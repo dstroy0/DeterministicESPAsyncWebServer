@@ -1,0 +1,36 @@
+name: Changelog
+
+on:
+  push:
+    branches: [main]
+
+# Do not cancel in progress — let the commit complete cleanly.
+concurrency:
+  group: changelog-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  changelog:
+    name: Update CHANGELOG.md
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # git-cliff needs full history to build the log
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate CHANGELOG.md
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: docs/cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Commit changelog
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update CHANGELOG.md [skip ci]"
+          file_pattern: CHANGELOG.md
