@@ -27,7 +27,7 @@ jobs:
           config: docs/cliff.toml
           args: --verbose
         env:
-          OUTPUT: CHANGELOG.md
+          OUTPUT: docs/CHANGELOG.md
 
       - name: Commit changelog
         uses: stefanzweifel/git-auto-commit-action@v5
