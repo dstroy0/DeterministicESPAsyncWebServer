@@ -5,6 +5,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`eeea908`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eeea9082c24ae05b8898ed371cef5dbffb0386db))
 - update CHANGELOG.md [skip ci] ([`e81b25f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e81b25ff412562043e086ffc315852f16ce3f180))
 - update CHANGELOG.md [skip ci] ([`1a4c39b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a4c39be56b8ba74da376b60f4b45bbb6ac57f07))
 - update CHANGELOG.md [skip ci] ([`f04ac84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f04ac84bdb7e675a6d2b255a87372bfa91ffd048))
@@ -12,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 
 ### Changes
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`99a92ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99a92ee1827c72ce691801a1d52612ffdb3b5c71))
+- update ci action versions ([`14748bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14748bfcb83c501975b5e6b8f50559e0e8f66513))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`16039a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16039a9384c580cf02392e25862f10cd45ac5664))
 - add examples; update README ([`ecfeb0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecfeb0faa559fbc674671a41a57e2ed03e10ecf8))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`846720c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/846720cc8111f113b5af11931eb17d9a81ef1c11))
