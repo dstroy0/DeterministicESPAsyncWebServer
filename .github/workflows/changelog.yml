@@ -33,4 +33,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update CHANGELOG.md [skip ci]"
-          file_pattern: CHANGELOG.md
+          file_pattern: docs/CHANGELOG.md
