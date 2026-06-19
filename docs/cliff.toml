@@ -1,11 +1,11 @@
-# git-cliff configuration for XPoint
+# git-cliff configuration for DeterministicESPAsyncWebServer
 # Docs: https://git-cliff.org/docs/configuration
 
 [changelog]
 header = """
 # Changelog
 
-All notable changes to XPoint are documented here.\n
+All notable changes to DeterministicESPAsyncWebServer are documented here.\n
 """
 body = """
 {% if version %}\
@@ -17,7 +17,7 @@ body = """
 ### {{ group | upper_first }}
 {% for commit in commits %}\
 - {{ commit.message | split(pat="\n") | first | trim }} \
-([`{{ commit.id | truncate(length=7, end="") }}`](https://github.com/dstroy0/XPoint/commit/{{ commit.id }}))
+([`{{ commit.id | truncate(length=7, end="") }}`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/{{ commit.id }}))
 {% endfor %}
 {% endfor %}\n
 """
