@@ -1,0 +1,351 @@
+/*
+ * DeterministicESPAsyncWebServer — Doxygen dark ocean theme
+ * Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Palette — "deep ocean at dusk"
+ *   background ......... #0e1621  deep navy
+ *   panel/sidebar ...... #13202f  midnight blue
+ *   surface ............ #1a2e42  dark teal-slate
+ *   border ............. #1e3a5f  deep blue border
+ *   primary ............ #4ecdc4  calm teal
+ *   secondary .......... #45b7d1  sky blue
+ *   accent ............. #a8dadc  pale aqua
+ *   heading ............ #89cff0  baby blue
+ *   text ............... #cdd6f4  lavender-white
+ *   text muted ......... #7d8eb5  slate blue
+ *   code background .... #0a101a  near-black
+ *   warning ............ #e9c46a  warm amber
+ *   success ............ #52b788  seafoam green
+ */
+
+/* ---- Doxygen CSS variable overrides -------------------------------- */
+html {
+    --primary-color:              #4ecdc4;
+    --primary-dark-color:         #3aafa9;
+    --primary-light-color:        #a8dadc;
+    --secondary-color:            #45b7d1;
+    --secondary-dark-color:       #2e9fc0;
+    --secondary-light-color:      #89cff0;
+
+    --page-background-color:      #0e1621;
+    --page-foreground-color:      #cdd6f4;
+    --page-secondary-foreground-color: #7d8eb5;
+
+    --separator-color:            #1e3a5f;
+    --border-color:               #1e3a5f;
+
+    --header-background:          #13202f;
+    --header-foreground:          #cdd6f4;
+    --header-gradient:            linear-gradient(135deg, #0e1621 0%, #13202f 100%);
+
+    --nav-background:             #13202f;
+    --nav-foreground:             #cdd6f4;
+    --nav-accent:                 #4ecdc4;
+
+    --code-background:            #0a101a;
+    --code-foreground:            #a8dadc;
+
+    --memdef-background:          #13202f;
+    --memdef-title-background:    #1a2e42;
+
+    --warning-color:              #e9c46a;
+    --note-color:                 #4ecdc4;
+    --attention-color:            #e76f51;
+    --deprecated-color:           #7d8eb5;
+    --bug-color:                  #e76f51;
+    --todo-color:                 #45b7d1;
+}
+
+/* ---- Layout and typography ----------------------------------------- */
+body, html {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+                 Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    background-color: #0e1621;
+    color: #cdd6f4;
+}
+
+/* ---- Page header / title bar --------------------------------------- */
+#titlearea, div.header {
+    background: linear-gradient(135deg, #0e1621 0%, #13202f 60%, #1a2e42 100%);
+    border-bottom: 1px solid #1e3a5f;
+    padding: 16px 24px;
+}
+
+#projectname {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #4ecdc4;
+    letter-spacing: -0.02em;
+}
+
+#projectbrief {
+    font-size: 0.9rem;
+    color: #7d8eb5;
+    margin-top: 2px;
+}
+
+/* ---- Navigation tree / sidebar ------------------------------------ */
+#nav-tree, #side-nav {
+    background-color: #13202f;
+    border-right: 1px solid #1e3a5f;
+}
+
+.ui-resizable-e {
+    background-color: #1e3a5f;
+}
+
+#nav-tree a {
+    color: #cdd6f4;
+}
+
+#nav-tree a:hover, #nav-tree .selected a {
+    color: #4ecdc4;
+}
+
+#nav-tree .label {
+    background-color: transparent;
+}
+
+#nav-sync {
+    color: #7d8eb5;
+}
+
+/* ---- Main content area -------------------------------------------- */
+#doc-content, div#doc-content {
+    background-color: #0e1621;
+}
+
+div.contents {
+    padding: 24px 32px;
+    max-width: 1100px;
+}
+
+/* ---- Search bar ---------------------------------------------------- */
+#MSearchBox {
+    background-color: #1a2e42;
+    border: 1px solid #1e3a5f;
+    border-radius: 6px;
+}
+
+#MSearchField {
+    background-color: transparent;
+    color: #cdd6f4;
+}
+
+#MSearchBox:hover, #MSearchBox:focus-within {
+    border-color: #4ecdc4;
+    box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.15);
+}
+
+/* ---- Section headings --------------------------------------------- */
+h1, h2, h3, h4 {
+    color: #89cff0;
+    font-weight: 600;
+    border-bottom: 1px solid #1e3a5f;
+    padding-bottom: 6px;
+    margin-top: 32px;
+}
+
+h1.glow {
+    color: #4ecdc4;
+    text-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+}
+
+/* ---- Anchor links -------------------------------------------------- */
+a, a:visited {
+    color: #45b7d1;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #4ecdc4;
+    text-decoration: underline;
+}
+
+/* ---- Member definition boxes --------------------------------------- */
+div.memitem {
+    background-color: #13202f;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+div.memproto {
+    background: linear-gradient(90deg, #1a2e42 0%, #13202f 100%);
+    border-bottom: 1px solid #1e3a5f;
+    padding: 10px 16px;
+}
+
+div.memdoc {
+    padding: 12px 16px;
+    background-color: #13202f;
+    color: #cdd6f4;
+}
+
+table.memname {
+    color: #4ecdc4;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+}
+
+/* ---- Code blocks --------------------------------------------------- */
+div.fragment, pre.fragment {
+    background-color: #0a101a;
+    border: 1px solid #1e3a5f;
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+span.keyword    { color: #c678dd; }  /* purple  — keywords        */
+span.keywordtype{ color: #e5c07b; }  /* amber   — built-in types  */
+span.keywordflow{ color: #c678dd; }  /* purple  — control flow    */
+span.preprocessor{ color: #7d8eb5; } /* muted   — preprocessor    */
+span.stringliteral{ color: #98c379; }/* green   — strings         */
+span.charliteral{ color: #98c379; }  /* green   — char literals   */
+span.comment    { color: #5c6a7f; font-style: italic; }
+span.vhdldigit  { color: #e9c46a; }
+span.vhdlchar   { color: #98c379; }
+span.vhdlkeyword{ color: #c678dd; }
+span.vhdllogic  { color: #45b7d1; }
+
+/* ---- Parameter tables ---------------------------------------------- */
+table.params td, table.params th,
+table.exception td, table.exception th,
+table.retval td, table.retval th {
+    background-color: #0a101a;
+    border: 1px solid #1e3a5f;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+table.params th {
+    background-color: #1a2e42;
+    color: #89cff0;
+    font-weight: 600;
+}
+
+td.paramname { color: #4ecdc4; font-family: monospace; }
+td.paramtype  { color: #e5c07b; font-family: monospace; }
+
+/* ---- Note / warning boxes ------------------------------------------ */
+dl.note, dl.warning, dl.attention, dl.pre, dl.post,
+dl.invariant, dl.deprecated, dl.todo, dl.bug, dl.remark {
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 12px 0;
+}
+
+dl.note       { background-color: rgba(78, 205, 196, 0.08); border-left: 3px solid #4ecdc4; }
+dl.warning    { background-color: rgba(231, 111,  81, 0.08); border-left: 3px solid #e76f51; }
+dl.attention  { background-color: rgba(233, 196, 106, 0.08); border-left: 3px solid #e9c46a; }
+dl.todo       { background-color: rgba(69, 183, 209, 0.08);  border-left: 3px solid #45b7d1; }
+dl.deprecated { background-color: rgba(125,142,181, 0.08);   border-left: 3px solid #7d8eb5; }
+
+dt.note:before        { content: "📝 Note"; color: #4ecdc4; font-weight: 700; }
+dt.warning:before     { content: "⚠️ Warning"; color: #e76f51; font-weight: 700; }
+dt.attention:before   { content: "⚡ Attention"; color: #e9c46a; font-weight: 700; }
+dt.todo:before        { content: "✅ Todo"; color: #45b7d1; font-weight: 700; }
+dt.deprecated:before  { content: "🚫 Deprecated"; color: #7d8eb5; font-weight: 700; }
+
+/* ---- Class / struct overview boxes --------------------------------- */
+div.summary {
+    background-color: #13202f;
+    border: 1px solid #1e3a5f;
+    border-radius: 6px;
+    padding: 8px 14px;
+}
+
+div.ingrouptitle {
+    color: #89cff0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ---- Section dividers --------------------------------------------- */
+hr {
+    border: none;
+    border-top: 1px solid #1e3a5f;
+    margin: 20px 0;
+}
+
+/* ---- File / directory listing ------------------------------------- */
+table.directory {
+    background-color: #13202f;
+    border: 1px solid #1e3a5f;
+    border-radius: 6px;
+    width: 100%;
+}
+
+table.directory td, table.directory th {
+    padding: 6px 12px;
+    border-bottom: 1px solid #1e3a5f;
+}
+
+table.directory th {
+    background-color: #1a2e42;
+    color: #89cff0;
+    font-weight: 600;
+}
+
+/* ---- Tab bar ------------------------------------------------------- */
+div.tabs, div.tabs2, div.tabs3 {
+    background: #13202f;
+    border-bottom: 1px solid #1e3a5f;
+}
+
+ul.tablist li a, ul.tablist li.current a {
+    color: #cdd6f4;
+    padding: 8px 16px;
+    display: inline-block;
+}
+
+ul.tablist li.current a {
+    color: #4ecdc4;
+    border-bottom: 2px solid #4ecdc4;
+    font-weight: 600;
+}
+
+ul.tablist li a:hover {
+    color: #4ecdc4;
+    text-decoration: none;
+}
+
+/* ---- Member group headings ---------------------------------------- */
+div.groupheader {
+    color: #45b7d1;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 20px 0 8px 0;
+    border-bottom: 1px solid #1e3a5f;
+    padding-bottom: 4px;
+}
+
+/* ---- Scrollbar ----------------------------------------------------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a101a; }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #4ecdc4; }
+
+/* ---- Inline code --------------------------------------------------- */
+code, tt {
+    background-color: #1a2e42;
+    color: #a8dadc;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.88em;
+}
+
+/* ---- Responsive adjustments --------------------------------------- */
+@media (max-width: 768px) {
+    div.contents { padding: 16px; }
+    #projectname { font-size: 1.3rem; }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "DeterministicESPAsyncWebServer",
+  "version": "0.1.0",
+  "description": "Deterministic async web server for ESP32 with static memory allocation, lock-free queues, and predictable real-time performance.",
+  "keywords": ["esp32", "async", "web server", "deterministic", "real-time", "lwip"],
+  "license": "MIT",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "build": {
+    "srcDir": "src"
+  }
+}
