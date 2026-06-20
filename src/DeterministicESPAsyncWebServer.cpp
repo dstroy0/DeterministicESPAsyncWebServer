@@ -10,8 +10,10 @@
  * handle()
  *   └─ server_tick()                 ← drain FreeRTOS event queue
  *   └─ for each slot:
- *        PARSE_COMPLETE → match_and_execute()
- *        PARSE_ERROR    → send(400)
+ *        PARSE_COMPLETE          → match_and_execute()
+ *        PARSE_ERROR             → send(400)
+ *        PARSE_ENTITY_TOO_LARGE  → send(413)
+ *        PARSE_URI_TOO_LONG      → send(414)
  * ```
  *
  * **Route table**
@@ -61,6 +63,7 @@ static const char *status_text(int code)
     case 408: return "Request Timeout";
     case 409: return "Conflict";
     case 413: return "Payload Too Large";
+    case 414: return "URI Too Long";
     case 429: return "Too Many Requests";
     case 500: return "Internal Server Error";
     case 501: return "Not Implemented";
@@ -98,11 +101,18 @@ DetWebServer::DetWebServer()
     _cors_header_buf[0] = '\0';
 }
 
-bool DetWebServer::begin(uint16_t port)
+int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
 {
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
-    return DeterministicAsyncTCP::init(port);
+    return DeterministicAsyncTCP::init(port, cfg);
+}
+
+void DetWebServer::stop()
+{
+    DeterministicAsyncTCP::stop();
+    for (uint8_t i = 0; i < MAX_CONNS; i++)
+        http_reset(i);
 }
 
 /**
@@ -200,6 +210,8 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
  *   3. Any slot left in PARSE_COMPLETE after dispatch (i.e., callback did not
  *      send a response) is reset so it doesn't block the slot.
  *   4. Any slot in PARSE_ERROR receives an automatic 400 response.
+ *   5. Any slot in PARSE_ENTITY_TOO_LARGE receives an automatic 413 response.
+ *   6. Any slot in PARSE_URI_TOO_LONG receives an automatic 414 response.
  */
 void DetWebServer::handle()
 {
@@ -216,6 +228,14 @@ void DetWebServer::handle()
         else if (http_pool[i].parse_state == PARSE_ERROR)
         {
             send(i, 400, "text/plain", "Bad Request");
+        }
+        else if (http_pool[i].parse_state == PARSE_ENTITY_TOO_LARGE)
+        {
+            send(i, 413, "text/plain", "Payload Too Large");
+        }
+        else if (http_pool[i].parse_state == PARSE_URI_TOO_LONG)
+        {
+            send(i, 414, "text/plain", "URI Too Long");
         }
     }
 }
@@ -242,6 +262,13 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     if (method == HTTP_OPTIONS && _cors_enabled)
     {
         send_empty(slot_id, 204);
+        return;
+    }
+
+    // RFC 7230 §3.3.1: reject Transfer-Encoding — chunked decoding is not supported
+    if (http_get_header(req, "Transfer-Encoding") != nullptr)
+    {
+        send(slot_id, 501, "text/plain", "Not Implemented");
         return;
     }
 

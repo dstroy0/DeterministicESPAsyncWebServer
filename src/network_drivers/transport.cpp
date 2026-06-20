@@ -25,11 +25,12 @@
 TcpConn        conn_pool[MAX_CONNS];
 static struct tcp_pcb *listen_pcb = nullptr;
 
-QueueHandle_t DeterministicAsyncTCP::queue = nullptr;
+QueueHandle_t DeterministicAsyncTCP::queue          = nullptr;
+uint32_t      DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 
 static err_t lowlevel_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err);
 static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-static err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
+static err_t lowlevel_sent_cb(void  *arg, struct tcp_pcb *tpcb, u16_t len);
 static void  lowlevel_err_cb(void *arg, err_t err);
 
 /**
@@ -45,11 +46,17 @@ static inline void enqueue(const TcpEvt &evt)
     xQueueSend(DeterministicAsyncTCP::queue, &evt, 0);
 }
 
-bool DeterministicAsyncTCP::init(uint16_t port)
+int32_t DeterministicAsyncTCP::init(uint16_t port, const WebServerConfig *cfg)
 {
+    // Load runtime config (or fall back to compile-time default)
+    conn_timeout_ms = cfg ? cfg->conn_timeout_ms : CONN_TIMEOUT_MS;
+
+    // Minimum heap required: 16-slot queue of TcpEvt records
+    static const int32_t QUEUE_RAM_NEEDED = (int32_t)(16 * sizeof(TcpEvt));
+
     queue = xQueueCreate(16, sizeof(TcpEvt));
     if (queue == nullptr)
-        return false;
+        return -QUEUE_RAM_NEEDED;
 
     for (int i = 0; i < MAX_CONNS; i++)
     {
@@ -60,26 +67,58 @@ bool DeterministicAsyncTCP::init(uint16_t port)
 
     struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
     if (!pcb)
-        return false;
+        return -1;
 
     err_t err = tcp_bind(pcb, IP_ANY_TYPE, port);
     if (err != ERR_OK)
     {
         tcp_abort(pcb);
-        return false;
+        return -1;
     }
 
     listen_pcb = tcp_listen_with_backlog(pcb, MAX_CONNS);
     if (!listen_pcb)
     {
         tcp_abort(pcb);
-        return false;
+        return -1;
     }
 
     tcp_arg(listen_pcb, nullptr);
     tcp_accept(listen_pcb, lowlevel_accept_cb);
 
-    return true;
+    return 1;
+}
+
+void DeterministicAsyncTCP::stop()
+{
+    // Close the listener first — no new connections accepted
+    if (listen_pcb)
+    {
+        tcp_close(listen_pcb);
+        listen_pcb = nullptr;
+    }
+
+    // Abort all active connections
+    for (int i = 0; i < MAX_CONNS; i++)
+    {
+        if (conn_pool[i].state == CONN_ACTIVE && conn_pool[i].pcb)
+        {
+            struct tcp_pcb *pcb = conn_pool[i].pcb;
+            conn_pool[i].state  = CONN_FREE;
+            conn_pool[i].pcb    = nullptr;
+            tcp_arg(pcb, nullptr);
+            tcp_abort(pcb);
+        }
+        conn_pool[i].state = CONN_FREE;
+        conn_pool[i].pcb   = nullptr;
+    }
+
+    // Free the event queue
+    if (queue)
+    {
+        vQueueDelete(queue);
+        queue = nullptr;
+    }
 }
 
 void DeterministicAsyncTCP::check_timeouts()
@@ -90,7 +129,7 @@ void DeterministicAsyncTCP::check_timeouts()
         TcpConn *slot = &conn_pool[i];
         if (slot->state != CONN_ACTIVE)
             continue;
-        if ((now - slot->last_activity_ms) < CONN_TIMEOUT_MS)
+        if ((now - slot->last_activity_ms) < conn_timeout_ms)
             continue;
 
         struct tcp_pcb *pcb = slot->pcb;
@@ -115,6 +154,13 @@ void DeterministicAsyncTCP::check_timeouts()
 // lwIP callbacks — execute in tcpip_thread task context
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief lwIP accept callback — fires when a new client connects.
+ *
+ * Finds a free slot, wires up the per-connection callbacks, and posts
+ * EVT_CONNECT.  If the pool is full, rejects the connection with ERR_ABRT
+ * (which tells lwIP the PCB is already gone from our side).
+ */
 static err_t lowlevel_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
     if (err != ERR_OK || newpcb == nullptr)
@@ -158,6 +204,13 @@ static err_t lowlevel_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     return ERR_OK;
 }
 
+/**
+ * @brief lwIP receive callback — fires when data arrives on a connection.
+ *
+ * Copies pbuf chain bytes into the ring buffer and calls tcp_recved() with
+ * only the bytes actually stored, applying TCP-level backpressure when the
+ * buffer is full.  A null pbuf signals graceful remote close (FIN received).
+ */
 static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
     TcpConn *slot = (TcpConn *)arg;
@@ -217,6 +270,12 @@ static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
     return ERR_OK;
 }
 
+/**
+ * @brief lwIP sent callback — fires after the stack acknowledges sent bytes.
+ *
+ * Used only to refresh the idle-timeout timestamp so an active sender doesn't
+ * get timed out while its responses are in flight.
+ */
 static err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
     TcpConn *slot = (TcpConn *)arg;
@@ -225,6 +284,13 @@ static err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
     return ERR_OK;
 }
 
+/**
+ * @brief lwIP error callback — fires when the stack detects a fatal error.
+ *
+ * By the time this fires the PCB is already gone internally, so we must NOT
+ * call tcp_close() or tcp_abort().  Null out the slot's pcb pointer and post
+ * EVT_ERROR so the session layer resets the HTTP parser.
+ */
 static void lowlevel_err_cb(void *arg, err_t err)
 {
     TcpConn *slot = (TcpConn *)arg;

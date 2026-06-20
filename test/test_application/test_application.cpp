@@ -294,29 +294,32 @@ void test_handler_reads_body()
     TEST_ASSERT_EQUAL_STRING("hello", body_seen);
 }
 
-// Handler calls http_get_query() to read a URL query parameter
+// Handler calls http_get_query() to read a URL query parameter.
+// Value is copied inside the handler because http_reset() clears
+// http_pool[] before handle() returns to the test.
 void test_handler_reads_query_param()
 {
-    static const char *q_seen = nullptr;
+    static char q_seen[48] = {};
     g_server->on("/q", HTTP_GET, [](uint8_t, HttpReq *req) {
-        q_seen = http_get_query(req, "id");
+        const char *v = http_get_query(req, "id");
+        if (v) strncpy(q_seen, v, sizeof(q_seen) - 1);
     });
     arm_slot(0, "GET /q?id=42 HTTP/1.1\r\n\r\n");
     g_server->handle();
-    TEST_ASSERT_NOT_NULL(q_seen);
     TEST_ASSERT_EQUAL_STRING("42", q_seen);
 }
 
-// Handler calls http_get_header() to read a custom request header
+// Handler calls http_get_header() to read a custom request header.
+// Same copy-inside-handler pattern as test_handler_reads_query_param.
 void test_handler_reads_header()
 {
-    static const char *h_seen = nullptr;
+    static char h_seen[48] = {};
     g_server->on("/h", HTTP_GET, [](uint8_t, HttpReq *req) {
-        h_seen = http_get_header(req, "X-Token");
+        const char *v = http_get_header(req, "X-Token");
+        if (v) strncpy(h_seen, v, sizeof(h_seen) - 1);
     });
     arm_slot(0, "GET /h HTTP/1.1\r\nX-Token: secret\r\n\r\n");
     g_server->handle();
-    TEST_ASSERT_NOT_NULL(h_seen);
     TEST_ASSERT_EQUAL_STRING("secret", h_seen);
 }
 
@@ -518,9 +521,61 @@ void race_callback_manually_resets_slot()
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
 }
 
+// ====================================================================
+// 414 URI TOO LONG
+// ====================================================================
+
+void test_uri_too_long_auto_resets_slot()
+{
+    // Overflow the path buffer — handle() should send 414 and free the slot
+    char req[MAX_PATH_LEN + 64];
+    int  idx = 0;
+    memcpy(req + idx, "GET /", 5); idx += 5;
+    for (int i = 0; i < MAX_PATH_LEN; i++) req[idx++] = 'a';
+    memcpy(req + idx, " HTTP/1.1\r\n\r\n", 13); idx += 13;
+    req[idx] = '\0';
+
+    push_bytes(0, req);
+    http_reset(0);
+    http_parse(0);
+    TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
+
+    g_server->handle(); // must send 414 and reset the slot
+    TEST_ASSERT_NOT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
+}
+
+// ====================================================================
+// TRANSFER-ENCODING REJECTION
+// ====================================================================
+
+void test_transfer_encoding_chunked_is_501()
+{
+    // A request advertising Transfer-Encoding must be rejected with 501
+    arm_slot(0, "POST /data HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n");
+    g_server->on("/data", HTTP_POST, [](uint8_t, HttpReq*) {
+        TEST_FAIL_MESSAGE("handler must not be called for Transfer-Encoding request");
+    });
+    g_server->handle(); // must send 501, not dispatch the route
+    TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+}
+
+void test_transfer_encoding_identity_is_501()
+{
+    // Even "identity" is rejected — we advertise no TE support at all
+    arm_slot(0, "GET / HTTP/1.1\r\nTransfer-Encoding: identity\r\n\r\n");
+    g_server->handle();
+    TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+}
+
 int main()
 {
     UNITY_BEGIN();
+
+    // Function I/O: handler API access
+    RUN_TEST(test_handler_reads_body);
+    RUN_TEST(test_handler_reads_query_param);
+    RUN_TEST(test_handler_reads_header);
+    RUN_TEST(test_wildcard_before_exact_wildcard_wins);
 
     // Function I/O: on()
     RUN_TEST(test_fn_on_registers_and_dispatches);
@@ -561,6 +616,13 @@ int main()
     RUN_TEST(race_double_handle_no_double_dispatch);
     RUN_TEST(race_error_and_valid_slot_in_same_handle);
     RUN_TEST(race_callback_manually_resets_slot);
+
+    // 414
+    RUN_TEST(test_uri_too_long_auto_resets_slot);
+
+    // Transfer-Encoding rejection
+    RUN_TEST(test_transfer_encoding_chunked_is_501);
+    RUN_TEST(test_transfer_encoding_identity_is_501);
 
     return UNITY_END();
 }

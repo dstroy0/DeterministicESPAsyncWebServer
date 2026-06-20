@@ -66,3 +66,5 @@ inline int xQueueReceive(QueueHandle_t, void *buf, uint32_t)
     }
     return pdFALSE;
 }
+
+inline void vQueueDelete(QueueHandle_t) {}

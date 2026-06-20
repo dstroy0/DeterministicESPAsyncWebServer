@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef PROGMEM
+#define PROGMEM
+#endif
+
 #ifdef _WIN32
   #define strcasecmp _stricmp
 #else

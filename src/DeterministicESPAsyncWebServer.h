@@ -9,13 +9,15 @@
  * The full OSI include chain is pulled in automatically:
  * @code
  *   DeterministicESPAsyncWebServer.h
- *     └── network_drivers/presentation.h  (Layer 6 — HTTP parser types)
- *           └── network_drivers/transport.h (Layer 4 — TCP types)
+ *     └── network_drivers/presentation.h  (Layer 6)
+ *           ├── network_drivers/transport.h  (Layer 4)
+ *           │     └── DetWebServerConfig.h   (compile-time constants)
+ *           └── network_drivers/http_parser.h (parser types)
  *     └── network_drivers/session.h       (Layer 5 — event queue)
  * @endcode
  *
  * **Determinism guarantees**
- * - All buffers are statically allocated; no heap usage.
+ * - All buffers are statically allocated; no heap usage after begin().
  * - Every operation has O(1) or O(MAX_ROUTES) worst-case time.
  * - `handle()` is safe to call every Arduino `loop()` iteration.
  *
@@ -30,9 +32,6 @@
 #include <Arduino.h>
 #include "network_drivers/presentation.h"
 #include "network_drivers/session.h"
-
-/** @brief Maximum number of simultaneously registered routes. */
-#define MAX_ROUTES 16
 
 // ---------------------------------------------------------------------------
 // HTTP method enumeration
@@ -111,7 +110,8 @@ struct Route
  *     WiFi.begin("SSID", "PASSWORD");
  *     server.on("/api/*", HTTP_GET, handle_api);
  *     server.set_cors("*");
- *     server.begin(80);
+ *     int32_t result = server.begin(80);
+ *     if (result < 0) { } // abs(result) == heap bytes needed
  * }
  *
  * void loop() {
@@ -120,8 +120,8 @@ struct Route
  * @endcode
  *
  * ## Design constraints
- * - Maximum simultaneous connections: `MAX_CONNS` (4).
- * - Maximum registered routes: `MAX_ROUTES` (16).
+ * - Maximum simultaneous connections: `MAX_CONNS` (default 4).
+ * - Maximum registered routes: `MAX_ROUTES` (default 16).
  * - Responses are sent synchronously and the TCP connection is closed
  *   immediately after every response (HTTP/1.0 close semantics).
  */
@@ -178,13 +178,24 @@ public:
     /**
      * @brief Initialise all connection slots and open the TCP listener.
      *
-     * Calls http_reset() on every slot before accepting connections so
-     * the parser pool is always in a known state.
+     * Resets the HTTP parser pool and delegates to DeterministicAsyncTCP::init().
+     * Pass a WebServerConfig to tune runtime parameters (timeout, etc.) at
+     * init time; the config may live in PROGMEM (flash) or RAM.
      *
      * @param port TCP port to listen on (typically 80).
-     * @return True on success; false if the lwIP listen setup failed.
+     * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
+     * @return Positive value on success; negative value whose absolute value is
+     *         the number of heap bytes needed when initialisation fails.
      */
-    bool begin(uint16_t port);
+    int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
+
+    /**
+     * @brief Gracefully stop the server.
+     *
+     * Aborts all active connections, closes the listener, frees the event
+     * queue, and resets all HTTP parser slots.  Call begin() to restart.
+     */
+    void stop();
 
     /**
      * @brief Register a route handler.
@@ -234,6 +245,8 @@ public:
      * 3. Scans all connection slots for `PARSE_COMPLETE` requests and
      *    dispatches them to the matching route handler.
      * 4. Auto-sends 400 for any slot stuck in `PARSE_ERROR`.
+     * 5. Auto-sends 413 for any slot stuck in `PARSE_ENTITY_TOO_LARGE`.
+     * 6. Auto-sends 414 for any slot stuck in `PARSE_URI_TOO_LONG`.
      */
     void handle();
 

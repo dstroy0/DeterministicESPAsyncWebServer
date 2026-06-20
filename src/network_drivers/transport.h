@@ -37,29 +37,7 @@
 #include "lwip/tcp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-
-// ---------------------------------------------------------------------------
-// Capacity constants
-// ---------------------------------------------------------------------------
-
-/** @brief Maximum number of simultaneously active TCP connections. */
-#define MAX_CONNS        4
-
-/**
- * @brief Ring buffer capacity in bytes per connection.
- *
- * The sentinel-slot design means the usable capacity is `RX_BUF_SIZE - 1`.
- * Choose a power-of-two so the modulo wraps via bitmasking on most toolchains.
- */
-#define RX_BUF_SIZE      1024
-
-/**
- * @brief Milliseconds of inactivity before a connection is forcibly closed.
- *
- * Applied by DeterministicAsyncTCP::check_timeouts() which is called at
- * the start of every server_tick() call.
- */
-#define CONN_TIMEOUT_MS  5000
+#include "DetWebServerConfig.h"
 
 // ---------------------------------------------------------------------------
 // Connection state
@@ -149,16 +127,26 @@ public:
     /**
      * @brief Initialise the TCP stack, create the event queue, and begin listening.
      *
-     * Must be called once from DetWebServer::begin() before any connections
-     * can arrive.  Zeroes the connection pool and creates the FreeRTOS queue.
+     * Checks whether enough heap is available before attempting queue creation.
+     * Zeroes the connection pool and stores the runtime config.
      *
      * @param port TCP port to bind and listen on.
-     * @return True on success; false if the event queue or lwIP setup failed.
+     * @param cfg  Optional runtime config.  Pass nullptr to use defaults.
+     * @return Positive value on success; negative value whose absolute value is
+     *         the number of heap bytes needed when initialisation fails.
      */
-    static bool init(uint16_t port);
+    static int32_t init(uint16_t port, const WebServerConfig *cfg = nullptr);
 
     /**
-     * @brief Scan the pool and force-close connections idle for > CONN_TIMEOUT_MS.
+     * @brief Stop the server: abort all connections, close the listener, free the queue.
+     *
+     * Safe to call from the main-loop task.  After stop() returns,
+     * init() may be called again to restart.
+     */
+    static void stop();
+
+    /**
+     * @brief Scan the pool and force-close connections idle for > conn_timeout_ms.
      *
      * Called at the start of every server_tick() call, before the event queue
      * is drained.  Uses `tcp_abort()` (not `tcp_close()`) because the
@@ -179,6 +167,14 @@ public:
      * Queue depth of 16 is sufficient for `MAX_CONNS * 4` event bursts.
      */
     static QueueHandle_t queue;
+
+    /**
+     * @brief Runtime connection-idle timeout in milliseconds.
+     *
+     * Loaded from WebServerConfig::conn_timeout_ms at init() time.
+     * Defaults to CONN_TIMEOUT_MS if no config is supplied.
+     */
+    static uint32_t conn_timeout_ms;
 };
 
 #endif

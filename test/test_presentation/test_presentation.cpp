@@ -343,23 +343,16 @@ void test_body_null_terminated()
     TEST_ASSERT_EQUAL('\0', http_pool[0].body[3]);
 }
 
-void test_body_truncates_at_buf_size()
+void test_body_over_buf_size_is_413()
 {
+    // Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read.
     char req[RX_BUF_SIZE];
     int  big = BODY_BUF_SIZE + 10;
     snprintf(req, sizeof(req), "POST /big HTTP/1.1\r\nContent-Length: %d\r\n\r\n", big);
     push(0, req);
-    TcpConn *s = &conn_pool[0];
-    for (int i = 0; i < big; i++)
-    {
-        size_t next = (s->rx_head + 1) % RX_BUF_SIZE;
-        s->rx_buffer[s->rx_head] = 'A';
-        s->rx_head = next;
-    }
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(BODY_BUF_SIZE, (int)http_pool[0].body_len);
-    TEST_ASSERT_EQUAL('\0', http_pool[0].body[BODY_BUF_SIZE]);
+    TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
 }
 
 void test_overflow_method_sets_error()
@@ -369,7 +362,7 @@ void test_overflow_method_sets_error()
     TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[3].parse_state);
 }
 
-void test_overflow_path_sets_error()
+void test_overflow_path_sets_414()
 {
     char req[256] = "GET /";
     for (int i = 5; i < MAX_PATH_LEN + 10; i++) req[i] = 'x';
@@ -377,7 +370,7 @@ void test_overflow_path_sets_error()
     strcat(req, " HTTP/1.1\r\n\r\n");
     push(0, req);
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
 }
 
 void test_bad_lf_after_cr_sets_error()
@@ -874,9 +867,9 @@ int main()
     RUN_TEST(test_query_single_param);
     RUN_TEST(test_query_multiple_params);
     RUN_TEST(test_body_null_terminated);
-    RUN_TEST(test_body_truncates_at_buf_size);
+    RUN_TEST(test_body_over_buf_size_is_413);
     RUN_TEST(test_overflow_method_sets_error);
-    RUN_TEST(test_overflow_path_sets_error);
+    RUN_TEST(test_overflow_path_sets_414);
     RUN_TEST(test_bad_lf_after_cr_sets_error);
     RUN_TEST(test_headers_beyond_max_are_dropped);
     RUN_TEST(test_query_params_beyond_max_are_dropped);
