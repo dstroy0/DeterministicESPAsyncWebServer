@@ -33,11 +33,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 
-#include <Arduino.h>
-#include "lwip/tcp.h"
+#include "DetWebServerConfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include "DetWebServerConfig.h"
+#include "lwip/tcp.h"
+#include <Arduino.h>
 
 // ---------------------------------------------------------------------------
 // Connection state
@@ -53,9 +53,9 @@
  */
 enum ConnState
 {
-    CONN_FREE,    ///< Slot is available; no PCB is attached.
-    CONN_ACTIVE,  ///< Live connection; PCB is valid.
-    CONN_CLOSING  ///< FIN sent; waiting for final ACK (reserved).
+    CONN_FREE,   ///< Slot is available; no PCB is attached.
+    CONN_ACTIVE, ///< Live connection; PCB is valid.
+    CONN_CLOSING ///< FIN sent; waiting for final ACK (reserved).
 };
 
 /**
@@ -67,14 +67,14 @@ enum ConnState
  */
 struct TcpConn
 {
-    uint8_t     id;               ///< Fixed slot index (0 … MAX_CONNS-1).
-    volatile ConnState state;     ///< Lifecycle state; volatile for inter-task visibility.
-    struct tcp_pcb *pcb;          ///< lwIP PCB; null when slot is free.
-    uint32_t    last_activity_ms; ///< `millis()` timestamp of last TX/RX event.
+    uint8_t id;                ///< Fixed slot index (0 … MAX_CONNS-1).
+    volatile ConnState state;  ///< Lifecycle state; volatile for inter-task visibility.
+    struct tcp_pcb *pcb;       ///< lwIP PCB; null when slot is free.
+    uint32_t last_activity_ms; ///< `millis()` timestamp of last TX/RX event.
 
-    uint8_t         rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
-    volatile size_t rx_head; ///< Producer write index (lwIP context).
-    volatile size_t rx_tail; ///< Consumer read index (main-loop context).
+    uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
+    volatile size_t rx_head;        ///< Producer write index (lwIP context).
+    volatile size_t rx_tail;        ///< Consumer read index (main-loop context).
 };
 
 /** @brief Static pool of connection contexts.  Defined in transport.cpp. */
@@ -103,9 +103,9 @@ enum EvtType
  */
 struct TcpEvt
 {
-    EvtType type;     ///< What happened.
-    uint8_t slot_id;  ///< Which connection slot is affected.
-    size_t  data_len; ///< Bytes copied (EVT_DATA only); 0 for other types.
+    EvtType type;    ///< What happened.
+    uint8_t slot_id; ///< Which connection slot is affected.
+    size_t data_len; ///< Bytes copied (EVT_DATA only); 0 for other types.
 };
 
 // ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ struct TcpEvt
  */
 class DeterministicAsyncTCP
 {
-public:
+  public:
     /**
      * @brief Initialise the TCP stack, create the event queue, and begin listening.
      *

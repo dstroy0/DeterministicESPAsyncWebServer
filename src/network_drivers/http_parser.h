@@ -36,8 +36,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 #define DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 
-#include <Arduino.h>
 #include "DetWebServerConfig.h"
+#include <Arduino.h>
 
 // ---------------------------------------------------------------------------
 // Parser state enumeration
@@ -51,19 +51,19 @@
  */
 enum ParseState
 {
-    PARSE_METHOD,             ///< Reading the HTTP method (GET, POST, …).
-    PARSE_PATH,               ///< Reading the URL path component.
-    PARSE_QUERY,              ///< Reading the raw query string (after `?`).
-    PARSE_VERSION,            ///< Accumulating `HTTP/1.x` — hashed for validation.
-    PARSE_HEADER_KEY,         ///< Reading a header field name.
-    PARSE_HEADER_VAL,         ///< Reading a header field value.
-    PARSE_EXPECT_LF,          ///< Consuming the LF of a header-line CRLF pair.
-    PARSE_EXPECT_BODY_LF,     ///< Consuming the LF of the blank-line CRLF.
-    PARSE_BODY,               ///< Reading the request body.
-    PARSE_COMPLETE,           ///< Full request parsed; ready for dispatch.
-    PARSE_ERROR,              ///< Unrecoverable parse failure → 400.
-    PARSE_ENTITY_TOO_LARGE,   ///< Content-Length > BODY_BUF_SIZE → 413.
-    PARSE_URI_TOO_LONG        ///< Path exceeds MAX_PATH_LEN → 414.
+    PARSE_METHOD,           ///< Reading the HTTP method (GET, POST, …).
+    PARSE_PATH,             ///< Reading the URL path component.
+    PARSE_QUERY,            ///< Reading the raw query string (after `?`).
+    PARSE_VERSION,          ///< Accumulating `HTTP/1.x` — hashed for validation.
+    PARSE_HEADER_KEY,       ///< Reading a header field name.
+    PARSE_HEADER_VAL,       ///< Reading a header field value.
+    PARSE_EXPECT_LF,        ///< Consuming the LF of a header-line CRLF pair.
+    PARSE_EXPECT_BODY_LF,   ///< Consuming the LF of the blank-line CRLF.
+    PARSE_BODY,             ///< Reading the request body.
+    PARSE_COMPLETE,         ///< Full request parsed; ready for dispatch.
+    PARSE_ERROR,            ///< Unrecoverable parse failure → 400.
+    PARSE_ENTITY_TOO_LARGE, ///< Content-Length > BODY_BUF_SIZE → 413.
+    PARSE_URI_TOO_LONG      ///< Path exceeds MAX_PATH_LEN → 414.
 };
 
 /**
@@ -109,29 +109,29 @@ struct QueryParam
  */
 struct HttpReq
 {
-    uint8_t     slot_id;        ///< Transport slot index (set by presentation layer).
-    ParseState  parse_state;    ///< Current parser state.
-    HttpVersion version;        ///< Protocol version parsed from the request line.
-    uint32_t    _version_hash;  ///< FNV-1a accumulator for version validation (internal).
+    uint8_t slot_id;        ///< Transport slot index (set by presentation layer).
+    ParseState parse_state; ///< Current parser state.
+    HttpVersion version;    ///< Protocol version parsed from the request line.
+    uint32_t _version_hash; ///< FNV-1a accumulator for version validation (internal).
 
-    char   method[8];              ///< HTTP method, null-terminated (max 7: OPTIONS).
-    char   path[MAX_PATH_LEN];     ///< URL path, null-terminated; no query string.
-    size_t path_idx;               ///< Write cursor into path[].
+    char method[8];          ///< HTTP method, null-terminated (max 7: OPTIONS).
+    char path[MAX_PATH_LEN]; ///< URL path, null-terminated; no query string.
+    size_t path_idx;         ///< Write cursor into path[].
 
-    char       query[MAX_QUERY_LEN];         ///< Raw query string (after `?`).
-    size_t     query_idx;                    ///< Write cursor into query[].
+    char query[MAX_QUERY_LEN];                 ///< Raw query string (after `?`).
+    size_t query_idx;                          ///< Write cursor into query[].
     QueryParam query_params[MAX_QUERY_PARAMS]; ///< Parsed key=value pairs.
-    uint8_t    query_count;                  ///< Valid entries in query_params[].
+    uint8_t query_count;                       ///< Valid entries in query_params[].
 
-    Header  headers[MAX_HEADERS]; ///< Captured header fields.
-    uint8_t header_count;         ///< Valid entries in headers[].
-    size_t  current_token_idx;    ///< Write cursor shared by key/value sub-states.
+    Header headers[MAX_HEADERS]; ///< Captured header fields.
+    uint8_t header_count;        ///< Valid entries in headers[].
+    size_t current_token_idx;    ///< Write cursor shared by key/value sub-states.
 
-    size_t content_length;    ///< Value of Content-Length header (0 if absent).
-    size_t body_bytes_read;   ///< Body bytes received (may exceed BODY_BUF_SIZE).
+    size_t content_length;  ///< Value of Content-Length header (0 if absent).
+    size_t body_bytes_read; ///< Body bytes received (may exceed BODY_BUF_SIZE).
 
     uint8_t body[BODY_BUF_SIZE + 1]; ///< Stored body bytes, always null-terminated.
-    size_t  body_len;                ///< Bytes stored in body[] (≤ BODY_BUF_SIZE).
+    size_t body_len;                 ///< Bytes stored in body[] (≤ BODY_BUF_SIZE).
 };
 
 /** @brief Pool of parser contexts, one per transport slot. */

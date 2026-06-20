@@ -3,7 +3,8 @@
 
 /**
  * @file expert.ino
- * @brief Expert example demonstrating connection-pool inspection, request profiling, rate-limiting, and memory-safe stack templating.
+ * @brief Expert example demonstrating connection-pool inspection, request profiling, rate-limiting, and memory-safe
+ * stack templating.
  *
  * Demonstrates:
  *   1. Direct low-level query of the Layer 4 connection pool (conn_pool[MAX_CONNS])
@@ -21,24 +22,24 @@
  *   - Monitor connection state diagnostics printed on the Serial interface.
  */
 
-#include <WiFi.h>
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical.h"
 #include "network_drivers/transport.h" // Needed to access conn_pool and ConnState
+#include <WiFi.h>
 
-static const char *SSID     = "YOUR_SSID";
+static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
 // Uptime tracker and execution counters
 static unsigned long total_routed_requests = 0;
-static unsigned long total_rate_limited    = 0;
+static unsigned long total_rate_limited = 0;
 
 // --- Token Bucket Rate Limiter State ---
-static float         bucket_tokens = 5.0f; // Max burst size
-static const float   bucket_capacity = 5.0f;
-static const float   refill_rate_per_sec = 2.0f; // Tokens added per second
+static float bucket_tokens = 5.0f; // Max burst size
+static const float bucket_capacity = 5.0f;
+static const float refill_rate_per_sec = 2.0f; // Tokens added per second
 static unsigned long last_refill_time_ms = 0;
 
 /**
@@ -83,23 +84,27 @@ void print_connection_pool_stats()
         const char *state_str = "UNKNOWN";
         switch (conn->state)
         {
-            case CONN_FREE:    state_str = "FREE"; break;
-            case CONN_ACTIVE:  state_str = "ACTIVE"; break;
-            case CONN_CLOSING: state_str = "CLOSING"; break;
+        case CONN_FREE:
+            state_str = "FREE";
+            break;
+        case CONN_ACTIVE:
+            state_str = "ACTIVE";
+            break;
+        case CONN_CLOSING:
+            state_str = "CLOSING";
+            break;
         }
 
         size_t rx_unread = 0;
         if (conn->state == CONN_ACTIVE)
         {
             // Calculate fill occupancy of the circular ring buffer
-            rx_unread = (conn->rx_head >= conn->rx_tail) 
-                        ? (conn->rx_head - conn->rx_tail) 
-                        : (RX_BUF_SIZE - (conn->rx_tail - conn->rx_head));
+            rx_unread = (conn->rx_head >= conn->rx_tail) ? (conn->rx_head - conn->rx_tail)
+                                                         : (RX_BUF_SIZE - (conn->rx_tail - conn->rx_head));
         }
 
-        Serial.printf("Slot [%d]: State=%-7s | UnreadBytes=%4zu | LastActivity=%6lu ms ago | PCB_Addr=%p\n",
-                      i, state_str, rx_unread, 
-                      (conn->state == CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0, 
+        Serial.printf("Slot [%d]: State=%-7s | UnreadBytes=%4zu | LastActivity=%6lu ms ago | PCB_Addr=%p\n", i,
+                      state_str, rx_unread, (conn->state == CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0,
                       conn->pcb);
     }
     Serial.println("---------------------------------");
@@ -137,11 +142,11 @@ void handle_diagnostics(uint8_t slot_id, HttpReq *req)
              "\"task_stack_headroom_words\":%u,"
              "\"bucket_tokens_left\":%.2f"
              "}",
-             millis(), total_routed_requests, total_rate_limited,
-             ESP.getFreeHeap(), (unsigned int)stack_high_water, bucket_tokens);
+             millis(), total_routed_requests, total_rate_limited, ESP.getFreeHeap(), (unsigned int)stack_high_water,
+             bucket_tokens);
 
     unsigned long duration_us = micros() - start_us;
-    
+
     // We send the reply first.
     server.send(slot_id, 200, "application/json", response_buf);
 
@@ -173,7 +178,7 @@ void handle_compute(uint8_t slot_id, HttpReq *req)
 
     char response_buf[64];
     snprintf(response_buf, sizeof(response_buf), "{\"result\":%u}", val);
-    
+
     server.send(slot_id, 200, "application/json", response_buf);
 
     unsigned long duration_us = micros() - start_us;
@@ -195,16 +200,14 @@ void handle_expert_not_found(uint8_t slot_id, HttpReq *req)
     char error_buf[256];
     if (wants_json)
     {
-        snprintf(error_buf, sizeof(error_buf),
-                 "{\"error\":\"not_found\",\"requested_path\":\"%s\",\"uptime\":%lu}",
+        snprintf(error_buf, sizeof(error_buf), "{\"error\":\"not_found\",\"requested_path\":\"%s\",\"uptime\":%lu}",
                  req->path, millis());
         server.send(slot_id, 404, "application/json", error_buf);
     }
     else
     {
         snprintf(error_buf, sizeof(error_buf),
-                 "--- Error 404 ---\nPath: %s\nUptime: %lu ms\nESP32 High-Reliability Node",
-                 req->path, millis());
+                 "--- Error 404 ---\nPath: %s\nUptime: %lu ms\nESP32 High-Reliability Node", req->path, millis());
         server.send(slot_id, 404, "text/plain", error_buf);
     }
 
@@ -232,7 +235,7 @@ void setup()
 
     // Map optimized endpoints
     server.on("/api/diagnostics", HTTP_GET, handle_diagnostics);
-    server.on("/api/compute",     HTTP_GET, handle_compute);
+    server.on("/api/compute", HTTP_GET, handle_compute);
     server.on_not_found(handle_expert_not_found);
 
     if (server.begin(80))

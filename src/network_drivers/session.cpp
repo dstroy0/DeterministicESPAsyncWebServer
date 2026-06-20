@@ -17,7 +17,7 @@ void server_tick()
     /*
      * Check timeouts BEFORE draining events.  This ensures that a slot
      * freed by a timeout is already in CONN_FREE state if a coincident
-     * EVT_DISCONNECT or EVT_ERROR is dequeued in the same tick — the
+     * EVT_DISCONNECT or EVT_ERROR is dequeued in the same tick, the
      * http_reset() call for that event is then a clean no-op.
      */
     DeterministicAsyncTCP::check_timeouts();

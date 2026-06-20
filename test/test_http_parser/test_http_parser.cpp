@@ -19,8 +19,8 @@
 //   HELPERS    — http_get_header, http_get_query edge cases
 //   STRESS     — large query, many headers, incremental feeds
 
-#include <unity.h>
 #include "network_drivers/http_parser.h"
+#include <unity.h>
 
 // ---- Helpers -----------------------------------------------------------
 
@@ -46,7 +46,9 @@ void setUp()
     }
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // RESET TESTS
@@ -215,10 +217,13 @@ void test_path_overflow_is_414()
 {
     // Build a path longer than MAX_PATH_LEN
     char req[MAX_PATH_LEN + 64];
-    int  idx = 0;
-    memcpy(req + idx, "GET /", 5); idx += 5;
-    for (int i = 0; i < MAX_PATH_LEN; i++) req[idx++] = 'a';
-    memcpy(req + idx, " HTTP/1.1\r\n\r\n", 13); idx += 13;
+    int idx = 0;
+    memcpy(req + idx, "GET /", 5);
+    idx += 5;
+    for (int i = 0; i < MAX_PATH_LEN; i++)
+        req[idx++] = 'a';
+    memcpy(req + idx, " HTTP/1.1\r\n\r\n", 13);
+    idx += 13;
     req[idx] = '\0';
     feed_request(0, req);
     TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
@@ -278,8 +283,7 @@ void test_header_lookup_case_insensitive()
     feed_request(0, "GET / HTTP/1.1\r\nContent-Type: application/json\r\n\r\n");
     TEST_ASSERT_NOT_NULL(http_get_header(&http_pool[0], "content-type"));
     TEST_ASSERT_NOT_NULL(http_get_header(&http_pool[0], "CONTENT-TYPE"));
-    TEST_ASSERT_EQUAL_STRING("application/json",
-                             http_get_header(&http_pool[0], "Content-Type"));
+    TEST_ASSERT_EQUAL_STRING("application/json", http_get_header(&http_pool[0], "Content-Type"));
 }
 
 void test_header_leading_space_stripped()
@@ -306,15 +310,14 @@ void test_content_length_in_headers_array()
 
 void test_multiple_headers_stored()
 {
-    feed_request(0,
-        "GET / HTTP/1.1\r\n"
-        "X-A: one\r\n"
-        "X-B: two\r\n"
-        "X-C: three\r\n"
-        "\r\n");
+    feed_request(0, "GET / HTTP/1.1\r\n"
+                    "X-A: one\r\n"
+                    "X-B: two\r\n"
+                    "X-C: three\r\n"
+                    "\r\n");
     TEST_ASSERT_EQUAL(3, (int)http_pool[0].header_count);
-    TEST_ASSERT_EQUAL_STRING("one",   http_get_header(&http_pool[0], "X-A"));
-    TEST_ASSERT_EQUAL_STRING("two",   http_get_header(&http_pool[0], "X-B"));
+    TEST_ASSERT_EQUAL_STRING("one", http_get_header(&http_pool[0], "X-A"));
+    TEST_ASSERT_EQUAL_STRING("two", http_get_header(&http_pool[0], "X-B"));
     TEST_ASSERT_EQUAL_STRING("three", http_get_header(&http_pool[0], "X-C"));
 }
 
@@ -372,9 +375,9 @@ void test_body_exactly_at_buffer_limit()
 {
     // Body of exactly BODY_BUF_SIZE bytes — should succeed
     char req[32 + BODY_BUF_SIZE + 64];
-    int  off = 0;
-    off += snprintf(req + off, sizeof(req) - (size_t)off,
-                    "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
+    int off = 0;
+    off +=
+        snprintf(req + off, sizeof(req) - (size_t)off, "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
     memset(req + off, 'X', BODY_BUF_SIZE);
     off += BODY_BUF_SIZE;
     req[off] = '\0';
@@ -398,9 +401,7 @@ void test_body_one_over_limit_is_413()
 {
     // Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE
     char req[128];
-    snprintf(req, sizeof(req),
-             "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n",
-             BODY_BUF_SIZE + 1);
+    snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE + 1);
     feed_request(0, req);
     TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
 }
@@ -408,8 +409,7 @@ void test_body_one_over_limit_is_413()
 void test_body_far_over_limit_is_413()
 {
     char req[128];
-    snprintf(req, sizeof(req),
-             "POST / HTTP/1.1\r\nContent-Length: 65535\r\n\r\n");
+    snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nContent-Length: 65535\r\n\r\n");
     feed_request(0, req);
     TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
 }
@@ -418,9 +418,7 @@ void test_413_no_body_bytes_fed()
 {
     // Even though we detected 413, no body bytes should have been stored
     char req[128];
-    snprintf(req, sizeof(req),
-             "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n",
-             BODY_BUF_SIZE + 1);
+    snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE + 1);
     feed_request(0, req);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
 }
@@ -429,9 +427,7 @@ void test_413_header_still_stored()
 {
     // Headers before the blank line must be accessible even when 413
     char req[128];
-    snprintf(req, sizeof(req),
-             "POST / HTTP/1.1\r\nX-Tag: test\r\nContent-Length: %d\r\n\r\n",
-             BODY_BUF_SIZE + 1);
+    snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nX-Tag: test\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE + 1);
     feed_request(0, req);
     TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("test", http_get_header(&http_pool[0], "X-Tag"));
@@ -441,8 +437,7 @@ void test_body_exactly_at_limit_is_not_413()
 {
     // BODY_BUF_SIZE is the max that fits — should NOT trigger 413
     char req[128];
-    snprintf(req, sizeof(req),
-             "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
+    snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
     feed_request(0, req);
     // Parser enters PARSE_BODY, not PARSE_ENTITY_TOO_LARGE
     // (we don't send the body bytes here — just check it didn't go 413)
@@ -457,9 +452,11 @@ void test_path_overflow_stops_feeding()
 {
     // Bytes fed after URI_TOO_LONG are ignored — state must not change
     char req[MAX_PATH_LEN + 64];
-    int  idx = 0;
-    memcpy(req + idx, "GET /", 5); idx += 5;
-    for (int i = 0; i < MAX_PATH_LEN; i++) req[idx++] = 'a';
+    int idx = 0;
+    memcpy(req + idx, "GET /", 5);
+    idx += 5;
+    for (int i = 0; i < MAX_PATH_LEN; i++)
+        req[idx++] = 'a';
     req[idx] = '\0';
     http_parser_reset(&http_pool[0]);
     feed_str(&http_pool[0], req);
@@ -473,9 +470,11 @@ void test_414_path_filled_to_capacity()
 {
     // Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected
     char req[MAX_PATH_LEN + 64];
-    int  idx = 0;
-    memcpy(req + idx, "GET /api", 8); idx += 8;
-    for (int i = 0; i < MAX_PATH_LEN; i++) req[idx++] = 'x';
+    int idx = 0;
+    memcpy(req + idx, "GET /api", 8);
+    idx += 8;
+    for (int i = 0; i < MAX_PATH_LEN; i++)
+        req[idx++] = 'x';
     req[idx] = '\0';
     http_parser_reset(&http_pool[0]);
     feed_str(&http_pool[0], req);
@@ -740,11 +739,11 @@ void test_slots_are_independent()
     feed_request(0, "GET /slot0 HTTP/1.1\r\n\r\n");
     feed_request(1, "POST /slot1 HTTP/1.1\r\nContent-Length: 4\r\n\r\ndata");
 
-    TEST_ASSERT_EQUAL_STRING("GET",    http_pool[0].method);
+    TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
     TEST_ASSERT_EQUAL_STRING("/slot0", http_pool[0].path);
-    TEST_ASSERT_EQUAL_STRING("POST",   http_pool[1].method);
+    TEST_ASSERT_EQUAL_STRING("POST", http_pool[1].method);
     TEST_ASSERT_EQUAL_STRING("/slot1", http_pool[1].path);
-    TEST_ASSERT_EQUAL_STRING("data",   (const char *)http_pool[1].body);
+    TEST_ASSERT_EQUAL_STRING("data", (const char *)http_pool[1].body);
 }
 
 // ====================================================================
@@ -788,12 +787,10 @@ void stress_max_headers()
 {
     // Build a request with MAX_HEADERS header lines
     char req[MAX_HEADERS * 32 + 64];
-    int  off = 0;
-    off += snprintf(req + off, sizeof(req) - (size_t)off,
-                    "GET / HTTP/1.1\r\n");
+    int off = 0;
+    off += snprintf(req + off, sizeof(req) - (size_t)off, "GET / HTTP/1.1\r\n");
     for (int i = 0; i < MAX_HEADERS; i++)
-        off += snprintf(req + off, sizeof(req) - (size_t)off,
-                        "H%d: v%d\r\n", i, i);
+        off += snprintf(req + off, sizeof(req) - (size_t)off, "H%d: v%d\r\n", i, i);
     off += snprintf(req + off, sizeof(req) - (size_t)off, "\r\n");
     req[off] = '\0';
 
@@ -806,11 +803,12 @@ void stress_max_query_params()
 {
     // Build a query string with MAX_QUERY_PARAMS parameters
     char req[MAX_QUERY_PARAMS * 16 + 64];
-    int  off = 0;
+    int off = 0;
     off += snprintf(req + off, sizeof(req) - (size_t)off, "GET /p?");
     for (int i = 0; i < MAX_QUERY_PARAMS; i++)
     {
-        if (i > 0) req[off++] = '&';
+        if (i > 0)
+            req[off++] = '&';
         off += snprintf(req + off, sizeof(req) - (size_t)off, "k%d=%d", i, i);
     }
     off += snprintf(req + off, sizeof(req) - (size_t)off, " HTTP/1.1\r\n\r\n");

@@ -6,38 +6,29 @@
 ##############################
 
 DetWebServer	KEYWORD1
-DeterministicAsyncTCP	KEYWORD1
-TcpConn	KEYWORD1
-TcpEvt	KEYWORD1
 HttpReq	KEYWORD1
-QueryParam	KEYWORD1
 Header	KEYWORD1
+QueryParam	KEYWORD1
 Route	KEYWORD1
+WebServerConfig	KEYWORD1
+HttpVersion	KEYWORD1
 
 ##############################
 # Methods and functions (KEYWORD2)
 ##############################
 
 begin	KEYWORD2
+stop	KEYWORD2
 on	KEYWORD2
 on_not_found	KEYWORD2
 set_cors	KEYWORD2
 handle	KEYWORD2
 send	KEYWORD2
 send_empty	KEYWORD2
-init	KEYWORD2
-check_timeouts	KEYWORD2
-server_tick	KEYWORD2
-http_parse	KEYWORD2
-http_reset	KEYWORD2
 http_get_header	KEYWORD2
 http_get_query	KEYWORD2
-path_matches	KEYWORD2
-match_and_execute	KEYWORD2
 init_wifi_physical	KEYWORD2
 wifi_ready	KEYWORD2
-init_datalink_layer	KEYWORD2
-init_network_layer	KEYWORD2
 
 ##############################
 # Enumerators (LITERAL1)
@@ -50,6 +41,10 @@ HTTP_DELETE	LITERAL1
 HTTP_PATCH	LITERAL1
 HTTP_HEAD	LITERAL1
 HTTP_OPTIONS	LITERAL1
+
+HTTP_UNKNOWN	LITERAL1
+HTTP_10	LITERAL1
+HTTP_11	LITERAL1
 
 CONN_FREE	LITERAL1
 CONN_ACTIVE	LITERAL1
@@ -66,9 +61,12 @@ PARSE_VERSION	LITERAL1
 PARSE_HEADER_KEY	LITERAL1
 PARSE_HEADER_VAL	LITERAL1
 PARSE_EXPECT_LF	LITERAL1
+PARSE_EXPECT_BODY_LF	LITERAL1
 PARSE_BODY	LITERAL1
 PARSE_COMPLETE	LITERAL1
 PARSE_ERROR	LITERAL1
+PARSE_ENTITY_TOO_LARGE	LITERAL1
+PARSE_URI_TOO_LONG	LITERAL1
 
 ##############################
 # Constants (LITERAL1)

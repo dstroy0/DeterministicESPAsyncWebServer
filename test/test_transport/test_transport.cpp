@@ -5,8 +5,8 @@
 // ring-buffer arithmetic, timeout logic, event-queue behaviour, and
 // sustained-load correctness.
 
-#include <unity.h>
 #include "network_drivers/transport.h"
+#include <unity.h>
 
 // transport.cpp is compiled into the native env — no stubs needed.
 
@@ -16,7 +16,9 @@ void setUp()
     DeterministicAsyncTCP::init(80);
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // UNIT TESTS
@@ -24,9 +26,18 @@ void tearDown() {}
 
 // ---- Compile-time constants ----------------------------------------
 
-void test_pool_capacity_is_four()       { TEST_ASSERT_EQUAL(4,    MAX_CONNS);       }
-void test_rx_buffer_size_is_one_kb()    { TEST_ASSERT_EQUAL(1024, RX_BUF_SIZE);     }
-void test_timeout_constant_is_5000ms()  { TEST_ASSERT_EQUAL(5000, CONN_TIMEOUT_MS); }
+void test_pool_capacity_is_four()
+{
+    TEST_ASSERT_EQUAL(4, MAX_CONNS);
+}
+void test_rx_buffer_size_is_one_kb()
+{
+    TEST_ASSERT_EQUAL(1024, RX_BUF_SIZE);
+}
+void test_timeout_constant_is_5000ms()
+{
+    TEST_ASSERT_EQUAL(5000, CONN_TIMEOUT_MS);
+}
 
 // ---- Pool defaults after init() ------------------------------------
 
@@ -77,14 +88,15 @@ void test_ring_full_sentinel_one_slot_reserved()
 
 void test_ring_can_store_size_minus_one_bytes()
 {
-    TcpConn s   = {};
-    s.rx_head   = 0;
-    s.rx_tail   = 0;
+    TcpConn s = {};
+    s.rx_head = 0;
+    s.rx_tail = 0;
     size_t count = 0;
     while (true)
     {
         size_t next = (s.rx_head + 1) % RX_BUF_SIZE;
-        if (next == s.rx_tail) break;
+        if (next == s.rx_tail)
+            break;
         s.rx_buffer[s.rx_head] = (uint8_t)count;
         s.rx_head = next;
         count++;
@@ -96,10 +108,10 @@ void test_ring_can_store_size_minus_one_bytes()
 
 void test_event_types_are_distinct()
 {
-    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT,    (int)EVT_DATA);
-    TEST_ASSERT_NOT_EQUAL((int)EVT_DATA,       (int)EVT_DISCONNECT);
+    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT, (int)EVT_DATA);
+    TEST_ASSERT_NOT_EQUAL((int)EVT_DATA, (int)EVT_DISCONNECT);
     TEST_ASSERT_NOT_EQUAL((int)EVT_DISCONNECT, (int)EVT_ERROR);
-    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT,    (int)EVT_ERROR);
+    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT, (int)EVT_ERROR);
 }
 
 // ---- Timeout logic -------------------------------------------------
@@ -114,8 +126,8 @@ void test_timeout_does_not_fire_on_free_slot()
 
 void test_timeout_does_not_fire_before_deadline()
 {
-    conn_pool[0].state            = CONN_ACTIVE;
-    conn_pool[0].pcb              = nullptr;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
     set_millis(CONN_TIMEOUT_MS - 1);
     DeterministicAsyncTCP::check_timeouts();
@@ -124,8 +136,8 @@ void test_timeout_does_not_fire_before_deadline()
 
 void test_timeout_fires_at_deadline()
 {
-    conn_pool[0].state            = CONN_ACTIVE;
-    conn_pool[0].pcb              = nullptr;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
     set_millis(CONN_TIMEOUT_MS);
     DeterministicAsyncTCP::check_timeouts();
@@ -135,18 +147,18 @@ void test_timeout_fires_at_deadline()
 
 void test_timeout_fires_only_on_stale_slots()
 {
-    conn_pool[0].state            = CONN_ACTIVE;
-    conn_pool[0].pcb              = nullptr;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
 
-    conn_pool[1].state            = CONN_ACTIVE;
-    conn_pool[1].pcb              = nullptr;
+    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].pcb = nullptr;
     conn_pool[1].last_activity_ms = CONN_TIMEOUT_MS; // fresh
 
     set_millis(CONN_TIMEOUT_MS);
     DeterministicAsyncTCP::check_timeouts();
 
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[0].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
     TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[1].state);
 }
 
@@ -177,9 +189,9 @@ void test_queue_not_null_after_init()
 // then drain and verify every byte — no corruption under full load.
 void stress_ring_buffer_fill_drain_integrity()
 {
-    TcpConn *s  = &conn_pool[0];
-    s->rx_head  = 0;
-    s->rx_tail  = 0;
+    TcpConn *s = &conn_pool[0];
+    s->rx_head = 0;
+    s->rx_tail = 0;
     const int FILL = RX_BUF_SIZE - 1; // sentinel leaves one slot empty
 
     // Write known pattern
@@ -191,14 +203,13 @@ void stress_ring_buffer_fill_drain_integrity()
     }
 
     // Buffer must report full (next_head == tail)
-    TEST_ASSERT_EQUAL(RX_BUF_SIZE - 1,
-        (int)((s->rx_head - s->rx_tail + RX_BUF_SIZE) % RX_BUF_SIZE));
+    TEST_ASSERT_EQUAL(RX_BUF_SIZE - 1, (int)((s->rx_head - s->rx_tail + RX_BUF_SIZE) % RX_BUF_SIZE));
 
     // Drain and verify every byte
     for (int i = 0; i < FILL; i++)
     {
         uint8_t expected = (uint8_t)(i & 0xFF);
-        uint8_t actual   = s->rx_buffer[s->rx_tail];
+        uint8_t actual = s->rx_buffer[s->rx_tail];
         s->rx_tail = (s->rx_tail + 1) % RX_BUF_SIZE;
         TEST_ASSERT_EQUAL_MESSAGE(expected, actual, "ring buffer byte mismatch");
     }
@@ -216,7 +227,7 @@ void stress_ring_buffer_multi_cycle_no_corruption()
     s->rx_tail = 0;
 
     uint8_t write_val = 0;
-    uint8_t read_val  = 0;
+    uint8_t read_val = 0;
 
     for (int cycle = 0; cycle < 8; cycle++)
     {
@@ -247,8 +258,8 @@ void stress_all_slots_timeout_simultaneously()
 {
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i].state            = CONN_ACTIVE;
-        conn_pool[i].pcb              = nullptr;
+        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].pcb = nullptr;
         conn_pool[i].last_activity_ms = 0;
     }
 
@@ -271,8 +282,8 @@ void stress_timeout_arm_recover_cycle()
     {
         for (int i = 0; i < MAX_CONNS; i++)
         {
-            conn_pool[i].state            = CONN_ACTIVE;
-            conn_pool[i].pcb              = nullptr;
+            conn_pool[i].state = CONN_ACTIVE;
+            conn_pool[i].pcb = nullptr;
             conn_pool[i].last_activity_ms = 0;
         }
 
@@ -288,22 +299,24 @@ void stress_timeout_arm_recover_cycle()
 // and active-stale slots — verifies no crash and final state is correct.
 void stress_check_timeouts_high_call_rate()
 {
-    conn_pool[0].state            = CONN_FREE;
-    conn_pool[1].state            = CONN_ACTIVE; conn_pool[1].pcb = nullptr;
+    conn_pool[0].state = CONN_FREE;
+    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].pcb = nullptr;
     conn_pool[1].last_activity_ms = 0;
-    conn_pool[2].state            = CONN_ACTIVE; conn_pool[2].pcb = nullptr;
+    conn_pool[2].state = CONN_ACTIVE;
+    conn_pool[2].pcb = nullptr;
     conn_pool[2].last_activity_ms = CONN_TIMEOUT_MS; // diff = (now - TIMEOUT_MS) = 0 < TIMEOUT_MS
-    conn_pool[3].state            = CONN_FREE;
+    conn_pool[3].state = CONN_FREE;
 
     set_millis(CONN_TIMEOUT_MS); // slot 1 will expire, slot 2 won't
 
     for (int i = 0; i < 2000; i++)
         DeterministicAsyncTCP::check_timeouts();
 
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[0].state);
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[1].state);   // expired
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[2].state);   // still fresh
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[3].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state);   // expired
+    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[2].state); // still fresh
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[3].state);
 }
 
 // Fills ring buffer with ascending bytes one byte at a time, checking
@@ -318,7 +331,8 @@ void stress_ring_buffer_byte_by_byte_fill_and_drain()
     while (true)
     {
         size_t next = (s->rx_head + 1) % RX_BUF_SIZE;
-        if (next == s->rx_tail) break; // full
+        if (next == s->rx_tail)
+            break; // full
         s->rx_buffer[s->rx_head] = (uint8_t)(written & 0xFF);
         s->rx_head = next;
         written++;

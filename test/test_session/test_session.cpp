@@ -8,9 +8,9 @@
 //   STRESS    — sustained idle load, all-slots timeout cycles
 //   RACE SIM  — ordering hazards across tick boundaries
 
-#include <unity.h>
-#include "network_drivers/session.h"
 #include "network_drivers/presentation.h"
+#include "network_drivers/session.h"
+#include <unity.h>
 
 // transport.cpp + presentation.cpp + session.cpp compiled into native env.
 // No stubs required.
@@ -39,7 +39,9 @@ void setUp()
     }
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // UNIT TESTS
@@ -59,7 +61,7 @@ void test_pool_initialises_to_parse_method()
 
 void test_reset_clears_mid_parse_state()
 {
-    http_pool[0].parse_state  = PARSE_HEADER_KEY;
+    http_pool[0].parse_state = PARSE_HEADER_KEY;
     http_pool[0].header_count = 3;
     http_reset(0);
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
@@ -104,16 +106,18 @@ void test_fn_tick_timeout_before_event_drain_ordering()
 void test_fn_tick_only_active_slots_expire()
 {
     conn_pool[0].state = CONN_FREE;
-    conn_pool[1].state = CONN_ACTIVE; conn_pool[1].last_activity_ms = 0;
+    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].last_activity_ms = 0;
     conn_pool[2].state = CONN_FREE;
-    conn_pool[3].state = CONN_ACTIVE; conn_pool[3].last_activity_ms = CONN_TIMEOUT_MS; // diff=0 < TIMEOUT_MS
+    conn_pool[3].state = CONN_ACTIVE;
+    conn_pool[3].last_activity_ms = CONN_TIMEOUT_MS; // diff=0 < TIMEOUT_MS
 
     set_millis(CONN_TIMEOUT_MS);
     server_tick();
 
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[0].state);
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[1].state); // expired
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[2].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state); // expired
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[2].state);
     TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[3].state); // still fresh
 }
 
@@ -140,8 +144,8 @@ void stress_timeout_all_slots_10_cycles()
     {
         for (int i = 0; i < MAX_CONNS; i++)
         {
-            conn_pool[i].state            = CONN_ACTIVE;
-            conn_pool[i].pcb              = nullptr;
+            conn_pool[i].state = CONN_ACTIVE;
+            conn_pool[i].pcb = nullptr;
             conn_pool[i].last_activity_ms = 0;
         }
         set_millis((uint32_t)(CONN_TIMEOUT_MS * (cycle + 1)));
@@ -155,17 +159,21 @@ void stress_timeout_all_slots_10_cycles()
 // Only the stale ones must expire; fresh ones must survive every tick.
 void stress_mixed_fresh_stale_slots_many_ticks()
 {
-    conn_pool[0].state = CONN_ACTIVE; conn_pool[0].last_activity_ms = 0;
-    conn_pool[1].state = CONN_ACTIVE; conn_pool[1].last_activity_ms = 0;
-    conn_pool[2].state = CONN_ACTIVE; conn_pool[2].last_activity_ms = CONN_TIMEOUT_MS;
-    conn_pool[3].state = CONN_ACTIVE; conn_pool[3].last_activity_ms = CONN_TIMEOUT_MS;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].last_activity_ms = 0;
+    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].last_activity_ms = 0;
+    conn_pool[2].state = CONN_ACTIVE;
+    conn_pool[2].last_activity_ms = CONN_TIMEOUT_MS;
+    conn_pool[3].state = CONN_ACTIVE;
+    conn_pool[3].last_activity_ms = CONN_TIMEOUT_MS;
 
     set_millis(CONN_TIMEOUT_MS);
     for (int tick = 0; tick < 200; tick++)
         server_tick();
 
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[0].state);
-    TEST_ASSERT_EQUAL(CONN_FREE,   conn_pool[1].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state);
     TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[2].state);
     TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[3].state);
 }
@@ -181,7 +189,7 @@ void stress_mixed_fresh_stale_slots_many_ticks()
 // EVT_CONNECT → http_reset(slot_id)
 void test_evt_connect_calls_http_reset()
 {
-    http_pool[1].parse_state  = PARSE_HEADER_KEY;
+    http_pool[1].parse_state = PARSE_HEADER_KEY;
     http_pool[1].header_count = 3;
 
     TcpEvt evt = {EVT_CONNECT, 1, 0};
@@ -189,13 +197,13 @@ void test_evt_connect_calls_http_reset()
     server_tick();
 
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[1].parse_state);
-    TEST_ASSERT_EQUAL(0,            http_pool[1].header_count);
+    TEST_ASSERT_EQUAL(0, http_pool[1].header_count);
 }
 
 // EVT_DISCONNECT → http_reset(slot_id)
 void test_evt_disconnect_calls_http_reset()
 {
-    http_pool[0].parse_state  = PARSE_COMPLETE;
+    http_pool[0].parse_state = PARSE_COMPLETE;
     http_pool[0].header_count = 2;
 
     TcpEvt evt = {EVT_DISCONNECT, 0, 0};
@@ -203,7 +211,7 @@ void test_evt_disconnect_calls_http_reset()
     server_tick();
 
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(0,            http_pool[0].header_count);
+    TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
 }
 
 // EVT_ERROR → http_reset(slot_id)
@@ -228,8 +236,8 @@ void test_evt_data_calls_http_parse()
     server_tick();
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL_STRING("GET",   http_pool[0].method);
-    TEST_ASSERT_EQUAL_STRING("/evt",  http_pool[0].path);
+    TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
+    TEST_ASSERT_EQUAL_STRING("/evt", http_pool[0].path);
 }
 
 // Multiple events in one tick must all be processed in arrival order.
@@ -246,15 +254,15 @@ void test_multiple_events_drained_in_one_tick()
     queue_stage_raw(&e1, sizeof(e1));
 
     // Slot 2: dirty header state → EVT_DISCONNECT → reset
-    http_pool[2].parse_state  = PARSE_HEADER_VAL;
+    http_pool[2].parse_state = PARSE_HEADER_VAL;
     TcpEvt e2 = {EVT_DISCONNECT, 2, 0};
     queue_stage_raw(&e2, sizeof(e2));
 
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD,   http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
-    TEST_ASSERT_EQUAL(PARSE_METHOD,   http_pool[2].parse_state);
+    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[2].parse_state);
 }
 
 // ====================================================================
@@ -302,7 +310,7 @@ void race_all_expire_then_idle_tick()
 {
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i].state            = CONN_ACTIVE;
+        conn_pool[i].state = CONN_ACTIVE;
         conn_pool[i].last_activity_ms = 0;
     }
     set_millis(CONN_TIMEOUT_MS);
@@ -320,7 +328,7 @@ void race_all_expire_then_idle_tick()
 void race_millis_wraparound_no_spurious_timeout()
 {
     // last_activity close to UINT32_MAX, now just past wrap
-    conn_pool[0].state            = CONN_ACTIVE;
+    conn_pool[0].state = CONN_ACTIVE;
     conn_pool[0].last_activity_ms = 0xFFFFFFFF - 100u;
     // now = 0x00000000 + (CONN_TIMEOUT_MS - 200) wraps around to just under deadline
     set_millis((uint32_t)(CONN_TIMEOUT_MS - 200));

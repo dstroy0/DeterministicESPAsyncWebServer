@@ -21,12 +21,13 @@ $ErrorActionPreference = 'Stop'
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = if ((Split-Path -Leaf $ScriptDir) -eq 'test') {
-                   Split-Path -Parent $ScriptDir
-               } else { $ScriptDir }
-$TestDir     = Join-Path $ProjectRoot 'test'
-$ReportPath  = Join-Path $TestDir 'TEST_REPORTS.md'
+    Split-Path -Parent $ScriptDir
+}
+else { $ScriptDir }
+$TestDir = Join-Path $ProjectRoot 'test'
+$ReportPath = Join-Path $TestDir 'TEST_REPORTS.md'
 
 # ── Find pio ──────────────────────────────────────────────────────────────────
 
@@ -34,9 +35,9 @@ function Find-Pio {
     $inPath = Get-Command pio -ErrorAction SilentlyContinue
     if ($inPath) { return $inPath.Source }
     foreach ($pattern in @(
-        "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe",
-        "$env:LOCALAPPDATA\Programs\Python\Python*\Scripts\pio.exe"
-    )) {
+            "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe",
+            "$env:LOCALAPPDATA\Programs\Python\Python*\Scripts\pio.exe"
+        )) {
         $hit = Get-Item $pattern -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($hit) { return $hit.FullName }
     }
@@ -60,14 +61,14 @@ Write-Host 'Running tests...'
 Write-Host ''
 
 Push-Location $ProjectRoot
-$T0       = Get-Date
+$T0 = Get-Date
 # Disable ErrorActionPreference locally so pio failure doesn't throw
-$prev_ea  = $ErrorActionPreference
+$prev_ea = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 $RawLines = & $PioExe test -e native -e native_app 2>&1
-$PioExit  = $LASTEXITCODE
+$PioExit = $LASTEXITCODE
 $ErrorActionPreference = $prev_ea
-$T1       = Get-Date
+$T1 = Get-Date
 Pop-Location
 
 $WallSec = [Math]::Round(($T1 - $T0).TotalSeconds, 2)
@@ -82,10 +83,10 @@ $Lines = $RawLines | ForEach-Object {
 
 # ── Parse results ─────────────────────────────────────────────────────────────
 
-$Tests      = [System.Collections.Generic.List[hashtable]]::new()
-$Suites     = [ordered]@{}   # "env:suite" -> hashtable
-$CurEnv     = 'native'
-$CurSuite   = ''
+$Tests = [System.Collections.Generic.List[hashtable]]::new()
+$Suites = [ordered]@{}   # "env:suite" -> hashtable
+$CurEnv = 'native'
+$CurSuite = ''
 
 foreach ($line in $Lines) {
     # "Processing test_X in native environment"
@@ -95,16 +96,16 @@ foreach ($line in $Lines) {
 
     # "test\test_X\test_X.cpp:829: test_name  [PASSED]"
     if ($line -match '(\S+\.cpp):(\d+):\s+(\S+)\s+\[(PASSED|FAILED)\]') {
-        $rel   = $Matches[1] -replace '\\', [IO.Path]::DirectorySeparatorChar
+        $rel = $Matches[1] -replace '\\', [IO.Path]::DirectorySeparatorChar
         $suite = [IO.Path]::GetFileNameWithoutExtension($rel)
         $Tests.Add(@{
-            Env    = $CurEnv
-            Suite  = $suite
-            File   = $rel
-            Line   = [int]$Matches[2]
-            Name   = $Matches[3]
-            Status = $Matches[4]
-        })
+                Env    = $CurEnv
+                Suite  = $suite
+                File   = $rel
+                Line   = [int]$Matches[2]
+                Name   = $Matches[3]
+                Status = $Matches[4]
+            })
     }
 
     # "native   test_http_parser   PASSED   00:00:02.07"
@@ -125,7 +126,7 @@ foreach ($line in $Lines) {
 $nTotal = 0; $nPassed = 0; $nFailed = 0
 $totLine = $Lines | Where-Object { $_ -match '\d+ test cases' } | Select-Object -Last 1
 if ($totLine -and ($totLine -match '(\d+) test cases.*?(\d+) succeeded')) {
-    $nTotal  = [int]$Matches[1]
+    $nTotal = [int]$Matches[1]
     $nPassed = [int]$Matches[2]
     $nFailed = $nTotal - $nPassed
 }
@@ -194,19 +195,20 @@ function Convert-Name([string]$name) {
     if ($name -match '^(stress|race)_') {
         $prefix = "$(([cultureinfo]::InvariantCulture.TextInfo.ToTitleCase($Matches[1]))) — "
         $name = $name -replace '^(stress|race)_', ''
-    } elseif ($name -match '^test_') {
+    }
+    elseif ($name -match '^test_') {
         $name = $name -replace '^test_', ''
     }
-    $words    = $name -split '_'
+    $words = $name -split '_'
     $words[0] = [cultureinfo]::InvariantCulture.TextInfo.ToTitleCase($words[0])
     return $prefix + ($words -join ' ')
 }
 
 # ── Build markdown ────────────────────────────────────────────────────────────
 
-$ovIcon  = if ($nFailed -eq 0) { '✅' } else { '❌' }
+$ovIcon = if ($nFailed -eq 0) { '✅' } else { '❌' }
 $dateStr = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-$sb      = [System.Text.StringBuilder]::new(131072)
+$sb = [System.Text.StringBuilder]::new(131072)
 
 function Add([string]$s = '') { $null = $sb.AppendLine($s) }
 
@@ -225,8 +227,8 @@ Add "| Suite | Environment | Tests | Status | Duration |"
 Add "|---|---|---|---|---|"
 
 foreach ($key in $Suites.Keys) {
-    $s    = $Suites[$key]
-    $cnt  = @($Tests | Where-Object { $_.Env -eq $s.Env -and $_.Suite -eq $s.Suite }).Count
+    $s = $Suites[$key]
+    $cnt = @($Tests | Where-Object { $_.Env -eq $s.Env -and $_.Suite -eq $s.Suite }).Count
     $icon = if ($s.Status -eq 'PASSED') { '✅' } else { '❌' }
     Add "| ``$($s.Suite)`` | ``$($s.Env)`` | $cnt | $icon | $($s.Duration) |"
 }
@@ -239,16 +241,16 @@ Add ""
 $done = [System.Collections.Generic.HashSet[string]]::new()
 
 foreach ($key in $Suites.Keys) {
-    $s      = $Suites[$key]
-    $suite  = $s.Suite
-    $env    = $s.Env
+    $s = $Suites[$key]
+    $suite = $s.Suite
+    $env = $s.Env
     if (-not $done.Add("${env}:${suite}")) { continue }
 
-    $group  = @($Tests | Where-Object { $_.Suite -eq $suite -and $_.Env -eq $env })
-    $pass   = @($group | Where-Object { $_.Status -eq 'PASSED' }).Count
-    $fail   = @($group | Where-Object { $_.Status -eq 'FAILED' }).Count
-    $gicon  = if ($fail -eq 0) { '✅' } else { '❌' }
-    $brief  = Get-SuiteBrief $suite
+    $group = @($Tests | Where-Object { $_.Suite -eq $suite -and $_.Env -eq $env })
+    $pass = @($group | Where-Object { $_.Status -eq 'PASSED' }).Count
+    $fail = @($group | Where-Object { $_.Status -eq 'FAILED' }).Count
+    $gicon = if ($fail -eq 0) { '✅' } else { '❌' }
+    $brief = Get-SuiteBrief $suite
 
     Add "## $suite — $gicon $pass passed$(if ($fail) { ", $fail failed" } else { '' })"
     Add ""
@@ -260,7 +262,7 @@ foreach ($key in $Suites.Keys) {
     $n = 1
     foreach ($t in $group) {
         $ticon = if ($t.Status -eq 'PASSED') { '✅' } else { '❌ **FAILED**' }
-        $desc  = Get-TestComment $t.File $t.Name
+        $desc = Get-TestComment $t.File $t.Name
         if (-not $desc) { $desc = Convert-Name $t.Name }
         Add "| $n | ``$($t.Name)`` | $ticon | $desc |"
         $n++

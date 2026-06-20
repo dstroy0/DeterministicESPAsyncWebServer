@@ -8,8 +8,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-inline QueueHandle_t xQueueCreate(uint32_t, size_t) { return (void *)1; }
-inline int           xQueueSend(QueueHandle_t, const void *, uint32_t) { return pdTRUE; }
+inline QueueHandle_t xQueueCreate(uint32_t, size_t)
+{
+    return (void *)1;
+}
+inline int xQueueSend(QueueHandle_t, const void *, uint32_t)
+{
+    return pdTRUE;
+}
 
 // ---------------------------------------------------------------------------
 // Programmable staged-event buffer — for testing the event-dispatch path.
@@ -26,9 +32,9 @@ inline int           xQueueSend(QueueHandle_t, const void *, uint32_t) { return 
 struct _QueueStageBuf
 {
     uint8_t items[16][32]; // up to 16 events, each ≤ 32 bytes
-    int     item_sz[16];
-    int     count;
-    int     idx;
+    int item_sz[16];
+    int count;
+    int idx;
 };
 
 inline _QueueStageBuf &_queue_stage_buf()
@@ -52,7 +58,7 @@ inline void queue_stage_reset()
 {
     _QueueStageBuf &b = _queue_stage_buf();
     b.count = 0;
-    b.idx   = 0;
+    b.idx = 0;
 }
 
 inline int xQueueReceive(QueueHandle_t, void *buf, uint32_t)
@@ -67,4 +73,6 @@ inline int xQueueReceive(QueueHandle_t, void *buf, uint32_t)
     return pdFALSE;
 }
 
-inline void vQueueDelete(QueueHandle_t) {}
+inline void vQueueDelete(QueueHandle_t)
+{
+}

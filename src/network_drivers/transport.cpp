@@ -17,21 +17,21 @@
  * needed beyond the `volatile` annotation.
  */
 
-#include "lwip/tcp.h"
+#include "transport.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include "transport.h"
+#include "lwip/tcp.h"
 
-TcpConn        conn_pool[MAX_CONNS];
+TcpConn conn_pool[MAX_CONNS];
 static struct tcp_pcb *listen_pcb = nullptr;
 
-QueueHandle_t DeterministicAsyncTCP::queue          = nullptr;
-uint32_t      DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
+QueueHandle_t DeterministicAsyncTCP::queue = nullptr;
+uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 
 static err_t lowlevel_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err);
 static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-static err_t lowlevel_sent_cb(void  *arg, struct tcp_pcb *tpcb, u16_t len);
-static void  lowlevel_err_cb(void *arg, err_t err);
+static err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
+static void lowlevel_err_cb(void *arg, err_t err);
 
 /**
  * @brief Non-blocking event enqueue helper.
@@ -60,8 +60,8 @@ int32_t DeterministicAsyncTCP::init(uint16_t port, const WebServerConfig *cfg)
 
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i]       = {};   // zero all fields, including last_activity_ms
-        conn_pool[i].id    = i;
+        conn_pool[i] = {}; // zero all fields, including last_activity_ms
+        conn_pool[i].id = i;
         conn_pool[i].state = CONN_FREE;
     }
 
@@ -104,13 +104,13 @@ void DeterministicAsyncTCP::stop()
         if (conn_pool[i].state == CONN_ACTIVE && conn_pool[i].pcb)
         {
             struct tcp_pcb *pcb = conn_pool[i].pcb;
-            conn_pool[i].state  = CONN_FREE;
-            conn_pool[i].pcb    = nullptr;
+            conn_pool[i].state = CONN_FREE;
+            conn_pool[i].pcb = nullptr;
             tcp_arg(pcb, nullptr);
             tcp_abort(pcb);
         }
         conn_pool[i].state = CONN_FREE;
-        conn_pool[i].pcb   = nullptr;
+        conn_pool[i].pcb = nullptr;
     }
 
     // Free the event queue
@@ -139,7 +139,7 @@ void DeterministicAsyncTCP::check_timeouts()
          * and exits immediately without accessing freed memory.
          */
         slot->state = CONN_FREE;
-        slot->pcb   = nullptr;
+        slot->pcb = nullptr;
         if (pcb)
         {
             tcp_arg(pcb, nullptr); // detach slot pointer from PCB
@@ -186,12 +186,12 @@ static err_t lowlevel_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
         return ERR_ABRT;
     }
 
-    TcpConn *slot          = &conn_pool[free_slot];
-    slot->state            = CONN_ACTIVE;
-    slot->pcb              = newpcb;
+    TcpConn *slot = &conn_pool[free_slot];
+    slot->state = CONN_ACTIVE;
+    slot->pcb = newpcb;
     slot->last_activity_ms = millis();
-    slot->rx_head          = 0;
-    slot->rx_tail          = 0;
+    slot->rx_head = 0;
+    slot->rx_tail = 0;
 
     tcp_arg(newpcb, slot);
     tcp_recv(newpcb, lowlevel_recv_cb);
@@ -225,7 +225,7 @@ static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
          * are harmless.
          */
         slot->state = CONN_FREE;
-        slot->pcb   = nullptr;
+        slot->pcb = nullptr;
         tcp_arg(tpcb, nullptr);
         if (tcp_close(tpcb) != ERR_OK)
             tcp_abort(tpcb);
@@ -237,15 +237,19 @@ static err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
     slot->last_activity_ms = millis();
 
     size_t bytes_copied = 0;
-    bool   full         = false;
-    struct pbuf *q      = p;
+    bool full = false;
+    struct pbuf *q = p;
     while (q != nullptr && !full)
     {
         uint8_t *payload = (uint8_t *)q->payload;
         for (u16_t i = 0; i < q->len; i++)
         {
             size_t next_head = (slot->rx_head + 1) % RX_BUF_SIZE;
-            if (next_head == slot->rx_tail) { full = true; break; }
+            if (next_head == slot->rx_tail)
+            {
+                full = true;
+                break;
+            }
             slot->rx_buffer[slot->rx_head] = payload[i];
             slot->rx_head = next_head;
             bytes_copied++;
@@ -303,7 +307,7 @@ static void lowlevel_err_cb(void *arg, err_t err)
      * out our pointer to prevent any future access.
      */
     slot->state = CONN_FREE;
-    slot->pcb   = nullptr;
+    slot->pcb = nullptr;
 
     TcpEvt evt = {EVT_ERROR, slot->id, 0};
     enqueue(evt);

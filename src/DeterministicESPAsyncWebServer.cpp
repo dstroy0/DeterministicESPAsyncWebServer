@@ -49,26 +49,46 @@ static const char *status_text(int code)
 {
     switch (code)
     {
-    case 200: return "OK";
-    case 201: return "Created";
-    case 204: return "No Content";
-    case 301: return "Moved Permanently";
-    case 302: return "Found";
-    case 304: return "Not Modified";
-    case 400: return "Bad Request";
-    case 401: return "Unauthorized";
-    case 403: return "Forbidden";
-    case 404: return "Not Found";
-    case 405: return "Method Not Allowed";
-    case 408: return "Request Timeout";
-    case 409: return "Conflict";
-    case 413: return "Payload Too Large";
-    case 414: return "URI Too Long";
-    case 429: return "Too Many Requests";
-    case 500: return "Internal Server Error";
-    case 501: return "Not Implemented";
-    case 503: return "Service Unavailable";
-    default:  return "Unknown";
+    case 200:
+        return "OK";
+    case 201:
+        return "Created";
+    case 204:
+        return "No Content";
+    case 301:
+        return "Moved Permanently";
+    case 302:
+        return "Found";
+    case 304:
+        return "Not Modified";
+    case 400:
+        return "Bad Request";
+    case 401:
+        return "Unauthorized";
+    case 403:
+        return "Forbidden";
+    case 404:
+        return "Not Found";
+    case 405:
+        return "Method Not Allowed";
+    case 408:
+        return "Request Timeout";
+    case 409:
+        return "Conflict";
+    case 413:
+        return "Payload Too Large";
+    case 414:
+        return "URI Too Long";
+    case 429:
+        return "Too Many Requests";
+    case 500:
+        return "Internal Server Error";
+    case 501:
+        return "Not Implemented";
+    case 503:
+        return "Service Unavailable";
+    default:
+        return "Unknown";
     }
 }
 
@@ -84,17 +104,22 @@ static const char *status_text(int code)
  */
 static HttpMethod parse_method(const char *m)
 {
-    if (strcmp(m, "POST")    == 0) return HTTP_POST;
-    if (strcmp(m, "PUT")     == 0) return HTTP_PUT;
-    if (strcmp(m, "DELETE")  == 0) return HTTP_DELETE;
-    if (strcmp(m, "PATCH")   == 0) return HTTP_PATCH;
-    if (strcmp(m, "HEAD")    == 0) return HTTP_HEAD;
-    if (strcmp(m, "OPTIONS") == 0) return HTTP_OPTIONS;
+    if (strcmp(m, "POST") == 0)
+        return HTTP_POST;
+    if (strcmp(m, "PUT") == 0)
+        return HTTP_PUT;
+    if (strcmp(m, "DELETE") == 0)
+        return HTTP_DELETE;
+    if (strcmp(m, "PATCH") == 0)
+        return HTTP_PATCH;
+    if (strcmp(m, "HEAD") == 0)
+        return HTTP_HEAD;
+    if (strcmp(m, "OPTIONS") == 0)
+        return HTTP_OPTIONS;
     return HTTP_GET;
 }
 
-DetWebServer::DetWebServer()
-    : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false)
+DetWebServer::DetWebServer() : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false)
 {
     for (int i = 0; i < MAX_ROUTES; i++)
         _routes[i].is_active = false;
@@ -137,11 +162,11 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
     Route *r = &_routes[_route_count];
     strncpy(r->path, path, MAX_PATH_LEN - 1);
     r->path[MAX_PATH_LEN - 1] = '\0';
-    r->method      = method;
-    r->callback    = callback;
-    r->is_active   = true;
+    r->method = method;
+    r->callback = callback;
+    r->is_active = true;
     // A trailing '*' means prefix match
-    size_t len     = strlen(r->path);
+    size_t len = strlen(r->path);
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
     _route_count++;
 }
@@ -255,7 +280,7 @@ void DetWebServer::handle()
  */
 void DetWebServer::match_and_execute(uint8_t slot_id)
 {
-    HttpReq   *req    = &http_pool[slot_id];
+    HttpReq *req = &http_pool[slot_id];
     HttpMethod method = parse_method(req->method);
 
     // OPTIONS request: CORS preflight — respond immediately if CORS is enabled
@@ -321,16 +346,13 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     int payload_len = (int)strlen(payload);
 
     char header[512];
-    int  hlen = snprintf(header, sizeof(header),
-                         "HTTP/1.1 %d %s\r\n"
-                         "Content-Type: %s\r\n"
-                         "Content-Length: %d\r\n"
-                         "%s"
-                         "Connection: close\r\n\r\n",
-                         code, status_text(code),
-                         content_type,
-                         payload_len,
-                         _cors_enabled ? _cors_header_buf : "");
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Content-Type: %s\r\n"
+                        "Content-Length: %d\r\n"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     /*
@@ -339,9 +361,9 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
      */
     tcp_arg(pcb, nullptr);
     conn->state = CONN_FREE;
-    conn->pcb   = nullptr;
+    conn->pcb = nullptr;
 
-    tcp_write(pcb, header,  (u16_t)hlen,       TCP_WRITE_FLAG_COPY);
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
     tcp_write(pcb, payload, (u16_t)payload_len, TCP_WRITE_FLAG_COPY);
     tcp_output(pcb);
 
@@ -371,18 +393,17 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
     }
 
     char header[512];
-    int  hlen = snprintf(header, sizeof(header),
-                         "HTTP/1.1 %d %s\r\n"
-                         "Content-Length: 0\r\n"
-                         "%s"
-                         "Connection: close\r\n\r\n",
-                         code, status_text(code),
-                         _cors_enabled ? _cors_header_buf : "");
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Content-Length: 0\r\n"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        code, status_text(code), _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
     conn->state = CONN_FREE;
-    conn->pcb   = nullptr;
+    conn->pcb = nullptr;
 
     tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
     tcp_output(pcb);

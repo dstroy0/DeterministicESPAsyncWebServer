@@ -32,11 +32,11 @@
  *   curl http://<ip>/files/image.png
  */
 
-#include <WiFi.h>
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical.h"
+#include <WiFi.h>
 
-static const char *SSID     = "YOUR_SSID";
+static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
@@ -53,9 +53,15 @@ void handle_status(uint8_t slot_id, HttpReq *req)
     const char *version_str;
     switch (req->version)
     {
-    case HTTP_11:    version_str = "1.1"; break;
-    case HTTP_10:    version_str = "1.0"; break;
-    default:         version_str = "?";   break;
+    case HTTP_11:
+        version_str = "1.1";
+        break;
+    case HTTP_10:
+        version_str = "1.0";
+        break;
+    default:
+        version_str = "?";
+        break;
     }
 
     // ?verbose=1 includes the path in the response
@@ -63,13 +69,10 @@ void handle_status(uint8_t slot_id, HttpReq *req)
 
     char body[160];
     if (verbose && strcmp(verbose, "1") == 0)
-        snprintf(body, sizeof(body),
-                 "{\"status\":\"ok\",\"count\":%d,\"http\":\"%s\",\"path\":\"%s\"}",
-                 request_count, version_str, req->path);
+        snprintf(body, sizeof(body), "{\"status\":\"ok\",\"count\":%d,\"http\":\"%s\",\"path\":\"%s\"}", request_count,
+                 version_str, req->path);
     else
-        snprintf(body, sizeof(body),
-                 "{\"status\":\"ok\",\"count\":%d,\"http\":\"%s\"}",
-                 request_count, version_str);
+        snprintf(body, sizeof(body), "{\"status\":\"ok\",\"count\":%d,\"http\":\"%s\"}", request_count, version_str);
 
     server.send(slot_id, 200, "application/json", body);
 }
@@ -92,9 +95,7 @@ void handle_files(uint8_t slot_id, HttpReq *req)
     bool wants_gzip = accept_enc && strstr(accept_enc, "gzip") != nullptr;
 
     char msg[MAX_PATH_LEN + 64];
-    snprintf(msg, sizeof(msg), "Requested: %s%s",
-             req->path,
-             wants_gzip ? " (gzip accepted)" : "");
+    snprintf(msg, sizeof(msg), "Requested: %s%s", req->path, wants_gzip ? " (gzip accepted)" : "");
     server.send(slot_id, 200, "text/plain", msg);
 }
 
@@ -124,9 +125,9 @@ void setup()
     // frontend origin in production).
     server.set_cors("*");
 
-    server.on("/api/status", HTTP_GET,  handle_status);
-    server.on("/api/echo",   HTTP_POST, handle_echo);
-    server.on("/files/*",    HTTP_GET,  handle_files);
+    server.on("/api/status", HTTP_GET, handle_status);
+    server.on("/api/echo", HTTP_POST, handle_echo);
+    server.on("/files/*", HTTP_GET, handle_files);
     server.on_not_found(handle_not_found);
 
     int32_t result = server.begin(80);

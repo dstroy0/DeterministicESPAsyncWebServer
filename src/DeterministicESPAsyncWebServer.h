@@ -29,9 +29,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
-#include <Arduino.h>
 #include "network_drivers/presentation.h"
 #include "network_drivers/session.h"
+#include <Arduino.h>
 
 // ---------------------------------------------------------------------------
 // HTTP method enumeration
@@ -46,13 +46,13 @@
  */
 enum HttpMethod
 {
-    HTTP_GET,      ///< Safe, idempotent read
-    HTTP_POST,     ///< Non-idempotent create / action
-    HTTP_PUT,      ///< Idempotent replace
-    HTTP_DELETE,   ///< Idempotent delete
-    HTTP_PATCH,    ///< Partial update
-    HTTP_HEAD,     ///< Same as GET but no response body
-    HTTP_OPTIONS   ///< Capability query / CORS preflight
+    HTTP_GET,    ///< Safe, idempotent read
+    HTTP_POST,   ///< Non-idempotent create / action
+    HTTP_PUT,    ///< Idempotent replace
+    HTTP_DELETE, ///< Idempotent delete
+    HTTP_PATCH,  ///< Partial update
+    HTTP_HEAD,   ///< Same as GET but no response body
+    HTTP_OPTIONS ///< Capability query / CORS preflight
 };
 
 // ---------------------------------------------------------------------------
@@ -83,11 +83,11 @@ typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
  */
 struct Route
 {
-    char       path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
-    HttpMethod method;             ///< HTTP method this route responds to.
-    Handler    callback;           ///< User-supplied handler function.
-    bool       is_active;          ///< `false` for unused table slots.
-    bool       is_wildcard;        ///< `true` when path ends with `*`.
+    char path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
+    HttpMethod method;       ///< HTTP method this route responds to.
+    Handler callback;        ///< User-supplied handler function.
+    bool is_active;          ///< `false` for unused table slots.
+    bool is_wildcard;        ///< `true` when path ends with `*`.
 };
 
 // ---------------------------------------------------------------------------
@@ -127,12 +127,12 @@ struct Route
  */
 class DetWebServer
 {
-private:
-    Route   _routes[MAX_ROUTES]; ///< Flat routing table; searched linearly.
-    uint8_t _route_count;        ///< Number of active entries in _routes.
+  private:
+    Route _routes[MAX_ROUTES]; ///< Flat routing table; searched linearly.
+    uint8_t _route_count;      ///< Number of active entries in _routes.
 
-    Handler _not_found_handler;  ///< Called when no route matches; may be null.
-    bool    _cors_enabled;       ///< True after a non-empty set_cors() call.
+    Handler _not_found_handler; ///< Called when no route matches; may be null.
+    bool _cors_enabled;         ///< True after a non-empty set_cors() call.
 
     /**
      * @brief Pre-built CORS header block injected into every response.
@@ -152,8 +152,7 @@ private:
      * @param req_path    Null-terminated path from the parsed request.
      * @return True if the route matches the request path.
      */
-    static bool path_matches(const char *route, bool is_wildcard,
-                             const char *req_path);
+    static bool path_matches(const char *route, bool is_wildcard, const char *req_path);
 
     /**
      * @brief Look up and invoke the first matching route for the given slot.
@@ -166,7 +165,7 @@ private:
      */
     void match_and_execute(uint8_t slot_id);
 
-public:
+  public:
     /**
      * @brief Construct a DetWebServer with an empty routing table.
      *
@@ -266,8 +265,7 @@ public:
      *       concurrent timeout), this function is a no-op that just
      *       resets the slot.
      */
-    void send(uint8_t slot_id, int code, const char *content_type,
-              const char *payload);
+    void send(uint8_t slot_id, int code, const char *content_type, const char *payload);
 
     /**
      * @brief Send a headers-only HTTP response and close the connection.

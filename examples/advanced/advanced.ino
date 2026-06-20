@@ -26,11 +26,11 @@
  *   - Use a REST client (like Postman or curl) to interact with /api/sensors.
  */
 
-#include <WiFi.h>
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical.h"
+#include <WiFi.h>
 
-static const char *SSID     = "YOUR_SSID";
+static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
@@ -41,19 +41,19 @@ static const char *EXPECTED_TOKEN = "Bearer secret_admin_token";
 // Zero-allocation static "database" model
 struct SensorDevice
 {
-    int   id;
-    char  name[16];
+    int id;
+    char name[16];
     float temperature;
-    bool  active;
-    bool  in_use; // Slot flag
+    bool active;
+    bool in_use; // Slot flag
 };
 
 #define MAX_SENSORS 4
 static SensorDevice sensor_db[MAX_SENSORS] = {
-    {0, "Living Room", 22.4, true,  true},
-    {1, "Kitchen",     24.1, true,  true},
-    {2, "Garage",      15.8, false, true},
-    {3, "",            0.0,  false, false} // Empty slot
+    {0, "Living Room", 22.4, true, true},
+    {1, "Kitchen", 24.1, true, true},
+    {2, "Garage", 15.8, false, true},
+    {3, "", 0.0, false, false} // Empty slot
 };
 
 // --- Helper Functions ---
@@ -81,16 +81,18 @@ bool json_get_float(const char *json, const char *key, float &out_val)
     // Search for key pattern, e.g., "temp":
     char key_pattern[32];
     snprintf(key_pattern, sizeof(key_pattern), "\"%s\":", key);
-    
+
     const char *ptr = strstr(json, key_pattern);
-    if (!ptr) return false;
-    
+    if (!ptr)
+        return false;
+
     // Move pointer past key
     ptr += strlen(key_pattern);
-    
+
     // Skip spaces
-    while (*ptr == ' ' || *ptr == '\t') ptr++;
-    
+    while (*ptr == ' ' || *ptr == '\t')
+        ptr++;
+
     out_val = (float)atof(ptr);
     return true;
 }
@@ -102,15 +104,17 @@ bool json_get_string(const char *json, const char *key, char *out_buf, size_t ma
 {
     char key_pattern[32];
     snprintf(key_pattern, sizeof(key_pattern), "\"%s\":", key);
-    
+
     const char *ptr = strstr(json, key_pattern);
-    if (!ptr) return false;
-    
+    if (!ptr)
+        return false;
+
     ptr += strlen(key_pattern);
-    
+
     // Skip spaces or quotes
-    while (*ptr == ' ' || *ptr == '\t' || *ptr == '"') ptr++;
-    
+    while (*ptr == ' ' || *ptr == '\t' || *ptr == '"')
+        ptr++;
+
     size_t i = 0;
     while (*ptr && *ptr != '"' && *ptr != ',' && *ptr != '}' && i < (max_len - 1))
     {
@@ -127,13 +131,15 @@ bool json_get_bool(const char *json, const char *key, bool &out_val)
 {
     char key_pattern[32];
     snprintf(key_pattern, sizeof(key_pattern), "\"%s\":", key);
-    
+
     const char *ptr = strstr(json, key_pattern);
-    if (!ptr) return false;
-    
+    if (!ptr)
+        return false;
+
     ptr += strlen(key_pattern);
-    while (*ptr == ' ' || *ptr == '\t') ptr++;
-    
+    while (*ptr == ' ' || *ptr == '\t')
+        ptr++;
+
     if (strncmp(ptr, "true", 4) == 0)
     {
         out_val = true;
@@ -162,12 +168,14 @@ void handle_get_sensors(uint8_t slot_id, HttpReq *req)
     // Build the JSON list response. We construct this incrementally on stack.
     char response_buf[512];
     int len = snprintf(response_buf, sizeof(response_buf), "[");
-    
+
     bool first = true;
     for (int i = 0; i < MAX_SENSORS; i++)
     {
-        if (!sensor_db[i].in_use) continue;
-        if (filter_by_active && (sensor_db[i].active != active_target_val)) continue;
+        if (!sensor_db[i].in_use)
+            continue;
+        if (filter_by_active && (sensor_db[i].active != active_target_val))
+            continue;
 
         if (!first)
         {
@@ -176,9 +184,8 @@ void handle_get_sensors(uint8_t slot_id, HttpReq *req)
         first = false;
 
         len += snprintf(response_buf + len, sizeof(response_buf) - len,
-                        "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
-                        sensor_db[i].id, sensor_db[i].name, sensor_db[i].temperature,
-                        sensor_db[i].active ? "true" : "false");
+                        "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}", sensor_db[i].id, sensor_db[i].name,
+                        sensor_db[i].temperature, sensor_db[i].active ? "true" : "false");
     }
     snprintf(response_buf + len, sizeof(response_buf) - len, "]");
 
@@ -206,10 +213,8 @@ void handle_get_sensor_by_id(uint8_t slot_id, HttpReq *req)
     }
 
     char response_buf[192];
-    snprintf(response_buf, sizeof(response_buf),
-             "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
-             sensor_db[id].id, sensor_db[id].name, sensor_db[id].temperature,
-             sensor_db[id].active ? "true" : "false");
+    snprintf(response_buf, sizeof(response_buf), "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
+             sensor_db[id].id, sensor_db[id].name, sensor_db[id].temperature, sensor_db[id].active ? "true" : "false");
 
     server.send(slot_id, 200, "application/json", response_buf);
 }
@@ -258,8 +263,7 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
     float temp = 0.0;
     bool active = false;
 
-    if (!json_get_string(body, "name", name, sizeof(name)) ||
-        !json_get_float(body, "temp", temp) ||
+    if (!json_get_string(body, "name", name, sizeof(name)) || !json_get_float(body, "temp", temp) ||
         !json_get_bool(body, "active", active))
     {
         server.send(slot_id, 400, "application/json", "{\"error\":\"Invalid JSON format or missing keys\"}");
@@ -267,16 +271,15 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
     }
 
     // Save item
-    sensor_db[empty_slot].id          = empty_slot;
+    sensor_db[empty_slot].id = empty_slot;
     strncpy(sensor_db[empty_slot].name, name, sizeof(sensor_db[empty_slot].name) - 1);
     sensor_db[empty_slot].temperature = temp;
-    sensor_db[empty_slot].active      = active;
-    sensor_db[empty_slot].in_use      = true;
+    sensor_db[empty_slot].active = active;
+    sensor_db[empty_slot].in_use = true;
 
     char response_buf[192];
-    snprintf(response_buf, sizeof(response_buf),
-             "{\"id\":%d,\"name\":\"%s\",\"status\":\"created\"}",
-             empty_slot, sensor_db[empty_slot].name);
+    snprintf(response_buf, sizeof(response_buf), "{\"id\":%d,\"name\":\"%s\",\"status\":\"created\"}", empty_slot,
+             sensor_db[empty_slot].name);
 
     server.send(slot_id, 201, "application/json", response_buf);
 }
@@ -320,10 +323,8 @@ void handle_patch_sensor(uint8_t slot_id, HttpReq *req)
     }
 
     char response_buf[192];
-    snprintf(response_buf, sizeof(response_buf),
-             "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
-             sensor_db[id].id, sensor_db[id].name, sensor_db[id].temperature,
-             sensor_db[id].active ? "true" : "false");
+    snprintf(response_buf, sizeof(response_buf), "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
+             sensor_db[id].id, sensor_db[id].name, sensor_db[id].temperature, sensor_db[id].active ? "true" : "false");
 
     server.send(slot_id, 200, "application/json", response_buf);
 }
@@ -379,10 +380,10 @@ void setup()
     server.set_cors("*");
 
     // Map REST routes using methods
-    server.on("/api/sensors",   HTTP_GET,    handle_get_sensors);
-    server.on("/api/sensors/*", HTTP_GET,    handle_get_sensor_by_id);
-    server.on("/api/sensors",   HTTP_POST,   handle_create_sensor);
-    server.on("/api/sensors/*", HTTP_PATCH,  handle_patch_sensor);
+    server.on("/api/sensors", HTTP_GET, handle_get_sensors);
+    server.on("/api/sensors/*", HTTP_GET, handle_get_sensor_by_id);
+    server.on("/api/sensors", HTTP_POST, handle_create_sensor);
+    server.on("/api/sensors/*", HTTP_PATCH, handle_patch_sensor);
     server.on("/api/sensors/*", HTTP_DELETE, handle_delete_sensor);
 
     if (server.begin(80))

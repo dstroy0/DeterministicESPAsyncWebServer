@@ -20,9 +20,9 @@
  *   - Interact with the dashboard to view real-time diagnostics or reboot the chip.
  */
 
-#include <WiFi.h>
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical.h"
+#include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -480,17 +480,9 @@ void handle_get_sysinfo(uint8_t slot_id, HttpReq *req)
              "\"wifi_channel\":%d,"
              "\"ip_address\":\"%s\""
              "}",
-             ESP.getFreeHeap(),
-             ESP.getMinFreeHeap(),
-             ESP.getMaxAllocHeap(),
-             millis(),
-             get_reset_reason_string(esp_reset_reason()),
-             ESP.getChipRevision(),
-             ESP.getCpuFreqMHz(),
-             WiFi.RSSI(),
-             WiFi.SSID().c_str(),
-             WiFi.channel(),
-             WiFi.localIP().toString().c_str());
+             ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap(), millis(),
+             get_reset_reason_string(esp_reset_reason()), ESP.getChipRevision(), ESP.getCpuFreqMHz(), WiFi.RSSI(),
+             WiFi.SSID().c_str(), WiFi.channel(), WiFi.localIP().toString().c_str());
 
     server.send(slot_id, 200, "application/json", response_buf);
 }

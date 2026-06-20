@@ -42,12 +42,12 @@
 
 /** @brief Maximum simultaneous TCP connections. */
 #ifndef MAX_CONNS
-#define MAX_CONNS        4
+#define MAX_CONNS 4
 #endif
 
 /** @brief Ring-buffer capacity in bytes per connection slot. */
 #ifndef RX_BUF_SIZE
-#define RX_BUF_SIZE      1024
+#define RX_BUF_SIZE 1024
 #endif
 
 /**
@@ -57,32 +57,32 @@
  * and loaded into `DeterministicAsyncTCP::conn_timeout_ms` by init().
  */
 #ifndef CONN_TIMEOUT_MS
-#define CONN_TIMEOUT_MS  5000
+#define CONN_TIMEOUT_MS 5000
 #endif
 
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
-#define MAX_HEADERS      8
+#define MAX_HEADERS 8
 #endif
 
 /** @brief Maximum URL path length (including leading `/`). */
 #ifndef MAX_PATH_LEN
-#define MAX_PATH_LEN     64
+#define MAX_PATH_LEN 64
 #endif
 
 /** @brief Maximum header field-name length (e.g. `"Content-Type"`). */
 #ifndef MAX_KEY_LEN
-#define MAX_KEY_LEN      24
+#define MAX_KEY_LEN 24
 #endif
 
 /** @brief Maximum header field-value length. */
 #ifndef MAX_VAL_LEN
-#define MAX_VAL_LEN      48
+#define MAX_VAL_LEN 48
 #endif
 
 /** @brief Maximum raw query-string length (everything after `?`). */
 #ifndef MAX_QUERY_LEN
-#define MAX_QUERY_LEN    128
+#define MAX_QUERY_LEN 128
 #endif
 
 /** @brief Maximum number of parsed query-string parameters. */
@@ -92,12 +92,12 @@
 
 /** @brief Maximum query-parameter key length. */
 #ifndef QUERY_KEY_LEN
-#define QUERY_KEY_LEN    24
+#define QUERY_KEY_LEN 24
 #endif
 
 /** @brief Maximum query-parameter value length. */
 #ifndef QUERY_VAL_LEN
-#define QUERY_VAL_LEN    48
+#define QUERY_VAL_LEN 48
 #endif
 
 /**
@@ -108,12 +108,12 @@
  * bytes arrive, so no data is read or stored for oversized requests.
  */
 #ifndef BODY_BUF_SIZE
-#define BODY_BUF_SIZE    256
+#define BODY_BUF_SIZE 256
 #endif
 
 /** @brief Maximum simultaneously registered routes. */
 #ifndef MAX_ROUTES
-#define MAX_ROUTES       16
+#define MAX_ROUTES 16
 #endif
 
 // ---------------------------------------------------------------------------
@@ -133,6 +133,6 @@ struct WebServerConfig
 };
 
 /** @brief Built-in defaults used when no config is supplied to begin(). */
-static const WebServerConfig DET_DEFAULT_CONFIG = { 5000u };
+static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 
 #endif

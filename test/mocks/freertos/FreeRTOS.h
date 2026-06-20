@@ -3,5 +3,5 @@
 
 typedef void *QueueHandle_t;
 
-#define pdTRUE  1
+#define pdTRUE 1
 #define pdFALSE 0

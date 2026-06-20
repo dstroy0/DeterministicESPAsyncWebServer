@@ -22,12 +22,12 @@
  *   - Monitor serial output at 115200 baud.
  */
 
-#include <WiFi.h>
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical.h"
+#include <WiFi.h>
 
 // WiFi Credentials - Replace with your network settings
-static const char *SSID     = "YOUR_SSID";
+static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
 // Server instance on default HTTP port
@@ -62,14 +62,12 @@ void handle_status(uint8_t slot_id, HttpReq *req)
     if (detailed)
     {
         snprintf(response_buf, sizeof(response_buf),
-                 "{\"status\":\"online\",\"uptime_ms\":%lu,\"requests\":%lu,\"free_heap\":%u}",
-                 millis(), boot_requests, ESP.getFreeHeap());
+                 "{\"status\":\"online\",\"uptime_ms\":%lu,\"requests\":%lu,\"free_heap\":%u}", millis(), boot_requests,
+                 ESP.getFreeHeap());
     }
     else
     {
-        snprintf(response_buf, sizeof(response_buf),
-                 "{\"status\":\"online\",\"requests\":%lu}",
-                 boot_requests);
+        snprintf(response_buf, sizeof(response_buf), "{\"status\":\"online\",\"requests\":%lu}", boot_requests);
     }
 
     server.send(slot_id, 200, "application/json", response_buf);
@@ -115,8 +113,8 @@ void handle_files(uint8_t slot_id, HttpReq *req)
 void handle_not_found(uint8_t slot_id, HttpReq *req)
 {
     char error_msg[128];
-    snprintf(error_msg, sizeof(error_msg), "Error 404: Resource '%s' with method '%s' not found.", 
-             req->path, req->method);
+    snprintf(error_msg, sizeof(error_msg), "Error 404: Resource '%s' with method '%s' not found.", req->path,
+             req->method);
     server.send(slot_id, 404, "text/plain", error_msg);
 }
 

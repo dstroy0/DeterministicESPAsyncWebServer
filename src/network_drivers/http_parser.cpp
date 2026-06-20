@@ -23,7 +23,7 @@ HttpReq http_pool[MAX_CONNS];
 // version field.
 
 static constexpr uint32_t FNV_OFFSET = 2166136261u;
-static constexpr uint32_t FNV_PRIME  = 16777619u;
+static constexpr uint32_t FNV_PRIME = 16777619u;
 
 static constexpr uint32_t fnv1a(const char *s, uint32_t h = FNV_OFFSET)
 {
@@ -48,14 +48,32 @@ static constexpr uint32_t HASH_HTTP11 = fnv1a("HTTP/1.1");
  */
 static inline bool is_tchar(uint8_t b)
 {
-    if (b >= 'A' && b <= 'Z') return true;
-    if (b >= 'a' && b <= 'z') return true;
-    if (b >= '0' && b <= '9') return true;
-    switch (b) {
-    case '!': case '#': case '$': case '%': case '&': case '\'':
-    case '*': case '+': case '-': case '.': case '^': case '_':
-    case '`': case '|': case '~': return true;
-    default:  return false;
+    if (b >= 'A' && b <= 'Z')
+        return true;
+    if (b >= 'a' && b <= 'z')
+        return true;
+    if (b >= '0' && b <= '9')
+        return true;
+    switch (b)
+    {
+    case '!':
+    case '#':
+    case '$':
+    case '%':
+    case '&':
+    case '\'':
+    case '*':
+    case '+':
+    case '-':
+    case '.':
+    case '^':
+    case '_':
+    case '`':
+    case '|':
+    case '~':
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -83,9 +101,9 @@ static inline bool is_vchar(uint8_t b)
  */
 static inline bool is_field_value_char(uint8_t b)
 {
-    return b == 0x09                    // HTAB
-        || (b >= 0x20 && b <= 0x7E)    // SP through '~', no DEL
-        || b >= 0x80;                   // obs-text
+    return b == 0x09                   // HTAB
+           || (b >= 0x20 && b <= 0x7E) // SP through '~', no DEL
+           || b >= 0x80;               // obs-text
 }
 
 /**
@@ -97,23 +115,27 @@ static inline bool is_field_value_char(uint8_t b)
  */
 static void parse_query_params(HttpReq *req)
 {
-    const char *qs  = req->query;
-    size_t      len = req->query_idx;
-    size_t      i   = 0;
+    const char *qs = req->query;
+    size_t len = req->query_idx;
+    size_t i = 0;
 
     while (i < len && req->query_count < MAX_QUERY_PARAMS)
     {
-        QueryParam *qp  = &req->query_params[req->query_count];
-        size_t key_idx  = 0;
-        size_t val_idx  = 0;
-        bool   in_val   = false;
+        QueryParam *qp = &req->query_params[req->query_count];
+        size_t key_idx = 0;
+        size_t val_idx = 0;
+        bool in_val = false;
 
         while (i < len)
         {
             char c = qs[i++];
             if (c == '&')
                 break;
-            if (c == '=' && !in_val) { in_val = true; continue; }
+            if (c == '=' && !in_val)
+            {
+                in_val = true;
+                continue;
+            }
             if (!in_val && key_idx < QUERY_KEY_LEN - 1)
                 qp->key[key_idx++] = c;
             else if (in_val && val_idx < QUERY_VAL_LEN - 1)
@@ -127,11 +149,11 @@ static void parse_query_params(HttpReq *req)
 
 void http_parser_reset(HttpReq *req)
 {
-    uint8_t id        = req->slot_id;
-    *req              = {};            // zero all fields
-    req->slot_id      = id;            // restore slot identity
-    req->parse_state  = PARSE_METHOD;
-    req->_version_hash = FNV_OFFSET;  // seed the FNV-1a accumulator
+    uint8_t id = req->slot_id;
+    *req = {};         // zero all fields
+    req->slot_id = id; // restore slot identity
+    req->parse_state = PARSE_METHOD;
+    req->_version_hash = FNV_OFFSET; // seed the FNV-1a accumulator
 }
 
 void http_parser_feed(HttpReq *p, uint8_t byte)
@@ -156,7 +178,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
     case PARSE_METHOD:
         if (c == ' ')
         {
-            p->parse_state       = PARSE_PATH;
+            p->parse_state = PARSE_PATH;
             p->current_token_idx = 0;
         }
         else if (!is_tchar(byte))
@@ -236,7 +258,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
     case PARSE_EXPECT_LF:
         if (c == '\n')
         {
-            p->parse_state       = PARSE_HEADER_KEY;
+            p->parse_state = PARSE_HEADER_KEY;
             p->current_token_idx = 0;
         }
         else
@@ -261,7 +283,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else if (c == ':')
         {
-            p->parse_state       = PARSE_HEADER_VAL;
+            p->parse_state = PARSE_HEADER_VAL;
             p->current_token_idx = 0;
         }
         else if (!is_tchar(byte))
@@ -300,7 +322,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                     p->content_length = (size_t)atoi(p->headers[h].val);
                 p->header_count++;
             }
-            p->parse_state       = PARSE_EXPECT_LF;
+            p->parse_state = PARSE_EXPECT_LF;
             p->current_token_idx = 0;
         }
         else if (!is_field_value_char(byte))
@@ -331,7 +353,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                 p->parse_state = PARSE_ENTITY_TOO_LARGE;
             else if (p->content_length == 0)
             {
-                p->body[0]     = '\0';
+                p->body[0] = '\0';
                 p->parse_state = PARSE_COMPLETE;
             }
             else

@@ -9,8 +9,8 @@
 //   STRESS        — sustained-load and boundary-value coverage
 //   RACE SIM      — simulated concurrent-access scenarios
 
-#include <unity.h>
 #include "network_drivers/presentation.h"
+#include <unity.h>
 
 // transport.cpp + presentation.cpp are compiled into the native env.
 // No stubs or redefinitions needed.
@@ -30,14 +30,16 @@ void setUp()
 {
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i]       = {};
-        conn_pool[i].id    = i;
+        conn_pool[i] = {};
+        conn_pool[i].id = i;
         conn_pool[i].state = CONN_ACTIVE;
         http_reset(i);
     }
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // FUNCTION I/O TESTS — http_reset()
@@ -76,13 +78,13 @@ void test_fn_reset_clears_path_and_idx()
 void test_fn_reset_clears_query_raw_and_params()
 {
     memcpy(http_pool[0].query, "a=1&b=2", 8);
-    http_pool[0].query_idx   = 7;
+    http_pool[0].query_idx = 7;
     http_pool[0].query_count = 2;
     memcpy(http_pool[0].query_params[0].key, "a", 2);
     http_reset(0);
     TEST_ASSERT_EQUAL('\0', http_pool[0].query[0]);
-    TEST_ASSERT_EQUAL(0,    (int)http_pool[0].query_idx);
-    TEST_ASSERT_EQUAL(0,    http_pool[0].query_count);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].query_idx);
+    TEST_ASSERT_EQUAL(0, http_pool[0].query_count);
     TEST_ASSERT_EQUAL('\0', http_pool[0].query_params[0].key[0]);
 }
 
@@ -92,22 +94,22 @@ void test_fn_reset_clears_all_header_slots()
     memcpy(http_pool[0].headers[0].key, "Host", 5);
     memcpy(http_pool[0].headers[2].val, "val", 4);
     http_reset(0);
-    TEST_ASSERT_EQUAL(0,    http_pool[0].header_count);
+    TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
     TEST_ASSERT_EQUAL('\0', http_pool[0].headers[0].key[0]);
     TEST_ASSERT_EQUAL('\0', http_pool[0].headers[2].val[0]);
 }
 
 void test_fn_reset_clears_body_fields()
 {
-    http_pool[0].body[0]         = 'X';
-    http_pool[0].body_len        = 1;
-    http_pool[0].content_length  = 5;
+    http_pool[0].body[0] = 'X';
+    http_pool[0].body_len = 1;
+    http_pool[0].content_length = 5;
     http_pool[0].body_bytes_read = 5;
     http_reset(0);
     TEST_ASSERT_EQUAL('\0', http_pool[0].body[0]);
-    TEST_ASSERT_EQUAL(0,    (int)http_pool[0].body_len);
-    TEST_ASSERT_EQUAL(0,    (int)http_pool[0].content_length);
-    TEST_ASSERT_EQUAL(0,    (int)http_pool[0].body_bytes_read);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].content_length);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_bytes_read);
 }
 
 void test_fn_reset_out_of_range_is_nop()
@@ -124,8 +126,8 @@ void test_fn_reset_is_idempotent()
     http_reset(0);
     http_reset(0);
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(0,            http_pool[0].header_count);
-    TEST_ASSERT_EQUAL(0,            (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
 }
 
 // ====================================================================
@@ -196,7 +198,7 @@ void test_fn_get_header_does_not_bleed_across_slots()
     http_parse(0);
     http_parse(1);
     TEST_ASSERT_EQUAL_STRING("alpha", http_get_header(&http_pool[0], "Host"));
-    TEST_ASSERT_EQUAL_STRING("beta",  http_get_header(&http_pool[1], "Host"));
+    TEST_ASSERT_EQUAL_STRING("beta", http_get_header(&http_pool[1], "Host"));
 }
 
 // ====================================================================
@@ -324,7 +326,7 @@ void test_query_single_param()
 {
     push(0, "GET /s?key=val HTTP/1.1\r\n\r\n");
     http_parse(0);
-    TEST_ASSERT_EQUAL(1,    http_pool[0].query_count);
+    TEST_ASSERT_EQUAL(1, http_pool[0].query_count);
     TEST_ASSERT_EQUAL_STRING("key", http_pool[0].query_params[0].key);
     TEST_ASSERT_EQUAL_STRING("val", http_pool[0].query_params[0].val);
 }
@@ -347,7 +349,7 @@ void test_body_over_buf_size_is_413()
 {
     // Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read.
     char req[RX_BUF_SIZE];
-    int  big = BODY_BUF_SIZE + 10;
+    int big = BODY_BUF_SIZE + 10;
     snprintf(req, sizeof(req), "POST /big HTTP/1.1\r\nContent-Length: %d\r\n\r\n", big);
     push(0, req);
     http_parse(0);
@@ -365,7 +367,8 @@ void test_overflow_method_sets_error()
 void test_overflow_path_sets_414()
 {
     char req[256] = "GET /";
-    for (int i = 5; i < MAX_PATH_LEN + 10; i++) req[i] = 'x';
+    for (int i = 5; i < MAX_PATH_LEN + 10; i++)
+        req[i] = 'x';
     req[MAX_PATH_LEN + 10] = '\0';
     strcat(req, " HTTP/1.1\r\n\r\n");
     push(0, req);
@@ -385,11 +388,10 @@ void test_bad_lf_after_cr_sets_error()
 
 void test_headers_beyond_max_are_dropped()
 {
-    push(0,
-         "GET / HTTP/1.1\r\n"
-         "H1: v1\r\nH2: v2\r\nH3: v3\r\nH4: v4\r\n"
-         "H5: v5\r\nH6: v6\r\nH7: v7\r\nH8: v8\r\n"
-         "H9: v9\r\n\r\n");
+    push(0, "GET / HTTP/1.1\r\n"
+            "H1: v1\r\nH2: v2\r\nH3: v3\r\nH4: v4\r\n"
+            "H5: v5\r\nH6: v6\r\nH7: v7\r\nH8: v8\r\n"
+            "H9: v9\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL(MAX_HEADERS, http_pool[0].header_count);
 }
@@ -419,7 +421,7 @@ void test_body_starting_with_newline_stored()
     push(0, "POST /nl HTTP/1.1\r\nContent-Length: 5\r\n\r\n\nabcd");
     http_parse(0);
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(5,    (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL(5, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL('\n', (char)http_pool[0].body[0]);
     TEST_ASSERT_EQUAL_STRING("\nabcd", (const char *)http_pool[0].body);
 }
@@ -430,8 +432,8 @@ void test_put_body_stored()
     push(0, "PUT /r/1 HTTP/1.1\r\nContent-Length: 7\r\n\r\nupdated");
     http_parse(0);
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL_STRING("PUT",     http_pool[0].method);
-    TEST_ASSERT_EQUAL(7,               (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL_STRING("PUT", http_pool[0].method);
+    TEST_ASSERT_EQUAL(7, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL_STRING("updated", (const char *)http_pool[0].body);
 }
 
@@ -459,12 +461,11 @@ void stress_parse_reset_100_cycles()
     {
         push(0, "GET /test HTTP/1.1\r\nHost: x\r\n\r\n");
         http_parse(0);
-        TEST_ASSERT_EQUAL_MESSAGE(PARSE_COMPLETE, http_pool[0].parse_state,
-                                  "unexpected parse state mid-cycle");
+        TEST_ASSERT_EQUAL_MESSAGE(PARSE_COMPLETE, http_pool[0].parse_state, "unexpected parse state mid-cycle");
         http_reset(0);
-        TEST_ASSERT_EQUAL_MESSAGE(PARSE_METHOD,  http_pool[0].parse_state, "state not reset");
-        TEST_ASSERT_EQUAL_MESSAGE(0, http_pool[0].header_count,            "headers not reset");
-        TEST_ASSERT_EQUAL_MESSAGE('\0', http_pool[0].method[0],            "method not reset");
+        TEST_ASSERT_EQUAL_MESSAGE(PARSE_METHOD, http_pool[0].parse_state, "state not reset");
+        TEST_ASSERT_EQUAL_MESSAGE(0, http_pool[0].header_count, "headers not reset");
+        TEST_ASSERT_EQUAL_MESSAGE('\0', http_pool[0].method[0], "method not reset");
     }
 }
 
@@ -477,18 +478,21 @@ void stress_all_slots_parse_simultaneously()
     push(2, "PUT /two HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
     push(3, "DELETE /three HTTP/1.1\r\n\r\n");
 
-    http_parse(0); http_parse(1); http_parse(2); http_parse(3);
+    http_parse(0);
+    http_parse(1);
+    http_parse(2);
+    http_parse(3);
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL_STRING("GET",    http_pool[0].method);
-    TEST_ASSERT_EQUAL_STRING("/zero",  http_pool[0].path);
+    TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
+    TEST_ASSERT_EQUAL_STRING("/zero", http_pool[0].path);
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
-    TEST_ASSERT_EQUAL_STRING("POST",  http_pool[1].method);
-    TEST_ASSERT_EQUAL_STRING("abc",   (const char *)http_pool[1].body);
+    TEST_ASSERT_EQUAL_STRING("POST", http_pool[1].method);
+    TEST_ASSERT_EQUAL_STRING("abc", (const char *)http_pool[1].body);
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[2].parse_state);
-    TEST_ASSERT_EQUAL_STRING("PUT",   http_pool[2].method);
+    TEST_ASSERT_EQUAL_STRING("PUT", http_pool[2].method);
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[3].parse_state);
     TEST_ASSERT_EQUAL_STRING("DELETE", http_pool[3].method);
@@ -509,24 +513,36 @@ void stress_method_at_max_7_chars_no_error()
 void stress_path_at_exact_limit_no_error()
 {
     char req[MAX_PATH_LEN + 32];
-    req[0] = 'G'; req[1] = 'E'; req[2] = 'T'; req[3] = ' ';
+    req[0] = 'G';
+    req[1] = 'E';
+    req[2] = 'T';
+    req[3] = ' ';
     req[4] = '/';
-    for (int i = 5; i < MAX_PATH_LEN - 1 + 4; i++) req[i] = 'a'; // 4 = "GET "
+    for (int i = 5; i < MAX_PATH_LEN - 1 + 4; i++)
+        req[i] = 'a'; // 4 = "GET "
     // req now contains "GET /" followed by (MAX_PATH_LEN-2) 'a's = MAX_PATH_LEN-1 total path chars
     // That's exactly MAX_PATH_LEN-1 path characters (including leading '/').
-    // Wait, let me re-think: path starts at index 4 with '/', so path ends at index 4+(MAX_PATH_LEN-1)-1 = MAX_PATH_LEN+2.
-    // Let me recalculate:
-    // req = "GET " + "/" + (MAX_PATH_LEN-2 'a's) = path length = 1 + (MAX_PATH_LEN-2) = MAX_PATH_LEN-1
-    // req[4] = '/', req[5..MAX_PATH_LEN+2] = 'a', total path = MAX_PATH_LEN-1 chars ✓
+    // Wait, let me re-think: path starts at index 4 with '/', so path ends at index 4+(MAX_PATH_LEN-1)-1 =
+    // MAX_PATH_LEN+2. Let me recalculate: req = "GET " + "/" + (MAX_PATH_LEN-2 'a's) = path length = 1 +
+    // (MAX_PATH_LEN-2) = MAX_PATH_LEN-1 req[4] = '/', req[5..MAX_PATH_LEN+2] = 'a', total path = MAX_PATH_LEN-1 chars ✓
     int end = 4 + MAX_PATH_LEN - 1; // index after last path char
-    req[end]   = ' ';
-    req[end+1] = 'H'; req[end+2] = 'T'; req[end+3] = 'T'; req[end+4] = 'P';
-    req[end+5] = '/'; req[end+6] = '1'; req[end+7] = '.'; req[end+8] = '1';
-    req[end+9] = '\r'; req[end+10] = '\n'; req[end+11] = '\r'; req[end+12] = '\n';
-    req[end+13] = '\0';
+    req[end] = ' ';
+    req[end + 1] = 'H';
+    req[end + 2] = 'T';
+    req[end + 3] = 'T';
+    req[end + 4] = 'P';
+    req[end + 5] = '/';
+    req[end + 6] = '1';
+    req[end + 7] = '.';
+    req[end + 8] = '1';
+    req[end + 9] = '\r';
+    req[end + 10] = '\n';
+    req[end + 11] = '\r';
+    req[end + 12] = '\n';
+    req[end + 13] = '\0';
     push(0, req);
     http_parse(0);
-    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR,  http_pool[0].parse_state);
+    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(MAX_PATH_LEN - 1, (int)strlen(http_pool[0].path));
 }
 
@@ -534,8 +550,7 @@ void stress_path_at_exact_limit_no_error()
 void stress_body_exactly_buf_size_all_stored()
 {
     char hdr[128];
-    snprintf(hdr, sizeof(hdr),
-             "POST /b HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
+    snprintf(hdr, sizeof(hdr), "POST /b HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
     push(0, hdr);
     TcpConn *s = &conn_pool[0];
     for (int i = 0; i < BODY_BUF_SIZE; i++)
@@ -546,8 +561,8 @@ void stress_body_exactly_buf_size_all_stored()
     }
     http_parse(0);
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(BODY_BUF_SIZE,  (int)http_pool[0].body_len);
-    TEST_ASSERT_EQUAL('\0',           http_pool[0].body[BODY_BUF_SIZE]);
+    TEST_ASSERT_EQUAL(BODY_BUF_SIZE, (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL('\0', http_pool[0].body[BODY_BUF_SIZE]);
     // Spot-check: first, 26th, and 27th body bytes
     TEST_ASSERT_EQUAL('A', http_pool[0].body[0]);
     TEST_ASSERT_EQUAL('Z', http_pool[0].body[25]);
@@ -557,11 +572,10 @@ void stress_body_exactly_buf_size_all_stored()
 // Exactly MAX_HEADERS headers — all must be stored; none silently dropped.
 void stress_exactly_max_headers_all_stored()
 {
-    push(0,
-         "GET / HTTP/1.1\r\n"
-         "H1: v1\r\nH2: v2\r\nH3: v3\r\nH4: v4\r\n"
-         "H5: v5\r\nH6: v6\r\nH7: v7\r\nH8: v8\r\n"
-         "\r\n");
+    push(0, "GET / HTTP/1.1\r\n"
+            "H1: v1\r\nH2: v2\r\nH3: v3\r\nH4: v4\r\n"
+            "H5: v5\r\nH6: v6\r\nH7: v7\r\nH8: v8\r\n"
+            "\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL(MAX_HEADERS, http_pool[0].header_count);
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
@@ -575,7 +589,7 @@ void stress_exactly_max_query_params_all_stored()
     push(0, "GET /?a=1&b=2&c=3&d=4&e=5&f=6&g=7&h=8 HTTP/1.1\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL(MAX_QUERY_PARAMS, http_pool[0].query_count);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE,   http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("h", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].key);
     TEST_ASSERT_EQUAL_STRING("8", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].val);
 }
@@ -586,7 +600,7 @@ void stress_exactly_max_query_params_all_stored()
 void stress_incremental_byte_by_byte_no_error()
 {
     const char *req = "GET /stream HTTP/1.1\r\nHost: test\r\n\r\n";
-    TcpConn    *s   = &conn_pool[0];
+    TcpConn *s = &conn_pool[0];
 
     for (size_t i = 0; req[i]; i++)
     {
@@ -610,16 +624,16 @@ void stress_sequential_requests_no_state_leak()
             push(0, "GET /ping HTTP/1.1\r\n\r\n");
             http_parse(0);
             TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-            TEST_ASSERT_EQUAL_STRING("GET",   http_pool[0].method);
-            TEST_ASSERT_EQUAL(0,              http_pool[0].header_count);
+            TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
+            TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
         }
         else
         {
             push(0, "POST /data HTTP/1.1\r\nContent-Length: 2\r\n\r\nhi");
             http_parse(0);
             TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-            TEST_ASSERT_EQUAL_STRING("POST",  http_pool[0].method);
-            TEST_ASSERT_EQUAL_STRING("hi",    (const char *)http_pool[0].body);
+            TEST_ASSERT_EQUAL_STRING("POST", http_pool[0].method);
+            TEST_ASSERT_EQUAL_STRING("hi", (const char *)http_pool[0].body);
         }
         http_reset(0);
     }
@@ -688,7 +702,8 @@ void race_ring_buffer_full_prevents_write()
     while (true)
     {
         size_t next = (s->rx_head + 1) % RX_BUF_SIZE;
-        if (next == s->rx_tail) break; // full — stop before overwriting
+        if (next == s->rx_tail)
+            break; // full — stop before overwriting
         s->rx_buffer[s->rx_head] = (uint8_t)(written & 0xFF);
         s->rx_head = next;
         written++;
@@ -703,12 +718,12 @@ void race_ring_buffer_full_prevents_write()
 // that last_activity_ms reflects the new connection — no stale timestamp.
 void race_aba_slot_reuse_fresh_timestamp()
 {
-    const uint32_t T_OLD  = 0;
+    const uint32_t T_OLD = 0;
     const uint32_t T_DEAD = CONN_TIMEOUT_MS;
-    const uint32_t T_NEW  = CONN_TIMEOUT_MS + 1;
+    const uint32_t T_NEW = CONN_TIMEOUT_MS + 1;
 
-    conn_pool[0].state            = CONN_ACTIVE;
-    conn_pool[0].pcb              = nullptr;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = T_OLD;
 
     set_millis(T_DEAD);
@@ -716,7 +731,7 @@ void race_aba_slot_reuse_fresh_timestamp()
     TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state); // timed out
 
     // Simulate a new accept: re-arm the slot
-    conn_pool[0].state            = CONN_ACTIVE;
+    conn_pool[0].state = CONN_ACTIVE;
     conn_pool[0].last_activity_ms = T_NEW;
 
     set_millis(T_NEW); // now millis == last_activity → diff = 0, no timeout
@@ -750,7 +765,7 @@ void race_concurrent_slot_parse_isolation()
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
     // Slot 1 is not complete — it's still awaiting headers/blank line
     TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
-    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR,    http_pool[1].parse_state);
+    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[1].parse_state);
 
     // Finish slot 1 with the blank line
     push(1, "Content-Length: 0\r\n\r\n");
@@ -771,8 +786,8 @@ void race_reset_during_parse_header_val()
     http_reset(0); // disconnect arrives mid-parse
 
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(0,            http_pool[0].header_count);
-    TEST_ASSERT_EQUAL('\0',         http_pool[0].method[0]);
+    TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
+    TEST_ASSERT_EQUAL('\0', http_pool[0].method[0]);
 }
 
 // Reset-during-query-parse: simulates a disconnect while accumulating
@@ -786,8 +801,8 @@ void race_reset_during_parse_query()
     http_reset(0);
 
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(0,            (int)http_pool[0].query_idx);
-    TEST_ASSERT_EQUAL(0,            http_pool[0].query_count);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].query_idx);
+    TEST_ASSERT_EQUAL(0, http_pool[0].query_count);
 }
 
 // Reset-during-body-parse: simulates a disconnect mid-body.
@@ -800,9 +815,9 @@ void race_reset_during_parse_body()
     http_reset(0);
 
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(0,            (int)http_pool[0].body_len);
-    TEST_ASSERT_EQUAL(0,            (int)http_pool[0].body_bytes_read);
-    TEST_ASSERT_EQUAL('\0',         http_pool[0].body[0]);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
+    TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_bytes_read);
+    TEST_ASSERT_EQUAL('\0', http_pool[0].body[0]);
 }
 
 // After http_parse hits PARSE_COMPLETE, calling it again must be a no-op
@@ -818,7 +833,7 @@ void race_parse_after_complete_is_nop()
     http_parse(0); // must not alter any field
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL_STRING("GET",   http_pool[0].method);
+    TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
 }
 
 int main()

@@ -1,9 +1,21 @@
 {
   "name": "DeterministicESPAsyncWebServer",
   "version": "0.1.0",
-  "description": "Deterministic async web server for ESP32 with static memory allocation, lock-free queues, and predictable real-time performance.",
-  "keywords": ["esp32", "async", "web server", "deterministic", "real-time", "lwip"],
-  "license": "MIT",
+  "description": "RFC 7230-compliant HTTP/1.1 server for ESP32 with zero heap allocation after begin(). Validates every request byte-by-byte; auto-sends 400/413/414/501. All buffers statically sized at compile time.",
+  "keywords": ["esp32", "http", "web server", "async", "deterministic", "rfc7230", "lwip"],
+  "authors": [
+    {
+      "name": "Douglas Quigg",
+      "email": "dquigg123@gmail.com",
+      "url": "https://github.com/dstroy0",
+      "maintainer": true
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dstroy0/DeterministicESPAsyncWebServer.git"
+  },
+  "license": "AGPL-3.0-or-later",
   "frameworks": ["arduino"],
   "platforms": ["espressif32"],
   "build": {
