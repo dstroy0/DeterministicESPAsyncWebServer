@@ -5,6 +5,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`399b835`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/399b835a8378ae3d5c5079a2078ae9f2c152570a))
+
+
+### Changes
+- update version to 1.1.0, add author and maintainer info, and update description in library.properties ([`4da247c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da247cea4209809b1d939dd85318f7539192f77))
+
+
+## [1.1.0] - 2026-06-20
+
+### CI / Build
 - update CHANGELOG.md [skip ci] ([`bb32fdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb32fdfba90eb4aeb4da4fd6130bae0ebc414813))
 
 
