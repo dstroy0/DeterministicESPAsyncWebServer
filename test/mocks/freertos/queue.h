@@ -12,6 +12,11 @@ inline QueueHandle_t xQueueCreate(uint32_t, size_t)
 {
     return (void *)1;
 }
+
+inline QueueHandle_t xQueueCreateStatic(uint32_t, size_t, uint8_t *, StaticQueue_t *)
+{
+    return (void *)1;
+}
 inline int xQueueSend(QueueHandle_t, const void *, uint32_t)
 {
     return pdTRUE;

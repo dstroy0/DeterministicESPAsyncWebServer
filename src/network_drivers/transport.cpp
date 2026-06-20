@@ -25,6 +25,9 @@
 TcpConn conn_pool[MAX_CONNS];
 static struct tcp_pcb *listen_pcb = nullptr;
 
+static StaticQueue_t        _queue_struct;
+static uint8_t              _queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)];
+
 QueueHandle_t DeterministicAsyncTCP::queue = nullptr;
 uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 
@@ -48,20 +51,12 @@ static inline void enqueue(const TcpEvt &evt)
 
 size_t DeterministicAsyncTCP::heap_needed()
 {
-#ifdef ARDUINO
-    return sizeof(StaticQueue_t) + EVT_QUEUE_DEPTH * sizeof(TcpEvt);
-#else
-    return EVT_QUEUE_DEPTH * sizeof(TcpEvt);
-#endif
+    return 0; // event queue is statically allocated in BSS
 }
 
 bool DeterministicAsyncTCP::heap_available()
 {
-#ifdef ARDUINO
-    return heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) >= heap_needed();
-#else
-    return true;
-#endif
+    return true; // no heap allocation; always safe to call begin()
 }
 
 int32_t DeterministicAsyncTCP::init(uint16_t port, const WebServerConfig *cfg)
@@ -69,9 +64,10 @@ int32_t DeterministicAsyncTCP::init(uint16_t port, const WebServerConfig *cfg)
     // Load runtime config (or fall back to compile-time default)
     conn_timeout_ms = cfg ? cfg->conn_timeout_ms : CONN_TIMEOUT_MS;
 
-    queue = xQueueCreate(EVT_QUEUE_DEPTH, sizeof(TcpEvt));
+    queue = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt),
+                               _queue_storage, &_queue_struct);
     if (queue == nullptr)
-        return -(int32_t)heap_needed();
+        return -1;
 
     for (int i = 0; i < MAX_CONNS; i++)
     {

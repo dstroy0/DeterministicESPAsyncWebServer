@@ -165,6 +165,7 @@ class DeterministicAsyncTCP
      * Events are posted from `tcpip_thread` context via `xQueueSend()` (not
      * the ISR variant) because lwIP callbacks run in a task, not a hardware ISR.
      * Queue depth is EVT_QUEUE_DEPTH, sized for MAX_CONNS * 4 event bursts.
+     * Backed by a static BSS array; no heap is allocated.
      */
     static QueueHandle_t queue;
 
@@ -177,22 +178,18 @@ class DeterministicAsyncTCP
     static uint32_t conn_timeout_ms;
 
     /**
-     * @brief Bytes of contiguous heap that init() will allocate.
+     * @brief Always returns 0 — the library makes no heap allocations.
      *
-     * The event queue is the library's only dynamic allocation.  FreeRTOS
-     * allocates the queue structure and storage in a single pvPortMalloc()
-     * call of exactly this size.  Use heap_available() to verify a
-     * suitable block exists before calling init().
-     *
-     * @return sizeof(StaticQueue_t) + EVT_QUEUE_DEPTH * sizeof(TcpEvt)
+     * The event queue is backed by statically-allocated BSS storage
+     * (_queue_struct + _queue_storage in transport.cpp).  Retained for
+     * API compatibility with code that calls it before begin().
      */
     static size_t heap_needed();
 
     /**
-     * @brief True if the largest contiguous free heap block >= heap_needed().
+     * @brief Always returns true — no heap allocation means no pre-flight needed.
      *
-     * Uses heap_caps_get_largest_free_block(MALLOC_CAP_8BIT).  Call this
-     * before init() / DetWebServer::begin() to pre-flight the allocation.
+     * Retained for API compatibility.  Safe to call or omit.
      */
     static bool heap_available();
 };

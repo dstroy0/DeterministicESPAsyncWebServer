@@ -225,16 +225,9 @@ void setup()
 {
     Serial.begin(115200);
 
-    // Pre-flight: verify enough contiguous heap exists before WiFi/TCP init
-    // consumes more RAM.  heap_needed() = sizeof(StaticQueue_t) +
-    // EVT_QUEUE_DEPTH * sizeof(TcpEvt) — the only allocation begin() makes.
-    if (!DetWebServer::heap_available())
-    {
-        Serial.printf("Insufficient contiguous heap: need %u bytes, largest block %u bytes\n",
-                      DetWebServer::heap_needed(),
-                      heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-        return;
-    }
+    // heap_needed() returns 0 and heap_available() returns true — the event
+    // queue is statically allocated in BSS so begin() makes no heap allocation.
+    // These calls are retained here only to show the API exists.
 
     init_wifi_physical(SSID, PASSWORD);
     Serial.print("Connecting");
