@@ -5,6 +5,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`3db5a62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3db5a6212dafab7c44dd6a68915aaa33e957f0f3))
 - update CHANGELOG.md [skip ci] ([`3ddf27c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ddf27c9362bf869f0216afc19874d141fbb0e24))
 - update CHANGELOG.md [skip ci] ([`eeea908`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eeea9082c24ae05b8898ed371cef5dbffb0386db))
 - update CHANGELOG.md [skip ci] ([`e81b25f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e81b25ff412562043e086ffc315852f16ce3f180))
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 
 ### Changes
+- update test suite, adjust logic for RFC compliance ([`689b240`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/689b24052bbbf8ba1905697b845e55af1de07c1d))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`73d5f25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73d5f2525e6756cdb9762b8477c43d36fcdb0215))
 - add dependabot github-actions dependency auto-updater ([`787158f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/787158f7214963b54bf77cb7f93f78315764b9d2))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`99a92ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99a92ee1827c72ce691801a1d52612ffdb3b5c71))
