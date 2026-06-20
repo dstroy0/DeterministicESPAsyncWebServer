@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string.h>
 
 typedef int8_t err_t;
 typedef uint16_t u16_t;
@@ -64,8 +65,57 @@ inline void tcp_err(struct tcp_pcb *, tcp_err_fn)
 inline void tcp_abort(struct tcp_pcb *)
 {
 }
-inline err_t tcp_write(struct tcp_pcb *, const void *, uint16_t, uint8_t)
+// ---------------------------------------------------------------------------
+// Optional write capture — off by default; tests enable with tcp_capture_reset()
+// ---------------------------------------------------------------------------
+
+struct TcpCapture
 {
+    char   buf[4096];
+    size_t len;
+};
+
+inline bool &_tcp_capture_active()
+{
+    static bool v = false;
+    return v;
+}
+
+inline TcpCapture &_tcp_capture()
+{
+    static TcpCapture c = {};
+    return c;
+}
+
+inline void tcp_capture_reset()
+{
+    _tcp_capture().len    = 0;
+    _tcp_capture().buf[0] = '\0';
+    _tcp_capture_active() = true;
+}
+
+inline void tcp_capture_disable()
+{
+    _tcp_capture_active() = false;
+}
+
+inline const char *tcp_captured() { return _tcp_capture().buf; }
+inline size_t      tcp_captured_len() { return _tcp_capture().len; }
+
+inline err_t tcp_write(struct tcp_pcb *, const void *data, uint16_t len, uint8_t)
+{
+    if (_tcp_capture_active())
+    {
+        TcpCapture &c = _tcp_capture();
+        size_t avail  = sizeof(c.buf) - c.len - 1;
+        size_t n      = (len < avail) ? (size_t)len : avail;
+        if (n > 0)
+        {
+            memcpy(c.buf + c.len, data, n);
+            c.len += n;
+            c.buf[c.len] = '\0';
+        }
+    }
     return ERR_OK;
 }
 inline void tcp_output(struct tcp_pcb *)

@@ -303,8 +303,10 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             }
             else
             {
-                // Past MAX_HEADERS: consume without storing; no length limit enforced
-                p->current_token_idx++;
+                // Past MAX_HEADERS: cap counter so it never wraps to 0 (which would
+                // look like a blank line ending headers) and never OOBs key buffers.
+                if (p->current_token_idx < MAX_KEY_LEN)
+                    p->current_token_idx++;
             }
         }
         break;

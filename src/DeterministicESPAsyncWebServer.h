@@ -11,9 +11,20 @@
  *   DeterministicESPAsyncWebServer.h
  *     └── network_drivers/presentation.h  (Layer 6)
  *           ├── network_drivers/transport.h  (Layer 4)
- *           │     └── DetWebServerConfig.h   (compile-time constants)
+ *           │     └── DetWebServerConfig.h   (compile-time constants + feature flags)
  *           └── network_drivers/http_parser.h (parser types)
  *     └── network_drivers/session.h       (Layer 5 — event queue)
+ * @endcode
+ *
+ * **Feature flags** — define any of these to 0 before including to strip
+ * the feature from the build entirely:
+ * @code
+ *   #define DETWS_ENABLE_WEBSOCKET    0
+ *   #define DETWS_ENABLE_SSE          0
+ *   #define DETWS_ENABLE_MULTIPART    0
+ *   #define DETWS_ENABLE_FILE_SERVING 0
+ *   #define DETWS_ENABLE_AUTH         0
+ *   #include <DeterministicESPAsyncWebServer.h>
  * @endcode
  *
  * **Determinism guarantees**
@@ -31,7 +42,23 @@
 
 #include "network_drivers/presentation.h"
 #include "network_drivers/session.h"
+#if DETWS_ENABLE_WEBSOCKET
+#include "network_drivers/websocket.h"
+#endif
+#if DETWS_ENABLE_SSE
+#include "network_drivers/sse.h"
+#endif
+#if DETWS_ENABLE_MULTIPART
+#include "network_drivers/multipart.h"
+#endif
 #include <Arduino.h>
+#if DETWS_ENABLE_FILE_SERVING
+#ifdef ARDUINO
+#include <FS.h>
+#else
+#include "FS.h"
+#endif
+#endif
 
 // ---------------------------------------------------------------------------
 // HTTP method enumeration
@@ -75,19 +102,91 @@ enum HttpMethod
  */
 typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
 
+#if DETWS_ENABLE_WEBSOCKET
+/**
+ * @brief Callback fired when a WebSocket connection is established.
+ *
+ * @param ws_id  Index into ws_pool[] for this connection.
+ */
+typedef void (*WsConnectHandler)(uint8_t ws_id);
+
+/**
+ * @brief Callback fired when a WebSocket text or binary frame arrives.
+ *
+ * The payload is in ws_pool[ws_id].buf, null-terminated.  Length is in
+ * ws_pool[ws_id].payload_len.  Opcode is in ws_pool[ws_id].opcode.
+ *
+ * @param ws_id  Index into ws_pool[].
+ */
+typedef void (*WsMessageHandler)(uint8_t ws_id);
+
+/**
+ * @brief Callback fired when a WebSocket connection closes.
+ *
+ * @param ws_id  Index into ws_pool[] (slot is still valid during callback).
+ */
+typedef void (*WsCloseHandler)(uint8_t ws_id);
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+/**
+ * @brief Callback fired when a new SSE client connects.
+ *
+ * Use sse_send() inside this callback to push an initial event if needed.
+ *
+ * @param sse_id  Index into sse_pool[] for this connection.
+ */
+typedef void (*SseConnectHandler)(uint8_t sse_id);
+#endif // DETWS_ENABLE_SSE
+
+// ---------------------------------------------------------------------------
+// Route type discriminator
+// ---------------------------------------------------------------------------
+
+/** @brief Discriminates between HTTP, WebSocket, and SSE route entries. */
+enum RouteType
+{
+    ROUTE_HTTP, ///< Standard HTTP request/response.
+#if DETWS_ENABLE_WEBSOCKET
+    ROUTE_WS,   ///< WebSocket upgrade route.
+#endif
+#if DETWS_ENABLE_SSE
+    ROUTE_SSE   ///< Server-Sent Events route.
+#endif
+};
+
 /**
  * @brief Internal route entry stored in the routing table.
  *
- * Populated by DetWebServer::on().  Application code does not interact
- * with this struct directly.
+ * Populated by DetWebServer::on(), on_ws(), or on_sse().
+ * Application code does not interact with this struct directly.
  */
 struct Route
 {
-    char path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
-    HttpMethod method;       ///< HTTP method this route responds to.
-    Handler callback;        ///< User-supplied handler function.
-    bool is_active;          ///< `false` for unused table slots.
-    bool is_wildcard;        ///< `true` when path ends with `*`.
+    char      path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
+    RouteType type;               ///< HTTP, WS, or SSE.
+    HttpMethod method;            ///< HTTP method (ROUTE_HTTP only).
+    Handler callback;             ///< HTTP handler (ROUTE_HTTP only).
+
+#if DETWS_ENABLE_WEBSOCKET
+    WsConnectHandler ws_connect; ///< Fired on upgrade success.
+    WsMessageHandler ws_message; ///< Fired on each data frame.
+    WsCloseHandler   ws_close;   ///< Fired on close.
+#endif
+
+#if DETWS_ENABLE_SSE
+    SseConnectHandler sse_connect; ///< Fired when client subscribes.
+#endif
+
+#if DETWS_ENABLE_AUTH
+    bool auth_required;            ///< True when this route requires Basic Auth.
+    char auth_realm[MAX_AUTH_LEN]; ///< WWW-Authenticate realm string.
+    char auth_user[MAX_AUTH_LEN];  ///< Required username.
+    char auth_pass[MAX_AUTH_LEN];  ///< Required password.
+#endif
+
+    bool is_active;   ///< `false` for unused table slots.
+    bool is_wildcard; ///< `true` when path ends with `*`.
 };
 
 // ---------------------------------------------------------------------------
@@ -131,6 +230,7 @@ class DetWebServer
     Route _routes[MAX_ROUTES]; ///< Flat routing table; searched linearly.
     uint8_t _route_count;      ///< Number of active entries in _routes.
 
+    uint16_t _port;             ///< TCP port passed to begin(); 0 before first begin().
     Handler _not_found_handler; ///< Called when no route matches; may be null.
     bool _cors_enabled;         ///< True after a non-empty set_cors() call.
 
@@ -139,7 +239,7 @@ class DetWebServer
      *
      * Built once by set_cors() to avoid repeated snprintf at dispatch time.
      */
-    char _cors_header_buf[192];
+    char _cors_header_buf[CORS_HDR_BUF_SIZE];
 
     /**
      * @brief Evaluate whether a route pattern matches a request path.
@@ -154,6 +254,11 @@ class DetWebServer
      */
     static bool path_matches(const char *route, bool is_wildcard, const char *req_path);
 
+#if DETWS_ENABLE_AUTH
+    static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
+    void send_unauth(uint8_t slot_id, const char *realm);
+#endif
+
     /**
      * @brief Look up and invoke the first matching route for the given slot.
      *
@@ -166,6 +271,33 @@ class DetWebServer
     void match_and_execute(uint8_t slot_id);
 
   public:
+    /**
+     * @brief Bytes of contiguous heap that begin() will allocate.
+     *
+     * The event queue is the library's only dynamic allocation.  Compare
+     * this value against heap_caps_get_largest_free_block(MALLOC_CAP_8BIT)
+     * to verify a suitable block exists before calling begin().
+     *
+     * @code
+     *   if (!DetWebServer::heap_available()) {
+     *       Serial.printf("need %u contiguous bytes, largest block is %u\n",
+     *                     DetWebServer::heap_needed(),
+     *                     heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+     *       return;
+     *   }
+     *   server.begin(80);
+     * @endcode
+     */
+    static size_t heap_needed();
+
+    /**
+     * @brief True if the largest contiguous free heap block >= heap_needed().
+     *
+     * A false return means begin() will fail; check heap fragmentation or
+     * reduce EVT_QUEUE_DEPTH.
+     */
+    static bool heap_available();
+
     /**
      * @brief Construct a DetWebServer with an empty routing table.
      *
@@ -192,9 +324,26 @@ class DetWebServer
      * @brief Gracefully stop the server.
      *
      * Aborts all active connections, closes the listener, frees the event
-     * queue, and resets all HTTP parser slots.  Call begin() to restart.
+     * queue, and resets all HTTP parser slots.  The WiFi and TCP/IP stack
+     * remain active.  Call begin() or restart() to bring the server back up.
      */
     void stop();
+
+    /**
+     * @brief Hard-reset all connections and reinitialise the server on the
+     *        same port that was passed to begin().
+     *
+     * Equivalent to stop() followed by begin() with the original port and an
+     * optional new runtime config.  The WiFi and TCP/IP stack are not touched.
+     * Returns the same values as begin(): positive on success, negative whose
+     * absolute value is the heap bytes needed on failure.
+     *
+     * Calling restart() before begin() has no effect and returns -1.
+     *
+     * @param cfg Optional new runtime configuration.  Pass nullptr to reuse
+     *            the compile-time default (CONN_TIMEOUT_MS).
+     */
+    int32_t restart(const WebServerConfig *cfg = nullptr);
 
     /**
      * @brief Register a route handler.
@@ -211,6 +360,43 @@ class DetWebServer
      * @note Registering more than MAX_ROUTES routes silently drops extras.
      */
     void on(const char *path, HttpMethod method, Handler callback);
+
+#if DETWS_ENABLE_AUTH
+    /**
+     * @brief Register a route handler protected by HTTP Basic Authentication.
+     *
+     * If the request does not include valid credentials, the library sends
+     * `401 Unauthorized` with a `WWW-Authenticate: Basic realm="<realm>"`
+     * header automatically; the callback is not invoked.
+     *
+     * @param path     URL path pattern.
+     * @param method   HTTP method.
+     * @param callback Handler invoked only on successful authentication.
+     * @param realm    WWW-Authenticate realm displayed by the browser.
+     * @param user     Required username.
+     * @param pass     Required password.
+     */
+    void on(const char *path, HttpMethod method, Handler callback,
+            const char *realm, const char *user, const char *pass);
+#endif // DETWS_ENABLE_AUTH
+
+#if DETWS_ENABLE_FILE_SERVING
+    /**
+     * @brief Serve a file from any Arduino-compatible filesystem.
+     *
+     * Opens @p fs_path on @p file_sys, sends HTTP 200 with the appropriate
+     * headers (Content-Type, Content-Length), and streams the file body in
+     * FILE_CHUNK_SIZE chunks via tcp_write().  Sends 404 if the file cannot
+     * be opened.
+     *
+     * @param slot_id      Connection slot index.
+     * @param file_sys     Filesystem reference (e.g. SPIFFS, LittleFS).
+     * @param fs_path      Path to the file on the filesystem.
+     * @param content_type MIME type string, e.g. "text/html".
+     */
+    void serve_file(uint8_t slot_id, fs::FS &file_sys,
+                    const char *fs_path, const char *content_type);
+#endif // DETWS_ENABLE_FILE_SERVING
 
     /**
      * @brief Register a fallback handler for unmatched requests.
@@ -278,6 +464,119 @@ class DetWebServer
      * @param code    HTTP status code.
      */
     void send_empty(uint8_t slot_id, int code);
+
+#if DETWS_ENABLE_DIAG
+    /**
+     * @brief Send the diagnostic JSON and close the connection.
+     *
+     * Responds with 200 application/json containing the compile-time feature
+     * flags and all capacity constants.  Only available when
+     * DETWS_ENABLE_DIAG is set to 1 — disable before deploying to production.
+     *
+     * @param slot_id Connection slot index.
+     */
+    void diag(uint8_t slot_id);
+#endif
+
+#if DETWS_ENABLE_WEBSOCKET
+    // -----------------------------------------------------------------------
+    // WebSocket API
+    // -----------------------------------------------------------------------
+
+    /**
+     * @brief Register a WebSocket upgrade route.
+     *
+     * When a GET request arrives for @p path with `Upgrade: websocket`, the
+     * library performs the RFC 6455 handshake automatically and fires
+     * @p on_connect.  Subsequent frames fire @p on_message.  Closing the
+     * connection fires @p on_close.
+     *
+     * Ping frames are answered with Pong automatically; no handler needed.
+     *
+     * @param path        URL path the client connects to, e.g. `"/ws"`.
+     * @param on_connect  Fired once when the handshake completes.  May be nullptr.
+     * @param on_message  Fired for each text or binary frame.  Must not be nullptr.
+     * @param on_close    Fired when the connection closes.  May be nullptr.
+     */
+    void on_ws(const char *path,
+               WsConnectHandler on_connect,
+               WsMessageHandler on_message,
+               WsCloseHandler   on_close);
+
+    /**
+     * @brief Send a text frame to a WebSocket client.
+     *
+     * @param ws_id    Index into ws_pool[] (from the WsConnectHandler or WsMessageHandler).
+     * @param text     Null-terminated UTF-8 string to send.
+     */
+    void ws_send_text(uint8_t ws_id, const char *text);
+
+    /**
+     * @brief Send a binary frame to a WebSocket client.
+     *
+     * @param ws_id    Index into ws_pool[].
+     * @param data     Payload bytes.
+     * @param len      Payload length in bytes; must be <= WS_FRAME_SIZE.
+     */
+    void ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t len);
+
+    /**
+     * @brief Initiate a graceful WebSocket close.
+     *
+     * Sends a Close frame with WS_CLOSE_NORMAL and marks the slot WS_CLOSED.
+     * The on_close handler fires on the next handle() call.
+     *
+     * @param ws_id  Index into ws_pool[].
+     */
+    void ws_disconnect(uint8_t ws_id);
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+    // -----------------------------------------------------------------------
+    // Server-Sent Events API
+    // -----------------------------------------------------------------------
+
+    /**
+     * @brief Register a Server-Sent Events endpoint.
+     *
+     * When a GET request arrives for @p path, the library sends the SSE
+     * headers and keeps the connection open.  @p on_connect fires so the
+     * handler can push an initial event with sse_send().
+     *
+     * @param path        URL path, e.g. `"/events"`.
+     * @param on_connect  Fired when a client subscribes.  May be nullptr.
+     */
+    void on_sse(const char *path, SseConnectHandler on_connect);
+
+    /**
+     * @brief Push an event to one SSE client.
+     *
+     * Formats and sends `event: ...\ndata: ...\nid: ...\n\n` to the client
+     * on @p sse_id.  Any field may be nullptr to omit it from the output.
+     * The data field is required; passing nullptr sends nothing.
+     *
+     * @param sse_id  Index into sse_pool[].
+     * @param data    Event data string (required).
+     * @param event   Optional event name (sets the `event:` field).
+     * @param id      Optional event ID (sets the `id:` field).
+     */
+    void sse_send(uint8_t sse_id, const char *data,
+                  const char *event = nullptr, const char *id = nullptr);
+
+    /**
+     * @brief Push an event to all connected SSE clients on a given path.
+     *
+     * Iterates sse_pool[] and calls sse_send() for every active client
+     * whose path matches @p path.
+     *
+     * @param path   SSE endpoint path, e.g. `"/events"`.
+     * @param data   Event data string.
+     * @param event  Optional event name.
+     * @param id     Optional event ID.
+     */
+    void sse_broadcast(const char *path, const char *data,
+                       const char *event = nullptr, const char *id = nullptr);
+#endif // DETWS_ENABLE_SSE
 };
 
 #endif

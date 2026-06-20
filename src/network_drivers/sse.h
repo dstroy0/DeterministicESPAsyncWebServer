@@ -1,0 +1,110 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file sse.h
+ * @brief Layer 6 (Presentation) -- Server-Sent Events connection pool.
+ *
+ * SSE (RFC 8895 / W3C EventSource) is a long-lived HTTP GET response with
+ * Content-Type: text/event-stream.  After the initial headers the connection
+ * stays open indefinitely; the server pushes newline-delimited event records
+ * at any time.
+ *
+ * **Event record format (RFC 8895 §9.2.6)**
+ * ```
+ * [event: <name>\n]
+ * [id: <id>\n]
+ * data: <payload>\n
+ * \n
+ * ```
+ *
+ * Each SseConn occupies one TCP slot from conn_pool[] for the lifetime of
+ * the subscription.  The total number of simultaneous SSE connections is
+ * capped at MAX_SSE_CONNS.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_SSE_H
+#define DETERMINISTICESPASYNCWEBSERVER_SSE_H
+
+#include "DetWebServerConfig.h"
+#include "transport.h"
+
+// ---------------------------------------------------------------------------
+// Per-connection SSE state
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief SSE connection state stored in sse_pool[].
+ *
+ * Allocated when the SSE handshake (200 + headers) is sent.  slot_id ties
+ * this entry back to conn_pool[] and the underlying TCP PCB.
+ */
+struct SseConn
+{
+    uint8_t sse_id;  ///< Index into sse_pool[] (set at init).
+    uint8_t slot_id; ///< Owning TCP slot in conn_pool[].
+    bool    active;  ///< True when this entry is in use.
+
+    /** Path this client subscribed to (for sse_broadcast() matching). */
+    char path[MAX_PATH_LEN];
+};
+
+/** @brief Pool of SSE connection state, one per MAX_SSE_CONNS. */
+extern SseConn sse_pool[MAX_SSE_CONNS];
+
+// ---------------------------------------------------------------------------
+// SSE pool API
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Initialise all SSE pool slots to inactive.
+ *
+ * Called once from DetWebServer::begin().
+ */
+void sse_init();
+
+/**
+ * @brief Allocate an SseConn and bind it to a TCP slot.
+ *
+ * @param slot_id  TCP slot that just received the SSE subscription request.
+ * @param path     URL path the client subscribed to (stored for broadcast).
+ * @return Pointer to the allocated SseConn, or nullptr if the pool is full.
+ */
+SseConn *sse_alloc(uint8_t slot_id, const char *path);
+
+/**
+ * @brief Find the SseConn for a given TCP slot, or nullptr.
+ *
+ * @param slot_id  TCP connection slot index.
+ */
+SseConn *sse_find(uint8_t slot_id);
+
+/**
+ * @brief Free the SseConn associated with a TCP slot.
+ *
+ * @param slot_id  TCP connection slot index.
+ */
+void sse_free(uint8_t slot_id);
+
+/**
+ * @brief Write one SSE event record to a client.
+ *
+ * Formats and sends `event: ...\nid: ...\ndata: ...\n\n`.  Any optional
+ * field may be nullptr to omit it.  data must not be nullptr.
+ *
+ * The caller must call tcp_output() on the underlying PCB afterwards if
+ * immediate delivery is needed.
+ *
+ * @param sse    SSE connection.
+ * @param data   Event data (required).
+ * @param event  Event name (optional).
+ * @param id     Event ID (optional).
+ * @return true on success, false if the TCP slot is not active.
+ */
+bool sse_write(SseConn *sse, const char *data,
+               const char *event, const char *id);
+
+#endif

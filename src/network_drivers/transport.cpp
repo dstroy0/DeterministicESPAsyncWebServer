@@ -46,17 +46,32 @@ static inline void enqueue(const TcpEvt &evt)
     xQueueSend(DeterministicAsyncTCP::queue, &evt, 0);
 }
 
+size_t DeterministicAsyncTCP::heap_needed()
+{
+#ifdef ARDUINO
+    return sizeof(StaticQueue_t) + EVT_QUEUE_DEPTH * sizeof(TcpEvt);
+#else
+    return EVT_QUEUE_DEPTH * sizeof(TcpEvt);
+#endif
+}
+
+bool DeterministicAsyncTCP::heap_available()
+{
+#ifdef ARDUINO
+    return heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) >= heap_needed();
+#else
+    return true;
+#endif
+}
+
 int32_t DeterministicAsyncTCP::init(uint16_t port, const WebServerConfig *cfg)
 {
     // Load runtime config (or fall back to compile-time default)
     conn_timeout_ms = cfg ? cfg->conn_timeout_ms : CONN_TIMEOUT_MS;
 
-    // Minimum heap required: 16-slot queue of TcpEvt records
-    static const int32_t QUEUE_RAM_NEEDED = (int32_t)(16 * sizeof(TcpEvt));
-
-    queue = xQueueCreate(16, sizeof(TcpEvt));
+    queue = xQueueCreate(EVT_QUEUE_DEPTH, sizeof(TcpEvt));
     if (queue == nullptr)
-        return -QUEUE_RAM_NEEDED;
+        return -(int32_t)heap_needed();
 
     for (int i = 0; i < MAX_CONNS; i++)
     {

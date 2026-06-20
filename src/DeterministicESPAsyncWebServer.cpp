@@ -35,6 +35,19 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
+#if DETWS_ENABLE_WEBSOCKET
+#include "network_drivers/sha1.h"
+#include "network_drivers/base64.h"
+#elif DETWS_ENABLE_AUTH
+#include "network_drivers/base64.h"
+#endif
+#include <string.h>
+#include <stdio.h>
+
+#if DETWS_ENABLE_WEBSOCKET
+// Magic GUID concatenated to the client key for the WS accept hash (RFC 6455 §4.2.2)
+static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+#endif
 
 /**
  * @brief Convert an HTTP status code to its standard reason phrase.
@@ -119,18 +132,36 @@ static HttpMethod parse_method(const char *m)
     return HTTP_GET;
 }
 
-DetWebServer::DetWebServer() : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false)
+size_t DetWebServer::heap_needed()    { return DeterministicAsyncTCP::heap_needed(); }
+bool   DetWebServer::heap_available() { return DeterministicAsyncTCP::heap_available(); }
+
+DetWebServer::DetWebServer() : _route_count(0), _port(0), _not_found_handler(nullptr), _cors_enabled(false)
 {
     for (int i = 0; i < MAX_ROUTES; i++)
-        _routes[i].is_active = false;
+        _routes[i] = {};  // zero all fields (auth_required, handlers, flags, etc.)
     _cors_header_buf[0] = '\0';
 }
 
 int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
 {
+    _port = port;
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
+#if DETWS_ENABLE_WEBSOCKET
+    ws_init();
+#endif
+#if DETWS_ENABLE_SSE
+    sse_init();
+#endif
     return DeterministicAsyncTCP::init(port, cfg);
+}
+
+int32_t DetWebServer::restart(const WebServerConfig *cfg)
+{
+    if (_port == 0)
+        return -1;
+    stop();
+    return begin(_port, cfg);
 }
 
 void DetWebServer::stop()
@@ -138,6 +169,12 @@ void DetWebServer::stop()
     DeterministicAsyncTCP::stop();
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
+#if DETWS_ENABLE_WEBSOCKET
+    ws_init();
+#endif
+#if DETWS_ENABLE_SSE
+    sse_init();
+#endif
 }
 
 /**
@@ -154,22 +191,75 @@ void DetWebServer::stop()
  * @param method   HTTP method that triggers this route.
  * @param callback Handler invoked with (slot_id, request).
  */
+static void fill_route_base(Route *r, const char *path)
+{
+    strncpy(r->path, path, MAX_PATH_LEN - 1);
+    r->path[MAX_PATH_LEN - 1] = '\0';
+    r->is_active   = true;
+    size_t len     = strlen(r->path);
+    r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
+}
+
 void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
 {
     if (_route_count >= MAX_ROUTES)
         return;
-
-    Route *r = &_routes[_route_count];
-    strncpy(r->path, path, MAX_PATH_LEN - 1);
-    r->path[MAX_PATH_LEN - 1] = '\0';
-    r->method = method;
+    Route *r    = &_routes[_route_count++];
+    fill_route_base(r, path);
+    r->type     = ROUTE_HTTP;
+    r->method   = method;
     r->callback = callback;
-    r->is_active = true;
-    // A trailing '*' means prefix match
-    size_t len = strlen(r->path);
-    r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
-    _route_count++;
 }
+
+#if DETWS_ENABLE_AUTH
+void DetWebServer::on(const char *path, HttpMethod method, Handler callback,
+                      const char *realm, const char *user, const char *pass)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r    = &_routes[_route_count++];
+    fill_route_base(r, path);
+    r->type          = ROUTE_HTTP;
+    r->method        = method;
+    r->callback      = callback;
+    r->auth_required = true;
+    strncpy(r->auth_realm, realm, MAX_AUTH_LEN - 1);
+    r->auth_realm[MAX_AUTH_LEN - 1] = '\0';
+    strncpy(r->auth_user, user, MAX_AUTH_LEN - 1);
+    r->auth_user[MAX_AUTH_LEN - 1] = '\0';
+    strncpy(r->auth_pass, pass, MAX_AUTH_LEN - 1);
+    r->auth_pass[MAX_AUTH_LEN - 1] = '\0';
+}
+#endif // DETWS_ENABLE_AUTH
+
+#if DETWS_ENABLE_WEBSOCKET
+void DetWebServer::on_ws(const char *path,
+                         WsConnectHandler on_connect,
+                         WsMessageHandler on_message,
+                         WsCloseHandler   on_close)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r       = &_routes[_route_count++];
+    fill_route_base(r, path);
+    r->type        = ROUTE_WS;
+    r->ws_connect  = on_connect;
+    r->ws_message  = on_message;
+    r->ws_close    = on_close;
+}
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+void DetWebServer::on_sse(const char *path, SseConnectHandler on_connect)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r       = &_routes[_route_count++];
+    fill_route_base(r, path);
+    r->type        = ROUTE_SSE;
+    r->sse_connect = on_connect;
+}
+#endif // DETWS_ENABLE_SSE
 
 void DetWebServer::on_not_found(Handler callback)
 {
@@ -197,7 +287,7 @@ void DetWebServer::set_cors(const char *origin)
         _cors_header_buf[0] = '\0';
         return;
     }
-    snprintf(_cors_header_buf, sizeof(_cors_header_buf),
+    snprintf(_cors_header_buf, CORS_HDR_BUF_SIZE,
              "Access-Control-Allow-Origin: %s\r\n"
              "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS\r\n"
              "Access-Control-Allow-Headers: Content-Type\r\n",
@@ -244,6 +334,49 @@ void DetWebServer::handle()
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)
     {
+#if DETWS_ENABLE_WEBSOCKET
+        // WebSocket slot — drain ring buffer and dispatch ready frames
+        WsConn *ws = ws_find(i);
+        if (ws)
+        {
+            ws_parse(ws);
+
+            if (ws->parse_state == WS_FRAME_READY)
+            {
+                for (uint8_t r = 0; r < _route_count; r++)
+                {
+                    if (_routes[r].type == ROUTE_WS && _routes[r].ws_message)
+                    {
+                        _routes[r].ws_message(ws->ws_id);
+                        break;
+                    }
+                }
+                ws_reset_frame(ws);
+            }
+            else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+            {
+                for (uint8_t r = 0; r < _route_count; r++)
+                {
+                    if (_routes[r].type == ROUTE_WS && _routes[r].ws_close)
+                    {
+                        _routes[r].ws_close(ws->ws_id);
+                        break;
+                    }
+                }
+                ws_free(i);
+                http_reset(i);
+            }
+            continue; // slot is owned by WS; skip HTTP dispatch
+        }
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+        // SSE slot — connection stays open, nothing to parse from client
+        if (sse_find(i))
+            continue;
+#endif // DETWS_ENABLE_SSE
+
+        // HTTP slot
         if (http_pool[i].parse_state == PARSE_COMPLETE)
         {
             match_and_execute(i);
@@ -265,53 +398,222 @@ void DetWebServer::handle()
     }
 }
 
+// ---------------------------------------------------------------------------
+// Diagnostic endpoint
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_DIAG
+void DetWebServer::diag(uint8_t slot_id)
+{
+    send(slot_id, 200, "application/json", DETWS_DIAG_JSON);
+}
+#endif
+
+// ---------------------------------------------------------------------------
+// WebSocket handshake helpers
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_WEBSOCKET
 /**
- * @brief Walk the route table and invoke the first matching handler.
+ * @brief Compute the Sec-WebSocket-Accept value for the HTTP 101 response.
  *
- * OPTIONS requests are intercepted before the route scan when CORS is enabled
- * so that preflight responses are returned without needing an explicit OPTIONS
- * route registered by the application.
- *
- * Route matching is first-match: insertion order determines priority.  An
- * exact route registered before a wildcard will therefore shadow the wildcard
- * for that specific path.
- *
- * @param slot_id Index into http_pool[] / conn_pool[].
+ * Concatenates the client key with the RFC 6455 magic GUID, SHA-1 hashes
+ * the result, and base64-encodes the 20-byte digest into @p out.
+ * @p out must be at least 29 bytes (28 base64 chars + null terminator).
  */
+static const size_t WS_MAX_KEY_LEN = 64;
+
+static bool ws_accept_key(const char *client_key, char *out)
+{
+    size_t key_len = strnlen(client_key, WS_MAX_KEY_LEN + 1);
+    if (key_len > WS_MAX_KEY_LEN)
+    {
+        out[0] = '\0';
+        return false;
+    }
+    size_t magic_len = sizeof(WS_MAGIC) - 1;
+    char concat[WS_MAX_KEY_LEN + sizeof(WS_MAGIC)];
+    memcpy(concat,           client_key, key_len);
+    memcpy(concat + key_len, WS_MAGIC,   magic_len);
+
+    uint8_t digest[SHA1_DIGEST_LEN];
+    sha1((const uint8_t *)concat, key_len + magic_len, digest);
+    base64_encode(digest, SHA1_DIGEST_LEN, out);
+    return true;
+}
+
+/**
+ * @brief Send the HTTP 101 Switching Protocols handshake and upgrade the slot.
+ *
+ * Does NOT close the TCP connection -- that is intentional.  The slot moves
+ * from HTTP parse ownership to WS frame parse ownership.
+ */
+static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req,
+                          WsConnectHandler on_connect)
+{
+    const char *client_key = http_get_header(req, "Sec-WebSocket-Key");
+    if (!client_key)
+        return false;
+
+    char accept[32];
+    if (!ws_accept_key(client_key, accept))
+        return false;
+
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+        return false;
+
+    char hdr[WS_HDR_BUF_SIZE];
+    int  hlen = snprintf(hdr, sizeof(hdr),
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: %s\r\n\r\n",
+        accept);
+
+    tcp_write(conn->pcb, hdr, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    tcp_output(conn->pcb);
+
+    // Reset HTTP parser but keep the TCP slot -- WS owns it now
+    http_reset(slot_id);
+
+    WsConn *ws = ws_alloc(slot_id);
+    if (!ws)
+    {
+        // No WS slot available -- abort the connection
+        tcp_arg(conn->pcb, nullptr);
+        conn->state = CONN_FREE;
+        conn->pcb   = nullptr;
+        return false;
+    }
+
+    if (on_connect)
+        on_connect(ws->ws_id);
+
+    return true;
+}
+#endif // DETWS_ENABLE_WEBSOCKET
+
+// ---------------------------------------------------------------------------
+// SSE upgrade helper
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_SSE
+/**
+ * @brief Send the HTTP 200 + SSE headers and promote the slot to SSE mode.
+ */
+static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req,
+                           SseConnectHandler on_connect)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+        return false;
+
+    static const char SSE_HDR[] =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/event-stream\r\n"
+        "Cache-Control: no-cache\r\n"
+        "Connection: keep-alive\r\n\r\n";
+
+    tcp_write(conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1),
+              TCP_WRITE_FLAG_COPY);
+    tcp_output(conn->pcb);
+
+    // Reset HTTP parser; SSE keeps the TCP slot open
+    const char *path = req->path;
+    http_reset(slot_id);
+
+    SseConn *sse = sse_alloc(slot_id, path);
+    if (!sse)
+    {
+        tcp_arg(conn->pcb, nullptr);
+        conn->state = CONN_FREE;
+        conn->pcb   = nullptr;
+        return false;
+    }
+
+    if (on_connect)
+        on_connect(sse->sse_id);
+
+    return true;
+}
+#endif // DETWS_ENABLE_SSE
+
+// ---------------------------------------------------------------------------
+// Route dispatch
+// ---------------------------------------------------------------------------
+
 void DetWebServer::match_and_execute(uint8_t slot_id)
 {
-    HttpReq *req = &http_pool[slot_id];
+    HttpReq   *req    = &http_pool[slot_id];
     HttpMethod method = parse_method(req->method);
 
-    // OPTIONS request: CORS preflight — respond immediately if CORS is enabled
+    // CORS preflight
     if (method == HTTP_OPTIONS && _cors_enabled)
     {
         send_empty(slot_id, 204);
         return;
     }
 
-    // RFC 7230 §3.3.1: reject Transfer-Encoding — chunked decoding is not supported
+    // RFC 7230 §3.3.1: reject Transfer-Encoding
     if (http_get_header(req, "Transfer-Encoding") != nullptr)
     {
         send(slot_id, 501, "text/plain", "Not Implemented");
         return;
     }
 
+#if DETWS_ENABLE_WEBSOCKET
+    const char *upgrade_hdr = http_get_header(req, "Upgrade");
+    bool is_ws_upgrade = (method == HTTP_GET)
+                      && upgrade_hdr
+                      && (strcasecmp(upgrade_hdr, "websocket") == 0);
+#endif
+
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
         if (!r->is_active)
             continue;
-        if (r->method != method)
-            continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
 
+#if DETWS_ENABLE_WEBSOCKET
+        if (r->type == ROUTE_WS)
+        {
+            if (!is_ws_upgrade)
+            {
+                send(slot_id, 400, "text/plain", "WebSocket upgrade required");
+                return;
+            }
+            if (!ws_do_upgrade(slot_id, req, r->ws_connect))
+                send(slot_id, 503, "text/plain", "Service Unavailable");
+            return;
+        }
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+        if (r->type == ROUTE_SSE)
+        {
+            if (!sse_do_upgrade(slot_id, req, r->sse_connect))
+                send(slot_id, 503, "text/plain", "Service Unavailable");
+            return;
+        }
+#endif // DETWS_ENABLE_SSE
+
+        // ROUTE_HTTP
+        if (r->method != method)
+            continue;
+#if DETWS_ENABLE_AUTH
+        if (r->auth_required && !check_basic_auth(slot_id, req, r))
+        {
+            send_unauth(slot_id, r->auth_realm);
+            return;
+        }
+#endif // DETWS_ENABLE_AUTH
         r->callback(slot_id, req);
         return;
     }
 
-    // No route matched
     if (_not_found_handler)
         _not_found_handler(slot_id, req);
     else
@@ -345,14 +647,15 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     int payload_len = (int)strlen(payload);
 
-    char header[512];
+    char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
                         "Content-Length: %d\r\n"
                         "%s"
                         "Connection: close\r\n\r\n",
-                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "");
+                        code, status_text(code), content_type, payload_len,
+                        _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     /*
@@ -392,7 +695,7 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         return;
     }
 
-    char header[512];
+    char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Length: 0\r\n"
@@ -413,3 +716,214 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
 
     http_reset(slot_id);
 }
+
+// ---------------------------------------------------------------------------
+// WebSocket public API
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_WEBSOCKET
+void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
+{
+    if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
+        return;
+    WsConn *ws = &ws_pool[ws_id];
+    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+        return;
+    uint16_t len = (uint16_t)strlen(text);
+    if (ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)text, len))
+    {
+        TcpConn *conn = &conn_pool[ws->slot_id];
+        if (conn->pcb)
+            tcp_output(conn->pcb);
+    }
+}
+
+void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t len)
+{
+    if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
+        return;
+    WsConn *ws = &ws_pool[ws_id];
+    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+        return;
+    if (ws_send_frame(ws, WS_OP_BINARY, data, len))
+    {
+        TcpConn *conn = &conn_pool[ws->slot_id];
+        if (conn->pcb)
+            tcp_output(conn->pcb);
+    }
+}
+
+void DetWebServer::ws_disconnect(uint8_t ws_id)
+{
+    if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
+        return;
+    WsConn *ws = &ws_pool[ws_id];
+    ws_close(ws, WS_CLOSE_NORMAL);
+    TcpConn *conn = &conn_pool[ws->slot_id];
+    if (conn->pcb)
+        tcp_output(conn->pcb);
+    // handle() detects WS_CLOSED next tick and fires ws_close callback
+}
+#endif // DETWS_ENABLE_WEBSOCKET
+
+// ---------------------------------------------------------------------------
+// Server-Sent Events public API
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_SSE
+void DetWebServer::sse_send(uint8_t sse_id, const char *data,
+                            const char *event, const char *id)
+{
+    if (sse_id >= MAX_SSE_CONNS || !sse_pool[sse_id].active)
+        return;
+    SseConn *sse = &sse_pool[sse_id];
+    if (sse_write(sse, data, event, id))
+    {
+        TcpConn *conn = &conn_pool[sse->slot_id];
+        if (conn->pcb)
+            tcp_output(conn->pcb);
+    }
+}
+
+void DetWebServer::sse_broadcast(const char *path, const char *data,
+                                 const char *event, const char *id)
+{
+    for (int i = 0; i < MAX_SSE_CONNS; i++)
+    {
+        if (!sse_pool[i].active)
+            continue;
+        if (strcmp(sse_pool[i].path, path) != 0)
+            continue;
+        SseConn *sse = &sse_pool[i];
+        if (sse_write(sse, data, event, id))
+        {
+            TcpConn *conn = &conn_pool[sse->slot_id];
+            if (conn->pcb)
+                tcp_output(conn->pcb);
+        }
+    }
+}
+#endif // DETWS_ENABLE_SSE
+
+// ---------------------------------------------------------------------------
+// Basic Auth helpers
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_AUTH
+void DetWebServer::send_unauth(uint8_t slot_id, const char *realm)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    static const char body[] = "Unauthorized";
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+        "HTTP/1.1 401 Unauthorized\r\n"
+        "WWW-Authenticate: Basic realm=\"%s\"\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %d\r\n"
+        "%s"
+        "Connection: close\r\n\r\n",
+        realm, (int)(sizeof(body) - 1),
+        _cors_enabled ? _cors_header_buf : "");
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb   = nullptr;
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
+    tcp_output(pcb);
+
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    http_reset(slot_id);
+}
+
+bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
+{
+    const char *auth_hdr = http_get_header(req, "Authorization");
+    if (!auth_hdr || strncmp(auth_hdr, "Basic ", 6) != 0)
+        return false;
+
+    uint8_t decoded[MAX_AUTH_LEN * 2 + 2];
+    size_t  n = base64_decode(auth_hdr + 6, decoded);
+    if (n == 0 || n >= sizeof(decoded))
+        return false;
+    decoded[n] = '\0';
+
+    const char *colon = (const char *)memchr(decoded, ':', n);
+    if (!colon)
+        return false;
+
+    size_t      ulen = (size_t)(colon - (const char *)decoded);
+    const char *pass = colon + 1;
+
+    return (ulen == strlen(r->auth_user))
+        && (memcmp(decoded, r->auth_user, ulen) == 0)
+        && (strcmp(pass, r->auth_pass) == 0);
+}
+#endif // DETWS_ENABLE_AUTH
+
+// ---------------------------------------------------------------------------
+// File serving
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_FILE_SERVING
+void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys,
+                              const char *fs_path, const char *content_type)
+{
+    fs::File f = file_sys.open(fs_path, "r");
+    if (!f)
+    {
+        send(slot_id, 404, "text/plain", "Not Found");
+        return;
+    }
+
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    {
+        f.close();
+        http_reset(slot_id);
+        return;
+    }
+
+    size_t file_size = f.size();
+
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: %s\r\n"
+                        "Content-Length: %d\r\n"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        content_type, (int)file_size,
+                        _cors_enabled ? _cors_header_buf : "");
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb   = nullptr;
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+
+    uint8_t chunk[FILE_CHUNK_SIZE];
+    size_t  n;
+    while ((n = f.read(chunk, sizeof(chunk))) > 0)
+        tcp_write(pcb, chunk, (u16_t)n, TCP_WRITE_FLAG_COPY);
+
+    tcp_output(pcb);
+
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    f.close();
+    http_reset(slot_id);
+}
+#endif // DETWS_ENABLE_FILE_SERVING
