@@ -5,11 +5,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`01d1e1a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01d1e1acbfc53b79de30074d6bc2bae6b4cb33ec))
 - update CHANGELOG.md [skip ci] ([`a4d0a84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d0a849a95bc369ee567199f833fb50e34bd7e9))
 
 
 ### Changes
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c214285`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c21428503d9f8f0e4e3acd035b2dc9fe598587ff))
+- patch ([`e689c81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e689c81d911c0be76c1e85c989d178aff3f2ecd1))
+- add support for Telnet and partially implement SSH; add port listener abstraction layer; add more hw crypto; update test suite to account for new functionality; reorganize network_drivers/, it has subfolders for all OSI layers, functionally grouped by layer; lint codebase; spellcheck codebase; move test results to test/TEST_REPORTS.md; create test/TEST_DOCUMENTATION.md and copy all test documentation to it;, link to test/TEST_DOCUMENTATION.md and test/TEST_REPORTS.md in the README.md; create RFC.md; move RFC info from README.md; remove RFC info from the README.md; link to RFC.md in README.md; ([`75ab65e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75ab65ef84321dbc824b25e1a4f240f5ad56f1f2))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c8c043c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c043c319e8c2967e3939d607aff6056e51eee9))
+
+
+### Documentation
+- docs ([`93c7ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ef88637ee6576bef7a6ba34a358881ff42a3))
 
 
 ## [1.2.0] - 2026-06-20
