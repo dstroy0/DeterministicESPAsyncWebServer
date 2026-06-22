@@ -4,7 +4,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+- fix concurrency issue in test-report ([`7e1b38c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e1b38c9e95a4594a1bc156efed63a09ee3732fe))
+
+
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`f306e1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f306e1ca909e9abd55db08632739509824d7a393))
 - update CHANGELOG.md [skip ci] ([`66e3d57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66e3d57ce55bf678e5665bfc0e674a9af9bb0ccf))
 - update CHANGELOG.md [skip ci] ([`484a46c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/484a46cfdda3148c6ade4ad02769b1132f9afb24))
 - update CHANGELOG.md [skip ci] ([`655130c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/655130cc105c49bc2c724d1ced92c84483d453a9))
