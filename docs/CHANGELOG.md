@@ -5,11 +5,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`a4d0a84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d0a849a95bc369ee567199f833fb50e34bd7e9))
+
+
+### Changes
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c8c043c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c043c319e8c2967e3939d607aff6056e51eee9))
+
+
+## [1.2.0] - 2026-06-20
+
+### CI / Build
 - update CHANGELOG.md [skip ci] ([`388646e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/388646e7d98a3d23f6e0f959ea03b87e2234bd4d))
 - update CHANGELOG.md [skip ci] ([`399b835`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/399b835a8378ae3d5c5079a2078ae9f2c152570a))
 
 
 ### Changes
+- add features; bump version ([`a0d5a67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0d5a67dbeaed2cfa832d8b7d7f9b80f0494dcc1))
 - implement websockets, sse, auth per-route, multipart form parsing, hw SHA-1 (mbedtls/sha1), user selectable features/configuration (e.g. ws, sse, etc.) via flag and compile-time constants. ([`d3c8ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3c8ec97acf3ec66bcbe103128e944fcde1ab2ed))
 - update version to 1.1.0, add author and maintainer info, and update description in library.properties ([`4da247c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da247cea4209809b1d939dd85318f7539192f77))
 
