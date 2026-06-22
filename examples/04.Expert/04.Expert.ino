@@ -2,29 +2,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file expert.ino
- * @brief Expert example demonstrating connection-pool inspection, request profiling, rate-limiting, and memory-safe
- * stack templating.
+ * @file 04.Expert.ino
+ * @brief Expert example: connection-pool inspection, request profiling,
+ *        rate-limiting, and memory-safe stack templating.
  *
  * Demonstrates:
  *   1. Direct low-level query of the Layer 4 connection pool (conn_pool[MAX_CONNS])
- *      to monitor TCP states, activity timestamps, and ring buffer fill-levels.
- *   2. Token Bucket Rate Limiting: zero-allocation, time-based threshold checks
+ *      to monitor TCP states, activity timestamps, and ring-buffer fill levels.
+ *   2. Token-bucket rate limiting: zero-allocation, time-based threshold checks
  *      returning "429 Too Many Requests".
- *   3. Execution Profiling: measuring route execution times in microseconds.
- *   4. Dynamic Stack-Allocated Response Templating: generating format-sensitive
- *      error pages (JSON vs. Plaintext) in the 404 handler based on request headers.
- *   5. Real-time stack watermarking (uxTaskGetStackHighWaterMark) to audit stack headroom.
+ *   3. Execution profiling: measuring route handler times in microseconds.
+ *   4. Dynamic stack-allocated response templating: JSON vs. plaintext error
+ *      pages in the 404 handler based on the Accept header.
+ *   5. Real-time stack watermarking (uxTaskGetStackHighWaterMark) to audit headroom.
  *
  * To run this example:
  *   - Configure SSID/PASSWORD, and upload to an ESP32.
- *   - Trigger high-frequency requests to see the rate limiter (429 status) in action.
- *   - Monitor connection state diagnostics printed on the Serial interface.
+ *   - Trigger high-frequency requests to see the rate limiter (429) in action.
+ *   - Watch the connection-pool diagnostics printed on Serial every 5 s.
  */
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/transport/transport.h" // Needed to access conn_pool and ConnState
+#include "network_drivers/transport/transport.h" // access conn_pool and ConnState
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
@@ -32,19 +32,18 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Uptime tracker and execution counters
 static unsigned long total_routed_requests = 0;
 static unsigned long total_rate_limited = 0;
 
-// --- Token Bucket Rate Limiter State ---
-static float bucket_tokens = 5.0f; // Max burst size
+// --- Token-bucket rate limiter state ---
+static float bucket_tokens = 5.0f; // current tokens (starts full)
 static const float bucket_capacity = 5.0f;
-static const float refill_rate_per_sec = 2.0f; // Tokens added per second
+static const float refill_rate_per_sec = 2.0f;
 static unsigned long last_refill_time_ms = 0;
 
 /**
- * @brief Zero-heap Token Bucket Rate Limiter
- * Refills tokens based on time elapsed and consumes one token per request.
+ * @brief Zero-heap token-bucket rate limiter.
+ * Refills based on elapsed time and consumes one token per request.
  * @return true if allowed, false if rate-limited (bucket empty).
  */
 bool acquire_rate_limit_token()
@@ -53,14 +52,10 @@ bool acquire_rate_limit_token()
     unsigned long elapsed_ms = now - last_refill_time_ms;
     last_refill_time_ms = now;
 
-    // Refill bucket
     bucket_tokens += (elapsed_ms / 1000.0f) * refill_rate_per_sec;
     if (bucket_tokens > bucket_capacity)
-    {
         bucket_tokens = bucket_capacity;
-    }
 
-    // Check if token is available
     if (bucket_tokens >= 1.0f)
     {
         bucket_tokens -= 1.0f;
@@ -69,12 +64,9 @@ bool acquire_rate_limit_token()
     return false;
 }
 
-// --- Connection Pool Monitoring ---
+// --- Connection-pool monitoring ---
 
-/**
- * @brief Helper function to log current TCP connection pool statistics to Serial.
- * Iterates through the static Layer 4 pool to analyze resource usage.
- */
+/** @brief Log current TCP connection-pool statistics to Serial. */
 void print_connection_pool_stats()
 {
     Serial.println("\n--- Connection Pool Snapshot ---");
@@ -97,31 +89,26 @@ void print_connection_pool_stats()
 
         size_t rx_unread = 0;
         if (conn->state == CONN_ACTIVE)
-        {
-            // Calculate fill occupancy of the circular ring buffer
             rx_unread = (conn->rx_head >= conn->rx_tail) ? (conn->rx_head - conn->rx_tail)
                                                          : (RX_BUF_SIZE - (conn->rx_tail - conn->rx_head));
-        }
 
-        Serial.printf("Slot [%d]: State=%-7s | UnreadBytes=%4zu | LastActivity=%6lu ms ago | PCB_Addr=%p\n", i,
-                      state_str, rx_unread, (conn->state == CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0,
-                      conn->pcb);
+        Serial.printf("Slot [%d]: State=%-7s | UnreadBytes=%4zu | LastActivity=%6lu ms ago | PCB=%p\n", i, state_str,
+                      rx_unread, (conn->state == CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0, conn->pcb);
     }
     Serial.println("---------------------------------");
 }
 
-// --- Route Handlers with microsecond profiling ---
+// --- Route handlers with microsecond profiling ---
 
 /**
  * @brief GET /api/diagnostics
- * Returns detailed telemetry. Profiler measures how fast this handler runs.
+ * Returns detailed telemetry; the profiler measures how fast the handler runs.
  */
 void handle_diagnostics(uint8_t slot_id, HttpReq *req)
 {
     unsigned long start_us = micros();
     total_routed_requests++;
 
-    // Apply Rate Limiting first
     if (!acquire_rate_limit_token())
     {
         total_rate_limited++;
@@ -129,7 +116,6 @@ void handle_diagnostics(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // Audit local task stack headroom
     UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(NULL);
 
     char response_buf[384];
@@ -146,16 +132,13 @@ void handle_diagnostics(uint8_t slot_id, HttpReq *req)
              bucket_tokens);
 
     unsigned long duration_us = micros() - start_us;
-
-    // We send the reply first.
     server.send(slot_id, 200, "application/json", response_buf);
-
-    Serial.printf("[Profile] Route GET %s handled in %lu us\n", req->path, duration_us);
+    Serial.printf("[Profile] GET %s handled in %lu us\n", req->path, duration_us);
 }
 
 /**
  * @brief GET /api/compute
- * Demonstrates a heavier compute-bound route with timing checks.
+ * A heavier compute-bound route with timing checks.
  */
 void handle_compute(uint8_t slot_id, HttpReq *req)
 {
@@ -169,25 +152,21 @@ void handle_compute(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // Perform a mock deterministic heavy calculation (e.g. integer math)
     volatile uint32_t val = 12345;
     for (int i = 0; i < 500; i++)
-    {
         val = (val ^ 37821) * 31;
-    }
 
     char response_buf[64];
     snprintf(response_buf, sizeof(response_buf), "{\"result\":%u}", val);
-
     server.send(slot_id, 200, "application/json", response_buf);
 
     unsigned long duration_us = micros() - start_us;
-    Serial.printf("[Profile] Route GET %s (heavy compute) handled in %lu us\n", req->path, duration_us);
+    Serial.printf("[Profile] GET %s (heavy compute) handled in %lu us\n", req->path, duration_us);
 }
 
 /**
- * @brief Dynamic template fallback handler
- * Chooses response type based on 'Accept' or 'Content-Type' headers.
+ * @brief Dynamic-template 404 handler.
+ * Chooses JSON or plaintext based on the Accept header.
  */
 void handle_expert_not_found(uint8_t slot_id, HttpReq *req)
 {
@@ -206,8 +185,8 @@ void handle_expert_not_found(uint8_t slot_id, HttpReq *req)
     }
     else
     {
-        snprintf(error_buf, sizeof(error_buf),
-                 "--- Error 404 ---\nPath: %s\nUptime: %lu ms\nESP32 High-Reliability Node", req->path, millis());
+        snprintf(error_buf, sizeof(error_buf), "--- Error 404 ---\nPath: %s\nUptime: %lu ms\nESP32 node", req->path,
+                 millis());
         server.send(slot_id, 404, "text/plain", error_buf);
     }
 
@@ -228,27 +207,29 @@ void setup()
         Serial.print(".");
     }
     Serial.println("\nWiFi online!");
-    Serial.print("Local IP Address: ");
+    Serial.print("Local IP: ");
     Serial.println(WiFi.localIP());
 
     last_refill_time_ms = millis();
 
-    // Map optimized endpoints
     server.on("/api/diagnostics", HTTP_GET, handle_diagnostics);
     server.on("/api/compute", HTTP_GET, handle_compute);
     server.on_not_found(handle_expert_not_found);
 
-    if (server.begin(80))
+    int32_t result = server.begin(80);
+    if (result < 0)
     {
-        Serial.println("Telemetry server started on port 80");
+        Serial.printf("begin() failed (error %d)\n", result);
+        return;
     }
+    Serial.println("Telemetry server started on port 80");
 }
 
 void loop()
 {
     server.handle();
 
-    // Periodically display active pool diagnostics every 5 seconds
+    // Display active pool diagnostics every 5 seconds.
     static unsigned long last_snapshot = 0;
     if (millis() - last_snapshot >= 5000)
     {

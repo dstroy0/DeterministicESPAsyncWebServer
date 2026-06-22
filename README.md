@@ -184,7 +184,7 @@ void loop()
 }
 ```
 
-See `examples/ConfigurationExample/ConfigurationExample.ino` for a full reference of every configurable flag and constant.
+See `examples/02.Configuration/02.Configuration.ino` for a full reference of every configurable flag and constant.
 
 ## API Reference
 

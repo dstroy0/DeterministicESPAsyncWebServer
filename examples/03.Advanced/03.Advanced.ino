@@ -2,28 +2,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file advanced.ino
- * @brief Advanced example demonstrating RESTful CRUD APIs, header verification, and zero-allocation JSON parsing.
+ * @file 03.Advanced.ino
+ * @brief Advanced example: RESTful CRUD APIs, header verification, and
+ *        zero-allocation JSON parsing.
  *
  * This example showcases:
- *   1. RESTful CRUD endpoints (GET, POST, PATCH, DELETE) for a mock sensor database.
+ *   1. RESTful CRUD endpoints (GET, POST, PATCH, DELETE) for a mock sensor DB.
  *   2. Strict HTTP request validation:
- *      - Authorization headers (bearer token) verified before modifications.
- *      - Content-Type header checked for incoming POST/PATCH requests.
- *   3. Extraction of wildcard ID parameters from routes (e.g., /api/sensors/2).
+ *      - Authorization (bearer token) verified before modifications.
+ *      - Content-Type checked for incoming POST/PATCH requests.
+ *   3. Extraction of wildcard ID parameters from routes (e.g. /api/sensors/2).
  *   4. Zero-heap manual JSON scanning for incoming payloads.
- *   5. Response diversity using different HTTP status codes:
- *      - 200 OK
- *      - 201 Created
- *      - 204 No Content
- *      - 400 Bad Request
- *      - 401 Unauthorized
- *      - 404 Not Found
- *   6. Query string filtering based on parameter values.
+ *   5. Response diversity: 200, 201, 204, 400, 401, 404, 409.
+ *   6. Query-string filtering based on parameter values.
  *
  * To run this example:
  *   - Configure SSID/PASSWORD, and upload to an ESP32.
- *   - Use a REST client (like Postman or curl) to interact with /api/sensors.
+ *   - Use a REST client (Postman or curl) to interact with /api/sensors.
  */
 
 #include "DeterministicESPAsyncWebServer.h"
@@ -35,10 +30,10 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Security token required for write/delete actions
+// Security token required for write/delete actions.
 static const char *EXPECTED_TOKEN = "Bearer secret_admin_token";
 
-// Zero-allocation static "database" model
+// Zero-allocation static "database" model.
 struct SensorDevice
 {
     int id;
@@ -58,27 +53,16 @@ static SensorDevice sensor_db[MAX_SENSORS] = {
 
 // --- Helper Functions ---
 
-/**
- * @brief Checks if a request has a valid Authorization header.
- * @return true if authenticated, false otherwise.
- */
+/** @brief Checks if a request carries the expected Authorization header. */
 bool is_authorized(const HttpReq *req)
 {
     const char *auth_hdr = http_get_header(req, "Authorization");
-    if (auth_hdr && strcmp(auth_hdr, EXPECTED_TOKEN) == 0)
-    {
-        return true;
-    }
-    return false;
+    return (auth_hdr && strcmp(auth_hdr, EXPECTED_TOKEN) == 0);
 }
 
-/**
- * @brief Custom helper to scan float values out of a simple JSON body.
- * Works without heap allocation by scanning the buffer.
- */
+/** @brief Scan a float value out of a simple JSON body (no heap). */
 bool json_get_float(const char *json, const char *key, float &out_val)
 {
-    // Search for key pattern, e.g., "temp":
     char key_pattern[32];
     snprintf(key_pattern, sizeof(key_pattern), "\"%s\":", key);
 
@@ -86,10 +70,7 @@ bool json_get_float(const char *json, const char *key, float &out_val)
     if (!ptr)
         return false;
 
-    // Move pointer past key
     ptr += strlen(key_pattern);
-
-    // Skip spaces
     while (*ptr == ' ' || *ptr == '\t')
         ptr++;
 
@@ -97,9 +78,7 @@ bool json_get_float(const char *json, const char *key, float &out_val)
     return true;
 }
 
-/**
- * @brief Custom helper to scan string values out of a simple JSON body.
- */
+/** @brief Scan a string value out of a simple JSON body (no heap). */
 bool json_get_string(const char *json, const char *key, char *out_buf, size_t max_len)
 {
     char key_pattern[32];
@@ -110,23 +89,17 @@ bool json_get_string(const char *json, const char *key, char *out_buf, size_t ma
         return false;
 
     ptr += strlen(key_pattern);
-
-    // Skip spaces or quotes
     while (*ptr == ' ' || *ptr == '\t' || *ptr == '"')
         ptr++;
 
     size_t i = 0;
     while (*ptr && *ptr != '"' && *ptr != ',' && *ptr != '}' && i < (max_len - 1))
-    {
         out_buf[i++] = *ptr++;
-    }
     out_buf[i] = '\0';
     return true;
 }
 
-/**
- * @brief Custom helper to scan boolean values out of a simple JSON body.
- */
+/** @brief Scan a boolean value out of a simple JSON body (no heap). */
 bool json_get_bool(const char *json, const char *key, bool &out_val)
 {
     char key_pattern[32];
@@ -145,7 +118,7 @@ bool json_get_bool(const char *json, const char *key, bool &out_val)
         out_val = true;
         return true;
     }
-    else if (strncmp(ptr, "false", 5) == 0)
+    if (strncmp(ptr, "false", 5) == 0)
     {
         out_val = false;
         return true;
@@ -157,7 +130,7 @@ bool json_get_bool(const char *json, const char *key, bool &out_val)
 
 /**
  * @brief GET /api/sensors
- * Serves list of sensors. Supports query filter: ?active=1 or ?active=0
+ * Serves the list of sensors. Supports query filter: ?active=1 or ?active=0
  */
 void handle_get_sensors(uint8_t slot_id, HttpReq *req)
 {
@@ -165,7 +138,6 @@ void handle_get_sensors(uint8_t slot_id, HttpReq *req)
     bool filter_by_active = (active_filter != nullptr);
     bool active_target_val = (filter_by_active && strcmp(active_filter, "1") == 0);
 
-    // Build the JSON list response. We construct this incrementally on stack.
     char response_buf[512];
     int len = snprintf(response_buf, sizeof(response_buf), "[");
 
@@ -178,9 +150,7 @@ void handle_get_sensors(uint8_t slot_id, HttpReq *req)
             continue;
 
         if (!first)
-        {
             len += snprintf(response_buf + len, sizeof(response_buf) - len, ",");
-        }
         first = false;
 
         len += snprintf(response_buf + len, sizeof(response_buf) - len,
@@ -194,11 +164,10 @@ void handle_get_sensors(uint8_t slot_id, HttpReq *req)
 
 /**
  * @brief GET /api/sensors/* (wildcard match)
- * Extracts sensor ID from the path prefix /api/sensors/
+ * Extracts the sensor ID from the path prefix /api/sensors/ (length 13).
  */
 void handle_get_sensor_by_id(uint8_t slot_id, HttpReq *req)
 {
-    // Length of "/api/sensors/" is 13
     if (strlen(req->path) <= 13)
     {
         server.send(slot_id, 400, "text/plain", "Missing sensor ID");
@@ -221,18 +190,16 @@ void handle_get_sensor_by_id(uint8_t slot_id, HttpReq *req)
 
 /**
  * @brief POST /api/sensors
- * Creates a new sensor. Requires authentication and JSON payload.
+ * Creates a new sensor. Requires authentication and a JSON payload.
  */
 void handle_create_sensor(uint8_t slot_id, HttpReq *req)
 {
-    // 1. Verify Authorization
     if (!is_authorized(req))
     {
         server.send(slot_id, 401, "text/plain", "401 Unauthorized: Invalid token");
         return;
     }
 
-    // 2. Verify Content-Type
     const char *content_type = http_get_header(req, "Content-Type");
     if (!content_type || strstr(content_type, "application/json") == nullptr)
     {
@@ -240,7 +207,6 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // Find an empty slot
     int empty_slot = -1;
     for (int i = 0; i < MAX_SENSORS; i++)
     {
@@ -257,7 +223,6 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // 3. Extract JSON keys
     const char *body = (const char *)req->body;
     char name[16] = "";
     float temp = 0.0;
@@ -270,7 +235,6 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // Save item
     sensor_db[empty_slot].id = empty_slot;
     strncpy(sensor_db[empty_slot].name, name, sizeof(sensor_db[empty_slot].name) - 1);
     sensor_db[empty_slot].temperature = temp;
@@ -286,7 +250,7 @@ void handle_create_sensor(uint8_t slot_id, HttpReq *req)
 
 /**
  * @brief PATCH /api/sensors/*
- * Partially updates a sensor's temperature or activity state. Requires authentication.
+ * Partially updates a sensor's temperature or activity. Requires auth.
  */
 void handle_patch_sensor(uint8_t slot_id, HttpReq *req)
 {
@@ -314,13 +278,9 @@ void handle_patch_sensor(uint8_t slot_id, HttpReq *req)
     bool new_active;
 
     if (json_get_float(body, "temp", new_temp))
-    {
         sensor_db[id].temperature = new_temp;
-    }
     if (json_get_bool(body, "active", new_active))
-    {
         sensor_db[id].active = new_active;
-    }
 
     char response_buf[192];
     snprintf(response_buf, sizeof(response_buf), "{\"id\":%d,\"name\":\"%s\",\"temp\":%.1f,\"active\":%s}",
@@ -331,7 +291,7 @@ void handle_patch_sensor(uint8_t slot_id, HttpReq *req)
 
 /**
  * @brief DELETE /api/sensors/*
- * Removes a sensor from the database. Requires authentication.
+ * Removes a sensor from the database. Requires auth.
  */
 void handle_delete_sensor(uint8_t slot_id, HttpReq *req)
 {
@@ -354,11 +314,8 @@ void handle_delete_sensor(uint8_t slot_id, HttpReq *req)
         return;
     }
 
-    // Free slot in database
     sensor_db[id].in_use = false;
-
-    // 204 status requires no response body
-    server.send_empty(slot_id, 204);
+    server.send_empty(slot_id, 204); // 204 No Content carries no body
 }
 
 void setup()
@@ -379,18 +336,20 @@ void setup()
 
     server.set_cors("*");
 
-    // Map REST routes using methods
     server.on("/api/sensors", HTTP_GET, handle_get_sensors);
     server.on("/api/sensors/*", HTTP_GET, handle_get_sensor_by_id);
     server.on("/api/sensors", HTTP_POST, handle_create_sensor);
     server.on("/api/sensors/*", HTTP_PATCH, handle_patch_sensor);
     server.on("/api/sensors/*", HTTP_DELETE, handle_delete_sensor);
 
-    if (server.begin(80))
+    int32_t result = server.begin(80);
+    if (result < 0)
     {
-        Serial.println("REST API Server running on port 80");
-        Serial.println("Admin token expected in headers: 'Authorization: Bearer secret_admin_token'");
+        Serial.printf("begin() failed (error %d)\n", result);
+        return;
     }
+    Serial.println("REST API server running on port 80");
+    Serial.println("Admin token: 'Authorization: Bearer secret_admin_token'");
 }
 
 void loop()
