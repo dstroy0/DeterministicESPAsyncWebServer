@@ -17,9 +17,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -36,7 +38,17 @@ jobs:
           if ! git diff --quiet -- docs/TEST_REPORT.md; then
             git add docs/TEST_REPORT.md
             git commit -m "ci: update test report [skip ci]"
-            git push
+            for i in {1..5}; do
+              echo "Attempt $i to push changes..."
+              if git pull --rebase origin main && git push; then
+                echo "Successfully pushed!"
+                exit 0
+              fi
+              echo "Push failed, retrying in 5 seconds..."
+              sleep 5
+            done
+            echo "Failed to push after 5 attempts."
+            exit 1
           else
             echo "Test report unchanged."
           fi
