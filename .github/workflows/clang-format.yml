@@ -14,6 +14,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
+    - name: Install Clang-Format 22
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 22
+        sudo apt-get install -y clang-format-22
+        sudo ln -sf /usr/bin/clang-format-22 /usr/bin/clang-format
+
     - name: Run Clang-Format Lint
       run: |
         # 1. Register a GitHub Problem Matcher for native LLVM diagnostic strings
