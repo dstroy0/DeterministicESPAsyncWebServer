@@ -4,6 +4,23 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 
 **[API Documentation](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
+## Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Zero Heap Allocation](#zero-heap-allocation)
+- [Feature Flags](#feature-flags)
+- [Configuration](#configuration)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+- [RFC Compliance](#rfc-compliance)
+- [SSH Support](#ssh-support)
+- [Full Memory Table](#full-memory-table-all-features-default-config)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Installation](#installation)
+- [License](#license)
+
 ## Features
 
 - **Zero heap allocation - ever** - the event queue, connection pool, HTTP pool, WebSocket pool, and SSE pool are all statically sized in BSS; the entire memory footprint is fixed at link time
