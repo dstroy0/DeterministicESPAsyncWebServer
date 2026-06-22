@@ -31,10 +31,21 @@ serve_static	KEYWORD2
 mime_type	KEYWORD2
 listen	KEYWORD2
 restart	KEYWORD2
+on_request_log	KEYWORD2
+stats	KEYWORD2
 http_get_header	KEYWORD2
 http_get_query	KEYWORD2
 init_wifi_physical	KEYWORD2
 wifi_ready	KEYWORD2
+detws_mdns_begin	KEYWORD2
+detws_ntp_begin	KEYWORD2
+detws_ntp_synced	KEYWORD2
+detws_ntp_epoch	KEYWORD2
+detws_ntp_http_date	KEYWORD2
+detws_ota_begin	KEYWORD2
+detws_provisioning_load	KEYWORD2
+detws_provisioning_begin	KEYWORD2
+detws_provisioning_clear	KEYWORD2
 
 ##############################
 # Enumerators (LITERAL1)

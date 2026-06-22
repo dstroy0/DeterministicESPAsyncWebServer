@@ -27,7 +27,7 @@ socket.
 - **DH-group14-SHA256 key exchange** (RFC 3526 + RFC 8268) - 2048-bit MODP, g=2, full exchange-hash + host-key signature
 - **AES-256-CTR** encryption (RFC 4344) - hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
 - **HMAC-SHA2-256** integrity (RFC 6668) - MAC-verify-before-use invariant
-- **RSA-SHA2-256** host key (RFC 8332) - PKCS#1 v1.5 signing (real on ESP32; native build is a test stub, see below)
+- **RSA-SHA2-256** host key (RFC 8332) - PKCS#1 v1.5 signing; real on both platforms (ESP32 mbedTLS, native full-width modexp), HW-accelerated on ESP32
 - **Publickey authentication** (RFC 4252 §7) - client RSA-SHA2-256 signatures are verified for real on both platforms; an application callback authorizes keys per user
 - **Password authentication** (RFC 4252 §8) - credentials checked via an application callback; the password is wiped from the stack after every attempt. Compile out with `DETWS_SSH_ALLOW_PASSWORD=0` for publickey-only hardening
 - **Session channel** (RFC 4254) - `shell`/`exec`/`pty-req` accepted; inbound channel data surfaced to the app as a raw byte stream, with RFC 4254 §5.2 window flow control
@@ -43,23 +43,23 @@ socket.
 <details>
 <summary><b>Expand RFC / FIPS Compliance Table</b></summary>
 
-| Component                     | Standard                   | Status                                                                                                                                   |
-| ----------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| SHA-256                       | FIPS 180-4                 | Implemented (software both platforms; HW one-shot via mbedTLS on ESP32)                                                                  |
-| HMAC-SHA2-256                 | RFC 2104, RFC 6668         | Implemented; verify-before-use, constant-time MAC compare                                                                                |
-| AES-256-CTR                   | FIPS 197, RFC 4344         | Implemented (HW via mbedTLS on ESP32; software AES on native)                                                                            |
-| DH group14 (modexp)           | RFC 3526, RFC 8268         | Implemented (HW `mbedtls_mpi` on ESP32; software Montgomery on native)                                                                   |
-| DH public-value validation    | RFC 4253 §8                | Implemented (rejects `e`/`f` outside `1 < v < p-1`)                                                                                      |
-| Session key derivation        | RFC 4253 §7.2              | Implemented (six A–F keys from `K`, `H`, session_id)                                                                                     |
-| Binary packet protocol        | RFC 4253 §6                | Implemented - framing, ≥4-byte padding to 16-byte multiple, encrypt-then-MAC over `seq‖plaintext`, CTR length-peek with snapshot/restore |
-| RSA public-key blob           | RFC 4253 §6.6, RFC 8332 §3 | Implemented - blob type string is `ssh-rsa`                                                                                              |
-| RSA-SHA2-256 signing          | RFC 8332, RFC 8017 §8.2    | **ESP32: real** (`mbedtls_pk_sign`). **Native: test stub** (`d=1`), never compiled into firmware                                         |
-| RSA-SHA2-256 verification     | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** (small public exponent); validated against an openssl-generated KAT                                           |
-| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + algorithm negotiation (one choice per category)                                                          |
-| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8          | Implemented - H over `V_C,V_S,I_C,I_S,K_S,e,f,K`; keys activate on NEWKEYS                                                               |
-| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                                                                                         |
-| Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control                                                                 |
-| Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys                                                                |
+| Component                     | Standard                   | Status                                                                                                                                              |
+| ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SHA-256                       | FIPS 180-4                 | Implemented; HW-accelerated on ESP32 (mbedtls streaming + one-shot), software on native                                                             |
+| HMAC-SHA2-256                 | RFC 2104, RFC 6668         | Implemented; verify-before-use, constant-time MAC compare                                                                                           |
+| AES-256-CTR                   | FIPS 197, RFC 4344         | Implemented (HW via mbedTLS on ESP32; software AES on native)                                                                                       |
+| DH group14 (modexp)           | RFC 3526, RFC 8268         | Implemented (HW `mbedtls_mpi` on ESP32; software Montgomery on native)                                                                              |
+| DH public-value validation    | RFC 4253 §8                | Implemented (rejects `e`/`f` outside `1 < v < p-1`)                                                                                                 |
+| Session key derivation        | RFC 4253 §7.2              | Implemented (six A–F keys from `K`, `H`, session_id)                                                                                                |
+| Binary packet protocol        | RFC 4253 §6                | Implemented - framing, ≥4-byte padding to 16-byte multiple, encrypt-then-MAC over `seq‖plaintext`, CTR length-peek with snapshot/restore            |
+| RSA public-key blob           | RFC 4253 §6.6, RFC 8332 §3 | Implemented - blob type string is `ssh-rsa`                                                                                                         |
+| RSA-SHA2-256 signing          | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** - ESP32 `mbedtls_pk_sign`; native full-width `m^d mod n` (sign->verify round-trip tested). Software path not in firmware |
+| RSA-SHA2-256 verification     | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** (small public exponent); validated against an openssl-generated KAT                                                      |
+| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + algorithm negotiation (one choice per category)                                                                     |
+| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8          | Implemented - H over `V_C,V_S,I_C,I_S,K_S,e,f,K`; keys activate on NEWKEYS                                                                          |
+| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                                                                                                    |
+| Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control                                                                            |
+| Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys                                                                           |
 
 </details>
 

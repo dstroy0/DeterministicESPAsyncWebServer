@@ -3,20 +3,23 @@
 Outstanding work and known limitations, roughly highest-impact first. Items are
 grouped by area; each names the file(s) involved so the fix is easy to locate.
 
-> **Status (this cycle):** All high-priority security/correctness items, the
-> ESP32 build blocker, the SSH `UNIMPLEMENTED` reply, the housekeeping bugfixes,
-> and the DX feature set (`serve_static` + MIME + gzip, `redirect()`, named
-> `begin()` codes) are **done and tested** (495 native cases across all envs;
-> the `06.SSH` firmware links at RAM 21% / Flash 60%). Items marked `[x]` carry a
-> _(done)_ note. **Still open / deliberately deferred:**
+> **Status:** Security/correctness, the ESP32 build blocker, SSH
+> `UNIMPLEMENTED`, housekeeping, the DX feature set (`serve_static` + MIME + gzip,
+> `redirect()`, named `begin()` codes), the **HW-crypto performance** items
+> (streaming SHA-256 + AES-CTR whole-buffer, **verified on a DevKitV1**), and the
+> **optional services** (mDNS, OTA, WiFi provisioning/captive portal, SNTP, ETag,
+> runtime stats, access-log hook) are all **done** - host-tested where possible
+> and ESP32-firmware-linked. Items marked `[x]` carry a _(done)_ note.
 >
-> - **ESP32-only subsystems** (can't be host-verified here): mDNS, OTA, WiFi
->   provisioning/captive portal, SNTP - all sizeable new modules.
-> - **Performance** (HW SHA-256 streaming, AES-CTR whole-buffer) - ESP32 runtime
->   work; needs a device to measure.
-> - **Operator features**: runtime stats endpoint, per-request log hook.
-> - **ETag/conditional GET** - blocked on file-mtime in the test mock (see below).
-> - SSH multiplexing / per-direction NEWKEYS / KDF-extension - YAGNI-deferred.
+> Optional services use only the base SDK + lwIP + mbedTLS (no add-on Arduino
+> libraries): mDNS via the ESP-IDF `mdns` component, the captive-portal DNS via a
+> raw lwIP UDP socket. Each is gated by a `DETWS_ENABLE_*` flag (default off).
+>
+> **Still deferred (YAGNI / large):** TLS (HTTPS) server; SSH multiplexing,
+> per-direction NEWKEYS, and the KDF `K1‖K2…` extension (no current use case);
+> moving `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification
+> of the WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal
+> join) needs WiFi credentials / a phone - only compile+link verified here.
 
 ## Build / toolchain
 
@@ -175,7 +178,9 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       terminator, or the SSH channel. A real fix is large (mbedTLS TLS server).
 
 - [ ] **`Date` response header not emitted.** Acceptable for a clock-less device
-      (RFC 7231 §7.1.1.2); revisit if an RTC/NTP time source is available.
+      (RFC 7231 §7.1.1.2). A time source now exists (`DETWS_ENABLE_NTP` +
+      `detws_ntp_http_date()`); auto-injecting `Date` into every response is left
+      off the hot path - apps that want it can add the header from a handler.
 
 - [ ] **Recv scratch on the stack.** `ssh_pkt_recv` uses a
       `SSH_PKT_BUF_SIZE + 32` (~2 KB) stack buffer; size the ESP32 SSH task stack
@@ -194,23 +199,29 @@ provide. Each should follow the existing feature-flag convention - a
 no code, RAM, or flash when disabled (`DetWebServerConfig.h`). Roughly ordered
 by how often a deployed device needs it.
 
-- [ ] **mDNS / DNS-SD advertisement (`DETWS_ENABLE_MDNS`).** Reach the device at
-      `name.local` instead of a DHCP IP, and advertise `_http._tcp`. Thin wrapper
-      over ESP32 `ESPmDNS`; near-essential for headless LAN devices. Hooks in at
-      `begin()` after the IP is up.
+- [x] **mDNS / DNS-SD advertisement (`DETWS_ENABLE_MDNS`).** _(done)_
+      `detws_mdns_begin(hostname, port)` (`src/services/mdns_service.*`) makes the
+      device reachable at `<hostname>.local` and advertises `_http._tcp`. Uses the
+      **ESP-IDF `mdns` component directly** (not the `ESPmDNS` add-on) to keep the
+      dependency set to base-SDK + mbedTLS. Firmware links (`examples/08.Services`).
 
-- [ ] **OTA firmware update (`DETWS_ENABLE_OTA`).** Authenticated
-      `POST /update` streaming a firmware image into the ESP32 `Update` API
-      (rollback on bad image). Builds on the existing multipart parser and Basic
-      auth; the main work is streaming the body to `Update.write()` instead of
-      buffering into `BODY_BUF_SIZE`. Essential once a device ships and USB
-      reflashing is impractical.
+- [x] **OTA firmware update (`DETWS_ENABLE_OTA`).** _(done)_ Authenticated
+      streaming `POST /update` into the ESP32 `Update` API
+      (`src/services/ota_service.*`). The HTTP parser gained a `#if DETWS_ENABLE_OTA`
+      streaming-body hook (`http_parser_set_stream_hooks`) that feeds the image to
+      `Update.write()` in `BODY_BUF_SIZE` chunks instead of buffering it - so the
+      `BODY_BUF_SIZE`/413 cap is bypassed and multi-MB images never live in RAM.
+      The matching route handler replies + reboots. Parser hook native-tested
+      (`test_http_ota`, env `native_ota`) with **no regression** to the 80 parser
+      tests (fully gated); `examples/09.OTA` firmware links.
 
-- [ ] **WiFi provisioning / captive portal (`DETWS_ENABLE_PROVISIONING`).**
-      First-boot AP mode with a catch-all DNS responder and a credentials form,
-      persisting SSID/PSK to NVS - removes the hardcoded `SSID`/`PASSWORD` the
-      examples rely on. Needs a softAP path in the physical layer
-      (`physical.cpp`) plus a small DNS responder.
+- [x] **WiFi provisioning / captive portal (`DETWS_ENABLE_PROVISIONING`).** _(done)_
+      `src/services/provisioning_service.*`: first-boot softAP + a catch-all DNS
+      responder + a credentials form, persisting SSID/PSK to NVS
+      (`detws_provisioning_load`/`_begin`/`_clear`, `examples/10.Provisioning`).
+      The DNS responder is a **raw lwIP UDP socket** (no `DNSServer` add-on) -
+      callback-driven, so no per-loop polling. The form-field/URL-decode parser is
+      native-tested (`test_provisioning`, env `native_prov`); firmware links.
 
 - [x] **Pre-compressed static asset serving.** _(done)_ `serve_static()` serves
       `<path>.gz` with `Content-Encoding: gzip` when the client sends
@@ -219,18 +230,20 @@ by how often a deployed device needs it.
       present. Tested by `test_serve_static_gzip_when_accepted` /
       `test_serve_static_no_gzip_when_not_accepted`.
 
-- [ ] **Conditional GET / ETag (`DETWS_ENABLE_ETAG`).** Emit `ETag`/
-      `Last-Modified` for served files and answer `If-None-Match`/
-      `If-Modified-Since` with `304 Not Modified`. _(Deferred - a meaningful
-      validator needs the file mtime (`fs::File::getLastWrite()`), which the
-      native test mock cannot represent, so it can't be host-verified; a
-      size-only ETag is too weak to be worth it. Revisit if/when the mock grows
-      mtime support.)_
+- [x] **Conditional GET / ETag (`DETWS_ENABLE_ETAG`).** _(done)_ `serve_file()` /
+      `serve_static()` emit a strong `ETag` (`"<hexsize>-<hexmtime>"` from
+      `f.size()` + `f.getLastWrite()`) and answer a matching `If-None-Match` with
+      `304 Not Modified` (no body). The FS test mock gained `getLastWrite()` so it
+      is host-tested (`test_serve_static_etag_conditional_get`); ESP32 path
+      compile-verified against the real `fs::File`. (`Last-Modified`/
+      `If-Modified-Since` intentionally skipped - ETag alone is sufficient and
+      avoids HTTP-date parsing.)
 
-- [ ] **SNTP time sync (`DETWS_ENABLE_NTP`).** Optional SNTP client so the device
-      has wall-clock time. Unblocks the `Date` response header (see HTTP/core
-      item above), log timestamps, and future TLS certificate validity checks.
-      Thin wrapper over ESP-IDF `esp_sntp`.
+- [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ `detws_ntp_begin()`/
+      `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
+      `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/08.Services`
+      exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
+      header is left to the app via the helper - kept off the hot path.)
 
 (Deliberately omitted as not worth the footprint for this class of device:
 HTTP Digest auth, WebSocket permessage-deflate, per-request access logging.)
@@ -272,18 +285,18 @@ Newbie / developer experience:
 
 Operator / sysadmin:
 
-- [ ] **Runtime stats endpoint (`DETWS_ENABLE_STATS`).** The existing `DETWS_DIAG_JSON`
-      is _compile-time_ config only. Add a runtime counters block - uptime,
-      requests served, 4xx/5xx counts, active/peak connection-pool usage, min
-      free heap - exposed as JSON. The expert example inspects `conn_pool[]` by
-      hand; this makes the same data a first-class, monitorable endpoint.
+- [x] **Runtime stats endpoint (`DETWS_ENABLE_STATS`).** _(done)_ `server.stats(slot)`
+      emits a JSON snapshot - uptime, total requests, 2xx/4xx/5xx counts, active
+      connection-pool slots, and free heap. Counters are maintained centrally in
+      `note_response()` (the single funnel through which `send`/`send_empty`/
+      `redirect`/`serve_file` report each response). Tested by
+      `test_stats_endpoint_emits_json`.
 
-- [ ] **Per-request log callback hook.** `server.on_request_log(cb)` invoked once
-      per completed request with method/path/status/bytes, so an operator can
-      route access logs to Serial, syslog, or a file. Note: this is the _hook_
-      only (one function pointer, no in-library buffering/formatting) - distinct
-      from the built-in access-logging that was deliberately omitted above as too
-      heavy for this device class.
+- [x] **Per-request log callback hook.** _(done)_ `server.on_request_log(cb)`
+      (`RequestLogCb`) fires once per response with method/path/status/body-length,
+      via the same `note_response()` funnel. Pure hook - one function pointer, no
+      in-library buffering. Always compiled (no flag). Tested by
+      `test_request_log_hook_fires`.
 
 </details>
 

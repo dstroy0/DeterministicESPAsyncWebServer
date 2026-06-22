@@ -1285,14 +1285,44 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     if (content_encoding)
         snprintf(enc_line, sizeof(enc_line), "Content-Encoding: %s\r\n", content_encoding);
 
+#if DETWS_ENABLE_ETAG
+    // Strong validator from size + last-modified time. If the client's
+    // If-None-Match matches, the resource is unchanged -> 304 (no body).
+    char etag[40];
+    snprintf(etag, sizeof(etag), "\"%x-%lx\"", (unsigned)file_size, (unsigned long)f.getLastWrite());
+    const char *inm = http_get_header(&http_pool[slot_id], "If-None-Match");
+    if (inm && strcmp(inm, etag) == 0)
+    {
+        f.close();
+        struct tcp_pcb *p304 = conn->pcb;
+        tcp_arg(p304, nullptr);
+        conn->state = CONN_FREE;
+        conn->pcb = nullptr;
+        char h304[RESP_HDR_BUF_SIZE];
+        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%sConnection: close\r\n\r\n",
+                            etag, _cors_enabled ? _cors_header_buf : "");
+        tcp_write(p304, h304, (u16_t)n304, TCP_WRITE_FLAG_COPY);
+        tcp_output(p304);
+        if (tcp_close(p304) != ERR_OK)
+            tcp_abort(p304);
+        note_response(slot_id, 304, 0);
+        http_reset(slot_id);
+        return;
+    }
+    char etag_line[48];
+    snprintf(etag_line, sizeof(etag_line), "ETag: %s\r\n", etag);
+#else
+    const char *etag_line = "";
+#endif
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 200 OK\r\n"
                         "Content-Type: %s\r\n"
                         "Content-Length: %d\r\n"
-                        "%s%s"
+                        "%s%s%s"
                         "Connection: close\r\n\r\n",
-                        content_type, (int)file_size, enc_line, _cors_enabled ? _cors_header_buf : "");
+                        content_type, (int)file_size, enc_line, etag_line, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);

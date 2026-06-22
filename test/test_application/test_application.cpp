@@ -726,6 +726,47 @@ void test_serve_static_missing_is_404()
     TEST_ASSERT_NOT_NULL(strstr(out, "404"));
 }
 
+// A served file carries an ETag; a matching If-None-Match yields 304 (no body).
+void test_serve_static_etag_conditional_get()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1000);
+    g_server->serve_static("/", g_static_fs, "/www");
+
+    // First GET: 200 with an ETag header.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out1 = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out1, "HTTP/1.1 200 OK"));
+    const char *etp = strstr(out1, "ETag: ");
+    TEST_ASSERT_NOT_NULL(etp);
+    char etag[40];
+    etp += 6;
+    size_t i = 0;
+    while (etp[i] && etp[i] != '\r' && i < sizeof(etag) - 1)
+    {
+        etag[i] = etp[i];
+        i++;
+    }
+    etag[i] = '\0';
+
+    // Second GET with that ETag in If-None-Match: 304, no body.
+    char req[160];
+    snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: %s\r\n\r\n", etag);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out2 = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out2, "304 Not Modified"));
+    TEST_ASSERT_NOT_NULL(strstr(out2, etag));          // ETag echoed
+    TEST_ASSERT_NULL(strstr(out2, "<html>hi</html>")); // body suppressed
+}
+
 // ====================================================================
 // ACCESS-LOG HOOK + RUNTIME STATS
 // ====================================================================
@@ -846,6 +887,7 @@ int main()
     RUN_TEST(test_serve_static_no_gzip_when_not_accepted);
     RUN_TEST(test_serve_static_traversal_not_leaked);
     RUN_TEST(test_serve_static_missing_is_404);
+    RUN_TEST(test_serve_static_etag_conditional_get);
 
     RUN_TEST(test_request_log_hook_fires);
     RUN_TEST(test_stats_endpoint_emits_json);

@@ -349,6 +349,17 @@
 #endif
 
 /**
+ * @brief Conditional GET via ETag for served files.
+ *
+ * When set, serve_file()/serve_static() emit a strong `ETag` (derived from the
+ * file size + last-modified time) and answer a matching `If-None-Match` with
+ * `304 Not Modified`, saving bandwidth on repeat fetches of static assets.
+ */
+#ifndef DETWS_ENABLE_ETAG
+#define DETWS_ENABLE_ETAG 0
+#endif
+
+/**
  * @brief Expose a diagnostic JSON endpoint via server.diag().
  *
  * Disabled by default - enabling it exposes compile-time configuration

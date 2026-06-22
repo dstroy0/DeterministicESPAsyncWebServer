@@ -92,25 +92,54 @@ Every byte of memory the library uses is accounted for at compile time:
 
 The only post-`begin()` allocation that can occur is inside `fs::File` construction in `serve_file()`, which is an Arduino FS implementation detail outside the library's control.
 
-## Feature Flags
+## Feature Flags & Configuration
 
-Define these **before** including the library header. Any flag set to `0` strips the corresponding code and its includes from the build entirely.
+> [!IMPORTANT]
+> **Use Build Flags (`-D...`), Not Sketch `#define`s!**
+> 
+> Because PlatformIO (and standard Arduino IDE builds) compiles the library's source files (`.cpp`) independently from your sketch (`.ino` / `.cpp`), `#define` macros inside your sketch files **do not propagate** to the library's pre-compiled objects. 
+> 
+> Declaring configuration or feature macros like `#define DETWS_ENABLE_PROVISIONING 1` inside your `.ino` sketch file before the `#include` will result in configuration mismatches, linker errors (such as undefined symbols), or unstable behavior at runtime.
+> 
+> To enable/disable features or override configuration constants, you **must** pass them as compiler build flags. For example, in PlatformIO, define them inside `platformio.ini` under `build_flags`:
+> 
+> ```ini
+> [env:esp32dev]
+> platform = espressif32
+> board = esp32dev
+> framework = arduino
+> build_flags =
+>     -DDETWS_ENABLE_PROVISIONING=1
+>     -DDETWS_ENABLE_WEBSOCKET=0
+>     -DMAX_CONNS=6
+> ```
 
-```cpp
-#define DETWS_ENABLE_WEBSOCKET    0  // default 1 - RFC 6455, SHA-1/base64 via mbedTLS
-#define DETWS_ENABLE_SSE          0  // default 1 - Server-Sent Events push
-#define DETWS_ENABLE_MULTIPART    0  // default 1 - multipart/form-data body parser
-#define DETWS_ENABLE_FILE_SERVING 0  // default 1 - static files via Arduino FS
-#define DETWS_ENABLE_AUTH         0  // default 1 - HTTP Basic Auth per-route
-#define DETWS_ENABLE_DIAG         1  // default 0 - JSON build-config endpoint (disable in production)
-#include "DeterministicESPAsyncWebServer.h"
-```
+Any feature flag set to `0` strips the corresponding code and its includes from the build entirely.
+
+### Feature Flags
+
+Here are the available compile-time feature flags and their default values:
+
+| Flag | Default | Description |
+| :--- | :--- | :--- |
+| `DETWS_ENABLE_WEBSOCKET` | `1` | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS) |
+| `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support |
+| `DETWS_ENABLE_MULTIPART` | `1` | `multipart/form-data` body parser |
+| `DETWS_ENABLE_FILE_SERVING` | `1` | Static file serving via Arduino `FS` |
+| `DETWS_ENABLE_AUTH` | `1` | HTTP Basic Auth per-route |
+| `DETWS_ENABLE_DIAG` | `0` | JSON build-config diagnostic endpoint (disable in production) |
+| `DETWS_ENABLE_MDNS` | `0` | mDNS/DNS-SD advertisement via ESPmDNS |
+| `DETWS_ENABLE_NTP` | `0` | SNTP wall-clock time synchronization |
+| `DETWS_ENABLE_OTA` | `0` | Authenticated OTA firmware updates |
+| `DETWS_ENABLE_PROVISIONING` | `0` | WiFi provisioning wizard (SoftAP + captive portal) |
+| `DETWS_ENABLE_TELNET` | `0` | RFC 854 Telnet server |
+| `DETWS_ENABLE_SSH` | `0` | RFC 4253/4252/4254 SSH server |
 
 Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `#error` messages at compile time with a descriptive reason string.
 
-## Configuration
+## Configuration Overrides
 
-All constants can be overridden via build flags or `#define` before the library include. Defaults live in `src/DetWebServerConfig.h`.
+All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`). Default limits and sizes reside in [DetWebServerConfig.h](file:///C:/Users/Douglas/Desktop/git_project/DeterministicESPAsyncWebserver/src/DetWebServerConfig.h).
 
 <details>
 <summary><b>Expand Configuration constants and options</b></summary>

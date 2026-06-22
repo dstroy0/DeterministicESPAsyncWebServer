@@ -83,6 +83,14 @@ PlatformIO separates configurations into different "environments" using [platfor
 > [!NOTE]
 > The `native` and `native_app` environments build with `DETWS_ENFORCE_HOST_HEADER=0` because their legacy test suites focus strictly on lower-level parser mechanics. The stricter RFC 7230 §5.4 host header validation is tested independently in `native_compliance`.
 
+> [!IMPORTANT]
+> **Compilation Isolation & Feature Flags**:
+> Under PlatformIO (and standard Arduino/C++ build systems), library source files (in `src/`) are compiled independently of the main application (the sketch's `.ino` file) as separate translation units. 
+> 
+> Consequently, `#define` macros specified inside `.ino` sketch files (e.g., `#define DETWS_ENABLE_PROVISIONING 1`) **do not propagate** to the library's compiled source code. If you define a configuration macro or feature flag in your sketch rather than in the build configuration, the library's `.cpp` files will compile with their default configuration, resulting in linker errors (e.g., undefined symbols) or severe runtime/memory layout mismatches.
+> 
+> To configure the library correctly, all override configuration constants and feature flags (such as `DETWS_ENABLE_PROVISIONING`, `DETWS_ENABLE_SSH`, `MAX_CONNS`, etc.) **must** be set as compiler build flags in your environment (e.g., `build_flags = -DDETWS_ENABLE_PROVISIONING=1` in `platformio.ini`).
+
 ---
 
 ## 4. Deep Dive: Key Concepts Tested

@@ -4,7 +4,9 @@
 // DetWebServer::serve_file().
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 namespace fs
 {
@@ -60,12 +62,14 @@ class File
     size_t _size;
     size_t _pos;
     bool _open;
+    time_t _mtime;
 
   public:
-    File() : _data(nullptr), _size(0), _pos(0), _open(false)
+    File() : _data(nullptr), _size(0), _pos(0), _open(false), _mtime(0)
     {
     }
-    File(const uint8_t *data, size_t size) : _data(data), _size(size), _pos(0), _open(true)
+    File(const uint8_t *data, size_t size, time_t mtime = 0)
+        : _data(data), _size(size), _pos(0), _open(true), _mtime(mtime)
     {
     }
 
@@ -83,6 +87,10 @@ class File
     size_t size() const
     {
         return _size;
+    }
+    time_t getLastWrite() const
+    {
+        return _mtime;
     }
     void close()
     {
@@ -107,6 +115,7 @@ struct MockFsEntry
     const char *path;
     const uint8_t *data;
     size_t size;
+    time_t mtime;
 };
 
 inline MockFsEntry *_mock_entries()
@@ -120,7 +129,7 @@ inline int &_mock_entry_count()
     return n;
 }
 
-inline void mock_fs_add(const char *path, const uint8_t *data, size_t size)
+inline void mock_fs_add(const char *path, const uint8_t *data, size_t size, time_t mtime = 0)
 {
     int &n = _mock_entry_count();
     if (n < 16)
@@ -128,12 +137,13 @@ inline void mock_fs_add(const char *path, const uint8_t *data, size_t size)
         _mock_entries()[n].path = path;
         _mock_entries()[n].data = data;
         _mock_entries()[n].size = size;
+        _mock_entries()[n].mtime = mtime;
         n++;
     }
 }
-inline void mock_fs_add(const char *path, const char *text)
+inline void mock_fs_add(const char *path, const char *text, time_t mtime = 0)
 {
-    mock_fs_add(path, reinterpret_cast<const uint8_t *>(text), strlen(text));
+    mock_fs_add(path, reinterpret_cast<const uint8_t *>(text), strlen(text), mtime);
 }
 inline void mock_fs_reset()
 {
@@ -160,7 +170,7 @@ class FS
         if (_mock_entry_count() > 0)
         {
             const MockFsEntry *e = _mock_find(path);
-            return e ? File(e->data, e->size) : File();
+            return e ? File(e->data, e->size, e->mtime) : File();
         }
         // Legacy path-agnostic single-file behavior.
         if (_mock_valid() && _mock_data())
