@@ -10,6 +10,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- bump patch version to 1.2.1 and update README ([`68d7375`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68d73753852f61a8242bd1fcb795ce6d83ba19fc))
+- update test report [skip ci] ([`8598435`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8598435a68f4ca6765cfc75f86a3528f766bef13))
+- update CHANGELOG.md [skip ci] ([`4a2cd14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a2cd14db09d426f7d71588fc6f790bd0f14df91))
 - update test report [skip ci] ([`d356856`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3568563a7de39f27cd92ab9597a03e96116cf78))
 - update CHANGELOG.md [skip ci] ([`b01f7b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b01f7b20b3cad3f3eab4dab2909b6e3fd2d3f498))
 - update test report [skip ci] ([`eb23a2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb23a2dceba5a93964791ecfc23b81166996f650))
