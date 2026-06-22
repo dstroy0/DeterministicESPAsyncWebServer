@@ -16,6 +16,7 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 - [RFC Compliance](#rfc-compliance)
 - [SSH Support](#ssh-support)
 - [Full Memory Table](#full-memory-table-all-features-default-config)
+- [Utility Tools](#utility-tools)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Installation](#installation)
@@ -368,6 +369,56 @@ GRAND TOTAL (all features, default config)               ~20,162 B  ≈ 20 KB
 </details>
 
 ESP32 has 320 KB of DRAM; this library consumes < 7% of that at maximum configuration.
+
+## Utility Tools
+
+A set of Python utility tools for formatting documentation, managing the test report directories, and styling/compressing web page assets.
+
+<details>
+<summary><b>Expand Utility Tools and Scripts Guide</b></summary>
+
+### 1. Interactive Theme Wizard
+
+The wizard guides developers through styling choices, compiles the customized assets, and prints the gzipped C++ hex array to the console.
+
+```bash
+python src/utilities/theme_wizard.py
+```
+
+### 2. HTML Beautification and Decoration Tool
+
+Processes raw HTML source files to beautify, minify, or inject modern premium dark-mode styling.
+
+```bash
+# Beautify, minify, and inject CSS theme
+python src/utilities/process_html.py --input src/html/index.html --output src/html/index_processed.html --minify --decorate-css
+```
+
+### 3. Gzip HTML to Hex Array Converter
+
+Compresses a processed HTML template and outputs a C++ hex byte array in a timestamped text file to prevent naming collisions.
+
+```bash
+python src/utilities/gzip_html_to_hex.py --input src/html/index_processed.html
+```
+
+### 4. Test Documentation Deep Dive Generator
+
+Scans Unity C++ test suites and auto-generates a nested, collapsible directory of test cases inside `TEST_DOCUMENTATION.md`.
+
+```bash
+python docs/utilities/generate_deep_dive.py
+```
+
+### 5. Changelog Collapsible Decorator
+
+Parses `CHANGELOG.md` and wraps individual release versions in collapsible details sections. Used dynamically inside the CI pipeline.
+
+```bash
+python docs/utilities/decorate_changelog.py
+```
+
+</details>
 
 ## Testing
 

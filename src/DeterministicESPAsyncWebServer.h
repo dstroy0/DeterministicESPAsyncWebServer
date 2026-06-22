@@ -103,6 +103,16 @@ enum HttpMethod
  */
 typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
 
+/**
+ * @brief Per-request access-log callback (see DetWebServer::on_request_log()).
+ *
+ * Invoked once per response with the request method/path, the HTTP status code,
+ * and the response body length in bytes. The strings are valid only for the
+ * duration of the call. This is a thin hook - the library does no buffering or
+ * formatting; route the data to Serial, syslog, etc. as you see fit.
+ */
+typedef void (*RequestLogCb)(const char *method, const char *path, int status, int body_len);
+
 #if DETWS_ENABLE_WEBSOCKET
 /**
  * @brief Callback fired when a WebSocket connection is established.
@@ -261,6 +271,14 @@ class DetWebServer
 
     Handler _not_found_handler; ///< Called when no route matches; may be null.
     bool _cors_enabled;         ///< True after a non-empty set_cors() call.
+    RequestLogCb _log_cb;       ///< Per-request access-log hook; may be null.
+
+#if DETWS_ENABLE_STATS
+    uint32_t _stat_requests; ///< Total responses sent.
+    uint32_t _stat_2xx;      ///< Responses with a 2xx status.
+    uint32_t _stat_4xx;      ///< Responses with a 4xx status.
+    uint32_t _stat_5xx;      ///< Responses with a 5xx status.
+#endif
 
     uint16_t _listen_ports[MAX_LISTENERS];   ///< Ports registered via listen() or begin(port).
     ConnProto _listen_protos[MAX_LISTENERS]; ///< Protocol for each registered listener.
@@ -285,6 +303,9 @@ class DetWebServer
      * @return True if the route matches the request path.
      */
     static bool path_matches(const char *route, bool is_wildcard, const char *req_path);
+
+    /// @brief Record a response for stats + the access-log hook. Reads method/path from http_pool[slot_id].
+    void note_response(uint8_t slot_id, int code, int body_len);
 
 #if DETWS_ENABLE_AUTH
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
@@ -506,6 +527,29 @@ class DetWebServer
      * @param callback Handler to invoke on a 404 condition.
      */
     void on_not_found(Handler callback);
+
+    /**
+     * @brief Install a per-request access-log callback (one hook, no buffering).
+     *
+     * @p cb is invoked once per response with the method, path, status code, and
+     * response body length. Pass nullptr to remove. See @ref RequestLogCb.
+     */
+    void on_request_log(RequestLogCb cb);
+
+#if DETWS_ENABLE_STATS
+    /**
+     * @brief Send a JSON runtime-stats snapshot and close the connection.
+     *
+     * Body: uptime_ms, total requests, 2xx/4xx/5xx counts, active connection-pool
+     * slots, and (on ESP32) free heap. Wire it to a route:
+     * @code
+     *   server.on("/stats", HTTP_GET, [](uint8_t id, HttpReq *) { server.stats(id); });
+     * @endcode
+     *
+     * @param slot_id Connection slot to respond on.
+     */
+    void stats(uint8_t slot_id);
+#endif
 
     /**
      * @brief Enable CORS by pre-building the Access-Control headers.

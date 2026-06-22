@@ -318,6 +318,36 @@
 #define DETWS_ENABLE_SSH 0
 #endif
 
+// ---------------------------------------------------------------------------
+// Optional network services (ESP32-only thin wrappers; each default-off so it
+// costs no code/RAM/flash unless explicitly enabled).
+// ---------------------------------------------------------------------------
+
+/** @brief mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS. */
+#ifndef DETWS_ENABLE_MDNS
+#define DETWS_ENABLE_MDNS 0
+#endif
+
+/** @brief SNTP wall-clock time sync via the ESP-IDF SNTP client. */
+#ifndef DETWS_ENABLE_NTP
+#define DETWS_ENABLE_NTP 0
+#endif
+
+/** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
+#ifndef DETWS_ENABLE_OTA
+#define DETWS_ENABLE_OTA 0
+#endif
+
+/** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */
+#ifndef DETWS_ENABLE_PROVISIONING
+#define DETWS_ENABLE_PROVISIONING 0
+#endif
+
+/** @brief Runtime stats endpoint (uptime, request/error counts, pool usage, heap). */
+#ifndef DETWS_ENABLE_STATS
+#define DETWS_ENABLE_STATS 0
+#endif
+
 /**
  * @brief Expose a diagnostic JSON endpoint via server.diag().
  *

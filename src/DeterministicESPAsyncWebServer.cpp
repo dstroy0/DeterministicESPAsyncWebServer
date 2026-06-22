@@ -176,11 +176,41 @@ bool DetWebServer::heap_available()
     return DeterministicAsyncTCP::heap_available();
 }
 
-DetWebServer::DetWebServer() : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _listener_count(0)
+DetWebServer::DetWebServer()
+    : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _log_cb(nullptr), _listener_count(0)
 {
     for (int i = 0; i < MAX_ROUTES; i++)
         _routes[i] = {};
     _cors_header_buf[0] = '\0';
+#if DETWS_ENABLE_STATS
+    _stat_requests = _stat_2xx = _stat_4xx = _stat_5xx = 0;
+#endif
+}
+
+void DetWebServer::on_request_log(RequestLogCb cb)
+{
+    _log_cb = cb;
+}
+
+// Record a completed response: bump stats counters and fire the access-log hook.
+// The request's method/path are still intact in http_pool[slot_id] (http_reset
+// has not run yet at the call sites).
+void DetWebServer::note_response(uint8_t slot_id, int code, int body_len)
+{
+#if DETWS_ENABLE_STATS
+    _stat_requests++;
+    if (code >= 500)
+        _stat_5xx++;
+    else if (code >= 400)
+        _stat_4xx++;
+    else if (code >= 200 && code < 300)
+        _stat_2xx++;
+#endif
+    if (_log_cb)
+    {
+        const HttpReq *r = &http_pool[slot_id];
+        _log_cb(r->method, r->path, code, body_len);
+    }
 }
 
 int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
@@ -875,6 +905,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
 
+    note_response(slot_id, code, payload_len);
     http_reset(slot_id);
 }
 
@@ -916,6 +947,7 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
 
+    note_response(slot_id, code, 0);
     http_reset(slot_id);
 }
 
@@ -962,6 +994,7 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
 
+    note_response(slot_id, code, 0);
     http_reset(slot_id);
 }
 
@@ -1038,6 +1071,35 @@ const char *DetWebServer::mime_type(const char *path)
     }
     return "application/octet-stream";
 }
+
+// ---------------------------------------------------------------------------
+// Runtime stats endpoint
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_STATS
+void DetWebServer::stats(uint8_t slot_id)
+{
+    int active = 0;
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conn_pool[i].state == CONN_ACTIVE)
+            active++;
+
+    unsigned long up = millis();
+#ifdef ARDUINO
+    uint32_t heap = ESP.getFreeHeap();
+#else
+    uint32_t heap = 0;
+#endif
+
+    char body[192];
+    snprintf(body, sizeof(body),
+             "{\"uptime_ms\":%lu,\"requests\":%lu,\"http_2xx\":%lu,\"http_4xx\":%lu,"
+             "\"http_5xx\":%lu,\"active_conns\":%d,\"free_heap\":%u}",
+             up, (unsigned long)_stat_requests, (unsigned long)_stat_2xx, (unsigned long)_stat_4xx,
+             (unsigned long)_stat_5xx, active, (unsigned)heap);
+    send(slot_id, 200, "application/json", body);
+}
+#endif // DETWS_ENABLE_STATS
 
 // ---------------------------------------------------------------------------
 // WebSocket public API
@@ -1254,6 +1316,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         tcp_abort(pcb);
 
     f.close();
+    note_response(slot_id, 200, head ? 0 : (int)file_size);
     http_reset(slot_id);
 }
 

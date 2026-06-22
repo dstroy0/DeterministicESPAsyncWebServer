@@ -726,6 +726,59 @@ void test_serve_static_missing_is_404()
     TEST_ASSERT_NOT_NULL(strstr(out, "404"));
 }
 
+// ====================================================================
+// ACCESS-LOG HOOK + RUNTIME STATS
+// ====================================================================
+
+static char g_log_method[8];
+static char g_log_path[64];
+static int g_log_status;
+static int g_log_bytes;
+static int g_log_calls;
+static void capture_log(const char *m, const char *p, int s, int b)
+{
+    strncpy(g_log_method, m, sizeof(g_log_method) - 1);
+    g_log_method[sizeof(g_log_method) - 1] = '\0';
+    strncpy(g_log_path, p, sizeof(g_log_path) - 1);
+    g_log_path[sizeof(g_log_path) - 1] = '\0';
+    g_log_status = s;
+    g_log_bytes = b;
+    g_log_calls++;
+}
+
+void test_request_log_hook_fires()
+{
+    g_log_calls = 0;
+    g_server->on_request_log(capture_log);
+    g_server->on("/hi", HTTP_GET, [](uint8_t id, HttpReq *) { g_server->send(id, 200, "text/plain", "hello"); });
+    arm_slot(0, "GET /hi HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    g_server->handle();
+    TEST_ASSERT_EQUAL_INT(1, g_log_calls);
+    TEST_ASSERT_EQUAL_STRING("GET", g_log_method);
+    TEST_ASSERT_EQUAL_STRING("/hi", g_log_path);
+    TEST_ASSERT_EQUAL_INT(200, g_log_status);
+    TEST_ASSERT_EQUAL_INT(5, g_log_bytes); // "hello"
+    g_server->on_request_log(nullptr);
+}
+
+void test_stats_endpoint_emits_json()
+{
+    g_server->on("/stats", HTTP_GET, [](uint8_t id, HttpReq *) { g_server->stats(id); });
+    arm_slot(0, "GET /stats HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "application/json"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"uptime_ms\""));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"requests\""));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"http_2xx\""));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"http_4xx\""));
+    TEST_ASSERT_NOT_NULL(strstr(out, "\"active_conns\""));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -793,6 +846,9 @@ int main()
     RUN_TEST(test_serve_static_no_gzip_when_not_accepted);
     RUN_TEST(test_serve_static_traversal_not_leaked);
     RUN_TEST(test_serve_static_missing_is_404);
+
+    RUN_TEST(test_request_log_hook_fires);
+    RUN_TEST(test_stats_endpoint_emits_json);
 
     return UNITY_END();
 }

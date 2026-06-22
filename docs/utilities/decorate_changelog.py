@@ -1,3 +1,12 @@
+##
+# @file decorate_changelog.py
+# @brief Parses docs/CHANGELOG.md and wraps release version sections in collapsible detail cards.
+# @details This script is run as part of the changelog generation pipeline to make release history collapsible,
+#          maintaining a compact and navigable file.
+# @author Douglas Quigg (dstroy0, dquigg123@gmail.com)
+# @date June 2026
+#
+
 import re
 import os
 
@@ -5,10 +14,17 @@ import os
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 changelog_path = os.path.join(PROJECT_ROOT, "docs", "CHANGELOG.md")
 
+##
+# @brief Find all sections matching a heading and wrap their body text in a collapsible details element.
+# @param content The raw text content of the markdown file.
+# @param heading_regex The regular expression used to locate section headers.
+# @param next_heading_regex The regular expression indicating the start of the next section.
+# @param summary_text_builder A lambda/callback to construct the text of the details <summary> element.
+# @return The updated markdown content with wrapped sections.
+#
 def wrap_all_between(content, heading_regex, next_heading_regex, summary_text_builder):
-    """Finds all sections matching a heading and wraps their body until the next heading."""
     matches = list(re.finditer(heading_regex, content))
-    # Process in reverse order to keep offsets valid
+    # Process in reverse order to keep offsets valid during string slices
     for i in range(len(matches) - 1, -1, -1):
         match = matches[i]
         start_idx = match.end()
@@ -24,7 +40,7 @@ def wrap_all_between(content, heading_regex, next_heading_regex, summary_text_bu
         
         body = content[start_idx:end_idx].strip()
         
-        # Avoid double-wrapping
+        # Avoid double-wrapping the section
         if "<details>" in body:
             continue
             

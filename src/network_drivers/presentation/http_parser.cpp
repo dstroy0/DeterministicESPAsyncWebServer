@@ -14,6 +14,18 @@
 
 HttpReq http_pool[MAX_CONNS];
 
+#if DETWS_ENABLE_OTA
+// Streaming-body hooks (OTA). Null unless the application installs them.
+static HttpStreamBeginCb g_stream_begin = nullptr;
+static HttpStreamDataCb g_stream_data = nullptr;
+
+void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data)
+{
+    g_stream_begin = begin;
+    g_stream_data = data;
+}
+#endif // DETWS_ENABLE_OTA
+
 // ---------------------------------------------------------------------------
 // FNV-1a hash constants for HTTP version validation
 // ---------------------------------------------------------------------------
@@ -404,6 +416,17 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
 #endif
             if (host_violation)
                 p->parse_state = PARSE_ERROR;
+#if DETWS_ENABLE_OTA
+            // Streaming sink (OTA): all headers are parsed here, so the hook can
+            // match method/path/Authorization and begin a sink (e.g. Update).
+            // If it accepts, the body streams in chunks and the size cap is
+            // bypassed; the matching route handler still runs at PARSE_COMPLETE.
+            else if (p->content_length > 0 && g_stream_begin && g_stream_begin(p))
+            {
+                p->body_streaming = true;
+                p->parse_state = PARSE_BODY;
+            }
+#endif
             else if (p->content_length > BODY_BUF_SIZE)
                 p->parse_state = PARSE_ENTITY_TOO_LARGE;
             else if (p->content_length == 0)
@@ -423,7 +446,32 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         break;
 
     case PARSE_BODY:
-        // Body is opaque data - no character validation
+        // Body is opaque data - no character validation.
+#if DETWS_ENABLE_OTA
+        if (p->body_streaming)
+        {
+            // Reuse body[] as a flush buffer: fill it, then hand whole chunks to
+            // the sink. No BODY_BUF_SIZE cap on the total - the body never lives
+            // in RAM all at once.
+            p->body[p->body_len++] = byte;
+            if (p->body_len == BODY_BUF_SIZE)
+            {
+                if (g_stream_data)
+                    g_stream_data(p->body, p->body_len);
+                p->body_len = 0;
+            }
+            p->body_bytes_read++;
+            if (p->body_bytes_read >= p->content_length)
+            {
+                if (p->body_len && g_stream_data)
+                    g_stream_data(p->body, p->body_len); // flush the tail
+                p->body_len = 0;
+                p->body[0] = '\0';
+                p->parse_state = PARSE_COMPLETE;
+            }
+            break;
+        }
+#endif
         if (p->body_len < BODY_BUF_SIZE)
             p->body[p->body_len++] = byte;
         p->body_bytes_read++;
