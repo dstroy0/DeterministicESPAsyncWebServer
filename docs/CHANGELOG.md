@@ -5,6 +5,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`655130c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/655130cc105c49bc2c724d1ced92c84483d453a9))
 - update CHANGELOG.md [skip ci] ([`6e8beaa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e8beaa140305d190bb46b884bf533c5155d6b52))
 - update CHANGELOG.md [skip ci] ([`3a55a15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a55a1556faeaf96f31a400f5fff01012efdcf4e))
 - update CHANGELOG.md [skip ci] ([`01d1e1a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01d1e1acbfc53b79de30074d6bc2bae6b4cb33ec))
@@ -12,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 
 ### Changes
+- format ([`290f745`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/290f74509db99120b5f6febbb4cbb175aab72f8f))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c4de884`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4de884402685b2aea7a5711926d832a8ab90868))
 - format codebase; check todo list for the current state of the library before the version bump finalizations ([`2cc3601`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2cc3601a965cacb7036f1eafd80be5bfc7ff10dc))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`e04a03b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e04a03b8d0a1feb524cd7ab8d9119066df54a628))
