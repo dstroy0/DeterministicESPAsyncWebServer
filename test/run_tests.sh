@@ -48,6 +48,76 @@ echo ""
 echo "Running tests..."
 echo ""
 
+# Format output helper function
+format_output() {
+    awk -F'\t' '
+    BEGIN {
+        width = 80
+    }
+    {
+        line = $0
+        clean_line = line
+        gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_line)
+        
+        # Test line: "test/test_X/test_X.cpp:829: test_name\t[PASSED]"
+        if (clean_line ~ /\[(PASSED|FAILED)\]$/) {
+            match(line, /[[:space:]]+(\x1b\[[0-9;?]*[a-zA-Z])*\[(PASSED|FAILED)\](\x1b\[[0-9;?]*[a-zA-Z])*$/)
+            if (RSTART > 0) {
+                left = substr(line, 1, RSTART - 1)
+                right = substr(line, RSTART)
+                sub(/^[[:space:]]+/, "", right)
+                
+                clean_left = left
+                gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_left)
+                
+                clean_right = right
+                gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_right)
+                
+                pad = width - length(clean_left) - length(clean_right)
+                if (pad < 1) pad = 1
+                spaces = ""
+                for (i = 1; i <= pad; i++) spaces = spaces " "
+                print left spaces right
+                next
+            }
+        }
+        
+        # Banner line: "------------ native_ssh:test_ssh_crypto [PASSED] Took 6.70 seconds ------------"
+        if (clean_line ~ /^-+ .* \[(PASSED|FAILED)\] Took .* seconds -+$/) {
+            orig_msg = line
+            gsub(/^-+/, "", orig_msg)
+            gsub(/-+$/, "", orig_msg)
+            gsub(/^[ \t]+|[ \t]+$/, "", orig_msg)
+            
+            clean_msg = orig_msg
+            gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_msg)
+            msg_len = length(clean_msg)
+            
+            pad_total = width - msg_len - 2
+            if (pad_total >= 2) {
+                pad_left = int(pad_total / 2)
+                pad_right = pad_total - pad_left
+                dashes_left = ""
+                for (i = 1; i <= pad_left; i++) dashes_left = dashes_left "-"
+                dashes_right = ""
+                for (i = 1; i <= pad_right; i++) dashes_right = dashes_right "-"
+                print dashes_left " " orig_msg " " dashes_right
+                next
+            }
+        }
+        
+        # Section line: "--------------------------------------------------------------------------------"
+        if (clean_line ~ /^-{20,}$/) {
+            dashes = ""
+            for (i = 1; i <= width; i++) dashes = dashes "-"
+            print dashes
+            next
+        }
+        
+        print line
+    }'
+}
+
 # ── Run tests ─────────────────────────────────────────────────────────────────
 
 cd "$PROJECT_ROOT"
@@ -58,7 +128,7 @@ trap 'rm -f "$RAW_FILE" "$CLEAN_FILE"' EXIT
 
 T0=$SECONDS
 set +e
-"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance 2>&1 | tee "$RAW_FILE"
+"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance 2>&1 | format_output | tee "$RAW_FILE"
 PIO_EXIT="${PIPESTATUS[0]}"
 set -e
 WALL_SECS=$(( SECONDS - T0 ))
@@ -225,7 +295,7 @@ cat <<EOF
 ## Summary
 
 | Suite | Environment | Tests | Status | Duration |
-|---|---|---|---|---|
+| :--- | :--- | ---: | :---: | ---: |
 EOF
 
 for _key in "${SUITE_ORDER[@]}"; do
@@ -262,7 +332,7 @@ for (( i=0; i<T_IDX; i++ )); do
     [[ -n "$_brief" ]] && printf '*%s*\n\n' "$_brief"
 
     echo "| # | Test | Status | Description |"
-    echo "|---|------|--------|-------------|"
+    echo "|---:|:---|:---:|:---|"
 
     _n=1
     for (( j=0; j<T_IDX; j++ )); do

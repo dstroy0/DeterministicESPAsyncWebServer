@@ -71,11 +71,55 @@ Pop-Location
 
 $WallSec = [Math]::Round(($T1 - $T0).TotalSeconds, 2)
 
-# Echo raw output
-$RawLines | Write-Host
+# Format output lines
+$Width = 80
+$FormattedLines = $RawLines | ForEach-Object {
+    $line = $_.ToString().TrimEnd()
+    $cleanLine = $line -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
+    
+    # Test line: "test\test_X\test_X.cpp:829: test_name  [PASSED]"
+    if ($cleanLine -match '(\S+\.cpp:\d+:\s+\S+)\s+\[(PASSED|FAILED)\]$') {
+        $left = $Matches[1]
+        $status = "[$($Matches[2])]"
+        
+        $cleanLeft = $left -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
+        $pad = $Width - $cleanLeft.Length - $status.Length
+        if ($pad -lt 1) { $pad = 1 }
+        $spaces = ' ' * $pad
+        
+        $origLeft = $line -replace '\s+\[(PASSED|FAILED)\](\x1b\[[0-9;?]*[a-zA-Z])*$', ''
+        $origRight = $line.Substring($origLeft.Length).Trim()
+        
+        $origLeft + $spaces + $origRight
+    }
+    # Banner line: "------------ native_ssh:test_ssh_crypto [PASSED] Took 6.70 seconds ------------"
+    elseif ($cleanLine -match '^-+\s+(\S+.*\[(?:PASSED|FAILED)\]\s+Took\s+\S+\s+seconds)\s+-+$') {
+        $msg = $Matches[1]
+        $cleanMsg = $msg -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
+        $padTotal = $Width - $cleanMsg.Length - 2
+        if ($padTotal -ge 2) {
+            $padLeft = [Math]::Floor($padTotal / 2)
+            $padRight = $padTotal - $padLeft
+            ('-' * $padLeft) + ' ' + $msg + ' ' + ('-' * $padRight)
+        }
+        else {
+            $line
+        }
+    }
+    # Section line: "--------------------------------------------------------------------------------"
+    elseif ($cleanLine -match '^-{20,}$') {
+        '-' * $Width
+    }
+    else {
+        $line
+    }
+}
+
+# Echo formatted output
+$FormattedLines | Write-Host
 
 # Strip ANSI escape sequences for parsing
-$Lines = $RawLines | ForEach-Object {
+$Lines = $FormattedLines | ForEach-Object {
     ($_ | Out-String).TrimEnd() -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
 }
 
@@ -222,7 +266,7 @@ Add ""
 Add "## Summary"
 Add ""
 Add "| Suite | Environment | Tests | Status | Duration |"
-Add "|---|---|---|---|---|"
+Add "| :--- | :--- | ---: | :---: | ---: |"
 
 foreach ($key in $Suites.Keys) {
     $s = $Suites[$key]
@@ -255,7 +299,7 @@ foreach ($key in $Suites.Keys) {
     if ($brief) { Add "*${brief}*"; Add "" }
 
     Add "| # | Test | Status | Description |"
-    Add "|---|------|--------|-------------|"
+    Add "|---:|:---|:---:|:---|"
 
     $n = 1
     foreach ($t in $group) {
