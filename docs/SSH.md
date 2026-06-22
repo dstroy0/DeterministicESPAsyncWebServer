@@ -21,6 +21,9 @@ socket.
 
 ## Feature summary
 
+<details>
+<summary><b>Expand Feature Summary List</b></summary>
+
 - **DH-group14-SHA256 key exchange** (RFC 3526 + RFC 8268) - 2048-bit MODP, g=2, full exchange-hash + host-key signature
 - **AES-256-CTR** encryption (RFC 4344) - hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
 - **HMAC-SHA2-256** integrity (RFC 6668) - MAC-verify-before-use invariant
@@ -33,7 +36,12 @@ socket.
 - **RSA private key never in static memory** - loaded from NVS → stack → sign → volatile-wipe; zero window for overflow-based key exfiltration
 - **Sequence number overflow guard** - connection closed before 32-bit wrap to prevent CTR keystream reuse
 
+</details>
+
 ## RFC / FIPS compliance
+
+<details>
+<summary><b>Expand RFC / FIPS Compliance Table</b></summary>
 
 | Component                     | Standard                   | Status                                                                                                                                   |
 | ----------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,6 +60,8 @@ socket.
 | User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                                                                                         |
 | Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control                                                                 |
 | Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys                                                                |
+
+</details>
 
 ## Authentication and hardening
 
@@ -126,6 +136,9 @@ The matching public key for clients' `known_hosts` is derived from the same DER
 
 All numbers use default configuration values.
 
+<details>
+<summary><b>Expand Memory Footprint Details Table</b></summary>
+
 | Symbol                    | Type | Notes                                            |
 | ------------------------- | ---- | ------------------------------------------------ |
 | `ssh_pkt[MAX_SSH_CONNS]`  | BSS  | Packet state + RX reassembly buffers             |
@@ -135,6 +148,8 @@ All numbers use default configuration values.
 | `crypto_work[1536]`       | BSS  | Montgomery bignum scratch; zeroed after each use |
 | `group14_p`, `group14_g`  | BSS  | RFC 3526 prime + generator (constants)           |
 | `ssh_host_pubkey`         | BSS  | RSA-2048 public key (n + e); no secret material  |
+
+</details>
 
 **Key material is excluded by design.** AES-256 keys, HMAC keys, and the DH
 shared secret K live in `ssh_keys[]` / `ssh_dh[]`. The RSA private key is never

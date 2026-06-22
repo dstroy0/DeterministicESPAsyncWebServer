@@ -329,6 +329,9 @@ for (( i=0; i<T_IDX; i++ )); do
     [[ $_fail -gt 0 ]] && _header+=", ${_fail} failed"
     echo "$_header"
     echo ""
+    echo "<details>"
+    echo "<summary><b>Expand Suite Details</b></summary>"
+    echo ""
     [[ -n "$_brief" ]] && printf '*%s*\n\n' "$_brief"
 
     echo "| # | Test | Status | Description |"
@@ -357,7 +360,8 @@ for (( i=0; i<T_IDX; i++ )); do
         echo '```'
         echo ""
     fi
-
+    echo "</details>"
+    echo ""
     echo "---"
     echo ""
 done

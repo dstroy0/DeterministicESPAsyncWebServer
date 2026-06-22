@@ -296,6 +296,9 @@ foreach ($key in $Suites.Keys) {
 
     Add "## $suite - $gicon $pass passed$(if ($fail) { ", $fail failed" } else { '' })"
     Add ""
+    Add "<details>"
+    Add "<summary><b>Expand Suite Details</b></summary>"
+    Add ""
     if ($brief) { Add "*${brief}*"; Add "" }
 
     Add "| # | Test | Status | Description |"
@@ -324,7 +327,8 @@ foreach ($key in $Suites.Keys) {
         Add '```'
         Add ""
     }
-
+    Add "</details>"
+    Add ""
     Add "---"
     Add ""
 }

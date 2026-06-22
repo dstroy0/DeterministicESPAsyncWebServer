@@ -48,6 +48,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [1.2.0] - 2026-06-20
 
+<details>
+<summary><b>Show Changelog for version [1.2.0] - 2026-06-20</b></summary>
+
 ### CI / Build
 
 - update CHANGELOG.md [skip ci] ([`388646e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/388646e7d98a3d23f6e0f959ea03b87e2234bd4d))
@@ -59,7 +62,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - implement websockets, sse, auth per-route, multipart form parsing, hw SHA-1 (mbedtls/sha1), user selectable features/configuration (e.g. ws, sse, etc.) via flag and compile-time constants. ([`d3c8ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3c8ec97acf3ec66bcbe103128e944fcde1ab2ed))
 - update version to 1.1.0, add author and maintainer info, and update description in library.properties ([`4da247c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4da247cea4209809b1d939dd85318f7539192f77))
 
+</details>
+
 ## [1.1.0] - 2026-06-20
+
+<details>
+<summary><b>Show Changelog for version [1.1.0] - 2026-06-20</b></summary>
 
 ### CI / Build
 
@@ -70,7 +78,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`86988ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86988ca73c51b903d15034deccf533e4c504e8a0))
 - format codebase using .clang-format, lint and add more examples, lint docs ([`12baf8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12baf8d5ce6976ceef0a65b2309702dfd1babf89))
 
+</details>
+
 ## [0.1.0] - 2026-06-20
+
+<details>
+<summary><b>Show Changelog for version [0.1.0] - 2026-06-20</b></summary>
 
 ### CI / Build
 
@@ -96,3 +109,5 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG output dir ([`2838da2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2838da22b3673aef7f6b365a1e0ec2c3ebedd504))
 - update CHANGELOG output dir ([`d799b4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d799b4f7c0031f5e539c9f3544127f283416f87e))
 - initial commit ([`9b48742`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b48742e971a4e41924df8d67aab91f10c3346e8))
+
+</details>

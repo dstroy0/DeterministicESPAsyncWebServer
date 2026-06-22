@@ -14,6 +14,9 @@ with caveats, ❌ = a real weakness to be aware of.
 
 ### Strong (✅)
 
+<details>
+<summary><b>Show Strong Security Areas Table</b></summary>
+
 | Area                   | Why it's solid                                                                                                                                                                                                                                                 |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Deterministic memory   | Zero heap after `begin()`; every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                                                    |
@@ -23,7 +26,12 @@ with caveats, ❌ = a real weakness to be aware of.
 | Secret hygiene         | RSA private key never in static memory (NVS→stack→wipe); session keys, DH secrets, and scratch buffers volatile-wiped after use; key pools are separate linker symbols.                                                                                        |
 | SSH hardening option   | `DETWS_SSH_ALLOW_PASSWORD=0` compiles password auth out entirely for publickey-only deployments.                                                                                                                                                               |
 
+</details>
+
 ### Acceptable, with caveats (⚠️)
+
+<details>
+<summary><b>Show Acceptable Areas Table</b></summary>
 
 | Area                        | Caveat                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,13 +41,20 @@ with caveats, ❌ = a real weakness to be aware of.
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
 | Diagnostic endpoint         | `DETWS_ENABLE_DIAG` leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                                                   |
 
+</details>
+
 ### Weak / not implemented (❌)
+
+<details>
+<summary><b>Show Weak / Not Implemented Areas Table</b></summary>
 
 | Area                          | Status                                                                                                                                                                                                                                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Connection-rate throttling    | SSH bounds failed auth attempts per connection (`SSH_MAX_AUTH_ATTEMPTS`, then `SSH_MSG_DISCONNECT`); HTTP closes the socket on every 401 (one guess per connection). There is still **no per-IP / connection-rate limit** across connections - an attacker can reconnect repeatedly; mitigate at the network layer. |
 | Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; there is no allow-list or SYN-cookie equivalent.                                                                                                                                                                               |
 | Formal audit                  | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments.                                                                                                                                                        |
+
+</details>
 
 The remaining sections document each property in depth.
 
@@ -344,6 +359,9 @@ The SSH transport layer (§7) is the only encrypted path built into this library
 
 ### 7.1 Key Exchange - DH-group14-SHA256
 
+<details>
+<summary><b>Expand 7.1 Key Exchange - DH-group14-SHA256 Details</b></summary>
+
 **RFCs:** RFC 3526 §3 (MODP group 14), RFC 8268 §3 (SHA-256 with group14)
 
 The SSH key exchange uses Diffie-Hellman with the 2048-bit MODP group 14
@@ -394,9 +412,14 @@ values e₁, e₂ allows recovery of y via:
 
 `ssh_dh_generate()` always generates fresh randomness; there is no caching.
 
+</details>
+
 ---
 
 ### 7.2 Symmetric Encryption - AES-256-CTR
+
+<details>
+<summary><b>Expand 7.2 Symmetric Encryption - AES-256-CTR Details</b></summary>
 
 **RFC:** RFC 4344 §4
 
@@ -434,9 +457,14 @@ No guessed buffer sizes are used: the Arduino path embeds `mbedtls_aes_context`
 directly (by `#include <mbedtls/aes.h>`), so the compiler enforces the exact
 size. The "opaque buffer of guessed size" anti-pattern is explicitly rejected.
 
+</details>
+
 ---
 
 ### 7.3 Integrity - HMAC-SHA2-256
+
+<details>
+<summary><b>Expand 7.3 Integrity - HMAC-SHA2-256 Details</b></summary>
 
 **RFC:** RFC 2104 (HMAC), RFC 6668 §2 (hmac-sha2-256 for SSH)
 
@@ -471,9 +499,14 @@ If MAC verification fails:
 4. The caller (SSH session layer) closes the TCP connection immediately.
 5. No byte of the payload is acted upon.
 
+</details>
+
 ---
 
 ### 7.4 Host Authentication - RSA-SHA2-256
+
+<details>
+<summary><b>Expand 7.4 Host Authentication - RSA-SHA2-256 Details</b></summary>
 
 **RFC:** RFC 8332 §3 (rsa-sha2-256), RFC 8017 §8.2 (PKCS#1 v1.5 signature)
 
@@ -519,9 +552,14 @@ The 256-byte signature is transmitted in the SSH_MSG_KEXDH_REPLY.
 
 For the private key lifetime policy, see §7.6.
 
+</details>
+
 ---
 
 ### 7.5 Key Derivation - RFC 4253 §7.2
+
+<details>
+<summary><b>Expand 7.5 Key Derivation - RFC 4253 §7.2 Details</b></summary>
 
 Six values are derived from the shared secret K and exchange hash H:
 
@@ -548,9 +586,14 @@ After derivation, all stack temporaries (`key_c2s`, `key_s2c`, `iv_c2s`,
 `iv_s2c`, the SHA-256 context) are zeroed via `ssh_wipe()` before
 `ssh_dh_derive_keys()` returns.
 
+</details>
+
 ---
 
 ### 7.6 Private Key Lifetime
+
+<details>
+<summary><b>Expand 7.6 Private Key Lifetime Details</b></summary>
 
 This is the most security-critical design decision in the SSH implementation.
 The same principle is documented in the source at the top of
@@ -606,9 +649,14 @@ key via `nvs_flash_generate_keys()`). Without NVS encryption, the private key
 is stored in plaintext flash and can be read by anyone with physical access to
 the device.
 
+</details>
+
 ---
 
 ### 7.7 Memory Layout Defences
+
+<details>
+<summary><b>Expand 7.7 Memory Layout Defences Details</b></summary>
 
 **Source:** [ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h)
 (Defence 1 comment block)
@@ -638,9 +686,14 @@ raises the attack bar significantly without requiring hardware security features
 one-byte overflow past `rx_buf` immediately reaches `aes_key`. The separate-
 symbol layout eliminates that risk.
 
+</details>
+
 ---
 
 ### 7.8 Sequence Number Overflow Guard
+
+<details>
+<summary><b>Expand 7.8 Sequence Number Overflow Guard Details</b></summary>
 
 **Source:** [ssh_packet.h](../src/network_drivers/presentation/ssh/ssh_packet.h),
 [ssh_packet.cpp](../src/network_drivers/presentation/ssh/ssh_packet.cpp)
@@ -669,9 +722,14 @@ A rekeying implementation (SSH_MSG_KEXINIT exchange to install new keys and
 reset sequence numbers) would allow long-lived sessions. This is a known
 limitation and is noted in [docs/CHANGELOG.md](CHANGELOG.md).
 
+</details>
+
 ---
 
 ### 7.9 Secure Wipe
+
+<details>
+<summary><b>Expand 7.9 Secure Wipe Details</b></summary>
 
 **Source:** [ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h)
 
@@ -709,9 +767,14 @@ removed.
 | DER private key stack copy       | After `mbedtls_pk_parse_key()` in `ssh_rsa_sign()` | `ssh_rsa.cpp`    |
 | Key derivation stack temporaries | After `ssh_dh_derive_keys()`                       | `ssh_dh.cpp`     |
 
+</details>
+
 ---
 
 ### 7.10 Random Number Generation
+
+<details>
+<summary><b>Expand 7.10 Random Number Generation Details</b></summary>
 
 **Source:** [test/mocks/Arduino.h](../test/mocks/Arduino.h) (native mock),
 ESP-IDF `esp_random.h` (Arduino production)
@@ -752,6 +815,8 @@ unpredictable output.
 The native mock is clearly marked and will not compile on Arduino targets
 because `test/mocks/Arduino.h` is only included by the `native_ssh` PlatformIO
 environment.
+
+</details>
 
 ---
 

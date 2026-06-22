@@ -8,6 +8,9 @@ HTTP/1.1, WebSocket, and error-handling behavior. (SSH conformance lives in
 
 The parser enforces these rules byte-by-byte during parsing:
 
+<details>
+<summary><b>HTTP/1.1 Parsing Conformance Table</b></summary>
+
 | Field              | Allowed characters                                      | RFC reference | Violation response |
 | ------------------ | ------------------------------------------------------- | ------------- | ------------------ |
 | Method             | `tchar` (`ALPHA DIGIT ! # $ % & ' * + - . ^ _ \` \| ~`) | §3.1.1        | 400                |
@@ -20,6 +23,8 @@ The parser enforces these rules byte-by-byte during parsing:
 | Host header        | Required for HTTP/1.1; more than one always rejected    | §5.4          | 400                |
 | Transfer-Encoding  | Not supported - rejected at dispatch                    | §3.3.1        | 501                |
 | HTTP version       | FNV-1a hash match; sets `HttpReq::version`              | §2.6          | `HTTP_UNKNOWN`     |
+
+</details>
 
 Additional behaviors:
 
@@ -34,6 +39,9 @@ Additional behaviors:
 
 ## WebSocket framing (RFC 6455)
 
+<details>
+<summary><b>WebSocket Framing Conformance Table</b></summary>
+
 | Rule                                  | Section | Behavior                                    |
 | ------------------------------------- | ------- | ------------------------------------------- |
 | Client→server frames must be masked   | §5.1    | Unmasked frame → Close 1002, fail           |
@@ -44,6 +52,8 @@ Additional behaviors:
 | Payload ≤ `WS_FRAME_SIZE`             | §5.2    | Oversized / 64-bit length → Close 1009      |
 | Handshake version negotiation         | §4.2.1  | Missing/≠ `13` → 426 with supported version |
 
+</details>
+
 Fragmented data messages (continuation frames, §5.4) are reassembled into the
 per-connection buffer and delivered once the FIN frame arrives; control frames
 may be interleaved between fragments. The reassembled message must fit in
@@ -53,13 +63,21 @@ may be interleaved between fragments. The reassembled message must fit in
 
 `handle()` sends these before dispatching to any route handler:
 
+<details>
+<summary><b>Parser State Errors Table</b></summary>
+
 | Parser state             | Response              | Trigger                                            |
 | ------------------------ | --------------------- | -------------------------------------------------- |
 | `PARSE_ERROR`            | 400 Bad Request       | Any RFC 7230 character violation or malformed CRLF |
 | `PARSE_ENTITY_TOO_LARGE` | 413 Payload Too Large | `Content-Length` > `BODY_BUF_SIZE`                 |
 | `PARSE_URI_TOO_LONG`     | 414 URI Too Long      | Path exceeds `MAX_PATH_LEN − 1` bytes              |
 
+</details>
+
 `handle()` also sends these during dispatch:
+
+<details>
+<summary><b>Dispatch Condition Errors Table</b></summary>
 
 | Condition                                    | Response                                     | RFC reference |
 | -------------------------------------------- | -------------------------------------------- | ------------- |
@@ -70,6 +88,8 @@ may be interleaved between fragments. The reassembled message must fit in
 | WebSocket upgrade on a non-WS route          | 400 Bad Request                              | 6455 §4.2.1   |
 | Unsupported `Sec-WebSocket-Version`          | 426 Upgrade Required                         | 6455 §4.2.1   |
 | WebSocket or SSE pool full                   | 503 Service Unavailable                      | -             |
+
+</details>
 
 A `HEAD` request is served by the matching `GET` route with the body suppressed
 (RFC 7231 §4.3.2); `GET` routes advertise `HEAD` in the `Allow` header.

@@ -20,6 +20,9 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 ## Build / toolchain
 
+<details>
+<summary><b>Expand Build / toolchain items</b></summary>
+
 - [x] **`esp32dev` build failed on the official platform (mbedtls v2).** _(done)_
       `ssh_rsa.cpp`'s ARDUINO path now compiles on **both** mbedtls v2 (official
       `espressif32`, Arduino core 2.0.x) and v3 (core 3.x) via
@@ -36,7 +39,12 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       Flash 56.3%). `platformio.ini` pins `espressif32 @ ^6.0.0` for
       reproducibility.
 
+</details>
+
 ## Security / correctness (high priority)
+
+<details>
+<summary><b>Expand Security / correctness (high priority) items</b></summary>
 
 - [x] **Native RSA signing is a `d=1` test stub, not a real signature.** _(done)_
       `ssh_rsa_sign()` native path now performs a full-width `s = em^d mod n`
@@ -96,7 +104,12 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       banner (`SSH_VERSION_MAX` + explicit lengths), and the WS handshake
       (`strnlen(client_key, WS_MAX_KEY_LEN+1)`) are all correctly bounded.
 
+</details>
+
 ## SSH protocol completeness (medium)
+
+<details>
+<summary><b>Expand SSH protocol completeness (medium) items</b></summary>
 
 - [x] **`SSH_MSG_UNIMPLEMENTED` not sent for unknown messages.** _(done)_ The
       dispatcher's default case (`ssh_server.cpp`) now emits
@@ -125,7 +138,12 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       _(Deferred - YAGNI: every negotiated algorithm needs ≤32 B; add the loop
       only when an algorithm that needs more is introduced.)_
 
+</details>
+
 ## Performance / hardware acceleration (medium)
+
+<details>
+<summary><b>Expand Performance / hardware acceleration (medium) items</b></summary>
 
 - [ ] **SSH per-packet HMAC runs in software SHA-256 on ESP32.** `compute_mac()`
       (`ssh_packet.cpp`) MACs every inbound and outbound packet via
@@ -146,7 +164,12 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       `mbedtls_aes_crypt_ecb()` loop. Native software path unchanged. Validated by
       the native AES-CTR KATs and `examples/07.SSHCryptoSelfTest` on-device.
 
+</details>
+
 ## HTTP / core (medium)
+
+<details>
+<summary><b>Expand HTTP / core (medium) items</b></summary>
 
 - [ ] **No TLS (HTTPS).** Plain HTTP only; relies on a trusted LAN, a TLS
       terminator, or the SSH channel. A real fix is large (mbedTLS TLS server).
@@ -158,7 +181,12 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       `SSH_PKT_BUF_SIZE + 32` (~2 KB) stack buffer; size the ESP32 SSH task stack
       accordingly or move it to BSS.
 
+</details>
+
 ## Optional services / features (toggleable, default off)
+
+<details>
+<summary><b>Expand Optional services / features (toggleable, default off) items</b></summary>
 
 Capabilities a small IoT web server commonly needs but the library does not yet
 provide. Each should follow the existing feature-flag convention - a
@@ -207,7 +235,12 @@ by how often a deployed device needs it.
 (Deliberately omitted as not worth the footprint for this class of device:
 HTTP Digest auth, WebSocket permessage-deflate, per-request access logging.)
 
+</details>
+
 ## Quality-of-life (developer / operator)
+
+<details>
+<summary><b>Expand Quality-of-life (developer / operator) items</b></summary>
 
 Convenience that does not add protocol capability but removes friction. Newbie
 items lower the floor for first-time users; operator items help whoever runs a
@@ -252,14 +285,24 @@ Operator / sysadmin:
       from the built-in access-logging that was deliberately omitted above as too
       heavy for this device class.
 
+</details>
+
 ## Examples (low)
+
+<details>
+<summary><b>Expand Examples (low) items</b></summary>
 
 - [x] **`begin()` heap-bytes contract mismatch.** _(done)_ The misleading
       "abs(result) == heap bytes needed" docstring/example was corrected; `begin()`
       now returns a `DetWebServerResult` code (see the named-failure-codes item
       above), and `heap_needed()`/`heap_available()` remain the way to check heap.
 
+</details>
+
 ## Housekeeping (low)
+
+<details>
+<summary><b>Expand Housekeeping (low) items</b></summary>
 
 - [x] **Native `base64_decode()` accepts `=` outside the trailing pad.** _(done)_
       `b64_val()` no longer treats `=` as a value; the decoder validates padding
@@ -288,3 +331,5 @@ Operator / sysadmin:
       now has a "Host key provisioning" section: `openssl genrsa` →
       `pkcs8 -topk8 -outform DER`, embed + write to NVS (`ssh_host_key/priv_der`)
       with `Preferences`, and `ssh_rsa_load_pubkey()` at boot.
+
+</details>
