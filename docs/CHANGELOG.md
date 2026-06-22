@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ef9facc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef9facc435b7caf534bb81e52b2bb938c8044c85))
+- update CHANGELOG.md [skip ci] ([`206abe1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/206abe1a8f6a823af00b0aa93b7fb045dbe37b4f))
 - update test report [skip ci] ([`b260304`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2603045df12eeb2b14866398138f91a4f752fc3))
 - update CHANGELOG.md [skip ci] ([`6863c57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6863c579e07218ebe2e431ee9bbfe814ac59efd4))
 - update test report [skip ci] ([`604cef3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/604cef3d8cd273916e04ed44ef95b94b1d9c96ee))
@@ -67,6 +69,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add GitHub Actions workflow status badges to README.md ([`346c0cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/346c0cf9362244e711d945a01abc0ba9ddee5203))
 - update feature flags info & add provisioning, MDNS & NTP services ([`b4135ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4135ba256608624ac5037f5f9e694775f4dca20))
 - docs ([`93c7ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ef88637ee6576bef7a6ba34a358881ff42a3))
 
