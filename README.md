@@ -397,6 +397,14 @@ GRAND TOTAL (all features, default config)               ~20,162 B  ≈ 20 KB
 
 </details>
 
+### Default Build Footprint
+
+A default compiled build of the minimal web server (including the Arduino/ESP-IDF framework core, ESP32 WiFi drivers, lwIP TCP/IP stack, and all library features active) consumes:
+
+* **Flash Footprint**: **307,857 bytes (~307.9 KB)** (approx. **23.5%** of a standard 1.3 MB application partition).
+* **RAM Footprint (BSS + Core RAM)**: **39,264 bytes (~39.3 KB)** (approx. **12.0%** of the 320 KB internal SRAM).
+* **Zero Dynamic Allocations**: The library requests exactly **0 bytes** of heap memory after `begin()`, managing all session and packet buffers statically (including event queues created via `xQueueCreateStatic()`).
+
 ESP32 has 320 KB of DRAM; this library consumes < 7% of that at maximum configuration.
 
 ## Utility Tools
