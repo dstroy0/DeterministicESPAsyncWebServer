@@ -82,6 +82,7 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 #if DETWS_ENABLE_PROVISIONING && defined(ARDUINO)
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "DETWS_HTML.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 #include <Arduino.h>
@@ -91,13 +92,6 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 static DetWebServer *g_server = nullptr;
 static struct udp_pcb *g_dns_pcb = nullptr;
 static uint8_t g_ap_ip[4] = {192, 168, 4, 1};
-
-static const char PROV_FORM[] = "<!DOCTYPE html><html><head><meta name=viewport content='width=device-width'>"
-                                "<title>WiFi setup</title></head><body><h2>WiFi setup</h2>"
-                                "<form method=POST action=/save>"
-                                "SSID:<br><input name=ssid maxlength=32><br>"
-                                "Password:<br><input name=psk type=password maxlength=63><br><br>"
-                                "<input type=submit value=Save></form></body></html>";
 
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
 static void prov_dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
@@ -192,7 +186,7 @@ void detws_provisioning_clear()
 static void prov_form_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    g_server->send(slot_id, 200, "text/html", PROV_FORM);
+    g_server->send(slot_id, 200, "text/html", DETWS_PROV_FORM);
 }
 
 static void prov_save_handler(uint8_t slot_id, HttpReq *req)
@@ -211,7 +205,7 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     prefs.putString("ssid", ssid);
     prefs.putString("psk", psk);
     prefs.end();
-    g_server->send(slot_id, 200, "text/html", "<html><body>Saved. Rebooting...</body></html>");
+    g_server->send(slot_id, 200, "text/html", DETWS_PROV_SAVED_HTML);
     delay(500);
     ESP.restart();
 }
