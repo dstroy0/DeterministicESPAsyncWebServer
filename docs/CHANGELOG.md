@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`604cef3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/604cef3d8cd273916e04ed44ef95b94b1d9c96ee))
+- update CHANGELOG.md [skip ci] ([`46d618d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46d618d06f4e571b542a965e78a84d984940b0bf))
 - bump patch version to 1.2.1 and update README ([`68d7375`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68d73753852f61a8242bd1fcb795ce6d83ba19fc))
 - update test report [skip ci] ([`8598435`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8598435a68f4ca6765cfc75f86a3528f766bef13))
 - update CHANGELOG.md [skip ci] ([`4a2cd14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a2cd14db09d426f7d71588fc6f790bd0f14df91))
@@ -38,6 +40,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`566095c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/566095cc8065a74a9afe6b4e258628d1d15ea717))
+- formatting ([`216902c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216902c416b2bed37e5465073cdb05129ce35c2e))
 - - Add optional system services: ([`5b3c5f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3c5f2bb500d4d4eafbafb1650c4292514a558d))
 - add toc ([`9f165c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f165c53fedb4e40fddd532b4aaf2797010fe847))
 - update md formatting; add collapsible sections ([`0b77665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b776659877417ad63f6eaf141918194480b8201))
