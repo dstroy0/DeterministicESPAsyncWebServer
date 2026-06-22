@@ -62,7 +62,7 @@ REFERENCED_BY_RELATION = YES
 REFERENCES_RELATION    = YES
 
 #---------------------------------------------------------------------------
-# HTML appearance — dark ocean theme
+# HTML appearance - dark ocean theme
 #---------------------------------------------------------------------------
 HTML_OUTPUT            = .
 HTML_FILE_EXTENSION    = .html
@@ -92,7 +92,7 @@ SEARCHENGINE           = YES
 SERVER_BASED_SEARCH    = NO
 
 #---------------------------------------------------------------------------
-# Graphs — disabled to avoid Graphviz dependency
+# Graphs - disabled to avoid Graphviz dependency
 # Set HAVE_DOT = YES and uncomment below if Graphviz is installed
 #---------------------------------------------------------------------------
 HAVE_DOT               = NO

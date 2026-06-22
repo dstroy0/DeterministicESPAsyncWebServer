@@ -13,12 +13,12 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "FS.h"
-#include <unity.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <unity.h>
 
 static DetWebServer server;
-static bool        handler_called = false;
+static bool handler_called = false;
 
 static void push_str(uint8_t slot, const char *s)
 {
@@ -57,15 +57,15 @@ static void handle_missing(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server        = DetWebServer();
+    server = DetWebServer();
     handler_called = false;
 
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i]       = {};
-        conn_pool[i].id    = (uint8_t)i;
+        conn_pool[i] = {};
+        conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].pcb   = &_mock_pcb;
+        conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
     }
     ws_init();
@@ -186,8 +186,7 @@ void test_large_file_body_fully_sent()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
 
     char expected_cl[64];
-    snprintf(expected_cl, sizeof(expected_cl),
-             "Content-Length: %u", (unsigned)(sizeof(large_body) - 1));
+    snprintf(expected_cl, sizeof(expected_cl), "Content-Length: %u", (unsigned)(sizeof(large_body) - 1));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), expected_cl));
 }
 
@@ -209,27 +208,31 @@ void test_serve_file_does_not_affect_other_routes()
 
 void test_multiple_content_types()
 {
-    static const struct { const char *path; const char *ctype; const char *body; }
-    cases[] = {
-        { "/page.html", "text/html",        "<html/>" },
-        { "/style.css", "text/css",         "body{}" },
-        { "/data.json", "application/json", "{}" },
-        { "/app.js",    "text/javascript",  "var x=1;" },
+    static const struct
+    {
+        const char *path;
+        const char *ctype;
+        const char *body;
+    } cases[] = {
+        {"/page.html", "text/html", "<html/>"},
+        {"/style.css", "text/css", "body{}"},
+        {"/data.json", "application/json", "{}"},
+        {"/app.js", "text/javascript", "var x=1;"},
     };
 
     static const char *cur_ctype = nullptr;
-    static const char *cur_path  = nullptr;
+    static const char *cur_path = nullptr;
 
     for (size_t i = 0; i < 4; i++)
     {
         cur_ctype = cases[i].ctype;
-        cur_path  = cases[i].path;
+        cur_path = cases[i].path;
 
-        server         = DetWebServer();
-        conn_pool[0]   = {};
-        conn_pool[0].id    = 0;
+        server = DetWebServer();
+        conn_pool[0] = {};
+        conn_pool[0].id = 0;
         conn_pool[0].state = CONN_ACTIVE;
-        conn_pool[0].pcb   = &_mock_pcb;
+        conn_pool[0].pcb = &_mock_pcb;
         http_reset(0);
         tcp_capture_reset();
 
@@ -244,12 +247,8 @@ void test_multiple_content_types()
         snprintf(req_str, sizeof(req_str), "GET %s HTTP/1.1\r\n\r\n", cases[i].path);
         feed_and_handle(0, req_str);
 
-        TEST_ASSERT_NOT_NULL_MESSAGE(
-            strstr(tcp_captured(), "200 OK"),
-            "expected 200 OK");
-        TEST_ASSERT_NOT_NULL_MESSAGE(
-            strstr(tcp_captured(), cases[i].ctype),
-            "expected content-type in response");
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr(tcp_captured(), "200 OK"), "expected 200 OK");
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr(tcp_captured(), cases[i].ctype), "expected content-type in response");
     }
 }
 
@@ -266,10 +265,10 @@ void stress_serve_file_50_requests()
     for (int i = 0; i < 50; i++)
     {
         uint8_t slot = (uint8_t)(i % MAX_CONNS);
-        conn_pool[slot]       = {};
-        conn_pool[slot].id    = slot;
+        conn_pool[slot] = {};
+        conn_pool[slot].id = slot;
         conn_pool[slot].state = CONN_ACTIVE;
-        conn_pool[slot].pcb   = &_mock_pcb;
+        conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);
         tcp_capture_reset();
         handler_called = false;
@@ -295,10 +294,10 @@ void stress_alternate_missing_and_found()
     for (int i = 0; i < 40; i++)
     {
         uint8_t slot = (uint8_t)(i % MAX_CONNS);
-        conn_pool[slot]       = {};
-        conn_pool[slot].id    = slot;
+        conn_pool[slot] = {};
+        conn_pool[slot].id = slot;
         conn_pool[slot].state = CONN_ACTIVE;
-        conn_pool[slot].pcb   = &_mock_pcb;
+        conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);
         tcp_capture_reset();
 

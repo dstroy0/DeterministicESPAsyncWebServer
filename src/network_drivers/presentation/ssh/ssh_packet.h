@@ -1,0 +1,232 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file ssh_packet.h
+ * @brief SSH binary packet protocol: framing, AES-256-CTR encryption,
+ *        HMAC-SHA2-256 integrity, and sequence-number tracking.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WIRE FORMAT (RFC 4253 §6)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  Each SSH packet on the wire (after KEX completes):
+ *
+ *    [4 bytes] packet_length    - big-endian uint32 (does NOT include itself
+ *                                 or the MAC; includes padding_length, payload,
+ *                                 and random_padding fields)
+ *    [1 byte]  padding_length   - number of bytes of random padding
+ *    [N bytes] payload          - the SSH message
+ *    [P bytes] random_padding   - random bytes; total pkt_len % blocksize == 0
+ *    [32 bytes] MAC             - HMAC-SHA2-256 over:
+ *                                   uint32(seq_no) || packet_length ||
+ *                                   padding_length || payload || random_padding
+ *
+ *  AES-256-CTR encrypts: packet_length || padding_length || payload || padding
+ *  The MAC is computed over the PLAINTEXT (before encryption) prepended with
+ *  the 4-byte sequence number.  This is the "encrypt-then-MAC" variant used
+ *  by openssh with hmac-sha2-256 (ETM) - but RFC 4253 default is MAC-then-
+ *  encrypt.  We implement STANDARD RFC 4253 (MAC over plaintext, then encrypt)
+ *  to match the base SSH specification.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * MAC-VERIFY-BEFORE-USE INVARIANT
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  On receive: decrypt → verify HMAC → then process the payload.
+ *  If HMAC verification fails: close the connection immediately, zero the
+ *  decrypted buffer.  Do NOT process or reflect any byte of the payload.
+ *
+ *  This ordering closes the "BEAST" class of attack where an attacker can
+ *  influence decryption outputs by injecting invalid packets.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SEQUENCE NUMBER OVERFLOW GUARD
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  SSH sequence numbers are 32-bit values that wrap at 2^32.  RFC 4253 does
+ *  not mandate rekeying before wrap; however, CTR-mode keystream repetition
+ *  at wrap would be a catastrophic confidentiality failure.
+ *
+ *  Policy: close the connection if seq_no_send or seq_no_recv reaches
+ *  SSH_SEQ_CLOSE_THRESHOLD.  A future rekey implementation would reset the
+ *  counters instead.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PADDING
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  AES-256-CTR block size = 16 bytes.  RFC 4253 §6 requires the padded
+ *  packet (packet_length + 1 + payload + padding) to be a multiple of
+ *  max(8, cipher_block_size) = 16.  Minimum padding is 4 bytes.
+ *
+ *  padding_len = (16 - ((5 + payload_len) % 16)) % 16
+ *  if (padding_len < 4) padding_len += 16;
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H
+#define DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H
+
+#include "DetWebServerConfig.h"
+#include "ssh_hmac_sha256.h"
+#include "ssh_keymat.h"
+#include <stddef.h>
+#include <stdint.h>
+
+// ---------------------------------------------------------------------------
+// Sequence number overflow threshold
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Close the connection when seq_no reaches this value.
+ *
+ * Set to 0xFFFFFFF0 (16 below the 32-bit wrap) as a conservative margin.
+ * This prevents CTR keystream reuse that would occur at wrap.
+ * A rekey implementation would reset this counter; until then, we close.
+ */
+#define SSH_SEQ_CLOSE_THRESHOLD 0xFFFFFFF0u
+
+// ---------------------------------------------------------------------------
+// SSH message type constants (RFC 4253)
+// ---------------------------------------------------------------------------
+
+#define SSH_MSG_DISCONNECT 1
+#define SSH_MSG_IGNORE 2
+#define SSH_MSG_UNIMPLEMENTED 3
+#define SSH_MSG_SERVICE_REQUEST 5
+#define SSH_MSG_SERVICE_ACCEPT 6
+#define SSH_MSG_KEXINIT 20
+#define SSH_MSG_NEWKEYS 21
+#define SSH_MSG_KEXDH_INIT 30
+#define SSH_MSG_KEXDH_REPLY 31
+#define SSH_MSG_USERAUTH_REQUEST 50
+#define SSH_MSG_USERAUTH_FAILURE 51
+#define SSH_MSG_USERAUTH_SUCCESS 52
+#define SSH_MSG_USERAUTH_PK_OK 60
+#define SSH_MSG_CHANNEL_OPEN 90
+#define SSH_MSG_CHANNEL_OPEN_CONFIRM 91
+#define SSH_MSG_CHANNEL_OPEN_FAILURE 92
+#define SSH_MSG_CHANNEL_WINDOW_ADJUST 93
+#define SSH_MSG_CHANNEL_DATA 94
+#define SSH_MSG_CHANNEL_EOF 96
+#define SSH_MSG_CHANNEL_CLOSE 97
+#define SSH_MSG_CHANNEL_REQUEST 98
+#define SSH_MSG_CHANNEL_SUCCESS 99
+#define SSH_MSG_CHANNEL_FAILURE 100
+
+// ---------------------------------------------------------------------------
+// Disconnect reason codes (RFC 4253 §11.1)
+// ---------------------------------------------------------------------------
+
+#define SSH_DISCONNECT_PROTOCOL_ERROR 2
+#define SSH_DISCONNECT_MAC_ERROR 5
+#define SSH_DISCONNECT_TOO_MANY_CONNECTIONS 11
+
+// ---------------------------------------------------------------------------
+// Packet state per connection
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Per-connection SSH binary packet state.
+ *
+ * Allocated in ssh_pool[] (BSS); one entry per SSH connection slot.
+ * Key material is in ssh_keys[] - a separate BSS symbol to prevent linear
+ * overflow from packet buffers into key material.
+ */
+struct SshPacketState
+{
+    uint32_t seq_no_send; ///< Outgoing sequence number (incremented per packet).
+    uint32_t seq_no_recv; ///< Incoming sequence number (incremented per packet).
+    bool kex_active;      ///< True while KEX is in progress (no user data).
+    bool encrypted;       ///< True after SSH_MSG_NEWKEYS exchange completes.
+
+    // Receive reassembly: we may receive partial packets across TCP segments.
+    uint8_t rx_buf[SSH_PKT_BUF_SIZE]; ///< Raw receive buffer (from transport).
+    size_t rx_len;                    ///< Bytes currently in rx_buf.
+};
+
+/** @brief Static packet state pool (BSS). One entry per SSH slot. */
+extern SshPacketState ssh_pkt[MAX_SSH_CONNS];
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Initialize the packet state for SSH connection slot @p i.
+ *
+ * Zeroes seq numbers; sets encrypted=false, kex_active=true.
+ *
+ * @param i  SSH slot index.
+ */
+void ssh_pkt_init(uint8_t i);
+
+/**
+ * @brief Build and send one SSH binary packet.
+ *
+ * Frames @p payload according to RFC 4253 §6:
+ *   - Adds random padding to align to 16-byte boundary.
+ *   - If encrypted: encrypts with AES-256-CTR, appends HMAC-SHA2-256 MAC.
+ *   - Increments seq_no_send; closes connection if threshold reached.
+ *
+ * The serialized packet is written into @p out.  *@p out_len is set to the
+ * number of bytes written.  @p out must be at least
+ * (4 + 1 + payload_len + 16 + 32) bytes.
+ *
+ * @param i           SSH slot index.
+ * @param payload     Plaintext SSH message payload.
+ * @param payload_len Length of @p payload.
+ * @param out         Output buffer for the wire packet.
+ * @param out_len     Set to the number of bytes written into @p out.
+ * @param out_cap     Capacity of @p out.
+ * @return 0 on success, -1 on overflow or sequence-number exhaustion.
+ */
+int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t *out_len, size_t out_cap);
+
+/**
+ * @brief Callback invoked once per complete, verified inbound SSH message.
+ *
+ * @param slot         SSH slot index.
+ * @param msg_type     First payload byte (SSH message number).
+ * @param payload      Decrypted message payload (includes @p msg_type at [0]).
+ * @param payload_len  Length of @p payload.
+ */
+typedef void (*ssh_msg_handler_t)(uint8_t slot, uint8_t msg_type, const uint8_t *payload, size_t payload_len);
+
+/**
+ * @brief Receive and process one or more SSH binary packets from @p data.
+ *
+ * Appends @p len bytes from @p data to the receive buffer for slot @p i,
+ * then extracts complete packets.  For each complete packet:
+ *   - If encrypted: decrypts with AES-256-CTR, verifies HMAC-SHA2-256.
+ *     Closes connection (returns -1) on MAC failure without processing payload.
+ *   - Increments seq_no_recv; closes connection if threshold reached.
+ *   - Calls @p handler(slot, msg_type, payload, payload_len) for the payload.
+ *
+ * @param i        SSH slot index.
+ * @param data     Received bytes (from TCP).
+ * @param len      Number of bytes in @p data.
+ * @param handler  Callback invoked once per complete, verified packet.
+ * @return 0 on success, -1 on MAC failure or sequence-number exhaustion
+ *         (caller must close the TCP connection).
+ */
+int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t handler);
+
+/**
+ * @brief Send SSH_MSG_DISCONNECT with reason @p reason_code.
+ *
+ * Sends the packet, then zeroes the packet state and key material for slot @p i.
+ *
+ * @param i            SSH slot index.
+ * @param reason_code  One of SSH_DISCONNECT_* constants.
+ * @param out          Output buffer for the wire packet.
+ * @param out_len      Set to the number of bytes written.
+ * @param out_cap      Capacity of @p out.
+ * @return 0 on success, -1 on error.
+ */
+int ssh_pkt_disconnect(uint8_t i, uint32_t reason_code, uint8_t *out, size_t *out_len, size_t out_cap);
+
+#endif // DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H

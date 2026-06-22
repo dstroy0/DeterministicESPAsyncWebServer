@@ -3,20 +3,20 @@
 
 /**
  * @file DeterministicESPAsyncWebServer.h
- * @brief Layer 7 (Application) — public HTTP routing API.
+ * @brief Layer 7 (Application) - public HTTP routing API.
  *
  * This is the only header most application code needs to include.
  * The full OSI include chain is pulled in automatically:
  * @code
- *   DeterministicESPAsyncWebServer.h
- *     └── network_drivers/presentation.h  (Layer 6)
- *           ├── network_drivers/transport.h  (Layer 4)
- *           │     └── DetWebServerConfig.h   (compile-time constants + feature flags)
- *           └── network_drivers/http_parser.h (parser types)
- *     └── network_drivers/session.h       (Layer 5 — event queue)
+ *   DeterministicESPAsyncWebServer.h                  (L7 Application)
+ *     ├── network_drivers/presentation/presentation.h (L6 Presentation)
+ *     │       ├── network_drivers/presentation/http_parser.h (parser types)
+ *     │       └── network_drivers/transport/transport.h      (L4 Transport)
+ *     │               └── DetWebServerConfig.h   (compile-time config)
+ *     └── network_drivers/session/session.h      (L5 Session - event drain)
  * @endcode
  *
- * **Feature flags** — define any of these to 0 before including to strip
+ * **Feature flags** - define any of these to 0 before including to strip
  * the feature from the build entirely:
  * @code
  *   #define DETWS_ENABLE_WEBSOCKET    0
@@ -40,16 +40,16 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
-#include "network_drivers/presentation.h"
-#include "network_drivers/session.h"
+#include "network_drivers/presentation/presentation.h"
+#include "network_drivers/session/session.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/websocket.h"
+#include "network_drivers/presentation/websocket.h"
 #endif
 #if DETWS_ENABLE_SSE
-#include "network_drivers/sse.h"
+#include "network_drivers/presentation/sse.h"
 #endif
 #if DETWS_ENABLE_MULTIPART
-#include "network_drivers/multipart.h"
+#include "network_drivers/presentation/multipart.h"
 #endif
 #include <Arduino.h>
 #if DETWS_ENABLE_FILE_SERVING
@@ -73,13 +73,14 @@
  */
 enum HttpMethod
 {
-    HTTP_GET,    ///< Safe, idempotent read
-    HTTP_POST,   ///< Non-idempotent create / action
-    HTTP_PUT,    ///< Idempotent replace
-    HTTP_DELETE, ///< Idempotent delete
-    HTTP_PATCH,  ///< Partial update
-    HTTP_HEAD,   ///< Same as GET but no response body
-    HTTP_OPTIONS ///< Capability query / CORS preflight
+    HTTP_GET,           ///< Safe, idempotent read
+    HTTP_POST,          ///< Non-idempotent create / action
+    HTTP_PUT,           ///< Idempotent replace
+    HTTP_DELETE,        ///< Idempotent delete
+    HTTP_PATCH,         ///< Partial update
+    HTTP_HEAD,          ///< Same as GET but no response body
+    HTTP_OPTIONS,       ///< Capability query / CORS preflight
+    HTTP_METHOD_UNKNOWN ///< Unrecognized method token → 501 Not Implemented
 };
 
 // ---------------------------------------------------------------------------
@@ -148,10 +149,10 @@ enum RouteType
 {
     ROUTE_HTTP, ///< Standard HTTP request/response.
 #if DETWS_ENABLE_WEBSOCKET
-    ROUTE_WS,   ///< WebSocket upgrade route.
+    ROUTE_WS, ///< WebSocket upgrade route.
 #endif
 #if DETWS_ENABLE_SSE
-    ROUTE_SSE   ///< Server-Sent Events route.
+    ROUTE_SSE ///< Server-Sent Events route.
 #endif
 };
 
@@ -163,15 +164,15 @@ enum RouteType
  */
 struct Route
 {
-    char      path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
-    RouteType type;               ///< HTTP, WS, or SSE.
-    HttpMethod method;            ///< HTTP method (ROUTE_HTTP only).
-    Handler callback;             ///< HTTP handler (ROUTE_HTTP only).
+    char path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
+    RouteType type;          ///< HTTP, WS, or SSE.
+    HttpMethod method;       ///< HTTP method (ROUTE_HTTP only).
+    Handler callback;        ///< HTTP handler (ROUTE_HTTP only).
 
 #if DETWS_ENABLE_WEBSOCKET
     WsConnectHandler ws_connect; ///< Fired on upgrade success.
     WsMessageHandler ws_message; ///< Fired on each data frame.
-    WsCloseHandler   ws_close;   ///< Fired on close.
+    WsCloseHandler ws_close;     ///< Fired on close.
 #endif
 
 #if DETWS_ENABLE_SSE
@@ -190,7 +191,7 @@ struct Route
 };
 
 // ---------------------------------------------------------------------------
-// DetWebServer — the main application class
+// DetWebServer - the main application class
 // ---------------------------------------------------------------------------
 
 /**
@@ -214,7 +215,7 @@ struct Route
  * }
  *
  * void loop() {
- *     server.handle();   // call every iteration — O(MAX_CONNS) per call
+ *     server.handle();   // call every iteration - O(MAX_CONNS) per call
  * }
  * @endcode
  *
@@ -230,9 +231,12 @@ class DetWebServer
     Route _routes[MAX_ROUTES]; ///< Flat routing table; searched linearly.
     uint8_t _route_count;      ///< Number of active entries in _routes.
 
-    uint16_t _port;             ///< TCP port passed to begin(); 0 before first begin().
     Handler _not_found_handler; ///< Called when no route matches; may be null.
     bool _cors_enabled;         ///< True after a non-empty set_cors() call.
+
+    uint16_t _listen_ports[MAX_LISTENERS];   ///< Ports registered via listen() or begin(port).
+    ConnProto _listen_protos[MAX_LISTENERS]; ///< Protocol for each registered listener.
+    uint8_t _listener_count;                 ///< Number of registered listeners.
 
     /**
      * @brief Pre-built CORS header block injected into every response.
@@ -255,7 +259,9 @@ class DetWebServer
     static bool path_matches(const char *route, bool is_wildcard, const char *req_path);
 
 #if DETWS_ENABLE_AUTH
+    /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
+    /// @brief Send 401 Unauthorized with a `WWW-Authenticate: Basic realm="<realm>"` header.
     void send_unauth(uint8_t slot_id, const char *realm);
 #endif
 
@@ -307,16 +313,50 @@ class DetWebServer
     DetWebServer();
 
     /**
-     * @brief Initialise all connection slots and open the TCP listener.
+     * @brief Register a port to listen on when begin() is called.
      *
-     * Resets the HTTP parser pool and delegates to DeterministicAsyncTCP::init().
-     * Pass a WebServerConfig to tune runtime parameters (timeout, etc.) at
-     * init time; the config may live in PROGMEM (flash) or RAM.
+     * Call this before begin() for each port you want the server to accept
+     * connections on.  The @p proto argument tells the session layer which
+     * protocol handler to invoke for events on this port.
+     *
+     * For the common single-HTTP-port case, prefer `begin(80)` which calls
+     * this internally.  Use the explicit listen() + begin() form when you
+     * need multiple ports (e.g., HTTP on 80 and Telnet on 23).
+     *
+     * @code
+     * server.listen(80, PROTO_HTTP);
+     * server.listen(23, PROTO_TELNET);
+     * server.begin();
+     * @endcode
+     *
+     * @param port  TCP port to open.
+     * @param proto Application protocol; defaults to PROTO_HTTP.
+     * @return Positive value on success; -1 if the listener pool is full.
+     */
+    int32_t listen(uint16_t port, ConnProto proto = PROTO_HTTP);
+
+    /**
+     * @brief Initialize all connection slots and open all registered listeners.
+     *
+     * Resets the HTTP parser pool, calls DeterministicAsyncTCP::pool_init(),
+     * then calls listener_add() for each port registered via listen().
+     * Requires at least one prior listen() call; returns -1 if no ports are
+     * registered.  For the common single-port case use begin(port, cfg) instead.
+     *
+     * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
+     * @return Positive value on success; -1 on failure.
+     */
+    int32_t begin(const WebServerConfig *cfg = nullptr);
+
+    /**
+     * @brief Convenience overload: register @p port as HTTP and start listening.
+     *
+     * Equivalent to `listen(port); begin(cfg);`.  Preserved for backward
+     * compatibility with single-port sketches.
      *
      * @param port TCP port to listen on (typically 80).
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return Positive value on success; negative value whose absolute value is
-     *         the number of heap bytes needed when initialisation fails.
+     * @return Positive value on success; -1 on failure.
      */
     int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
 
@@ -330,15 +370,14 @@ class DetWebServer
     void stop();
 
     /**
-     * @brief Hard-reset all connections and reinitialise the server on the
-     *        same port that was passed to begin().
+     * @brief Hard-reset all connections and re-open all registered listeners.
      *
-     * Equivalent to stop() followed by begin() with the original port and an
-     * optional new runtime config.  The WiFi and TCP/IP stack are not touched.
-     * Returns the same values as begin(): positive on success, negative whose
-     * absolute value is the heap bytes needed on failure.
+     * Equivalent to stop() followed by begin(cfg) using the ports and protocols
+     * registered via listen() (or the port passed to begin(port)).  The WiFi
+     * and TCP/IP stack are not touched.
      *
-     * Calling restart() before begin() has no effect and returns -1.
+     * Calling restart() before any listen() / begin(port) has no effect and
+     * returns -1.
      *
      * @param cfg Optional new runtime configuration.  Pass nullptr to reuse
      *            the compile-time default (CONN_TIMEOUT_MS).
@@ -376,8 +415,8 @@ class DetWebServer
      * @param user     Required username.
      * @param pass     Required password.
      */
-    void on(const char *path, HttpMethod method, Handler callback,
-            const char *realm, const char *user, const char *pass);
+    void on(const char *path, HttpMethod method, Handler callback, const char *realm, const char *user,
+            const char *pass);
 #endif // DETWS_ENABLE_AUTH
 
 #if DETWS_ENABLE_FILE_SERVING
@@ -394,8 +433,7 @@ class DetWebServer
      * @param fs_path      Path to the file on the filesystem.
      * @param content_type MIME type string, e.g. "text/html".
      */
-    void serve_file(uint8_t slot_id, fs::FS &file_sys,
-                    const char *fs_path, const char *content_type);
+    void serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type);
 #endif // DETWS_ENABLE_FILE_SERVING
 
     /**
@@ -421,7 +459,7 @@ class DetWebServer
     void set_cors(const char *origin);
 
     /**
-     * @brief Drive the server — call every Arduino `loop()` iteration.
+     * @brief Drive the server - call every Arduino `loop()` iteration.
      *
      * Internally this:
      * 1. Calls `DeterministicAsyncTCP::check_timeouts()` to kill stale
@@ -471,7 +509,7 @@ class DetWebServer
      *
      * Responds with 200 application/json containing the compile-time feature
      * flags and all capacity constants.  Only available when
-     * DETWS_ENABLE_DIAG is set to 1 — disable before deploying to production.
+     * DETWS_ENABLE_DIAG is set to 1 - disable before deploying to production.
      *
      * @param slot_id Connection slot index.
      */
@@ -498,10 +536,7 @@ class DetWebServer
      * @param on_message  Fired for each text or binary frame.  Must not be nullptr.
      * @param on_close    Fired when the connection closes.  May be nullptr.
      */
-    void on_ws(const char *path,
-               WsConnectHandler on_connect,
-               WsMessageHandler on_message,
-               WsCloseHandler   on_close);
+    void on_ws(const char *path, WsConnectHandler on_connect, WsMessageHandler on_message, WsCloseHandler on_close);
 
     /**
      * @brief Send a text frame to a WebSocket client.
@@ -560,8 +595,7 @@ class DetWebServer
      * @param event   Optional event name (sets the `event:` field).
      * @param id      Optional event ID (sets the `id:` field).
      */
-    void sse_send(uint8_t sse_id, const char *data,
-                  const char *event = nullptr, const char *id = nullptr);
+    void sse_send(uint8_t sse_id, const char *data, const char *event = nullptr, const char *id = nullptr);
 
     /**
      * @brief Push an event to all connected SSE clients on a given path.
@@ -574,8 +608,7 @@ class DetWebServer
      * @param event  Optional event name.
      * @param id     Optional event ID.
      */
-    void sse_broadcast(const char *path, const char *data,
-                       const char *event = nullptr, const char *id = nullptr);
+    void sse_broadcast(const char *path, const char *data, const char *event = nullptr, const char *id = nullptr);
 #endif // DETWS_ENABLE_SSE
 };
 

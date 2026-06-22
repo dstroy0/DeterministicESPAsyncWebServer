@@ -3,7 +3,7 @@
 
 /**
  * @file datalink.cpp
- * @brief Layer 2 (Data Link) — IEEE 802.11 frame handling stub.
+ * @brief Layer 2 (Data Link) - IEEE 802.11 frame handling stub.
  *
  * All Layer 2 operations (WLAN MAC, frame assembly/disassembly, CSMA/CA)
  * are handled by the Espressif WiFi driver and lwIP port.  This function

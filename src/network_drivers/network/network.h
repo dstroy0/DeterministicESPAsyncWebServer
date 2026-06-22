@@ -3,7 +3,7 @@
 
 /**
  * @file network.h
- * @brief Layer 3 (Network) — IP routing and packet forwarding.
+ * @brief Layer 3 (Network) - IP routing and packet forwarding.
  *
  * On ESP32 the network layer is fully managed by the lwIP TCP/IP stack.
  * IP address assignment (DHCP or static), routing, and ICMP are all
@@ -22,7 +22,7 @@
 #include <Arduino.h>
 
 /**
- * @brief Initialise the network layer.
+ * @brief Initialize the network layer.
  *
  * Currently a no-op; lwIP manages IP routing internally.  Call this if you
  * later add static-route configuration, ICMP echo handling, or custom

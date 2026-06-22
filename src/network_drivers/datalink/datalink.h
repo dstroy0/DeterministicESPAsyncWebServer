@@ -3,7 +3,7 @@
 
 /**
  * @file datalink.h
- * @brief Layer 2 (Data Link) — Ethernet / 802.11 frame handling.
+ * @brief Layer 2 (Data Link) - Ethernet / 802.11 frame handling.
  *
  * On ESP32 the data link layer is fully managed by the Espressif lwIP port
  * (WLAN device driver + IEEE 802.11 MAC).  This header exists to complete
@@ -22,7 +22,7 @@
 #include <Arduino.h>
 
 /**
- * @brief Initialise the data-link layer.
+ * @brief Initialize the data-link layer.
  *
  * Currently a no-op; the Espressif WiFi + lwIP stack handles all Layer 2
  * operations internally.  Call this if you later add MAC-level extensions.

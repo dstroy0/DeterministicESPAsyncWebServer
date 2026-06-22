@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# run_tests.sh — Build, run, and document all PlatformIO native test suites.
+# run_tests.sh - Build, run, and document all PlatformIO native test suites.
 #
 # Usage:
 #   ./test/run_tests.sh      # from project root
 #   ./run_tests.sh           # from test/ directory
 #
-# Writes: test/TEST_REPORTS.md
+# Writes: docs/TEST_REPORT.md
 #
 # Requires: bash 4.2+, pio (PlatformIO Core), awk, sed, grep, mktemp
 
@@ -20,7 +20,7 @@ else
     PROJECT_ROOT="$SCRIPT_DIR"
 fi
 TEST_DIR="${PROJECT_ROOT}/test"
-REPORT_PATH="${TEST_DIR}/TEST_REPORTS.md"
+REPORT_PATH="${PROJECT_ROOT}/docs/TEST_REPORT.md"
 
 # ── Find pio ──────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ trap 'rm -f "$RAW_FILE" "$CLEAN_FILE"' EXIT
 
 T0=$SECONDS
 set +e
-"$PIO" test -e native -e native_app 2>&1 | tee "$RAW_FILE"
+"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance 2>&1 | tee "$RAW_FILE"
 PIO_EXIT="${PIPESTATUS[0]}"
 set -e
 WALL_SECS=$(( SECONDS - T0 ))
@@ -68,7 +68,7 @@ sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$RAW_FILE" > "$CLEAN_FILE"
 
 # ── Parse results ─────────────────────────────────────────────────────────────
 
-# Parallel indexed arrays — bash 4.0+
+# Parallel indexed arrays - bash 4.0+
 T_IDX=0
 declare -a T_ENV=() T_SUITE=() T_FILE=() T_LINE=() T_NAME=() T_STATUS=()
 
@@ -117,12 +117,15 @@ done < "$CLEAN_FILE"
 
 # Totals
 N_TOTAL=0; N_PASSED=0; N_FAILED=0
-_tot=$(grep -E '[0-9]+ test cases' "$CLEAN_FILE" | tail -1) || true
-if [[ "$_tot" =~ ([0-9]+)[[:space:]]+test[[:space:]]+cases.*([0-9]+)[[:space:]]+succeeded ]]; then
-    N_TOTAL="${BASH_REMATCH[1]}"
-    N_PASSED="${BASH_REMATCH[2]}"
-    N_FAILED=$(( N_TOTAL - N_PASSED ))
-fi
+# Sum the per-invocation summary line(s): "N test cases: M succeeded in ...".
+# The literal ": " anchor avoids a greedy ".*" mis-capturing the second count.
+while IFS= read -r _line; do
+    if [[ "$_line" =~ ([0-9]+)[[:space:]]+test[[:space:]]+cases:[[:space:]]+([0-9]+)[[:space:]]+succeeded ]]; then
+        N_TOTAL=$(( N_TOTAL + BASH_REMATCH[1] ))
+        N_PASSED=$(( N_PASSED + BASH_REMATCH[2] ))
+    fi
+done < <(grep -E '[0-9]+ test cases:' "$CLEAN_FILE")
+N_FAILED=$(( N_TOTAL - N_PASSED ))
 
 # ── Description helpers ───────────────────────────────────────────────────────
 
@@ -175,10 +178,10 @@ name_to_desc() {
     local prefix=""
 
     if [[ "$name" == stress_* ]]; then
-        prefix="Stress — "
+        prefix="Stress - "
         name="${name#stress_}"
     elif [[ "$name" == race_* ]]; then
-        prefix="Race — "
+        prefix="Race - "
         name="${name#race_}"
     elif [[ "$name" == test_* ]]; then
         name="${name#test_}"
@@ -207,14 +210,14 @@ OV_ICON="✅"; [[ $N_FAILED -gt 0 ]] && OV_ICON="❌"
 DATE_STR="$(date '+%Y-%m-%d %H:%M:%S')"
 RES_STR="${OV_ICON} ${N_PASSED} passed"
 [[ $N_FAILED -gt 0 ]] && RES_STR+=", ${N_FAILED} failed"
-RES_STR+=" — ${WALL_SECS}s"
+RES_STR+=" - ${WALL_SECS}s"
 
 {
 cat <<EOF
-# Test Report — DeterministicESPAsyncWebServer
+# Test Report - DeterministicESPAsyncWebServer
 
 **Generated:** ${DATE_STR}
-**Command:** \`pio test -e native -e native_app\`
+**Command:** \`pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance\`
 **Result:** ${RES_STR}
 
 ---
@@ -252,7 +255,7 @@ for (( i=0; i<T_IDX; i++ )); do
     _gicon="✅"; [[ $_fail -gt 0 ]] && _gicon="❌"
     _brief=$(get_suite_brief "$_suite") || true
 
-    _header="## ${_suite} — ${_gicon} ${_pass} passed"
+    _header="## ${_suite} - ${_gicon} ${_pass} passed"
     [[ $_fail -gt 0 ]] && _header+=", ${_fail} failed"
     echo "$_header"
     echo ""

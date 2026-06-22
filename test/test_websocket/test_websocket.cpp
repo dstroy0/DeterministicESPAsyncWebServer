@@ -10,11 +10,11 @@
 //   WS PARSER   -- per-state-machine path through ws_parse()
 //   STRESS      -- sustained-load and boundary-value coverage
 
-#include "network_drivers/websocket.h"
-#include "network_drivers/sha1.h"
-#include "network_drivers/base64.h"
-#include <unity.h>
+#include "network_drivers/presentation/base64.h"
+#include "network_drivers/presentation/sha1.h"
+#include "network_drivers/presentation/websocket.h"
 #include <string.h>
+#include <unity.h>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,8 +37,7 @@ static void push_bytes(uint8_t slot, const uint8_t *data, size_t len)
 // Build a WebSocket frame into dst.
 // Uses mask key {0,0,0,0} so the stored payload equals the unmasked input.
 // Returns the number of bytes written.
-static size_t build_frame(uint8_t *dst, WsOpcode opcode, bool fin,
-                          const uint8_t *payload, uint16_t payload_len,
+static size_t build_frame(uint8_t *dst, WsOpcode opcode, bool fin, const uint8_t *payload, uint16_t payload_len,
                           bool masked)
 {
     size_t pos = 0;
@@ -58,8 +57,10 @@ static size_t build_frame(uint8_t *dst, WsOpcode opcode, bool fin,
 
     if (masked)
     {
-        dst[pos++] = 0; dst[pos++] = 0;
-        dst[pos++] = 0; dst[pos++] = 0;
+        dst[pos++] = 0;
+        dst[pos++] = 0;
+        dst[pos++] = 0;
+        dst[pos++] = 0;
     }
 
     if (payload && payload_len > 0)
@@ -75,14 +76,16 @@ void setUp()
     ws_init();
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i]       = {};
-        conn_pool[i].id    = (uint8_t)i;
+        conn_pool[i] = {};
+        conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].pcb   = &_mock_pcb;
+        conn_pool[i].pcb = &_mock_pcb;
     }
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // SHA-1 TESTS
@@ -93,11 +96,8 @@ void test_sha1_empty_string()
 {
     uint8_t digest[SHA1_DIGEST_LEN];
     sha1((const uint8_t *)"", 0, digest);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {
-        0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D,
-        0x32, 0x55, 0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90,
-        0xAF, 0xD8, 0x07, 0x09
-    };
+    const uint8_t expected[SHA1_DIGEST_LEN] = {0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D, 0x32, 0x55,
+                                               0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90, 0xAF, 0xD8, 0x07, 0x09};
     TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
 }
 
@@ -106,11 +106,8 @@ void test_sha1_abc()
 {
     uint8_t digest[SHA1_DIGEST_LEN];
     sha1((const uint8_t *)"abc", 3, digest);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {
-        0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A,
-        0xBA, 0x3E, 0x25, 0x71, 0x78, 0x50, 0xC2, 0x6C,
-        0x9C, 0xD0, 0xD8, 0x9D
-    };
+    const uint8_t expected[SHA1_DIGEST_LEN] = {0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A, 0xBA, 0x3E,
+                                               0x25, 0x71, 0x78, 0x50, 0xC2, 0x6C, 0x9C, 0xD0, 0xD8, 0x9D};
     TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
 }
 
@@ -123,11 +120,8 @@ void test_sha1_rfc6455_handshake_key()
     uint8_t digest[SHA1_DIGEST_LEN];
     sha1((const uint8_t *)input, strlen(input), digest);
 
-    const uint8_t expected[SHA1_DIGEST_LEN] = {
-        0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16,
-        0x90, 0xF6, 0x46, 0x06, 0xCF, 0x38, 0x59, 0x45,
-        0xB2, 0xBE, 0xC4, 0xEA
-    };
+    const uint8_t expected[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                               0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
     TEST_ASSERT_EQUAL_MEMORY(expected, digest, SHA1_DIGEST_LEN);
 }
 
@@ -147,7 +141,7 @@ void test_sha1_different_inputs_different_digests()
 // Encode single byte
 void test_base64_encode_one_byte()
 {
-    const uint8_t src[] = { 0x4D }; // 'M'
+    const uint8_t src[] = {0x4D}; // 'M'
     char out[8] = {};
     base64_encode(src, 1, out);
     TEST_ASSERT_EQUAL_STRING("TQ==", out);
@@ -156,7 +150,7 @@ void test_base64_encode_one_byte()
 // Encode two bytes
 void test_base64_encode_two_bytes()
 {
-    const uint8_t src[] = { 0x4D, 0x61 }; // "Ma"
+    const uint8_t src[] = {0x4D, 0x61}; // "Ma"
     char out[8] = {};
     base64_encode(src, 2, out);
     TEST_ASSERT_EQUAL_STRING("TWE=", out);
@@ -165,7 +159,7 @@ void test_base64_encode_two_bytes()
 // Encode three bytes (no padding needed)
 void test_base64_encode_three_bytes()
 {
-    const uint8_t src[] = { 0x4D, 0x61, 0x6E }; // "Man"
+    const uint8_t src[] = {0x4D, 0x61, 0x6E}; // "Man"
     char out[8] = {};
     base64_encode(src, 3, out);
     TEST_ASSERT_EQUAL_STRING("TWFu", out);
@@ -174,11 +168,8 @@ void test_base64_encode_three_bytes()
 // Encode the RFC 6455 §B SHA-1 digest → known accept header value
 void test_base64_encode_ws_accept_key()
 {
-    const uint8_t digest[SHA1_DIGEST_LEN] = {
-        0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16,
-        0x90, 0xF6, 0x46, 0x06, 0xCF, 0x38, 0x59, 0x45,
-        0xB2, 0xBE, 0xC4, 0xEA
-    };
+    const uint8_t digest[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                             0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
     char out[32] = {};
     base64_encode(digest, SHA1_DIGEST_LEN, out);
     TEST_ASSERT_EQUAL_STRING("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", out);
@@ -220,19 +211,15 @@ void test_base64_decode_ws_accept_key()
     uint8_t dst[SHA1_DIGEST_LEN + 4] = {};
     size_t n = base64_decode("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=", dst);
     TEST_ASSERT_EQUAL(SHA1_DIGEST_LEN, (int)n);
-    const uint8_t expected[SHA1_DIGEST_LEN] = {
-        0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16,
-        0x90, 0xF6, 0x46, 0x06, 0xCF, 0x38, 0x59, 0x45,
-        0xB2, 0xBE, 0xC4, 0xEA
-    };
+    const uint8_t expected[SHA1_DIGEST_LEN] = {0xB3, 0x7A, 0x4F, 0x2C, 0xC0, 0x62, 0x4F, 0x16, 0x90, 0xF6,
+                                               0x46, 0x06, 0xCF, 0x38, 0x59, 0x45, 0xB2, 0xBE, 0xC4, 0xEA};
     TEST_ASSERT_EQUAL_MEMORY(expected, dst, SHA1_DIGEST_LEN);
 }
 
 // Encode then decode must return identical bytes
 void test_base64_round_trip()
 {
-    const uint8_t src[] = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                            0xFE, 0xDC, 0xBA, 0x98 };
+    const uint8_t src[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98};
     char encoded[24] = {};
     uint8_t decoded[16] = {};
     base64_encode(src, sizeof(src), encoded);
@@ -295,7 +282,7 @@ void test_ws_alloc_pool_full_returns_null()
 void test_ws_find_returns_correct_conn()
 {
     WsConn *allocated = ws_alloc(0);
-    WsConn *found     = ws_find(0);
+    WsConn *found = ws_find(0);
     TEST_ASSERT_NOT_NULL(found);
     TEST_ASSERT_EQUAL_PTR(allocated, found);
 }
@@ -365,7 +352,7 @@ void test_ws_alloc_after_free_succeeds()
 void test_ws_parse_text_frame_sets_ready()
 {
     WsConn *ws = ws_alloc(0);
-    const uint8_t payload[] = { 'H', 'i' };
+    const uint8_t payload[] = {'H', 'i'};
     uint8_t frame[12];
     size_t flen = build_frame(frame, WS_OP_TEXT, true, payload, 2, true);
     push_bytes(0, frame, flen);
@@ -378,8 +365,7 @@ void test_ws_parse_payload_stored_correctly()
     WsConn *ws = ws_alloc(0);
     const char *text = "Hello";
     uint8_t frame[16];
-    size_t flen = build_frame(frame, WS_OP_TEXT, true,
-                              (const uint8_t *)text, (uint16_t)strlen(text), true);
+    size_t flen = build_frame(frame, WS_OP_TEXT, true, (const uint8_t *)text, (uint16_t)strlen(text), true);
     push_bytes(0, frame, flen);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
@@ -390,7 +376,7 @@ void test_ws_parse_payload_stored_correctly()
 void test_ws_parse_binary_frame_sets_ready()
 {
     WsConn *ws = ws_alloc(0);
-    const uint8_t payload[] = { 0x01, 0x02, 0x03 };
+    const uint8_t payload[] = {0x01, 0x02, 0x03};
     uint8_t frame[16];
     size_t flen = build_frame(frame, WS_OP_BINARY, true, payload, 3, true);
     push_bytes(0, frame, flen);
@@ -406,12 +392,66 @@ void test_ws_parse_binary_frame_sets_ready()
 void test_ws_parse_zero_length_unmasked_frame()
 {
     WsConn *ws = ws_alloc(0);
-    // Unmasked zero-length frame: 0x81 0x00
-    uint8_t frame[2] = { 0x81, 0x00 };
+    // Unmasked zero-length frame: 0x81 0x00.
+    // RFC 6455 §5.1: client-to-server frames MUST be masked; the server must
+    // fail the connection on any unmasked frame.
+    uint8_t frame[2] = {0x81, 0x00};
     push_bytes(0, frame, 2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
+void test_ws_parse_zero_length_masked_frame()
+{
+    WsConn *ws = ws_alloc(0);
+    // Masked zero-length text frame: FIN|TEXT, MASK|0, 4-byte mask key.
+    // The 4 mask bytes must be consumed before the frame is complete.
+    uint8_t frame[6] = {0x81, 0x80, 0x00, 0x00, 0x00, 0x00};
+    push_bytes(0, frame, 6);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
     TEST_ASSERT_EQUAL(0, (int)ws->payload_len);
+}
+
+void test_ws_reject_unmasked_data_frame()
+{
+    WsConn *ws = ws_alloc(0);
+    // FIN|TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking.
+    uint8_t frame[5] = {0x81, 0x03, 'a', 'b', 'c'};
+    push_bytes(0, frame, 5);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
+void test_ws_reject_reserved_opcode()
+{
+    WsConn *ws = ws_alloc(0);
+    // Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection.
+    uint8_t frame[2] = {0x83, 0x80};
+    push_bytes(0, frame, 2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
+void test_ws_reject_fragmented_control_frame()
+{
+    WsConn *ws = ws_alloc(0);
+    // PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5).
+    uint8_t frame[2] = {0x09, 0x80};
+    push_bytes(0, frame, 2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
+void test_ws_reject_oversized_control_frame()
+{
+    WsConn *ws = ws_alloc(0);
+    // PING (masked) with payload length 126 - control frames MUST be <= 125
+    // bytes (RFC 6455 §5.5).
+    uint8_t frame[2] = {0x89, (uint8_t)(0x80u | 126u)};
+    push_bytes(0, frame, 2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
 }
 
 void test_ws_parse_16bit_length_frame()
@@ -438,7 +478,7 @@ void test_ws_parse_rsv1_set_closes_protocol()
 {
     WsConn *ws = ws_alloc(0);
     // FIN=1, RSV1=0x40, TEXT: byte0 = 0x80|0x40|0x01 = 0xC1
-    uint8_t frame[2] = { 0xC1, 0x00 };
+    uint8_t frame[2] = {0xC1, 0x00};
     push_bytes(0, frame, 2);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
@@ -448,7 +488,7 @@ void test_ws_parse_rsv2_set_closes_protocol()
 {
     WsConn *ws = ws_alloc(0);
     // FIN=1, RSV2=0x20, TEXT: byte0 = 0x80|0x20|0x01 = 0xA1
-    uint8_t frame[2] = { 0xA1, 0x00 };
+    uint8_t frame[2] = {0xA1, 0x00};
     push_bytes(0, frame, 2);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
@@ -458,7 +498,7 @@ void test_ws_parse_rsv3_set_closes_protocol()
 {
     WsConn *ws = ws_alloc(0);
     // FIN=1, RSV3=0x10, TEXT: byte0 = 0x80|0x10|0x01 = 0x91
-    uint8_t frame[2] = { 0x91, 0x00 };
+    uint8_t frame[2] = {0x91, 0x00};
     push_bytes(0, frame, 2);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
@@ -469,9 +509,9 @@ void test_ws_parse_64bit_length_closes_too_big()
     WsConn *ws = ws_alloc(0);
     // FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes
     uint8_t frame[10] = {
-        0x81,                       // FIN=1, TEXT
-        0xFF,                       // MASK=1, len7=127
-        0,0,0,0,0,0,0,1            // 8-byte big-endian length = 1
+        0x81,                     // FIN=1, TEXT
+        0xFF,                     // MASK=1, len7=127
+        0,    0, 0, 0, 0, 0, 0, 1 // 8-byte big-endian length = 1
     };
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
@@ -482,43 +522,84 @@ void test_ws_parse_oversized_16bit_length_closes_too_big()
 {
     WsConn *ws = ws_alloc(0);
     uint16_t big_len = (uint16_t)WS_FRAME_SIZE + 1;
-    uint8_t frame[4] = {
-        0x81,
-        0xFE,                       // MASK=1, len7=126 → 16-bit extended
-        (uint8_t)(big_len >> 8),
-        (uint8_t)(big_len)
-    };
+    uint8_t frame[4] = {0x81,
+                        0xFE, // MASK=1, len7=126 → 16-bit extended
+                        (uint8_t)(big_len >> 8), (uint8_t)(big_len)};
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
 }
 
-void test_ws_parse_fragmented_fin0_closes_unsupported()
+void test_ws_fragment_start_waits_for_continuation()
 {
     WsConn *ws = ws_alloc(0);
-    // FIN=0, TEXT=1: byte0 = 0x01
-    uint8_t frame[8] = {
-        0x01,   // FIN=0, TEXT
-        0x82,   // MASK=1, len=2
-        0,0,0,0,
-        'H','i'
-    };
+    // FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet.
+    uint8_t frame[8] = {0x01, 0x82, 0, 0, 0, 0, 'H', 'i'};
+    push_bytes(0, frame, sizeof(frame));
+    ws_parse(ws);
+    TEST_ASSERT_NOT_EQUAL(WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_NOT_EQUAL(WS_ERROR, ws->parse_state);
+    TEST_ASSERT_TRUE(ws->fragmenting);
+}
+
+void test_ws_fragmented_message_reassembled()
+{
+    WsConn *ws = ws_alloc(0);
+    uint8_t f1[16], f2[16];
+    size_t n1 = build_frame(f1, WS_OP_TEXT, false, (const uint8_t *)"He", 2, true);
+    size_t n2 = build_frame(f2, WS_OP_CONTINUATION, true, (const uint8_t *)"llo", 3, true);
+
+    push_bytes(0, f1, n1);
+    ws_parse(ws);
+    TEST_ASSERT_TRUE(ws->fragmenting);
+
+    push_bytes(0, f2, n2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_EQUAL(WS_OP_TEXT, ws->opcode); // original message opcode reported
+    TEST_ASSERT_EQUAL(5, (int)ws->payload_len);
+    TEST_ASSERT_EQUAL_MEMORY("Hello", ws->buf, 5);
+}
+
+void test_ws_control_frame_interleaved_in_fragments()
+{
+    WsConn *ws = ws_alloc(0);
+    uint8_t f1[16], pf[16], f2[16];
+    size_t n1 = build_frame(f1, WS_OP_TEXT, false, (const uint8_t *)"He", 2, true);
+    size_t np = build_frame(pf, WS_OP_PING, true, (const uint8_t *)"x", 1, true);
+    size_t n2 = build_frame(f2, WS_OP_CONTINUATION, true, (const uint8_t *)"llo", 3, true);
+
+    // A PING arrives between the two data fragments; it must be handled without
+    // corrupting the partial message (RFC 6455 §5.4).
+    push_bytes(0, f1, n1);
+    push_bytes(0, pf, np);
+    push_bytes(0, f2, n2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_EQUAL(WS_OP_TEXT, ws->opcode);
+    TEST_ASSERT_EQUAL(5, (int)ws->payload_len);
+    TEST_ASSERT_EQUAL_MEMORY("Hello", ws->buf, 5);
+}
+
+void test_ws_continuation_without_start_rejected()
+{
+    WsConn *ws = ws_alloc(0);
+    // CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002.
+    uint8_t frame[8] = {0x80, 0x82, 0, 0, 0, 0, 'H', 'i'};
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
 }
 
-void test_ws_parse_continuation_opcode_closes_unsupported()
+void test_ws_new_data_frame_during_fragmentation_rejected()
 {
     WsConn *ws = ws_alloc(0);
-    // FIN=1, CONTINUATION=0: byte0 = 0x80
-    uint8_t frame[8] = {
-        0x80,   // FIN=1, CONTINUATION
-        0x82,   // MASK=1, len=2
-        0,0,0,0,
-        'H','i'
-    };
-    push_bytes(0, frame, sizeof(frame));
+    uint8_t f1[16], f2[16];
+    size_t n1 = build_frame(f1, WS_OP_TEXT, false, (const uint8_t *)"He", 2, true);
+    // A second TEXT (new message) before finishing the first is illegal.
+    size_t n2 = build_frame(f2, WS_OP_TEXT, true, (const uint8_t *)"llo", 3, true);
+    push_bytes(0, f1, n1);
+    push_bytes(0, f2, n2);
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
 }
@@ -527,15 +608,12 @@ void test_ws_parse_ping_auto_pong_resets_frame()
 {
     WsConn *ws = ws_alloc(0);
     // FIN=1, PING=0x09: byte0 = 0x89
-    uint8_t frame[10] = {
-        0x89,   // FIN=1, PING
-        0x84,   // MASK=1, len=4
-        0,0,0,0,
-        'p','i','n','g'
-    };
+    uint8_t frame[10] = {0x89, // FIN=1, PING
+                         0x84, // MASK=1, len=4
+                         0,    0, 0, 0, 'p', 'i', 'n', 'g'};
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
-    // Auto-pong fires and frame resets — parser waits for next frame
+    // Auto-pong fires and frame resets - parser waits for next frame
     TEST_ASSERT_EQUAL(WS_HEADER1, ws->parse_state);
 }
 
@@ -543,12 +621,9 @@ void test_ws_parse_pong_silently_ignored()
 {
     WsConn *ws = ws_alloc(0);
     // FIN=1, PONG=0x0A: byte0 = 0x8A
-    uint8_t frame[8] = {
-        0x8A,   // FIN=1, PONG
-        0x82,   // MASK=1, len=2
-        0,0,0,0,
-        0,0
-    };
+    uint8_t frame[8] = {0x8A, // FIN=1, PONG
+                        0x82, // MASK=1, len=2
+                        0,    0, 0, 0, 0, 0};
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_HEADER1, ws->parse_state);
@@ -559,10 +634,9 @@ void test_ws_parse_close_marks_ws_closed()
     WsConn *ws = ws_alloc(0);
     // FIN=1, CLOSE=0x08: byte0 = 0x88
     uint8_t frame[8] = {
-        0x88,   // FIN=1, CLOSE
-        0x82,   // MASK=1, len=2
-        0,0,0,0,
-        0x03, 0xE8  // status code 1000 = WS_CLOSE_NORMAL
+        0x88,                     // FIN=1, CLOSE
+        0x82,                     // MASK=1, len=2
+        0,    0, 0, 0, 0x03, 0xE8 // status code 1000 = WS_CLOSE_NORMAL
     };
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
@@ -572,7 +646,7 @@ void test_ws_parse_close_marks_ws_closed()
 void test_ws_parse_stops_at_frame_ready()
 {
     WsConn *ws = ws_alloc(0);
-    const uint8_t p[] = { 'A' };
+    const uint8_t p[] = {'A'};
     uint8_t f1[8], f2[8];
     size_t l1 = build_frame(f1, WS_OP_TEXT, true, p, 1, true);
     size_t l2 = build_frame(f2, WS_OP_TEXT, true, p, 1, true);
@@ -590,14 +664,14 @@ void test_ws_parse_stops_at_frame_ready()
 void test_ws_reset_frame_clears_fields()
 {
     WsConn *ws = ws_alloc(0);
-    ws->parse_state  = WS_FRAME_READY;
-    ws->payload_len  = 10;
-    ws->payload_idx  = 10;
-    ws->fin          = true;
-    ws->masked       = true;
-    ws->mask_key[0]  = 0xAB;
-    ws->buf[0]       = 'X';
-    ws->len64_count  = 5;
+    ws->parse_state = WS_FRAME_READY;
+    ws->payload_len = 10;
+    ws->payload_idx = 10;
+    ws->fin = true;
+    ws->masked = true;
+    ws->mask_key[0] = 0xAB;
+    ws->buf[0] = 'X';
+    ws->len64_count = 5;
 
     ws_reset_frame(ws);
 
@@ -616,10 +690,10 @@ void test_ws_parse_mask_applied_correctly()
     // Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F
     // Payload byte 'H' = 0x48; 0x48 ^ 0x37 = 0x7F
     uint8_t frame[8] = {
-        0x81,   // FIN=1, TEXT
-        0x81,   // MASK=1, len=1
+        0x81, // FIN=1, TEXT
+        0x81, // MASK=1, len=1
         0x37, 0xFA, 0x21, 0x3D,
-        0x7F    // 'H' ^ 0x37 = 0x7F
+        0x7F // 'H' ^ 0x37 = 0x7F
     };
     push_bytes(0, frame, sizeof(frame));
     ws_parse(ws);
@@ -636,8 +710,7 @@ void stress_ws_parse_reset_100_cycles()
 {
     const char *text = "test";
     uint8_t frame[12];
-    size_t flen = build_frame(frame, WS_OP_TEXT, true,
-                              (const uint8_t *)text, 4, true);
+    size_t flen = build_frame(frame, WS_OP_TEXT, true, (const uint8_t *)text, 4, true);
     for (int i = 0; i < 100; i++)
     {
         WsConn *ws = ws_alloc(0);
@@ -680,15 +753,13 @@ void stress_ws_parse_incremental_byte_by_byte()
     WsConn *ws = ws_alloc(0);
     const char *text = "Incremental";
     uint8_t frame[20];
-    size_t flen = build_frame(frame, WS_OP_TEXT, true,
-                              (const uint8_t *)text, (uint16_t)strlen(text), true);
+    size_t flen = build_frame(frame, WS_OP_TEXT, true, (const uint8_t *)text, (uint16_t)strlen(text), true);
     for (size_t i = 0; i < flen; i++)
     {
         push_bytes(0, &frame[i], 1);
         ws_parse(ws);
         if (i < flen - 1)
-            TEST_ASSERT_NOT_EQUAL_MESSAGE(WS_ERROR, ws->parse_state,
-                                          "WS_ERROR during valid incremental parse");
+            TEST_ASSERT_NOT_EQUAL_MESSAGE(WS_ERROR, ws->parse_state, "WS_ERROR during valid incremental parse");
     }
     TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
     TEST_ASSERT_EQUAL_STRING(text, (const char *)ws->buf);
@@ -704,8 +775,7 @@ void stress_ws_parse_max_payload()
     for (int i = 0; i < WS_FRAME_SIZE; i++)
         payload[i] = (uint8_t)(i & 0xFF);
 
-    size_t flen = build_frame(frame, WS_OP_BINARY, true,
-                              payload, (uint16_t)WS_FRAME_SIZE, true);
+    size_t flen = build_frame(frame, WS_OP_BINARY, true, payload, (uint16_t)WS_FRAME_SIZE, true);
     push_bytes(0, frame, flen);
     ws_parse(ws);
 
@@ -723,10 +793,8 @@ void stress_ws_parse_two_consecutive_frames()
     const char *t1 = "first";
     const char *t2 = "second";
     uint8_t f1[16], f2[16];
-    size_t l1 = build_frame(f1, WS_OP_TEXT, true,
-                            (const uint8_t *)t1, (uint16_t)strlen(t1), true);
-    size_t l2 = build_frame(f2, WS_OP_TEXT, true,
-                            (const uint8_t *)t2, (uint16_t)strlen(t2), true);
+    size_t l1 = build_frame(f1, WS_OP_TEXT, true, (const uint8_t *)t1, (uint16_t)strlen(t1), true);
+    size_t l2 = build_frame(f2, WS_OP_TEXT, true, (const uint8_t *)t2, (uint16_t)strlen(t2), true);
 
     // First frame
     push_bytes(0, f1, l1);
@@ -787,14 +855,22 @@ int main()
     RUN_TEST(test_ws_parse_payload_stored_correctly);
     RUN_TEST(test_ws_parse_binary_frame_sets_ready);
     RUN_TEST(test_ws_parse_zero_length_unmasked_frame);
+    RUN_TEST(test_ws_parse_zero_length_masked_frame);
+    RUN_TEST(test_ws_reject_unmasked_data_frame);
+    RUN_TEST(test_ws_reject_reserved_opcode);
+    RUN_TEST(test_ws_reject_fragmented_control_frame);
+    RUN_TEST(test_ws_reject_oversized_control_frame);
     RUN_TEST(test_ws_parse_16bit_length_frame);
     RUN_TEST(test_ws_parse_rsv1_set_closes_protocol);
     RUN_TEST(test_ws_parse_rsv2_set_closes_protocol);
     RUN_TEST(test_ws_parse_rsv3_set_closes_protocol);
     RUN_TEST(test_ws_parse_64bit_length_closes_too_big);
     RUN_TEST(test_ws_parse_oversized_16bit_length_closes_too_big);
-    RUN_TEST(test_ws_parse_fragmented_fin0_closes_unsupported);
-    RUN_TEST(test_ws_parse_continuation_opcode_closes_unsupported);
+    RUN_TEST(test_ws_fragment_start_waits_for_continuation);
+    RUN_TEST(test_ws_fragmented_message_reassembled);
+    RUN_TEST(test_ws_control_frame_interleaved_in_fragments);
+    RUN_TEST(test_ws_continuation_without_start_rejected);
+    RUN_TEST(test_ws_new_data_frame_during_fragmentation_rejected);
     RUN_TEST(test_ws_parse_ping_auto_pong_resets_frame);
     RUN_TEST(test_ws_parse_pong_silently_ignored);
     RUN_TEST(test_ws_parse_close_marks_ws_closed);

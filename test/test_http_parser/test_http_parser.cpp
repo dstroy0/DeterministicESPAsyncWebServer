@@ -3,23 +3,23 @@
 //
 // Comprehensive unit tests for the standalone HTTP/1.1 parser.
 //
-// Tests call http_parser_feed() directly — no ring buffer, no transport layer.
+// Tests call http_parser_feed() directly - no ring buffer, no transport layer.
 // This verifies the parser in isolation: state transitions, field extraction,
 // body handling, 413 detection, error cases, and boundary values.
 //
 // Sections:
-//   RESET      — http_parser_reset() invariants
-//   FEED API   — terminal-state guard, byte ordering
-//   METHOD     — all supported methods, overflow → PARSE_ERROR
-//   PATH       — extraction, truncation → PARSE_ERROR
-//   QUERY      — single/multiple params, key/value split
-//   HEADERS    — extraction, case-insensitive lookup, multi-header
-//   BODY       — GET (no body), POST/PUT with body, boundary values
-//   413        — Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE
-//   HELPERS    — http_get_header, http_get_query edge cases
-//   STRESS     — large query, many headers, incremental feeds
+//   RESET      - http_parser_reset() invariants
+//   FEED API   - terminal-state guard, byte ordering
+//   METHOD     - all supported methods, overflow → PARSE_ERROR
+//   PATH       - extraction, truncation → PARSE_ERROR
+//   QUERY      - single/multiple params, key/value split
+//   HEADERS    - extraction, case-insensitive lookup, multi-header
+//   BODY       - GET (no body), POST/PUT with body, boundary values
+//   413        - Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE
+//   HELPERS    - http_get_header, http_get_query edge cases
+//   STRESS     - large query, many headers, incremental feeds
 
-#include "network_drivers/http_parser.h"
+#include "network_drivers/presentation/http_parser.h"
 #include <unity.h>
 
 // ---- Helpers -----------------------------------------------------------
@@ -105,7 +105,7 @@ void test_reset_clears_query_count()
 }
 
 // ====================================================================
-// FEED API — terminal-state guard
+// FEED API - terminal-state guard
 // ====================================================================
 
 void test_feed_after_complete_does_not_change_state()
@@ -373,7 +373,7 @@ void test_post_content_length_zero()
 
 void test_body_exactly_at_buffer_limit()
 {
-    // Body of exactly BODY_BUF_SIZE bytes — should succeed
+    // Body of exactly BODY_BUF_SIZE bytes - should succeed
     char req[32 + BODY_BUF_SIZE + 64];
     int off = 0;
     off +=
@@ -394,7 +394,7 @@ void test_body_null_terminated_after_complete()
 }
 
 // ====================================================================
-// 413 — PARSE_ENTITY_TOO_LARGE
+// 413 - PARSE_ENTITY_TOO_LARGE
 // ====================================================================
 
 void test_body_one_over_limit_is_413()
@@ -435,22 +435,22 @@ void test_413_header_still_stored()
 
 void test_body_exactly_at_limit_is_not_413()
 {
-    // BODY_BUF_SIZE is the max that fits — should NOT trigger 413
+    // BODY_BUF_SIZE is the max that fits - should NOT trigger 413
     char req[128];
     snprintf(req, sizeof(req), "POST / HTTP/1.1\r\nContent-Length: %d\r\n\r\n", BODY_BUF_SIZE);
     feed_request(0, req);
     // Parser enters PARSE_BODY, not PARSE_ENTITY_TOO_LARGE
-    // (we don't send the body bytes here — just check it didn't go 413)
+    // (we don't send the body bytes here - just check it didn't go 413)
     TEST_ASSERT_NOT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
 }
 
 // ====================================================================
-// 414 — PARSE_URI_TOO_LONG
+// 414 - PARSE_URI_TOO_LONG
 // ====================================================================
 
 void test_path_overflow_stops_feeding()
 {
-    // Bytes fed after URI_TOO_LONG are ignored — state must not change
+    // Bytes fed after URI_TOO_LONG are ignored - state must not change
     char req[MAX_PATH_LEN + 64];
     int idx = 0;
     memcpy(req + idx, "GET /", 5);
@@ -461,7 +461,7 @@ void test_path_overflow_stops_feeding()
     http_parser_reset(&http_pool[0]);
     feed_str(&http_pool[0], req);
     TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
-    // Feed more bytes — state must stay PARSE_URI_TOO_LONG
+    // Feed more bytes - state must stay PARSE_URI_TOO_LONG
     http_parser_feed(&http_pool[0], 'X');
     TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
 }
@@ -486,7 +486,7 @@ void test_414_path_filled_to_capacity()
 }
 
 // ====================================================================
-// RFC 7230 COMPLIANCE — method (tchar only)
+// RFC 7230 COMPLIANCE - method (tchar only)
 // ====================================================================
 
 void test_method_nul_byte_is_error()
@@ -527,7 +527,7 @@ void test_method_tchar_symbols_accepted()
 }
 
 // ====================================================================
-// RFC 7230 COMPLIANCE — path / query (VCHAR only)
+// RFC 7230 COMPLIANCE - path / query (VCHAR only)
 // ====================================================================
 
 void test_path_nul_byte_is_error()
@@ -571,7 +571,7 @@ void test_query_control_char_is_error()
 }
 
 // ====================================================================
-// RFC 7230 COMPLIANCE — header field-name (tchar only)
+// RFC 7230 COMPLIANCE - header field-name (tchar only)
 // ====================================================================
 
 void test_header_key_space_is_error()
@@ -609,14 +609,14 @@ void test_header_key_mid_cr_is_error()
 void test_header_key_colon_at_start_skips_header()
 {
     // Empty key name (colon immediately after CRLF): transition to val with empty key
-    // This is unusual but not explicitly rejected — the header just has an empty key name
+    // This is unusual but not explicitly rejected - the header just has an empty key name
     feed_request(0, "GET / HTTP/1.1\r\n: empty-key\r\n\r\n");
-    // Parser enters header-val with empty key — should complete without error
+    // Parser enters header-val with empty key - should complete without error
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 // ====================================================================
-// RFC 7230 COMPLIANCE — header field-value (field-value chars only)
+// RFC 7230 COMPLIANCE - header field-value (field-value chars only)
 // ====================================================================
 
 void test_header_val_nul_byte_is_error()
@@ -888,28 +888,28 @@ int main()
     RUN_TEST(test_path_overflow_stops_feeding);
     RUN_TEST(test_414_path_filled_to_capacity);
 
-    // RFC 7230 — method (tchar)
+    // RFC 7230 - method (tchar)
     RUN_TEST(test_method_nul_byte_is_error);
     RUN_TEST(test_method_control_char_is_error);
     RUN_TEST(test_method_del_byte_is_error);
     RUN_TEST(test_method_non_tchar_symbol_is_error);
     RUN_TEST(test_method_tchar_symbols_accepted);
 
-    // RFC 7230 — path / query (VCHAR)
+    // RFC 7230 - path / query (VCHAR)
     RUN_TEST(test_path_nul_byte_is_error);
     RUN_TEST(test_path_control_char_is_error);
     RUN_TEST(test_path_del_byte_is_error);
     RUN_TEST(test_query_nul_byte_is_error);
     RUN_TEST(test_query_control_char_is_error);
 
-    // RFC 7230 — header field-name (tchar)
+    // RFC 7230 - header field-name (tchar)
     RUN_TEST(test_header_key_space_is_error);
     RUN_TEST(test_header_key_nul_byte_is_error);
     RUN_TEST(test_header_key_control_char_is_error);
     RUN_TEST(test_header_key_mid_cr_is_error);
     RUN_TEST(test_header_key_colon_at_start_skips_header);
 
-    // RFC 7230 — header field-value
+    // RFC 7230 - header field-value
     RUN_TEST(test_header_val_nul_byte_is_error);
     RUN_TEST(test_header_val_control_char_is_error);
     RUN_TEST(test_header_val_del_byte_is_error);

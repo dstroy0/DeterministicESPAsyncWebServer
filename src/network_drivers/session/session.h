@@ -3,7 +3,7 @@
 
 /**
  * @file session.h
- * @brief Layer 5 (Session) — event queue dispatcher and session lifecycle.
+ * @brief Layer 5 (Session) - event queue dispatcher and session lifecycle.
  *
  * The session layer is the bridge between the interrupt-driven transport
  * layer and the application-layer HTTP handler.  It processes all pending
@@ -18,9 +18,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 #define DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 
+#include "../transport/transport.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include "transport.h"
 #include <Arduino.h>
 
 /**
@@ -29,15 +29,15 @@
  * Call this function from your `loop()` (or indirectly via
  * DetWebServer::handle()).  It performs three actions in order:
  *
- * 1. **Timeout sweep** — calls DeterministicAsyncTCP::check_timeouts()
+ * 1. **Timeout sweep** - calls DeterministicAsyncTCP::check_timeouts()
  *    to force-close connections that have been idle for > CONN_TIMEOUT_MS.
  *
- * 2. **Event drain** — dequeues all pending TcpEvt records from the
+ * 2. **Event drain** - dequeues all pending TcpEvt records from the
  *    FreeRTOS queue.  Each event is dispatched:
  *    - `EVT_CONNECT / EVT_DISCONNECT / EVT_ERROR` → http_reset()
  *    - `EVT_DATA` → http_parse()
  *
- * 3. **Returns** — upper layers may then inspect http_pool[] for
+ * 3. **Returns** - upper layers may then inspect http_pool[] for
  *    PARSE_COMPLETE slots and send responses.
  *
  * @note The event-drain loop is bounded by the queue depth (16 entries).

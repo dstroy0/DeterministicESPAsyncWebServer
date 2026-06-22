@@ -1,9 +1,9 @@
 /*
- * DeterministicESPAsyncWebServer — Doxygen dark ocean theme
+ * DeterministicESPAsyncWebServer - Doxygen dark ocean theme
  * Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Palette — "deep ocean at dusk"
+ * Palette - "deep ocean at dusk"
  *   background ......... #0e1621  deep navy
  *   panel/sidebar ...... #13202f  midnight blue
  *   surface ............ #1a2e42  dark teal-slate
@@ -204,12 +204,12 @@ div.fragment, pre.fragment {
     overflow-x: auto;
 }
 
-span.keyword    { color: #c678dd; }  /* purple  — keywords        */
-span.keywordtype{ color: #e5c07b; }  /* amber   — built-in types  */
-span.keywordflow{ color: #c678dd; }  /* purple  — control flow    */
-span.preprocessor{ color: #7d8eb5; } /* muted   — preprocessor    */
-span.stringliteral{ color: #98c379; }/* green   — strings         */
-span.charliteral{ color: #98c379; }  /* green   — char literals   */
+span.keyword    { color: #c678dd; }  /* purple  - keywords        */
+span.keywordtype{ color: #e5c07b; }  /* amber   - built-in types  */
+span.keywordflow{ color: #c678dd; }  /* purple  - control flow    */
+span.preprocessor{ color: #7d8eb5; } /* muted   - preprocessor    */
+span.stringliteral{ color: #98c379; }/* green   - strings         */
+span.charliteral{ color: #98c379; }  /* green   - char literals   */
 span.comment    { color: #5c6a7f; font-style: italic; }
 span.vhdldigit  { color: #e9c46a; }
 span.vhdlchar   { color: #98c379; }

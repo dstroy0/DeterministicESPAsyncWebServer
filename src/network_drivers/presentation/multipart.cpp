@@ -54,8 +54,7 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
 
     char bval[MAX_BOUNDARY_LEN + 1];
     size_t blen = 0;
-    while (*bsearch && *bsearch != '"' && *bsearch != ';' && *bsearch != ' '
-           && blen < MAX_BOUNDARY_LEN)
+    while (*bsearch && *bsearch != '"' && *bsearch != ';' && *bsearch != ' ' && blen < MAX_BOUNDARY_LEN)
         bval[blen++] = *bsearch++;
     bval[blen] = '\0';
 
@@ -86,10 +85,10 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
             break;
 
         MultipartPart *part = &mp->parts[mp->part_count];
-        part->name     = nullptr;
+        part->name = nullptr;
         part->filename = nullptr;
-        part->type     = nullptr;
-        part->data     = nullptr;
+        part->type = nullptr;
+        part->data = nullptr;
         part->data_len = 0;
 
         // Parse per-part headers until the blank line
@@ -117,7 +116,7 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
                 // header, so extracting it first avoids corrupting name='s search
                 // when extract_quoted_param null-terminates the value in-place.
                 part->filename = extract_quoted_param(v, "filename=");
-                part->name     = extract_quoted_param(v, "name=");
+                part->name = extract_quoted_param(v, "name=");
             }
             else if (strncasecmp(pos, "Content-Type:", 13) == 0)
             {
@@ -131,14 +130,14 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
         }
 
         // Data runs from pos until the next delimiter (preceded by \r\n)
-        part->data   = pos;
-        char *next   = strstr(pos, delim);
+        part->data = pos;
+        char *next = strstr(pos, delim);
         if (!next)
             return false;
 
-        char *data_end  = next - 2; // \r\n before the delimiter
-        part->data_len  = (size_t)(data_end - pos);
-        *data_end       = '\0'; // null-terminate data
+        char *data_end = next - 2; // \r\n before the delimiter
+        part->data_len = (size_t)(data_end - pos);
+        *data_end = '\0'; // null-terminate data
 
         mp->part_count++;
 

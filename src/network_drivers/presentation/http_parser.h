@@ -3,7 +3,7 @@
 
 /**
  * @file http_parser.h
- * @brief Standalone HTTP/1.1 request parser — no transport dependency.
+ * @brief Standalone HTTP/1.1 request parser - no transport dependency.
  *
  * The parser is a pure byte-stream state machine.  It has no knowledge of
  * ring buffers, TCP PCBs, or FreeRTOS.  Feed it bytes one at a time via
@@ -54,7 +54,7 @@ enum ParseState
     PARSE_METHOD,           ///< Reading the HTTP method (GET, POST, …).
     PARSE_PATH,             ///< Reading the URL path component.
     PARSE_QUERY,            ///< Reading the raw query string (after `?`).
-    PARSE_VERSION,          ///< Accumulating `HTTP/1.x` — hashed for validation.
+    PARSE_VERSION,          ///< Accumulating `HTTP/1.x` - hashed for validation.
     PARSE_HEADER_KEY,       ///< Reading a header field name.
     PARSE_HEADER_VAL,       ///< Reading a header field value.
     PARSE_EXPECT_LF,        ///< Consuming the LF of a header-line CRLF pair.
@@ -77,8 +77,8 @@ enum ParseState
 enum HttpVersion
 {
     HTTP_UNKNOWN = 0, ///< Version string did not match any known token.
-    HTTP_10,          ///< HTTP/1.0 — close semantics by default.
-    HTTP_11           ///< HTTP/1.1 — persistent connection by default.
+    HTTP_10,          ///< HTTP/1.0 - close semantics by default.
+    HTTP_11           ///< HTTP/1.1 - persistent connection by default.
 };
 
 // ---------------------------------------------------------------------------
@@ -127,8 +127,16 @@ struct HttpReq
     uint8_t header_count;        ///< Valid entries in headers[].
     size_t current_token_idx;    ///< Write cursor shared by key/value sub-states.
 
-    size_t content_length;  ///< Value of Content-Length header (0 if absent).
-    size_t body_bytes_read; ///< Body bytes received (may exceed BODY_BUF_SIZE).
+    // Scratch copies of the header currently being parsed, populated even for
+    // headers beyond MAX_HEADERS so that Host / Content-Length detection and
+    // counting are independent of the storage cap (RFC 7230 §5.4, §3.3.2).
+    char cur_key[MAX_KEY_LEN]; ///< Field-name of the in-progress header.
+    char cur_val[MAX_VAL_LEN]; ///< Field-value of the in-progress header.
+
+    size_t content_length;        ///< Value of Content-Length header (0 if absent).
+    uint8_t content_length_count; ///< Number of Content-Length fields seen (RFC 7230 §3.3.2).
+    uint8_t host_count;           ///< Number of Host fields seen (RFC 7230 §5.4).
+    size_t body_bytes_read;       ///< Body bytes received (may exceed BODY_BUF_SIZE).
 
     uint8_t body[BODY_BUF_SIZE + 1]; ///< Stored body bytes, always null-terminated.
     size_t body_len;                 ///< Bytes stored in body[] (≤ BODY_BUF_SIZE).

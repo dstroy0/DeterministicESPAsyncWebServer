@@ -3,7 +3,7 @@
 
 /**
  * @file DeterministicESPAsyncWebServer.cpp
- * @brief Layer 7 (Application) — HTTP routing and request handler implementation.
+ * @brief Layer 7 (Application) - HTTP routing and request handler implementation.
  *
  * **Dispatch pipeline (called from DetWebServer::handle())**
  * ```
@@ -31,18 +31,19 @@
  *   4. Do the write + close/abort on the saved local pointer.
  *
  * This means any lwIP error callback that fires mid-write sees the slot as
- * already free and takes no action — preventing a double-free scenario.
+ * already free and takes no action - preventing a double-free scenario.
  */
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/transport/listener.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/sha1.h"
-#include "network_drivers/base64.h"
+#include "network_drivers/presentation/base64.h"
+#include "network_drivers/presentation/sha1.h"
 #elif DETWS_ENABLE_AUTH
-#include "network_drivers/base64.h"
+#include "network_drivers/presentation/base64.h"
 #endif
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #if DETWS_ENABLE_WEBSOCKET
 // Magic GUID concatenated to the client key for the WS accept hash (RFC 6455 §4.2.2)
@@ -108,15 +109,17 @@ static const char *status_text(int code)
 /**
  * @brief Map a method string (from the parsed request line) to an HttpMethod enum.
  *
- * Falls through to HTTP_GET for any unrecognised method.  This keeps the
- * no-match path simple: the route table will fail to find an exact method
- * match and will return 404 (or invoke the not-found handler).
+ * Returns HTTP_UNKNOWN for any method the server does not implement, so the
+ * dispatcher can answer 501 Not Implemented (RFC 7231 §6.5.2) instead of
+ * silently treating it as GET.
  *
  * @param m Null-terminated method string, e.g. "POST".
- * @return Matching HttpMethod enum value.
+ * @return Matching HttpMethod enum value, or HTTP_UNKNOWN.
  */
 static HttpMethod parse_method(const char *m)
 {
+    if (strcmp(m, "GET") == 0)
+        return HTTP_GET;
     if (strcmp(m, "POST") == 0)
         return HTTP_POST;
     if (strcmp(m, "PUT") == 0)
@@ -129,22 +132,66 @@ static HttpMethod parse_method(const char *m)
         return HTTP_HEAD;
     if (strcmp(m, "OPTIONS") == 0)
         return HTTP_OPTIONS;
-    return HTTP_GET;
+    return HTTP_METHOD_UNKNOWN;
 }
 
-size_t DetWebServer::heap_needed()    { return DeterministicAsyncTCP::heap_needed(); }
-bool   DetWebServer::heap_available() { return DeterministicAsyncTCP::heap_available(); }
+/**
+ * @brief Canonical method token for an HttpMethod (for the Allow header).
+ */
+static const char *method_name(HttpMethod m)
+{
+    switch (m)
+    {
+    case HTTP_GET:
+        return "GET";
+    case HTTP_POST:
+        return "POST";
+    case HTTP_PUT:
+        return "PUT";
+    case HTTP_DELETE:
+        return "DELETE";
+    case HTTP_PATCH:
+        return "PATCH";
+    case HTTP_HEAD:
+        return "HEAD";
+    case HTTP_OPTIONS:
+        return "OPTIONS";
+    default:
+        return "";
+    }
+}
 
-DetWebServer::DetWebServer() : _route_count(0), _port(0), _not_found_handler(nullptr), _cors_enabled(false)
+size_t DetWebServer::heap_needed()
+{
+    return DeterministicAsyncTCP::heap_needed();
+}
+bool DetWebServer::heap_available()
+{
+    return DeterministicAsyncTCP::heap_available();
+}
+
+DetWebServer::DetWebServer() : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _listener_count(0)
 {
     for (int i = 0; i < MAX_ROUTES; i++)
-        _routes[i] = {};  // zero all fields (auth_required, handlers, flags, etc.)
+        _routes[i] = {};
     _cors_header_buf[0] = '\0';
 }
 
-int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
+int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 {
-    _port = port;
+    if (_listener_count >= MAX_LISTENERS)
+        return -1;
+    _listen_ports[_listener_count] = port;
+    _listen_protos[_listener_count] = proto;
+    _listener_count++;
+    return 1;
+}
+
+int32_t DetWebServer::begin(const WebServerConfig *cfg)
+{
+    if (_listener_count == 0)
+        return -1;
+    DeterministicAsyncTCP::pool_init(cfg);
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
 #if DETWS_ENABLE_WEBSOCKET
@@ -153,19 +200,32 @@ int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
 #if DETWS_ENABLE_SSE
     sse_init();
 #endif
-    return DeterministicAsyncTCP::init(port, cfg);
+    for (uint8_t i = 0; i < _listener_count; i++)
+    {
+        if (listener_add(i, _listen_ports[i], _listen_protos[i]) < 0)
+            return -1;
+    }
+    return 1;
+}
+
+int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
+{
+    if (listen(port) < 0)
+        return -1;
+    return begin(cfg);
 }
 
 int32_t DetWebServer::restart(const WebServerConfig *cfg)
 {
-    if (_port == 0)
+    if (_listener_count == 0)
         return -1;
     stop();
-    return begin(_port, cfg);
+    return begin(cfg);
 }
 
 void DetWebServer::stop()
 {
+    listener_stop_all();
     DeterministicAsyncTCP::stop();
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
@@ -184,7 +244,7 @@ void DetWebServer::stop()
  * trailing character of the stored path is inspected to detect wildcard
  * routes: any path ending in `*` is treated as a prefix match.
  *
- * Registrations beyond MAX_ROUTES are silently ignored — callers should
+ * Registrations beyond MAX_ROUTES are silently ignored - callers should
  * verify return values if overflow is a concern.
  *
  * @param path     URL path to match, e.g. "/api/*".
@@ -195,8 +255,8 @@ static void fill_route_base(Route *r, const char *path)
 {
     strncpy(r->path, path, MAX_PATH_LEN - 1);
     r->path[MAX_PATH_LEN - 1] = '\0';
-    r->is_active   = true;
-    size_t len     = strlen(r->path);
+    r->is_active = true;
+    size_t len = strlen(r->path);
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
 }
 
@@ -204,24 +264,24 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
 {
     if (_route_count >= MAX_ROUTES)
         return;
-    Route *r    = &_routes[_route_count++];
+    Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type     = ROUTE_HTTP;
-    r->method   = method;
+    r->type = ROUTE_HTTP;
+    r->method = method;
     r->callback = callback;
 }
 
 #if DETWS_ENABLE_AUTH
-void DetWebServer::on(const char *path, HttpMethod method, Handler callback,
-                      const char *realm, const char *user, const char *pass)
+void DetWebServer::on(const char *path, HttpMethod method, Handler callback, const char *realm, const char *user,
+                      const char *pass)
 {
     if (_route_count >= MAX_ROUTES)
         return;
-    Route *r    = &_routes[_route_count++];
+    Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type          = ROUTE_HTTP;
-    r->method        = method;
-    r->callback      = callback;
+    r->type = ROUTE_HTTP;
+    r->method = method;
+    r->callback = callback;
     r->auth_required = true;
     strncpy(r->auth_realm, realm, MAX_AUTH_LEN - 1);
     r->auth_realm[MAX_AUTH_LEN - 1] = '\0';
@@ -233,19 +293,17 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback,
 #endif // DETWS_ENABLE_AUTH
 
 #if DETWS_ENABLE_WEBSOCKET
-void DetWebServer::on_ws(const char *path,
-                         WsConnectHandler on_connect,
-                         WsMessageHandler on_message,
-                         WsCloseHandler   on_close)
+void DetWebServer::on_ws(const char *path, WsConnectHandler on_connect, WsMessageHandler on_message,
+                         WsCloseHandler on_close)
 {
     if (_route_count >= MAX_ROUTES)
         return;
-    Route *r       = &_routes[_route_count++];
+    Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type        = ROUTE_WS;
-    r->ws_connect  = on_connect;
-    r->ws_message  = on_message;
-    r->ws_close    = on_close;
+    r->type = ROUTE_WS;
+    r->ws_connect = on_connect;
+    r->ws_message = on_message;
+    r->ws_close = on_close;
 }
 #endif // DETWS_ENABLE_WEBSOCKET
 
@@ -254,9 +312,9 @@ void DetWebServer::on_sse(const char *path, SseConnectHandler on_connect)
 {
     if (_route_count >= MAX_ROUTES)
         return;
-    Route *r       = &_routes[_route_count++];
+    Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type        = ROUTE_SSE;
+    r->type = ROUTE_SSE;
     r->sse_connect = on_connect;
 }
 #endif // DETWS_ENABLE_SSE
@@ -274,7 +332,7 @@ void DetWebServer::on_not_found(Handler callback)
  * `_cors_header_buf[]` and injected verbatim into every response when
  * `_cors_enabled` is true.
  *
- * Passing an empty or null origin disables CORS without clearing the buffer —
+ * Passing an empty or null origin disables CORS without clearing the buffer -
  * only the `_cors_enabled` flag matters at dispatch time.
  *
  * @param origin Value for the Access-Control-Allow-Origin header, e.g. "*".
@@ -317,7 +375,7 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
 }
 
 /**
- * @brief Main application tick — tick the session layer then dispatch completed requests.
+ * @brief Main application tick - tick the session layer then dispatch completed requests.
  *
  * Call this repeatedly from loop().  Each call:
  *   1. Calls server_tick() which runs timeout sweeps + drains the event queue.
@@ -335,7 +393,7 @@ void DetWebServer::handle()
     for (uint8_t i = 0; i < MAX_CONNS; i++)
     {
 #if DETWS_ENABLE_WEBSOCKET
-        // WebSocket slot — drain ring buffer and dispatch ready frames
+        // WebSocket slot - drain ring buffer and dispatch ready frames
         WsConn *ws = ws_find(i);
         if (ws)
         {
@@ -371,7 +429,7 @@ void DetWebServer::handle()
 #endif // DETWS_ENABLE_WEBSOCKET
 
 #if DETWS_ENABLE_SSE
-        // SSE slot — connection stays open, nothing to parse from client
+        // SSE slot - connection stays open, nothing to parse from client
         if (sse_find(i))
             continue;
 #endif // DETWS_ENABLE_SSE
@@ -433,8 +491,8 @@ static bool ws_accept_key(const char *client_key, char *out)
     }
     size_t magic_len = sizeof(WS_MAGIC) - 1;
     char concat[WS_MAX_KEY_LEN + sizeof(WS_MAGIC)];
-    memcpy(concat,           client_key, key_len);
-    memcpy(concat + key_len, WS_MAGIC,   magic_len);
+    memcpy(concat, client_key, key_len);
+    memcpy(concat + key_len, WS_MAGIC, magic_len);
 
     uint8_t digest[SHA1_DIGEST_LEN];
     sha1((const uint8_t *)concat, key_len + magic_len, digest);
@@ -448,8 +506,41 @@ static bool ws_accept_key(const char *client_key, char *out)
  * Does NOT close the TCP connection -- that is intentional.  The slot moves
  * from HTTP parse ownership to WS frame parse ownership.
  */
-static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req,
-                          WsConnectHandler on_connect)
+/**
+ * @brief Send a 426 Upgrade Required for an unsupported Sec-WebSocket-Version.
+ *
+ * RFC 6455 §4.2.1: if the version is not 13 the server MUST respond with a
+ * 426 and include a Sec-WebSocket-Version header listing the versions it
+ * supports.  Closes the connection afterward.
+ */
+static void ws_send_version_required(uint8_t slot_id)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    static const char resp[] = "HTTP/1.1 426 Upgrade Required\r\n"
+                               "Sec-WebSocket-Version: 13\r\n"
+                               "Content-Length: 0\r\n"
+                               "Connection: close\r\n\r\n";
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    tcp_write(pcb, resp, (u16_t)(sizeof(resp) - 1), TCP_WRITE_FLAG_COPY);
+    tcp_output(pcb);
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    http_reset(slot_id);
+}
+
+static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
 {
     const char *client_key = http_get_header(req, "Sec-WebSocket-Key");
     if (!client_key)
@@ -464,12 +555,12 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req,
         return false;
 
     char hdr[WS_HDR_BUF_SIZE];
-    int  hlen = snprintf(hdr, sizeof(hdr),
-        "HTTP/1.1 101 Switching Protocols\r\n"
-        "Upgrade: websocket\r\n"
-        "Connection: Upgrade\r\n"
-        "Sec-WebSocket-Accept: %s\r\n\r\n",
-        accept);
+    int hlen = snprintf(hdr, sizeof(hdr),
+                        "HTTP/1.1 101 Switching Protocols\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: Upgrade\r\n"
+                        "Sec-WebSocket-Accept: %s\r\n\r\n",
+                        accept);
 
     tcp_write(conn->pcb, hdr, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
     tcp_output(conn->pcb);
@@ -483,7 +574,7 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req,
         // No WS slot available -- abort the connection
         tcp_arg(conn->pcb, nullptr);
         conn->state = CONN_FREE;
-        conn->pcb   = nullptr;
+        conn->pcb = nullptr;
         return false;
     }
 
@@ -502,21 +593,18 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req,
 /**
  * @brief Send the HTTP 200 + SSE headers and promote the slot to SSE mode.
  */
-static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req,
-                           SseConnectHandler on_connect)
+static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 {
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return false;
 
-    static const char SSE_HDR[] =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/event-stream\r\n"
-        "Cache-Control: no-cache\r\n"
-        "Connection: keep-alive\r\n\r\n";
+    static const char SSE_HDR[] = "HTTP/1.1 200 OK\r\n"
+                                  "Content-Type: text/event-stream\r\n"
+                                  "Cache-Control: no-cache\r\n"
+                                  "Connection: keep-alive\r\n\r\n";
 
-    tcp_write(conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1),
-              TCP_WRITE_FLAG_COPY);
+    tcp_write(conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1), TCP_WRITE_FLAG_COPY);
     tcp_output(conn->pcb);
 
     // Reset HTTP parser; SSE keeps the TCP slot open
@@ -528,7 +616,7 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req,
     {
         tcp_arg(conn->pcb, nullptr);
         conn->state = CONN_FREE;
-        conn->pcb   = nullptr;
+        conn->pcb = nullptr;
         return false;
     }
 
@@ -543,9 +631,62 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req,
 // Route dispatch
 // ---------------------------------------------------------------------------
 
+// True when the request on this slot used the HEAD method, whose response must
+// carry the same headers as GET but no message body (RFC 7231 §4.3.2).
+static inline bool req_is_head(uint8_t slot_id)
+{
+    return strcmp(http_pool[slot_id].method, "HEAD") == 0;
+}
+
+// Append a method token to a comma-separated Allow list, de-duplicating.
+static void allow_append(char *buf, size_t cap, const char *m)
+{
+    if (!m[0] || strstr(buf, m))
+        return;
+    size_t len = strlen(buf);
+    if (len == 0)
+        snprintf(buf, cap, "%s", m);
+    else
+        snprintf(buf + len, cap - len, ", %s", m);
+}
+
+// Send 405 Method Not Allowed with the required Allow header (RFC 7231 §6.5.5).
+static void send_method_not_allowed(uint8_t slot_id, const char *allow)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    static const char body[] = "Method Not Allowed";
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 405 Method Not Allowed\r\n"
+                        "Allow: %s\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: %d\r\n"
+                        "Connection: close\r\n\r\n",
+                        allow, (int)(sizeof(body) - 1));
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    if (!req_is_head(slot_id))
+        tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
+    tcp_output(pcb);
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+    http_reset(slot_id);
+}
+
 void DetWebServer::match_and_execute(uint8_t slot_id)
 {
-    HttpReq   *req    = &http_pool[slot_id];
+    HttpReq *req = &http_pool[slot_id];
     HttpMethod method = parse_method(req->method);
 
     // CORS preflight
@@ -562,12 +703,23 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         return;
     }
 
+    // RFC 7231 §6.5.2: a method the server does not implement → 501.
+    if (method == HTTP_METHOD_UNKNOWN)
+    {
+        send(slot_id, 501, "text/plain", "Not Implemented");
+        return;
+    }
+
 #if DETWS_ENABLE_WEBSOCKET
     const char *upgrade_hdr = http_get_header(req, "Upgrade");
-    bool is_ws_upgrade = (method == HTTP_GET)
-                      && upgrade_hdr
-                      && (strcasecmp(upgrade_hdr, "websocket") == 0);
+    bool is_ws_upgrade = (method == HTTP_GET) && upgrade_hdr && (strcasecmp(upgrade_hdr, "websocket") == 0);
 #endif
+
+    // For RFC 7231 §6.5.5: if a path matches but no method does, answer 405
+    // with an Allow header listing the methods registered for that path.
+    bool path_matched = false;
+    char allow_buf[64];
+    allow_buf[0] = '\0';
 
     for (uint8_t i = 0; i < _route_count; i++)
     {
@@ -585,6 +737,13 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
                 send(slot_id, 400, "text/plain", "WebSocket upgrade required");
                 return;
             }
+            // RFC 6455 §4.2.1: only version 13 is supported; otherwise 426.
+            const char *ws_ver = http_get_header(req, "Sec-WebSocket-Version");
+            if (!ws_ver || strcmp(ws_ver, "13") != 0)
+            {
+                ws_send_version_required(slot_id);
+                return;
+            }
             if (!ws_do_upgrade(slot_id, req, r->ws_connect))
                 send(slot_id, 503, "text/plain", "Service Unavailable");
             return;
@@ -600,9 +759,19 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         }
 #endif // DETWS_ENABLE_SSE
 
-        // ROUTE_HTTP
-        if (r->method != method)
+        // ROUTE_HTTP - a HEAD request is served by the GET handler with the
+        // response body suppressed (RFC 7231 §4.3.2).
+        bool method_ok = (r->method == method) || (method == HTTP_HEAD && r->method == HTTP_GET);
+        if (!method_ok)
+        {
+            // Path matches but method differs - record it for a 405 + Allow.
+            path_matched = true;
+            allow_append(allow_buf, sizeof(allow_buf), method_name(r->method));
+            // A GET route also answers HEAD, so advertise it in Allow.
+            if (r->method == HTTP_GET)
+                allow_append(allow_buf, sizeof(allow_buf), "HEAD");
             continue;
+        }
 #if DETWS_ENABLE_AUTH
         if (r->auth_required && !check_basic_auth(slot_id, req, r))
         {
@@ -611,6 +780,13 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         }
 #endif // DETWS_ENABLE_AUTH
         r->callback(slot_id, req);
+        return;
+    }
+
+    // Path existed but the method was not allowed (RFC 7231 §6.5.5).
+    if (path_matched)
+    {
+        send_method_not_allowed(slot_id, allow_buf);
         return;
     }
 
@@ -654,8 +830,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
                         "Content-Length: %d\r\n"
                         "%s"
                         "Connection: close\r\n\r\n",
-                        code, status_text(code), content_type, payload_len,
-                        _cors_enabled ? _cors_header_buf : "");
+                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     /*
@@ -666,8 +841,12 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
+    bool head = req_is_head(slot_id);
+
     tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
-    tcp_write(pcb, payload, (u16_t)payload_len, TCP_WRITE_FLAG_COPY);
+    // HEAD responses carry the headers (incl. Content-Length) but no body.
+    if (!head && payload_len > 0)
+        tcp_write(pcb, payload, (u16_t)payload_len, TCP_WRITE_FLAG_COPY);
     tcp_output(pcb);
 
     if (tcp_close(pcb) != ERR_OK)
@@ -681,7 +860,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
  *
  * Used for CORS preflight (204) and any response where only status headers
  * are needed.  Behaves identically to send() regarding slot lifecycle and
- * PCB ownership transfer — the slot is freed before the lwIP write call.
+ * PCB ownership transfer - the slot is freed before the lwIP write call.
  *
  * @param slot_id Connection slot index.
  * @param code    HTTP status code, e.g. 204.
@@ -771,8 +950,7 @@ void DetWebServer::ws_disconnect(uint8_t ws_id)
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_SSE
-void DetWebServer::sse_send(uint8_t sse_id, const char *data,
-                            const char *event, const char *id)
+void DetWebServer::sse_send(uint8_t sse_id, const char *data, const char *event, const char *id)
 {
     if (sse_id >= MAX_SSE_CONNS || !sse_pool[sse_id].active)
         return;
@@ -785,8 +963,7 @@ void DetWebServer::sse_send(uint8_t sse_id, const char *data,
     }
 }
 
-void DetWebServer::sse_broadcast(const char *path, const char *data,
-                                 const char *event, const char *id)
+void DetWebServer::sse_broadcast(const char *path, const char *data, const char *event, const char *id)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
@@ -822,22 +999,22 @@ void DetWebServer::send_unauth(uint8_t slot_id, const char *realm)
     static const char body[] = "Unauthorized";
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
-        "HTTP/1.1 401 Unauthorized\r\n"
-        "WWW-Authenticate: Basic realm=\"%s\"\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %d\r\n"
-        "%s"
-        "Connection: close\r\n\r\n",
-        realm, (int)(sizeof(body) - 1),
-        _cors_enabled ? _cors_header_buf : "");
+                        "HTTP/1.1 401 Unauthorized\r\n"
+                        "WWW-Authenticate: Basic realm=\"%s\"\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: %d\r\n"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        realm, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
     conn->state = CONN_FREE;
-    conn->pcb   = nullptr;
+    conn->pcb = nullptr;
 
     tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
-    tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
+    if (!req_is_head(slot_id))
+        tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
     tcp_output(pcb);
 
     if (tcp_close(pcb) != ERR_OK)
@@ -853,7 +1030,7 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
         return false;
 
     uint8_t decoded[MAX_AUTH_LEN * 2 + 2];
-    size_t  n = base64_decode(auth_hdr + 6, decoded);
+    size_t n = base64_decode(auth_hdr + 6, decoded);
     if (n == 0 || n >= sizeof(decoded))
         return false;
     decoded[n] = '\0';
@@ -862,12 +1039,11 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
     if (!colon)
         return false;
 
-    size_t      ulen = (size_t)(colon - (const char *)decoded);
+    size_t ulen = (size_t)(colon - (const char *)decoded);
     const char *pass = colon + 1;
 
-    return (ulen == strlen(r->auth_user))
-        && (memcmp(decoded, r->auth_user, ulen) == 0)
-        && (strcmp(pass, r->auth_pass) == 0);
+    return (ulen == strlen(r->auth_user)) && (memcmp(decoded, r->auth_user, ulen) == 0) &&
+           (strcmp(pass, r->auth_pass) == 0);
 }
 #endif // DETWS_ENABLE_AUTH
 
@@ -876,8 +1052,7 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_FILE_SERVING
-void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys,
-                              const char *fs_path, const char *content_type)
+void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
 {
     fs::File f = file_sys.open(fs_path, "r");
     if (!f)
@@ -903,18 +1078,17 @@ void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys,
                         "Content-Length: %d\r\n"
                         "%s"
                         "Connection: close\r\n\r\n",
-                        content_type, (int)file_size,
-                        _cors_enabled ? _cors_header_buf : "");
+                        content_type, (int)file_size, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
     conn->state = CONN_FREE;
-    conn->pcb   = nullptr;
+    conn->pcb = nullptr;
 
     tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
 
     uint8_t chunk[FILE_CHUNK_SIZE];
-    size_t  n;
+    size_t n;
     while ((n = f.read(chunk, sizeof(chunk))) > 0)
         tcp_write(pcb, chunk, (u16_t)n, TCP_WRITE_FLAG_COPY);
 

@@ -4,9 +4,8 @@
     Build, run, and document all PlatformIO native test suites.
 
 .DESCRIPTION
-    Runs `pio test -e native -e native_app`, parses every test result,
-    extracts per-test descriptions from source-file comments, and writes
-    test/TEST_REPORTS.md.
+    Runs the native test suites, parses every test result, extracts per-test
+    descriptions from source-file comments, and writes docs/TEST_REPORT.md.
 
 .EXAMPLE
     # From project root:
@@ -26,8 +25,7 @@ $ProjectRoot = if ((Split-Path -Leaf $ScriptDir) -eq 'test') {
     Split-Path -Parent $ScriptDir
 }
 else { $ScriptDir }
-$TestDir = Join-Path $ProjectRoot 'test'
-$ReportPath = Join-Path $TestDir 'TEST_REPORTS.md'
+$ReportPath = Join-Path (Join-Path $ProjectRoot 'docs') 'TEST_REPORT.md'
 
 # ── Find pio ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +63,7 @@ $T0 = Get-Date
 # Disable ErrorActionPreference locally so pio failure doesn't throw
 $prev_ea = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-$RawLines = & $PioExe test -e native -e native_app 2>&1
+$RawLines = & $PioExe test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance 2>&1
 $PioExit = $LASTEXITCODE
 $ErrorActionPreference = $prev_ea
 $T1 = Get-Date
@@ -164,7 +162,7 @@ function Get-TestComment([string]$relFile, [string]$fnName) {
     for ($i = $bi + 1; $i -lt [Math]::Min($bi + 13, $src.Count); $i++) {
         $t = $src[$i].Trim()
         if ($t -match '^//\s*(.+)') { return $Matches[1].Trim() }
-        # Stop at first assertion or declaration — the comment window has passed
+        # Stop at first assertion or declaration - the comment window has passed
         if ($t -match '^TEST_ASSERT|^http_|^feed_|^push|^arm_|^[a-z][a-zA-Z0-9_]+\s*[=(]') { break }
     }
     return $null
@@ -193,7 +191,7 @@ function Get-SuiteBrief([string]$suiteName) {
 function Convert-Name([string]$name) {
     $prefix = ''
     if ($name -match '^(stress|race)_') {
-        $prefix = "$(([cultureinfo]::InvariantCulture.TextInfo.ToTitleCase($Matches[1]))) — "
+        $prefix = "$(([cultureinfo]::InvariantCulture.TextInfo.ToTitleCase($Matches[1]))) - "
         $name = $name -replace '^(stress|race)_', ''
     }
     elseif ($name -match '^test_') {
@@ -212,12 +210,12 @@ $sb = [System.Text.StringBuilder]::new(131072)
 
 function Add([string]$s = '') { $null = $sb.AppendLine($s) }
 
-Add "# Test Report — DeterministicESPAsyncWebServer"
+Add "# Test Report - DeterministicESPAsyncWebServer"
 Add ""
 Add "**Generated:** $dateStr  "
-Add "**Command:** ``pio test -e native -e native_app``  "
+Add "**Command:** ``pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance``  "
 $resStr = "$ovIcon $nPassed passed" + $(if ($nFailed) { ", $nFailed failed" } else { '' })
-Add "**Result:** $resStr — ${WallSec}s  "
+Add "**Result:** $resStr - ${WallSec}s  "
 Add ""
 Add "---"
 Add ""
@@ -252,7 +250,7 @@ foreach ($key in $Suites.Keys) {
     $gicon = if ($fail -eq 0) { '✅' } else { '❌' }
     $brief = Get-SuiteBrief $suite
 
-    Add "## $suite — $gicon $pass passed$(if ($fail) { ", $fail failed" } else { '' })"
+    Add "## $suite - $gicon $pass passed$(if ($fail) { ", $fail failed" } else { '' })"
     Add ""
     if ($brief) { Add "*${brief}*"; Add "" }
 

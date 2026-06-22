@@ -3,7 +3,7 @@
 
 /**
  * @file physical.cpp
- * @brief Layer 1 (Physical) — WiFi hardware initialisation implementation.
+ * @brief Layer 1 (Physical) - WiFi hardware initialization implementation.
  *
  * `init_wifi_physical()` kicks off the association process; it returns
  * immediately because the Arduino WiFi driver handles association

@@ -8,26 +8,28 @@
 //   WRITE       -- sse_write() guard conditions and return values
 //   STRESS      -- sustained alloc/free cycles and multi-slot isolation
 
-#include "network_drivers/sse.h"
-#include <unity.h>
+#include "network_drivers/presentation/sse.h"
 #include <string.h>
+#include <unity.h>
 
 void setUp()
 {
     sse_init();
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i]       = {};
-        conn_pool[i].id    = (uint8_t)i;
+        conn_pool[i] = {};
+        conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].pcb   = &_mock_pcb;
+        conn_pool[i].pcb = &_mock_pcb;
     }
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
-// POOL TESTS — sse_init()
+// POOL TESTS - sse_init()
 // ====================================================================
 
 void test_sse_pool_size()
@@ -54,7 +56,7 @@ void test_sse_path_empty_after_init()
 }
 
 // ====================================================================
-// POOL TESTS — sse_alloc()
+// POOL TESTS - sse_alloc()
 // ====================================================================
 
 void test_sse_alloc_returns_non_null()
@@ -84,7 +86,7 @@ void test_sse_alloc_stores_different_paths_per_slot()
 {
     SseConn *s0 = sse_alloc(0, "/events");
     SseConn *s1 = sse_alloc(1, "/metrics");
-    TEST_ASSERT_EQUAL_STRING("/events",  s0->path);
+    TEST_ASSERT_EQUAL_STRING("/events", s0->path);
     TEST_ASSERT_EQUAL_STRING("/metrics", s1->path);
 }
 
@@ -121,13 +123,13 @@ void test_sse_alloc_sse_id_is_pool_index()
 }
 
 // ====================================================================
-// POOL TESTS — sse_find()
+// POOL TESTS - sse_find()
 // ====================================================================
 
 void test_sse_find_returns_correct_conn()
 {
     SseConn *allocated = sse_alloc(0, "/events");
-    SseConn *found     = sse_find(0);
+    SseConn *found = sse_find(0);
     TEST_ASSERT_NOT_NULL(found);
     TEST_ASSERT_EQUAL_PTR(allocated, found);
 }
@@ -161,7 +163,7 @@ void test_sse_find_checks_slot_id_not_sse_id()
 }
 
 // ====================================================================
-// POOL TESTS — sse_free()
+// POOL TESTS - sse_free()
 // ====================================================================
 
 void test_sse_free_deactivates_slot()
@@ -222,7 +224,7 @@ void test_sse_free_only_frees_matching_slot()
 }
 
 // ====================================================================
-// WRITE TESTS — sse_write()
+// WRITE TESTS - sse_write()
 // ====================================================================
 
 void test_sse_write_null_data_returns_false()
@@ -240,7 +242,7 @@ void test_sse_write_returns_false_when_conn_not_active()
 
 void test_sse_write_returns_false_when_pcb_null()
 {
-    SseConn *sse  = sse_alloc(0, "/events");
+    SseConn *sse = sse_alloc(0, "/events");
     conn_pool[0].pcb = nullptr;
     TEST_ASSERT_FALSE(sse_write(sse, "data", nullptr, nullptr));
 }

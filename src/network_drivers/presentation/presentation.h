@@ -3,7 +3,7 @@
 
 /**
  * @file presentation.h
- * @brief Layer 6 (Presentation) — wires the transport ring buffer to the HTTP parser.
+ * @brief Layer 6 (Presentation) - wires the transport ring buffer to the HTTP parser.
  *
  * This layer owns two responsibilities:
  *   1. Drain bytes from `conn_pool[slot_id].rx_buffer` (transport ring buffer)
@@ -21,8 +21,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PRESENTATION_H
 #define DETERMINISTICESPASYNCWEBSERVER_PRESENTATION_H
 
+#include "../transport/transport.h"
 #include "http_parser.h"
-#include "transport.h"
 
 // ---------------------------------------------------------------------------
 // Slot-indexed wrappers called by the session and application layers

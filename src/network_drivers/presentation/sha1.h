@@ -3,7 +3,7 @@
 
 /**
  * @file sha1.h
- * @brief Software SHA-1 implementation — no platform dependencies.
+ * @brief Software SHA-1 implementation - no platform dependencies.
  *
  * Used exclusively for the WebSocket opening handshake (RFC 6455 §4.2.2).
  * Output is always a 20-byte digest.

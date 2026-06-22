@@ -23,8 +23,8 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/physical.h"
-#include "network_drivers/transport.h" // Needed to access conn_pool and ConnState
+#include "network_drivers/physical/physical.h"
+#include "network_drivers/transport/transport.h" // Needed to access conn_pool and ConnState
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

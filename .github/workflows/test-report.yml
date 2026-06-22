@@ -1,0 +1,42 @@
+name: Test Report
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: test-report-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-report:
+    name: Run native test suites and publish report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Run tests and regenerate docs/TEST_REPORT.md
+        run: bash test/run_tests.sh || true
+
+      - name: Commit updated test report
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- docs/TEST_REPORT.md; then
+            git add docs/TEST_REPORT.md
+            git commit -m "ci: update test report [skip ci]"
+            git push
+          else
+            echo "Test report unchanged."
+          fi

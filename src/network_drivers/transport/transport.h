@@ -3,11 +3,11 @@
 
 /**
  * @file transport.h
- * @brief Layer 4 (Transport) — TCP connection pool, ring buffers, and lwIP integration.
+ * @brief Layer 4 (Transport) - TCP connection pool, ring buffers, and lwIP integration.
  *
- * Defines the static connection pool and the FreeRTOS event queue used to
- * pass connection events from lwIP callbacks (running in `tcpip_thread`) to
- * the Arduino main-loop task.
+ * Defines the static connection pool and the per-connection event plumbing.
+ * Each listener port owns its own FreeRTOS queue (see listener.h); the
+ * session layer drains all active queues each tick via server_tick().
  *
  * **Concurrency model**
  * | Context          | Reads                  | Writes                  |
@@ -22,7 +22,7 @@
  *
  * **Backpressure**
  * When the ring buffer is full, `tcp_recved()` is called with only the
- * bytes actually copied — not `p->tot_len`.  This shrinks the TCP receive
+ * bytes actually copied - not `p->tot_len`.  This shrinks the TCP receive
  * window and applies backpressure to the sender rather than silently
  * dropping data.
  *
@@ -75,7 +75,14 @@ struct TcpConn
     uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
     volatile size_t rx_head;        ///< Producer write index (lwIP context).
     volatile size_t rx_tail;        ///< Consumer read index (main-loop context).
+
+    uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
+    ConnProto proto;     ///< Application protocol for this connection.
+    uint8_t ssh_id;      ///< SSH session slot (PROTO_SSH only); 0xFF when none.
 };
+
+/** @brief Sentinel for TcpConn::ssh_id meaning "no SSH session bound". */
+#define SSH_ID_NONE 0xFFu
 
 /** @brief Static pool of connection contexts.  Defined in transport.cpp. */
 extern TcpConn conn_pool[MAX_CONNS];
@@ -85,7 +92,7 @@ extern TcpConn conn_pool[MAX_CONNS];
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Type of connection event posted to the FreeRTOS event queue.
+ * @brief Type of connection event posted to a listener's FreeRTOS queue.
  */
 enum EvtType
 {
@@ -96,10 +103,10 @@ enum EvtType
 };
 
 /**
- * @brief Event record posted from lwIP callbacks to the main-loop task.
+ * @brief Event record posted from lwIP callbacks to the session layer.
  *
- * Small enough (8 bytes on 32-bit) that the FreeRTOS queue copies it by
- * value — no pointer lifetime issues.
+ * Small enough (≤12 bytes on 32-bit) that the FreeRTOS queue copies it by
+ * value - no pointer lifetime issues.
  */
 struct TcpEvt
 {
@@ -114,41 +121,41 @@ struct TcpEvt
 
 /**
  * @class DeterministicAsyncTCP
- * @brief Static-only facade over the raw lwIP TCP API.
+ * @brief Static-only facade managing the shared TCP connection pool.
  *
- * All state is class-level (no instances).  Initialises the connection pool,
- * the FreeRTOS event queue, and the lwIP listening PCB once per boot via
- * init().  The lwIP callbacks (lowlevel_accept_cb, lowlevel_recv_cb, …) are
- * private implementation details in transport.cpp.
+ * All state is class-level (no instances).  pool_init() initializes the
+ * connection pool and the runtime timeout config once per boot (or per
+ * restart cycle).  Listening sockets and per-listener queues are owned by
+ * the listener layer (see listener.h); this class only manages the shared
+ * conn_pool[] and the idle-timeout sweep.
  */
 class DeterministicAsyncTCP
 {
   public:
     /**
-     * @brief Initialise the TCP stack, create the event queue, and begin listening.
+     * @brief Initialize the connection pool and store the runtime config.
      *
-     * Checks whether enough heap is available before attempting queue creation.
-     * Zeroes the connection pool and stores the runtime config.
+     * Zeroes all connection slots and sets conn_timeout_ms from @p cfg.
+     * Call this before calling listener_add() for each port.
      *
-     * @param port TCP port to bind and listen on.
-     * @param cfg  Optional runtime config.  Pass nullptr to use defaults.
-     * @return Positive value on success; negative value whose absolute value is
-     *         the number of heap bytes needed when initialisation fails.
+     * @param cfg  Optional runtime config.  Pass nullptr to use compile-time
+     *             defaults (CONN_TIMEOUT_MS).
      */
-    static int32_t init(uint16_t port, const WebServerConfig *cfg = nullptr);
+    static void pool_init(const WebServerConfig *cfg = nullptr);
 
     /**
-     * @brief Stop the server: abort all connections, close the listener, free the queue.
+     * @brief Abort all active connections and reset the pool to CONN_FREE.
      *
-     * Safe to call from the main-loop task.  After stop() returns,
-     * init() may be called again to restart.
+     * Does not touch listener PCBs or listener queues - call listener_stop_all()
+     * before this if you also want to close the listening sockets.
+     * Safe to call from the main-loop task.
      */
     static void stop();
 
     /**
      * @brief Scan the pool and force-close connections idle for > conn_timeout_ms.
      *
-     * Called at the start of every server_tick() call, before the event queue
+     * Called at the start of every server_tick() call, before any event queue
      * is drained.  Uses `tcp_abort()` (not `tcp_close()`) because the
      * connection has already timed out and a graceful FIN is not warranted.
      *
@@ -160,38 +167,66 @@ class DeterministicAsyncTCP
     static void check_timeouts();
 
     /**
-     * @brief FreeRTOS queue handle shared between lwIP callbacks and server_tick().
-     *
-     * Events are posted from `tcpip_thread` context via `xQueueSend()` (not
-     * the ISR variant) because lwIP callbacks run in a task, not a hardware ISR.
-     * Queue depth is EVT_QUEUE_DEPTH, sized for MAX_CONNS * 4 event bursts.
-     * Backed by a static BSS array; no heap is allocated.
-     */
-    static QueueHandle_t queue;
-
-    /**
      * @brief Runtime connection-idle timeout in milliseconds.
      *
-     * Loaded from WebServerConfig::conn_timeout_ms at init() time.
+     * Loaded from WebServerConfig::conn_timeout_ms at pool_init() time.
      * Defaults to CONN_TIMEOUT_MS if no config is supplied.
      */
     static uint32_t conn_timeout_ms;
 
     /**
-     * @brief Always returns 0 — the library makes no heap allocations.
+     * @brief Always returns 0 - the library makes no heap allocations.
      *
-     * The event queue is backed by statically-allocated BSS storage
-     * (_queue_struct + _queue_storage in transport.cpp).  Retained for
-     * API compatibility with code that calls it before begin().
+     * Each listener's event queue is backed by statically-allocated BSS
+     * storage inside the Listener struct.  Retained for API compatibility.
      */
     static size_t heap_needed();
 
     /**
-     * @brief Always returns true — no heap allocation means no pre-flight needed.
+     * @brief Always returns true - no heap allocation means no pre-flight needed.
      *
      * Retained for API compatibility.  Safe to call or omit.
      */
     static bool heap_available();
 };
+
+// ---------------------------------------------------------------------------
+// Per-connection lwIP callbacks (defined in transport.cpp, used in listener.cpp)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief lwIP receive callback - wired to each new connection by listener_accept_cb.
+ * @see transport.cpp
+ */
+err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
+
+/**
+ * @brief lwIP sent callback - refreshes the idle-timeout timestamp.
+ * @see transport.cpp
+ */
+err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
+
+/**
+ * @brief lwIP error callback - fires when the stack detects a fatal error.
+ * @see transport.cpp
+ */
+void lowlevel_err_cb(void *arg, err_t err);
+
+// ---------------------------------------------------------------------------
+// Event enqueue (defined in listener.cpp, called from transport.cpp)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Post @p evt to the queue owned by listener @p listener_id.
+ *
+ * Forward declaration here breaks the circular-include chain:
+ * transport.cpp calls this function but cannot include listener.h (because
+ * listener.h already includes transport.h).  The linker resolves it to
+ * listener.cpp at link time.
+ *
+ * @param listener_id  Index into listener_pool[].
+ * @param evt          Event to enqueue.
+ */
+void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 
 #endif

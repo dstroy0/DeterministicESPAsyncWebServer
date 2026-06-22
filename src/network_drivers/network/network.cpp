@@ -3,10 +3,10 @@
 
 /**
  * @file network.cpp
- * @brief Layer 3 (Network) — IP routing and packet forwarding stub.
+ * @brief Layer 3 (Network) - IP routing and packet forwarding stub.
  *
  * IPv4/IPv6 routing, DHCP, ARP, ICMP, and DNS resolution are all
- * transparent to this library — they run inside the lwIP stack.  This
+ * transparent to this library - they run inside the lwIP stack.  This
  * function is provided as an architectural extension point for future
  * work such as static-route injection or custom ICMP handling.
  */

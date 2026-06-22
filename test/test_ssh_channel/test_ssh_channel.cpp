@@ -1,0 +1,290 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// SSH connection-protocol (channel) tests - RFC 4254.
+
+#include "network_drivers/presentation/ssh/ssh_channel.h"
+#include "network_drivers/presentation/ssh/ssh_packet.h"
+#include <stdint.h>
+#include <string.h>
+#include <unity.h>
+
+static uint8_t last_data[256];
+static size_t last_data_len;
+static int data_cb_count;
+
+static void data_cb(uint8_t slot, const uint8_t *d, size_t n)
+{
+    (void)slot;
+    last_data_len = n < sizeof(last_data) ? n : sizeof(last_data);
+    memcpy(last_data, d, last_data_len);
+    data_cb_count++;
+}
+
+void setUp()
+{
+    ssh_channel_init(0);
+    ssh_channel_set_data_cb(data_cb);
+    memset(last_data, 0, sizeof(last_data));
+    last_data_len = 0;
+    data_cb_count = 0;
+}
+void tearDown()
+{
+}
+
+static void wr_u32(uint8_t *p, uint32_t v)
+{
+    p[0] = (uint8_t)(v >> 24);
+    p[1] = (uint8_t)(v >> 16);
+    p[2] = (uint8_t)(v >> 8);
+    p[3] = (uint8_t)v;
+}
+static uint32_t rd_u32(const uint8_t *p)
+{
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+static size_t put_string(uint8_t *p, const char *s)
+{
+    uint32_t n = (uint32_t)strlen(s);
+    wr_u32(p, n);
+    memcpy(p + 4, s, n);
+    return 4 + n;
+}
+
+// Open a session channel; returns the confirmation in out.
+static void open_session(uint32_t peer_id, uint32_t peer_window)
+{
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(pkt + n, "session");
+    wr_u32(pkt + n, peer_id);
+    wr_u32(pkt + n + 4, peer_window);
+    wr_u32(pkt + n + 8, 32768);
+    n += 12;
+
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0]);
+}
+
+// ---- open -----------------------------------------------------------------
+
+void test_open_session_confirms()
+{
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(pkt + n, "session");
+    wr_u32(pkt + n, 42);        // sender channel
+    wr_u32(pkt + n + 4, 1000);  // window
+    wr_u32(pkt + n + 8, 16384); // max packet
+    n += 12;
+
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(42, rd_u32(out + 1)); // recipient = client's sender
+    TEST_ASSERT_TRUE(ssh_chan[0].open);
+    TEST_ASSERT_EQUAL_UINT32(42, ssh_chan[0].peer_id);
+    TEST_ASSERT_EQUAL_UINT32(1000, ssh_chan[0].peer_window);
+}
+
+void test_open_non_session_fails()
+{
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(pkt + n, "direct-tcpip");
+    wr_u32(pkt + n, 7);
+    wr_u32(pkt + n + 4, 1000);
+    wr_u32(pkt + n + 8, 16384);
+    n += 12;
+
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_FAILURE, out[0]);
+    TEST_ASSERT_FALSE(ssh_chan[0].open);
+}
+
+// ---- request --------------------------------------------------------------
+
+void test_shell_request_success_with_reply()
+{
+    open_session(5, 1000);
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "shell");
+    pkt[n++] = 1; // want_reply
+
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));
+}
+
+void test_unknown_request_failure()
+{
+    open_session(5, 1000);
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "x11-req");
+    pkt[n++] = 1;
+
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_FAILURE, out[0]);
+}
+
+void test_request_no_reply_produces_nothing()
+{
+    open_session(5, 1000);
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "shell");
+    pkt[n++] = 0; // want_reply = false
+
+    uint8_t out[16];
+    size_t olen = 99;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)olen);
+}
+
+// ---- data -----------------------------------------------------------------
+
+void test_inbound_data_invokes_callback()
+{
+    open_session(5, 1000);
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_DATA;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "hello");
+
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(1, data_cb_count);
+    TEST_ASSERT_EQUAL_INT(5, (int)last_data_len);
+    TEST_ASSERT_EQUAL_MEMORY("hello", last_data, 5);
+}
+
+void test_inbound_data_window_replenish()
+{
+    open_session(5, 1000);
+    // Send more than half the window so a WINDOW_ADJUST is emitted.
+    uint8_t big[20000];
+    memset(big, 'x', sizeof(big));
+    uint8_t pkt[20100];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_DATA;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    wr_u32(pkt + n, (uint32_t)sizeof(big));
+    n += 4;
+    memcpy(pkt + n, big, sizeof(big));
+    n += sizeof(big);
+
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_WINDOW_ADJUST, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel
+    // Window restored to full.
+    TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW, ssh_chan[0].local_window);
+}
+
+void test_inbound_data_exceeding_window_rejected()
+{
+    open_session(5, 1000);
+    ssh_chan[0].local_window = 4; // shrink artificially
+    uint8_t pkt[32];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_DATA;
+    wr_u32(pkt + n, 0);
+    n += 4;
+    n += put_string(pkt + n, "toolong"); // 7 bytes > 4
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)));
+}
+
+void test_outbound_data_frames_and_decrements_window()
+{
+    open_session(5, 1000);
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_build_data(0, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_DATA, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel
+    TEST_ASSERT_EQUAL_UINT32(3, rd_u32(out + 5)); // data length
+    TEST_ASSERT_EQUAL_MEMORY("abc", out + 9, 3);
+    TEST_ASSERT_EQUAL_UINT32(997, ssh_chan[0].peer_window);
+}
+
+void test_outbound_data_exceeding_peer_window_rejected()
+{
+    open_session(5, 2); // tiny peer window
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_build_data(0, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)));
+}
+
+void test_window_adjust_grows_peer_window()
+{
+    open_session(5, 100);
+    uint8_t pkt[9];
+    pkt[0] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+    wr_u32(pkt + 1, 0);
+    wr_u32(pkt + 5, 500);
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_window_adjust(0, pkt, sizeof(pkt)));
+    TEST_ASSERT_EQUAL_UINT32(600, ssh_chan[0].peer_window);
+}
+
+void test_build_close_emits_eof_and_close()
+{
+    open_session(5, 1000);
+    uint8_t out[16];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_build_close(0, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT32(10, (uint32_t)olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_EOF, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_CLOSE, out[5]);
+    TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 6));
+    TEST_ASSERT_FALSE(ssh_chan[0].open);
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_open_session_confirms);
+    RUN_TEST(test_open_non_session_fails);
+    RUN_TEST(test_shell_request_success_with_reply);
+    RUN_TEST(test_unknown_request_failure);
+    RUN_TEST(test_request_no_reply_produces_nothing);
+    RUN_TEST(test_inbound_data_invokes_callback);
+    RUN_TEST(test_inbound_data_window_replenish);
+    RUN_TEST(test_inbound_data_exceeding_window_rejected);
+    RUN_TEST(test_outbound_data_frames_and_decrements_window);
+    RUN_TEST(test_outbound_data_exceeding_peer_window_rejected);
+    RUN_TEST(test_window_adjust_grows_peer_window);
+    RUN_TEST(test_build_close_emits_eof_and_close);
+    return UNITY_END();
+}

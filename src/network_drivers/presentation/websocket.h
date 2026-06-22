@@ -44,9 +44,14 @@
  * ```
  *
  * **Limitations**
- * - Fragmented messages are not supported (FIN=0 frames close with 1003).
- * - Payload larger than WS_FRAME_SIZE closes with 1009.
+ * - A reassembled message must fit in WS_FRAME_SIZE bytes; larger closes 1009.
  * - RSV bits must be zero (no extensions supported).
+ *
+ * **Fragmentation (RFC 6455 §5.4)**
+ * Fragmented data messages are reassembled into `buf` across continuation
+ * frames; the message is delivered only when the FIN frame arrives. Control
+ * frames (ping/pong/close) may be interleaved between fragments and are
+ * handled immediately without disturbing the partial message.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -55,8 +60,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBSOCKET_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEBSOCKET_H
 
+#include "../transport/transport.h"
 #include "DetWebServerConfig.h"
-#include "transport.h"
 
 // ---------------------------------------------------------------------------
 // WebSocket opcodes (RFC 6455 §5.2)
@@ -66,21 +71,21 @@
 enum WsOpcode
 {
     WS_OP_CONTINUATION = 0x0, ///< Continuation frame (fragmentation -- rejected).
-    WS_OP_TEXT         = 0x1, ///< UTF-8 text payload.
-    WS_OP_BINARY       = 0x2, ///< Binary payload.
-    WS_OP_CLOSE        = 0x8, ///< Connection close.
-    WS_OP_PING         = 0x9, ///< Ping (auto-ponged by the library).
-    WS_OP_PONG         = 0xA  ///< Pong (echoed ping; ignored by library).
+    WS_OP_TEXT = 0x1,         ///< UTF-8 text payload.
+    WS_OP_BINARY = 0x2,       ///< Binary payload.
+    WS_OP_CLOSE = 0x8,        ///< Connection close.
+    WS_OP_PING = 0x9,         ///< Ping (auto-ponged by the library).
+    WS_OP_PONG = 0xA          ///< Pong (echoed ping; ignored by library).
 };
 
 /** @brief WebSocket close status codes (RFC 6455 §7.4.1). */
 enum WsCloseCode
 {
-    WS_CLOSE_NORMAL    = 1000, ///< Normal closure.
-    WS_CLOSE_GOING_AWAY= 1001, ///< Endpoint going away.
-    WS_CLOSE_PROTOCOL  = 1002, ///< Protocol error.
-    WS_CLOSE_UNSUPPORTED=1003, ///< Unsupported data (e.g. fragmented message).
-    WS_CLOSE_TOO_BIG   = 1009  ///< Payload too large for WS_FRAME_SIZE.
+    WS_CLOSE_NORMAL = 1000,      ///< Normal closure.
+    WS_CLOSE_GOING_AWAY = 1001,  ///< Endpoint going away.
+    WS_CLOSE_PROTOCOL = 1002,    ///< Protocol error.
+    WS_CLOSE_UNSUPPORTED = 1003, ///< Unsupported data (e.g. fragmented message).
+    WS_CLOSE_TOO_BIG = 1009      ///< Payload too large for WS_FRAME_SIZE.
 };
 
 // ---------------------------------------------------------------------------
@@ -117,20 +122,29 @@ enum WsParseState
  */
 struct WsConn
 {
-    uint8_t      ws_id;   ///< Index into ws_pool[] (set at init).
-    uint8_t      slot_id; ///< Owning TCP slot in conn_pool[].
-    bool         active;  ///< True when this entry is in use.
+    uint8_t ws_id;   ///< Index into ws_pool[] (set at init).
+    uint8_t slot_id; ///< Owning TCP slot in conn_pool[].
+    bool active;     ///< True when this entry is in use.
 
     WsParseState parse_state; ///< Current frame parser state.
-    WsOpcode     opcode;      ///< Opcode of the frame being parsed.
-    bool         fin;         ///< FIN bit of the frame being parsed.
-    bool         masked;      ///< True if client sent a masking key.
+    WsOpcode opcode;          ///< Opcode of the frame being parsed.
+    bool fin;                 ///< FIN bit of the frame being parsed.
+    bool masked;              ///< True if client sent a masking key.
 
-    uint8_t  mask_key[4];            ///< Client masking key.
-    uint32_t payload_len;            ///< Expected payload byte count.
-    uint32_t payload_idx;            ///< Bytes received so far.
-    uint8_t  len64_count;            ///< Bytes consumed from 64-bit length.
-    uint8_t  buf[WS_FRAME_SIZE + 1]; ///< Unmasked payload, null-terminated.
+    uint8_t mask_key[4];            ///< Client masking key.
+    uint32_t payload_len;           ///< Expected payload byte count (current frame).
+    uint32_t payload_idx;           ///< Bytes received so far (current frame).
+    uint8_t len64_count;            ///< Bytes consumed from 64-bit length.
+    uint8_t buf[WS_FRAME_SIZE + 1]; ///< Reassembled message payload, null-terminated.
+
+    // Fragmentation state (RFC 6455 §5.4). A data message may span multiple
+    // frames (first text/binary with FIN=0, then continuation frames). Control
+    // frames may be interleaved and use a separate buffer so they never clobber
+    // the partially-assembled data message.
+    bool fragmenting;         ///< True between a non-FIN data frame and its FIN.
+    WsOpcode msg_opcode;      ///< Opcode of the data message being assembled.
+    uint32_t msg_len;         ///< Bytes assembled so far across all fragments.
+    uint8_t ctl_buf[125 + 1]; ///< Control-frame payload (ping/pong/close), null-terminated.
 };
 
 /** @brief Pool of WebSocket connection state, one per MAX_WS_CONNS. */
@@ -141,7 +155,7 @@ extern WsConn ws_pool[MAX_WS_CONNS];
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Initialise all WebSocket pool slots to inactive.
+ * @brief Initialize all WebSocket pool slots to inactive.
  *
  * Called once from DetWebServer::begin().
  */
@@ -201,8 +215,7 @@ void ws_reset_frame(WsConn *ws);
  * @param len      Payload length in bytes.
  * @return true on success, false if the TCP slot is not active.
  */
-bool ws_send_frame(WsConn *ws, WsOpcode opcode,
-                   const uint8_t *payload, uint16_t len);
+bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t len);
 
 /**
  * @brief Send a Close frame and mark the slot WS_CLOSED.

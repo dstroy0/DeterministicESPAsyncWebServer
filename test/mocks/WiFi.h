@@ -12,5 +12,5 @@ class WiFiClass
     }
 };
 
-// One instance per translation unit — acceptable for mock purposes
+// One instance per translation unit - acceptable for mock purposes
 static WiFiClass WiFi;

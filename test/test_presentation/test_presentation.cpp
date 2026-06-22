@@ -4,12 +4,12 @@
 // Unit, stress, and race-condition tests for Layer 6 (Presentation).
 //
 // Sections:
-//   FUNCTION I/O  — one test per observable input→output path for each function
-//   UNIT          — correctness of the state machine and parser logic
-//   STRESS        — sustained-load and boundary-value coverage
-//   RACE SIM      — simulated concurrent-access scenarios
+//   FUNCTION I/O  - one test per observable input→output path for each function
+//   UNIT          - correctness of the state machine and parser logic
+//   STRESS        - sustained-load and boundary-value coverage
+//   RACE SIM      - simulated concurrent-access scenarios
 
-#include "network_drivers/presentation.h"
+#include "network_drivers/presentation/presentation.h"
 #include <unity.h>
 
 // transport.cpp + presentation.cpp are compiled into the native env.
@@ -42,7 +42,7 @@ void tearDown()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — http_reset()
+// FUNCTION I/O TESTS - http_reset()
 // ====================================================================
 
 void test_fn_reset_sets_parse_state_to_method()
@@ -131,12 +131,12 @@ void test_fn_reset_is_idempotent()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — http_get_header()
+// FUNCTION I/O TESTS - http_get_header()
 // ====================================================================
 
 void test_fn_get_header_null_when_no_headers()
 {
-    // setUp already reset all slots — header_count is 0
+    // setUp already reset all slots - header_count is 0
     TEST_ASSERT_NULL(http_get_header(&http_pool[0], "Host"));
 }
 
@@ -202,7 +202,7 @@ void test_fn_get_header_does_not_bleed_across_slots()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — http_get_query()
+// FUNCTION I/O TESTS - http_get_query()
 // ====================================================================
 
 void test_fn_get_query_null_when_no_params()
@@ -269,7 +269,7 @@ void test_fn_get_query_does_not_bleed_across_slots()
 }
 
 // ====================================================================
-// UNIT TESTS — parser state machine
+// UNIT TESTS - parser state machine
 // ====================================================================
 
 void test_get_parses_complete()
@@ -454,7 +454,7 @@ void test_content_length_header_stored_in_headers_array()
 // STRESS TESTS
 // ====================================================================
 
-// 100 parse+reset cycles on one slot — no state accumulation allowed.
+// 100 parse+reset cycles on one slot - no state accumulation allowed.
 void stress_parse_reset_100_cycles()
 {
     for (int iter = 0; iter < 100; iter++)
@@ -499,7 +499,7 @@ void stress_all_slots_parse_simultaneously()
     TEST_ASSERT_EQUAL_STRING("/three", http_pool[3].path);
 }
 
-// "OPTIONS" is the longest valid 7-character method — exactly fills method[0..6]
+// "OPTIONS" is the longest valid 7-character method - exactly fills method[0..6]
 // with the null terminator at method[7]; must not trigger overflow.
 void stress_method_at_max_7_chars_no_error()
 {
@@ -509,7 +509,7 @@ void stress_method_at_max_7_chars_no_error()
     TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
 }
 
-// Path exactly MAX_PATH_LEN-1 characters — must parse without error.
+// Path exactly MAX_PATH_LEN-1 characters - must parse without error.
 void stress_path_at_exact_limit_no_error()
 {
     char req[MAX_PATH_LEN + 32];
@@ -546,7 +546,7 @@ void stress_path_at_exact_limit_no_error()
     TEST_ASSERT_EQUAL(MAX_PATH_LEN - 1, (int)strlen(http_pool[0].path));
 }
 
-// Body exactly BODY_BUF_SIZE bytes — all bytes stored, null terminator at index BODY_BUF_SIZE.
+// Body exactly BODY_BUF_SIZE bytes - all bytes stored, null terminator at index BODY_BUF_SIZE.
 void stress_body_exactly_buf_size_all_stored()
 {
     char hdr[128];
@@ -569,7 +569,7 @@ void stress_body_exactly_buf_size_all_stored()
     TEST_ASSERT_EQUAL('A', http_pool[0].body[26]); // pattern wraps
 }
 
-// Exactly MAX_HEADERS headers — all must be stored; none silently dropped.
+// Exactly MAX_HEADERS headers - all must be stored; none silently dropped.
 void stress_exactly_max_headers_all_stored()
 {
     push(0, "GET / HTTP/1.1\r\n"
@@ -583,7 +583,7 @@ void stress_exactly_max_headers_all_stored()
     TEST_ASSERT_EQUAL_STRING("v8", http_pool[0].headers[7].val);
 }
 
-// Exactly MAX_QUERY_PARAMS query params — all stored; none dropped.
+// Exactly MAX_QUERY_PARAMS query params - all stored; none dropped.
 void stress_exactly_max_query_params_all_stored()
 {
     push(0, "GET /?a=1&b=2&c=3&d=4&e=5&f=6&g=7&h=8 HTTP/1.1\r\n\r\n");
@@ -594,7 +594,7 @@ void stress_exactly_max_query_params_all_stored()
     TEST_ASSERT_EQUAL_STRING("8", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].val);
 }
 
-// Byte-by-byte incremental parse — worst-case for a streaming environment.
+// Byte-by-byte incremental parse - worst-case for a streaming environment.
 // Each byte is pushed individually; the parser must never enter PARSE_ERROR
 // while consuming a valid request.
 void stress_incremental_byte_by_byte_no_error()
@@ -614,7 +614,7 @@ void stress_incremental_byte_by_byte_no_error()
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
-// 50 sequential requests, alternating GET/POST — verify slot is clean after each.
+// 50 sequential requests, alternating GET/POST - verify slot is clean after each.
 void stress_sequential_requests_no_state_leak()
 {
     for (int i = 0; i < 50; i++)
@@ -691,7 +691,7 @@ void race_interleaved_producer_consumer_ring_buffer()
 }
 
 // Write-past-full protection: reaching the sentinel must prevent writes
-// — the full condition must be enforced before any write succeeds.
+// - the full condition must be enforced before any write succeeds.
 void race_ring_buffer_full_prevents_write()
 {
     TcpConn *s = &conn_pool[0];
@@ -703,7 +703,7 @@ void race_ring_buffer_full_prevents_write()
     {
         size_t next = (s->rx_head + 1) % RX_BUF_SIZE;
         if (next == s->rx_tail)
-            break; // full — stop before overwriting
+            break; // full - stop before overwriting
         s->rx_buffer[s->rx_head] = (uint8_t)(written & 0xFF);
         s->rx_head = next;
         written++;
@@ -715,7 +715,7 @@ void race_ring_buffer_full_prevents_write()
 }
 
 // ABA slot reuse: free a slot via timeout, immediately re-arm it, verify
-// that last_activity_ms reflects the new connection — no stale timestamp.
+// that last_activity_ms reflects the new connection - no stale timestamp.
 void race_aba_slot_reuse_fresh_timestamp()
 {
     const uint32_t T_OLD = 0;
@@ -740,7 +740,7 @@ void race_aba_slot_reuse_fresh_timestamp()
 }
 
 // Double-free: call check_timeouts() on a slot that is already CONN_FREE.
-// Must be a no-op — no state corruption and no crash.
+// Must be a no-op - no state corruption and no crash.
 void race_double_free_is_nop()
 {
     conn_pool[0].state = CONN_FREE;
@@ -763,7 +763,7 @@ void race_concurrent_slot_parse_isolation()
     http_parse(1);
 
     TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
-    // Slot 1 is not complete — it's still awaiting headers/blank line
+    // Slot 1 is not complete - it's still awaiting headers/blank line
     TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
     TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[1].parse_state);
 
@@ -821,7 +821,7 @@ void race_reset_during_parse_body()
 }
 
 // After http_parse hits PARSE_COMPLETE, calling it again must be a no-op
-// — bytes pushed after completion must stay in the buffer unconsumed.
+// - bytes pushed after completion must stay in the buffer unconsumed.
 void race_parse_after_complete_is_nop()
 {
     push(0, "GET / HTTP/1.1\r\n\r\n");

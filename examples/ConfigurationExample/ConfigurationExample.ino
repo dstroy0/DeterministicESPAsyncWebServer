@@ -200,7 +200,7 @@
 #define MAX_VAL_LEN      64
 
 #include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/physical.h"
+#include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 
 static const char *SSID     = "YOUR_SSID";

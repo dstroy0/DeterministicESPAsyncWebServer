@@ -14,10 +14,10 @@
  *   build_flags = -DMAX_CONNS=8 -DBODY_BUF_SIZE=512
  * @endcode
  *
- * **Runtime parameters — flash or RAM, your choice**
+ * **Runtime parameters - flash or RAM, your choice**
  * `WebServerConfig` holds values that can be changed without a rebuild.
  * On ESP32, `PROGMEM` is a no-op (const data lands in DROM automatically).
- * On AVR it places data in flash and requires `pgm_read_*` accessors — this
+ * On AVR it places data in flash and requires `pgm_read_*` accessors - this
  * library targets ESP32 only, so both forms read identically via pointer:
  * @code
  *   // Flash (PROGMEM, no RAM cost at runtime):
@@ -103,7 +103,7 @@
 /**
  * @brief Maximum request body bytes stored in `HttpReq::body`.
  *
- * Bodies larger than this trigger a 413 Payload Too Large response —
+ * Bodies larger than this trigger a 413 Payload Too Large response -
  * the parser detects the overflow via `Content-Length` before any body
  * bytes arrive, so no data is read or stored for oversized requests.
  */
@@ -308,10 +308,20 @@
 #define DETWS_ENABLE_AUTH 1
 #endif
 
+/** @brief Telnet server support (RFC 854 / IAC option negotiation). */
+#ifndef DETWS_ENABLE_TELNET
+#define DETWS_ENABLE_TELNET 0
+#endif
+
+/** @brief SSH server support (RFC 4253/4252/4254). */
+#ifndef DETWS_ENABLE_SSH
+#define DETWS_ENABLE_SSH 0
+#endif
+
 /**
  * @brief Expose a diagnostic JSON endpoint via server.diag().
  *
- * Disabled by default — enabling it exposes compile-time configuration
+ * Disabled by default - enabling it exposes compile-time configuration
  * (buffer sizes, feature flags) which could aid an attacker.  Only
  * enable in development or behind an authenticated route.
  *
@@ -328,6 +338,165 @@
 #ifndef DETWS_ENABLE_DIAG
 #define DETWS_ENABLE_DIAG 0
 #endif
+
+/**
+ * @brief Enforce the RFC 7230 §5.4 Host-header requirement (default on).
+ *
+ * When 1, an HTTP/1.1 request that lacks a Host header - or carries more than
+ * one - is rejected with 400 Bad Request. When 0, the Host header is not
+ * required (useful for constrained clients or test harnesses that feed bare
+ * request lines). The multiple-Host rule and Content-Length validation are
+ * always active regardless of this flag.
+ */
+#ifndef DETWS_ENFORCE_HOST_HEADER
+#define DETWS_ENFORCE_HOST_HEADER 1
+#endif
+
+/**
+ * @brief Allow SSH password authentication (default on).
+ *
+ * Set to 0 to harden the SSH server to publickey-only authentication
+ * (RFC 4252 §7): the "password" method is then refused outright and is not
+ * advertised in the USERAUTH_FAILURE method list. Publickey auth is always
+ * available regardless of this flag.
+ */
+#ifndef DETWS_SSH_ALLOW_PASSWORD
+#define DETWS_SSH_ALLOW_PASSWORD 1
+#endif
+
+// ---------------------------------------------------------------------------
+// Listener pool
+// ---------------------------------------------------------------------------
+
+/** @brief Maximum number of simultaneously active listener ports. */
+#ifndef MAX_LISTENERS
+#define MAX_LISTENERS 3
+#endif
+
+// ---------------------------------------------------------------------------
+// Telnet sizing constants  (DETWS_ENABLE_TELNET must be 1)
+// ---------------------------------------------------------------------------
+
+/** @brief Maximum simultaneous Telnet connections. */
+#ifndef MAX_TELNET_CONNS
+#define MAX_TELNET_CONNS 2
+#endif
+
+/** @brief Stack buffer for one Telnet I/O chunk. */
+#ifndef TELNET_BUF_SIZE
+#define TELNET_BUF_SIZE 256
+#endif
+
+// ---------------------------------------------------------------------------
+// SSH sizing constants  (DETWS_ENABLE_SSH must be 1)
+// ---------------------------------------------------------------------------
+
+/** @brief Maximum simultaneous SSH connections. */
+#ifndef MAX_SSH_CONNS
+#define MAX_SSH_CONNS 1
+#endif
+
+/** @brief Packet assembly buffer per SSH connection (bytes). */
+#ifndef SSH_PKT_BUF_SIZE
+#define SSH_PKT_BUF_SIZE 2048
+#endif
+
+/** @brief Maximum SSH username length including null terminator. */
+#ifndef SSH_MAX_USERNAME_LEN
+#define SSH_MAX_USERNAME_LEN 32
+#endif
+
+/** @brief Maximum SSH password length including null terminator. */
+#ifndef SSH_MAX_PASSWORD_LEN
+#define SSH_MAX_PASSWORD_LEN 64
+#endif
+
+/**
+ * @brief Shared scratch buffer for SSH big-number operations.
+ *
+ * Holds Montgomery multiplication temporaries and RSA padding workspace.
+ * Must be large enough for the biggest single crypto operation:
+ *
+ *   DH expmod:
+ *     base_mont  (SshBigNum = 256 B)
+ *     result     (SshBigNum = 256 B)
+ *     tmp        (SshBigNum = 256 B)
+ *     mont_t     (uint32_t[129] = 516 B)
+ *                                ─────
+ *                                1284 B  → round up with margin → 1536 B
+ *
+ * The buffer is zeroed via volatile memset immediately after each operation.
+ * Only one SSH KEX may run at a time (guaranteed by the single Arduino loop
+ * task and MAX_SSH_CONNS synchronous handshake model).
+ */
+#ifndef SSH_CRYPTO_WORK_SIZE
+#define SSH_CRYPTO_WORK_SIZE 1536
+#endif
+
+// ---------------------------------------------------------------------------
+// Static RAM (BSS) usage table
+// ---------------------------------------------------------------------------
+//
+// All library memory is in BSS - allocated at link time, zero-initialized by
+// the C runtime, never heap-allocated after begin().  The table below shows
+// the contribution of every feature at its default constant values.
+//
+// Sizes are for ESP32 (32-bit pointers, int = 4 B).  Where a size depends on
+// a macro the formula is given so you can compute the impact of any change.
+//
+// ┌──────────────────────────────┬──────────────────────────────────────────────────────────────┬──────────┐
+// │ Symbol / pool                │ Size formula                                                 │ Default  │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ TRANSPORT LAYER (always on)  │                                                              │          │
+// │  conn_pool[MAX_CONNS]        │ MAX_CONNS × (RX_BUF_SIZE + 22)                              │  4 168 B │
+// │  listener_pool[MAX_LISTENERS]│ MAX_LISTENERS × (StaticQueue_t≈48 + EVT_QUEUE_DEPTH×12 + 18)│    654 B │
+// │  conn_timeout_ms             │ 4 B                                                          │      4 B │
+// │  TRANSPORT SUBTOTAL          │                                                              │  4 826 B │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ HTTP PRESENTATION (always on)│                                                              │          │
+// │  http_pool[MAX_CONNS]        │ MAX_CONNS × (MAX_PATH_LEN + MAX_QUERY_LEN                   │          │
+// │                              │   + MAX_HEADERS×(MAX_KEY_LEN+MAX_VAL_LEN)                   │          │
+// │                              │   + MAX_QUERY_PARAMS×(QUERY_KEY_LEN+QUERY_VAL_LEN)          │          │
+// │                              │   + BODY_BUF_SIZE + 50)                                     │  6 668 B │
+// │  HTTP SUBTOTAL               │                                                              │  6 668 B │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ WEBSOCKET (DETWS_ENABLE_WEBSOCKET=1)                                                        │          │
+// │  ws_pool[MAX_WS_CONNS]       │ MAX_WS_CONNS × (WS_FRAME_SIZE + 29)                         │  1 082 B │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ SSE (DETWS_ENABLE_SSE=1)     │                                                              │          │
+// │  sse_pool[MAX_SSE_CONNS]     │ MAX_SSE_CONNS × (MAX_PATH_LEN + 3)                          │    134 B │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ SSH (DETWS_ENABLE_SSH=1)     │                                                              │          │
+// │  ssh_pool[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × (SSH_PKT_BUF_SIZE + 22)                     │  2 070 B │
+// │  ssh_keys[MAX_SSH_CONNS]     │ MAX_SSH_CONNS × (2×SshAesCtrCtx + 64)                       │          │
+// │   └─ SshAesCtrCtx (native)   │   rk[60]=240 + counter[16] + keystream[16] + pos[1] = 273 B │    610 B │
+// │   └─ SshAesCtrCtx (ARDUINO)  │   mbedtls_aes_context (≈284 B) + 33 B = ≈317 B per ctx     │    698 B │
+// │  ssh_dh[MAX_SSH_CONNS]       │ MAX_SSH_CONNS × (3×SshBigNum[256] + H[32] + 1)              │    801 B │
+// │  crypto_work[]               │ SSH_CRYPTO_WORK_SIZE (scratch, wiped after each use)         │  1 536 B │
+// │  SSH SUBTOTAL                │                                                              │  5 017 B │
+// ├──────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────┤
+// │ GRAND TOTAL (all features)   │                                                              │ ≈18 KB   │
+// └──────────────────────────────┴──────────────────────────────────────────────────────────────┴──────────┘
+//
+// ESP32 has 320 KB of SRAM; the library uses ~5–18 KB depending on features.
+// Stack usage is separate; the largest frame is during SSH DH key exchange
+// (~256 B for the SshBigNum private scalar on the call stack before it is
+// zeroed by ssh_dh_finish()).
+//
+// SSH KEY MATERIAL IS NOT IN THE TABLE ABOVE intentionally:
+//   - The RSA host private key is NEVER stored in any static array.  It is
+//     loaded from NVS into a local stack frame at sign time, used once, then
+//     explicitly zeroed (volatile memset) before the function returns.
+//   - AES session keys and HMAC keys live in ssh_keys[] (above), which is a
+//     separate BSS symbol from ssh_pool[].  Physical separation means a
+//     buffer overflow in the packet receive path (ssh_pool[].pkt_buf) cannot
+//     reach the key material without crossing a distinct linker symbol - a
+//     significant barrier against heap/BSS spray attacks.
+//   - The DH ephemeral private scalar y lives in ssh_dh[].y and is zeroed
+//     immediately after the shared secret K is derived.
+//   - crypto_work[] is zeroed via volatile memset after every use so that
+//     bignum intermediates (including partial products that contain key
+//     material) do not persist in memory.
 
 // ---------------------------------------------------------------------------
 // Runtime configuration struct
@@ -349,16 +518,39 @@ struct WebServerConfig
 static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 
 // ---------------------------------------------------------------------------
+// Protocol identifier
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Application protocol spoken on a listener port or connection slot.
+ *
+ * Stored in both Listener::proto and TcpConn::proto.  The session layer uses
+ * this to route events to the correct protocol handler without branching on
+ * port numbers.
+ *
+ * All values are always present regardless of feature flags - the enum is
+ * part of the listener API.  Feature flags gate the implementation, not the
+ * identifier.
+ */
+enum ConnProto
+{
+    PROTO_NONE = 0,   ///< Unassigned slot.
+    PROTO_HTTP = 1,   ///< HTTP/1.1 with optional WS and SSE upgrades.
+    PROTO_TELNET = 2, ///< Telnet (RFC 854).
+    PROTO_SSH = 3,    ///< SSH (RFC 4253/4252/4254).
+};
+
+// ---------------------------------------------------------------------------
 // Diagnostic JSON string  (only defined when DETWS_ENABLE_DIAG == 1)
 // ---------------------------------------------------------------------------
-// DETWS_DIAG_JSON is a compile-time string literal — zero runtime cost.
+// DETWS_DIAG_JSON is a compile-time string literal - zero runtime cost.
 // Adjacent string literals are concatenated by the compiler; DETWS_STR()
 // stringifies an integer macro value without evaluating it twice.
 
 #if DETWS_ENABLE_DIAG
 
 #define _DETWS_STR_(x) #x
-#define _DETWS_STR(x)  _DETWS_STR_(x)
+#define _DETWS_STR(x) _DETWS_STR_(x)
 
 #if DETWS_ENABLE_WEBSOCKET
 #define _DETWS_F_WS "true"
@@ -390,34 +582,45 @@ static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 #define _DETWS_F_AUTH "false"
 #endif
 
-#define DETWS_DIAG_JSON \
-    "{"                                                                    \
-    "\"lib\":\"DeterministicESPAsyncWebServer\","                          \
-    "\"features\":{"                                                       \
-      "\"websocket\":"    _DETWS_F_WS    ","                              \
-      "\"sse\":"          _DETWS_F_SSE   ","                              \
-      "\"multipart\":"    _DETWS_F_MP    ","                              \
-      "\"file_serving\":" _DETWS_F_FS    ","                              \
-      "\"auth\":"         _DETWS_F_AUTH                                   \
-    "},"                                                                   \
-    "\"config\":{"                                                         \
-      "\"MAX_CONNS\":"       _DETWS_STR(MAX_CONNS)       ","              \
-      "\"RX_BUF_SIZE\":"     _DETWS_STR(RX_BUF_SIZE)     ","              \
-      "\"BODY_BUF_SIZE\":"   _DETWS_STR(BODY_BUF_SIZE)   ","              \
-      "\"MAX_ROUTES\":"      _DETWS_STR(MAX_ROUTES)       ","              \
-      "\"MAX_HEADERS\":"     _DETWS_STR(MAX_HEADERS)      ","              \
-      "\"MAX_PATH_LEN\":"    _DETWS_STR(MAX_PATH_LEN)     ","              \
-      "\"MAX_KEY_LEN\":"     _DETWS_STR(MAX_KEY_LEN)      ","              \
-      "\"MAX_VAL_LEN\":"     _DETWS_STR(MAX_VAL_LEN)      ","              \
-      "\"MAX_QUERY_LEN\":"   _DETWS_STR(MAX_QUERY_LEN)    ","              \
-      "\"MAX_QUERY_PARAMS\":" _DETWS_STR(MAX_QUERY_PARAMS) ","             \
-      "\"CONN_TIMEOUT_MS\":"    _DETWS_STR(CONN_TIMEOUT_MS)    ","          \
-      "\"RESP_HDR_BUF_SIZE\":" _DETWS_STR(RESP_HDR_BUF_SIZE) ","          \
-      "\"WS_HDR_BUF_SIZE\":"   _DETWS_STR(WS_HDR_BUF_SIZE)   ","          \
-      "\"CORS_HDR_BUF_SIZE\":"  _DETWS_STR(CORS_HDR_BUF_SIZE)  ","         \
-      "\"EVT_QUEUE_DEPTH\":"   _DETWS_STR(EVT_QUEUE_DEPTH)                \
-    "}"                                                                    \
-    "}"
+#define DETWS_DIAG_JSON                                                                                                                                                                                                                                                                                                                                                                                                                                                 \
+    "{"                                                                                                                                                                                                                                                                                                                                                                                                                                                                 \
+    "\"lib\":\"DeterministicESPAsyncWebServer\","                                                                                                                                                                                                                                                                                                                                                                                                                       \
+    "\"features\":{"                                                                                                                                                                                                                                                                                                                                                                                                                                                    \
+    "\"websocket\":" _DETWS_F_WS ","                                                                                                                                                                                                                                                                                                                                                                                                                                    \
+    "\"sse\":" _DETWS_F_SSE ","                                                                                                                                                                                                                                                                                                                                                                                                                                         \
+    "\"multipart\":" _DETWS_F_MP ","                                                                                                                                                                                                                                                                                                                                                                                                                                    \
+    "\"file_serving\":" _DETWS_F_FS ","                                                                                                                                                                                                                                                                                                                                                                                                                                 \
+    "\"auth\":" _DETWS_F_AUTH "},"                                                                                                                                                                                                                                                                                                                                                                                                                                      \
+    "\"config\":{"                                                                                                                                                                                                                                                                                                                                                                                                                                                      \
+    "\"MAX_CONNS\":" _DETWS_STR(                                                                                                                                                                                                                                                                                                                                                                                                                                        \
+        MAX_CONNS) ","                                                                                                                                                                                                                                                                                                                                                                                                                                                  \
+                   "\"RX_BUF_SIZE\":" _DETWS_STR(                                                                                                                                                                                                                                                                                                                                                                                                                       \
+                       RX_BUF_SIZE) ","                                                                                                                                                                                                                                                                                                                                                                                                                                 \
+                                    "\"BODY_BUF_SIZE\":" _DETWS_STR(                                                                                                                                                                                                                                                                                                                                                                                                    \
+                                        BODY_BUF_SIZE) ","                                                                                                                                                                                                                                                                                                                                                                                                              \
+                                                       "\"MAX_ROUTES\":" _DETWS_STR(                                                                                                                                                                                                                                                                                                                                                                                    \
+                                                           MAX_ROUTES) ","                                                                                                                                                                                                                                                                                                                                                                                              \
+                                                                       "\"MAX_"                                                                                                                                                                                                                                                                                                                                                                                         \
+                                                                       "HEADERS\""                                                                                                                                                                                                                                                                                                                                                                                      \
+                                                                       ":" _DETWS_STR(MAX_HEADERS) ","                                                                                                                                                                                                                                                                                                                                                                  \
+                                                                                                   "\"MAX_PATH_"                                                                                                                                                                                                                                                                                                                                                        \
+                                                                                                   "LEN\""                                                                                                                                                                                                                                                                                                                                                              \
+                                                                                                   ":" _DETWS_STR(                                                                                                                                                                                                                                                                                                                                                      \
+                                                                                                       MAX_PATH_LEN) ","                                                                                                                                                                                                                                                                                                                                                \
+                                                                                                                     "\"MAX_KEY_LEN\":" _DETWS_STR(MAX_KEY_LEN) ","                                                                                                                                                                                                                                                                                                     \
+                                                                                                                                                                "\"MAX_VAL_LEN\":" _DETWS_STR(MAX_VAL_LEN) ","                                                                                                                                                                                                                                                          \
+                                                                                                                                                                                                           "\"MAX_QUERY_LEN\":" _DETWS_STR(MAX_QUERY_LEN) ","                                                                                                                                                                                                           \
+                                                                                                                                                                                                                                                          "\"MAX_QUERY_PARAMS\":" _DETWS_STR(MAX_QUERY_PARAMS) ","                                                                                                                                                      \
+                                                                                                                                                                                                                                                                                                               "\"CONN_TIMEOUT_MS\":" _DETWS_STR(CONN_TIMEOUT_MS) ","                                                                                                   \
+                                                                                                                                                                                                                                                                                                                                                                  "\"RESP_HDR_BUF_SIZE\":" _DETWS_STR(                                                                  \
+                                                                                                                                                                                                                                                                                                                                                                      RESP_HDR_BUF_SIZE) ","                                                                            \
+                                                                                                                                                                                                                                                                                                                                                                                         "\"WS_HDR_BUF_SIZE\":" _DETWS_STR(                                             \
+                                                                                                                                                                                                                                                                                                                                                                                             WS_HDR_BUF_SIZE) ","                                                       \
+                                                                                                                                                                                                                                                                                                                                                                                                              "\"CORS_HDR_BUF_SIZE\":" _DETWS_STR(                      \
+                                                                                                                                                                                                                                                                                                                                                                                                                  CORS_HDR_BUF_SIZE) ","                                \
+                                                                                                                                                                                                                                                                                                                                                                                                                                     "\"EVT_QUEUE_DEPTH\":" _DETWS_STR( \
+                                                                                                                                                                                                                                                                                                                                                                                                                                         EVT_QUEUE_DEPTH) "}"           \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                          "}"
 
 #endif // DETWS_ENABLE_DIAG
 
@@ -425,10 +628,11 @@ static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 // Compile-time sanity checks
 // ---------------------------------------------------------------------------
 // These produce a clear #error message in the compiler output rather than a
-// cryptic linker failure or silent misbehaviour.
+// cryptic linker failure or silent misbehavior.
 
 #if EVT_QUEUE_DEPTH < MAX_CONNS * 4
-#error "DeterministicESPAsyncWebServer: EVT_QUEUE_DEPTH must be >= MAX_CONNS * 4 to absorb event bursts without blocking lwIP"
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: EVT_QUEUE_DEPTH must be >= MAX_CONNS * 4 to absorb event bursts without blocking lwIP"
 #endif
 
 #if MAX_CONNS < 1
@@ -510,7 +714,8 @@ static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 #endif
 
 #if RESP_HDR_BUF_SIZE < CORS_HDR_BUF_SIZE
-#error "DeterministicESPAsyncWebServer: RESP_HDR_BUF_SIZE must be >= CORS_HDR_BUF_SIZE (CORS block is injected into response headers)"
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: RESP_HDR_BUF_SIZE must be >= CORS_HDR_BUF_SIZE (CORS block is injected into response headers)"
 #endif
 
 #endif

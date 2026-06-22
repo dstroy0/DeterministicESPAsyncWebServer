@@ -4,15 +4,15 @@
 // Unit, stress, and race-condition tests for Layer 7 (Application).
 //
 // Sections:
-//   FUNCTION I/O  — one test per DetWebServer method behaviour
-//   UNIT          — routing, wildcard, not-found, CORS dispatch
-//   STRESS        — route-table full scan, sequential requests, all-slots
-//   RACE SIM      — slot state hazards visible to handle()
+//   FUNCTION I/O  - one test per DetWebServer method behavior
+//   UNIT          - routing, wildcard, not-found, CORS dispatch
+//   STRESS        - route-table full scan, sequential requests, all-slots
+//   RACE SIM      - slot state hazards visible to handle()
 
 #include "DeterministicESPAsyncWebServer.h"
 #include <unity.h>
 
-// All source layers compiled via native_app env — no stubs needed.
+// All source layers compiled via native_app env - no stubs needed.
 
 // ---- Shared helpers ------------------------------------------------
 
@@ -82,7 +82,7 @@ void tearDown()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — DetWebServer::on()
+// FUNCTION I/O TESTS - DetWebServer::on()
 // ====================================================================
 
 void test_fn_on_registers_and_dispatches()
@@ -102,7 +102,7 @@ void test_fn_on_path_copied_null_terminated()
         path[i] = 'a';
     path[MAX_PATH_LEN - 1] = '\0';
     g_server->on(path, HTTP_GET, record_handler);
-    arm_slot(0, "GET /a HTTP/1.1\r\n\r\n"); // won't match long path — just must not crash
+    arm_slot(0, "GET /a HTTP/1.1\r\n\r\n"); // won't match long path - just must not crash
     g_server->handle();
     TEST_PASS();
 }
@@ -135,7 +135,7 @@ void test_fn_on_same_path_different_methods_are_distinct()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — DetWebServer::on_not_found()
+// FUNCTION I/O TESTS - DetWebServer::on_not_found()
 // ====================================================================
 
 void test_fn_on_not_found_called_when_no_match()
@@ -158,7 +158,7 @@ void test_fn_on_not_found_not_called_when_match_exists()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — DetWebServer::set_cors()
+// FUNCTION I/O TESTS - DetWebServer::set_cors()
 // ====================================================================
 
 void test_fn_set_cors_options_preflight_clears_slot()
@@ -180,7 +180,7 @@ void test_fn_set_cors_empty_string_disables()
 }
 
 // ====================================================================
-// UNIT TESTS — routing
+// UNIT TESTS - routing
 // ====================================================================
 
 void test_wrong_method_does_not_match()
@@ -350,7 +350,7 @@ void test_wildcard_before_exact_wildcard_wins()
 // STRESS TESTS
 // ====================================================================
 
-// Route table full (MAX_ROUTES entries); request matches the LAST route —
+// Route table full (MAX_ROUTES entries); request matches the LAST route -
 // worst-case O(N) linear scan must not corrupt any route or crash.
 void stress_last_route_dispatched_in_full_table()
 {
@@ -429,11 +429,11 @@ void stress_wildcard_matches_many_paths()
     TEST_ASSERT_EQUAL(10, wc_count);
 }
 
-// 20 sequential handle() calls with NO complete parse slots — must be idle no-ops.
+// 20 sequential handle() calls with NO complete parse slots - must be idle no-ops.
 void stress_handle_with_no_complete_slots_is_nop()
 {
     g_server->on("/x", HTTP_GET, record_handler);
-    // All slots in PARSE_METHOD (setUp resets them) — nothing to dispatch
+    // All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch
     for (int i = 0; i < 20; i++)
         g_server->handle();
     TEST_ASSERT_FALSE(handler_called);
@@ -443,7 +443,7 @@ void stress_handle_with_no_complete_slots_is_nop()
 // RACE CONDITION SIMULATIONS
 // ====================================================================
 
-// Slot transitions to PARSE_COMPLETE between tick and handle() slot scan —
+// Slot transitions to PARSE_COMPLETE between tick and handle() slot scan -
 // already covered by the normal flow; here we verify handle() dispatches
 // a slot that became complete since the last call.
 void race_slot_complete_between_handle_calls()
@@ -477,7 +477,7 @@ void race_conn_freed_after_parse_complete()
     TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
-// handle() is called twice without any new input — the second call must
+// handle() is called twice without any new input - the second call must
 // see no PARSE_COMPLETE slots and dispatch nothing.
 void race_double_handle_no_double_dispatch()
 {
@@ -486,7 +486,7 @@ void race_double_handle_no_double_dispatch()
 
     arm_slot(0, "GET /dd HTTP/1.1\r\n\r\n");
     g_server->handle(); // dispatches once, resets slot
-    g_server->handle(); // slot is PARSE_METHOD — must dispatch 0 times
+    g_server->handle(); // slot is PARSE_METHOD - must dispatch 0 times
 
     TEST_ASSERT_EQUAL(1, dispatch_count);
 }
@@ -536,7 +536,7 @@ void race_callback_manually_resets_slot()
 
 void test_uri_too_long_auto_resets_slot()
 {
-    // Overflow the path buffer — handle() should send 414 and free the slot
+    // Overflow the path buffer - handle() should send 414 and free the slot
     char req[MAX_PATH_LEN + 64];
     int idx = 0;
     memcpy(req + idx, "GET /", 5);
@@ -573,7 +573,7 @@ void test_transfer_encoding_chunked_is_501()
 
 void test_transfer_encoding_identity_is_501()
 {
-    // Even "identity" is rejected — we advertise no TE support at all
+    // Even "identity" is rejected - we advertise no TE support at all
     arm_slot(0, "GET / HTTP/1.1\r\nTransfer-Encoding: identity\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);

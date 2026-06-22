@@ -1,19 +1,21 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit and stress tests for Layer 4 (Transport) — constants, pool invariants,
-// ring-buffer arithmetic, timeout logic, event-queue behaviour, and
+// Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,
+// ring-buffer arithmetic, timeout logic, event-queue behavior, and
 // sustained-load correctness.
 
-#include "network_drivers/transport.h"
+#include "network_drivers/transport/listener.h"
+#include "network_drivers/transport/transport.h"
 #include <unity.h>
 
-// transport.cpp is compiled into the native env — no stubs needed.
+// transport.cpp + listener.cpp are compiled into the native env - no stubs needed.
 
 void setUp()
 {
     set_millis(0);
-    DeterministicAsyncTCP::init(80);
+    DeterministicAsyncTCP::pool_init();
+    listener_add(0, 80, PROTO_HTTP);
 }
 
 void tearDown()
@@ -164,11 +166,12 @@ void test_timeout_fires_only_on_stale_slots()
 
 void test_init_succeeds_on_native()
 {
-    bool ok = DeterministicAsyncTCP::init(80);
-    TEST_ASSERT_TRUE(ok);
+    DeterministicAsyncTCP::pool_init();
+    int32_t ok = listener_add(0, 80, PROTO_HTTP);
+    TEST_ASSERT_EQUAL(1, ok);
 }
 
-// Regression: init() must zero last_activity_ms (was left uninitialised
+// Regression: init() must zero last_activity_ms (was left uninitialized
 // before the conn_pool[i]={} fix, causing cross-test timeout spurious fires).
 void test_all_last_activity_ms_zero_after_init()
 {
@@ -178,7 +181,7 @@ void test_all_last_activity_ms_zero_after_init()
 
 void test_queue_not_null_after_init()
 {
-    TEST_ASSERT_NOT_NULL(DeterministicAsyncTCP::queue);
+    TEST_ASSERT_NOT_NULL(listener_pool[0].queue);
 }
 
 // ====================================================================
@@ -186,7 +189,7 @@ void test_queue_not_null_after_init()
 // ====================================================================
 
 // Fill the ring buffer to max capacity with a known pattern,
-// then drain and verify every byte — no corruption under full load.
+// then drain and verify every byte - no corruption under full load.
 void stress_ring_buffer_fill_drain_integrity()
 {
     TcpConn *s = &conn_pool[0];
@@ -218,7 +221,7 @@ void stress_ring_buffer_fill_drain_integrity()
     TEST_ASSERT_EQUAL(s->rx_head, s->rx_tail);
 }
 
-// Half-fill, half-drain, repeat — forces pointer wrap-around multiple
+// Half-fill, half-drain, repeat - forces pointer wrap-around multiple
 // times and proves the circular invariant holds under sustained partial load.
 void stress_ring_buffer_multi_cycle_no_corruption()
 {
@@ -252,7 +255,7 @@ void stress_ring_buffer_multi_cycle_no_corruption()
     TEST_ASSERT_EQUAL(s->rx_head, s->rx_tail); // empty after all cycles
 }
 
-// All four connection slots timeout simultaneously — every slot must be
+// All four connection slots timeout simultaneously - every slot must be
 // freed and none must corrupt a neighbour.
 void stress_all_slots_timeout_simultaneously()
 {
@@ -274,7 +277,7 @@ void stress_all_slots_timeout_simultaneously()
     }
 }
 
-// Arms all slots, times them out, re-arms, times out again — 5 cycles.
+// Arms all slots, times them out, re-arms, times out again - 5 cycles.
 // Verifies the pool recovers cleanly and check_timeouts is idempotent.
 void stress_timeout_arm_recover_cycle()
 {
@@ -296,7 +299,7 @@ void stress_timeout_arm_recover_cycle()
 }
 
 // Runs check_timeouts() 2000 times against a mix of free, active-fresh,
-// and active-stale slots — verifies no crash and final state is correct.
+// and active-stale slots - verifies no crash and final state is correct.
 void stress_check_timeouts_high_call_rate()
 {
     conn_pool[0].state = CONN_FREE;

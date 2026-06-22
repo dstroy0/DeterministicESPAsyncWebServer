@@ -3,7 +3,7 @@
 
 /**
  * @file physical.h
- * @brief Layer 1 (Physical) — WiFi radio initialisation and link-state query.
+ * @brief Layer 1 (Physical) - WiFi radio initialization and link-state query.
  *
  * Wraps the Arduino WiFi library into the OSI-layered interface used by
  * this library.  On ESP32, the "physical" link is the 802.11 radio managed

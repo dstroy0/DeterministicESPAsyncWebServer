@@ -6,7 +6,7 @@
  * @brief Base64 encoder/decoder.
  *
  * On Arduino (ESP32) targets, delegates to mbedtls_base64_encode/decode()
- * from the ESP-IDF mbedTLS bundle — same SDK path as SHA-1.
+ * from the ESP-IDF mbedTLS bundle - same SDK path as SHA-1.
  *
  * On native (x86) test targets, uses a portable software implementation so
  * unit tests run without mbedTLS installed.

@@ -59,6 +59,8 @@ static inline void store_be32(uint8_t *p, uint32_t v)
 
 static void sha1_block(uint32_t h[5], const uint8_t block[64])
 {
+    // Message schedule: 16 big-endian words from the block, extended to 80 by
+    // XOR-and-rotate (the SHA-1 recurrence; the rotate-by-1 is what SHA-0 lacked).
     uint32_t w[80];
     for (int i = 0; i < 16; i++)
         w[i] = load_be32(block + i * 4);
@@ -67,30 +69,33 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
 
     uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4];
 
+    // 80 rounds in four 20-round regimes, each with its own mixing function f
+    // and constant k (FIPS 180-4 §6.1.2).
     for (int i = 0; i < 80; i++)
     {
         uint32_t f, k;
         if (i < 20)
         {
-            f = (b & c) | (~b & d);
+            f = (b & c) | (~b & d); // choice
             k = 0x5A827999u;
         }
         else if (i < 40)
         {
-            f = b ^ c ^ d;
+            f = b ^ c ^ d; // parity
             k = 0x6ED9EBA1u;
         }
         else if (i < 60)
         {
-            f = (b & c) | (b & d) | (c & d);
+            f = (b & c) | (b & d) | (c & d); // majority
             k = 0x8F1BBCDCu;
         }
         else
         {
-            f = b ^ c ^ d;
+            f = b ^ c ^ d; // parity
             k = 0xCA62C1D6u;
         }
 
+        // Round update; b is rotated 30 as it shifts into c.
         uint32_t tmp = rot32(a, 5) + f + e + k + w[i];
         e = d;
         d = c;

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
 
-# Do not cancel in progress — let the commit complete cleanly.
+# Do not cancel in progress - let the commit complete cleanly.
 concurrency:
   group: changelog-${{ github.ref }}
   cancel-in-progress: false

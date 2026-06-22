@@ -3,7 +3,7 @@
 
 /**
  * @file http_parser.cpp
- * @brief Standalone HTTP/1.1 request parser — implementation.
+ * @brief Standalone HTTP/1.1 request parser - implementation.
  *
  * No dependency on transport, session, or lwIP.  Consumes one byte at a
  * time via http_parser_feed(); the presentation layer is responsible for
@@ -111,7 +111,7 @@ static inline bool is_field_value_char(uint8_t b)
  *
  * Operates in-place on `req->query[]`.  Pairs are `&`-separated; key and
  * value are split on the first `=`.  Keys or values longer than their
- * respective limits are silently truncated — the path itself remains valid.
+ * respective limits are silently truncated - the path itself remains valid.
  */
 static void parse_query_params(HttpReq *req)
 {
@@ -158,7 +158,7 @@ void http_parser_reset(HttpReq *req)
 
 void http_parser_feed(HttpReq *p, uint8_t byte)
 {
-    // Terminal states — do nothing
+    // Terminal states - do nothing
     switch (p->parse_state)
     {
     case PARSE_COMPLETE:
@@ -235,7 +235,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         {
             p->query[p->query_idx++] = c;
         }
-        // Silently truncate — query overflow is a capacity limit, not a protocol error
+        // Silently truncate - query overflow is a capacity limit, not a protocol error
         break;
 
     case PARSE_VERSION:
@@ -272,7 +272,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         {
             if (p->current_token_idx == 0)
             {
-                // Blank line — end of headers
+                // Blank line - end of headers
                 p->parse_state = PARSE_EXPECT_BODY_LF;
             }
             else
@@ -283,6 +283,10 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else if (c == ':')
         {
+            // Terminate the scratch key so Host / Content-Length detection works
+            // regardless of whether this header is stored (header_count < MAX).
+            size_t k = p->current_token_idx < MAX_KEY_LEN ? p->current_token_idx : MAX_KEY_LEN - 1;
+            p->cur_key[k] = '\0';
             p->parse_state = PARSE_HEADER_VAL;
             p->current_token_idx = 0;
         }
@@ -294,36 +298,71 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         else
         {
             uint8_t h = p->header_count;
-            if (h < MAX_HEADERS)
+            if (p->current_token_idx < MAX_KEY_LEN - 1)
             {
-                if (p->current_token_idx < MAX_KEY_LEN - 1)
-                    p->headers[h].key[p->current_token_idx++] = c;
-                else
-                    p->parse_state = PARSE_ERROR; // key too long for stored header
+                // Always capture into the scratch key; also store into the
+                // header slot when one is still available.
+                p->cur_key[p->current_token_idx] = c;
+                if (h < MAX_HEADERS)
+                    p->headers[h].key[p->current_token_idx] = c;
+                p->current_token_idx++;
             }
-            else
+            else if (h < MAX_HEADERS)
             {
-                // Past MAX_HEADERS: cap counter so it never wraps to 0 (which would
-                // look like a blank line ending headers) and never OOBs key buffers.
-                if (p->current_token_idx < MAX_KEY_LEN)
-                    p->current_token_idx++;
+                p->parse_state = PARSE_ERROR; // key too long for stored header
             }
+            // Past MAX_HEADERS with an over-long key: the scratch key is already
+            // capped; ignore the excess (it cannot match Host/Content-Length).
         }
         break;
 
     case PARSE_HEADER_VAL:
-        // Strip leading OWS (SP or HTAB) after the colon — RFC 9110 §5.6.3
+        // Strip leading OWS (SP or HTAB) after the colon - RFC 9110 §5.6.3
         if ((c == ' ' || c == '\t') && p->current_token_idx == 0)
             break;
         if (c == '\r')
         {
             uint8_t h = p->header_count;
-            if (h < MAX_HEADERS)
+
+            // Terminate the scratch value so detection sees a clean C string.
+            size_t vlen = p->current_token_idx < MAX_VAL_LEN ? p->current_token_idx : MAX_VAL_LEN - 1;
+            p->cur_val[vlen] = '\0';
+
+            // Host / Content-Length detection works off the scratch copies, so
+            // it is correct even for headers past MAX_HEADERS (RFC 7230 §5.4,
+            // §3.3.2).
+            if (strcasecmp(p->cur_key, "Host") == 0)
+                p->host_count++;
+
+            if (strcasecmp(p->cur_key, "Content-Length") == 0)
             {
-                if (strcasecmp(p->headers[h].key, "Content-Length") == 0)
-                    p->content_length = (size_t)atoi(p->headers[h].val);
-                p->header_count++;
+                // RFC 7230 §3.3.2: Content-Length = 1*DIGIT.
+                size_t cl = 0;
+                bool valid = (p->cur_val[0] != '\0');
+                for (const char *q = p->cur_val; *q; q++)
+                {
+                    if (*q < '0' || *q > '9')
+                    {
+                        valid = false;
+                        break;
+                    }
+                    cl = cl * 10 + (size_t)(*q - '0');
+                }
+                // A non-numeric value, or a second Content-Length whose value
+                // disagrees with the first, is a fatal framing error (request
+                // smuggling vector) → 400.
+                if (!valid || (p->content_length_count > 0 && cl != p->content_length))
+                {
+                    p->parse_state = PARSE_ERROR;
+                    break;
+                }
+                p->content_length = cl;
+                p->content_length_count++;
             }
+
+            if (h < MAX_HEADERS)
+                p->header_count++;
+
             p->parse_state = PARSE_EXPECT_LF;
             p->current_token_idx = 0;
         }
@@ -334,11 +373,15 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else if (p->current_token_idx < MAX_VAL_LEN - 1)
         {
+            // Always capture into the scratch value; also store into the header
+            // slot when one is still available.
             uint8_t h = p->header_count;
+            p->cur_val[p->current_token_idx] = c;
             if (h < MAX_HEADERS)
-                p->headers[h].val[p->current_token_idx++] = c;
+                p->headers[h].val[p->current_token_idx] = c;
+            p->current_token_idx++;
         }
-        // Silently truncate — value overflow is a capacity limit, not a protocol error
+        // Silently truncate - value overflow is a capacity limit, not a protocol error
         break;
 
     case PARSE_EXPECT_BODY_LF:
@@ -351,7 +394,17 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
          */
         if (c == '\n')
         {
-            if (p->content_length > BODY_BUF_SIZE)
+            // RFC 7230 §5.4: a request MUST NOT carry more than one Host header
+            // (always enforced); an HTTP/1.1 request MUST carry exactly one Host
+            // header (enforced only when DETWS_ENFORCE_HOST_HEADER is set).
+            bool host_violation = (p->host_count > 1);
+#if DETWS_ENFORCE_HOST_HEADER
+            if (p->version == HTTP_11 && p->host_count == 0)
+                host_violation = true;
+#endif
+            if (host_violation)
+                p->parse_state = PARSE_ERROR;
+            else if (p->content_length > BODY_BUF_SIZE)
                 p->parse_state = PARSE_ENTITY_TOO_LARGE;
             else if (p->content_length == 0)
             {
@@ -370,7 +423,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         break;
 
     case PARSE_BODY:
-        // Body is opaque data — no character validation
+        // Body is opaque data - no character validation
         if (p->body_len < BODY_BUF_SIZE)
             p->body[p->body_len++] = byte;
         p->body_bytes_read++;

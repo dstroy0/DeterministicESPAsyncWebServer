@@ -17,12 +17,12 @@
 //   - max parts (MAX_MULTIPART_PARTS) are captured; extras ignored
 //   - whitespace trimming in Content-Disposition header
 
-#include "network_drivers/multipart.h"
-#include "network_drivers/http_parser.h"
-#include "network_drivers/transport.h"
-#include <unity.h>
-#include <string.h>
+#include "network_drivers/presentation/http_parser.h"
+#include "network_drivers/presentation/multipart.h"
+#include "network_drivers/transport/transport.h"
 #include <stdio.h>
+#include <string.h>
+#include <unity.h>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,19 +30,16 @@
 
 static void reset_slot(uint8_t slot)
 {
-    conn_pool[slot]       = {};
-    conn_pool[slot].id    = slot;
+    conn_pool[slot] = {};
+    conn_pool[slot].id = slot;
     conn_pool[slot].state = CONN_ACTIVE;
-    conn_pool[slot].pcb   = &_mock_pcb;
+    conn_pool[slot].pcb = &_mock_pcb;
     http_reset(slot);
 }
 
 // Build a complete HTTP POST with multipart body, parse it, return request ptr.
 // body_buf is caller-supplied working space (the parser modifies body in-place).
-static HttpReq *build_multipart_req(uint8_t slot,
-                                    const char *boundary,
-                                    const char *body,
-                                    char *body_buf,
+static HttpReq *build_multipart_req(uint8_t slot, const char *boundary, const char *body, char *body_buf,
                                     size_t body_buf_size)
 {
     reset_slot(slot);
@@ -85,7 +82,9 @@ void setUp()
         reset_slot((uint8_t)i);
 }
 
-void tearDown() {}
+void tearDown()
+{
+}
 
 // ====================================================================
 // UNIT TESTS
@@ -95,11 +94,10 @@ void test_no_content_type_returns_false()
 {
     reset_slot(0);
     // Craft a request with no Content-Type
-    const char *raw =
-        "POST /upload HTTP/1.1\r\n"
-        "Content-Length: 5\r\n"
-        "\r\n"
-        "hello";
+    const char *raw = "POST /upload HTTP/1.1\r\n"
+                      "Content-Length: 5\r\n"
+                      "\r\n"
+                      "hello";
     TcpConn *c = &conn_pool[0];
     for (const char *p = raw; *p; p++)
     {
@@ -117,12 +115,11 @@ void test_no_content_type_returns_false()
 void test_no_boundary_in_content_type_returns_false()
 {
     reset_slot(0);
-    const char *raw =
-        "POST /upload HTTP/1.1\r\n"
-        "Content-Type: multipart/form-data\r\n"
-        "Content-Length: 5\r\n"
-        "\r\n"
-        "hello";
+    const char *raw = "POST /upload HTTP/1.1\r\n"
+                      "Content-Type: multipart/form-data\r\n"
+                      "Content-Length: 5\r\n"
+                      "\r\n"
+                      "hello";
     TcpConn *c = &conn_pool[0];
     for (const char *p = raw; *p; p++)
     {
@@ -149,12 +146,11 @@ void test_body_missing_delimiter_returns_false()
 void test_single_text_field_parsed()
 {
     char buf[512];
-    const char *body =
-        "--BOUND\r\n"
-        "Content-Disposition: form-data; name=\"field1\"\r\n"
-        "\r\n"
-        "value1\r\n"
-        "--BOUND--\r\n";
+    const char *body = "--BOUND\r\n"
+                       "Content-Disposition: form-data; name=\"field1\"\r\n"
+                       "\r\n"
+                       "value1\r\n"
+                       "--BOUND--\r\n";
 
     HttpReq *req = build_multipart_req(0, "BOUND", body, buf, sizeof(buf));
     Multipart mp;
@@ -169,16 +165,15 @@ void test_single_text_field_parsed()
 void test_two_text_fields_parsed()
 {
     char buf[512];
-    const char *body =
-        "--BOUND\r\n"
-        "Content-Disposition: form-data; name=\"username\"\r\n"
-        "\r\n"
-        "alice\r\n"
-        "--BOUND\r\n"
-        "Content-Disposition: form-data; name=\"email\"\r\n"
-        "\r\n"
-        "alice@example.com\r\n"
-        "--BOUND--\r\n";
+    const char *body = "--BOUND\r\n"
+                       "Content-Disposition: form-data; name=\"username\"\r\n"
+                       "\r\n"
+                       "alice\r\n"
+                       "--BOUND\r\n"
+                       "Content-Disposition: form-data; name=\"email\"\r\n"
+                       "\r\n"
+                       "alice@example.com\r\n"
+                       "--BOUND--\r\n";
 
     HttpReq *req = build_multipart_req(0, "BOUND", body, buf, sizeof(buf));
     Multipart mp;
@@ -186,29 +181,28 @@ void test_two_text_fields_parsed()
     TEST_ASSERT_EQUAL_INT(2, mp.part_count);
 
     TEST_ASSERT_EQUAL_STRING("username", mp.parts[0].name);
-    TEST_ASSERT_EQUAL_STRING("alice",    mp.parts[0].data);
+    TEST_ASSERT_EQUAL_STRING("alice", mp.parts[0].data);
 
-    TEST_ASSERT_EQUAL_STRING("email",             mp.parts[1].name);
+    TEST_ASSERT_EQUAL_STRING("email", mp.parts[1].name);
     TEST_ASSERT_EQUAL_STRING("alice@example.com", mp.parts[1].data);
 }
 
 void test_three_text_fields_parsed()
 {
     char buf[768];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"a\"\r\n"
-        "\r\n"
-        "AAA\r\n"
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"b\"\r\n"
-        "\r\n"
-        "BBB\r\n"
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"c\"\r\n"
-        "\r\n"
-        "CCC\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"a\"\r\n"
+                       "\r\n"
+                       "AAA\r\n"
+                       "--B\r\n"
+                       "Content-Disposition: form-data; name=\"b\"\r\n"
+                       "\r\n"
+                       "BBB\r\n"
+                       "--B\r\n"
+                       "Content-Disposition: form-data; name=\"c\"\r\n"
+                       "\r\n"
+                       "CCC\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -222,13 +216,12 @@ void test_three_text_fields_parsed()
 void test_file_upload_part()
 {
     char buf[512];
-    const char *body =
-        "--BOUND\r\n"
-        "Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n"
-        "Content-Type: text/plain\r\n"
-        "\r\n"
-        "file contents here\r\n"
-        "--BOUND--\r\n";
+    const char *body = "--BOUND\r\n"
+                       "Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n"
+                       "Content-Type: text/plain\r\n"
+                       "\r\n"
+                       "file contents here\r\n"
+                       "--BOUND--\r\n";
 
     HttpReq *req = build_multipart_req(0, "BOUND", body, buf, sizeof(buf));
     Multipart mp;
@@ -239,51 +232,49 @@ void test_file_upload_part()
     TEST_ASSERT_NOT_NULL(mp.parts[0].filename);
     TEST_ASSERT_NOT_NULL(mp.parts[0].type);
 
-    TEST_ASSERT_EQUAL_STRING("file",               mp.parts[0].name);
-    TEST_ASSERT_EQUAL_STRING("test.txt",           mp.parts[0].filename);
-    TEST_ASSERT_EQUAL_STRING("text/plain",         mp.parts[0].type);
+    TEST_ASSERT_EQUAL_STRING("file", mp.parts[0].name);
+    TEST_ASSERT_EQUAL_STRING("test.txt", mp.parts[0].filename);
+    TEST_ASSERT_EQUAL_STRING("text/plain", mp.parts[0].type);
     TEST_ASSERT_EQUAL_STRING("file contents here", mp.parts[0].data);
 }
 
 void test_file_upload_with_text_field()
 {
     char buf[768];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"desc\"\r\n"
-        "\r\n"
-        "my description\r\n"
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"upload\"; filename=\"pic.jpg\"\r\n"
-        "Content-Type: image/jpeg\r\n"
-        "\r\n"
-        "JPEG_DATA\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"desc\"\r\n"
+                       "\r\n"
+                       "my description\r\n"
+                       "--B\r\n"
+                       "Content-Disposition: form-data; name=\"upload\"; filename=\"pic.jpg\"\r\n"
+                       "Content-Type: image/jpeg\r\n"
+                       "\r\n"
+                       "JPEG_DATA\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
     TEST_ASSERT_TRUE(multipart_parse(req, &mp));
     TEST_ASSERT_EQUAL_INT(2, mp.part_count);
 
-    TEST_ASSERT_EQUAL_STRING("desc",           mp.parts[0].name);
+    TEST_ASSERT_EQUAL_STRING("desc", mp.parts[0].name);
     TEST_ASSERT_EQUAL_STRING("my description", mp.parts[0].data);
     TEST_ASSERT_NULL(mp.parts[0].filename);
 
-    TEST_ASSERT_EQUAL_STRING("upload",     mp.parts[1].name);
-    TEST_ASSERT_EQUAL_STRING("pic.jpg",    mp.parts[1].filename);
+    TEST_ASSERT_EQUAL_STRING("upload", mp.parts[1].name);
+    TEST_ASSERT_EQUAL_STRING("pic.jpg", mp.parts[1].filename);
     TEST_ASSERT_EQUAL_STRING("image/jpeg", mp.parts[1].type);
-    TEST_ASSERT_EQUAL_STRING("JPEG_DATA",  mp.parts[1].data);
+    TEST_ASSERT_EQUAL_STRING("JPEG_DATA", mp.parts[1].data);
 }
 
 void test_get_field_found()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"token\"\r\n"
-        "\r\n"
-        "abc123\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"token\"\r\n"
+                       "\r\n"
+                       "abc123\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -297,12 +288,11 @@ void test_get_field_found()
 void test_get_field_not_found_returns_null()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"x\"\r\n"
-        "\r\n"
-        "val\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"x\"\r\n"
+                       "\r\n"
+                       "val\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -314,16 +304,15 @@ void test_get_field_not_found_returns_null()
 void test_get_field_multiple_fields()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"first\"\r\n"
-        "\r\n"
-        "one\r\n"
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"second\"\r\n"
-        "\r\n"
-        "two\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"first\"\r\n"
+                       "\r\n"
+                       "one\r\n"
+                       "--B\r\n"
+                       "Content-Disposition: form-data; name=\"second\"\r\n"
+                       "\r\n"
+                       "two\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -380,12 +369,11 @@ void test_max_parts_captured()
 void test_empty_field_value()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"empty\"\r\n"
-        "\r\n"
-        "\r\n"      // empty data -- immediately the next delimiter
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"empty\"\r\n"
+                       "\r\n"
+                       "\r\n" // empty data -- immediately the next delimiter
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -397,12 +385,11 @@ void test_empty_field_value()
 void test_part_without_filename_has_null_filename()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"nofile\"\r\n"
-        "\r\n"
-        "data\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"nofile\"\r\n"
+                       "\r\n"
+                       "data\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -413,12 +400,11 @@ void test_part_without_filename_has_null_filename()
 void test_part_without_content_type_has_null_type()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"f\"\r\n"
-        "\r\n"
-        "data\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"f\"\r\n"
+                       "\r\n"
+                       "data\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;
@@ -482,12 +468,11 @@ void stress_parse_100_requests()
 void stress_get_field_100_lookups()
 {
     char buf[512];
-    const char *body =
-        "--B\r\n"
-        "Content-Disposition: form-data; name=\"key\"\r\n"
-        "\r\n"
-        "found_it\r\n"
-        "--B--\r\n";
+    const char *body = "--B\r\n"
+                       "Content-Disposition: form-data; name=\"key\"\r\n"
+                       "\r\n"
+                       "found_it\r\n"
+                       "--B--\r\n";
 
     HttpReq *req = build_multipart_req(0, "B", body, buf, sizeof(buf));
     Multipart mp;

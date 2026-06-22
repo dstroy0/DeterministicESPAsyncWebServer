@@ -29,8 +29,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSE_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSE_H
 
+#include "../transport/transport.h"
 #include "DetWebServerConfig.h"
-#include "transport.h"
 
 // ---------------------------------------------------------------------------
 // Per-connection SSE state
@@ -46,7 +46,7 @@ struct SseConn
 {
     uint8_t sse_id;  ///< Index into sse_pool[] (set at init).
     uint8_t slot_id; ///< Owning TCP slot in conn_pool[].
-    bool    active;  ///< True when this entry is in use.
+    bool active;     ///< True when this entry is in use.
 
     /** Path this client subscribed to (for sse_broadcast() matching). */
     char path[MAX_PATH_LEN];
@@ -60,7 +60,7 @@ extern SseConn sse_pool[MAX_SSE_CONNS];
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Initialise all SSE pool slots to inactive.
+ * @brief Initialize all SSE pool slots to inactive.
  *
  * Called once from DetWebServer::begin().
  */
@@ -104,7 +104,6 @@ void sse_free(uint8_t slot_id);
  * @param id     Event ID (optional).
  * @return true on success, false if the TCP slot is not active.
  */
-bool sse_write(SseConn *sse, const char *data,
-               const char *event, const char *id);
+bool sse_write(SseConn *sse, const char *data, const char *event, const char *id);
 
 #endif

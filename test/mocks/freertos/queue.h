@@ -23,11 +23,11 @@ inline int xQueueSend(QueueHandle_t, const void *, uint32_t)
 }
 
 // ---------------------------------------------------------------------------
-// Programmable staged-event buffer — for testing the event-dispatch path.
+// Programmable staged-event buffer - for testing the event-dispatch path.
 //
 // Call queue_stage_raw(item, size) before server_tick().  xQueueReceive
 // drains staged items FIFO, then returns pdFALSE when empty, matching
-// real FreeRTOS behaviour.
+// real FreeRTOS behavior.
 //
 // Uses the inline function-local-static trick (C++11 §3.2) so all
 // translation units in one test binary share a single buffer instance.
@@ -44,7 +44,7 @@ struct _QueueStageBuf
 
 inline _QueueStageBuf &_queue_stage_buf()
 {
-    static _QueueStageBuf b; // zero-initialised (static storage duration)
+    static _QueueStageBuf b; // zero-initialized (static storage duration)
     return b;
 }
 

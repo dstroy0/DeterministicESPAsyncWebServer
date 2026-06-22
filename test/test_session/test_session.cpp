@@ -4,12 +4,13 @@
 // Unit, stress, and race-condition tests for Layer 5 (Session).
 //
 // Sections:
-//   UNIT      — dispatch invariants and basic tick behaviour
-//   STRESS    — sustained idle load, all-slots timeout cycles
-//   RACE SIM  — ordering hazards across tick boundaries
+//   UNIT      - dispatch invariants and basic tick behavior
+//   STRESS    - sustained idle load, all-slots timeout cycles
+//   RACE SIM  - ordering hazards across tick boundaries
 
-#include "network_drivers/presentation.h"
-#include "network_drivers/session.h"
+#include "network_drivers/presentation/presentation.h"
+#include "network_drivers/session/session.h"
+#include "network_drivers/transport/listener.h"
 #include <unity.h>
 
 // transport.cpp + presentation.cpp + session.cpp compiled into native env.
@@ -31,7 +32,8 @@ void setUp()
 {
     set_millis(0);
     queue_stage_reset(); // clear any staged events from previous test
-    DeterministicAsyncTCP::init(80);
+    DeterministicAsyncTCP::pool_init();
+    listener_add(0, 80, PROTO_HTTP);
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i].state = CONN_ACTIVE;
@@ -53,7 +55,7 @@ void test_empty_queue_does_not_crash()
     TEST_PASS();
 }
 
-void test_pool_initialises_to_parse_method()
+void test_pool_initializes_to_parse_method()
 {
     for (int i = 0; i < MAX_CONNS; i++)
         TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[i].parse_state);
@@ -85,7 +87,7 @@ void test_tick_does_not_free_fresh_connection()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS — server_tick()
+// FUNCTION I/O TESTS - server_tick()
 // ====================================================================
 
 // tick() must call check_timeouts() BEFORE event drain, so a timed-out
@@ -97,7 +99,7 @@ void test_fn_tick_timeout_before_event_drain_ordering()
     server_tick(); // timeout fires; queue empty (mock returns pdFALSE)
     TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state);
     // http_reset was NOT called by server_tick directly (only check_timeouts),
-    // but slot state is CONN_FREE — the connection-level layer is clean.
+    // but slot state is CONN_FREE - the connection-level layer is clean.
     TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state);
 }
 
@@ -125,7 +127,7 @@ void test_fn_tick_only_active_slots_expire()
 // STRESS TESTS
 // ====================================================================
 
-// 1000 consecutive ticks with no events and no timeouts — the loop must
+// 1000 consecutive ticks with no events and no timeouts - the loop must
 // be a true no-op: no state change, no crash.
 void stress_1000_idle_ticks_stable()
 {
@@ -179,7 +181,7 @@ void stress_mixed_fresh_stale_slots_many_ticks()
 }
 
 // ====================================================================
-// EVENT DISPATCH TESTS — server_tick() queue-drain path
+// EVENT DISPATCH TESTS - server_tick() queue-drain path
 //
 // The FreeRTOS queue mock supports staged events via queue_stage_raw().
 // These tests verify the while(xQueueReceive…) loop in server_tick()
@@ -226,7 +228,7 @@ void test_evt_error_calls_http_reset()
     TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[2].parse_state);
 }
 
-// EVT_DATA → http_parse(slot_id) — ring buffer is drained and parse completes
+// EVT_DATA → http_parse(slot_id) - ring buffer is drained and parse completes
 void test_evt_data_calls_http_parse()
 {
     push_to_slot(0, "GET /evt HTTP/1.1\r\n\r\n");
@@ -281,7 +283,7 @@ void race_external_free_between_ticks()
     server_tick();
     TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
 
-    // Second tick: slot is already free — must not double-free or crash
+    // Second tick: slot is already free - must not double-free or crash
     server_tick();
     TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
 }
@@ -323,7 +325,7 @@ void race_all_expire_then_idle_tick()
         TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[i].state);
 }
 
-// millis() wraps around (uint32_t overflow) — the timeout calculation
+// millis() wraps around (uint32_t overflow) - the timeout calculation
 // `(now - last_activity)` must remain correct due to unsigned subtraction.
 void race_millis_wraparound_no_spurious_timeout()
 {
@@ -343,7 +345,7 @@ int main()
 
     // Unit tests
     RUN_TEST(test_empty_queue_does_not_crash);
-    RUN_TEST(test_pool_initialises_to_parse_method);
+    RUN_TEST(test_pool_initializes_to_parse_method);
     RUN_TEST(test_reset_clears_mid_parse_state);
     RUN_TEST(test_tick_fires_check_timeouts_stale_slot_freed);
     RUN_TEST(test_tick_does_not_free_fresh_connection);

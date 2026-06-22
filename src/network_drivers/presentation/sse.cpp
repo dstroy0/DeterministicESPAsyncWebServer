@@ -17,7 +17,7 @@ void sse_init()
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
-        sse_pool[i]        = {};
+        sse_pool[i] = {};
         sse_pool[i].sse_id = (uint8_t)i;
     }
 }
@@ -28,10 +28,10 @@ SseConn *sse_alloc(uint8_t slot_id, const char *path)
     {
         if (!sse_pool[i].active)
         {
-            sse_pool[i]         = {};
-            sse_pool[i].sse_id  = (uint8_t)i;
+            sse_pool[i] = {};
+            sse_pool[i].sse_id = (uint8_t)i;
             sse_pool[i].slot_id = slot_id;
-            sse_pool[i].active  = true;
+            sse_pool[i].active = true;
             strncpy(sse_pool[i].path, path, MAX_PATH_LEN - 1);
             sse_pool[i].path[MAX_PATH_LEN - 1] = '\0';
             return &sse_pool[i];
@@ -56,15 +56,14 @@ void sse_free(uint8_t slot_id)
     {
         if (sse_pool[i].active && sse_pool[i].slot_id == slot_id)
         {
-            sse_pool[i]        = {};
+            sse_pool[i] = {};
             sse_pool[i].sse_id = (uint8_t)i;
             return;
         }
     }
 }
 
-bool sse_write(SseConn *sse, const char *data,
-               const char *event, const char *id)
+bool sse_write(SseConn *sse, const char *data, const char *event, const char *id)
 {
     if (!data)
         return false;
@@ -74,8 +73,8 @@ bool sse_write(SseConn *sse, const char *data,
         return false;
 
     char buf[SSE_BUF_SIZE];
-    int  pos = 0;
-    int  rem = (int)sizeof(buf);
+    int pos = 0;
+    int rem = (int)sizeof(buf);
 
     if (event && pos < rem)
         pos += snprintf(buf + pos, (size_t)(rem - pos), "event: %s\n", event);

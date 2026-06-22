@@ -3,7 +3,7 @@
 
 /**
  * @file presentation.cpp
- * @brief Layer 6 (Presentation) — wires the transport ring buffer to the HTTP parser.
+ * @brief Layer 6 (Presentation) - wires the transport ring buffer to the HTTP parser.
  *
  * This file is now a thin adapter.  The HTTP parsing logic lives in
  * http_parser.cpp.  This layer only knows about:
@@ -42,7 +42,7 @@ void http_parse(uint8_t slot_id)
         case PARSE_ERROR:
         case PARSE_ENTITY_TOO_LARGE:
         case PARSE_URI_TOO_LONG:
-            return; // terminal state — drain nothing further
+            return; // terminal state - drain nothing further
         default:
             break;
         }
