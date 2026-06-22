@@ -120,20 +120,20 @@ Any feature flag set to `0` strips the corresponding code and its includes from 
 
 Here are the available compile-time feature flags and their default values:
 
-| Flag | Default | Description |
-| :--- | :--- | :--- |
-| `DETWS_ENABLE_WEBSOCKET` | `1` | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS) |
-| `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support |
-| `DETWS_ENABLE_MULTIPART` | `1` | `multipart/form-data` body parser |
-| `DETWS_ENABLE_FILE_SERVING` | `1` | Static file serving via Arduino `FS` |
-| `DETWS_ENABLE_AUTH` | `1` | HTTP Basic Auth per-route |
-| `DETWS_ENABLE_DIAG` | `0` | JSON build-config diagnostic endpoint (disable in production) |
-| `DETWS_ENABLE_MDNS` | `0` | mDNS/DNS-SD advertisement via ESPmDNS |
-| `DETWS_ENABLE_NTP` | `0` | SNTP wall-clock time synchronization |
-| `DETWS_ENABLE_OTA` | `0` | Authenticated OTA firmware updates |
-| `DETWS_ENABLE_PROVISIONING` | `0` | WiFi provisioning wizard (SoftAP + captive portal) |
-| `DETWS_ENABLE_TELNET` | `0` | RFC 854 Telnet server |
-| `DETWS_ENABLE_SSH` | `0` | RFC 4253/4252/4254 SSH server |
+| Flag                        | Default | Description                                                   |
+| :-------------------------- | :------ | :------------------------------------------------------------ |
+| `DETWS_ENABLE_WEBSOCKET`    | `1`     | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS)        |
+| `DETWS_ENABLE_SSE`          | `1`     | Server-Sent Events push support                               |
+| `DETWS_ENABLE_MULTIPART`    | `1`     | `multipart/form-data` body parser                             |
+| `DETWS_ENABLE_FILE_SERVING` | `1`     | Static file serving via Arduino `FS`                          |
+| `DETWS_ENABLE_AUTH`         | `1`     | HTTP Basic Auth per-route                                     |
+| `DETWS_ENABLE_DIAG`         | `0`     | JSON build-config diagnostic endpoint (disable in production) |
+| `DETWS_ENABLE_MDNS`         | `0`     | mDNS/DNS-SD advertisement via ESPmDNS                         |
+| `DETWS_ENABLE_NTP`          | `0`     | SNTP wall-clock time synchronization                          |
+| `DETWS_ENABLE_OTA`          | `0`     | Authenticated OTA firmware updates                            |
+| `DETWS_ENABLE_PROVISIONING` | `0`     | WiFi provisioning wizard (SoftAP + captive portal)            |
+| `DETWS_ENABLE_TELNET`       | `0`     | RFC 854 Telnet server                                         |
+| `DETWS_ENABLE_SSH`          | `0`     | RFC 4253/4252/4254 SSH server                                 |
 
 Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `#error` messages at compile time with a descriptive reason string.
 

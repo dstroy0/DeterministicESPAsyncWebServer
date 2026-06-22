@@ -81,8 +81,8 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 
 #if DETWS_ENABLE_PROVISIONING && defined(ARDUINO)
 
-#include "DeterministicESPAsyncWebServer.h"
 #include "DETWS_HTML.h"
+#include "DeterministicESPAsyncWebServer.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 #include <Arduino.h>
