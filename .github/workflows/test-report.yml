@@ -31,6 +31,9 @@ jobs:
       - name: Run tests and regenerate docs/TEST_REPORT.md
         run: bash test/run_tests.sh || true
 
+      - name: Format TEST_REPORT.md with Prettier
+        run: npx prettier --write docs/TEST_REPORT.md
+
       - name: Commit updated test report
         run: |
           git config user.name  "github-actions[bot]"

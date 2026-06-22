@@ -97,7 +97,7 @@ The remaining sections document each property in depth.
     - [7.8 Sequence Number Overflow Guard](#78-sequence-number-overflow-guard)
     - [7.9 Secure Wipe](#79-secure-wipe)
       - [Why not `memset`?](#why-not-memset)
-      - [Where ssh\_wipe is used](#where-ssh_wipe-is-used)
+      - [Where ssh_wipe is used](#where-ssh_wipe-is-used)
     - [7.10 Random Number Generation](#710-random-number-generation)
       - [Production (Arduino / ESP32)](#production-arduino--esp32)
       - [Native test environment](#native-test-environment)
@@ -253,6 +253,7 @@ the server side.
 ### Handshake Verification
 
 The WebSocket upgrade handshake requires:
+
 1. An HTTP `GET` request (any other method is rejected with 400).
 2. A `Connection: Upgrade` header (case-insensitive match).
 3. An `Upgrade: websocket` header (case-insensitive match).
@@ -295,6 +296,7 @@ susceptible to timing side channels if an attacker can measure the response
 time precisely.
 
 For embedded device use this is generally acceptable because:
+
 - The comparison time difference (a few nanoseconds) is dominated by network
   jitter on WiFi.
 - The credential is transmitted in base64 (effectively plaintext) over HTTP; if
@@ -328,6 +330,7 @@ The SSH transport layer (§7) is the only encrypted path built into this library
 ## 7. SSH Cryptographic Layer
 
 **Files:**
+
 - [src/network_drivers/presentation/ssh/ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h) - security model, types, wipe helpers
 - [src/network_drivers/presentation/ssh/ssh_bignum.h](../src/network_drivers/presentation/ssh/ssh_bignum.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_bignum.cpp) - 2048-bit Montgomery arithmetic
 - [src/network_drivers/presentation/ssh/ssh_sha256.h](../src/network_drivers/presentation/ssh/ssh_sha256.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_sha256.cpp) - SHA-256
@@ -412,6 +415,7 @@ AES-256-CTR is a stream cipher mode. The keystream is produced by encrypting a
 The counter is initialised to IV_c2s or IV_s2c (derived from the KEX; see §7.5)
 and incremented as a big-endian 128-bit integer after each 16-byte block. The
 counter never repeats within a connection because:
+
 - The IV is unique per connection (derived from a unique K and H).
 - The sequence number overflow guard (§7.8) closes the connection before enough
   packets could be sent to cause a counter repetition within the 2^128 counter
@@ -460,6 +464,7 @@ timing-oracle attacks where an attacker measures how many bytes of the MAC
 matched before a short-circuit return.
 
 If MAC verification fails:
+
 1. The decrypted payload buffer is wiped.
 2. The receive buffer is wiped.
 3. `ssh_pkt_recv()` returns -1.
@@ -645,8 +650,8 @@ at 2^32. Two problems arise at wrap:
 
 1. **AES-CTR counter reuse.** The AES-CTR keystream is indexed by the counter
    (IV) value and does not reset at sequence number wrap. However, if the
-   session persists long enough for the *sequence number* to wrap, the
-   *sequence-number field* in the MAC input wraps too. Whether this directly
+   session persists long enough for the _sequence number_ to wrap, the
+   _sequence-number field_ in the MAC input wraps too. Whether this directly
    causes keystream reuse depends on implementation details, but RFC 4253 §9.3.4
    recommends rekeying before the sequence number wraps.
 

@@ -118,8 +118,8 @@ The matching public key for clients' `known_hosts` is derived from the same DER
 - One `session` channel per connection (no port-forwarding / X11).
 - The native-build software RSA/AES/bignum paths are not constant-time; they are
   compiled out of firmware (`#ifndef ARDUINO`) and exist only for host tests. On
-  ESP32 the hardware/mbedTLS paths are used. Native RSA *signing* and
-  *verification* are both mathematically complete (validated by a sign→verify
+  ESP32 the hardware/mbedTLS paths are used. Native RSA _signing_ and
+  _verification_ are both mathematically complete (validated by a sign→verify
   round-trip and an openssl KAT).
 
 ## Memory footprint

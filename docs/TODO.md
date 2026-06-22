@@ -8,7 +8,8 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > and the DX feature set (`serve_static` + MIME + gzip, `redirect()`, named
 > `begin()` codes) are **done and tested** (495 native cases across all envs;
 > the `06.SSH` firmware links at RAM 21% / Flash 60%). Items marked `[x]` carry a
-> *(done)* note. **Still open / deliberately deferred:**
+> _(done)_ note. **Still open / deliberately deferred:**
+>
 > - **ESP32-only subsystems** (can't be host-verified here): mDNS, OTA, WiFi
 >   provisioning/captive portal, SNTP - all sizeable new modules.
 > - **Performance** (HW SHA-256 streaming, AES-CTR whole-buffer) - ESP32 runtime
@@ -19,7 +20,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 ## Build / toolchain
 
-- [x] **`esp32dev` build failed on the official platform (mbedtls v2).** *(done)*
+- [x] **`esp32dev` build failed on the official platform (mbedtls v2).** _(done)_
       `ssh_rsa.cpp`'s ARDUINO path now compiles on **both** mbedtls v2 (official
       `espressif32`, Arduino core 2.0.x) and v3 (core 3.x) via
       `MBEDTLS_VERSION_MAJOR` guards around `mbedtls_rsa_init`, `mbedtls_pk_sign`
@@ -37,16 +38,15 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 ## Security / correctness (high priority)
 
-- [x] **Native RSA signing is a `d=1` test stub, not a real signature.** *(done)*
+- [x] **Native RSA signing is a `d=1` test stub, not a real signature.** _(done)_
       `ssh_rsa_sign()` native path now performs a full-width `s = em^d mod n`
       via `bn_modexp_full()` (square-and-multiply over every bit of d, reusing
       the correct `bn_mul_full` / `bn_reduce_full` helpers). Validated by
       `test_rsa_sign_verify_roundtrip` with a real 2048-bit private exponent.
-      Still software / not constant-time (test-only path; ESP32/mbedTLS is real)
-      - covered by the constant-time item below. CRT was deliberately skipped
+      Still software / not constant-time (test-only path; ESP32/mbedTLS is real) - covered by the constant-time item below. CRT was deliberately skipped
       (YAGNI: the native path is test-only, speed is adequate).
 
-- [x] **No authentication attempt limiting (brute-force).** *(done)*
+- [x] **No authentication attempt limiting (brute-force).** _(done)_
       SSH now bounds failed `USERAUTH_REQUEST`s per connection: the dispatcher
       (`ssh_server.cpp`) counts `SSH_MSG_USERAUTH_FAILURE` responses in
       `SshSession.auth_failures` and, after `SSH_MAX_AUTH_ATTEMPTS`
@@ -59,8 +59,8 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       so a client gets exactly one guess per TCP connection. Cross-connection
       (per-IP) throttling is the connection-flood item below.
 
-- [x] **Software crypto paths are not constant-time.** *(done - asserted out of
-      firmware)* The native Montgomery cluster (`ssh_bignum.cpp`: `bn_init`,
+- [x] **Software crypto paths are not constant-time.** _(done - asserted out of
+      firmware)_ The native Montgomery cluster (`ssh_bignum.cpp`: `bn_init`,
       `bn_monpro`, `bn_shl1`, `bn_sub_inplace`, `g14_R1/R2`) is now under
       `#ifndef ARDUINO`, so it is not compiled into firmware at all; the software
       AES (`ssh_aes256ctr.cpp`) and native RSA modexp (`ssh_rsa.cpp`,
@@ -70,7 +70,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       (YAGNI: they are host-test-only and now provably absent from firmware).
       Documented in `SECURITY.md` (⚠️ timing row).
 
-- [x] **No connection-flood / rate limiting.** *(done - opt-in global throttle)*
+- [x] **No connection-flood / rate limiting.** _(done - opt-in global throttle)_
       `listener.cpp` now has a fixed-window accept-rate gate
       (`listener_accept_allowed()`): when `DETWS_ENABLE_ACCEPT_THROTTLE` is set,
       the accept callback drops connections beyond
@@ -83,7 +83,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       Finer-grained / per-IP throttling remains a network-layer concern.
 
 - [x] **`base64_decode()` has no output-capacity guard (Basic-auth ingestion).**
-      *(done)* `base64_decode()` now takes a `dst_cap` parameter
+      _(done)_ `base64_decode()` now takes a `dst_cap` parameter
       (`base64.cpp`/`.h`, both platforms) and bounds every write; an over-capacity
       decode returns 0 instead of overrunning. `check_basic_auth()`
       (`DeterministicESPAsyncWebServer.cpp`) passes `sizeof(decoded) - 1`, leaving
@@ -98,7 +98,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 ## SSH protocol completeness (medium)
 
-- [x] **`SSH_MSG_UNIMPLEMENTED` not sent for unknown messages.** *(done)* The
+- [x] **`SSH_MSG_UNIMPLEMENTED` not sent for unknown messages.** _(done)_ The
       dispatcher's default case (`ssh_server.cpp`) now emits
       `SSH_MSG_UNIMPLEMENTED` with the rejected packet's sequence number
       (`ssh_pkt[i].seq_no_recv - 1`, since `ssh_pkt_recv` has already advanced the
@@ -107,30 +107,30 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 - [ ] **Single SSH `session` channel only.** No port-forwarding, X11, or
       multiple channels (`ssh_channel.cpp` is a single-channel pool). Add a small
-      channel table if multiplexing is needed. *(Deferred - YAGNI: a headless IoT
+      channel table if multiplexing is needed. _(Deferred - YAGNI: a headless IoT
       device exposes one shell/exec session; multiplexing adds a channel table +
-      window bookkeeping for no current use case.)*
+      window bookkeeping for no current use case.)_
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a
       strict implementation tracks inbound/outbound cipher activation separately
-      (`ssh_packet.*`, `ssh_transport.cpp::ssh_newkeys_complete`). *(Deferred -
+      (`ssh_packet.*`, `ssh_transport.cpp::ssh_newkeys_complete`). _(Deferred -
       YAGNI: the current strict send-then-receive ordering makes a single flag
       correct; splitting it is churn with no behavioral change until an
-      out-of-order activation path exists.)*
+      out-of-order activation path exists.)_
 
 - [ ] **Key-derivation extension (RFC 4253 §7.2).** `derive_key()` produces a
       single 32-byte block. Fine for AES-256/HMAC-SHA256/IV (≤32 B), but add the
       `K1‖K2‖…` extension loop before introducing any algorithm needing >32 bytes.
-      *(Deferred - YAGNI: every negotiated algorithm needs ≤32 B; add the loop
-      only when an algorithm that needs more is introduced.)*
+      _(Deferred - YAGNI: every negotiated algorithm needs ≤32 B; add the loop
+      only when an algorithm that needs more is introduced.)_
 
 ## Performance / hardware acceleration (medium)
 
 - [ ] **SSH per-packet HMAC runs in software SHA-256 on ESP32.** `compute_mac()`
       (`ssh_packet.cpp`) MACs every inbound and outbound packet via
-- [x] **SSH per-packet HMAC ran in software SHA-256 on ESP32.** *(done; on-device
-      verification pending a board connection)* The streaming SHA-256 context is
+- [x] **SSH per-packet HMAC ran in software SHA-256 on ESP32.** _(done; on-device
+      verification pending a board connection)_ The streaming SHA-256 context is
       now backed by `mbedtls_sha256_context` on Arduino
       (`mbedtls_sha256_starts/update/finish`, v2/v3-guarded), so the HW SHA engine
       accelerates per-packet HMAC **and** KEX hashing. The software FIPS-180-4 path
@@ -138,7 +138,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       HW-acceleration comment is now accurate. Native software KATs still pass;
       `examples/07.SSHCryptoSelfTest` validates the HW path on-device.
 
-- [x] **AES-256-CTR re-acquired the HW engine once per 16-byte block.** *(done)*
+- [x] **AES-256-CTR re-acquired the HW engine once per 16-byte block.** _(done)_
       The Arduino `ssh_aes256ctr_crypt()` now makes a single
       `mbedtls_aes_crypt_ctr()` call for the whole buffer (our `counter` /
       `keystream` / `pos` fields map 1:1 to mbedtls's `nonce_counter` /
@@ -184,7 +184,7 @@ by how often a deployed device needs it.
       examples rely on. Needs a softAP path in the physical layer
       (`physical.cpp`) plus a small DNS responder.
 
-- [x] **Pre-compressed static asset serving.** *(done)* `serve_static()` serves
+- [x] **Pre-compressed static asset serving.** _(done)_ `serve_static()` serves
       `<path>.gz` with `Content-Encoding: gzip` when the client sends
       `Accept-Encoding: gzip` and the `.gz` exists (original Content-Type
       preserved). No separate flag needed - it is zero-cost when no `.gz` is
@@ -193,11 +193,11 @@ by how often a deployed device needs it.
 
 - [ ] **Conditional GET / ETag (`DETWS_ENABLE_ETAG`).** Emit `ETag`/
       `Last-Modified` for served files and answer `If-None-Match`/
-      `If-Modified-Since` with `304 Not Modified`. *(Deferred - a meaningful
+      `If-Modified-Since` with `304 Not Modified`. _(Deferred - a meaningful
       validator needs the file mtime (`fs::File::getLastWrite()`), which the
       native test mock cannot represent, so it can't be host-verified; a
       size-only ETag is too weak to be worth it. Revisit if/when the mock grows
-      mtime support.)*
+      mtime support.)_
 
 - [ ] **SNTP time sync (`DETWS_ENABLE_NTP`).** Optional SNTP client so the device
       has wall-clock time. Unblocks the `Date` response header (see HTTP/core
@@ -215,60 +215,59 @@ deployed device.
 
 Newbie / developer experience:
 
-- [x] **One-call static directory mount.** *(done)*
+- [x] **One-call static directory mount.** _(done)_
       `serve_static(url_prefix, fs, fs_root)` (`DeterministicESPAsyncWebServer.h`)
       mounts a filesystem subtree at a URL prefix via a wildcard `ROUTE_STATIC`:
       `index.html` fallback for `/` or directory requests, MIME auto-detection,
       gzip-static, path-traversal rejection, GET/HEAD only (else 405). Tested by
       the `test_serve_static_*` suite.
 
-- [x] **MIME type auto-detection by extension.** *(done)* `DetWebServer::mime_type(path)`
-      - a static, case-insensitive extension→type table (html/css/js/json/svg/
+- [x] **MIME type auto-detection by extension.** _(done)_ `DetWebServer::mime_type(path)` - a static, case-insensitive extension→type table (html/css/js/json/svg/
       png/jpg/gif/ico/webp/wasm/woff2/… → falls back to
       `application/octet-stream`). Used automatically by `serve_static()` and
       callable directly with `serve_file()`. Tested by `test_mime_type_detection`.
 
-- [x] **Named `begin()` failure codes.** *(done)* `begin()`/`listen()`/`restart()`
+- [x] **Named `begin()` failure codes.** _(done)_ `begin()`/`listen()`/`restart()`
       now return a `DetWebServerResult` enum: `DETWS_OK`, `DETWS_ERR_NO_LISTENERS`,
       `DETWS_ERR_LISTENER_FULL`, `DETWS_ERR_LISTEN_FAILED`
       (`DeterministicESPAsyncWebServer.h`/`.cpp`). Subsumes the heap-bytes mismatch
       item below (docstring corrected).
 
-- [x] **`redirect()` helper.** *(done)* `server.redirect(slot_id, code, location)`
+- [x] **`redirect()` helper.** _(done)_ `server.redirect(slot_id, code, location)`
       sends a `Location` header + empty body and closes; accepts 301/302/303/307/308
       (any other code → 302). Tested by `test_redirect_*`.
 
 Operator / sysadmin:
 
 - [ ] **Runtime stats endpoint (`DETWS_ENABLE_STATS`).** The existing `DETWS_DIAG_JSON`
-      is *compile-time* config only. Add a runtime counters block - uptime,
+      is _compile-time_ config only. Add a runtime counters block - uptime,
       requests served, 4xx/5xx counts, active/peak connection-pool usage, min
       free heap - exposed as JSON. The expert example inspects `conn_pool[]` by
       hand; this makes the same data a first-class, monitorable endpoint.
 
 - [ ] **Per-request log callback hook.** `server.on_request_log(cb)` invoked once
       per completed request with method/path/status/bytes, so an operator can
-      route access logs to Serial, syslog, or a file. Note: this is the *hook*
+      route access logs to Serial, syslog, or a file. Note: this is the _hook_
       only (one function pointer, no in-library buffering/formatting) - distinct
       from the built-in access-logging that was deliberately omitted above as too
       heavy for this device class.
 
 ## Examples (low)
 
-- [x] **`begin()` heap-bytes contract mismatch.** *(done)* The misleading
+- [x] **`begin()` heap-bytes contract mismatch.** _(done)_ The misleading
       "abs(result) == heap bytes needed" docstring/example was corrected; `begin()`
       now returns a `DetWebServerResult` code (see the named-failure-codes item
       above), and `heap_needed()`/`heap_available()` remain the way to check heap.
 
 ## Housekeeping (low)
 
-- [x] **Native `base64_decode()` accepts `=` outside the trailing pad.** *(done)*
+- [x] **Native `base64_decode()` accepts `=` outside the trailing pad.** _(done)_
       `b64_val()` no longer treats `=` as a value; the decoder validates padding
       positionally - full 4-char quads only, `=` permitted only as 1-2 trailing
       chars of the final quad (`base64.cpp`). Misplaced padding and non-multiple-
       of-4 input now return 0. Tested by `test_base64_decode_rejects_misplaced_padding`.
 
-- [x] **`test/test_application/` is orphaned** *(done)* - wired into the
+- [x] **`test/test_application/` is orphaned** _(done)_ - wired into the
       `native_app` env's `test_filter` (`platformio.ini`) and de-bit-rotted (it
       called the removed `DeterministicAsyncTCP::init(80)`; now `pool_init()`).
       All 35 cases pass.
@@ -278,14 +277,14 @@ Operator / sysadmin:
       SSH server (KEX→auth→channel), publickey auth, `DETWS_SSH_ALLOW_PASSWORD`,
       and the docs reorg.
 
-- [x] **Add an SSH usage example** *(done)* - `examples/06.SSH/06.SSH.ino`:
+- [x] **Add an SSH usage example** _(done)_ - `examples/06.SSH/06.SSH.ino`:
       enables SSH, loads the host key from NVS (`ssh_rsa_load_pubkey()`), installs
       password + publickey auth callbacks and a channel data callback that echoes
       via the new `ssh_conn_send()` helper, listens on `PROTO_SSH`. Required a
       small public outbound API (`ssh_conn_send()`, `ssh_conn.*`) since the
       dispatcher's emit path was internal-only.
 
-- [x] **Publish RSA host-key provisioning docs** *(done)* - `docs/SSH.md`
+- [x] **Publish RSA host-key provisioning docs** _(done)_ - `docs/SSH.md`
       now has a "Host key provisioning" section: `openssl genrsa` →
       `pkcs8 -topk8 -outform DER`, embed + write to NVS (`ssh_host_key/priv_der`)
       with `Preferences`, and `ssh_rsa_load_pubkey()` at boot.

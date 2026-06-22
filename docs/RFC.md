@@ -24,7 +24,7 @@ The parser enforces these rules byte-by-byte during parsing:
 Additional behaviors:
 
 - CR mid header field-name → 400
-- Leading SP/HTAB in header values stripped per OWS rules (§3.2.3) 
+- Leading SP/HTAB in header values stripped per OWS rules (§3.2.3)
 - Excess headers beyond `MAX_HEADERS` are consumed and discarded, not rejected
 - Query string overflow silently truncates (capacity limit, not a protocol error)
 - Host enforcement is governed by `DETWS_ENFORCE_HOST_HEADER` (default `1`); set to
