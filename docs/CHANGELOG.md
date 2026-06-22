@@ -5,6 +5,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ## [Unreleased]
 
 ### CI / Build
+- update CHANGELOG.md [skip ci] ([`66e3d57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66e3d57ce55bf678e5665bfc0e674a9af9bb0ccf))
 - update CHANGELOG.md [skip ci] ([`484a46c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/484a46cfdda3148c6ade4ad02769b1132f9afb24))
 - update CHANGELOG.md [skip ci] ([`655130c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/655130cc105c49bc2c724d1ced92c84483d453a9))
 - update CHANGELOG.md [skip ci] ([`6e8beaa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e8beaa140305d190bb46b884bf533c5155d6b52))
@@ -14,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 
 ### Changes
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c653ca9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c653ca91f0deab888bef98f8f3291b20cfa8b34e))
+- update clang-format workflow to use v22 ([`6654bfa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6654bfa5d0805d2a480c28f33c4dd33d28ab620b))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`f833120`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f833120b824fda7e9c1ea622b786b7f7f7ef0549))
 - stop tracking .vscode/ ([`b618929`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b61892970a93f631aac292731c55d4e589b61dd6))
 - format ([`290f745`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/290f74509db99120b5f6febbb4cbb175aab72f8f))
