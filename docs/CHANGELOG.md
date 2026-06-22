@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d356856`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3568563a7de39f27cd92ab9597a03e96116cf78))
+- update CHANGELOG.md [skip ci] ([`b01f7b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b01f7b20b3cad3f3eab4dab2909b6e3fd2d3f498))
 - update test report [skip ci] ([`eb23a2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb23a2dceba5a93964791ecfc23b81166996f650))
 - update CHANGELOG.md [skip ci] ([`63784f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63784f641ea0e54c4c6db7d4d0702307e3648225))
 - update test report [skip ci] ([`4a536dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a536dcbc54c8928f0daed6efdae7a12a376e620))
@@ -57,6 +59,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - update feature flags info & add provisioning, MDNS & NTP services ([`b4135ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4135ba256608624ac5037f5f9e694775f4dca20))
 - docs ([`93c7ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ef88637ee6576bef7a6ba34a358881ff42a3))
+
+### Refactor
+
+- centralize HTML templates into DETWS_HTML.h ([`72f5d1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72f5d1f8b83fbfd2b2d6593ba76a9fa391964f8b))
 
 ## [1.2.0] - 2026-06-20
 
