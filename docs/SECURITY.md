@@ -14,33 +14,32 @@ with caveats, ❌ = a real weakness to be aware of.
 
 ### Strong (✅)
 
-| Area | Why it's solid |
-| --- | --- |
-| Deterministic memory | Zero heap after `begin()`; every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths. |
-| HTTP input validation | RFC 7230 parser validates every byte; rejects malformed method/path/headers, enforces Host and Content-Length, refuses Transfer-Encoding (no request smuggling surface). |
-| WebSocket framing | Enforces client masking, reserved-opcode/RSV checks, control-frame size and fragmentation rules. |
-| SSH crypto correctness | SHA-256/HMAC/AES-CTR/DH validated against NIST/RFC vectors; RSA verification validated against an openssl KAT. MAC-verify-before-use; constant-time MAC compare. |
-| Secret hygiene | RSA private key never in static memory (NVS→stack→wipe); session keys, DH secrets, and scratch buffers volatile-wiped after use; key pools are separate linker symbols. |
-| SSH hardening option | `DETWS_SSH_ALLOW_PASSWORD=0` compiles password auth out entirely for publickey-only deployments. |
+| Area                   | Why it's solid                                                                                                                                                                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deterministic memory   | Zero heap after `begin()`; every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                                                    |
+| HTTP input validation  | RFC 7230 parser validates every byte; rejects malformed method/path/headers, enforces Host and Content-Length, refuses Transfer-Encoding (no request smuggling surface).                                                                                       |
+| WebSocket framing      | Enforces client masking, reserved-opcode/RSV checks, control-frame size and fragmentation rules.                                                                                                                                                               |
+| SSH crypto correctness | SHA-256/HMAC/AES-CTR/DH validated against NIST/RFC vectors; RSA verification validated against an openssl KAT and native RSA signing against a sign→verify round-trip with a real 2048-bit private exponent. MAC-verify-before-use; constant-time MAC compare. |
+| Secret hygiene         | RSA private key never in static memory (NVS→stack→wipe); session keys, DH secrets, and scratch buffers volatile-wiped after use; key pools are separate linker symbols.                                                                                        |
+| SSH hardening option   | `DETWS_SSH_ALLOW_PASSWORD=0` compiles password auth out entirely for publickey-only deployments.                                                                                                                                                               |
 
 ### Acceptable, with caveats (⚠️)
 
-| Area | Caveat |
-| --- | --- |
-| Transport encryption (HTTP) | There is **no TLS** - plain HTTP only. Fine on a trusted LAN or behind a TLS terminator; do not expose to the internet for sensitive data. Use the SSH layer for an encrypted channel. |
-| SSH timing side-channels | The native software bignum/AES paths are **not constant-time**. On ESP32 the hardware/mbedTLS paths are used; the software paths are for host testing. |
-| `Date` response header | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers. |
-| Single SSH channel | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit. |
-| Diagnostic endpoint | `DETWS_ENABLE_DIAG` leaks build configuration; default-off and must stay off in production. |
+| Area                        | Caveat                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transport encryption (HTTP) | There is **no TLS** - plain HTTP only. Fine on a trusted LAN or behind a TLS terminator; do not expose to the internet for sensitive data. Use the SSH layer for an encrypted channel.                                                                                                                                                                                                                                                        |
+| SSH timing side-channels    | The native software bignum/AES/RSA paths are **not constant-time**, but they are **compile-excluded from firmware**: the software Montgomery cluster is under `#ifndef ARDUINO` (`ssh_bignum.cpp`) and the software AES / native RSA modexp live in the `#else` of an `#ifdef ARDUINO` (`ssh_aes256ctr.cpp`, `ssh_rsa.cpp`). On ESP32 only the hardware/mbedTLS paths are compiled and run; the software paths exist solely for host testing. |
+| `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
+| Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
+| Diagnostic endpoint         | `DETWS_ENABLE_DIAG` leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                                                   |
 
 ### Weak / not implemented (❌)
 
-| Area | Status |
-| --- | --- |
-| Native RSA *signing* | The native build's `ssh_rsa_sign` is a `d=1` **test stub**, not a real signature. Only the ESP32 mbedTLS path produces real host-key signatures. Never ship the native signing path. |
-| Rate limiting / brute-force defense | No connection throttling or auth-attempt limiting. An attacker can hammer auth; mitigate at the network layer. |
-| Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; there is no allow-list or SYN-cookie equivalent. |
-| Formal audit | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments. |
+| Area                          | Status                                                                                                                                                                                                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection-rate throttling    | SSH bounds failed auth attempts per connection (`SSH_MAX_AUTH_ATTEMPTS`, then `SSH_MSG_DISCONNECT`); HTTP closes the socket on every 401 (one guess per connection). There is still **no per-IP / connection-rate limit** across connections - an attacker can reconnect repeatedly; mitigate at the network layer. |
+| Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; there is no allow-list or SYN-cookie equivalent.                                                                                                                                                                               |
+| Formal audit                  | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments.                                                                                                                                                        |
 
 The remaining sections document each property in depth.
 
@@ -48,26 +47,67 @@ The remaining sections document each property in depth.
 
 ## Table of Contents
 
-1. [Threat Model](#1-threat-model)
-2. [Memory Safety - HTTP / Core Stack](#2-memory-safety--http--core-stack)
-3. [Input Validation - RFC 7230 Parser](#3-input-validation--rfc-7230-parser)
-4. [WebSocket Security](#4-websocket-security)
-5. [Authentication (HTTP Basic Auth)](#5-authentication-http-basic-auth)
-6. [TLS / Transport Encryption](#6-tls--transport-encryption)
-7. [SSH Cryptographic Layer](#7-ssh-cryptographic-layer)
-   - 7.1 [Key Exchange - DH-group14-SHA256](#71-key-exchange--dh-group14-sha256)
-   - 7.2 [Symmetric Encryption - AES-256-CTR](#72-symmetric-encryption--aes-256-ctr)
-   - 7.3 [Integrity - HMAC-SHA2-256](#73-integrity--hmac-sha2-256)
-   - 7.4 [Host Authentication - RSA-SHA2-256](#74-host-authentication--rsa-sha2-256)
-   - 7.5 [Key Derivation - RFC 4253 §7.2](#75-key-derivation--rfc-4253-72)
-   - 7.6 [Private Key Lifetime](#76-private-key-lifetime)
-   - 7.7 [Memory Layout Defences](#77-memory-layout-defences)
-   - 7.8 [Sequence Number Overflow Guard](#78-sequence-number-overflow-guard)
-   - 7.9 [Secure Wipe](#79-secure-wipe)
-   - 7.10 [Random Number Generation](#710-random-number-generation)
-8. [Diagnostic Endpoint](#8-diagnostic-endpoint)
-9. [Known Limitations and Non-Goals](#9-known-limitations-and-non-goals)
-10. [Hardening Checklist](#10-hardening-checklist)
+- [DeterministicESPAsyncWebServer - Security Documentation](#deterministicespasyncwebserver---security-documentation)
+  - [0. Security Posture at a Glance](#0-security-posture-at-a-glance)
+    - [Strong (✅)](#strong-)
+    - [Acceptable, with caveats (⚠️)](#acceptable-with-caveats-️)
+    - [Weak / not implemented (❌)](#weak--not-implemented-)
+  - [Table of Contents](#table-of-contents)
+  - [1. Threat Model](#1-threat-model)
+  - [2. Memory Safety - HTTP / Core Stack](#2-memory-safety---http--core-stack)
+    - [Static Allocation](#static-allocation)
+    - [Buffer Overflow Containment](#buffer-overflow-containment)
+    - [Compile-Time Safety Checks](#compile-time-safety-checks)
+  - [3. Input Validation - RFC 7230 Parser](#3-input-validation---rfc-7230-parser)
+    - [Character-Class Validation](#character-class-validation)
+    - [Length Limits](#length-limits)
+    - [CR-Injection Defence](#cr-injection-defence)
+    - [Transfer-Encoding Rejection](#transfer-encoding-rejection)
+  - [4. WebSocket Security](#4-websocket-security)
+    - [Handshake Verification](#handshake-verification)
+    - [Frame Validation](#frame-validation)
+    - [No Origin Validation by Default](#no-origin-validation-by-default)
+  - [5. Authentication (HTTP Basic Auth)](#5-authentication-http-basic-auth)
+    - [Implementation](#implementation)
+    - [Credentials in Flash](#credentials-in-flash)
+  - [6. TLS / Transport Encryption](#6-tls--transport-encryption)
+  - [7. SSH Cryptographic Layer](#7-ssh-cryptographic-layer)
+    - [7.1 Key Exchange - DH-group14-SHA256](#71-key-exchange---dh-group14-sha256)
+      - [Why group14?](#why-group14)
+      - [Protocol flow](#protocol-flow)
+      - [Client value validation](#client-value-validation)
+      - [Private scalar generation](#private-scalar-generation)
+    - [7.2 Symmetric Encryption - AES-256-CTR](#72-symmetric-encryption---aes-256-ctr)
+      - [Why CTR mode?](#why-ctr-mode)
+      - [Counter management](#counter-management)
+      - [Platform-specific implementations](#platform-specific-implementations)
+    - [7.3 Integrity - HMAC-SHA2-256](#73-integrity---hmac-sha2-256)
+      - [MAC key size](#mac-key-size)
+      - [Verify-before-use](#verify-before-use)
+    - [7.4 Host Authentication - RSA-SHA2-256](#74-host-authentication---rsa-sha2-256)
+      - [Why PKCS#1 v1.5 and not RSA-PSS?](#why-pkcs1-v15-and-not-rsa-pss)
+      - [Signature construction](#signature-construction)
+      - [Key storage and loading](#key-storage-and-loading)
+    - [7.5 Key Derivation - RFC 4253 §7.2](#75-key-derivation---rfc-4253-72)
+    - [7.6 Private Key Lifetime](#76-private-key-lifetime)
+      - [Why the private key must never be in static memory](#why-the-private-key-must-never-be-in-static-memory)
+      - [The mandated lifetime](#the-mandated-lifetime)
+      - [NVS encryption recommendation](#nvs-encryption-recommendation)
+    - [7.7 Memory Layout Defences](#77-memory-layout-defences)
+    - [7.8 Sequence Number Overflow Guard](#78-sequence-number-overflow-guard)
+    - [7.9 Secure Wipe](#79-secure-wipe)
+      - [Why not `memset`?](#why-not-memset)
+      - [Where ssh\_wipe is used](#where-ssh_wipe-is-used)
+    - [7.10 Random Number Generation](#710-random-number-generation)
+      - [Production (Arduino / ESP32)](#production-arduino--esp32)
+      - [Native test environment](#native-test-environment)
+  - [8. Diagnostic Endpoint](#8-diagnostic-endpoint)
+  - [9. Known Limitations and Non-Goals](#9-known-limitations-and-non-goals)
+  - [10. Hardening Checklist](#10-hardening-checklist)
+    - [General](#general)
+    - [Authentication](#authentication)
+    - [SSH](#ssh)
+    - [Build](#build)
 
 ---
 
@@ -120,12 +160,12 @@ The remaining sections document each property in depth.
 Every buffer that can hold user-supplied data is a fixed-size array in BSS,
 sized at compile time:
 
-| Buffer | Symbol | Size |
-|---|---|---|
-| TCP ring buffer per connection | `conn_pool[i].rx_buffer` | `RX_BUF_SIZE` bytes |
-| HTTP request body | `http_pool[i].body` | `BODY_BUF_SIZE + 1` bytes |
-| WebSocket frame payload | `ws_pool[i].buf` | `WS_FRAME_SIZE` bytes |
-| SSH packet receive | `ssh_pkt[i].rx_buf` | `SSH_RX_BUF_SIZE` bytes |
+| Buffer                         | Symbol                   | Size                      |
+| ------------------------------ | ------------------------ | ------------------------- |
+| TCP ring buffer per connection | `conn_pool[i].rx_buffer` | `RX_BUF_SIZE` bytes       |
+| HTTP request body              | `http_pool[i].body`      | `BODY_BUF_SIZE + 1` bytes |
+| WebSocket frame payload        | `ws_pool[i].buf`         | `WS_FRAME_SIZE` bytes     |
+| SSH packet receive             | `ssh_pkt[i].rx_buf`      | `SSH_RX_BUF_SIZE` bytes   |
 
 No `malloc`, `new`, or `pvPortMalloc` is called after `begin()` for any of
 these paths. The total footprint is a compile-time constant; there is no
@@ -170,22 +210,22 @@ stored or acted upon. This is a defence-in-depth measure: even if a buffer
 overflow were possible, the parser rejects payloads that contain non-printing
 or control characters before they enter any buffer.
 
-| Field | Allowed characters | RFC reference | Violation response |
-|---|---|---|---|
-| Method | `tchar` (`ALPHA DIGIT ! # $ % & ' * + - . ^ _ \` \| ~`) | RFC 7230 §3.1.1 | 400 |
-| Path | `VCHAR` (%x21–7E) | RFC 3986 §3.3 | 400 |
-| Query | `VCHAR` (%x21–7E) | RFC 3986 §3.4 | 400 |
-| Header field-name | `tchar` | RFC 7230 §3.2 | 400 |
-| Header field-value | `VCHAR`, SP, HTAB, obs-text (%x80–FF) | RFC 7230 §3.2 | 400 |
+| Field              | Allowed characters                                      | RFC reference   | Violation response |
+| ------------------ | ------------------------------------------------------- | --------------- | ------------------ |
+| Method             | `tchar` (`ALPHA DIGIT ! # $ % & ' * + - . ^ _ \` \| ~`) | RFC 7230 §3.1.1 | 400                |
+| Path               | `VCHAR` (%x21–7E)                                       | RFC 3986 §3.3   | 400                |
+| Query              | `VCHAR` (%x21–7E)                                       | RFC 3986 §3.4   | 400                |
+| Header field-name  | `tchar`                                                 | RFC 7230 §3.2   | 400                |
+| Header field-value | `VCHAR`, SP, HTAB, obs-text (%x80–FF)                   | RFC 7230 §3.2   | 400                |
 
 ### Length Limits
 
-| Field | Limit | Violation response |
-|---|---|---|
-| Path | `MAX_PATH_LEN - 1` bytes | 414 URI Too Long |
-| Body | `BODY_BUF_SIZE` bytes | 413 Payload Too Large |
-| Header field-name | `MAX_KEY_LEN` bytes | silently truncated |
-| Header field-value | `MAX_VAL_LEN` bytes | silently truncated |
+| Field              | Limit                    | Violation response    |
+| ------------------ | ------------------------ | --------------------- |
+| Path               | `MAX_PATH_LEN - 1` bytes | 414 URI Too Long      |
+| Body               | `BODY_BUF_SIZE` bytes    | 413 Payload Too Large |
+| Header field-name  | `MAX_KEY_LEN` bytes      | silently truncated    |
+| Header field-value | `MAX_VAL_LEN` bytes      | silently truncated    |
 
 Path and body oversize conditions are detected before any byte is written to
 the destination buffer and result in an error response sent immediately.
@@ -480,14 +520,14 @@ For the private key lifetime policy, see §7.6.
 
 Six values are derived from the shared secret K and exchange hash H:
 
-| Label | Use | Size |
-|---|---|---|
-| `'A'` | IV_c2s (AES-CTR IV, client→server) | first 16 bytes |
-| `'B'` | IV_s2c (AES-CTR IV, server→client) | first 16 bytes |
-| `'C'` | key_c2s (AES-256 key, client→server) | 32 bytes |
-| `'D'` | key_s2c (AES-256 key, server→client) | 32 bytes |
-| `'E'` | mac_c2s (HMAC-SHA2-256 key, client→server) | 32 bytes |
-| `'F'` | mac_s2c (HMAC-SHA2-256 key, server→client) | 32 bytes |
+| Label | Use                                        | Size           |
+| ----- | ------------------------------------------ | -------------- |
+| `'A'` | IV_c2s (AES-CTR IV, client→server)         | first 16 bytes |
+| `'B'` | IV_s2c (AES-CTR IV, server→client)         | first 16 bytes |
+| `'C'` | key_c2s (AES-256 key, client→server)       | 32 bytes       |
+| `'D'` | key_s2c (AES-256 key, server→client)       | 32 bytes       |
+| `'E'` | mac_c2s (HMAC-SHA2-256 key, client→server) | 32 bytes       |
+| `'F'` | mac_s2c (HMAC-SHA2-256 key, server→client) | 32 bytes       |
 
 Each value is derived as:
 
@@ -654,15 +694,15 @@ removed.
 
 #### Where ssh_wipe is used
 
-| What is wiped | When | File |
-|---|---|---|
-| `crypto_work[1536]` | After every `bn_expmod_group14()` call | `ssh_bignum.cpp` |
-| `SshDhState.y`, `.K` | After key derivation in `ssh_dh_finish()` | `ssh_dh.cpp` |
-| `SshRsaPrivKey` (stack) | Before `ssh_rsa_sign()` returns | `ssh_rsa.cpp` |
-| `SshKeyMat` | On connection close / error | `ssh_keymat.h` |
-| `SshDhState` (full struct) | On connection close / error | `ssh_keymat.h` |
-| DER private key stack copy | After `mbedtls_pk_parse_key()` in `ssh_rsa_sign()` | `ssh_rsa.cpp` |
-| Key derivation stack temporaries | After `ssh_dh_derive_keys()` | `ssh_dh.cpp` |
+| What is wiped                    | When                                               | File             |
+| -------------------------------- | -------------------------------------------------- | ---------------- |
+| `crypto_work[1536]`              | After every `bn_expmod_group14()` call             | `ssh_bignum.cpp` |
+| `SshDhState.y`, `.K`             | After key derivation in `ssh_dh_finish()`          | `ssh_dh.cpp`     |
+| `SshRsaPrivKey` (stack)          | Before `ssh_rsa_sign()` returns                    | `ssh_rsa.cpp`    |
+| `SshKeyMat`                      | On connection close / error                        | `ssh_keymat.h`   |
+| `SshDhState` (full struct)       | On connection close / error                        | `ssh_keymat.h`   |
+| DER private key stack copy       | After `mbedtls_pk_parse_key()` in `ssh_rsa_sign()` | `ssh_rsa.cpp`    |
+| Key derivation stack temporaries | After `ssh_dh_derive_keys()`                       | `ssh_dh.cpp`     |
 
 ---
 
@@ -733,16 +773,16 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 
 ## 9. Known Limitations and Non-Goals
 
-| Limitation | Impact | Workaround |
-|---|---|---|
-| No SSH rekeying | Connection closed at seq ≈ 2^32 (≈ 4 billion packets) | Reconnect |
-| No SSH user authentication | Any client that completes KEX is accepted | Add `SSH_MSG_USERAUTH_REQUEST` handler |
-| HTTP Basic Auth is not constant-time | Timing oracle risk if measurable from network | Use TLS or SSH tunnel |
-| Software AES/SHA paths are not constant-time | Test-only paths; not relevant in production | Production uses hardware AES (mbedTLS) |
-| No certificate pinning for outbound connections | N/A - this is a server library | N/A |
-| No HSTS, CSP, or other HTTP security headers | Application must add headers manually | Call `send()` with appropriate headers |
-| WebSocket Origin not validated | Cross-origin WebSocket requests accepted | Check Origin in ws_connect handler |
-| NVS not encrypted by default | RSA private key readable from flash | Enable `CONFIG_NVS_ENCRYPTION` |
+| Limitation                                      | Impact                                                | Workaround                             |
+| ----------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
+| No SSH rekeying                                 | Connection closed at seq ≈ 2^32 (≈ 4 billion packets) | Reconnect                              |
+| No SSH user authentication                      | Any client that completes KEX is accepted             | Add `SSH_MSG_USERAUTH_REQUEST` handler |
+| HTTP Basic Auth is not constant-time            | Timing oracle risk if measurable from network         | Use TLS or SSH tunnel                  |
+| Software AES/SHA paths are not constant-time    | Test-only paths; not relevant in production           | Production uses hardware AES (mbedTLS) |
+| No certificate pinning for outbound connections | N/A - this is a server library                        | N/A                                    |
+| No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call `send()` with appropriate headers |
+| WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler     |
+| NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`         |
 
 ---
 

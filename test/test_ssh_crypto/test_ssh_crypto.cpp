@@ -484,6 +484,68 @@ static void test_rsa_pkcs1_pad_structure(void)
     TEST_ASSERT_EQUAL_MEMORY(ssh_pkcs1_sha256_digestinfo, sig + 205, 19);
 }
 
+// Real RSA-2048 keypair (generated offline with `openssl genrsa 2048`).
+// Used to prove the native signing path is correct for a genuine private
+// exponent d != 1: sign(msg) then verify(msg) must round-trip.  This is a
+// KNOWN test key - NEVER use for actual SSH.
+static const char RT_N[] = "a855616bbe1ed8ff73463006a1c2e9fcb67d8b3f39e19df514bd17f444697402"
+                           "52d7e059497714b436fdabfc56a75a09ce85f9946f2896cd57e705a7d432a89c"
+                           "c2296ad8e04b12e26648279c203cbfe4e0784a0dc4be8b370abf02c126f87aa3"
+                           "7860267f4b11b49fcc00d830b45fc2fb5ded85ddcbe684201ed7c614de313ead"
+                           "2410bc0ef689cc32909159f6c29279075c4bbf43deea939b32901a93c1bcb38c"
+                           "528253951433076c1a3b9864e9d95f04c3757634a8626cae7826f501a2f20288"
+                           "6eb4b63fc27b1bff84bafb4be5b4d1bc603e1c711112dc318a5213e7c2a71d49"
+                           "6935767aec1dcd5e46f3d159f51daf8525e3b78833f561af2e34a2698539c58f";
+static const char RT_D[] = "0568149fe10fdd01f242187e5ce4b3435f90d88f98611ccce2fdb4aa2edd2ec8"
+                           "792dfb1f7c2bc999850d352991045c95530d254159dea2f0be78614b7abaa617"
+                           "511f279206aac4e74a7efea4fa705fec97ea82dcac34888492d7ffdc93e15a7e"
+                           "749eacd26f6706adeb8441ffa02ee80ff37c4996c508b4921bd259a322f26264"
+                           "204e74612f1e58b1b5c54507a01916751dfcac4ed30aade8a0e458d2d636a35a"
+                           "1f309e7bec81b348aa603b14be4c8dfc4dc2b5693fdfa1c1227ad33999c2f4d1"
+                           "5f6ecea9d3fdb3337c31a11eb498f30c2b47ad9fcff3a68240e23595e406ceb4"
+                           "ba73c3d29a97a67517ca45ae871673ca769cdf627a72ccd8b7bb3d57a195c3b5";
+
+static void test_rsa_sign_verify_roundtrip(void)
+{
+    // Install the real keypair into the native sign fixture.
+    hex_to_bytes(_test_rsa_n, RT_N, 256);
+    hex_to_bytes(_test_rsa_d, RT_D, 256);
+    _test_rsa_e[0] = 0x00;
+    _test_rsa_e[1] = 0x01;
+    _test_rsa_e[2] = 0x00;
+    _test_rsa_e[3] = 0x01; // e = 65537
+
+    const uint8_t msg[] = "round-trip with a real private exponent";
+    uint8_t sig[256];
+    int rc = ssh_rsa_sign(msg, sizeof(msg) - 1, sig);
+    TEST_ASSERT_EQUAL_INT(0, rc);
+
+    // The signature must NOT equal the padded message (d != 1 exercised).
+    uint8_t em[256];
+    {
+        uint8_t digest[SSH_SHA256_DIGEST_LEN];
+        ssh_sha256(msg, sizeof(msg) - 1, digest);
+        // Rebuild the expected EM to confirm the modexp actually transformed it.
+        em[0] = 0x00;
+        em[1] = 0x01;
+        memset(em + 2, 0xFF, 256 - 3 - SSH_PKCS1_DIGESTINFO_LEN - SSH_SHA256_DIGEST_LEN);
+        em[256 - 1 - SSH_PKCS1_DIGESTINFO_LEN - SSH_SHA256_DIGEST_LEN] = 0x00;
+        memcpy(em + 256 - SSH_PKCS1_DIGESTINFO_LEN - SSH_SHA256_DIGEST_LEN, ssh_pkcs1_sha256_digestinfo,
+               SSH_PKCS1_DIGESTINFO_LEN);
+        memcpy(em + 256 - SSH_SHA256_DIGEST_LEN, digest, SSH_SHA256_DIGEST_LEN);
+    }
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(sig, em, 256));
+
+    // Public verify of our own signature must succeed.
+    uint8_t n[256];
+    uint8_t e[4] = {0x00, 0x01, 0x00, 0x01};
+    hex_to_bytes(n, RT_N, 256);
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, msg, sizeof(msg) - 1, sig, 256));
+
+    // A tampered message must fail verification of the same signature.
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"different", 9, sig, 256));
+}
+
 static void test_rsa_encode_pubkey(void)
 {
     setup_test_rsa_key();
@@ -818,6 +880,7 @@ int main(void)
 
     // RSA PKCS#1
     RUN_TEST(test_rsa_pkcs1_pad_structure);
+    RUN_TEST(test_rsa_sign_verify_roundtrip);
     RUN_TEST(test_rsa_encode_pubkey);
     RUN_TEST(test_rsa_verify_valid_signature);
     RUN_TEST(test_rsa_verify_rejects_tampered_signature);

@@ -23,14 +23,14 @@ bash test/run_tests.sh   # writes docs/TEST_REPORT.md
 Each PlatformIO environment compiles a specific slice of the stack so that
 features (and compile-time flags) are exercised in isolation:
 
-| Environment            | Purpose                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `native`               | Transport, session, presentation, HTTP parser, WebSocket, SSE           |
-| `native_app`           | Full Layer-7 server: auth, file serving, multipart, method dispatch     |
-| `native_ssh`           | SSH crypto + protocol stack (software crypto paths, no mbedTLS)          |
-| `native_ssh_hardened`  | SSH built with `DETWS_SSH_ALLOW_PASSWORD=0` (publickey-only)             |
-| `native_ssh_conn`      | SSH wired through the real transport/session byte-pump (`DETWS_ENABLE_SSH=1`) |
-| `native_compliance`    | Strict-defaults build (`DETWS_ENFORCE_HOST_HEADER=1`) for Host/Content-Length |
+| Environment           | Purpose                                                                       |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `native`              | Transport, session, presentation, HTTP parser, WebSocket, SSE                 |
+| `native_app`          | Full Layer-7 server: auth, file serving, multipart, method dispatch           |
+| `native_ssh`          | SSH crypto + protocol stack (software crypto paths, no mbedTLS)               |
+| `native_ssh_hardened` | SSH built with `DETWS_SSH_ALLOW_PASSWORD=0` (publickey-only)                  |
+| `native_ssh_conn`     | SSH wired through the real transport/session byte-pump (`DETWS_ENABLE_SSH=1`) |
+| `native_compliance`   | Strict-defaults build (`DETWS_ENFORCE_HOST_HEADER=1`) for Host/Content-Length |
 
 The `native` and `native_app` environments build with
 `DETWS_ENFORCE_HOST_HEADER=0` because their fixtures predate the RFC 7230 §5.4
@@ -50,15 +50,15 @@ strict behavior is verified separately in `native_compliance`.
 | `test_auth`          | 13    | Base64 decode, credential matching, 401 responses                              |
 | `test_file_serving`  | 12    | Chunked send, 404 on missing file, FS stub                                     |
 | `test_multipart`     | 19    | Boundary parsing, field extraction, stress                                     |
-| `test_dispatch`      | 10    | RFC 7231 method handling: 405 + Allow header, 501, HEAD                         |
+| `test_dispatch`      | 10    | RFC 7231 method handling: 405 + Allow header, 501, HEAD                        |
 | `test_compliance`    | 12    | RFC 7230 Host enforcement + Content-Length validation (strict-defaults build)  |
-| `test_ssh_crypto`    | 36    | NIST/RFC vectors: SHA-256, HMAC, AES-CTR, DH, RSA sign/verify, packet framing   |
-| `test_ssh_transport` | 23    | Banner + KEXINIT negotiation, exchange hash, KEXDH, NEWKEYS, re-key (RFC 4253)  |
+| `test_ssh_crypto`    | 36    | NIST/RFC vectors: SHA-256, HMAC, AES-CTR, DH, RSA sign/verify, packet framing  |
+| `test_ssh_transport` | 23    | Banner + KEXINIT negotiation, exchange hash, KEXDH, NEWKEYS, re-key (RFC 4253) |
 | `test_ssh_auth`      | 12    | Service request, password + publickey auth (RFC 4252)                          |
 | `test_ssh_channel`   | 12    | Session channel open/request/data, window flow control, EOF/close (RFC 4254)   |
 | `test_ssh_server`    | 4     | End-to-end dispatcher: full handshake → authenticated channel data             |
 | `test_ssh_hardening` | 2     | Password auth refused/unadvertised when `DETWS_SSH_ALLOW_PASSWORD=0`           |
-| `test_ssh_conn`      | 2     | SSH wired through the transport: banner exchange + KEXINIT byte-pump            |
+| `test_ssh_conn`      | 2     | SSH wired through the transport: banner exchange + KEXINIT byte-pump           |
 
 **Total: 442 tests across 18 suites.**
 

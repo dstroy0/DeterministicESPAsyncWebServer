@@ -124,6 +124,7 @@
 #define SSH_DISCONNECT_PROTOCOL_ERROR 2
 #define SSH_DISCONNECT_MAC_ERROR 5
 #define SSH_DISCONNECT_TOO_MANY_CONNECTIONS 11
+#define SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE 14 // RFC 4250 §4.2.2
 
 // ---------------------------------------------------------------------------
 // Packet state per connection

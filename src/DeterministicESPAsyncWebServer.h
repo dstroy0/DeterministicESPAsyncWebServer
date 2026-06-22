@@ -152,8 +152,31 @@ enum RouteType
     ROUTE_WS, ///< WebSocket upgrade route.
 #endif
 #if DETWS_ENABLE_SSE
-    ROUTE_SSE ///< Server-Sent Events route.
+    ROUTE_SSE, ///< Server-Sent Events route.
 #endif
+#if DETWS_ENABLE_FILE_SERVING
+    ROUTE_STATIC, ///< Static-file subtree mount (serve_static()).
+#endif
+};
+
+// ---------------------------------------------------------------------------
+// begin() / listen() / restart() result codes
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Result codes for listen(), begin(), and restart().
+ *
+ * Success is a positive value (DETWS_OK). Failures are distinct negative codes
+ * so a caller can tell why startup failed. NOTE: a negative result is NOT a
+ * heap byte count - use heap_needed() / heap_available() to check heap before
+ * begin().
+ */
+enum DetWebServerResult : int32_t
+{
+    DETWS_OK = 1,                 ///< Success.
+    DETWS_ERR_NO_LISTENERS = -1,  ///< begin() called before any listen() / begin(port).
+    DETWS_ERR_LISTENER_FULL = -2, ///< listen(): listener pool (MAX_LISTENERS) is full.
+    DETWS_ERR_LISTEN_FAILED = -3  ///< A listener failed to open (bind/listen/lwIP error).
 };
 
 /**
@@ -177,6 +200,11 @@ struct Route
 
 #if DETWS_ENABLE_SSE
     SseConnectHandler sse_connect; ///< Fired when client subscribes.
+#endif
+
+#if DETWS_ENABLE_FILE_SERVING
+    fs::FS *static_fs;       ///< Filesystem for ROUTE_STATIC (else nullptr).
+    const char *static_root; ///< FS root prefix for ROUTE_STATIC (must be a persistent string).
 #endif
 
 #if DETWS_ENABLE_AUTH
@@ -211,7 +239,7 @@ struct Route
  *     server.on("/api/*", HTTP_GET, handle_api);
  *     server.set_cors("*");
  *     int32_t result = server.begin(80);
- *     if (result < 0) { } // abs(result) == heap bytes needed
+ *     if (result < 0) { } // DetWebServerResult code; check heap_needed() for heap
  * }
  *
  * void loop() {
@@ -263,6 +291,14 @@ class DetWebServer
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Send 401 Unauthorized with a `WWW-Authenticate: Basic realm="<realm>"` header.
     void send_unauth(uint8_t slot_id, const char *realm);
+#endif
+
+#if DETWS_ENABLE_FILE_SERVING
+    /// @brief Dispatch a ROUTE_STATIC match: resolve the FS path and serve it (MIME/index/gzip).
+    void serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r);
+    /// @brief Open @p fs_path and stream it as 200 with the given type and optional Content-Encoding.
+    void serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
+                             const char *content_type, const char *content_encoding);
 #endif
 
     /**
@@ -331,7 +367,7 @@ class DetWebServer
      *
      * @param port  TCP port to open.
      * @param proto Application protocol; defaults to PROTO_HTTP.
-     * @return Positive value on success; -1 if the listener pool is full.
+     * @return DETWS_OK on success; DETWS_ERR_LISTENER_FULL if the pool is full.
      */
     int32_t listen(uint16_t port, ConnProto proto = PROTO_HTTP);
 
@@ -340,11 +376,12 @@ class DetWebServer
      *
      * Resets the HTTP parser pool, calls DeterministicAsyncTCP::pool_init(),
      * then calls listener_add() for each port registered via listen().
-     * Requires at least one prior listen() call; returns -1 if no ports are
-     * registered.  For the common single-port case use begin(port, cfg) instead.
+     * Requires at least one prior listen() call.  For the common single-port
+     * case use begin(port, cfg) instead.
      *
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return Positive value on success; -1 on failure.
+     * @return DETWS_OK on success; DETWS_ERR_NO_LISTENERS if no ports were
+     *         registered; DETWS_ERR_LISTEN_FAILED if a listener could not open.
      */
     int32_t begin(const WebServerConfig *cfg = nullptr);
 
@@ -356,7 +393,7 @@ class DetWebServer
      *
      * @param port TCP port to listen on (typically 80).
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return Positive value on success; -1 on failure.
+     * @return DETWS_OK on success; a negative DetWebServerResult on failure.
      */
     int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
 
@@ -434,6 +471,30 @@ class DetWebServer
      * @param content_type MIME type string, e.g. "text/html".
      */
     void serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type);
+
+    /**
+     * @brief Mount a filesystem subtree at a URL prefix (one-call static serving).
+     *
+     * Registers a wildcard route so every request under @p url_prefix is served
+     * from @p fs_root on @p file_sys. The request path beyond the prefix is
+     * appended to @p fs_root; a request ending in `/` (or exactly the prefix)
+     * serves `index.html`. Content-Type is auto-detected from the extension
+     * (see mime_type()). If the client sends `Accept-Encoding: gzip` and a
+     * `<path>.gz` exists, the pre-compressed file is served with
+     * `Content-Encoding: gzip`. Paths containing `..` are rejected (404).
+     *
+     * Only GET and HEAD are served; other methods get 405.
+     *
+     * @code
+     * server.serve_static("/", LittleFS, "/www");      // SPA from flash
+     * server.serve_static("/assets/", LittleFS, "/assets");
+     * @endcode
+     *
+     * @param url_prefix  URL prefix to mount (with or without a trailing `*`).
+     * @param file_sys    Filesystem reference (must outlive the server).
+     * @param fs_root     Root directory on the filesystem (persistent string).
+     */
+    void serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root);
 #endif // DETWS_ENABLE_FILE_SERVING
 
     /**
@@ -502,6 +563,32 @@ class DetWebServer
      * @param code    HTTP status code.
      */
     void send_empty(uint8_t slot_id, int code);
+
+    /**
+     * @brief Send an HTTP redirect (Location header, empty body) and close.
+     *
+     * Convenience for the common `/`→`/index.html` or canonical-host case,
+     * previously hand-rolled via send_empty() plus a manual Location header.
+     *
+     * @param slot_id  Connection slot index.
+     * @param code     Redirect status: 301, 302, 303, 307, or 308. Any other
+     *                 value is treated as 302 Found.
+     * @param location Value for the `Location` response header.
+     */
+    void redirect(uint8_t slot_id, int code, const char *location);
+
+    /**
+     * @brief Guess a `Content-Type` from a path's file extension.
+     *
+     * Small static extension→type table covering the common web asset types
+     * (html, css, js, json, svg, png, jpg, gif, ico, txt, wasm, woff2, …).
+     * Case-insensitive on the extension. Falls back to
+     * `"application/octet-stream"` when the extension is unknown or absent.
+     *
+     * @param path  File path or name (e.g. "/css/site.css").
+     * @return Static content-type string (never null).
+     */
+    static const char *mime_type(const char *path);
 
 #if DETWS_ENABLE_DIAG
     /**

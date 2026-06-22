@@ -62,7 +62,7 @@ static DetWebServer *g_server;
 void setUp()
 {
     set_millis(0);
-    DeterministicAsyncTCP::init(80);
+    DeterministicAsyncTCP::pool_init();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -579,6 +579,153 @@ void test_transfer_encoding_identity_is_501()
     TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
+// ====================================================================
+// REDIRECT + MIME
+// ====================================================================
+
+void test_redirect_emits_location_and_status()
+{
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->redirect(0, 301, "/index.html");
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 301 Moved Permanently"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Location: /index.html\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Length: 0\r\n"));
+    tcp_capture_disable();
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state); // slot released
+}
+
+void test_redirect_invalid_code_defaults_to_302()
+{
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->redirect(0, 200, "/elsewhere"); // 200 is not a redirect code
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 302 Found"));
+    tcp_capture_disable();
+}
+
+void test_mime_type_detection()
+{
+    TEST_ASSERT_EQUAL_STRING("text/html", DetWebServer::mime_type("/index.html"));
+    TEST_ASSERT_EQUAL_STRING("text/css", DetWebServer::mime_type("/css/site.css"));
+    TEST_ASSERT_EQUAL_STRING("application/javascript", DetWebServer::mime_type("/app.JS")); // case-insensitive
+    TEST_ASSERT_EQUAL_STRING("application/json", DetWebServer::mime_type("/api/data.json"));
+    TEST_ASSERT_EQUAL_STRING("image/svg+xml", DetWebServer::mime_type("logo.svg"));
+    TEST_ASSERT_EQUAL_STRING("image/png", DetWebServer::mime_type("a.b.c.png")); // last extension wins
+    // Unknown / missing extension and dotfiles fall back.
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/file.unknownext"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/noext"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/dir.with.dot/file"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type(nullptr));
+}
+
+// ====================================================================
+// SERVE_STATIC (mount a filesystem subtree)
+// ====================================================================
+
+static fs::FS g_static_fs; // mock FS instance (state lives in the global registry)
+
+void test_serve_static_file_and_mime()
+{
+    fs::mock_fs_reset();
+    static const char css[] = "body{color:red}";
+    fs::mock_fs_add("/www/style.css", css);
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET /style.css HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Type: text/css"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "body{color:red}"));
+}
+
+void test_serve_static_index_fallback()
+{
+    fs::mock_fs_reset();
+    static const char html[] = "<h1>home</h1>";
+    fs::mock_fs_add("/www/index.html", html);
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET / HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Type: text/html"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "<h1>home</h1>"));
+}
+
+void test_serve_static_gzip_when_accepted()
+{
+    fs::mock_fs_reset();
+    static const char gzbody[] = "\x1f\x8b"
+                                 "FAKEGZIP"; // split avoids \x8bF hex-escape merge
+    fs::mock_fs_add("/www/app.js.gz", (const uint8_t *)gzbody, sizeof(gzbody) - 1);
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET /app.js HTTP/1.1\r\nHost: x\r\nAccept-Encoding: gzip, deflate\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Type: application/javascript")); // original type
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Encoding: gzip"));
+}
+
+void test_serve_static_no_gzip_when_not_accepted()
+{
+    fs::mock_fs_reset();
+    static const char js[] = "console.log(1)";
+    fs::mock_fs_add("/www/app.js", js);
+    fs::mock_fs_add("/www/app.js.gz", "GZIPPED");
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET /app.js HTTP/1.1\r\nHost: x\r\n\r\n"); // no Accept-Encoding
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NULL(strstr(out, "Content-Encoding: gzip"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "console.log(1)"));
+}
+
+void test_serve_static_traversal_not_leaked()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/secret", "topsecret");
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET /../secret HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NULL(strstr(out, "topsecret")); // traversal must not leak the file
+}
+
+void test_serve_static_missing_is_404()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/exists.txt", "hi");
+    g_server->serve_static("/", g_static_fs, "/www");
+    arm_slot(0, "GET /nope.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "404"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -635,6 +782,17 @@ int main()
     // Transfer-Encoding rejection
     RUN_TEST(test_transfer_encoding_chunked_is_501);
     RUN_TEST(test_transfer_encoding_identity_is_501);
+
+    RUN_TEST(test_redirect_emits_location_and_status);
+    RUN_TEST(test_redirect_invalid_code_defaults_to_302);
+    RUN_TEST(test_mime_type_detection);
+
+    RUN_TEST(test_serve_static_file_and_mime);
+    RUN_TEST(test_serve_static_index_fallback);
+    RUN_TEST(test_serve_static_gzip_when_accepted);
+    RUN_TEST(test_serve_static_no_gzip_when_not_accepted);
+    RUN_TEST(test_serve_static_traversal_not_leaked);
+    RUN_TEST(test_serve_static_missing_is_404);
 
     return UNITY_END();
 }

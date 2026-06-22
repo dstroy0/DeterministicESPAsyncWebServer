@@ -59,9 +59,20 @@ static int pkcs1v15_encode(const uint8_t digest[SSH_SHA256_DIGEST_LEN], uint8_t 
 #ifdef ARDUINO
 
 #include <Preferences.h> // ESP-IDF NVS wrapper
+#include <esp_random.h>  // esp_fill_random() for the RSA blinding RNG
 #include <mbedtls/md.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/rsa.h>
+
+// RNG callback for mbedtls private-key operations. mbedtls v3 requires a real
+// f_rng for RSA signing (blinding); v2 uses it harmlessly. Backed by the ESP32
+// hardware RNG.
+static int ssh_mbedtls_rng(void *ctx, unsigned char *buf, size_t len)
+{
+    (void)ctx;
+    esp_fill_random(buf, len);
+    return 0;
+}
 
 // Load the NVS DER blob into a stack buffer, parse it with mbedtls, and
 // extract n and e into ssh_host_pubkey.
@@ -158,9 +169,22 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
         return -1;
     }
 
-    // 2. Sign: mbedtls handles SHA-256 hashing + PKCS#1 v1.5 pad internally.
+    // 2. Hash the message, then sign the digest. mbedtls_pk_sign() does NOT hash
+    //    its input - it PKCS#1-pads the supplied digest - so for rsa-sha2-256
+    //    (RFC 8332) we must pass SHA-256(msg), not msg itself. (Passing msg here
+    //    would sign DigestInfo||msg and be rejected by any conforming peer.)
+    uint8_t digest[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(msg, msg_len, digest);
+
     size_t sig_len = 0;
-    rc = mbedtls_pk_sign(&pk, MBEDTLS_MD_SHA256, msg, msg_len, sig, SSH_RSA_SIG_BYTES, &sig_len, nullptr, nullptr);
+#if MBEDTLS_VERSION_MAJOR >= 3
+    rc = mbedtls_pk_sign(&pk, MBEDTLS_MD_SHA256, digest, SSH_SHA256_DIGEST_LEN, sig, SSH_RSA_SIG_BYTES, &sig_len,
+                         ssh_mbedtls_rng, nullptr);
+#else
+    rc =
+        mbedtls_pk_sign(&pk, MBEDTLS_MD_SHA256, digest, SSH_SHA256_DIGEST_LEN, sig, &sig_len, ssh_mbedtls_rng, nullptr);
+#endif
+    ssh_wipe(digest, sizeof(digest));
     mbedtls_pk_free(&pk); // frees all MPI limb memory (private key)
 
     return (rc == 0 && sig_len == SSH_RSA_SIG_BYTES) ? 0 : -1;
@@ -173,7 +197,11 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
         return -1;
 
     mbedtls_rsa_context rsa;
+#if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_rsa_init(&rsa);
+#else
+    mbedtls_rsa_init(&rsa, MBEDTLS_RSA_PKCS_V15, 0);
+#endif
 
     mbedtls_mpi N, E;
     mbedtls_mpi_init(&N);
@@ -189,7 +217,12 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     if (rc == 0)
     {
         ssh_sha256(msg, msg_len, digest);
+#if MBEDTLS_VERSION_MAJOR >= 3
         rc = mbedtls_rsa_pkcs1_verify(&rsa, MBEDTLS_MD_SHA256, SSH_SHA256_DIGEST_LEN, digest, sig);
+#else
+        rc = mbedtls_rsa_pkcs1_verify(&rsa, nullptr, nullptr, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256,
+                                      SSH_SHA256_DIGEST_LEN, digest, sig);
+#endif
     }
 
     mbedtls_mpi_free(&N);
@@ -219,139 +252,12 @@ int ssh_rsa_load_pubkey(void)
     return 0;
 }
 
-int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYTES])
-{
-    // SECURITY: private key lives only in this stack frame.
-    // Volatile wipe at end ensures the compiler cannot elide the zero-out.
-    SshRsaPrivKey priv;
-
-    // Load from test fixture arrays.
-    memcpy(priv.n, _test_rsa_n, SSH_RSA_KEY_BYTES);
-    memcpy(priv.d, _test_rsa_d, SSH_RSA_KEY_BYTES);
-    memcpy(priv.e_bytes, _test_rsa_e, 4);
-
-    // 1. SHA-256 digest of the message.
-    uint8_t digest[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, msg_len, digest);
-
-    // 2. PKCS#1 v1.5 encode: 0x00 0x01 0xFF... 0x00 DigestInfo digest
-    uint8_t em[SSH_RSA_KEY_BYTES];
-    pkcs1v15_encode(digest, em);
-    ssh_wipe(digest, sizeof(digest));
-
-    // 3. RSA private-key operation: s = em^d mod n.
-    //    Portable square-and-multiply; test-only, NOT constant-time.
-    //    Test fixtures must use d=1 (sig = em mod n = em for em < n).
-    SshBigNum n_bn, d_bn, m_bn, s_bn;
-    bn_from_bytes(&n_bn, priv.n, SSH_RSA_KEY_BYTES);
-    bn_from_bytes(&d_bn, priv.d, SSH_RSA_KEY_BYTES);
-    bn_from_bytes(&m_bn, em, SSH_RSA_KEY_BYTES);
-    ssh_wipe(em, sizeof(em));
-
-    // Square-and-multiply mod n.
-    // Uses uint64_t for intermediate products of 32-bit limbs.
-    memset(s_bn.d, 0, sizeof(s_bn.d));
-    s_bn.d[0] = 1; // s = 1
-
-    // Iterating from MSB to LSB of d.
-    for (int limb = SSH_BN_LIMBS - 1; limb >= 0; limb--)
-    {
-        for (int bit = 31; bit >= 0; bit--)
-        {
-            // Square: s = s*s mod n
-            // (Uses crypto_work as scratch via the existing bn_monpro machinery)
-            // For simplicity in test: use naive O(n^2) reduction.
-            // This is 64-limb multiply with 64-limb modular reduction.
-            uint64_t prod[128] = {0};
-            for (int a = 0; a < SSH_BN_LIMBS; a++)
-                for (int b2 = 0; b2 < SSH_BN_LIMBS; b2++)
-                {
-                    uint64_t carry = (uint64_t)s_bn.d[a] * s_bn.d[b2];
-                    int idx = a + b2;
-                    prod[idx] += carry;
-                    if (prod[idx] < carry)
-                        prod[idx + 1]++;
-                }
-            // Normalize carries
-            for (int k = 0; k < 127; k++)
-            {
-                prod[k + 1] += prod[k] >> 32;
-                prod[k] &= 0xFFFFFFFFu;
-            }
-            // Reduce mod n (multi-precision division by repeated subtraction
-            // is too slow; use shift-based schoolbook reduction).
-            // For test purposes, truncate to 64 limbs (mod 2^2048), then
-            // reduce mod n via repeated subtraction of n<<k.
-            SshBigNum sq;
-            for (int k = 0; k < SSH_BN_LIMBS; k++)
-                sq.d[k] = (uint32_t)prod[k];
-            // Reduce mod n using bn_cmp + subtract loop.
-            while (bn_cmp(&sq, &n_bn) >= 0)
-            {
-                int64_t borrow = 0;
-                for (int k = 0; k < SSH_BN_LIMBS; k++)
-                {
-                    int64_t diff = (int64_t)sq.d[k] - (int64_t)n_bn.d[k] + borrow;
-                    sq.d[k] = (uint32_t)(diff & 0xFFFFFFFFLL);
-                    borrow = diff >> 32;
-                }
-            }
-            s_bn = sq;
-
-            // Conditional multiply: if bit set, s = s * m mod n
-            if ((d_bn.d[limb] >> bit) & 1u)
-            {
-                memset(prod, 0, sizeof(prod));
-                for (int a = 0; a < SSH_BN_LIMBS; a++)
-                    for (int b2 = 0; b2 < SSH_BN_LIMBS; b2++)
-                    {
-                        uint64_t carry = (uint64_t)s_bn.d[a] * m_bn.d[b2];
-                        int idx = a + b2;
-                        prod[idx] += carry;
-                        if (prod[idx] < carry)
-                            prod[idx + 1]++;
-                    }
-                for (int k = 0; k < 127; k++)
-                {
-                    prod[k + 1] += prod[k] >> 32;
-                    prod[k] &= 0xFFFFFFFFu;
-                }
-                SshBigNum mul;
-                for (int k = 0; k < SSH_BN_LIMBS; k++)
-                    mul.d[k] = (uint32_t)prod[k];
-                while (bn_cmp(&mul, &n_bn) >= 0)
-                {
-                    int64_t borrow = 0;
-                    for (int k = 0; k < SSH_BN_LIMBS; k++)
-                    {
-                        int64_t diff = (int64_t)mul.d[k] - (int64_t)n_bn.d[k] + borrow;
-                        mul.d[k] = (uint32_t)(diff & 0xFFFFFFFFLL);
-                        borrow = diff >> 32;
-                    }
-                }
-                s_bn = mul;
-            }
-        }
-    }
-
-    // Write result as big-endian signature.
-    bn_to_bytes(sig, &s_bn);
-
-    // Wipe all sensitive stack material.
-    ssh_wipe(&priv, sizeof(priv));
-    ssh_wipe(&n_bn, sizeof(n_bn));
-    ssh_wipe(&d_bn, sizeof(d_bn));
-    ssh_wipe(&m_bn, sizeof(m_bn));
-    ssh_wipe(&s_bn, sizeof(s_bn));
-
-    return 0;
-}
-
 // ---------------------------------------------------------------------------
-// Native RSA verification - correct full-width modular exponentiation.
-// Only the public operation s^e mod n is needed (e is small, ~17 bits), so a
-// straightforward schoolbook multiply + bit-serial reduction is fast enough
-// and, unlike the d=1 signing stub, mathematically complete.
+// Native full-width modular arithmetic.
+// These helpers back both the private signing operation (s = em^d mod n) and
+// the public verify operation (s^e mod n).  Schoolbook multiply + bit-serial
+// reduction: correct and full-width (no truncation), but NOT constant-time -
+// the native path is test-only (ESP32/mbedTLS is the real one).
 // ---------------------------------------------------------------------------
 
 // Full 128-limb product of two 64-limb little-endian integers.
@@ -463,6 +369,97 @@ static void bn_modexp_pub(const SshBigNum *base, uint32_t e, const SshBigNum *n,
         }
     }
     *out = r;
+}
+
+// out = base^exp mod n, exp a full-width 2048-bit private exponent.
+// Left-to-right square-and-multiply over every bit of exp (MSB to LSB,
+// skipping leading zero limbs/bits).  Same helpers as the public path, so the
+// reduction is full-width and correct for any d (not just d=1).
+static void bn_modexp_full(const SshBigNum *base, const SshBigNum *exp, const SshBigNum *n, SshBigNum *out)
+{
+    uint32_t prod[2 * SSH_BN_LIMBS];
+
+    // Reduce the base mod n up front.
+    SshBigNum b;
+    for (int k = 0; k < SSH_BN_LIMBS; k++)
+    {
+        prod[k] = base->d[k];
+        prod[k + SSH_BN_LIMBS] = 0;
+    }
+    bn_reduce_full(prod, n->d, b.d);
+
+    SshBigNum r;
+    memset(r.d, 0, sizeof(r.d));
+    r.d[0] = 1; // r = 1
+
+    // Locate the most-significant set bit of exp.
+    int top_limb = SSH_BN_LIMBS - 1;
+    while (top_limb >= 0 && exp->d[top_limb] == 0)
+        top_limb--;
+    if (top_limb < 0)
+    {
+        *out = r; // exp == 0 -> result is 1
+        return;
+    }
+    int top_bit = 31;
+    while (top_bit >= 0 && !((exp->d[top_limb] >> top_bit) & 1u))
+        top_bit--;
+
+    for (int limb = top_limb; limb >= 0; limb--)
+    {
+        int start = (limb == top_limb) ? top_bit : 31;
+        for (int bit = start; bit >= 0; bit--)
+        {
+            bn_mul_full(r.d, r.d, prod); // r = r^2 mod n
+            bn_reduce_full(prod, n->d, r.d);
+            if ((exp->d[limb] >> bit) & 1u)
+            {
+                bn_mul_full(r.d, b.d, prod); // r = r*base mod n
+                bn_reduce_full(prod, n->d, r.d);
+            }
+        }
+    }
+    *out = r;
+}
+
+int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYTES])
+{
+    // SECURITY: private key lives only in this stack frame.
+    SshRsaPrivKey priv;
+    memcpy(priv.n, _test_rsa_n, SSH_RSA_KEY_BYTES);
+    memcpy(priv.d, _test_rsa_d, SSH_RSA_KEY_BYTES);
+    memcpy(priv.e_bytes, _test_rsa_e, 4);
+
+    // 1. SHA-256 digest of the message.
+    uint8_t digest[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(msg, msg_len, digest);
+
+    // 2. PKCS#1 v1.5 encode: 0x00 0x01 0xFF... 0x00 DigestInfo digest
+    uint8_t em[SSH_RSA_KEY_BYTES];
+    pkcs1v15_encode(digest, em);
+    ssh_wipe(digest, sizeof(digest));
+
+    // 3. RSA private-key operation: s = em^d mod n (full-width, correct for
+    //    any private exponent - no longer a d=1 stub).
+    SshBigNum n_bn, d_bn, m_bn, s_bn;
+    bn_from_bytes(&n_bn, priv.n, SSH_RSA_KEY_BYTES);
+    bn_from_bytes(&d_bn, priv.d, SSH_RSA_KEY_BYTES);
+    bn_from_bytes(&m_bn, em, SSH_RSA_KEY_BYTES);
+    ssh_wipe(em, sizeof(em));
+
+    bn_modexp_full(&m_bn, &d_bn, &n_bn, &s_bn);
+
+    // Write result as big-endian signature.
+    bn_to_bytes(sig, &s_bn);
+
+    // Wipe all sensitive stack material.
+    ssh_wipe(&priv, sizeof(priv));
+    ssh_wipe(&n_bn, sizeof(n_bn));
+    ssh_wipe(&d_bn, sizeof(d_bn));
+    ssh_wipe(&m_bn, sizeof(m_bn));
+    ssh_wipe(&s_bn, sizeof(s_bn));
+
+    return 0;
 }
 
 int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4], const uint8_t *msg, size_t msg_len,

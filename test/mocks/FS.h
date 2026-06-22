@@ -95,17 +95,84 @@ class File
 };
 
 // ---------------------------------------------------------------------------
+// Path-aware registry (for serve_static / gzip tests)
+//
+// Legacy single-file API (mock_fs_set / open path-agnostic) is preserved for
+// existing tests. When at least one mock_fs_add(path,...) entry is registered,
+// open()/exists() become path-aware and the legacy single file is ignored.
+// ---------------------------------------------------------------------------
+
+struct MockFsEntry
+{
+    const char *path;
+    const uint8_t *data;
+    size_t size;
+};
+
+inline MockFsEntry *_mock_entries()
+{
+    static MockFsEntry e[16];
+    return e;
+}
+inline int &_mock_entry_count()
+{
+    static int n = 0;
+    return n;
+}
+
+inline void mock_fs_add(const char *path, const uint8_t *data, size_t size)
+{
+    int &n = _mock_entry_count();
+    if (n < 16)
+    {
+        _mock_entries()[n].path = path;
+        _mock_entries()[n].data = data;
+        _mock_entries()[n].size = size;
+        n++;
+    }
+}
+inline void mock_fs_add(const char *path, const char *text)
+{
+    mock_fs_add(path, reinterpret_cast<const uint8_t *>(text), strlen(text));
+}
+inline void mock_fs_reset()
+{
+    _mock_entry_count() = 0;
+    mock_fs_clear();
+}
+inline const MockFsEntry *_mock_find(const char *path)
+{
+    for (int i = 0; i < _mock_entry_count(); i++)
+        if (strcmp(_mock_entries()[i].path, path) == 0)
+            return &_mock_entries()[i];
+    return nullptr;
+}
+
+// ---------------------------------------------------------------------------
 // FS
 // ---------------------------------------------------------------------------
 
 class FS
 {
   public:
-    File open(const char * /*path*/, const char * /*mode*/ = "r")
+    File open(const char *path, const char * /*mode*/ = "r")
     {
+        if (_mock_entry_count() > 0)
+        {
+            const MockFsEntry *e = _mock_find(path);
+            return e ? File(e->data, e->size) : File();
+        }
+        // Legacy path-agnostic single-file behavior.
         if (_mock_valid() && _mock_data())
             return File(_mock_data(), _mock_size());
         return File(); // invalid - signals file-not-found
+    }
+
+    bool exists(const char *path)
+    {
+        if (_mock_entry_count() > 0)
+            return _mock_find(path) != nullptr;
+        return _mock_valid(); // legacy: any path "exists" if a file is set
     }
 };
 

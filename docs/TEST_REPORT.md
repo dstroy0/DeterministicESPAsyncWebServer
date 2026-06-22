@@ -8,26 +8,26 @@
 
 ## Summary
 
-| Suite | Environment | Tests | Status | Duration |
-|---|---|---|---|---|
-| `test_http_parser` | `native` | 80 | ✅ | 00:00:04.084 |
-| `test_presentation` | `native` | 63 | ✅ | 00:00:02.798 |
-| `test_session` | `native` | 19 | ✅ | 00:00:02.766 |
-| `test_sse` | `native` | 37 | ✅ | 00:00:02.855 |
-| `test_transport` | `native` | 25 | ✅ | 00:00:02.785 |
-| `test_websocket` | `native` | 61 | ✅ | 00:00:02.934 |
-| `test_ssh_auth` | `native_ssh` | 12 | ✅ | 00:00:03.023 |
-| `test_ssh_channel` | `native_ssh` | 12 | ✅ | 00:00:02.968 |
-| `test_ssh_crypto` | `native_ssh` | 36 | ✅ | 00:00:03.480 |
-| `test_ssh_server` | `native_ssh` | 4 | ✅ | 00:00:03.042 |
-| `test_ssh_transport` | `native_ssh` | 23 | ✅ | 00:00:03.468 |
-| `test_ssh_hardening` | `native_ssh_hardened` | 2 | ✅ | 00:00:02.757 |
-| `test_ssh_conn` | `native_ssh_conn` | 2 | ✅ | 00:00:03.451 |
-| `test_auth` | `native_app` | 13 | ✅ | 00:00:02.978 |
-| `test_dispatch` | `native_app` | 10 | ✅ | 00:00:02.815 |
-| `test_file_serving` | `native_app` | 12 | ✅ | 00:00:02.810 |
-| `test_multipart` | `native_app` | 19 | ✅ | 00:00:02.849 |
-| `test_compliance` | `native_compliance` | 12 | ✅ | 00:00:01.964 |
+| Suite                | Environment           | Tests | Status | Duration     |
+| -------------------- | --------------------- | ----- | ------ | ------------ |
+| `test_http_parser`   | `native`              | 80    | ✅      | 00:00:04.084 |
+| `test_presentation`  | `native`              | 63    | ✅      | 00:00:02.798 |
+| `test_session`       | `native`              | 19    | ✅      | 00:00:02.766 |
+| `test_sse`           | `native`              | 37    | ✅      | 00:00:02.855 |
+| `test_transport`     | `native`              | 25    | ✅      | 00:00:02.785 |
+| `test_websocket`     | `native`              | 61    | ✅      | 00:00:02.934 |
+| `test_ssh_auth`      | `native_ssh`          | 12    | ✅      | 00:00:03.023 |
+| `test_ssh_channel`   | `native_ssh`          | 12    | ✅      | 00:00:02.968 |
+| `test_ssh_crypto`    | `native_ssh`          | 36    | ✅      | 00:00:03.480 |
+| `test_ssh_server`    | `native_ssh`          | 4     | ✅      | 00:00:03.042 |
+| `test_ssh_transport` | `native_ssh`          | 23    | ✅      | 00:00:03.468 |
+| `test_ssh_hardening` | `native_ssh_hardened` | 2     | ✅      | 00:00:02.757 |
+| `test_ssh_conn`      | `native_ssh_conn`     | 2     | ✅      | 00:00:03.451 |
+| `test_auth`          | `native_app`          | 13    | ✅      | 00:00:02.978 |
+| `test_dispatch`      | `native_app`          | 10    | ✅      | 00:00:02.815 |
+| `test_file_serving`  | `native_app`          | 12    | ✅      | 00:00:02.810 |
+| `test_multipart`     | `native_app`          | 19    | ✅      | 00:00:02.849 |
+| `test_compliance`    | `native_compliance`   | 12    | ✅      | 00:00:01.964 |
 
 ---
 
@@ -35,88 +35,88 @@
 
 *Comprehensive unit tests for the standalone HTTP/1.1 parser.*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_reset_sets_parse_method_state` | ✅ | Reset sets parse method state |
-| 2 | `test_reset_preserves_slot_id` | ✅ | Reset preserves slot id |
-| 3 | `test_reset_clears_method` | ✅ | Reset clears method |
-| 4 | `test_reset_clears_path` | ✅ | Reset clears path |
-| 5 | `test_reset_clears_header_count` | ✅ | Reset clears header count |
-| 6 | `test_reset_clears_body` | ✅ | Reset clears body |
-| 7 | `test_reset_clears_query_count` | ✅ | Reset clears query count |
-| 8 | `test_feed_after_complete_does_not_change_state` | ✅ | Feed after complete does not change state |
-| 9 | `test_feed_after_error_does_not_change_state` | ✅ | Feed after error does not change state |
-| 10 | `test_feed_after_entity_too_large_does_not_change_state` | ✅ | Feed after entity too large does not change state |
-| 11 | `test_method_get` | ✅ | Method get |
-| 12 | `test_method_post` | ✅ | Method post |
-| 13 | `test_method_put` | ✅ | Method put |
-| 14 | `test_method_delete` | ✅ | Method delete |
-| 15 | `test_method_patch` | ✅ | Method patch |
-| 16 | `test_method_head` | ✅ | Method head |
-| 17 | `test_method_options` | ✅ | Method options |
-| 18 | `test_method_overflow_is_error` | ✅ | More than 7 chars (sizeof method - 1) before a space → PARSE_ERROR |
-| 19 | `test_path_root` | ✅ | Path root |
-| 20 | `test_path_segments` | ✅ | Path segments |
-| 21 | `test_path_without_query` | ✅ | Path without query |
-| 22 | `test_path_overflow_is_414` | ✅ | Build a path longer than MAX_PATH_LEN |
-| 23 | `test_single_query_param` | ✅ | Single query param |
-| 24 | `test_two_query_params` | ✅ | Two query params |
-| 25 | `test_query_key_not_found_returns_null` | ✅ | Query key not found returns null |
-| 26 | `test_query_empty_value` | ✅ | Query empty value |
-| 27 | `test_single_header_stored` | ✅ | Single header stored |
-| 28 | `test_header_lookup_case_insensitive` | ✅ | Header lookup case insensitive |
-| 29 | `test_header_leading_space_stripped` | ✅ | Header leading space stripped |
-| 30 | `test_content_length_header_parsed` | ✅ | Content length header parsed |
-| 31 | `test_content_length_in_headers_array` | ✅ | Content length in headers array |
-| 32 | `test_multiple_headers_stored` | ✅ | Multiple headers stored |
-| 33 | `test_missing_header_returns_null` | ✅ | Missing header returns null |
-| 34 | `test_get_no_body_completes` | ✅ | Get no body completes |
-| 35 | `test_post_with_body` | ✅ | Post with body |
-| 36 | `test_put_with_body` | ✅ | Put with body |
-| 37 | `test_body_starting_with_newline` | ✅ | Body starting with newline |
-| 38 | `test_post_content_length_zero` | ✅ | Post content length zero |
-| 39 | `test_body_exactly_at_buffer_limit` | ✅ | Body of exactly BODY_BUF_SIZE bytes - should succeed |
-| 40 | `test_body_null_terminated_after_complete` | ✅ | Body null terminated after complete |
-| 41 | `test_body_one_over_limit_is_413` | ✅ | Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE |
-| 42 | `test_body_far_over_limit_is_413` | ✅ | Body far over limit is 413 |
-| 43 | `test_413_no_body_bytes_fed` | ✅ | Even though we detected 413, no body bytes should have been stored |
-| 44 | `test_413_header_still_stored` | ✅ | Headers before the blank line must be accessible even when 413 |
-| 45 | `test_body_exactly_at_limit_is_not_413` | ✅ | BODY_BUF_SIZE is the max that fits - should NOT trigger 413 |
-| 46 | `test_path_overflow_stops_feeding` | ✅ | Bytes fed after URI_TOO_LONG are ignored - state must not change |
-| 47 | `test_414_path_filled_to_capacity` | ✅ | Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected |
-| 48 | `test_method_nul_byte_is_error` | ✅ | Method nul byte is error |
-| 49 | `test_method_control_char_is_error` | ✅ | Method control char is error |
-| 50 | `test_method_del_byte_is_error` | ✅ | Method del byte is error |
-| 51 | `test_method_non_tchar_symbol_is_error` | ✅ | '(' is VCHAR but not tchar |
-| 52 | `test_method_tchar_symbols_accepted` | ✅ | '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230 |
-| 53 | `test_path_nul_byte_is_error` | ✅ | Path nul byte is error |
-| 54 | `test_path_control_char_is_error` | ✅ | Path control char is error |
-| 55 | `test_path_del_byte_is_error` | ✅ | Path del byte is error |
-| 56 | `test_query_nul_byte_is_error` | ✅ | Query nul byte is error |
-| 57 | `test_query_control_char_is_error` | ✅ | Query control char is error |
-| 58 | `test_header_key_space_is_error` | ✅ | Space in a field-name is not a valid tchar |
-| 59 | `test_header_key_nul_byte_is_error` | ✅ | Header key nul byte is error |
-| 60 | `test_header_key_control_char_is_error` | ✅ | Header key control char is error |
-| 61 | `test_header_key_mid_cr_is_error` | ✅ | CR in the middle of a key name must be PARSE_ERROR, not blank-line detection |
-| 62 | `test_header_key_colon_at_start_skips_header` | ✅ | Empty key name (colon immediately after CRLF): transition to val with empty key |
-| 63 | `test_header_val_nul_byte_is_error` | ✅ | Header val nul byte is error |
-| 64 | `test_header_val_control_char_is_error` | ✅ | Header val control char is error |
-| 65 | `test_header_val_del_byte_is_error` | ✅ | Header val del byte is error |
-| 66 | `test_header_val_htab_mid_value_allowed` | ✅ | HTAB is valid mid-value (RFC 7230 §3.2) |
-| 67 | `test_header_val_leading_htab_stripped` | ✅ | Leading HTAB (OWS) is stripped just like leading SP |
-| 68 | `test_header_val_obs_text_allowed` | ✅ | obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6) |
-| 69 | `test_version_http11_recognized` | ✅ | Version http11 recognized |
-| 70 | `test_version_http10_recognized` | ✅ | Version http10 recognized |
-| 71 | `test_version_unknown_is_http_unknown` | ✅ | Version unknown is http unknown |
-| 72 | `test_version_reset_to_unknown` | ✅ | Version reset to unknown |
-| 73 | `test_bad_expect_lf_is_error` | ✅ | CRLF in version line replaced by CR + X (no LF) |
-| 74 | `test_blank_line_non_lf_is_error` | ✅ | Header block ends with CR + non-LF in the blank line |
-| 75 | `test_slots_are_independent` | ✅ | Slots are independent |
-| 76 | `test_incremental_byte_by_byte` | ✅ | Incremental byte by byte |
-| 77 | `test_incremental_two_chunks` | ✅ | Incremental two chunks |
-| 78 | `stress_many_requests_same_slot` | ✅ | Stress - Many requests same slot |
-| 79 | `stress_max_headers` | ✅ | Build a request with MAX_HEADERS header lines |
-| 80 | `stress_max_query_params` | ✅ | Build a query string with MAX_QUERY_PARAMS parameters |
+| #   | Test                                                     | Status | Description                                                                     |
+| --- | -------------------------------------------------------- | ------ | ------------------------------------------------------------------------------- |
+| 1   | `test_reset_sets_parse_method_state`                     | ✅      | Reset sets parse method state                                                   |
+| 2   | `test_reset_preserves_slot_id`                           | ✅      | Reset preserves slot id                                                         |
+| 3   | `test_reset_clears_method`                               | ✅      | Reset clears method                                                             |
+| 4   | `test_reset_clears_path`                                 | ✅      | Reset clears path                                                               |
+| 5   | `test_reset_clears_header_count`                         | ✅      | Reset clears header count                                                       |
+| 6   | `test_reset_clears_body`                                 | ✅      | Reset clears body                                                               |
+| 7   | `test_reset_clears_query_count`                          | ✅      | Reset clears query count                                                        |
+| 8   | `test_feed_after_complete_does_not_change_state`         | ✅      | Feed after complete does not change state                                       |
+| 9   | `test_feed_after_error_does_not_change_state`            | ✅      | Feed after error does not change state                                          |
+| 10  | `test_feed_after_entity_too_large_does_not_change_state` | ✅      | Feed after entity too large does not change state                               |
+| 11  | `test_method_get`                                        | ✅      | Method get                                                                      |
+| 12  | `test_method_post`                                       | ✅      | Method post                                                                     |
+| 13  | `test_method_put`                                        | ✅      | Method put                                                                      |
+| 14  | `test_method_delete`                                     | ✅      | Method delete                                                                   |
+| 15  | `test_method_patch`                                      | ✅      | Method patch                                                                    |
+| 16  | `test_method_head`                                       | ✅      | Method head                                                                     |
+| 17  | `test_method_options`                                    | ✅      | Method options                                                                  |
+| 18  | `test_method_overflow_is_error`                          | ✅      | More than 7 chars (sizeof method - 1) before a space → PARSE_ERROR              |
+| 19  | `test_path_root`                                         | ✅      | Path root                                                                       |
+| 20  | `test_path_segments`                                     | ✅      | Path segments                                                                   |
+| 21  | `test_path_without_query`                                | ✅      | Path without query                                                              |
+| 22  | `test_path_overflow_is_414`                              | ✅      | Build a path longer than MAX_PATH_LEN                                           |
+| 23  | `test_single_query_param`                                | ✅      | Single query param                                                              |
+| 24  | `test_two_query_params`                                  | ✅      | Two query params                                                                |
+| 25  | `test_query_key_not_found_returns_null`                  | ✅      | Query key not found returns null                                                |
+| 26  | `test_query_empty_value`                                 | ✅      | Query empty value                                                               |
+| 27  | `test_single_header_stored`                              | ✅      | Single header stored                                                            |
+| 28  | `test_header_lookup_case_insensitive`                    | ✅      | Header lookup case insensitive                                                  |
+| 29  | `test_header_leading_space_stripped`                     | ✅      | Header leading space stripped                                                   |
+| 30  | `test_content_length_header_parsed`                      | ✅      | Content length header parsed                                                    |
+| 31  | `test_content_length_in_headers_array`                   | ✅      | Content length in headers array                                                 |
+| 32  | `test_multiple_headers_stored`                           | ✅      | Multiple headers stored                                                         |
+| 33  | `test_missing_header_returns_null`                       | ✅      | Missing header returns null                                                     |
+| 34  | `test_get_no_body_completes`                             | ✅      | Get no body completes                                                           |
+| 35  | `test_post_with_body`                                    | ✅      | Post with body                                                                  |
+| 36  | `test_put_with_body`                                     | ✅      | Put with body                                                                   |
+| 37  | `test_body_starting_with_newline`                        | ✅      | Body starting with newline                                                      |
+| 38  | `test_post_content_length_zero`                          | ✅      | Post content length zero                                                        |
+| 39  | `test_body_exactly_at_buffer_limit`                      | ✅      | Body of exactly BODY_BUF_SIZE bytes - should succeed                            |
+| 40  | `test_body_null_terminated_after_complete`               | ✅      | Body null terminated after complete                                             |
+| 41  | `test_body_one_over_limit_is_413`                        | ✅      | Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE                    |
+| 42  | `test_body_far_over_limit_is_413`                        | ✅      | Body far over limit is 413                                                      |
+| 43  | `test_413_no_body_bytes_fed`                             | ✅      | Even though we detected 413, no body bytes should have been stored              |
+| 44  | `test_413_header_still_stored`                           | ✅      | Headers before the blank line must be accessible even when 413                  |
+| 45  | `test_body_exactly_at_limit_is_not_413`                  | ✅      | BODY_BUF_SIZE is the max that fits - should NOT trigger 413                     |
+| 46  | `test_path_overflow_stops_feeding`                       | ✅      | Bytes fed after URI_TOO_LONG are ignored - state must not change                |
+| 47  | `test_414_path_filled_to_capacity`                       | ✅      | Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected                |
+| 48  | `test_method_nul_byte_is_error`                          | ✅      | Method nul byte is error                                                        |
+| 49  | `test_method_control_char_is_error`                      | ✅      | Method control char is error                                                    |
+| 50  | `test_method_del_byte_is_error`                          | ✅      | Method del byte is error                                                        |
+| 51  | `test_method_non_tchar_symbol_is_error`                  | ✅      | '(' is VCHAR but not tchar                                                      |
+| 52  | `test_method_tchar_symbols_accepted`                     | ✅      | '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230        |
+| 53  | `test_path_nul_byte_is_error`                            | ✅      | Path nul byte is error                                                          |
+| 54  | `test_path_control_char_is_error`                        | ✅      | Path control char is error                                                      |
+| 55  | `test_path_del_byte_is_error`                            | ✅      | Path del byte is error                                                          |
+| 56  | `test_query_nul_byte_is_error`                           | ✅      | Query nul byte is error                                                         |
+| 57  | `test_query_control_char_is_error`                       | ✅      | Query control char is error                                                     |
+| 58  | `test_header_key_space_is_error`                         | ✅      | Space in a field-name is not a valid tchar                                      |
+| 59  | `test_header_key_nul_byte_is_error`                      | ✅      | Header key nul byte is error                                                    |
+| 60  | `test_header_key_control_char_is_error`                  | ✅      | Header key control char is error                                                |
+| 61  | `test_header_key_mid_cr_is_error`                        | ✅      | CR in the middle of a key name must be PARSE_ERROR, not blank-line detection    |
+| 62  | `test_header_key_colon_at_start_skips_header`            | ✅      | Empty key name (colon immediately after CRLF): transition to val with empty key |
+| 63  | `test_header_val_nul_byte_is_error`                      | ✅      | Header val nul byte is error                                                    |
+| 64  | `test_header_val_control_char_is_error`                  | ✅      | Header val control char is error                                                |
+| 65  | `test_header_val_del_byte_is_error`                      | ✅      | Header val del byte is error                                                    |
+| 66  | `test_header_val_htab_mid_value_allowed`                 | ✅      | HTAB is valid mid-value (RFC 7230 §3.2)                                         |
+| 67  | `test_header_val_leading_htab_stripped`                  | ✅      | Leading HTAB (OWS) is stripped just like leading SP                             |
+| 68  | `test_header_val_obs_text_allowed`                       | ✅      | obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6) |
+| 69  | `test_version_http11_recognized`                         | ✅      | Version http11 recognized                                                       |
+| 70  | `test_version_http10_recognized`                         | ✅      | Version http10 recognized                                                       |
+| 71  | `test_version_unknown_is_http_unknown`                   | ✅      | Version unknown is http unknown                                                 |
+| 72  | `test_version_reset_to_unknown`                          | ✅      | Version reset to unknown                                                        |
+| 73  | `test_bad_expect_lf_is_error`                            | ✅      | CRLF in version line replaced by CR + X (no LF)                                 |
+| 74  | `test_blank_line_non_lf_is_error`                        | ✅      | Header block ends with CR + non-LF in the blank line                            |
+| 75  | `test_slots_are_independent`                             | ✅      | Slots are independent                                                           |
+| 76  | `test_incremental_byte_by_byte`                          | ✅      | Incremental byte by byte                                                        |
+| 77  | `test_incremental_two_chunks`                            | ✅      | Incremental two chunks                                                          |
+| 78  | `stress_many_requests_same_slot`                         | ✅      | Stress - Many requests same slot                                                |
+| 79  | `stress_max_headers`                                     | ✅      | Build a request with MAX_HEADERS header lines                                   |
+| 80  | `stress_max_query_params`                                | ✅      | Build a query string with MAX_QUERY_PARAMS parameters                           |
 
 ---
 
@@ -124,71 +124,71 @@
 
 *Unit, stress, and race-condition tests for Layer 6 (Presentation).*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_fn_reset_sets_parse_state_to_method` | ✅ | Fn reset sets parse state to method |
-| 2 | `test_fn_reset_sets_slot_id` | ✅ | Fn reset sets slot id |
-| 3 | `test_fn_reset_clears_method` | ✅ | Fn reset clears method |
-| 4 | `test_fn_reset_clears_path_and_idx` | ✅ | Fn reset clears path and idx |
-| 5 | `test_fn_reset_clears_query_raw_and_params` | ✅ | Fn reset clears query raw and params |
-| 6 | `test_fn_reset_clears_all_header_slots` | ✅ | Fn reset clears all header slots |
-| 7 | `test_fn_reset_clears_body_fields` | ✅ | Fn reset clears body fields |
-| 8 | `test_fn_reset_out_of_range_is_nop` | ✅ | Fn reset out of range is nop |
-| 9 | `test_fn_reset_is_idempotent` | ✅ | Fn reset is idempotent |
-| 10 | `test_fn_get_header_null_when_no_headers` | ✅ | setUp already reset all slots - header_count is 0 |
-| 11 | `test_fn_get_header_finds_single_header` | ✅ | Fn get header finds single header |
-| 12 | `test_fn_get_header_finds_first_of_many` | ✅ | Fn get header finds first of many |
-| 13 | `test_fn_get_header_finds_middle_of_many` | ✅ | Fn get header finds middle of many |
-| 14 | `test_fn_get_header_finds_last_of_many` | ✅ | Fn get header finds last of many |
-| 15 | `test_fn_get_header_case_insensitive_lowercase` | ✅ | Fn get header case insensitive lowercase |
-| 16 | `test_fn_get_header_case_insensitive_uppercase` | ✅ | Fn get header case insensitive uppercase |
-| 17 | `test_fn_get_header_returns_null_for_absent_key` | ✅ | Fn get header returns null for absent key |
-| 18 | `test_fn_get_header_does_not_bleed_across_slots` | ✅ | Fn get header does not bleed across slots |
-| 19 | `test_fn_get_query_null_when_no_params` | ✅ | Fn get query null when no params |
-| 20 | `test_fn_get_query_finds_single_param` | ✅ | Fn get query finds single param |
-| 21 | `test_fn_get_query_finds_first_param` | ✅ | Fn get query finds first param |
-| 22 | `test_fn_get_query_finds_middle_param` | ✅ | Fn get query finds middle param |
-| 23 | `test_fn_get_query_finds_last_param` | ✅ | Fn get query finds last param |
-| 24 | `test_fn_get_query_returns_null_for_absent_key` | ✅ | Fn get query returns null for absent key |
-| 25 | `test_fn_get_query_empty_value` | ✅ | Fn get query empty value |
-| 26 | `test_fn_get_query_does_not_bleed_across_slots` | ✅ | Fn get query does not bleed across slots |
-| 27 | `test_get_parses_complete` | ✅ | Get parses complete |
-| 28 | `test_post_body_stored` | ✅ | Post body stored |
-| 29 | `test_put_parses_complete` | ✅ | Put parses complete |
-| 30 | `test_delete_parses_complete` | ✅ | Delete parses complete |
-| 31 | `test_patch_parses_complete` | ✅ | Patch parses complete |
-| 32 | `test_head_parses_complete` | ✅ | Head parses complete |
-| 33 | `test_query_single_param` | ✅ | Query single param |
-| 34 | `test_query_multiple_params` | ✅ | Query multiple params |
-| 35 | `test_body_null_terminated` | ✅ | Body null terminated |
-| 36 | `test_body_over_buf_size_is_413` | ✅ | Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read. |
-| 37 | `test_overflow_method_sets_error` | ✅ | Overflow method sets error |
-| 38 | `test_overflow_path_sets_414` | ✅ | Overflow path sets 414 |
-| 39 | `test_bad_lf_after_cr_sets_error` | ✅ | '\x00' would terminate the C-string in push(), so use a visible non-LF byte. |
-| 40 | `test_headers_beyond_max_are_dropped` | ✅ | Headers beyond max are dropped |
-| 41 | `test_query_params_beyond_max_are_dropped` | ✅ | Query params beyond max are dropped |
-| 42 | `test_incremental_two_pushes_completes` | ✅ | Incremental two pushes completes |
-| 43 | `test_body_starting_with_newline_stored` | ✅ | Body starting with newline stored |
-| 44 | `test_put_body_stored` | ✅ | Put body stored |
-| 45 | `test_content_length_header_stored_in_headers_array` | ✅ | Content length header stored in headers array |
-| 46 | `stress_parse_reset_100_cycles` | ✅ | Stress - Parse reset 100 cycles |
-| 47 | `stress_all_slots_parse_simultaneously` | ✅ | Stress - All slots parse simultaneously |
-| 48 | `stress_method_at_max_7_chars_no_error` | ✅ | Stress - Method at max 7 chars no error |
-| 49 | `stress_path_at_exact_limit_no_error` | ✅ | Stress - Path at exact limit no error |
-| 50 | `stress_body_exactly_buf_size_all_stored` | ✅ | Stress - Body exactly buf size all stored |
-| 51 | `stress_exactly_max_headers_all_stored` | ✅ | Stress - Exactly max headers all stored |
-| 52 | `stress_exactly_max_query_params_all_stored` | ✅ | Stress - Exactly max query params all stored |
-| 53 | `stress_incremental_byte_by_byte_no_error` | ✅ | Stress - Incremental byte by byte no error |
-| 54 | `stress_sequential_requests_no_state_leak` | ✅ | Stress - Sequential requests no state leak |
-| 55 | `race_interleaved_producer_consumer_ring_buffer` | ✅ | Producer writes first 100 bytes |
-| 56 | `race_ring_buffer_full_prevents_write` | ✅ | Race - Ring buffer full prevents write |
-| 57 | `race_aba_slot_reuse_fresh_timestamp` | ✅ | Race - Aba slot reuse fresh timestamp |
-| 58 | `race_double_free_is_nop` | ✅ | Race - Double free is nop |
-| 59 | `race_concurrent_slot_parse_isolation` | ✅ | Slot 0: push a full request |
-| 60 | `race_reset_during_parse_header_val` | ✅ | Race - Reset during parse header val |
-| 61 | `race_reset_during_parse_query` | ✅ | Race - Reset during parse query |
-| 62 | `race_reset_during_parse_body` | ✅ | Race - Reset during parse body |
-| 63 | `race_parse_after_complete_is_nop` | ✅ | Race - Parse after complete is nop |
+| #   | Test                                                 | Status | Description                                                                      |
+| --- | ---------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| 1   | `test_fn_reset_sets_parse_state_to_method`           | ✅      | Fn reset sets parse state to method                                              |
+| 2   | `test_fn_reset_sets_slot_id`                         | ✅      | Fn reset sets slot id                                                            |
+| 3   | `test_fn_reset_clears_method`                        | ✅      | Fn reset clears method                                                           |
+| 4   | `test_fn_reset_clears_path_and_idx`                  | ✅      | Fn reset clears path and idx                                                     |
+| 5   | `test_fn_reset_clears_query_raw_and_params`          | ✅      | Fn reset clears query raw and params                                             |
+| 6   | `test_fn_reset_clears_all_header_slots`              | ✅      | Fn reset clears all header slots                                                 |
+| 7   | `test_fn_reset_clears_body_fields`                   | ✅      | Fn reset clears body fields                                                      |
+| 8   | `test_fn_reset_out_of_range_is_nop`                  | ✅      | Fn reset out of range is nop                                                     |
+| 9   | `test_fn_reset_is_idempotent`                        | ✅      | Fn reset is idempotent                                                           |
+| 10  | `test_fn_get_header_null_when_no_headers`            | ✅      | setUp already reset all slots - header_count is 0                                |
+| 11  | `test_fn_get_header_finds_single_header`             | ✅      | Fn get header finds single header                                                |
+| 12  | `test_fn_get_header_finds_first_of_many`             | ✅      | Fn get header finds first of many                                                |
+| 13  | `test_fn_get_header_finds_middle_of_many`            | ✅      | Fn get header finds middle of many                                               |
+| 14  | `test_fn_get_header_finds_last_of_many`              | ✅      | Fn get header finds last of many                                                 |
+| 15  | `test_fn_get_header_case_insensitive_lowercase`      | ✅      | Fn get header case insensitive lowercase                                         |
+| 16  | `test_fn_get_header_case_insensitive_uppercase`      | ✅      | Fn get header case insensitive uppercase                                         |
+| 17  | `test_fn_get_header_returns_null_for_absent_key`     | ✅      | Fn get header returns null for absent key                                        |
+| 18  | `test_fn_get_header_does_not_bleed_across_slots`     | ✅      | Fn get header does not bleed across slots                                        |
+| 19  | `test_fn_get_query_null_when_no_params`              | ✅      | Fn get query null when no params                                                 |
+| 20  | `test_fn_get_query_finds_single_param`               | ✅      | Fn get query finds single param                                                  |
+| 21  | `test_fn_get_query_finds_first_param`                | ✅      | Fn get query finds first param                                                   |
+| 22  | `test_fn_get_query_finds_middle_param`               | ✅      | Fn get query finds middle param                                                  |
+| 23  | `test_fn_get_query_finds_last_param`                 | ✅      | Fn get query finds last param                                                    |
+| 24  | `test_fn_get_query_returns_null_for_absent_key`      | ✅      | Fn get query returns null for absent key                                         |
+| 25  | `test_fn_get_query_empty_value`                      | ✅      | Fn get query empty value                                                         |
+| 26  | `test_fn_get_query_does_not_bleed_across_slots`      | ✅      | Fn get query does not bleed across slots                                         |
+| 27  | `test_get_parses_complete`                           | ✅      | Get parses complete                                                              |
+| 28  | `test_post_body_stored`                              | ✅      | Post body stored                                                                 |
+| 29  | `test_put_parses_complete`                           | ✅      | Put parses complete                                                              |
+| 30  | `test_delete_parses_complete`                        | ✅      | Delete parses complete                                                           |
+| 31  | `test_patch_parses_complete`                         | ✅      | Patch parses complete                                                            |
+| 32  | `test_head_parses_complete`                          | ✅      | Head parses complete                                                             |
+| 33  | `test_query_single_param`                            | ✅      | Query single param                                                               |
+| 34  | `test_query_multiple_params`                         | ✅      | Query multiple params                                                            |
+| 35  | `test_body_null_terminated`                          | ✅      | Body null terminated                                                             |
+| 36  | `test_body_over_buf_size_is_413`                     | ✅      | Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read. |
+| 37  | `test_overflow_method_sets_error`                    | ✅      | Overflow method sets error                                                       |
+| 38  | `test_overflow_path_sets_414`                        | ✅      | Overflow path sets 414                                                           |
+| 39  | `test_bad_lf_after_cr_sets_error`                    | ✅      | '\x00' would terminate the C-string in push(), so use a visible non-LF byte.     |
+| 40  | `test_headers_beyond_max_are_dropped`                | ✅      | Headers beyond max are dropped                                                   |
+| 41  | `test_query_params_beyond_max_are_dropped`           | ✅      | Query params beyond max are dropped                                              |
+| 42  | `test_incremental_two_pushes_completes`              | ✅      | Incremental two pushes completes                                                 |
+| 43  | `test_body_starting_with_newline_stored`             | ✅      | Body starting with newline stored                                                |
+| 44  | `test_put_body_stored`                               | ✅      | Put body stored                                                                  |
+| 45  | `test_content_length_header_stored_in_headers_array` | ✅      | Content length header stored in headers array                                    |
+| 46  | `stress_parse_reset_100_cycles`                      | ✅      | Stress - Parse reset 100 cycles                                                  |
+| 47  | `stress_all_slots_parse_simultaneously`              | ✅      | Stress - All slots parse simultaneously                                          |
+| 48  | `stress_method_at_max_7_chars_no_error`              | ✅      | Stress - Method at max 7 chars no error                                          |
+| 49  | `stress_path_at_exact_limit_no_error`                | ✅      | Stress - Path at exact limit no error                                            |
+| 50  | `stress_body_exactly_buf_size_all_stored`            | ✅      | Stress - Body exactly buf size all stored                                        |
+| 51  | `stress_exactly_max_headers_all_stored`              | ✅      | Stress - Exactly max headers all stored                                          |
+| 52  | `stress_exactly_max_query_params_all_stored`         | ✅      | Stress - Exactly max query params all stored                                     |
+| 53  | `stress_incremental_byte_by_byte_no_error`           | ✅      | Stress - Incremental byte by byte no error                                       |
+| 54  | `stress_sequential_requests_no_state_leak`           | ✅      | Stress - Sequential requests no state leak                                       |
+| 55  | `race_interleaved_producer_consumer_ring_buffer`     | ✅      | Producer writes first 100 bytes                                                  |
+| 56  | `race_ring_buffer_full_prevents_write`               | ✅      | Race - Ring buffer full prevents write                                           |
+| 57  | `race_aba_slot_reuse_fresh_timestamp`                | ✅      | Race - Aba slot reuse fresh timestamp                                            |
+| 58  | `race_double_free_is_nop`                            | ✅      | Race - Double free is nop                                                        |
+| 59  | `race_concurrent_slot_parse_isolation`               | ✅      | Slot 0: push a full request                                                      |
+| 60  | `race_reset_during_parse_header_val`                 | ✅      | Race - Reset during parse header val                                             |
+| 61  | `race_reset_during_parse_query`                      | ✅      | Race - Reset during parse query                                                  |
+| 62  | `race_reset_during_parse_body`                       | ✅      | Race - Reset during parse body                                                   |
+| 63  | `race_parse_after_complete_is_nop`                   | ✅      | Race - Parse after complete is nop                                               |
 
 ---
 
@@ -196,27 +196,27 @@
 
 *Unit, stress, and race-condition tests for Layer 5 (Session).*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_empty_queue_does_not_crash` | ✅ | Empty queue does not crash |
-| 2 | `test_pool_initializes_to_parse_method` | ✅ | Pool initializes to parse method |
-| 3 | `test_reset_clears_mid_parse_state` | ✅ | Reset clears mid parse state |
-| 4 | `test_tick_fires_check_timeouts_stale_slot_freed` | ✅ | Tick fires check timeouts stale slot freed |
-| 5 | `test_tick_does_not_free_fresh_connection` | ✅ | Tick does not free fresh connection |
-| 6 | `test_fn_tick_timeout_before_event_drain_ordering` | ✅ | Fn tick timeout before event drain ordering |
-| 7 | `test_fn_tick_only_active_slots_expire` | ✅ | Fn tick only active slots expire |
-| 8 | `stress_1000_idle_ticks_stable` | ✅ | Stress - 1000 idle ticks stable |
-| 9 | `stress_timeout_all_slots_10_cycles` | ✅ | Stress - Timeout all slots 10 cycles |
-| 10 | `stress_mixed_fresh_stale_slots_many_ticks` | ✅ | Stress - Mixed fresh stale slots many ticks |
-| 11 | `test_evt_connect_calls_http_reset` | ✅ | Evt connect calls http reset |
-| 12 | `test_evt_disconnect_calls_http_reset` | ✅ | Evt disconnect calls http reset |
-| 13 | `test_evt_error_calls_http_reset` | ✅ | Evt error calls http reset |
-| 14 | `test_evt_data_calls_http_parse` | ✅ | Evt data calls http parse |
-| 15 | `test_multiple_events_drained_in_one_tick` | ✅ | Slot 0: dirty state → EVT_CONNECT → reset |
-| 16 | `race_external_free_between_ticks` | ✅ | First tick: slot expires inside check_timeouts |
-| 17 | `race_activity_update_saves_slot_from_timeout` | ✅ | Race - Activity update saves slot from timeout |
-| 18 | `race_all_expire_then_idle_tick` | ✅ | Race - All expire then idle tick |
-| 19 | `race_millis_wraparound_no_spurious_timeout` | ✅ | last_activity close to UINT32_MAX, now just past wrap |
+| #   | Test                                               | Status | Description                                           |
+| --- | -------------------------------------------------- | ------ | ----------------------------------------------------- |
+| 1   | `test_empty_queue_does_not_crash`                  | ✅      | Empty queue does not crash                            |
+| 2   | `test_pool_initializes_to_parse_method`            | ✅      | Pool initializes to parse method                      |
+| 3   | `test_reset_clears_mid_parse_state`                | ✅      | Reset clears mid parse state                          |
+| 4   | `test_tick_fires_check_timeouts_stale_slot_freed`  | ✅      | Tick fires check timeouts stale slot freed            |
+| 5   | `test_tick_does_not_free_fresh_connection`         | ✅      | Tick does not free fresh connection                   |
+| 6   | `test_fn_tick_timeout_before_event_drain_ordering` | ✅      | Fn tick timeout before event drain ordering           |
+| 7   | `test_fn_tick_only_active_slots_expire`            | ✅      | Fn tick only active slots expire                      |
+| 8   | `stress_1000_idle_ticks_stable`                    | ✅      | Stress - 1000 idle ticks stable                       |
+| 9   | `stress_timeout_all_slots_10_cycles`               | ✅      | Stress - Timeout all slots 10 cycles                  |
+| 10  | `stress_mixed_fresh_stale_slots_many_ticks`        | ✅      | Stress - Mixed fresh stale slots many ticks           |
+| 11  | `test_evt_connect_calls_http_reset`                | ✅      | Evt connect calls http reset                          |
+| 12  | `test_evt_disconnect_calls_http_reset`             | ✅      | Evt disconnect calls http reset                       |
+| 13  | `test_evt_error_calls_http_reset`                  | ✅      | Evt error calls http reset                            |
+| 14  | `test_evt_data_calls_http_parse`                   | ✅      | Evt data calls http parse                             |
+| 15  | `test_multiple_events_drained_in_one_tick`         | ✅      | Slot 0: dirty state → EVT_CONNECT → reset             |
+| 16  | `race_external_free_between_ticks`                 | ✅      | First tick: slot expires inside check_timeouts        |
+| 17  | `race_activity_update_saves_slot_from_timeout`     | ✅      | Race - Activity update saves slot from timeout        |
+| 18  | `race_all_expire_then_idle_tick`                   | ✅      | Race - All expire then idle tick                      |
+| 19  | `race_millis_wraparound_no_spurious_timeout`       | ✅      | last_activity close to UINT32_MAX, now just past wrap |
 
 ---
 
@@ -224,45 +224,45 @@
 
 *Unit and stress tests for the Server-Sent Events connection pool (sse.h/cpp).*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_sse_pool_size` | ✅ | Sse pool size |
-| 2 | `test_sse_ids_match_indices_after_init` | ✅ | Sse ids match indices after init |
-| 3 | `test_sse_all_inactive_after_init` | ✅ | Sse all inactive after init |
-| 4 | `test_sse_path_empty_after_init` | ✅ | Sse path empty after init |
-| 5 | `test_sse_alloc_returns_non_null` | ✅ | Sse alloc returns non null |
-| 6 | `test_sse_alloc_sets_active` | ✅ | Sse alloc sets active |
-| 7 | `test_sse_alloc_sets_slot_id` | ✅ | Sse alloc sets slot id |
-| 8 | `test_sse_alloc_stores_path` | ✅ | Sse alloc stores path |
-| 9 | `test_sse_alloc_stores_different_paths_per_slot` | ✅ | Sse alloc stores different paths per slot |
-| 10 | `test_sse_alloc_path_truncated_to_max` | ✅ | Build a path longer than MAX_PATH_LEN |
-| 11 | `test_sse_alloc_pool_full_returns_null` | ✅ | Sse alloc pool full returns null |
-| 12 | `test_sse_alloc_sse_id_is_pool_index` | ✅ | First free slot is 0 → sse_id should be 0 |
-| 13 | `test_sse_find_returns_correct_conn` | ✅ | Sse find returns correct conn |
-| 14 | `test_sse_find_returns_null_when_empty` | ✅ | Sse find returns null when empty |
-| 15 | `test_sse_find_returns_null_for_different_slot` | ✅ | Sse find returns null for different slot |
-| 16 | `test_sse_find_after_both_slots_allocated` | ✅ | Sse find after both slots allocated |
-| 17 | `test_sse_find_checks_slot_id_not_sse_id` | ✅ | sse_pool[0] → slot 3; sse_find(3) must return it, not sse_find(0) |
-| 18 | `test_sse_free_deactivates_slot` | ✅ | Sse free deactivates slot |
-| 19 | `test_sse_free_restores_sse_id` | ✅ | Sse free restores sse id |
-| 20 | `test_sse_free_makes_slot_findable_as_null` | ✅ | Sse free makes slot findable as null |
-| 21 | `test_sse_free_clears_path` | ✅ | Sse free clears path |
-| 22 | `test_sse_free_nop_on_unallocated` | ✅ | Sse free nop on unallocated |
-| 23 | `test_sse_alloc_after_free_succeeds` | ✅ | Sse alloc after free succeeds |
-| 24 | `test_sse_free_only_frees_matching_slot` | ✅ | Sse free only frees matching slot |
-| 25 | `test_sse_write_null_data_returns_false` | ✅ | Sse write null data returns false |
-| 26 | `test_sse_write_returns_false_when_conn_not_active` | ✅ | Sse write returns false when conn not active |
-| 27 | `test_sse_write_returns_false_when_pcb_null` | ✅ | Sse write returns false when pcb null |
-| 28 | `test_sse_write_data_only_returns_true` | ✅ | Sse write data only returns true |
-| 29 | `test_sse_write_with_event_returns_true` | ✅ | Sse write with event returns true |
-| 30 | `test_sse_write_with_id_returns_true` | ✅ | Sse write with id returns true |
-| 31 | `test_sse_write_with_all_fields_returns_true` | ✅ | Sse write with all fields returns true |
-| 32 | `test_sse_write_does_not_affect_other_slots` | ✅ | Write to slot 0 -- slot 1 state must be unchanged |
-| 33 | `stress_sse_alloc_free_100_cycles` | ✅ | Stress - Sse alloc free 100 cycles |
-| 34 | `stress_sse_alloc_free_both_slots_alternating` | ✅ | Stress - Sse alloc free both slots alternating |
-| 35 | `stress_sse_write_100_calls` | ✅ | Stress - Sse write 100 calls |
-| 36 | `stress_sse_find_with_full_pool` | ✅ | Stress - Sse find with full pool |
-| 37 | `stress_sse_write_slot_isolation` | ✅ | Stress - Sse write slot isolation |
+| #   | Test                                                | Status | Description                                                       |
+| --- | --------------------------------------------------- | ------ | ----------------------------------------------------------------- |
+| 1   | `test_sse_pool_size`                                | ✅      | Sse pool size                                                     |
+| 2   | `test_sse_ids_match_indices_after_init`             | ✅      | Sse ids match indices after init                                  |
+| 3   | `test_sse_all_inactive_after_init`                  | ✅      | Sse all inactive after init                                       |
+| 4   | `test_sse_path_empty_after_init`                    | ✅      | Sse path empty after init                                         |
+| 5   | `test_sse_alloc_returns_non_null`                   | ✅      | Sse alloc returns non null                                        |
+| 6   | `test_sse_alloc_sets_active`                        | ✅      | Sse alloc sets active                                             |
+| 7   | `test_sse_alloc_sets_slot_id`                       | ✅      | Sse alloc sets slot id                                            |
+| 8   | `test_sse_alloc_stores_path`                        | ✅      | Sse alloc stores path                                             |
+| 9   | `test_sse_alloc_stores_different_paths_per_slot`    | ✅      | Sse alloc stores different paths per slot                         |
+| 10  | `test_sse_alloc_path_truncated_to_max`              | ✅      | Build a path longer than MAX_PATH_LEN                             |
+| 11  | `test_sse_alloc_pool_full_returns_null`             | ✅      | Sse alloc pool full returns null                                  |
+| 12  | `test_sse_alloc_sse_id_is_pool_index`               | ✅      | First free slot is 0 → sse_id should be 0                         |
+| 13  | `test_sse_find_returns_correct_conn`                | ✅      | Sse find returns correct conn                                     |
+| 14  | `test_sse_find_returns_null_when_empty`             | ✅      | Sse find returns null when empty                                  |
+| 15  | `test_sse_find_returns_null_for_different_slot`     | ✅      | Sse find returns null for different slot                          |
+| 16  | `test_sse_find_after_both_slots_allocated`          | ✅      | Sse find after both slots allocated                               |
+| 17  | `test_sse_find_checks_slot_id_not_sse_id`           | ✅      | sse_pool[0] → slot 3; sse_find(3) must return it, not sse_find(0) |
+| 18  | `test_sse_free_deactivates_slot`                    | ✅      | Sse free deactivates slot                                         |
+| 19  | `test_sse_free_restores_sse_id`                     | ✅      | Sse free restores sse id                                          |
+| 20  | `test_sse_free_makes_slot_findable_as_null`         | ✅      | Sse free makes slot findable as null                              |
+| 21  | `test_sse_free_clears_path`                         | ✅      | Sse free clears path                                              |
+| 22  | `test_sse_free_nop_on_unallocated`                  | ✅      | Sse free nop on unallocated                                       |
+| 23  | `test_sse_alloc_after_free_succeeds`                | ✅      | Sse alloc after free succeeds                                     |
+| 24  | `test_sse_free_only_frees_matching_slot`            | ✅      | Sse free only frees matching slot                                 |
+| 25  | `test_sse_write_null_data_returns_false`            | ✅      | Sse write null data returns false                                 |
+| 26  | `test_sse_write_returns_false_when_conn_not_active` | ✅      | Sse write returns false when conn not active                      |
+| 27  | `test_sse_write_returns_false_when_pcb_null`        | ✅      | Sse write returns false when pcb null                             |
+| 28  | `test_sse_write_data_only_returns_true`             | ✅      | Sse write data only returns true                                  |
+| 29  | `test_sse_write_with_event_returns_true`            | ✅      | Sse write with event returns true                                 |
+| 30  | `test_sse_write_with_id_returns_true`               | ✅      | Sse write with id returns true                                    |
+| 31  | `test_sse_write_with_all_fields_returns_true`       | ✅      | Sse write with all fields returns true                            |
+| 32  | `test_sse_write_does_not_affect_other_slots`        | ✅      | Write to slot 0 -- slot 1 state must be unchanged                 |
+| 33  | `stress_sse_alloc_free_100_cycles`                  | ✅      | Stress - Sse alloc free 100 cycles                                |
+| 34  | `stress_sse_alloc_free_both_slots_alternating`      | ✅      | Stress - Sse alloc free both slots alternating                    |
+| 35  | `stress_sse_write_100_calls`                        | ✅      | Stress - Sse write 100 calls                                      |
+| 36  | `stress_sse_find_with_full_pool`                    | ✅      | Stress - Sse find with full pool                                  |
+| 37  | `stress_sse_write_slot_isolation`                   | ✅      | Stress - Sse write slot isolation                                 |
 
 ---
 
@@ -270,33 +270,33 @@
 
 *Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_pool_capacity_is_four` | ✅ | Pool capacity is four |
-| 2 | `test_rx_buffer_size_is_one_kb` | ✅ | Rx buffer size is one kb |
-| 3 | `test_timeout_constant_is_5000ms` | ✅ | Timeout constant is 5000ms |
-| 4 | `test_all_slots_free_after_init` | ✅ | All slots free after init |
-| 5 | `test_all_pcbs_null_after_init` | ✅ | All pcbs null after init |
-| 6 | `test_all_ring_buffers_empty_after_init` | ✅ | All ring buffers empty after init |
-| 7 | `test_slot_ids_match_indices` | ✅ | Slot ids match indices |
-| 8 | `test_ring_empty_when_head_equals_tail` | ✅ | Ring empty when head equals tail |
-| 9 | `test_ring_wrap_at_boundary` | ✅ | Ring wrap at boundary |
-| 10 | `test_ring_full_sentinel_one_slot_reserved` | ✅ | Ring full sentinel one slot reserved |
-| 11 | `test_ring_can_store_size_minus_one_bytes` | ✅ | Ring can store size minus one bytes |
-| 12 | `test_event_types_are_distinct` | ✅ | Event types are distinct |
-| 13 | `test_timeout_does_not_fire_on_free_slot` | ✅ | Timeout does not fire on free slot |
-| 14 | `test_timeout_does_not_fire_before_deadline` | ✅ | Timeout does not fire before deadline |
-| 15 | `test_timeout_fires_at_deadline` | ✅ | Timeout fires at deadline |
-| 16 | `test_timeout_fires_only_on_stale_slots` | ✅ | Timeout fires only on stale slots |
-| 17 | `test_init_succeeds_on_native` | ✅ | Init succeeds on native |
-| 18 | `test_all_last_activity_ms_zero_after_init` | ✅ | All last activity ms zero after init |
-| 19 | `test_queue_not_null_after_init` | ✅ | Queue not null after init |
-| 20 | `stress_ring_buffer_fill_drain_integrity` | ✅ | Write known pattern |
-| 21 | `stress_ring_buffer_multi_cycle_no_corruption` | ✅ | Stress - Ring buffer multi cycle no corruption |
-| 22 | `stress_all_slots_timeout_simultaneously` | ✅ | Stress - All slots timeout simultaneously |
-| 23 | `stress_timeout_arm_recover_cycle` | ✅ | Stress - Timeout arm recover cycle |
-| 24 | `stress_check_timeouts_high_call_rate` | ✅ | Stress - Check timeouts high call rate |
-| 25 | `stress_ring_buffer_byte_by_byte_fill_and_drain` | ✅ | Stress - Ring buffer byte by byte fill and drain |
+| #   | Test                                             | Status | Description                                      |
+| --- | ------------------------------------------------ | ------ | ------------------------------------------------ |
+| 1   | `test_pool_capacity_is_four`                     | ✅      | Pool capacity is four                            |
+| 2   | `test_rx_buffer_size_is_one_kb`                  | ✅      | Rx buffer size is one kb                         |
+| 3   | `test_timeout_constant_is_5000ms`                | ✅      | Timeout constant is 5000ms                       |
+| 4   | `test_all_slots_free_after_init`                 | ✅      | All slots free after init                        |
+| 5   | `test_all_pcbs_null_after_init`                  | ✅      | All pcbs null after init                         |
+| 6   | `test_all_ring_buffers_empty_after_init`         | ✅      | All ring buffers empty after init                |
+| 7   | `test_slot_ids_match_indices`                    | ✅      | Slot ids match indices                           |
+| 8   | `test_ring_empty_when_head_equals_tail`          | ✅      | Ring empty when head equals tail                 |
+| 9   | `test_ring_wrap_at_boundary`                     | ✅      | Ring wrap at boundary                            |
+| 10  | `test_ring_full_sentinel_one_slot_reserved`      | ✅      | Ring full sentinel one slot reserved             |
+| 11  | `test_ring_can_store_size_minus_one_bytes`       | ✅      | Ring can store size minus one bytes              |
+| 12  | `test_event_types_are_distinct`                  | ✅      | Event types are distinct                         |
+| 13  | `test_timeout_does_not_fire_on_free_slot`        | ✅      | Timeout does not fire on free slot               |
+| 14  | `test_timeout_does_not_fire_before_deadline`     | ✅      | Timeout does not fire before deadline            |
+| 15  | `test_timeout_fires_at_deadline`                 | ✅      | Timeout fires at deadline                        |
+| 16  | `test_timeout_fires_only_on_stale_slots`         | ✅      | Timeout fires only on stale slots                |
+| 17  | `test_init_succeeds_on_native`                   | ✅      | Init succeeds on native                          |
+| 18  | `test_all_last_activity_ms_zero_after_init`      | ✅      | All last activity ms zero after init             |
+| 19  | `test_queue_not_null_after_init`                 | ✅      | Queue not null after init                        |
+| 20  | `stress_ring_buffer_fill_drain_integrity`        | ✅      | Write known pattern                              |
+| 21  | `stress_ring_buffer_multi_cycle_no_corruption`   | ✅      | Stress - Ring buffer multi cycle no corruption   |
+| 22  | `stress_all_slots_timeout_simultaneously`        | ✅      | Stress - All slots timeout simultaneously        |
+| 23  | `stress_timeout_arm_recover_cycle`               | ✅      | Stress - Timeout arm recover cycle               |
+| 24  | `stress_check_timeouts_high_call_rate`           | ✅      | Stress - Check timeouts high call rate           |
+| 25  | `stress_ring_buffer_byte_by_byte_fill_and_drain` | ✅      | Stress - Ring buffer byte by byte fill and drain |
 
 ---
 
@@ -304,69 +304,69 @@
 
 *Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser.*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_sha1_empty_string` | ✅ | Sha1 empty string |
-| 2 | `test_sha1_abc` | ✅ | Sha1 abc |
-| 3 | `test_sha1_rfc6455_handshake_key` | ✅ | Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ== |
-| 4 | `test_sha1_different_inputs_different_digests` | ✅ | Sha1 different inputs different digests |
-| 5 | `test_base64_encode_one_byte` | ✅ | Base64 encode one byte |
-| 6 | `test_base64_encode_two_bytes` | ✅ | Base64 encode two bytes |
-| 7 | `test_base64_encode_three_bytes` | ✅ | Base64 encode three bytes |
-| 8 | `test_base64_encode_ws_accept_key` | ✅ | Base64 encode ws accept key |
-| 9 | `test_base64_decode_one_byte` | ✅ | Base64 decode one byte |
-| 10 | `test_base64_decode_two_bytes` | ✅ | Base64 decode two bytes |
-| 11 | `test_base64_decode_three_bytes` | ✅ | Base64 decode three bytes |
-| 12 | `test_base64_decode_ws_accept_key` | ✅ | Base64 decode ws accept key |
-| 13 | `test_base64_round_trip` | ✅ | Base64 round trip |
-| 14 | `test_ws_pool_size` | ✅ | Ws pool size |
-| 15 | `test_ws_ids_match_indices_after_init` | ✅ | Ws ids match indices after init |
-| 16 | `test_ws_all_inactive_after_init` | ✅ | Ws all inactive after init |
-| 17 | `test_ws_alloc_returns_non_null` | ✅ | Ws alloc returns non null |
-| 18 | `test_ws_alloc_sets_active` | ✅ | Ws alloc sets active |
-| 19 | `test_ws_alloc_sets_slot_id` | ✅ | Ws alloc sets slot id |
-| 20 | `test_ws_alloc_sets_parse_state_header1` | ✅ | Ws alloc sets parse state header1 |
-| 21 | `test_ws_alloc_pool_full_returns_null` | ✅ | Ws alloc pool full returns null |
-| 22 | `test_ws_find_returns_correct_conn` | ✅ | Ws find returns correct conn |
-| 23 | `test_ws_find_returns_null_when_empty` | ✅ | Ws find returns null when empty |
-| 24 | `test_ws_find_returns_null_for_different_slot` | ✅ | Ws find returns null for different slot |
-| 25 | `test_ws_find_after_both_slots_allocated` | ✅ | Ws find after both slots allocated |
-| 26 | `test_ws_free_deactivates_slot` | ✅ | Ws free deactivates slot |
-| 27 | `test_ws_free_restores_ws_id` | ✅ | Ws free restores ws id |
-| 28 | `test_ws_free_makes_slot_findable_as_null` | ✅ | Ws free makes slot findable as null |
-| 29 | `test_ws_free_nop_on_unallocated` | ✅ | Ws free nop on unallocated |
-| 30 | `test_ws_alloc_after_free_succeeds` | ✅ | Ws alloc after free succeeds |
-| 31 | `test_ws_parse_text_frame_sets_ready` | ✅ | Ws parse text frame sets ready |
-| 32 | `test_ws_parse_payload_stored_correctly` | ✅ | Ws parse payload stored correctly |
-| 33 | `test_ws_parse_binary_frame_sets_ready` | ✅ | Ws parse binary frame sets ready |
-| 34 | `test_ws_parse_zero_length_unmasked_frame` | ✅ | Unmasked zero-length frame: 0x81 0x00. |
-| 35 | `test_ws_parse_zero_length_masked_frame` | ✅ | Masked zero-length text frame: FIN|TEXT, MASK|0, 4-byte mask key. |
-| 36 | `test_ws_reject_unmasked_data_frame` | ✅ | FIN|TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking. |
-| 37 | `test_ws_reject_reserved_opcode` | ✅ | Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection. |
-| 38 | `test_ws_reject_fragmented_control_frame` | ✅ | PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5). |
-| 39 | `test_ws_reject_oversized_control_frame` | ✅ | PING (masked) with payload length 126 - control frames MUST be <= 125 |
-| 40 | `test_ws_parse_16bit_length_frame` | ✅ | Build a 130-byte payload (> 125, requires 16-bit length field) |
-| 41 | `test_ws_parse_rsv1_set_closes_protocol` | ✅ | FIN=1, RSV1=0x40, TEXT: byte0 = 0x80|0x40|0x01 = 0xC1 |
-| 42 | `test_ws_parse_rsv2_set_closes_protocol` | ✅ | FIN=1, RSV2=0x20, TEXT: byte0 = 0x80|0x20|0x01 = 0xA1 |
-| 43 | `test_ws_parse_rsv3_set_closes_protocol` | ✅ | FIN=1, RSV3=0x10, TEXT: byte0 = 0x80|0x10|0x01 = 0x91 |
-| 44 | `test_ws_parse_64bit_length_closes_too_big` | ✅ | FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes |
-| 45 | `test_ws_parse_oversized_16bit_length_closes_too_big` | ✅ | Ws parse oversized 16bit length closes too big |
-| 46 | `test_ws_fragment_start_waits_for_continuation` | ✅ | FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet. |
-| 47 | `test_ws_fragmented_message_reassembled` | ✅ | Ws fragmented message reassembled |
-| 48 | `test_ws_control_frame_interleaved_in_fragments` | ✅ | A PING arrives between the two data fragments; it must be handled without |
-| 49 | `test_ws_continuation_without_start_rejected` | ✅ | CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002. |
-| 50 | `test_ws_new_data_frame_during_fragmentation_rejected` | ✅ | A second TEXT (new message) before finishing the first is illegal. |
-| 51 | `test_ws_parse_ping_auto_pong_resets_frame` | ✅ | FIN=1, PING=0x09: byte0 = 0x89 |
-| 52 | `test_ws_parse_pong_silently_ignored` | ✅ | FIN=1, PONG=0x0A: byte0 = 0x8A |
-| 53 | `test_ws_parse_close_marks_ws_closed` | ✅ | FIN=1, CLOSE=0x08: byte0 = 0x88 |
-| 54 | `test_ws_parse_stops_at_frame_ready` | ✅ | Push two complete frames -- parser should stop after the first |
-| 55 | `test_ws_reset_frame_clears_fields` | ✅ | Ws reset frame clears fields |
-| 56 | `test_ws_parse_mask_applied_correctly` | ✅ | Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F |
-| 57 | `stress_ws_parse_reset_100_cycles` | ✅ | Stress - Ws parse reset 100 cycles |
-| 58 | `stress_ws_alloc_free_pool_cycle` | ✅ | Stress - Ws alloc free pool cycle |
-| 59 | `stress_ws_parse_incremental_byte_by_byte` | ✅ | Stress - Ws parse incremental byte by byte |
-| 60 | `stress_ws_parse_max_payload` | ✅ | Stress - Ws parse max payload |
-| 61 | `stress_ws_parse_two_consecutive_frames` | ✅ | First frame |
+| #   | Test                                                   | Status | Description                                                               |
+| --- | ------------------------------------------------------ | ------ | ------------------------------------------------------------------------- |
+| 1   | `test_sha1_empty_string`                               | ✅      | Sha1 empty string                                                         |
+| 2   | `test_sha1_abc`                                        | ✅      | Sha1 abc                                                                  |
+| 3   | `test_sha1_rfc6455_handshake_key`                      | ✅      | Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==                 |
+| 4   | `test_sha1_different_inputs_different_digests`         | ✅      | Sha1 different inputs different digests                                   |
+| 5   | `test_base64_encode_one_byte`                          | ✅      | Base64 encode one byte                                                    |
+| 6   | `test_base64_encode_two_bytes`                         | ✅      | Base64 encode two bytes                                                   |
+| 7   | `test_base64_encode_three_bytes`                       | ✅      | Base64 encode three bytes                                                 |
+| 8   | `test_base64_encode_ws_accept_key`                     | ✅      | Base64 encode ws accept key                                               |
+| 9   | `test_base64_decode_one_byte`                          | ✅      | Base64 decode one byte                                                    |
+| 10  | `test_base64_decode_two_bytes`                         | ✅      | Base64 decode two bytes                                                   |
+| 11  | `test_base64_decode_three_bytes`                       | ✅      | Base64 decode three bytes                                                 |
+| 12  | `test_base64_decode_ws_accept_key`                     | ✅      | Base64 decode ws accept key                                               |
+| 13  | `test_base64_round_trip`                               | ✅      | Base64 round trip                                                         |
+| 14  | `test_ws_pool_size`                                    | ✅      | Ws pool size                                                              |
+| 15  | `test_ws_ids_match_indices_after_init`                 | ✅      | Ws ids match indices after init                                           |
+| 16  | `test_ws_all_inactive_after_init`                      | ✅      | Ws all inactive after init                                                |
+| 17  | `test_ws_alloc_returns_non_null`                       | ✅      | Ws alloc returns non null                                                 |
+| 18  | `test_ws_alloc_sets_active`                            | ✅      | Ws alloc sets active                                                      |
+| 19  | `test_ws_alloc_sets_slot_id`                           | ✅      | Ws alloc sets slot id                                                     |
+| 20  | `test_ws_alloc_sets_parse_state_header1`               | ✅      | Ws alloc sets parse state header1                                         |
+| 21  | `test_ws_alloc_pool_full_returns_null`                 | ✅      | Ws alloc pool full returns null                                           |
+| 22  | `test_ws_find_returns_correct_conn`                    | ✅      | Ws find returns correct conn                                              |
+| 23  | `test_ws_find_returns_null_when_empty`                 | ✅      | Ws find returns null when empty                                           |
+| 24  | `test_ws_find_returns_null_for_different_slot`         | ✅      | Ws find returns null for different slot                                   |
+| 25  | `test_ws_find_after_both_slots_allocated`              | ✅      | Ws find after both slots allocated                                        |
+| 26  | `test_ws_free_deactivates_slot`                        | ✅      | Ws free deactivates slot                                                  |
+| 27  | `test_ws_free_restores_ws_id`                          | ✅      | Ws free restores ws id                                                    |
+| 28  | `test_ws_free_makes_slot_findable_as_null`             | ✅      | Ws free makes slot findable as null                                       |
+| 29  | `test_ws_free_nop_on_unallocated`                      | ✅      | Ws free nop on unallocated                                                |
+| 30  | `test_ws_alloc_after_free_succeeds`                    | ✅      | Ws alloc after free succeeds                                              |
+| 31  | `test_ws_parse_text_frame_sets_ready`                  | ✅      | Ws parse text frame sets ready                                            |
+| 32  | `test_ws_parse_payload_stored_correctly`               | ✅      | Ws parse payload stored correctly                                         |
+| 33  | `test_ws_parse_binary_frame_sets_ready`                | ✅      | Ws parse binary frame sets ready                                          |
+| 34  | `test_ws_parse_zero_length_unmasked_frame`             | ✅      | Unmasked zero-length frame: 0x81 0x00.                                    |
+| 35  | `test_ws_parse_zero_length_masked_frame`               | ✅      | Masked zero-length text frame: FIN                                        | TEXT, MASK                                                 | 0, 4-byte mask key. |
+| 36  | `test_ws_reject_unmasked_data_frame`                   | ✅      | FIN                                                                       | TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking. |
+| 37  | `test_ws_reject_reserved_opcode`                       | ✅      | Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection.        |
+| 38  | `test_ws_reject_fragmented_control_frame`              | ✅      | PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5).  |
+| 39  | `test_ws_reject_oversized_control_frame`               | ✅      | PING (masked) with payload length 126 - control frames MUST be <= 125     |
+| 40  | `test_ws_parse_16bit_length_frame`                     | ✅      | Build a 130-byte payload (> 125, requires 16-bit length field)            |
+| 41  | `test_ws_parse_rsv1_set_closes_protocol`               | ✅      | FIN=1, RSV1=0x40, TEXT: byte0 = 0x80                                      | 0x40                                                       | 0x01 = 0xC1         |
+| 42  | `test_ws_parse_rsv2_set_closes_protocol`               | ✅      | FIN=1, RSV2=0x20, TEXT: byte0 = 0x80                                      | 0x20                                                       | 0x01 = 0xA1         |
+| 43  | `test_ws_parse_rsv3_set_closes_protocol`               | ✅      | FIN=1, RSV3=0x10, TEXT: byte0 = 0x80                                      | 0x10                                                       | 0x01 = 0x91         |
+| 44  | `test_ws_parse_64bit_length_closes_too_big`            | ✅      | FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes        |
+| 45  | `test_ws_parse_oversized_16bit_length_closes_too_big`  | ✅      | Ws parse oversized 16bit length closes too big                            |
+| 46  | `test_ws_fragment_start_waits_for_continuation`        | ✅      | FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet.   |
+| 47  | `test_ws_fragmented_message_reassembled`               | ✅      | Ws fragmented message reassembled                                         |
+| 48  | `test_ws_control_frame_interleaved_in_fragments`       | ✅      | A PING arrives between the two data fragments; it must be handled without |
+| 49  | `test_ws_continuation_without_start_rejected`          | ✅      | CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002.          |
+| 50  | `test_ws_new_data_frame_during_fragmentation_rejected` | ✅      | A second TEXT (new message) before finishing the first is illegal.        |
+| 51  | `test_ws_parse_ping_auto_pong_resets_frame`            | ✅      | FIN=1, PING=0x09: byte0 = 0x89                                            |
+| 52  | `test_ws_parse_pong_silently_ignored`                  | ✅      | FIN=1, PONG=0x0A: byte0 = 0x8A                                            |
+| 53  | `test_ws_parse_close_marks_ws_closed`                  | ✅      | FIN=1, CLOSE=0x08: byte0 = 0x88                                           |
+| 54  | `test_ws_parse_stops_at_frame_ready`                   | ✅      | Push two complete frames -- parser should stop after the first            |
+| 55  | `test_ws_reset_frame_clears_fields`                    | ✅      | Ws reset frame clears fields                                              |
+| 56  | `test_ws_parse_mask_applied_correctly`                 | ✅      | Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F |
+| 57  | `stress_ws_parse_reset_100_cycles`                     | ✅      | Stress - Ws parse reset 100 cycles                                        |
+| 58  | `stress_ws_alloc_free_pool_cycle`                      | ✅      | Stress - Ws alloc free pool cycle                                         |
+| 59  | `stress_ws_parse_incremental_byte_by_byte`             | ✅      | Stress - Ws parse incremental byte by byte                                |
+| 60  | `stress_ws_parse_max_payload`                          | ✅      | Stress - Ws parse max payload                                             |
+| 61  | `stress_ws_parse_two_consecutive_frames`               | ✅      | First frame                                                               |
 
 ---
 
@@ -374,20 +374,20 @@
 
 *SSH user-authentication tests (RFC 4252): service request/accept, request*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_service_request_accept` | ✅ | Service request accept |
-| 2 | `test_service_request_rejects_unknown` | ✅ | Service request rejects unknown |
-| 3 | `test_parse_password_request` | ✅ | Parse password request |
-| 4 | `test_parse_none_request` | ✅ | Parse none request |
-| 5 | `test_handle_request_success` | ✅ | Handle request success |
-| 6 | `test_handle_request_wrong_password_fails` | ✅ | Handle request wrong password fails |
-| 7 | `test_handle_none_request_fails_without_auth` | ✅ | Handle none request fails without auth |
-| 8 | `test_handle_request_no_callback_fails` | ✅ | No callback installed → all credentials rejected. |
-| 9 | `test_pubkey_probe_returns_pk_ok` | ✅ | Pubkey probe returns pk ok |
-| 10 | `test_pubkey_valid_signature_succeeds` | ✅ | Pubkey valid signature succeeds |
-| 11 | `test_pubkey_tampered_signature_fails` | ✅ | Pubkey tampered signature fails |
-| 12 | `test_pubkey_unauthorized_key_fails` | ✅ | Pubkey unauthorized key fails |
+| #   | Test                                          | Status | Description                                       |
+| --- | --------------------------------------------- | ------ | ------------------------------------------------- |
+| 1   | `test_service_request_accept`                 | ✅      | Service request accept                            |
+| 2   | `test_service_request_rejects_unknown`        | ✅      | Service request rejects unknown                   |
+| 3   | `test_parse_password_request`                 | ✅      | Parse password request                            |
+| 4   | `test_parse_none_request`                     | ✅      | Parse none request                                |
+| 5   | `test_handle_request_success`                 | ✅      | Handle request success                            |
+| 6   | `test_handle_request_wrong_password_fails`    | ✅      | Handle request wrong password fails               |
+| 7   | `test_handle_none_request_fails_without_auth` | ✅      | Handle none request fails without auth            |
+| 8   | `test_handle_request_no_callback_fails`       | ✅      | No callback installed → all credentials rejected. |
+| 9   | `test_pubkey_probe_returns_pk_ok`             | ✅      | Pubkey probe returns pk ok                        |
+| 10  | `test_pubkey_valid_signature_succeeds`        | ✅      | Pubkey valid signature succeeds                   |
+| 11  | `test_pubkey_tampered_signature_fails`        | ✅      | Pubkey tampered signature fails                   |
+| 12  | `test_pubkey_unauthorized_key_fails`          | ✅      | Pubkey unauthorized key fails                     |
 
 ---
 
@@ -395,20 +395,20 @@
 
 *SSH connection-protocol (channel) tests - RFC 4254.*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_open_session_confirms` | ✅ | Open session confirms |
-| 2 | `test_open_non_session_fails` | ✅ | Open non session fails |
-| 3 | `test_shell_request_success_with_reply` | ✅ | Shell request success with reply |
-| 4 | `test_unknown_request_failure` | ✅ | Unknown request failure |
-| 5 | `test_request_no_reply_produces_nothing` | ✅ | Request no reply produces nothing |
-| 6 | `test_inbound_data_invokes_callback` | ✅ | Inbound data invokes callback |
-| 7 | `test_inbound_data_window_replenish` | ✅ | Inbound data window replenish |
-| 8 | `test_inbound_data_exceeding_window_rejected` | ✅ | Inbound data exceeding window rejected |
-| 9 | `test_outbound_data_frames_and_decrements_window` | ✅ | Outbound data frames and decrements window |
-| 10 | `test_outbound_data_exceeding_peer_window_rejected` | ✅ | Outbound data exceeding peer window rejected |
-| 11 | `test_window_adjust_grows_peer_window` | ✅ | Window adjust grows peer window |
-| 12 | `test_build_close_emits_eof_and_close` | ✅ | Build close emits eof and close |
+| #   | Test                                                | Status | Description                                  |
+| --- | --------------------------------------------------- | ------ | -------------------------------------------- |
+| 1   | `test_open_session_confirms`                        | ✅      | Open session confirms                        |
+| 2   | `test_open_non_session_fails`                       | ✅      | Open non session fails                       |
+| 3   | `test_shell_request_success_with_reply`             | ✅      | Shell request success with reply             |
+| 4   | `test_unknown_request_failure`                      | ✅      | Unknown request failure                      |
+| 5   | `test_request_no_reply_produces_nothing`            | ✅      | Request no reply produces nothing            |
+| 6   | `test_inbound_data_invokes_callback`                | ✅      | Inbound data invokes callback                |
+| 7   | `test_inbound_data_window_replenish`                | ✅      | Inbound data window replenish                |
+| 8   | `test_inbound_data_exceeding_window_rejected`       | ✅      | Inbound data exceeding window rejected       |
+| 9   | `test_outbound_data_frames_and_decrements_window`   | ✅      | Outbound data frames and decrements window   |
+| 10  | `test_outbound_data_exceeding_peer_window_rejected` | ✅      | Outbound data exceeding peer window rejected |
+| 11  | `test_window_adjust_grows_peer_window`              | ✅      | Window adjust grows peer window              |
+| 12  | `test_build_close_emits_eof_and_close`              | ✅      | Build close emits eof and close              |
 
 ---
 
@@ -416,44 +416,44 @@
 
 *SSH crypto layer test suite.*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_sha256_empty` | ✅ | SHA256("") = e3b0c44298fc1c149afb... |
-| 2 | `test_sha256_abc` | ✅ | SHA256("abc") = ba7816bf8f01cfea414140de5dae2ec73b00361bbef0469... |
-| 3 | `test_sha256_448bit` | ✅ | SHA256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") |
-| 4 | `test_sha256_streaming` | ✅ | Same as test_sha256_abc but using the streaming API. |
-| 5 | `test_hmac_sha256_tc1` | ✅ | RFC 4231 Test Case 1 |
-| 6 | `test_hmac_sha256_tc2` | ✅ | RFC 4231 Test Case 2 |
-| 7 | `test_hmac_sha256_tc3` | ✅ | RFC 4231 Test Case 3 |
-| 8 | `test_hmac_sha256_streaming` | ✅ | Same as tc1 but via streaming API. |
-| 9 | `test_aes256ctr_encrypt` | ✅ | NIST SP 800-38A, Section F.5.5 |
-| 10 | `test_aes256ctr_decrypt` | ✅ | AES-256-CTR decrypt is identical to encrypt. |
-| 11 | `test_aes256ctr_multi_block` | ✅ | NIST F.5.5 blocks 1-4 (64 bytes). |
-| 12 | `test_aes256ctr_wipe` | ✅ | After wipe, the context should be all zeros. |
-| 13 | `test_bn_roundtrip` | ✅ | Round-trip: bytes → SshBigNum → bytes. |
-| 14 | `test_bn_cmp_equal` | ✅ | Bn cmp equal |
-| 15 | `test_bn_cmp_less` | ✅ | Bn cmp less |
-| 16 | `test_bn_cmp_greater` | ✅ | Bn cmp greater |
-| 17 | `test_bn_is_zero` | ✅ | Bn is zero |
-| 18 | `test_bn_dh_validate_rejects_zero` | ✅ | Bn dh validate rejects zero |
-| 19 | `test_bn_dh_validate_rejects_one` | ✅ | Bn dh validate rejects one |
-| 20 | `test_bn_dh_validate_accepts_two` | ✅ | Bn dh validate accepts two |
-| 21 | `test_expmod_exp1` | ✅ | Expmod exp1 |
-| 22 | `test_expmod_exp2` | ✅ | Expmod exp2 |
-| 23 | `test_expmod_exp3` | ✅ | Expmod exp3 |
-| 24 | `test_expmod_commutative` | ✅ | Expmod commutative |
-| 25 | `test_rsa_pkcs1_pad_structure` | ✅ | With d=1, sign(msg) = m^1 mod n = m (the padded message itself). |
-| 26 | `test_rsa_encode_pubkey` | ✅ | Rsa encode pubkey |
-| 27 | `test_rsa_verify_valid_signature` | ✅ | Rsa verify valid signature |
-| 28 | `test_rsa_verify_rejects_tampered_signature` | ✅ | Rsa verify rejects tampered signature |
-| 29 | `test_rsa_verify_rejects_wrong_message` | ✅ | Rsa verify rejects wrong message |
-| 30 | `test_pkt_send_recv_unencrypted` | ✅ | Pkt send recv unencrypted |
-| 31 | `test_pkt_padding_alignment` | ✅ | Packet length + padding must be multiple of 16. |
-| 32 | `test_pkt_seq_increments` | ✅ | Pkt seq increments |
-| 33 | `test_pkt_disconnect_zeroes_state` | ✅ | Pkt disconnect zeroes state |
-| 34 | `test_pkt_encrypted_roundtrip` | ✅ | Pkt encrypted roundtrip |
-| 35 | `test_pkt_encrypted_fragmented` | ✅ | Pkt encrypted fragmented |
-| 36 | `test_pkt_encrypted_two_packets` | ✅ | Pkt encrypted two packets |
+| #   | Test                                         | Status | Description                                                        |
+| --- | -------------------------------------------- | ------ | ------------------------------------------------------------------ |
+| 1   | `test_sha256_empty`                          | ✅      | SHA256("") = e3b0c44298fc1c149afb...                               |
+| 2   | `test_sha256_abc`                            | ✅      | SHA256("abc") = ba7816bf8f01cfea414140de5dae2ec73b00361bbef0469... |
+| 3   | `test_sha256_448bit`                         | ✅      | SHA256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") |
+| 4   | `test_sha256_streaming`                      | ✅      | Same as test_sha256_abc but using the streaming API.               |
+| 5   | `test_hmac_sha256_tc1`                       | ✅      | RFC 4231 Test Case 1                                               |
+| 6   | `test_hmac_sha256_tc2`                       | ✅      | RFC 4231 Test Case 2                                               |
+| 7   | `test_hmac_sha256_tc3`                       | ✅      | RFC 4231 Test Case 3                                               |
+| 8   | `test_hmac_sha256_streaming`                 | ✅      | Same as tc1 but via streaming API.                                 |
+| 9   | `test_aes256ctr_encrypt`                     | ✅      | NIST SP 800-38A, Section F.5.5                                     |
+| 10  | `test_aes256ctr_decrypt`                     | ✅      | AES-256-CTR decrypt is identical to encrypt.                       |
+| 11  | `test_aes256ctr_multi_block`                 | ✅      | NIST F.5.5 blocks 1-4 (64 bytes).                                  |
+| 12  | `test_aes256ctr_wipe`                        | ✅      | After wipe, the context should be all zeros.                       |
+| 13  | `test_bn_roundtrip`                          | ✅      | Round-trip: bytes → SshBigNum → bytes.                             |
+| 14  | `test_bn_cmp_equal`                          | ✅      | Bn cmp equal                                                       |
+| 15  | `test_bn_cmp_less`                           | ✅      | Bn cmp less                                                        |
+| 16  | `test_bn_cmp_greater`                        | ✅      | Bn cmp greater                                                     |
+| 17  | `test_bn_is_zero`                            | ✅      | Bn is zero                                                         |
+| 18  | `test_bn_dh_validate_rejects_zero`           | ✅      | Bn dh validate rejects zero                                        |
+| 19  | `test_bn_dh_validate_rejects_one`            | ✅      | Bn dh validate rejects one                                         |
+| 20  | `test_bn_dh_validate_accepts_two`            | ✅      | Bn dh validate accepts two                                         |
+| 21  | `test_expmod_exp1`                           | ✅      | Expmod exp1                                                        |
+| 22  | `test_expmod_exp2`                           | ✅      | Expmod exp2                                                        |
+| 23  | `test_expmod_exp3`                           | ✅      | Expmod exp3                                                        |
+| 24  | `test_expmod_commutative`                    | ✅      | Expmod commutative                                                 |
+| 25  | `test_rsa_pkcs1_pad_structure`               | ✅      | With d=1, sign(msg) = m^1 mod n = m (the padded message itself).   |
+| 26  | `test_rsa_encode_pubkey`                     | ✅      | Rsa encode pubkey                                                  |
+| 27  | `test_rsa_verify_valid_signature`            | ✅      | Rsa verify valid signature                                         |
+| 28  | `test_rsa_verify_rejects_tampered_signature` | ✅      | Rsa verify rejects tampered signature                              |
+| 29  | `test_rsa_verify_rejects_wrong_message`      | ✅      | Rsa verify rejects wrong message                                   |
+| 30  | `test_pkt_send_recv_unencrypted`             | ✅      | Pkt send recv unencrypted                                          |
+| 31  | `test_pkt_padding_alignment`                 | ✅      | Packet length + padding must be multiple of 16.                    |
+| 32  | `test_pkt_seq_increments`                    | ✅      | Pkt seq increments                                                 |
+| 33  | `test_pkt_disconnect_zeroes_state`           | ✅      | Pkt disconnect zeroes state                                        |
+| 34  | `test_pkt_encrypted_roundtrip`               | ✅      | Pkt encrypted roundtrip                                            |
+| 35  | `test_pkt_encrypted_fragmented`              | ✅      | Pkt encrypted fragmented                                           |
+| 36  | `test_pkt_encrypted_two_packets`             | ✅      | Pkt encrypted two packets                                          |
 
 ---
 
@@ -461,12 +461,12 @@
 
 *End-to-end SSH server dispatcher test: drives a full handshake*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_full_handshake_to_channel_data` | ✅ | Banner exchange already done out-of-band; seed V_C and enter KEXINIT. |
-| 2 | `test_channel_open_before_auth_rejected` | ✅ | Channel open before auth rejected |
-| 3 | `test_disconnect_closes` | ✅ | Disconnect closes |
-| 4 | `test_ignore_is_noop` | ✅ | Ignore is noop |
+| #   | Test                                     | Status | Description                                                           |
+| --- | ---------------------------------------- | ------ | --------------------------------------------------------------------- |
+| 1   | `test_full_handshake_to_channel_data`    | ✅      | Banner exchange already done out-of-band; seed V_C and enter KEXINIT. |
+| 2   | `test_channel_open_before_auth_rejected` | ✅      | Channel open before auth rejected                                     |
+| 3   | `test_disconnect_closes`                 | ✅      | Disconnect closes                                                     |
+| 4   | `test_ignore_is_noop`                    | ✅      | Ignore is noop                                                        |
 
 ---
 
@@ -474,31 +474,31 @@
 
 *SSH transport handshake tests (RFC 4253): identification-string exchange and*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_server_banner_format` | ✅ | Server banner format |
-| 2 | `test_recv_banner_complete` | ✅ | Recv banner complete |
-| 3 | `test_recv_banner_bare_lf` | ✅ | Recv banner bare lf |
-| 4 | `test_recv_banner_split_across_reads` | ✅ | Recv banner split across reads |
-| 5 | `test_recv_banner_skips_preamble_lines` | ✅ | RFC 4253 §4.2 allows lines before the SSH identification string. |
-| 6 | `test_kexinit_build_starts_with_msg_and_stores_is` | ✅ | Kexinit build starts with msg and stores is |
-| 7 | `test_kexinit_parse_accepts_supported` | ✅ | Kexinit parse accepts supported |
-| 8 | `test_kexinit_parse_accepts_when_ours_listed_among_others` | ✅ | Kexinit parse accepts when ours listed among others |
-| 9 | `test_kexinit_parse_rejects_missing_kex` | ✅ | Kexinit parse rejects missing kex |
-| 10 | `test_kexinit_parse_rejects_missing_cipher` | ✅ | Kexinit parse rejects missing cipher |
-| 11 | `test_kexinit_parse_rejects_truncated` | ✅ | Kexinit parse rejects truncated |
-| 12 | `test_exchange_hash_matches_independent_assembly` | ✅ | Populate the session fields the hash reads. |
-| 13 | `test_exchange_hash_changes_with_input` | ✅ | Exchange hash changes with input |
-| 14 | `test_kexdh_parse_init_extracts_e_with_padding` | ✅ | Kexdh parse init extracts e with padding |
-| 15 | `test_kexdh_parse_init_extracts_small_e` | ✅ | Kexdh parse init extracts small e |
-| 16 | `test_kexdh_parse_init_rejects_wrong_type` | ✅ | Kexdh parse init rejects wrong type |
-| 17 | `test_kexdh_parse_init_rejects_oversized_e` | ✅ | mpint with 300 magnitude bytes → exceeds 2048 bits. |
-| 18 | `test_kexdh_build_reply_structure` | ✅ | Kexdh build reply structure |
-| 19 | `test_kexdh_handle_produces_reply_and_installs_keys` | ✅ | Kexdh handle produces reply and installs keys |
-| 20 | `test_kexdh_handle_rejects_invalid_e` | ✅ | Kexdh handle rejects invalid e |
-| 21 | `test_derive_keys_session_id_affects_output` | ✅ | Derive keys session id affects output |
-| 22 | `test_rekey_needed_threshold` | ✅ | Rekey needed threshold |
-| 23 | `test_begin_rekey_preserves_session_and_auth` | ✅ | Begin rekey preserves session and auth |
+| #   | Test                                                       | Status | Description                                                      |
+| --- | ---------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| 1   | `test_server_banner_format`                                | ✅      | Server banner format                                             |
+| 2   | `test_recv_banner_complete`                                | ✅      | Recv banner complete                                             |
+| 3   | `test_recv_banner_bare_lf`                                 | ✅      | Recv banner bare lf                                              |
+| 4   | `test_recv_banner_split_across_reads`                      | ✅      | Recv banner split across reads                                   |
+| 5   | `test_recv_banner_skips_preamble_lines`                    | ✅      | RFC 4253 §4.2 allows lines before the SSH identification string. |
+| 6   | `test_kexinit_build_starts_with_msg_and_stores_is`         | ✅      | Kexinit build starts with msg and stores is                      |
+| 7   | `test_kexinit_parse_accepts_supported`                     | ✅      | Kexinit parse accepts supported                                  |
+| 8   | `test_kexinit_parse_accepts_when_ours_listed_among_others` | ✅      | Kexinit parse accepts when ours listed among others              |
+| 9   | `test_kexinit_parse_rejects_missing_kex`                   | ✅      | Kexinit parse rejects missing kex                                |
+| 10  | `test_kexinit_parse_rejects_missing_cipher`                | ✅      | Kexinit parse rejects missing cipher                             |
+| 11  | `test_kexinit_parse_rejects_truncated`                     | ✅      | Kexinit parse rejects truncated                                  |
+| 12  | `test_exchange_hash_matches_independent_assembly`          | ✅      | Populate the session fields the hash reads.                      |
+| 13  | `test_exchange_hash_changes_with_input`                    | ✅      | Exchange hash changes with input                                 |
+| 14  | `test_kexdh_parse_init_extracts_e_with_padding`            | ✅      | Kexdh parse init extracts e with padding                         |
+| 15  | `test_kexdh_parse_init_extracts_small_e`                   | ✅      | Kexdh parse init extracts small e                                |
+| 16  | `test_kexdh_parse_init_rejects_wrong_type`                 | ✅      | Kexdh parse init rejects wrong type                              |
+| 17  | `test_kexdh_parse_init_rejects_oversized_e`                | ✅      | mpint with 300 magnitude bytes → exceeds 2048 bits.              |
+| 18  | `test_kexdh_build_reply_structure`                         | ✅      | Kexdh build reply structure                                      |
+| 19  | `test_kexdh_handle_produces_reply_and_installs_keys`       | ✅      | Kexdh handle produces reply and installs keys                    |
+| 20  | `test_kexdh_handle_rejects_invalid_e`                      | ✅      | Kexdh handle rejects invalid e                                   |
+| 21  | `test_derive_keys_session_id_affects_output`               | ✅      | Derive keys session id affects output                            |
+| 22  | `test_rekey_needed_threshold`                              | ✅      | Rekey needed threshold                                           |
+| 23  | `test_begin_rekey_preserves_session_and_auth`              | ✅      | Begin rekey preserves session and auth                           |
 
 ---
 
@@ -506,10 +506,10 @@
 
 *Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_password_refused_even_with_correct_callback` | ✅ | Even a callback that accepts everything must not authenticate, because |
-| 2 | `test_failure_advertises_publickey_only` | ✅ | Failure advertises publickey only |
+| #   | Test                                               | Status | Description                                                            |
+| --- | -------------------------------------------------- | ------ | ---------------------------------------------------------------------- |
+| 1   | `test_password_refused_even_with_correct_callback` | ✅      | Even a callback that accepts everything must not authenticate, because |
+| 2   | `test_failure_advertises_publickey_only`           | ✅      | Failure advertises publickey only                                      |
 
 ---
 
@@ -517,10 +517,10 @@
 
 *SSH transport-glue test: drives a PROTO_SSH connection through the real*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_accept_sends_server_banner` | ✅ | Accept sends server banner |
-| 2 | `test_banner_then_kexinit_advances_and_replies` | ✅ | Banner then kexinit advances and replies |
+| #   | Test                                            | Status | Description                              |
+| --- | ----------------------------------------------- | ------ | ---------------------------------------- |
+| 1   | `test_accept_sends_server_banner`               | ✅      | Accept sends server banner               |
+| 2   | `test_banner_then_kexinit_advances_and_replies` | ✅      | Banner then kexinit advances and replies |
 
 ---
 
@@ -528,21 +528,21 @@
 
 *Unit tests for HTTP Basic Authentication (per-route).*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_unprotected_route_fires_handler` | ✅ | Unprotected route fires handler |
-| 2 | `test_protected_route_no_header_returns_401` | ✅ | Protected route no header returns 401 |
-| 3 | `test_protected_route_wrong_password_returns_401` | ✅ | base64("user:wrong") = "dXNlcjp3cm9uZw==" |
-| 4 | `test_protected_route_wrong_username_returns_401` | ✅ | base64("admin:pass") = "YWRtaW46cGFzcw==" |
-| 5 | `test_protected_route_valid_credentials_fires_handler` | ✅ | base64("user:pass") = "dXNlcjpwYXNz" |
-| 6 | `test_401_includes_www_authenticate_header` | ✅ | 401 includes www authenticate header |
-| 7 | `test_non_basic_scheme_returns_401` | ✅ | Non basic scheme returns 401 |
-| 8 | `test_credentials_without_colon_returns_401` | ✅ | base64("nocolon") = "bm9jb2xvbg==" |
-| 9 | `test_protected_and_unprotected_routes_coexist` | ✅ | Hit public route -- handler fires |
-| 10 | `test_auth_route_returns_404_for_wrong_path` | ✅ | Auth route returns 404 for wrong path |
-| 11 | `test_auth_checked_per_method` | ✅ | Route only handles POST; a GET to that path is 405 Method Not Allowed |
-| 12 | `stress_auth_50_valid_requests` | ✅ | base64("u:p") = "dTpw" |
-| 13 | `stress_auth_50_invalid_requests` | ✅ | Stress - Auth 50 invalid requests |
+| #   | Test                                                   | Status | Description                                                           |
+| --- | ------------------------------------------------------ | ------ | --------------------------------------------------------------------- |
+| 1   | `test_unprotected_route_fires_handler`                 | ✅      | Unprotected route fires handler                                       |
+| 2   | `test_protected_route_no_header_returns_401`           | ✅      | Protected route no header returns 401                                 |
+| 3   | `test_protected_route_wrong_password_returns_401`      | ✅      | base64("user:wrong") = "dXNlcjp3cm9uZw=="                             |
+| 4   | `test_protected_route_wrong_username_returns_401`      | ✅      | base64("admin:pass") = "YWRtaW46cGFzcw=="                             |
+| 5   | `test_protected_route_valid_credentials_fires_handler` | ✅      | base64("user:pass") = "dXNlcjpwYXNz"                                  |
+| 6   | `test_401_includes_www_authenticate_header`            | ✅      | 401 includes www authenticate header                                  |
+| 7   | `test_non_basic_scheme_returns_401`                    | ✅      | Non basic scheme returns 401                                          |
+| 8   | `test_credentials_without_colon_returns_401`           | ✅      | base64("nocolon") = "bm9jb2xvbg=="                                    |
+| 9   | `test_protected_and_unprotected_routes_coexist`        | ✅      | Hit public route -- handler fires                                     |
+| 10  | `test_auth_route_returns_404_for_wrong_path`           | ✅      | Auth route returns 404 for wrong path                                 |
+| 11  | `test_auth_checked_per_method`                         | ✅      | Route only handles POST; a GET to that path is 405 Method Not Allowed |
+| 12  | `stress_auth_50_valid_requests`                        | ✅      | base64("u:p") = "dTpw"                                                |
+| 13  | `stress_auth_50_invalid_requests`                      | ✅      | Stress - Auth 50 invalid requests                                     |
 
 ---
 
@@ -550,18 +550,18 @@
 
 *Dispatch-level RFC 7231 compliance:*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_method_mismatch_returns_405` | ✅ | Method mismatch returns 405 |
-| 2 | `test_405_includes_allow_header` | ✅ | 405 includes allow header |
-| 3 | `test_405_allow_lists_all_methods_for_path` | ✅ | 405 allow lists all methods for path |
-| 4 | `test_unknown_path_still_404_not_405` | ✅ | Unknown path still 404 not 405 |
-| 5 | `test_unknown_method_returns_501` | ✅ | Unknown method returns 501 |
-| 6 | `test_unknown_method_not_treated_as_get` | ✅ | A bogus method must NOT run the GET handler (security: no method spoofing). |
-| 7 | `test_head_runs_get_handler_without_body` | ✅ | Head runs get handler without body |
-| 8 | `test_get_route_advertises_head_in_allow` | ✅ | Get route advertises head in allow |
-| 9 | `test_head_on_post_only_route_405` | ✅ | Head on post only route 405 |
-| 10 | `test_correct_method_still_dispatches` | ✅ | Correct method still dispatches |
+| #   | Test                                        | Status | Description                                                                 |
+| --- | ------------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| 1   | `test_method_mismatch_returns_405`          | ✅      | Method mismatch returns 405                                                 |
+| 2   | `test_405_includes_allow_header`            | ✅      | 405 includes allow header                                                   |
+| 3   | `test_405_allow_lists_all_methods_for_path` | ✅      | 405 allow lists all methods for path                                        |
+| 4   | `test_unknown_path_still_404_not_405`       | ✅      | Unknown path still 404 not 405                                              |
+| 5   | `test_unknown_method_returns_501`           | ✅      | Unknown method returns 501                                                  |
+| 6   | `test_unknown_method_not_treated_as_get`    | ✅      | A bogus method must NOT run the GET handler (security: no method spoofing). |
+| 7   | `test_head_runs_get_handler_without_body`   | ✅      | Head runs get handler without body                                          |
+| 8   | `test_get_route_advertises_head_in_allow`   | ✅      | Get route advertises head in allow                                          |
+| 9   | `test_head_on_post_only_route_405`          | ✅      | Head on post only route 405                                                 |
+| 10  | `test_correct_method_still_dispatches`      | ✅      | Correct method still dispatches                                             |
 
 ---
 
@@ -569,20 +569,20 @@
 
 *Unit tests for serve_file().*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_missing_file_returns_404` | ✅ | Missing file returns 404 |
-| 2 | `test_existing_file_returns_200` | ✅ | Existing file returns 200 |
-| 3 | `test_response_includes_content_type_html` | ✅ | Response includes content type html |
-| 4 | `test_response_includes_content_type_js` | ✅ | Response includes content type js |
-| 5 | `test_content_length_matches_file_size` | ✅ | Content length matches file size |
-| 6 | `test_file_body_is_sent` | ✅ | File body is sent |
-| 7 | `test_empty_file_returns_200_with_zero_length` | ✅ | Empty file returns 200 with zero length |
-| 8 | `test_large_file_body_fully_sent` | ✅ | Build a body larger than one FILE_CHUNK_SIZE to exercise chunked streaming |
-| 9 | `test_serve_file_does_not_affect_other_routes` | ✅ | Serve file does not affect other routes |
-| 10 | `test_multiple_content_types` | ✅ | Multiple content types |
-| 11 | `stress_serve_file_50_requests` | ✅ | Stress - Serve file 50 requests |
-| 12 | `stress_alternate_missing_and_found` | ✅ | Stress - Alternate missing and found |
+| #   | Test                                           | Status | Description                                                                |
+| --- | ---------------------------------------------- | ------ | -------------------------------------------------------------------------- |
+| 1   | `test_missing_file_returns_404`                | ✅      | Missing file returns 404                                                   |
+| 2   | `test_existing_file_returns_200`               | ✅      | Existing file returns 200                                                  |
+| 3   | `test_response_includes_content_type_html`     | ✅      | Response includes content type html                                        |
+| 4   | `test_response_includes_content_type_js`       | ✅      | Response includes content type js                                          |
+| 5   | `test_content_length_matches_file_size`        | ✅      | Content length matches file size                                           |
+| 6   | `test_file_body_is_sent`                       | ✅      | File body is sent                                                          |
+| 7   | `test_empty_file_returns_200_with_zero_length` | ✅      | Empty file returns 200 with zero length                                    |
+| 8   | `test_large_file_body_fully_sent`              | ✅      | Build a body larger than one FILE_CHUNK_SIZE to exercise chunked streaming |
+| 9   | `test_serve_file_does_not_affect_other_routes` | ✅      | Serve file does not affect other routes                                    |
+| 10  | `test_multiple_content_types`                  | ✅      | Multiple content types                                                     |
+| 11  | `stress_serve_file_50_requests`                | ✅      | Stress - Serve file 50 requests                                            |
+| 12  | `stress_alternate_missing_and_found`           | ✅      | Stress - Alternate missing and found                                       |
 
 ---
 
@@ -590,27 +590,27 @@
 
 *Unit tests for multipart/form-data parser (multipart.cpp).*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_no_content_type_returns_false` | ✅ | No content type returns false |
-| 2 | `test_no_boundary_in_content_type_returns_false` | ✅ | No boundary in content type returns false |
-| 3 | `test_body_missing_delimiter_returns_false` | ✅ | Body missing delimiter returns false |
-| 4 | `test_single_text_field_parsed` | ✅ | Single text field parsed |
-| 5 | `test_two_text_fields_parsed` | ✅ | Two text fields parsed |
-| 6 | `test_three_text_fields_parsed` | ✅ | Three text fields parsed |
-| 7 | `test_file_upload_part` | ✅ | File upload part |
-| 8 | `test_file_upload_with_text_field` | ✅ | File upload with text field |
-| 9 | `test_get_field_found` | ✅ | Get field found |
-| 10 | `test_get_field_not_found_returns_null` | ✅ | Get field not found returns null |
-| 11 | `test_get_field_multiple_fields` | ✅ | Get field multiple fields |
-| 12 | `test_data_len_is_correct` | ✅ | Data len is correct |
-| 13 | `test_max_parts_captured` | ✅ | Build exactly MAX_MULTIPART_PARTS + 1 parts; only MAX_MULTIPART_PARTS |
-| 14 | `test_empty_field_value` | ✅ | Empty field value |
-| 15 | `test_part_without_filename_has_null_filename` | ✅ | Part without filename has null filename |
-| 16 | `test_part_without_content_type_has_null_type` | ✅ | Part without content type has null type |
-| 17 | `test_long_boundary_string` | ✅ | MAX_VAL_LEN=48 limits the stored Content-Type value. |
-| 18 | `stress_parse_100_requests` | ✅ | Stress - Parse 100 requests |
-| 19 | `stress_get_field_100_lookups` | ✅ | Stress - Get field 100 lookups |
+| #   | Test                                             | Status | Description                                                           |
+| --- | ------------------------------------------------ | ------ | --------------------------------------------------------------------- |
+| 1   | `test_no_content_type_returns_false`             | ✅      | No content type returns false                                         |
+| 2   | `test_no_boundary_in_content_type_returns_false` | ✅      | No boundary in content type returns false                             |
+| 3   | `test_body_missing_delimiter_returns_false`      | ✅      | Body missing delimiter returns false                                  |
+| 4   | `test_single_text_field_parsed`                  | ✅      | Single text field parsed                                              |
+| 5   | `test_two_text_fields_parsed`                    | ✅      | Two text fields parsed                                                |
+| 6   | `test_three_text_fields_parsed`                  | ✅      | Three text fields parsed                                              |
+| 7   | `test_file_upload_part`                          | ✅      | File upload part                                                      |
+| 8   | `test_file_upload_with_text_field`               | ✅      | File upload with text field                                           |
+| 9   | `test_get_field_found`                           | ✅      | Get field found                                                       |
+| 10  | `test_get_field_not_found_returns_null`          | ✅      | Get field not found returns null                                      |
+| 11  | `test_get_field_multiple_fields`                 | ✅      | Get field multiple fields                                             |
+| 12  | `test_data_len_is_correct`                       | ✅      | Data len is correct                                                   |
+| 13  | `test_max_parts_captured`                        | ✅      | Build exactly MAX_MULTIPART_PARTS + 1 parts; only MAX_MULTIPART_PARTS |
+| 14  | `test_empty_field_value`                         | ✅      | Empty field value                                                     |
+| 15  | `test_part_without_filename_has_null_filename`   | ✅      | Part without filename has null filename                               |
+| 16  | `test_part_without_content_type_has_null_type`   | ✅      | Part without content type has null type                               |
+| 17  | `test_long_boundary_string`                      | ✅      | MAX_VAL_LEN=48 limits the stored Content-Type value.                  |
+| 18  | `stress_parse_100_requests`                      | ✅      | Stress - Parse 100 requests                                           |
+| 19  | `stress_get_field_100_lookups`                   | ✅      | Stress - Get field 100 lookups                                        |
 
 ---
 
@@ -618,20 +618,20 @@
 
 *RFC-compliance suite. Built with production enforcement defaults*
 
-| # | Test | Status | Description |
-|---|------|--------|-------------|
-| 1 | `test_http11_missing_host_rejected` | ✅ | Http11 missing host rejected |
-| 2 | `test_http11_with_host_ok` | ✅ | Http11 with host ok |
-| 3 | `test_http10_missing_host_ok` | ✅ | Host is not required for HTTP/1.0. |
-| 4 | `test_duplicate_host_rejected` | ✅ | Duplicate host rejected |
-| 5 | `test_duplicate_host_rejected_http10` | ✅ | More than one Host is invalid regardless of version. |
-| 6 | `test_host_beyond_max_headers_still_counted` | ✅ | A valid Host that appears after MAX_HEADERS other fields is still counted |
-| 7 | `test_duplicate_host_with_one_beyond_cap_rejected` | ✅ | First Host is stored; a second Host pushed past MAX_HEADERS must still be |
-| 8 | `test_content_length_non_digit_rejected` | ✅ | Content length non digit rejected |
-| 9 | `test_content_length_empty_rejected` | ✅ | Content length empty rejected |
-| 10 | `test_content_length_conflicting_duplicate_rejected` | ✅ | Content length conflicting duplicate rejected |
-| 11 | `test_content_length_matching_duplicate_ok` | ✅ | Two identical Content-Length values are not a conflict. |
-| 12 | `test_content_length_valid_body` | ✅ | Content length valid body |
+| #   | Test                                                 | Status | Description                                                               |
+| --- | ---------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| 1   | `test_http11_missing_host_rejected`                  | ✅      | Http11 missing host rejected                                              |
+| 2   | `test_http11_with_host_ok`                           | ✅      | Http11 with host ok                                                       |
+| 3   | `test_http10_missing_host_ok`                        | ✅      | Host is not required for HTTP/1.0.                                        |
+| 4   | `test_duplicate_host_rejected`                       | ✅      | Duplicate host rejected                                                   |
+| 5   | `test_duplicate_host_rejected_http10`                | ✅      | More than one Host is invalid regardless of version.                      |
+| 6   | `test_host_beyond_max_headers_still_counted`         | ✅      | A valid Host that appears after MAX_HEADERS other fields is still counted |
+| 7   | `test_duplicate_host_with_one_beyond_cap_rejected`   | ✅      | First Host is stored; a second Host pushed past MAX_HEADERS must still be |
+| 8   | `test_content_length_non_digit_rejected`             | ✅      | Content length non digit rejected                                         |
+| 9   | `test_content_length_empty_rejected`                 | ✅      | Content length empty rejected                                             |
+| 10  | `test_content_length_conflicting_duplicate_rejected` | ✅      | Content length conflicting duplicate rejected                             |
+| 11  | `test_content_length_matching_duplicate_ok`          | ✅      | Two identical Content-Length values are not a conflict.                   |
+| 12  | `test_content_length_valid_body`                     | ✅      | Content length valid body                                                 |
 
 ---
 

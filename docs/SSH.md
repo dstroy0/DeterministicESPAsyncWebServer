@@ -35,23 +35,23 @@ socket.
 
 ## RFC / FIPS compliance
 
-| Component                     | Standard                   | Status                                                                  |
-| ----------------------------- | -------------------------- | ----------------------------------------------------------------------- |
-| SHA-256                       | FIPS 180-4                 | Implemented (software both platforms; HW one-shot via mbedTLS on ESP32) |
-| HMAC-SHA2-256                 | RFC 2104, RFC 6668         | Implemented; verify-before-use, constant-time MAC compare               |
-| AES-256-CTR                   | FIPS 197, RFC 4344         | Implemented (HW via mbedTLS on ESP32; software AES on native)           |
-| DH group14 (modexp)           | RFC 3526, RFC 8268         | Implemented (HW `mbedtls_mpi` on ESP32; software Montgomery on native)  |
-| DH public-value validation    | RFC 4253 §8                | Implemented (rejects `e`/`f` outside `1 < v < p-1`)                     |
-| Session key derivation        | RFC 4253 §7.2              | Implemented (six A–F keys from `K`, `H`, session_id)                    |
+| Component                     | Standard                   | Status                                                                                                                                   |
+| ----------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| SHA-256                       | FIPS 180-4                 | Implemented (software both platforms; HW one-shot via mbedTLS on ESP32)                                                                  |
+| HMAC-SHA2-256                 | RFC 2104, RFC 6668         | Implemented; verify-before-use, constant-time MAC compare                                                                                |
+| AES-256-CTR                   | FIPS 197, RFC 4344         | Implemented (HW via mbedTLS on ESP32; software AES on native)                                                                            |
+| DH group14 (modexp)           | RFC 3526, RFC 8268         | Implemented (HW `mbedtls_mpi` on ESP32; software Montgomery on native)                                                                   |
+| DH public-value validation    | RFC 4253 §8                | Implemented (rejects `e`/`f` outside `1 < v < p-1`)                                                                                      |
+| Session key derivation        | RFC 4253 §7.2              | Implemented (six A–F keys from `K`, `H`, session_id)                                                                                     |
 | Binary packet protocol        | RFC 4253 §6                | Implemented - framing, ≥4-byte padding to 16-byte multiple, encrypt-then-MAC over `seq‖plaintext`, CTR length-peek with snapshot/restore |
-| RSA public-key blob           | RFC 4253 §6.6, RFC 8332 §3 | Implemented - blob type string is `ssh-rsa`                             |
-| RSA-SHA2-256 signing          | RFC 8332, RFC 8017 §8.2    | **ESP32: real** (`mbedtls_pk_sign`). **Native: test stub** (`d=1`), never compiled into firmware |
-| RSA-SHA2-256 verification     | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** (small public exponent); validated against an openssl-generated KAT |
-| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + algorithm negotiation (one choice per category) |
-| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8          | Implemented - H over `V_C,V_S,I_C,I_S,K_S,e,f,K`; keys activate on NEWKEYS |
-| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                        |
-| Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control |
-| Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys |
+| RSA public-key blob           | RFC 4253 §6.6, RFC 8332 §3 | Implemented - blob type string is `ssh-rsa`                                                                                              |
+| RSA-SHA2-256 signing          | RFC 8332, RFC 8017 §8.2    | **ESP32: real** (`mbedtls_pk_sign`). **Native: test stub** (`d=1`), never compiled into firmware                                         |
+| RSA-SHA2-256 verification     | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** (small public exponent); validated against an openssl-generated KAT                                           |
+| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + algorithm negotiation (one choice per category)                                                          |
+| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8          | Implemented - H over `V_C,V_S,I_C,I_S,K_S,e,f,K`; keys activate on NEWKEYS                                                               |
+| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                                                                                         |
+| Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control                                                                 |
+| Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys                                                                |
 
 ## Authentication and hardening
 
@@ -74,11 +74,53 @@ session id and request before granting access.
 entirely. The `password` method is then refused and is not advertised in the
 `USERAUTH_FAILURE` method list; only `publickey` remains.
 
+## Host key provisioning
+
+The server reads its RSA-2048 private key from NVS (namespace `ssh_host_key`,
+key `priv_der`) as a DER-encoded PKCS#1/PKCS#8 blob. Generate and store it once
+per device:
+
+1. **Generate a 2048-bit key and export DER (PKCS#8) on your workstation:**
+
+   ```sh
+   openssl genrsa -out ssh_host.pem 2048
+   openssl pkcs8 -topk8 -nocrypt -in ssh_host.pem -outform DER -out ssh_host.der
+   ```
+
+   (`ssh_host.der` must be ≤ `SSH_RSA_KEY_DER_MAX` bytes - ~1.2 KB for RSA-2048.)
+
+2. **Write the DER blob into NVS** from a one-time provisioning sketch:
+
+   ```cpp
+   #include <Preferences.h>
+   extern const uint8_t der[] /* = { ...contents of ssh_host.der... } */;
+   extern const size_t der_len;
+
+   Preferences p;
+   p.begin("ssh_host_key", false);          // read-write
+   p.putBytes("priv_der", der, der_len);     // key name MUST be "priv_der"
+   p.end();
+   ```
+
+   Embed `ssh_host.der` as a byte array (e.g. `xxd -i ssh_host.der`), flash the
+   provisioning sketch once, then flash your real firmware.
+
+3. **At boot**, call `ssh_rsa_load_pubkey()` once (before accepting SSH) so the
+   public half (n, e) is available for the host-key blob; the private key is read
+   straight from NVS into a stack buffer for each signature and wiped immediately
+   after (never held in static memory).
+
+The matching public key for clients' `known_hosts` is derived from the same DER
+(`ssh-keygen -y -f ssh_host.pem`).
+
 ## Limitations
 
 - One `session` channel per connection (no port-forwarding / X11).
-- Native-build RSA *signing* is the `d=1` test stub above (ESP32 mbedTLS path is
-  real). RSA *verification* is real on both platforms.
+- The native-build software RSA/AES/bignum paths are not constant-time; they are
+  compiled out of firmware (`#ifndef ARDUINO`) and exist only for host tests. On
+  ESP32 the hardware/mbedTLS paths are used. Native RSA *signing* and
+  *verification* are both mathematically complete (validated by a sign→verify
+  round-trip and an openssl KAT).
 
 ## Memory footprint
 

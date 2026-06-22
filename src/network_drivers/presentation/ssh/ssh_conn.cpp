@@ -64,6 +64,30 @@ void ssh_conn_setup()
     ssh_server_set_emit_cb(ssh_emit);
 }
 
+int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
+{
+    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+        return -1;
+    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+        return -1;
+
+    // Frame the application bytes as SSH_MSG_CHANNEL_DATA (bounded by the peer
+    // window / max packet), then encrypt+MAC and write to the socket.
+    static uint8_t payload[SSH_PKT_BUF_SIZE];
+    size_t plen = 0;
+    if (ssh_channel_build_data(ssh_slot, data, len, payload, &plen, sizeof(payload)) != 0)
+        return -1;
+
+    static uint8_t wire[SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN];
+    size_t wlen = 0;
+    if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, sizeof(wire)) != 0)
+        return -1;
+    tcp_write(conn->pcb, wire, (u16_t)wlen, TCP_WRITE_FLAG_COPY);
+    tcp_output(conn->pcb);
+    return (int)len;
+}
+
 // ---------------------------------------------------------------------------
 // Connection lifecycle
 // ---------------------------------------------------------------------------

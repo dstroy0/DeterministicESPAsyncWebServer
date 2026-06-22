@@ -39,14 +39,18 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst);
 /**
  * @brief Decode a null-terminated Base64 string.
  *
- * Writes decoded bytes into @p dst.  @p dst must be at least
- * `(strlen(src) / 4) * 3` bytes.  Returns the number of decoded bytes.
- * Returns 0 on invalid input.
+ * Writes decoded bytes into @p dst, never writing more than @p dst_cap bytes.
+ * Returns the number of decoded bytes, or 0 on invalid input or if the decoded
+ * output would exceed @p dst_cap (the write is bounded - no overflow). The
+ * caller must leave room for any terminator it adds afterward (pass a capacity
+ * one less than the buffer size if it will null-terminate at the returned
+ * length).
  *
  * @param src     Null-terminated Base64 input string.
  * @param dst     Output byte buffer.
- * @return        Number of bytes written to @p dst, or 0 on error.
+ * @param dst_cap Capacity of @p dst in bytes.
+ * @return        Number of bytes written to @p dst, or 0 on error / overflow.
  */
-size_t base64_decode(const char *src, uint8_t *dst);
+size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap);
 
 #endif

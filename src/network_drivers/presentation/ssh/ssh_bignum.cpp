@@ -58,11 +58,17 @@ const SshBigNum group14_g = {{
     0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
 }};
 
+// Software Montgomery state and helpers below are used ONLY by the native
+// software modexp; on ARDUINO bn_expmod_group14() delegates to mbedtls (HW),
+// so this (data-dependent, non-constant-time) machinery must never be compiled
+// into firmware.  Guarded out on ARDUINO accordingly (SECURITY.md §timing).
+#ifndef ARDUINO
 // R mod p = 2^2048 - p  (computed as two's complement of p in 2048 bits)
 static SshBigNum g14_R1; // initialized by bn_init()
 // R^2 mod p = 2^4096 mod p (computed by bn_init() via repeated doubling)
 static SshBigNum g14_R2; // initialized by bn_init()
 static bool g14_initialized = false;
+#endif // !ARDUINO
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -80,6 +86,7 @@ static int bn_cmp_raw(const uint32_t *a, const uint32_t *b, int n)
     return 0;
 }
 
+#ifndef ARDUINO // native-only Montgomery helpers (see guard note above)
 // Subtract b from a in place (a -= b).  Assumes a >= b.  Both are n limbs.
 static void bn_sub_inplace(uint32_t *a, const uint32_t *b, int n)
 {
@@ -190,9 +197,10 @@ static void bn_monpro(SshBigNum *out, const SshBigNum *a, const SshBigNum *b)
 
     memcpy(out->d, res, SSH_BN_LIMBS * sizeof(uint32_t));
 }
+#endif // !ARDUINO (native-only Montgomery helpers)
 
 // ---------------------------------------------------------------------------
-// Public API - software path (native and ESP32 without HW bignum)
+// Public API (bn_from_bytes / bn_to_bytes / bn_cmp / ... shared both platforms)
 // ---------------------------------------------------------------------------
 
 void bn_from_bytes(SshBigNum *out, const uint8_t *bytes, size_t len)

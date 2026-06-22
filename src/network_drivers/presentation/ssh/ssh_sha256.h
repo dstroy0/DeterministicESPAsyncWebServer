@@ -5,14 +5,15 @@
  * @file ssh_sha256.h
  * @brief SHA-256 (FIPS 180-4) - streaming context and one-shot API.
  *
- * On Arduino (ESP32) targets the one-shot function delegates to
- * mbedtls_sha256() which uses the hardware SHA accelerator and is
- * significantly faster than the software path.  The streaming context
- * (init / update / final) uses the software implementation on both
- * platforms because the mbedtls_sha256_context is an internal type that
- * would require including mbedtls headers in every file that holds an
- * SshSha256Ctx.  The streaming path is used only for the KEX exchange-hash
- * (once per connection), where the extra cost is negligible.
+ * On Arduino (ESP32) targets BOTH the one-shot and the streaming context
+ * (init / update / final) delegate to mbedtls, which routes SHA-256 to the
+ * hardware accelerator. The streaming path backs the per-packet HMAC
+ * (ssh_hmac_sha256, run on every inbound and outbound SSH packet) as well as
+ * the KEX exchange-hash, so hardware acceleration matters for bulk throughput,
+ * not just the handshake. On native builds the software implementation is used.
+ *
+ * The context therefore holds an mbedtls_sha256_context on Arduino (pulling in
+ * <mbedtls/sha256.h>) and the software hash state on native.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -37,6 +38,13 @@
  * Used for the KEX exchange-hash which is assembled from several
  * separately-encoded fields (V_C, V_S, I_C, I_S, K_S, e, f, K).
  */
+#ifdef ARDUINO
+#include <mbedtls/sha256.h>
+typedef struct
+{
+    mbedtls_sha256_context mbed; ///< HW-accelerated SHA-256 state (ESP32 mbedtls).
+} SshSha256Ctx;
+#else
 typedef struct
 {
     uint32_t s[8];   ///< Running hash words (H0..H7).
@@ -44,6 +52,7 @@ typedef struct
     uint8_t buf[64]; ///< Partial block accumulator.
     uint32_t buflen; ///< Bytes valid in buf[].
 } SshSha256Ctx;
+#endif
 
 /**
  * @brief Initialize a streaming SHA-256 context.

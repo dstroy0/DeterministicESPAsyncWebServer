@@ -104,7 +104,8 @@ struct SshSession
     uint8_t session_id[SSH_SHA256_DIGEST_LEN]; ///< H from the first KEX (RFC 4253 §7.2).
     bool have_session_id;                      ///< True once the first KEX completes.
 
-    bool authed; ///< True after successful user authentication.
+    bool authed;           ///< True after successful user authentication.
+    uint8_t auth_failures; ///< Failed USERAUTH_REQUESTs (brute-force limit, RFC 4252 §4).
 };
 
 /** @brief Static pool of SSH session state (BSS), one per SSH slot. */

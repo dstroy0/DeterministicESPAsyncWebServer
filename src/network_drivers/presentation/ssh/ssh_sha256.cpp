@@ -16,8 +16,53 @@
 #include "ssh_sha256.h"
 #include <string.h>
 
+#ifdef ARDUINO
+
 // ---------------------------------------------------------------------------
-// Software SHA-256 (FIPS 180-4)
+// Arduino (ESP32): streaming + one-shot via mbedtls (hardware SHA accelerator).
+// The software FIPS-180-4 path below is compiled only on native.
+// ---------------------------------------------------------------------------
+
+#include <mbedtls/sha256.h>
+
+void ssh_sha256_init(SshSha256Ctx *ctx)
+{
+    mbedtls_sha256_init(&ctx->mbed);
+#if MBEDTLS_VERSION_MAJOR >= 3
+    mbedtls_sha256_starts(&ctx->mbed, 0 /* 0 = SHA-256 */);
+#else
+    mbedtls_sha256_starts_ret(&ctx->mbed, 0);
+#endif
+}
+
+void ssh_sha256_update(SshSha256Ctx *ctx, const uint8_t *data, size_t len)
+{
+#if MBEDTLS_VERSION_MAJOR >= 3
+    mbedtls_sha256_update(&ctx->mbed, data, len);
+#else
+    mbedtls_sha256_update_ret(&ctx->mbed, data, len);
+#endif
+}
+
+void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+{
+#if MBEDTLS_VERSION_MAJOR >= 3
+    mbedtls_sha256_finish(&ctx->mbed, digest);
+#else
+    mbedtls_sha256_finish_ret(&ctx->mbed, digest);
+#endif
+    mbedtls_sha256_free(&ctx->mbed);
+}
+
+void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGEST_LEN])
+{
+    (void)mbedtls_sha256(data, len, digest, 0 /* 0 = SHA-256, 1 = SHA-224 */);
+}
+
+#else // native software path
+
+// ---------------------------------------------------------------------------
+// Software SHA-256 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
 
 static const uint32_t K256[64] = {
@@ -112,7 +157,7 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
 }
 
 // ---------------------------------------------------------------------------
-// Streaming API (software, both platforms)
+// Streaming API (software, native only)
 // ---------------------------------------------------------------------------
 
 void ssh_sha256_init(SshSha256Ctx *ctx)
@@ -168,18 +213,8 @@ void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
 }
 
 // ---------------------------------------------------------------------------
-// One-shot: hardware on Arduino, software on native
+// One-shot (software)
 // ---------------------------------------------------------------------------
-
-#ifdef ARDUINO
-#include <mbedtls/sha256.h>
-
-void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGEST_LEN])
-{
-    (void)mbedtls_sha256(data, len, digest, 0 /* 0 = SHA-256, 1 = SHA-224 */);
-}
-
-#else
 
 void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGEST_LEN])
 {
@@ -189,4 +224,4 @@ void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGES
     ssh_sha256_final(&ctx, digest);
 }
 
-#endif // ARDUINO
+#endif // !ARDUINO (native software path)

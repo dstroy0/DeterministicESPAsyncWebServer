@@ -28,12 +28,13 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst)
     dst[olen] = '\0';
 }
 
-size_t base64_decode(const char *src, uint8_t *dst)
+size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 {
     size_t src_len = strlen(src);
     size_t olen;
-    size_t dlen = (src_len / 4) * 3 + 3;
-    int ret = mbedtls_base64_decode(dst, dlen, &olen, (const unsigned char *)src, src_len);
+    // Pass the caller's true capacity; mbedtls returns BUFFER_TOO_SMALL (and we
+    // map it to 0) rather than overrunning dst.
+    int ret = mbedtls_base64_decode(dst, dst_cap, &olen, (const unsigned char *)src, src_len);
     return (ret == 0) ? olen : 0;
 }
 
@@ -88,34 +89,59 @@ static int b64_val(char c)
         return 62;
     if (c == '/')
         return 63;
-    if (c == '=')
-        return 0;
+    // '=' is NOT a value here - padding is validated positionally by the
+    // decoder (1-2 '=' only at the end of the final quad).
     return -1;
 }
 
-size_t base64_decode(const char *src, uint8_t *dst)
+size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 {
     size_t out = 0;
 
-    // Process 4 characters at a time -> up to 3 output bytes. Any non-base64
-    // character (b64_val returns -1) aborts and signals failure by returning 0.
+    // Canonical Base64: process complete 4-character quads. A truncated final
+    // group, any non-base64 character, or misplaced '=' padding fails (return 0).
     while (*src)
     {
-        int a = b64_val(src[0]);
-        int b = (src[1]) ? b64_val(src[1]) : -1;
-        int c = (src[2]) ? b64_val(src[2]) : -1;
-        int d = (src[3]) ? b64_val(src[3]) : -1;
+        char c0 = src[0], c1 = src[1], c2 = src[2], c3 = src[3];
+        if (!c1 || !c2 || !c3)
+            return 0; // input length must be a multiple of 4
 
-        if (a < 0 || b < 0 || c < 0 || d < 0)
+        // The first two characters of every quad must be real Base64 (never pad).
+        int a = b64_val(c0);
+        int b = b64_val(c1);
+        if (a < 0 || b < 0)
             return 0;
 
-        // Reassemble the 24-bit group and slice it back into bytes; trailing
-        // '=' padding suppresses the corresponding output byte(s).
+        // '=' is permitted only as 1-2 trailing pad characters of the FINAL quad.
+        bool pad2 = (c2 == '=');
+        bool pad3 = (c3 == '=');
+        if (pad2 && !pad3)
+            return 0; // "xx=y" - a single pad must be in position 4, not 3
+        if ((pad2 || pad3) && src[4] != '\0')
+            return 0; // padding only allowed in the last quad
+
+        int c = pad2 ? 0 : b64_val(c2);
+        int d = pad3 ? 0 : b64_val(c3);
+        if (c < 0 || d < 0)
+            return 0;
+
+        // Reassemble the 24-bit group and slice it back into bytes. Each write is
+        // bounded by dst_cap; an over-capacity decode fails rather than overruns.
+        if (out >= dst_cap)
+            return 0;
         dst[out++] = (uint8_t)((a << 2) | (b >> 4));
-        if (src[2] && src[2] != '=')
+        if (!pad2)
+        {
+            if (out >= dst_cap)
+                return 0;
             dst[out++] = (uint8_t)((b << 4) | (c >> 2));
-        if (src[3] && src[3] != '=')
+        }
+        if (!pad3)
+        {
+            if (out >= dst_cap)
+                return 0;
             dst[out++] = (uint8_t)((c << 6) | d);
+        }
 
         src += 4;
     }

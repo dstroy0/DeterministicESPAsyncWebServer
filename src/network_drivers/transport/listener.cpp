@@ -31,6 +31,34 @@ extern err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
 extern err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
 extern void lowlevel_err_cb(void *arg, err_t err);
 
+// ---------------------------------------------------------------------------
+// Accept-rate throttle (fixed window, global). State persists across accepts.
+// Always compiled (unit-testable); only consulted when the feature is enabled.
+// ---------------------------------------------------------------------------
+
+static uint32_t g_accept_window_start = 0;
+static uint16_t g_accept_count = 0;
+
+bool listener_accept_allowed(uint32_t now_ms)
+{
+    // Unsigned subtraction wraps correctly across the millis() rollover.
+    if ((uint32_t)(now_ms - g_accept_window_start) >= DETWS_ACCEPT_THROTTLE_WINDOW_MS)
+    {
+        g_accept_window_start = now_ms;
+        g_accept_count = 0;
+    }
+    if (g_accept_count >= DETWS_ACCEPT_THROTTLE_MAX)
+        return false;
+    g_accept_count++;
+    return true;
+}
+
+void listener_accept_throttle_reset(void)
+{
+    g_accept_window_start = 0;
+    g_accept_count = 0;
+}
+
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
 {
     if (listener_id >= MAX_LISTENERS)
@@ -59,6 +87,16 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     if (idx >= MAX_LISTENERS)
         return ERR_VAL;
     Listener *lst = &listener_pool[idx];
+
+#if DETWS_ENABLE_ACCEPT_THROTTLE
+    // Connection-flood defense: drop accepts beyond the per-window budget before
+    // claiming a pool slot or doing any per-connection work.
+    if (!listener_accept_allowed(millis()))
+    {
+        tcp_abort(newpcb);
+        return ERR_ABRT;
+    }
+#endif
 
     int free_slot = -1;
     for (int i = 0; i < MAX_CONNS; i++)

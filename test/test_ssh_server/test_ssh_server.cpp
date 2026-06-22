@@ -24,11 +24,15 @@ extern uint8_t _test_rsa_e[4];
 
 static uint8_t emt_type[32];
 static int emt_n;
+static uint8_t emt_last[64]; // bytes of the most recent emit (for payload checks)
+static size_t emt_last_len;
 static void rec_emit(uint8_t slot, const uint8_t *p, size_t n)
 {
     (void)slot;
     if (emt_n < 32 && n > 0)
         emt_type[emt_n++] = p[0];
+    emt_last_len = n < sizeof(emt_last) ? n : sizeof(emt_last);
+    memcpy(emt_last, p, emt_last_len);
 }
 static void emt_reset()
 {
@@ -271,6 +275,87 @@ void test_ignore_is_noop()
     TEST_ASSERT_EQUAL_INT(0, emt_n);
 }
 
+// Build a password USERAUTH_REQUEST with the given (wrong/right) password.
+static size_t build_password_auth(uint8_t *p, const char *user, const char *pass)
+{
+    size_t n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, user);
+    n += put_string(p + n, "ssh-connection");
+    n += put_string(p + n, "password");
+    p[n++] = 0; // change-password boolean = FALSE
+    n += put_string(p + n, pass);
+    return n;
+}
+
+// Repeated auth failures must be bounded: after SSH_MAX_AUTH_ATTEMPTS failed
+// USERAUTH_REQUESTs the server sends SSH_MSG_DISCONNECT and signals close (-1).
+void test_auth_bruteforce_disconnect()
+{
+    SshSession *s = &ssh_sess[0];
+    s->phase = SSH_PHASE_AUTH;
+    s->authed = false;
+    s->auth_failures = 0;
+
+    uint8_t pkt[128];
+    size_t n = build_password_auth(pkt, "alice", "wrong");
+
+    // The first SSH_MAX_AUTH_ATTEMPTS-1 failures keep the connection open.
+    for (int k = 0; k < SSH_MAX_AUTH_ATTEMPTS - 1; k++)
+    {
+        emt_reset();
+        TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
+        TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
+        TEST_ASSERT_FALSE(s->authed);
+    }
+    TEST_ASSERT_EQUAL_INT(SSH_MAX_AUTH_ATTEMPTS - 1, s->auth_failures);
+
+    // The final failure trips the limit: FAILURE then DISCONNECT, return -1.
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(2, emt_n);
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
+    TEST_ASSERT_EQUAL(SSH_MSG_DISCONNECT, emt_type[1]);
+}
+
+// A successful auth before the limit does not count toward the failure budget.
+void test_auth_success_after_failures()
+{
+    SshSession *s = &ssh_sess[0];
+    s->phase = SSH_PHASE_AUTH;
+    s->authed = false;
+    s->auth_failures = 0;
+
+    uint8_t pkt[128];
+    size_t n = build_password_auth(pkt, "alice", "wrong");
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
+
+    n = build_password_auth(pkt, "alice", "s3cret");
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, emt_type[0]);
+    TEST_ASSERT_TRUE(s->authed);
+    TEST_ASSERT_EQUAL_INT(1, s->auth_failures); // unchanged by the success
+}
+
+// An unrecognized message gets SSH_MSG_UNIMPLEMENTED with the rejected packet's
+// sequence number (RFC 4253 §11.4). seq_no_recv has already advanced past it.
+void test_unimplemented_reply_for_unknown_message()
+{
+    ssh_pkt_init(0);
+    ssh_pkt[0].seq_no_recv = 7; // pretend recv() just processed packet #6
+    emt_reset();
+    uint8_t pkt[1] = {200}; // 200 is not a handled message type
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, 1));
+    TEST_ASSERT_EQUAL(SSH_MSG_UNIMPLEMENTED, emt_type[0]);
+    TEST_ASSERT_EQUAL_INT(5, (int)emt_last_len);
+    uint32_t seq = ((uint32_t)emt_last[1] << 24) | ((uint32_t)emt_last[2] << 16) | ((uint32_t)emt_last[3] << 8) |
+                   (uint32_t)emt_last[4];
+    TEST_ASSERT_EQUAL_UINT32(6, seq); // rejected packet = seq_no_recv - 1
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -278,5 +363,8 @@ int main()
     RUN_TEST(test_channel_open_before_auth_rejected);
     RUN_TEST(test_disconnect_closes);
     RUN_TEST(test_ignore_is_noop);
+    RUN_TEST(test_auth_bruteforce_disconnect);
+    RUN_TEST(test_auth_success_after_failures);
+    RUN_TEST(test_unimplemented_reply_for_unknown_message);
     return UNITY_END();
 }

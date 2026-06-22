@@ -12,6 +12,7 @@
 #include "ssh_dh.h"
 #include "ssh_packet.h"
 #include "ssh_transport.h"
+#include <string.h>
 
 static SshEmitCb g_emit = nullptr;
 
@@ -84,7 +85,39 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
             return -1;
         if (ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
-        emit(i, buf, n); // SUCCESS (→ phase OPEN) or FAILURE
+        emit(i, buf, n); // SUCCESS (→ phase OPEN), PK_OK probe, or FAILURE
+        // Brute-force defense (RFC 4252 §4): bound failed attempts per
+        // connection. Only an actual USERAUTH_FAILURE counts - a SUCCESS or the
+        // publickey "would-be-accepted" probe (PK_OK) does not.
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
+        {
+            if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
+            {
+                // SSH_MSG_DISCONNECT payload: byte || uint32(reason) ||
+                // string(desc) || string(lang="").  Emitted through the normal
+                // packet path, then -1 tells the caller to close the socket.
+                static const char desc[] = "too many authentication failures";
+                const uint32_t dl = (uint32_t)(sizeof(desc) - 1);
+                size_t o = 0;
+                buf[o++] = SSH_MSG_DISCONNECT;
+                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 24);
+                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 16);
+                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 8);
+                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE);
+                buf[o++] = (uint8_t)(dl >> 24);
+                buf[o++] = (uint8_t)(dl >> 16);
+                buf[o++] = (uint8_t)(dl >> 8);
+                buf[o++] = (uint8_t)(dl);
+                memcpy(buf + o, desc, dl);
+                o += dl;
+                buf[o++] = 0; // language tag: empty string (4-byte length 0)
+                buf[o++] = 0;
+                buf[o++] = 0;
+                buf[o++] = 0;
+                emit(i, buf, o);
+                return -1; // close the connection
+            }
+        }
         return 0;
 
     case SSH_MSG_CHANNEL_OPEN:
@@ -123,10 +156,19 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
             emit(i, buf, n);
         return 0;
 
-    default:
-        // Unrecognized message: ignore (a strict SSH_MSG_UNIMPLEMENTED reply
-        // requires the rejected packet's sequence number, which is not exposed
-        // to the dispatcher).
+    default: {
+        // RFC 4253 §11.4: reply to an unrecognized message with
+        // SSH_MSG_UNIMPLEMENTED carrying the rejected packet's sequence number.
+        // ssh_pkt_recv() has already incremented seq_no_recv past this packet,
+        // so the rejected packet's number is seq_no_recv - 1.
+        uint32_t rej = ssh_pkt[i].seq_no_recv - 1u;
+        buf[0] = SSH_MSG_UNIMPLEMENTED;
+        buf[1] = (uint8_t)(rej >> 24);
+        buf[2] = (uint8_t)(rej >> 16);
+        buf[3] = (uint8_t)(rej >> 8);
+        buf[4] = (uint8_t)(rej);
+        emit(i, buf, 5);
         return 0;
+    }
     }
 }

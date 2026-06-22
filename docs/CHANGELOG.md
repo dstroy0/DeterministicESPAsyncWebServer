@@ -4,6 +4,39 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Highlights (hand-curated)
+
+Security / correctness:
+- Native RSA signing is now a real full-width `m^d mod n` (was a `d=1` test stub);
+  validated by a sign→verify round-trip with a real 2048-bit key.
+- SSH brute-force defense: failed `USERAUTH_REQUEST`s are bounded per connection
+  (`SSH_MAX_AUTH_ATTEMPTS`) then `SSH_MSG_DISCONNECT`.
+- Non-constant-time software crypto is now compile-excluded from firmware
+  (`#ifndef ARDUINO` around the native Montgomery cluster).
+- `base64_decode()` takes a `dst_cap` bound (no overflow) and rejects misplaced
+  `=` padding / non-multiple-of-4 input.
+- Opt-in global accept-rate throttle (`DETWS_ENABLE_ACCEPT_THROTTLE`).
+- `SSH_MSG_UNIMPLEMENTED` reply for unknown messages (RFC 4253 §11.4).
+
+ESP32 build / performance:
+- `ssh_rsa.cpp` compiles on mbedtls v2 **and** v3 (`MBEDTLS_VERSION_MAJOR`
+  guards). Fixed a latent bug where the host signature covered `H` instead of
+  `SHA256(H)`.
+- SSH streaming SHA-256 now uses the ESP32 hardware engine (mbedtls-backed
+  context), accelerating per-packet HMAC + KEX; AES-256-CTR encrypts the whole
+  buffer in one `mbedtls_aes_crypt_ctr()` call (was per-16-byte-block ECB).
+  Software paths remain native-only. `examples/07.SSHCryptoSelfTest` validates
+  the HW path on a device.
+
+Features:
+- `serve_static(prefix, fs, root)` - one-call static subtree mount with
+  `index.html` fallback, MIME auto-detection, gzip-static (`<path>.gz`), and
+  path-traversal rejection.
+- `DetWebServer::mime_type()`, `redirect()`, and named `DetWebServerResult` codes
+  for `begin()`/`listen()`/`restart()`.
+- SSH: `ssh_conn_send()` outbound channel API + `examples/06.SSH`, plus host-key
+  provisioning docs (`docs/SSH.md`).
+
 ### CI / Build
 - update CHANGELOG.md [skip ci] ([`01d1e1a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01d1e1acbfc53b79de30074d6bc2bae6b4cb33ec))
 - update CHANGELOG.md [skip ci] ([`a4d0a84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d0a849a95bc369ee567199f833fb50e34bd7e9))

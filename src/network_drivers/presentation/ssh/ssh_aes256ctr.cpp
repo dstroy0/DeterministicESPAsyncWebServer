@@ -30,24 +30,17 @@ void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t 
     ctx->pos = 0;
 }
 
-static void aes_block_hw(SshAesCtrCtx *ctx)
-{
-    mbedtls_aes_crypt_ecb(&ctx->_mbed, MBEDTLS_AES_ENCRYPT, ctx->counter, ctx->keystream);
-    // Increment counter as big-endian 128-bit integer.
-    for (int j = 15; j >= 0; j--)
-        if (++ctx->counter[j])
-            break;
-}
-
 void ssh_aes256ctr_crypt(SshAesCtrCtx *ctx, const uint8_t *in, uint8_t *out, size_t len)
 {
-    for (size_t i = 0; i < len; i++)
-    {
-        if (ctx->pos == 0)
-            aes_block_hw(ctx);
-        out[i] = in[i] ^ ctx->keystream[ctx->pos];
-        ctx->pos = (uint8_t)((ctx->pos + 1u) & 0x0fu);
-    }
+    // Encrypt the whole buffer in one mbedtls call: it acquires the HW AES
+    // engine / loads the key once and manages the big-endian counter, keystream
+    // block, and intra-block offset itself (our fields map 1:1 to its
+    // nonce_counter / stream_block / nc_off). This replaces the previous
+    // per-16-byte-block mbedtls_aes_crypt_ecb() loop, whose per-block setup
+    // dominated bulk throughput on ESP32.
+    size_t nc_off = ctx->pos;
+    mbedtls_aes_crypt_ctr(&ctx->_mbed, len, &nc_off, ctx->counter, ctx->keystream, in, out);
+    ctx->pos = (uint8_t)nc_off; // 0..15
 }
 
 void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx)

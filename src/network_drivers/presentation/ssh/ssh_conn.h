@@ -14,6 +14,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -44,5 +45,18 @@ void ssh_conn_rx(uint8_t conn_slot);
  * @brief Tear down SSH state for @p conn_slot (disconnect / error).
  */
 void ssh_conn_close(uint8_t conn_slot);
+
+/**
+ * @brief Send application data to the client over the SSH session channel.
+ *
+ * Frames @p data as SSH_MSG_CHANNEL_DATA, encrypts+MACs it, and writes it to the
+ * socket. @p ssh_slot is the SSH session slot index passed to the data callback
+ * registered via ssh_channel_set_data_cb(). A single call sends at most one
+ * channel-data message (bounded by the peer's flow-control window).
+ *
+ * @return Number of bytes sent, or -1 on error (bad slot, channel closed, peer
+ *         window/packet limit, or no active connection).
+ */
+int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H

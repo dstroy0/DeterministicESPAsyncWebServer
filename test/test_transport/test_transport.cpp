@@ -352,6 +352,40 @@ void stress_ring_buffer_byte_by_byte_fill_and_drain()
     TEST_ASSERT_EQUAL(written, read);
 }
 
+// ====================================================================
+// Accept-rate throttle (connection-flood defense)
+// ====================================================================
+
+// Within one window, the first MAX accepts pass and the next is rejected.
+void test_accept_throttle_blocks_over_budget()
+{
+    listener_accept_throttle_reset();
+    for (int i = 0; i < DETWS_ACCEPT_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed(0));
+    TEST_ASSERT_FALSE(listener_accept_allowed(0)); // budget exhausted
+}
+
+// Crossing into the next window refills the budget.
+void test_accept_throttle_window_refills()
+{
+    listener_accept_throttle_reset();
+    for (int i = 0; i < DETWS_ACCEPT_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed(10));
+    TEST_ASSERT_FALSE(listener_accept_allowed(10));
+    // One full window later the counter resets.
+    TEST_ASSERT_TRUE(listener_accept_allowed(10 + DETWS_ACCEPT_THROTTLE_WINDOW_MS));
+}
+
+// The unsigned window math survives a millis() rollover near 2^32.
+void test_accept_throttle_handles_rollover()
+{
+    listener_accept_throttle_reset();
+    uint32_t near_max = 0xFFFFFFFFu - 5;
+    TEST_ASSERT_TRUE(listener_accept_allowed(near_max));
+    // Wrap past zero: elapsed = (small - near_max) wraps to a large window jump.
+    TEST_ASSERT_TRUE(listener_accept_allowed(near_max + DETWS_ACCEPT_THROTTLE_WINDOW_MS));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -384,6 +418,11 @@ int main()
     RUN_TEST(stress_timeout_arm_recover_cycle);
     RUN_TEST(stress_check_timeouts_high_call_rate);
     RUN_TEST(stress_ring_buffer_byte_by_byte_fill_and_drain);
+
+    // Accept-rate throttle
+    RUN_TEST(test_accept_throttle_blocks_over_budget);
+    RUN_TEST(test_accept_throttle_window_refills);
+    RUN_TEST(test_accept_throttle_handles_rollover);
 
     return UNITY_END();
 }

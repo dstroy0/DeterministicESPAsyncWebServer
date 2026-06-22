@@ -116,4 +116,20 @@ void listener_stop_all();
  */
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 
+/**
+ * @brief Fixed-window global accept-rate gate (connection-flood defense).
+ *
+ * Returns true if a new connection accepted at @p now_ms is within the
+ * DETWS_ACCEPT_THROTTLE_MAX-per-DETWS_ACCEPT_THROTTLE_WINDOW_MS budget (and
+ * counts it), false if the budget for the current window is exhausted. State is
+ * two static counters shared across all listeners. The accept callback consults
+ * this only when DETWS_ENABLE_ACCEPT_THROTTLE is set; the function is always
+ * compiled so it can be unit-tested. Call listener_accept_throttle_reset() to
+ * clear the window (e.g. between tests).
+ */
+bool listener_accept_allowed(uint32_t now_ms);
+
+/** @brief Reset the accept-throttle window counters. */
+void listener_accept_throttle_reset(void);
+
 #endif

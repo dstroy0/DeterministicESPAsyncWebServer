@@ -73,8 +73,14 @@ static const char *status_text(int code)
         return "Moved Permanently";
     case 302:
         return "Found";
+    case 303:
+        return "See Other";
     case 304:
         return "Not Modified";
+    case 307:
+        return "Temporary Redirect";
+    case 308:
+        return "Permanent Redirect";
     case 400:
         return "Bad Request";
     case 401:
@@ -180,17 +186,17 @@ DetWebServer::DetWebServer() : _route_count(0), _not_found_handler(nullptr), _co
 int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 {
     if (_listener_count >= MAX_LISTENERS)
-        return -1;
+        return DETWS_ERR_LISTENER_FULL;
     _listen_ports[_listener_count] = port;
     _listen_protos[_listener_count] = proto;
     _listener_count++;
-    return 1;
+    return DETWS_OK;
 }
 
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
 {
     if (_listener_count == 0)
-        return -1;
+        return DETWS_ERR_NO_LISTENERS;
     DeterministicAsyncTCP::pool_init(cfg);
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
@@ -203,22 +209,23 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
     for (uint8_t i = 0; i < _listener_count; i++)
     {
         if (listener_add(i, _listen_ports[i], _listen_protos[i]) < 0)
-            return -1;
+            return DETWS_ERR_LISTEN_FAILED;
     }
-    return 1;
+    return DETWS_OK;
 }
 
 int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
 {
-    if (listen(port) < 0)
-        return -1;
+    int32_t rc = listen(port);
+    if (rc < 0)
+        return rc;
     return begin(cfg);
 }
 
 int32_t DetWebServer::restart(const WebServerConfig *cfg)
 {
     if (_listener_count == 0)
-        return -1;
+        return DETWS_ERR_NO_LISTENERS;
     stop();
     return begin(cfg);
 }
@@ -759,6 +766,22 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         }
 #endif // DETWS_ENABLE_SSE
 
+#if DETWS_ENABLE_FILE_SERVING
+        if (r->type == ROUTE_STATIC)
+        {
+            // Static mounts answer GET (and HEAD via GET); other methods → 405.
+            if (method != HTTP_GET && method != HTTP_HEAD)
+            {
+                path_matched = true;
+                allow_append(allow_buf, sizeof(allow_buf), "GET");
+                allow_append(allow_buf, sizeof(allow_buf), "HEAD");
+                continue;
+            }
+            serve_static_request(slot_id, req, r);
+            return;
+        }
+#endif // DETWS_ENABLE_FILE_SERVING
+
         // ROUTE_HTTP - a HEAD request is served by the GET handler with the
         // response body suppressed (RFC 7231 §4.3.2).
         bool method_ok = (r->method == method) || (method == HTTP_HEAD && r->method == HTTP_GET);
@@ -896,6 +919,126 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
     http_reset(slot_id);
 }
 
+void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    // Only the redirect status codes are valid here; anything else → 302.
+    switch (code)
+    {
+    case 301:
+    case 302:
+    case 303:
+    case 307:
+    case 308:
+        break;
+    default:
+        code = 302;
+        break;
+    }
+
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Location: %s\r\n"
+                        "Content-Length: 0\r\n"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        code, status_text(code), location, _cors_enabled ? _cors_header_buf : "");
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    tcp_output(pcb);
+
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    http_reset(slot_id);
+}
+
+// ---------------------------------------------------------------------------
+// MIME type lookup by extension
+// ---------------------------------------------------------------------------
+
+const char *DetWebServer::mime_type(const char *path)
+{
+    if (!path)
+        return "application/octet-stream";
+
+    // Find the last '.' after the last '/'.
+    const char *dot = nullptr;
+    for (const char *p = path; *p; p++)
+    {
+        if (*p == '/')
+            dot = nullptr;
+        else if (*p == '.')
+            dot = p;
+    }
+    if (!dot || dot[1] == '\0')
+        return "application/octet-stream";
+    const char *ext = dot + 1;
+
+    // Case-insensitive compare against a small static table.
+    static const struct
+    {
+        const char *ext;
+        const char *type;
+    } table[] = {
+        {"html", "text/html"},
+        {"htm", "text/html"},
+        {"css", "text/css"},
+        {"js", "application/javascript"},
+        {"mjs", "application/javascript"},
+        {"json", "application/json"},
+        {"xml", "application/xml"},
+        {"txt", "text/plain"},
+        {"csv", "text/csv"},
+        {"svg", "image/svg+xml"},
+        {"png", "image/png"},
+        {"jpg", "image/jpeg"},
+        {"jpeg", "image/jpeg"},
+        {"gif", "image/gif"},
+        {"ico", "image/x-icon"},
+        {"webp", "image/webp"},
+        {"wasm", "application/wasm"},
+        {"woff", "font/woff"},
+        {"woff2", "font/woff2"},
+        {"ttf", "font/ttf"},
+        {"pdf", "application/pdf"},
+        {"gz", "application/gzip"},
+    };
+    for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++)
+    {
+        const char *a = ext;
+        const char *b = table[i].ext;
+        bool eq = true;
+        while (*a && *b)
+        {
+            char ca = (*a >= 'A' && *a <= 'Z') ? (char)(*a + 32) : *a;
+            char cb = *b; // table is already lowercase
+            if (ca != cb)
+            {
+                eq = false;
+                break;
+            }
+            a++;
+            b++;
+        }
+        if (eq && *a == '\0' && *b == '\0')
+            return table[i].type;
+    }
+    return "application/octet-stream";
+}
+
 // ---------------------------------------------------------------------------
 // WebSocket public API
 // ---------------------------------------------------------------------------
@@ -1030,8 +1173,10 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
         return false;
 
     uint8_t decoded[MAX_AUTH_LEN * 2 + 2];
-    size_t n = base64_decode(auth_hdr + 6, decoded);
-    if (n == 0 || n >= sizeof(decoded))
+    // Bound the write to leave room for the null terminator at decoded[n]; an
+    // over-long Authorization value now fails the decode instead of overrunning.
+    size_t n = base64_decode(auth_hdr + 6, decoded, sizeof(decoded) - 1);
+    if (n == 0)
         return false;
     decoded[n] = '\0';
 
@@ -1052,7 +1197,8 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_FILE_SERVING
-void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
+void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
+                                       const char *content_type, const char *content_encoding)
 {
     fs::File f = file_sys.open(fs_path, "r");
     if (!f)
@@ -1071,14 +1217,20 @@ void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_
 
     size_t file_size = f.size();
 
+    // Optional Content-Encoding line (e.g. gzip for pre-compressed assets).
+    char enc_line[40];
+    enc_line[0] = '\0';
+    if (content_encoding)
+        snprintf(enc_line, sizeof(enc_line), "Content-Encoding: %s\r\n", content_encoding);
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 200 OK\r\n"
                         "Content-Type: %s\r\n"
                         "Content-Length: %d\r\n"
-                        "%s"
+                        "%s%s"
                         "Connection: close\r\n\r\n",
-                        content_type, (int)file_size, _cors_enabled ? _cors_header_buf : "");
+                        content_type, (int)file_size, enc_line, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
@@ -1087,10 +1239,14 @@ void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_
 
     tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
 
-    uint8_t chunk[FILE_CHUNK_SIZE];
-    size_t n;
-    while ((n = f.read(chunk, sizeof(chunk))) > 0)
-        tcp_write(pcb, chunk, (u16_t)n, TCP_WRITE_FLAG_COPY);
+    // HEAD: headers only (Content-Length reflects the body that would be sent).
+    if (!head)
+    {
+        uint8_t chunk[FILE_CHUNK_SIZE];
+        size_t n;
+        while ((n = f.read(chunk, sizeof(chunk))) > 0)
+            tcp_write(pcb, chunk, (u16_t)n, TCP_WRITE_FLAG_COPY);
+    }
 
     tcp_output(pcb);
 
@@ -1099,5 +1255,92 @@ void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_
 
     f.close();
     http_reset(slot_id);
+}
+
+void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
+{
+    serve_file_internal(slot_id, req_is_head(slot_id), file_sys, fs_path, content_type, nullptr);
+}
+
+void DetWebServer::serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r = &_routes[_route_count++];
+
+    // Store the pattern as a wildcard so path_matches() does a prefix match.
+    char pat[MAX_PATH_LEN];
+    size_t n = strlen(url_prefix);
+    if (n > 0 && url_prefix[n - 1] == '*')
+        snprintf(pat, sizeof(pat), "%s", url_prefix); // already a wildcard
+    else
+        snprintf(pat, sizeof(pat), "%s*", url_prefix); // append the wildcard
+    fill_route_base(r, pat);
+    r->type = ROUTE_STATIC;
+    r->method = HTTP_GET;
+    r->static_fs = &file_sys;
+    r->static_root = fs_root;
+}
+
+void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
+{
+    if (!r->static_fs)
+    {
+        send(slot_id, 404, "text/plain", "Not Found");
+        return;
+    }
+
+    // Request path beyond the mount prefix (route path minus its trailing '*').
+    size_t plen = strlen(r->path);
+    if (plen > 0 && r->path[plen - 1] == '*')
+        plen--;
+    const char *sub = (strlen(req->path) >= plen) ? req->path + plen : "";
+
+    // Reject path traversal before touching the filesystem.
+    if (strstr(sub, ".."))
+    {
+        send(slot_id, 404, "text/plain", "Not Found");
+        return;
+    }
+
+    const char *root = r->static_root ? r->static_root : "";
+    size_t rlen = strlen(root);
+    bool root_slash = (rlen > 0 && root[rlen - 1] == '/');
+    if (root_slash && sub[0] == '/') // avoid a doubled separator
+        sub++;
+    bool sub_slash = (sub[0] == '/');
+    const char *sep = (root_slash || sub_slash) ? "" : "/";
+
+    // Directory or bare-prefix request → index.html.
+    size_t slen = strlen(sub);
+    bool dir = (slen == 0) || (sub[slen - 1] == '/');
+
+    char fs_path[256];
+    int wn = dir ? snprintf(fs_path, sizeof(fs_path), "%s%s%sindex.html", root, sep, sub)
+                 : snprintf(fs_path, sizeof(fs_path), "%s%s%s", root, sep, sub);
+    if (wn <= 0 || wn >= (int)sizeof(fs_path))
+    {
+        send(slot_id, 404, "text/plain", "Not Found");
+        return;
+    }
+
+    const char *ctype = mime_type(fs_path);
+    bool head = req_is_head(slot_id);
+
+    // Pre-compressed variant: serve <path>.gz if the client accepts gzip and it
+    // exists. Content-Type stays that of the original (uncompressed) resource.
+    const char *ae = http_get_header(req, "Accept-Encoding");
+    if (ae && strstr(ae, "gzip"))
+    {
+        char gz[260];
+        int gn = snprintf(gz, sizeof(gz), "%s.gz", fs_path);
+        if (gn > 0 && gn < (int)sizeof(gz) && r->static_fs->exists(gz))
+        {
+            serve_file_internal(slot_id, head, *r->static_fs, gz, ctype, "gzip");
+            return;
+        }
+    }
+
+    serve_file_internal(slot_id, head, *r->static_fs, fs_path, ctype, nullptr);
 }
 #endif // DETWS_ENABLE_FILE_SERVING
