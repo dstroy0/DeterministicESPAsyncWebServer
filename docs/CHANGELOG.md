@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`7866465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78664653af173e99cf505f23253713ae969a45b4))
+- update CHANGELOG.md [skip ci] ([`b6c032e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6c032eb151d77b6ae681661fc2bb90c4deeb18c))
 - update test report [skip ci] ([`e018e74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e018e74e6810eeb5e2c479699e799fa55082840f))
 - update CHANGELOG.md [skip ci] ([`9819cc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9819cc2ee3e543c7a1c6f725e6f8604b5e135c6e))
 - update test report [skip ci] ([`0cf241f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cf241fdc2441ea4cfc0e062c2422b525c7692c3))
@@ -73,6 +75,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c275933`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c275933bbd5942936e3510078e91f4b8568befb3))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5c7d7e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c7d7e6695efbd49bc18af5b617160ddfa99d91a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c6cefe3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6cefe3a5c9d0dccf30d2dc3f42a737d354314f4))
 - create squirty the injection squid; update docs ([`8528f7d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8528f7dd00d31cdfb7a490fec1e150d8b73a0aaa))
@@ -128,6 +131,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - add GitHub Actions workflow status badges to README.md ([`346c0cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/346c0cf9362244e711d945a01abc0ba9ddee5203))
 - update feature flags info & add provisioning, MDNS & NTP services ([`b4135ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4135ba256608624ac5037f5f9e694775f4dca20))
 - docs ([`93c7ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ef88637ee6576bef7a6ba34a358881ff42a3))
+
+### Features
+
+- custom response headers/cookies + urlencoded form params ([`8d9f7c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d9f7c55a3660f5727ef0577523a9868104c9579))
 
 ### Refactor
 
