@@ -10,18 +10,18 @@
 #---------------------------------------------------------------------------
 PROJECT_NAME           = "DeterministicESPAsyncWebServer"
 PROJECT_BRIEF          = "Zero-allocation, bounded-execution async HTTP server for ESP32"
-PROJECT_NUMBER         = "1.2.0"
+PROJECT_NUMBER         = "1.2.1"
 PROJECT_LOGO           =
 
 #---------------------------------------------------------------------------
 # Input / output
 #---------------------------------------------------------------------------
-INPUT                  = src examples README.md
+INPUT                  = src examples docs/README.md
 FILE_PATTERNS          = *.h *.cpp *.ino *.md
 RECURSIVE              = YES
 EXCLUDE                =
-EXCLUDE_PATTERNS       = */test/* */docs/*
-USE_MDFILE_AS_MAINPAGE = README.md
+EXCLUDE_PATTERNS       = */test/* */docs/html/* */docs/utilities/* */docs/RFC.md */docs/SSH.md */docs/SECURITY.md */docs/TEST_DOCUMENTATION.md */docs/TEST_REPORT.md */docs/TODO.md */docs/CHANGELOG.md */docs/Doxyfile */docs/cliff.toml */docs/custom.css
+USE_MDFILE_AS_MAINPAGE = docs/README.md
 
 OUTPUT_DIRECTORY       = docs/html
 CREATE_SUBDIRS         = NO
