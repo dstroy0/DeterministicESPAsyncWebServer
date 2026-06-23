@@ -81,6 +81,8 @@ PlatformIO separates configurations into different "environments" using [platfor
 | `native_ssh_hardened` | `DETWS_SSH_ALLOW_PASSWORD=0`  | Validates secure-only configuration where password-based logins are stripped out at compile-time.       |
 | `native_ssh_conn`     | Full SSH + transport link     | Exercises the SSH state machine wired directly through our raw transport/session event-loop.            |
 | `native_compliance`   | `DETWS_ENFORCE_HOST_HEADER=1` | Rigid RFC-compliance testing (enforces mandatory HTTP/1.1 `Host` headers and rejects duplicate fields). |
+| `native_ota`          | `DETWS_ENABLE_OTA=1`          | The HTTP parser's streaming-body hook (large uploads bypass the buffer cap) against a mock sink.        |
+| `native_prov`         | Default flags                 | The captive-portal form-field extractor / URL-decoder (the host-testable part of WiFi provisioning).    |
 
 > [!NOTE]
 > The `native` and `native_app` environments build with `DETWS_ENFORCE_HOST_HEADER=0` because their legacy test suites focus strictly on lower-level parser mechanics. The stricter RFC 7230 §5.4 host header validation is tested independently in `native_compliance`.
@@ -230,10 +232,10 @@ We test session and socket race conditions by interleaved function calling:
 
 ## 7. Comprehensive Test Directory
 
-This section contains a thorough directory of all test cases across all 18 test suites. Click on any test suite to expand its test cases, and click on individual test cases to expand their objectives and assertions.
+This section contains a thorough directory of all test cases across all 20 test suites. Click on any test suite to expand its test cases, and click on individual test cases to expand their objectives and assertions.
 
 <details>
-<summary><b>test_application (44 tests)</b></summary>
+<summary><b>test_application (47 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><code>test_handler_reads_body</code> &mdash; <i>Handler reads body</i></summary>
@@ -614,6 +616,43 @@ This section contains a thorough directory of all test cases across all 18 test 
     * **Objective**: Serve static missing is 404
     * **Assertions**:
       * `Assert not null (strstr(out, "404"))`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_serve_static_etag_conditional_get</code> &mdash; <i>Serve static etag conditional get</i></summary>
+
+    * **Objective**: Serve static etag conditional get
+    * **Assertions**:
+      * `Assert not null (strstr(out1, "HTTP/1.1 200 OK"))`
+      * `Assert not null (etp)`
+      * `Assert not null (strstr(out2, "304 Not Modified"))`
+      * `Assert not null (strstr(out2, etag))`
+      * `Assert null (strstr(out2, "&lt;html&gt;hi&lt;/html&gt;"))`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_request_log_hook_fires</code> &mdash; <i>Request log hook fires</i></summary>
+
+    * **Objective**: Request log hook fires
+    * **Assertions**:
+      * `Assert equal int (1, g_log_calls)`
+      * `Assert equal string ("GET", g_log_method)`
+      * `Assert equal string ("/hi", g_log_path)`
+      * `Assert equal int (200, g_log_status)`
+      * `Assert equal int (5, g_log_bytes)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_stats_endpoint_emits_json</code> &mdash; <i>Stats endpoint emits json</i></summary>
+
+    * **Objective**: Stats endpoint emits json
+    * **Assertions**:
+      * `Assert not null (strstr(out, "application/json"))`
+      * `Assert not null (strstr(out, "\"uptime_ms\""))`
+      * `Assert not null (strstr(out, "\"requests\""))`
+      * `Assert not null (strstr(out, "\"http_2xx\""))`
+      * `Assert not null (strstr(out, "\"http_4xx\""))`
+      * `Assert not null (strstr(out, "\"active_conns\""))`
 
   </details>
 </details>
@@ -1047,6 +1086,40 @@ This section contains a thorough directory of all test cases across all 18 test 
     * **Assertions**:
       * `Assert not null message (strstr(tcp_captured(), "200"), "expected 200")`
       * `Assert not null message (strstr(tcp_captured(), "404"), "expected 404")`
+
+  </details>
+</details>
+
+<details>
+<summary><b>test_http_ota (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><code>test_large_body_streams_to_completion</code> &mdash; <i>Large body streams to completion</i></summary>
+
+    * **Objective**: Large body streams to completion
+    * **Assertions**:
+      * `Assert equal (PARSE_COMPLETE, r.parse_state)`
+      * `Assert true (r.body_streaming)`
+      * `Assert equal uint (N, (unsigned)g_total)`
+      * `Assert greater than (1, g_chunks)`
+      * `TEST_ASSERT_EQUAL_UINT8('A' + (i % 26), g_capture[i]);`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_no_hooks_large_body_is_413</code> &mdash; <i>No hooks large body is 413</i></summary>
+
+    * **Objective**: No hooks large body is 413
+    * **Assertions**:
+      * `Assert equal (PARSE_ENTITY_TOO_LARGE, r.parse_state)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_nonmatching_path_not_streamed</code> &mdash; <i>Nonmatching path not streamed</i></summary>
+
+    * **Objective**: Nonmatching path not streamed
+    * **Assertions**:
+      * `Assert equal (PARSE_ENTITY_TOO_LARGE, r.parse_state)`
+      * `Assert equal uint (0, (unsigned)g_total)`
 
   </details>
 </details>
@@ -2544,6 +2617,60 @@ This section contains a thorough directory of all test cases across all 18 test 
       * `Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)`
       * `Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)`
       * `Assert equal string ("GET", http_pool[0].method)`
+
+  </details>
+</details>
+
+<details>
+<summary><b>test_provisioning (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><code>test_plain_fields</code> &mdash; <i>Plain fields</i></summary>
+
+    * **Objective**: Plain fields
+    * **Assertions**:
+      * `Assert true (detws_prov_form_field("ssid=MyAP&psk=secret", "ssid", v, sizeof(v)))`
+      * `Assert equal string ("MyAP", v)`
+      * `Assert true (detws_prov_form_field("ssid=MyAP&psk=secret", "psk", v, sizeof(v)))`
+      * `Assert equal string ("secret", v)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_url_decoding</code> &mdash; <i>Url decoding</i></summary>
+
+    * **Objective**: Url decoding
+    * **Assertions**:
+      * `Assert true (detws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "ssid", v, sizeof(v)))`
+      * `Assert equal string ("My AP", v)`
+      * `Assert true (detws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "psk", v, sizeof(v)))`
+      * `Assert equal string ("p@ss!", v)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_missing_field</code> &mdash; <i>Missing field</i></summary>
+
+    * **Objective**: Missing field
+    * **Assertions**:
+      * `Assert false (detws_prov_form_field("ssid=x", "psk", v, sizeof(v)))`
+      * `Assert equal string ("", v)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_no_substring_match</code> &mdash; <i>No substring match</i></summary>
+
+    * **Objective**: No substring match
+    * **Assertions**:
+      * `Assert true (detws_prov_form_field("myssid=wrong&ssid=right", "ssid", v, sizeof(v)))`
+      * `Assert equal string ("right", v)`
+
+  </details>
+  <details style="margin-left: 20px;">
+    <summary><code>test_capacity_bound</code> &mdash; <i>Capacity bound</i></summary>
+
+    * **Objective**: Capacity bound
+    * **Assertions**:
+      * `Assert true (detws_prov_form_field("ssid=abcdef", "ssid", v, sizeof(v)))`
+      * `Assert equal string ("abc", v)`
 
   </details>
 </details>
