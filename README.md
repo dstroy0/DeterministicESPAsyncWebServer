@@ -1,4 +1,4 @@
-# DeterministicESPAsyncWebServer
+# DeterministicESPAsyncWebServer (@dstroy0)
 
 An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture.
 
