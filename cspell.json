@@ -192,6 +192,7 @@
     "pcbs",
     "penv",
     "permessage",
+    "pkcs",
     "PlatformIO",
     "POWERON",
     "preflight",
