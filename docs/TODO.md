@@ -243,14 +243,14 @@ by how often a deployed device needs it.
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
 
-- [ ] **Implement zero-copy template slicing.** The templating engine must operate within 
-      strict boundaries. If a user tries to expand a template placeholder into a string 
-      that exceeds the pre-allocated channel or work buffer slot, reject/truncate the token 
+- [ ] **Implement zero-copy template slicing.** The templating engine must operate within
+      strict boundaries. If a user tries to expand a template placeholder into a string
+      that exceeds the pre-allocated channel or work buffer slot, reject/truncate the token
       or enforce an immediate boundary guard.
 
-- [ ] **Implement JSON serialization** JSON parsing or serialization must be constrained. If 
-      the serialized JSON payload attempts to cross the pre-allocated buffer ceiling, it hits 
-      an ingestion or serialization boundary guard. That means strict pre-defined caps on the 
+- [ ] **Implement JSON serialization** JSON parsing or serialization must be constrained. If
+      the serialized JSON payload attempts to cross the pre-allocated buffer ceiling, it hits
+      an ingestion or serialization boundary guard. That means strict pre-defined caps on the
       depth and size of the JSON payloads.
 
 (Deliberately omitted as not worth the footprint for this class of device:
