@@ -30,6 +30,9 @@ Asynchronous HTTP, WebSocket, and SSH Server Library for ESP32 with zero heap al
 - **File Serving**: Stream static assets with chunked reads from LittleFS, SPIFFS, and SD.
 - **Multipart Parser**: In-place form-data parser supporting file uploads.
 - **SSH 2.0 and Telnet Server**: Integrated zero-heap SSH/Telnet stacks with host-key verification and password/publickey authentication.
+- **mDNS & NTP Services**: Embedded hostname advertisement via ESPmDNS and SNTP wall-clock time synchronization for request logging.
+- **OTA Updates**: Secure, authenticated over-the-air firmware updates via streaming POST request body.
+- **Captive Portal Provisioning**: Setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration.
 
 ## Compatibility
 

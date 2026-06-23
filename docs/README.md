@@ -43,6 +43,9 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 - **Backpressure-aware TCP** - shrinks the receive window instead of dropping data when the ring buffer fills
 - **CORS preflight short-circuit** - OPTIONS answered with 204 automatically when CORS is enabled
 - **`restart()`** - hard-resets all connections and reinitialises on the same port without touching the WiFi/TCP stack
+- **mDNS & NTP Services** - zero-dependency multicast DNS hostname advertisement and SNTP wall-clock time synchronization for local discovery and request logging
+- **OTA Updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
+- **Captive Portal Provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
 - **442 tests** across 18 Unity test suites, runnable on native x86/x64 (no hardware required)
 
 ## Architecture
