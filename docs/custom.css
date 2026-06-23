@@ -1,121 +1,181 @@
 /*
- * DeterministicESPAsyncWebServer - Doxygen dark ocean theme
+ * DeterministicESPAsyncWebServer - TTY Retro Green Screen Theme
  * Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Palette - "deep ocean at dusk"
- *   background ......... #0e1621  deep navy
- *   panel/sidebar ...... #13202f  midnight blue
- *   surface ............ #1a2e42  dark teal-slate
- *   border ............. #1e3a5f  deep blue border
- *   primary ............ #4ecdc4  calm teal
- *   secondary .......... #45b7d1  sky blue
- *   accent ............. #a8dadc  pale aqua
- *   heading ............ #89cff0  baby blue
- *   text ............... #cdd6f4  lavender-white
- *   text muted ......... #7d8eb5  slate blue
- *   code background .... #0a101a  near-black
- *   warning ............ #e9c46a  warm amber
- *   success ............ #52b788  seafoam green
+ * A retro, monospace TTY green-on-black screen styling for Doxygen.
  */
 
-/* ---- Doxygen CSS variable overrides -------------------------------- */
+/* ---- Doxygen CSS variable overrides - Retro TTY Green Screen -------- */
 html {
-    --primary-color:              #4ecdc4;
-    --primary-dark-color:         #3aafa9;
-    --primary-light-color:        #a8dadc;
-    --secondary-color:            #45b7d1;
-    --secondary-dark-color:       #2e9fc0;
-    --secondary-light-color:      #89cff0;
+    --primary-color:              #00c000;
+    --primary-dark-color:         #008000;
+    --primary-light-color:        #40ff40;
+    --secondary-color:            #00c000;
+    --secondary-dark-color:       #008000;
+    --secondary-light-color:      #40ff40;
 
-    --page-background-color:      #0e1621;
-    --page-foreground-color:      #cdd6f4;
-    --page-secondary-foreground-color: #7d8eb5;
+    --page-background-color:      #000000;
+    --page-foreground-color:      #00c000;
+    --page-secondary-foreground-color: #008000;
 
-    --separator-color:            #1e3a5f;
-    --border-color:               #1e3a5f;
+    --separator-color:            #008000;
+    --border-color:               #008000;
 
-    --header-background:          #13202f;
-    --header-foreground:          #cdd6f4;
-    --header-gradient:            linear-gradient(135deg, #0e1621 0%, #13202f 100%);
+    --header-background:          #000000;
+    --header-foreground:          #00c000;
+    --header-gradient:            linear-gradient(180deg, #000000 0%, #001100 100%);
 
-    --nav-background:             #13202f;
-    --nav-foreground:             #cdd6f4;
-    --nav-accent:                 #4ecdc4;
+    --nav-background:             #000000;
+    --nav-foreground:             #00c000;
+    --nav-accent:                 #00c000;
 
-    --code-background:            #0a101a;
-    --code-foreground:            #a8dadc;
+    --code-background:            #001100;
+    --code-foreground:            #00c000;
 
-    --memdef-background:          #13202f;
-    --memdef-title-background:    #1a2e42;
+    --memdef-background:          #000000;
+    --memdef-title-background:    #001100;
 
-    --warning-color:              #e9c46a;
-    --note-color:                 #4ecdc4;
-    --attention-color:            #e76f51;
-    --deprecated-color:           #7d8eb5;
-    --bug-color:                  #e76f51;
-    --todo-color:                 #45b7d1;
+    --warning-color:              #00c000;
+    --note-color:                 #00c000;
+    --attention-color:            #00c000;
+    --deprecated-color:           #008000;
+    --bug-color:                  #00c000;
+    --todo-color:                 #00c000;
 }
 
-/* ---- Layout and typography ----------------------------------------- */
+/* ---- Force Monospace (TTY style) everywhere ---- */
+* {
+    font-family: 'Fira Code', 'Cascadia Code', 'Courier New', Courier, 'Lucida Console', Monaco, monospace !important;
+}
+
 body, html {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
-                 Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.65;
-    background-color: #0e1621;
-    color: #cdd6f4;
+    background-color: #000000 !important;
+    color: #00c000 !important;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 /* ---- Page header / title bar --------------------------------------- */
-#titlearea, div.header {
-    background: linear-gradient(135deg, #0e1621 0%, #13202f 60%, #1a2e42 100%);
-    border-bottom: 1px solid #1e3a5f;
-    padding: 16px 24px;
+#titlearea {
+    background: #000000 !important;
+    border-bottom: 2px solid #008000 !important;
+    padding: 16px 16px !important;
+}
+
+div.header {
+    background: #000000 !important;
+    border-bottom: 1px solid #008000 !important;
+    padding: 8px 32px !important;
+    margin-bottom: 12px !important;
+    position: relative !important;
+}
+
+div.header .title {
+    font-size: 1.5rem !important;
+    color: #00c000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: 700 !important;
 }
 
 #projectname {
-    font-size: 1.6rem;
+    font-size: 1.25rem !important;
     font-weight: 700;
-    color: #4ecdc4;
-    letter-spacing: -0.02em;
+    color: #00c000 !important;
+    text-shadow: 0 0 10px rgba(0, 192, 0, 0.8) !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
 }
 
 #projectbrief {
-    font-size: 0.9rem;
-    color: #7d8eb5;
-    margin-top: 2px;
+    font-size: 0.85rem !important;
+    color: #008000 !important;
+    margin-top: 6px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
 }
 
 /* ---- Navigation tree / sidebar ------------------------------------ */
 #nav-tree, #side-nav {
-    background-color: #13202f;
-    border-right: 1px solid #1e3a5f;
+    background-color: #000000 !important;
+    border-right: 2px solid #008000 !important;
 }
 
 .ui-resizable-e {
-    background-color: #1e3a5f;
+    background-color: #008000 !important;
 }
 
 #nav-tree a {
-    color: #cdd6f4;
+    color: #00c000 !important;
 }
 
 #nav-tree a:hover, #nav-tree .selected a {
-    color: #4ecdc4;
+    color: #00c000 !important;
+    text-shadow: 0 0 8px rgba(0, 192, 0, 0.8) !important;
+    background-color: #001100 !important;
 }
 
 #nav-tree .label {
-    background-color: transparent;
+    background-color: transparent !important;
 }
 
 #nav-sync {
-    color: #7d8eb5;
+    color: #00c000 !important;
+    z-index: 10 !important;
+    cursor: pointer !important;
+}
+
+div.nav-sync-icon {
+    background-color: #001100 !important;
+    border: 1px solid #008000 !important;
+    opacity: 0.7 !important;
+    cursor: pointer !important;
+    transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease !important;
+}
+
+div.nav-sync-icon:hover {
+    background-color: #002200 !important;
+    opacity: 1.0 !important;
+    border-color: #00c000 !important;
+}
+
+span.sync-icon-left {
+    border-left: 2px solid #00c000 !important;
+    border-top: 2px solid #00c000 !important;
+    transition: border-color 0.2s ease !important;
+}
+
+span.sync-icon-right {
+    border-right: 2px solid #00c000 !important;
+    border-bottom: 2px solid #00c000 !important;
+    transition: border-color 0.2s ease !important;
+}
+
+div.nav-sync-icon:hover span.sync-icon-left {
+    border-left: 2px solid #40ff40 !important;
+    border-top: 2px solid #40ff40 !important;
+}
+
+div.nav-sync-icon:hover span.sync-icon-right {
+    border-right: 2px solid #40ff40 !important;
+    border-bottom: 2px solid #40ff40 !important;
+}
+
+div.nav-sync-icon.active:after {
+    border-top: 2px solid #40ff40 !important;
+    background-color: #001100 !important;
+}
+
+div.nav-sync-icon.active:hover:after {
+    border-top: 2px solid #40ff40 !important;
 }
 
 /* ---- Main content area -------------------------------------------- */
 #doc-content, div#doc-content {
-    background-color: #0e1621;
+    background-color: #000000 !important;
 }
 
 div.contents {
@@ -125,227 +185,524 @@ div.contents {
 
 /* ---- Search bar ---------------------------------------------------- */
 #MSearchBox {
-    background-color: #1a2e42;
-    border: 1px solid #1e3a5f;
-    border-radius: 6px;
+    background-color: #001100 !important;
+    border: 2px solid #008000 !important;
+    border-radius: 4px !important;
+    width: calc(100% - 32px) !important;
+    margin: 12px 16px !important;
+    float: none !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 34px !important;
+}
+
+#MSearchBox .left, #MSearchBox .right {
+    display: flex !important;
+    align-items: center !important;
+    background: none !important;
+}
+
+#MSearchBox .left {
+    flex-grow: 1 !important;
 }
 
 #MSearchField {
-    background-color: transparent;
-    color: #cdd6f4;
+    background-color: transparent !important;
+    color: #00c000 !important;
+    border: none !important;
+    outline: none !important;
+    width: 100% !important;
+    font-size: 0.9rem !important;
+    padding-left: 8px !important;
 }
 
 #MSearchBox:hover, #MSearchBox:focus-within {
-    border-color: #4ecdc4;
-    box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.15);
+    border-color: #00c000 !important;
+    box-shadow: 0 0 8px rgba(0, 192, 0, 0.4) !important;
 }
 
 /* ---- Section headings --------------------------------------------- */
 h1, h2, h3, h4 {
-    color: #89cff0;
-    font-weight: 600;
-    border-bottom: 1px solid #1e3a5f;
+    color: #00c000 !important;
+    text-shadow: 0 0 8px rgba(0, 192, 0, 0.7) !important;
+    font-weight: 700;
+    border-bottom: 2px solid #008000 !important;
     padding-bottom: 6px;
     margin-top: 32px;
 }
 
 h1.glow {
-    color: #4ecdc4;
-    text-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+    color: #00c000 !important;
+    text-shadow: 0 0 15px rgba(0, 192, 0, 0.9) !important;
 }
 
 /* ---- Anchor links -------------------------------------------------- */
 a, a:visited {
-    color: #45b7d1;
-    text-decoration: none;
+    color: #00c000 !important;
+    text-decoration: underline !important;
+    text-shadow: 0 0 4px rgba(0, 192, 0, 0.3) !important;
 }
 
 a:hover {
-    color: #4ecdc4;
-    text-decoration: underline;
+    color: #40ff40 !important;
+    text-decoration: underline !important;
+    text-shadow: 0 0 10px rgba(64, 255, 64, 0.8) !important;
 }
 
 /* ---- Member definition boxes --------------------------------------- */
 div.memitem {
-    background-color: #13202f;
-    border: 1px solid #1e3a5f;
-    border-radius: 8px;
+    background-color: #000000 !important;
+    border: 2px solid #008000 !important;
+    border-radius: 4px;
     margin-bottom: 16px;
     overflow: hidden;
 }
 
 div.memproto {
-    background: linear-gradient(90deg, #1a2e42 0%, #13202f 100%);
-    border-bottom: 1px solid #1e3a5f;
+    background: #001100 !important;
+    border-bottom: 1px solid #008000 !important;
     padding: 10px 16px;
 }
 
 div.memdoc {
     padding: 12px 16px;
-    background-color: #13202f;
-    color: #cdd6f4;
+    background-color: #000000 !important;
+    color: #00c000 !important;
 }
 
 table.memname {
-    color: #4ecdc4;
-    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    color: #00c000 !important;
     font-size: 0.95rem;
 }
 
-/* ---- Code blocks --------------------------------------------------- */
+/* ---- Code blocks (VSCode Dark+ Theme) ----------------------------- */
 div.fragment, pre.fragment {
-    background-color: #0a101a;
-    border: 1px solid #1e3a5f;
-    border-radius: 6px;
+    background-color: #1e1e1e !important;
+    border: 1px solid #3c3c3c !important;
+    border-left: 4px solid #569cd6 !important; /* VSCode Blue accent border */
+    border-radius: 4px;
     padding: 14px 18px;
-    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
     font-size: 0.875rem;
     line-height: 1.5;
     overflow-x: auto;
+    color: #d4d4d4 !important; /* VSCode code foreground */
+    text-shadow: none !important; /* Disable glowing inside code */
 }
 
-span.keyword    { color: #c678dd; }  /* purple  - keywords        */
-span.keywordtype{ color: #e5c07b; }  /* amber   - built-in types  */
-span.keywordflow{ color: #c678dd; }  /* purple  - control flow    */
-span.preprocessor{ color: #7d8eb5; } /* muted   - preprocessor    */
-span.stringliteral{ color: #98c379; }/* green   - strings         */
-span.charliteral{ color: #98c379; }  /* green   - char literals   */
-span.comment    { color: #5c6a7f; font-style: italic; }
-span.vhdldigit  { color: #e9c46a; }
-span.vhdlchar   { color: #98c379; }
-span.vhdlkeyword{ color: #c678dd; }
-span.vhdllogic  { color: #45b7d1; }
+/* VSCode syntax highlighting tokens */
+span.keyword {
+    color: #569cd6 !important; /* VSCode Blue */
+    font-weight: 400 !important;
+}
+
+span.keywordtype {
+    color: #569cd6 !important; /* VSCode Blue (types like void, int, char) */
+    font-weight: 400 !important;
+    text-decoration: none !important;
+}
+
+span.keywordflow {
+    color: #c586c0 !important; /* VSCode Control flow purple */
+    font-weight: 400 !important;
+}
+
+span.preprocessor {
+    color: #c586c0 !important; /* VSCode Preprocessor purple */
+}
+
+span.stringliteral {
+    color: #ce9178 !important; /* VSCode String orange */
+    opacity: 1 !important;
+}
+
+span.charliteral {
+    color: #ce9178 !important; /* VSCode Char orange */
+}
+
+span.comment {
+    color: #6a9955 !important; /* VSCode Comment green */
+    font-style: italic !important;
+}
+
+span.vhdldigit, span.vhdllogic {
+    color: #b5cea8 !important; /* VSCode Number light-green */
+}
+
+/* Semantic code links in Doxygen */
+.code, .code hl_enumvalue, .code hl_typedef, .code hl_struct, .code hl_define,
+a.code, a.code:visited {
+    color: #9cdcfe !important; /* Default identifier light-blue */
+    text-shadow: none !important;
+    text-decoration: none !important;
+}
+
+a.code:hover {
+    color: #4fc1ff !important; /* Bright blue hover */
+    text-decoration: underline !important;
+}
+
+/* Doxygen HL classes */
+.hl_keyword { color: #569cd6 !important; }
+.hl_keywordflow { color: #c586c0 !important; }
+.hl_keywordtype { color: #569cd6 !important; }
+.hl_preprocessor { color: #c586c0 !important; }
+.hl_stringliteral { color: #ce9178 !important; }
+.hl_charliteral { color: #ce9178 !important; }
+.hl_comment { color: #6a9955 !important; font-style: italic !important; }
+
+/* Line numbers in code blocks */
+span.lineno, a.lineno {
+    color: #858585 !important; /* VSCode line number grey */
+    background-color: transparent !important;
+    border-right: none !important;
+    margin-right: 12px !important;
+    opacity: 0.8 !important;
+    user-select: none !important;
+}
 
 /* ---- Parameter tables ---------------------------------------------- */
 table.params td, table.params th,
 table.exception td, table.exception th,
 table.retval td, table.retval th {
-    background-color: #0a101a;
-    border: 1px solid #1e3a5f;
+    background-color: #000000 !important;
+    border: 1px solid #008000 !important;
     padding: 6px 12px;
     font-size: 0.9rem;
+    color: #00c000 !important;
 }
 
 table.params th {
-    background-color: #1a2e42;
-    color: #89cff0;
-    font-weight: 600;
+    background-color: #001100 !important;
+    color: #00c000 !important;
+    font-weight: 700;
 }
 
-td.paramname { color: #4ecdc4; font-family: monospace; }
-td.paramtype  { color: #e5c07b; font-family: monospace; }
+td.paramname { color: #00c000 !important; font-weight: 700; }
+td.paramtype  { color: #008000 !important; }
 
 /* ---- Note / warning boxes ------------------------------------------ */
 dl.note, dl.warning, dl.attention, dl.pre, dl.post,
 dl.invariant, dl.deprecated, dl.todo, dl.bug, dl.remark {
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 10px 14px;
     margin: 12px 0;
+    background-color: #001100 !important;
+    border: 1px solid #008000 !important;
+    border-left: 5px solid #00c000 !important;
 }
 
-dl.note       { background-color: rgba(78, 205, 196, 0.08); border-left: 3px solid #4ecdc4; }
-dl.warning    { background-color: rgba(231, 111,  81, 0.08); border-left: 3px solid #e76f51; }
-dl.attention  { background-color: rgba(233, 196, 106, 0.08); border-left: 3px solid #e9c46a; }
-dl.todo       { background-color: rgba(69, 183, 209, 0.08);  border-left: 3px solid #45b7d1; }
-dl.deprecated { background-color: rgba(125,142,181, 0.08);   border-left: 3px solid #7d8eb5; }
-
-dt.note:before        { content: "📝 Note"; color: #4ecdc4; font-weight: 700; }
-dt.warning:before     { content: "⚠️ Warning"; color: #e76f51; font-weight: 700; }
-dt.attention:before   { content: "⚡ Attention"; color: #e9c46a; font-weight: 700; }
-dt.todo:before        { content: "✅ Todo"; color: #45b7d1; font-weight: 700; }
-dt.deprecated:before  { content: "🚫 Deprecated"; color: #7d8eb5; font-weight: 700; }
+dt.note:before        { content: ">> NOTE: "; color: #00c000; font-weight: 700; }
+dt.warning:before     { content: ">> WARNING: "; color: #00c000; font-weight: 700; }
+dt.attention:before   { content: ">> ATTENTION: "; color: #00c000; font-weight: 700; }
+dt.todo:before        { content: ">> TODO: "; color: #00c000; font-weight: 700; }
+dt.deprecated:before  { content: ">> DEPRECATED: "; color: #008000; font-weight: 700; }
 
 /* ---- Class / struct overview boxes --------------------------------- */
 div.summary {
-    background-color: #13202f;
-    border: 1px solid #1e3a5f;
-    border-radius: 6px;
+    background-color: #001100 !important;
+    border: 2px solid #008000 !important;
+    border-radius: 4px;
     padding: 8px 14px;
 }
 
 div.ingrouptitle {
-    color: #89cff0;
+    color: #00c000 !important;
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ---- Section dividers --------------------------------------------- */
 hr {
-    border: none;
-    border-top: 1px solid #1e3a5f;
+    border: none !important;
+    border-top: 2px solid #008000 !important;
     margin: 20px 0;
 }
 
 /* ---- File / directory listing ------------------------------------- */
 table.directory {
-    background-color: #13202f;
-    border: 1px solid #1e3a5f;
-    border-radius: 6px;
+    background-color: #000000 !important;
+    border: 2px solid #008000 !important;
+    border-radius: 4px;
     width: 100%;
 }
 
 table.directory td, table.directory th {
     padding: 6px 12px;
-    border-bottom: 1px solid #1e3a5f;
+    border-bottom: 1px solid #008000 !important;
+    color: #00c000 !important;
 }
 
 table.directory th {
-    background-color: #1a2e42;
-    color: #89cff0;
-    font-weight: 600;
+    background-color: #001100 !important;
+    color: #00c000 !important;
+    font-weight: 700;
 }
 
 /* ---- Tab bar ------------------------------------------------------- */
 div.tabs, div.tabs2, div.tabs3 {
-    background: #13202f;
-    border-bottom: 1px solid #1e3a5f;
+    background: #000000 !important;
+    border-bottom: 2px solid #008000 !important;
 }
 
 ul.tablist li a, ul.tablist li.current a {
-    color: #cdd6f4;
+    color: #00c000 !important;
     padding: 8px 16px;
     display: inline-block;
 }
 
 ul.tablist li.current a {
-    color: #4ecdc4;
-    border-bottom: 2px solid #4ecdc4;
-    font-weight: 600;
+    color: #00c000 !important;
+    border-bottom: 3px solid #00c000 !important;
+    font-weight: 700;
+    background-color: #001100 !important;
 }
 
 ul.tablist li a:hover {
-    color: #4ecdc4;
-    text-decoration: none;
+    color: #00c000 !important;
+    text-decoration: none !important;
+    background-color: #001100 !important;
 }
 
 /* ---- Member group headings ---------------------------------------- */
 div.groupheader {
-    color: #45b7d1;
+    color: #00c000 !important;
     font-size: 1rem;
     font-weight: 700;
     margin: 20px 0 8px 0;
-    border-bottom: 1px solid #1e3a5f;
+    border-bottom: 2px solid #008000 !important;
     padding-bottom: 4px;
 }
 
 /* ---- Scrollbar ----------------------------------------------------- */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #0a101a; }
-::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #4ecdc4; }
+::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-thumb { background: #008000; border-radius: 0px; }
+::-webkit-scrollbar-thumb:hover { background: #00c000; }
 
 /* ---- Inline code --------------------------------------------------- */
-code, tt {
-    background-color: #1a2e42;
-    color: #a8dadc;
-    border-radius: 3px;
+code, tt, .tt {
+    background-color: #001100 !important;
+    color: #00c000 !important;
+    border-radius: 0px;
+    border: 1px solid #008000 !important;
     padding: 1px 5px;
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    font-size: 0.88em;
+    font-size: 0.9em;
 }
 
 /* ---- Responsive adjustments --------------------------------------- */
 @media (max-width: 768px) {
     div.contents { padding: 16px; }
     #projectname { font-size: 1.3rem; }
+}
+
+/* ---- Terminal Window & Matrix Details Theme ----------------------- */
+details {
+    background-color: #000000 !important;
+    border: 2px solid #008000 !important;
+    border-left: 4px solid #00c000 !important; /* Thick bright TTY green border */
+    border-radius: 0px; /* Sharp terminals */
+    padding: 12px 16px;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+details[open] {
+    border-color: #00c000 !important;
+    box-shadow: 0 0 15px rgba(0, 192, 0, 0.3) !important;
+}
+
+details > summary {
+    outline: none;
+    cursor: pointer;
+    font-weight: 700;
+    color: #00c000 !important;
+    text-shadow: 0 0 5px rgba(0, 192, 0, 0.6) !important;
+    user-select: none;
+    padding: 4px 0;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    list-style: none; /* Hide default arrow */
+}
+
+details > summary::-webkit-details-marker {
+    display: none; /* Hide default arrow on Safari */
+}
+
+details > summary::before {
+    display: none !important; /* Hide prompt when collapsed/vertical */
+}
+
+details[open] > summary::before {
+    content: "dstroy0@esp32:~$ " !important;
+    color: #00c000 !important;
+    font-weight: 700;
+    margin-right: 8px;
+    display: inline-block !important; /* Show prompt when expanded/horizontal */
+}
+
+/* Terminal window controls (TTY stylized monochrome separate hoverable dots) */
+.tty-controls {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    margin-right: 20px;
+    align-items: center;
+}
+
+.tty-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #008000 !important; /* Base TTY green */
+    border-radius: 50%;
+    opacity: 0.6;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background-color 0.2s ease, 
+                opacity 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+details:hover .tty-dot {
+    opacity: 1;
+    background-color: #00c000 !important;
+}
+
+.tty-dot:hover {
+    transform: scale(1.3) !important;
+    background-color: #00c000 !important;
+    box-shadow: 0 0 8px #00c000 !important;
+    cursor: pointer;
+}
+
+/* Expansion grows clip path vertically */
+details[open] > *:not(summary) {
+    animation: terminal-expand 0.45s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    transform-origin: top;
+}
+
+@keyframes terminal-expand {
+    0% {
+        clip-path: inset(0 0 100% 0);
+        margin-top: 0;
+    }
+    100% {
+        clip-path: inset(0 0 0 0);
+        margin-top: 14px;
+    }
+}
+
+/* ---- Navbar Title Layout (Relocated Title area) -------------------- */
+.navbar-project-title {
+    display: inline-block !important;
+    padding: 8px 16px !important;
+    font-weight: 700 !important;
+    color: #00c000 !important;
+    text-shadow: 0 0 5px rgba(0, 192, 0, 0.5) !important;
+    font-size: 1.1rem !important;
+    pointer-events: none !important; /* Non-clickable */
+    border-right: 2px solid #008000 !important; /* Visual separator line */
+    margin-right: 8px !important;
+    vertical-align: middle !important;
+}
+
+.navbar-project-title .navbar-version {
+    font-size: 0.8rem !important;
+    color: #008000 !important;
+    margin-left: 8px !important;
+    text-shadow: none !important;
+}
+
+/* ---- Cute Pixel Squid Animation ------------------------------------ */
+#squid-container {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    z-index: 10000;
+    cursor: pointer;
+    pointer-events: auto;
+    will-change: left, top, transform;
+    transition: none !important;
+}
+
+#squid-container * {
+    transition: none !important;
+}
+
+.squid-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.7));
+}
+
+/* Pixel Tentacle wiggling keyframes with discrete step timing */
+@keyframes pixel-wiggle-left {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-1px, 0); }
+}
+@keyframes pixel-wiggle-right {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(1px, 0); }
+}
+
+.pixel-tentacle-1 {
+    animation: pixel-wiggle-left 0.8s steps(2) infinite;
+    transform-origin: 5px 12px;
+}
+.pixel-tentacle-2 {
+    animation: pixel-wiggle-left 0.6s steps(2) infinite;
+    transform-origin: 7px 12px;
+}
+.pixel-tentacle-3 {
+    animation: pixel-wiggle-right 0.6s steps(2) infinite;
+    transform-origin: 8px 12px;
+}
+.pixel-tentacle-4 {
+    animation: pixel-wiggle-right 0.8s steps(2) infinite;
+    transform-origin: 10px 12px;
+}
+
+/* Pulse swim scale */
+@keyframes squid-pulse {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(0.85, 1.15); }
+    70% { transform: scale(1.1, 0.9); }
+}
+.squid-pulse-active {
+    animation: squid-pulse 0.7s ease-out;
+}
+
+.squid-ink {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 3px rgba(0, 255, 0, 0.7));
+    transform-origin: center center;
+    transition: transform 0.9s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.9s ease-out;
+}
+
+/* Mascot Clicks Counter in Navbar Banner */
+.navbar-squirty-counter {
+    float: right !important;
+    margin-left: auto !important;
+    display: inline-block !important;
+    padding: 8px 16px !important;
+    font-weight: 700 !important;
+    color: #40ff40 !important;
+    text-shadow: 0 0 5px rgba(64, 255, 64, 0.6) !important;
+    font-size: 0.95rem !important;
+    pointer-events: none !important;
+    border-left: 2px solid #008000 !important; /* visual left divider */
+    margin-left: 8px !important;
+    vertical-align: middle !important;
+}
+
+.navbar-squirty-counter .navbar-squirty-label {
+    color: #008000 !important;
+    text-shadow: none !important;
+    margin-right: 4px !important;
 }

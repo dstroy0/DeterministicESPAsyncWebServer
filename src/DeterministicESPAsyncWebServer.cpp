@@ -361,8 +361,8 @@ void DetWebServer::on_not_found(Handler callback)
     _not_found_handler = callback;
 }
 
-/**
- * @brief Enable CORS and pre-build the Access-Control response header block.
+/*
+ * Enable CORS and pre-build the Access-Control response header block.
  *
  * The header string is constructed once here rather than at response time to
  * avoid repeated snprintf calls on the hot path.  It is stored in
@@ -849,8 +849,8 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         send(slot_id, 404, "text/plain", "Not Found");
 }
 
-/**
- * @brief Build and transmit an HTTP response with a body.
+/*
+ * Build and transmit an HTTP response with a body.
  *
  * Uses a 512-byte stack buffer for headers.  CORS headers are appended when
  * `_cors_enabled`.  The slot is freed (state → CONN_FREE, pcb → nullptr)
@@ -909,8 +909,8 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     http_reset(slot_id);
 }
 
-/**
- * @brief Build and transmit an HTTP response with no body.
+/*
+ * Build and transmit an HTTP response with no body.
  *
  * Used for CORS preflight (204) and any response where only status headers
  * are needed.  Behaves identically to send() regarding slot lifecycle and

@@ -1,4 +1,4 @@
-# DeterministicESPAsyncWebServer - Security Documentation
+# Security Documentation
 
 This document covers the security posture of the entire library. Each section
 names the specific files that implement or enforce the property described. Where
@@ -7,12 +7,12 @@ it and explains the broader context.
 
 ---
 
-## 0. Security Posture at a Glance
+## 0. Security Posture at a Glance {#security-posture}
 
 A candid assessment of where the library stands today. ✅ = solid, ⚠️ = acceptable
 with caveats, ❌ = a real weakness to be aware of.
 
-### Strong (✅)
+### Strong (✅) {#strong-areas}
 
 <details>
 <summary><b>Show Strong Security Areas Table</b></summary>
@@ -28,7 +28,7 @@ with caveats, ❌ = a real weakness to be aware of.
 
 </details>
 
-### Acceptable, with caveats (⚠️)
+### Acceptable, with caveats (⚠️) {#acceptable-areas}
 
 <details>
 <summary><b>Show Acceptable Areas Table</b></summary>
@@ -43,7 +43,7 @@ with caveats, ❌ = a real weakness to be aware of.
 
 </details>
 
-### Weak / not implemented (❌)
+### Weak / not implemented (❌) {#weak-areas}
 
 <details>
 <summary><b>Show Weak / Not Implemented Areas Table</b></summary>
@@ -62,71 +62,50 @@ The remaining sections document each property in depth.
 
 ## Table of Contents
 
-- [DeterministicESPAsyncWebServer - Security Documentation](#deterministicespasyncwebserver---security-documentation)
-  - [0. Security Posture at a Glance](#0-security-posture-at-a-glance)
-    - [Strong (✅)](#strong-)
-    - [Acceptable, with caveats (⚠️)](#acceptable-with-caveats-️)
-    - [Weak / not implemented (❌)](#weak--not-implemented-)
-  - [Table of Contents](#table-of-contents)
-  - [1. Threat Model](#1-threat-model)
-  - [2. Memory Safety - HTTP / Core Stack](#2-memory-safety---http--core-stack)
-    - [Static Allocation](#static-allocation)
-    - [Buffer Overflow Containment](#buffer-overflow-containment)
-    - [Compile-Time Safety Checks](#compile-time-safety-checks)
-  - [3. Input Validation - RFC 7230 Parser](#3-input-validation---rfc-7230-parser)
-    - [Character-Class Validation](#character-class-validation)
-    - [Length Limits](#length-limits)
-    - [CR-Injection Defence](#cr-injection-defence)
-    - [Transfer-Encoding Rejection](#transfer-encoding-rejection)
-  - [4. WebSocket Security](#4-websocket-security)
-    - [Handshake Verification](#handshake-verification)
-    - [Frame Validation](#frame-validation)
-    - [No Origin Validation by Default](#no-origin-validation-by-default)
-  - [5. Authentication (HTTP Basic Auth)](#5-authentication-http-basic-auth)
-    - [Implementation](#implementation)
-    - [Credentials in Flash](#credentials-in-flash)
-  - [6. TLS / Transport Encryption](#6-tls--transport-encryption)
-  - [7. SSH Cryptographic Layer](#7-ssh-cryptographic-layer)
-    - [7.1 Key Exchange - DH-group14-SHA256](#71-key-exchange---dh-group14-sha256)
-      - [Why group14?](#why-group14)
-      - [Protocol flow](#protocol-flow)
-      - [Client value validation](#client-value-validation)
-      - [Private scalar generation](#private-scalar-generation)
-    - [7.2 Symmetric Encryption - AES-256-CTR](#72-symmetric-encryption---aes-256-ctr)
-      - [Why CTR mode?](#why-ctr-mode)
-      - [Counter management](#counter-management)
-      - [Platform-specific implementations](#platform-specific-implementations)
-    - [7.3 Integrity - HMAC-SHA2-256](#73-integrity---hmac-sha2-256)
-      - [MAC key size](#mac-key-size)
-      - [Verify-before-use](#verify-before-use)
-    - [7.4 Host Authentication - RSA-SHA2-256](#74-host-authentication---rsa-sha2-256)
-      - [Why PKCS#1 v1.5 and not RSA-PSS?](#why-pkcs1-v15-and-not-rsa-pss)
-      - [Signature construction](#signature-construction)
-      - [Key storage and loading](#key-storage-and-loading)
-    - [7.5 Key Derivation - RFC 4253 §7.2](#75-key-derivation---rfc-4253-72)
-    - [7.6 Private Key Lifetime](#76-private-key-lifetime)
-      - [Why the private key must never be in static memory](#why-the-private-key-must-never-be-in-static-memory)
-      - [The mandated lifetime](#the-mandated-lifetime)
-      - [NVS encryption recommendation](#nvs-encryption-recommendation)
-    - [7.7 Memory Layout Defences](#77-memory-layout-defences)
-    - [7.8 Sequence Number Overflow Guard](#78-sequence-number-overflow-guard)
-    - [7.9 Secure Wipe](#79-secure-wipe)
-      - [Why not `memset`?](#why-not-memset)
-      - [Where ssh_wipe is used](#where-ssh_wipe-is-used)
-    - [7.10 Random Number Generation](#710-random-number-generation)
-      - [Production (Arduino / ESP32)](#production-arduino--esp32)
-      - [Native test environment](#native-test-environment)
-  - [8. Diagnostic Endpoint](#8-diagnostic-endpoint)
-  - [9. Known Limitations and Non-Goals](#9-known-limitations-and-non-goals)
-  - [10. Hardening Checklist](#10-hardening-checklist)
-    - [General](#general)
-    - [Authentication](#authentication)
-    - [SSH](#ssh)
-    - [Build](#build)
+- [0. Security Posture at a Glance](#security-posture)
+  - [Strong (✅)](#strong-areas)
+  - [Acceptable, with caveats (⚠️)](#acceptable-areas)
+  - [Weak / not implemented (❌)](#weak-areas)
+- [1. Threat Model](#threat-model)
+- [2. Memory Safety - HTTP / Core Stack](#memory-safety)
+  - [Static Allocation](#core-static)
+  - [Buffer Overflow Containment](#core-overflow)
+  - [Compile-Time Safety Checks](#core-checks)
+- [3. Input Validation - RFC 7230 Parser](#input-validation)
+  - [Character-Class Validation](#parser-validation)
+  - [Length Limits](#parser-limits)
+  - [CR-Injection Defence](#parser-cr)
+  - [Transfer-Encoding Rejection](#parser-transfer)
+- [4. WebSocket Security](#websocket-security)
+  - [Handshake Verification](#ws-handshake)
+  - [Frame Validation](#ws-frame)
+  - [No Origin Validation by Default](#ws-origin)
+- [5. Authentication (HTTP Basic Auth)](#auth-security)
+  - [Implementation](#auth-implementation)
+  - [Credentials in Flash](#auth-flash)
+- [6. TLS / Transport Encryption](#tls-security)
+- [7. SSH Cryptographic Layer](#ssh-security)
+  - [7.1 Key Exchange - DH-group14-SHA256](#ssh-kex)
+  - [7.2 Symmetric Encryption - AES-256-CTR](#ssh-aes)
+  - [7.3 Integrity - HMAC-SHA2-256](#ssh-hmac)
+  - [7.4 Host Authentication - RSA-SHA2-256](#ssh-host-auth)
+  - [7.5 Key Derivation - RFC 4253 §7.2](#ssh-kdf)
+  - [7.6 Private Key Lifetime](#ssh-pkey-lifetime)
+  - [7.7 Memory Layout Defences](#ssh-memory-defences)
+  - [7.8 Sequence Number Overflow Guard](#ssh-seq-overflow)
+  - [7.9 Secure Wipe](#ssh-wipe)
+  - [7.10 Random Number Generation](#ssh-rng)
+- [8. Diagnostic Endpoint](#diagnostic-endpoint)
+- [9. Known Limitations and Non-Goals](#known-limitations)
+- [10. Hardening Checklist](#hardening-checklist)
+  - [General](#general-hardening)
+  - [Authentication](#auth-hardening)
+  - [SSH](#ssh-hardening)
+  - [Build Hardening](#build-hardening)
 
 ---
 
-## 1. Threat Model
+## 1. Threat Model {#threat-model}
 
 **In scope (attacks this library defends against):**
 
@@ -164,13 +143,13 @@ The remaining sections document each property in depth.
 
 ---
 
-## 2. Memory Safety - HTTP / Core Stack
+## 2. Memory Safety - HTTP / Core Stack {#memory-safety}
 
-**Files:** [src/network_drivers/transport/transport.cpp](../src/network_drivers/transport/transport.cpp),
-[src/network_drivers/presentation/presentation.cpp](../src/network_drivers/presentation/presentation.cpp),
-[src/DetWebServerConfig.h](../src/DetWebServerConfig.h)
+**Files:** [src/network_drivers/transport/transport.cpp](@ref transport.cpp),
+[src/network_drivers/presentation/presentation.cpp](@ref presentation.cpp),
+[src/DetWebServerConfig.h](@ref DetWebServerConfig.h)
 
-### Static Allocation
+### Static Allocation {#core-static}
 
 Every buffer that can hold user-supplied data is a fixed-size array in BSS,
 sized at compile time:
@@ -186,14 +165,14 @@ No `malloc`, `new`, or `pvPortMalloc` is called after `begin()` for any of
 these paths. The total footprint is a compile-time constant; there is no
 fragmentation, no use-after-free, and no heap spray surface.
 
-### Buffer Overflow Containment
+### Buffer Overflow Containment {#core-overflow}
 
 Each buffer is separately named in BSS. An overflow inside one connection's
 ring buffer cannot reach another connection's data without crossing the entire
 `conn_pool[]` symbol and then whatever the linker places next - it cannot
 reach the SSH key store in a single linear stride (see §7.7).
 
-### Compile-Time Safety Checks
+### Compile-Time Safety Checks {#core-checks}
 
 `DetWebServerConfig.h` contains `#error` guards that catch impossible
 combinations at build time:
@@ -213,12 +192,12 @@ has buffered data that was never written.
 
 ---
 
-## 3. Input Validation - RFC 7230 Parser
+## 3. Input Validation - RFC 7230 Parser {#input-validation}
 
-**Files:** [src/network_drivers/presentation/http_parser.cpp](../src/network_drivers/presentation/http_parser.cpp),
-[src/network_drivers/presentation/http_parser.h](../src/network_drivers/presentation/http_parser.h)
+**Files:** [src/network_drivers/presentation/http_parser.cpp](@ref http_parser.cpp),
+[src/network_drivers/presentation/http_parser.h](@ref http_parser.h)
 
-### Character-Class Validation
+### Character-Class Validation {#parser-validation}
 
 The parser validates every byte of every user-controlled field before it is
 stored or acted upon. This is a defence-in-depth measure: even if a buffer
@@ -233,7 +212,7 @@ or control characters before they enter any buffer.
 | Header field-name  | `tchar`                                                 | RFC 7230 §3.2   | 400                |
 | Header field-value | `VCHAR`, SP, HTAB, obs-text (%x80–FF)                   | RFC 7230 §3.2   | 400                |
 
-### Length Limits
+### Length Limits {#parser-limits}
 
 | Field              | Limit                    | Violation response    |
 | ------------------ | ------------------------ | --------------------- |
@@ -245,13 +224,13 @@ or control characters before they enter any buffer.
 Path and body oversize conditions are detected before any byte is written to
 the destination buffer and result in an error response sent immediately.
 
-### CR-Injection Defence
+### CR-Injection Defence {#parser-cr}
 
 A bare CR (`\r`) inside a header field-name transitions the parser to an error
 state (400). This prevents HTTP response splitting and CRLF injection via
 carefully crafted header values that contain `\r\n`.
 
-### Transfer-Encoding Rejection
+### Transfer-Encoding Rejection {#parser-transfer}
 
 The library does not support chunked transfer encoding. Any request containing
 a `Transfer-Encoding` header is rejected with 501 Not Implemented. This closes
@@ -260,12 +239,12 @@ the server side.
 
 ---
 
-## 4. WebSocket Security
+## 4. WebSocket Security {#websocket-security}
 
-**Files:** [src/network_drivers/presentation/websocket.cpp](../src/network_drivers/presentation/websocket.cpp),
-[src/network_drivers/presentation/websocket.h](../src/network_drivers/presentation/websocket.h)
+**Files:** [src/network_drivers/presentation/websocket.cpp](@ref websocket.cpp),
+[src/network_drivers/presentation/websocket.h](@ref websocket.h)
 
-### Handshake Verification
+### Handshake Verification {#ws-handshake}
 
 The WebSocket upgrade handshake requires:
 
@@ -280,7 +259,7 @@ hardware accelerator on ESP32. The GUID (`258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
 is defined in RFC 6455 §1.3 and prevents cross-protocol attacks where an HTTP
 server is tricked into treating a non-WebSocket request as one.
 
-### Frame Validation
+### Frame Validation {#ws-frame}
 
 - Client frames must be masked (RFC 6455 §5.1 requires client-to-server masking).
   Unmasked frames are rejected and the connection is closed.
@@ -289,7 +268,7 @@ server is tricked into treating a non-WebSocket request as one.
 - Control frames (Close, Ping, Pong) are handled automatically. Ping is answered
   with Pong without forwarding to the application handler.
 
-### No Origin Validation by Default
+### No Origin Validation by Default {#ws-origin}
 
 The library does not validate the `Origin` header by default. For internet-
 facing deployments, the application should check `http_get_header(req, "Origin")`
@@ -297,12 +276,12 @@ in the WebSocket route handler and reject origins that are not in an allowlist.
 
 ---
 
-## 5. Authentication (HTTP Basic Auth)
+## 5. Authentication (HTTP Basic Auth) {#auth-security}
 
-**Files:** [src/network_drivers/presentation/presentation.cpp](../src/network_drivers/presentation/presentation.cpp),
-[src/DetWebServerConfig.h](../src/DetWebServerConfig.h)
+**Files:** [src/network_drivers/presentation/presentation.cpp](@ref presentation.cpp),
+[src/DetWebServerConfig.h](@ref DetWebServerConfig.h)
 
-### Implementation
+### Implementation {#auth-implementation}
 
 HTTP Basic Auth credentials are compared after base64-decoding the
 `Authorization` header value. The comparison uses the standard library
@@ -318,7 +297,7 @@ For embedded device use this is generally acceptable because:
   the deployment requires true authentication security, TLS (or SSH) must be
   used at the transport layer.
 
-### Credentials in Flash
+### Credentials in Flash {#auth-flash}
 
 Credentials passed to `server.on(path, method, handler, realm, user, pass)` are
 stored in the application's `.rodata` or `.text` section. They are never copied
@@ -328,7 +307,7 @@ read exploit.
 
 ---
 
-## 6. TLS / Transport Encryption
+## 6. TLS / Transport Encryption {#tls-security}
 
 The core HTTP/WebSocket/SSE stack does not include a TLS layer. The intended
 deployment pattern is:
@@ -342,22 +321,22 @@ The SSH transport layer (§7) is the only encrypted path built into this library
 
 ---
 
-## 7. SSH Cryptographic Layer
+## 7. SSH Cryptographic Layer {#ssh-security}
 
 **Files:**
 
-- [src/network_drivers/presentation/ssh/ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h) - security model, types, wipe helpers
-- [src/network_drivers/presentation/ssh/ssh_bignum.h](../src/network_drivers/presentation/ssh/ssh_bignum.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_bignum.cpp) - 2048-bit Montgomery arithmetic
-- [src/network_drivers/presentation/ssh/ssh_sha256.h](../src/network_drivers/presentation/ssh/ssh_sha256.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_sha256.cpp) - SHA-256
-- [src/network_drivers/presentation/ssh/ssh_hmac_sha256.h](../src/network_drivers/presentation/ssh/ssh_hmac_sha256.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_hmac_sha256.cpp) - HMAC-SHA2-256
-- [src/network_drivers/presentation/ssh/ssh_aes256ctr.h](../src/network_drivers/presentation/ssh/ssh_aes256ctr.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_aes256ctr.cpp) - AES-256-CTR
-- [src/network_drivers/presentation/ssh/ssh_dh.h](../src/network_drivers/presentation/ssh/ssh_dh.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_dh.cpp) - DH-group14-SHA256 KEX
-- [src/network_drivers/presentation/ssh/ssh_rsa.h](../src/network_drivers/presentation/ssh/ssh_rsa.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_rsa.cpp) - RSA-SHA2-256 host key
-- [src/network_drivers/presentation/ssh/ssh_packet.h](../src/network_drivers/presentation/ssh/ssh_packet.h) / [.cpp](../src/network_drivers/presentation/ssh/ssh_packet.cpp) - binary packet protocol
+- [src/network_drivers/presentation/ssh/ssh_keymat.h](@ref ssh_keymat.h) - security model, types, wipe helpers
+- [src/network_drivers/presentation/ssh/ssh_bignum.h](@ref ssh_bignum.h) / [.cpp](@ref ssh_bignum.cpp) - 2048-bit Montgomery arithmetic
+- [src/network_drivers/presentation/ssh/ssh_sha256.h](@ref ssh_sha256.h) / [.cpp](@ref ssh_sha256.cpp) - SHA-256
+- [src/network_drivers/presentation/ssh/ssh_hmac_sha256.h](@ref ssh_hmac_sha256.h) / [.cpp](@ref ssh_hmac_sha256.cpp) - HMAC-SHA2-256
+- [src/network_drivers/presentation/ssh/ssh_aes256ctr.h](@ref ssh_aes256ctr.h) / [.cpp](@ref ssh_aes256ctr.cpp) - AES-256-CTR
+- [src/network_drivers/presentation/ssh/ssh_dh.h](@ref ssh_dh.h) / [.cpp](@ref ssh_dh.cpp) - DH-group14-SHA256 KEX
+- [src/network_drivers/presentation/ssh/ssh_rsa.h](@ref ssh_rsa.h) / [.cpp](@ref ssh_rsa.cpp) - RSA-SHA2-256 host key
+- [src/network_drivers/presentation/ssh/ssh_packet.h](@ref ssh_packet.h) / [.cpp](@ref ssh_packet.cpp) - binary packet protocol
 
 ---
 
-### 7.1 Key Exchange - DH-group14-SHA256
+### 7.1 Key Exchange - DH-group14-SHA256 {#ssh-kex}
 
 <details>
 <summary><b>Expand 7.1 Key Exchange - DH-group14-SHA256 Details</b></summary>
@@ -367,7 +346,7 @@ The SSH transport layer (§7) is the only encrypted path built into this library
 The SSH key exchange uses Diffie-Hellman with the 2048-bit MODP group 14
 prime (p) and generator g=2. The exchange hash uses SHA-256.
 
-#### Why group14?
+**Why group14?**
 
 Group14 (2048-bit) provides approximately 112 bits of security (NIST SP 800-131A
 equivalent), which is the minimum recommended for new deployments as of 2024.
@@ -375,7 +354,7 @@ It is widely supported by existing SSH clients. Group16 (4096-bit) provides
 ~140 bits but is 4× slower on ESP32; the hardware mbedTLS path makes group14
 fast enough.
 
-#### Protocol flow
+**Protocol flow**
 
 ```
 Client                              Server
@@ -390,7 +369,7 @@ SSH_MSG_KEXDH_INIT ──── e ──────►  (1) y = esp_fill_random
                                     (7) y wiped; K → key derivation; K wiped
 ```
 
-#### Client value validation
+**Client value validation**
 
 The received client public value `e` is checked against 1 and p-1 by
 `bn_dh_validate()` before any computation. A value of 1 leaks the server
@@ -398,7 +377,7 @@ scalar y directly (K = 1^y = 1, fixed). A value of p-1 causes K to be either
 1 or p-1 (depending on y parity), which is also a fixed value. Both are
 well-known small-subgroup attacks specified in RFC 4253 §8.
 
-#### Private scalar generation
+**Private scalar generation**
 
 The server's private scalar `y` is generated by `esp_fill_random()` (hardware
 RNG on ESP32; see §7.10). The top two bits are masked to ensure y < p; the
@@ -416,7 +395,7 @@ values e₁, e₂ allows recovery of y via:
 
 ---
 
-### 7.2 Symmetric Encryption - AES-256-CTR
+### 7.2 Symmetric Encryption - AES-256-CTR {#ssh-aes}
 
 <details>
 <summary><b>Expand 7.2 Symmetric Encryption - AES-256-CTR Details</b></summary>
@@ -426,14 +405,14 @@ values e₁, e₂ allows recovery of y via:
 AES-256-CTR is a stream cipher mode. The keystream is produced by encrypting a
 128-bit counter with AES-256 and XOR-ing it with the plaintext.
 
-#### Why CTR mode?
+**Why CTR mode?**
 
 - No padding required (stream cipher).
 - Encryption and decryption are identical operations.
 - Parallelisable (hardware accelerator on ESP32).
 - No "padding oracle" vulnerability class (unlike CBC).
 
-#### Counter management
+**Counter management**
 
 The counter is initialised to IV_c2s or IV_s2c (derived from the KEX; see §7.5)
 and incremented as a big-endian 128-bit integer after each 16-byte block. The
@@ -444,7 +423,7 @@ counter never repeats within a connection because:
   packets could be sent to cause a counter repetition within the 2^128 counter
   space (which is practically unreachable in any case).
 
-#### Platform-specific implementations
+**Platform-specific implementations**
 
 - **Arduino (ESP32):** `mbedtls_aes_crypt_ecb()` with the hardware AES accelerator
   inside the ESP32 crypto engine. The key schedule is managed by mbedtls.
@@ -452,7 +431,7 @@ counter never repeats within a connection because:
   MixColumns polynomial (FIPS 197). NOT constant-time; test-only.
 
 The platform is selected by `#ifdef ARDUINO` in
-[ssh_aes256ctr.cpp](../src/network_drivers/presentation/ssh/ssh_aes256ctr.cpp).
+[ssh_aes256ctr.cpp](@ref ssh_aes256ctr.cpp).
 No guessed buffer sizes are used: the Arduino path embeds `mbedtls_aes_context`
 directly (by `#include <mbedtls/aes.h>`), so the compiler enforces the exact
 size. The "opaque buffer of guessed size" anti-pattern is explicitly rejected.
@@ -461,7 +440,7 @@ size. The "opaque buffer of guessed size" anti-pattern is explicitly rejected.
 
 ---
 
-### 7.3 Integrity - HMAC-SHA2-256
+### 7.3 Integrity - HMAC-SHA2-256 {#ssh-hmac}
 
 <details>
 <summary><b>Expand 7.3 Integrity - HMAC-SHA2-256 Details</b></summary>
@@ -474,7 +453,7 @@ Every SSH binary packet carries a 32-byte HMAC-SHA2-256 MAC computed over:
 
 where `seq_no_be32` is the 32-bit packet sequence number in big-endian encoding.
 
-#### MAC key size
+**MAC key size**
 
 The mac keys (mac_key_c2s, mac_key_s2c) are 32 bytes each, derived from the
 key exchange (§7.5). HMAC-SHA256 block length is 64 bytes; a 32-byte key is
@@ -482,11 +461,11 @@ shorter than the block length and is padded with zeros to 64 bytes internally.
 This is correct per RFC 2104 §2: keys shorter than B (block length) are
 right-padded with zeros.
 
-#### Verify-before-use
+**Verify-before-use**
 
 The MAC is verified **before** the payload bytes are forwarded to any protocol
 handler. The verification uses a constant-time 32-byte comparison (`ct_memcmp`
-in [ssh_packet.cpp](../src/network_drivers/presentation/ssh/ssh_packet.cpp))
+in [ssh_packet.cpp](@ref ssh_packet.cpp))
 that accumulates XOR differences without early-exit branching. This prevents
 timing-oracle attacks where an attacker measures how many bytes of the MAC
 matched before a short-circuit return.
@@ -503,7 +482,7 @@ If MAC verification fails:
 
 ---
 
-### 7.4 Host Authentication - RSA-SHA2-256
+### 7.4 Host Authentication - RSA-SHA2-256 {#ssh-host-auth}
 
 <details>
 <summary><b>Expand 7.4 Host Authentication - RSA-SHA2-256 Details</b></summary>
@@ -513,7 +492,7 @@ If MAC verification fails:
 The server authenticates itself to the client by signing the exchange hash H
 with its RSA-2048 private key using PKCS#1 v1.5 and SHA-256.
 
-#### Why PKCS#1 v1.5 and not RSA-PSS?
+**Why PKCS#1 v1.5 and not RSA-PSS?**
 
 The SSH protocol specifies `rsa-sha2-256` (RFC 8332), which is defined as
 PKCS#1 v1.5 with SHA-256 as per RFC 8017 §8.2. RSA-PSS is a different scheme
@@ -521,7 +500,7 @@ PKCS#1 v1.5 with SHA-256 as per RFC 8017 §8.2. RSA-PSS is a different scheme
 major SSH clients (OpenSSH ≥ 7.2) support `rsa-sha2-256`. This library
 implements the algorithm the RFC requires.
 
-#### Signature construction
+**Signature construction**
 
 1. Compute `digest = SHA-256(H)`.
 2. Build PKCS#1 v1.5 DigestInfo:
@@ -541,7 +520,7 @@ implements the algorithm the RFC requires.
 
 The 256-byte signature is transmitted in the SSH_MSG_KEXDH_REPLY.
 
-#### Key storage and loading
+**Key storage and loading**
 
 - **NVS namespace:** `"ssh_host_key"`, key `"priv_der"`.
 - **Format:** DER-encoded PKCS#1 RSAPrivateKey (RFC 8017 Appendix C).
@@ -556,7 +535,7 @@ For the private key lifetime policy, see §7.6.
 
 ---
 
-### 7.5 Key Derivation - RFC 4253 §7.2
+### 7.5 Key Derivation - RFC 4253 §7.2 {#ssh-kdf}
 
 <details>
 <summary><b>Expand 7.5 Key Derivation - RFC 4253 §7.2 Details</b></summary>
@@ -590,16 +569,16 @@ After derivation, all stack temporaries (`key_c2s`, `key_s2c`, `iv_c2s`,
 
 ---
 
-### 7.6 Private Key Lifetime
+### 7.6 Private Key Lifetime {#ssh-pkey-lifetime}
 
 <details>
 <summary><b>Expand 7.6 Private Key Lifetime Details</b></summary>
 
 This is the most security-critical design decision in the SSH implementation.
 The same principle is documented in the source at the top of
-[ssh_rsa.h](../src/network_drivers/presentation/ssh/ssh_rsa.h).
+[ssh_rsa.h](@ref ssh_rsa.h).
 
-#### Why the private key must never be in static memory
+**Why the private key must never be in static memory**
 
 If the RSA-2048 private key (`d`, `p`, `q`, `dp`, `dq`, `qinv`) were stored
 in a global or static array:
@@ -617,7 +596,7 @@ in a global or static array:
 3. **Use-after-free / dangling read:** A bug that reads a stale pointer into
    BSS could silently return key bytes without the application knowing.
 
-#### The mandated lifetime
+**The mandated lifetime**
 
 ```
 NVS (encrypted flash)
@@ -641,7 +620,7 @@ which is in SRAM. It is not accessible from a single linear overflow of any
 BSS buffer because the stack is a separate region with an opposite growth
 direction.
 
-#### NVS encryption recommendation
+**NVS encryption recommendation**
 
 The NVS partition should be encrypted using the ESP-IDF NVS encryption feature
 (enable `CONFIG_NVS_ENCRYPTION` in menuconfig, provision the NVS encryption
@@ -653,12 +632,12 @@ the device.
 
 ---
 
-### 7.7 Memory Layout Defences
+### 7.7 Memory Layout Defences {#ssh-memory-defences}
 
 <details>
 <summary><b>Expand 7.7 Memory Layout Defences Details</b></summary>
 
-**Source:** [ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h)
+**Source:** [ssh_keymat.h](@ref ssh_keymat.h)
 (Defence 1 comment block)
 
 Three separate BSS symbols hold SSH state:
@@ -690,13 +669,13 @@ symbol layout eliminates that risk.
 
 ---
 
-### 7.8 Sequence Number Overflow Guard
+### 7.8 Sequence Number Overflow Guard {#ssh-seq-overflow}
 
 <details>
 <summary><b>Expand 7.8 Sequence Number Overflow Guard Details</b></summary>
 
-**Source:** [ssh_packet.h](../src/network_drivers/presentation/ssh/ssh_packet.h),
-[ssh_packet.cpp](../src/network_drivers/presentation/ssh/ssh_packet.cpp)
+**Source:** [ssh_packet.h](@ref ssh_packet.h),
+[ssh_packet.cpp](@ref ssh_packet.cpp)
 
 SSH sequence numbers are 32-bit unsigned integers (RFC 4253 §6.4). They wrap
 at 2^32. Two problems arise at wrap:
@@ -726,12 +705,12 @@ limitation and is noted in [docs/CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-### 7.9 Secure Wipe
+### 7.9 Secure Wipe {#ssh-wipe}
 
 <details>
 <summary><b>Expand 7.9 Secure Wipe Details</b></summary>
 
-**Source:** [ssh_keymat.h](../src/network_drivers/presentation/ssh/ssh_keymat.h)
+**Source:** [ssh_keymat.h](@ref ssh_keymat.h)
 
 ```cpp
 static inline void ssh_wipe(void *ptr, size_t len) {
@@ -740,7 +719,7 @@ static inline void ssh_wipe(void *ptr, size_t len) {
 }
 ```
 
-#### Why not `memset`?
+**Why not `memset`?**
 
 C and C++ compilers are explicitly permitted by the standard to elide a `memset`
 call whose result is "not observed" before the memory goes out of scope or is
@@ -755,7 +734,7 @@ The `volatile` pointer cast forces every store to actually reach SRAM because
 `volatile` reads/writes are not subject to the "as-if rule" and cannot be
 removed.
 
-#### Where ssh_wipe is used
+**Where ssh_wipe is used**
 
 | What is wiped                    | When                                               | File             |
 | -------------------------------- | -------------------------------------------------- | ---------------- |
@@ -771,15 +750,15 @@ removed.
 
 ---
 
-### 7.10 Random Number Generation
+### 7.10 Random Number Generation {#ssh-rng}
 
 <details>
 <summary><b>Expand 7.10 Random Number Generation Details</b></summary>
 
-**Source:** [test/mocks/Arduino.h](../test/mocks/Arduino.h) (native mock),
+**Source:** `test/mocks/Arduino.h` (native mock),
 ESP-IDF `esp_random.h` (Arduino production)
 
-#### Production (Arduino / ESP32)
+**Production (Arduino / ESP32)**
 
 The server DH private scalar `y` and all random padding bytes are generated
 using `esp_fill_random()`, which wraps `esp_random()`. On ESP32:
@@ -793,7 +772,7 @@ using `esp_fill_random()`, which wraps `esp_random()`. On ESP32:
 - Entropy rate is approximately 2 Mbit/s; `esp_fill_random(256 bytes)` is
   effectively instantaneous.
 
-#### Native test environment
+**Native test environment**
 
 The native test mock in `test/mocks/Arduino.h` provides a time-seeded PRNG:
 
@@ -820,9 +799,9 @@ environment.
 
 ---
 
-## 8. Diagnostic Endpoint
+## 8. Diagnostic Endpoint {#diagnostic-endpoint}
 
-**File:** [src/DeterministicESPAsyncWebServer.cpp](../src/DeterministicESPAsyncWebServer.cpp)
+**File:** [DeterministicESPAsyncWebServer.cpp](@ref DeterministicESPAsyncWebServer.cpp)
 
 The optional `DETWS_ENABLE_DIAG` build flag enables a JSON endpoint at `/diag`
 that returns all active feature flags and configuration constants.
@@ -841,7 +820,7 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 
 ---
 
-## 9. Known Limitations and Non-Goals
+## 9. Known Limitations and Non-Goals {#known-limitations}
 
 | Limitation                                      | Impact                                                | Workaround                             |
 | ----------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
@@ -856,11 +835,11 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 
 ---
 
-## 10. Hardening Checklist
+## 10. Hardening Checklist {#hardening-checklist}
 
 Use this checklist before deploying to a production environment.
 
-### General
+### General {#general-hardening}
 
 - [ ] Disable `DETWS_ENABLE_DIAG` (default is off; confirm `#define DETWS_ENABLE_DIAG 0`)
 - [ ] Set `CONN_TIMEOUT_MS` appropriately (default 5000 ms) to limit slow-loris attacks
@@ -868,13 +847,13 @@ Use this checklist before deploying to a production environment.
 - [ ] Review all route handlers for unchecked user input (query params, body content, header values)
 - [ ] Validate the `Origin` header in WebSocket upgrade handlers if the device is accessible from untrusted networks
 
-### Authentication
+### Authentication {#auth-hardening}
 
 - [ ] All sensitive routes are protected with Basic Auth at minimum
 - [ ] Credentials are in flash (`.rodata`), not computed from user input
 - [ ] If using HTTP (not SSH), accept that Basic Auth credentials are transmitted in cleartext (base64 is not encryption)
 
-### SSH
+### SSH {#ssh-hardening}
 
 - [ ] RSA host key is provisioned in NVS (`"ssh_host_key"` / `"priv_der"`)
 - [ ] NVS encryption is enabled in ESP-IDF menuconfig (`CONFIG_NVS_ENCRYPTION`)
@@ -883,7 +862,7 @@ Use this checklist before deploying to a production environment.
 - [ ] Client host-key verification is enforced by the connecting SSH client (openssh `known_hosts`)
 - [ ] `MAX_SSH_CONNS` is set to the minimum required concurrent sessions
 
-### Build
+### Build Hardening {#build-hardening}
 
 - [ ] Build with `-Os` (default in ESP-IDF) - do not disable optimisation, as it is not needed for security and `ssh_wipe` is already volatile-correct
 - [ ] Confirm the final binary does not include the native test PRNG mock (it is excluded by the `#ifdef ARDUINO` guard in production builds)

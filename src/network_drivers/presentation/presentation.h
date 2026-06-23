@@ -31,8 +31,8 @@
 /**
  * @brief Reset the HTTP parser for a connection slot.
  *
- * Delegates to http_parser_reset(&http_pool[slot_id]).  Silently ignores
- * out-of-range slot IDs.
+ * Delegates to http_parser_reset() for the slot's request struct.
+ * Silently ignores out-of-range slot IDs.
  *
  * @param slot_id Index into conn_pool / http_pool (0 … MAX_CONNS-1).
  */
@@ -41,7 +41,7 @@ void http_reset(uint8_t slot_id);
 /**
  * @brief Drain the transport ring buffer and advance the HTTP parser.
  *
- * Reads all available bytes from `conn_pool[slot_id].rx_buffer` and feeds
+ * Reads all available bytes from the slot's transport ring buffer and feeds
  * each byte to `http_parser_feed()`.  Stops early if the parser reaches a
  * terminal state (PARSE_COMPLETE, PARSE_ERROR, PARSE_ENTITY_TOO_LARGE,
  * PARSE_URI_TOO_LONG).

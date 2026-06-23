@@ -266,6 +266,7 @@ bool ssh_rekey_needed(uint8_t i);
  * id and authentication state are preserved, so once the re-key completes the
  * connection resumes in its prior (authenticated) phase.
  *
+ * @param[in]  i        Connection slot index.
  * @param[out] out      KEXINIT payload to send.
  * @param[out] out_len  Bytes written.
  * @param[in]  cap      Capacity of @p out.

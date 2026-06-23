@@ -153,22 +153,22 @@ if __name__ == "__main__":
     markdown.append(f"This section contains a thorough directory of all test cases across all {len(suites)} test suites. Click on any test suite to expand its test cases, and click on individual test cases to expand their objectives and assertions.\n")
 
     for suite_name, tests in sorted(suites.items()):
-        markdown.append(f"<details>")
+        markdown.append("\n<details>")
         markdown.append(f"<summary><b>{suite_name} ({len(tests)} tests)</b></summary>\n")
         
         for test in tests:
-            markdown.append(f"  <details style=\"margin-left: 20px;\">")
-            markdown.append(f"    <summary><code>{test['fn_name']}</code> &mdash; <i>{test['description']}</i></summary>\n")
+            markdown.append("\n  <details style=\"margin-left: 20px;\">")
+            markdown.append(f"    <summary><b>{test['fn_name']}</b> &mdash; <i>{test['description']}</i></summary>\n")
             markdown.append(f"    * **Objective**: {test['description']}")
             
             if test['assertions']:
                 markdown.append("    * **Assertions**:")
                 for assertion in test['assertions']:
-                    safe_assert = assertion.replace('<', '&lt;').replace('>', '&gt;')
-                    markdown.append(f"      * `{safe_assert}`")
-            markdown.append("  </details>")
+                    safe_assert = assertion.replace('<', '&lt;').replace('>', '&gt;').replace('\\', '\\\\')
+                    markdown.append(f"      * <code>{safe_assert}</code>")
+            markdown.append("\n  </details>\n")
             
-        markdown.append(f"</details>\n")
+        markdown.append("\n</details>\n")
 
     # Write back to documentation file
     with open(DOCS_FILE, 'w', encoding='utf-8') as f:
