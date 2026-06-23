@@ -3,45 +3,46 @@
  * Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * A retro, monospace TTY green-on-black screen styling for Doxygen.
+ * A retro, monospace TTY phosphor-green styling for Doxygen: a calm
+ * green-on-near-black palette with soft CRT bloom, scanlines and vignette.
  */
 
 /* ---- Doxygen CSS variable overrides - Retro TTY Green Screen -------- */
 html {
-    --primary-color:              #00c000;
+    --primary-color:              #2bb35a;
     --primary-dark-color:         #008000;
     --primary-light-color:        #40ff40;
-    --secondary-color:            #00c000;
+    --secondary-color:            #2bb35a;
     --secondary-dark-color:       #008000;
     --secondary-light-color:      #40ff40;
 
-    --page-background-color:      #000000;
-    --page-foreground-color:      #00c000;
+    --page-background-color:      #080c08;
+    --page-foreground-color:      #2bb35a;
     --page-secondary-foreground-color: #008000;
 
     --separator-color:            #008000;
     --border-color:               #008000;
 
-    --header-background:          #000000;
-    --header-foreground:          #00c000;
-    --header-gradient:            linear-gradient(180deg, #000000 0%, #001100 100%);
+    --header-background:          #080c08;
+    --header-foreground:          #2bb35a;
+    --header-gradient:            linear-gradient(180deg, #080c08 0%, #001100 100%);
 
-    --nav-background:             #000000;
-    --nav-foreground:             #00c000;
-    --nav-accent:                 #00c000;
+    --nav-background:             #080c08;
+    --nav-foreground:             #2bb35a;
+    --nav-accent:                 #2bb35a;
 
     --code-background:            #001100;
-    --code-foreground:            #00c000;
+    --code-foreground:            #2bb35a;
 
-    --memdef-background:          #000000;
+    --memdef-background:          #080c08;
     --memdef-title-background:    #001100;
 
-    --warning-color:              #00c000;
-    --note-color:                 #00c000;
-    --attention-color:            #00c000;
+    --warning-color:              #2bb35a;
+    --note-color:                 #2bb35a;
+    --attention-color:            #2bb35a;
     --deprecated-color:           #008000;
-    --bug-color:                  #00c000;
-    --todo-color:                 #00c000;
+    --bug-color:                  #2bb35a;
+    --todo-color:                 #2bb35a;
 }
 
 /* ---- Force Monospace (TTY style) everywhere ---- */
@@ -50,21 +51,21 @@ html {
 }
 
 body, html {
-    background-color: #000000 !important;
-    color: #00c000 !important;
+    background-color: #080c08 !important;
+    color: #2bb35a !important;
     font-size: 14px;
     line-height: 1.6;
 }
 
 /* ---- Page header / title bar --------------------------------------- */
 #titlearea {
-    background: #000000 !important;
+    background: #080c08 !important;
     border-bottom: 2px solid #008000 !important;
     padding: 16px 16px !important;
 }
 
 div.header {
-    background: #000000 !important;
+    background: #080c08 !important;
     border-bottom: 1px solid #008000 !important;
     padding: 8px 32px !important;
     margin-bottom: 12px !important;
@@ -73,7 +74,7 @@ div.header {
 
 div.header .title {
     font-size: 1.5rem !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     margin: 0 !important;
     padding: 0 !important;
     font-weight: 700 !important;
@@ -82,7 +83,7 @@ div.header .title {
 #projectname {
     font-size: 1.25rem !important;
     font-weight: 700;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 10px rgba(0, 192, 0, 0.8) !important;
     line-height: 1.3 !important;
     white-space: normal !important;
@@ -100,7 +101,7 @@ div.header .title {
 
 /* ---- Navigation tree / sidebar ------------------------------------ */
 #nav-tree, #side-nav {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
     border-right: 2px solid #008000 !important;
 }
 
@@ -109,11 +110,11 @@ div.header .title {
 }
 
 #nav-tree a {
-    color: #00c000 !important;
+    color: #2bb35a !important;
 }
 
 #nav-tree a:hover, #nav-tree .selected a {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 8px rgba(0, 192, 0, 0.8) !important;
     background-color: #001100 !important;
 }
@@ -123,7 +124,7 @@ div.header .title {
 }
 
 #nav-sync {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     z-index: 10 !important;
     cursor: pointer !important;
 }
@@ -139,18 +140,18 @@ div.nav-sync-icon {
 div.nav-sync-icon:hover {
     background-color: #002200 !important;
     opacity: 1.0 !important;
-    border-color: #00c000 !important;
+    border-color: #2bb35a !important;
 }
 
 span.sync-icon-left {
-    border-left: 2px solid #00c000 !important;
-    border-top: 2px solid #00c000 !important;
+    border-left: 2px solid #2bb35a !important;
+    border-top: 2px solid #2bb35a !important;
     transition: border-color 0.2s ease !important;
 }
 
 span.sync-icon-right {
-    border-right: 2px solid #00c000 !important;
-    border-bottom: 2px solid #00c000 !important;
+    border-right: 2px solid #2bb35a !important;
+    border-bottom: 2px solid #2bb35a !important;
     transition: border-color 0.2s ease !important;
 }
 
@@ -175,7 +176,7 @@ div.nav-sync-icon.active:hover:after {
 
 /* ---- Main content area -------------------------------------------- */
 #doc-content, div#doc-content {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
 }
 
 div.contents {
@@ -209,7 +210,7 @@ div.contents {
 
 #MSearchField {
     background-color: transparent !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     border: none !important;
     outline: none !important;
     width: 100% !important;
@@ -218,13 +219,13 @@ div.contents {
 }
 
 #MSearchBox:hover, #MSearchBox:focus-within {
-    border-color: #00c000 !important;
+    border-color: #2bb35a !important;
     box-shadow: 0 0 8px rgba(0, 192, 0, 0.4) !important;
 }
 
 /* ---- Section headings --------------------------------------------- */
 h1, h2, h3, h4 {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 8px rgba(0, 192, 0, 0.7) !important;
     font-weight: 700;
     border-bottom: 2px solid #008000 !important;
@@ -233,13 +234,13 @@ h1, h2, h3, h4 {
 }
 
 h1.glow {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 15px rgba(0, 192, 0, 0.9) !important;
 }
 
 /* ---- Anchor links -------------------------------------------------- */
 a, a:visited {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-decoration: underline !important;
     text-shadow: 0 0 4px rgba(0, 192, 0, 0.3) !important;
 }
@@ -252,7 +253,7 @@ a:hover {
 
 /* ---- Member definition boxes --------------------------------------- */
 div.memitem {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
     border: 2px solid #008000 !important;
     border-radius: 4px;
     margin-bottom: 16px;
@@ -267,12 +268,12 @@ div.memproto {
 
 div.memdoc {
     padding: 12px 16px;
-    background-color: #000000 !important;
-    color: #00c000 !important;
+    background-color: #080c08 !important;
+    color: #2bb35a !important;
 }
 
 table.memname {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-size: 0.95rem;
 }
 
@@ -365,20 +366,20 @@ span.lineno, a.lineno {
 table.params td, table.params th,
 table.exception td, table.exception th,
 table.retval td, table.retval th {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
     border: 1px solid #008000 !important;
     padding: 6px 12px;
     font-size: 0.9rem;
-    color: #00c000 !important;
+    color: #2bb35a !important;
 }
 
 table.params th {
     background-color: #001100 !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-weight: 700;
 }
 
-td.paramname { color: #00c000 !important; font-weight: 700; }
+td.paramname { color: #2bb35a !important; font-weight: 700; }
 td.paramtype  { color: #008000 !important; }
 
 /* ---- Note / warning boxes ------------------------------------------ */
@@ -389,13 +390,13 @@ dl.invariant, dl.deprecated, dl.todo, dl.bug, dl.remark {
     margin: 12px 0;
     background-color: #001100 !important;
     border: 1px solid #008000 !important;
-    border-left: 5px solid #00c000 !important;
+    border-left: 5px solid #2bb35a !important;
 }
 
-dt.note:before        { content: ">> NOTE: "; color: #00c000; font-weight: 700; }
-dt.warning:before     { content: ">> WARNING: "; color: #00c000; font-weight: 700; }
-dt.attention:before   { content: ">> ATTENTION: "; color: #00c000; font-weight: 700; }
-dt.todo:before        { content: ">> TODO: "; color: #00c000; font-weight: 700; }
+dt.note:before        { content: ">> NOTE: "; color: #2bb35a; font-weight: 700; }
+dt.warning:before     { content: ">> WARNING: "; color: #2bb35a; font-weight: 700; }
+dt.attention:before   { content: ">> ATTENTION: "; color: #2bb35a; font-weight: 700; }
+dt.todo:before        { content: ">> TODO: "; color: #2bb35a; font-weight: 700; }
 dt.deprecated:before  { content: ">> DEPRECATED: "; color: #008000; font-weight: 700; }
 
 /* ---- Class / struct overview boxes --------------------------------- */
@@ -407,7 +408,7 @@ div.summary {
 }
 
 div.ingrouptitle {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-size: 1.1rem;
     font-weight: 700;
 }
@@ -421,7 +422,7 @@ hr {
 
 /* ---- File / directory listing ------------------------------------- */
 table.directory {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
     border: 2px solid #008000 !important;
     border-radius: 4px;
     width: 100%;
@@ -430,43 +431,43 @@ table.directory {
 table.directory td, table.directory th {
     padding: 6px 12px;
     border-bottom: 1px solid #008000 !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
 }
 
 table.directory th {
     background-color: #001100 !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-weight: 700;
 }
 
 /* ---- Tab bar ------------------------------------------------------- */
 div.tabs, div.tabs2, div.tabs3 {
-    background: #000000 !important;
+    background: #080c08 !important;
     border-bottom: 2px solid #008000 !important;
 }
 
 ul.tablist li a, ul.tablist li.current a {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     padding: 8px 16px;
     display: inline-block;
 }
 
 ul.tablist li.current a {
-    color: #00c000 !important;
-    border-bottom: 3px solid #00c000 !important;
+    color: #2bb35a !important;
+    border-bottom: 3px solid #2bb35a !important;
     font-weight: 700;
     background-color: #001100 !important;
 }
 
 ul.tablist li a:hover {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-decoration: none !important;
     background-color: #001100 !important;
 }
 
 /* ---- Member group headings ---------------------------------------- */
 div.groupheader {
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-size: 1rem;
     font-weight: 700;
     margin: 20px 0 8px 0;
@@ -476,14 +477,14 @@ div.groupheader {
 
 /* ---- Scrollbar ----------------------------------------------------- */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-track { background: #080c08; }
 ::-webkit-scrollbar-thumb { background: #008000; border-radius: 0px; }
-::-webkit-scrollbar-thumb:hover { background: #00c000; }
+::-webkit-scrollbar-thumb:hover { background: #2bb35a; }
 
 /* ---- Inline code --------------------------------------------------- */
 code, tt, .tt {
     background-color: #001100 !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     border-radius: 0px;
     border: 1px solid #008000 !important;
     padding: 1px 5px;
@@ -494,13 +495,27 @@ code, tt, .tt {
 @media (max-width: 768px) {
     div.contents { padding: 16px; }
     #projectname { font-size: 1.3rem; }
+
+    /* Keep the Squirty counter visible and well-placed when the navbar
+       collapses into the mobile menu (float/right layout breaks there). */
+    .navbar-squirty-counter {
+        float: none !important;
+        display: block !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding: 6px 16px !important;
+        text-align: center !important;
+        border-left: none !important;
+        border-top: 2px solid #008000 !important; /* divider above instead of left */
+        box-sizing: border-box !important;
+    }
 }
 
 /* ---- Terminal Window & Matrix Details Theme ----------------------- */
 details {
-    background-color: #000000 !important;
+    background-color: #080c08 !important;
     border: 2px solid #008000 !important;
-    border-left: 4px solid #00c000 !important; /* Thick bright TTY green border */
+    border-left: 4px solid #2bb35a !important; /* Thick bright TTY green border */
     border-radius: 0px; /* Sharp terminals */
     padding: 12px 16px;
     margin: 20px 0;
@@ -509,7 +524,7 @@ details {
 }
 
 details[open] {
-    border-color: #00c000 !important;
+    border-color: #2bb35a !important;
     box-shadow: 0 0 15px rgba(0, 192, 0, 0.3) !important;
 }
 
@@ -517,7 +532,7 @@ details > summary {
     outline: none;
     cursor: pointer;
     font-weight: 700;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 5px rgba(0, 192, 0, 0.6) !important;
     user-select: none;
     padding: 4px 0;
@@ -537,7 +552,7 @@ details > summary::before {
 
 details[open] > summary::before {
     content: "dstroy0@esp32:~$ " !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     font-weight: 700;
     margin-right: 8px;
     display: inline-block !important; /* Show prompt when expanded/horizontal */
@@ -566,13 +581,13 @@ details[open] > summary::before {
 
 details:hover .tty-dot {
     opacity: 1;
-    background-color: #00c000 !important;
+    background-color: #2bb35a !important;
 }
 
 .tty-dot:hover {
     transform: scale(1.3) !important;
-    background-color: #00c000 !important;
-    box-shadow: 0 0 8px #00c000 !important;
+    background-color: #2bb35a !important;
+    box-shadow: 0 0 8px #2bb35a !important;
     cursor: pointer;
 }
 
@@ -598,7 +613,7 @@ details[open] > *:not(summary) {
     display: inline-block !important;
     padding: 8px 16px !important;
     font-weight: 700 !important;
-    color: #00c000 !important;
+    color: #2bb35a !important;
     text-shadow: 0 0 5px rgba(0, 192, 0, 0.5) !important;
     font-size: 1.1rem !important;
     pointer-events: none !important; /* Non-clickable */
@@ -614,11 +629,54 @@ details[open] > *:not(summary) {
     text-shadow: none !important;
 }
 
+/* "Deterministic" prefix is a repo link that glows in/out on hover.
+   The title bar sets pointer-events:none, so re-enable it on the link. */
+.navbar-libname-link {
+    color: inherit !important;
+    text-decoration: none !important;
+    display: inline !important; /* menu makes <a> block; keep it inline so the name stays on one line */
+    padding: 0 !important;  /* menu links add padding that would gap the two halves apart */
+    margin: 0 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    text-shadow: 0 0 0 rgba(64, 255, 64, 0) !important; /* glow off */
+    transition: color 0.4s ease, text-shadow 0.4s ease !important;
+}
+
+/* Override the global a:hover so a hovered link doesn't light itself up.
+   By default both halves stay dark on hover; only "Deterministic" is then
+   lit by the higher-specificity :first-child rule below. */
+.navbar-libname:hover .navbar-libname-link {
+    color: inherit !important;
+    text-decoration: none !important;
+    text-shadow: 0 0 1px rgba(0, 220, 90, 0.35) !important;
+}
+
+/* Hovering either part of the name lights up "Deterministic" (the first
+   link); the "ESPAsyncWebServer" half stays dark but is still a repo link. */
+.navbar-libname:hover .navbar-libname-link:first-child,
+.navbar-libname-link:first-child:focus-visible {
+    color: #40ff40 !important;
+    text-decoration: none !important; /* glow only, no underline */
+    text-shadow: 0 0 6px rgba(64, 255, 64, 0.9),
+                 0 0 14px rgba(64, 255, 64, 0.6) !important; /* glow on */
+}
+
+/* Keep the project name on one line — splitting the prefix into a link
+   introduced a wrap opportunity that the single long word didn't have. */
+.navbar-libname {
+    white-space: nowrap !important;
+}
+/* Don't show the menu-item hover background behind the title. */
+.navbar-project-title:hover {
+    background: transparent !important;
+}
+
 /* ---- Cute Pixel Squid Animation ------------------------------------ */
 #squid-container {
     position: fixed;
-    width: 32px;
-    height: 32px;
+    width: 37px;
+    height: 37px;
     z-index: 10000;
     cursor: pointer;
     pointer-events: auto;
@@ -663,6 +721,59 @@ details[open] > *:not(summary) {
     transform-origin: 10px 12px;
 }
 
+/* Flapping mantle fins / wings — smooth undulating rotation about the
+   point where each fin meets the mantle. */
+@keyframes squid-fin-flap-l {
+    0%, 100% { transform: rotate(12deg); }
+    50%      { transform: rotate(-14deg); }
+}
+@keyframes squid-fin-flap-r {
+    0%, 100% { transform: rotate(-12deg); }
+    50%      { transform: rotate(14deg); }
+}
+.squid-fin-left {
+    transform-origin: 5px 1px; /* hinge at the mantle apex */
+    animation: squid-fin-flap-l 0.5s ease-in-out infinite;
+}
+.squid-fin-right {
+    transform-origin: 11px 1px; /* hinge at the mantle apex */
+    animation: squid-fin-flap-r 0.5s ease-in-out infinite;
+}
+
+/* Hunting: tentacles wiggle faster/agitated as Squirty stalks the cursor. */
+.squid-svg.squid-hunting .pixel-tentacle-1,
+.squid-svg.squid-hunting .pixel-tentacle-2,
+.squid-svg.squid-hunting .pixel-tentacle-3,
+.squid-svg.squid-hunting .pixel-tentacle-4 {
+    animation-duration: 0.25s;
+}
+
+/* Attacking: tentacles shoot out to grab the cursor. */
+@keyframes squid-tentacle-strike {
+    0%   { transform: scaleY(1); }
+    100% { transform: scaleY(2.6); }
+}
+.squid-svg.squid-attacking .pixel-tentacle-1,
+.squid-svg.squid-attacking .pixel-tentacle-2,
+.squid-svg.squid-attacking .pixel-tentacle-3,
+.squid-svg.squid-attacking .pixel-tentacle-4 {
+    transform-origin: 8px 12px;
+    animation: squid-tentacle-strike 0.18s ease-out forwards;
+}
+
+/* Chewing: tentacles stay extended and chomp rapidly on the cursor. */
+@keyframes squid-tentacle-chew {
+    0%, 100% { transform: scaleY(2.3); }
+    50%      { transform: scaleY(1.7); }
+}
+.squid-svg.squid-chewing .pixel-tentacle-1,
+.squid-svg.squid-chewing .pixel-tentacle-2,
+.squid-svg.squid-chewing .pixel-tentacle-3,
+.squid-svg.squid-chewing .pixel-tentacle-4 {
+    transform-origin: 8px 12px;
+    animation: squid-tentacle-chew 0.14s steps(2) infinite;
+}
+
 /* Pulse swim scale */
 @keyframes squid-pulse {
     0%, 100% { transform: scale(1); }
@@ -705,4 +816,53 @@ details[open] > *:not(summary) {
     color: #008000 !important;
     text-shadow: none !important;
     margin-right: 4px !important;
+}
+
+/* ---- CRT phosphor texture ----------------------------------------- */
+/* Calms the green-on-near-black palette into an "old monitor" feel: a
+   faint glow on text plus a screen overlay (scanlines + corner vignette
+   + green wash). The lifted near-black background (#080c08) set in the
+   variables and rules above is part of this same calm direction. */
+
+/* Soft phosphor bloom on all text — the gentle glow of a real CRT. */
+body, body * {
+    text-shadow: 0 0 1px rgba(0, 220, 90, 0.35);
+}
+/* Stronger, intentional glow on headings and banner elements. */
+#projectname, .navbar-squirty-counter, h1, h2, h3,
+details > summary, details[open] > summary::before {
+    text-shadow: 0 0 6px rgba(0, 200, 0, 0.45) !important;
+}
+
+/* Screen overlay: scanlines + corner vignette + faint glass tint.
+   Sits above content but below the squid (z 10000) and is click-through. */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background:
+        /* scanlines */
+        repeating-linear-gradient(
+            rgba(0, 0, 0, 0) 0px,
+            rgba(0, 0, 0, 0) 2px,
+            rgba(0, 0, 0, 0.16) 3px,
+            rgba(0, 0, 0, 0.16) 3px),
+        /* vignette — darker toward the corners like curved glass */
+        radial-gradient(ellipse at center,
+            rgba(0, 0, 0, 0) 70%,
+            rgba(0, 0, 0, 0.22) 100%),
+        /* faint green phosphor wash */
+        radial-gradient(ellipse at center,
+            rgba(0, 40, 0, 0.10) 0%,
+            rgba(0, 20, 0, 0.10) 100%);
+    background-size: 100% 3px, 100% 100%, 100% 100%; /* scanline pitch */
+}
+
+/* Respect reduced-motion / contrast preferences: drop the texture for
+   users who ask for it (accessibility). */
+@media (prefers-reduced-motion: reduce), (prefers-contrast: more) {
+    body::after { display: none; }
+    body, body * { text-shadow: none; }
 }

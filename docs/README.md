@@ -1,11 +1,5 @@
 # Documentation
 
-<p align="center">
-  <img src="squirty.svg" alt="Squirty the Injection Squid" width="128" height="128"><br>
-  <b>Squirty the Injection Squid</b><br>
-  <sub>The official library mascot. Copyright &copy; Douglas Quigg. All rights reserved.</sub>
-</p>
-
 An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture.
 
 ![Version](https://img.shields.io/badge/version-v1.2.4-blue)
@@ -23,17 +17,17 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 - **Server-Sent Events** - persistent connections, per-connection and broadcast push
 - **HTTP Basic Authentication** - per-route credential checking via mbedTLS base64
 - **Static file serving** - chunked reads from any Arduino `FS` (LittleFS, SPIFFS, SD)
-- **Multipart form-data parser** - in-place, no allocation, up to `MAX_MULTIPART_PARTS` parts
+- **Multipart form-data parser** - in-place, no allocation, up to [`MAX_MULTIPART_PARTS`](@ref MAX_MULTIPART_PARTS) parts
 - **Compile-time feature flags** - strip unused subsystems entirely; a REST-only build includes none of the above
 - **Compile-time configuration** - every buffer, pool, and timeout is a `#define`; illegal combinations produce `#error` messages
-- **Diagnostic JSON endpoint** - optional `DETWS_ENABLE_DIAG` build-config dump, disabled by default for security
+- **Diagnostic JSON endpoint** - optional [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) build-config dump, disabled by default for security
 - **Backpressure-aware TCP** - shrinks the receive window instead of dropping data when the ring buffer fills
 - **CORS preflight short-circuit** - OPTIONS answered with 204 automatically when CORS is enabled
-- **`restart()`** - hard-resets all connections and reinitialises on the same port without touching the WiFi/TCP stack
+- **[`restart()`](@ref DetWebServer::restart)** - hard-resets all connections and reinitialises on the same port without touching the WiFi/TCP stack
 - **mDNS & NTP Services** - zero-dependency multicast DNS hostname advertisement and SNTP wall-clock time synchronization for local discovery and request logging
 - **OTA Updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
 - **Captive Portal Provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
-- **442 tests** across 18 Unity test suites, runnable on native x86/x64 (no hardware required)
+- **498 tests** across 19 Unity test suites, runnable on native x86/x64 (no hardware required)
 
 ## Installation
 
@@ -114,19 +108,19 @@ Every byte of memory the library uses is accounted for at compile time:
 <details>
 <summary><b>View Zero Heap Allocation Storage Details</b></summary>
 
-| Storage                                                                        | Location                    |
-| ------------------------------------------------------------------------------ | --------------------------- |
-| `conn_pool[MAX_CONNS]` - TCP connections + ring buffers                        | BSS                         |
-| `http_pool[MAX_CONNS]` - HTTP request structs                                  | BSS                         |
-| `ws_pool[MAX_WS_CONNS]` - WebSocket connection state                           | BSS                         |
-| `sse_pool[MAX_SSE_CONNS]` - SSE connection state                               | BSS                         |
-| `_queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)]` - event queue backing store | BSS                         |
-| `_queue_struct` - FreeRTOS `StaticQueue_t`                                     | BSS                         |
-| Route table `_routes[MAX_ROUTES]`                                              | BSS (inside `DetWebServer`) |
+| Storage                                                                        | Location                                         |
+| ------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `conn_pool[MAX_CONNS]` - TCP connections + ring buffers                        | BSS                                              |
+| `http_pool[MAX_CONNS]` - HTTP request structs                                  | BSS                                              |
+| `ws_pool[MAX_WS_CONNS]` - WebSocket connection state                           | BSS                                              |
+| `sse_pool[MAX_SSE_CONNS]` - SSE connection state                               | BSS                                              |
+| `_queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)]` - event queue backing store | BSS                                              |
+| `_queue_struct` - FreeRTOS `StaticQueue_t`                                     | BSS                                              |
+| Route table `_routes[MAX_ROUTES]`                                              | BSS (inside [`DetWebServer`](@ref DetWebServer)) |
 
 </details>
 
-`begin()` calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. `DetWebServer::heap_needed()` returns 0 and `heap_available()` returns `true`.
+[`begin()`](@ref DetWebServer::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. [`DetWebServer::heap_needed()`](@ref DetWebServer::heap_needed) returns 0 and [`heap_available()`](@ref DetWebServer::heap_available) returns `true`.
 
 The only post-`begin()` allocation that can occur is inside `fs::File` construction in `serve_file()`, which is an Arduino FS implementation detail outside the library's control.
 
@@ -158,20 +152,20 @@ Any feature flag set to `0` strips the corresponding code and its includes from 
 
 Here are the available compile-time feature flags and their default values:
 
-| Flag                        | Default | Description                                                   |
-| :-------------------------- | :------ | :------------------------------------------------------------ |
-| `DETWS_ENABLE_WEBSOCKET`    | `1`     | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS)        |
-| `DETWS_ENABLE_SSE`          | `1`     | Server-Sent Events push support                               |
-| `DETWS_ENABLE_MULTIPART`    | `1`     | `multipart/form-data` body parser                             |
-| `DETWS_ENABLE_FILE_SERVING` | `1`     | Static file serving via Arduino `FS`                          |
-| `DETWS_ENABLE_AUTH`         | `1`     | HTTP Basic Auth per-route                                     |
-| `DETWS_ENABLE_DIAG`         | `0`     | JSON build-config diagnostic endpoint (disable in production) |
-| `DETWS_ENABLE_MDNS`         | `0`     | mDNS/DNS-SD advertisement via ESPmDNS                         |
-| `DETWS_ENABLE_NTP`          | `0`     | SNTP wall-clock time synchronization                          |
-| `DETWS_ENABLE_OTA`          | `0`     | Authenticated OTA firmware updates                            |
-| `DETWS_ENABLE_PROVISIONING` | `0`     | WiFi provisioning wizard (SoftAP + captive portal)            |
-| `DETWS_ENABLE_TELNET`       | `0`     | RFC 854 Telnet server                                         |
-| `DETWS_ENABLE_SSH`          | `0`     | RFC 4253/4252/4254 SSH server                                 |
+| Flag                                                          | Default | Description                                                   |
+| :------------------------------------------------------------ | :------ | :------------------------------------------------------------ |
+| [`DETWS_ENABLE_WEBSOCKET`](@ref DETWS_ENABLE_WEBSOCKET)       | `1`     | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS)        |
+| [`DETWS_ENABLE_SSE`](@ref DETWS_ENABLE_SSE)                   | `1`     | Server-Sent Events push support                               |
+| [`DETWS_ENABLE_MULTIPART`](@ref DETWS_ENABLE_MULTIPART)       | `1`     | `multipart/form-data` body parser                             |
+| [`DETWS_ENABLE_FILE_SERVING`](@ref DETWS_ENABLE_FILE_SERVING) | `1`     | Static file serving via Arduino `FS`                          |
+| [`DETWS_ENABLE_AUTH`](@ref DETWS_ENABLE_AUTH)                 | `1`     | HTTP Basic Auth per-route                                     |
+| `DETWS_ENABLE_DIAG`                                           | `0`     | JSON build-config diagnostic endpoint (disable in production) |
+| [`DETWS_ENABLE_MDNS`](@ref DETWS_ENABLE_MDNS)                 | `0`     | mDNS/DNS-SD advertisement via ESPmDNS                         |
+| [`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP)                   | `0`     | SNTP wall-clock time synchronization                          |
+| [`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)                   | `0`     | Authenticated OTA firmware updates                            |
+| [`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING) | `0`     | WiFi provisioning wizard (SoftAP + captive portal)            |
+| [`DETWS_ENABLE_TELNET`](@ref DETWS_ENABLE_TELNET)             | `0`     | RFC 854 Telnet server                                         |
+| [`DETWS_ENABLE_SSH`](@ref DETWS_ENABLE_SSH)                   | `0`     | RFC 4253/4252/4254 SSH server                                 |
 
 Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `#error` messages at compile time with a descriptive reason string.
 
@@ -184,62 +178,62 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 
 **Capacity**
 
-| Constant           | Default | Description                                           |
-| ------------------ | ------- | ----------------------------------------------------- |
-| `MAX_CONNS`        | 4       | Simultaneous TCP connections (1–255)                  |
-| `EVT_QUEUE_DEPTH`  | 16      | FreeRTOS event queue depth; must be ≥ `MAX_CONNS * 4` |
-| `RX_BUF_SIZE`      | 1024    | Ring buffer bytes per connection                      |
-| `BODY_BUF_SIZE`    | 256     | Request body bytes; must be ≤ `RX_BUF_SIZE`           |
-| `MAX_ROUTES`       | 16      | Registered route handlers                             |
-| `MAX_HEADERS`      | 8       | Headers stored per request                            |
-| `MAX_PATH_LEN`     | 64      | URL path bytes including leading `/`                  |
-| `MAX_KEY_LEN`      | 24      | Header field-name bytes                               |
-| `MAX_VAL_LEN`      | 48      | Header field-value bytes                              |
-| `MAX_QUERY_LEN`    | 128     | Raw query string bytes (after `?`)                    |
-| `MAX_QUERY_PARAMS` | 8       | Parsed query key=value pairs                          |
-| `QUERY_KEY_LEN`    | 24      | Query parameter key bytes                             |
-| `QUERY_VAL_LEN`    | 48      | Query parameter value bytes                           |
+| Constant                                    | Default | Description                                           |
+| ------------------------------------------- | ------- | ----------------------------------------------------- |
+| [`MAX_CONNS`](@ref MAX_CONNS)               | 4       | Simultaneous TCP connections (1–255)                  |
+| [`EVT_QUEUE_DEPTH`](@ref EVT_QUEUE_DEPTH)   | 16      | FreeRTOS event queue depth; must be ≥ `MAX_CONNS * 4` |
+| [`RX_BUF_SIZE`](@ref RX_BUF_SIZE)           | 1024    | Ring buffer bytes per connection                      |
+| [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE)       | 256     | Request body bytes; must be ≤ `RX_BUF_SIZE`           |
+| [`MAX_ROUTES`](@ref MAX_ROUTES)             | 16      | Registered route handlers                             |
+| [`MAX_HEADERS`](@ref MAX_HEADERS)           | 8       | Headers stored per request                            |
+| [`MAX_PATH_LEN`](@ref MAX_PATH_LEN)         | 64      | URL path bytes including leading `/`                  |
+| [`MAX_KEY_LEN`](@ref MAX_KEY_LEN)           | 24      | Header field-name bytes                               |
+| [`MAX_VAL_LEN`](@ref MAX_VAL_LEN)           | 48      | Header field-value bytes                              |
+| [`MAX_QUERY_LEN`](@ref MAX_QUERY_LEN)       | 128     | Raw query string bytes (after `?`)                    |
+| [`MAX_QUERY_PARAMS`](@ref MAX_QUERY_PARAMS) | 8       | Parsed query key=value pairs                          |
+| [`QUERY_KEY_LEN`](@ref QUERY_KEY_LEN)       | 24      | Query parameter key bytes                             |
+| [`QUERY_VAL_LEN`](@ref QUERY_VAL_LEN)       | 48      | Query parameter value bytes                           |
 
 **Response Buffers**
 
-| Constant            | Default | Minimum | Description                                                           |
-| ------------------- | ------- | ------- | --------------------------------------------------------------------- |
-| `RESP_HDR_BUF_SIZE` | 512     | 128     | Stack buffer for HTTP response headers                                |
-| `WS_HDR_BUF_SIZE`   | 256     | 128     | Stack buffer for WebSocket 101 response                               |
-| `CORS_HDR_BUF_SIZE` | 192     | 64      | Buffer for pre-built CORS header block; must be ≤ `RESP_HDR_BUF_SIZE` |
+| Constant                                      | Default | Minimum | Description                                                           |
+| --------------------------------------------- | ------- | ------- | --------------------------------------------------------------------- |
+| [`RESP_HDR_BUF_SIZE`](@ref RESP_HDR_BUF_SIZE) | 512     | 128     | Stack buffer for HTTP response headers                                |
+| [`WS_HDR_BUF_SIZE`](@ref WS_HDR_BUF_SIZE)     | 256     | 128     | Stack buffer for WebSocket 101 response                               |
+| [`CORS_HDR_BUF_SIZE`](@ref CORS_HDR_BUF_SIZE) | 192     | 64      | Buffer for pre-built CORS header block; must be ≤ `RESP_HDR_BUF_SIZE` |
 
 **WebSocket (DETWS_ENABLE_WEBSOCKET)**
 
-| Constant        | Default | Description                                         |
-| --------------- | ------- | --------------------------------------------------- |
-| `MAX_WS_CONNS`  | 2       | WebSocket slots; each consumes one `MAX_CONNS` slot |
-| `WS_FRAME_SIZE` | 512     | Max WebSocket frame payload bytes                   |
+| Constant                              | Default | Description                                         |
+| ------------------------------------- | ------- | --------------------------------------------------- |
+| [`MAX_WS_CONNS`](@ref MAX_WS_CONNS)   | 2       | WebSocket slots; each consumes one `MAX_CONNS` slot |
+| [`WS_FRAME_SIZE`](@ref WS_FRAME_SIZE) | 512     | Max WebSocket frame payload bytes                   |
 
 **SSE (DETWS_ENABLE_SSE)**
 
-| Constant        | Default | Description                                   |
-| --------------- | ------- | --------------------------------------------- |
-| `MAX_SSE_CONNS` | 2       | SSE slots; each consumes one `MAX_CONNS` slot |
-| `SSE_BUF_SIZE`  | 256     | Stack buffer for one formatted SSE event      |
+| Constant                              | Default | Description                                   |
+| ------------------------------------- | ------- | --------------------------------------------- |
+| [`MAX_SSE_CONNS`](@ref MAX_SSE_CONNS) | 2       | SSE slots; each consumes one `MAX_CONNS` slot |
+| [`SSE_BUF_SIZE`](@ref SSE_BUF_SIZE)   | 256     | Stack buffer for one formatted SSE event      |
 
 **File Serving (DETWS_ENABLE_FILE_SERVING)**
 
-| Constant          | Default | Description                                                        |
-| ----------------- | ------- | ------------------------------------------------------------------ |
-| `FILE_CHUNK_SIZE` | 512     | Bytes read from FS per `tcp_write()` call; must be ≤ `RX_BUF_SIZE` |
+| Constant                                  | Default | Description                                                        |
+| ----------------------------------------- | ------- | ------------------------------------------------------------------ |
+| [`FILE_CHUNK_SIZE`](@ref FILE_CHUNK_SIZE) | 512     | Bytes read from FS per `tcp_write()` call; must be ≤ `RX_BUF_SIZE` |
 
 **Auth (DETWS_ENABLE_AUTH)**
 
-| Constant       | Default | Description                                               |
-| -------------- | ------- | --------------------------------------------------------- |
-| `MAX_AUTH_LEN` | 32      | Max username or password length including null terminator |
+| Constant                            | Default | Description                                               |
+| ----------------------------------- | ------- | --------------------------------------------------------- |
+| [`MAX_AUTH_LEN`](@ref MAX_AUTH_LEN) | 32      | Max username or password length including null terminator |
 
 **Multipart (DETWS_ENABLE_MULTIPART)**
 
-| Constant              | Default | Description                |
-| --------------------- | ------- | -------------------------- |
-| `MAX_MULTIPART_PARTS` | 4       | Max form parts per request |
-| `MAX_BOUNDARY_LEN`    | 72      | Max MIME boundary length   |
+| Constant                                    | Default | Description                |
+| ------------------------------------------- | ------- | -------------------------- |
+| `MAX_MULTIPART_PARTS`                       | 4       | Max form parts per request |
+| [`MAX_BOUNDARY_LEN`](@ref MAX_BOUNDARY_LEN) | 72      | Max MIME boundary length   |
 
 **Runtime Config**
 
@@ -250,7 +244,7 @@ const WebServerConfig cfg PROGMEM = { .conn_timeout_ms = 10000 }; // flash, no R
 server.begin(80, &cfg);
 ```
 
-Pass `nullptr` (or omit) to use the compile-time default `CONN_TIMEOUT_MS` (5000 ms).
+Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@ref CONN_TIMEOUT_MS) (5000 ms).
 
 </details>
 
@@ -261,14 +255,14 @@ Pass `nullptr` (or omit) to use the compile-time default `CONN_TIMEOUT_MS` (5000
 
 **DetWebServer - Lifecycle**
 
-| Method                       | Description                                                                     |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| `begin(port, cfg = nullptr)` | Bind and listen. Returns `+1` on success, `-1` on lwIP error.                   |
-| `stop()`                     | Abort all connections, close listener, reset all pools.                         |
-| `restart(cfg = nullptr)`     | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`. |
-| `handle()`                   | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.             |
-| `static heap_needed()`       | Returns 0 - no heap allocation.                                                 |
-| `static heap_available()`    | Returns `true` - always safe to call `begin()`.                                 |
+| Method                                  | Description                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------- |
+| `begin(port, cfg = nullptr)`            | Bind and listen. Returns `+1` on success, `-1` on lwIP error.                   |
+| [`stop()`](@ref DetWebServer::stop)     | Abort all connections, close listener, reset all pools.                         |
+| `restart(cfg = nullptr)`                | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`. |
+| [`handle()`](@ref DetWebServer::handle) | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.             |
+| `static heap_needed()`                  | Returns 0 - no heap allocation.                                                 |
+| `static heap_available()`               | Returns `true` - always safe to call `begin()`.                                 |
 
 **DetWebServer - HTTP Routes**
 
@@ -324,19 +318,19 @@ void sse_connect(uint8_t sse_id);
 
 **HttpReq Fields**
 
-| Field            | Type                           | Description                                    |
-| ---------------- | ------------------------------ | ---------------------------------------------- |
-| `method`         | `char[8]`                      | HTTP method string, e.g. `"GET"`               |
-| `path`           | `char[MAX_PATH_LEN]`           | URL path, e.g. `"/api/status"`                 |
-| `version`        | `HttpVersion`                  | `HTTP_10`, `HTTP_11`, or `HTTP_UNKNOWN`        |
-| `query`          | `char[MAX_QUERY_LEN]`          | Raw query string (everything after `?`)        |
-| `query_params`   | `QueryParam[MAX_QUERY_PARAMS]` | Parsed key=value pairs                         |
-| `query_count`    | `uint8_t`                      | Valid entries in `query_params[]`              |
-| `headers`        | `Header[MAX_HEADERS]`          | Captured header fields                         |
-| `header_count`   | `uint8_t`                      | Valid entries in `headers[]`                   |
-| `content_length` | `size_t`                       | Value of `Content-Length` header (0 if absent) |
-| `body`           | `uint8_t[BODY_BUF_SIZE+1]`     | Request body, always null-terminated           |
-| `body_len`       | `size_t`                       | Bytes stored in `body[]`                       |
+| Field            | Type                              | Description                                                                                  |
+| ---------------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| `method`         | `char[8]`                         | HTTP method string, e.g. `"GET"`                                                             |
+| `path`           | `char[MAX_PATH_LEN]`              | URL path, e.g. `"/api/status"`                                                               |
+| `version`        | [`HttpVersion`](@ref HttpVersion) | [`HTTP_10`](@ref HTTP_10), [`HTTP_11`](@ref HTTP_11), or [`HTTP_UNKNOWN`](@ref HTTP_UNKNOWN) |
+| `query`          | `char[MAX_QUERY_LEN]`             | Raw query string (everything after `?`)                                                      |
+| `query_params`   | `QueryParam[MAX_QUERY_PARAMS]`    | Parsed key=value pairs                                                                       |
+| `query_count`    | `uint8_t`                         | Valid entries in `query_params[]`                                                            |
+| `headers`        | `Header[MAX_HEADERS]`             | Captured header fields                                                                       |
+| `header_count`   | `uint8_t`                         | Valid entries in `headers[]`                                                                 |
+| `content_length` | `size_t`                          | Value of `Content-Length` header (0 if absent)                                               |
+| `body`           | `uint8_t[BODY_BUF_SIZE+1]`        | Request body, always null-terminated                                                         |
+| `body_len`       | `size_t`                          | Bytes stored in `body[]`                                                                     |
 
 **Helper Functions**
 
@@ -465,7 +459,7 @@ python docs/utilities/decorate_changelog.py
 
 ## Testing
 
-**442 Unity tests across 18 suites**, all runnable on a native x86/x64 host (no
+**498 Unity tests across 19 suites**, all runnable on a native x86/x64 host (no
 hardware required):
 
 ```
@@ -509,12 +503,14 @@ The output will be generated in `docs/html/index.html`.
 
 If you are viewing the offline version of this documentation, you can access the latest online version at the [GitHub Pages documentation site](https://dstroy0.github.io/DeterministicESPAsyncWebServer/).
 
-## Mascot
-
-**Squirty the Injection Squid** is the official mascot of the DeterministicESPAsyncWebServer library.
-
-<small>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</small>
-
 ## License
 
 AGPL-3.0-or-later. See `LICENSE` for details.
+
+---
+
+<p align="center">
+  <img src="squirty.svg" alt="Squirty the Injection Squid" width="64" height="64"><br>
+  <b>Squirty the Injection Squid</b> — the official library mascot.<br>
+  <sub>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</sub>
+</p>

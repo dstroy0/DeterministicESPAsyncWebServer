@@ -93,7 +93,7 @@ PlatformIO separates configurations into different "environments" using [platfor
 >
 > Consequently, `#define` macros specified inside `.ino` sketch files (e.g., `#define DETWS_ENABLE_PROVISIONING 1`) **do not propagate** to the library's compiled source code. If you define a configuration macro or feature flag in your sketch rather than in the build configuration, the library's `.cpp` files will compile with their default configuration, resulting in linker errors (e.g., undefined symbols) or severe runtime/memory layout mismatches.
 >
-> To configure the library correctly, all override configuration constants and feature flags (such as `DETWS_ENABLE_PROVISIONING`, `DETWS_ENABLE_SSH`, `MAX_CONNS`, etc.) **must** be set as compiler build flags in your environment (e.g., `build_flags = -DDETWS_ENABLE_PROVISIONING=1` in `platformio.ini`).
+> To configure the library correctly, all override configuration constants and feature flags (such as [`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING), [`DETWS_ENABLE_SSH`](@ref DETWS_ENABLE_SSH), [`MAX_CONNS`](@ref MAX_CONNS), etc.) **must** be set as compiler build flags in your environment (e.g., `build_flags = -DDETWS_ENABLE_PROVISIONING=1` in `platformio.ini`).
 
 ---
 
@@ -104,7 +104,7 @@ PlatformIO separates configurations into different "environments" using [platfor
 HTTP parsing is notoriously difficult to write safely. A single parsing slip can lead to security vulnerabilities like **HTTP Request Smuggling**. Our parser is tested against:
 
 - **RFC 7230 & 7231**: Ensuring correct interpretation of URI paths, query parameters, header keys, and body limits.
-- **Buffer Overflows (413 & 414)**: We verify that when client requests send URIs larger than `URI_BUF_SIZE` (414 URI Too Long) or bodies exceeding `BODY_BUF_SIZE` (413 Payload Too Large), the server safely terminates the connection without corrupting memory.
+- **Buffer Overflows (413 & 414)**: We verify that when client requests send URIs larger than `URI_BUF_SIZE` (414 URI Too Long) or bodies exceeding [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE) (413 Payload Too Large), the server safely terminates the connection without corrupting memory.
 - **Host Header Enforcement**: In compliance builds, the server rejects any HTTP/1.1 request lacking a `Host` header, or containing duplicate `Host` headers.
 
 ### 2. WebSocket Protocols
