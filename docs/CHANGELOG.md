@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`0e872ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e872ef5719e3a06adf7c57f79eed84ab125c80a))
+- update CHANGELOG.md [skip ci] ([`b8ecc21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8ecc214ecb3d6da003c17f9b396dcd32bfc7cd7))
 - update test report [skip ci] ([`d3bf700`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3bf7008af6e23784eb305e79d048af7bd5bfdfa))
 - update CHANGELOG.md [skip ci] ([`e30b48d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e30b48d050fe6c44504fb30d639f0d7629a242a4))
 - update test report [skip ci] ([`150f8bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/150f8bcf8a053230f6a0c4705bc07ef1e6d18c91))
@@ -50,6 +52,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`aaa6b68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa6b68f47a5595214dd529ae3b7d83c15be8bcd))
+- update initial search token ([`668f56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/668f56e629e39a763991a29d86d461550c08d7eb))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`f3a4a1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3a4a1c75084dc97a8f8c79d6e8ba1235eb5ed19))
 - update initial search token ([`8a02843`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a0284336640b3d194b2058530fd86b514b1668e))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`a65c596`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a65c5963d8bbf02dea7289c54e57a25647292ba0))
