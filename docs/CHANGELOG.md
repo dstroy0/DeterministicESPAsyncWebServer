@@ -11,6 +11,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- bump streetsidesoftware/cspell-action from 6 to 8 ([`8c1ea22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c1ea22f7e1dee054ac2694dd84ba1747cc88286))
+- update test report [skip ci] ([`ba920d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba920d859baf90a62900e9261a4f0d3ae799cf13))
+- update CHANGELOG.md [skip ci] ([`c238c1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c238c1b47ec82a908a2ee40d21bf23db2391912a))
 - update CHANGELOG.md [skip ci] ([`6a8cad1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a8cad1340e3dae57d01a7a3a5f03a8588c2ba02))
 - update test report [skip ci] ([`a59ec29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59ec2906489195a9deed0e645333f119a9af860))
 - update CHANGELOG.md [skip ci] ([`56b9333`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56b933331a9d1317016acc21d9a49e339df8c95f))
@@ -79,6 +82,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge pull request #2 from dstroy0/dependabot/github_actions/streetsidesoftware/cspell-action-8 ([`0b18b2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b18b2d670930204c7b070d36658a03afee0b75b))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b726a42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b726a42462e6e12fd3f3a3b413a0e78c35759bdf))
 - Bump version: 1.2.5 → 1.2.6 ([`358fd49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/358fd49924164272441ce2f6647d9216071d5048))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`9da59a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da59a27e8b097ab7e0b742ca9f40c095f9d4246))
