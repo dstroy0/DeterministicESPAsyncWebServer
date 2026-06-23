@@ -1,0 +1,235 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for custom response headers and cookies:
+//   add_response_header(), set_cookie(), clear_response_headers().
+//
+// Tests verify that:
+//   - A queued header appears in a send() response
+//   - Multiple headers all appear
+//   - set_cookie() emits Set-Cookie (with and without attributes)
+//   - Custom headers appear on send_empty() and redirect() too
+//   - Headers do NOT leak from one request to the next on the same slot
+//   - clear_response_headers() discards queued headers
+//   - An oversized header is dropped whole (no malformed half-line)
+
+#include "DeterministicESPAsyncWebServer.h"
+#include <stdio.h>
+#include <string.h>
+#include <unity.h>
+
+static DetWebServer server;
+
+static void push_str(uint8_t slot, const char *s)
+{
+    TcpConn *c = &conn_pool[slot];
+    for (size_t i = 0; s[i]; i++)
+    {
+        size_t next = (c->rx_head + 1) % RX_BUF_SIZE;
+        c->rx_buffer[c->rx_head] = (uint8_t)s[i];
+        c->rx_head = next;
+    }
+}
+
+// Handlers exercising the various response paths -----------------------------
+
+static void h_one_header(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.add_response_header(slot, "X-Custom", "hello");
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+static void h_two_headers(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.add_response_header(slot, "X-One", "1");
+    server.add_response_header(slot, "X-Two", "2");
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+static void h_cookie(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.set_cookie(slot, "session", "abc123");
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+static void h_cookie_attrs(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.set_cookie(slot, "session", "abc123", "Path=/; HttpOnly; Max-Age=3600");
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+static void h_header_empty(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.add_response_header(slot, "X-Empty", "yes");
+    server.send_empty(slot, 204);
+}
+
+static void h_header_redirect(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.add_response_header(slot, "X-Redir", "yes");
+    server.redirect(slot, 302, "/elsewhere");
+}
+
+static void h_plain(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.send(slot, 200, "text/plain", "ok"); // no custom headers
+}
+
+static void h_clear(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    server.add_response_header(slot, "X-Gone", "1");
+    server.clear_response_headers(slot);
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+static void h_oversized(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    static char big[EXTRA_HDR_BUF_SIZE + 64];
+    memset(big, 'A', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    server.add_response_header(slot, "X-Big", big); // must be dropped whole
+    server.add_response_header(slot, "X-Small", "ok");
+    server.send(slot, 200, "text/plain", "ok");
+}
+
+void setUp()
+{
+    server = DetWebServer();
+    for (int i = 0; i < MAX_CONNS; i++)
+    {
+        conn_pool[i] = {};
+        conn_pool[i].id = (uint8_t)i;
+        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].pcb = &_mock_pcb;
+        http_reset(i);
+    }
+    ws_init();
+    sse_init();
+    tcp_capture_reset();
+}
+
+void tearDown()
+{
+    tcp_capture_disable();
+}
+
+static void feed_and_handle(uint8_t slot, const char *req_str)
+{
+    push_str(slot, req_str);
+    http_parse(slot);
+    server.handle();
+}
+
+// ====================================================================
+// TESTS
+// ====================================================================
+
+void test_single_custom_header_present()
+{
+    server.on("/h", HTTP_GET, h_one_header);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Custom: hello\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+}
+
+void test_multiple_custom_headers_present()
+{
+    server.on("/h", HTTP_GET, h_two_headers);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-One: 1\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Two: 2\r\n"));
+}
+
+void test_set_cookie_basic()
+{
+    server.on("/h", HTTP_GET, h_cookie);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Set-Cookie: session=abc123\r\n"));
+}
+
+void test_set_cookie_with_attrs()
+{
+    server.on("/h", HTTP_GET, h_cookie_attrs);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Set-Cookie: session=abc123; Path=/; HttpOnly; Max-Age=3600\r\n"));
+}
+
+void test_custom_header_on_send_empty()
+{
+    server.on("/h", HTTP_GET, h_header_empty);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "204"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Empty: yes\r\n"));
+}
+
+void test_custom_header_on_redirect()
+{
+    server.on("/h", HTTP_GET, h_header_redirect);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Location: /elsewhere\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Redir: yes\r\n"));
+}
+
+void test_headers_do_not_leak_across_requests()
+{
+    server.on("/h", HTTP_GET, h_one_header);
+    server.on("/p", HTTP_GET, h_plain);
+
+    // First request queues X-Custom on slot 0.
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Custom: hello\r\n"));
+
+    // Reuse the same slot for a plain handler; the header must be gone.
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    http_reset(0);
+    tcp_capture_reset();
+
+    feed_and_handle(0, "GET /p HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "X-Custom"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+}
+
+void test_clear_response_headers()
+{
+    server.on("/h", HTTP_GET, h_clear);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "X-Gone"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+}
+
+void test_oversized_header_dropped_whole()
+{
+    server.on("/h", HTTP_GET, h_oversized);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    // The oversized header name must not appear...
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "X-Big"));
+    // ...and the subsequent small header must still be emitted intact.
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Small: ok\r\n"));
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_single_custom_header_present);
+    RUN_TEST(test_multiple_custom_headers_present);
+    RUN_TEST(test_set_cookie_basic);
+    RUN_TEST(test_set_cookie_with_attrs);
+    RUN_TEST(test_custom_header_on_send_empty);
+    RUN_TEST(test_custom_header_on_redirect);
+    RUN_TEST(test_headers_do_not_leak_across_requests);
+    RUN_TEST(test_clear_response_headers);
+    RUN_TEST(test_oversized_header_dropped_whole);
+    return UNITY_END();
+}

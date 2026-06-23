@@ -215,4 +215,21 @@ const char *http_get_header(const HttpReq *req, const char *key);
  */
 const char *http_get_query(const HttpReq *req, const char *key);
 
+/**
+ * @brief Look up an `application/x-www-form-urlencoded` body field by name.
+ *
+ * Parses the request body on demand (no extra per-request storage) when the
+ * `Content-Type` is `application/x-www-form-urlencoded`, and copies the raw
+ * (not percent-decoded, matching http_get_query()) value of @p key into
+ * @p out. Useful for classic HTML form POSTs.
+ *
+ * @param req      Parsed request (body must be buffered, i.e. not streamed).
+ * @param key      Field name (case-sensitive).
+ * @param out      Caller buffer; always null-terminated on a true return.
+ * @param out_size Size of @p out in bytes (must be >= 1).
+ * @return `true` and fills @p out if the field is present; `false` otherwise
+ *         (out is set to an empty string).
+ */
+bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_size);
+
 #endif

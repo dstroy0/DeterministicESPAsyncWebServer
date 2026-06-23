@@ -21,6 +21,67 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > of the WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal
 > join) needs WiFi credentials / a phone - only compile+link verified here.
 
+## Feature parity with ESPAsyncWebServer (ESP32Async)
+
+Conceptual features [ESP32Async/ESPAsyncWebServer](https://github.com/ESP32Async/ESPAsyncWebServer)
+offers that this library does not yet, ordered by value-vs-fit within the
+zero-heap / fixed-buffer model. Implement top-down, one at a time, each with
+native Unity tests before moving on. Each must keep the "no heap after
+`begin()`" guarantee (fixed-size buffers, compile-time caps).
+
+<details>
+<summary><b>Expand feature-parity items</b></summary>
+
+- [x] **1. Custom response headers + cookies (high / easy).** _(done)_
+      Per-connection `_extra_hdr[MAX_CONNS][EXTRA_HDR_BUF_SIZE]` buffer injected
+      into [`send()`](@ref DetWebServer::send) /
+      [`send_empty()`](@ref DetWebServer::send_empty) /
+      [`redirect()`](@ref DetWebServer::redirect), the same way the CORS block is
+      injected. New API: [`add_response_header()`](@ref DetWebServer::add_response_header),
+      [`set_cookie()`](@ref DetWebServer::set_cookie),
+      [`clear_response_headers()`](@ref DetWebServer::clear_response_headers).
+      Oversized headers are dropped whole; the buffer is cleared at the start of
+      each dispatch. Tested by `test_response_headers` (9 cases).
+
+- [x] **2. Request-data convenience (high / easy).** _(done)_ By-name request
+      header lookup already existed via [`http_get_header()`](@ref http_get_header);
+      added [`http_get_form()`](@ref http_get_form) for urlencoded POST body
+      fields (parsed on demand into a caller buffer, gated on the
+      `application/x-www-form-urlencoded` Content-Type, raw values to match
+      `http_get_query()`). Tested by `test_form_params` (5 cases).
+
+- [ ] **3. Path parameters in routing (high / medium).** `/users/:id` style
+      capture segments stored in a fixed `HttpReq` array, exposed via
+      `req_param(req, "id")`. Extends the current exact + trailing-`*` matcher.
+
+- [ ] **4. Digest authentication (medium / medium).** Add HTTP Digest
+      (`MD5`/`SHA-256` via mbedTLS) alongside the existing Basic auth on
+      `on(..., realm, user, pass)`. Nonce stored in a fixed per-listener slot.
+
+- [ ] **5. Response templating (medium / medium).** `{{PLACEHOLDER}}`
+      substitution via a user processor callback for `send()` and static files,
+      streamed through a fixed scratch buffer (no full-document copy).
+
+- [ ] **6. Middleware pipeline (high value / large).** Fixed-size, composable
+      middleware chain (compile-time cap) attachable globally or per-route.
+      Re-express CORS + Basic/Digest auth as middlewares and add new
+      **rate-limit** (per-route/token-bucket) and **logging** middlewares.
+      This is the architectural umbrella several items above fold into.
+
+- [ ] **7. Chunked / streaming app responses (medium / medium).** A
+      callback-driven chunked-transfer response for app-generated bodies
+      (`begin_chunked(slot, type, fill_cb)`) and a small `Print`-style writer,
+      so dynamic output isn't limited to one pre-built `send()` buffer.
+
+- [ ] **8. Stretch / lower priority.**
+  - [ ] Regex routes (heavy; needs a bounded, allocation-free matcher).
+  - [ ] Static JSON request/response helper (zero-heap tokenizer; ArduinoJson
+        stays optional since it heap-allocates).
+  - [ ] Interface filters (`ON_STA_FILTER` / `ON_AP_FILTER`) on handlers.
+  - [ ] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350).
+
+</details>
+
 ## Build / toolchain
 
 <details>

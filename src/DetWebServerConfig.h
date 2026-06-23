@@ -249,7 +249,20 @@
  * CORS_HDR_BUF_SIZE + 96.
  */
 #ifndef RESP_HDR_BUF_SIZE
-#define RESP_HDR_BUF_SIZE 512
+#define RESP_HDR_BUF_SIZE 768
+#endif
+
+/**
+ * @brief Per-connection buffer for app-supplied custom response headers and
+ *        cookies.
+ *
+ * Filled by add_response_header() / set_cookie() and injected into send() /
+ * send_empty() / redirect() the same way the CORS block is. RESP_HDR_BUF_SIZE
+ * must be large enough to hold the status line plus the CORS block plus this
+ * block (see the assert below).
+ */
+#ifndef EXTRA_HDR_BUF_SIZE
+#define EXTRA_HDR_BUF_SIZE 256
 #endif
 
 /**
@@ -790,9 +803,9 @@ enum ConnProto
 #error "DeterministicESPAsyncWebServer: CORS_HDR_BUF_SIZE must be >= 64"
 #endif
 
-#if RESP_HDR_BUF_SIZE < CORS_HDR_BUF_SIZE
+#if RESP_HDR_BUF_SIZE < (CORS_HDR_BUF_SIZE + EXTRA_HDR_BUF_SIZE + 96)
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: RESP_HDR_BUF_SIZE must be >= CORS_HDR_BUF_SIZE (CORS block is injected into response headers)"
+    "DeterministicESPAsyncWebServer: RESP_HDR_BUF_SIZE must be >= CORS_HDR_BUF_SIZE + EXTRA_HDR_BUF_SIZE + 96 (status line + CORS block + custom-header block are injected into response headers)"
 #endif
 
 #endif
