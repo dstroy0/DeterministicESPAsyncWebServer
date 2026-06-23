@@ -16,11 +16,11 @@ PROJECT_LOGO           =
 #---------------------------------------------------------------------------
 # Input / output
 #---------------------------------------------------------------------------
-INPUT                  = src examples docs/README.md
+INPUT                  = src examples docs
 FILE_PATTERNS          = *.h *.cpp *.ino *.md
 RECURSIVE              = YES
 EXCLUDE                =
-EXCLUDE_PATTERNS       = */test/* */docs/html/* */docs/utilities/* */docs/RFC.md */docs/SSH.md */docs/SECURITY.md */docs/TEST_DOCUMENTATION.md */docs/TEST_REPORT.md */docs/TODO.md */docs/CHANGELOG.md */docs/Doxyfile */docs/cliff.toml */docs/custom.css
+EXCLUDE_PATTERNS       = */test/* */docs/html/* */docs/utilities/* */docs/Doxyfile */docs/cliff.toml */docs/custom.css
 USE_MDFILE_AS_MAINPAGE = docs/README.md
 
 OUTPUT_DIRECTORY       = docs/html
@@ -67,9 +67,9 @@ REFERENCES_RELATION    = YES
 HTML_OUTPUT            = .
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
-HTML_FOOTER            =
+HTML_FOOTER            = docs/footer.html
 HTML_EXTRA_STYLESHEET  = docs/custom.css
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = docs/squirty.svg
 
 # Built-in dark mode (Doxygen >= 1.9.5)
 HTML_COLORSTYLE        = DARK

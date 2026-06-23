@@ -1,0 +1,643 @@
+<!-- HTML footer for doxygen 1.17.0-->
+<!-- start footer part -->
+<!--BEGIN GENERATE_TREEVIEW-->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    $navpath
+    <li class="footer">$generatedby <a href="https://www.doxygen.org/index.html"><img class="footer" src="$relpath^doxygen.svg" width="104" height="31" alt="doxygen"/></a> $doxygenversion </li>
+  </ul>
+</div>
+<!--END GENERATE_TREEVIEW-->
+<!--BEGIN !GENERATE_TREEVIEW-->
+<hr class="footer"/><address class="footer"><small>
+$generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="$relpath^doxygen.svg" width="104" height="31" alt="doxygen"/></a> $doxygenversion
+</small></address>
+</div><!-- doc-content -->
+<!--END !GENERATE_TREEVIEW-->
+<script>
+(function() {
+    // Helper function to wrap text nodes in spans recursively
+    function wrapTextNodes(element) {
+        if (element.nodeType === Node.TEXT_NODE) {
+            const text = element.nodeValue;
+            if (text.trim() === '') return; // Skip whitespace nodes
+            
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === '\n' || char === '\r') {
+                    fragment.appendChild(document.createTextNode(char));
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'm-char';
+                    span.textContent = char;
+                    span.style.opacity = '0';
+                    span.style.transition = 'color 0.15s ease, text-shadow 0.15s ease';
+                    fragment.appendChild(span);
+                }
+            }
+            element.parentNode.replaceChild(fragment, element);
+        } else if (element.nodeType === Node.ELEMENT_NODE) {
+            // Do not wrap text inside <summary>, <script>, or <style>
+            if (element.tagName === 'SUMMARY' || element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
+                return;
+            }
+            const children = Array.from(element.childNodes);
+            children.forEach(wrapTextNodes);
+        }
+    }
+
+    // Create separate terminal dots for each details block
+    document.querySelectorAll('details > summary').forEach(summary => {
+        if (summary.querySelector('.tty-controls')) return;
+        
+        const controls = document.createElement('span');
+        controls.className = 'tty-controls';
+        
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'tty-dot';
+            controls.appendChild(dot);
+        }
+        
+        summary.appendChild(controls);
+    });
+
+    // Monitor details expansion
+    document.querySelectorAll('details').forEach(details => {
+        const summary = details.querySelector('summary');
+        let originalHtml = null;
+        let animationFrameId = null;
+        
+        details.addEventListener('toggle', () => {
+            if (!details.open) {
+                if (details.dataset.matrixRunning === 'true') {
+                    // Stop animation and restore original HTML immediately
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                    details.dataset.matrixRunning = 'false';
+                    if (originalHtml !== null) {
+                        details.innerHTML = originalHtml;
+                    }
+                }
+                return;
+            }
+            
+            // Check if already processed
+            if (details.dataset.matrixProcessed === 'true') {
+                return;
+            }
+            
+            // Count animatable characters (excluding code blocks, etc.)
+            let animatableCount = 0;
+            const contentNodes = Array.from(details.childNodes).filter(node => node !== summary);
+            contentNodes.forEach(node => {
+                animatableCount += countAnimatableChars(node);
+            });
+            
+            if (animatableCount === 0 || animatableCount > 3000) {
+                details.dataset.matrixProcessed = 'true';
+                return;
+            }
+            
+            // Save original HTML
+            originalHtml = details.innerHTML;
+            details.dataset.matrixRunning = 'true';
+            
+            // Wrap text nodes
+            contentNodes.forEach(wrapTextNodes);
+            
+            // Start waterfall animation
+            animateMatrix(details);
+        });
+
+        function countAnimatableChars(element) {
+            if (element.nodeType === Node.TEXT_NODE) {
+                return element.nodeValue.trim().length;
+            }
+            if (element.nodeType === Node.ELEMENT_NODE) {
+                const tag = element.tagName;
+                if (tag === 'SUMMARY' || tag === 'SCRIPT' || tag === 'STYLE' || tag === 'PRE' || tag === 'CODE') {
+                    return 0;
+                }
+                let count = 0;
+                element.childNodes.forEach(child => {
+                    count += countAnimatableChars(child);
+                });
+                return count;
+            }
+            return 0;
+        }
+
+        function wrapTextNodes(element) {
+            if (element.nodeType === Node.TEXT_NODE) {
+                const text = element.nodeValue;
+                if (text.trim() === '') return;
+                
+                const fragment = document.createDocumentFragment();
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    if (char === '\n' || char === '\r') {
+                        fragment.appendChild(document.createTextNode(char));
+                    } else {
+                        const span = document.createElement('span');
+                        span.className = 'm-char';
+                        span.textContent = char;
+                        span.style.opacity = '0';
+                        span.style.transition = 'color 0.15s ease, text-shadow 0.15s ease';
+                        fragment.appendChild(span);
+                    }
+                }
+                element.parentNode.replaceChild(fragment, element);
+            } else if (element.nodeType === Node.ELEMENT_NODE) {
+                const tag = element.tagName;
+                if (tag === 'SUMMARY' || tag === 'SCRIPT' || tag === 'STYLE' || tag === 'PRE' || tag === 'CODE') {
+                    return;
+                }
+                const children = Array.from(element.childNodes);
+                children.forEach(wrapTextNodes);
+            }
+        }
+
+        function animateMatrix(details) {
+            const chars = Array.from(details.querySelectorAll('.m-char'));
+            if (chars.length === 0) {
+                finish();
+                return;
+            }
+            
+            const columnsMap = {};
+            chars.forEach(span => {
+                const rect = span.getBoundingClientRect();
+                const colKey = Math.round(rect.left / 8) * 8;
+                if (!columnsMap[colKey]) {
+                    columnsMap[colKey] = [];
+                }
+                columnsMap[colKey].push({ el: span, top: rect.top });
+            });
+            
+            const columns = Object.keys(columnsMap)
+                .sort((a, b) => Number(a) - Number(b))
+                .map(key => {
+                    const list = columnsMap[key];
+                    list.sort((a, b) => a.top - b.top);
+                    return {
+                        chars: list.map(item => item.el),
+                        currentIndex: -10,
+                        started: false,
+                        completed: false,
+                        speed: 1.2 + Math.random() * 1.5
+                    };
+                });
+                
+            if (columns.length === 0) {
+                finish();
+                return;
+            }
+            
+            function loop() {
+                if (details.dataset.matrixRunning !== 'true') return;
+                
+                let allCompleted = true;
+                
+                for (let i = 0; i < columns.length; i++) {
+                    const col = columns[i];
+                    if (col.completed) continue;
+                    
+                    allCompleted = false;
+                    
+                    if (!col.started) {
+                        let shouldStart = Math.random() < 0.02;
+                        if (!shouldStart) {
+                            const leftNeighbor = columns[i - 1];
+                            const rightNeighbor = columns[i + 1];
+                            if (leftNeighbor && leftNeighbor.started && (leftNeighbor.currentIndex / leftNeighbor.chars.length) >= 0.33) {
+                                shouldStart = true;
+                            }
+                            if (rightNeighbor && rightNeighbor.started && (rightNeighbor.currentIndex / rightNeighbor.chars.length) >= 0.33) {
+                                shouldStart = true;
+                            }
+                        }
+                        if (shouldStart) col.started = true;
+                    }
+                    
+                    if (col.started) {
+                        col.currentIndex += col.speed;
+                        const len = col.chars.length;
+                        
+                        if (col.currentIndex >= len + 5) {
+                            col.completed = true;
+                            continue;
+                        }
+                        
+                        for (let c = 0; c < len; c++) {
+                            const el = col.chars[c];
+                            const dist = col.currentIndex - c;
+                            
+                            if (dist < 0) {
+                                el.style.opacity = '0';
+                            } else if (dist <= 4) {
+                                el.style.opacity = '1';
+                                el.style.color = '#fff';
+                                el.style.textShadow = '0 0 8px #00c000, 0 0 15px #00c000';
+                            } else if (dist <= 8) {
+                                el.style.opacity = '0.9';
+                                el.style.color = '#00c000';
+                                el.style.textShadow = '0 0 6px #00c000';
+                            } else {
+                                if (Math.random() < 0.15) {
+                                    el.style.opacity = '0.4';
+                                    el.style.color = '#008000';
+                                    el.style.textShadow = 'none';
+                                } else {
+                                    el.style.opacity = '1';
+                                    el.style.color = '#00c000';
+                                    el.style.textShadow = '0 0 2px rgba(0, 192, 0, 0.4)';
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (allCompleted) {
+                    finish();
+                } else {
+                    animationFrameId = requestAnimationFrame(loop);
+                }
+            }
+            
+            function finish() {
+                animationFrameId = null;
+                details.dataset.matrixRunning = 'false';
+                details.dataset.matrixProcessed = 'true';
+                if (originalHtml !== null) {
+                    details.innerHTML = originalHtml;
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(loop);
+        }
+    });
+
+    // Shared mascot clicks counter state and UI updater
+    let clickCount = parseInt(localStorage.getItem('squirty_clicks') || '0', 10);
+    const updateCounterUI = () => {
+        const counterEl = document.getElementById('squirty-clicks-count');
+        if (counterEl) {
+            counterEl.textContent = clickCount;
+        }
+    };
+
+    // Cute swimming pixel squid inside the viewport / entire page
+    function initSquid() {
+        if (document.getElementById('squid-container')) {
+            return;
+        }
+        // Create squid element
+        const squid = document.createElement('div');
+        squid.id = 'squid-container';
+        squid.style.setProperty('transition', 'none', 'important');
+        squid.innerHTML = `
+            <svg class="squid-svg" viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
+              <!-- Body (neon cyan #00e5ff) -->
+              <rect x="5" y="1" width="6" height="1" fill="#00e5ff"/>
+              <rect x="4" y="2" width="8" height="1" fill="#00e5ff"/>
+              <rect x="3" y="3" width="10" height="1" fill="#00e5ff"/>
+              <rect x="2" y="4" width="12" height="3" fill="#00e5ff"/>
+              
+              <!-- Eyes & Blush -->
+              <rect x="2" y="7" width="1" height="2" fill="#00e5ff"/>
+              <rect x="3" y="7" width="2" height="2" fill="#ffffff"/> <!-- Left eye white -->
+              <rect id="squid-pupil-l" x="3" y="8" width="1" height="1" fill="#000000"/> <!-- Left pupil -->
+              <rect x="5" y="7" width="6" height="2" fill="#00e5ff"/>
+              <rect x="11" y="7" width="2" height="2" fill="#ffffff"/> <!-- Right eye white -->
+              <rect id="squid-pupil-r" x="11" y="8" width="1" height="1" fill="#000000"/> <!-- Right pupil -->
+              <rect x="13" y="7" width="1" height="2" fill="#00e5ff"/>
+              
+              <rect x="2" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
+              <rect x="13" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
+              <rect x="3" y="9" width="10" height="1" fill="#00e5ff"/>
+              <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
+              <rect x="4" y="11" width="8" height="1" fill="#00e5ff"/>
+
+              <!-- Tentacles (animated in CSS) -->
+              <g class="pixel-tentacle-1">
+                <rect x="4" y="12" width="2" height="3" fill="#00e5ff"/>
+                <rect x="4" y="13" width="1" height="1" fill="#00b8d4"/>
+              </g>
+              <g class="pixel-tentacle-2">
+                <rect x="6" y="12" width="1" height="3" fill="#00b8d4"/>
+                <rect x="7" y="12" width="1" height="3" fill="#00e5ff"/>
+              </g>
+              <g class="pixel-tentacle-3">
+                <rect x="8" y="12" width="1" height="3" fill="#00e5ff"/>
+                <rect x="9" y="12" width="1" height="3" fill="#00b8d4"/>
+              </g>
+              <g class="pixel-tentacle-4">
+                <rect x="10" y="12" width="2" height="3" fill="#00e5ff"/>
+                <rect x="11" y="13" width="1" height="1" fill="#00b8d4"/>
+              </g>
+
+              <!-- Shadows -->
+              <rect x="5" y="2" width="1" height="1" fill="#00b8d4"/>
+              <rect x="4" y="3" width="1" height="1" fill="#00b8d4"/>
+              <rect x="3" y="4" width="1" height="2" fill="#00b8d4"/>
+              <rect x="2" y="6" width="1" height="1" fill="#00b8d4"/>
+              <!-- Mouth -->
+              <rect x="7" y="9" width="2" height="1" fill="#00838f"/>
+            </svg>
+        `;
+        
+        document.body.appendChild(squid);
+        
+        // Dynamic viewport limit solver with fallback safe defaults
+        const getLimits = () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            return {
+                maxX: w > 100 ? w - 36 : 800,
+                maxY: h > 100 ? h - 36 : 600
+            };
+        };
+        
+        let startLim = getLimits();
+        let posX = Math.random() * startLim.maxX;
+        let posY = Math.random() * startLim.maxY;
+        let velX = 0;
+        let velY = 0;
+        let rotation = 0;
+        
+        // Mouse coordinate tracking
+        let mouseX = -9999;
+        let mouseY = -9999;
+        if (window.__squidMouseMove) {
+            window.removeEventListener('mousemove', window.__squidMouseMove);
+        }
+        window.__squidMouseMove = (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        };
+        window.addEventListener('mousemove', window.__squidMouseMove);
+        
+        // Initial placement
+        squid.style.left = '0px';
+        squid.style.top = '0px';
+        squid.style.transform = `translate(${posX}px, ${posY}px) rotate(0deg)`;
+        
+        let nextPulseTime = Date.now() + 1000 + Math.random() * 2000;
+        let isScared = false;
+        
+        function updatePhysics() {
+            const limits = getLimits();
+            
+            posX += velX;
+            posY += velY;
+            
+            // Friction/Drag
+            velX *= 0.94;
+            velY *= 0.94;
+            
+            // Wall bounce
+            if (posX < 0) { posX = 0; velX = Math.abs(velX) * 0.5; }
+            if (posX > limits.maxX) { posX = limits.maxX; velX = -Math.abs(velX) * 0.5; }
+            if (posY < 0) { posY = 0; velY = Math.abs(velY) * 0.5; }
+            if (posY > limits.maxY) { posY = limits.maxY; velY = -Math.abs(velY) * 0.5; }
+            
+            // Determine horizontal flip and vertical tilt based on velocity
+            let flip = 1;
+            if (velX < -0.15) {
+                flip = -1;
+            } else if (velX > 0.15) {
+                flip = 1;
+            }
+            
+            // Slight tilt based on Y velocity
+            let targetTilt = velY * 2.5;
+            let diff = targetTilt - rotation;
+            rotation += diff * 0.15;
+            
+            squid.style.transform = `translate(${posX}px, ${posY}px) scaleX(${flip}) rotate(${rotation}deg)`;
+            
+            // Eye tracking logic
+            const pupilL = squid.querySelector('#squid-pupil-l');
+            const pupilR = squid.querySelector('#squid-pupil-r');
+            if (pupilL && pupilR) {
+                const squidCenterX = posX + 16;
+                const squidCenterY = posY + 16;
+                const mDx = mouseX - squidCenterX;
+                const mDy = mouseY - squidCenterY;
+                const mDist = Math.sqrt(mDx * mDx + mDy * mDy);
+                
+                let targetX_L = 3;
+                let targetX_R = 11;
+                let targetY_L = 8;
+                let targetY_R = 8;
+                
+                if (mDist < 250) {
+                    const localDx = mDx * flip;
+                    targetX_L = localDx < 0 ? 3 : 4;
+                    targetX_R = localDx < 0 ? 11 : 12;
+                    targetY_L = mDy < 0 ? 7 : 8;
+                    targetY_R = mDy < 0 ? 7 : 8;
+                }
+                
+                pupilL.setAttribute('x', targetX_L);
+                pupilL.setAttribute('y', targetY_L);
+                pupilR.setAttribute('x', targetX_R);
+                pupilR.setAttribute('y', targetY_R);
+            }
+            
+            // Swim logic
+            if (Date.now() > nextPulseTime && !isScared) {
+                pulseSwim();
+            }
+            
+            requestAnimationFrame(updatePhysics);
+        }
+        
+        function pulseSwim(forcePower = null) {
+            const limits = getLimits();
+            
+            // Swim in larger steps since the viewport is spacious
+            const maxStepX = 300;
+            const maxStepY = 250;
+            const rx = (Math.random() * 2 - 1) * maxStepX;
+            const ry = (Math.random() * 2 - 1) * maxStepY;
+            
+            let tx = posX + rx;
+            let ty = posY + ry;
+            
+            // Clamp targets to bounds
+            if (tx < 0) tx = 0;
+            if (tx > limits.maxX) tx = limits.maxX;
+            if (ty < 0) ty = 0;
+            if (ty > limits.maxY) ty = limits.maxY;
+            
+            const dx = tx - posX;
+            const dy = ty - posY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            let angle = 0;
+            if (dist > 10) {
+                angle = Math.atan2(dy, dx);
+                const power = forcePower !== null ? forcePower : (2.5 + Math.random() * 3.5);
+                
+                velX = Math.cos(angle) * power;
+                velY = Math.sin(angle) * power;
+                
+                const svgEl = squid.querySelector('.squid-svg');
+                if (svgEl) {
+                    svgEl.classList.remove('squid-pulse-active');
+                    void svgEl.offsetWidth; // Trigger reflow
+                    svgEl.classList.add('squid-pulse-active');
+                }
+            }
+            
+            nextPulseTime = Date.now() + 2000 + Math.random() * 2500;
+            return angle;
+        }
+        
+        // Scared run-away click handler
+        squid.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Increment mascot click counter
+            clickCount++;
+            localStorage.setItem('squirty_clicks', clickCount);
+            updateCounterUI();
+            
+            // Dart away fast (returns the angle the squid escapes in)
+            isScared = true;
+            const angle = pulseSwim(14); // Escape speed
+            
+            // Spawn ink
+            const ink = document.createElement('div');
+            ink.className = 'squid-ink';
+            ink.style.left = `${posX + 16}px`;
+            ink.style.top = `${posY + 16}px`;
+            
+            // 180 degrees opposite to acceleration is angle + Math.PI.
+            // SVG defaults to pointing UP (-90 or 270 deg), so we rotate by angle + 270 degrees.
+            const angleDegrees = angle * (180 / Math.PI);
+            const rotDegrees = angleDegrees + 270;
+            
+            ink.innerHTML = `
+            <svg viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
+              <!-- Bubbly Green Fart / Gas Puff -->
+              <!-- Top Highlight -->
+              <rect x="6" y="2" width="4" height="1" fill="#40ff40"/>
+              <rect x="4" y="3" width="8" height="1" fill="#40ff40"/>
+              <rect x="3" y="4" width="2" height="1" fill="#40ff40"/>
+              <rect x="11" y="4" width="2" height="1" fill="#40ff40"/>
+              
+              <!-- Mid-body puff -->
+              <rect x="5" y="4" width="6" height="1" fill="#00c000"/>
+              <rect x="2" y="5" width="12" height="4" fill="#00c000"/>
+              <rect x="3" y="9" width="10" height="2" fill="#00c000"/>
+              
+              <!-- Base Shadow -->
+              <rect x="4" y="11" width="8" height="1" fill="#008000"/>
+              <rect x="6" y="12" width="4" height="1" fill="#008000"/>
+              
+              <!-- Trailing side particles/puffs -->
+              <rect x="1" y="7" width="1" height="2" fill="#008000" opacity="0.8"/>
+              <rect x="14" y="7" width="1" height="2" fill="#008000" opacity="0.8"/>
+              <rect x="7" y="14" width="2" height="1" fill="#008000" opacity="0.6"/>
+            </svg>
+            `;
+            
+            ink.style.transform = `translate(-50%, -50%) rotate(${rotDegrees}deg) scale(0.1)`;
+            document.body.appendChild(ink);
+            
+            setTimeout(() => {
+                // Grow 180 degrees from acceleration (local -Y direction of rotated frame)
+                ink.style.transform = `translate(-50%, -50%) rotate(${rotDegrees}deg) translateY(-24px) scale(3.5)`;
+                ink.style.opacity = '0';
+            }, 20);
+            
+            setTimeout(() => {
+                ink.remove();
+            }, 1000);
+            
+            setTimeout(() => {
+                isScared = false;
+            }, 1000);
+        });
+        
+        // Start updates
+        requestAnimationFrame(updatePhysics);
+    }
+
+    // Relocate library name & version to top navigation bar
+    const relocateTitle = () => {
+        const projNameEl = document.getElementById('projectname');
+        const projNumEl = document.getElementById('projectnumber');
+        const mainMenu = document.getElementById('main-menu');
+        
+        if (projNameEl && mainMenu && !mainMenu.querySelector('.navbar-project-title')) {
+            const libName = projNameEl.childNodes[0].textContent.trim();
+            const version = projNumEl ? projNumEl.textContent.trim() : '';
+            
+            const titleLi = document.createElement('li');
+            titleLi.className = 'navbar-project-title';
+            
+            const libSpan = document.createElement('span');
+            libSpan.className = 'navbar-libname';
+            libSpan.textContent = libName;
+            titleLi.appendChild(libSpan);
+            
+            if (version) {
+                const verSpan = document.createElement('span');
+                verSpan.className = 'navbar-version';
+                verSpan.textContent = ' ' + version;
+                titleLi.appendChild(verSpan);
+            }
+            
+            mainMenu.insertBefore(titleLi, mainMenu.firstChild);
+            
+            const projRow = document.getElementById('projectrow');
+            if (projRow) {
+                projRow.style.display = 'none';
+            }
+        }
+    };
+
+    // Initialize smart clicks counter on the navigation bar
+    const initCounter = () => {
+        const mainMenu = document.getElementById('main-menu');
+        if (mainMenu && !mainMenu.querySelector('.navbar-squirty-counter')) {
+            const counterLi = document.createElement('li');
+            counterLi.className = 'navbar-squirty-counter';
+            
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'navbar-squirty-label';
+            labelSpan.textContent = 'Squirty Clicks: ';
+            
+            const countSpan = document.createElement('span');
+            countSpan.id = 'squirty-clicks-count';
+            countSpan.textContent = clickCount;
+            
+            counterLi.appendChild(labelSpan);
+            counterLi.appendChild(countSpan);
+            
+            mainMenu.appendChild(counterLi);
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(relocateTitle, 50);
+            setTimeout(initCounter, 75);
+            setTimeout(initSquid, 100);
+        });
+    } else {
+        setTimeout(relocateTitle, 50);
+        setTimeout(initCounter, 75);
+        setTimeout(initSquid, 100);
+    }
+})();
+</script>
+</body>
+</html>

@@ -40,7 +40,7 @@
  *        30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20 <32 bytes>
  *      The OID 2.16.840.1.101.3.4.2.1 identifies SHA-256 (RFC 5754 §3.2).
  *   3. Pad to the RSA modulus length (256 bytes for RSA-2048):
- *        0x00 0x01 <0xFF padding> 0x00 <DigestInfo>
+ *        0x00 0x01 &lt;0xFF padding&gt; 0x00 &lt;DigestInfo&gt;
  *      The 0xFF padding fills bytes [2 .. 256-1-len(DigestInfo)-1].
  *      For SHA-256 DigestInfo = 51 bytes; padding = 256-3-51 = 202 bytes.
  *   4. Interpret the 256-byte padded message M as a bignum m.

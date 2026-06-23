@@ -58,7 +58,7 @@ if __name__ == "__main__":
             content,
             r'(?m)^## (\[\d+\.\d+\.\d+\][^#\n]*)$',
             r'(?m)^## ',
-            lambda heading: f"Show Changelog for version {heading.strip()}"
+            lambda heading: f"Show Changelog for version {heading.replace('[', '').replace(']', '').strip()}"
         )
         
         with open(changelog_path, "w", encoding="utf-8") as f:

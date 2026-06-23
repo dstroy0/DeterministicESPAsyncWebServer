@@ -216,16 +216,9 @@ void lowlevel_err_cb(void *arg, err_t err);
 // Event enqueue (defined in listener.cpp, called from transport.cpp)
 // ---------------------------------------------------------------------------
 
-/**
- * @brief Post @p evt to the queue owned by listener @p listener_id.
- *
- * Forward declaration here breaks the circular-include chain:
- * transport.cpp calls this function but cannot include listener.h (because
- * listener.h already includes transport.h).  The linker resolves it to
- * listener.cpp at link time.
- *
- * @param listener_id  Index into listener_pool[].
- * @param evt          Event to enqueue.
+/*
+ * Forward declaration of listener_enqueue() to break the circular include.
+ * See listener.h for the full documentation of this function.
  */
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 

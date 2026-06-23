@@ -284,7 +284,7 @@ RES_STR+=" - ${WALL_SECS}s"
 
 {
 cat <<EOF
-# Test Report - DeterministicESPAsyncWebServer
+# Test Report
 
 **Generated:** ${DATE_STR}
 **Command:** \`pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance\`

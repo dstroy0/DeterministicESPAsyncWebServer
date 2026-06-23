@@ -254,7 +254,7 @@ $sb = [System.Text.StringBuilder]::new(131072)
 
 function Add([string]$s = '') { $null = $sb.AppendLine($s) }
 
-Add "# Test Report - DeterministicESPAsyncWebServer"
+Add "# Test Report"
 Add ""
 Add "**Generated:** $dateStr  "
 Add "**Command:** ``pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance``  "

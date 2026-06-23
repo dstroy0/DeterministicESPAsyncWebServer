@@ -7,10 +7,10 @@ connection/channel protocol - all built on constant-memory, side-channel-aware
 primitives.
 
 The message state machine is driven by a single transport-agnostic dispatcher
-([`ssh_server.cpp`](../src/network_drivers/presentation/ssh/ssh_server.cpp)) that
+([`ssh_server.cpp`](@ref ssh_server.cpp)) that
 consumes decrypted message payloads and emits responses through a callback, so
 it is fully unit-testable off-target. The TCP glue
-([`ssh_conn.cpp`](../src/network_drivers/presentation/ssh/ssh_conn.cpp)) binds a
+([`ssh_conn.cpp`](@ref ssh_conn.cpp)) binds a
 `PROTO_SSH` connection to a session slot, pumps ring-buffer bytes through the
 banner exchange and binary-packet layer, and writes responses back to the
 socket.

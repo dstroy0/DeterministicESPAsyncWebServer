@@ -1,4 +1,10 @@
-# DeterministicESPAsyncWebServer Documentation
+# Documentation
+
+<p align="center">
+  <img src="squirty.svg" alt="Squirty the Injection Squid" width="128" height="128"><br>
+  <b>Squirty the Injection Squid</b><br>
+  <sub>The official library mascot. Copyright &copy; Douglas Quigg. All rights reserved.</sub>
+</p>
 
 An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture.
 
@@ -8,26 +14,6 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 [![Changelog Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml)
 [![C++ Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml)
 [![Markdown Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml)
-
-**[API Documentation](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
-
-## Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Zero Heap Allocation](#zero-heap-allocation)
-- [Feature Flags](#feature-flags)
-- [Configuration](#configuration)
-- [Quick Start](#quick-start)
-- [API Reference](#api-reference)
-- [RFC Compliance](#rfc-compliance)
-- [SSH Support](#ssh-support)
-- [Full Memory Table](#full-memory-table-all-features-default-config)
-- [Utility Tools](#utility-tools)
-- [Testing](#testing)
-- [Documentation](#documentation)
-- [Installation](#installation)
-- [License](#license)
 
 ## Features
 
@@ -48,6 +34,48 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 - **OTA Updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
 - **Captive Portal Provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
 - **442 tests** across 18 Unity test suites, runnable on native x86/x64 (no hardware required)
+
+## Installation
+
+**PlatformIO:**
+
+```ini
+lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
+```
+
+**Arduino IDE:** Download the repository as a ZIP and use _Sketch → Include Library → Add .ZIP Library_.
+
+## Quick Start
+
+```cpp
+#include <WiFi.h>
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical.h"
+
+DetWebServer server;
+
+void handle_status(uint8_t slot_id, HttpReq *req)
+{
+    server.send(slot_id, 200, "application/json", "{\"ok\":true}");
+}
+
+void setup()
+{
+    init_wifi_physical("SSID", "PASSWORD");
+    while (!wifi_ready()) delay(250);
+
+    server.on("/status", HTTP_GET, handle_status);
+    server.set_cors("*");
+    server.begin(80);
+}
+
+void loop()
+{
+    server.handle();
+}
+```
+
+See `examples/02.Configuration/02.Configuration.ino` for a full reference of every configurable flag and constant.
 
 ## Architecture
 
@@ -149,12 +177,12 @@ Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `
 
 ## Configuration Overrides
 
-All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`). Default limits and sizes reside in [DetWebServerConfig.h](../src/DetWebServerConfig.h).
+All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`). Default limits and sizes reside in [DetWebServerConfig.h](@ref DetWebServerConfig.h).
 
 <details>
 <summary><b>Expand Configuration constants and options</b></summary>
 
-### Capacity
+**Capacity**
 
 | Constant           | Default | Description                                           |
 | ------------------ | ------- | ----------------------------------------------------- |
@@ -172,7 +200,7 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 | `QUERY_KEY_LEN`    | 24      | Query parameter key bytes                             |
 | `QUERY_VAL_LEN`    | 48      | Query parameter value bytes                           |
 
-### Response buffers
+**Response Buffers**
 
 | Constant            | Default | Minimum | Description                                                           |
 | ------------------- | ------- | ------- | --------------------------------------------------------------------- |
@@ -180,40 +208,40 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 | `WS_HDR_BUF_SIZE`   | 256     | 128     | Stack buffer for WebSocket 101 response                               |
 | `CORS_HDR_BUF_SIZE` | 192     | 64      | Buffer for pre-built CORS header block; must be ≤ `RESP_HDR_BUF_SIZE` |
 
-### WebSocket (`DETWS_ENABLE_WEBSOCKET`)
+**WebSocket (DETWS_ENABLE_WEBSOCKET)**
 
 | Constant        | Default | Description                                         |
 | --------------- | ------- | --------------------------------------------------- |
 | `MAX_WS_CONNS`  | 2       | WebSocket slots; each consumes one `MAX_CONNS` slot |
 | `WS_FRAME_SIZE` | 512     | Max WebSocket frame payload bytes                   |
 
-### SSE (`DETWS_ENABLE_SSE`)
+**SSE (DETWS_ENABLE_SSE)**
 
 | Constant        | Default | Description                                   |
 | --------------- | ------- | --------------------------------------------- |
 | `MAX_SSE_CONNS` | 2       | SSE slots; each consumes one `MAX_CONNS` slot |
 | `SSE_BUF_SIZE`  | 256     | Stack buffer for one formatted SSE event      |
 
-### File serving (`DETWS_ENABLE_FILE_SERVING`)
+**File Serving (DETWS_ENABLE_FILE_SERVING)**
 
 | Constant          | Default | Description                                                        |
 | ----------------- | ------- | ------------------------------------------------------------------ |
 | `FILE_CHUNK_SIZE` | 512     | Bytes read from FS per `tcp_write()` call; must be ≤ `RX_BUF_SIZE` |
 
-### Auth (`DETWS_ENABLE_AUTH`)
+**Auth (DETWS_ENABLE_AUTH)**
 
 | Constant       | Default | Description                                               |
 | -------------- | ------- | --------------------------------------------------------- |
 | `MAX_AUTH_LEN` | 32      | Max username or password length including null terminator |
 
-### Multipart (`DETWS_ENABLE_MULTIPART`)
+**Multipart (DETWS_ENABLE_MULTIPART)**
 
 | Constant              | Default | Description                |
 | --------------------- | ------- | -------------------------- |
 | `MAX_MULTIPART_PARTS` | 4       | Max form parts per request |
 | `MAX_BOUNDARY_LEN`    | 72      | Max MIME boundary length   |
 
-### Runtime config
+**Runtime Config**
 
 The connection idle timeout can be changed without a rebuild:
 
@@ -226,44 +254,12 @@ Pass `nullptr` (or omit) to use the compile-time default `CONN_TIMEOUT_MS` (5000
 
 </details>
 
-## Quick Start
-
-```cpp
-#include <WiFi.h>
-#include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/physical.h"
-
-DetWebServer server;
-
-void handle_status(uint8_t slot_id, HttpReq *req)
-{
-    server.send(slot_id, 200, "application/json", "{\"ok\":true}");
-}
-
-void setup()
-{
-    init_wifi_physical("SSID", "PASSWORD");
-    while (!wifi_ready()) delay(250);
-
-    server.on("/status", HTTP_GET, handle_status);
-    server.set_cors("*");
-    server.begin(80);
-}
-
-void loop()
-{
-    server.handle();
-}
-```
-
-See `examples/02.Configuration/02.Configuration.ino` for a full reference of every configurable flag and constant.
-
 ## API Reference
 
 <details>
 <summary><b>Expand API Reference</b></summary>
 
-### `DetWebServer` - lifecycle
+**DetWebServer - Lifecycle**
 
 | Method                       | Description                                                                     |
 | ---------------------------- | ------------------------------------------------------------------------------- |
@@ -274,7 +270,7 @@ See `examples/02.Configuration/02.Configuration.ino` for a full reference of eve
 | `static heap_needed()`       | Returns 0 - no heap allocation.                                                 |
 | `static heap_available()`    | Returns `true` - always safe to call `begin()`.                                 |
 
-### `DetWebServer` - HTTP routes
+**DetWebServer - HTTP Routes**
 
 | Method                                         | Description                                                     |
 | ---------------------------------------------- | --------------------------------------------------------------- |
@@ -286,7 +282,7 @@ See `examples/02.Configuration/02.Configuration.ino` for a full reference of eve
 | `send_empty(slot_id, code)`                    | Send a headers-only response and close the connection.          |
 | `serve_file(slot_id, fs, path, type)`          | Stream a file from an Arduino FS (`DETWS_ENABLE_FILE_SERVING`). |
 
-### `DetWebServer` - WebSocket (`DETWS_ENABLE_WEBSOCKET`)
+**DetWebServer - WebSocket (DETWS_ENABLE_WEBSOCKET)**
 
 | Method                                          | Description                                 |
 | ----------------------------------------------- | ------------------------------------------- |
@@ -297,7 +293,7 @@ See `examples/02.Configuration/02.Configuration.ino` for a full reference of eve
 
 In `on_message`, read the received payload from `ws_pool[ws_id].buf` (length in `ws_pool[ws_id].payload_len`).
 
-### `DetWebServer` - SSE (`DETWS_ENABLE_SSE`)
+**DetWebServer - SSE (DETWS_ENABLE_SSE)**
 
 | Method                                                     | Description                             |
 | ---------------------------------------------------------- | --------------------------------------- |
@@ -305,13 +301,13 @@ In `on_message`, read the received payload from `ws_pool[ws_id].buf` (length in 
 | `sse_send(sse_id, data, event = nullptr, id = nullptr)`    | Push an event to one client.            |
 | `sse_broadcast(path, data, event = nullptr, id = nullptr)` | Push an event to all clients on a path. |
 
-### `DetWebServer` - Diagnostic (`DETWS_ENABLE_DIAG`)
+**DetWebServer - Diagnostic (DETWS_ENABLE_DIAG)**
 
 | Method          | Description                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
 | `diag(slot_id)` | Send a JSON object with all active feature flags and configuration constants. Disable in production. |
 
-### Handler signatures
+**Handler Signatures**
 
 ```cpp
 // HTTP
@@ -326,7 +322,7 @@ void ws_close(uint8_t ws_id);
 void sse_connect(uint8_t sse_id);
 ```
 
-### `HttpReq` fields
+**HttpReq Fields**
 
 | Field            | Type                           | Description                                    |
 | ---------------- | ------------------------------ | ---------------------------------------------- |
@@ -342,7 +338,7 @@ void sse_connect(uint8_t sse_id);
 | `body`           | `uint8_t[BODY_BUF_SIZE+1]`     | Request body, always null-terminated           |
 | `body_len`       | `size_t`                       | Bytes stored in `body[]`                       |
 
-### Helper functions
+**Helper Functions**
 
 ```cpp
 const char *http_get_header(const HttpReq *req, const char *key); // case-insensitive
@@ -373,7 +369,7 @@ See **[SSH.md](SSH.md)** for the feature summary, RFC/FIPS compliance
 table, authentication/hardening details, and memory footprint, and
 **[SECURITY.md](SECURITY.md)** for the security treatment.
 
-## Full Memory Table (All Features, Default Config)
+## Memory Table
 
 <details>
 <summary><b>Memory Usage Breakdown Table</b></summary>
@@ -424,7 +420,7 @@ A set of Python utility tools for formatting documentation, managing the test re
 <details>
 <summary><b>Expand Utility Tools and Scripts Guide</b></summary>
 
-### 1. Interactive Theme Wizard
+**1. Interactive Theme Wizard**
 
 The wizard guides developers through styling choices, compiles the customized assets, and prints the gzipped C++ hex array to the console.
 
@@ -432,7 +428,7 @@ The wizard guides developers through styling choices, compiles the customized as
 python src/utilities/theme_wizard.py
 ```
 
-### 2. HTML Beautification and Decoration Tool
+**2. HTML Beautification and Decoration Tool**
 
 Processes raw HTML source files to beautify, minify, or inject modern premium dark-mode styling.
 
@@ -441,7 +437,7 @@ Processes raw HTML source files to beautify, minify, or inject modern premium da
 python src/utilities/process_html.py --input src/html/index.html --output src/html/index_processed.html --minify --decorate-css
 ```
 
-### 3. Gzip HTML to Hex Array Converter
+**3. Gzip HTML to Hex Array Converter**
 
 Compresses a processed HTML template and outputs a C++ hex byte array in a timestamped text file to prevent naming collisions.
 
@@ -449,7 +445,7 @@ Compresses a processed HTML template and outputs a C++ hex byte array in a times
 python src/utilities/gzip_html_to_hex.py --input src/html/index_processed.html
 ```
 
-### 4. Test Documentation Deep Dive Generator
+**4. Test Documentation Deep Dive Generator**
 
 Scans Unity C++ test suites and auto-generates a nested, collapsible directory of test cases inside `TEST_DOCUMENTATION.md`.
 
@@ -457,7 +453,7 @@ Scans Unity C++ test suites and auto-generates a nested, collapsible directory o
 python docs/utilities/generate_deep_dive.py
 ```
 
-### 5. Changelog Collapsible Decorator
+**5. Changelog Collapsible Decorator**
 
 Parses `CHANGELOG.md` and wraps individual release versions in collapsible details sections. Used dynamically inside the CI pipeline.
 
@@ -484,6 +480,8 @@ breakdown and environment descriptions, and
 
 ## Documentation
 
+Other documentation files in this repository:
+
 <details>
 <summary><b>View Documentation Reference Directory</b></summary>
 
@@ -499,21 +497,23 @@ breakdown and environment descriptions, and
 
 </details>
 
-Full API documentation generated by Doxygen: **[https://dstroy0.github.io/DeterministicESPAsyncWebServer/](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
+### Generating Docs Locally
+
+To generate the HTML API documentation locally, run the following command from the repository root:
 
 ```bash
-doxygen Doxyfile   # output: docs/html/index.html
+doxygen docs/Doxyfile
 ```
 
-## Installation
+The output will be generated in `docs/html/index.html`.
 
-**PlatformIO:**
+If you are viewing the offline version of this documentation, you can access the latest online version at the [GitHub Pages documentation site](https://dstroy0.github.io/DeterministicESPAsyncWebServer/).
 
-```ini
-lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
-```
+## Mascot
 
-**Arduino IDE:** Download the repository as a ZIP and use _Sketch → Include Library → Add .ZIP Library_.
+**Squirty the Injection Squid** is the official mascot of the DeterministicESPAsyncWebServer library.
+
+<small>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</small>
 
 ## License
 

@@ -378,7 +378,7 @@ void test_overflow_path_sets_414()
 
 void test_bad_lf_after_cr_sets_error()
 {
-    // '\x00' would terminate the C-string in push(), so use a visible non-LF byte.
+    // Null byte would terminate the C-string in push(), so use a visible non-LF byte.
     // The parser is in PARSE_EXPECT_LF after the \r; seeing 'X' instead of '\n'
     // must produce PARSE_ERROR.
     push(0, "GET / HTTP/1.1\rX\r\n\r\n");
