@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`7f67f58`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f67f58da64c63393d0ddc86bc35153ee03d46a5))
+- update CHANGELOG.md [skip ci] ([`d10a5e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d10a5e8794b08e860237c987a893fcc1edf53da5))
 - update test report [skip ci] ([`0e872ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e872ef5719e3a06adf7c57f79eed84ab125c80a))
 - update CHANGELOG.md [skip ci] ([`b8ecc21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8ecc214ecb3d6da003c17f9b396dcd32bfc7cd7))
 - update test report [skip ci] ([`d3bf700`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3bf7008af6e23784eb305e79d048af7bd5bfdfa))
@@ -52,6 +54,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b8335ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8335ec55cf53f07afd24b6cd85577d3d8d095cf))
+- add version badge to docs ([`7ecebd1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ecebd1d404c2bbe975d71d6f2760642b77b7eb8))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`aaa6b68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa6b68f47a5595214dd529ae3b7d83c15be8bcd))
 - update initial search token ([`668f56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/668f56e629e39a763991a29d86d461550c08d7eb))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`f3a4a1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3a4a1c75084dc97a8f8c79d6e8ba1235eb5ed19))
