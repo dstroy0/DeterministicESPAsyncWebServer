@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`150f8bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/150f8bcf8a053230f6a0c4705bc07ef1e6d18c91))
+- update CHANGELOG.md [skip ci] ([`c20569a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c20569aec8ce215ba2e098b9337246126b79908b))
 - update test report [skip ci] ([`1f2b41c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f2b41c8954d206cdabaf1515d8de3aa9be0c863))
 - update CHANGELOG.md [skip ci] ([`ad53276`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad532769d8e980c83327d752194905a283bd81b8))
 - update test report [skip ci] ([`ef9facc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef9facc435b7caf534bb81e52b2bb938c8044c85))
@@ -46,6 +48,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`a65c596`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a65c5963d8bbf02dea7289c54e57a25647292ba0))
+- update readme; add qol bumpversion ([`6062d0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6062d0ba13d182fcbc1376a1636cd0382089ba5f))
 - fix markdown formatting style check issues ([`d0399c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0399c23ca11bb2576ec1fdb6e484118be16a06a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`566095c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/566095cc8065a74a9afe6b4e258628d1d15ea717))
 - formatting ([`216902c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216902c416b2bed37e5465073cdb05129ce35c2e))
