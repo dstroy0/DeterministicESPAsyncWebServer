@@ -28,12 +28,14 @@ Asynchronous HTTP, WebSocket, and SSH Server Library for ESP32 with zero heap al
 - **WebSocket (RFC 6455)**: Built-in frame parser with SHA-1 handshake and ping/pong management.
 - **SSE (Server-Sent Events)**: Persistent client connections and push broadcasting.
 - **Basic Authentication**: Built-in per-route HTTP Basic Auth support.
-- **File Serving**: Stream static assets with chunked reads from LittleFS, SPIFFS, and SD.
+- **File Serving**: Stream static assets with chunked reads from LittleFS, SPIFFS, and SD. One-call `serve_static()` subtree mount with `index.html` fallback, MIME auto-detection, pre-compressed `.gz` serving, and `ETag`/`304` conditional GET.
 - **Multipart Parser**: In-place form-data parser supporting file uploads.
 - **SSH 2.0 and Telnet Server**: Integrated zero-heap SSH/Telnet stacks with host-key verification and password/publickey authentication.
-- **mDNS & NTP Services**: Embedded hostname advertisement via ESPmDNS and SNTP wall-clock time synchronization for request logging.
-- **OTA Updates**: Secure, authenticated over-the-air firmware updates via streaming POST request body.
-- **Captive Portal Provisioning**: Setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration.
+- **mDNS & NTP Services**: Hostname advertisement via the ESP-IDF mDNS component and SNTP wall-clock time synchronization for request logging.
+- **OTA Updates**: Secure, authenticated over-the-air firmware updates that stream the POST body straight into flash (no full-image RAM buffer).
+- **Captive Portal Provisioning**: Setup wizard (SoftAP + catch-all DNS portal) for first-boot WiFi credential configuration.
+- **Observability**: Optional runtime stats endpoint (uptime, request/error counts, pool usage, heap) and a per-request access-log callback.
+- **Minimal Dependencies**: Beyond the Arduino/ESP-IDF SDK, the only external dependency is mbedTLS (crypto); optional services use the ESP-IDF mDNS component and raw lwIP UDP rather than add-on libraries. Every optional feature is gated by a `DETWS_ENABLE_*` build flag (default off).
 
 ## Compatibility
 

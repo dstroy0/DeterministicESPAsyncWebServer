@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # Generate the deep dive markdown with collapsible sections
     markdown = []
     markdown.append("\n\n## 7. Comprehensive Test Directory\n")
-    markdown.append("This section contains a thorough directory of all test cases across all 18 test suites. Click on any test suite to expand its test cases, and click on individual test cases to expand their objectives and assertions.\n")
+    markdown.append(f"This section contains a thorough directory of all test cases across all {len(suites)} test suites. Click on any test suite to expand its test cases, and click on individual test cases to expand their objectives and assertions.\n")
 
     for suite_name, tests in sorted(suites.items()):
         markdown.append(f"<details>")
