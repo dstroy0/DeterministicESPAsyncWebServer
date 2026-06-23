@@ -123,6 +123,15 @@ struct HttpReq
     QueryParam query_params[MAX_QUERY_PARAMS]; ///< Parsed key=value pairs.
     uint8_t query_count;                       ///< Valid entries in query_params[].
 
+    QueryParam path_params[MAX_PATH_PARAMS]; ///< `:name` captures from the matched route.
+    uint8_t path_param_count;                ///< Valid entries in path_params[].
+
+#if DETWS_ENABLE_AUTH
+    char authorization[DIGEST_AUTH_HDR_MAX]; ///< Full Authorization header value (Digest needs > MAX_VAL_LEN).
+    uint16_t auth_idx;                       ///< Write cursor into authorization[] (parser-internal).
+    bool cur_is_auth;                        ///< True while parsing an Authorization header value (parser-internal).
+#endif
+
     Header headers[MAX_HEADERS]; ///< Captured header fields.
     uint8_t header_count;        ///< Valid entries in headers[].
     size_t current_token_idx;    ///< Write cursor shared by key/value sub-states.
@@ -231,5 +240,19 @@ const char *http_get_query(const HttpReq *req, const char *key);
  *         (out is set to an empty string).
  */
 bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_size);
+
+/**
+ * @brief Look up a captured path parameter by name (case-sensitive).
+ *
+ * Path parameters are the `:name` segments of a matched route pattern
+ * (e.g. route `"/users/:id"` matching `"/users/42"` captures `id`→`"42"`).
+ * Populated by the dispatcher when the route matches; valid for the duration
+ * of the handler.
+ *
+ * @param req  Parsed request.
+ * @param key  Parameter name without the leading `:`.
+ * @return Pointer to the null-terminated value, or `nullptr` if absent.
+ */
+const char *http_get_param(const HttpReq *req, const char *key);
 
 #endif

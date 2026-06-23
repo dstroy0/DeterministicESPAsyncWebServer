@@ -301,6 +301,13 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             p->cur_key[k] = '\0';
             p->parse_state = PARSE_HEADER_VAL;
             p->current_token_idx = 0;
+#if DETWS_ENABLE_AUTH
+            // The Authorization value (Digest) exceeds MAX_VAL_LEN, so capture
+            // it whole into a dedicated buffer independent of the scratch value.
+            p->cur_is_auth = (strcasecmp(p->cur_key, "Authorization") == 0);
+            if (p->cur_is_auth)
+                p->auth_idx = 0;
+#endif
         }
         else if (!is_tchar(byte))
         {
@@ -339,6 +346,13 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // Terminate the scratch value so detection sees a clean C string.
             size_t vlen = p->current_token_idx < MAX_VAL_LEN ? p->current_token_idx : MAX_VAL_LEN - 1;
             p->cur_val[vlen] = '\0';
+#if DETWS_ENABLE_AUTH
+            if (p->cur_is_auth)
+            {
+                p->authorization[p->auth_idx] = '\0';
+                p->cur_is_auth = false;
+            }
+#endif
 
             // Host / Content-Length detection works off the scratch copies, so
             // it is correct even for headers past MAX_HEADERS (RFC 7230 §5.4,
@@ -383,17 +397,25 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // RFC 7230 §3.2: control chars and NUL are not valid in field values
             p->parse_state = PARSE_ERROR;
         }
-        else if (p->current_token_idx < MAX_VAL_LEN - 1)
+        else
         {
-            // Always capture into the scratch value; also store into the header
-            // slot when one is still available.
-            uint8_t h = p->header_count;
-            p->cur_val[p->current_token_idx] = c;
-            if (h < MAX_HEADERS)
-                p->headers[h].val[p->current_token_idx] = c;
-            p->current_token_idx++;
+#if DETWS_ENABLE_AUTH
+            // Capture the full Authorization value (Digest) past MAX_VAL_LEN.
+            if (p->cur_is_auth && p->auth_idx < DIGEST_AUTH_HDR_MAX - 1)
+                p->authorization[p->auth_idx++] = c;
+#endif
+            if (p->current_token_idx < MAX_VAL_LEN - 1)
+            {
+                // Always capture into the scratch value; also store into the
+                // header slot when one is still available.
+                uint8_t h = p->header_count;
+                p->cur_val[p->current_token_idx] = c;
+                if (h < MAX_HEADERS)
+                    p->headers[h].val[p->current_token_idx] = c;
+                p->current_token_idx++;
+            }
+            // Silently truncate the scratch/stored value - capacity limit, not an error.
         }
-        // Silently truncate - value overflow is a capacity limit, not a protocol error
         break;
 
     case PARSE_EXPECT_BODY_LF:
@@ -554,4 +576,16 @@ bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_si
         }
     }
     return false;
+}
+
+const char *http_get_param(const HttpReq *req, const char *key)
+{
+    if (req == nullptr || key == nullptr)
+        return nullptr;
+    for (uint8_t i = 0; i < req->path_param_count; i++)
+    {
+        if (strcmp(req->path_params[i].key, key) == 0)
+            return req->path_params[i].val;
+    }
+    return nullptr;
 }
