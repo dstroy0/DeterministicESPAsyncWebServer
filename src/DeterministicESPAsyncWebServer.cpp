@@ -182,6 +182,8 @@ DetWebServer::DetWebServer()
     for (int i = 0; i < MAX_ROUTES; i++)
         _routes[i] = {};
     _cors_header_buf[0] = '\0';
+    for (int i = 0; i < MAX_CONNS; i++)
+        _extra_hdr[i][0] = '\0';
 #if DETWS_ENABLE_STATS
     _stat_requests = _stat_2xx = _stat_4xx = _stat_5xx = 0;
 #endif
@@ -726,6 +728,9 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     HttpReq *req = &http_pool[slot_id];
     HttpMethod method = parse_method(req->method);
 
+    // Start each request with no carried-over custom response headers.
+    _extra_hdr[slot_id][0] = '\0';
+
     // CORS preflight
     if (method == HTTP_OPTIONS && _cors_enabled)
     {
@@ -882,8 +887,10 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
                         "Content-Type: %s\r\n"
                         "Content-Length: %d\r\n"
                         "%s"
+                        "%s"
                         "Connection: close\r\n\r\n",
-                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "");
+                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "",
+                        _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
     /*
@@ -933,8 +940,9 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Length: 0\r\n"
                         "%s"
+                        "%s"
                         "Connection: close\r\n\r\n",
-                        code, status_text(code), _cors_enabled ? _cors_header_buf : "");
+                        code, status_text(code), _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
@@ -980,8 +988,9 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
                         "Location: %s\r\n"
                         "Content-Length: 0\r\n"
                         "%s"
+                        "%s"
                         "Connection: close\r\n\r\n",
-                        code, status_text(code), location, _cors_enabled ? _cors_header_buf : "");
+                        code, status_text(code), location, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
@@ -996,6 +1005,52 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
 
     note_response(slot_id, code, 0);
     http_reset(slot_id);
+}
+
+// ---------------------------------------------------------------------------
+// Custom response headers / cookies
+//
+// Appended to a fixed per-slot buffer during a handler and injected into the
+// send paths above. A header that would overflow the buffer is dropped whole
+// (the buffer is rewound to its prior length) so a malformed half-line never
+// reaches the wire.
+// ---------------------------------------------------------------------------
+
+void DetWebServer::add_response_header(uint8_t slot_id, const char *name, const char *value)
+{
+    if (slot_id >= MAX_CONNS || name == nullptr || value == nullptr)
+        return;
+
+    char *buf = _extra_hdr[slot_id];
+    size_t used = strlen(buf);
+    size_t room = EXTRA_HDR_BUF_SIZE - used;
+    int n = snprintf(buf + used, room, "%s: %s\r\n", name, value);
+    if (n < 0 || (size_t)n >= room)
+        buf[used] = '\0'; // would not fit: drop this header entirely
+}
+
+void DetWebServer::set_cookie(uint8_t slot_id, const char *name, const char *value, const char *attrs)
+{
+    if (slot_id >= MAX_CONNS || name == nullptr || value == nullptr)
+        return;
+
+    char *buf = _extra_hdr[slot_id];
+    size_t used = strlen(buf);
+    size_t room = EXTRA_HDR_BUF_SIZE - used;
+    int n;
+    if (attrs != nullptr && attrs[0] != '\0')
+        n = snprintf(buf + used, room, "Set-Cookie: %s=%s; %s\r\n", name, value, attrs);
+    else
+        n = snprintf(buf + used, room, "Set-Cookie: %s=%s\r\n", name, value);
+    if (n < 0 || (size_t)n >= room)
+        buf[used] = '\0'; // would not fit: drop this cookie entirely
+}
+
+void DetWebServer::clear_response_headers(uint8_t slot_id)
+{
+    if (slot_id >= MAX_CONNS)
+        return;
+    _extra_hdr[slot_id][0] = '\0';
 }
 
 // ---------------------------------------------------------------------------

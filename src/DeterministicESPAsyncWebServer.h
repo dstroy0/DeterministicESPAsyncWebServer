@@ -292,6 +292,16 @@ class DetWebServer
     char _cors_header_buf[CORS_HDR_BUF_SIZE];
 
     /**
+     * @brief Per-slot buffer for app-supplied custom response headers/cookies.
+     *
+     * Filled via add_response_header() / set_cookie() during a handler and
+     * injected into send() / send_empty() / redirect() just like the CORS
+     * block. Cleared at the start of every dispatch so each request begins
+     * with no carried-over headers.
+     */
+    char _extra_hdr[MAX_CONNS][EXTRA_HDR_BUF_SIZE];
+
+    /**
      * @brief Evaluate whether a route pattern matches a request path.
      *
      * Wildcard routes end with `*`; the `*` is replaced by a prefix match.
@@ -620,6 +630,42 @@ class DetWebServer
      * @param location Value for the `Location` response header.
      */
     void redirect(uint8_t slot_id, int code, const char *location);
+
+    /**
+     * @brief Queue a custom response header for the next send on this slot.
+     *
+     * Call from inside a handler before send() / send_empty() / redirect().
+     * The header is appended to a fixed per-slot buffer (EXTRA_HDR_BUF_SIZE)
+     * and emitted verbatim as `Name: value\r\n`. Headers that would overflow
+     * the buffer are dropped whole (never truncated mid-line). The buffer is
+     * cleared automatically at the start of each request.
+     *
+     * @param slot_id Connection slot index.
+     * @param name    Header field name (no `:` or CRLF).
+     * @param value   Header field value (no CRLF).
+     */
+    void add_response_header(uint8_t slot_id, const char *name, const char *value);
+
+    /**
+     * @brief Queue a `Set-Cookie` response header for the next send on this slot.
+     *
+     * Emits `Set-Cookie: name=value\r\n`, or `Set-Cookie: name=value; attrs\r\n`
+     * when @p attrs is non-null (e.g. `"Path=/; HttpOnly; Max-Age=3600"`).
+     * Shares the per-slot buffer with add_response_header().
+     *
+     * @param slot_id Connection slot index.
+     * @param name    Cookie name.
+     * @param value   Cookie value.
+     * @param attrs   Optional `;`-separated attribute string, or nullptr.
+     */
+    void set_cookie(uint8_t slot_id, const char *name, const char *value, const char *attrs = nullptr);
+
+    /**
+     * @brief Discard any headers/cookies queued for this slot.
+     *
+     * @param slot_id Connection slot index.
+     */
+    void clear_response_headers(uint8_t slot_id);
 
     /**
      * @brief Guess a `Content-Type` from a path's file extension.

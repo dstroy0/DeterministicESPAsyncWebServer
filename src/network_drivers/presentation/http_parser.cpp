@@ -506,3 +506,52 @@ const char *http_get_query(const HttpReq *req, const char *key)
     }
     return nullptr;
 }
+
+bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_size)
+{
+    if (out == nullptr || out_size == 0)
+        return false;
+    out[0] = '\0';
+    if (req == nullptr || key == nullptr)
+        return false;
+
+    // Only urlencoded bodies (allow a trailing "; charset=..." suffix).
+    const char *ct = http_get_header(req, "Content-Type");
+    if (ct == nullptr || strncasecmp(ct, "application/x-www-form-urlencoded", 33) != 0)
+        return false;
+
+    const char *body = (const char *)req->body;
+    size_t len = req->body_len;
+    size_t key_len = strlen(key);
+    size_t i = 0;
+
+    while (i < len)
+    {
+        size_t ks = i;
+        while (i < len && body[i] != '=' && body[i] != '&')
+            i++;
+        bool key_matches = (i - ks == key_len) && (strncmp(body + ks, key, key_len) == 0);
+
+        size_t vs = i, ve = i;
+        if (i < len && body[i] == '=')
+        {
+            vs = ++i;
+            while (i < len && body[i] != '&')
+                i++;
+            ve = i;
+        }
+        if (i < len && body[i] == '&')
+            i++;
+
+        if (key_matches)
+        {
+            size_t vlen = ve - vs;
+            if (vlen > out_size - 1)
+                vlen = out_size - 1;
+            memcpy(out, body + vs, vlen);
+            out[vlen] = '\0';
+            return true;
+        }
+    }
+    return false;
+}
