@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`1f2b41c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f2b41c8954d206cdabaf1515d8de3aa9be0c863))
+- update CHANGELOG.md [skip ci] ([`ad53276`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad532769d8e980c83327d752194905a283bd81b8))
 - update test report [skip ci] ([`ef9facc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef9facc435b7caf534bb81e52b2bb938c8044c85))
 - update CHANGELOG.md [skip ci] ([`206abe1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/206abe1a8f6a823af00b0aa93b7fb045dbe37b4f))
 - update test report [skip ci] ([`b260304`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2603045df12eeb2b14866398138f91a4f752fc3))
@@ -69,6 +71,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- move detailed README body to docs/README.md ([`8eb8de2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8eb8de2105b1590bff3736a09dbd13ff54b81330))
 - add GitHub Actions workflow status badges to README.md ([`346c0cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/346c0cf9362244e711d945a01abc0ba9ddee5203))
 - update feature flags info & add provisioning, MDNS & NTP services ([`b4135ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4135ba256608624ac5037f5f9e694775f4dca20))
 - docs ([`93c7ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ef88637ee6576bef7a6ba34a358881ff42a3))
