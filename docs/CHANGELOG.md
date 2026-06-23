@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ac6c36f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac6c36f39afc4c1be11de612e48e6b0700807da4))
+- update CHANGELOG.md [skip ci] ([`996488a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/996488a133851861e9d61d4fa983b27ca169c25e))
 - update test report [skip ci] ([`7f67f58`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f67f58da64c63393d0ddc86bc35153ee03d46a5))
 - update CHANGELOG.md [skip ci] ([`d10a5e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d10a5e8794b08e860237c987a893fcc1edf53da5))
 - update test report [skip ci] ([`0e872ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e872ef5719e3a06adf7c57f79eed84ab125c80a))
@@ -54,6 +56,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`e4d2614`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4d26140b11b01c8e13ce8df1bb88d904be35c51))
+- update bumpversion to use GPG ([`72686e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72686e86c1ee7f23318575eb7906ace657702679))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b8335ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8335ec55cf53f07afd24b6cd85577d3d8d095cf))
 - add version badge to docs ([`7ecebd1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ecebd1d404c2bbe975d71d6f2760642b77b7eb8))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`aaa6b68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa6b68f47a5595214dd529ae3b7d83c15be8bcd))
