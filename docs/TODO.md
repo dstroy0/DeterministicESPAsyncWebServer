@@ -50,28 +50,69 @@ native Unity tests before moving on. Each must keep the "no heap after
       `application/x-www-form-urlencoded` Content-Type, raw values to match
       `http_get_query()`). Tested by `test_form_params` (5 cases).
 
-- [ ] **3. Path parameters in routing (high / medium).** `/users/:id` style
-      capture segments stored in a fixed `HttpReq` array, exposed via
-      `req_param(req, "id")`. Extends the current exact + trailing-`*` matcher.
+- [x] **3. Path parameters in routing (high / medium).** _(done)_ `/users/:id`
+      style capture segments stored in a fixed `HttpReq::path_params[MAX_PATH_PARAMS]`
+      array, exposed via [`http_get_param()`](@ref http_get_param). Routes are
+      flagged `is_param` at registration; `match_path_params()` does a
+      segment-by-segment match (literal segments exact, `:name` segments
+      captured) alongside the existing exact + trailing-`*` matcher. Tested by
+      `test_path_params` (8 cases).
 
-- [ ] **4. Digest authentication (medium / medium).** Add HTTP Digest
-      (`MD5`/`SHA-256` via mbedTLS) alongside the existing Basic auth on
-      `on(..., realm, user, pass)`. Nonce stored in a fixed per-listener slot.
+- [x] **4. Digest authentication (medium / medium).** _(done)_ HTTP Digest
+      (RFC 7616, SHA-256, `qop=auth`) via the existing `ssh_sha256`, selected by
+      the new `digest` flag on
+      [`on(..., realm, user, pass, digest=true)`](@ref DetWebServer::on).
+      Server nonce regenerated per `begin()`; challenge emitted by
+      `send_unauth()`; verified by `check_digest_auth()`. The parser now
+      captures the full `Authorization` value into a dedicated
+      `HttpReq::authorization[DIGEST_AUTH_HDR_MAX]` buffer (a Digest header far
+      exceeds `MAX_VAL_LEN`). Tested by `test_digest_auth` (4 cases: challenge,
+      valid handshake, wrong password, forged nonce).
+      _Follow-up:_ nonce is counter+instance derived — harden to a CSPRNG/time
+      seed and add `nc` replay tracking before relying on it in production.
 
-- [ ] **5. Response templating (medium / medium).** `{{PLACEHOLDER}}`
-      substitution via a user processor callback for `send()` and static files,
-      streamed through a fixed scratch buffer (no full-document copy).
+- [x] **5. Response templating (medium / medium).** _(done)_ `{{name}}`
+      substitution via [`send_template()`](@ref DetWebServer::send_template) with
+      a `TemplateVar` resolver callback. The body is walked twice (size, then
+      write) so it is never buffered whole - constant memory regardless of body
+      size. Unterminated/over-long placeholders are emitted literally; HEAD
+      sends headers only. Tested by `test_template` (6 cases).
+      _Follow-up:_ apply the same resolver path to static-file serving.
 
-- [ ] **6. Middleware pipeline (high value / large).** Fixed-size, composable
-      middleware chain (compile-time cap) attachable globally or per-route.
-      Re-express CORS + Basic/Digest auth as middlewares and add new
-      **rate-limit** (per-route/token-bucket) and **logging** middlewares.
-      This is the architectural umbrella several items above fold into.
+- [x] **6. Middleware pipeline (high value / large).** _(done)_ Fixed-size,
+      composable global middleware chain (cap `MAX_MIDDLEWARE`, default 4) run in
+      registration order before route matching via
+      [`use()`](@ref DetWebServer::use). A [`Middleware`](@ref Middleware) returns
+      [`MW_NEXT`](@ref MwResult) to fall through or [`MW_HALT`](@ref MwResult) to
+      short-circuit (after sending its own response); middlewares can also inject
+      response headers / log every request (incl. unmatched 404s). Added a
+      built-in fixed-window rate limiter,
+      [`enable_rate_limit(max, window_ms)`](@ref DetWebServer::enable_rate_limit),
+      that answers over-budget requests with `429` + `Retry-After` before the
+      chain (cheapest rejection under flood); rollover-safe, per-server state, no
+      per-IP table. Tested by `test_middleware` (9 cases).
+      _Design note:_ CORS + Basic/Digest auth were **left as-is** (tested/green)
+      rather than re-expressed as middlewares - the chain is additive and
+      composes alongside them; "logging middleware" is the existing
+      [`on_request_log()`](@ref DetWebServer::on_request_log) hook plus any
+      user `use()` middleware. _Follow-up:_ per-route middleware attachment (a
+      middleware can already gate on `req->path` in user code).
 
-- [ ] **7. Chunked / streaming app responses (medium / medium).** A
-      callback-driven chunked-transfer response for app-generated bodies
-      (`begin_chunked(slot, type, fill_cb)`) and a small `Print`-style writer,
-      so dynamic output isn't limited to one pre-built `send()` buffer.
+- [x] **7. Chunked / streaming app responses (medium / medium).** _(done)_
+      [`send_chunked(slot, code, type, filler)`](@ref DetWebServer::send_chunked)
+      writes the status + headers (`Transfer-Encoding: chunked`, plus CORS /
+      queued custom headers), runs a [`ChunkFiller`](@ref ChunkFiller) callback
+      that emits body pieces through a small [`ChunkedResponse`](@ref ChunkedResponse)
+      writer (`write()` / `write(buf,len)` / `printf()`), then writes the
+      terminating `0\r\n\r\n` and closes. Each call emits exactly one RFC 7230
+      §4.1 chunk straight to the socket - the body is never buffered whole, so
+      output size is unbounded in constant memory. Zero-length writes are
+      no-ops (never a premature terminator); HEAD sends headers only;
+      [`on_request_log()`](@ref DetWebServer::on_request_log) reports the summed
+      body length. Tested by `test_chunked` (8 cases).
+      _Follow-up:_ no `tcp_sndbuf()` backpressure check (mirrors `serve_file()`)
+      - for very large streams add a per-chunk `tcp_output()` / send-window
+      check before relying on it under load.
 
 - [ ] **8. Stretch / lower priority.**
   - [ ] Regex routes (heavy; needs a bounded, allocation-free matcher).

@@ -1,0 +1,219 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for HTTP Digest authentication (RFC 7616, SHA-256, qop=auth).
+// Each test performs the real handshake: an unauthenticated request yields a
+// 401 challenge, the test computes the digest response with the same SHA-256
+// the server uses, then re-requests with an Authorization: Digest header.
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include <stdio.h>
+#include <string.h>
+#include <unity.h>
+
+static DetWebServer server;
+static bool g_called;
+
+static const char *kUser = "admin";
+static const char *kRealm = "secure area";
+static const char *kPass = "s3cret";
+
+static void push_str(uint8_t slot, const char *s)
+{
+    TcpConn *c = &conn_pool[slot];
+    for (size_t i = 0; s[i]; i++)
+    {
+        size_t next = (c->rx_head + 1) % RX_BUF_SIZE;
+        c->rx_buffer[c->rx_head] = (uint8_t)s[i];
+        c->rx_head = next;
+    }
+}
+
+static void h_secure(uint8_t slot, HttpReq *req)
+{
+    (void)req;
+    g_called = true;
+    server.send(slot, 200, "text/plain", "secret");
+}
+
+static void sha256_hex(const char *s, char out[65])
+{
+    uint8_t d[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256((const uint8_t *)s, strlen(s), d);
+    static const char *hx = "0123456789abcdef";
+    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+    {
+        out[i * 2] = hx[d[i] >> 4];
+        out[i * 2 + 1] = hx[d[i] & 0x0f];
+    }
+    out[64] = '\0';
+}
+
+static bool extract_nonce(const char *resp, char *out, size_t n)
+{
+    const char *p = strstr(resp, "nonce=\"");
+    if (!p)
+        return false;
+    p += 7;
+    const char *e = strchr(p, '"');
+    if (!e)
+        return false;
+    size_t len = (size_t)(e - p);
+    if (len > n - 1)
+        len = n - 1;
+    memcpy(out, p, len);
+    out[len] = '\0';
+    return true;
+}
+
+// Compute response = SHA256(HA1:nonce:nc:cnonce:qop:HA2) for GET <uri>.
+static void compute_response(const char *user, const char *realm, const char *pass, const char *method, const char *uri,
+                             const char *nonce, const char *nc, const char *cnonce, char out[65])
+{
+    char buf[256], ha1[65], ha2[65];
+    snprintf(buf, sizeof(buf), "%s:%s:%s", user, realm, pass);
+    sha256_hex(buf, ha1);
+    snprintf(buf, sizeof(buf), "%s:%s", method, uri);
+    sha256_hex(buf, ha2);
+    snprintf(buf, sizeof(buf), "%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, "auth", ha2);
+    sha256_hex(buf, out);
+}
+
+void setUp()
+{
+    server = DetWebServer();
+    g_called = false;
+    for (int i = 0; i < MAX_CONNS; i++)
+    {
+        conn_pool[i] = {};
+        conn_pool[i].id = (uint8_t)i;
+        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].pcb = &_mock_pcb;
+        http_reset(i);
+    }
+    ws_init();
+    sse_init();
+    tcp_capture_reset();
+}
+
+void tearDown()
+{
+    tcp_capture_disable();
+}
+
+static void rearm_slot(uint8_t slot)
+{
+    conn_pool[slot] = {};
+    conn_pool[slot].id = slot;
+    conn_pool[slot].state = CONN_ACTIVE;
+    conn_pool[slot].pcb = &_mock_pcb;
+    http_reset(slot);
+    tcp_capture_reset();
+}
+
+static void feed_and_handle(uint8_t slot, const char *req_str)
+{
+    push_str(slot, req_str);
+    http_parse(slot);
+    server.handle();
+}
+
+// ====================================================================
+// TESTS
+// ====================================================================
+
+void test_challenge_is_digest_sha256()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    const char *resp = tcp_captured();
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(resp, "401"));
+    TEST_ASSERT_NOT_NULL(strstr(resp, "WWW-Authenticate: Digest"));
+    TEST_ASSERT_NOT_NULL(strstr(resp, "algorithm=SHA-256"));
+    TEST_ASSERT_NOT_NULL(strstr(resp, "qop=\"auth\""));
+    TEST_ASSERT_NOT_NULL(strstr(resp, "nonce=\""));
+}
+
+void test_valid_digest_authenticates()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    char resp[65];
+    compute_response(kUser, kRealm, kPass, "GET", "/secure", nonce, "00000001", "abc", resp);
+
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce, resp);
+
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_TRUE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "secret"));
+}
+
+void test_wrong_password_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    char resp[65];
+    compute_response(kUser, kRealm, "wrongpass", "GET", "/secure", nonce, "00000001", "abc", resp);
+
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce, resp);
+
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
+void test_bad_nonce_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    // Compute a response against a forged nonce the server never issued.
+    char resp[65];
+    compute_response(kUser, kRealm, kPass, "GET", "/secure", "deadbeefdeadbeefdeadbeefdeadbeef", "00000001", "abc",
+                     resp);
+
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"deadbeefdeadbeefdeadbeefdeadbeef\", "
+             "uri=\"/secure\", qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, resp);
+
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_challenge_is_digest_sha256);
+    RUN_TEST(test_valid_digest_authenticates);
+    RUN_TEST(test_wrong_password_rejected);
+    RUN_TEST(test_bad_nonce_rejected);
+    return UNITY_END();
+}

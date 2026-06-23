@@ -90,6 +90,22 @@
 #define MAX_QUERY_PARAMS 8
 #endif
 
+/** @brief Maximum number of `:name` path parameters captured per route match. */
+#ifndef MAX_PATH_PARAMS
+#define MAX_PATH_PARAMS 4
+#endif
+
+/**
+ * @brief Capacity for the full `Authorization` header value (Digest auth).
+ *
+ * A Digest `Authorization` header (username, realm, nonce, uri, response,
+ * qop, nc, cnonce) is far longer than MAX_VAL_LEN, so when DETWS_ENABLE_AUTH
+ * is set the parser captures it whole into a dedicated per-request buffer.
+ */
+#ifndef DIGEST_AUTH_HDR_MAX
+#define DIGEST_AUTH_HDR_MAX 384
+#endif
+
 /** @brief Maximum query-parameter key length. */
 #ifndef QUERY_KEY_LEN
 #define QUERY_KEY_LEN 24
@@ -114,6 +130,28 @@
 /** @brief Maximum simultaneously registered routes. */
 #ifndef MAX_ROUTES
 #define MAX_ROUTES 16
+#endif
+
+/**
+ * @brief Maximum globally-registered middleware functions.
+ *
+ * The middleware chain is a fixed array of function pointers run in
+ * registration order before a request reaches its route handler (see
+ * DetWebServer::use()). Costs MAX_MIDDLEWARE pointers of BSS; an empty chain
+ * adds no per-request work.
+ */
+#ifndef MAX_MIDDLEWARE
+#define MAX_MIDDLEWARE 4
+#endif
+
+/**
+ * @brief Stack scratch buffer for ChunkedResponse::printf() (see send_chunked()).
+ *
+ * One formatted chunk must fit in this many bytes (longer output is truncated).
+ * Allocated on the stack only while printf() runs - no persistent RAM cost.
+ */
+#ifndef CHUNK_BUF_SIZE
+#define CHUNK_BUF_SIZE 256
 #endif
 
 // ---------------------------------------------------------------------------
@@ -773,6 +811,14 @@ enum ConnProto
 
 #if MAX_ROUTES < 1
 #error "DeterministicESPAsyncWebServer: MAX_ROUTES must be >= 1"
+#endif
+
+#if MAX_MIDDLEWARE < 1
+#error "DeterministicESPAsyncWebServer: MAX_MIDDLEWARE must be >= 1"
+#endif
+
+#if CHUNK_BUF_SIZE < 16
+#error "DeterministicESPAsyncWebServer: CHUNK_BUF_SIZE must be >= 16"
 #endif
 
 #if DETWS_ENABLE_AUTH && MAX_AUTH_LEN < 2

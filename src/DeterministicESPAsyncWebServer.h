@@ -104,6 +104,16 @@ enum HttpMethod
 typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
 
 /**
+ * @brief Resolver for `{{name}}` template placeholders used by send_template().
+ *
+ * Called with a placeholder name; returns the replacement string, or nullptr
+ * to substitute an empty string. The pointer must stay valid for the duration
+ * of the send_template() call, and the resolver must be deterministic (it is
+ * invoked twice: once to size the body, once to emit it).
+ */
+typedef const char *(*TemplateVar)(const char *name);
+
+/**
  * @brief Per-request access-log callback (see DetWebServer::on_request_log()).
  *
  * Invoked once per response with the request method/path, the HTTP status code,
@@ -112,6 +122,38 @@ typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
  * formatting; route the data to Serial, syslog, etc. as you see fit.
  */
 typedef void (*RequestLogCb)(const char *method, const char *path, int status, int body_len);
+
+/**
+ * @brief Outcome of a middleware function (see @ref Middleware).
+ *
+ * Returning MW_NEXT passes the request to the next middleware in the chain and,
+ * once the chain is exhausted, on to the matching route handler. Returning
+ * MW_HALT stops the chain: the route handler is NOT invoked, so a middleware
+ * that halts must have already written a response (the dispatcher treats the
+ * request as fully handled).
+ */
+enum MwResult
+{
+    MW_NEXT = 0, ///< Continue to the next middleware / the route handler.
+    MW_HALT = 1  ///< Stop dispatch; the middleware already sent a response.
+};
+
+/**
+ * @brief Composable pre-dispatch middleware (see DetWebServer::use()).
+ *
+ * Each registered middleware runs - in registration order - on every request
+ * before route matching, receiving the same `(slot_id, request)` pair a handler
+ * does. A middleware may inspect the request, queue response headers
+ * (DetWebServer::add_response_header()), short-circuit by sending a response and
+ * returning MW_HALT, or fall through with MW_NEXT. Middlewares reference the
+ * application's server instance the same way handlers do (the global object), so
+ * they can call send() / send_empty() to short-circuit.
+ *
+ * @param slot_id  Connection slot index (0 … MAX_CONNS-1).
+ * @param request  Parsed request; valid only during the call (do not cache).
+ * @return MW_NEXT to continue, MW_HALT to stop (response already sent).
+ */
+typedef MwResult (*Middleware)(uint8_t slot_id, HttpReq *request);
 
 #if DETWS_ENABLE_WEBSOCKET
 /**
@@ -218,7 +260,8 @@ struct Route
 #endif
 
 #if DETWS_ENABLE_AUTH
-    bool auth_required;            ///< True when this route requires Basic Auth.
+    bool auth_required;            ///< True when this route requires authentication.
+    bool auth_digest;              ///< True for Digest auth; false for Basic.
     char auth_realm[MAX_AUTH_LEN]; ///< WWW-Authenticate realm string.
     char auth_user[MAX_AUTH_LEN];  ///< Required username.
     char auth_pass[MAX_AUTH_LEN];  ///< Required password.
@@ -226,7 +269,101 @@ struct Route
 
     bool is_active;   ///< `false` for unused table slots.
     bool is_wildcard; ///< `true` when path ends with `*`.
+    bool is_param;    ///< `true` when the path contains a `:name` segment.
 };
+
+// ---------------------------------------------------------------------------
+// Chunked (streaming) response writer
+// ---------------------------------------------------------------------------
+
+struct tcp_pcb; // forward decl (full type pulled in via the transport layer)
+
+class DetWebServer;
+
+/**
+ * @class ChunkedResponse
+ * @brief Writer handle for a streaming `Transfer-Encoding: chunked` response.
+ *
+ * An instance is created by DetWebServer::send_chunked() and handed to a
+ * @ref ChunkFiller callback. Each write() / printf() emits exactly one HTTP/1.1
+ * chunk straight to the socket - the body is never buffered whole, so a response
+ * may be arbitrarily large with constant memory. The framework writes the
+ * status line + headers before the callback and the terminating zero-length
+ * chunk after it; the application only emits body pieces.
+ *
+ * @code
+ * void fill(ChunkedResponse &res, HttpReq *req) {
+ *     for (int i = 0; i < 100; i++)
+ *         res.printf("line %d\n", i);     // 100 chunks, no big buffer
+ * }
+ * void handler(uint8_t slot, HttpReq *req) {
+ *     server.send_chunked(slot, 200, "text/plain", fill);
+ * }
+ * @endcode
+ */
+class ChunkedResponse
+{
+  public:
+    /**
+     * @brief Emit one chunk from a null-terminated string.
+     * @param s Null-terminated data (a null or empty string is a no-op).
+     * @return false once any write has failed; true otherwise.
+     */
+    bool write(const char *s);
+
+    /**
+     * @brief Emit one chunk of exactly @p len bytes.
+     * @param data Chunk payload (may contain NULs).
+     * @param len  Byte count (0 is a no-op - a 0-length chunk would terminate).
+     * @return false once any write has failed; true otherwise.
+     */
+    bool write(const char *data, size_t len);
+
+    /**
+     * @brief Emit one chunk built with printf-style formatting.
+     *
+     * The formatted text must fit in CHUNK_BUF_SIZE bytes (longer output is
+     * truncated). Produces a single chunk.
+     *
+     * @param fmt printf format string.
+     * @return false once any write has failed; true otherwise.
+     */
+    bool printf(const char *fmt, ...)
+#if defined(__GNUC__)
+        __attribute__((format(printf, 2, 3)))
+#endif
+        ;
+
+    /** @brief Total body bytes emitted so far (excludes chunk framing). */
+    size_t total() const
+    {
+        return _total;
+    }
+
+  private:
+    friend class DetWebServer;
+    ChunkedResponse(struct tcp_pcb *pcb, bool head) : _pcb(pcb), _total(0), _ok(true), _head(head)
+    {
+    }
+
+    struct tcp_pcb *_pcb; ///< Socket to stream to (slot already detached).
+    size_t _total;        ///< Running count of body bytes (no framing).
+    bool _ok;             ///< Cleared if a tcp_write reported an error.
+    bool _head;           ///< HEAD request: suppress all body output.
+};
+
+/**
+ * @brief Callback that streams a chunked response body (see DetWebServer::send_chunked()).
+ *
+ * Invoked once, synchronously, between the response headers and the terminating
+ * chunk. Emit body pieces via @p res; read request data from @p request if
+ * needed. Do NOT call send()/send_empty()/etc. from here - the response is
+ * already in progress.
+ *
+ * @param res     Chunk writer for this response.
+ * @param request The parsed request (valid for the duration of the callback).
+ */
+typedef void (*ChunkFiller)(ChunkedResponse &res, HttpReq *request);
 
 // ---------------------------------------------------------------------------
 // DetWebServer - the main application class
@@ -302,6 +439,35 @@ class DetWebServer
     char _extra_hdr[MAX_CONNS][EXTRA_HDR_BUF_SIZE];
 
     /**
+     * @brief Global middleware chain, run in registration order before dispatch.
+     *
+     * Populated by use(); a middleware returning MW_HALT short-circuits the
+     * request. An empty chain (the default) adds no per-request work.
+     */
+    Middleware _middleware[MAX_MIDDLEWARE];
+    uint8_t _middleware_count; ///< Number of active entries in _middleware.
+
+    // --- Built-in rate-limit pre-filter (fixed-window counter) ----------------
+    uint16_t _rl_max;          ///< Max requests per window; 0 = rate limiting off.
+    uint32_t _rl_window_ms;    ///< Window length in milliseconds.
+    uint32_t _rl_window_start; ///< millis() at the start of the current window.
+    uint16_t _rl_count;        ///< Requests counted in the current window.
+
+    /**
+     * @brief Run the global middleware chain for a request.
+     * @return true if a middleware returned MW_HALT (a response was sent and
+     *         dispatch must stop); false to continue to route matching.
+     */
+    bool run_middleware(uint8_t slot_id, HttpReq *req);
+
+    /**
+     * @brief Built-in fixed-window rate-limit check (see enable_rate_limit()).
+     * @return true if the request was rejected with 429 (response sent, dispatch
+     *         must stop); false when rate limiting is disabled or within budget.
+     */
+    bool rate_limit_check(uint8_t slot_id);
+
+    /**
      * @brief Evaluate whether a route pattern matches a request path.
      *
      * Wildcard routes end with `*`; the `*` is replaced by a prefix match.
@@ -320,8 +486,14 @@ class DetWebServer
 #if DETWS_ENABLE_AUTH
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
-    /// @brief Send 401 Unauthorized with a `WWW-Authenticate: Basic realm="<realm>"` header.
-    void send_unauth(uint8_t slot_id, const char *realm);
+    /// @brief Validate an `Authorization: Digest` (RFC 7616, SHA-256, qop=auth) request against route @p r.
+    bool check_digest_auth(uint8_t slot_id, HttpReq *req, const Route *r);
+    /// @brief Send 401 Unauthorized with a Basic or Digest `WWW-Authenticate` challenge per route @p r.
+    void send_unauth(uint8_t slot_id, const Route *r);
+    /// @brief Current server Digest nonce (regenerated at begin()); 32 hex chars + NUL.
+    char _digest_nonce[33];
+    /// @brief Generate a fresh server Digest nonce into _digest_nonce.
+    void regen_digest_nonce();
 #endif
 
 #if DETWS_ENABLE_FILE_SERVING
@@ -470,11 +642,12 @@ class DetWebServer
 
 #if DETWS_ENABLE_AUTH
     /**
-     * @brief Register a route handler protected by HTTP Basic Authentication.
+     * @brief Register a route handler protected by HTTP authentication.
      *
      * If the request does not include valid credentials, the library sends
-     * `401 Unauthorized` with a `WWW-Authenticate: Basic realm="<realm>"`
-     * header automatically; the callback is not invoked.
+     * `401 Unauthorized` with the appropriate `WWW-Authenticate` challenge
+     * (`Basic`, or `Digest` with SHA-256 + `qop=auth` per RFC 7616) and the
+     * callback is not invoked.
      *
      * @param path     URL path pattern.
      * @param method   HTTP method.
@@ -482,9 +655,10 @@ class DetWebServer
      * @param realm    WWW-Authenticate realm displayed by the browser.
      * @param user     Required username.
      * @param pass     Required password.
+     * @param digest   When true, use Digest authentication instead of Basic.
      */
     void on(const char *path, HttpMethod method, Handler callback, const char *realm, const char *user,
-            const char *pass);
+            const char *pass, bool digest = false);
 #endif // DETWS_ENABLE_AUTH
 
 #if DETWS_ENABLE_FILE_SERVING
@@ -545,6 +719,44 @@ class DetWebServer
      * response body length. Pass nullptr to remove. See @ref RequestLogCb.
      */
     void on_request_log(RequestLogCb cb);
+
+    /**
+     * @brief Register a middleware to run before every request is dispatched.
+     *
+     * Middlewares run in registration order (see @ref Middleware) ahead of route
+     * matching, after the built-in rate-limit check. Up to MAX_MIDDLEWARE may be
+     * registered; further calls are ignored. Use this to add cross-cutting
+     * behavior - request logging, custom auth, header injection, feature gating -
+     * composed independently of individual routes.
+     *
+     * @code
+     *   static MwResult log_mw(uint8_t slot, HttpReq *req) {
+     *       Serial.printf("%s %s\n", req->method, req->path);
+     *       return MW_NEXT;                  // fall through to the handler
+     *   }
+     *   server.use(log_mw);
+     * @endcode
+     *
+     * @param mw Middleware function pointer (must not be nullptr).
+     */
+    void use(Middleware mw);
+
+    /**
+     * @brief Enable a built-in fixed-window request rate limiter.
+     *
+     * Counts all incoming requests in a sliding fixed window; once more than
+     * @p max_requests arrive within @p window_ms the server answers further
+     * requests in that window with `429 Too Many Requests` (plus a `Retry-After`
+     * header) instead of dispatching them. The check runs before the middleware
+     * chain and route matching, so it bounds work under flood. State is a few
+     * per-server counters (no heap, no per-IP table) - a global throttle suited
+     * to a small device behind a trusted LAN. For connection-level flood defense
+     * see also `DETWS_ENABLE_ACCEPT_THROTTLE`.
+     *
+     * @param max_requests Requests allowed per window. Pass 0 to disable.
+     * @param window_ms    Window length in milliseconds (must be > 0).
+     */
+    void enable_rate_limit(uint16_t max_requests, uint32_t window_ms);
 
 #if DETWS_ENABLE_STATS
     /**
@@ -630,6 +842,41 @@ class DetWebServer
      * @param location Value for the `Location` response header.
      */
     void redirect(uint8_t slot_id, int code, const char *location);
+
+    /**
+     * @brief Send a response body with `{{name}}` placeholders substituted.
+     *
+     * Streams @p tmpl to the client, replacing each `{{name}}` token with the
+     * string returned by @p resolver (nullptr → empty). The body is never
+     * buffered whole: it is walked twice - once to compute Content-Length, once
+     * to write - so memory use is constant regardless of body size. A `{{` with
+     * no matching `}}` (or a name longer than 32 chars) is emitted literally.
+     *
+     * @param slot_id      Connection slot index.
+     * @param code         HTTP status code.
+     * @param content_type Response Content-Type.
+     * @param tmpl         Null-terminated template text.
+     * @param resolver     Placeholder resolver (see TemplateVar), or nullptr.
+     */
+    void send_template(uint8_t slot_id, int code, const char *content_type, const char *tmpl, TemplateVar resolver);
+
+    /**
+     * @brief Stream a response body of unknown length via chunked transfer.
+     *
+     * Writes the status line and headers (including `Transfer-Encoding: chunked`,
+     * plus any CORS / queued custom headers), then invokes @p filler with a
+     * @ref ChunkedResponse it uses to emit body pieces, then writes the
+     * terminating chunk and closes. The body is never buffered whole, so output
+     * size is unbounded with constant memory - the complement to send(), which
+     * needs the full payload up front. A HEAD request sends the headers only
+     * (the filler is not called).
+     *
+     * @param slot_id      Connection slot index.
+     * @param code         HTTP status code.
+     * @param content_type Response Content-Type.
+     * @param filler       Callback that emits the body (must not be nullptr).
+     */
+    void send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkFiller filler);
 
     /**
      * @brief Queue a custom response header for the next send on this slot.

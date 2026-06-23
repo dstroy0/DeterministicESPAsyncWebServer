@@ -42,6 +42,10 @@
 #elif DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/base64.h"
 #endif
+#if DETWS_ENABLE_AUTH
+#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#endif
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -177,13 +181,19 @@ bool DetWebServer::heap_available()
 }
 
 DetWebServer::DetWebServer()
-    : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _log_cb(nullptr), _listener_count(0)
+    : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _log_cb(nullptr), _listener_count(0),
+      _middleware_count(0), _rl_max(0), _rl_window_ms(0), _rl_window_start(0), _rl_count(0)
 {
     for (int i = 0; i < MAX_ROUTES; i++)
         _routes[i] = {};
+    for (int i = 0; i < MAX_MIDDLEWARE; i++)
+        _middleware[i] = nullptr;
     _cors_header_buf[0] = '\0';
     for (int i = 0; i < MAX_CONNS; i++)
         _extra_hdr[i][0] = '\0';
+#if DETWS_ENABLE_AUTH
+    regen_digest_nonce();
+#endif
 #if DETWS_ENABLE_STATS
     _stat_requests = _stat_2xx = _stat_4xx = _stat_5xx = 0;
 #endif
@@ -215,6 +225,65 @@ void DetWebServer::note_response(uint8_t slot_id, int code, int body_len)
     }
 }
 
+// ---------------------------------------------------------------------------
+// Middleware chain + built-in rate limiter
+// ---------------------------------------------------------------------------
+
+void DetWebServer::use(Middleware mw)
+{
+    if (mw == nullptr || _middleware_count >= MAX_MIDDLEWARE)
+        return;
+    _middleware[_middleware_count++] = mw;
+}
+
+// Run the chain in registration order. The first middleware to return MW_HALT
+// stops dispatch; it is responsible for having sent a response.
+bool DetWebServer::run_middleware(uint8_t slot_id, HttpReq *req)
+{
+    for (uint8_t i = 0; i < _middleware_count; i++)
+    {
+        if (_middleware[i] && _middleware[i](slot_id, req) == MW_HALT)
+            return true;
+    }
+    return false;
+}
+
+void DetWebServer::enable_rate_limit(uint16_t max_requests, uint32_t window_ms)
+{
+    _rl_max = max_requests;
+    _rl_window_ms = window_ms;
+    _rl_window_start = millis();
+    _rl_count = 0;
+}
+
+// Fixed-window counter. Unsigned subtraction is rollover-safe across the millis()
+// wrap. On the request that tips past _rl_max, reply 429 + Retry-After and stop.
+bool DetWebServer::rate_limit_check(uint8_t slot_id)
+{
+    if (_rl_max == 0 || _rl_window_ms == 0)
+        return false; // disabled
+
+    uint32_t now = millis();
+    if ((uint32_t)(now - _rl_window_start) >= _rl_window_ms)
+    {
+        _rl_window_start = now; // new window
+        _rl_count = 0;
+    }
+
+    _rl_count++;
+    if (_rl_count <= _rl_max)
+        return false; // within budget
+
+    // Over budget: advertise how long until the window resets, then 429.
+    uint32_t elapsed = (uint32_t)(now - _rl_window_start);
+    uint32_t remain_ms = (_rl_window_ms > elapsed) ? (_rl_window_ms - elapsed) : 0;
+    char secs[12];
+    snprintf(secs, sizeof(secs), "%lu", (unsigned long)((remain_ms + 999) / 1000));
+    add_response_header(slot_id, "Retry-After", secs);
+    send(slot_id, 429, "text/plain", "Too Many Requests");
+    return true;
+}
+
 int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 {
     if (_listener_count >= MAX_LISTENERS)
@@ -230,6 +299,9 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
     if (_listener_count == 0)
         return DETWS_ERR_NO_LISTENERS;
     DeterministicAsyncTCP::pool_init(cfg);
+#if DETWS_ENABLE_AUTH
+    regen_digest_nonce(); // fresh server nonce per begin()
+#endif
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
 #if DETWS_ENABLE_WEBSOCKET
@@ -297,6 +369,7 @@ static void fill_route_base(Route *r, const char *path)
     r->is_active = true;
     size_t len = strlen(r->path);
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
+    r->is_param = (strstr(r->path, "/:") != nullptr);
 }
 
 void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
@@ -312,7 +385,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
 
 #if DETWS_ENABLE_AUTH
 void DetWebServer::on(const char *path, HttpMethod method, Handler callback, const char *realm, const char *user,
-                      const char *pass)
+                      const char *pass, bool digest)
 {
     if (_route_count >= MAX_ROUTES)
         return;
@@ -322,6 +395,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback, con
     r->method = method;
     r->callback = callback;
     r->auth_required = true;
+    r->auth_digest = digest;
     strncpy(r->auth_realm, realm, MAX_AUTH_LEN - 1);
     r->auth_realm[MAX_AUTH_LEN - 1] = '\0';
     strncpy(r->auth_user, user, MAX_AUTH_LEN - 1);
@@ -411,6 +485,64 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
     // Prefix match: compare everything up to (but not including) the '*'
     size_t prefix_len = strlen(route) - 1;
     return strncmp(route, req_path, prefix_len) == 0;
+}
+
+/**
+ * @brief Segment-by-segment match for routes containing `:name` parameters.
+ *
+ * Walks @p route and @p path one `/`-delimited segment at a time. Literal
+ * segments must match exactly; a `:name` segment captures the corresponding
+ * path segment into @p req->path_params. Both must contain the same number of
+ * segments. No wildcard support (`:name` and trailing `*` are not combined).
+ *
+ * @return True on a full match (params captured); false otherwise.
+ */
+static bool match_path_params(const char *route, const char *path, HttpReq *req)
+{
+    req->path_param_count = 0;
+    const char *r = route;
+    const char *p = path;
+
+    while (*r == '/' && *p == '/')
+    {
+        r++;
+        p++;
+        const char *rseg = r;
+        while (*r && *r != '/')
+            r++;
+        size_t rlen = (size_t)(r - rseg);
+        const char *pseg = p;
+        while (*p && *p != '/')
+            p++;
+        size_t plen = (size_t)(p - pseg);
+
+        if (rlen > 0 && rseg[0] == ':')
+        {
+            if (plen == 0)
+                return false; // a `:name` segment must capture a non-empty value
+            if (req->path_param_count < MAX_PATH_PARAMS)
+            {
+                QueryParam *qp = &req->path_params[req->path_param_count++];
+                size_t klen = rlen - 1;
+                if (klen > QUERY_KEY_LEN - 1)
+                    klen = QUERY_KEY_LEN - 1;
+                memcpy(qp->key, rseg + 1, klen);
+                qp->key[klen] = '\0';
+                size_t vlen = plen;
+                if (vlen > QUERY_VAL_LEN - 1)
+                    vlen = QUERY_VAL_LEN - 1;
+                memcpy(qp->val, pseg, vlen);
+                qp->val[vlen] = '\0';
+            }
+        }
+        else if (rlen != plen || strncmp(rseg, pseg, rlen) != 0)
+        {
+            return false; // literal segment mismatch
+        }
+    }
+
+    // Both strings must be fully consumed (identical segment counts).
+    return (*r == '\0' && *p == '\0');
 }
 
 /**
@@ -728,8 +860,17 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     HttpReq *req = &http_pool[slot_id];
     HttpMethod method = parse_method(req->method);
 
-    // Start each request with no carried-over custom response headers.
+    // Start each request with no carried-over custom response headers or
+    // captured path parameters.
     _extra_hdr[slot_id][0] = '\0';
+    req->path_param_count = 0;
+
+    // Built-in rate limiter first (cheapest rejection under flood), then the
+    // user middleware chain. Either may short-circuit with a response.
+    if (rate_limit_check(slot_id))
+        return;
+    if (run_middleware(slot_id, req))
+        return;
 
     // CORS preflight
     if (method == HTTP_OPTIONS && _cors_enabled)
@@ -768,7 +909,9 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         Route *r = &_routes[i];
         if (!r->is_active)
             continue;
-        if (!path_matches(r->path, r->is_wildcard, req->path))
+        bool matched =
+            r->is_param ? match_path_params(r->path, req->path, req) : path_matches(r->path, r->is_wildcard, req->path);
+        if (!matched)
             continue;
 
 #if DETWS_ENABLE_WEBSOCKET
@@ -831,10 +974,14 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
             continue;
         }
 #if DETWS_ENABLE_AUTH
-        if (r->auth_required && !check_basic_auth(slot_id, req, r))
+        if (r->auth_required)
         {
-            send_unauth(slot_id, r->auth_realm);
-            return;
+            bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r) : check_basic_auth(slot_id, req, r);
+            if (!ok)
+            {
+                send_unauth(slot_id, r);
+                return;
+            }
         }
 #endif // DETWS_ENABLE_AUTH
         r->callback(slot_id, req);
@@ -1004,6 +1151,198 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
         tcp_abort(pcb);
 
     note_response(slot_id, code, 0);
+    http_reset(slot_id);
+}
+
+// ---------------------------------------------------------------------------
+// Template rendering
+//
+// Walk a template once: when @p pcb is null only the output length is summed
+// (pass 1); when @p pcb is set each literal run and resolved {{name}} value is
+// written to it (pass 2). Walking twice avoids buffering the whole body, so
+// memory use is constant. The resolver must be deterministic across the two
+// passes. A "{{" with no matching "}}", or a name longer than 32 chars, is
+// emitted literally.
+// ---------------------------------------------------------------------------
+static size_t tmpl_walk(const char *tmpl, TemplateVar resolver, struct tcp_pcb *pcb)
+{
+    size_t total = 0;
+    const char *p = tmpl;
+    while (*p)
+    {
+        if (p[0] == '{' && p[1] == '{')
+        {
+            const char *end = strstr(p + 2, "}}");
+            size_t nlen = end ? (size_t)(end - (p + 2)) : 0;
+            if (end && nlen <= 32)
+            {
+                char name[33];
+                memcpy(name, p + 2, nlen);
+                name[nlen] = '\0';
+                const char *val = resolver ? resolver(name) : nullptr;
+                if (!val)
+                    val = "";
+                size_t vlen = strlen(val);
+                total += vlen;
+                if (pcb && vlen)
+                    tcp_write(pcb, val, (u16_t)vlen, TCP_WRITE_FLAG_COPY);
+                p = end + 2;
+                continue;
+            }
+            // Unterminated or over-long placeholder: emit "{{" literally.
+            total += 2;
+            if (pcb)
+                tcp_write(pcb, "{{", 2, TCP_WRITE_FLAG_COPY);
+            p += 2;
+            continue;
+        }
+
+        // Literal run up to the next "{{".
+        const char *run = p;
+        while (*p && !(p[0] == '{' && p[1] == '{'))
+            p++;
+        size_t rlen = (size_t)(p - run);
+        total += rlen;
+        if (pcb && rlen)
+            tcp_write(pcb, run, (u16_t)rlen, TCP_WRITE_FLAG_COPY);
+    }
+    return total;
+}
+
+void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_type, const char *tmpl,
+                                 TemplateVar resolver)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    // Pass 1: size the rendered body (no writes).
+    size_t body_len = tmpl_walk(tmpl, resolver, nullptr);
+
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Content-Type: %s\r\n"
+                        "Content-Length: %d\r\n"
+                        "%s"
+                        "%s"
+                        "Connection: close\r\n\r\n",
+                        code, status_text(code), content_type, (int)body_len, _cors_enabled ? _cors_header_buf : "",
+                        _extra_hdr[slot_id]);
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    bool head = req_is_head(slot_id);
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    // Pass 2: stream the rendered body (HEAD carries headers only).
+    if (!head && body_len > 0)
+        tmpl_walk(tmpl, resolver, pcb);
+    tcp_output(pcb);
+
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    note_response(slot_id, code, (int)body_len);
+    http_reset(slot_id);
+}
+
+// ---------------------------------------------------------------------------
+// Chunked (streaming) responses
+//
+// Each write emits one HTTP/1.1 chunk - "<hexlen>\r\n<data>\r\n" - straight to
+// the socket (RFC 7230 §4.1). send_chunked() writes the headers, runs the
+// filler, then writes the terminating "0\r\n\r\n". The body is never buffered
+// whole, so a response may be arbitrarily large in constant memory.
+// ---------------------------------------------------------------------------
+
+bool ChunkedResponse::write(const char *s)
+{
+    return write(s, s ? strlen(s) : 0);
+}
+
+bool ChunkedResponse::write(const char *data, size_t len)
+{
+    // A zero-length chunk is the terminator, so never emit one here; HEAD
+    // responses suppress the body entirely.
+    if (!_ok || _head || _pcb == nullptr || data == nullptr || len == 0)
+        return _ok;
+
+    char sz[12];
+    int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)len);
+    tcp_write(_pcb, sz, (u16_t)sn, TCP_WRITE_FLAG_COPY);
+    tcp_write(_pcb, data, (u16_t)len, TCP_WRITE_FLAG_COPY);
+    tcp_write(_pcb, "\r\n", 2, TCP_WRITE_FLAG_COPY);
+    _total += len;
+    return true;
+}
+
+bool ChunkedResponse::printf(const char *fmt, ...)
+{
+    if (!_ok || _head || _pcb == nullptr)
+        return _ok;
+
+    char buf[CHUNK_BUF_SIZE];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    if (n < 0)
+        return _ok;
+    size_t len = (n < (int)sizeof(buf)) ? (size_t)n : (sizeof(buf) - 1);
+    return write(buf, len);
+}
+
+void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkFiller filler)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen =
+        snprintf(header, sizeof(header),
+                 "HTTP/1.1 %d %s\r\n"
+                 "Content-Type: %s\r\n"
+                 "Transfer-Encoding: chunked\r\n"
+                 "%s"
+                 "%s"
+                 "Connection: close\r\n\r\n",
+                 code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
+
+    struct tcp_pcb *pcb = conn->pcb;
+    tcp_arg(pcb, nullptr);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    bool head = req_is_head(slot_id);
+
+    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+
+    ChunkedResponse res(pcb, head);
+    // HEAD carries the headers (incl. Transfer-Encoding) but no body, so the
+    // filler and terminating chunk are skipped entirely.
+    if (!head && filler)
+    {
+        filler(res, &http_pool[slot_id]);
+        tcp_write(pcb, "0\r\n\r\n", 5, TCP_WRITE_FLAG_COPY);
+    }
+
+    tcp_output(pcb);
+
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+
+    note_response(slot_id, code, head ? 0 : (int)res.total());
     http_reset(slot_id);
 }
 
@@ -1247,7 +1586,84 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_AUTH
-void DetWebServer::send_unauth(uint8_t slot_id, const char *realm)
+// Lowercase-hex-encode @p len bytes of @p in into @p out (needs len*2+1 bytes).
+static void hex_encode(const uint8_t *in, size_t len, char *out)
+{
+    static const char hexd[] = "0123456789abcdef";
+    for (size_t i = 0; i < len; i++)
+    {
+        out[i * 2] = hexd[in[i] >> 4];
+        out[i * 2 + 1] = hexd[in[i] & 0x0f];
+    }
+    out[len * 2] = '\0';
+}
+
+// One-shot SHA-256 of @p data, written as 64 lowercase hex chars + NUL.
+static void sha256_hex(const uint8_t *data, size_t len, char out[65])
+{
+    uint8_t d[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(data, len, d);
+    hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
+}
+
+// Extract the value of @p key from a Digest auth header into @p out.
+// Handles both quoted ("value") and token (value) forms. The match must sit on
+// a field boundary (start, or after ' '/',') and be immediately followed by '='
+// so "nc" does not match inside "cnonce", etc.
+static bool digest_field(const char *hdr, const char *key, char *out, size_t out_size)
+{
+    size_t klen = strlen(key);
+    const char *p = hdr;
+    while ((p = strstr(p, key)) != nullptr)
+    {
+        bool left_ok = (p == hdr) || p[-1] == ' ' || p[-1] == ',';
+        const char *after = p + klen;
+        if (left_ok && *after == '=')
+        {
+            after++;
+            const char *vs;
+            const char *ve;
+            if (*after == '"')
+            {
+                vs = after + 1;
+                ve = strchr(vs, '"');
+                if (!ve)
+                    return false;
+            }
+            else
+            {
+                vs = after;
+                ve = vs;
+                while (*ve && *ve != ',' && *ve != ' ')
+                    ve++;
+            }
+            size_t vlen = (size_t)(ve - vs);
+            if (vlen > out_size - 1)
+                vlen = out_size - 1;
+            memcpy(out, vs, vlen);
+            out[vlen] = '\0';
+            return true;
+        }
+        p = after;
+    }
+    return false;
+}
+
+void DetWebServer::regen_digest_nonce()
+{
+    static uint32_t counter = 0;
+    counter++;
+    uint8_t seed[8];
+    uint32_t c = counter;
+    uintptr_t self = (uintptr_t)this;
+    memcpy(seed, &c, 4);
+    memcpy(seed + 4, &self, 4);
+    uint8_t d[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(seed, sizeof(seed), d);
+    hex_encode(d, 16, _digest_nonce); // 16 bytes -> 32 hex chars
+}
+
+void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
 {
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
@@ -1256,16 +1672,24 @@ void DetWebServer::send_unauth(uint8_t slot_id, const char *realm)
         return;
     }
 
+    char challenge[MAX_AUTH_LEN + 128];
+    if (r->auth_digest)
+        snprintf(challenge, sizeof(challenge),
+                 "WWW-Authenticate: Digest realm=\"%s\", qop=\"auth\", algorithm=SHA-256, nonce=\"%s\"\r\n",
+                 r->auth_realm, _digest_nonce);
+    else
+        snprintf(challenge, sizeof(challenge), "WWW-Authenticate: Basic realm=\"%s\"\r\n", r->auth_realm);
+
     static const char body[] = "Unauthorized";
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 401 Unauthorized\r\n"
-                        "WWW-Authenticate: Basic realm=\"%s\"\r\n"
+                        "%s"
                         "Content-Type: text/plain\r\n"
                         "Content-Length: %d\r\n"
                         "%s"
                         "Connection: close\r\n\r\n",
-                        realm, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "");
+                        challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
     tcp_arg(pcb, nullptr);
@@ -1306,6 +1730,59 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 
     return (ulen == strlen(r->auth_user)) && (memcmp(decoded, r->auth_user, ulen) == 0) &&
            (strcmp(pass, r->auth_pass) == 0);
+}
+
+// Validate an Authorization: Digest header (RFC 7616, SHA-256, qop=auth).
+// HA1 = SHA256(user:realm:pass), HA2 = SHA256(method:uri),
+// response = SHA256(HA1:nonce:nc:cnonce:qop:HA2).
+bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
+{
+    // Use the full-length Authorization capture (the scratch header value is
+    // capped at MAX_VAL_LEN, far shorter than a Digest header).
+    const char *hdr = req->authorization;
+    if (strncmp(hdr, "Digest ", 7) != 0)
+        return false;
+    const char *d = hdr + 7;
+
+    char username[MAX_AUTH_LEN];
+    char nonce[40];
+    char uri[MAX_PATH_LEN + MAX_QUERY_LEN + 2];
+    char qop[16];
+    char nc[16];
+    char cnonce[64];
+    char response[80];
+
+    if (!digest_field(d, "username", username, sizeof(username)) || !digest_field(d, "nonce", nonce, sizeof(nonce)) ||
+        !digest_field(d, "uri", uri, sizeof(uri)) || !digest_field(d, "qop", qop, sizeof(qop)) ||
+        !digest_field(d, "nc", nc, sizeof(nc)) || !digest_field(d, "cnonce", cnonce, sizeof(cnonce)) ||
+        !digest_field(d, "response", response, sizeof(response)))
+        return false;
+
+    // Identity + challenge binding must match before any hashing.
+    if (strcmp(username, r->auth_user) != 0)
+        return false;
+    if (strcmp(nonce, _digest_nonce) != 0)
+        return false;
+    if (strcmp(qop, "auth") != 0)
+        return false;
+
+    char tmp[3 * MAX_AUTH_LEN + 4];
+    char ha1[65];
+    char ha2[65];
+    char expected[65];
+
+    int n = snprintf(tmp, sizeof(tmp), "%s:%s:%s", r->auth_user, r->auth_realm, r->auth_pass);
+    sha256_hex((const uint8_t *)tmp, (size_t)n, ha1);
+
+    char tmp2[sizeof(uri) + 16];
+    n = snprintf(tmp2, sizeof(tmp2), "%s:%s", req->method, uri);
+    sha256_hex((const uint8_t *)tmp2, (size_t)n, ha2);
+
+    char tmp3[65 + 40 + 16 + 64 + 8 + 65 + 8];
+    n = snprintf(tmp3, sizeof(tmp3), "%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2);
+    sha256_hex((const uint8_t *)tmp3, (size_t)n, expected);
+
+    return strcasecmp(expected, response) == 0;
 }
 #endif // DETWS_ENABLE_AUTH
 
