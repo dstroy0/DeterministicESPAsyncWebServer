@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`a59ec29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59ec2906489195a9deed0e645333f119a9af860))
+- update CHANGELOG.md [skip ci] ([`56b9333`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56b933331a9d1317016acc21d9a49e339df8c95f))
 - update CHANGELOG.md [skip ci] ([`30a407b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30a407b4b0f623326a9b4ce17c6d6717bebc7dcb))
 - update test report [skip ci] ([`7866465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78664653af173e99cf505f23253713ae969a45b4))
 - update CHANGELOG.md [skip ci] ([`b6c032e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6c032eb151d77b6ae681661fc2bb90c4deeb18c))
@@ -76,6 +78,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`9da59a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da59a27e8b097ab7e0b742ca9f40c095f9d4246))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`400309b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400309b01a5c0de74aade41260d1279333e0e35d))
 - Bump version: 1.2.4 → 1.2.5 ([`e1ffd16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1ffd168113c26295bc41ac0e1824b73b96e09e5))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`c275933`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c275933bbd5942936e3510078e91f4b8568befb3))
@@ -137,6 +140,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- path params, Digest auth, templating, middleware, and chunked responses ([`d0ecc72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0ecc722a4eb57f3035404f5614ce8761ef596b9))
 - custom response headers/cookies + urlencoded form params ([`8d9f7c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d9f7c55a3660f5727ef0577523a9868104c9579))
 
 ### Refactor
