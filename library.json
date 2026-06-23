@@ -1,6 +1,6 @@
 {
   "name": "DeterministicESPAsyncWebServer",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "RFC 7230-compliant HTTP/1.1 server for ESP32 with zero heap allocation. WebSocket (RFC 6455), SSE, Basic Auth, file serving, multipart. All buffers statically sized at compile time; feature flags strip unused subsystems.",
   "keywords": ["esp32", "http", "web server", "async", "deterministic", "rfc7230", "lwip"],
   "authors": [
