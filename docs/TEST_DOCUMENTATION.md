@@ -1,5 +1,7 @@
 # Test Documentation - DeterministicESPAsyncWebServer
 
+![Version](https://img.shields.io/badge/version-v1.2.1-blue)
+
 Welcome to the testing documentation for `DeterministicESPAsyncWebServer`. This repository is designed to be extremely robust, employing **100% hardware-free, deterministic testing**.
 
 Whether you are a beginner looking to understand how C++ testing works or an expert systems engineer designing secure, high-concurrency embedded protocols, this guide explains the architectures, methodologies, and concepts behind our test suite.
