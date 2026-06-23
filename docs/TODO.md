@@ -5,7 +5,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 > **Status:** Security/correctness, the ESP32 build blocker, SSH
 > `UNIMPLEMENTED`, housekeeping, the DX feature set (`serve_static` + MIME + gzip,
-> `redirect()`, named `begin()` codes), the **HW-crypto performance** items
+> [`redirect()`](@ref DetWebServer::redirect), named [`begin()`](@ref DetWebServer::begin) codes), the **HW-crypto performance** items
 > (streaming SHA-256 + AES-CTR whole-buffer, **verified on a DevKitV1**), and the
 > **optional services** (mDNS, OTA, WiFi provisioning/captive portal, SNTP, ETag,
 > runtime stats, access-log hook) are all **done** - host-tested where possible
@@ -33,7 +33,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       (with an `esp_fill_random`-backed `f_rng`), and `mbedtls_rsa_pkcs1_verify`.
       Two further fixes: (1) a missing `intelhex` Python module broke
       `bootloader.bin` (installed into the PlatformIO Python); (2) **latent bug** -
-      the ARDUINO `ssh_rsa_sign()` passed the raw exchange hash `H` to
+      the ARDUINO [`ssh_rsa_sign()`](@ref ssh_rsa_sign) passed the raw exchange hash `H` to
       `mbedtls_pk_sign()`, which does not re-hash, so it signed `DigestInfo||H`
       instead of `DigestInfo||SHA256(H)` (RFC 8332) and any client would reject
       the host signature; now hashes `H` first to match the native path.
@@ -59,9 +59,9 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 - [x] **No authentication attempt limiting (brute-force).** _(done)_
       SSH now bounds failed `USERAUTH_REQUEST`s per connection: the dispatcher
-      (`ssh_server.cpp`) counts `SSH_MSG_USERAUTH_FAILURE` responses in
-      `SshSession.auth_failures` and, after `SSH_MAX_AUTH_ATTEMPTS`
-      (`DetWebServerConfig.h`, default 6), emits `SSH_MSG_DISCONNECT`
+      (`ssh_server.cpp`) counts [`SSH_MSG_USERAUTH_FAILURE`](@ref SSH_MSG_USERAUTH_FAILURE) responses in
+      `SshSession.auth_failures` and, after [`SSH_MAX_AUTH_ATTEMPTS`](@ref SSH_MAX_AUTH_ATTEMPTS)
+      (`DetWebServerConfig.h`, default 6), emits [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)
       (reason 14) and closes (RFC 4252 §4). The publickey probe (PK_OK) and a
       SUCCESS do not count. Tested by `test_auth_bruteforce_disconnect` /
       `test_auth_success_after_failures`.
@@ -83,28 +83,28 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 - [x] **No connection-flood / rate limiting.** _(done - opt-in global throttle)_
       `listener.cpp` now has a fixed-window accept-rate gate
-      (`listener_accept_allowed()`): when `DETWS_ENABLE_ACCEPT_THROTTLE` is set,
+      ([`listener_accept_allowed()`](@ref listener_accept_allowed)): when [`DETWS_ENABLE_ACCEPT_THROTTLE`](@ref DETWS_ENABLE_ACCEPT_THROTTLE) is set,
       the accept callback drops connections beyond
-      `DETWS_ACCEPT_THROTTLE_MAX` per `DETWS_ACCEPT_THROTTLE_WINDOW_MS`
+      [`DETWS_ACCEPT_THROTTLE_MAX`](@ref DETWS_ACCEPT_THROTTLE_MAX) per [`DETWS_ACCEPT_THROTTLE_WINDOW_MS`](@ref DETWS_ACCEPT_THROTTLE_WINDOW_MS)
       (`DetWebServerConfig.h`) before claiming a pool slot. Default off (zero
       cost / no behavior change). Two static counters, global across listeners -
       a per-IP table was deliberately not added (YAGNI; the mock PCB carries no
       remote IP and a 1-3 connection device gains little from per-IP state).
-      Rollover-safe; tested by `test_accept_throttle_*` in `test_transport`.
+      Rollover-safe; tested by `test_accept_throttle*\*`in`test_transport`.
       Finer-grained / per-IP throttling remains a network-layer concern.
 
-- [x] **`base64_decode()` has no output-capacity guard (Basic-auth ingestion).**
+- [x] **[`base64_decode()`](@ref base64_decode) has no output-capacity guard (Basic-auth ingestion).**
       _(done)_ `base64_decode()` now takes a `dst_cap` parameter
       (`base64.cpp`/`.h`, both platforms) and bounds every write; an over-capacity
       decode returns 0 instead of overrunning. `check_basic_auth()`
       (`DeterministicESPAsyncWebServer.cpp`) passes `sizeof(decoded) - 1`, leaving
-      room for the null terminator regardless of how `MAX_VAL_LEN`/`MAX_AUTH_LEN`
+      room for the null terminator regardless of how [`MAX_VAL_LEN`](@ref MAX_VAL_LEN)/[`MAX_AUTH_LEN`](@ref MAX_AUTH_LEN)
       are set. Tested by `test_base64_decode_respects_capacity`; all callers
       (WS handshake tests) updated to the new signature.
       Note: this was the only unguarded ingestion path - the HTTP parser
       (indexed bounds + `body[BODY_BUF_SIZE+1]`), multipart (bounded boundary copy
       over a null-terminated body), SSH `read_string()` (capacity-checked), the SSH
-      banner (`SSH_VERSION_MAX` + explicit lengths), and the WS handshake
+      banner ([`SSH_VERSION_MAX`](@ref SSH_VERSION_MAX) + explicit lengths), and the WS handshake
       (`strnlen(client_key, WS_MAX_KEY_LEN+1)`) are all correctly bounded.
 
 </details>
@@ -114,7 +114,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 <details>
 <summary><b>Expand SSH protocol completeness (medium) items</b></summary>
 
-- [x] **`SSH_MSG_UNIMPLEMENTED` not sent for unknown messages.** _(done)_ The
+- [x] **[`SSH_MSG_UNIMPLEMENTED`](@ref SSH_MSG_UNIMPLEMENTED) not sent for unknown messages.** _(done)_ The
       dispatcher's default case (`ssh_server.cpp`) now emits
       `SSH_MSG_UNIMPLEMENTED` with the rejected packet's sequence number
       (`ssh_pkt[i].seq_no_recv - 1`, since `ssh_pkt_recv` has already advanced the
@@ -158,7 +158,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       `examples/07.SSHCryptoSelfTest` validates the HW path on-device.
 
 - [x] **AES-256-CTR re-acquired the HW engine once per 16-byte block.** _(done)_
-      The Arduino `ssh_aes256ctr_crypt()` now makes a single
+      The Arduino [`ssh_aes256ctr_crypt()`](@ref ssh_aes256ctr_crypt) now makes a single
       `mbedtls_aes_crypt_ctr()` call for the whole buffer (our `counter` /
       `keystream` / `pos` fields map 1:1 to mbedtls's `nonce_counter` /
       `stream_block` / `nc_off`), replacing the per-block
@@ -176,8 +176,8 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
       terminator, or the SSH channel. A real fix is large (mbedTLS TLS server).
 
 - [ ] **`Date` response header not emitted.** Acceptable for a clock-less device
-      (RFC 7231 §7.1.1.2). A time source now exists (`DETWS_ENABLE_NTP` +
-      `detws_ntp_http_date()`); auto-injecting `Date` into every response is left
+      (RFC 7231 §7.1.1.2). A time source now exists ([`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP) +
+      [`detws_ntp_http_date()`](@ref detws_ntp_http_date)); auto-injecting `Date` into every response is left
       off the hot path - apps that want it can add the header from a handler.
 
 - [ ] **Recv scratch on the stack.** `ssh_pkt_recv` uses a
@@ -197,23 +197,23 @@ provide. Each should follow the existing feature-flag convention - a
 no code, RAM, or flash when disabled (`DetWebServerConfig.h`). Roughly ordered
 by how often a deployed device needs it.
 
-- [x] **mDNS / DNS-SD advertisement (`DETWS_ENABLE_MDNS`).** _(done)_
+- [x] **mDNS / DNS-SD advertisement ([`DETWS_ENABLE_MDNS`](@ref DETWS_ENABLE_MDNS)).** _(done)_
       `detws_mdns_begin(hostname, port)` (`src/services/mdns_service.*`) makes the
       device reachable at `<hostname>.local` and advertises `_http._tcp`. Uses the
       **ESP-IDF `mdns` component directly** (not the `ESPmDNS` add-on) to keep the
       dependency set to base-SDK + mbedTLS. Firmware links (`examples/08.Services`).
 
-- [x] **OTA firmware update (`DETWS_ENABLE_OTA`).** _(done)_ Authenticated
+- [x] **OTA firmware update ([`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)).** _(done)_ Authenticated
       streaming `POST /update` into the ESP32 `Update` API
       (`src/services/ota_service.*`). The HTTP parser gained a `#if DETWS_ENABLE_OTA`
       streaming-body hook (`http_parser_set_stream_hooks`) that feeds the image to
-      `Update.write()` in `BODY_BUF_SIZE` chunks instead of buffering it - so the
+      `Update.write()` in [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE) chunks instead of buffering it - so the
       `BODY_BUF_SIZE`/413 cap is bypassed and multi-MB images never live in RAM.
       The matching route handler replies + reboots. Parser hook native-tested
       (`test_http_ota`, env `native_ota`) with **no regression** to the 80 parser
       tests (fully gated); `examples/09.OTA` firmware links.
 
-- [x] **WiFi provisioning / captive portal (`DETWS_ENABLE_PROVISIONING`).** _(done)_
+- [x] **WiFi provisioning / captive portal ([`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING)).** _(done)_
       `src/services/provisioning_service.*`: first-boot softAP + a catch-all DNS
       responder + a credentials form, persisting SSID/PSK to NVS
       (`detws_provisioning_load`/`_begin`/`_clear`, `examples/10.Provisioning`).
@@ -228,7 +228,7 @@ by how often a deployed device needs it.
       present. Tested by `test_serve_static_gzip_when_accepted` /
       `test_serve_static_no_gzip_when_not_accepted`.
 
-- [x] **Conditional GET / ETag (`DETWS_ENABLE_ETAG`).** _(done)_ `serve_file()` /
+- [x] **Conditional GET / ETag ([`DETWS_ENABLE_ETAG`](@ref DETWS_ENABLE_ETAG)).** _(done)_ `serve_file()` /
       `serve_static()` emit a strong `ETag` (`"<hexsize>-<hexmtime>"` from
       `f.size()` + `f.getLastWrite()`) and answer a matching `If-None-Match` with
       `304 Not Modified` (no body). The FS test mock gained `getLastWrite()` so it
@@ -237,7 +237,7 @@ by how often a deployed device needs it.
       `If-Modified-Since` intentionally skipped - ETag alone is sufficient and
       avoids HTTP-date parsing.)
 
-- [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ `detws_ntp_begin()`/
+- [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ [`detws_ntp_begin()`](@ref detws_ntp_begin)/
       `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
       `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/08.Services`
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
@@ -281,9 +281,9 @@ Newbie / developer experience:
       `application/octet-stream`). Used automatically by `serve_static()` and
       callable directly with `serve_file()`. Tested by `test_mime_type_detection`.
 
-- [x] **Named `begin()` failure codes.** _(done)_ `begin()`/`listen()`/`restart()`
-      now return a `DetWebServerResult` enum: `DETWS_OK`, `DETWS_ERR_NO_LISTENERS`,
-      `DETWS_ERR_LISTENER_FULL`, `DETWS_ERR_LISTEN_FAILED`
+- [x] **Named `begin()` failure codes.** _(done)_ `begin()`/[`listen()`](@ref DetWebServer::listen)/[`restart()`](@ref DetWebServer::restart)
+      now return a [`DetWebServerResult`](@ref DetWebServerResult) enum: [`DETWS_OK`](@ref DETWS_OK), [`DETWS_ERR_NO_LISTENERS`](@ref DETWS_ERR_NO_LISTENERS),
+      [`DETWS_ERR_LISTENER_FULL`](@ref DETWS_ERR_LISTENER_FULL), [`DETWS_ERR_LISTEN_FAILED`](@ref DETWS_ERR_LISTEN_FAILED)
       (`DeterministicESPAsyncWebServer.h`/`.cpp`). Subsumes the heap-bytes mismatch
       item below (docstring corrected).
 
@@ -293,7 +293,7 @@ Newbie / developer experience:
 
 Operator / sysadmin:
 
-- [x] **Runtime stats endpoint (`DETWS_ENABLE_STATS`).** _(done)_ `server.stats(slot)`
+- [x] **Runtime stats endpoint ([`DETWS_ENABLE_STATS`](@ref DETWS_ENABLE_STATS)).** _(done)_ `server.stats(slot)`
       emits a JSON snapshot - uptime, total requests, 2xx/4xx/5xx counts, active
       connection-pool slots, and free heap. Counters are maintained centrally in
       `note_response()` (the single funnel through which `send`/`send_empty`/
@@ -316,7 +316,7 @@ Operator / sysadmin:
 - [x] **`begin()` heap-bytes contract mismatch.** _(done)_ The misleading
       "abs(result) == heap bytes needed" docstring/example was corrected; `begin()`
       now returns a `DetWebServerResult` code (see the named-failure-codes item
-      above), and `heap_needed()`/`heap_available()` remain the way to check heap.
+      above), and [`heap_needed()`](@ref DetWebServer::heap_needed)/[`heap_available()`](@ref DetWebServer::heap_available) remain the way to check heap.
 
 </details>
 
@@ -333,18 +333,18 @@ Operator / sysadmin:
 
 - [x] **`test/test_application/` is orphaned** _(done)_ - wired into the
       `native_app` env's `test_filter` (`platformio.ini`) and de-bit-rotted (it
-      called the removed `DeterministicAsyncTCP::init(80)`; now `pool_init()`).
+      called the removed `DeterministicAsyncTCP::init(80)`; now [`pool_init()`](@ref DeterministicAsyncTCP::pool_init)).
       All 35 cases pass.
 
 - [ ] **Update `docs/CHANGELOG.md`** for this cycle: HTTP RFC fixes (Host,
       Content-Length, 405/501, HEAD), WebSocket masking/fragmentation, the full
-      SSH server (KEX→auth→channel), publickey auth, `DETWS_SSH_ALLOW_PASSWORD`,
+      SSH server (KEX→auth→channel), publickey auth, [`DETWS_SSH_ALLOW_PASSWORD`](@ref DETWS_SSH_ALLOW_PASSWORD),
       and the docs reorg.
 
 - [x] **Add an SSH usage example** _(done)_ - `examples/06.SSH/06.SSH.ino`:
-      enables SSH, loads the host key from NVS (`ssh_rsa_load_pubkey()`), installs
+      enables SSH, loads the host key from NVS ([`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey)), installs
       password + publickey auth callbacks and a channel data callback that echoes
-      via the new `ssh_conn_send()` helper, listens on `PROTO_SSH`. Required a
+      via the new [`ssh_conn_send()`](@ref ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a
       small public outbound API (`ssh_conn_send()`, `ssh_conn.*`) since the
       dispatcher's emit path was internal-only.
 

@@ -19,7 +19,7 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                   | Why it's solid                                                                                                                                                                                                                                                 |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Deterministic memory   | Zero heap after `begin()`; every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                                                    |
+| Deterministic memory   | Zero heap after [`begin()`](@ref DetWebServer::begin); every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                        |
 | HTTP input validation  | RFC 7230 parser validates every byte; rejects malformed method/path/headers, enforces Host and Content-Length, refuses Transfer-Encoding (no request smuggling surface).                                                                                       |
 | WebSocket framing      | Enforces client masking, reserved-opcode/RSV checks, control-frame size and fragmentation rules.                                                                                                                                                               |
 | SSH crypto correctness | SHA-256/HMAC/AES-CTR/DH validated against NIST/RFC vectors; RSA verification validated against an openssl KAT and native RSA signing against a sign→verify round-trip with a real 2048-bit private exponent. MAC-verify-before-use; constant-time MAC compare. |
@@ -39,7 +39,7 @@ with caveats, ❌ = a real weakness to be aware of.
 | SSH timing side-channels    | The native software bignum/AES/RSA paths are **not constant-time**, but they are **compile-excluded from firmware**: the software Montgomery cluster is under `#ifndef ARDUINO` (`ssh_bignum.cpp`) and the software AES / native RSA modexp live in the `#else` of an `#ifdef ARDUINO` (`ssh_aes256ctr.cpp`, `ssh_rsa.cpp`). On ESP32 only the hardware/mbedTLS paths are compiled and run; the software paths exist solely for host testing. |
 | `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
-| Diagnostic endpoint         | `DETWS_ENABLE_DIAG` leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                                                   |
+| Diagnostic endpoint         | [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                         |
 
 </details>
 
@@ -48,11 +48,11 @@ with caveats, ❌ = a real weakness to be aware of.
 <details>
 <summary><b>Show Weak / Not Implemented Areas Table</b></summary>
 
-| Area                          | Status                                                                                                                                                                                                                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection-rate throttling    | SSH bounds failed auth attempts per connection (`SSH_MAX_AUTH_ATTEMPTS`, then `SSH_MSG_DISCONNECT`); HTTP closes the socket on every 401 (one guess per connection). There is still **no per-IP / connection-rate limit** across connections - an attacker can reconnect repeatedly; mitigate at the network layer. |
-| Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; there is no allow-list or SYN-cookie equivalent.                                                                                                                                                                               |
-| Formal audit                  | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments.                                                                                                                                                        |
+| Area                          | Status                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection-rate throttling    | SSH bounds failed auth attempts per connection ([`SSH_MAX_AUTH_ATTEMPTS`](@ref SSH_MAX_AUTH_ATTEMPTS), then [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)); HTTP closes the socket on every 401 (one guess per connection). There is still **no per-IP / connection-rate limit** across connections - an attacker can reconnect repeatedly; mitigate at the network layer. |
+| Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; there is no allow-list or SYN-cookie equivalent.                                                                                                                                                                                                                                        |
+| Formal audit                  | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments.                                                                                                                                                                                                                 |
 
 </details>
 
@@ -154,12 +154,12 @@ The remaining sections document each property in depth.
 Every buffer that can hold user-supplied data is a fixed-size array in BSS,
 sized at compile time:
 
-| Buffer                         | Symbol                   | Size                      |
-| ------------------------------ | ------------------------ | ------------------------- |
-| TCP ring buffer per connection | `conn_pool[i].rx_buffer` | `RX_BUF_SIZE` bytes       |
-| HTTP request body              | `http_pool[i].body`      | `BODY_BUF_SIZE + 1` bytes |
-| WebSocket frame payload        | `ws_pool[i].buf`         | `WS_FRAME_SIZE` bytes     |
-| SSH packet receive             | `ssh_pkt[i].rx_buf`      | `SSH_RX_BUF_SIZE` bytes   |
+| Buffer                         | Symbol                   | Size                                        |
+| ------------------------------ | ------------------------ | ------------------------------------------- |
+| TCP ring buffer per connection | `conn_pool[i].rx_buffer` | [`RX_BUF_SIZE`](@ref RX_BUF_SIZE) bytes     |
+| HTTP request body              | `http_pool[i].body`      | `BODY_BUF_SIZE + 1` bytes                   |
+| WebSocket frame payload        | `ws_pool[i].buf`         | [`WS_FRAME_SIZE`](@ref WS_FRAME_SIZE) bytes |
+| SSH packet receive             | `ssh_pkt[i].rx_buf`      | `SSH_RX_BUF_SIZE` bytes                     |
 
 No `malloc`, `new`, or `pvPortMalloc` is called after `begin()` for any of
 these paths. The total footprint is a compile-time constant; there is no
@@ -214,12 +214,12 @@ or control characters before they enter any buffer.
 
 ### Length Limits {#parser-limits}
 
-| Field              | Limit                    | Violation response    |
-| ------------------ | ------------------------ | --------------------- |
-| Path               | `MAX_PATH_LEN - 1` bytes | 414 URI Too Long      |
-| Body               | `BODY_BUF_SIZE` bytes    | 413 Payload Too Large |
-| Header field-name  | `MAX_KEY_LEN` bytes      | silently truncated    |
-| Header field-value | `MAX_VAL_LEN` bytes      | silently truncated    |
+| Field              | Limit                                       | Violation response    |
+| ------------------ | ------------------------------------------- | --------------------- |
+| Path               | `MAX_PATH_LEN - 1` bytes                    | 414 URI Too Long      |
+| Body               | [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE) bytes | 413 Payload Too Large |
+| Header field-name  | [`MAX_KEY_LEN`](@ref MAX_KEY_LEN) bytes     | silently truncated    |
+| Header field-value | [`MAX_VAL_LEN`](@ref MAX_VAL_LEN) bytes     | silently truncated    |
 
 Path and body oversize conditions are detected before any byte is written to
 the destination buffer and result in an error response sent immediately.
@@ -372,7 +372,7 @@ SSH_MSG_KEXDH_INIT ──── e ──────►  (1) y = esp_fill_random
 **Client value validation**
 
 The received client public value `e` is checked against 1 and p-1 by
-`bn_dh_validate()` before any computation. A value of 1 leaks the server
+[`bn_dh_validate()`](@ref bn_dh_validate) before any computation. A value of 1 leaks the server
 scalar y directly (K = 1^y = 1, fixed). A value of p-1 causes K to be either
 1 or p-1 (depending on y parity), which is also a fixed value. Both are
 well-known small-subgroup attacks specified in RFC 4253 §8.
@@ -389,7 +389,7 @@ values e₁, e₂ allows recovery of y via:
 
     log_g(K₁) / log_g(K₂) = y  (both sides known → y can be derived)
 
-`ssh_dh_generate()` always generates fresh randomness; there is no caching.
+[`ssh_dh_generate()`](@ref ssh_dh_generate) always generates fresh randomness; there is no caching.
 
 </details>
 
@@ -474,7 +474,7 @@ If MAC verification fails:
 
 1. The decrypted payload buffer is wiped.
 2. The receive buffer is wiped.
-3. `ssh_pkt_recv()` returns -1.
+3. [`ssh_pkt_recv()`](@ref ssh_pkt_recv) returns -1.
 4. The caller (SSH session layer) closes the TCP connection immediately.
 5. No byte of the payload is acted upon.
 
@@ -563,7 +563,7 @@ positive integer), followed by the 256-byte big-endian value of K.
 
 After derivation, all stack temporaries (`key_c2s`, `key_s2c`, `iv_c2s`,
 `iv_s2c`, the SHA-256 context) are zeroed via `ssh_wipe()` before
-`ssh_dh_derive_keys()` returns.
+[`ssh_dh_derive_keys()`](@ref ssh_dh_derive_keys) returns.
 
 </details>
 
@@ -650,7 +650,7 @@ ssh_dh[MAX_SSH_CONNS]      ← DH scalars y, f, K        (separate symbol)
 
 The linker assigns each symbol its own address. An overflow that starts inside
 `ssh_pkt[i].rx_buf` and continues linearly would first overwrite other
-`SshPacketState` fields, then overflow past the end of `ssh_pkt[]`, then
+[`SshPacketState`](@ref SshPacketState) fields, then overflow past the end of `ssh_pkt[]`, then
 traverse whatever the linker placed between `ssh_pkt` and `ssh_keys` (which
 could be hundreds or thousands of bytes of other data), before reaching any
 byte of `ssh_keys`.
@@ -692,9 +692,9 @@ at 2^32. Two problems arise at wrap:
    the same sequence number in the MAC input, potentially allowing chosen-
    plaintext/ciphertext attacks.
 
-**Policy:** When `seq_no_send` or `seq_no_recv` reaches `SSH_SEQ_CLOSE_THRESHOLD`
+**Policy:** When `seq_no_send` or `seq_no_recv` reaches [`SSH_SEQ_CLOSE_THRESHOLD`](@ref SSH_SEQ_CLOSE_THRESHOLD)
 (0xFFFFFFF0 - 16 below the 32-bit maximum), the library closes the connection.
-`ssh_pkt_send()` returns -1 at this point; the caller is responsible for
+[`ssh_pkt_send()`](@ref ssh_pkt_send) returns -1 at this point; the caller is responsible for
 closing the TCP connection and notifying the client.
 
 A rekeying implementation (SSH_MSG_KEXINIT exchange to install new keys and
@@ -736,15 +736,15 @@ removed.
 
 **Where ssh_wipe is used**
 
-| What is wiped                    | When                                               | File             |
-| -------------------------------- | -------------------------------------------------- | ---------------- |
-| `crypto_work[1536]`              | After every `bn_expmod_group14()` call             | `ssh_bignum.cpp` |
-| `SshDhState.y`, `.K`             | After key derivation in `ssh_dh_finish()`          | `ssh_dh.cpp`     |
-| `SshRsaPrivKey` (stack)          | Before `ssh_rsa_sign()` returns                    | `ssh_rsa.cpp`    |
-| `SshKeyMat`                      | On connection close / error                        | `ssh_keymat.h`   |
-| `SshDhState` (full struct)       | On connection close / error                        | `ssh_keymat.h`   |
-| DER private key stack copy       | After `mbedtls_pk_parse_key()` in `ssh_rsa_sign()` | `ssh_rsa.cpp`    |
-| Key derivation stack temporaries | After `ssh_dh_derive_keys()`                       | `ssh_dh.cpp`     |
+| What is wiped                                 | When                                                             | File             |
+| --------------------------------------------- | ---------------------------------------------------------------- | ---------------- |
+| `crypto_work[1536]`                           | After every [`bn_expmod_group14()`](@ref bn_expmod_group14) call | `ssh_bignum.cpp` |
+| `SshDhState.y`, `.K`                          | After key derivation in [`ssh_dh_finish()`](@ref ssh_dh_finish)  | `ssh_dh.cpp`     |
+| [`SshRsaPrivKey`](@ref SshRsaPrivKey) (stack) | Before [`ssh_rsa_sign()`](@ref ssh_rsa_sign) returns             | `ssh_rsa.cpp`    |
+| [`SshKeyMat`](@ref SshKeyMat)                 | On connection close / error                                      | `ssh_keymat.h`   |
+| [`SshDhState`](@ref SshDhState) (full struct) | On connection close / error                                      | `ssh_keymat.h`   |
+| DER private key stack copy                    | After `mbedtls_pk_parse_key()` in `ssh_rsa_sign()`               | `ssh_rsa.cpp`    |
+| Key derivation stack temporaries              | After `ssh_dh_derive_keys()`                                     | `ssh_dh.cpp`     |
 
 </details>
 
@@ -822,16 +822,16 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 
 ## 9. Known Limitations and Non-Goals {#known-limitations}
 
-| Limitation                                      | Impact                                                | Workaround                             |
-| ----------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
-| No SSH rekeying                                 | Connection closed at seq ≈ 2^32 (≈ 4 billion packets) | Reconnect                              |
-| No SSH user authentication                      | Any client that completes KEX is accepted             | Add `SSH_MSG_USERAUTH_REQUEST` handler |
-| HTTP Basic Auth is not constant-time            | Timing oracle risk if measurable from network         | Use TLS or SSH tunnel                  |
-| Software AES/SHA paths are not constant-time    | Test-only paths; not relevant in production           | Production uses hardware AES (mbedTLS) |
-| No certificate pinning for outbound connections | N/A - this is a server library                        | N/A                                    |
-| No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call `send()` with appropriate headers |
-| WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler     |
-| NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`         |
+| Limitation                                      | Impact                                                | Workaround                                                              |
+| ----------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| No SSH rekeying                                 | Connection closed at seq ≈ 2^32 (≈ 4 billion packets) | Reconnect                                                               |
+| No SSH user authentication                      | Any client that completes KEX is accepted             | Add [`SSH_MSG_USERAUTH_REQUEST`](@ref SSH_MSG_USERAUTH_REQUEST) handler |
+| HTTP Basic Auth is not constant-time            | Timing oracle risk if measurable from network         | Use TLS or SSH tunnel                                                   |
+| Software AES/SHA paths are not constant-time    | Test-only paths; not relevant in production           | Production uses hardware AES (mbedTLS)                                  |
+| No certificate pinning for outbound connections | N/A - this is a server library                        | N/A                                                                     |
+| No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call [`send()`](@ref DetWebServer::send) with appropriate headers       |
+| WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler                                      |
+| NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`                                          |
 
 ---
 
@@ -842,8 +842,8 @@ Use this checklist before deploying to a production environment.
 ### General {#general-hardening}
 
 - [ ] Disable `DETWS_ENABLE_DIAG` (default is off; confirm `#define DETWS_ENABLE_DIAG 0`)
-- [ ] Set `CONN_TIMEOUT_MS` appropriately (default 5000 ms) to limit slow-loris attacks
-- [ ] Configure `MAX_CONNS` no higher than necessary to limit resource exhaustion
+- [ ] Set [`CONN_TIMEOUT_MS`](@ref CONN_TIMEOUT_MS) appropriately (default 5000 ms) to limit slow-loris attacks
+- [ ] Configure [`MAX_CONNS`](@ref MAX_CONNS) no higher than necessary to limit resource exhaustion
 - [ ] Review all route handlers for unchecked user input (query params, body content, header values)
 - [ ] Validate the `Origin` header in WebSocket upgrade handlers if the device is accessible from untrusted networks
 
@@ -860,7 +860,7 @@ Use this checklist before deploying to a production environment.
 - [ ] NVS encryption key (`nvs_keys` partition) is stored in eFuse or secure flash
 - [ ] SSH listener port is firewalled / restricted to known clients if possible
 - [ ] Client host-key verification is enforced by the connecting SSH client (openssh `known_hosts`)
-- [ ] `MAX_SSH_CONNS` is set to the minimum required concurrent sessions
+- [ ] [`MAX_SSH_CONNS`](@ref MAX_SSH_CONNS) is set to the minimum required concurrent sessions
 
 ### Build Hardening {#build-hardening}
 

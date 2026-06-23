@@ -1,10 +1,8 @@
-# DeterministicESPAsyncWebServer (@dstroy0)
-
 <p align="center">
-  <img src="docs/squirty.svg" alt="Squirty the Injection Squid" width="128" height="128"><br>
-  <b>Squirty the Injection Squid</b><br>
-  <sub>The official library mascot. Copyright &copy; Douglas Quigg. All rights reserved.</sub>
+  <img src="docs/banner.svg" alt="DeterministicESPAsyncWebServer" width="100%">
 </p>
+
+# DeterministicESPAsyncWebServer (@dstroy0)
 
 An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture.
 
@@ -48,12 +46,14 @@ Asynchronous HTTP, WebSocket, and SSH Server Library for ESP32 with zero heap al
 - **Chips**: ESP32 (all variants)
 - **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO
 
-## Mascot
-
-**Squirty the Injection Squid** is the official mascot of the DeterministicESPAsyncWebServer library.
-
-<small>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</small>
-
 ## License
 
 This project is licensed under the AGPL-3.0-or-later License - see the `LICENSE` file for details.
+
+---
+
+<p align="center">
+  <img src="docs/squirty.svg" alt="Squirty the Injection Squid" width="64" height="64"><br>
+  <b>Squirty the Injection Squid</b> — the official library mascot.<br>
+  <sub>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</sub>
+</p>

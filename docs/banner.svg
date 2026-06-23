@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" width="900" height="220" font-family="'Courier New', ui-monospace, monospace">
+  <defs>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" y="3" fill="#000000" opacity="0.28"/>
+    </pattern>
+    <radialGradient id="vig" cx="50%" cy="50%" r="78%">
+      <stop offset="58%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Screen -->
+  <rect x="1" y="1" width="898" height="218" rx="6" fill="#080c08" stroke="#008000" stroke-width="2"/>
+
+  <!-- Squirty (16x16 pixel art, scaled) -->
+  <g transform="translate(58,46) scale(8)" shape-rendering="crispEdges">
+    <rect x="1" y="1" width="4" height="1" fill="#00e5ff"/>
+    <rect x="1" y="2" width="4" height="1" fill="#00e5ff"/>
+    <rect x="2" y="3" width="2" height="1" fill="#00e5ff"/>
+    <rect x="3" y="4" width="1" height="1" fill="#00e5ff"/>
+    <rect x="1" y="1" width="1" height="2" fill="#00b8d4"/>
+    <rect x="3" y="4" width="1" height="1" fill="#00b8d4"/>
+    <rect x="11" y="1" width="4" height="1" fill="#00e5ff"/>
+    <rect x="11" y="2" width="4" height="1" fill="#00e5ff"/>
+    <rect x="12" y="3" width="2" height="1" fill="#00e5ff"/>
+    <rect x="12" y="4" width="1" height="1" fill="#00e5ff"/>
+    <rect x="14" y="1" width="1" height="2" fill="#00b8d4"/>
+    <rect x="12" y="4" width="1" height="1" fill="#00b8d4"/>
+    <rect x="6" y="0" width="4" height="1" fill="#00e5ff"/>
+    <rect x="5" y="1" width="6" height="1" fill="#00e5ff"/>
+    <rect x="5" y="2" width="6" height="1" fill="#00e5ff"/>
+    <rect x="4" y="3" width="8" height="1" fill="#00e5ff"/>
+    <rect x="4" y="4" width="8" height="1" fill="#00e5ff"/>
+    <rect x="3" y="5" width="10" height="1" fill="#00e5ff"/>
+    <rect x="2" y="6" width="12" height="1" fill="#00e5ff"/>
+    <rect x="2" y="7" width="1" height="2" fill="#00e5ff"/>
+    <rect x="3" y="7" width="2" height="2" fill="#ffffff"/>
+    <rect x="3" y="8" width="1" height="1" fill="#000000"/>
+    <rect x="5" y="7" width="6" height="2" fill="#00e5ff"/>
+    <rect x="11" y="7" width="2" height="2" fill="#ffffff"/>
+    <rect x="11" y="8" width="1" height="1" fill="#000000"/>
+    <rect x="13" y="7" width="1" height="2" fill="#00e5ff"/>
+    <rect x="2" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/>
+    <rect x="13" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/>
+    <rect x="3" y="9" width="10" height="1" fill="#00e5ff"/>
+    <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
+    <rect x="4" y="11" width="8" height="1" fill="#00e5ff"/>
+    <rect x="4" y="12" width="2" height="3" fill="#00e5ff"/>
+    <rect x="4" y="13" width="1" height="1" fill="#00b8d4"/>
+    <rect x="6" y="12" width="1" height="3" fill="#00b8d4"/>
+    <rect x="7" y="12" width="1" height="3" fill="#00e5ff"/>
+    <rect x="8" y="12" width="1" height="3" fill="#00e5ff"/>
+    <rect x="9" y="12" width="1" height="3" fill="#00b8d4"/>
+    <rect x="10" y="12" width="2" height="3" fill="#00e5ff"/>
+    <rect x="11" y="13" width="1" height="1" fill="#00b8d4"/>
+    <rect x="9" y="1" width="1" height="1" fill="#00b8d4"/>
+    <rect x="9" y="2" width="1" height="1" fill="#00b8d4"/>
+    <rect x="10" y="3" width="1" height="1" fill="#00b8d4"/>
+    <rect x="10" y="4" width="1" height="1" fill="#00b8d4"/>
+    <rect x="11" y="5" width="1" height="1" fill="#00b8d4"/>
+    <rect x="12" y="6" width="1" height="1" fill="#00b8d4"/>
+    <rect x="6" y="0" width="2" height="1" fill="#7df9ff"/>
+    <rect x="7" y="9" width="2" height="1" fill="#00838f"/>
+  </g>
+
+  <!-- Terminal prompt + title -->
+  <text x="212" y="50" font-size="17" fill="#008000">dstroy0@esp32:~$ ./squirty --banner</text>
+  <text x="210" y="108" font-size="50" font-weight="700" fill="#40ff40" filter="url(#glow)">Deterministic</text>
+  <text x="210" y="158" font-size="46" font-weight="700" fill="#2bb35a" filter="url(#glow)">ESPAsyncWebServer</text>
+  <text x="212" y="192" font-size="18" fill="#2bb35a">Zero-heap &#183; RFC 7230 &#183; HTTP &#183; WebSocket &#183; SSH for ESP32</text>
+
+  <!-- Version tag -->
+  <rect x="786" y="30" width="84" height="26" rx="3" fill="#001100" stroke="#008000" stroke-width="1.5"/>
+  <text x="828" y="48" font-size="16" font-weight="700" fill="#40ff40" text-anchor="middle">v1.2.4</text>
+
+  <!-- CRT overlays -->
+  <rect x="1" y="1" width="898" height="218" rx="6" fill="url(#scan)"/>
+  <rect x="1" y="1" width="898" height="218" rx="6" fill="url(#vig)"/>
+</svg>

@@ -168,6 +168,11 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 return;
             }
             
+            // Glyphs the falling head scrambles through before locking to the
+            // real character (half-width katakana + digits + symbols).
+            const GLYPHS = 'ｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789:.=*+-<>¦|';
+            const randGlyph = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
+
             const columnsMap = {};
             chars.forEach(span => {
                 const rect = span.getBoundingClientRect();
@@ -175,9 +180,10 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 if (!columnsMap[colKey]) {
                     columnsMap[colKey] = [];
                 }
+                span.dataset.real = span.textContent; // remember the true char
                 columnsMap[colKey].push({ el: span, top: rect.top });
             });
-            
+
             const columns = Object.keys(columnsMap)
                 .sort((a, b) => Number(a) - Number(b))
                 .map(key => {
@@ -188,7 +194,7 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                         currentIndex: -10,
                         started: false,
                         completed: false,
-                        speed: 1.2 + Math.random() * 1.5
+                        speed: 3.5 + Math.random() * 3.5 // faster fall (was 1.2–2.7)
                     };
                 });
                 
@@ -209,53 +215,60 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                     allCompleted = false;
                     
                     if (!col.started) {
-                        let shouldStart = Math.random() < 0.02;
+                        let shouldStart = Math.random() < 0.08;
                         if (!shouldStart) {
                             const leftNeighbor = columns[i - 1];
                             const rightNeighbor = columns[i + 1];
-                            if (leftNeighbor && leftNeighbor.started && (leftNeighbor.currentIndex / leftNeighbor.chars.length) >= 0.33) {
+                            if (leftNeighbor && leftNeighbor.started && (leftNeighbor.currentIndex / leftNeighbor.chars.length) >= 0.2) {
                                 shouldStart = true;
                             }
-                            if (rightNeighbor && rightNeighbor.started && (rightNeighbor.currentIndex / rightNeighbor.chars.length) >= 0.33) {
+                            if (rightNeighbor && rightNeighbor.started && (rightNeighbor.currentIndex / rightNeighbor.chars.length) >= 0.2) {
                                 shouldStart = true;
                             }
                         }
                         if (shouldStart) col.started = true;
                     }
-                    
+
                     if (col.started) {
                         col.currentIndex += col.speed;
                         const len = col.chars.length;
-                        
-                        if (col.currentIndex >= len + 5) {
+
+                        if (col.currentIndex >= len + 16) {
                             col.completed = true;
                             continue;
                         }
-                        
+
                         for (let c = 0; c < len; c++) {
                             const el = col.chars[c];
                             const dist = col.currentIndex - c;
-                            
+
                             if (dist < 0) {
+                                // not reached yet
                                 el.style.opacity = '0';
-                            } else if (dist <= 4) {
+                            } else if (dist <= 1.5) {
+                                // bright white scrambling head
+                                el.textContent = randGlyph();
                                 el.style.opacity = '1';
                                 el.style.color = '#fff';
-                                el.style.textShadow = '0 0 8px #00c000, 0 0 15px #00c000';
-                            } else if (dist <= 8) {
-                                el.style.opacity = '0.9';
-                                el.style.color = '#00c000';
-                                el.style.textShadow = '0 0 6px #00c000';
+                                el.style.textShadow = '0 0 8px #40ff40, 0 0 16px #40ff40';
+                            } else if (dist <= 6) {
+                                // vivid green scrambling trail
+                                el.textContent = randGlyph();
+                                el.style.opacity = '1';
+                                el.style.color = '#40ff40';
+                                el.style.textShadow = '0 0 6px #40ff40';
+                            } else if (dist <= 12) {
+                                // fading: occasional last glyph flicker, then the real char
+                                el.textContent = Math.random() < 0.4 ? randGlyph() : el.dataset.real;
+                                el.style.opacity = '0.85';
+                                el.style.color = '#2bb35a';
+                                el.style.textShadow = '0 0 4px rgba(43, 179, 90, 0.5)';
                             } else {
-                                if (Math.random() < 0.15) {
-                                    el.style.opacity = '0.4';
-                                    el.style.color = '#008000';
-                                    el.style.textShadow = 'none';
-                                } else {
-                                    el.style.opacity = '1';
-                                    el.style.color = '#00c000';
-                                    el.style.textShadow = '0 0 2px rgba(0, 192, 0, 0.4)';
-                                }
+                                // settled: lock to the real character in the calm theme green
+                                el.textContent = el.dataset.real;
+                                el.style.opacity = '1';
+                                el.style.color = '#2bb35a';
+                                el.style.textShadow = '0 0 2px rgba(43, 179, 90, 0.4)';
                             }
                         }
                     }
@@ -301,12 +314,34 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         squid.style.setProperty('transition', 'none', 'important');
         squid.innerHTML = `
             <svg class="squid-svg" viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
-              <!-- Body (neon cyan #00e5ff) -->
+              <!-- Flapping triangular sail fins, hinged at the mantle apex
+                   and flaring out then tapering down (animated in CSS) -->
+              <g class="squid-fin-left">
+                <rect x="1" y="1" width="4" height="1" fill="#00e5ff"/>
+                <rect x="1" y="2" width="4" height="1" fill="#00e5ff"/>
+                <rect x="2" y="3" width="2" height="1" fill="#00e5ff"/>
+                <rect x="3" y="4" width="1" height="1" fill="#00e5ff"/>
+                <rect x="1" y="1" width="1" height="2" fill="#00b8d4"/> <!-- outer edge -->
+                <rect x="3" y="4" width="1" height="1" fill="#00b8d4"/> <!-- lower tip -->
+              </g>
+              <g class="squid-fin-right">
+                <rect x="11" y="1" width="4" height="1" fill="#00e5ff"/>
+                <rect x="11" y="2" width="4" height="1" fill="#00e5ff"/>
+                <rect x="12" y="3" width="2" height="1" fill="#00e5ff"/>
+                <rect x="12" y="4" width="1" height="1" fill="#00e5ff"/>
+                <rect x="14" y="1" width="1" height="2" fill="#00b8d4"/> <!-- outer edge -->
+                <rect x="12" y="4" width="1" height="1" fill="#00b8d4"/> <!-- lower tip -->
+              </g>
+
+              <!-- Mantle: rounded squid body (domed top, not a sharp point) -->
+              <rect x="6" y="0" width="4" height="1" fill="#00e5ff"/>
               <rect x="5" y="1" width="6" height="1" fill="#00e5ff"/>
-              <rect x="4" y="2" width="8" height="1" fill="#00e5ff"/>
-              <rect x="3" y="3" width="10" height="1" fill="#00e5ff"/>
-              <rect x="2" y="4" width="12" height="3" fill="#00e5ff"/>
-              
+              <rect x="5" y="2" width="6" height="1" fill="#00e5ff"/>
+              <rect x="4" y="3" width="8" height="1" fill="#00e5ff"/>
+              <rect x="4" y="4" width="8" height="1" fill="#00e5ff"/>
+              <rect x="3" y="5" width="10" height="1" fill="#00e5ff"/>
+              <rect x="2" y="6" width="12" height="1" fill="#00e5ff"/>
+
               <!-- Eyes & Blush -->
               <rect x="2" y="7" width="1" height="2" fill="#00e5ff"/>
               <rect x="3" y="7" width="2" height="2" fill="#ffffff"/> <!-- Left eye white -->
@@ -322,7 +357,8 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
               <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
               <rect x="4" y="11" width="8" height="1" fill="#00e5ff"/>
 
-              <!-- Tentacles (animated in CSS) -->
+              <!-- Tentacles (animated in CSS); bundle rotates to track cursor -->
+              <g id="squid-tentacle-bundle">
               <g class="pixel-tentacle-1">
                 <rect x="4" y="12" width="2" height="3" fill="#00e5ff"/>
                 <rect x="4" y="13" width="1" height="1" fill="#00b8d4"/>
@@ -339,12 +375,17 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 <rect x="10" y="12" width="2" height="3" fill="#00e5ff"/>
                 <rect x="11" y="13" width="1" height="1" fill="#00b8d4"/>
               </g>
+              </g>
 
-              <!-- Shadows -->
-              <rect x="5" y="2" width="1" height="1" fill="#00b8d4"/>
-              <rect x="4" y="3" width="1" height="1" fill="#00b8d4"/>
-              <rect x="3" y="4" width="1" height="2" fill="#00b8d4"/>
-              <rect x="2" y="6" width="1" height="1" fill="#00b8d4"/>
+              <!-- Mantle shading (darker cyan on the right edge for depth) -->
+              <rect x="9" y="1" width="1" height="1" fill="#00b8d4"/>
+              <rect x="9" y="2" width="1" height="1" fill="#00b8d4"/>
+              <rect x="10" y="3" width="1" height="1" fill="#00b8d4"/>
+              <rect x="10" y="4" width="1" height="1" fill="#00b8d4"/>
+              <rect x="11" y="5" width="1" height="1" fill="#00b8d4"/>
+              <rect x="12" y="6" width="1" height="1" fill="#00b8d4"/>
+              <!-- Mantle highlight (lighter rounded top) -->
+              <rect x="6" y="0" width="2" height="1" fill="#7df9ff"/>
               <!-- Mouth -->
               <rect x="7" y="9" width="2" height="1" fill="#00838f"/>
             </svg>
@@ -357,8 +398,8 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             const w = window.innerWidth;
             const h = window.innerHeight;
             return {
-                maxX: w > 100 ? w - 36 : 800,
-                maxY: h > 100 ? h - 36 : 600
+                maxX: w > 100 ? w - 41 : 800,
+                maxY: h > 100 ? h - 41 : 600
             };
         };
         
@@ -372,14 +413,90 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         // Mouse coordinate tracking
         let mouseX = -9999;
         let mouseY = -9999;
+        let lastMoveT = 0, lastMX = 0, lastMY = 0;
         if (window.__squidMouseMove) {
             window.removeEventListener('mousemove', window.__squidMouseMove);
         }
         window.__squidMouseMove = (e) => {
+            const now = performance.now();
+            if (lastMoveT) {
+                const dt = Math.max(8, now - lastMoveT);
+                // approximate cursor speed in px per animation frame
+                const sp = Math.hypot(e.clientX - lastMX, e.clientY - lastMY) / dt * 16;
+                // While Squirty is latched on, shaking the cursor fast drains his grip.
+                if (mode === 'latched' && sp > 8) {
+                    grip -= (sp - 8) * 1.8;
+                }
+            }
+            lastMoveT = now; lastMX = e.clientX; lastMY = e.clientY;
             mouseX = e.clientX;
             mouseY = e.clientY;
         };
         window.addEventListener('mousemove', window.__squidMouseMove);
+
+        // --- Hunt / attack / latch state machine ---
+        let mode = 'idle';            // 'idle' | 'hunting' | 'attacking' | 'latched'
+        let huntEndTime = 0;
+        let nextHuntTime = Date.now() + 9000 + Math.random() * 9000;
+        let grip = 0;
+        const GRIP_MAX = 100;
+        const GRAB_RANGE = 52;        // distance (px) from cursor that triggers the grab
+        const HUNT_SPEED = 5.0;
+
+        const setSquidState = (cls) => {
+            const svgEl = squid.querySelector('.squid-svg');
+            if (!svgEl) return;
+            svgEl.classList.remove('squid-hunting', 'squid-attacking', 'squid-chewing');
+            if (cls) svgEl.classList.add(cls);
+        };
+
+        const startAttack = () => {
+            if (mode !== 'hunting') return;
+            mode = 'attacking';
+            setSquidState('squid-attacking');
+            const svgEl = squid.querySelector('.squid-svg');
+            if (svgEl) { svgEl.classList.remove('squid-pulse-active'); void svgEl.offsetWidth; svgEl.classList.add('squid-pulse-active'); }
+            setTimeout(() => {
+                if (mode === 'attacking') {
+                    mode = 'latched';
+                    grip = GRIP_MAX;
+                    setSquidState('squid-chewing');
+                }
+            }, 320);
+        };
+
+        const detach = () => {
+            mode = 'idle';
+            setSquidState(null);
+            grip = 0;
+            nextHuntTime = Date.now() + 12000 + Math.random() * 10000;
+            // fling away from the cursor like he got shaken loose
+            const fa = Math.atan2(posY + 18 - mouseY, posX + 18 - mouseX);
+            velX = Math.cos(fa) * 11;
+            velY = Math.sin(fa) * 11;
+        };
+
+        // The cursor only reports position while it's over the page. When it
+        // leaves the viewport/window (e.g. onto another monitor) mousemove stops
+        // firing and the last coordinates go stale — mark it gone so Squirty
+        // doesn't chase an off-screen position, and break off any active hunt.
+        const onCursorGone = () => {
+            mouseX = -9999; mouseY = -9999;
+            if (mode !== 'idle') {
+                mode = 'idle';
+                setSquidState(null);
+                grip = 0;
+                nextHuntTime = Date.now() + 9000 + Math.random() * 9000;
+            }
+        };
+        if (window.__squidCursorGone) {
+            document.removeEventListener('mouseleave', window.__squidCursorGone);
+            window.removeEventListener('blur', window.__squidCursorGone);
+        }
+        window.__squidCursorGone = onCursorGone;
+        document.addEventListener('mouseleave', onCursorGone);
+        window.addEventListener('blur', onCursorGone);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) onCursorGone(); });
         
         // Initial placement
         squid.style.left = '0px';
@@ -391,34 +508,87 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         
         function updatePhysics() {
             const limits = getLimits();
-            
-            posX += velX;
-            posY += velY;
-            
-            // Friction/Drag
-            velX *= 0.94;
-            velY *= 0.94;
-            
-            // Wall bounce
-            if (posX < 0) { posX = 0; velX = Math.abs(velX) * 0.5; }
-            if (posX > limits.maxX) { posX = limits.maxX; velX = -Math.abs(velX) * 0.5; }
-            if (posY < 0) { posY = 0; velY = Math.abs(velY) * 0.5; }
-            if (posY > limits.maxY) { posY = limits.maxY; velY = -Math.abs(velY) * 0.5; }
-            
-            // Determine horizontal flip and vertical tilt based on velocity
-            let flip = 1;
-            if (velX < -0.15) {
-                flip = -1;
-            } else if (velX > 0.15) {
-                flip = 1;
+            const now = Date.now();
+
+            // Every now and then, go hunt the cursor.
+            if (mode === 'idle' && !isScared && mouseX > -9000 && now > nextHuntTime) {
+                mode = 'hunting';
+                huntEndTime = now + 7000;
+                setSquidState('squid-hunting');
             }
-            
-            // Slight tilt based on Y velocity
-            let targetTilt = velY * 2.5;
-            let diff = targetTilt - rotation;
-            rotation += diff * 0.15;
-            
+
+            if (mode === 'latched') {
+                // Chewing on the cursor: pin the mouth to it.
+                posX = mouseX - 18;
+                posY = mouseY - 9;
+                velX = 0; velY = 0;
+                grip = Math.min(GRIP_MAX, grip + 0.6); // recovers while the cursor is still
+                if (grip <= 0) detach();
+            } else if (mode === 'attacking') {
+                // Lunge the final gap onto the cursor.
+                posX += ((mouseX - 18) - posX) * 0.4;
+                posY += ((mouseY - 9) - posY) * 0.4;
+                velX = 0; velY = 0;
+            } else {
+                if (mode === 'hunting') {
+                    const cx = posX + 18, cy = posY + 18;
+                    const dx = mouseX - cx, dy = mouseY - cy;
+                    const d = Math.hypot(dx, dy) || 1;
+                    if (d < GRAB_RANGE) {
+                        startAttack();
+                    } else {
+                        velX += (dx / d) * 0.75;
+                        velY += (dy / d) * 0.75;
+                        const sp = Math.hypot(velX, velY);
+                        if (sp > HUNT_SPEED) { velX = velX / sp * HUNT_SPEED; velY = velY / sp * HUNT_SPEED; }
+                        if (now > huntEndTime) { // gave up the chase
+                            mode = 'idle'; setSquidState(null);
+                            nextHuntTime = now + 10000 + Math.random() * 9000;
+                        }
+                    }
+                } else if (now > nextPulseTime && !isScared) {
+                    pulseSwim();
+                }
+
+                // Integrate motion + drag
+                posX += velX; posY += velY;
+                velX *= 0.94; velY *= 0.94;
+
+                // Wall bounce
+                if (posX < 0) { posX = 0; velX = Math.abs(velX) * 0.5; }
+                if (posX > limits.maxX) { posX = limits.maxX; velX = -Math.abs(velX) * 0.5; }
+                if (posY < 0) { posY = 0; velY = Math.abs(velY) * 0.5; }
+                if (posY > limits.maxY) { posY = limits.maxY; velY = -Math.abs(velY) * 0.5; }
+            }
+
+            // Face the cursor while hunting/latched, otherwise face travel direction.
+            let flip = 1;
+            let faceDx = (mode === 'idle') ? velX : (mouseX - (posX + 18));
+            if (faceDx < -0.15) flip = -1; else if (faceDx > 0.15) flip = 1;
+
+            // Tilt: gentle swim tilt, or a quick wobble while chewing.
+            if (mode === 'latched') {
+                rotation = Math.sin(now / 55) * 7; // chewing head-shake
+            } else {
+                const targetTilt = velY * 2.5;
+                rotation += (targetTilt - rotation) * 0.15;
+            }
+
             squid.style.transform = `translate(${posX}px, ${posY}px) scaleX(${flip}) rotate(${rotation}deg)`;
+
+            // Tentacle bundle reaches toward the cursor while hunting/latched.
+            const bundle = squid.querySelector('#squid-tentacle-bundle');
+            if (bundle) {
+                if (mode !== 'idle') {
+                    const cx = posX + 18, cy = posY + 18;
+                    const ang = Math.atan2(mouseY - cy, (mouseX - cx) * flip) * 180 / Math.PI;
+                    const rot = Math.max(-45, Math.min(45, ang - 90)); // tentacles hang down by default
+                    bundle.style.transformOrigin = '8px 11px';
+                    bundle.style.transform = `rotate(${rot}deg)`;
+                } else {
+                    bundle.style.transform = '';
+                }
+            }
             
             // Eye tracking logic
             const pupilL = squid.querySelector('#squid-pupil-l');
@@ -447,11 +617,6 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 pupilL.setAttribute('y', targetY_L);
                 pupilR.setAttribute('x', targetX_R);
                 pupilR.setAttribute('y', targetY_R);
-            }
-            
-            // Swim logic
-            if (Date.now() > nextPulseTime && !isScared) {
-                pulseSwim();
             }
             
             requestAnimationFrame(updatePhysics);
@@ -507,7 +672,13 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             clickCount++;
             localStorage.setItem('squirty_clicks', clickCount);
             updateCounterUI();
-            
+
+            // A click also breaks off any hunt/latch.
+            mode = 'idle';
+            setSquidState(null);
+            grip = 0;
+            nextHuntTime = Date.now() + 12000 + Math.random() * 10000;
+
             // Dart away fast (returns the angle the squid escapes in)
             isScared = true;
             const angle = pulseSwim(14); // Escape speed
@@ -585,7 +756,24 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             
             const libSpan = document.createElement('span');
             libSpan.className = 'navbar-libname';
-            libSpan.textContent = libName;
+            // Split the name into two glowing links to the repo ("Deterministic"
+            // + "ESPAsyncWebServer"), kept tight against each other.
+            const prefix = 'Deterministic';
+            const mkLink = (txt) => {
+                const a = document.createElement('a');
+                a.className = 'navbar-libname-link';
+                a.href = 'https://github.com/dstroy0/DeterministicESPAsyncWebServer';
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = txt;
+                return a;
+            };
+            if (libName.startsWith(prefix)) {
+                libSpan.appendChild(mkLink(prefix));
+                libSpan.appendChild(mkLink(libName.slice(prefix.length)));
+            } else {
+                libSpan.appendChild(mkLink(libName));
+            }
             titleLi.appendChild(libSpan);
             
             if (version) {

@@ -11,7 +11,7 @@ The message state machine is driven by a single transport-agnostic dispatcher
 consumes decrypted message payloads and emits responses through a callback, so
 it is fully unit-testable off-target. The TCP glue
 ([`ssh_conn.cpp`](@ref ssh_conn.cpp)) binds a
-`PROTO_SSH` connection to a session slot, pumps ring-buffer bytes through the
+[`PROTO_SSH`](@ref PROTO_SSH) connection to a session slot, pumps ring-buffer bytes through the
 banner exchange and binary-packet layer, and writes responses back to the
 socket.
 
@@ -32,7 +32,7 @@ socket.
 - **Password authentication** (RFC 4252 §8) - credentials checked via an application callback; the password is wiped from the stack after every attempt. Compile out with `DETWS_SSH_ALLOW_PASSWORD=0` for publickey-only hardening
 - **Session channel** (RFC 4254) - `shell`/`exec`/`pty-req` accepted; inbound channel data surfaced to the app as a raw byte stream, with RFC 4254 §5.2 window flow control
 - **In-session re-keying** (RFC 4253 §9) - client- or server-initiated; the session id is fixed at the first exchange hash across re-keys
-- **Static-only allocation** - all SSH state pre-allocated in BSS; no heap after `begin()` (except the one-per-connection mbedTLS RSA operation during KEX, freed immediately)
+- **Static-only allocation** - all SSH state pre-allocated in BSS; no heap after [`begin()`](@ref DetWebServer::begin) (except the one-per-connection mbedTLS RSA operation during KEX, freed immediately)
 - **RSA private key never in static memory** - loaded from NVS → stack → sign → volatile-wipe; zero window for overflow-based key exfiltration
 - **Sequence number overflow guard** - connection closed before 32-bit wrap to prevent CTR keystream reuse
 
@@ -97,7 +97,7 @@ per device:
    openssl pkcs8 -topk8 -nocrypt -in ssh_host.pem -outform DER -out ssh_host.der
    ```
 
-   (`ssh_host.der` must be ≤ `SSH_RSA_KEY_DER_MAX` bytes - ~1.2 KB for RSA-2048.)
+   (`ssh_host.der` must be ≤ [`SSH_RSA_KEY_DER_MAX`](@ref SSH_RSA_KEY_DER_MAX) bytes - ~1.2 KB for RSA-2048.)
 
 2. **Write the DER blob into NVS** from a one-time provisioning sketch:
 
@@ -115,7 +115,7 @@ per device:
    Embed `ssh_host.der` as a byte array (e.g. `xxd -i ssh_host.der`), flash the
    provisioning sketch once, then flash your real firmware.
 
-3. **At boot**, call `ssh_rsa_load_pubkey()` once (before accepting SSH) so the
+3. **At boot**, call [`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey) once (before accepting SSH) so the
    public half (n, e) is available for the host-key blob; the private key is read
    straight from NVS into a stack buffer for each signature and wiped immediately
    after (never held in static memory).
@@ -153,7 +153,7 @@ All numbers use default configuration values.
 
 **Key material is excluded by design.** AES-256 keys, HMAC keys, and the DH
 shared secret K live in `ssh_keys[]` / `ssh_dh[]`. The RSA private key is never
-in static memory - it exists only on the stack during `ssh_rsa_sign()` and is
+in static memory - it exists only on the stack during [`ssh_rsa_sign()`](@ref ssh_rsa_sign) and is
 volatile-wiped before the function returns.
 
 The BSS symbols (`ssh_pkt`, `ssh_keys`, `ssh_dh`) are separate linker symbols, so
