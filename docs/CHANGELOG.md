@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`17fd6a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17fd6a110835b920041a88f800ef8576730031e6))
+- update CHANGELOG.md [skip ci] ([`86efe13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86efe13f97d464881581301eee06537f25cdd441))
 - update CHANGELOG.md [skip ci] ([`c432f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c432f73ba523065d9040d27b18196ca180805931))
 - update test report [skip ci] ([`75b8284`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75b8284eef75a7ec9c26dfa1e6c7a09bc3d328a4))
 - update CHANGELOG.md [skip ci] ([`a277ea2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a277ea282277c41b59533d8cb36de35028aec5ba))
@@ -87,6 +89,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- formatting ([`dc9e998`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc9e998aaeba4084d7312bd8a1d0ded1437a08b9))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`dd253d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd253d57ae6cfcac14526f67894306abbc47b293))
 - Bump version: 1.2.6 → 1.2.7 ([`2e4047e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e4047eeaa1fd8e030cb48eaecdf4891b6a5ef48))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`496279a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/496279a02bba5c1c206c995b3137ef38a3abfa1b))
@@ -163,6 +166,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- transport-layer I/O API + Telnet server; reorganize examples; docs ([`503e1c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503e1c4d974f9dbfbe31b156ea7ea1f21e097da6))
 - centralize HTML templates into DETWS_HTML.h ([`72f5d1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72f5d1f8b83fbfd2b2d6593ba76a9fa391964f8b))
 
 ## [1.2.0] - 2026-06-20
