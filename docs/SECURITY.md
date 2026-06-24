@@ -40,6 +40,7 @@ with caveats, ❌ = a real weakness to be aware of.
 | `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
 | Diagnostic endpoint         | [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                         |
+| SNMP agent (v1/v2c)         | Opt-in ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default off). Community-string access only - the community is sent **in cleartext** and is not real authentication (§10). Read-only by default; `Set` is refused unless a separate read-write community is configured. Run only on a trusted/management network and rename the default `public`/`private` communities. For authenticated + encrypted access, enable **SNMPv3 / USM** ([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3): HMAC-SHA-256 auth + AES-128 privacy). |
 
 </details>
 
@@ -97,10 +98,12 @@ The remaining sections document each property in depth.
   - [7.10 Random Number Generation](#ssh-rng)
 - [8. Diagnostic Endpoint](#diagnostic-endpoint)
 - [9. Known Limitations and Non-Goals](#known-limitations)
-- [10. Hardening Checklist](#hardening-checklist)
+- [10. SNMP Agent Security](#snmp-security)
+- [11. Hardening Checklist](#hardening-checklist)
   - [General](#general-hardening)
   - [Authentication](#auth-hardening)
   - [SSH](#ssh-hardening)
+  - [SNMP](#snmp-hardening)
   - [Build Hardening](#build-hardening)
 
 ---
@@ -884,10 +887,64 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 | No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call [`send()`](@ref DetWebServer::send) with appropriate headers       |
 | WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler                                      |
 | NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`                                          |
+| SNMP v1/v2c community is cleartext              | Anyone who can sniff UDP/161 learns the community      | Trusted/management VLAN; rename communities; wait for v3 USM, or tunnel |
 
 ---
 
-## 10. Hardening Checklist {#hardening-checklist}
+## 10. SNMP Agent Security {#snmp-security}
+
+The optional SNMP agent ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default
+off) implements **SNMP v1 and v2c**, whose security model is the community
+string - effectively a shared password sent **in the clear** in every datagram.
+It is convenient for monitoring on a trusted network but is **not** an
+authentication or confidentiality mechanism.
+
+For authenticated and encrypted access, enable **SNMPv3 / USM**
+([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3), default off): a single
+authPriv user with `usmHMAC192SHA256` authentication (HMAC-SHA-256) and
+`usmAesCfb128` privacy (AES-128-CFB), engine discovery, and the RFC 3414
+timeliness window against replay. The agent rejects unauthenticated non-discovery
+requests, verifies the HMAC before acting on any byte, and answers unknown
+users / wrong digests / out-of-window times with the standard USM Report PDUs.
+Keys are derived once from the passwords (RFC 3414 §2.6 localization), so no
+password material is recomputed per request. Operational notes: passwords must be
+>= 8 characters; persist and increment `engineBoots` in NVS
+([`snmp_v3_set_boots()`](@ref snmp_v3_set_boots)) so the timeliness window
+survives reboots; give each device a unique engine ID (derive from the MAC).
+
+**What the agent does enforce**
+
+- **Two communities, least-privilege by default.** The read-only community
+  (default `public`) authorizes only `Get` / `GetNext` / `GetBulk`. `Set` is
+  refused (`noAccess`) unless a distinct read-write community is configured via
+  [`snmp_agent_set_rw_community()`](@ref snmp_agent_set_rw_community); if none is
+  set, the agent is effectively read-only. Writable objects must additionally
+  opt in with a setter callback (others answer `notWritable`).
+- **Unknown community → silent drop.** A datagram whose community matches neither
+  configured value produces no response (no oracle, no amplification).
+- **Zero-heap, bounded work.** Request and response share two fixed BSS buffers
+  ([`SNMP_MSG_BUF_SIZE`](@ref SNMP_MSG_BUF_SIZE)); the MIB is a fixed table; the
+  BER decoder is fully bounds-checked and a malformed/truncated message is
+  dropped. `GetBulk` expansion is clamped to
+  [`SNMP_MAX_VARBINDS`](@ref SNMP_MAX_VARBINDS), and an over-large response
+  degrades to `tooBig` - so one request yields at most one bounded datagram (no
+  unbounded amplification).
+- **No reflection vector beyond 1:1.** The agent only ever replies to the source
+  of a valid-community request with a single response datagram.
+
+**What it does not provide**
+
+- **No encryption or message authentication (v1/v2c).** The community string and
+  all varbind data are visible to anyone who can observe UDP/161. Treat the
+  community as a low-value access token, not a secret.
+- **No per-source rate limiting.** Mitigate query floods at the network layer
+  (firewall the port to your management host/VLAN).
+
+See [RFC.md](RFC.md) for the protocol-conformance details.
+
+---
+
+## 11. Hardening Checklist {#hardening-checklist}
 
 Use this checklist before deploying to a production environment.
 
@@ -913,6 +970,15 @@ Use this checklist before deploying to a production environment.
 - [ ] SSH listener port is firewalled / restricted to known clients if possible
 - [ ] Client host-key verification is enforced by the connecting SSH client (openssh `known_hosts`)
 - [ ] [`MAX_SSH_CONNS`](@ref MAX_SSH_CONNS) is set to the minimum required concurrent sessions
+
+### SNMP {#snmp-hardening}
+
+- [ ] SNMP is left disabled unless needed ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP) default off)
+- [ ] Default communities `public` / `private` are renamed to non-guessable values
+- [ ] No read-write community is configured unless `Set` is actually required (read-only otherwise)
+- [ ] UDP/161 is firewalled to the management host / VLAN (v1/v2c communities are cleartext)
+- [ ] For authenticated/encrypted access use SNMPv3 authPriv ([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3)); v1/v2c offer no encryption or real authentication
+- [ ] SNMPv3: each device has a unique engine ID and persists/increments `engineBoots` in NVS; auth/priv passwords are >= 8 chars and not the defaults
 
 ### Build Hardening {#build-hardening}
 

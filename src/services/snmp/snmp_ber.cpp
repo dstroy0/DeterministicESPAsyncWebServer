@@ -71,6 +71,12 @@ bool ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n)
     return e->ok;
 }
 
+bool ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n)
+{
+    enc_bytes(e, bytes, n);
+    return e->ok;
+}
+
 bool ber_put_integer(BerEnc *e, long v)
 {
     // Minimal two's-complement encoding.

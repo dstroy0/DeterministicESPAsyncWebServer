@@ -432,6 +432,53 @@
 #endif
 
 /**
+ * @brief Maximum registered MIB objects (the agent's fixed OID table).
+ *
+ * Each entry holds its OID, a value descriptor, and optional get/set callbacks
+ * (see src/services/snmp/snmp_agent.h). The table lives in BSS; entries are
+ * scanned linearly (small table) and need not be registered in OID order.
+ */
+#ifndef SNMP_MAX_MIB_ENTRIES
+#define SNMP_MAX_MIB_ENTRIES 16
+#endif
+
+/**
+ * @brief Maximum variable bindings the agent will emit in one response.
+ *
+ * Bounds GetBulk expansion (max-repetitions is clamped so the total response
+ * varbind count never exceeds this) and the per-request decode scratch.
+ */
+#ifndef SNMP_MAX_VARBINDS
+#define SNMP_MAX_VARBINDS 16
+#endif
+
+/**
+ * @brief Static request/response datagram buffers for the SNMP UDP agent.
+ *
+ * Two buffers of this size live in BSS (one in, one out) - no heap. 484 is the
+ * RFC 1157 minimum maximum message size; the default holds a one-frame UDP
+ * payload so GetBulk walks fit without IP fragmentation.
+ */
+#ifndef SNMP_MSG_BUF_SIZE
+#define SNMP_MSG_BUF_SIZE 1472
+#endif
+
+/** @brief Maximum SNMP community-string length (including null terminator). */
+#ifndef SNMP_COMMUNITY_MAX
+#define SNMP_COMMUNITY_MAX 32
+#endif
+
+/** @brief Maximum SNMPv3 USM user-name length (including null terminator). */
+#ifndef SNMP_V3_USER_MAX
+#define SNMP_V3_USER_MAX 32
+#endif
+
+/** @brief Maximum SNMPv3 authoritative engine-ID length in bytes (RFC 3411 allows 5..32). */
+#ifndef SNMP_V3_ENGINEID_MAX
+#define SNMP_V3_ENGINEID_MAX 32
+#endif
+
+/**
  * @brief Bytes of the static BSS arena mbedTLS allocates from (DETWS_ENABLE_TLS).
  *
  * All mbedTLS allocations (per-connection record buffers, handshake temporaries,
@@ -951,6 +998,21 @@ enum DetIface : uint8_t
 #endif
 #if DETWS_TLS_ARENA_SIZE < 8192
 #error "DeterministicESPAsyncWebServer: DETWS_TLS_ARENA_SIZE is far too small for a TLS handshake"
+#endif
+#endif
+
+#if DETWS_ENABLE_SNMP
+#if SNMP_MAX_OID_LEN < 4
+#error "DeterministicESPAsyncWebServer: SNMP_MAX_OID_LEN must be >= 4"
+#endif
+#if SNMP_MAX_MIB_ENTRIES < 1
+#error "DeterministicESPAsyncWebServer: SNMP_MAX_MIB_ENTRIES must be >= 1"
+#endif
+#if SNMP_MAX_VARBINDS < 1
+#error "DeterministicESPAsyncWebServer: SNMP_MAX_VARBINDS must be >= 1"
+#endif
+#if SNMP_MSG_BUF_SIZE < 484
+#error "DeterministicESPAsyncWebServer: SNMP_MSG_BUF_SIZE must be >= 484 (RFC 1157 minimum)"
 #endif
 #endif
 
