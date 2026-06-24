@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 04.Expert.ino
+ * @file 03.Expert.ino
  * @brief Expert example: connection-pool inspection, request profiling,
  *        rate-limiting, and memory-safe stack templating.
  *

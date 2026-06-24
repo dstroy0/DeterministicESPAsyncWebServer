@@ -155,7 +155,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Bind the agent to a raw lwIP UDP socket on @p port (default 161).
+ * @brief Bind the agent to UDP @p port (default 161) via the transport-layer UDP service.
  *
  * Callback-driven (no per-loop servicing). Call after WiFi is up. On non-Arduino
  * builds this is a no-op so the core remains host-testable.

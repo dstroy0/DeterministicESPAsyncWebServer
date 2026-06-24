@@ -95,7 +95,7 @@ void sse_free(uint8_t slot_id);
  * Formats and sends `event: ...\nid: ...\ndata: ...\n\n`.  Any optional
  * field may be nullptr to omit it.  data must not be nullptr.
  *
- * The caller must call tcp_output() on the underlying PCB afterwards if
+ * The caller must flush the connection afterwards (det_conn_flush()) if
  * immediate delivery is needed.
  *
  * @param sse    SSE connection.

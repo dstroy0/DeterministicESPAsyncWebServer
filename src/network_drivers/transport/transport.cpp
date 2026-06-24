@@ -29,11 +29,70 @@
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
 
+#if DETWS_ENABLE_TLS
+#include "network_drivers/tls/det_tls.h"
+#endif
+
 TcpConn conn_pool[MAX_CONNS];
 
 uint32_t detws_ap_ip = 0;
 
 uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
+
+// ---------------------------------------------------------------------------
+// Connection output API
+// ---------------------------------------------------------------------------
+// The single send/flush/close path for every higher layer (HTTP app, WebSocket,
+// SSE, SSH). Keeping it here means presentation and application code never call
+// lwIP directly - they hand bytes to the transport layer, which decides whether
+// they go out as plaintext (tcp_write) or through the TLS record layer. With
+// DETWS_ENABLE_TLS off this is byte-identical to a direct tcp_write/tcp_output.
+
+void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        det_tls_write(slot, data, len);
+        return;
+    }
+#endif
+    (void)slot;
+    tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+}
+
+void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        det_tls_conn_end(slot); // emits close_notify; the TCP close follows
+        return;
+    }
+#endif
+    (void)slot;
+    tcp_output(pcb);
+}
+
+void det_conn_close(struct tcp_pcb *pcb)
+{
+    // Graceful close; fall back to abort if lwIP cannot queue the FIN (no memory).
+    if (tcp_close(pcb) != ERR_OK)
+        tcp_abort(pcb);
+}
+
+void det_conn_detach(struct tcp_pcb *pcb)
+{
+    // Disassociate the slot from this pcb's lwIP callbacks before freeing the
+    // slot, so any late callback for the pcb finds a null arg and does nothing.
+    tcp_arg(pcb, nullptr);
+}
+
+void det_conn_abort(struct tcp_pcb *pcb)
+{
+    // Hard reset (RST) for a fatal condition - no graceful FIN.
+    tcp_abort(pcb);
+}
 
 /**
  * @brief Non-blocking event enqueue helper.

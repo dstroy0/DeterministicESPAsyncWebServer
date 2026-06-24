@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 10.Provisioning.ino
+ * @file 23.Provisioning.ino
  * @brief First-boot WiFi provisioning via a captive portal (DETWS_ENABLE_PROVISIONING).
  *
  * On first boot (no stored credentials) the device starts a softAP

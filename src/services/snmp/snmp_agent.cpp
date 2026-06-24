@@ -3,7 +3,7 @@
 
 /**
  * @file snmp_agent.cpp
- * @brief SNMP v1/v2c agent: MIB table, PDU dispatch, and the lwIP UDP socket.
+ * @brief SNMP v1/v2c agent: MIB table, PDU dispatch, and the UDP binding.
  */
 
 #include "services/snmp/snmp_agent.h"
@@ -615,59 +615,24 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 }
 
 // ---------------------------------------------------------------------------
-// UDP transport (ESP32 only)
+// UDP binding (via the transport-layer UDP service - no lwIP here)
 // ---------------------------------------------------------------------------
 
-#if defined(ARDUINO)
+#include "network_drivers/transport/udp_transport.h"
 
-#include "lwip/pbuf.h"
-#include "lwip/udp.h"
+static uint8_t g_snmp_tx[SNMP_MSG_BUF_SIZE]; // response scratch (request is transport-owned)
 
-static struct udp_pcb *g_snmp_pcb = nullptr;
-static uint8_t g_snmp_rx[SNMP_MSG_BUF_SIZE];
-static uint8_t g_snmp_tx[SNMP_MSG_BUF_SIZE];
-
-static void snmp_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+static void snmp_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
 {
-    (void)arg;
-    if (!p)
-        return;
-    u16_t n = (p->tot_len < sizeof(g_snmp_rx)) ? p->tot_len : (u16_t)sizeof(g_snmp_rx);
-    pbuf_copy_partial(p, g_snmp_rx, n, 0);
-    pbuf_free(p);
-
-    size_t rn = snmp_agent_process(g_snmp_rx, n, g_snmp_tx, sizeof(g_snmp_tx));
-    if (rn == 0)
-        return;
-
-    struct pbuf *out = pbuf_alloc(PBUF_TRANSPORT, (u16_t)rn, PBUF_RAM);
-    if (out)
-    {
-        memcpy(out->payload, g_snmp_tx, rn);
-        udp_sendto(pcb, out, addr, port);
-        pbuf_free(out);
-    }
+    (void)ctx;
+    size_t rn = snmp_agent_process(data, len, g_snmp_tx, sizeof(g_snmp_tx));
+    if (rn)
+        det_udp_send(peer, g_snmp_tx, rn);
 }
 
 void snmp_agent_begin_udp(uint16_t port)
 {
-    if (g_snmp_pcb)
-        return;
-    g_snmp_pcb = udp_new();
-    if (g_snmp_pcb)
-    {
-        udp_bind(g_snmp_pcb, IP_ANY_TYPE, port);
-        udp_recv(g_snmp_pcb, snmp_udp_recv, nullptr);
-    }
+    det_udp_listen(port, snmp_udp_handler, nullptr);
 }
-
-#else // non-Arduino: the core stays host-testable; no socket layer
-
-void snmp_agent_begin_udp(uint16_t port)
-{
-    (void)port;
-}
-
-#endif // ARDUINO
 
 #endif // DETWS_ENABLE_SNMP

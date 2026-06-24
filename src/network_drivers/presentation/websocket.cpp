@@ -16,7 +16,7 @@
  */
 
 #include "websocket.h"
-#include "lwip/tcp.h"
+#include "network_drivers/transport/transport.h"
 #include <string.h>
 
 WsConn ws_pool[MAX_WS_CONNS];
@@ -125,9 +125,9 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
         hlen = 4;
     }
 
-    tcp_write(conn->pcb, header, hlen, TCP_WRITE_FLAG_COPY);
+    det_conn_send(conn->id, conn->pcb, header, hlen);
     if (len > 0 && payload)
-        tcp_write(conn->pcb, payload, len, TCP_WRITE_FLAG_COPY);
+        det_conn_send(conn->id, conn->pcb, payload, len);
 
     return true;
 }
@@ -140,7 +140,7 @@ void ws_close(WsConn *ws, WsCloseCode code)
 
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
-        tcp_output(conn->pcb);
+        det_conn_flush(conn->id, conn->pcb);
 
     ws->parse_state = WS_CLOSED;
 }
@@ -171,7 +171,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         {
             ws_send_frame(ws, WS_OP_PONG, ws->ctl_buf, (uint16_t)ws->payload_idx);
             if (conn->pcb)
-                tcp_output(conn->pcb);
+                det_conn_flush(conn->id, conn->pcb);
         }
         else if (ws->opcode == WS_OP_CLOSE)
         {

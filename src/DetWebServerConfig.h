@@ -155,7 +155,7 @@
 #endif
 
 /**
- * @brief Maximum object/array nesting depth for the JsonWriter (see DetJson.h).
+ * @brief Maximum object/array nesting depth for the JsonWriter (see json.h).
  *
  * Bounds the writer's per-level comma-tracking stack (one bool per level);
  * begin_object()/begin_array() beyond this fail the writer instead of
@@ -624,6 +624,28 @@
 /** @brief Maximum number of simultaneously active listener ports. */
 #ifndef MAX_LISTENERS
 #define MAX_LISTENERS 3
+#endif
+
+/**
+ * @brief Maximum simultaneously bound UDP ports (transport-layer UDP service).
+ *
+ * Sizes the fixed pool in udp_transport.cpp. One slot per bound port, e.g. SNMP
+ * (:161) and the captive-portal DNS responder (:53). Costs only a few pointers
+ * of BSS each.
+ */
+#ifndef DETWS_MAX_UDP_LISTENERS
+#define DETWS_MAX_UDP_LISTENERS 2
+#endif
+
+/**
+ * @brief Shared receive-scratch size for the transport-layer UDP service.
+ *
+ * One static buffer (lwIP delivers a single datagram at a time) into which each
+ * incoming datagram is copied before the handler runs. Must hold the largest
+ * datagram any UDP service expects (SNMP messages are the largest user).
+ */
+#ifndef DETWS_UDP_RX_BUF_SIZE
+#define DETWS_UDP_RX_BUF_SIZE 1472
 #endif
 
 /**

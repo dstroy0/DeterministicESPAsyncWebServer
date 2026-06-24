@@ -393,6 +393,21 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         
         document.body.appendChild(squid);
         
+        // Long hunting tentacles, drawn in a click-through overlay between the
+        // body and the cursor during a strike (the short body tentacles stay).
+        const SQNS = 'http://www.w3.org/2000/svg';
+        let tentLayer = document.getElementById('squid-tentacles');
+        if (tentLayer) tentLayer.remove();
+        tentLayer = document.createElementNS(SQNS, 'svg');
+        tentLayer.id = 'squid-tentacles';
+        const tentPaths = [];
+        for (let i = 0; i < 2; i++) {
+            const p = document.createElementNS(SQNS, 'path');
+            tentLayer.appendChild(p);
+            tentPaths.push(p);
+        }
+        document.body.appendChild(tentLayer);
+
         // Dynamic viewport limit solver with fallback safe defaults
         const getLimits = () => {
             const w = window.innerWidth;
@@ -442,6 +457,9 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         const GRIP_MAX = 100;
         const GRAB_RANGE = 52;        // distance (px) from cursor that triggers the grab
         const HUNT_SPEED = 5.0;
+        let striking = false;         // tentacle strike in progress
+        let reach = 0;                // 0..1 how far the hunting tentacles have shot out
+        const STRIKE_RANGE = 190;     // ~5x body length the hunting tentacles can lash
 
         const setSquidState = (cls) => {
             const svgEl = squid.querySelector('.squid-svg');
@@ -450,19 +468,14 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             if (cls) svgEl.classList.add(cls);
         };
 
-        const startAttack = () => {
+        const startStrike = () => {
             if (mode !== 'hunting') return;
-            mode = 'attacking';
+            mode = 'striking';   // tentacles spring out, then reel him in (see updatePhysics)
+            reach = 0;
+            striking = true;
             setSquidState('squid-attacking');
             const svgEl = squid.querySelector('.squid-svg');
             if (svgEl) { svgEl.classList.remove('squid-pulse-active'); void svgEl.offsetWidth; svgEl.classList.add('squid-pulse-active'); }
-            setTimeout(() => {
-                if (mode === 'attacking') {
-                    mode = 'latched';
-                    grip = GRIP_MAX;
-                    setSquidState('squid-chewing');
-                }
-            }, 320);
         };
 
         const detach = () => {
@@ -510,6 +523,25 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             const limits = getLimits();
             const now = Date.now();
 
+            // Squirty timeout: ignore the cursor and swim home to his house.
+            if (window.__squirtyTimeout) {
+                if (mode !== 'idle') { mode = 'idle'; setSquidState(null); striking = false; grip = 0; }
+                let hx = limits.maxX - 6, hy = 6;
+                const house = document.getElementById('squirty-house');
+                if (house) { const r = house.getBoundingClientRect(); hx = r.left + r.width / 2 - 18; hy = r.top + r.height / 2 - 12; }
+                posX += (hx - posX) * 0.08;
+                posY += (hy - posY) * 0.08;
+                velX = 0; velY = 0;
+                const home = Math.hypot(hx - posX, hy - posY) < 6;
+                squid.classList.toggle('squid-tucked', home);
+                squid.style.transform = `translate(${posX}px, ${posY}px) scale(${home ? 0.5 : 1})`;
+                reach = 0;
+                tentPaths.forEach(p => p.setAttribute('d', ''));
+                requestAnimationFrame(updatePhysics);
+                return;
+            }
+            squid.classList.remove('squid-tucked');
+
             // Every now and then, go hunt the cursor.
             if (mode === 'idle' && !isScared && mouseX > -9000 && now > nextHuntTime) {
                 mode = 'hunting';
@@ -524,18 +556,28 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 velX = 0; velY = 0;
                 grip = Math.min(GRIP_MAX, grip + 0.6); // recovers while the cursor is still
                 if (grip <= 0) detach();
-            } else if (mode === 'attacking') {
-                // Lunge the final gap onto the cursor.
-                posX += ((mouseX - 18) - posX) * 0.4;
-                posY += ((mouseY - 9) - posY) * 0.4;
+            } else if (mode === 'striking') {
+                // Tentacles have shot out; spring them taut and reel him in fast.
+                reach += (1 - reach) * 0.28;
+                if (reach > 0.5) {
+                    posX += ((mouseX - 18) - posX) * 0.34; // rapid reel-in
+                    posY += ((mouseY - 9) - posY) * 0.34;
+                }
                 velX = 0; velY = 0;
+                const cx = posX + 18, cy = posY + 18;
+                if (Math.hypot(mouseX - cx, mouseY - cy) < GRAB_RANGE) {
+                    mode = 'latched'; grip = GRIP_MAX; setSquidState('squid-chewing'); striking = false;
+                } else if (now > huntEndTime + 1500) {
+                    mode = 'idle'; setSquidState(null); striking = false;
+                    nextHuntTime = now + 10000 + Math.random() * 9000;
+                }
             } else {
                 if (mode === 'hunting') {
                     const cx = posX + 18, cy = posY + 18;
                     const dx = mouseX - cx, dy = mouseY - cy;
                     const d = Math.hypot(dx, dy) || 1;
-                    if (d < GRAB_RANGE) {
-                        startAttack();
+                    if (d < STRIKE_RANGE) {
+                        startStrike();
                     } else {
                         velX += (dx / d) * 0.75;
                         velY += (dy / d) * 0.75;
@@ -575,6 +617,36 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             }
 
             squid.style.transform = `translate(${posX}px, ${posY}px) scaleX(${flip}) rotate(${rotation}deg)`;
+
+            // Chromatophore colour-pulsing while stalking / striking.
+            const svgChro = squid.querySelector('.squid-svg');
+            if (svgChro) svgChro.classList.toggle('squid-chromatophore', mode === 'hunting' || mode === 'striking');
+
+            // Long hunting tentacles: spring from the body to the cursor and stay
+            // taut while reeling in; retract (decay) otherwise.
+            if (mode !== 'striking') reach *= 0.6;
+            if (reach > 0.03 && mouseX > -9000) {
+                const ax = posX + 18, ay = posY + 26; // tentacle root (underside / front)
+                const tx = ax + (mouseX - ax) * reach;
+                const ty = ay + (mouseY - ay) * reach;
+                let nx = -(ty - ay), ny = (tx - ax);
+                const nlen = Math.hypot(nx, ny) || 1; nx /= nlen; ny /= nlen;
+                const whip = Math.sin(now / 38) * 12 * (1 - reach); // whippy out, taut in
+                for (let i = 0; i < 2; i++) {
+                    const off = (i === 0 ? 5 : -5);
+                    const c1x = ax + (tx - ax) * 0.40 + nx * (whip + off);
+                    const c1y = ay + (ty - ay) * 0.40 + ny * (whip + off);
+                    const c2x = ax + (tx - ax) * 0.78 + nx * (-whip * 0.6 + off * 0.5);
+                    const c2y = ay + (ty - ay) * 0.78 + ny * (-whip * 0.6 + off * 0.5);
+                    const p = tentPaths[i];
+                    p.setAttribute('d', `M ${ax.toFixed(1)} ${ay.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${tx.toFixed(1)} ${ty.toFixed(1)}`);
+                    p.setAttribute('stroke', i === 0 ? '#00e5ff' : '#7df9ff');
+                    p.setAttribute('stroke-width', (1 + reach * 3).toFixed(1));
+                    p.setAttribute('opacity', Math.min(1, reach * 1.6).toFixed(2));
+                }
+            } else {
+                tentPaths.forEach(p => p.setAttribute('d', ''));
+            }
 
             // Tentacle bundle reaches toward the cursor while hunting/latched.
             const bundle = squid.querySelector('#squid-tentacle-bundle');
@@ -814,15 +886,53 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         }
     };
 
+    // Squirty's house (top-right banner) + the "Squirty timeout" navbar toggle.
+    function initSquirtyHouse() {
+        if (!document.getElementById('squirty-house')) {
+            const house = document.createElement('div');
+            house.id = 'squirty-house';
+            house.title = "Squirty's house";
+            house.innerHTML = `
+                <svg viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
+                  <rect x="7" y="1" width="2" height="1" fill="#7df9ff"/>
+                  <rect x="6" y="2" width="4" height="1" fill="#00e5ff"/>
+                  <rect x="5" y="3" width="6" height="1" fill="#00e5ff"/>
+                  <rect x="4" y="4" width="8" height="1" fill="#00e5ff"/>
+                  <rect x="3" y="5" width="10" height="1" fill="#00b8d4"/>
+                  <rect x="4" y="6" width="8" height="7" fill="#00838f"/>
+                  <rect x="4" y="6" width="8" height="1" fill="#00b8d4"/>
+                  <rect x="5" y="7" width="2" height="2" fill="#7df9ff"/>
+                  <rect x="9" y="9" width="2" height="4" fill="#003b44"/>
+                  <rect x="9" y="9" width="2" height="1" fill="#00e5ff"/>
+                  <rect x="3" y="13" width="10" height="1" fill="#00b8d4"/>
+                </svg>`;
+            document.body.appendChild(house);
+        }
+        const mainMenu = document.getElementById('main-menu');
+        if (mainMenu && !mainMenu.querySelector('.navbar-squirty-timeout')) {
+            const li = document.createElement('li');
+            li.className = 'navbar-squirty-timeout';
+            li.textContent = '\u{1F3E0} Squirty timeout';
+            li.title = 'Send Squirty to his house (click again to let him out)';
+            li.addEventListener('click', () => {
+                window.__squirtyTimeout = !window.__squirtyTimeout;
+                li.classList.toggle('active', !!window.__squirtyTimeout);
+            });
+            mainMenu.appendChild(li);
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(relocateTitle, 50);
             setTimeout(initCounter, 75);
+            setTimeout(initSquirtyHouse, 90);
             setTimeout(initSquid, 100);
         });
     } else {
         setTimeout(relocateTitle, 50);
         setTimeout(initCounter, 75);
+        setTimeout(initSquirtyHouse, 90);
         setTimeout(initSquid, 100);
     }
 })();

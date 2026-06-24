@@ -5,7 +5,7 @@
  * @file provisioning_service.cpp
  * @brief First-boot WiFi provisioning / captive portal (DETWS_ENABLE_PROVISIONING).
  *
- * The catch-all DNS responder is a raw lwIP UDP socket (no add-on library);
+ * The catch-all DNS responder uses the transport-layer UDP service (no add-on library);
  * credentials persist to NVS via Preferences.
  */
 
@@ -81,28 +81,20 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 
 #if DETWS_ENABLE_PROVISIONING && defined(ARDUINO)
 
-#include "DETWS_HTML.h"
 #include "DeterministicESPAsyncWebServer.h"
-#include "lwip/pbuf.h"
-#include "lwip/udp.h"
+#include "network_drivers/application/html.h"
+#include "network_drivers/transport/udp_transport.h"
 #include <Arduino.h>
 #include <Preferences.h>
 #include <WiFi.h>
 
 static DetWebServer *g_server = nullptr;
-static struct udp_pcb *g_dns_pcb = nullptr;
 static uint8_t g_ap_ip[4] = {192, 168, 4, 1};
 
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
-static void prov_dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *peer, void *ctx)
 {
-    (void)arg;
-    if (!p)
-        return;
-    uint8_t req[256];
-    u16_t qlen = (p->len < sizeof(req)) ? p->len : sizeof(req);
-    pbuf_copy_partial(p, req, qlen, 0);
-    pbuf_free(p);
+    (void)ctx;
     if (qlen < 12)
         return; // smaller than a DNS header
 
@@ -143,13 +135,7 @@ static void prov_dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const 
     resp[n++] = g_ap_ip[2];
     resp[n++] = g_ap_ip[3];
 
-    struct pbuf *out = pbuf_alloc(PBUF_TRANSPORT, (u16_t)n, PBUF_RAM);
-    if (out)
-    {
-        memcpy(out->payload, resp, n);
-        udp_sendto(pcb, out, addr, port);
-        pbuf_free(out);
-    }
+    det_udp_send(peer, resp, n);
 }
 
 bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap)
@@ -221,13 +207,8 @@ void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
     g_ap_ip[2] = ip[2];
     g_ap_ip[3] = ip[3];
 
-    // Catch-all DNS on UDP/53 (raw lwIP - callback-driven, no polling).
-    g_dns_pcb = udp_new();
-    if (g_dns_pcb)
-    {
-        udp_bind(g_dns_pcb, IP_ANY_TYPE, 53);
-        udp_recv(g_dns_pcb, prov_dns_recv, nullptr);
-    }
+    // Catch-all DNS on UDP/53 via the transport-layer UDP service (callback-driven).
+    det_udp_listen(53, prov_dns_recv, nullptr);
 
     server.on("/save", HTTP_POST, prov_save_handler);
     server.on("/*", HTTP_GET, prov_form_handler); // any other path -> the form

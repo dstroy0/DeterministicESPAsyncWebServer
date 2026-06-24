@@ -206,8 +206,8 @@ void ws_reset_frame(WsConn *ws);
  * @brief Send a WebSocket frame to the client.
  *
  * Builds the header (no masking -- server-to-client frames are never masked)
- * and hands both to tcp_write().  The caller is responsible for calling
- * tcp_output() afterwards.
+ * and hands both to the transport layer (det_conn_send()).  The caller is
+ * responsible for flushing afterwards (det_conn_flush()).
  *
  * @param ws       WebSocket connection.
  * @param opcode   Frame opcode (WS_OP_TEXT, WS_OP_BINARY, WS_OP_PONG, etc.).

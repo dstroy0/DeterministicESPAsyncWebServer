@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 18.Json.ino
+ * @file 17.Json.ino
  * @brief Zero-heap JSON: build responses with JsonWriter, read requests with json_get_*.
  *
  * JsonWriter formats into a fixed stack buffer (no heap); json_get_str/int/bool
- * read top-level members of a JSON request body in place. See DetJson.h.
+ * read top-level members of a JSON request body in place. See json.h.
  *
  * Flash, open Serial @ 115200 for the IP, then:
  *   curl http://<ip>/api/info

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 15.Templating.ino
+ * @file 33.Templating.ino
  * @brief Response templating with {{name}} placeholder substitution.
  *
  * send_template() streams a template, replacing each `{{name}}` token with the
