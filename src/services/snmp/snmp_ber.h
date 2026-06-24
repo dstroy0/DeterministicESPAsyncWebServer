@@ -48,6 +48,7 @@ enum SnmpTag
     SNMP_PDU_SET = 0xA3,
     SNMP_PDU_GETBULK = 0xA5,
     SNMP_PDU_TRAPV2 = 0xA7,
+    SNMP_PDU_REPORT = 0xA8,
 };
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ bool ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d, size_t n); /
 bool ber_put_null(BerEnc *e);                                                  ///< NULL
 bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n);                   ///< OBJECT IDENTIFIER (n >= 2)
 bool ber_put_tlv(BerEnc *e, uint8_t tag, const uint8_t *val, size_t n);        ///< raw primitive TLV
+bool ber_put_raw(BerEnc *e, const uint8_t *bytes, size_t n);                   ///< append pre-encoded bytes verbatim
 
 size_t ber_seq_begin(BerEnc *e, uint8_t tag); ///< open a constructed type; returns a token
 void ber_seq_end(BerEnc *e, size_t token);    ///< close it (back-patch the length)

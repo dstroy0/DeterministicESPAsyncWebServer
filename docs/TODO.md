@@ -398,19 +398,40 @@ by how often a deployed device needs it.
       for now; an upgrade on a TLS conn returns 501), session resumption, and
       `MAX_TLS_CONNS` > 1 (needs smaller IDF record buffers).
 
-- [ ] **SNMP agent v1 / v2c / v3.** Zero-heap ASN.1 BER codec + a fixed MIB
+- **SNMP agent v1 / v2c / v3.** Zero-heap ASN.1 BER codec + a fixed MIB
       (OID table) over a raw lwIP UDP socket, GET / GETNEXT / GETBULK / SET.
       Shared base (codec + PDU + MIB) is native-testable.
-  - v1/v2c: community-string access (RFC 1157 / 3416), no crypto.
-  - v3 (USM, RFC 3414): gated behind `DETWS_ENABLE_SNMP_V3` (default off). Auth
-    via HMAC-SHA (`usmHMACSHA`/`usmHMACSHA-2`, reusing the existing SHA-1/SHA-256
-    + HMAC), privacy via AES-128-CFB (RFC 3826; the AES block core is reused, CFB
-    mode added). Also needs the v3 message framing (msgGlobalData +
-    msgSecurityParameters + scopedPDU), engine discovery (Report PDU), timeliness
-    window (engineBoots/engineTime, persisted in NVS), and key localization
-    (RFC 3414 §2.6). The security model is "an auth layer," but the message
-    format + discovery + timeliness roughly double the code vs v1/v2c - hence the
-    flag gate.
+  - [x] BER codec (RFC indefinite-free definite-length TLV): INTEGER, OCTET
+        STRING, NULL, OID (base-128), SEQUENCE, and the SNMP application types.
+        `src/services/snmp/snmp_ber.*`, KAT-tested (`env:native_snmp`).
+  - [x] v1/v2c agent (community-string access, RFC 1157 / 3416): GET / GETNEXT /
+        GETBULK / SET dispatch over a fixed MIB-II-style table, per-varbind v2c
+        exceptions (`noSuchObject`/`endOfMibView`) and v1 error-status/-index,
+        SET gated by a separate read-write community. `snmp_agent_process()` is a
+        pure, host-testable core (13 tests); the lwIP UDP socket on :161 mirrors
+        the provisioning DNS responder. `snmp_agent_*` API, example `23.SNMP`.
+        **HW-verified** with a UDP client: `snmpget`/walk of the system group in
+        OID order, GetBulk, dynamic Gauge32, SET authorization (RO→noAccess,
+        RW→success), v1 `noSuchName`, and unknown-community drop all behave per
+        net-snmp.
+  - [x] v3 (USM, RFC 3414): gated behind `DETWS_ENABLE_SNMP_V3` (default off).
+        Auth = `usmHMAC192SHA256` (HMAC-SHA-256, 24-byte; RFC 7860, reusing the
+        SSH SHA-256/HMAC), privacy = `usmAesCfb128` (AES-128-CFB, RFC 3826 - a
+        compact portable AES added in `snmp_crypto`). Implements the v3 message
+        framing (msgGlobalData + msgSecurityParameters + scopedPDU), engine
+        discovery (Report `usmStatsUnknownEngineIDs`), the timeliness window
+        (engineBoots/engineTime; boots persists via `snmp_v3_set_boots()` from
+        NVS), USM error Reports (unknownUserNames / wrongDigests /
+        notInTimeWindows / decryptionErrors), and key localization (RFC 3414
+        §2.6). `snmp_v3_*` API; `snmp_v3_process()` reuses the shared
+        [`snmp_dispatch_pdu()`](@ref snmp_dispatch_pdu) MIB core. Native tests
+        (`env:native_snmp_v3`): SHA-256 localization KAT (hashlib-grounded),
+        AES-128 FIPS-197 KAT, and the full discovery -> authNoPriv -> authPriv
+        flow. **HW-verified** against an independent manager (pycryptodome AES +
+        Python hashlib/hmac): authNoPriv + authPriv GET/SET and the error Reports
+        interoperate byte-for-byte over real UDP. Example `23.SNMP` (set the
+        flag to enable the user). _Follow-up:_ derive the engine ID from the chip
+        MAC; persist engineBoots across reboots.
 
 (Deliberately omitted as not worth the footprint for this class of device:
 WebSocket permessage-deflate.)

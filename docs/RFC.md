@@ -112,6 +112,48 @@ authentication, AEAD AES-256-GCM). Server certificate/key are loaded via
 `wss://` and TLS Server-Sent Events are not yet wired (an upgrade on a TLS
 connection is answered `501`). Full properties and caveats: [SECURITY.md](SECURITY.md) §6.
 
+## SNMP agent (RFC 1157 / 1901 / 3416 / 2578 / 1213)
+
+Optional SNMP agent ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default off)
+on a raw lwIP UDP socket (port 161), with a zero-heap ASN.1 BER codec and a
+fixed MIB table. Conformance:
+
+- **Message format (RFC 1157 §3 / RFC 1901):** `SNMPv1` (version 0) and
+  `SNMPv2c` (version 1) community-based messages — `SEQUENCE { version, community,
+  PDU }`. A request whose community matches neither the read-only nor the
+  read-write community is silently discarded.
+- **SNMPv3 / USM (RFC 3412 / 3414, optional `DETWS_ENABLE_SNMP_V3`):** the v3
+  message format (msgGlobalData + msgSecurityParameters + scopedPDU), engine
+  discovery (Report `usmStatsUnknownEngineIDs`), the timeliness window
+  (engineBoots / engineTime), authentication `usmHMAC192SHA256` (HMAC-SHA-256,
+  RFC 7860) and privacy `usmAesCfb128` (AES-128-CFB, RFC 3826), with key
+  localization per RFC 3414 §2.6. The authenticated, decrypted inner PDU is
+  dispatched through the same MIB core as v1/v2c.
+- **ASN.1 BER (X.690 / RFC 2578 types):** definite-length TLV encoding of
+  `INTEGER`, `OCTET STRING`, `NULL`, `OBJECT IDENTIFIER` (first two arcs packed as
+  `40·a+b`, sub-identifiers in base-128), `SEQUENCE`, and the SMI application types
+  `Counter32` / `Gauge32` / `TimeTicks` / `IpAddress` / `Opaque`. Integers use the
+  minimal two's-complement form; unsigned application types add a leading `0x00`
+  when the high bit is set.
+- **PDU operations (RFC 1157 §4 / RFC 3416 §4):** `GetRequest`, `GetNextRequest`,
+  `GetBulkRequest` (v2c), and `SetRequest`, each answered with a `GetResponse`
+  echoing the request id. v2c retrieval reports per-varbind exceptions
+  (`noSuchObject` / `endOfMibView`); v1 reports `error-status` / `error-index`
+  (`noSuchName`). `Set` is authorized by the read-write community and uses
+  `error-status` (`noAccess` / `notWritable` / `wrongType`) in both versions.
+  `GetBulk` honors `non-repeaters` / `max-repetitions`, clamped so the response
+  never exceeds `SNMP_MAX_VARBINDS`; an over-large response degrades to `tooBig`.
+- **MIB (RFC 1213):** the standard `system` group (`1.3.6.1.2.1.1`) —
+  `sysDescr`, `sysObjectID`, `sysUpTime` (`TimeTicks`), `sysContact`, `sysName`,
+  `sysLocation`, `sysServices` — plus any application objects registered under a
+  private enterprise subtree. `GetNext` / `GetBulk` walk objects in lexicographic
+  OID order.
+
+The decode/dispatch/encode core ([`snmp_agent_process()`](@ref snmp_agent_process))
+is transport-independent and host-tested; only the UDP socket is ESP32-specific.
+SNMP security properties (cleartext community strings, no v1/v2c authentication):
+[SECURITY.md](SECURITY.md).
+
 ## Automatic error responses
 
 [`handle()`](@ref DetWebServer::handle) sends these before dispatching to any route handler:
