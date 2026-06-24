@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 17.ChunkedResponse.ino
+ * @file 08.ChunkedResponse.ino
  * @brief Streaming a response of unknown length with chunked transfer.
  *
  * send_chunked() writes the status + headers (Transfer-Encoding: chunked), then

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file DetJson.cpp
+ * @file json.cpp
  * @brief Implementation of the zero-heap JSON writer and top-level reader.
  */
 
-#include "DetJson.h"
+#include "json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

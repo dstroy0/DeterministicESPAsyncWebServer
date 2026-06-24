@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 09.OTA.ino
+ * @file 21.OTA.ino
  * @brief Authenticated over-the-air firmware update (DETWS_ENABLE_OTA).
  *
  * Registers a streaming `POST /update` endpoint: a firmware image POSTed with

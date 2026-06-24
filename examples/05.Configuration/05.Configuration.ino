@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 02.Configuration.ino
+ * @file 05.Configuration.ino
  * @brief Reference for every user-configurable flag and constant, plus runnable
  *        routes that echo the active configuration so you can confirm your
  *        overrides took effect.

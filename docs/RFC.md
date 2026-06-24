@@ -115,7 +115,7 @@ connection is answered `501`). Full properties and caveats: [SECURITY.md](SECURI
 ## SNMP agent (RFC 1157 / 1901 / 3416 / 2578 / 1213)
 
 Optional SNMP agent ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default off)
-on a raw lwIP UDP socket (port 161), with a zero-heap ASN.1 BER codec and a
+on UDP port 161 (via the transport-layer UDP service), with a zero-heap ASN.1 BER codec and a
 fixed MIB table. Conformance:
 
 - **Message format (RFC 1157 §3 / RFC 1901):** `SNMPv1` (version 0) and

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file DetJson.h
- * @brief Zero-heap JSON: a bounded writer and top-level reader.
+ * @file json.h
+ * @brief Layer 6 (Presentation) - zero-heap JSON: a bounded writer and top-level reader.
  *
  * A deliberately small JSON helper for the common IoT shapes (a flat-ish object
  * of strings / numbers / booleans, with bounded nesting). It allocates nothing:
@@ -35,8 +35,8 @@
  * @endcode
  */
 
-#ifndef DETERMINISTICESPASYNCWEBSERVER_DETJSON_H
-#define DETERMINISTICESPASYNCWEBSERVER_DETJSON_H
+#ifndef DETERMINISTICESPASYNCWEBSERVER_JSON_H
+#define DETERMINISTICESPASYNCWEBSERVER_JSON_H
 
 #include "DetWebServerConfig.h"
 #include <stddef.h>
@@ -145,4 +145,4 @@ bool json_get_int(const char *json, const char *key, long *out);
  */
 bool json_get_bool(const char *json, const char *key, bool *out);
 
-#endif // DETERMINISTICESPASYNCWEBSERVER_DETJSON_H
+#endif // DETERMINISTICESPASYNCWEBSERVER_JSON_H

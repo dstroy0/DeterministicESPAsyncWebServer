@@ -1,6 +1,6 @@
 # Documentation
 
-An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, and SNMP.
 
 ![Version](https://img.shields.io/badge/version-v1.2.7-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
@@ -11,23 +11,51 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 
 ## Features
 
-- **Zero heap allocation - ever** - the event queue, connection pool, HTTP pool, WebSocket pool, and SSE pool are all statically sized in BSS; the entire memory footprint is fixed at link time
+- **Zero heap allocation - ever** - the event queue, connection pool, HTTP pool, WebSocket/SSE pools, TLS arena, and SNMP buffers are all statically sized in BSS; the entire memory footprint is fixed at link time
 - **RFC 7230 compliant request parser** - validates method, path, header field-names, and field-values byte-by-byte before storing anything
-- **WebSocket support** (RFC 6455) - SHA-1 handshake via mbedTLS hardware accelerator, frame parser, ping/pong/close handled automatically
+- **Flexible routing** - exact, wildcard (`/*`), `:param` path parameters, bounded allocation-free regex routes ([`on_regex()`](@ref DetWebServer::on_regex)), and per-interface STA/softAP route filters
+- **Request data** - query-string, `x-www-form-urlencoded` form fields, in-place `multipart/form-data` uploads (up to [`MAX_MULTIPART_PARTS`](@ref MAX_MULTIPART_PARTS)), and a zero-heap JSON writer/reader (`json.h`)
+- **Response tools** - custom headers + cookies, CORS with preflight, `{{var}}` templating ([`send_template()`](@ref DetWebServer::send_template)), and chunked/streaming responses ([`send_chunked()`](@ref DetWebServer::send_chunked)) of unbounded length in constant memory
+- **WebSocket support** (RFC 6455) - SHA-1 handshake via mbedTLS hardware accelerator, frame parser, ping/pong/close handled automatically; plus a browser web-serial terminal over WebSocket
 - **Server-Sent Events** - persistent connections, per-connection and broadcast push
-- **HTTP Basic Authentication** - per-route credential checking via mbedTLS base64
-- **Static file serving** - chunked reads from any Arduino `FS` (LittleFS, SPIFFS, SD)
-- **Multipart form-data parser** - in-place, no allocation, up to [`MAX_MULTIPART_PARTS`](@ref MAX_MULTIPART_PARTS) parts
-- **Compile-time feature flags** - strip unused subsystems entirely; a REST-only build includes none of the above
-- **Compile-time configuration** - every buffer, pool, and timeout is a `#define`; illegal combinations produce `#error` messages
+- **Authentication** - per-route HTTP Basic (RFC 7617) and Digest (RFC 7616, SHA-256, `qop=auth`)
+- **Static file serving** - chunked reads from any Arduino `FS` (LittleFS, SPIFFS, SD), `index.html` fallback, MIME detection, pre-compressed `.gz`, and `ETag`/`304` conditional GET
+- **HTTPS / TLS** - optional ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) mbedTLS over a fixed static memory pool, so encrypted transport keeps the no-heap guarantee
+- **SSH 2.0 server** - zero-heap SSH with host-key verification and password/publickey auth (hardware-accelerated crypto)
+- **Telnet console** (RFC 854) - plaintext line console with IAC negotiation + server echo, for trusted networks
+- **SNMP agent** - v1/v2c plus optional v3 USM (HMAC-SHA-256 + AES-128) over UDP, with a zero-heap ASN.1 BER codec and fixed MIB
+- **Middleware & rate limiting** - composable [`use()`](@ref DetWebServer::use) pipeline, fixed-window rate limiter, and an opt-in accept-throttle
+- **mDNS & NTP services** - zero-dependency multicast DNS hostname advertisement and SNTP wall-clock time synchronization
+- **OTA updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
+- **Captive portal provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
+- **Compile-time feature flags & configuration** - every subsystem is gated by a `DETWS_ENABLE_*` flag (default off) and every buffer/pool/timeout is a `#define`; illegal combinations produce `#error` messages
 - **Diagnostic JSON endpoint** - optional [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) build-config dump, disabled by default for security
 - **Backpressure-aware TCP** - shrinks the receive window instead of dropping data when the ring buffer fills
-- **CORS preflight short-circuit** - OPTIONS answered with 204 automatically when CORS is enabled
 - **[`restart()`](@ref DetWebServer::restart)** - hard-resets all connections and reinitialises on the same port without touching the WiFi/TCP stack
-- **mDNS & NTP Services** - zero-dependency multicast DNS hostname advertisement and SNTP wall-clock time synchronization for local discovery and request logging
-- **OTA Updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
-- **Captive Portal Provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
-- **498 tests** across 19 Unity test suites, runnable on native x86/x64 (no hardware required)
+- **Native-testable** - the protocol/parser/codec logic runs on host x86/x64 under Unity (no hardware required)
+
+## Build Footprint
+
+Measured on `esp32dev` (Arduino core, `pio ci`). The baseline → server jump is almost entirely the WiFi/lwIP stack; the library and most HTTP features add little on top. Each indented row enables one optional subsystem over the default server.
+
+| Build                                                                               | Flash (bytes) | RAM (bytes) |
+| ----------------------------------------------------------------------------------- | ------------: | ----------: |
+| Empty sketch (no WiFi, no library) - _RTOS/Arduino baseline_                         |       233,257 |      21,032 |
+| Minimal REST server (WS/SSE/multipart/file/auth stripped)                           |       734,745 |      57,936 |
+| **Default server** (HTTP + WebSocket + SSE + multipart + file serving + Basic auth) |       745,133 |      64,264 |
+| &nbsp;&nbsp;+ HTTPS / TLS (static-pool mbedTLS)                                      |       847,185 |     115,164 |
+| &nbsp;&nbsp;+ SSH 2.0 server                                                         |       798,005 |      76,556 |
+| &nbsp;&nbsp;+ SNMP agent (v1/v2c)                                                    |       751,277 |      76,648 |
+| &nbsp;&nbsp;+ mDNS                                                                   |       768,037 |      66,160 |
+| &nbsp;&nbsp;+ SNTP                                                                   |       768,861 |      66,808 |
+| &nbsp;&nbsp;+ OTA update                                                             |       748,417 |      64,544 |
+| &nbsp;&nbsp;+ Captive-portal provisioning                                            |       750,709 |      65,836 |
+| &nbsp;&nbsp;+ Static files via LittleFS (incl. ETag)                                |       784,361 |      64,288 |
+| &nbsp;&nbsp;+ Telnet console                                                         |       745,137 |      64,784 |
+| &nbsp;&nbsp;+ Web terminal (WebSocket)                                               |       747,613 |      64,336 |
+| SSH crypto self-test (Serial only, no WiFi)                                          |       269,585 |      21,476 |
+
+TLS's larger RAM is the fixed mbedTLS arena ([`DETWS_TLS_ARENA_SIZE`](@ref DETWS_TLS_ARENA_SIZE), 48 KB default). Small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) stay within a few KB of the default server. ESP32 capacity: 1,310,720 B flash / 327,680 B RAM.
 
 ## Installation
 
@@ -69,7 +97,7 @@ void loop()
 }
 ```
 
-See `examples/02.Configuration/02.Configuration.ino` for a full reference of every configurable flag and constant.
+See `examples/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
 
 ## Architecture
 

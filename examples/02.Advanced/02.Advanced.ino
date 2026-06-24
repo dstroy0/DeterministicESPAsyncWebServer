@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 03.Advanced.ino
+ * @file 02.Advanced.ino
  * @brief Advanced example: RESTful CRUD APIs, header verification, and
  *        zero-allocation JSON parsing.
  *

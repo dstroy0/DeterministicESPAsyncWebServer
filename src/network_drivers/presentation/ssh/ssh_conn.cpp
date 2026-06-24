@@ -8,7 +8,6 @@
 
 #include "ssh_conn.h"
 #include "../../transport/transport.h"
-#include "lwip/tcp.h"
 #include "ssh_channel.h"
 #include "ssh_keymat.h"
 #include "ssh_packet.h"
@@ -47,8 +46,8 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
     size_t wlen = 0;
     if (ssh_pkt_send(i, payload, len, wire, &wlen, sizeof(wire)) != 0)
         return;
-    tcp_write(conn->pcb, wire, (u16_t)wlen, TCP_WRITE_FLAG_COPY);
-    tcp_output(conn->pcb);
+    det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
+    det_conn_flush(conn->id, conn->pcb);
 }
 
 // ssh_pkt_recv handler: dispatch one decrypted message, remember fatal results.
@@ -83,8 +82,8 @@ int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
     size_t wlen = 0;
     if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, sizeof(wire)) != 0)
         return -1;
-    tcp_write(conn->pcb, wire, (u16_t)wlen, TCP_WRITE_FLAG_COPY);
-    tcp_output(conn->pcb);
+    det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
+    det_conn_flush(conn->id, conn->pcb);
     return (int)len;
 }
 
@@ -110,9 +109,8 @@ void ssh_conn_accept(uint8_t conn_slot)
         // No SSH capacity: drop the connection.
         if (conn->pcb)
         {
-            tcp_arg(conn->pcb, nullptr);
-            if (tcp_close(conn->pcb) != ERR_OK)
-                tcp_abort(conn->pcb);
+            det_conn_detach(conn->pcb);
+            det_conn_close(conn->pcb);
         }
         conn->state = CONN_FREE;
         conn->pcb = nullptr;
@@ -132,8 +130,8 @@ void ssh_conn_accept(uint8_t conn_slot)
     size_t blen = 0;
     if (ssh_transport_server_banner(banner, &blen, sizeof(banner)) == 0 && conn->pcb)
     {
-        tcp_write(conn->pcb, banner, (u16_t)blen, TCP_WRITE_FLAG_COPY);
-        tcp_output(conn->pcb);
+        det_conn_send(conn->id, conn->pcb, banner, (u16_t)blen);
+        det_conn_flush(conn->id, conn->pcb);
     }
 }
 
@@ -142,9 +140,8 @@ static void close_conn(uint8_t conn_slot)
     TcpConn *conn = &conn_pool[conn_slot];
     if (conn->pcb)
     {
-        tcp_arg(conn->pcb, nullptr);
-        if (tcp_close(conn->pcb) != ERR_OK)
-            tcp_abort(conn->pcb);
+        det_conn_detach(conn->pcb);
+        det_conn_close(conn->pcb);
     }
     conn->state = CONN_FREE;
     conn->pcb = nullptr;

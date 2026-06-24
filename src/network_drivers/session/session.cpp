@@ -19,14 +19,16 @@
 #if DETWS_ENABLE_SSH
 #include "../presentation/ssh/ssh_conn.h"
 #endif
+#if DETWS_ENABLE_TELNET
+#include "../presentation/telnet.h"
+#endif
 
 #if DETWS_ENABLE_TLS
 #include "../presentation/http_parser.h"
 #include "../tls/det_tls.h"
-#include "lwip/tcp.h"
 
 // Abort a TLS connection (fatal handshake/read error): free the TLS context and
-// tear down the TCP slot.
+// tear down the TCP slot (through the transport-layer connection API).
 static void tls_abort(uint8_t slot)
 {
     TcpConn *c = &conn_pool[slot];
@@ -34,10 +36,10 @@ static void tls_abort(uint8_t slot)
     if (c->pcb)
     {
         struct tcp_pcb *p = c->pcb;
-        tcp_arg(p, nullptr);
+        det_conn_detach(p);
         c->state = CONN_FREE;
         c->pcb = nullptr;
-        tcp_abort(p);
+        det_conn_abort(p);
     }
     http_reset(slot);
 }
@@ -108,6 +110,9 @@ void server_tick()
                     http_reset(evt.slot_id);
                     break;
                 case PROTO_TELNET:
+#if DETWS_ENABLE_TELNET
+                    telnet_accept(evt.slot_id);
+#endif
                     break;
                 case PROTO_SSH:
 #if DETWS_ENABLE_SSH
@@ -130,6 +135,9 @@ void server_tick()
                     http_reset(evt.slot_id);
                     break;
                 case PROTO_TELNET:
+#if DETWS_ENABLE_TELNET
+                    telnet_close(evt.slot_id);
+#endif
                     break;
                 case PROTO_SSH:
 #if DETWS_ENABLE_SSH
@@ -154,6 +162,9 @@ void server_tick()
                     http_parse(evt.slot_id);
                     break;
                 case PROTO_TELNET:
+#if DETWS_ENABLE_TELNET
+                    telnet_rx(evt.slot_id);
+#endif
                     break;
                 case PROTO_SSH:
 #if DETWS_ENABLE_SSH

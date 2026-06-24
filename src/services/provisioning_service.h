@@ -6,7 +6,7 @@
  * @brief First-boot WiFi provisioning via a captive portal (DETWS_ENABLE_PROVISIONING).
  *
  * When no WiFi credentials are stored, the device starts a softAP and a
- * catch-all DNS responder (a raw lwIP UDP socket - no add-on library) so any
+ * catch-all DNS responder (via the transport-layer UDP service - no add-on library) so any
  * connected client is funneled to a credentials form. Submitted SSID/passphrase
  * are persisted to NVS and the device reboots into station mode. Uses only
  * `WiFi.softAP`, lwIP UDP, and `Preferences`; compiled to stubs when disabled
@@ -52,7 +52,7 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
  * @brief Start the captive portal: softAP @p ap_ssid + catch-all DNS + form routes.
  *
  * Registers `GET /*` (the credentials form) and `POST /save` (persist + reboot)
- * on @p server. The catch-all DNS responder runs from a raw lwIP UDP callback,
+ * on @p server. The catch-all DNS responder runs from a transport-layer UDP callback,
  * so no per-loop servicing is required. Call after server.begin().
  */
 void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid);

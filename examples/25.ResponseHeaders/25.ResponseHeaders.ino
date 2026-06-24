@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 11.ResponseHeaders.ino
+ * @file 25.ResponseHeaders.ino
  * @brief Custom response headers and cookies.
  *
  * Demonstrates queuing extra headers onto a response from inside a handler:

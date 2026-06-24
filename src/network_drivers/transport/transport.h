@@ -202,6 +202,30 @@ class DeterministicAsyncTCP
 };
 
 // ---------------------------------------------------------------------------
+// Connection output API (defined in transport.cpp)
+// ---------------------------------------------------------------------------
+// The one send/flush/close path for all higher layers. Presentation (WebSocket,
+// SSE, SSH) and the HTTP application call these instead of touching lwIP, so the
+// transport layer stays the sole owner of TCP I/O. det_conn_send/flush are
+// TLS-aware (route through the TLS record layer when the slot is a TLS conn);
+// with DETWS_ENABLE_TLS off they are byte-identical to tcp_write/tcp_output.
+
+/** @brief Send @p len bytes on connection @p slot (copies @p data; TLS-aware). */
+void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len);
+
+/** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
+void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
+
+/** @brief Close @p pcb gracefully (tcp_close), aborting if the FIN cannot be queued. */
+void det_conn_close(struct tcp_pcb *pcb);
+
+/** @brief Detach @p pcb from its slot's lwIP callbacks before the slot is freed. */
+void det_conn_detach(struct tcp_pcb *pcb);
+
+/** @brief Hard-abort @p pcb (RST) for a fatal condition; no graceful FIN. */
+void det_conn_abort(struct tcp_pcb *pcb);
+
+// ---------------------------------------------------------------------------
 // Per-connection lwIP callbacks (defined in transport.cpp, used in listener.cpp)
 // ---------------------------------------------------------------------------
 

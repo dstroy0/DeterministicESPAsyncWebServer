@@ -7,7 +7,7 @@
  */
 
 #include "sse.h"
-#include "lwip/tcp.h"
+#include "network_drivers/transport/transport.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -86,6 +86,6 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
     if (pos <= 0 || pos >= rem)
         return false;
 
-    tcp_write(conn->pcb, buf, (u16_t)pos, TCP_WRITE_FLAG_COPY);
+    det_conn_send(conn->id, conn->pcb, buf, (u16_t)pos);
     return true;
 }

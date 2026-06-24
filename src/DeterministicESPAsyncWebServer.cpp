@@ -24,11 +24,13 @@
  *
  * **PCB lifecycle in send() / send_empty()**
  * Before writing to the PCB the slot is set to `CONN_FREE` and the pcb
- * pointer is nulled.  This mirrors the pattern in transport.cpp:
+ * pointer is nulled.  All TCP I/O goes through the transport-layer connection
+ * API (det_conn_send / det_conn_flush / det_conn_close / det_conn_detach), so
+ * this layer never calls lwIP directly:
  *   1. Save a local copy of the pcb pointer.
- *   2. Detach our slot from it (`tcp_arg(pcb, nullptr)`).
+ *   2. Detach our slot from it (`det_conn_detach(pcb)`).
  *   3. Null out `conn->pcb` and set `conn->state = CONN_FREE`.
- *   4. Do the write + close/abort on the saved local pointer.
+ *   4. Do the send + flush + close on the saved local pointer.
  *
  * This means any lwIP error callback that fires mid-write sees the slot as
  * already free and takes no action - preventing a double-free scenario.
@@ -67,40 +69,9 @@ static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
  * @param code HTTP status integer.
  * @return Pointer to a string-literal reason phrase; never null.
  */
-// ---------------------------------------------------------------------------
-// Output chokepoint: route response bytes through TLS when the connection is
-// TLS, else straight to lwIP. With DETWS_ENABLE_TLS off these are byte-identical
-// to the original tcp_write/tcp_output calls (so the plaintext path is
-// unchanged). conn->tls / the TLS context survive the senders' detach-before-
-// write (det_tls keeps its own pcb), so reading conn_pool[slot].tls here is safe.
-// ---------------------------------------------------------------------------
-static inline void conn_write(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
-{
-#if DETWS_ENABLE_TLS
-    if (conn_pool[slot].tls)
-    {
-        det_tls_write(slot, data, len);
-        return;
-    }
-#endif
-    (void)slot;
-    tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
-}
-
-// Finish a response: TLS sends close_notify (the TCP close follows); plaintext
-// flushes the send buffer. Caller still issues tcp_close() afterwards.
-static inline void conn_finish(uint8_t slot, struct tcp_pcb *pcb)
-{
-#if DETWS_ENABLE_TLS
-    if (conn_pool[slot].tls)
-    {
-        det_tls_conn_end(slot);
-        return;
-    }
-#endif
-    (void)slot;
-    tcp_output(pcb);
-}
+// Response bytes go out via the transport-layer connection I/O API
+// (det_conn_send / det_conn_flush / det_conn_close, see transport.h) so this
+// application layer never calls lwIP directly.
 
 static const char *status_text(int code)
 {
@@ -975,14 +946,13 @@ static void ws_send_version_required(uint8_t slot_id)
                                "Connection: close\r\n\r\n";
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, resp, (u16_t)(sizeof(resp) - 1), TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_send(slot_id, pcb, resp, (u16_t)(sizeof(resp) - 1));
+    det_conn_flush(slot_id, pcb);
+    det_conn_close(pcb);
 
     http_reset(slot_id);
 }
@@ -1009,8 +979,8 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
                         "Sec-WebSocket-Accept: %s\r\n\r\n",
                         accept);
 
-    tcp_write(conn->pcb, hdr, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
-    tcp_output(conn->pcb);
+    det_conn_send(slot_id, conn->pcb, hdr, (u16_t)hlen);
+    det_conn_flush(slot_id, conn->pcb);
 
     // Reset HTTP parser but keep the TCP slot -- WS owns it now
     http_reset(slot_id);
@@ -1019,7 +989,7 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
     if (!ws)
     {
         // No WS slot available -- abort the connection
-        tcp_arg(conn->pcb, nullptr);
+        det_conn_detach(conn->pcb);
         conn->state = CONN_FREE;
         conn->pcb = nullptr;
         return false;
@@ -1051,8 +1021,8 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_c
                                   "Cache-Control: no-cache\r\n"
                                   "Connection: keep-alive\r\n\r\n";
 
-    tcp_write(conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1), TCP_WRITE_FLAG_COPY);
-    tcp_output(conn->pcb);
+    det_conn_send(slot_id, conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
+    det_conn_flush(slot_id, conn->pcb);
 
     // Reset HTTP parser; SSE keeps the TCP slot open
     const char *path = req->path;
@@ -1061,7 +1031,7 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_c
     SseConn *sse = sse_alloc(slot_id, path);
     if (!sse)
     {
-        tcp_arg(conn->pcb, nullptr);
+        det_conn_detach(conn->pcb);
         conn->state = CONN_FREE;
         conn->pcb = nullptr;
         return false;
@@ -1118,16 +1088,15 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
                         allow, (int)(sizeof(body) - 1));
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
-        conn_write(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
-    conn_finish(slot_id, pcb);
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    det_conn_flush(slot_id, pcb);
+    det_conn_close(pcb);
     http_reset(slot_id);
 }
 
@@ -1342,20 +1311,19 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
      * Detach and free the slot before writing.  Any lwIP error callback
      * firing during tcp_write will see CONN_FREE and take no action.
      */
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
     bool head = req_is_head(slot_id);
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     // HEAD responses carry the headers (incl. Content-Length) but no body.
     if (!head && payload_len > 0)
-        conn_write(slot_id, pcb, payload, (u16_t)payload_len);
-    conn_finish(slot_id, pcb);
+        det_conn_send(slot_id, pcb, payload, (u16_t)payload_len);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     note_response(slot_id, code, payload_len);
     http_reset(slot_id);
@@ -1390,15 +1358,14 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
                         code, status_text(code), _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
-    conn_finish(slot_id, pcb);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     note_response(slot_id, code, 0);
     http_reset(slot_id);
@@ -1438,15 +1405,14 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
                         code, status_text(code), location, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
-    conn_finish(slot_id, pcb);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     note_response(slot_id, code, 0);
     http_reset(slot_id);
@@ -1483,14 +1449,14 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, st
                 size_t vlen = strlen(val);
                 total += vlen;
                 if (pcb && vlen)
-                    conn_write(slot, pcb, val, (u16_t)vlen);
+                    det_conn_send(slot, pcb, val, (u16_t)vlen);
                 p = end + 2;
                 continue;
             }
             // Unterminated or over-long placeholder: emit "{{" literally.
             total += 2;
             if (pcb)
-                conn_write(slot, pcb, "{{", 2);
+                det_conn_send(slot, pcb, "{{", 2);
             p += 2;
             continue;
         }
@@ -1502,7 +1468,7 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, st
         size_t rlen = (size_t)(p - run);
         total += rlen;
         if (pcb && rlen)
-            conn_write(slot, pcb, run, (u16_t)rlen);
+            det_conn_send(slot, pcb, run, (u16_t)rlen);
     }
     return total;
 }
@@ -1532,20 +1498,19 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
                         _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
     bool head = req_is_head(slot_id);
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     // Pass 2: stream the rendered body (HEAD carries headers only).
     if (!head && body_len > 0)
         tmpl_walk(slot_id, tmpl, resolver, pcb);
-    conn_finish(slot_id, pcb);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     note_response(slot_id, code, (int)body_len);
     http_reset(slot_id);
@@ -1574,9 +1539,9 @@ bool ChunkedResponse::write(const char *data, size_t len)
 
     char sz[12];
     int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)len);
-    conn_write(_slot, _pcb, sz, (u16_t)sn);
-    conn_write(_slot, _pcb, data, (u16_t)len);
-    conn_write(_slot, _pcb, "\r\n", 2);
+    det_conn_send(_slot, _pcb, sz, (u16_t)sn);
+    det_conn_send(_slot, _pcb, data, (u16_t)len);
+    det_conn_send(_slot, _pcb, "\r\n", 2);
     _total += len;
     return true;
 }
@@ -1618,13 +1583,13 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
                  code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
     bool head = req_is_head(slot_id);
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
 
     ChunkedResponse res(slot_id, pcb, head);
     // HEAD carries the headers (incl. Transfer-Encoding) but no body, so the
@@ -1632,13 +1597,12 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
     if (!head && filler)
     {
         filler(res, &http_pool[slot_id]);
-        conn_write(slot_id, pcb, "0\r\n\r\n", 5);
+        det_conn_send(slot_id, pcb, "0\r\n\r\n", 5);
     }
 
-    conn_finish(slot_id, pcb);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     note_response(slot_id, code, head ? 0 : (int)res.total());
     http_reset(slot_id);
@@ -1810,7 +1774,7 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
-            tcp_output(conn->pcb);
+            det_conn_flush(conn->id, conn->pcb);
     }
 }
 
@@ -1825,7 +1789,7 @@ void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t l
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
-            tcp_output(conn->pcb);
+            det_conn_flush(conn->id, conn->pcb);
     }
 }
 
@@ -1837,7 +1801,7 @@ void DetWebServer::ws_disconnect(uint8_t ws_id)
     ws_close(ws, WS_CLOSE_NORMAL);
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
-        tcp_output(conn->pcb);
+        det_conn_flush(conn->id, conn->pcb);
     // handle() detects WS_CLOSED next tick and fires ws_close callback
 }
 #endif // DETWS_ENABLE_WEBSOCKET
@@ -1856,7 +1820,7 @@ void DetWebServer::sse_send(uint8_t sse_id, const char *data, const char *event,
     {
         TcpConn *conn = &conn_pool[sse->slot_id];
         if (conn->pcb)
-            tcp_output(conn->pcb);
+            det_conn_flush(conn->id, conn->pcb);
     }
 }
 
@@ -1873,7 +1837,7 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
         {
             TcpConn *conn = &conn_pool[sse->slot_id];
             if (conn->pcb)
-                tcp_output(conn->pcb);
+                det_conn_flush(conn->id, conn->pcb);
         }
     }
 }
@@ -2000,17 +1964,16 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
                         challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
-        conn_write(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
-    conn_finish(slot_id, pcb);
+        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     http_reset(slot_id);
 }
@@ -2135,16 +2098,15 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     {
         f.close();
         struct tcp_pcb *p304 = conn->pcb;
-        tcp_arg(p304, nullptr);
+        det_conn_detach(p304);
         conn->state = CONN_FREE;
         conn->pcb = nullptr;
         char h304[RESP_HDR_BUF_SIZE];
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%sConnection: close\r\n\r\n",
                             etag, _cors_enabled ? _cors_header_buf : "");
-        conn_write(slot_id, p304, h304, (u16_t)n304);
-        conn_finish(slot_id, p304);
-        if (tcp_close(p304) != ERR_OK)
-            tcp_abort(p304);
+        det_conn_send(slot_id, p304, h304, (u16_t)n304);
+        det_conn_flush(slot_id, p304);
+        det_conn_close(p304);
         note_response(slot_id, 304, 0);
         http_reset(slot_id);
         return;
@@ -2165,11 +2127,11 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                         content_type, (int)file_size, enc_line, etag_line, _cors_enabled ? _cors_header_buf : "");
 
     struct tcp_pcb *pcb = conn->pcb;
-    tcp_arg(pcb, nullptr);
+    det_conn_detach(pcb);
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
 
     // HEAD: headers only (Content-Length reflects the body that would be sent).
     if (!head)
@@ -2177,13 +2139,12 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         uint8_t chunk[FILE_CHUNK_SIZE];
         size_t n;
         while ((n = f.read(chunk, sizeof(chunk))) > 0)
-            conn_write(slot_id, pcb, chunk, (u16_t)n);
+            det_conn_send(slot_id, pcb, chunk, (u16_t)n);
     }
 
-    conn_finish(slot_id, pcb);
+    det_conn_flush(slot_id, pcb);
 
-    if (tcp_close(pcb) != ERR_OK)
-        tcp_abort(pcb);
+    det_conn_close(pcb);
 
     f.close();
     note_response(slot_id, 200, head ? 0 : (int)file_size);

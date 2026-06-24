@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 05.Sysadmin.ino
+ * @file 04.Sysadmin.ino
  * @brief System-administration example: a dark-themed HTML/CSS dashboard, a
  *        stats API, and a clean reboot sequencer.
  *

@@ -40,7 +40,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
-#include "DetJson.h"
+#include "network_drivers/presentation/json.h"
 #include "network_drivers/presentation/presentation.h"
 #include "network_drivers/session/session.h"
 #if DETWS_ENABLE_WEBSOCKET
