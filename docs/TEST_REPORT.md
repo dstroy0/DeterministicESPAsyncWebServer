@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-06-23 21:07:36
+**Generated:** 2026-06-23 21:10:53
 **Command:** `pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance`
-**Result:** ✅ 547 passed - 35s
+**Result:** ✅ 547 passed - 28s
 
 ---
 
@@ -10,32 +10,32 @@
 
 | Suite                   | Environment           | Tests | Status |     Duration |
 | :---------------------- | :-------------------- | ----: | :----: | -----------: |
-| `test_sse`              | `native`              |    37 |   ✅   | 00:00:13.223 |
-| `test_session`          | `native`              |    19 |   ✅   | 00:00:00.507 |
-| `test_presentation`     | `native`              |    63 |   ✅   | 00:00:00.525 |
-| `test_transport`        | `native`              |    28 |   ✅   | 00:00:00.489 |
-| `test_websocket`        | `native`              |    63 |   ✅   | 00:00:00.538 |
-| `test_http_parser`      | `native`              |    80 |   ✅   | 00:00:00.522 |
-| `test_ssh_crypto`       | `native_ssh`          |    37 |   ✅   | 00:00:03.819 |
-| `test_ssh_auth`         | `native_ssh`          |    12 |   ✅   | 00:00:00.541 |
-| `test_ssh_server`       | `native_ssh`          |     7 |   ✅   | 00:00:00.646 |
-| `test_ssh_transport`    | `native_ssh`          |    23 |   ✅   | 00:00:00.880 |
-| `test_ssh_channel`      | `native_ssh`          |    12 |   ✅   | 00:00:00.491 |
-| `test_ssh_hardening`    | `native_ssh_hardened` |     2 |   ✅   | 00:00:00.796 |
-| `test_ssh_conn`         | `native_ssh_conn`     |     2 |   ✅   | 00:00:01.052 |
-| `test_template`         | `native_app`          |     6 |   ✅   | 00:00:00.849 |
-| `test_path_params`      | `native_app`          |     8 |   ✅   | 00:00:00.498 |
-| `test_form_params`      | `native_app`          |     5 |   ✅   | 00:00:00.492 |
-| `test_response_headers` | `native_app`          |     9 |   ✅   | 00:00:00.498 |
-| `test_middleware`       | `native_app`          |     9 |   ✅   | 00:00:00.511 |
-| `test_digest_auth`      | `native_app`          |     4 |   ✅   | 00:00:00.505 |
-| `test_multipart`        | `native_app`          |    19 |   ✅   | 00:00:00.498 |
-| `test_auth`             | `native_app`          |    13 |   ✅   | 00:00:00.518 |
-| `test_file_serving`     | `native_app`          |    12 |   ✅   | 00:00:00.530 |
-| `test_dispatch`         | `native_app`          |    10 |   ✅   | 00:00:00.499 |
-| `test_chunked`          | `native_app`          |     8 |   ✅   | 00:00:00.512 |
-| `test_application`      | `native_app`          |    47 |   ✅   | 00:00:00.588 |
-| `test_compliance`       | `native_compliance`   |    12 |   ✅   | 00:00:00.638 |
+| `test_sse`              | `native`              |    37 |   ✅   | 00:00:06.642 |
+| `test_session`          | `native`              |    19 |   ✅   | 00:00:00.491 |
+| `test_presentation`     | `native`              |    63 |   ✅   | 00:00:00.512 |
+| `test_transport`        | `native`              |    28 |   ✅   | 00:00:00.488 |
+| `test_websocket`        | `native`              |    63 |   ✅   | 00:00:00.523 |
+| `test_http_parser`      | `native`              |    80 |   ✅   | 00:00:00.535 |
+| `test_ssh_crypto`       | `native_ssh`          |    37 |   ✅   | 00:00:03.825 |
+| `test_ssh_auth`         | `native_ssh`          |    12 |   ✅   | 00:00:00.536 |
+| `test_ssh_server`       | `native_ssh`          |     7 |   ✅   | 00:00:00.641 |
+| `test_ssh_transport`    | `native_ssh`          |    23 |   ✅   | 00:00:00.857 |
+| `test_ssh_channel`      | `native_ssh`          |    12 |   ✅   | 00:00:00.512 |
+| `test_ssh_hardening`    | `native_ssh_hardened` |     2 |   ✅   | 00:00:00.826 |
+| `test_ssh_conn`         | `native_ssh_conn`     |     2 |   ✅   | 00:00:01.084 |
+| `test_template`         | `native_app`          |     6 |   ✅   | 00:00:00.880 |
+| `test_path_params`      | `native_app`          |     8 |   ✅   | 00:00:00.515 |
+| `test_form_params`      | `native_app`          |     5 |   ✅   | 00:00:00.503 |
+| `test_response_headers` | `native_app`          |     9 |   ✅   | 00:00:00.505 |
+| `test_middleware`       | `native_app`          |     9 |   ✅   | 00:00:00.492 |
+| `test_digest_auth`      | `native_app`          |     4 |   ✅   | 00:00:00.493 |
+| `test_multipart`        | `native_app`          |    19 |   ✅   | 00:00:00.499 |
+| `test_auth`             | `native_app`          |    13 |   ✅   | 00:00:00.510 |
+| `test_file_serving`     | `native_app`          |    12 |   ✅   | 00:00:00.507 |
+| `test_dispatch`         | `native_app`          |    10 |   ✅   | 00:00:00.488 |
+| `test_chunked`          | `native_app`          |     8 |   ✅   | 00:00:00.496 |
+| `test_application`      | `native_app`          |    47 |   ✅   | 00:00:00.579 |
+| `test_compliance`       | `native_compliance`   |    12 |   ✅   | 00:00:00.630 |
 
 ---
 
@@ -1019,7 +1019,7 @@ test/test_sse/test_sse.cpp:415: stress_sse_alloc_free_both_slots_alternating [PA
 test/test_sse/test_sse.cpp:416: stress_sse_write_100_calls              [PASSED]
 test/test_sse/test_sse.cpp:417: stress_sse_find_with_full_pool          [PASSED]
 test/test_sse/test_sse.cpp:418: stress_sse_write_slot_isolation         [PASSED]
------------------ native:test_sse [PASSED] Took 13.22 seconds ------------------
+------------------ native:test_sse [PASSED] Took 6.64 seconds ------------------
 
 Processing test_session in native environment
 --------------------------------------------------------------------------------
@@ -1044,7 +1044,7 @@ test/test_session/test_session.cpp:370: race_external_free_between_ticks [PASSED
 test/test_session/test_session.cpp:371: race_activity_update_saves_slot_from_timeout [PASSED]
 test/test_session/test_session.cpp:372: race_all_expire_then_idle_tick  [PASSED]
 test/test_session/test_session.cpp:373: race_millis_wraparound_no_spurious_timeout [PASSED]
----------------- native:test_session [PASSED] Took 0.51 seconds ----------------
+---------------- native:test_session [PASSED] Took 0.49 seconds ----------------
 
 Processing test_presentation in native environment
 --------------------------------------------------------------------------------
@@ -1113,7 +1113,7 @@ test/test_presentation/test_presentation.cpp:913: race_reset_during_parse_header
 test/test_presentation/test_presentation.cpp:914: race_reset_during_parse_query [PASSED]
 test/test_presentation/test_presentation.cpp:915: race_reset_during_parse_body [PASSED]
 test/test_presentation/test_presentation.cpp:916: race_parse_after_complete_is_nop [PASSED]
-------------- native:test_presentation [PASSED] Took 0.52 seconds --------------
+------------- native:test_presentation [PASSED] Took 0.51 seconds --------------
 
 Processing test_transport in native environment
 --------------------------------------------------------------------------------
@@ -1216,7 +1216,7 @@ test/test_websocket/test_websocket.cpp:913: stress_ws_alloc_free_pool_cycle [PAS
 test/test_websocket/test_websocket.cpp:914: stress_ws_parse_incremental_byte_by_byte [PASSED]
 test/test_websocket/test_websocket.cpp:915: stress_ws_parse_max_payload [PASSED]
 test/test_websocket/test_websocket.cpp:916: stress_ws_parse_two_consecutive_frames [PASSED]
---------------- native:test_websocket [PASSED] Took 0.54 seconds ---------------
+--------------- native:test_websocket [PASSED] Took 0.52 seconds ---------------
 
 Processing test_http_parser in native environment
 --------------------------------------------------------------------------------
@@ -1302,7 +1302,7 @@ test/test_http_parser/test_http_parser.cpp:935: test_incremental_two_chunks [PAS
 test/test_http_parser/test_http_parser.cpp:938: stress_many_requests_same_slot [PASSED]
 test/test_http_parser/test_http_parser.cpp:939: stress_max_headers      [PASSED]
 test/test_http_parser/test_http_parser.cpp:940: stress_max_query_params [PASSED]
--------------- native:test_http_parser [PASSED] Took 0.52 seconds --------------
+-------------- native:test_http_parser [PASSED] Took 0.53 seconds --------------
 
 Processing test_ssh_crypto in native_ssh environment
 --------------------------------------------------------------------------------
@@ -1379,7 +1379,7 @@ test/test_ssh_server/test_ssh_server.cpp:365: test_ignore_is_noop       [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:366: test_auth_bruteforce_disconnect [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:367: test_auth_success_after_failures [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:368: test_unimplemented_reply_for_unknown_message [PASSED]
------------- native_ssh:test_ssh_server [PASSED] Took 0.65 seconds -------------
+------------ native_ssh:test_ssh_server [PASSED] Took 0.64 seconds -------------
 
 Processing test_ssh_transport in native_ssh environment
 --------------------------------------------------------------------------------
@@ -1408,7 +1408,7 @@ test/test_ssh_transport/test_ssh_transport.cpp:534: test_kexdh_handle_rejects_in
 test/test_ssh_transport/test_ssh_transport.cpp:535: test_derive_keys_session_id_affects_output [PASSED]
 test/test_ssh_transport/test_ssh_transport.cpp:536: test_rekey_needed_threshold [PASSED]
 test/test_ssh_transport/test_ssh_transport.cpp:537: test_begin_rekey_preserves_session_and_auth [PASSED]
------------ native_ssh:test_ssh_transport [PASSED] Took 0.88 seconds -----------
+----------- native_ssh:test_ssh_transport [PASSED] Took 0.86 seconds -----------
 
 Processing test_ssh_channel in native_ssh environment
 --------------------------------------------------------------------------------
@@ -1426,7 +1426,7 @@ test/test_ssh_channel/test_ssh_channel.cpp:285: test_outbound_data_frames_and_de
 test/test_ssh_channel/test_ssh_channel.cpp:286: test_outbound_data_exceeding_peer_window_rejected [PASSED]
 test/test_ssh_channel/test_ssh_channel.cpp:287: test_window_adjust_grows_peer_window [PASSED]
 test/test_ssh_channel/test_ssh_channel.cpp:288: test_build_close_emits_eof_and_close [PASSED]
------------- native_ssh:test_ssh_channel [PASSED] Took 0.49 seconds ------------
+------------ native_ssh:test_ssh_channel [PASSED] Took 0.51 seconds ------------
 
 Processing test_ssh_hardening in native_ssh_hardened environment
 --------------------------------------------------------------------------------
@@ -1437,7 +1437,7 @@ Library Manager: Unity@2.6.1 has been installed!
 Testing...
 test/test_ssh_hardening/test_ssh_hardening.cpp:87: test_password_refused_even_with_correct_callback [PASSED]
 test/test_ssh_hardening/test_ssh_hardening.cpp:88: test_failure_advertises_publickey_only [PASSED]
------- native_ssh_hardened:test_ssh_hardening [PASSED] Took 0.80 seconds -------
+------ native_ssh_hardened:test_ssh_hardening [PASSED] Took 0.83 seconds -------
 
 Processing test_ssh_conn in native_ssh_conn environment
 --------------------------------------------------------------------------------
@@ -1448,7 +1448,7 @@ Library Manager: Unity@2.6.1 has been installed!
 Testing...
 test/test_ssh_conn/test_ssh_conn.cpp:137: test_accept_sends_server_banner [PASSED]
 test/test_ssh_conn/test_ssh_conn.cpp:138: test_banner_then_kexinit_advances_and_replies [PASSED]
------------ native_ssh_conn:test_ssh_conn [PASSED] Took 1.05 seconds -----------
+----------- native_ssh_conn:test_ssh_conn [PASSED] Took 1.08 seconds -----------
 
 Processing test_template in native_app environment
 --------------------------------------------------------------------------------
@@ -1463,7 +1463,7 @@ test/test_template/test_template.cpp:154: test_unknown_placeholder_is_empty [PAS
 test/test_template/test_template.cpp:155: test_unterminated_placeholder_is_literal [PASSED]
 test/test_template/test_template.cpp:156: test_null_resolver_empties_all [PASSED]
 test/test_template/test_template.cpp:157: test_head_suppresses_body_keeps_length [PASSED]
-------------- native_app:test_template [PASSED] Took 0.85 seconds --------------
+------------- native_app:test_template [PASSED] Took 0.88 seconds --------------
 
 Processing test_path_params in native_app environment
 --------------------------------------------------------------------------------
@@ -1477,7 +1477,7 @@ test/test_path_params/test_path_params.cpp:173: test_extra_segment_does_not_matc
 test/test_path_params/test_path_params.cpp:174: test_empty_param_value_does_not_match [PASSED]
 test/test_path_params/test_path_params.cpp:175: test_exact_route_still_matches [PASSED]
 test/test_path_params/test_path_params.cpp:176: test_param_route_wrong_method_405 [PASSED]
------------- native_app:test_path_params [PASSED] Took 0.50 seconds ------------
+------------ native_app:test_path_params [PASSED] Took 0.52 seconds ------------
 
 Processing test_form_params in native_app environment
 --------------------------------------------------------------------------------
@@ -1488,7 +1488,7 @@ test/test_form_params/test_form_params.cpp:135: test_form_missing_key_returns_fa
 test/test_form_params/test_form_params.cpp:136: test_form_empty_value   [PASSED]
 test/test_form_params/test_form_params.cpp:137: test_form_wrong_content_type_ignored [PASSED]
 test/test_form_params/test_form_params.cpp:138: test_form_value_truncated_to_buffer [PASSED]
------------- native_app:test_form_params [PASSED] Took 0.49 seconds ------------
+------------ native_app:test_form_params [PASSED] Took 0.50 seconds ------------
 
 Processing test_response_headers in native_app environment
 --------------------------------------------------------------------------------
@@ -1518,7 +1518,7 @@ test/test_middleware/test_middleware.cpp:250: test_use_respects_capacity_cap [PA
 test/test_middleware/test_middleware.cpp:251: test_rate_limit_allows_then_rejects [PASSED]
 test/test_middleware/test_middleware.cpp:252: test_rate_limit_window_resets [PASSED]
 test/test_middleware/test_middleware.cpp:253: test_rate_limit_disabled_by_default [PASSED]
------------- native_app:test_middleware [PASSED] Took 0.51 seconds -------------
+------------ native_app:test_middleware [PASSED] Took 0.49 seconds -------------
 
 Processing test_digest_auth in native_app environment
 --------------------------------------------------------------------------------
@@ -1528,7 +1528,7 @@ test/test_digest_auth/test_digest_auth.cpp:214: test_challenge_is_digest_sha256 
 test/test_digest_auth/test_digest_auth.cpp:215: test_valid_digest_authenticates [PASSED]
 test/test_digest_auth/test_digest_auth.cpp:216: test_wrong_password_rejected [PASSED]
 test/test_digest_auth/test_digest_auth.cpp:217: test_bad_nonce_rejected [PASSED]
------------- native_app:test_digest_auth [PASSED] Took 0.51 seconds ------------
+------------ native_app:test_digest_auth [PASSED] Took 0.49 seconds ------------
 
 Processing test_multipart in native_app environment
 --------------------------------------------------------------------------------
@@ -1572,7 +1572,7 @@ test/test_auth/test_auth.cpp:260: test_auth_route_returns_404_for_wrong_path [PA
 test/test_auth/test_auth.cpp:261: test_auth_checked_per_method          [PASSED]
 test/test_auth/test_auth.cpp:263: stress_auth_50_valid_requests         [PASSED]
 test/test_auth/test_auth.cpp:264: stress_auth_50_invalid_requests       [PASSED]
---------------- native_app:test_auth [PASSED] Took 0.52 seconds ----------------
+--------------- native_app:test_auth [PASSED] Took 0.51 seconds ----------------
 
 Processing test_file_serving in native_app environment
 --------------------------------------------------------------------------------
@@ -1590,7 +1590,7 @@ test/test_file_serving/test_file_serving.cpp:332: test_serve_file_does_not_affec
 test/test_file_serving/test_file_serving.cpp:333: test_multiple_content_types [PASSED]
 test/test_file_serving/test_file_serving.cpp:334: stress_serve_file_50_requests [PASSED]
 test/test_file_serving/test_file_serving.cpp:335: stress_alternate_missing_and_found [PASSED]
------------ native_app:test_file_serving [PASSED] Took 0.53 seconds ------------
+----------- native_app:test_file_serving [PASSED] Took 0.51 seconds ------------
 
 Processing test_dispatch in native_app environment
 --------------------------------------------------------------------------------
@@ -1606,7 +1606,7 @@ test/test_dispatch/test_dispatch.cpp:168: test_head_runs_get_handler_without_bod
 test/test_dispatch/test_dispatch.cpp:169: test_get_route_advertises_head_in_allow [PASSED]
 test/test_dispatch/test_dispatch.cpp:170: test_head_on_post_only_route_405 [PASSED]
 test/test_dispatch/test_dispatch.cpp:171: test_correct_method_still_dispatches [PASSED]
-------------- native_app:test_dispatch [PASSED] Took 0.50 seconds --------------
+------------- native_app:test_dispatch [PASSED] Took 0.49 seconds --------------
 
 Processing test_chunked in native_app environment
 --------------------------------------------------------------------------------
@@ -1620,7 +1620,7 @@ test/test_chunked/test_chunked.cpp:213: test_empty_writes_do_not_terminate_early
 test/test_chunked/test_chunked.cpp:214: test_head_sends_headers_only    [PASSED]
 test/test_chunked/test_chunked.cpp:215: test_custom_header_injected_into_chunked [PASSED]
 test/test_chunked/test_chunked.cpp:216: test_log_hook_reports_total_body_length [PASSED]
--------------- native_app:test_chunked [PASSED] Took 0.51 seconds --------------
+-------------- native_app:test_chunked [PASSED] Took 0.50 seconds --------------
 
 Processing test_application in native_app environment
 --------------------------------------------------------------------------------
@@ -1673,7 +1673,7 @@ test/test_application/test_application.cpp:889: test_serve_static_missing_is_404
 test/test_application/test_application.cpp:890: test_serve_static_etag_conditional_get [PASSED]
 test/test_application/test_application.cpp:892: test_request_log_hook_fires [PASSED]
 test/test_application/test_application.cpp:893: test_stats_endpoint_emits_json [PASSED]
------------- native_app:test_application [PASSED] Took 0.59 seconds ------------
+------------ native_app:test_application [PASSED] Took 0.58 seconds ------------
 
 Processing test_compliance in native_compliance environment
 --------------------------------------------------------------------------------
@@ -1694,38 +1694,38 @@ test/test_compliance/test_compliance.cpp:152: test_content_length_empty_rejected
 test/test_compliance/test_compliance.cpp:153: test_content_length_conflicting_duplicate_rejected [PASSED]
 test/test_compliance/test_compliance.cpp:154: test_content_length_matching_duplicate_ok [PASSED]
 test/test_compliance/test_compliance.cpp:155: test_content_length_valid_body [PASSED]
---------- native_compliance:test_compliance [PASSED] Took 0.64 seconds ---------
+--------- native_compliance:test_compliance [PASSED] Took 0.63 seconds ---------
 
 =================================== SUMMARY ===================================
 Environment          Test                   Status    Duration
 -------------------  ---------------------  --------  ------------
-native               test_sse               PASSED    00:00:13.223
-native               test_session           PASSED    00:00:00.507
-native               test_presentation      PASSED    00:00:00.525
-native               test_transport         PASSED    00:00:00.489
-native               test_websocket         PASSED    00:00:00.538
-native               test_http_parser       PASSED    00:00:00.522
-native_ssh           test_ssh_crypto        PASSED    00:00:03.819
-native_ssh           test_ssh_auth          PASSED    00:00:00.541
-native_ssh           test_ssh_server        PASSED    00:00:00.646
-native_ssh           test_ssh_transport     PASSED    00:00:00.880
-native_ssh           test_ssh_channel       PASSED    00:00:00.491
-native_ssh_hardened  test_ssh_hardening     PASSED    00:00:00.796
-native_ssh_conn      test_ssh_conn          PASSED    00:00:01.052
-native_app           test_template          PASSED    00:00:00.849
-native_app           test_path_params       PASSED    00:00:00.498
-native_app           test_form_params       PASSED    00:00:00.492
-native_app           test_response_headers  PASSED    00:00:00.498
-native_app           test_middleware        PASSED    00:00:00.511
-native_app           test_digest_auth       PASSED    00:00:00.505
-native_app           test_multipart         PASSED    00:00:00.498
-native_app           test_auth              PASSED    00:00:00.518
-native_app           test_file_serving      PASSED    00:00:00.530
-native_app           test_dispatch          PASSED    00:00:00.499
-native_app           test_chunked           PASSED    00:00:00.512
-native_app           test_application       PASSED    00:00:00.588
-native_compliance    test_compliance        PASSED    00:00:00.638
-================ 547 test cases: 547 succeeded in 00:00:31.166 ================
+native               test_sse               PASSED    00:00:06.642
+native               test_session           PASSED    00:00:00.491
+native               test_presentation      PASSED    00:00:00.512
+native               test_transport         PASSED    00:00:00.488
+native               test_websocket         PASSED    00:00:00.523
+native               test_http_parser       PASSED    00:00:00.535
+native_ssh           test_ssh_crypto        PASSED    00:00:03.825
+native_ssh           test_ssh_auth          PASSED    00:00:00.536
+native_ssh           test_ssh_server        PASSED    00:00:00.641
+native_ssh           test_ssh_transport     PASSED    00:00:00.857
+native_ssh           test_ssh_channel       PASSED    00:00:00.512
+native_ssh_hardened  test_ssh_hardening     PASSED    00:00:00.826
+native_ssh_conn      test_ssh_conn          PASSED    00:00:01.084
+native_app           test_template          PASSED    00:00:00.880
+native_app           test_path_params       PASSED    00:00:00.515
+native_app           test_form_params       PASSED    00:00:00.503
+native_app           test_response_headers  PASSED    00:00:00.505
+native_app           test_middleware        PASSED    00:00:00.492
+native_app           test_digest_auth       PASSED    00:00:00.493
+native_app           test_multipart         PASSED    00:00:00.499
+native_app           test_auth              PASSED    00:00:00.510
+native_app           test_file_serving      PASSED    00:00:00.507
+native_app           test_dispatch          PASSED    00:00:00.488
+native_app           test_chunked           PASSED    00:00:00.496
+native_app           test_application       PASSED    00:00:00.579
+native_compliance    test_compliance        PASSED    00:00:00.630
+================ 547 test cases: 547 succeeded in 00:00:24.569 ================
 ```
 
 </details>
