@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c432f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c432f73ba523065d9040d27b18196ca180805931))
 - update test report [skip ci] ([`75b8284`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75b8284eef75a7ec9c26dfa1e6c7a09bc3d328a4))
 - update CHANGELOG.md [skip ci] ([`a277ea2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a277ea282277c41b59533d8cb36de35028aec5ba))
 - update test report [skip ci] ([`cdafc0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdafc0b7ac0312f134802383456cd41328819458))
@@ -86,6 +87,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`dd253d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd253d57ae6cfcac14526f67894306abbc47b293))
+- Bump version: 1.2.6 → 1.2.7 ([`2e4047e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e4047eeaa1fd8e030cb48eaecdf4891b6a5ef48))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`496279a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/496279a02bba5c1c206c995b3137ef38a3abfa1b))
 - Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`85202b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85202b0f17388d584ae1f48de536302bfa8955c4))
 - Merge pull request #2 from dstroy0/dependabot/github_actions/streetsidesoftware/cspell-action-8 ([`0b18b2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b18b2d670930204c7b070d36658a03afee0b75b))
