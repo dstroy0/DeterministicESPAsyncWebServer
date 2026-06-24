@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`cdafc0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdafc0b7ac0312f134802383456cd41328819458))
+- update CHANGELOG.md [skip ci] ([`beea7db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beea7db1d60cadbaeccc4659158effb062a85f58))
 - bump streetsidesoftware/cspell-action from 6 to 8 ([`8c1ea22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c1ea22f7e1dee054ac2694dd84ba1747cc88286))
 - update test report [skip ci] ([`ba920d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba920d859baf90a62900e9261a4f0d3ae799cf13))
 - update CHANGELOG.md [skip ci] ([`c238c1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c238c1b47ec82a908a2ee40d21bf23db2391912a))
@@ -82,6 +84,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`85202b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85202b0f17388d584ae1f48de536302bfa8955c4))
 - Merge pull request #2 from dstroy0/dependabot/github_actions/streetsidesoftware/cspell-action-8 ([`0b18b2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b18b2d670930204c7b070d36658a03afee0b75b))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b726a42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b726a42462e6e12fd3f3a3b413a0e78c35759bdf))
 - Bump version: 1.2.5 → 1.2.6 ([`358fd49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/358fd49924164272441ce2f6647d9216071d5048))
@@ -147,6 +150,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- HTTPS, web terminal, JSON helper, regex/interface routes, SNMP codec ([`9cd18ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9cd18ba2da3166f1409a51cc35f9aed75e67c708))
 - path params, Digest auth, templating, middleware, and chunked responses ([`d0ecc72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0ecc722a4eb57f3035404f5614ce8761ef596b9))
 - custom response headers/cookies + urlencoded form params ([`8d9f7c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d9f7c55a3660f5727ef0577523a9868104c9579))
 
