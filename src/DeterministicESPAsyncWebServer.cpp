@@ -35,6 +35,7 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64.h"
@@ -44,6 +45,9 @@
 #endif
 #if DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
+#ifdef ARDUINO
+#include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
+#endif
 #endif
 #include <stdarg.h>
 #include <stdio.h>
@@ -63,6 +67,41 @@ static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
  * @param code HTTP status integer.
  * @return Pointer to a string-literal reason phrase; never null.
  */
+// ---------------------------------------------------------------------------
+// Output chokepoint: route response bytes through TLS when the connection is
+// TLS, else straight to lwIP. With DETWS_ENABLE_TLS off these are byte-identical
+// to the original tcp_write/tcp_output calls (so the plaintext path is
+// unchanged). conn->tls / the TLS context survive the senders' detach-before-
+// write (det_tls keeps its own pcb), so reading conn_pool[slot].tls here is safe.
+// ---------------------------------------------------------------------------
+static inline void conn_write(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        det_tls_write(slot, data, len);
+        return;
+    }
+#endif
+    (void)slot;
+    tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+}
+
+// Finish a response: TLS sends close_notify (the TCP close follows); plaintext
+// flushes the send buffer. Caller still issues tcp_close() afterwards.
+static inline void conn_finish(uint8_t slot, struct tcp_pcb *pcb)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        det_tls_conn_end(slot);
+        return;
+    }
+#endif
+    (void)slot;
+    tcp_output(pcb);
+}
+
 static const char *status_text(int code)
 {
     switch (code)
@@ -290,6 +329,7 @@ int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
         return DETWS_ERR_LISTENER_FULL;
     _listen_ports[_listener_count] = port;
     _listen_protos[_listener_count] = proto;
+    _listen_tls[_listener_count] = false;
     _listener_count++;
     return DETWS_OK;
 }
@@ -312,7 +352,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
 #endif
     for (uint8_t i = 0; i < _listener_count; i++)
     {
-        if (listener_add(i, _listen_ports[i], _listen_protos[i]) < 0)
+        if (listener_add(i, _listen_ports[i], _listen_protos[i], _listen_tls[i]) < 0)
             return DETWS_ERR_LISTEN_FAILED;
     }
     return DETWS_OK;
@@ -325,6 +365,35 @@ int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
         return rc;
     return begin(cfg);
 }
+
+#if DETWS_ENABLE_TLS
+bool DetWebServer::tls_cert(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
+{
+    return det_tls_global_init(cert, cert_len, key, key_len);
+}
+
+int32_t DetWebServer::listen_tls(uint16_t port)
+{
+    if (_listener_count >= MAX_LISTENERS)
+        return DETWS_ERR_LISTENER_FULL;
+    _listen_ports[_listener_count] = port;
+    _listen_protos[_listener_count] = PROTO_HTTP;
+    _listen_tls[_listener_count] = true;
+    _listener_count++;
+    return DETWS_OK;
+}
+
+int32_t DetWebServer::begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
+                                const WebServerConfig *cfg)
+{
+    if (!tls_cert(cert, cert_len, key, key_len))
+        return DETWS_ERR_LISTEN_FAILED;
+    int32_t rc = listen_tls(port);
+    if (rc < 0)
+        return rc;
+    return begin(cfg);
+}
+#endif // DETWS_ENABLE_TLS
 
 int32_t DetWebServer::restart(const WebServerConfig *cfg)
 {
@@ -370,6 +439,8 @@ static void fill_route_base(Route *r, const char *path)
     size_t len = strlen(r->path);
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
     r->is_param = (strstr(r->path, "/:") != nullptr);
+    r->is_regex = false;
+    r->iface_filter = DETIFACE_ANY;
 }
 
 void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
@@ -381,6 +452,35 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
     r->type = ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
+}
+
+void DetWebServer::on(const char *path, HttpMethod method, Handler callback, DetIface iface)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r = &_routes[_route_count++];
+    fill_route_base(r, path);
+    r->type = ROUTE_HTTP;
+    r->method = method;
+    r->callback = callback;
+    r->iface_filter = (uint8_t)iface;
+}
+
+void DetWebServer::set_ap_ip(uint32_t ap_ip)
+{
+    detws_ap_ip = ap_ip;
+}
+
+void DetWebServer::on_regex(const char *pattern, HttpMethod method, Handler callback)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r = &_routes[_route_count++];
+    fill_route_base(r, pattern);
+    r->type = ROUTE_HTTP;
+    r->method = method;
+    r->callback = callback;
+    r->is_regex = true;
 }
 
 #if DETWS_ENABLE_AUTH
@@ -485,6 +585,182 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
     // Prefix match: compare everything up to (but not including) the '*'
     size_t prefix_len = strlen(route) - 1;
     return strncmp(route, req_path, prefix_len) == 0;
+}
+
+// ---------------------------------------------------------------------------
+// Bounded regex route matcher (see on_regex()).
+//
+// A small recursive backtracker over a single pattern (no heap, no groups, no
+// alternation). Supported: literals, '.', quantifiers '*' '+' '?', character
+// classes [..]/[^..] with a-z ranges, and '\' escapes incl. \d \w \s (\D \W \S).
+// A step counter bounds total work so a pathological pattern fails closed
+// (no match) instead of backtracking unboundedly - preserving determinism.
+// ---------------------------------------------------------------------------
+
+struct ReCtx
+{
+    uint32_t steps;
+    uint32_t max_steps;
+};
+
+// Byte length of the atom at p: an escape (\x), a class ([...]), or one char.
+static size_t re_atom_len(const char *p)
+{
+    if (*p == '\\')
+        return p[1] ? 2 : 1;
+    if (*p == '[')
+    {
+        const char *q = p + 1;
+        if (*q == '^')
+            q++;
+        if (*q == ']') // a ']' right after '[' (or '[^') is a literal member
+            q++;
+        while (*q && *q != ']')
+        {
+            if (*q == '\\' && q[1])
+                q += 2;
+            else
+                q++;
+        }
+        return (size_t)((*q == ']' ? q + 1 : q) - p);
+    }
+    return 1;
+}
+
+static bool re_class_member(char lo, char hi, char ch)
+{
+    return ch >= lo && ch <= hi;
+}
+
+// Does the atom [p, p+len) match the single character ch (ch != '\0')?
+static bool re_atom_matches(const char *p, size_t len, char ch)
+{
+    if (ch == '\0')
+        return false;
+    if (*p == '\\')
+    {
+        char e = p[1];
+        switch (e)
+        {
+        case 'd':
+            return ch >= '0' && ch <= '9';
+        case 'D':
+            return !(ch >= '0' && ch <= '9');
+        case 'w':
+            return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_';
+        case 'W':
+            return !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_');
+        case 's':
+            return ch == ' ' || ch == '\t';
+        case 'S':
+            return !(ch == ' ' || ch == '\t');
+        default:
+            return ch == e; // escaped literal (\. \* \\ ...)
+        }
+    }
+    if (*p == '.')
+        return true;
+    if (*p == '[')
+    {
+        const char *q = p + 1;
+        const char *end = p + len - 1; // points at the closing ']'
+        bool neg = false;
+        if (q < end && *q == '^')
+        {
+            neg = true;
+            q++;
+        }
+        bool m = false;
+        while (q < end)
+        {
+            char lo;
+            if (*q == '\\' && (q + 1) < end)
+            {
+                lo = q[1];
+                q += 2;
+            }
+            else
+            {
+                lo = *q;
+                q++;
+            }
+            if (q < end && *q == '-' && (q + 1) < end && q[1] != ']')
+            {
+                q++; // consume '-'
+                char hi;
+                if (*q == '\\' && (q + 1) < end)
+                {
+                    hi = q[1];
+                    q += 2;
+                }
+                else
+                {
+                    hi = *q;
+                    q++;
+                }
+                if (re_class_member(lo, hi, ch))
+                    m = true;
+            }
+            else if (ch == lo)
+            {
+                m = true;
+            }
+        }
+        return neg ? !m : m;
+    }
+    return ch == *p; // literal
+}
+
+static bool re_match(ReCtx *c, const char *pat, const char *text);
+
+// Greedy "(atom)* rest" against text.
+static bool re_star(ReCtx *c, const char *atom, size_t al, const char *rest, const char *text)
+{
+    if (++c->steps > c->max_steps)
+        return false;
+    if (re_atom_matches(atom, al, *text) && re_star(c, atom, al, rest, text + 1))
+        return true;
+    return re_match(c, rest, text);
+}
+
+static bool re_match(ReCtx *c, const char *pat, const char *text)
+{
+    if (++c->steps > c->max_steps)
+        return false;
+    if (*pat == '\0')
+        return *text == '\0'; // full-match: pattern and text end together
+
+    size_t al = re_atom_len(pat);
+    char quant = pat[al];
+    const char *rest = (quant == '*' || quant == '+' || quant == '?') ? pat + al + 1 : pat + al;
+
+    if (quant == '*')
+        return re_star(c, pat, al, rest, text);
+    if (quant == '+')
+    {
+        if (!re_atom_matches(pat, al, *text))
+            return false;
+        return re_star(c, pat, al, rest, text + 1);
+    }
+    if (quant == '?')
+    {
+        if (re_atom_matches(pat, al, *text) && re_match(c, rest, text + 1))
+            return true;
+        return re_match(c, rest, text);
+    }
+    // exactly one
+    if (re_atom_matches(pat, al, *text))
+        return re_match(c, rest, text + 1);
+    return false;
+}
+
+// Whole-path regex match (implicitly anchored at both ends).
+static bool regex_match(const char *pattern, const char *path)
+{
+    ReCtx c;
+    c.steps = 0;
+    c.max_steps = RE_MAX_STEPS;
+    return re_match(&c, pattern, path);
 }
 
 /**
@@ -846,10 +1122,10 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
-        tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
+        conn_write(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    conn_finish(slot_id, pcb);
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
     http_reset(slot_id);
@@ -909,14 +1185,29 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         Route *r = &_routes[i];
         if (!r->is_active)
             continue;
-        bool matched =
-            r->is_param ? match_path_params(r->path, req->path, req) : path_matches(r->path, r->is_wildcard, req->path);
+        bool matched = r->is_regex   ? regex_match(r->path, req->path)
+                       : r->is_param ? match_path_params(r->path, req->path, req)
+                                     : path_matches(r->path, r->is_wildcard, req->path);
         if (!matched)
+            continue;
+
+        // Per-route interface gate: a route bound to STA/AP is invisible on the
+        // other interface (falls through to other routes / 404).
+        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
             continue;
 
 #if DETWS_ENABLE_WEBSOCKET
         if (r->type == ROUTE_WS)
         {
+#if DETWS_ENABLE_TLS
+            // Encrypted WebSocket (wss) is not wired yet; reject cleanly so we
+            // never emit a plaintext 101 over the TLS record layer.
+            if (conn_pool[slot_id].tls)
+            {
+                send(slot_id, 501, "text/plain", "wss not supported");
+                return;
+            }
+#endif
             if (!is_ws_upgrade)
             {
                 send(slot_id, 400, "text/plain", "WebSocket upgrade required");
@@ -938,6 +1229,13 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #if DETWS_ENABLE_SSE
         if (r->type == ROUTE_SSE)
         {
+#if DETWS_ENABLE_TLS
+            if (conn_pool[slot_id].tls)
+            {
+                send(slot_id, 501, "text/plain", "encrypted SSE not supported");
+                return;
+            }
+#endif
             if (!sse_do_upgrade(slot_id, req, r->sse_connect))
                 send(slot_id, 503, "text/plain", "Service Unavailable");
             return;
@@ -1050,11 +1348,11 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     bool head = req_is_head(slot_id);
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
     // HEAD responses carry the headers (incl. Content-Length) but no body.
     if (!head && payload_len > 0)
-        tcp_write(pcb, payload, (u16_t)payload_len, TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
+        conn_write(slot_id, pcb, payload, (u16_t)payload_len);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1096,8 +1394,8 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1144,8 +1442,8 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1164,7 +1462,7 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
 // passes. A "{{" with no matching "}}", or a name longer than 32 chars, is
 // emitted literally.
 // ---------------------------------------------------------------------------
-static size_t tmpl_walk(const char *tmpl, TemplateVar resolver, struct tcp_pcb *pcb)
+static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, struct tcp_pcb *pcb)
 {
     size_t total = 0;
     const char *p = tmpl;
@@ -1185,14 +1483,14 @@ static size_t tmpl_walk(const char *tmpl, TemplateVar resolver, struct tcp_pcb *
                 size_t vlen = strlen(val);
                 total += vlen;
                 if (pcb && vlen)
-                    tcp_write(pcb, val, (u16_t)vlen, TCP_WRITE_FLAG_COPY);
+                    conn_write(slot, pcb, val, (u16_t)vlen);
                 p = end + 2;
                 continue;
             }
             // Unterminated or over-long placeholder: emit "{{" literally.
             total += 2;
             if (pcb)
-                tcp_write(pcb, "{{", 2, TCP_WRITE_FLAG_COPY);
+                conn_write(slot, pcb, "{{", 2);
             p += 2;
             continue;
         }
@@ -1204,7 +1502,7 @@ static size_t tmpl_walk(const char *tmpl, TemplateVar resolver, struct tcp_pcb *
         size_t rlen = (size_t)(p - run);
         total += rlen;
         if (pcb && rlen)
-            tcp_write(pcb, run, (u16_t)rlen, TCP_WRITE_FLAG_COPY);
+            conn_write(slot, pcb, run, (u16_t)rlen);
     }
     return total;
 }
@@ -1220,7 +1518,7 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     }
 
     // Pass 1: size the rendered body (no writes).
-    size_t body_len = tmpl_walk(tmpl, resolver, nullptr);
+    size_t body_len = tmpl_walk(slot_id, tmpl, resolver, nullptr);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -1240,11 +1538,11 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 
     bool head = req_is_head(slot_id);
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
     // Pass 2: stream the rendered body (HEAD carries headers only).
     if (!head && body_len > 0)
-        tmpl_walk(tmpl, resolver, pcb);
-    tcp_output(pcb);
+        tmpl_walk(slot_id, tmpl, resolver, pcb);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1276,9 +1574,9 @@ bool ChunkedResponse::write(const char *data, size_t len)
 
     char sz[12];
     int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)len);
-    tcp_write(_pcb, sz, (u16_t)sn, TCP_WRITE_FLAG_COPY);
-    tcp_write(_pcb, data, (u16_t)len, TCP_WRITE_FLAG_COPY);
-    tcp_write(_pcb, "\r\n", 2, TCP_WRITE_FLAG_COPY);
+    conn_write(_slot, _pcb, sz, (u16_t)sn);
+    conn_write(_slot, _pcb, data, (u16_t)len);
+    conn_write(_slot, _pcb, "\r\n", 2);
     _total += len;
     return true;
 }
@@ -1326,18 +1624,18 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
 
     bool head = req_is_head(slot_id);
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
 
-    ChunkedResponse res(pcb, head);
+    ChunkedResponse res(slot_id, pcb, head);
     // HEAD carries the headers (incl. Transfer-Encoding) but no body, so the
     // filler and terminating chunk are skipped entirely.
     if (!head && filler)
     {
         filler(res, &http_pool[slot_id]);
-        tcp_write(pcb, "0\r\n\r\n", 5, TCP_WRITE_FLAG_COPY);
+        conn_write(slot_id, pcb, "0\r\n\r\n", 5);
     }
 
-    tcp_output(pcb);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1651,13 +1949,23 @@ static bool digest_field(const char *hdr, const char *key, char *out, size_t out
 
 void DetWebServer::regen_digest_nonce()
 {
+    // Seed a 128-bit nonce from the hardware CSPRNG (esp_random() on ESP32; a
+    // non-crypto mock on native test builds), folded through SHA-256 with a
+    // counter + millis() so even a weak host RNG yields distinct values across
+    // regenerations. Replaces the old counter+`this` derivation, which was
+    // predictable and leaked an object address.
     static uint32_t counter = 0;
     counter++;
-    uint8_t seed[8];
+    uint8_t seed[24];
+    for (int i = 0; i < 4; i++)
+    {
+        uint32_t r = esp_random();
+        memcpy(seed + i * 4, &r, 4);
+    }
     uint32_t c = counter;
-    uintptr_t self = (uintptr_t)this;
-    memcpy(seed, &c, 4);
-    memcpy(seed + 4, &self, 4);
+    uint32_t t = (uint32_t)millis();
+    memcpy(seed + 16, &c, 4);
+    memcpy(seed + 20, &t, 4);
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(seed, sizeof(seed), d);
     hex_encode(d, 16, _digest_nonce); // 16 bytes -> 32 hex chars
@@ -1696,10 +2004,10 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
-        tcp_write(pcb, body, (u16_t)(sizeof(body) - 1), TCP_WRITE_FLAG_COPY);
-    tcp_output(pcb);
+        conn_write(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
@@ -1833,8 +2141,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         char h304[RESP_HDR_BUF_SIZE];
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%sConnection: close\r\n\r\n",
                             etag, _cors_enabled ? _cors_header_buf : "");
-        tcp_write(p304, h304, (u16_t)n304, TCP_WRITE_FLAG_COPY);
-        tcp_output(p304);
+        conn_write(slot_id, p304, h304, (u16_t)n304);
+        conn_finish(slot_id, p304);
         if (tcp_close(p304) != ERR_OK)
             tcp_abort(p304);
         note_response(slot_id, 304, 0);
@@ -1861,7 +2169,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     conn->state = CONN_FREE;
     conn->pcb = nullptr;
 
-    tcp_write(pcb, header, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    conn_write(slot_id, pcb, header, (u16_t)hlen);
 
     // HEAD: headers only (Content-Length reflects the body that would be sent).
     if (!head)
@@ -1869,10 +2177,10 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         uint8_t chunk[FILE_CHUNK_SIZE];
         size_t n;
         while ((n = f.read(chunk, sizeof(chunk))) > 0)
-            tcp_write(pcb, chunk, (u16_t)n, TCP_WRITE_FLAG_COPY);
+            conn_write(slot_id, pcb, chunk, (u16_t)n);
     }
 
-    tcp_output(pcb);
+    conn_finish(slot_id, pcb);
 
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);

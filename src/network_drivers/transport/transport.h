@@ -79,10 +79,21 @@ struct TcpConn
     uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
     ConnProto proto;     ///< Application protocol for this connection.
     uint8_t ssh_id;      ///< SSH session slot (PROTO_SSH only); 0xFF when none.
+    uint8_t iface;       ///< DetIface this connection arrived on; set at accept time.
+    uint8_t tls;         ///< Non-zero when this connection is TLS (set at accept time).
 };
 
 /** @brief Sentinel for TcpConn::ssh_id meaning "no SSH session bound". */
 #define SSH_ID_NONE 0xFFu
+
+/**
+ * @brief softAP IPv4 address (network byte order) for STA/AP interface tagging.
+ *
+ * Zero when no softAP is configured. Set via DetWebServer::set_ap_ip(); the
+ * accept callback tags each connection DETIFACE_AP when its local IP equals
+ * this, else DETIFACE_STA. Used by per-route interface filters.
+ */
+extern uint32_t detws_ap_ip;
 
 /** @brief Static pool of connection contexts.  Defined in transport.cpp. */
 extern TcpConn conn_pool[MAX_CONNS];

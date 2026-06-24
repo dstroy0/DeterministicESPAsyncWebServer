@@ -60,6 +60,7 @@ struct Listener
     uint8_t _queue_storage[EVT_QUEUE_DEPTH * sizeof(TcpEvt)]; ///< Queue backing store.
     QueueHandle_t queue;                                      ///< Handle returned by xQueueCreateStatic().
     bool active; ///< True after listener_add(), false after listener_stop().
+    bool tls;    ///< True when connections accepted here begin a TLS handshake.
 };
 
 /** @brief Static pool of listener contexts.  Defined in listener.cpp. */
@@ -80,9 +81,10 @@ extern Listener listener_pool[MAX_LISTENERS];
  * @param idx   Slot in listener_pool[] (0 … MAX_LISTENERS-1).
  * @param port  TCP port to bind and listen on.
  * @param proto Application protocol spoken on connections from this port.
+ * @param tls   When true, connections accepted here start a TLS handshake.
  * @return Positive value on success; -1 on failure (pool full or lwIP error).
  */
-int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto);
+int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls = false);
 
 /**
  * @brief Stop listening on the port at @p idx and release its resources.

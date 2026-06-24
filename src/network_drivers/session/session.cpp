@@ -20,6 +20,63 @@
 #include "../presentation/ssh/ssh_conn.h"
 #endif
 
+#if DETWS_ENABLE_TLS
+#include "../presentation/http_parser.h"
+#include "../tls/det_tls.h"
+#include "lwip/tcp.h"
+
+// Abort a TLS connection (fatal handshake/read error): free the TLS context and
+// tear down the TCP slot.
+static void tls_abort(uint8_t slot)
+{
+    TcpConn *c = &conn_pool[slot];
+    det_tls_conn_free(slot);
+    if (c->pcb)
+    {
+        struct tcp_pcb *p = c->pcb;
+        tcp_arg(p, nullptr);
+        c->state = CONN_FREE;
+        c->pcb = nullptr;
+        tcp_abort(p);
+    }
+    http_reset(slot);
+}
+
+// Pump a TLS connection: drive the handshake to completion, then decrypt any
+// application data straight into the HTTP parser (same byte-by-byte feed the
+// plaintext path uses; the rx ring now holds ciphertext, consumed by the BIO).
+static void tls_data(uint8_t slot)
+{
+    if (!det_tls_established(slot))
+    {
+        int h = det_tls_handshake(slot);
+        if (h < 0)
+        {
+            tls_abort(slot);
+            return;
+        }
+        if (h == 0)
+            return; // still handshaking; wait for more ciphertext
+    }
+
+    uint8_t buf[256];
+    int n;
+    while ((n = det_tls_read(slot, buf, sizeof(buf))) > 0)
+    {
+        HttpReq *req = &http_pool[slot];
+        for (int i = 0; i < n; i++)
+        {
+            if (req->parse_state == PARSE_COMPLETE || req->parse_state == PARSE_ERROR ||
+                req->parse_state == PARSE_ENTITY_TOO_LARGE || req->parse_state == PARSE_URI_TOO_LONG)
+                break; // terminal state - let handle() dispatch before reading more
+            http_parser_feed(req, buf[i]);
+        }
+    }
+    if (n < 0)
+        tls_abort(slot);
+}
+#endif // DETWS_ENABLE_TLS
+
 void server_tick()
 {
     /*
@@ -66,6 +123,10 @@ void server_tick()
                 {
                 case PROTO_NONE:
                 case PROTO_HTTP:
+#if DETWS_ENABLE_TLS
+                    if (conn_pool[evt.slot_id].tls)
+                        det_tls_conn_free(evt.slot_id); // also covers timeouts (EVT_ERROR)
+#endif
                     http_reset(evt.slot_id);
                     break;
                 case PROTO_TELNET:
@@ -83,6 +144,13 @@ void server_tick()
                 {
                 case PROTO_NONE:
                 case PROTO_HTTP:
+#if DETWS_ENABLE_TLS
+                    if (conn_pool[evt.slot_id].tls)
+                    {
+                        tls_data(evt.slot_id);
+                        break;
+                    }
+#endif
                     http_parse(evt.slot_id);
                     break;
                 case PROTO_TELNET:

@@ -21,6 +21,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
+#include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
+#ifdef ARDUINO
+#include "lwip/ip_addr.h" // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
+#endif
 #include <Arduino.h>
 
 // Listener pool - all storage in BSS.
@@ -123,7 +127,28 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     slot->listener_id = idx;
     slot->proto = lst->proto;
 
+    // Tag the ingress interface for per-route STA/AP filtering. On ESP32 compare
+    // the connection's local IP to the configured softAP IP; on native (no real
+    // pcb IP) leave it unclassified for tests to set directly.
+#ifdef ARDUINO
+    {
+        uint32_t lip = ip4_addr_get_u32(ip_2_ip4(&newpcb->local_ip));
+        slot->iface = (detws_ap_ip != 0 && lip == detws_ap_ip) ? DETIFACE_AP : DETIFACE_STA;
+    }
+#else
+    slot->iface = DETIFACE_ANY;
+#endif
+
     tcp_arg(newpcb, slot);
+
+#if DETWS_ENABLE_TLS
+    // TLS listeners begin a handshake immediately; the session loop pumps it.
+    slot->tls = lst->tls ? 1 : 0;
+    if (lst->tls)
+        det_tls_conn_begin(free_slot);
+#else
+    slot->tls = 0;
+#endif
     tcp_recv(newpcb, lowlevel_recv_cb);
     tcp_sent(newpcb, lowlevel_sent_cb);
     tcp_err(newpcb, lowlevel_err_cb);
@@ -134,7 +159,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     return ERR_OK;
 }
 
-int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto)
+int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
 {
     if (idx >= MAX_LISTENERS)
         return -1;
@@ -144,6 +169,7 @@ int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto)
     Listener *lst = &listener_pool[idx];
     lst->port = port;
     lst->proto = proto;
+    lst->tls = tls;
 
     lst->queue = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), lst->_queue_storage, &lst->_queue_struct);
     if (!lst->queue)
