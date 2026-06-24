@@ -66,10 +66,17 @@ native Unity tests before moving on. Each must keep the "no heap after
       `send_unauth()`; verified by `check_digest_auth()`. The parser now
       captures the full `Authorization` value into a dedicated
       `HttpReq::authorization[DIGEST_AUTH_HDR_MAX]` buffer (a Digest header far
-      exceeds `MAX_VAL_LEN`). Tested by `test_digest_auth` (4 cases: challenge,
-      valid handshake, wrong password, forged nonce).
-      _Follow-up:_ nonce is counter+instance derived — harden to a CSPRNG/time
-      seed and add `nc` replay tracking before relying on it in production.
+      exceeds `MAX_VAL_LEN`). Tested by `test_digest_auth` (5 cases: challenge,
+      valid handshake, wrong password, forged nonce, 128-bit hex nonce) and
+      independently grounded against `openssl`/FIPS vectors by `test_digest_vectors`
+      (4 cases). The nonce is now seeded from the hardware CSPRNG
+      (`esp_random()`) folded through SHA-256 with a counter + `millis()`, and
+      regenerated per `begin()`.
+      _Follow-up:_ `nc` (nonce-count) replay tracking is still not implemented —
+      it needs per-client state, which conflicts with the single shared server
+      nonce and this device class's 1–2 client model (global `nc` tracking would
+      reject legitimate concurrent clients). The per-`begin()` nonce rotation
+      bounds the replay window in the meantime.
 
 - [x] **5. Response templating (medium / medium).** _(done)_ `{{name}}`
       substitution via [`send_template()`](@ref DetWebServer::send_template) with
@@ -115,11 +122,23 @@ native Unity tests before moving on. Each must keep the "no heap after
       check before relying on it under load.
 
 - [ ] **8. Stretch / lower priority.**
-  - [ ] Regex routes (heavy; needs a bounded, allocation-free matcher).
-  - [ ] Static JSON request/response helper (zero-heap tokenizer; ArduinoJson
-        stays optional since it heap-allocates).
-  - [ ] Interface filters (`ON_STA_FILTER` / `ON_AP_FILTER`) on handlers.
-  - [ ] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350).
+  - [x] Regex routes _(done)_ — [`on_regex()`](@ref DetWebServer::on_regex):
+        whole-path match via a bounded, allocation-free backtracker (`.`, `* + ?`,
+        `[...]`/`[^...]` ranges, `\d \w \s`, `\` escapes; non-capturing). A
+        `RE_MAX_STEPS` budget keeps it deterministic (fails closed). Tested by
+        `test_regex` (9 cases); example `20.RegexRoutes`.
+  - [x] Static JSON request/response helper _(done)_ — zero-heap `JsonWriter`
+        (formats into a caller buffer, auto comma/escape, `JSON_MAX_DEPTH` cap)
+        plus `json_get_str()`/`json_get_int()`/`json_get_bool()` top-level object
+        readers (`src/DetJson.*`). ArduinoJson stays optional (it heap-allocates).
+        Tested by `test_json` (17 cases); example `18.Json`.
+  - [x] Interface filters _(done)_ — per-route STA/AP gate via
+        [`on(..., DetIface)`](@ref DetWebServer::on) + [`set_ap_ip()`](@ref DetWebServer::set_ap_ip).
+        Each connection is tagged `DETIFACE_STA`/`DETIFACE_AP` at accept time by
+        comparing its local IP to the softAP IP. Tested by `test_iface` (7 cases);
+        example `19.InterfaceFilter`.
+  - [ ] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350). _(Deferred per
+        request — not pursued.)_
 
 </details>
 
@@ -345,18 +364,56 @@ by how often a deployed device needs it.
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
 
-- [ ] **Implement zero-copy template slicing.** The templating engine must operate within
-      strict boundaries. If a user tries to expand a template placeholder into a string
-      that exceeds the pre-allocated channel or work buffer slot, reject/truncate the token
-      or enforce an immediate boundary guard.
+- [x] **Zero-copy template slicing.** _(addressed by design)_
+      [`send_template()`](@ref DetWebServer::send_template) never buffers the
+      expanded body: it walks the template twice (size, then stream each literal
+      run and resolved `{{name}}` value straight to the socket), and placeholder
+      names over 32 chars are emitted literally - so there is no fixed expansion
+      slot to overflow. _Follow-up:_ apply the same resolver path to static-file
+      serving.
 
-- [ ] **Implement JSON serialization** JSON parsing or serialization must be constrained. If
-      the serialized JSON payload attempts to cross the pre-allocated buffer ceiling, it hits
-      an ingestion or serialization boundary guard. That means strict pre-defined caps on the
-      depth and size of the JSON payloads.
+- [x] **JSON request/response helper.** _(done)_ Zero-heap `JsonWriter`
+      (formats into a caller buffer with automatic comma/escaping and a
+      `JSON_MAX_DEPTH` nesting cap; overflow flips `ok()` and truncates safely)
+      plus top-level object readers `json_get_str()`/`json_get_int()`/
+      `json_get_bool()` (`src/DetJson.*`). ArduinoJson stays optional (it
+      heap-allocates). Tested by `test_json` (17); example `18.Json`.
+
+- [x] **Web "serial" terminal ([`DETWS_ENABLE_WEB_TERMINAL`](@ref DETWS_ENABLE_WEB_TERMINAL)).**
+      _(done)_ A WebSerial-style browser terminal over the existing WebSocket
+      layer (`src/services/web_terminal.*`): serves a self-contained CRT-themed
+      page + a WebSocket endpoint, broadcasts device output to all browsers, and
+      delivers typed lines to a command callback - all zero-heap. Tested by
+      `test_web_terminal` (7); example `21.WebTerminal`.
+
+- [x] **HTTPS / TLS ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)).** _(done)_
+      Opt-in mbedTLS on a static memory pool (`src/network_drivers/tls/det_tls.*`):
+      all mbedTLS allocations come from a fixed BSS arena
+      (`DETWS_TLS_ARENA_SIZE`, default 48 KB) via
+      `mbedtls_platform_set_calloc_free()`, so the zero-heap guarantee holds. HW
+      CSPRNG RNG; BIO bridged to the raw `tcp_pcb` + rx ring; handshake pumped in
+      the session loop. `begin_tls(port, cert, …)` / [`listen_tls()`](@ref DetWebServer::listen_tls).
+      HW-verified: `ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+. See SECURITY.md §6.
+      Example `22.HTTPS`. _Follow-ups:_ `wss://` + TLS-SSE (HTTP responses only
+      for now; an upgrade on a TLS conn returns 501), session resumption, and
+      `MAX_TLS_CONNS` > 1 (needs smaller IDF record buffers).
+
+- [ ] **SNMP agent v1 / v2c / v3.** Zero-heap ASN.1 BER codec + a fixed MIB
+      (OID table) over a raw lwIP UDP socket, GET / GETNEXT / GETBULK / SET.
+      Shared base (codec + PDU + MIB) is native-testable.
+  - v1/v2c: community-string access (RFC 1157 / 3416), no crypto.
+  - v3 (USM, RFC 3414): gated behind `DETWS_ENABLE_SNMP_V3` (default off). Auth
+    via HMAC-SHA (`usmHMACSHA`/`usmHMACSHA-2`, reusing the existing SHA-1/SHA-256
+    + HMAC), privacy via AES-128-CFB (RFC 3826; the AES block core is reused, CFB
+    mode added). Also needs the v3 message framing (msgGlobalData +
+    msgSecurityParameters + scopedPDU), engine discovery (Report PDU), timeliness
+    window (engineBoots/engineTime, persisted in NVS), and key localization
+    (RFC 3414 §2.6). The security model is "an auth layer," but the message
+    format + discovery + timeliness roughly double the code vs v1/v2c - hence the
+    flag gate.
 
 (Deliberately omitted as not worth the footprint for this class of device:
-HTTP Digest auth, WebSocket permessage-deflate, per-request access logging.)
+WebSocket permessage-deflate.)
 
 </details>
 

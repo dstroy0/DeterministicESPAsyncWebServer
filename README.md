@@ -13,7 +13,6 @@ An HTTP/1.1 web server for ESP32 with a fully deterministic memory footprint, RF
 [![C++ Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml)
 [![Markdown Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml)
 
-**[API Documentation](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
 ## 📚 Documentation
 

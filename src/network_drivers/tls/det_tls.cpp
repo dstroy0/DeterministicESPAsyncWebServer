@@ -1,0 +1,395 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file det_tls.cpp
+ * @brief Deterministic TLS engine implementation (mbedTLS + static pool).
+ *
+ * ESP32/Arduino only. All mbedTLS allocations are served from a fixed BSS arena
+ * (MBEDTLS_MEMORY_BUFFER_ALLOC_C) so no system heap is touched; the RNG is the
+ * ESP32 hardware CSPRNG; the transport BIO reads ciphertext straight from the
+ * connection's rx ring and writes via tcp_write. v2/v3 mbedTLS differences are
+ * bridged with MBEDTLS_VERSION_MAJOR guards (same approach as the SSH layer).
+ */
+
+#include "network_drivers/tls/det_tls.h"
+
+#if DETWS_ENABLE_TLS && defined(ARDUINO)
+
+#include "lwip/tcp.h"
+#include "network_drivers/transport/transport.h"
+#include <esp_system.h> // esp_fill_random (HW CSPRNG)
+#include <string.h>
+
+#include <mbedtls/error.h>
+#include <mbedtls/pk.h>
+#include <mbedtls/platform.h> // mbedtls_platform_set_calloc_free
+#include <mbedtls/ssl.h>
+#include <mbedtls/version.h>
+#include <mbedtls/x509_crt.h>
+
+// ---------------------------------------------------------------------------
+// Static memory pool - a minimal first-fit allocator over a fixed BSS arena.
+//
+// The precompiled Arduino mbedTLS does not ship MBEDTLS_MEMORY_BUFFER_ALLOC_C,
+// so instead we install our own calloc/free via mbedtls_platform_set_calloc_free
+// (MBEDTLS_PLATFORM_MEMORY). Every mbedTLS allocation (record buffers, handshake
+// temporaries, cert/key) is then served from s_arena - no system heap, so the
+// determinism guarantee holds. Bounded by the arena: exhaustion fails the
+// handshake cleanly (calloc returns NULL) rather than corrupting anything.
+// ---------------------------------------------------------------------------
+static uint8_t s_arena[DETWS_TLS_ARENA_SIZE];
+static bool s_ready = false;
+static bool s_pool_init = false;
+static size_t s_pool_used = 0;
+static size_t s_pool_peak = 0;
+
+#define TLS_ALIGN 8u
+struct PoolBlk
+{
+    size_t size;  // payload bytes
+    uint8_t used; // 0 = free, 1 = in use
+};
+static const size_t POOL_HDR = (sizeof(PoolBlk) + (TLS_ALIGN - 1)) & ~(size_t)(TLS_ALIGN - 1);
+
+static void pool_init()
+{
+    PoolBlk *b = (PoolBlk *)s_arena;
+    b->size = sizeof(s_arena) - POOL_HDR;
+    b->used = 0;
+    s_pool_used = 0;
+    s_pool_peak = 0;
+    s_pool_init = true;
+}
+
+static void pool_coalesce()
+{
+    uint8_t *p = s_arena;
+    uint8_t *end = s_arena + sizeof(s_arena);
+    while (p < end)
+    {
+        PoolBlk *b = (PoolBlk *)p;
+        uint8_t *next = p + POOL_HDR + b->size;
+        if (!b->used && next < end)
+        {
+            PoolBlk *nb = (PoolBlk *)next;
+            if (!nb->used)
+            {
+                b->size += POOL_HDR + nb->size; // merge
+                continue;                       // try merging further
+            }
+        }
+        p = next;
+    }
+}
+
+static void *pool_calloc(size_t n, size_t size)
+{
+    if (!s_pool_init)
+        pool_init();
+    if (n != 0 && size > (size_t)-1 / n)
+        return nullptr; // overflow
+    size_t want = n * size;
+    want = (want + (TLS_ALIGN - 1)) & ~(size_t)(TLS_ALIGN - 1);
+    if (want == 0)
+        want = TLS_ALIGN;
+
+    uint8_t *p = s_arena;
+    uint8_t *end = s_arena + sizeof(s_arena);
+    while (p < end)
+    {
+        PoolBlk *b = (PoolBlk *)p;
+        if (!b->used && b->size >= want)
+        {
+            // Split if the remainder can hold another header + a min payload.
+            if (b->size >= want + POOL_HDR + TLS_ALIGN)
+            {
+                PoolBlk *nb = (PoolBlk *)(p + POOL_HDR + want);
+                nb->size = b->size - want - POOL_HDR;
+                nb->used = 0;
+                b->size = want;
+            }
+            b->used = 1;
+            s_pool_used += b->size;
+            if (s_pool_used > s_pool_peak)
+                s_pool_peak = s_pool_used;
+            void *payload = p + POOL_HDR;
+            memset(payload, 0, b->size);
+            return payload;
+        }
+        p += POOL_HDR + b->size;
+    }
+    return nullptr; // arena exhausted
+}
+
+static void pool_free(void *ptr)
+{
+    if (!ptr)
+        return;
+    PoolBlk *b = (PoolBlk *)((uint8_t *)ptr - POOL_HDR);
+    if (b->used)
+    {
+        b->used = 0;
+        if (s_pool_used >= b->size)
+            s_pool_used -= b->size;
+    }
+    pool_coalesce();
+}
+
+static mbedtls_ssl_config s_conf;
+static mbedtls_x509_crt s_cert;
+static mbedtls_pk_context s_key;
+
+struct TlsConn
+{
+    mbedtls_ssl_context ssl;
+    struct tcp_pcb *pcb; // captured at begin: the senders null conn->pcb mid-write
+    uint8_t slot;
+    bool active;
+    bool established;
+};
+static TlsConn s_tls[MAX_TLS_CONNS];
+
+static TlsConn *find(uint8_t slot)
+{
+    for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
+        if (s_tls[i].active && s_tls[i].slot == slot)
+            return &s_tls[i];
+    return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// RNG + transport BIO
+// ---------------------------------------------------------------------------
+static int tls_rng(void *ctx, unsigned char *out, size_t len)
+{
+    (void)ctx;
+    esp_fill_random(out, len); // ESP32 hardware CSPRNG
+    return 0;
+}
+
+// Pull ciphertext from the connection's rx ring (already filled by the lwIP
+// recv callback). No bytes available -> WANT_READ so mbedTLS yields to the loop.
+static int bio_recv(void *ctx, unsigned char *buf, size_t len)
+{
+    TlsConn *e = (TlsConn *)ctx;
+    TcpConn *c = &conn_pool[e->slot];
+    size_t n = 0;
+    while (n < len && c->rx_tail != c->rx_head)
+    {
+        buf[n++] = c->rx_buffer[c->rx_tail];
+        c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
+    }
+    if (n == 0)
+        return MBEDTLS_ERR_SSL_WANT_READ;
+    return (int)n;
+}
+
+// Write ciphertext out via lwIP, bounded by the current send buffer. Uses the
+// pcb captured at begin() because the response senders null conn->pcb before
+// they write (the detach-before-write race guard).
+static int bio_send(void *ctx, const unsigned char *buf, size_t len)
+{
+    TlsConn *e = (TlsConn *)ctx;
+    if (!e->pcb)
+        return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
+
+    size_t avail = tcp_sndbuf(e->pcb);
+    if (avail == 0)
+        return MBEDTLS_ERR_SSL_WANT_WRITE; // backpressure; retry next pump
+    size_t to = len;
+    if (to > avail)
+        to = avail;
+    if (to > 0xFFFF)
+        to = 0xFFFF;
+
+    err_t err = tcp_write(e->pcb, buf, (u16_t)to, TCP_WRITE_FLAG_COPY);
+    if (err == ERR_OK)
+    {
+        tcp_output(e->pcb);
+        return (int)to;
+    }
+    if (err == ERR_MEM)
+        return MBEDTLS_ERR_SSL_WANT_WRITE;
+    return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
+{
+    if (s_ready)
+        return true;
+    if (!cert || !key)
+        return false;
+
+    // Route ALL mbedTLS allocations through our static arena before any mbedTLS
+    // object is initialized.
+    pool_init();
+    mbedtls_platform_set_calloc_free(pool_calloc, pool_free);
+
+    mbedtls_x509_crt_init(&s_cert);
+    mbedtls_pk_init(&s_key);
+    mbedtls_ssl_config_init(&s_conf);
+
+    if (mbedtls_x509_crt_parse(&s_cert, cert, cert_len) != 0)
+        return false;
+
+#if MBEDTLS_VERSION_MAJOR >= 3
+    if (mbedtls_pk_parse_key(&s_key, key, key_len, nullptr, 0, tls_rng, nullptr) != 0)
+        return false;
+#else
+    if (mbedtls_pk_parse_key(&s_key, key, key_len, nullptr, 0) != 0)
+        return false;
+#endif
+
+    if (mbedtls_ssl_config_defaults(&s_conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
+                                    MBEDTLS_SSL_PRESET_DEFAULT) != 0)
+        return false;
+
+    mbedtls_ssl_conf_rng(&s_conf, tls_rng, nullptr);
+#if MBEDTLS_VERSION_MAJOR >= 3
+    mbedtls_ssl_conf_min_tls_version(&s_conf, MBEDTLS_SSL_VERSION_TLS1_2);
+#else
+    mbedtls_ssl_conf_min_version(&s_conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+#endif
+
+    if (mbedtls_ssl_conf_own_cert(&s_conf, &s_cert, &s_key) != 0)
+        return false;
+
+    for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
+        s_tls[i].active = false;
+
+    s_ready = true;
+    return true;
+}
+
+bool det_tls_ready()
+{
+    return s_ready;
+}
+
+bool det_tls_conn_begin(uint8_t slot)
+{
+    if (!s_ready)
+        return false;
+    TlsConn *e = nullptr;
+    for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
+    {
+        if (!s_tls[i].active)
+        {
+            e = &s_tls[i];
+            break;
+        }
+    }
+    if (!e)
+        return false; // TLS connection pool full
+
+    e->slot = slot;
+    e->pcb = conn_pool[slot].pcb;
+    e->active = true;
+    e->established = false;
+    mbedtls_ssl_init(&e->ssl);
+    if (mbedtls_ssl_setup(&e->ssl, &s_conf) != 0)
+    {
+        mbedtls_ssl_free(&e->ssl);
+        e->active = false;
+        return false;
+    }
+    mbedtls_ssl_set_bio(&e->ssl, e, bio_send, bio_recv, nullptr);
+    return true;
+}
+
+int det_tls_handshake(uint8_t slot)
+{
+    TlsConn *e = find(slot);
+    if (!e)
+        return -1;
+    int ret = mbedtls_ssl_handshake(&e->ssl);
+    if (ret == 0)
+    {
+        e->established = true;
+        return 1;
+    }
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+        return 0;
+    return -1;
+}
+
+bool det_tls_established(uint8_t slot)
+{
+    TlsConn *e = find(slot);
+    return e && e->established;
+}
+
+int det_tls_read(uint8_t slot, uint8_t *buf, size_t len)
+{
+    TlsConn *e = find(slot);
+    if (!e)
+        return -1;
+    int ret = mbedtls_ssl_read(&e->ssl, buf, len);
+    if (ret > 0)
+        return ret;
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+        return 0; // no plaintext available yet
+    return -1;    // close_notify, peer close, or fatal
+}
+
+int det_tls_write(uint8_t slot, const void *data, size_t len)
+{
+    TlsConn *e = find(slot);
+    if (!e)
+        return -1;
+    const unsigned char *p = (const unsigned char *)data;
+    size_t sent = 0;
+    uint16_t guard = 0; // bound retries so a stuck send buffer cannot spin forever
+    while (sent < len)
+    {
+        int ret = mbedtls_ssl_write(&e->ssl, p + sent, len - sent);
+        if (ret > 0)
+        {
+            sent += (size_t)ret;
+            guard = 0;
+            continue;
+        }
+        if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+        {
+            if (++guard > 64)
+                break; // give up this flush; backpressure
+            continue;
+        }
+        return -1;
+    }
+    return (int)sent;
+}
+
+void det_tls_conn_end(uint8_t slot)
+{
+    TlsConn *e = find(slot);
+    if (!e)
+        return;
+    mbedtls_ssl_close_notify(&e->ssl);
+    mbedtls_ssl_free(&e->ssl);
+    e->active = false;
+    e->established = false;
+    e->pcb = nullptr;
+}
+
+void det_tls_conn_free(uint8_t slot)
+{
+    TlsConn *e = find(slot);
+    if (!e)
+        return;
+    mbedtls_ssl_free(&e->ssl); // abrupt teardown: no close_notify (peer is gone)
+    e->active = false;
+    e->established = false;
+    e->pcb = nullptr;
+}
+
+size_t det_tls_arena_peak()
+{
+    return s_pool_peak;
+}
+
+#endif // DETWS_ENABLE_TLS && ARDUINO

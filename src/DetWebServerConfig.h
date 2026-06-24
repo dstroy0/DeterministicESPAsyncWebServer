@@ -154,6 +154,29 @@
 #define CHUNK_BUF_SIZE 256
 #endif
 
+/**
+ * @brief Maximum object/array nesting depth for the JsonWriter (see DetJson.h).
+ *
+ * Bounds the writer's per-level comma-tracking stack (one bool per level);
+ * begin_object()/begin_array() beyond this fail the writer instead of
+ * overflowing. No heap; ~JSON_MAX_DEPTH bytes of stack inside the writer object.
+ */
+#ifndef JSON_MAX_DEPTH
+#define JSON_MAX_DEPTH 8
+#endif
+
+/**
+ * @brief Step budget for the regex route matcher (see on_regex()).
+ *
+ * The matcher is a bounded backtracker: it counts match steps and fails closed
+ * (no match) once this budget is exhausted, so a pathological pattern can never
+ * backtrack unboundedly. Keeps regex routing deterministic. Routing patterns hit
+ * only a handful of steps; the default leaves wide margin.
+ */
+#ifndef RE_MAX_STEPS
+#define RE_MAX_STEPS 2000
+#endif
+
 // ---------------------------------------------------------------------------
 // WebSocket sizing constants
 // ---------------------------------------------------------------------------
@@ -369,6 +392,64 @@
 #define DETWS_ENABLE_SSH 0
 #endif
 
+/**
+ * @brief TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only).
+ *
+ * When set, the server can accept TLS connections using mbedTLS configured with
+ * MBEDTLS_MEMORY_BUFFER_ALLOC_C over a fixed BSS arena (DETWS_TLS_ARENA_SIZE) -
+ * no system heap, so the determinism guarantee is preserved. The TLS engine is
+ * compiled only on Arduino/ESP32 (mbedTLS is not part of the native build).
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_TLS
+#define DETWS_ENABLE_TLS 0
+#endif
+
+/** @brief Maximum simultaneous TLS connections (each holds mbedTLS record buffers). */
+#ifndef MAX_TLS_CONNS
+#define MAX_TLS_CONNS 1
+#endif
+
+/**
+ * @brief SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP.
+ *
+ * Zero-heap ASN.1 BER codec + a fixed MIB table on UDP/161. Default off. The BER
+ * codec itself is gated by this flag and is otherwise unit-tested standalone
+ * (env:native_snmp).
+ */
+#ifndef DETWS_ENABLE_SNMP
+#define DETWS_ENABLE_SNMP 0
+#endif
+
+/** @brief Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). Default off. */
+#ifndef DETWS_ENABLE_SNMP_V3
+#define DETWS_ENABLE_SNMP_V3 0
+#endif
+
+/** @brief Maximum sub-identifiers (arcs) in an SNMP object identifier. */
+#ifndef SNMP_MAX_OID_LEN
+#define SNMP_MAX_OID_LEN 32
+#endif
+
+/**
+ * @brief Bytes of the static BSS arena mbedTLS allocates from (DETWS_ENABLE_TLS).
+ *
+ * All mbedTLS allocations (per-connection record buffers, handshake temporaries,
+ * cert/key parsing) are served from this fixed arena via a custom allocator
+ * installed with mbedtls_platform_set_calloc_free() - never the system heap. Must
+ * cover the worst-case handshake peak for MAX_TLS_CONNS; if undersized the
+ * handshake fails cleanly (no corruption). Measured peak for ONE ECDSA P-256
+ * connection on Arduino-esp32 (16 KB IN + 16 KB OUT records) is ~41.5 KB, so the
+ * default leaves a small margin. An RSA cert/larger chain needs more; query the
+ * live peak via det_tls_arena_peak(). NOTE: a second concurrent TLS connection
+ * roughly doubles the record-buffer cost (~32 KB more), which overflows the
+ * static DRAM budget - keep MAX_TLS_CONNS at 1 unless you shrink the IDF record
+ * sizes (CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN, needs an ESP-IDF build).
+ */
+#ifndef DETWS_TLS_ARENA_SIZE
+#define DETWS_TLS_ARENA_SIZE 49152
+#endif
+
 // ---------------------------------------------------------------------------
 // Optional network services (ESP32-only thin wrappers; each default-off so it
 // costs no code/RAM/flash unless explicitly enabled).
@@ -397,6 +478,27 @@
 /** @brief Runtime stats endpoint (uptime, request/error counts, pool usage, heap). */
 #ifndef DETWS_ENABLE_STATS
 #define DETWS_ENABLE_STATS 0
+#endif
+
+/**
+ * @brief Browser "web serial" terminal over WebSocket (src/services/web_terminal).
+ *
+ * Serves a self-contained terminal page and a WebSocket endpoint: device output
+ * is broadcast to all connected browsers, browser input is delivered to a
+ * command callback. Requires DETWS_ENABLE_WEBSOCKET. Default off.
+ */
+#ifndef DETWS_ENABLE_WEB_TERMINAL
+#define DETWS_ENABLE_WEB_TERMINAL 0
+#endif
+
+/**
+ * @brief Stack scratch for detws_web_terminal_printf()/println() formatting.
+ *
+ * One formatted terminal line must fit in this many bytes (longer is truncated).
+ * Allocated on the stack only during the call - no persistent RAM cost.
+ */
+#ifndef TERM_TX_BUF_SIZE
+#define TERM_TX_BUF_SIZE 256
 #endif
 
 /**
@@ -669,6 +771,20 @@ enum ConnProto
     PROTO_SSH = 3,    ///< SSH (RFC 4253/4252/4254).
 };
 
+/**
+ * @brief Network interface a connection arrived on (for per-route filtering).
+ *
+ * Stamped onto each TcpConn at accept time by comparing the connection's local
+ * IP to the softAP IP (see DetWebServer::set_ap_ip()). Used to gate routes to
+ * the station or softAP interface only (DetWebServer::on(..., DetIface)).
+ */
+enum DetIface : uint8_t
+{
+    DETIFACE_ANY = 0, ///< Unknown / no filter (matches any interface).
+    DETIFACE_STA = 1, ///< Station interface (joined to an AP / your LAN).
+    DETIFACE_AP = 2,  ///< softAP interface (clients joined to the device).
+};
+
 // ---------------------------------------------------------------------------
 // Diagnostic JSON string  (only defined when DETWS_ENABLE_DIAG == 1)
 // ---------------------------------------------------------------------------
@@ -819,6 +935,23 @@ enum ConnProto
 
 #if CHUNK_BUF_SIZE < 16
 #error "DeterministicESPAsyncWebServer: CHUNK_BUF_SIZE must be >= 16"
+#endif
+
+#if JSON_MAX_DEPTH < 1
+#error "DeterministicESPAsyncWebServer: JSON_MAX_DEPTH must be >= 1"
+#endif
+
+#if RE_MAX_STEPS < 64
+#error "DeterministicESPAsyncWebServer: RE_MAX_STEPS must be >= 64"
+#endif
+
+#if DETWS_ENABLE_TLS
+#if MAX_TLS_CONNS < 1 || MAX_TLS_CONNS > MAX_CONNS
+#error "DeterministicESPAsyncWebServer: MAX_TLS_CONNS must be between 1 and MAX_CONNS"
+#endif
+#if DETWS_TLS_ARENA_SIZE < 8192
+#error "DeterministicESPAsyncWebServer: DETWS_TLS_ARENA_SIZE is far too small for a TLS handshake"
+#endif
 #endif
 
 #if DETWS_ENABLE_AUTH && MAX_AUTH_LEN < 2

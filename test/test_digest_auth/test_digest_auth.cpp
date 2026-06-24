@@ -208,6 +208,23 @@ void test_bad_nonce_rejected()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
 }
 
+void test_nonce_is_128bit_hex()
+{
+    // The hardened nonce is SHA-256(CSPRNG + counter + millis) truncated to 16
+    // bytes -> exactly 32 lowercase hex characters.
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+    TEST_ASSERT_EQUAL_UINT(32, (unsigned)strlen(nonce));
+    for (int i = 0; i < 32; i++)
+    {
+        char ch = nonce[i];
+        bool is_hex = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+        TEST_ASSERT_TRUE(is_hex);
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -215,5 +232,6 @@ int main()
     RUN_TEST(test_valid_digest_authenticates);
     RUN_TEST(test_wrong_password_rejected);
     RUN_TEST(test_bad_nonce_rejected);
+    RUN_TEST(test_nonce_is_128bit_hex);
     return UNITY_END();
 }

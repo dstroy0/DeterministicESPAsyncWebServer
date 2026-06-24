@@ -31,6 +31,8 @@
 
 TcpConn conn_pool[MAX_CONNS];
 
+uint32_t detws_ap_ip = 0;
+
 uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 
 /**

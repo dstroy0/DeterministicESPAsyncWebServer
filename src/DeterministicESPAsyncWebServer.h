@@ -40,6 +40,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
+#include "DetJson.h"
 #include "network_drivers/presentation/presentation.h"
 #include "network_drivers/session/session.h"
 #if DETWS_ENABLE_WEBSOCKET
@@ -267,9 +268,11 @@ struct Route
     char auth_pass[MAX_AUTH_LEN];  ///< Required password.
 #endif
 
-    bool is_active;   ///< `false` for unused table slots.
-    bool is_wildcard; ///< `true` when path ends with `*`.
-    bool is_param;    ///< `true` when the path contains a `:name` segment.
+    bool is_active;       ///< `false` for unused table slots.
+    bool is_wildcard;     ///< `true` when path ends with `*`.
+    bool is_param;        ///< `true` when the path contains a `:name` segment.
+    bool is_regex;        ///< `true` when the path is a regex (see on_regex()).
+    uint8_t iface_filter; ///< DetIface gate; DETIFACE_ANY (0) = match any interface.
 };
 
 // ---------------------------------------------------------------------------
@@ -342,12 +345,14 @@ class ChunkedResponse
 
   private:
     friend class DetWebServer;
-    ChunkedResponse(struct tcp_pcb *pcb, bool head) : _pcb(pcb), _total(0), _ok(true), _head(head)
+    ChunkedResponse(uint8_t slot, struct tcp_pcb *pcb, bool head)
+        : _pcb(pcb), _total(0), _slot(slot), _ok(true), _head(head)
     {
     }
 
     struct tcp_pcb *_pcb; ///< Socket to stream to (slot already detached).
     size_t _total;        ///< Running count of body bytes (no framing).
+    uint8_t _slot;        ///< Connection slot (for the TLS-aware write path).
     bool _ok;             ///< Cleared if a tcp_write reported an error.
     bool _head;           ///< HEAD request: suppress all body output.
 };
@@ -419,6 +424,7 @@ class DetWebServer
 
     uint16_t _listen_ports[MAX_LISTENERS];   ///< Ports registered via listen() or begin(port).
     ConnProto _listen_protos[MAX_LISTENERS]; ///< Protocol for each registered listener.
+    bool _listen_tls[MAX_LISTENERS];         ///< True for TLS listeners (listen_tls()).
     uint8_t _listener_count;                 ///< Number of registered listeners.
 
     /**
@@ -600,6 +606,44 @@ class DetWebServer
      */
     int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
 
+#if DETWS_ENABLE_TLS
+    /**
+     * @brief Load the TLS server certificate + private key (call before begin).
+     *
+     * Initializes the static-pool mbedTLS engine. Required before any TLS
+     * listener will complete a handshake. PEM buffers must include the trailing
+     * NUL in the length; DER is also accepted.
+     *
+     * @return true on success; false if the cert/key/pool setup failed.
+     */
+    bool tls_cert(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len);
+
+    /**
+     * @brief Register a TLS (HTTPS) HTTP listener on @p port (typically 443).
+     *
+     * Like listen() but connections accepted here run a TLS handshake first.
+     * Call tls_cert() first, then begin(). @return DETWS_OK or an error code.
+     */
+    int32_t listen_tls(uint16_t port);
+
+    /**
+     * @brief Convenience: load cert/key, register a TLS listener, and start.
+     *
+     * Equivalent to `tls_cert(...); listen_tls(port); begin(cfg);`.
+     *
+     * @param port     TLS port (typically 443).
+     * @param cert     Server certificate (chain).
+     * @param cert_len Length incl. trailing NUL for PEM.
+     * @param key      Server private key.
+     * @param key_len  Length incl. trailing NUL for PEM.
+     * @param cfg      Optional runtime config.
+     * @return DETWS_OK on success; a negative code, or DETWS_ERR_LISTEN_FAILED if
+     *         the TLS engine could not initialize.
+     */
+    int32_t begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
+                      const WebServerConfig *cfg = nullptr);
+#endif // DETWS_ENABLE_TLS
+
     /**
      * @brief Gracefully stop the server.
      *
@@ -639,6 +683,58 @@ class DetWebServer
      * @note Registering more than MAX_ROUTES routes silently drops extras.
      */
     void on(const char *path, HttpMethod method, Handler callback);
+
+    /**
+     * @brief Register a route that only matches on a specific network interface.
+     *
+     * Identical to on(path, method, callback) but the route is invisible unless
+     * the request arrived on @p iface (DETIFACE_STA or DETIFACE_AP). A
+     * non-matching interface falls through to other routes / 404, so you can,
+     * e.g., expose a provisioning UI only on the softAP and the app API only on
+     * the station link. Requires set_ap_ip() to have been called so connections
+     * can be classified.
+     *
+     * @param path     URL path pattern.
+     * @param method   HTTP method.
+     * @param callback Handler invoked on a match.
+     * @param iface    DETIFACE_STA or DETIFACE_AP (DETIFACE_ANY = no filter).
+     */
+    void on(const char *path, HttpMethod method, Handler callback, DetIface iface);
+
+    /**
+     * @brief Register a route whose path is a regular expression.
+     *
+     * The whole request path must match @p pattern (implicitly anchored). The
+     * matcher is a small, bounded, allocation-free backtracker supporting:
+     * `.` (any char), `*` `+` `?` quantifiers, character classes `[...]` /
+     * `[^...]` with `a-z` ranges, the shorthands `\d \w \s` (and `\D \W \S`),
+     * and `\` to escape a metacharacter. It is **non-capturing** and has no
+     * groups `()` or alternation `|` - use `:name` path parameters (see the
+     * other on() overload notes / http_get_param) when you need to capture.
+     * Matching is bounded by RE_MAX_STEPS and fails closed past that budget.
+     *
+     * @code
+     *   server.on_regex("/sensor/[0-9]+", HTTP_GET, handle_sensor);
+     *   server.on_regex("/img/.+\\.png", HTTP_GET, handle_png);
+     * @endcode
+     *
+     * @param pattern  Regex the full path must match (stored, <= MAX_PATH_LEN-1).
+     * @param method   HTTP method.
+     * @param callback Handler invoked on a match.
+     */
+    void on_regex(const char *pattern, HttpMethod method, Handler callback);
+
+    /**
+     * @brief Tell the server the softAP IPv4 address for STA/AP route filtering.
+     *
+     * Each accepted connection is tagged DETIFACE_AP when its local IP equals
+     * @p ap_ip, else DETIFACE_STA. Call once after starting the softAP, e.g.
+     * `server.set_ap_ip(WiFi.softAPIP())` (IPAddress converts to uint32_t).
+     * Without it, every connection is treated as DETIFACE_STA.
+     *
+     * @param ap_ip softAP IPv4 address in network byte order (0 to clear).
+     */
+    void set_ap_ip(uint32_t ap_ip);
 
 #if DETWS_ENABLE_AUTH
     /**

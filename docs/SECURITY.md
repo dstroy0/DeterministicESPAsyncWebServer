@@ -35,7 +35,7 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                        | Caveat                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Transport encryption (HTTP) | There is **no TLS** - plain HTTP only. Fine on a trusted LAN or behind a TLS terminator; do not expose to the internet for sensitive data. Use the SSH layer for an encrypted channel.                                                                                                                                                                                                                                                        |
+| Transport encryption (HTTP) | Opt-in **HTTPS** ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) via mbedTLS on a static memory pool - TLS 1.2+/`ECDHE-ECDSA-AES256-GCM-SHA384`, zero-heap (§6). Default off (plain HTTP). Caveats: one connection at a time (`MAX_TLS_CONNS`=1), no client-cert/mTLS, no session resumption, and `wss`/TLS-SSE not yet wired. On a trusted LAN plain HTTP is fine; the SSH layer is also an encrypted channel. |
 | SSH timing side-channels    | The native software bignum/AES/RSA paths are **not constant-time**, but they are **compile-excluded from firmware**: the software Montgomery cluster is under `#ifndef ARDUINO` (`ssh_bignum.cpp`) and the software AES / native RSA modexp live in the `#else` of an `#ifdef ARDUINO` (`ssh_aes256ctr.cpp`, `ssh_rsa.cpp`). On ESP32 only the hardware/mbedTLS paths are compiled and run; the software paths exist solely for host testing. |
 | `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
@@ -307,17 +307,69 @@ read exploit.
 
 ---
 
-## 6. TLS / Transport Encryption {#tls-security}
+## 6. TLS / Transport Encryption (HTTPS) {#tls-security}
 
-The core HTTP/WebSocket/SSE stack does not include a TLS layer. The intended
-deployment pattern is:
+HTTPS is available as an opt-in layer (`DETWS_ENABLE_TLS`, default off) built on
+mbedTLS, designed so it does **not** break the library's zero-heap / determinism
+guarantee. With it disabled, no TLS code is compiled and the build is unchanged.
 
-- **Local network:** TLS is often omitted; the WiFi encryption (WPA2/WPA3)
-  provides transport-layer protection for the local segment.
-- **Internet-facing:** place a TLS-terminating reverse proxy (nginx, HAProxy)
-  in front of the device, or enable the SSH listener and use SSH tunnelling.
+### Static memory - no heap {#tls-static}
 
-The SSH transport layer (§7) is the only encrypted path built into this library.
+mbedTLS normally heap-allocates per connection (TLS context, ~16 KB IN + 16 KB
+OUT record buffers, handshake temporaries). Here every mbedTLS allocation is
+redirected to a **fixed BSS arena** (`DETWS_TLS_ARENA_SIZE`) via a custom
+first-fit allocator installed with `mbedtls_platform_set_calloc_free()` - so the
+system heap is never touched after `begin()`. The arena is sized for the
+worst-case handshake; if it is ever too small the handshake **fails cleanly**
+(allocation returns NULL → connection dropped), never corrupting memory. The
+live high-water mark is queryable via [`det_tls_arena_peak()`](@ref det_tls_arena_peak).
+Measured peak for one ECDSA P-256 connection on Arduino-esp32 (16 KB IN/OUT
+records) is ~41.5 KB; the default arena is 48 KB.
+
+- ESP32/Arduino only - mbedTLS is not part of the native test build, so TLS is
+  verified on hardware (`openssl s_client` + browser), not in the native suite.
+  The arena allocator's accounting is the unit-testable part.
+
+### Cryptography {#tls-crypto}
+
+- **Protocol:** TLS 1.2 minimum (`MBEDTLS_SSL_VERSION_TLS1_2`); TLS 1.3 is
+  negotiated when the client offers it.
+- **Cipher (verified on device):** `ECDHE-ECDSA-AES256-GCM-SHA384` - forward
+  secrecy via ephemeral ECDHE, ECDSA server authentication, AEAD AES-256-GCM
+  (hardware-accelerated on the ESP32 AES/SHA engines).
+- **RNG:** the ESP32 hardware CSPRNG (`esp_fill_random`) feeds mbedTLS directly
+  (`mbedtls_ssl_conf_rng`); no software DRBG state to seed or persist.
+- **Server key/cert:** loaded once at `begin_tls()` / `tls_cert()` into the
+  static pool. An ECDSA P-256 cert is recommended (faster handshake, smaller
+  than RSA). The private key lives in the static arena for the device's lifetime
+  (it is not wiped per-connection like the SSH host key).
+
+### Limitations / caveats (⚠️) {#tls-caveats}
+
+- **One TLS connection at a time** by default (`MAX_TLS_CONNS` = 1). A second
+  concurrent TLS connection roughly doubles the ~32 KB record-buffer cost, which
+  overflows the static DRAM budget on a stock Arduino build; raising it requires
+  shrinking the IDF record sizes (`CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`, an
+  ESP-IDF-framework build).
+- **No client-certificate verification** - the server does not authenticate
+  clients via mTLS (use HTTP Basic/Digest auth on top for client identity).
+- **No session resumption / tickets** yet - every connection does a full
+  handshake. Acceptable for a low-connection-rate device; a future optimization.
+- **`wss://` and TLS Server-Sent Events are not wired.** Only HTTP responses go
+  through the TLS write path; a WebSocket/SSE upgrade on a TLS connection is
+  rejected with `501` rather than emitting a plaintext frame over the record
+  layer. Plain `ws://`/SSE on a non-TLS listener is unaffected.
+- The example certificate in `examples/22.HTTPS` is a **public throwaway** -
+  generate your own key/cert and keep the key secret.
+
+### When to use what {#tls-guidance}
+
+- **Trusted LAN:** plain HTTP is often fine (WPA2/WPA3 protects the segment);
+  it is also the fastest path.
+- **Internet-facing:** enable on-device HTTPS as above, or place a
+  TLS-terminating reverse proxy (nginx, HAProxy) in front, or use the SSH
+  transport (§7). On-device HTTPS keeps the device self-contained at the cost of
+  ~48 KB RAM and one connection at a time.
 
 ---
 
