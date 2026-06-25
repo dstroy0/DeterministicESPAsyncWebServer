@@ -90,6 +90,54 @@ void det_tls_conn_free(uint8_t slot);
 /** @brief Peak bytes ever used from the static arena (for sizing DETWS_TLS_ARENA_SIZE). */
 size_t det_tls_arena_peak();
 
+#if DETWS_ENABLE_MTLS
+/**
+ * @brief Require a verified client certificate (mTLS): install the trust-anchor CA.
+ *
+ * Call after det_tls_global_init(). Parses @p ca (PEM - length incl. the trailing
+ * NUL - or DER) as the CA chain and switches the server to
+ * MBEDTLS_SSL_VERIFY_REQUIRED, so the handshake demands a client certificate that
+ * chains to @p ca and aborts the connection otherwise.
+ *
+ * @return true on success; false if the engine is not initialized or the CA
+ *         failed to parse.
+ */
+bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len);
+
+/**
+ * @brief Copy the established peer's certificate subject DN into @p out.
+ *
+ * Valid once the handshake on @p slot has completed with a verified client cert.
+ * @return the subject string length written (excl. NUL), or <0 if there is no
+ *         verified peer certificate.
+ */
+int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
+#endif // DETWS_ENABLE_MTLS
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+/** @brief TLS BIO send/recv callbacks (mbedTLS signatures) supplied by the caller. */
+typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
+typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
+
+/**
+ * @brief Run a blocking client-side TLS exchange over caller-supplied BIO callbacks.
+ *
+ * Performs a TLS 1.2+ client handshake (SNI = @p host, server cert not verified -
+ * see note), writes @p req, then reads the decrypted response into @p out until
+ * the peer closes or @p out fills. Uses the shared static arena (installs the
+ * allocator if the server side has not). Yields with delay() while waiting, up to
+ * @p deadline_ms (millis() timestamp).
+ *
+ * NOTE: server-certificate verification is OFF by default (no trust store on the
+ * device); the transport is encrypted but not authenticated. Pin/verify at the
+ * application layer if needed.
+ *
+ * @return 0 on success (@p out_len set), <0 on handshake/IO failure.
+ */
+int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
+                       size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms);
+#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+
 #else // stubs (TLS disabled or native build)
 
 static inline bool det_tls_global_init(const uint8_t *, size_t, const uint8_t *, size_t)
@@ -130,6 +178,27 @@ static inline size_t det_tls_arena_peak()
 {
     return 0;
 }
+
+#if DETWS_ENABLE_MTLS
+static inline bool det_tls_set_client_ca(const uint8_t *, size_t)
+{
+    return false;
+}
+static inline int det_tls_peer_subject(uint8_t, char *, size_t)
+{
+    return -1;
+}
+#endif // DETWS_ENABLE_MTLS
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
+typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
+static inline int det_tls_client_run(const char *, const uint8_t *, size_t, uint8_t *, size_t, size_t *,
+                                     det_tls_bio_send_fn, det_tls_bio_recv_fn, uint32_t)
+{
+    return -1;
+}
+#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 
 #endif // DETWS_ENABLE_TLS && ARDUINO
 

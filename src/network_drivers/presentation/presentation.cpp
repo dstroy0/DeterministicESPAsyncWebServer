@@ -18,12 +18,26 @@
 
 #include "presentation.h"
 
+#if DETWS_ENABLE_KEEPALIVE
+uint16_t http_req_count[MAX_CONNS];
+#endif
+
 void http_reset(uint8_t slot_id)
 {
     if (slot_id >= MAX_CONNS)
         return;
     http_pool[slot_id].slot_id = slot_id; // ensure slot_id is correct before reset reads it
     http_parser_reset(&http_pool[slot_id]);
+}
+
+void http_conn_open(uint8_t slot_id)
+{
+    if (slot_id >= MAX_CONNS)
+        return;
+#if DETWS_ENABLE_KEEPALIVE
+    http_req_count[slot_id] = 0; // fresh connection: clear the keep-alive request tally
+#endif
+    http_reset(slot_id);
 }
 
 void http_parse(uint8_t slot_id)

@@ -820,6 +820,53 @@ void test_stats_endpoint_emits_json()
     TEST_ASSERT_NOT_NULL(strstr(out, "\"active_conns\""));
 }
 
+#if DETWS_ENABLE_METRICS
+// Prometheus /metrics emits the stats counters in text exposition format.
+void test_metrics_emits_prometheus()
+{
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    http_reset(0);
+    tcp_capture_reset();
+    g_server->metrics(0);
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "text/plain; version=0.0.4"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "# TYPE detws_http_requests_total counter"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "detws_http_responses_total{class=\"2xx\"}"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "detws_free_heap_bytes"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "detws_uptime_seconds"));
+    tcp_capture_disable();
+}
+#endif
+
+#if DETWS_ENABLE_SSE
+// Regression: sse_do_upgrade() must store the request path by VALUE before
+// http_reset() zeroes the parser buffer, so a later path-matched sse_broadcast()
+// reaches the client. (A dangling path pointer made broadcasts silently miss.)
+void test_sse_broadcast_after_upgrade_matches_path()
+{
+    g_server->on_sse("/events", nullptr);
+
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    push_bytes(0, "GET /events HTTP/1.1\r\n\r\n");
+    http_reset(0);
+    http_parse(0);
+
+    tcp_capture_reset();
+    g_server->handle(); // dispatch -> sse_do_upgrade (200 text/event-stream)
+    g_server->sse_broadcast("/events", "hello", "msg");
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "text/event-stream")); // upgrade happened
+    TEST_ASSERT_NOT_NULL(strstr(out, "data: hello"));       // broadcast matched the stored path
+    tcp_capture_disable();
+}
+#endif
+
 int main()
 {
     UNITY_BEGIN();
@@ -891,6 +938,13 @@ int main()
 
     RUN_TEST(test_request_log_hook_fires);
     RUN_TEST(test_stats_endpoint_emits_json);
+
+#if DETWS_ENABLE_SSE
+    RUN_TEST(test_sse_broadcast_after_upgrade_matches_path);
+#endif
+#if DETWS_ENABLE_METRICS
+    RUN_TEST(test_metrics_emits_prometheus);
+#endif
 
     return UNITY_END();
 }

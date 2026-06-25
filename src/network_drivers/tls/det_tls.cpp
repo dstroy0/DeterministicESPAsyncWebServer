@@ -18,6 +18,7 @@
 
 #include "lwip/tcp.h"
 #include "network_drivers/transport/transport.h"
+#include <Arduino.h>    // millis(), delay() for the blocking client loop
 #include <esp_system.h> // esp_fill_random (HW CSPRNG)
 #include <string.h>
 
@@ -139,6 +140,9 @@ static void pool_free(void *ptr)
 static mbedtls_ssl_config s_conf;
 static mbedtls_x509_crt s_cert;
 static mbedtls_pk_context s_key;
+#if DETWS_ENABLE_MTLS
+static mbedtls_x509_crt s_ca; // client-cert trust anchor (mTLS)
+#endif
 
 struct TlsConn
 {
@@ -391,5 +395,156 @@ size_t det_tls_arena_peak()
 {
     return s_pool_peak;
 }
+
+#if DETWS_ENABLE_MTLS
+bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
+{
+    if (!s_ready || !ca)
+        return false;
+    mbedtls_x509_crt_init(&s_ca);
+    if (mbedtls_x509_crt_parse(&s_ca, ca, ca_len) != 0)
+        return false;
+    // Trust anchor for the client chain + demand a (valid) client cert: an absent
+    // or untrusted client certificate now fails the handshake.
+    mbedtls_ssl_conf_ca_chain(&s_conf, &s_ca, nullptr);
+    mbedtls_ssl_conf_authmode(&s_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+    return true;
+}
+
+int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
+{
+    if (!out || out_len == 0)
+        return -1;
+    out[0] = '\0';
+    TlsConn *e = find(slot);
+    if (!e || !e->established)
+        return -1;
+    const mbedtls_x509_crt *peer = mbedtls_ssl_get_peer_cert(&e->ssl);
+    if (!peer)
+        return -1;
+    int n = mbedtls_x509_dn_gets(out, out_len, &peer->subject);
+    return n; // bytes written (excl. NUL), or <0 on error
+}
+#endif // DETWS_ENABLE_MTLS
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+// Blocking client-side TLS exchange over caller-supplied BIO callbacks. Used by
+// the outbound HTTP client for https://. The transport (raw lwIP tcp_write + the
+// receive ring) lives in http_client.cpp; here we own only the mbedTLS client
+// session, served from the same static arena as the server side.
+//
+// Server-certificate verification is OFF (the device has no trust store): the
+// transport is encrypted but the peer is not authenticated. Pin/verify at the
+// application layer if you need it.
+int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
+                       size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms)
+{
+    if (out_len)
+        *out_len = 0;
+    if (!req || !out || out_cap == 0 || !send_fn || !recv_fn)
+        return -1;
+
+    // The client can run before any server TLS init, so make sure every mbedTLS
+    // allocation is routed through the static arena (never the system heap).
+    if (!s_pool_init)
+    {
+        pool_init();
+        mbedtls_platform_set_calloc_free(pool_calloc, pool_free);
+    }
+
+    mbedtls_ssl_context ssl;
+    mbedtls_ssl_config conf;
+    mbedtls_ssl_init(&ssl);
+    mbedtls_ssl_config_init(&conf);
+
+    int rc = -1;
+    int ret;
+    do
+    {
+        if (mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
+                                        MBEDTLS_SSL_PRESET_DEFAULT) != 0)
+            break;
+        mbedtls_ssl_conf_rng(&conf, tls_rng, nullptr);
+        mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE); // no on-device trust store
+#if MBEDTLS_VERSION_MAJOR >= 3
+        mbedtls_ssl_conf_min_tls_version(&conf, MBEDTLS_SSL_VERSION_TLS1_2);
+#else
+        mbedtls_ssl_conf_min_version(&conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+#endif
+        if (mbedtls_ssl_setup(&ssl, &conf) != 0)
+            break;
+        if (host)
+            mbedtls_ssl_set_hostname(&ssl, host); // SNI (ignored if unsupported)
+        mbedtls_ssl_set_bio(&ssl, nullptr, send_fn, recv_fn, nullptr);
+
+        // Handshake (BIO callbacks yield WANT_READ/WANT_WRITE while data is pending).
+        while ((ret = mbedtls_ssl_handshake(&ssl)) != 0)
+        {
+            if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+                break;
+            if ((int32_t)(deadline_ms - millis()) <= 0)
+            {
+                ret = -1;
+                break;
+            }
+            delay(5);
+        }
+        if (ret != 0)
+        {
+#ifdef DETWS_HTTP_CLIENT_DEBUG
+            printf("[tls] handshake ret=-0x%04x arena_peak=%u\n", (unsigned)(-ret), (unsigned)det_tls_arena_peak());
+#endif
+            break;
+        }
+
+        // Send the (plaintext) request; mbedTLS encrypts and pushes via send_fn.
+        size_t sent = 0;
+        while (sent < reqlen)
+        {
+            ret = mbedtls_ssl_write(&ssl, req + sent, reqlen - sent);
+            if (ret > 0)
+            {
+                sent += (size_t)ret;
+                continue;
+            }
+            if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+                break;
+            if ((int32_t)(deadline_ms - millis()) <= 0)
+                break;
+            delay(5);
+        }
+        if (sent < reqlen)
+            break;
+
+        // Read the decrypted response into out until the peer closes / buffer fills.
+        size_t total = 0;
+        while (total < out_cap)
+        {
+            ret = mbedtls_ssl_read(&ssl, out + total, out_cap - total);
+            if (ret > 0)
+            {
+                total += (size_t)ret;
+                continue;
+            }
+            if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+            {
+                if ((int32_t)(deadline_ms - millis()) <= 0)
+                    break;
+                delay(5);
+                continue;
+            }
+            break; // 0 / PEER_CLOSE_NOTIFY / fatal -> response complete
+        }
+        if (out_len)
+            *out_len = total;
+        rc = (total > 0) ? 0 : -1;
+    } while (0);
+
+    mbedtls_ssl_close_notify(&ssl);
+    mbedtls_ssl_free(&ssl);
+    mbedtls_ssl_config_free(&conf);
+    return rc;
+}
+#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 
 #endif // DETWS_ENABLE_TLS && ARDUINO

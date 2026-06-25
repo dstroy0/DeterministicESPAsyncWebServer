@@ -216,8 +216,12 @@ void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t le
 /** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
 void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
 
-/** @brief Close @p pcb gracefully (tcp_close), aborting if the FIN cannot be queued. */
-void det_conn_close(struct tcp_pcb *pcb);
+/**
+ * @brief Close connection @p slot gracefully (tcp_close), aborting if the FIN
+ *        cannot be queued. For a TLS slot this also emits close_notify and frees
+ *        the per-connection TLS context first.
+ */
+void det_conn_close(uint8_t slot, struct tcp_pcb *pcb);
 
 /** @brief Detach @p pcb from its slot's lwIP callbacks before the slot is freed. */
 void det_conn_detach(struct tcp_pcb *pcb);

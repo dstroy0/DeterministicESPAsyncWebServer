@@ -1,6 +1,6 @@
 # Documentation
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, and SNMP.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
 
 ![Version](https://img.shields.io/badge/version-v2.0.0-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
@@ -21,16 +21,26 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 - **Authentication** - per-route HTTP Basic (RFC 7617) and Digest (RFC 7616, SHA-256, `qop=auth`)
 - **Static file serving** - chunked reads from any Arduino `FS` (LittleFS, SPIFFS, SD), `index.html` fallback, MIME detection, pre-compressed `.gz`, and `ETag`/`304` conditional GET
 - **HTTPS / TLS** - optional ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) mbedTLS over a fixed static memory pool, so encrypted transport keeps the no-heap guarantee
+- **Mutual TLS (mTLS)** - optional ([`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS)) client-certificate authentication: the handshake requires a client cert chaining to a configured CA and exposes the verified peer subject DN to handlers
+- **Secure WebSocket & SSE** - WebSocket (`wss://`) and Server-Sent Events run over the TLS record layer when TLS is enabled: the upgrade and every frame/event are encrypted, transparent to handler code
+- **Prometheus metrics** - optional ([`DETWS_ENABLE_METRICS`](@ref DETWS_ENABLE_METRICS)) `/metrics` endpoint in Prometheus text exposition format (0.0.4): uptime, request/response-class counters, active/max connections, free heap - point a Prometheus server straight at the device
+- **Syslog client** - optional ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG)) RFC 5424 remote logging over UDP: ship structured log lines (facility/severity, hostname, app-name) to a central syslog server, zero-heap and fire-and-forget
+- **JWT bearer auth** - optional ([`DETWS_ENABLE_JWT`](@ref DETWS_ENABLE_JWT)) stateless `Authorization: Bearer` verification (HS256, constant-time signature check, integer-claim access) - gate routes on a shared-secret token with no server-side session
 - **SSH 2.0 server** - zero-heap SSH with host-key verification and password/publickey auth (hardware-accelerated crypto)
 - **Telnet console** (RFC 854) - plaintext line console with IAC negotiation + server echo, for trusted networks
 - **SNMP agent** - v1/v2c plus optional v3 USM (HMAC-SHA-256 + AES-128) over UDP, with a zero-heap ASN.1 BER codec and fixed MIB
+- **CoAP server** (RFC 7252) - optional ([`DETWS_ENABLE_COAP`](@ref DETWS_ENABLE_COAP)) zero-heap Constrained Application Protocol over UDP: a fixed resource table dispatched on Uri-Path, GET/POST/PUT/DELETE with piggybacked responses, Uri-Query and Content-Format options
+- **HTTP keep-alive** - optional ([`DETWS_ENABLE_KEEPALIVE`](@ref DETWS_ENABLE_KEEPALIVE)) HTTP/1.1 persistent connections: one TCP connection serves many requests (bounded by a per-connection request cap and the idle timeout), transparent to handler code
+- **HTTP Range requests** - optional ([`DETWS_ENABLE_RANGE`](@ref DETWS_ENABLE_RANGE)) `206 Partial Content` (RFC 7233) for served files: single-range `Range: bytes=...` streams only the requested bytes (resumable downloads, media seeking), with `Accept-Ranges` advertisement and `416` for unsatisfiable ranges
 - **Middleware & rate limiting** - composable [`use()`](@ref DetWebServer::use) pipeline, fixed-window rate limiter, and an opt-in accept-throttle
 - **mDNS & NTP services** - zero-dependency multicast DNS hostname advertisement and SNTP wall-clock time synchronization
 - **OTA updates** - secure, authenticated over-the-air firmware updates via streaming POST request body
+- **Streaming uploads** - optional ([`DETWS_ENABLE_UPLOAD`](@ref DETWS_ENABLE_UPLOAD)) POST body streamed straight into a filesystem file (LittleFS / SPIFFS / SD); the upload never has to fit in RAM
+- **Outbound HTTP(S) client** - optional ([`DETWS_ENABLE_HTTP_CLIENT`](@ref DETWS_ENABLE_HTTP_CLIENT)) zero-heap requests _from_ the device (webhooks, telemetry push, REST calls): blocking [`http_get()`](@ref http_get) / [`http_post()`](@ref http_post) over raw lwIP with DNS, Content-Length / chunked decoding, and `https://` via client-side mbedTLS over the same static arena ([`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS)); links no code unless a sketch calls it
 - **Captive portal provisioning** - setup wizard (SoftAP + DNS portal) for first-boot WiFi credential configuration
 - **Compile-time feature flags & configuration** - every subsystem is gated by a `DETWS_ENABLE_*` flag (default off) and every buffer/pool/timeout is a `#define`; illegal combinations produce `#error` messages
 - **Diagnostic JSON endpoint** - optional [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) build-config dump, disabled by default for security
-- **Backpressure-aware TCP** - shrinks the receive window instead of dropping data when the ring buffer fills
+- **Lossless TCP backpressure** - when a connection's receive ring is full, an oversized segment is refused (lwIP retains it as `refused_data` and redelivers once the app drains the ring) rather than dropped, so no received byte is ever lost; all socket operations are marshaled to the lwIP thread to stay race-free
 - **[`restart()`](@ref DetWebServer::restart)** - hard-resets all connections and reinitialises on the same port without touching the WiFi/TCP stack
 - **Native-testable** - the protocol/parser/codec logic runs on host x86/x64 under Unity (no hardware required)
 
@@ -40,22 +50,23 @@ Measured on `esp32dev` (Arduino core, `pio ci`). The baseline → server jump is
 
 | Build                                                                               | Flash (bytes) | RAM (bytes) |
 | ----------------------------------------------------------------------------------- | ------------: | ----------: |
-| Empty sketch (no WiFi, no library) - _RTOS/Arduino baseline_                         |       233,257 |      21,032 |
+| Empty sketch (no WiFi, no library) - _RTOS/Arduino baseline_                        |       233,257 |      21,032 |
 | Minimal REST server (WS/SSE/multipart/file/auth stripped)                           |       734,745 |      57,936 |
 | **Default server** (HTTP + WebSocket + SSE + multipart + file serving + Basic auth) |       745,133 |      64,264 |
-| &nbsp;&nbsp;+ HTTPS / TLS (static-pool mbedTLS)                                      |       847,185 |     115,164 |
-| &nbsp;&nbsp;+ SSH 2.0 server                                                         |       798,005 |      76,556 |
-| &nbsp;&nbsp;+ SNMP agent (v1/v2c)                                                    |       751,277 |      76,648 |
-| &nbsp;&nbsp;+ mDNS                                                                   |       768,037 |      66,160 |
-| &nbsp;&nbsp;+ SNTP                                                                   |       768,861 |      66,808 |
-| &nbsp;&nbsp;+ OTA update                                                             |       748,417 |      64,544 |
-| &nbsp;&nbsp;+ Captive-portal provisioning                                            |       750,709 |      65,836 |
+| &nbsp;&nbsp;+ HTTPS / TLS (static-pool mbedTLS)                                     |       847,185 |     115,164 |
+| &nbsp;&nbsp;+ SSH 2.0 server                                                        |       798,005 |      76,556 |
+| &nbsp;&nbsp;+ SNMP agent (v1/v2c)                                                   |       751,277 |      76,648 |
+| &nbsp;&nbsp;+ CoAP server (RFC 7252, UDP)                                           |       747,921 |      66,760 |
+| &nbsp;&nbsp;+ mDNS                                                                  |       768,037 |      66,160 |
+| &nbsp;&nbsp;+ SNTP                                                                  |       768,861 |      66,808 |
+| &nbsp;&nbsp;+ OTA update                                                            |       748,417 |      64,544 |
+| &nbsp;&nbsp;+ Captive-portal provisioning                                           |       750,709 |      65,836 |
 | &nbsp;&nbsp;+ Static files via LittleFS (incl. ETag)                                |       784,361 |      64,288 |
-| &nbsp;&nbsp;+ Telnet console                                                         |       745,137 |      64,784 |
-| &nbsp;&nbsp;+ Web terminal (WebSocket)                                               |       747,613 |      64,336 |
-| SSH crypto self-test (Serial only, no WiFi)                                          |       269,585 |      21,476 |
+| &nbsp;&nbsp;+ Telnet console                                                        |       745,137 |      64,784 |
+| &nbsp;&nbsp;+ Web terminal (WebSocket)                                              |       747,613 |      64,336 |
+| SSH crypto self-test (Serial only, no WiFi)                                         |       269,585 |      21,476 |
 
-TLS's larger RAM is the fixed mbedTLS arena ([`DETWS_TLS_ARENA_SIZE`](@ref DETWS_TLS_ARENA_SIZE), 48 KB default). Small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) stay within a few KB of the default server. ESP32 capacity: 1,310,720 B flash / 327,680 B RAM.
+TLS's larger RAM is the fixed mbedTLS arena ([`DETWS_TLS_ARENA_SIZE`](@ref DETWS_TLS_ARENA_SIZE), 48 KB default). Small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) stay within a few KB of the default server. The outbound HTTP client ([`DETWS_ENABLE_HTTP_CLIENT`](@ref DETWS_ENABLE_HTTP_CLIENT)) links no code unless a sketch actually calls [`http_get()`](@ref http_get) / [`http_post()`](@ref http_post); the standalone client example builds to 732,961 B flash / 46,752 B RAM, and adding `https://` (which pulls in mbedTLS) makes it 827,853 B / 100,620 B. ESP32 capacity: 1,310,720 B flash / 327,680 B RAM.
 
 ## Installation
 
@@ -539,6 +550,6 @@ AGPL-3.0-or-later. See `LICENSE` for details.
 
 <p align="center">
   <img src="squirty.svg" alt="Squirty the Injection Squid" width="64" height="64"><br>
-  <b>Squirty the Injection Squid</b> — the official library mascot.<br>
+  <b>Squirty the Injection Squid</b>: the official library mascot.<br>
   <sub>Copyright &copy; Douglas Quigg (dstroy0). All rights reserved.</sub>
 </p>

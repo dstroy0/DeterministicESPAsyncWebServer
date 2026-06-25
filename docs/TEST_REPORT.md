@@ -699,7 +699,7 @@ _Independent-oracle regression test for the Digest-auth math (RFC 7616,_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for http_get_form() — application/x-www-form-urlencoded body_
+_Unit tests for http_get_form(): application/x-www-form-urlencoded body_
 
 |   # | Test                                   | Status | Description                     |
 | --: | :------------------------------------- | :----: | :------------------------------ |

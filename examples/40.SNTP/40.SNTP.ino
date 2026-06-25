@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 28.SNTP.ino
+ * @file 40.SNTP.ino
  * @brief Wall-clock time via SNTP (DETWS_ENABLE_NTP).
  *
  * detws_ntp_begin(tz) starts the ESP-IDF SNTP client; the first sync lands a few

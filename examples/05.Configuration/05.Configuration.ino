@@ -49,7 +49,7 @@
  * ============================================================
  * RUNTIME CONFIGURATION  (passed to server.begin())
  * ============================================================
- *   WebServerConfig::conn_timeout_ms — ms of inactivity before force-close.
+ *   WebServerConfig::conn_timeout_ms: ms of inactivity before force-close.
  *     Flash (no RAM cost):  const WebServerConfig cfg PROGMEM = {10000};
  *     RAM (runtime-tunable): WebServerConfig cfg = {10000};
  *     Pass nullptr (or omit) to use the built-in default of 5000 ms.
@@ -61,7 +61,7 @@
  */
 
 // -------------------------------------------------------------------
-// A low-footprint REST-only profile — no WS, SSE, multipart, or file IO.
+// A low-footprint REST-only profile: no WS, SSE, multipart, or file IO.
 // These values roughly halve RAM use versus the defaults; good for sensor
 // nodes sharing the heap with other subsystems.
 // -------------------------------------------------------------------
@@ -72,7 +72,7 @@
 #define DETWS_ENABLE_FILE_SERVING 0
 #define DETWS_ENABLE_AUTH 0
 
-// Diagnostic endpoint — exposes the compile-time config; disable in production.
+// Diagnostic endpoint: exposes the compile-time config; disable in production.
 #define DETWS_ENABLE_DIAG 1
 
 // Tightened capacity to match a small REST API.
@@ -140,7 +140,7 @@ void handle_echo(uint8_t slot_id, HttpReq *req)
 
 // GET /search
 // Echoes the parsed query parameters.  With MAX_QUERY_PARAMS=4, a fifth
-// parameter is parsed but silently dropped — this shows exactly what was kept.
+// parameter is parsed but silently dropped: this shows exactly what was kept.
 void handle_search(uint8_t slot_id, HttpReq *req)
 {
     char body[256] = "params: ";
@@ -182,7 +182,7 @@ void setup()
     server.on("/echo", HTTP_POST, handle_echo);
     server.on("/search", HTTP_GET, handle_search);
 
-    // Diagnostic route (DETWS_ENABLE_DIAG=1) — remove or protect in production.
+    // Diagnostic route (DETWS_ENABLE_DIAG=1): remove or protect in production.
     server.on("/diag", HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
 
     // Pass a runtime config to override the idle timeout without a rebuild.

@@ -89,6 +89,31 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
     return e == ERR_OK;
 }
 
+bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
+{
+    if (!dst_ip || !data || len == 0)
+        return false;
+    ip_addr_t dst;
+    if (!ipaddr_aton(dst_ip, &dst))
+        return false;
+
+    // One shared outbound PCB for all det_udp_sendto() users (lazy-created).
+    static struct udp_pcb *s_out = nullptr;
+    if (!s_out)
+    {
+        s_out = udp_new();
+        if (!s_out)
+            return false;
+    }
+    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
+    if (!p)
+        return false;
+    memcpy(p->payload, data, len);
+    err_t e = udp_sendto(s_out, p, &dst, dst_port);
+    pbuf_free(p);
+    return e == ERR_OK;
+}
+
 #else // host build: no lwIP. Stubs keep UDP-using services host-compilable.
 
 bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
@@ -102,6 +127,15 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
 bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
 {
     (void)peer;
+    (void)data;
+    (void)len;
+    return false;
+}
+
+bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
+{
+    (void)dst_ip;
+    (void)dst_port;
     (void)data;
     (void)len;
     return false;

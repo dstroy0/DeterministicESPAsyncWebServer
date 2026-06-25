@@ -126,10 +126,10 @@ struct HttpReq
     QueryParam path_params[MAX_PATH_PARAMS]; ///< `:name` captures from the matched route.
     uint8_t path_param_count;                ///< Valid entries in path_params[].
 
-#if DETWS_ENABLE_AUTH
-    char authorization[DIGEST_AUTH_HDR_MAX]; ///< Full Authorization header value (Digest needs > MAX_VAL_LEN).
-    uint16_t auth_idx;                       ///< Write cursor into authorization[] (parser-internal).
-    bool cur_is_auth;                        ///< True while parsing an Authorization header value (parser-internal).
+#if DETWS_CAPTURE_AUTH_HEADER
+    char authorization[DETWS_AUTH_HDR_CAP]; ///< Full Authorization header value (Digest/JWT exceed MAX_VAL_LEN).
+    uint16_t auth_idx;                      ///< Write cursor into authorization[] (parser-internal).
+    bool cur_is_auth;                       ///< True while parsing an Authorization header value (parser-internal).
 #endif
 
     Header headers[MAX_HEADERS]; ///< Captured header fields.
@@ -150,25 +150,25 @@ struct HttpReq
     uint8_t body[BODY_BUF_SIZE + 1]; ///< Stored body bytes, always null-terminated.
     size_t body_len;                 ///< Bytes stored in body[] (≤ BODY_BUF_SIZE).
 
-#if DETWS_ENABLE_OTA
-    bool body_streaming; ///< True when the body is streamed to a sink, not buffered (OTA).
+#if DETWS_ENABLE_STREAM_BODY
+    bool body_streaming; ///< True when the body is streamed to a sink, not buffered (OTA / upload).
 #endif
 };
 
 /** @brief Pool of parser contexts, one per transport slot. */
 extern HttpReq http_pool[MAX_CONNS];
 
-#if DETWS_ENABLE_OTA
+#if DETWS_ENABLE_STREAM_BODY
 // ---------------------------------------------------------------------------
-// Streaming-body hooks (OTA) - opt-in, gated by DETWS_ENABLE_OTA.
+// Streaming-body hooks (OTA / file upload) - gated by DETWS_ENABLE_STREAM_BODY.
 //
 // When set, the parser consults @ref HttpStreamBeginCb at end-of-headers (the
 // request line + all headers are parsed, so method/path/Authorization are
 // available). If it returns true, the body is streamed to @ref HttpStreamDataCb
 // in BODY_BUF_SIZE chunks instead of being buffered into body[] (and the
 // BODY_BUF_SIZE / 413 cap is bypassed), enabling multi-MB uploads such as a
-// firmware image fed to the ESP32 Update API. The matching route handler still
-// runs at PARSE_COMPLETE to send the response.
+// firmware image fed to the ESP32 Update API or a file written to LittleFS. The
+// matching route handler still runs at PARSE_COMPLETE to send the response.
 // ---------------------------------------------------------------------------
 
 /** @brief Decide whether to stream this request's body; begin the sink if so. */
@@ -178,7 +178,7 @@ typedef void (*HttpStreamDataCb)(const uint8_t *data, size_t len);
 
 /** @brief Install the streaming-body hooks (pass nullptr,nullptr to disable). */
 void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data);
-#endif // DETWS_ENABLE_OTA
+#endif // DETWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
 // Parser API

@@ -489,6 +489,33 @@ class DetWebServer
     /// @brief Record a response for stats + the access-log hook. Reads method/path from http_pool[slot_id].
     void note_response(uint8_t slot_id, int code, int body_len);
 
+#if DETWS_ENABLE_KEEPALIVE
+    /**
+     * @brief Decide whether the current response should keep the connection alive.
+     *
+     * Only a cleanly-parsed request (PARSE_COMPLETE) is eligible: HTTP/1.1 keeps
+     * alive unless the client sent `Connection: close`; HTTP/1.0 keeps alive only
+     * with `Connection: keep-alive`. On a true return the slot's request tally is
+     * incremented; the DETWS_KEEPALIVE_MAX_REQUESTS-th request returns false so
+     * the connection is closed deliberately. Always false with keep-alive off.
+     */
+    bool keepalive_eval(uint8_t slot_id);
+#endif
+
+    /**
+     * @brief Begin a response: capture the slot's PCB and, unless keeping the
+     *        connection alive, detach + free the slot before the write (so an
+     *        lwIP error callback during the write sees CONN_FREE). Returns the PCB.
+     */
+    struct tcp_pcb *resp_begin(uint8_t slot_id, bool keep);
+
+    /**
+     * @brief Finish a response: flush, then close the PCB (close path) or recycle
+     *        the slot for the next request (keep-alive). Records the response and
+     *        resets the HTTP parser either way.
+     */
+    void resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep);
+
 #if DETWS_ENABLE_AUTH
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
@@ -520,6 +547,13 @@ class DetWebServer
      * @param slot_id Connection slot to dispatch.
      */
     void match_and_execute(uint8_t slot_id);
+
+#if DETWS_ENABLE_WEBSOCKET
+    /// @brief Invoke the registered WS message handler for a completed frame on @p ws.
+    void ws_dispatch_message(WsConn *ws);
+    /// @brief Invoke the registered WS close handler for @p ws.
+    void ws_dispatch_close(WsConn *ws);
+#endif
 
   public:
     /**
@@ -642,6 +676,37 @@ class DetWebServer
      */
     int32_t begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
                       const WebServerConfig *cfg = nullptr);
+
+#if DETWS_ENABLE_MTLS
+    /**
+     * @brief Require a verified client certificate (mTLS).
+     *
+     * Call after tls_cert() (or begin_tls()) and before connections arrive. Sets
+     * @p ca as the trust anchor and switches the handshake to require a client
+     * certificate chaining to it; a client that presents none, or an untrusted
+     * one, is rejected during the handshake.
+     *
+     * @param ca     CA certificate (chain).
+     * @param ca_len Length incl. trailing NUL for PEM.
+     * @return true on success; false if the engine is not ready or the CA failed
+     *         to parse.
+     */
+    bool tls_require_client_cert(const uint8_t *ca, size_t ca_len);
+
+    /**
+     * @brief Copy the connecting client's verified certificate subject DN.
+     *
+     * Use inside a handler to identify the mTLS peer (e.g. for authorization or
+     * logging). Valid only on a TLS connection whose handshake required and
+     * verified a client cert.
+     *
+     * @param slot_id  Connection slot (the handler's id).
+     * @param out      Destination buffer (always NUL-terminated on success).
+     * @param out_len  Capacity of @p out.
+     * @return subject length written, or <0 if there is no verified client cert.
+     */
+    int tls_client_subject(uint8_t slot_id, char *out, size_t out_len);
+#endif // DETWS_ENABLE_MTLS
 #endif // DETWS_ENABLE_TLS
 
     /**
@@ -867,6 +932,22 @@ class DetWebServer
      * @param slot_id Connection slot to respond on.
      */
     void stats(uint8_t slot_id);
+#endif
+
+#if DETWS_ENABLE_METRICS
+    /**
+     * @brief Respond with runtime metrics in Prometheus text exposition format.
+     *
+     * Convenience for a `/metrics` route: emits the stats counters as Prometheus
+     * gauges/counters (Content-Type `text/plain; version=0.0.4`) so a Prometheus
+     * server can scrape the device.
+     * @code
+     *   server.on("/metrics", HTTP_GET, [](uint8_t id, HttpReq *) { server.metrics(id); });
+     * @endcode
+     *
+     * @param slot_id Connection slot to respond on.
+     */
+    void metrics(uint8_t slot_id);
 #endif
 
     /**

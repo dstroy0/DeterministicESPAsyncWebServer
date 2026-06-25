@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 34.WebSocket.ino
+ * @file 26.WebSocket.ino
  * @brief Bidirectional WebSocket echo (RFC 6455) via on_ws().
  *
  * Registers a WebSocket endpoint at /ws: each text frame the browser sends is

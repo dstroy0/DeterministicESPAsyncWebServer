@@ -411,6 +411,26 @@
 #endif
 
 /**
+ * @brief Mutual TLS - require and verify a client certificate (mTLS).
+ *
+ * Default off. When set (requires DETWS_ENABLE_TLS), the server can be given a
+ * trust-anchor CA via DetWebServer::tls_require_client_cert(): the TLS handshake
+ * then demands a client certificate chaining to that CA
+ * (MBEDTLS_SSL_VERIFY_REQUIRED) and aborts the connection if the client presents
+ * none or an untrusted one. The verified peer's subject DN is available to
+ * handlers via DetWebServer::tls_client_subject(). Strong transport-level client
+ * authentication with no passwords.
+ */
+#ifndef DETWS_ENABLE_MTLS
+#define DETWS_ENABLE_MTLS 0
+#endif
+
+/** @brief Maximum length of a verified mTLS peer subject DN string (incl. NUL). */
+#ifndef DETWS_MTLS_SUBJECT_MAX
+#define DETWS_MTLS_SUBJECT_MAX 128
+#endif
+
+/**
  * @brief SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP.
  *
  * Zero-heap ASN.1 BER codec + a fixed MIB table on UDP/161. Default off. The BER
@@ -478,6 +498,64 @@
 #define SNMP_V3_ENGINEID_MAX 32
 #endif
 
+// ---------------------------------------------------------------------------
+// CoAP server sizing constants  (DETWS_ENABLE_COAP must be 1)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief CoAP server (RFC 7252) over UDP/5683.
+ *
+ * A zero-heap Constrained Application Protocol endpoint: a fixed resource table
+ * dispatched against the request's Uri-Path, with a pure host-testable message
+ * codec (parse/build) and an ESP32 UDP binding via the transport-layer UDP
+ * service. Default off; the codec is otherwise unit-tested standalone
+ * (env:native_coap).
+ */
+#ifndef DETWS_ENABLE_COAP
+#define DETWS_ENABLE_COAP 0
+#endif
+
+/**
+ * @brief Maximum registered CoAP resources (the server's fixed routing table).
+ *
+ * Each entry holds a path pointer, an allowed-methods bitmask, and a handler.
+ * The table lives in BSS and is scanned linearly (small table).
+ */
+#ifndef DETWS_COAP_MAX_RESOURCES
+#define DETWS_COAP_MAX_RESOURCES 8
+#endif
+
+/** @brief Maximum reconstructed Uri-Path length, including separators and the leading '/'. */
+#ifndef DETWS_COAP_MAX_PATH
+#define DETWS_COAP_MAX_PATH 64
+#endif
+
+/** @brief Maximum reconstructed Uri-Query length (segments joined by '&'). */
+#ifndef DETWS_COAP_MAX_QUERY
+#define DETWS_COAP_MAX_QUERY 64
+#endif
+
+/**
+ * @brief Maximum CoAP request/response payload in bytes.
+ *
+ * Sizes the static scratch a handler writes its response body into and bounds
+ * the request payload handed to it. One buffer of this size lives in BSS.
+ */
+#ifndef DETWS_COAP_MAX_PAYLOAD
+#define DETWS_COAP_MAX_PAYLOAD 256
+#endif
+
+/**
+ * @brief Static response-datagram buffer for the CoAP UDP server.
+ *
+ * One buffer of this size lives in BSS (the request is transport-owned). Must
+ * hold a 4-byte header + token (<=8) + the Content-Format option + a 0xFF marker
+ * + DETWS_COAP_MAX_PAYLOAD bytes.
+ */
+#ifndef DETWS_COAP_MSG_BUF_SIZE
+#define DETWS_COAP_MSG_BUF_SIZE 512
+#endif
+
 /**
  * @brief Bytes of the static BSS arena mbedTLS allocates from (DETWS_ENABLE_TLS).
  *
@@ -517,14 +595,165 @@
 #define DETWS_ENABLE_OTA 0
 #endif
 
+/**
+ * @brief Streaming file upload: POST a body straight to a file on the filesystem.
+ *
+ * Default off. When set, src/services/upload_service.h registers a POST route
+ * that streams the request body directly into an Arduino FS file (LittleFS /
+ * SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser
+ * streaming-body hook as OTA.
+ *
+ * For reliable uploads set RX_BUF_SIZE above the largest inbound TCP segment
+ * (TCP_MSS, ~1460): the transport refuses-and-redelivers a segment that will not
+ * fit the receive ring (lossless backpressure), but a ring smaller than one
+ * segment would stall. The 1024 default suits ordinary requests, not uploads.
+ */
+#ifndef DETWS_ENABLE_UPLOAD
+#define DETWS_ENABLE_UPLOAD 0
+#endif
+
+/**
+ * @brief Internal: the parser's streaming-body machinery (OTA or file upload).
+ *
+ * Both stream the request body to a sink instead of buffering it into body[];
+ * the parser support is shared and compiled when either feature is enabled.
+ */
+#if DETWS_ENABLE_OTA || DETWS_ENABLE_UPLOAD
+#define DETWS_ENABLE_STREAM_BODY 1
+#else
+#define DETWS_ENABLE_STREAM_BODY 0
+#endif
+
 /** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */
 #ifndef DETWS_ENABLE_PROVISIONING
 #define DETWS_ENABLE_PROVISIONING 0
 #endif
 
+/**
+ * @brief Syslog client (RFC 5424 over UDP).
+ *
+ * Default off. When set, the device can ship log lines to a remote syslog server
+ * (e.g. rsyslog / journald / a SIEM) as RFC 5424 UDP datagrams via the
+ * transport-layer UDP service - a zero-heap structured-logging sink for fleets
+ * of constrained devices. See src/services/syslog/syslog.h.
+ */
+#ifndef DETWS_ENABLE_SYSLOG
+#define DETWS_ENABLE_SYSLOG 0
+#endif
+
+/** @brief Maximum formatted syslog datagram length in bytes (RFC 5424 line). */
+#ifndef DETWS_SYSLOG_MSG_MAX
+#define DETWS_SYSLOG_MSG_MAX 256
+#endif
+
+/** @brief Maximum syslog HOSTNAME / APP-NAME field length (including NUL). */
+#ifndef DETWS_SYSLOG_FIELD_MAX
+#define DETWS_SYSLOG_FIELD_MAX 32
+#endif
+
+/**
+ * @brief JWT bearer-token authentication (HS256).
+ *
+ * Default off. When set, src/services/jwt/jwt.h verifies `Authorization: Bearer
+ * <jwt>` tokens signed with HMAC-SHA-256 (reusing the SSH crypto layer) and can
+ * read integer claims (e.g. `exp`) so a handler/middleware can gate routes on a
+ * stateless token. Signature verification is constant-time.
+ */
+#ifndef DETWS_ENABLE_JWT
+#define DETWS_ENABLE_JWT 0
+#endif
+
+/** @brief Maximum accepted JWT length in bytes (header.payload.signature). */
+#ifndef DETWS_JWT_MAX_LEN
+#define DETWS_JWT_MAX_LEN 512
+#endif
+
+/**
+ * @brief Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS).
+ *
+ * Default off. When set, src/services/http_client/http_client.h can issue a
+ * blocking GET/POST to a remote server: it resolves the host (DNS), opens a raw
+ * lwIP TCP connection (https:// goes through client-side mbedTLS over the same
+ * static arena as the server TLS), sends the request, and returns the status +
+ * body in caller buffers. For webhooks, telemetry push, REST calls from the
+ * device. The request builder + response parser are host-testable; the transport
+ * is ESP32-only.
+ */
+#ifndef DETWS_ENABLE_HTTP_CLIENT
+#define DETWS_ENABLE_HTTP_CLIENT 0
+#endif
+
+/** @brief HTTPS client support inside the HTTP client (needs DETWS_ENABLE_TLS). */
+#ifndef DETWS_ENABLE_HTTP_CLIENT_TLS
+#define DETWS_ENABLE_HTTP_CLIENT_TLS 0
+#endif
+
+/** @brief Receive buffer (and max response size) for the outbound HTTP client, bytes. */
+#ifndef DETWS_HTTP_CLIENT_BUF_SIZE
+#define DETWS_HTTP_CLIENT_BUF_SIZE 2048
+#endif
+
+/**
+ * @brief Ciphertext receive-ring size for the https:// client, bytes.
+ *
+ * The lwIP recv callback feeds TLS wire bytes into this draining ring while the
+ * TLS engine pulls and decrypts them, so it holds only the in-flight (not yet
+ * decrypted) ciphertext: a multi-KB handshake flight fits without loss thanks to
+ * the refuse-and-redeliver backpressure. Must exceed one TCP segment (TCP_MSS,
+ * ~1460) or a full segment could never fit. Only used when
+ * DETWS_ENABLE_HTTP_CLIENT_TLS is set.
+ */
+#ifndef DETWS_HTTP_CLIENT_CT_BUF_SIZE
+#define DETWS_HTTP_CLIENT_CT_BUF_SIZE 4096
+#endif
+
+/** @brief Outbound HTTP client connect/response timeout in milliseconds. */
+#ifndef DETWS_HTTP_CLIENT_TIMEOUT_MS
+#define DETWS_HTTP_CLIENT_TIMEOUT_MS 8000
+#endif
+
+// ---------------------------------------------------------------------------
+// Full Authorization-header capture (internal)
+// ---------------------------------------------------------------------------
+// Digest auth and JWT bearer tokens both carry an Authorization value far longer
+// than MAX_VAL_LEN, so the parser captures the whole header into a dedicated
+// per-request buffer (HttpReq::authorization) when either feature is enabled.
+
+/** @brief True when the parser must capture the full Authorization header value. */
+#if DETWS_ENABLE_AUTH || DETWS_ENABLE_JWT
+#define DETWS_CAPTURE_AUTH_HEADER 1
+#else
+#define DETWS_CAPTURE_AUTH_HEADER 0
+#endif
+
+/**
+ * @brief Capacity of HttpReq::authorization (full Authorization header value).
+ *
+ * Sized to the larger consumer: a Digest header (DIGEST_AUTH_HDR_MAX) or a
+ * `Bearer <jwt>` token (DETWS_JWT_MAX_LEN + the scheme).
+ */
+#if DETWS_ENABLE_JWT && (DETWS_JWT_MAX_LEN + 16 > DIGEST_AUTH_HDR_MAX)
+#define DETWS_AUTH_HDR_CAP (DETWS_JWT_MAX_LEN + 16)
+#else
+#define DETWS_AUTH_HDR_CAP DIGEST_AUTH_HDR_MAX
+#endif
+
 /** @brief Runtime stats endpoint (uptime, request/error counts, pool usage, heap). */
 #ifndef DETWS_ENABLE_STATS
 #define DETWS_ENABLE_STATS 0
+#endif
+
+/**
+ * @brief Prometheus `/metrics` endpoint (text exposition format 0.0.4).
+ *
+ * Default off (requires DETWS_ENABLE_STATS for the underlying counters). When
+ * set, DetWebServer::metrics() emits the runtime stats as Prometheus metrics
+ * (`detws_uptime_seconds`, `detws_http_requests_total`,
+ * `detws_http_responses_total{class=...}`, `detws_active_connections`,
+ * `detws_free_heap_bytes`, ...) so a Prometheus server can scrape the device.
+ */
+#ifndef DETWS_ENABLE_METRICS
+#define DETWS_ENABLE_METRICS 0
 #endif
 
 /**
@@ -578,6 +807,52 @@
  */
 #ifndef DETWS_ENABLE_DIAG
 #define DETWS_ENABLE_DIAG 0
+#endif
+
+/**
+ * @brief HTTP/1.1 persistent connections (keep-alive).
+ *
+ * Default off (every response carries `Connection: close` and the connection is
+ * closed after one request - the long-standing behavior). When set to 1, a
+ * cleanly-parsed request is answered with `Connection: keep-alive` and the slot
+ * is recycled for the next request on the same socket: HTTP/1.1 keeps the
+ * connection open unless the client sends `Connection: close`; HTTP/1.0 closes
+ * unless the client sends `Connection: keep-alive`. Error responses (400/413/414
+ * and any non-PARSE_COMPLETE path) always close, since the next request boundary
+ * is unknown. Idle keep-alive connections are still reclaimed by the existing
+ * conn_timeout sweep, and each connection serves at most
+ * DETWS_KEEPALIVE_MAX_REQUESTS requests before a deliberate close.
+ */
+#ifndef DETWS_ENABLE_KEEPALIVE
+#define DETWS_ENABLE_KEEPALIVE 0
+#endif
+
+/**
+ * @brief Maximum requests served on one keep-alive connection before it is closed.
+ *
+ * A fairness bound so a single client cannot hold a connection slot
+ * indefinitely with a steady request stream. After this many responses the
+ * server emits `Connection: close` and drops the link; the client simply
+ * reconnects. Only meaningful when DETWS_ENABLE_KEEPALIVE is set.
+ */
+#ifndef DETWS_KEEPALIVE_MAX_REQUESTS
+#define DETWS_KEEPALIVE_MAX_REQUESTS 100
+#endif
+
+/**
+ * @brief HTTP Range requests / 206 Partial Content for served files.
+ *
+ * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /
+ * serve_static() honor a single-range `Range: bytes=...` request header: they
+ * answer `206 Partial Content` with a `Content-Range` header and stream only the
+ * requested bytes (seeking the file to the start offset), advertise
+ * `Accept-Ranges: bytes` on full responses, and answer an unsatisfiable range
+ * with `416 Range Not Satisfiable`. This enables resumable downloads and media
+ * seeking. Multi-range (multipart/byteranges) requests are not supported - the
+ * server falls back to a full 200 response, which is RFC 7233 §3.1 compliant.
+ */
+#ifndef DETWS_ENABLE_RANGE
+#define DETWS_ENABLE_RANGE 0
 #endif
 
 /**
@@ -1038,8 +1313,44 @@ enum DetIface : uint8_t
 #endif
 #endif
 
+#if DETWS_ENABLE_COAP
+#if DETWS_COAP_MAX_RESOURCES < 1
+#error "DeterministicESPAsyncWebServer: DETWS_COAP_MAX_RESOURCES must be >= 1"
+#endif
+#if DETWS_COAP_MAX_PATH < 2
+#error "DeterministicESPAsyncWebServer: DETWS_COAP_MAX_PATH must be >= 2 (minimum: \"/\")"
+#endif
+#if DETWS_COAP_MAX_PAYLOAD < 1
+#error "DeterministicESPAsyncWebServer: DETWS_COAP_MAX_PAYLOAD must be >= 1"
+#endif
+#if DETWS_COAP_MSG_BUF_SIZE < (DETWS_COAP_MAX_PAYLOAD + 16)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_COAP_MSG_BUF_SIZE must be >= DETWS_COAP_MAX_PAYLOAD + 16 (header + token + Content-Format option + payload marker)"
+#endif
+#endif
+
 #if DETWS_ENABLE_AUTH && MAX_AUTH_LEN < 2
 #error "DeterministicESPAsyncWebServer: MAX_AUTH_LEN must be >= 2 when DETWS_ENABLE_AUTH is set"
+#endif
+
+#if DETWS_ENABLE_KEEPALIVE && DETWS_KEEPALIVE_MAX_REQUESTS < 1
+#error "DeterministicESPAsyncWebServer: DETWS_KEEPALIVE_MAX_REQUESTS must be >= 1 when DETWS_ENABLE_KEEPALIVE is set"
+#endif
+
+#if DETWS_ENABLE_RANGE && !DETWS_ENABLE_FILE_SERVING
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_RANGE requires DETWS_ENABLE_FILE_SERVING"
+#endif
+
+#if DETWS_ENABLE_MTLS && !DETWS_ENABLE_TLS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_MTLS requires DETWS_ENABLE_TLS"
+#endif
+
+#if DETWS_ENABLE_METRICS && !DETWS_ENABLE_STATS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_METRICS requires DETWS_ENABLE_STATS"
+#endif
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS && !DETWS_ENABLE_TLS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP_CLIENT_TLS requires DETWS_ENABLE_TLS"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2

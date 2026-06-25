@@ -35,12 +35,14 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                        | Caveat                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Transport encryption (HTTP) | Opt-in **HTTPS** ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) via mbedTLS on a static memory pool - TLS 1.2+/`ECDHE-ECDSA-AES256-GCM-SHA384`, zero-heap (§6). Default off (plain HTTP). Caveats: one connection at a time (`MAX_TLS_CONNS`=1), no client-cert/mTLS, no session resumption, and `wss`/TLS-SSE not yet wired. On a trusted LAN plain HTTP is fine; the SSH layer is also an encrypted channel. |
+| Transport encryption (HTTP) | Opt-in **HTTPS** ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) via mbedTLS on a static memory pool - TLS 1.2+/`ECDHE-ECDSA-AES256-GCM-SHA384`, zero-heap (§6). Default off (plain HTTP). Optional **mutual TLS** ([`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS)) adds client-certificate authentication (handshake requires a cert chaining to a configured CA), and `wss://` + TLS-SSE run encrypted over the same TLS record layer. Caveats: one connection at a time (`MAX_TLS_CONNS`=1) and no session resumption. On a trusted LAN plain HTTP is fine; the SSH layer is also an encrypted channel. |
 | SSH timing side-channels    | The native software bignum/AES/RSA paths are **not constant-time**, but they are **compile-excluded from firmware**: the software Montgomery cluster is under `#ifndef ARDUINO` (`ssh_bignum.cpp`) and the software AES / native RSA modexp live in the `#else` of an `#ifdef ARDUINO` (`ssh_aes256ctr.cpp`, `ssh_rsa.cpp`). On ESP32 only the hardware/mbedTLS paths are compiled and run; the software paths exist solely for host testing. |
 | `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
 | Diagnostic endpoint         | [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                         |
 | SNMP agent (v1/v2c)         | Opt-in ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default off). Community-string access only - the community is sent **in cleartext** and is not real authentication (§10). Read-only by default; `Set` is refused unless a separate read-write community is configured. Run only on a trusted/management network and rename the default `public`/`private` communities. For authenticated + encrypted access, enable **SNMPv3 / USM** ([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3): HMAC-SHA-256 auth + AES-128 privacy). |
+| JWT bearer auth             | Opt-in ([`DETWS_ENABLE_JWT`](@ref DETWS_ENABLE_JWT), default off). HS256 only - a single shared secret both signs and verifies, so any holder of the secret can mint tokens; keep it server-side. Signature compare is constant-time. The verifier checks the signature and can read integer claims (e.g. `exp`), but does not itself enforce expiry - gate on the claim in your handler. Send tokens only over HTTPS (a bearer token is a password). |
+| Outbound HTTPS client       | Opt-in ([`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS), default off). The client encrypts the connection but does **not verify the server certificate** (the device has no trust store), so it resists passive eavesdropping but not an active man-in-the-middle. Pin or verify the peer at the application layer for authenticated outbound calls, and treat any secrets you send as exposed to a MITM otherwise. |
 
 </details>
 
@@ -354,15 +356,20 @@ records) is ~41.5 KB; the default arena is 48 KB.
   overflows the static DRAM budget on a stock Arduino build; raising it requires
   shrinking the IDF record sizes (`CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`, an
   ESP-IDF-framework build).
-- **No client-certificate verification** - the server does not authenticate
-  clients via mTLS (use HTTP Basic/Digest auth on top for client identity).
+- **Client-certificate auth is optional, off by default** - enable mutual TLS
+  with [`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS) and
+  [`tls_require_client_cert()`](@ref DetWebServer::tls_require_client_cert): the
+  handshake then requires a client cert chaining to the configured CA and exposes
+  the verified peer subject DN to handlers. Without it the server does not
+  authenticate clients via TLS (use HTTP Basic/Digest/JWT auth for client
+  identity instead).
 - **No session resumption / tickets** yet - every connection does a full
   handshake. Acceptable for a low-connection-rate device; a future optimization.
-- **`wss://` and TLS Server-Sent Events are not wired.** Only HTTP responses go
-  through the TLS write path; a WebSocket/SSE upgrade on a TLS connection is
-  rejected with `501` rather than emitting a plaintext frame over the record
-  layer. Plain `ws://`/SSE on a non-TLS listener is unaffected.
-- The example certificate in `examples/15.HTTPS` is a **public throwaway** -
+- **`wss://` and TLS Server-Sent Events run over the record layer** when TLS is
+  enabled: a WebSocket/SSE upgrade on a TLS connection is encrypted frame-by-frame
+  (transparent to handler code), not rejected. Plain `ws://`/SSE on a non-TLS
+  listener is unaffected.
+- The example certificate in `examples/22.HTTPS` is a **public throwaway** -
   generate your own key/cert and keep the key secret.
 
 ### When to use what {#tls-guidance}
@@ -883,11 +890,11 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 | No SSH user authentication                      | Any client that completes KEX is accepted             | Add [`SSH_MSG_USERAUTH_REQUEST`](@ref SSH_MSG_USERAUTH_REQUEST) handler |
 | HTTP Basic Auth is not constant-time            | Timing oracle risk if measurable from network         | Use TLS or SSH tunnel                                                   |
 | Software AES/SHA paths are not constant-time    | Test-only paths; not relevant in production           | Production uses hardware AES (mbedTLS)                                  |
-| No certificate pinning for outbound connections | N/A - this is a server library                        | N/A                                                                     |
+| Outbound HTTPS client does not verify the server cert | Optional client (`DETWS_ENABLE_HTTP_CLIENT_TLS`) encrypts but does not authenticate the peer (active MITM exposed) | Pin/verify at the application layer; treat secrets sent over it as MITM-exposed |
 | No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call [`send()`](@ref DetWebServer::send) with appropriate headers       |
 | WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler                                      |
 | NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`                                          |
-| SNMP v1/v2c community is cleartext              | Anyone who can sniff UDP/161 learns the community      | Trusted/management VLAN; rename communities; wait for v3 USM, or tunnel |
+| SNMP v1/v2c community is cleartext              | Anyone who can sniff UDP/161 learns the community      | Trusted/management VLAN; rename communities; enable SNMPv3 USM authPriv (`DETWS_ENABLE_SNMP_V3`), or tunnel |
 
 ---
 
