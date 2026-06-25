@@ -128,6 +128,10 @@ inline err_t tcp_write(struct tcp_pcb *, const void *data, uint16_t len, uint8_t
 inline void tcp_output(struct tcp_pcb *)
 {
 }
+inline uint16_t tcp_sndbuf(struct tcp_pcb *)
+{
+    return 5744; // a typical lwIP TCP_SND_BUF; advisory send-space for the flow-control query
+}
 inline err_t tcp_close(struct tcp_pcb *)
 {
     return ERR_OK;

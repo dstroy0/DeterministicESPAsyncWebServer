@@ -23,7 +23,7 @@ void setUp()
         conn_pool[i].state = CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
         conn_pool[i].proto = PROTO_SSH;
-        conn_pool[i].ssh_id = SSH_ID_NONE;
+        conn_pool[i].proto_slot = DETWS_PROTO_SLOT_NONE;
     }
     ssh_conn_setup();
     tcp_capture_reset();
@@ -102,13 +102,13 @@ void test_accept_sends_server_banner()
     const char *resp = tcp_captured();
     TEST_ASSERT_TRUE(tcp_captured_len() >= 8);
     TEST_ASSERT_EQUAL_MEMORY("SSH-2.0-", resp, 8);
-    TEST_ASSERT_NOT_EQUAL(SSH_ID_NONE, conn_pool[0].ssh_id);
+    TEST_ASSERT_NOT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot);
 }
 
 void test_banner_then_kexinit_advances_and_replies()
 {
     ssh_conn_accept(0);
-    uint8_t j = conn_pool[0].ssh_id;
+    uint8_t j = conn_pool[0].proto_slot;
     tcp_capture_reset();
 
     // Client banner followed by a framed KEXINIT, delivered together.

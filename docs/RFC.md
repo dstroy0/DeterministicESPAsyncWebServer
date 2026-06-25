@@ -220,8 +220,10 @@ off). Builds RFC 7230 request messages ([`http_get()`](@ref http_get) /
 [`http_post()`](@ref http_post)) and parses responses framed by `Content-Length`
 or `Transfer-Encoding: chunked` (decoded in place) or by connection close.
 `https://` runs over client-side mbedTLS
-([`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS)); the server
-certificate is not verified (see [SECURITY.md](SECURITY.md)).
+([`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS)); encrypt-only
+by default, with optional server authentication via a CA trust anchor
+([`http_client_set_ca()`](@ref http_client_set_ca)) or a SHA-256 certificate pin
+([`http_client_set_pin()`](@ref http_client_set_pin)). See [SECURITY.md](SECURITY.md).
 
 ## Automatic error responses
 

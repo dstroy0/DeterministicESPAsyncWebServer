@@ -105,6 +105,22 @@ int http_get(const char *url, HttpClientResult *out);
  */
 int http_post(const char *url, const char *content_type, const uint8_t *body, size_t body_len, HttpClientResult *out);
 
+// ---------------------------------------------------------------------------
+// https:// server authentication (optional; needs DETWS_ENABLE_HTTP_CLIENT_TLS)
+// ---------------------------------------------------------------------------
+// By default the client encrypts but does NOT authenticate the server (no trust
+// store). Install a CA and/or a certificate pin to authenticate the peer; calls
+// are no-ops on a build without client TLS. Set once before issuing requests.
+
+/** @brief Trust anchor for https:// verification (PEM incl. NUL, or DER; nullptr clears). */
+void http_client_set_ca(const uint8_t *ca, size_t ca_len);
+
+/** @brief Pin the server certificate by its SHA-256 (32 bytes of the DER; nullptr clears). */
+void http_client_set_pin(const uint8_t sha256[32]);
+
+/** @brief Clear any installed CA / pin (back to encrypt-only). */
+void http_client_clear_verify();
+
 #endif // DETWS_ENABLE_HTTP_CLIENT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HTTP_CLIENT_H

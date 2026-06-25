@@ -20,11 +20,11 @@
  * single-consumer ring buffer design guarantees correctness without a mutex
  * as long as writes to each index are atomic (true for 32-bit Xtensa).
  *
- * **Backpressure**
- * When the ring buffer is full, `tcp_recved()` is called with only the
- * bytes actually copied - not `p->tot_len`.  This shrinks the TCP receive
- * window and applies backpressure to the sender rather than silently
- * dropping data.
+ * **Backpressure (lossless)**
+ * When a whole inbound segment will not fit the free ring space, the recv
+ * callback refuses it (returns ERR_MEM without freeing the pbuf); lwIP retains
+ * it as refused_data and redelivers once the main loop has drained the ring, so
+ * no received byte is dropped. Requires RX_BUF_SIZE > one TCP segment (TCP_MSS).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -78,13 +78,14 @@ struct TcpConn
 
     uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
     ConnProto proto;     ///< Application protocol for this connection.
-    uint8_t ssh_id;      ///< SSH session slot (PROTO_SSH only); 0xFF when none.
-    uint8_t iface;       ///< DetIface this connection arrived on; set at accept time.
-    uint8_t tls;         ///< Non-zero when this connection is TLS (set at accept time).
+    uint8_t
+        proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
+    uint8_t iface;  ///< DetIface this connection arrived on; set at accept time.
+    uint8_t tls;    ///< Non-zero when this connection is TLS (set at accept time).
 };
 
-/** @brief Sentinel for TcpConn::ssh_id meaning "no SSH session bound". */
-#define SSH_ID_NONE 0xFFu
+/** @brief Sentinel for TcpConn::proto_slot meaning "no per-protocol session bound". */
+#define DETWS_PROTO_SLOT_NONE 0xFFu
 
 /**
  * @brief softAP IPv4 address (network byte order) for STA/AP interface tagging.
@@ -210,11 +211,40 @@ class DeterministicAsyncTCP
 // TLS-aware (route through the TLS record layer when the slot is a TLS conn);
 // with DETWS_ENABLE_TLS off they are byte-identical to tcp_write/tcp_output.
 
-/** @brief Send @p len bytes on connection @p slot (copies @p data; TLS-aware). */
-void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len);
+/**
+ * @brief Send @p len bytes on connection @p slot (copies @p data; TLS-aware).
+ * @return true if the bytes were queued; false if the send buffer was full and
+ *         the write was refused. A streaming producer should pace with
+ *         det_conn_sndbuf() and resume on a later loop; existing fixed-size
+ *         senders may ignore the result.
+ */
+bool det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len);
+
+/**
+ * @brief Bytes that can currently be queued for sending on @p slot.
+ *
+ * Advisory free space in the TCP send buffer: a producer can send at most this
+ * many bytes per handle() loop and resume on the next loop as the window drains
+ * (the on_poll hook is the natural resume point). For a TLS slot the usable
+ * plaintext is somewhat less (TLS record + cipher overhead). Returns 0 when
+ * @p pcb is null.
+ */
+u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb);
 
 /** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
 void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
+
+/**
+ * @brief Write raw bytes straight to @p pcb (no TLS), context-safe.
+ *
+ * This is the one safe path for the TLS engine's BIO to emit ciphertext: it
+ * writes directly when already running inside the lwIP thread (the marshaled
+ * app-data send path) and marshals a raw write when called from the main-loop
+ * task (the handshake / read pump), so a TLS handshake never does an
+ * unsynchronized tcp_write from the main loop. Calls tcp_output() on success.
+ * @return true if the bytes were queued; false on a full send buffer (ERR_MEM).
+ */
+bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
 
 /**
  * @brief Close connection @p slot gracefully (tcp_close), aborting if the FIN

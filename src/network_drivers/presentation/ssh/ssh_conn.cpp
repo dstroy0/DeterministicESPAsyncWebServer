@@ -118,7 +118,7 @@ void ssh_conn_accept(uint8_t conn_slot)
     }
 
     conn_for_ssh[j] = conn_slot;
-    conn->ssh_id = j;
+    conn->proto_slot = j;
     g_close[j] = false;
 
     ssh_transport_init(j);
@@ -151,7 +151,7 @@ static void close_conn(uint8_t conn_slot)
 void ssh_conn_rx(uint8_t conn_slot)
 {
     TcpConn *conn = &conn_pool[conn_slot];
-    uint8_t j = conn->ssh_id;
+    uint8_t j = conn->proto_slot;
     if (j >= MAX_SSH_CONNS || conn_for_ssh[j] != conn_slot)
         return;
 
@@ -194,7 +194,7 @@ void ssh_conn_rx(uint8_t conn_slot)
 void ssh_conn_close(uint8_t conn_slot)
 {
     TcpConn *conn = &conn_pool[conn_slot];
-    uint8_t j = conn->ssh_id;
+    uint8_t j = conn->proto_slot;
     if (j < MAX_SSH_CONNS)
     {
         // Zero all key material and session state for this slot.
@@ -203,5 +203,5 @@ void ssh_conn_close(uint8_t conn_slot)
         ssh_wipe(&ssh_sess[j], sizeof(SshSession));
         conn_for_ssh[j] = 0xFF;
     }
-    conn->ssh_id = SSH_ID_NONE;
+    conn->proto_slot = DETWS_PROTO_SLOT_NONE;
 }

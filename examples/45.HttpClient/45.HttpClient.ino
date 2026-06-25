@@ -20,9 +20,11 @@
  *     ; to trace where a request stalls, add: -DDETWS_HTTP_CLIENT_DEBUG
  * (Arduino IDE: set them in DetWebServerConfig.h.)
  *
- * https:// note: the server certificate is NOT verified (the device has no trust
- * store) - the transport is encrypted but the peer is unauthenticated; pin or
- * verify at the application layer if you need it.
+ * https:// note: encrypt-only by default (the device has no trust store), so the
+ * peer is unauthenticated. To authenticate the server, install a CA trust anchor
+ * with http_client_set_ca(pem, len) - verifies the chain + hostname - and/or a
+ * SHA-256 certificate pin with http_client_set_pin(hash32); a failure aborts the
+ * request. Call once before issuing requests.
  */
 
 #define DETWS_ENABLE_HTTP_CLIENT 1

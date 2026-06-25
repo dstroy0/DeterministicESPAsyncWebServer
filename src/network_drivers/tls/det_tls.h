@@ -90,6 +90,18 @@ void det_tls_conn_free(uint8_t slot);
 /** @brief Peak bytes ever used from the static arena (for sizing DETWS_TLS_ARENA_SIZE). */
 size_t det_tls_arena_peak();
 
+/**
+ * @brief TLS BIO send/recv callbacks (mbedTLS signatures) - the transport
+ *        abstraction the engine reads/writes ciphertext through.
+ *
+ * Both sides conform to this: the server registers BIO functions that read the
+ * connection's rx ring and write via the transport (det_conn_raw_send), and the
+ * outbound client passes its own pair to det_tls_client_run(). The engine itself
+ * never touches lwIP directly.
+ */
+typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
+typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
+
 #if DETWS_ENABLE_MTLS
 /**
  * @brief Require a verified client certificate (mTLS): install the trust-anchor CA.
@@ -115,10 +127,6 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
 #endif // DETWS_ENABLE_MTLS
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
-/** @brief TLS BIO send/recv callbacks (mbedTLS signatures) supplied by the caller. */
-typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
-typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
-
 /**
  * @brief Run a blocking client-side TLS exchange over caller-supplied BIO callbacks.
  *
@@ -128,14 +136,35 @@ typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
  * allocator if the server side has not). Yields with delay() while waiting, up to
  * @p deadline_ms (millis() timestamp).
  *
- * NOTE: server-certificate verification is OFF by default (no trust store on the
- * device); the transport is encrypted but not authenticated. Pin/verify at the
- * application layer if needed.
+ * NOTE: server authentication is OFF by default (no trust store on the device);
+ * the transport is encrypted but unauthenticated unless a CA and/or a cert pin is
+ * installed via det_tls_client_set_ca() / det_tls_client_set_pin().
  *
- * @return 0 on success (@p out_len set), <0 on handshake/IO failure.
+ * @return 0 on success (@p out_len set), <0 on handshake/verification/IO failure.
  */
 int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
                        size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms);
+
+/**
+ * @brief Install a CA trust anchor for outbound https:// server verification.
+ *
+ * Pass PEM (length incl. the trailing NUL) or DER; nullptr/0 clears it. With a CA
+ * installed, the client handshake verifies the server's certificate chain and its
+ * hostname (SNI) and aborts the connection on failure.
+ */
+void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len);
+
+/**
+ * @brief Pin the outbound server's certificate by SHA-256 (32 bytes of the DER).
+ *
+ * After a successful handshake the peer certificate is hashed and constant-time
+ * compared to @p sha256; a mismatch (or no peer cert) fails the connection. Pass
+ * nullptr to clear. Can be combined with det_tls_client_set_ca().
+ */
+void det_tls_client_set_pin(const uint8_t sha256[32]);
+
+/** @brief Clear any installed client CA and cert pin (back to encrypt-only). */
+void det_tls_client_clear_verify();
 #endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 
 #else // stubs (TLS disabled or native build)
@@ -197,6 +226,15 @@ static inline int det_tls_client_run(const char *, const uint8_t *, size_t, uint
                                      det_tls_bio_send_fn, det_tls_bio_recv_fn, uint32_t)
 {
     return -1;
+}
+static inline void det_tls_client_set_ca(const uint8_t *, size_t)
+{
+}
+static inline void det_tls_client_set_pin(const uint8_t *)
+{
+}
+static inline void det_tls_client_clear_verify()
+{
 }
 #endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 

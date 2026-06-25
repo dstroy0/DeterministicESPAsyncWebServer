@@ -639,6 +639,30 @@ int http_post(const char *url, const char *content_type, const uint8_t *body, si
     return http_request("POST", url, content_type, body, body_len, out);
 }
 
+void http_client_set_ca(const uint8_t *ca, size_t ca_len)
+{
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+    det_tls_client_set_ca(ca, ca_len);
+#else
+    (void)ca;
+    (void)ca_len;
+#endif
+}
+void http_client_set_pin(const uint8_t sha256[32])
+{
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+    det_tls_client_set_pin(sha256);
+#else
+    (void)sha256;
+#endif
+}
+void http_client_clear_verify()
+{
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+    det_tls_client_clear_verify();
+#endif
+}
+
 #else // host build: transport is a stub
 
 int http_get(const char *, HttpClientResult *)
@@ -648,6 +672,15 @@ int http_get(const char *, HttpClientResult *)
 int http_post(const char *, const char *, const uint8_t *, size_t, HttpClientResult *)
 {
     return HTTP_CLIENT_ERR_CONNECT;
+}
+void http_client_set_ca(const uint8_t *, size_t)
+{
+}
+void http_client_set_pin(const uint8_t *)
+{
+}
+void http_client_clear_verify()
+{
 }
 
 #endif // ARDUINO

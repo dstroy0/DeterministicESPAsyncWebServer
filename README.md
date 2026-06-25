@@ -49,7 +49,7 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 - **Captive Portal Provisioning**: Setup wizard (SoftAP + catch-all DNS portal) for first-boot WiFi credential configuration.
 - **Observability**: Optional runtime stats endpoint (uptime, request/error counts, pool usage, heap), a Prometheus `/metrics` endpoint (text exposition format 0.0.4) for scraping, a per-request access-log callback, and a diagnostics endpoint.
 - **Remote Logging**: Optional RFC 5424 syslog client - ship structured log lines to a central syslog server over UDP (zero-heap, fire-and-forget).
-- **Outbound HTTP(S) Client**: Optional zero-heap client for requests _from_ the device (webhooks, telemetry push, REST calls): blocking `http_get()` / `http_post()` over raw lwIP with DNS resolution, Content-Length / chunked response decoding, and `https://` via client-side mbedTLS over the same static arena. It links no code unless a sketch actually calls it.
+- **Outbound HTTP(S) Client**: Optional zero-heap client for requests _from_ the device (webhooks, telemetry push, REST calls): blocking `http_get()` / `http_post()` over raw lwIP with DNS resolution, Content-Length / chunked response decoding, and `https://` via client-side mbedTLS over the same static arena - encrypt-only by default with optional server authentication (CA trust anchor or SHA-256 certificate pin). It links no code unless a sketch actually calls it.
 - **Minimal Dependencies**: Beyond the Arduino/ESP-IDF SDK, the only external dependency is mbedTLS (crypto); optional services use the ESP-IDF mDNS component and raw lwIP UDP rather than add-on libraries. Every optional feature is gated by a `DETWS_ENABLE_*` build flag (default off).
 
 ## Build Footprint
