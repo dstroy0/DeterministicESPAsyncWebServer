@@ -472,4 +472,43 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     return build_message(msg_id, true, req_priv, g_v3_c, sc.len, resp, resp_cap);
 }
 
+#if DETWS_ENABLE_SNMP_TRAP
+#include "network_drivers/transport/udp_transport.h"
+#include "services/snmp/snmp_notify.h"
+
+// SNMPv3 USM notification (Trap): authenticated, and encrypted when a privacy
+// password is configured. Reuses the engine ID + localized keys from
+// snmp_v3_init()/snmp_v3_set_user() and the same build_message() as responses.
+bool snmp_trap_v3(const char *dst_ip, uint16_t port, const uint32_t *trap_oid, size_t trap_oid_len,
+                  const SnmpVarbind *vbs, size_t n)
+{
+    if (!g_auth_set) // a v3 notification must be authenticated
+        return false;
+    static uint32_t s_v3_trap_id = 1;
+    uint32_t id = s_v3_trap_id++;
+
+    // Trap PDU into the inner-PDU scratch.
+    BerEnc e;
+    ber_enc_init(&e, g_v3_b, sizeof(g_v3_b));
+    snmp_notify_build_pdu(&e, SNMP_PDU_TRAPV2, id, trap_oid, trap_oid_len, snmp_v3_uptime_s() * 100, vbs, n);
+    if (!e.ok)
+        return false;
+
+    // scopedPDU { contextEngineID = our engine, contextName = "", trap PDU }.
+    BerEnc sc;
+    ber_enc_init(&sc, g_v3_c, sizeof(g_v3_c));
+    size_t s = ber_seq_begin(&sc, BER_SEQUENCE);
+    ber_put_octet_string(&sc, BER_OCTET_STRING, g_engine_id, g_engine_id_len);
+    ber_put_octet_string(&sc, BER_OCTET_STRING, nullptr, 0);
+    ber_put_raw(&sc, g_v3_b, e.len);
+    ber_seq_end(&sc, s);
+    if (!sc.ok)
+        return false;
+
+    uint8_t out[SNMP_MSG_BUF_SIZE];
+    size_t len = build_message((long)id, g_auth_set, g_priv_set, g_v3_c, sc.len, out, sizeof(out));
+    return len && det_udp_sendto(dst_ip, port, out, len);
+}
+#endif // DETWS_ENABLE_SNMP_TRAP
+
 #endif // DETWS_ENABLE_SNMP_V3
