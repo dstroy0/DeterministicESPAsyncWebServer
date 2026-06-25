@@ -3,8 +3,8 @@
 This document details the standards conformance of DeterministicESPAsyncWebServer's
 HTTP/1.1 (request parsing, response generation, keep-alive, Range), authentication
 (Basic / Digest / JWT), WebSocket, TLS / mTLS, CoAP, SNMP, syslog, the outbound
-HTTP client, and error-handling behavior. (SSH conformance lives in [SSH.md](SSH.md);
-the TLS security posture is in [SECURITY.md](SECURITY.md).)
+HTTP and MQTT clients, and error-handling behavior. (SSH conformance lives in
+[SSH.md](SSH.md); the TLS security posture is in [SECURITY.md](SECURITY.md).)
 
 ## HTTP/1.1 request parsing (RFC 7230)
 
@@ -212,6 +212,29 @@ claims such as `exp` are readable via [`jwt_claim_int()`](@ref jwt_claim_int) fo
 the handler to enforce. The full `Authorization` header is captured (a bearer
 token exceeds the normal header-value cap). Shared-secret caveat:
 [SECURITY.md](SECURITY.md).
+
+## MQTT 3.1.1 client (OASIS)
+
+Optional ([`DETWS_ENABLE_MQTT`](@ref DETWS_ENABLE_MQTT), default off) persistent
+publish/subscribe client. Conformance to the OASIS MQTT 3.1.1 specification:
+
+- **Packet framing (§2):** the 2-bit-flags + Remaining-Length variable-length
+  integer header, length-prefixed UTF-8 strings, and all control packets:
+  CONNECT/CONNACK, PUBLISH, PUBACK/PUBREC/PUBREL/PUBCOMP, SUBSCRIBE/SUBACK,
+  UNSUBSCRIBE/UNSUBACK, PINGREQ/PINGRESP, DISCONNECT.
+- **CONNECT (§3.1):** protocol level 4, Clean Session, keep-alive, optional
+  username/password, and an optional Last-Will (topic / message / QoS / retain).
+- **Quality of Service (§4.3):** QoS 0 (at most once), QoS 1 (PUBLISH/PUBACK,
+  outbound DUP retransmit until acknowledged), and QoS 2 (the four-packet
+  PUBLISH/PUBREC/PUBREL/PUBCOMP exchange both directions, with inbound de-dup by
+  packet id). Outbound QoS 1/2 messages are held in a bounded in-flight pool.
+- **Keep-alive (§3.1.2.10):** a PINGREQ is sent when the link is idle; the
+  connection is dropped if no PINGRESP returns within the keep-alive window.
+- `mqtts://` runs over a persistent client-side TLS session
+  ([`DETWS_ENABLE_MQTT_TLS`](@ref DETWS_ENABLE_MQTT_TLS)) with the same optional
+  CA / pin verification as the HTTP client. QoS 2 inbound flow uses method A
+  (deliver on PUBLISH, de-dup by id until PUBREL). The packet codec is
+  transport-independent and host-tested (env:native_mqtt).
 
 ## Outbound HTTP(S) client (RFC 7230)
 
