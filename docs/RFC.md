@@ -2,9 +2,9 @@
 
 This document details the standards conformance of DeterministicESPAsyncWebServer's
 HTTP/1.1 (request parsing, response generation, keep-alive, Range), authentication
-(Basic / Digest / JWT), WebSocket, TLS / mTLS, CoAP, SNMP, syslog, the outbound
-HTTP and MQTT clients, and error-handling behavior. (SSH conformance lives in
-[SSH.md](SSH.md); the TLS security posture is in [SECURITY.md](SECURITY.md).)
+(Basic / Digest / JWT), WebSocket (server and client), TLS / mTLS, CoAP, SNMP,
+syslog, the outbound HTTP and MQTT clients, and error-handling behavior. (SSH
+conformance lives in [SSH.md](SSH.md); the TLS posture is in [SECURITY.md](SECURITY.md).)
 
 ## HTTP/1.1 request parsing (RFC 7230)
 
@@ -235,6 +235,23 @@ publish/subscribe client. Conformance to the OASIS MQTT 3.1.1 specification:
   CA / pin verification as the HTTP client. QoS 2 inbound flow uses method A
   (deliver on PUBLISH, de-dup by id until PUBREL). The packet codec is
   transport-independent and host-tested (env:native_mqtt).
+
+## WebSocket client (RFC 6455)
+
+Optional ([`DETWS_ENABLE_WS_CLIENT`](@ref DETWS_ENABLE_WS_CLIENT), default off)
+outbound client - the device as a WebSocket client to a remote endpoint:
+
+- **Opening handshake (§4.1-4.2):** sends an HTTP/1.1 Upgrade GET with a random
+  `Sec-WebSocket-Key` and `Sec-WebSocket-Version: 13`, and verifies the `101`
+  response's `Sec-WebSocket-Accept` = base64(SHA-1(key + GUID)).
+- **Framing (§5):** client-to-server frames are always masked with a fresh random
+  key (§5.3); server frames are read unmasked. Text/binary/ping/pong/close
+  opcodes, 7/16/64-bit payload lengths, and continuation-frame reassembly into one
+  delivered message. A Ping is answered with a Pong; a Close is echoed.
+- `wss://` runs over the shared persistent client TLS session
+  ([`DETWS_ENABLE_WS_CLIENT_TLS`](@ref DETWS_ENABLE_WS_CLIENT_TLS)) with the same
+  CA / pin verification. The handshake/frame codec is host-tested
+  (env:native_ws_client), including the RFC 6455 §4.2.2 accept example.
 
 ## Outbound HTTP(S) client (RFC 7230)
 

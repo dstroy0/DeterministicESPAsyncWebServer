@@ -784,13 +784,41 @@
 #endif
 
 /**
- * @brief Internal: client-side TLS engine is compiled (HTTPS client and/or MQTTS).
+ * @brief Outbound WebSocket client (RFC 6455 over raw lwIP, optional wss:// TLS).
  *
- * The outbound HTTP client (one-shot exchange) and the MQTT client (persistent
- * session) share the same client mbedTLS code in det_tls - the CA/pin trust
- * config, the BIO typedefs, and the session API - gated by this.
+ * Default off. When set, src/services/ws_client/ws_client.h connects to a remote
+ * WebSocket endpoint (ws://, or wss:// over client-side mbedTLS), performs the
+ * RFC 6455 client handshake (Sec-WebSocket-Key/Accept), and sends masked text /
+ * binary frames + receives server frames via a callback - for streaming to cloud
+ * dashboards or bidirectional control. The frame/handshake codec is host-testable.
  */
-#if DETWS_ENABLE_HTTP_CLIENT_TLS || DETWS_ENABLE_MQTT_TLS
+#ifndef DETWS_ENABLE_WS_CLIENT
+#define DETWS_ENABLE_WS_CLIENT 0
+#endif
+
+/** @brief wss://: run the WebSocket client over client-side TLS (needs DETWS_ENABLE_TLS). */
+#ifndef DETWS_ENABLE_WS_CLIENT_TLS
+#define DETWS_ENABLE_WS_CLIENT_TLS 0
+#endif
+
+/** @brief WebSocket client send/receive buffer size in bytes (bounds one frame). */
+#ifndef DETWS_WS_CLIENT_BUF_SIZE
+#define DETWS_WS_CLIENT_BUF_SIZE 1024
+#endif
+
+/** @brief Ciphertext receive-ring size for wss:// (draining ring; must exceed one TCP_MSS). */
+#ifndef DETWS_WS_CLIENT_CT_BUF_SIZE
+#define DETWS_WS_CLIENT_CT_BUF_SIZE 4096
+#endif
+
+/**
+ * @brief Internal: client-side TLS engine is compiled (HTTPS client, MQTTS, and/or wss client).
+ *
+ * The outbound HTTP client (one-shot exchange) and the MQTT / WebSocket clients
+ * (persistent sessions) share the same client mbedTLS code in det_tls - the
+ * CA/pin trust config, the BIO typedefs, and the session API - gated by this.
+ */
+#if DETWS_ENABLE_HTTP_CLIENT_TLS || DETWS_ENABLE_MQTT_TLS || DETWS_ENABLE_WS_CLIENT_TLS
 #define DETWS_ENABLE_CLIENT_TLS 1
 #else
 #define DETWS_ENABLE_CLIENT_TLS 0
@@ -1439,6 +1467,10 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_MQTT_TLS && !DETWS_ENABLE_TLS
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_MQTT_TLS requires DETWS_ENABLE_TLS"
+#endif
+
+#if DETWS_ENABLE_WS_CLIENT_TLS && !DETWS_ENABLE_TLS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_CLIENT_TLS requires DETWS_ENABLE_TLS"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2
