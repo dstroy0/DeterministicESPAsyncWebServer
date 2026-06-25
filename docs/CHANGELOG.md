@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`3680129`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/368012928b29c0735fb829fe792457e366de4577))
+- update CHANGELOG.md [skip ci] ([`281429e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/281429e5d3c52ec63093bd6d09ed7155c17877d4))
 - update test report [skip ci] ([`ca5b149`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca5b149dd1527bdd7593f8a50d3b8cbb79add1f6))
 - update CHANGELOG.md [skip ci] ([`e5a2597`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5a2597c08e90b551f145412d36d0ff88ee4e2bd))
 - update test report [skip ci] ([`14d0309`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14d03096f879300467c714df811dc93b84ef722c))
@@ -23,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- outbound SNMP notifications - traps and informs (v2c + v3) ([`617d0ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/617d0ffd1445cce701cbf245fa9a85e28bf8b5d7))
 - outbound WebSocket client + wss (RFC 6455) ([`6f3e9d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f3e9d91088c9a386c1d378f9a3f5ba00e27774b))
 - MQTT 3.1.1 client + MQTTS, full QoS 0/1/2 ([`f037ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f037ef87cc251ecb7e88aa517ade25abd74221d3))
 - pluggable protocol dispatch, flow control, and outbound TLS auth ([`8d79900`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d7990012a557f1a4ad73cae3a63b5554e1e3ecc))
