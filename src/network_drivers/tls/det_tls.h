@@ -144,9 +144,11 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
  */
 int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
                        size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms);
+#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 
+#if DETWS_ENABLE_CLIENT_TLS
 /**
- * @brief Install a CA trust anchor for outbound https:// server verification.
+ * @brief Install a CA trust anchor for outbound TLS (HTTPS/MQTTS) verification.
  *
  * Pass PEM (length incl. the trailing NUL) or DER; nullptr/0 clears it. With a CA
  * installed, the client handshake verifies the server's certificate chain and its
@@ -165,7 +167,28 @@ void det_tls_client_set_pin(const uint8_t sha256[32]);
 
 /** @brief Clear any installed client CA and cert pin (back to encrypt-only). */
 void det_tls_client_clear_verify();
-#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+
+// --- Persistent client TLS session (one outbound connection at a time) ---
+// For a long-lived encrypted client (MQTTS): handshake once, then read/write
+// application data over the caller's BIO until det_tls_csess_end(). Honors the
+// CA/pin installed above. The BIO callbacks read ciphertext from the caller's
+// receive ring and write it to the socket.
+
+/** @brief Begin a client TLS session to @p host over the given BIO. @return false on setup failure. */
+bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn);
+
+/** @brief Advance the handshake. @return 1 established (CA/pin checked), 0 pending, <0 fatal. */
+int det_tls_csess_handshake();
+
+/** @brief Read decrypted application data. @return >0 bytes, 0 none yet, <0 closed/error. */
+int det_tls_csess_read(uint8_t *buf, size_t len);
+
+/** @brief Encrypt and send @p len bytes. @return bytes written, or <0 on error. */
+int det_tls_csess_write(const uint8_t *data, size_t len);
+
+/** @brief Send close_notify and tear down the session. */
+void det_tls_csess_end();
+#endif // DETWS_ENABLE_CLIENT_TLS
 
 #else // stubs (TLS disabled or native build)
 
@@ -219,14 +242,9 @@ static inline int det_tls_peer_subject(uint8_t, char *, size_t)
 }
 #endif // DETWS_ENABLE_MTLS
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
+#if DETWS_ENABLE_CLIENT_TLS
 typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
 typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
-static inline int det_tls_client_run(const char *, const uint8_t *, size_t, uint8_t *, size_t, size_t *,
-                                     det_tls_bio_send_fn, det_tls_bio_recv_fn, uint32_t)
-{
-    return -1;
-}
 static inline void det_tls_client_set_ca(const uint8_t *, size_t)
 {
 }
@@ -235,6 +253,33 @@ static inline void det_tls_client_set_pin(const uint8_t *)
 }
 static inline void det_tls_client_clear_verify()
 {
+}
+static inline bool det_tls_csess_begin(const char *, det_tls_bio_send_fn, det_tls_bio_recv_fn)
+{
+    return false;
+}
+static inline int det_tls_csess_handshake()
+{
+    return -1;
+}
+static inline int det_tls_csess_read(uint8_t *, size_t)
+{
+    return -1;
+}
+static inline int det_tls_csess_write(const uint8_t *, size_t)
+{
+    return -1;
+}
+static inline void det_tls_csess_end()
+{
+}
+#endif // DETWS_ENABLE_CLIENT_TLS
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS
+static inline int det_tls_client_run(const char *, const uint8_t *, size_t, uint8_t *, size_t, size_t *,
+                                     det_tls_bio_send_fn, det_tls_bio_recv_fn, uint32_t)
+{
+    return -1;
 }
 #endif // DETWS_ENABLE_HTTP_CLIENT_TLS
 

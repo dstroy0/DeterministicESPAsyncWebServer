@@ -712,6 +712,90 @@
 #define DETWS_HTTP_CLIENT_TIMEOUT_MS 8000
 #endif
 
+/**
+ * @brief MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS).
+ *
+ * Default off. When set, src/services/mqtt/mqtt.h provides a persistent outbound
+ * client: connect to a broker, PUBLISH (QoS 0/1) and SUBSCRIBE to topics, receive
+ * incoming messages via a callback, with keep-alive pings - the dominant IoT
+ * messaging pattern, for telemetry push and remote command. The packet codec is
+ * host-testable; the transport (DNS + raw lwIP TCP, MQTTS via client-side mbedTLS)
+ * is ESP32-only. QoS 2 and Last-Will are not implemented.
+ */
+#ifndef DETWS_ENABLE_MQTT
+#define DETWS_ENABLE_MQTT 0
+#endif
+
+/** @brief MQTTS: run the MQTT client over client-side TLS (needs DETWS_ENABLE_TLS). */
+#ifndef DETWS_ENABLE_MQTT_TLS
+#define DETWS_ENABLE_MQTT_TLS 0
+#endif
+
+/**
+ * @brief MQTT packet buffer size in bytes (bounds one outgoing/incoming packet).
+ *
+ * Two buffers of this size live in BSS (one tx, one rx). Must hold the largest
+ * CONNECT/PUBLISH the client sends and the largest incoming PUBLISH it accepts
+ * (topic + payload + a few header bytes); larger incoming packets are dropped.
+ */
+#ifndef DETWS_MQTT_BUF_SIZE
+#define DETWS_MQTT_BUF_SIZE 1024
+#endif
+
+/** @brief Default MQTT keep-alive interval in seconds (PINGREQ cadence / CONNECT field). */
+#ifndef DETWS_MQTT_KEEPALIVE_S
+#define DETWS_MQTT_KEEPALIVE_S 30
+#endif
+
+/** @brief Ciphertext receive-ring size for MQTTS (draining ring; must exceed one TCP_MSS). */
+#ifndef DETWS_MQTT_CT_BUF_SIZE
+#define DETWS_MQTT_CT_BUF_SIZE 4096
+#endif
+
+/** @brief Maximum inbound MQTT topic length (including NUL) delivered to the callback. */
+#ifndef DETWS_MQTT_MAX_TOPIC
+#define DETWS_MQTT_MAX_TOPIC 128
+#endif
+
+/**
+ * @brief Outbound QoS 1/2 in-flight slots (unacknowledged messages held for DUP retransmit).
+ *
+ * Each slot stores its serialized packet (up to DETWS_MQTT_INFLIGHT_BUF bytes) until
+ * the broker acknowledges it; a publish is refused when all slots are busy. The pool
+ * costs DETWS_MQTT_MAX_INFLIGHT * (DETWS_MQTT_INFLIGHT_BUF + a few bytes) of BSS.
+ */
+#ifndef DETWS_MQTT_MAX_INFLIGHT
+#define DETWS_MQTT_MAX_INFLIGHT 4
+#endif
+
+/** @brief Stored-packet size per in-flight QoS 1/2 slot (caps a retransmittable PUBLISH). */
+#ifndef DETWS_MQTT_INFLIGHT_BUF
+#define DETWS_MQTT_INFLIGHT_BUF 256
+#endif
+
+/** @brief Retransmit timeout (ms) for an unacknowledged in-flight QoS 1/2 message. */
+#ifndef DETWS_MQTT_RETRANSMIT_MS
+#define DETWS_MQTT_RETRANSMIT_MS 5000
+#endif
+
+/** @brief Inbound QoS 2 packet-id de-duplication ring depth (PUBREC-acknowledged, awaiting PUBREL). */
+#ifndef DETWS_MQTT_RX_QOS2_SLOTS
+#define DETWS_MQTT_RX_QOS2_SLOTS 8
+#endif
+
+/**
+ * @brief Internal: client-side TLS engine is compiled (HTTPS client and/or MQTTS).
+ *
+ * The outbound HTTP client (one-shot exchange) and the MQTT client (persistent
+ * session) share the same client mbedTLS code in det_tls - the CA/pin trust
+ * config, the BIO typedefs, and the session API - gated by this.
+ */
+#if DETWS_ENABLE_HTTP_CLIENT_TLS || DETWS_ENABLE_MQTT_TLS
+#define DETWS_ENABLE_CLIENT_TLS 1
+#else
+#define DETWS_ENABLE_CLIENT_TLS 0
+#endif
+
 // ---------------------------------------------------------------------------
 // Full Authorization-header capture (internal)
 // ---------------------------------------------------------------------------
@@ -1351,6 +1435,10 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS && !DETWS_ENABLE_TLS
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP_CLIENT_TLS requires DETWS_ENABLE_TLS"
+#endif
+
+#if DETWS_ENABLE_MQTT_TLS && !DETWS_ENABLE_TLS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_MQTT_TLS requires DETWS_ENABLE_TLS"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2
