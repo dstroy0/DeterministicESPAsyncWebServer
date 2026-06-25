@@ -199,6 +199,7 @@ struct CoapDec
     uint16_t mid;
     const uint8_t *token;
     uint16_t content_format;
+    int observe; // Observe option value (RFC 7641), or -1 if absent
     const uint8_t *payload;
     size_t payload_len;
 };
@@ -214,6 +215,7 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
     d->mid = (uint16_t)((buf[2] << 8) | buf[3]);
     d->token = buf + 4;
     d->content_format = COAP_CF_NONE;
+    d->observe = -1;
     d->payload = nullptr;
     d->payload_len = 0;
     size_t p = 4 + d->tkl;
@@ -243,12 +245,15 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
             p += 2;
         }
         opt += delta;
-        if (opt == 12)
+        if (opt == 12 || opt == 6)
         {
             uint32_t v = 0;
             for (uint32_t k = 0; k < l; k++)
                 v = (v << 8) | buf[p + k];
-            d->content_format = (uint16_t)v;
+            if (opt == 12)
+                d->content_format = (uint16_t)v;
+            else
+                d->observe = (int)v;
         }
         p += l;
     }
@@ -464,9 +469,40 @@ void test_unknown_method_not_implemented()
     TEST_ASSERT_EQUAL_UINT(COAP_RSP_NOT_IMPLEMENTED, d.code);
 }
 
+// RFC 7641: coap_server_process_ex() includes an Observe option (6, before
+// Content-Format 12) carrying the notification sequence on a 2.xx response.
+void test_observe_option_in_response()
+{
+    const char *paths[] = {"ro"};
+    uint8_t tok[] = {0x01, 0x02};
+    uint8_t req[128], resp[128];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, tok, 2, 0x2222, paths, 1, nullptr, 0, -1, nullptr, 0);
+    size_t n = coap_server_process_ex(req, rl, resp, sizeof(resp), 5);
+    TEST_ASSERT_GREATER_THAN_UINT(0, n);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_TYPE_ACK, d.type);
+    TEST_ASSERT_EQUAL_INT(5, d.observe);                      // Observe option present, seq 5
+    TEST_ASSERT_EQUAL_UINT16(COAP_CF_TEXT, d.content_format); // still ordered/decoded after Observe
+    TEST_ASSERT_EQUAL_size_t(2, d.payload_len);
+}
+
+void test_no_observe_option_when_seq_negative()
+{
+    const char *paths[] = {"ro"};
+    uint8_t req[128], resp[128];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x2223, paths, 1, nullptr, 0, -1, nullptr, 0);
+    size_t n = coap_server_process_ex(req, rl, resp, sizeof(resp), -1);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_INT(-1, d.observe); // no Observe option
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_observe_option_in_response);
+    RUN_TEST(test_no_observe_option_when_seq_negative);
     RUN_TEST(test_get_content);
     RUN_TEST(test_not_found);
     RUN_TEST(test_method_not_allowed);
