@@ -4,6 +4,21 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### CI / Build
+
+- update test report [skip ci] ([`279d844`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/279d844c2dc9272d09ad4d87ad69d83e4e9ad132))
+- update CHANGELOG.md [skip ci] ([`3816adc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3816adc6062862f97fc1070667f292ce0d2f8a19))
+
+### Features
+
+- add 10 optional subsystems, harden transport, regroup examples ([`246d353`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/246d35308d17fc29fcc75742fb63febebe11917c))
+- add 10 optional subsystems, harden transport, regroup examples ([`0cfffb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cfffb9ac167ebda47c4c0a54fc42fc3066d6577))
+
+## [2.0.0] - 2026-06-24
+
+<details>
+<summary><b>Show Changelog for version 2.0.0 - 2026-06-24</b></summary>
+
 ### Bug Fixes
 
 - fix ci errors ([`81ea3f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81ea3f8ec5cc1f3e39578795a3cc1f1926b6f6a0))
@@ -171,6 +186,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - transport-layer I/O API + Telnet server; reorganize examples; docs ([`503e1c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503e1c4d974f9dbfbe31b156ea7ea1f21e097da6))
 - centralize HTML templates into DETWS_HTML.h ([`72f5d1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72f5d1f8b83fbfd2b2d6593ba76a9fa391964f8b))
+
+</details>
 
 ## [1.2.0] - 2026-06-20
 
