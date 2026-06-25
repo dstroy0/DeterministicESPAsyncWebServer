@@ -86,4 +86,25 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len);
  */
 bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len);
 
+/**
+ * @brief Copy a received peer's source IPv4 address (dotted-quad) and port out.
+ *
+ * The DetUdpPeer token is valid only inside the handler; a service that wants to
+ * message the peer later (e.g. CoAP Observe notifications) captures its address
+ * here and sends with det_udp_listener_sendto(). @return false on a host build or
+ * a too-small buffer.
+ */
+bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out);
+
+/**
+ * @brief Send a datagram from the listener bound on @p listen_port to an address.
+ *
+ * Unlike det_udp_sendto() (a shared ephemeral source port), this uses the bound
+ * listener's PCB, so the datagram's source is @p listen_port - required when a
+ * peer matches replies by the server endpoint (CoAP Observe notifications come
+ * from :5683). @return false if no listener is bound on @p listen_port.
+ */
+bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
+                             size_t len);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H

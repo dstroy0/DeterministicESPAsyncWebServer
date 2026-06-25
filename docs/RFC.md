@@ -198,6 +198,14 @@ dispatches GET/POST/PUT/DELETE against a fixed resource table by reconstructed
 Uri-Path. The codec ([`coap_server_process()`](@ref coap_server_process)) is
 transport-independent and host-tested; only the UDP socket is ESP32-specific.
 
+**Resource observation (RFC 7641, optional [`DETWS_ENABLE_COAP_OBSERVE`](@ref DETWS_ENABLE_COAP_OBSERVE)):**
+a GET carrying the Observe option (value 0) registers the client as an observer;
+the registration response and every subsequent notification carry the Observe
+option with a monotonically increasing sequence. [`coap_notify()`](@ref coap_notify)
+re-renders the resource and pushes a NON notification to each observer from the
+server's port (so the client matches it by token + endpoint). An observer is
+removed by a GET with Observe (1), a Reset, or a failed send.
+
 ## Remote logging - syslog (RFC 5424)
 
 Optional ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG), default off) syslog

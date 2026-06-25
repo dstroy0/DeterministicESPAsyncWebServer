@@ -114,6 +114,40 @@ bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
     return e == ERR_OK;
 }
 
+bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
+{
+    if (!peer || !peer->addr || !ip_out || ip_cap < 8)
+        return false;
+    ipaddr_ntoa_r(peer->addr, ip_out, (int)ip_cap);
+    if (port_out)
+        *port_out = peer->port;
+    return true;
+}
+
+bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
+                             size_t len)
+{
+    if (!dst_ip || !data || len == 0)
+        return false;
+    ip_addr_t dst;
+    if (!ipaddr_aton(dst_ip, &dst))
+        return false;
+    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    {
+        if (s_listeners[i].used && s_listeners[i].pcb && s_listeners[i].pcb->local_port == listen_port)
+        {
+            struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
+            if (!p)
+                return false;
+            memcpy(p->payload, data, len);
+            err_t e = udp_sendto(s_listeners[i].pcb, p, &dst, dst_port);
+            pbuf_free(p);
+            return e == ERR_OK;
+        }
+    }
+    return false;
+}
+
 #else // host build: no lwIP. Stubs keep UDP-using services host-compilable.
 
 bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
@@ -134,6 +168,26 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
 
 bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
 {
+    (void)dst_ip;
+    (void)dst_port;
+    (void)data;
+    (void)len;
+    return false;
+}
+
+bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
+{
+    (void)peer;
+    (void)ip_out;
+    (void)ip_cap;
+    (void)port_out;
+    return false;
+}
+
+bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
+                             size_t len)
+{
+    (void)listen_port;
     (void)dst_ip;
     (void)dst_port;
     (void)data;

@@ -538,6 +538,24 @@
 #endif
 
 /**
+ * @brief CoAP resource observation - RFC 7641 (requires DETWS_ENABLE_COAP).
+ *
+ * Default off. When set, a client GET with the Observe option registers as an
+ * observer of a resource; the application calls coap_notify(path) to push the
+ * resource's current representation to every observer (a CoAP notification from
+ * the server port with an increasing Observe sequence). Observers are dropped on
+ * a deregister GET, a client RST, or send failure.
+ */
+#ifndef DETWS_ENABLE_COAP_OBSERVE
+#define DETWS_ENABLE_COAP_OBSERVE 0
+#endif
+
+/** @brief Maximum simultaneous CoAP observers (one slot per observed resource per client). */
+#ifndef DETWS_COAP_MAX_OBSERVERS
+#define DETWS_COAP_MAX_OBSERVERS 4
+#endif
+
+/**
  * @brief Maximum registered CoAP resources (the server's fixed routing table).
  *
  * Each entry holds a path pointer, an allowed-methods bitmask, and a handler.
@@ -1497,6 +1515,10 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_SNMP_TRAP && !DETWS_ENABLE_SNMP
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SNMP_TRAP requires DETWS_ENABLE_SNMP"
+#endif
+
+#if DETWS_ENABLE_COAP_OBSERVE && !DETWS_ENABLE_COAP
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_COAP_OBSERVE requires DETWS_ENABLE_COAP"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2

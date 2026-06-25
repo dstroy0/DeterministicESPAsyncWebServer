@@ -168,6 +168,13 @@ bool coap_server_add_resource(const char *path, uint8_t methods, CoapHandler han
  */
 size_t coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
 
+/**
+ * @brief Like coap_server_process(), but include an Observe option (RFC 7641) in
+ *        a successful (2.xx) response carrying the notification sequence
+ *        @p observe_seq (a value < 0 omits it). Used by the Observe transport.
+ */
+size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap, int32_t observe_seq);
+
 // ---------------------------------------------------------------------------
 // UDP transport (binds via the transport-layer UDP service; no-op on host)
 // ---------------------------------------------------------------------------
@@ -179,6 +186,20 @@ size_t coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
  * builds det_udp_listen() is a stub, so the core remains host-testable.
  */
 void coap_server_begin_udp(uint16_t port = 5683);
+
+#if DETWS_ENABLE_COAP_OBSERVE
+/**
+ * @brief Push a notification to every observer of @p path (RFC 7641).
+ *
+ * Re-renders the resource (invokes its GET handler) and sends the current
+ * representation as a CoAP notification - from the bound server port, carrying
+ * each observer's token and an increasing Observe sequence. Call this whenever the
+ * resource's state changes. A send failure drops that observer. No-op on a host
+ * build. A client registers by sending a GET with the Observe option (0); it
+ * deregisters with Observe (1), a Reset, or by going away.
+ */
+void coap_notify(const char *path);
+#endif
 
 #endif // DETWS_ENABLE_COAP
 
