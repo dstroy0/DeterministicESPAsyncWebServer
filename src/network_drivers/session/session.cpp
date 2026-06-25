@@ -16,6 +16,7 @@
 
 #include "session.h"
 #include "../transport/listener.h"
+#include "proto_handler.h"
 #if DETWS_ENABLE_SSH
 #include "../presentation/ssh/ssh_conn.h"
 #endif
@@ -90,6 +91,72 @@ static void tls_data(uint8_t slot)
 }
 #endif // DETWS_ENABLE_TLS
 
+// ---------------------------------------------------------------------------
+// Protocol-handler dispatch table (see proto_handler.h)
+// ---------------------------------------------------------------------------
+static const ProtoHandler *s_proto_handlers[DETWS_PROTO_MAX];
+
+void proto_register(ConnProto proto, const ProtoHandler *h)
+{
+    if ((unsigned)proto < DETWS_PROTO_MAX)
+        s_proto_handlers[proto] = h;
+}
+
+// Built-in HTTP handler. The data/close paths branch on TLS (a TLS slot's rx
+// ring holds ciphertext, decrypted into the parser); accept maps directly.
+static void http_evt_accept(uint8_t slot)
+{
+    http_conn_open(slot); // resets the parser + (keep-alive) the per-conn request tally
+}
+static void http_evt_data(uint8_t slot)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        tls_data(slot);
+        return;
+    }
+#endif
+    http_parse(slot);
+}
+static void http_evt_close(uint8_t slot)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+        det_tls_conn_free(slot); // also covers timeouts (EVT_ERROR)
+#endif
+    http_reset(slot);
+}
+static const ProtoHandler s_http_handler = {http_evt_accept, http_evt_data, http_evt_close, nullptr};
+
+#if DETWS_ENABLE_TELNET
+static const ProtoHandler s_telnet_handler = {telnet_accept, telnet_rx, telnet_close, nullptr};
+#endif
+#if DETWS_ENABLE_SSH
+static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, nullptr};
+#endif
+
+const ProtoHandler *proto_get(ConnProto proto)
+{
+    // Lazily register the built-ins on first lookup so dispatch works before
+    // begin() (the native test harness drives server_tick() directly). Keyed on
+    // the always-present HTTP slot; new protocols add themselves via proto_register.
+    if (!s_proto_handlers[PROTO_HTTP])
+    {
+        s_proto_handlers[PROTO_HTTP] = &s_http_handler;
+#if DETWS_ENABLE_TELNET
+        s_proto_handlers[PROTO_TELNET] = &s_telnet_handler;
+#endif
+#if DETWS_ENABLE_SSH
+        s_proto_handlers[PROTO_SSH] = &s_ssh_handler;
+#endif
+    }
+    const ProtoHandler *h = ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;
+    if (!h)
+        h = s_proto_handlers[PROTO_HTTP]; // PROTO_NONE / unregistered -> HTTP
+    return h;
+}
+
 void server_tick()
 {
     /*
@@ -109,80 +176,26 @@ void server_tick()
         TcpEvt evt;
         while (xQueueReceive(lst->queue, &evt, 0) == pdTRUE)
         {
-            ConnProto proto = conn_pool[evt.slot_id].proto;
+            // Route the event to the slot's protocol handler (PROTO_NONE and any
+            // unregistered protocol fall back to HTTP, preserving legacy behavior).
+            const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);
+            if (!h)
+                continue;
 
             switch (evt.type)
             {
             case EVT_CONNECT:
-                switch (proto)
-                {
-                case PROTO_NONE: /* fallthrough - treat unset slots as HTTP */
-                case PROTO_HTTP:
-                    http_conn_open(evt.slot_id); // resets parser + (keep-alive) the request tally
-                    break;
-                case PROTO_TELNET:
-#if DETWS_ENABLE_TELNET
-                    telnet_accept(evt.slot_id);
-#endif
-                    break;
-                case PROTO_SSH:
-#if DETWS_ENABLE_SSH
-                    ssh_conn_accept(evt.slot_id);
-#endif
-                    break;
-                }
+                if (h->on_accept)
+                    h->on_accept(evt.slot_id);
                 break;
-
+            case EVT_DATA:
+                if (h->on_data)
+                    h->on_data(evt.slot_id);
+                break;
             case EVT_DISCONNECT:
             case EVT_ERROR:
-                switch (proto)
-                {
-                case PROTO_NONE:
-                case PROTO_HTTP:
-#if DETWS_ENABLE_TLS
-                    if (conn_pool[evt.slot_id].tls)
-                        det_tls_conn_free(evt.slot_id); // also covers timeouts (EVT_ERROR)
-#endif
-                    http_reset(evt.slot_id);
-                    break;
-                case PROTO_TELNET:
-#if DETWS_ENABLE_TELNET
-                    telnet_close(evt.slot_id);
-#endif
-                    break;
-                case PROTO_SSH:
-#if DETWS_ENABLE_SSH
-                    ssh_conn_close(evt.slot_id);
-#endif
-                    break;
-                }
-                break;
-
-            case EVT_DATA:
-                switch (proto)
-                {
-                case PROTO_NONE:
-                case PROTO_HTTP:
-#if DETWS_ENABLE_TLS
-                    if (conn_pool[evt.slot_id].tls)
-                    {
-                        tls_data(evt.slot_id);
-                        break;
-                    }
-#endif
-                    http_parse(evt.slot_id);
-                    break;
-                case PROTO_TELNET:
-#if DETWS_ENABLE_TELNET
-                    telnet_rx(evt.slot_id);
-#endif
-                    break;
-                case PROTO_SSH:
-#if DETWS_ENABLE_SSH
-                    ssh_conn_rx(evt.slot_id);
-#endif
-                    break;
-                }
+                if (h->on_close)
+                    h->on_close(evt.slot_id);
                 break;
             }
         }

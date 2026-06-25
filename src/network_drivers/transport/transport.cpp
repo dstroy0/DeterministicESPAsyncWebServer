@@ -59,8 +59,14 @@ enum DetTcpOp
     DET_OP_OUTPUT,
     DET_OP_CLOSE,
     DET_OP_ABORT,
-    DET_OP_DETACH
+    DET_OP_DETACH,
+    DET_OP_RAWSEND // raw tcp_write of already-encrypted bytes (TLS BIO), no TLS re-entry
 };
+
+// True while det_tcp_do() is executing, i.e. while we are running inside the lwIP
+// thread. Lets det_conn_raw_send() pick a direct vs. marshaled tcp_write so the
+// TLS BIO is safe from either context without re-marshaling (which would deadlock).
+static volatile bool s_in_tcpip_thread = false;
 
 struct DetTcpCall
 {
@@ -70,6 +76,7 @@ struct DetTcpCall
     struct tcp_pcb *pcb;
     const void *data;
     u16_t len;
+    err_t result; ///< outcome of the op (DET_OP_SEND: whether the write was queued)
 };
 
 // Runs in tcpip_thread (via tcpip_api_call). Performs the requested raw lwIP op
@@ -78,17 +85,24 @@ struct DetTcpCall
 static err_t det_tcp_do(struct tcpip_api_call_data *c)
 {
     DetTcpCall *k = (DetTcpCall *)c;
+    k->result = ERR_OK;
+    s_in_tcpip_thread = true; // any tcp_write reached from here is already in-thread
     switch (k->op)
     {
+    case DET_OP_RAWSEND:
+        k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
+        if (k->result == ERR_OK)
+            tcp_output(k->pcb);
+        break;
     case DET_OP_SEND:
 #if DETWS_ENABLE_TLS
         if (conn_pool[k->slot].tls)
         {
-            det_tls_write(k->slot, k->data, k->len);
+            k->result = (det_tls_write(k->slot, k->data, k->len) >= 0) ? ERR_OK : ERR_MEM;
             break;
         }
 #endif
-        tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
+        k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
         break;
     case DET_OP_OUTPUT:
         tcp_output(k->pcb);
@@ -108,10 +122,11 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         tcp_arg(k->pcb, nullptr);
         break;
     }
+    s_in_tcpip_thread = false;
     return ERR_OK;
 }
 
-static inline void det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
 {
     DetTcpCall k;
     memset(&k, 0, sizeof(k));
@@ -121,6 +136,7 @@ static inline void det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pc
     k.data = data;
     k.len = len;
     tcpip_api_call(det_tcp_do, &k.base);
+    return k.result;
 }
 #endif // ARDUINO
 
@@ -139,21 +155,33 @@ uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 // they go out as plaintext (tcp_write) or through the TLS record layer. With
 // DETWS_ENABLE_TLS off this is byte-identical to a direct tcp_write/tcp_output.
 
-void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+bool det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
 {
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_SEND, slot, pcb, data, len); // runs the write in tcpip_thread
+    return det_tcp_marshal(DET_OP_SEND, slot, pcb, data, len) == ERR_OK; // write runs in tcpip_thread
 #else
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
-    {
-        det_tls_write(slot, data, len);
-        return;
-    }
+        return det_tls_write(slot, data, len) >= 0;
 #endif
     (void)slot;
-    tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+    return tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY) == ERR_OK;
 #endif
+}
+
+u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb)
+{
+    (void)slot;
+    if (!pcb)
+        return 0;
+    u16_t avail = tcp_sndbuf(pcb);
+#if DETWS_ENABLE_TLS
+    // A TLS record adds header + MAC/tag overhead; report a conservative plaintext
+    // budget so a caller that fills it does not overrun the cipher's framing.
+    if (conn_pool[slot].tls)
+        avail = (avail > 64) ? (u16_t)(avail - 64) : 0;
+#endif
+    return avail;
 }
 
 void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
@@ -168,6 +196,31 @@ void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
     det_tcp_marshal(DET_OP_OUTPUT, slot, pcb, nullptr, 0);
 #else
     tcp_output(pcb);
+#endif
+}
+
+bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
+{
+    if (!pcb)
+        return false;
+#if defined(ARDUINO)
+    if (s_in_tcpip_thread)
+    {
+        // Already inside the lwIP thread (the marshaled app-data send path): write
+        // directly - re-marshaling here would deadlock on the tcpip mailbox.
+        err_t e = tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+        if (e == ERR_OK)
+            tcp_output(pcb);
+        return e == ERR_OK;
+    }
+    // Main-loop task (TLS handshake / read pump): marshal a raw write so the
+    // tcp_write runs in the lwIP thread, not racing it.
+    return det_tcp_marshal(DET_OP_RAWSEND, 0, pcb, data, len) == ERR_OK;
+#else
+    err_t e = tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+    if (e == ERR_OK)
+        tcp_output(pcb);
+    return e == ERR_OK;
 #endif
 }
 

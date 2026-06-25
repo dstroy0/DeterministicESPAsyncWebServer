@@ -37,6 +37,7 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
 #if DETWS_ENABLE_WEBSOCKET
@@ -927,6 +928,22 @@ void DetWebServer::handle()
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)
     {
+        // Non-HTTP protocols (Telnet/SSH and registered services such as
+        // MQTT/Modbus) are pumped through their registered poll handler. HTTP -
+        // with its WebSocket/SSE upgrades - keeps the inline pump below, which is
+        // bound to this DetWebServer instance (it dispatches into routes).
+        ConnProto proto = conn_pool[i].proto;
+        if (proto != PROTO_HTTP && proto != PROTO_NONE)
+        {
+            if (conn_pool[i].state == CONN_ACTIVE)
+            {
+                const ProtoHandler *ph = proto_get(proto);
+                if (ph && ph->on_poll)
+                    ph->on_poll(i);
+            }
+            continue;
+        }
+
 #if DETWS_ENABLE_WEBSOCKET
         // WebSocket slot - drain ring buffer and dispatch ready frames
         WsConn *ws = ws_find(i);
@@ -1465,10 +1482,20 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     bool head = req_is_head(slot_id);
 
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    // HEAD responses carry the headers (incl. Content-Length) but no body.
-    if (!head && payload_len > 0)
-        det_conn_send(slot_id, pcb, payload, (u16_t)payload_len);
+    // HEAD responses carry the headers (incl. Content-Length) but no body. For a
+    // body that fits the header scratch, coalesce headers+body into a single send
+    // so the response costs one tcpip_thread round-trip instead of two.
+    if (!head && payload_len > 0 && (size_t)hlen + (size_t)payload_len <= sizeof(header))
+    {
+        memcpy(header + hlen, payload, (size_t)payload_len);
+        det_conn_send(slot_id, pcb, header, (u16_t)(hlen + payload_len));
+    }
+    else
+    {
+        det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+        if (!head && payload_len > 0)
+            det_conn_send(slot_id, pcb, payload, (u16_t)payload_len);
+    }
 
     resp_end(slot_id, pcb, code, payload_len, keep);
 }

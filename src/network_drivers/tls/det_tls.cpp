@@ -25,6 +25,7 @@
 #include <mbedtls/error.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/platform.h> // mbedtls_platform_set_calloc_free
+#include <mbedtls/sha256.h>   // peer-cert pin hashing (client verification)
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509_crt.h>
@@ -172,9 +173,10 @@ static int tls_rng(void *ctx, unsigned char *out, size_t len)
     return 0;
 }
 
-// Pull ciphertext from the connection's rx ring (already filled by the lwIP
-// recv callback). No bytes available -> WANT_READ so mbedTLS yields to the loop.
-static int bio_recv(void *ctx, unsigned char *buf, size_t len)
+// Server BIO recv (a det_tls_bio_recv_fn): pull ciphertext from the connection's
+// rx ring (filled by the lwIP recv callback). No bytes -> WANT_READ so mbedTLS
+// yields to the loop. Reads only the ring, so it is safe from either context.
+static int server_bio_recv(void *ctx, unsigned char *buf, size_t len)
 {
     TlsConn *e = (TlsConn *)ctx;
     TcpConn *c = &conn_pool[e->slot];
@@ -189,10 +191,12 @@ static int bio_recv(void *ctx, unsigned char *buf, size_t len)
     return (int)n;
 }
 
-// Write ciphertext out via lwIP, bounded by the current send buffer. Uses the
-// pcb captured at begin() because the response senders null conn->pcb before
-// they write (the detach-before-write race guard).
-static int bio_send(void *ctx, const unsigned char *buf, size_t len)
+// Server BIO send (a det_tls_bio_send_fn): emit ciphertext through the transport's
+// context-safe raw write (det_conn_raw_send), so the handshake - pumped from the
+// main loop - never does an unsynchronized tcp_write racing the lwIP thread, while
+// app-data writes (already in the lwIP thread) still go out directly. Uses the pcb
+// captured at begin() because the response senders null conn->pcb before writing.
+static int server_bio_send(void *ctx, const unsigned char *buf, size_t len)
 {
     TlsConn *e = (TlsConn *)ctx;
     if (!e->pcb)
@@ -207,15 +211,9 @@ static int bio_send(void *ctx, const unsigned char *buf, size_t len)
     if (to > 0xFFFF)
         to = 0xFFFF;
 
-    err_t err = tcp_write(e->pcb, buf, (u16_t)to, TCP_WRITE_FLAG_COPY);
-    if (err == ERR_OK)
-    {
-        tcp_output(e->pcb);
+    if (det_conn_raw_send(e->pcb, buf, (u16_t)to))
         return (int)to;
-    }
-    if (err == ERR_MEM)
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
-    return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
+    return MBEDTLS_ERR_SSL_WANT_WRITE; // send buffer full -> mbedTLS retries
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +299,7 @@ bool det_tls_conn_begin(uint8_t slot)
         e->active = false;
         return false;
     }
-    mbedtls_ssl_set_bio(&e->ssl, e, bio_send, bio_recv, nullptr);
+    mbedtls_ssl_set_bio(&e->ssl, e, server_bio_send, server_bio_recv, nullptr);
     return true;
 }
 
@@ -428,14 +426,70 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
 #endif // DETWS_ENABLE_MTLS
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
+// Optional client-side server authentication (default off = encrypt-only):
+//  - a CA trust anchor -> mbedTLS verifies the chain + hostname during handshake;
+//  - a 32-byte SHA-256 cert pin -> the peer's certificate DER is hashed and
+//    constant-time compared after the handshake.
+// Either, both, or neither may be set; both must pass when both are set.
+static mbedtls_x509_crt s_client_ca;
+static bool s_client_ca_set = false;
+static uint8_t s_client_pin[32];
+static bool s_client_pin_set = false;
+
+void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len)
+{
+    if (!s_pool_init)
+    {
+        pool_init();
+        mbedtls_platform_set_calloc_free(pool_calloc, pool_free);
+    }
+    if (s_client_ca_set)
+        mbedtls_x509_crt_free(&s_client_ca);
+    s_client_ca_set = false;
+    if (!ca || ca_len == 0)
+        return;
+    mbedtls_x509_crt_init(&s_client_ca);
+    s_client_ca_set = (mbedtls_x509_crt_parse(&s_client_ca, ca, ca_len) == 0);
+    if (!s_client_ca_set)
+        mbedtls_x509_crt_free(&s_client_ca);
+}
+
+void det_tls_client_set_pin(const uint8_t sha256[32])
+{
+    if (!sha256)
+    {
+        s_client_pin_set = false;
+        return;
+    }
+    memcpy(s_client_pin, sha256, 32);
+    s_client_pin_set = true;
+}
+
+void det_tls_client_clear_verify()
+{
+    if (s_client_ca_set)
+        mbedtls_x509_crt_free(&s_client_ca);
+    s_client_ca_set = false;
+    s_client_pin_set = false;
+}
+
+// Constant-time 32-byte compare (no early-out on the first differing byte).
+static bool ct_eq32(const uint8_t *a, const uint8_t *b)
+{
+    uint8_t d = 0;
+    for (int i = 0; i < 32; i++)
+        d |= (uint8_t)(a[i] ^ b[i]);
+    return d == 0;
+}
+
 // Blocking client-side TLS exchange over caller-supplied BIO callbacks. Used by
 // the outbound HTTP client for https://. The transport (raw lwIP tcp_write + the
 // receive ring) lives in http_client.cpp; here we own only the mbedTLS client
 // session, served from the same static arena as the server side.
 //
-// Server-certificate verification is OFF (the device has no trust store): the
-// transport is encrypted but the peer is not authenticated. Pin/verify at the
-// application layer if you need it.
+// Server authentication is OFF by default (the device has no trust store): the
+// transport is encrypted but the peer is unauthenticated unless a CA
+// (det_tls_client_set_ca) and/or a cert pin (det_tls_client_set_pin) is installed.
 int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
                        size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms)
 {
@@ -465,7 +519,17 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
                                         MBEDTLS_SSL_PRESET_DEFAULT) != 0)
             break;
         mbedtls_ssl_conf_rng(&conf, tls_rng, nullptr);
-        mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE); // no on-device trust store
+        if (s_client_ca_set)
+        {
+            // Verify the server chain (and hostname, via the SNI set below) against
+            // the installed CA; a verification failure aborts the handshake.
+            mbedtls_ssl_conf_ca_chain(&conf, &s_client_ca, nullptr);
+            mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+        }
+        else
+        {
+            mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE); // encrypt-only (no trust store)
+        }
 #if MBEDTLS_VERSION_MAJOR >= 3
         mbedtls_ssl_conf_min_tls_version(&conf, MBEDTLS_SSL_VERSION_TLS1_2);
 #else
@@ -495,6 +559,32 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
             printf("[tls] handshake ret=-0x%04x arena_peak=%u\n", (unsigned)(-ret), (unsigned)det_tls_arena_peak());
 #endif
             break;
+        }
+
+        // Certificate pinning: hash the peer's certificate DER and constant-time
+        // compare to the installed pin. Mismatch (or no peer cert) aborts.
+        if (s_client_pin_set)
+        {
+            const mbedtls_x509_crt *peer = mbedtls_ssl_get_peer_cert(&ssl);
+            bool pin_ok = false;
+            if (peer)
+            {
+                uint8_t hash[32];
+#if MBEDTLS_VERSION_MAJOR >= 3
+                int hret = mbedtls_sha256(peer->raw.p, peer->raw.len, hash, 0);
+#else
+                int hret = mbedtls_sha256_ret(peer->raw.p, peer->raw.len, hash, 0);
+#endif
+                pin_ok = (hret == 0) && ct_eq32(hash, s_client_pin);
+            }
+            if (!pin_ok)
+            {
+#ifdef DETWS_HTTP_CLIENT_DEBUG
+                printf("[tls] cert pin mismatch\n");
+#endif
+                ret = -1;
+                break;
+            }
         }
 
         // Send the (plaintext) request; mbedTLS encrypts and pushes via send_fn.
