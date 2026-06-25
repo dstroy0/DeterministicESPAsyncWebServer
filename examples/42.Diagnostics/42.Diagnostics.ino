@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 10.Diagnostics.ino
+ * @file 42.Diagnostics.ino
  * @brief Compile-time configuration endpoint (DETWS_ENABLE_DIAG).
  *
  * server.diag(slot_id) serves DETWS_DIAG_JSON - a compile-time snapshot of the

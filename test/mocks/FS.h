@@ -53,6 +53,34 @@ inline void mock_fs_clear()
 }
 
 // ---------------------------------------------------------------------------
+// Write capture (for streaming-upload tests): File::write() appends here when a
+// file is opened in "w"/"a" mode.
+// ---------------------------------------------------------------------------
+
+inline uint8_t *_mock_wbuf()
+{
+    static uint8_t b[8192];
+    return b;
+}
+inline size_t &_mock_wlen()
+{
+    static size_t n = 0;
+    return n;
+}
+inline void mock_fs_write_reset()
+{
+    _mock_wlen() = 0;
+}
+inline size_t mock_fs_written()
+{
+    return _mock_wlen();
+}
+inline const uint8_t *mock_fs_wdata()
+{
+    return _mock_wbuf();
+}
+
+// ---------------------------------------------------------------------------
 // File
 // ---------------------------------------------------------------------------
 
@@ -72,6 +100,25 @@ class File
         : _data(data), _size(size), _pos(0), _open(true), _mtime(mtime)
     {
     }
+    // Writable sink: bytes go to the shared write-capture buffer.
+    explicit File(bool open_writable) : _data(nullptr), _size(0), _pos(0), _open(open_writable), _mtime(0)
+    {
+    }
+
+    size_t write(const uint8_t *src, size_t sz)
+    {
+        if (!_open)
+            return 0;
+        size_t cap = 8192 - _mock_wlen();
+        size_t w = sz < cap ? sz : cap;
+        memcpy(_mock_wbuf() + _mock_wlen(), src, w);
+        _mock_wlen() += w;
+        return w;
+    }
+    size_t write(uint8_t b)
+    {
+        return write(&b, 1);
+    }
 
     size_t read(uint8_t *dst, size_t sz)
     {
@@ -82,6 +129,15 @@ class File
         memcpy(dst, _data + _pos, n);
         _pos += n;
         return n;
+    }
+
+    // Mirrors fs::File::seek(pos, SeekSet) for Range request tests.
+    bool seek(uint32_t pos)
+    {
+        if (!_open || pos > _size)
+            return false;
+        _pos = pos;
+        return true;
     }
 
     size_t size() const
@@ -165,8 +221,11 @@ inline const MockFsEntry *_mock_find(const char *path)
 class FS
 {
   public:
-    File open(const char *path, const char * /*mode*/ = "r")
+    File open(const char *path, const char *mode = "r")
     {
+        // Write/append mode -> a writable sink (captured via mock_fs_written()).
+        if (mode && (mode[0] == 'w' || mode[0] == 'a'))
+            return File(true);
         if (_mock_entry_count() > 0)
         {
             const MockFsEntry *e = _mock_find(path);

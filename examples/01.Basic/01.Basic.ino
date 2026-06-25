@@ -17,11 +17,11 @@
  *   - on_not_found()   → custom 404 handler
  *   - http_get_query() / http_get_header() accessors
  *
- * The framework handles these automatically — no application code needed:
- *   - 400 Bad Request       — RFC 7230 character violation in method/path/headers
- *   - 413 Payload Too Large — Content-Length exceeds BODY_BUF_SIZE
- *   - 414 URI Too Long      — path exceeds MAX_PATH_LEN
- *   - 501 Not Implemented   — Transfer-Encoding present (chunked not supported)
+ * The framework handles these automatically: no application code needed:
+ *   - 400 Bad Request      : RFC 7230 character violation in method/path/headers
+ *   - 413 Payload Too Large: Content-Length exceeds BODY_BUF_SIZE
+ *   - 414 URI Too Long     : path exceeds MAX_PATH_LEN
+ *   - 501 Not Implemented  : Transfer-Encoding present (chunked not supported)
  *
  * Flash to any ESP32 board.  Open the Serial Monitor at 115200 baud to see the
  * assigned IP address, then use curl or a browser to test routes.
@@ -107,7 +107,7 @@ void handle_echo(uint8_t slot_id, HttpReq *req)
 // path, not just the suffix after the wildcard prefix.
 void handle_files(uint8_t slot_id, HttpReq *req)
 {
-    // Demonstrate header lookup — check whether the client accepts gzip.
+    // Demonstrate header lookup: check whether the client accepts gzip.
     const char *accept_enc = http_get_header(req, "Accept-Encoding");
     bool wants_gzip = accept_enc && strstr(accept_enc, "gzip") != nullptr;
 

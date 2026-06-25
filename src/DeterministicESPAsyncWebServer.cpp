@@ -83,6 +83,8 @@ static const char *status_text(int code)
         return "Created";
     case 204:
         return "No Content";
+    case 206:
+        return "Partial Content";
     case 301:
         return "Moved Permanently";
     case 302:
@@ -113,6 +115,8 @@ static const char *status_text(int code)
         return "Payload Too Large";
     case 414:
         return "URI Too Long";
+    case 416:
+        return "Range Not Satisfiable";
     case 429:
         return "Too Many Requests";
     case 500:
@@ -233,6 +237,85 @@ void DetWebServer::note_response(uint8_t slot_id, int code, int body_len)
         const HttpReq *r = &http_pool[slot_id];
         _log_cb(r->method, r->path, code, body_len);
     }
+}
+
+#if DETWS_ENABLE_KEEPALIVE
+// Case-insensitive search for @p token as a comma/space-delimited element of a
+// Connection header value (e.g. "keep-alive" in "Keep-Alive, Upgrade").
+static bool conn_has_token(const char *hdr, const char *token)
+{
+    if (!hdr)
+        return false;
+    size_t tlen = strlen(token);
+    const char *p = hdr;
+    while (*p)
+    {
+        while (*p == ' ' || *p == ',' || *p == '\t')
+            p++;
+        const char *start = p;
+        while (*p && *p != ',')
+            p++;
+        size_t len = (size_t)(p - start);
+        while (len && (start[len - 1] == ' ' || start[len - 1] == '\t'))
+            len--;
+        if (len == tlen && strncasecmp(start, token, tlen) == 0)
+            return true;
+        if (*p == ',')
+            p++;
+    }
+    return false;
+}
+
+bool DetWebServer::keepalive_eval(uint8_t slot_id)
+{
+    HttpReq *req = &http_pool[slot_id];
+    // Only a cleanly-parsed request has a known message boundary; errors close.
+    if (req->parse_state != PARSE_COMPLETE)
+        return false;
+
+    const char *c = http_get_header(req, "Connection");
+    bool keep;
+    if (req->version == HTTP_11)
+        keep = !conn_has_token(c, "close"); // 1.1 default: persistent
+    else
+        keep = conn_has_token(c, "keep-alive"); // 1.0/unknown default: close
+    if (!keep)
+        return false;
+
+    // Fairness bound: serve at most DETWS_KEEPALIVE_MAX_REQUESTS, then close.
+    if (++http_req_count[slot_id] >= DETWS_KEEPALIVE_MAX_REQUESTS)
+        return false;
+    return true;
+}
+#endif // DETWS_ENABLE_KEEPALIVE
+
+// Capture the slot's PCB for the response. On the close path the slot is
+// detached + freed before the write so an lwIP error callback fired during the
+// write sees CONN_FREE; on the keep-alive path the slot stays ACTIVE so it can
+// be reused for the next request on the same socket.
+struct tcp_pcb *DetWebServer::resp_begin(uint8_t slot_id, bool keep)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    struct tcp_pcb *pcb = conn->pcb;
+    if (!keep)
+    {
+        det_conn_detach(pcb);
+        conn->state = CONN_FREE;
+        conn->pcb = nullptr;
+    }
+    return pcb;
+}
+
+// Finish a response: flush, then either close (close path) or leave the slot
+// active for reuse (keep-alive). The HTTP parser is reset either way, returning
+// a kept-alive slot to PARSE_METHOD ready for the next request.
+void DetWebServer::resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep)
+{
+    det_conn_flush(slot_id, pcb);
+    if (!keep)
+        det_conn_close(slot_id, pcb);
+    note_response(slot_id, code, body_len);
+    http_reset(slot_id);
 }
 
 // ---------------------------------------------------------------------------
@@ -364,6 +447,18 @@ int32_t DetWebServer::begin_tls(uint16_t port, const uint8_t *cert, size_t cert_
         return rc;
     return begin(cfg);
 }
+
+#if DETWS_ENABLE_MTLS
+bool DetWebServer::tls_require_client_cert(const uint8_t *ca, size_t ca_len)
+{
+    return det_tls_set_client_ca(ca, ca_len);
+}
+
+int DetWebServer::tls_client_subject(uint8_t slot_id, char *out, size_t out_len)
+{
+    return det_tls_peer_subject(slot_id, out, out_len);
+}
+#endif // DETWS_ENABLE_MTLS
 #endif // DETWS_ENABLE_TLS
 
 int32_t DetWebServer::restart(const WebServerConfig *cfg)
@@ -804,6 +899,28 @@ static bool match_path_params(const char *route, const char *path, HttpReq *req)
  *   5. Any slot in PARSE_ENTITY_TOO_LARGE receives an automatic 413 response.
  *   6. Any slot in PARSE_URI_TOO_LONG receives an automatic 414 response.
  */
+#if DETWS_ENABLE_WEBSOCKET
+void DetWebServer::ws_dispatch_message(WsConn *ws)
+{
+    for (uint8_t r = 0; r < _route_count; r++)
+        if (_routes[r].type == ROUTE_WS && _routes[r].ws_message)
+        {
+            _routes[r].ws_message(ws->ws_id);
+            break;
+        }
+}
+
+void DetWebServer::ws_dispatch_close(WsConn *ws)
+{
+    for (uint8_t r = 0; r < _route_count; r++)
+        if (_routes[r].type == ROUTE_WS && _routes[r].ws_close)
+        {
+            _routes[r].ws_close(ws->ws_id);
+            break;
+        }
+}
+#endif // DETWS_ENABLE_WEBSOCKET
+
 void DetWebServer::handle()
 {
     server_tick();
@@ -815,30 +932,59 @@ void DetWebServer::handle()
         WsConn *ws = ws_find(i);
         if (ws)
         {
+#if DETWS_ENABLE_TLS
+            if (conn_pool[i].tls)
+            {
+                // wss://: the rx ring holds ciphertext, so decrypt records here and
+                // feed the frame parser, dispatching each completed frame as it
+                // finishes (one TLS record may carry several WS frames).
+                uint8_t tbuf[256];
+                int n;
+                while ((n = det_tls_read(i, tbuf, sizeof(tbuf))) > 0)
+                {
+                    for (int k = 0; k < n; k++)
+                    {
+                        ws_feed_byte(ws, tbuf[k]);
+                        if (ws->parse_state == WS_FRAME_READY)
+                        {
+                            ws_dispatch_message(ws);
+                            ws_reset_frame(ws);
+                        }
+                        else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                            break;
+                    }
+                    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                        break;
+                }
+                if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR || n < 0)
+                {
+                    ws_dispatch_close(ws);
+                    ws_free(i);
+                    det_tls_conn_free(i);
+                    struct tcp_pcb *p = conn_pool[i].pcb;
+                    if (p)
+                    {
+                        det_conn_detach(p);
+                        conn_pool[i].state = CONN_FREE;
+                        conn_pool[i].pcb = nullptr;
+                        det_conn_abort(p);
+                    }
+                    http_reset(i);
+                }
+                continue;
+            }
+#endif // DETWS_ENABLE_TLS
+
             ws_parse(ws);
 
             if (ws->parse_state == WS_FRAME_READY)
             {
-                for (uint8_t r = 0; r < _route_count; r++)
-                {
-                    if (_routes[r].type == ROUTE_WS && _routes[r].ws_message)
-                    {
-                        _routes[r].ws_message(ws->ws_id);
-                        break;
-                    }
-                }
+                ws_dispatch_message(ws);
                 ws_reset_frame(ws);
             }
             else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
             {
-                for (uint8_t r = 0; r < _route_count; r++)
-                {
-                    if (_routes[r].type == ROUTE_WS && _routes[r].ws_close)
-                    {
-                        _routes[r].ws_close(ws->ws_id);
-                        break;
-                    }
-                }
+                ws_dispatch_close(ws);
                 ws_free(i);
                 http_reset(i);
             }
@@ -851,6 +997,19 @@ void DetWebServer::handle()
         if (sse_find(i))
             continue;
 #endif // DETWS_ENABLE_SSE
+
+#if DETWS_ENABLE_KEEPALIVE
+        // Keep-alive: a slot recycled after a response may already hold the next
+        // (pipelined) request in its ring buffer with no new EVT_DATA to trigger a
+        // parse. Drain it here each tick so it gets dispatched. TLS slots are
+        // skipped - their ring holds ciphertext, decrypted in the session layer.
+        if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != PARSE_COMPLETE
+#if DETWS_ENABLE_TLS
+            && !conn_pool[i].tls
+#endif
+        )
+            http_parse(i);
+#endif
 
         // HTTP slot
         if (http_pool[i].parse_state == PARSE_COMPLETE)
@@ -952,7 +1111,7 @@ static void ws_send_version_required(uint8_t slot_id)
 
     det_conn_send(slot_id, pcb, resp, (u16_t)(sizeof(resp) - 1));
     det_conn_flush(slot_id, pcb);
-    det_conn_close(pcb);
+    det_conn_close(slot_id, pcb);
 
     http_reset(slot_id);
 }
@@ -1024,8 +1183,12 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_c
     det_conn_send(slot_id, conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
     det_conn_flush(slot_id, conn->pcb);
 
-    // Reset HTTP parser; SSE keeps the TCP slot open
-    const char *path = req->path;
+    // Copy the path BEFORE resetting the parser: http_reset() zeroes the whole
+    // HttpReq (including req->path), so a pointer into it would dangle. The saved
+    // path is what sse_broadcast() matches against.
+    char path[MAX_PATH_LEN];
+    strncpy(path, req->path, sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
     http_reset(slot_id);
 
     SseConn *sse = sse_alloc(slot_id, path);
@@ -1096,7 +1259,7 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
     if (!req_is_head(slot_id))
         det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
     det_conn_flush(slot_id, pcb);
-    det_conn_close(pcb);
+    det_conn_close(slot_id, pcb);
     http_reset(slot_id);
 }
 
@@ -1168,15 +1331,6 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #if DETWS_ENABLE_WEBSOCKET
         if (r->type == ROUTE_WS)
         {
-#if DETWS_ENABLE_TLS
-            // Encrypted WebSocket (wss) is not wired yet; reject cleanly so we
-            // never emit a plaintext 101 over the TLS record layer.
-            if (conn_pool[slot_id].tls)
-            {
-                send(slot_id, 501, "text/plain", "wss not supported");
-                return;
-            }
-#endif
             if (!is_ws_upgrade)
             {
                 send(slot_id, 400, "text/plain", "WebSocket upgrade required");
@@ -1198,13 +1352,6 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #if DETWS_ENABLE_SSE
         if (r->type == ROUTE_SSE)
         {
-#if DETWS_ENABLE_TLS
-            if (conn_pool[slot_id].tls)
-            {
-                send(slot_id, 501, "text/plain", "encrypted SSE not supported");
-                return;
-            }
-#endif
             if (!sse_do_upgrade(slot_id, req, r->sse_connect))
                 send(slot_id, 503, "text/plain", "Service Unavailable");
             return;
@@ -1295,6 +1442,12 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     int payload_len = (int)strlen(payload);
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
@@ -1302,18 +1455,13 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
                         "Content-Length: %d\r\n"
                         "%s"
                         "%s"
-                        "Connection: close\r\n\r\n",
+                        "%s\r\n",
                         code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "",
-                        _extra_hdr[slot_id]);
+                        _extra_hdr[slot_id], cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    /*
-     * Detach and free the slot before writing.  Any lwIP error callback
-     * firing during tcp_write will see CONN_FREE and take no action.
-     */
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    // resp_begin frees the slot before the write on the close path (so an lwIP
+    // error callback sees CONN_FREE); on keep-alive the slot stays active.
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     bool head = req_is_head(slot_id);
 
@@ -1321,12 +1469,8 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     // HEAD responses carry the headers (incl. Content-Length) but no body.
     if (!head && payload_len > 0)
         det_conn_send(slot_id, pcb, payload, (u16_t)payload_len);
-    det_conn_flush(slot_id, pcb);
 
-    det_conn_close(pcb);
-
-    note_response(slot_id, code, payload_len);
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, code, payload_len, keep);
 }
 
 /*
@@ -1348,27 +1492,26 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         return;
     }
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Length: 0\r\n"
                         "%s"
                         "%s"
-                        "Connection: close\r\n\r\n",
-                        code, status_text(code), _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
+                        "%s\r\n",
+                        code, status_text(code), _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    det_conn_flush(slot_id, pcb);
 
-    det_conn_close(pcb);
-
-    note_response(slot_id, code, 0);
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, code, 0, keep);
 }
 
 void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
@@ -1394,28 +1537,28 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
         break;
     }
 
-    char header[RESP_HDR_BUF_SIZE];
-    int hlen = snprintf(header, sizeof(header),
-                        "HTTP/1.1 %d %s\r\n"
-                        "Location: %s\r\n"
-                        "Content-Length: 0\r\n"
-                        "%s"
-                        "%s"
-                        "Connection: close\r\n\r\n",
-                        code, status_text(code), location, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen =
+        snprintf(header, sizeof(header),
+                 "HTTP/1.1 %d %s\r\n"
+                 "Location: %s\r\n"
+                 "Content-Length: 0\r\n"
+                 "%s"
+                 "%s"
+                 "%s\r\n",
+                 code, status_text(code), location, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
+
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    det_conn_flush(slot_id, pcb);
 
-    det_conn_close(pcb);
-
-    note_response(slot_id, code, 0);
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, code, 0, keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -1486,6 +1629,12 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     // Pass 1: size the rendered body (no writes).
     size_t body_len = tmpl_walk(slot_id, tmpl, resolver, nullptr);
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
@@ -1493,14 +1642,11 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
                         "Content-Length: %d\r\n"
                         "%s"
                         "%s"
-                        "Connection: close\r\n\r\n",
+                        "%s\r\n",
                         code, status_text(code), content_type, (int)body_len, _cors_enabled ? _cors_header_buf : "",
-                        _extra_hdr[slot_id]);
+                        _extra_hdr[slot_id], cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     bool head = req_is_head(slot_id);
 
@@ -1508,12 +1654,8 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     // Pass 2: stream the rendered body (HEAD carries headers only).
     if (!head && body_len > 0)
         tmpl_walk(slot_id, tmpl, resolver, pcb);
-    det_conn_flush(slot_id, pcb);
 
-    det_conn_close(pcb);
-
-    note_response(slot_id, code, (int)body_len);
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, code, (int)body_len, keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -1571,6 +1713,12 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
         return;
     }
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen =
         snprintf(header, sizeof(header),
@@ -1579,13 +1727,10 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
                  "Transfer-Encoding: chunked\r\n"
                  "%s"
                  "%s"
-                 "Connection: close\r\n\r\n",
-                 code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id]);
+                 "%s\r\n",
+                 code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     bool head = req_is_head(slot_id);
 
@@ -1600,12 +1745,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
         det_conn_send(slot_id, pcb, "0\r\n\r\n", 5);
     }
 
-    det_conn_flush(slot_id, pcb);
-
-    det_conn_close(pcb);
-
-    note_response(slot_id, code, head ? 0 : (int)res.total());
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, code, head ? 0 : (int)res.total(), keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -1756,6 +1896,49 @@ void DetWebServer::stats(uint8_t slot_id)
     send(slot_id, 200, "application/json", body);
 }
 #endif // DETWS_ENABLE_STATS
+
+#if DETWS_ENABLE_METRICS
+void DetWebServer::metrics(uint8_t slot_id)
+{
+    int active = 0;
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conn_pool[i].state == CONN_ACTIVE)
+            active++;
+
+    unsigned long up = millis();
+#ifdef ARDUINO
+    uint32_t heap = ESP.getFreeHeap();
+#else
+    uint32_t heap = 0;
+#endif
+
+    char body[768];
+    snprintf(body, sizeof(body),
+             "# HELP detws_uptime_seconds Device uptime in seconds.\n"
+             "# TYPE detws_uptime_seconds gauge\n"
+             "detws_uptime_seconds %lu\n"
+             "# HELP detws_http_requests_total Total HTTP responses sent.\n"
+             "# TYPE detws_http_requests_total counter\n"
+             "detws_http_requests_total %lu\n"
+             "# HELP detws_http_responses_total HTTP responses by status class.\n"
+             "# TYPE detws_http_responses_total counter\n"
+             "detws_http_responses_total{class=\"2xx\"} %lu\n"
+             "detws_http_responses_total{class=\"4xx\"} %lu\n"
+             "detws_http_responses_total{class=\"5xx\"} %lu\n"
+             "# HELP detws_active_connections Currently active connection slots.\n"
+             "# TYPE detws_active_connections gauge\n"
+             "detws_active_connections %d\n"
+             "# HELP detws_max_connections Connection slot capacity.\n"
+             "# TYPE detws_max_connections gauge\n"
+             "detws_max_connections %d\n"
+             "# HELP detws_free_heap_bytes Free heap in bytes.\n"
+             "# TYPE detws_free_heap_bytes gauge\n"
+             "detws_free_heap_bytes %u\n",
+             up / 1000UL, (unsigned long)_stat_requests, (unsigned long)_stat_2xx, (unsigned long)_stat_4xx,
+             (unsigned long)_stat_5xx, active, (int)MAX_CONNS, (unsigned)heap);
+    send(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", body);
+}
+#endif // DETWS_ENABLE_METRICS
 
 // ---------------------------------------------------------------------------
 // WebSocket public API
@@ -1952,6 +2135,12 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
     else
         snprintf(challenge, sizeof(challenge), "WWW-Authenticate: Basic realm=\"%s\"\r\n", r->auth_realm);
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     static const char body[] = "Unauthorized";
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
@@ -1960,22 +2149,16 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
                         "Content-Type: text/plain\r\n"
                         "Content-Length: %d\r\n"
                         "%s"
-                        "Connection: close\r\n\r\n",
-                        challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "");
+                        "%s\r\n",
+                        challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "", cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
         det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
-    det_conn_flush(slot_id, pcb);
 
-    det_conn_close(pcb);
-
-    http_reset(slot_id);
+    resp_end(slot_id, pcb, 401, (int)(sizeof(body) - 1), keep);
 }
 
 bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
@@ -2061,6 +2244,75 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
 // File serving
 // ---------------------------------------------------------------------------
 
+#if DETWS_ENABLE_RANGE
+// Parse a single-range `Range: bytes=...` header value against a resource of
+// @p size bytes. Supported forms: "bytes=A-B", "bytes=A-" (A to end) and
+// "bytes=-N" (last N bytes). Returns:
+//   0  no usable Range header (caller sends a full 200) - absent, malformed, or
+//      a multi-range request (RFC 7233 §3.1 permits ignoring it),
+//   1  a satisfiable range (writes inclusive [*out_start, *out_end]),
+//  -1  a syntactically valid but unsatisfiable range (caller sends 416).
+static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, size_t *out_end)
+{
+    if (!hdr)
+        return 0;
+    // Require the "bytes=" unit (case-insensitive).
+    if (strncasecmp(hdr, "bytes=", 6) != 0)
+        return 0;
+    const char *p = hdr + 6;
+    while (*p == ' ')
+        p++;
+    if (strchr(p, ',')) // multi-range not supported -> fall back to full 200
+        return 0;
+
+    bool have_start = false, have_end = false;
+    size_t start = 0, end = 0;
+    if (*p >= '0' && *p <= '9')
+    {
+        have_start = true;
+        while (*p >= '0' && *p <= '9')
+            start = start * 10 + (size_t)(*p++ - '0');
+    }
+    if (*p != '-')
+        return 0; // malformed
+    p++;
+    if (*p >= '0' && *p <= '9')
+    {
+        have_end = true;
+        end = 0;
+        while (*p >= '0' && *p <= '9')
+            end = end * 10 + (size_t)(*p++ - '0');
+    }
+    while (*p == ' ')
+        p++;
+    if (*p != '\0')
+        return 0; // trailing garbage -> ignore the header
+
+    if (!have_start)
+    {
+        // Suffix form "bytes=-N": the last N bytes.
+        if (!have_end || end == 0)
+            return -1; // "-" alone, or "-0" -> unsatisfiable
+        if (size == 0)
+            return -1;
+        start = (end >= size) ? 0 : (size - end);
+        end = size - 1;
+    }
+    else
+    {
+        if (start >= size)
+            return -1; // start past EOF -> unsatisfiable
+        if (!have_end || end >= size)
+            end = size - 1; // open-ended or clamped to last byte
+        if (start > end)
+            return -1;
+    }
+    *out_start = start;
+    *out_end = end;
+    return 1;
+}
+#endif // DETWS_ENABLE_RANGE
+
 #if DETWS_ENABLE_FILE_SERVING
 void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
                                        const char *content_type, const char *content_encoding)
@@ -2082,6 +2334,12 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 
     size_t file_size = f.size();
 
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
     // Optional Content-Encoding line (e.g. gzip for pre-compressed assets).
     char enc_line[40];
     enc_line[0] = '\0';
@@ -2097,18 +2355,12 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     if (inm && strcmp(inm, etag) == 0)
     {
         f.close();
-        struct tcp_pcb *p304 = conn->pcb;
-        det_conn_detach(p304);
-        conn->state = CONN_FREE;
-        conn->pcb = nullptr;
+        struct tcp_pcb *p304 = resp_begin(slot_id, keep);
         char h304[RESP_HDR_BUF_SIZE];
-        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%sConnection: close\r\n\r\n",
-                            etag, _cors_enabled ? _cors_header_buf : "");
+        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s\r\n", etag,
+                            _cors_enabled ? _cors_header_buf : "", cl);
         det_conn_send(slot_id, p304, h304, (u16_t)n304);
-        det_conn_flush(slot_id, p304);
-        det_conn_close(p304);
-        note_response(slot_id, 304, 0);
-        http_reset(slot_id);
+        resp_end(slot_id, p304, 304, 0, keep);
         return;
     }
     char etag_line[48];
@@ -2117,19 +2369,54 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     const char *etag_line = "";
 #endif
 
+    // Default: full 200 response covering the whole file.
+    int status = 200;
+    size_t body_len = file_size;
+    const char *accept_ranges = "";
+    char range_line[64];
+    range_line[0] = '\0';
+
+#if DETWS_ENABLE_RANGE
+    accept_ranges = "Accept-Ranges: bytes\r\n"; // advertise range support on every file response
+    size_t r_start = 0, r_end = 0;
+    int rr = parse_byte_range(http_get_header(&http_pool[slot_id], "Range"), file_size, &r_start, &r_end);
+    if (rr < 0)
+    {
+        // Unsatisfiable range -> 416 with Content-Range: bytes */<size>.
+        f.close();
+        struct tcp_pcb *p416 = resp_begin(slot_id, keep);
+        char h416[RESP_HDR_BUF_SIZE];
+        int n416 = snprintf(h416, sizeof(h416),
+                            "HTTP/1.1 416 Range Not Satisfiable\r\n"
+                            "Content-Range: bytes */%u\r\n"
+                            "Content-Length: 0\r\n"
+                            "%s%s\r\n",
+                            (unsigned)file_size, _cors_enabled ? _cors_header_buf : "", cl);
+        det_conn_send(slot_id, p416, h416, (u16_t)n416);
+        resp_end(slot_id, p416, 416, 0, keep);
+        return;
+    }
+    if (rr > 0)
+    {
+        status = 206;
+        body_len = r_end - r_start + 1;
+        snprintf(range_line, sizeof(range_line), "Content-Range: bytes %u-%u/%u\r\n", (unsigned)r_start,
+                 (unsigned)r_end, (unsigned)file_size);
+        f.seek((uint32_t)r_start);
+    }
+#endif
+
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
-                        "HTTP/1.1 200 OK\r\n"
+                        "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
-                        "Content-Length: %d\r\n"
-                        "%s%s%s"
-                        "Connection: close\r\n\r\n",
-                        content_type, (int)file_size, enc_line, etag_line, _cors_enabled ? _cors_header_buf : "");
+                        "Content-Length: %u\r\n"
+                        "%s%s%s%s%s"
+                        "%s\r\n",
+                        status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line,
+                        enc_line, etag_line, _cors_enabled ? _cors_header_buf : "", cl);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
 
@@ -2137,18 +2424,18 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     if (!head)
     {
         uint8_t chunk[FILE_CHUNK_SIZE];
+        size_t remaining = body_len;
         size_t n;
-        while ((n = f.read(chunk, sizeof(chunk))) > 0)
+        while (remaining > 0 && (n = f.read(chunk, remaining < sizeof(chunk) ? remaining : sizeof(chunk))) > 0)
+        {
             det_conn_send(slot_id, pcb, chunk, (u16_t)n);
+            remaining -= n;
+        }
     }
 
-    det_conn_flush(slot_id, pcb);
-
-    det_conn_close(pcb);
-
     f.close();
-    note_response(slot_id, 200, head ? 0 : (int)file_size);
-    http_reset(slot_id);
+
+    resp_end(slot_id, pcb, status, head ? 0 : (int)body_len, keep);
 }
 
 void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)

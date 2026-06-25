@@ -283,13 +283,13 @@ bool verify_admin_privileges(const HttpReq *req)
 
 // --- Route Handlers ---
 
-/** @brief GET / — serve the embedded single-page dashboard. */
+/** @brief GET /: serve the embedded single-page dashboard. */
 void handle_serve_dashboard(uint8_t slot_id, HttpReq *req)
 {
     server.send(slot_id, 200, "text/html", ADMIN_HTML);
 }
 
-/** @brief GET /api/sysinfo — serialize hardware telemetry to JSON (auth required). */
+/** @brief GET /api/sysinfo: serialize hardware telemetry to JSON (auth required). */
 void handle_get_sysinfo(uint8_t slot_id, HttpReq *req)
 {
     if (!verify_admin_privileges(req))
@@ -320,7 +320,7 @@ void handle_get_sysinfo(uint8_t slot_id, HttpReq *req)
     server.send(slot_id, 200, "application/json", response_buf);
 }
 
-/** @brief POST /api/restart — acknowledge, then arm the reboot timer (auth required). */
+/** @brief POST /api/restart: acknowledge, then arm the reboot timer (auth required). */
 void handle_post_restart(uint8_t slot_id, HttpReq *req)
 {
     if (!verify_admin_privileges(req))

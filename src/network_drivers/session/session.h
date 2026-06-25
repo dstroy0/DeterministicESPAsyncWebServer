@@ -57,6 +57,14 @@ void server_tick();
 void http_reset(uint8_t slot_id);
 
 /*
+ * Initialize a slot for a freshly-accepted HTTP connection (Layer 6 forward decl).
+ * Resets the parser and (keep-alive) the per-connection request tally.
+ * @param slot_id Connection slot to open.
+ * @see http_conn_open in presentation.h
+ */
+void http_conn_open(uint8_t slot_id);
+
+/*
  * Advance the HTTP parser for a slot (Layer 6 forward decl).
  * @param slot_id Connection slot to parse.
  * @see http_parse in presentation.h

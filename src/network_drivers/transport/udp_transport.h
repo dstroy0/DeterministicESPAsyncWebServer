@@ -69,4 +69,21 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx);
  */
 bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len);
 
+/**
+ * @brief Send a UDP datagram to an arbitrary destination (outbound client).
+ *
+ * Unlike det_udp_send() - which replies to the peer of a received datagram -
+ * this sends to a host given as a dotted-quad IPv4 string and port, using a
+ * single shared outbound PCB. Fire-and-forget; for clients such as the syslog
+ * sender. ESP32 only; a host build returns false.
+ *
+ * @param dst_ip   destination IPv4 address (e.g. "192.168.1.10").
+ * @param dst_port destination UDP port.
+ * @param data     payload bytes.
+ * @param len      payload length.
+ * @return true if the datagram was queued; false on a bad address, allocation
+ *         failure, or a host build.
+ */
+bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H

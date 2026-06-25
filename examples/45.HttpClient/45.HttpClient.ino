@@ -1,0 +1,72 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file 45.HttpClient.ino
+ * @brief Outbound HTTP(S) client: the device makes requests to a remote server.
+ *
+ * A blocking GET/POST over raw lwIP (https:// via client-side mbedTLS), for
+ * webhooks, telemetry push, or REST calls from the device. The host is resolved
+ * via DNS (or used directly if it is a dotted-quad IP); the response status and
+ * body are returned in a fixed static buffer (no heap).
+ *
+ * Flash, open Serial @ 115200. It fetches a URL once at boot and prints the
+ * status + body. Point URL at your own endpoint.
+ *
+ * NOTE: optional services are gated by a compile flag the *library* sources must
+ * also see; for PlatformIO enable it for the whole build, e.g.:
+ *     build_flags = -DDETWS_ENABLE_HTTP_CLIENT=1
+ *     ; for https:// add: -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_HTTP_CLIENT_TLS=1
+ *     ; to trace where a request stalls, add: -DDETWS_HTTP_CLIENT_DEBUG
+ * (Arduino IDE: set them in DetWebServerConfig.h.)
+ *
+ * https:// note: the server certificate is NOT verified (the device has no trust
+ * store) - the transport is encrypted but the peer is unauthenticated; pin or
+ * verify at the application layer if you need it.
+ */
+
+#define DETWS_ENABLE_HTTP_CLIENT 1
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical/physical.h"
+#include "services/http_client/http_client.h"
+#include <WiFi.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+
+static const char *URL = "http://example.com/";
+
+void setup()
+{
+    Serial.begin(115200);
+
+    init_wifi_physical(SSID, PASSWORD);
+    Serial.print("Connecting to WiFi");
+    while (!wifi_ready())
+    {
+        delay(250);
+        Serial.print('.');
+    }
+    Serial.print("\nIP: ");
+    Serial.println(WiFi.localIP());
+    WiFi.setSleep(false);
+
+    HttpClientResult r;
+    int status = http_get(URL, &r);
+    if (status < 0)
+    {
+        Serial.printf("request failed (error %d)\n", status);
+    }
+    else
+    {
+        Serial.printf("HTTP %d, %u body bytes:\n", r.status, (unsigned)r.body_len);
+        Serial.write(r.body, r.body_len);
+        Serial.println();
+    }
+}
+
+void loop()
+{
+    delay(1000);
+}

@@ -26,6 +26,9 @@
 #if DETWS_ENABLE_TLS
 #include "../presentation/http_parser.h"
 #include "../tls/det_tls.h"
+#if DETWS_ENABLE_WEBSOCKET
+#include "../presentation/websocket.h"
+#endif
 
 // Abort a TLS connection (fatal handshake/read error): free the TLS context and
 // tear down the TCP slot (through the transport-layer connection API).
@@ -60,6 +63,14 @@ static void tls_data(uint8_t slot)
         if (h == 0)
             return; // still handshaking; wait for more ciphertext
     }
+
+#if DETWS_ENABLE_WEBSOCKET
+    // A TLS slot upgraded to WebSocket is pumped from handle() (it decrypts
+    // records and feeds the WS frame parser, dispatching each frame); leave the
+    // ciphertext in the rx ring for it rather than feeding the HTTP parser here.
+    if (ws_find(slot))
+        return;
+#endif
 
     uint8_t buf[256];
     int n;
@@ -107,7 +118,7 @@ void server_tick()
                 {
                 case PROTO_NONE: /* fallthrough - treat unset slots as HTTP */
                 case PROTO_HTTP:
-                    http_reset(evt.slot_id);
+                    http_conn_open(evt.slot_id); // resets parser + (keep-alive) the request tally
                     break;
                 case PROTO_TELNET:
 #if DETWS_ENABLE_TELNET

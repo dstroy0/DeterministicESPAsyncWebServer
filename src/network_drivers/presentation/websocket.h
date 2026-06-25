@@ -194,6 +194,19 @@ void ws_free(uint8_t slot_id);
 void ws_parse(WsConn *ws);
 
 /**
+ * @brief Feed one already-plaintext byte through the WS frame state machine.
+ *
+ * The per-byte core shared by ws_parse() (which reads the plaintext rx ring) and
+ * the TLS receive path (which decrypts ciphertext and feeds the plaintext here).
+ * Callers must stop feeding once parse_state reaches a terminal state
+ * (WS_FRAME_READY / WS_CLOSED / WS_ERROR) and dispatch/reset before continuing.
+ *
+ * @param ws    WebSocket connection.
+ * @param byte  Next plaintext byte of the client frame stream.
+ */
+void ws_feed_byte(WsConn *ws, uint8_t byte);
+
+/**
  * @brief Reset the frame parser back to WS_HEADER1, ready for the next frame.
  *
  * Does not change ws->active or ws->slot_id.

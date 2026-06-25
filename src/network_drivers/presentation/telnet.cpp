@@ -91,7 +91,7 @@ void telnet_accept(uint8_t slot)
             det_conn_detach(p);
             c->state = CONN_FREE;
             c->pcb = nullptr;
-            det_conn_close(p);
+            det_conn_close(slot, p);
         }
         return;
     }

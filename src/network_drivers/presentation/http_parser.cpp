@@ -14,8 +14,8 @@
 
 HttpReq http_pool[MAX_CONNS];
 
-#if DETWS_ENABLE_OTA
-// Streaming-body hooks (OTA). Null unless the application installs them.
+#if DETWS_ENABLE_STREAM_BODY
+// Streaming-body hooks (OTA / file upload). Null unless the application installs them.
 static HttpStreamBeginCb g_stream_begin = nullptr;
 static HttpStreamDataCb g_stream_data = nullptr;
 
@@ -24,7 +24,7 @@ void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data
     g_stream_begin = begin;
     g_stream_data = data;
 }
-#endif // DETWS_ENABLE_OTA
+#endif // DETWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
 // FNV-1a hash constants for HTTP version validation
@@ -301,9 +301,9 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             p->cur_key[k] = '\0';
             p->parse_state = PARSE_HEADER_VAL;
             p->current_token_idx = 0;
-#if DETWS_ENABLE_AUTH
-            // The Authorization value (Digest) exceeds MAX_VAL_LEN, so capture
-            // it whole into a dedicated buffer independent of the scratch value.
+#if DETWS_CAPTURE_AUTH_HEADER
+            // The Authorization value (Digest / JWT bearer) exceeds MAX_VAL_LEN,
+            // so capture it whole into a dedicated buffer independent of scratch.
             p->cur_is_auth = (strcasecmp(p->cur_key, "Authorization") == 0);
             if (p->cur_is_auth)
                 p->auth_idx = 0;
@@ -346,7 +346,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // Terminate the scratch value so detection sees a clean C string.
             size_t vlen = p->current_token_idx < MAX_VAL_LEN ? p->current_token_idx : MAX_VAL_LEN - 1;
             p->cur_val[vlen] = '\0';
-#if DETWS_ENABLE_AUTH
+#if DETWS_CAPTURE_AUTH_HEADER
             if (p->cur_is_auth)
             {
                 p->authorization[p->auth_idx] = '\0';
@@ -399,9 +399,9 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else
         {
-#if DETWS_ENABLE_AUTH
-            // Capture the full Authorization value (Digest) past MAX_VAL_LEN.
-            if (p->cur_is_auth && p->auth_idx < DIGEST_AUTH_HDR_MAX - 1)
+#if DETWS_CAPTURE_AUTH_HEADER
+            // Capture the full Authorization value (Digest / JWT) past MAX_VAL_LEN.
+            if (p->cur_is_auth && p->auth_idx < DETWS_AUTH_HDR_CAP - 1)
                 p->authorization[p->auth_idx++] = c;
 #endif
             if (p->current_token_idx < MAX_VAL_LEN - 1)
@@ -438,11 +438,11 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
 #endif
             if (host_violation)
                 p->parse_state = PARSE_ERROR;
-#if DETWS_ENABLE_OTA
-            // Streaming sink (OTA): all headers are parsed here, so the hook can
-            // match method/path/Authorization and begin a sink (e.g. Update).
-            // If it accepts, the body streams in chunks and the size cap is
-            // bypassed; the matching route handler still runs at PARSE_COMPLETE.
+#if DETWS_ENABLE_STREAM_BODY
+            // Streaming sink (OTA / upload): all headers are parsed here, so the
+            // hook can match method/path/Authorization and begin a sink (Update
+            // or a file). If it accepts, the body streams in chunks and the size
+            // cap is bypassed; the matching route handler still runs at COMPLETE.
             else if (p->content_length > 0 && g_stream_begin && g_stream_begin(p))
             {
                 p->body_streaming = true;
@@ -469,7 +469,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
 
     case PARSE_BODY:
         // Body is opaque data - no character validation.
-#if DETWS_ENABLE_OTA
+#if DETWS_ENABLE_STREAM_BODY
         if (p->body_streaming)
         {
             // Reuse body[] as a flush buffer: fill it, then hand whole chunks to

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 18.mDNS.ino
+ * @file 37.mDNS.ino
  * @brief Advertise the device over mDNS / DNS-SD (DETWS_ENABLE_MDNS).
  *
  * detws_mdns_begin(hostname, port) makes the device reachable at

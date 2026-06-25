@@ -33,6 +33,97 @@
 #include "network_drivers/tls/det_tls.h"
 #endif
 
+// ---------------------------------------------------------------------------
+// Cross-thread TCP serialization
+// ---------------------------------------------------------------------------
+// The raw lwIP API is not thread-safe: its callbacks run in the tcpip_thread
+// task, while this library issues writes/closes from the Arduino main-loop task.
+// Calling tcp_*() from the main loop concurrently with tcpip_thread processing
+// an inbound segment corrupts the PCB state - under a streaming upload (the peer
+// is actively sending as the server responds/closes) it trips lwIP's
+// "tcp_receive: wrong state" assert and panics.
+//
+// Arduino-esp32 ships lwIP with LWIP_TCPIP_CORE_LOCKING disabled, so
+// LOCK_TCPIP_CORE() is a no-op. The portable fix is tcpip_api_call(): it runs a
+// function *inside* tcpip_thread and blocks the caller until it completes, so
+// every main-loop-originated tcp_*() executes in the one safe context. lwIP's
+// own callbacks already run in that context and must NOT marshal again (they
+// call tcp_*() directly).
+#if defined(ARDUINO)
+#include "lwip/priv/tcpip_priv.h"
+#include <string.h>
+
+enum DetTcpOp
+{
+    DET_OP_SEND,
+    DET_OP_OUTPUT,
+    DET_OP_CLOSE,
+    DET_OP_ABORT,
+    DET_OP_DETACH
+};
+
+struct DetTcpCall
+{
+    struct tcpip_api_call_data base;
+    DetTcpOp op;
+    uint8_t slot;
+    struct tcp_pcb *pcb;
+    const void *data;
+    u16_t len;
+};
+
+// Runs in tcpip_thread (via tcpip_api_call). Performs the requested raw lwIP op
+// in the one context where it is safe; TLS record I/O (which also reaches
+// tcp_write through the BIO) is done here too.
+static err_t det_tcp_do(struct tcpip_api_call_data *c)
+{
+    DetTcpCall *k = (DetTcpCall *)c;
+    switch (k->op)
+    {
+    case DET_OP_SEND:
+#if DETWS_ENABLE_TLS
+        if (conn_pool[k->slot].tls)
+        {
+            det_tls_write(k->slot, k->data, k->len);
+            break;
+        }
+#endif
+        tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
+        break;
+    case DET_OP_OUTPUT:
+        tcp_output(k->pcb);
+        break;
+    case DET_OP_CLOSE:
+#if DETWS_ENABLE_TLS
+        if (conn_pool[k->slot].tls)
+            det_tls_conn_end(k->slot); // close_notify + free the TLS context
+#endif
+        if (tcp_close(k->pcb) != ERR_OK)
+            tcp_abort(k->pcb);
+        break;
+    case DET_OP_ABORT:
+        tcp_abort(k->pcb);
+        break;
+    case DET_OP_DETACH:
+        tcp_arg(k->pcb, nullptr);
+        break;
+    }
+    return ERR_OK;
+}
+
+static inline void det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+{
+    DetTcpCall k;
+    memset(&k, 0, sizeof(k));
+    k.op = op;
+    k.slot = slot;
+    k.pcb = pcb;
+    k.data = data;
+    k.len = len;
+    tcpip_api_call(det_tcp_do, &k.base);
+}
+#endif // ARDUINO
+
 TcpConn conn_pool[MAX_CONNS];
 
 uint32_t detws_ap_ip = 0;
@@ -50,6 +141,9 @@ uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 
 void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
 {
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_SEND, slot, pcb, data, len); // runs the write in tcpip_thread
+#else
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
     {
@@ -59,39 +153,58 @@ void det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t le
 #endif
     (void)slot;
     tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
+#endif
 }
 
 void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
 {
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
-    {
-        det_tls_conn_end(slot); // emits close_notify; the TCP close follows
-        return;
-    }
+        return; // ciphertext was already pushed by the TLS BIO (tcp_output per record);
+                // flush must NOT end the session - persistent TLS (wss / TLS SSE) reuses it
 #endif
     (void)slot;
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_OUTPUT, slot, pcb, nullptr, 0);
+#else
     tcp_output(pcb);
+#endif
 }
 
-void det_conn_close(struct tcp_pcb *pcb)
+void det_conn_close(uint8_t slot, struct tcp_pcb *pcb)
 {
-    // Graceful close; fall back to abort if lwIP cannot queue the FIN (no memory).
+    (void)slot;
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_CLOSE, slot, pcb, nullptr, 0); // TLS teardown + FIN in tcpip_thread
+#else
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+        det_tls_conn_end(slot);
+#endif
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
+#endif
 }
 
 void det_conn_detach(struct tcp_pcb *pcb)
 {
     // Disassociate the slot from this pcb's lwIP callbacks before freeing the
     // slot, so any late callback for the pcb finds a null arg and does nothing.
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_DETACH, 0, pcb, nullptr, 0);
+#else
     tcp_arg(pcb, nullptr);
+#endif
 }
 
 void det_conn_abort(struct tcp_pcb *pcb)
 {
     // Hard reset (RST) for a fatal condition - no graceful FIN.
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_ABORT, 0, pcb, nullptr, 0);
+#else
     tcp_abort(pcb);
+#endif
 }
 
 /**
@@ -139,8 +252,8 @@ void DeterministicAsyncTCP::stop()
             struct tcp_pcb *pcb = conn_pool[i].pcb;
             conn_pool[i].state = CONN_FREE;
             conn_pool[i].pcb = nullptr;
-            tcp_arg(pcb, nullptr);
-            tcp_abort(pcb);
+            det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
+            det_conn_abort(pcb);
         }
         conn_pool[i].state = CONN_FREE;
         conn_pool[i].pcb = nullptr;
@@ -168,8 +281,8 @@ void DeterministicAsyncTCP::check_timeouts()
         slot->pcb = nullptr;
         if (pcb)
         {
-            tcp_arg(pcb, nullptr);
-            tcp_abort(pcb);
+            det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
+            det_conn_abort(pcb);
         }
         TcpEvt evt = {EVT_ERROR, (uint8_t)i, 0};
         enqueue(slot, evt);
@@ -213,32 +326,40 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
 
     slot->last_activity_ms = millis();
 
+    /*
+     * Backpressure without data loss: if the whole segment will not fit in the
+     * free ring space, refuse it (return ERR_MEM without freeing) so lwIP retains
+     * it as refused_data and redelivers once the application has drained the
+     * ring; nudge the main loop to drain. The previous code copied what fit and
+     * dropped the rest, silently corrupting bodies larger than the ring (e.g.
+     * streamed uploads). NOTE: needs RX_BUF_SIZE > the largest incoming segment
+     * (TCP_MSS) so a full segment can eventually fit; smaller rings only ever see
+     * sub-MSS requests, which always fit.
+     */
+    size_t used = (slot->rx_head + RX_BUF_SIZE - slot->rx_tail) % RX_BUF_SIZE;
+    size_t free_space = (RX_BUF_SIZE - 1) - used; // keep one slot to tell full from empty
+    if (p->tot_len > free_space)
+    {
+        TcpEvt evt = {EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
+        enqueue(slot, evt);
+        return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
+    }
+
     size_t bytes_copied = 0;
-    bool full = false;
     struct pbuf *q = p;
-    while (q != nullptr && !full)
+    while (q != nullptr)
     {
         uint8_t *payload = (uint8_t *)q->payload;
         for (u16_t i = 0; i < q->len; i++)
         {
-            size_t next_head = (slot->rx_head + 1) % RX_BUF_SIZE;
-            if (next_head == slot->rx_tail)
-            {
-                full = true;
-                break;
-            }
             slot->rx_buffer[slot->rx_head] = payload[i];
-            slot->rx_head = next_head;
+            slot->rx_head = (slot->rx_head + 1) % RX_BUF_SIZE;
             bytes_copied++;
         }
         q = q->next;
     }
 
-    /*
-     * Acknowledge only bytes actually placed in the ring buffer.
-     * This shrinks the TCP receive window and applies backpressure if
-     * the application falls behind - data is never silently dropped.
-     */
+    // The whole segment was stored, so acknowledge all of it.
     tcp_recved(tpcb, (u16_t)bytes_copied);
     pbuf_free(p);
 

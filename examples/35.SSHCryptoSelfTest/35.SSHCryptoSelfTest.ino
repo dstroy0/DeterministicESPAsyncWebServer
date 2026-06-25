@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 30.SSHCryptoSelfTest.ino
+ * @file 35.SSHCryptoSelfTest.ino
  * @brief On-device check that the ESP32 hardware-accelerated SSH crypto is correct.
  *
  * Runs the streaming SHA-256, HMAC-SHA-256, and AES-256-CTR primitives - which

@@ -72,7 +72,7 @@ native Unity tests before moving on. Each must keep the "no heap after
       (4 cases). The nonce is now seeded from the hardware CSPRNG
       (`esp_random()`) folded through SHA-256 with a counter + `millis()`, and
       regenerated per `begin()`.
-      _Follow-up:_ `nc` (nonce-count) replay tracking is still not implemented —
+      _Follow-up:_ `nc` (nonce-count) replay tracking is still not implemented:
       it needs per-client state, which conflicts with the single shared server
       nonce and this device class's 1–2 client model (global `nc` tracking would
       reject legitimate concurrent clients). The per-`begin()` nonce rotation
@@ -122,23 +122,23 @@ native Unity tests before moving on. Each must keep the "no heap after
       check before relying on it under load.
 
 - [ ] **8. Stretch / lower priority.**
-  - [x] Regex routes _(done)_ — [`on_regex()`](@ref DetWebServer::on_regex):
+  - [x] Regex routes _(done)_: [`on_regex()`](@ref DetWebServer::on_regex):
         whole-path match via a bounded, allocation-free backtracker (`.`, `* + ?`,
         `[...]`/`[^...]` ranges, `\d \w \s`, `\` escapes; non-capturing). A
         `RE_MAX_STEPS` budget keeps it deterministic (fails closed). Tested by
-        `test_regex` (9 cases); example `20.RegexRoutes`.
-  - [x] Static JSON request/response helper _(done)_ — zero-heap `JsonWriter`
+        `test_regex` (9 cases); example `15.RegexRoutes`.
+  - [x] Static JSON request/response helper _(done)_: zero-heap `JsonWriter`
         (formats into a caller buffer, auto comma/escape, `JSON_MAX_DEPTH` cap)
         plus `json_get_str()`/`json_get_int()`/`json_get_bool()` top-level object
         readers (`src/network_drivers/presentation/json.*`). ArduinoJson stays optional (it heap-allocates).
-        Tested by `test_json` (17 cases); example `17.Json`.
-  - [x] Interface filters _(done)_ — per-route STA/AP gate via
+        Tested by `test_json` (17 cases); example `10.Json`.
+  - [x] Interface filters _(done)_: per-route STA/AP gate via
         [`on(..., DetIface)`](@ref DetWebServer::on) + [`set_ap_ip()`](@ref DetWebServer::set_ap_ip).
         Each connection is tagged `DETIFACE_STA`/`DETIFACE_AP` at accept time by
         comparing its local IP to the softAP IP. Tested by `test_iface` (7 cases);
-        example `19.InterfaceFilter`.
+        example `09.InterfaceFilter`.
   - [ ] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350). _(Deferred per
-        request — not pursued.)_
+        request: not pursued.)_
 
 </details>
 
@@ -276,7 +276,7 @@ native Unity tests before moving on. Each must keep the "no heap after
       accelerates per-packet HMAC **and** KEX hashing. The software FIPS-180-4 path
       is now compiled only on native (`#ifndef ARDUINO`). The `ssh_hmac_sha256.cpp`
       HW-acceleration comment is now accurate. Native software KATs still pass;
-      `examples/30.SSHCryptoSelfTest` validates the HW path on-device.
+      `examples/35.SSHCryptoSelfTest` validates the HW path on-device.
 
 - [x] **AES-256-CTR re-acquired the HW engine once per 16-byte block.** _(done)_
       The Arduino [`ssh_aes256ctr_crypt()`](@ref ssh_aes256ctr_crypt) now makes a single
@@ -284,7 +284,7 @@ native Unity tests before moving on. Each must keep the "no heap after
       `keystream` / `pos` fields map 1:1 to mbedtls's `nonce_counter` /
       `stream_block` / `nc_off`), replacing the per-block
       `mbedtls_aes_crypt_ecb()` loop. Native software path unchanged. Validated by
-      the native AES-CTR KATs and `examples/30.SSHCryptoSelfTest` on-device.
+      the native AES-CTR KATs and `examples/35.SSHCryptoSelfTest` on-device.
 
 </details>
 
@@ -322,7 +322,7 @@ by how often a deployed device needs it.
       `detws_mdns_begin(hostname, port)` (`src/services/mdns_service.*`) makes the
       device reachable at `<hostname>.local` and advertises `_http._tcp`. Uses the
       **ESP-IDF `mdns` component directly** (not the `ESPmDNS` add-on) to keep the
-      dependency set to base-SDK + mbedTLS. Firmware links (`examples/18.mDNS`).
+      dependency set to base-SDK + mbedTLS. Firmware links (`examples/37.mDNS`).
 
 - [x] **OTA firmware update ([`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)).** _(done)_ Authenticated
       streaming `POST /update` into the ESP32 `Update` API
@@ -332,12 +332,12 @@ by how often a deployed device needs it.
       `BODY_BUF_SIZE`/413 cap is bypassed and multi-MB images never live in RAM.
       The matching route handler replies + reboots. Parser hook native-tested
       (`test_http_ota`, env `native_ota`) with **no regression** to the 80 parser
-      tests (fully gated); `examples/21.OTA` firmware links.
+      tests (fully gated); `examples/38.OTA` firmware links.
 
 - [x] **WiFi provisioning / captive portal ([`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING)).** _(done)_
       `src/services/provisioning_service.*`: first-boot softAP + a catch-all DNS
       responder + a credentials form, persisting SSID/PSK to NVS
-      (`detws_provisioning_load`/`_begin`/`_clear`, `examples/23.Provisioning`).
+      (`detws_provisioning_load`/`_begin`/`_clear`, `examples/39.Provisioning`).
       The DNS responder is a **raw lwIP UDP socket** (no `DNSServer` add-on) -
       callback-driven, so no per-loop polling. The form-field/URL-decode parser is
       native-tested (`test_provisioning`, env `native_prov`); firmware links.
@@ -360,7 +360,7 @@ by how often a deployed device needs it.
 
 - [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ [`detws_ntp_begin()`](@ref detws_ntp_begin)/
       `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
-      `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/28.SNTP`
+      `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/40.SNTP`
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
 
@@ -377,14 +377,14 @@ by how often a deployed device needs it.
       `JSON_MAX_DEPTH` nesting cap; overflow flips `ok()` and truncates safely)
       plus top-level object readers `json_get_str()`/`json_get_int()`/
       `json_get_bool()` (`src/network_drivers/presentation/json.*`). ArduinoJson stays optional (it
-      heap-allocates). Tested by `test_json` (17); example `17.Json`.
+      heap-allocates). Tested by `test_json` (17); example `10.Json`.
 
 - [x] **Web "serial" terminal ([`DETWS_ENABLE_WEB_TERMINAL`](@ref DETWS_ENABLE_WEB_TERMINAL)).**
       _(done)_ A WebSerial-style browser terminal over the existing WebSocket
       layer (`src/services/web_terminal.*`): serves a self-contained CRT-themed
       page + a WebSocket endpoint, broadcasts device output to all browsers, and
       delivers typed lines to a command callback - all zero-heap. Tested by
-      `test_web_terminal` (7); example `34.WebTerminal`.
+      `test_web_terminal` (7); example `27.WebTerminal`.
 
 - [x] **HTTPS / TLS ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)).** _(done)_
       Opt-in mbedTLS on a static memory pool (`src/network_drivers/tls/det_tls.*`):
@@ -394,7 +394,7 @@ by how often a deployed device needs it.
       CSPRNG RNG; BIO bridged to the raw `tcp_pcb` + rx ring; handshake pumped in
       the session loop. `begin_tls(port, cert, …)` / [`listen_tls()`](@ref DetWebServer::listen_tls).
       HW-verified: `ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+. See SECURITY.md §6.
-      Example `15.HTTPS`. _Follow-ups:_ `wss://` + TLS-SSE (HTTP responses only
+      Example `22.HTTPS`. _Follow-ups:_ `wss://` + TLS-SSE (HTTP responses only
       for now; an upgrade on a TLS conn returns 501), session resumption, and
       `MAX_TLS_CONNS` > 1 (needs smaller IDF record buffers).
 
@@ -410,7 +410,7 @@ by how often a deployed device needs it.
         SET gated by a separate read-write community. `snmp_agent_process()` is a
         pure, host-testable core (13 tests); the transport-layer UDP service
         (`det_udp_listen`) on :161 carries datagrams (the same service the
-        provisioning DNS responder uses). `snmp_agent_*` API, example `27.SNMP`.
+        provisioning DNS responder uses). `snmp_agent_*` API, example `33.SNMP`.
         **HW-verified** with a UDP client: `snmpget`/walk of the system group in
         OID order, GetBulk, dynamic Gauge32, SET authorization (RO→noAccess,
         RW→success), v1 `noSuchName`, and unknown-community drop all behave per
@@ -430,7 +430,7 @@ by how often a deployed device needs it.
         AES-128 FIPS-197 KAT, and the full discovery -> authNoPriv -> authPriv
         flow. **HW-verified** against an independent manager (pycryptodome AES +
         Python hashlib/hmac): authNoPriv + authPriv GET/SET and the error Reports
-        interoperate byte-for-byte over real UDP. Example `27.SNMP` (set the
+        interoperate byte-for-byte over real UDP. Example `33.SNMP` (set the
         flag to enable the user). _Follow-up:_ derive the engine ID from the chip
         MAC; persist engineBoots across reboots.
 
@@ -522,7 +522,7 @@ Operator / sysadmin:
       SSH server (KEX→auth→channel), publickey auth, [`DETWS_SSH_ALLOW_PASSWORD`](@ref DETWS_SSH_ALLOW_PASSWORD),
       and the docs reorg.
 
-- [x] **Add an SSH usage example** _(done)_ - `examples/29.SSH/29.SSH.ino`:
+- [x] **Add an SSH usage example** _(done)_ - `examples/34.SSH/34.SSH.ino`:
       enables SSH, loads the host key from NVS ([`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey)), installs
       password + publickey auth callbacks and a channel data callback that echoes
       via the new [`ssh_conn_send()`](@ref ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a

@@ -662,7 +662,7 @@ details[open] > *:not(summary) {
                  0 0 14px rgba(64, 255, 64, 0.6) !important; /* glow on */
 }
 
-/* Keep the project name on one line — splitting the prefix into a link
+/* Keep the project name on one line, splitting the prefix into a link
    introduced a wrap opportunity that the single long word didn't have. */
 .navbar-libname {
     white-space: nowrap !important;
@@ -721,7 +721,7 @@ details[open] > *:not(summary) {
     transform-origin: 10px 12px;
 }
 
-/* Flapping mantle fins / wings — smooth undulating rotation about the
+/* Flapping mantle fins / wings: smooth undulating rotation about the
    point where each fin meets the mantle. */
 @keyframes squid-fin-flap-l {
     0%, 100% { transform: rotate(12deg); }
@@ -816,7 +816,7 @@ details[open] > *:not(summary) {
     filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.85));
 }
 
-/* Chromatophore colour-pulsing while hunting/striking — quick "weird" steps
+/* Chromatophore colour-pulsing while hunting/striking: quick "weird" steps
    through cyan -> magenta -> amber -> green, like a hunting squid flashing. */
 @keyframes squid-chromatophore {
     0%   { filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.7)) hue-rotate(0deg) saturate(1.2) brightness(1); }
@@ -905,7 +905,7 @@ details[open] > *:not(summary) {
    + green wash). The lifted near-black background (#080c08) set in the
    variables and rules above is part of this same calm direction. */
 
-/* Soft phosphor bloom on all text — the gentle glow of a real CRT. */
+/* Soft phosphor bloom on all text: the gentle glow of a real CRT. */
 body, body * {
     text-shadow: 0 0 1px rgba(0, 220, 90, 0.35);
 }
@@ -930,7 +930,7 @@ body::after {
             rgba(0, 0, 0, 0) 2px,
             rgba(0, 0, 0, 0.16) 3px,
             rgba(0, 0, 0, 0.16) 3px),
-        /* vignette — darker toward the corners like curved glass */
+        /* vignette: darker toward the corners like curved glass */
         radial-gradient(ellipse at center,
             rgba(0, 0, 0, 0) 70%,
             rgba(0, 0, 0, 0.22) 100%),

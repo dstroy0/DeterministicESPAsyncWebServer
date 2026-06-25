@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 35.WebTerminal.ino
+ * @file 27.WebTerminal.ino
  * @brief Browser "web serial" terminal over WebSocket (docs CRT theme).
  *
  * Serves a self-contained green-phosphor terminal page (matching the docs site)

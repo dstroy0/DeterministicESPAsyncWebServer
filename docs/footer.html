@@ -491,7 +491,7 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
 
         // The cursor only reports position while it's over the page. When it
         // leaves the viewport/window (e.g. onto another monitor) mousemove stops
-        // firing and the last coordinates go stale — mark it gone so Squirty
+        // firing and the last coordinates go stale: mark it gone so Squirty
         // doesn't chase an off-screen position, and break off any active hunt.
         const onCursorGone = () => {
             mouseX = -9999; mouseY = -9999;

@@ -1,0 +1,43 @@
+name: Release Arduino Library
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          path: 'library-source'
+
+      - name: Package Arduino Library
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          REPO_NAME=$(basename ${{ github.repository }})
+          
+          # 1. Create clean staging folder named after the library
+          mkdir "$REPO_NAME"
+          
+          # 2. Copy source files, ignoring Git metadata
+          rsync -rr --exclude='.git*' --exclude='library-source' library-source/ "$REPO_NAME/"
+          
+          # 3. Create the ZIP archive
+          zip -r "${REPO_NAME}-${TAG_NAME}.zip" "$REPO_NAME"
+          
+          # 4. Create the TARBALL (.tar.gz) archive
+          tar -czf "${REPO_NAME}-${TAG_NAME}.tar.gz" "$REPO_NAME"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            *.zip
+            *.tar.gz
+          generate_release_notes: true

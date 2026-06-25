@@ -6,6 +6,7 @@ typedef int8_t err_t;
 typedef uint16_t u16_t;
 
 #define ERR_OK ((err_t)0)
+#define ERR_MEM ((err_t) - 1)
 #define ERR_VAL ((err_t) - 6)
 #define ERR_ABRT ((err_t) - 8)
 

@@ -221,7 +221,14 @@ void ws_parse(WsConn *ws)
 
         uint8_t byte = conn->rx_buffer[conn->rx_tail];
         conn->rx_tail = (conn->rx_tail + 1) % RX_BUF_SIZE;
+        ws_feed_byte(ws, byte);
+    }
+}
 
+void ws_feed_byte(WsConn *ws, uint8_t byte)
+{
+    TcpConn *conn = &conn_pool[ws->slot_id];
+    {
         switch (ws->parse_state)
         {
         case WS_HEADER1:
