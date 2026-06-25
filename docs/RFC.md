@@ -158,6 +158,12 @@ fixed MIB table. Conformance:
   `error-status` (`noAccess` / `notWritable` / `wrongType`) in both versions.
   `GetBulk` honors `non-repeaters` / `max-repetitions`, clamped so the response
   never exceeds `SNMP_MAX_VARBINDS`; an over-large response degrades to `tooBig`.
+- **Notifications (RFC 3416 §4.2.6, optional `DETWS_ENABLE_SNMP_TRAP`):** outbound
+  `SNMPv2-Trap` and `InformRequest` PDUs, each opening with `sysUpTime.0`
+  (TimeTicks) and `snmpTrapOID.0` (the trap OID) followed by caller varbinds.
+  SNMPv2c uses the community envelope; SNMPv3 traps are USM authPriv, built from
+  the agent's engine ID and localized keys (the same message construction as v3
+  responses).
 - **MIB (RFC 1213):** the standard `system` group (`1.3.6.1.2.1.1`):
   `sysDescr`, `sysObjectID`, `sysUpTime` (`TimeTicks`), `sysContact`, `sysName`,
   `sysLocation`, `sysServices`: plus any application objects registered under a

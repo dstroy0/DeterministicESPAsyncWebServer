@@ -446,6 +446,28 @@
 #define DETWS_ENABLE_SNMP_V3 0
 #endif
 
+/**
+ * @brief Outbound SNMP notifications - traps and informs (requires DETWS_ENABLE_SNMP).
+ *
+ * Default off. When set, src/services/snmp/snmp_notify.h sends SNMPv2c (and, with
+ * DETWS_ENABLE_SNMP_V3, SNMPv3 USM) Trap / InformRequest PDUs to a manager over
+ * UDP - so the agent can push alerts instead of only answering polls. Reuses the
+ * BER codec and the transport-layer UDP service; the PDU builder is host-testable.
+ */
+#ifndef DETWS_ENABLE_SNMP_TRAP
+#define DETWS_ENABLE_SNMP_TRAP 0
+#endif
+
+/** @brief Maximum extra variable-bindings (beyond sysUpTime/snmpTrapOID) in one notification. */
+#ifndef DETWS_SNMP_TRAP_MAX_VARBINDS
+#define DETWS_SNMP_TRAP_MAX_VARBINDS 8
+#endif
+
+/** @brief Static datagram buffer for an outbound SNMP notification, bytes. */
+#ifndef DETWS_SNMP_TRAP_BUF_SIZE
+#define DETWS_SNMP_TRAP_BUF_SIZE 1024
+#endif
+
 /** @brief Maximum sub-identifiers (arcs) in an SNMP object identifier. */
 #ifndef SNMP_MAX_OID_LEN
 #define SNMP_MAX_OID_LEN 32
@@ -1471,6 +1493,10 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_WS_CLIENT_TLS && !DETWS_ENABLE_TLS
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_CLIENT_TLS requires DETWS_ENABLE_TLS"
+#endif
+
+#if DETWS_ENABLE_SNMP_TRAP && !DETWS_ENABLE_SNMP
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SNMP_TRAP requires DETWS_ENABLE_SNMP"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2

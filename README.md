@@ -39,6 +39,7 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 - **SSH 2.0 Server**: Zero-heap SSH stack with host-key verification and password/publickey authentication (hardware-accelerated crypto).
 - **Telnet Console**: Plaintext line-oriented console (RFC 854, IAC negotiation + server echo) for trusted networks.
 - **SNMP Agent**: v1/v2c plus optional v3 USM (HMAC-SHA-256 auth + AES-128 privacy) over UDP, with a zero-heap ASN.1 BER codec and a fixed MIB.
+- **SNMP Notifications**: Optional outbound Traps and InformRequests (`DETWS_ENABLE_SNMP_TRAP`) so the agent pushes alerts to a manager - SNMPv2c, and SNMPv3 USM (authPriv) traps reusing the agent's engine ID and localized keys. Each notification carries `sysUpTime.0` + `snmpTrapOID.0` plus caller varbinds; the PDU builder is host-tested.
 - **CoAP Server (RFC 7252)**: Zero-heap Constrained Application Protocol endpoint over UDP - a fixed resource table dispatched on Uri-Path, GET/POST/PUT/DELETE with piggybacked responses, Uri-Query and Content-Format options.
 - **HTTP Keep-Alive**: Optional HTTP/1.1 persistent connections - one TCP connection serves many requests (with a per-connection request cap and the existing idle timeout), transparent to handler code.
 - **HTTP Range Requests**: Optional `206 Partial Content` (RFC 7233) for served files - single-range `Range: bytes=...` requests stream just the requested bytes (resumable downloads, media seeking), with `Accept-Ranges` advertisement and `416` for unsatisfiable ranges.
