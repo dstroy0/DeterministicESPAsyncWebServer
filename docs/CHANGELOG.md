@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`312a004`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/312a004f09e34d34a1538e900f7f363ac3c8aa85))
+- update CHANGELOG.md [skip ci] ([`f06dace`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f06dace404f5cf346ccd25c2b16e20687a430f2f))
 - update test report [skip ci] ([`d3d0f45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d0f458714d3287a5b31a22fce25e4a70beb4e6))
 - update CHANGELOG.md [skip ci] ([`ca898c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca898c50625fe7023748dd56b5c7cd30c7e92c86))
 - update test report [skip ci] ([`01dda18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01dda1804f496e7124e5b7390566feb7a3939df2))
@@ -33,6 +35,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b7bcd45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bcd455947959c849b4be1293e2dbd6c19dedfe))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`daa0754`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daa0754717651b1a5f94753d036ab0d3cf432feb))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`32c0f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c0f73ded6c2dcc9890cea166f65db09e348c71))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`36b92b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36b92b3acb10b7d2c063b52cd5ab689e3a2f7bbe))
@@ -43,6 +46,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2bcb1ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2bcb1eef81c3c85360df5880b19680ed84f37181))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`96c5029`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96c50291de9dece7e815f911daee742da896a356))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`757ad23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/757ad230929d5989329160faa6eb36c5050eae66))
+
+### Documentation
+
+- smile, 9-way eyes, swim rotation, live-rock house, sticky timeout ([`c665c9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c665c9e4b1a2789fda25e593c39a84e531861e0d))
 
 ### Features
 
