@@ -611,7 +611,8 @@ details[open] > *:not(summary) {
 /* ---- Navbar Title Layout (Relocated Title area) -------------------- */
 .navbar-project-title {
     display: inline-block !important;
-    padding: 8px 16px !important;
+    padding: 6px 16px !important;
+    line-height: 22px !important; /* shared row height so the navbar add-ons align */
     font-weight: 700 !important;
     color: #2bb35a !important;
     text-shadow: 0 0 5px rgba(0, 192, 0, 0.5) !important;
@@ -834,13 +835,46 @@ details[open] > *:not(summary) {
     position: fixed;
     top: 46px;
     right: 10px;
-    width: 52px;
-    height: 52px;
-    z-index: 9997;
+    width: 60px;
+    height: 60px;
+    /* Above the CRT screen overlay (body::after, z 9998) so the house is not
+       washed out / hidden by the scanlines + corner vignette; still below the
+       squid (z 10000). */
+    z-index: 9999;
     pointer-events: none;
     image-rendering: pixelated;
-    opacity: 0.92;
-    filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
+    opacity: 0.96;
+    filter: drop-shadow(0 0 4px rgba(255, 126, 182, 0.35));
+}
+
+/* Chimney bubbles: idle (hidden) until Squirty is sent to his house, then they
+   rise out of the sponge and fade in a staggered loop. */
+#squirty-house .sq-bubble {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+#squirty-house.timeout .sq-bubble {
+    animation: sq-bubble-rise 1.8s linear infinite;
+}
+#squirty-house.timeout .sq-bubble.sq-b2 {
+    animation-delay: 0.6s;
+}
+#squirty-house.timeout .sq-bubble.sq-b3 {
+    animation-delay: 1.1s;
+}
+@keyframes sq-bubble-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.6);
+    }
+    25% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-7px) scale(1);
+    }
 }
 
 /* "Squirty timeout" toggle in the navbar. */
@@ -849,6 +883,8 @@ details[open] > *:not(summary) {
     display: inline-block !important;
     margin: 4px 6px !important;
     padding: 6px 12px !important;
+    line-height: 22px !important; /* shared row height so the navbar add-ons align */
+    vertical-align: middle !important;
     font-weight: 700 !important;
     font-size: 0.85rem !important;
     color: #00e5ff !important;
@@ -880,9 +916,9 @@ details[open] > *:not(summary) {
 /* Mascot Clicks Counter in Navbar Banner */
 .navbar-squirty-counter {
     float: right !important;
-    margin-left: auto !important;
     display: inline-block !important;
-    padding: 8px 16px !important;
+    padding: 6px 16px !important;
+    line-height: 22px !important; /* shared row height so the navbar add-ons align */
     font-weight: 700 !important;
     color: #40ff40 !important;
     text-shadow: 0 0 5px rgba(64, 255, 64, 0.6) !important;
