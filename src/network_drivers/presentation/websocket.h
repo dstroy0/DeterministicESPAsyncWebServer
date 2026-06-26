@@ -145,6 +145,11 @@ struct WsConn
     WsOpcode msg_opcode;      ///< Opcode of the data message being assembled.
     uint32_t msg_len;         ///< Bytes assembled so far across all fragments.
     uint8_t ctl_buf[125 + 1]; ///< Control-frame payload (ping/pong/close), null-terminated.
+
+#if DETWS_ENABLE_WS_DEFLATE
+    bool pmd;            ///< permessage-deflate negotiated on this connection (RFC 7692).
+    bool msg_compressed; ///< Current data message arrived compressed (RSV1 on its first frame).
+#endif
 };
 
 /** @brief Pool of WebSocket connection state, one per MAX_WS_CONNS. */

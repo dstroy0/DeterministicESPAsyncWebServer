@@ -7,6 +7,7 @@
  */
 
 #include "ssh_packet.h"
+#include "network_drivers/session/scratch.h"
 #include "ssh_hmac_sha256.h"
 #include "ssh_keymat.h"
 #include <string.h>
@@ -163,10 +164,6 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
     // Extract complete packets.
     while (s->rx_len >= 4)
     {
-        // Use a stack scratch area for the current packet's plaintext.
-        // Maximum SSH packet = SSH_PKT_BUF_SIZE bytes.
-        uint8_t scratch[SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN];
-
         if (s->encrypted)
         {
             // We need the first cipher block (16 bytes) to read packet_length.
@@ -212,6 +209,20 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             if (s->rx_len < wire_need)
                 break; // incomplete packet; cipher state already restored
 
+            // Borrow this packet's plaintext scratch from the shared arena. The
+            // scope guard reclaims it on every exit path, so multiple packets in
+            // one call reuse the same space instead of accumulating; an exhausted
+            // arena fails closed (discard + disconnect).
+            const size_t scratch_sz = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+            ScratchScope scratch_scope;
+            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+            if (!scratch)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+
             // Full packet present.  Decrypt EXACTLY the encrypted portion,
             // which advances c2s_ctx by exactly enc_len/16 blocks and leaves
             // the cipher aligned on the next packet boundary.
@@ -226,7 +237,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             if (ct_memcmp(expected_mac, rx_mac, SSH_HMAC_SHA256_LEN) != 0)
             {
                 // MAC failure: zero everything and disconnect.
-                ssh_wipe(scratch, sizeof(scratch));
+                ssh_wipe(scratch, scratch_sz);
                 ssh_wipe(expected_mac, sizeof(expected_mac));
                 ssh_wipe(s->rx_buf, s->rx_len);
                 s->rx_len = 0;
@@ -237,7 +248,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             // MAC verified.  Sequence overflow guard.
             if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
             {
-                ssh_wipe(scratch, sizeof(scratch));
+                ssh_wipe(scratch, scratch_sz);
                 return -1;
             }
             s->seq_no_recv++;
@@ -246,7 +257,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             uint8_t pad_len_byte = scratch[4];
             if (pad_len_byte >= pkt_len)
             {
-                ssh_wipe(scratch, sizeof(scratch));
+                ssh_wipe(scratch, scratch_sz);
                 return -1;
             }
             size_t payload_len = pkt_len - 1 - pad_len_byte;
@@ -257,7 +268,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             size_t consumed = wire_need;
             memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
             s->rx_len -= consumed;
-            ssh_wipe(scratch, sizeof(scratch));
+            ssh_wipe(scratch, scratch_sz);
         }
         else
         {

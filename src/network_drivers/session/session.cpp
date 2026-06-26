@@ -17,6 +17,7 @@
 #include "session.h"
 #include "../transport/listener.h"
 #include "proto_handler.h"
+#include "scratch.h"
 #if DETWS_ENABLE_SSH
 #include "../presentation/ssh/ssh_conn.h"
 #endif
@@ -187,6 +188,12 @@ void server_tick()
         TcpEvt evt;
         while (xQueueReceive(lst->queue, &evt, 0) == pdTRUE)
         {
+            // Per-dispatch reset of the shared scratch arena: every handler runs
+            // with the whole arena available, and any scratch it borrows is
+            // reclaimed before the next event - the backstop that stops a
+            // forgotten release from accumulating across events.
+            scratch_reset();
+
             // Route the event to the slot's protocol handler (PROTO_NONE and any
             // unregistered protocol fall back to HTTP, preserving legacy behavior).
             const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);

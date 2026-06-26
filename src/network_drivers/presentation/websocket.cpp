@@ -19,6 +19,11 @@
 #include "network_drivers/transport/transport.h"
 #include <string.h>
 
+#if DETWS_ENABLE_WS_DEFLATE
+#include "inflate.h"
+#include "network_drivers/session/scratch.h"
+#endif
+
 WsConn ws_pool[MAX_WS_CONNS];
 
 void ws_init()
@@ -190,6 +195,48 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 
     if (ws->fin)
     {
+#if DETWS_ENABLE_WS_DEFLATE
+        // permessage-deflate: decompress the reassembled message before delivery.
+        // The compressed bytes are in ws->buf; append the RFC 7692 00 00 ff ff
+        // marker, INFLATE into an arena buffer, and copy the result back. All
+        // scratch is borrowed per-dispatch and released when this scope exits.
+        if (ws->msg_compressed)
+        {
+            ScratchScope scope;
+            size_t comp_len = ws->msg_len;
+            uint8_t *in = (uint8_t *)scratch_alloc(comp_len + 4, 1);
+            uint8_t *out = (uint8_t *)scratch_alloc(WS_FRAME_SIZE, 1);
+            uint8_t *tbl = (uint8_t *)scratch_alloc(INFLATE_SCRATCH_SIZE, 16);
+            if (!in || !out || !tbl)
+            {
+                ws_close(ws, WS_CLOSE_PROTOCOL); // arena exhausted: fail closed
+                ws->parse_state = WS_ERROR;
+                return;
+            }
+            memcpy(in, ws->buf, comp_len);
+            in[comp_len] = 0x00;
+            in[comp_len + 1] = 0x00;
+            in[comp_len + 2] = 0xff;
+            in[comp_len + 3] = 0xff;
+            size_t dlen = 0;
+            int rc = inflate_raw(in, comp_len + 4, out, WS_FRAME_SIZE, &dlen, tbl, INFLATE_SCRATCH_SIZE);
+            if (rc == INFLATE_ERR_OVERFLOW)
+            {
+                ws_close(ws, WS_CLOSE_TOO_BIG);
+                ws->parse_state = WS_ERROR;
+                return;
+            }
+            if (rc != INFLATE_OK)
+            {
+                ws_close(ws, WS_CLOSE_PROTOCOL);
+                ws->parse_state = WS_ERROR;
+                return;
+            }
+            memcpy(ws->buf, out, dlen);
+            ws->msg_len = dlen;
+            ws->msg_compressed = false;
+        }
+#endif
         // Whole message received - surface it to the application.
         size_t n = ws->msg_len < WS_FRAME_SIZE ? ws->msg_len : WS_FRAME_SIZE;
         ws->buf[n] = '\0';
@@ -231,15 +278,11 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
     {
         switch (ws->parse_state)
         {
-        case WS_HEADER1:
+        case WS_HEADER1: {
             ws->fin = (byte & 0x80) != 0;
-            // RSV1-3 must be zero (no extensions)
-            if (byte & 0x70)
-            {
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
-                return;
-            }
+            // RSV bits are validated below, once the opcode / message position is
+            // known (RSV1 is permessage-deflate's per-message "compressed" flag).
+            uint8_t rsv = byte & 0x70;
             ws->opcode = (WsOpcode)(byte & 0x0F);
             // RFC 6455 §5.2: only opcodes 0x0/0x1/0x2 (data) and 0x8/0x9/0xA
             // (control) are defined; everything else MUST fail the connection.
@@ -290,10 +333,36 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
                     // Start of a new data message.
                     ws->msg_opcode = ws->opcode;
                     ws->msg_len = 0;
+#if DETWS_ENABLE_WS_DEFLATE
+                    // RSV1 on the first frame of a data message marks it compressed
+                    // (RFC 7692); only honored when permessage-deflate was negotiated.
+                    ws->msg_compressed = ws->pmd && (rsv & 0x40);
+#endif
                 }
             }
+            // Validate reserved bits. RSV2/RSV3 are never legal; RSV1 is legal only
+            // as the per-message compression flag set above (pmd + new data frame).
+#if DETWS_ENABLE_WS_DEFLATE
+            {
+                bool new_data = !ws_is_control(ws->opcode) && ws->opcode != WS_OP_CONTINUATION;
+                if ((rsv & 0x30) || ((rsv & 0x40) && !(ws->pmd && new_data)))
+                {
+                    ws_close(ws, WS_CLOSE_PROTOCOL);
+                    ws->parse_state = WS_ERROR;
+                    return;
+                }
+            }
+#else
+            if (rsv)
+            {
+                ws_close(ws, WS_CLOSE_PROTOCOL);
+                ws->parse_state = WS_ERROR;
+                return;
+            }
+#endif
             ws->parse_state = WS_HEADER2;
             break;
+        }
 
         case WS_HEADER2:
             ws->masked = (byte & 0x80) != 0;
