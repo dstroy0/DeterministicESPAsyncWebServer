@@ -1421,7 +1421,7 @@
  * workload; an over-budget borrow fails closed (scratch_alloc returns nullptr).
  */
 #ifndef DETWS_SCRATCH_ARENA_SIZE
-#define DETWS_SCRATCH_ARENA_SIZE 6144
+#define DETWS_SCRATCH_ARENA_SIZE 8192
 #endif
 
 // ---------------------------------------------------------------------------
