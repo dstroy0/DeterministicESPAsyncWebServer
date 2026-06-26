@@ -223,6 +223,7 @@ DetWebServer::DetWebServer()
     for (int i = 0; i < MAX_MIDDLEWARE; i++)
         _middleware[i] = nullptr;
     _cors_header_buf[0] = '\0';
+    _cache_control_buf[0] = '\0';
     for (int i = 0; i < MAX_CONNS; i++)
         _extra_hdr[i][0] = '\0';
 #if DETWS_ENABLE_AUTH
@@ -650,6 +651,16 @@ void DetWebServer::set_cors(const char *origin)
              "Access-Control-Allow-Headers: Content-Type\r\n",
              origin);
     _cors_enabled = true;
+}
+
+void DetWebServer::set_cache_control(const char *value)
+{
+    if (!value || value[0] == '\0')
+    {
+        _cache_control_buf[0] = '\0';
+        return;
+    }
+    snprintf(_cache_control_buf, CACHE_CONTROL_BUF_SIZE, "Cache-Control: %s\r\n", value);
 }
 
 /**
@@ -2487,8 +2498,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         f.close();
         struct tcp_pcb *p304 = resp_begin(slot_id, keep);
         char h304[RESP_HDR_BUF_SIZE];
-        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s\r\n", etag,
-                            _cors_enabled ? _cors_header_buf : "", cl);
+        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s\r\n", etag,
+                            _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
         det_conn_send(slot_id, p304, h304, (u16_t)n304);
         resp_end(slot_id, p304, 304, 0, keep);
         return;
@@ -2541,10 +2552,10 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
                         "Content-Length: %u\r\n"
-                        "%s%s%s%s%s"
+                        "%s%s%s%s%s%s"
                         "%s\r\n",
                         status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line,
-                        enc_line, etag_line, _cors_enabled ? _cors_header_buf : "", cl);
+                        enc_line, etag_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 

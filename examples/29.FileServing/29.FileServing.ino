@@ -45,6 +45,8 @@ void setup()
 
     // Map the URL tree "/" onto the "/www" directory in LittleFS.
     server.serve_static("/", LittleFS, "/www");
+    // Cache assets for an hour; browsers still revalidate cheaply via the ETag.
+    server.set_cache_control("max-age=3600");
     server.begin(80);
 }
 

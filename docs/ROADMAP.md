@@ -15,9 +15,9 @@ flag (default off) so it costs nothing when unused.
 
 ## Recommended near-term order (value vs. risk)
 
-1. **Quick wins (mostly already there):** Cache-Control beside ETag (S), runtime
-   build-flag endpoint (S), Bonjour TXT / `_https._tcp` enrichment (S), raw-UDP
-   telemetry helper (S), MAC-derived UUID (S).
+1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
+   runtime build-flag endpoint (S), Bonjour TXT / `_https._tcp` enrichment (S),
+   raw-UDP telemetry helper (S), MAC-derived UUID (S).
 2. **Security hardening cluster:** CSRF token, brute-force lockout, IP whitelist -
    all fit the existing middleware + accept-callback + per-IP throttle.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
@@ -31,7 +31,8 @@ flag (default off) so it costs nothing when unused.
 - [x] REST substrate, AJAX _(shipped)_.
 - [ ] Real-time **dashboard configurator** (L) - user telemetry callback + hand-rolled SVG/Canvas widgets (no external JS), via the `web_assets` pipeline, live over SSE/WS. **Flagship.**
 - [ ] **Telemetry math** cluster (M, host-testable; feeds the dashboard): moving-window stats (mean/stddev/variance), derivative rate-of-change triggers, run-time totalizers/odometer.
-- [ ] HTTP caching/delivery (S-M): Cache-Control beside ETag, stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
+- [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
+- [ ] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
 - [ ] Binary streaming (M-L): CBOR / MessagePack, or Protobuf / FlatBuffers zero-copy instead of JSON.
 - [ ] GraphQL bounded subset (L); feature-dependent schema generation (M).
 - [ ] Browser diag tools (M): GPIO pin mapper, ping/tracert panel, web logic analyzer.

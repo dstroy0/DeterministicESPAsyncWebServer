@@ -646,6 +646,34 @@ void test_serve_static_file_and_mime()
     TEST_ASSERT_NOT_NULL(strstr(out, "body{color:red}"));
 }
 
+void test_serve_static_cache_control()
+{
+    fs::mock_fs_reset();
+    static const char css[] = "body{color:red}";
+    fs::mock_fs_add("/www/style.css", css);
+    g_server->serve_static("/", g_static_fs, "/www");
+
+    g_server->set_cache_control("max-age=3600");
+    arm_slot(0, "GET /style.css HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Cache-Control: max-age=3600"));
+
+    // Clearing it removes the header (and restores the default for later tests).
+    g_server->set_cache_control("");
+    arm_slot(0, "GET /style.css HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NULL(strstr(out, "Cache-Control:"));
+}
+
 void test_serve_static_index_fallback()
 {
     fs::mock_fs_reset();
@@ -935,6 +963,7 @@ int main()
     RUN_TEST(test_serve_static_traversal_not_leaked);
     RUN_TEST(test_serve_static_missing_is_404);
     RUN_TEST(test_serve_static_etag_conditional_get);
+    RUN_TEST(test_serve_static_cache_control);
 
     RUN_TEST(test_request_log_hook_fires);
     RUN_TEST(test_stats_endpoint_emits_json);

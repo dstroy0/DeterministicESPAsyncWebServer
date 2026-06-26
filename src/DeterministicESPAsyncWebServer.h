@@ -438,6 +438,14 @@ class DetWebServer
     char _cors_header_buf[CORS_HDR_BUF_SIZE];
 
     /**
+     * @brief Pre-built `Cache-Control: <value>\r\n` line, or "" when unset.
+     *
+     * Set by set_cache_control(); injected into serve_file() / serve_static()
+     * responses beside the ETag. Empty by default (no header emitted).
+     */
+    char _cache_control_buf[CACHE_CONTROL_BUF_SIZE];
+
+    /**
      * @brief Per-slot buffer for app-supplied custom response headers/cookies.
      *
      * Filled via add_response_header() / set_cookie() during a handler and
@@ -1002,6 +1010,18 @@ class DetWebServer
      *               `"https://example.com"`.  Pass `""` to disable CORS.
      */
     void set_cors(const char *origin);
+
+    /**
+     * @brief Set the `Cache-Control` header emitted for static files.
+     *
+     * Applies to serve_file() / serve_static() responses (beside the ETag), so
+     * browsers can cache assets and revalidate cheaply with `If-None-Match`.
+     * Examples: `"no-cache"` (cache but always revalidate), `"max-age=3600"`,
+     * `"public, max-age=31536000, immutable"`. Pass `""` / `nullptr` to disable.
+     *
+     * @param value `Cache-Control` directive, or empty/null to emit no header.
+     */
+    void set_cache_control(const char *value);
 
     /**
      * @brief Drive the server - call every Arduino `loop()` iteration.

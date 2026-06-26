@@ -355,6 +355,16 @@
 #define CORS_HDR_BUF_SIZE 192
 #endif
 
+/**
+ * @brief Size of the optional Cache-Control header line stored in DetWebServer.
+ *
+ * Built once by set_cache_control() and injected into static-file responses
+ * (serve_file / serve_static) beside the ETag. Holds "Cache-Control: <value>\r\n".
+ */
+#ifndef CACHE_CONTROL_BUF_SIZE
+#define CACHE_CONTROL_BUF_SIZE 64
+#endif
+
 // ---------------------------------------------------------------------------
 // Feature flags
 // ---------------------------------------------------------------------------
