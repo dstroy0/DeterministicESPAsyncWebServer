@@ -528,9 +528,12 @@ Other documentation files in this repository:
 | [RFC.md](RFC.md)                               | HTTP/1.1, WebSocket, and error-response RFC conformance tables    |
 | [SSH.md](SSH.md)                               | SSH-2.0 server: features, RFC/FIPS compliance, auth, memory       |
 | [SECURITY.md](SECURITY.md)                     | Security posture (good/ok/bad) and per-feature security treatment |
+| [CODEQL.md](CODEQL.md)                         | CodeQL static-analysis setup, coverage, and findings disposition  |
 | [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md) | Test suites, environments, and how to run them                    |
 | [TEST_REPORT.md](TEST_REPORT.md)               | Latest test results (auto-generated)                              |
-| [TODO.md](TODO.md)                             | Outstanding fixes and known limitations                           |
+| [TODO.md](TODO.md)                             | Outstanding fixes and maintenance                                 |
+| [ROADMAP.md](ROADMAP.md)                       | Forward-looking feature backlog (sized S/M/L)                     |
+| [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)   | Deliberate constraints and caveats                                |
 | [CHANGELOG.md](CHANGELOG.md)                   | Release history                                                   |
 
 </details>
