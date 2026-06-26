@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`b2a90ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2a90ab21483d80ec378f589c27da840cf6a8f51))
+- update CHANGELOG.md [skip ci] ([`b02da18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b02da18dfa9226eeb03ad0c95826e71bebda7977))
 - update test report [skip ci] ([`312a004`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/312a004f09e34d34a1538e900f7f363ac3c8aa85))
 - update CHANGELOG.md [skip ci] ([`f06dace`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f06dace404f5cf346ccd25c2b16e20687a430f2f))
 - update test report [skip ci] ([`d3d0f45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d0f458714d3287a5b31a22fce25e4a70beb4e6))
@@ -35,6 +37,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`d726657`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d72665707eea0e4e03e741167ec08ae50023f32b))
 - Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`b7bcd45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bcd455947959c849b4be1293e2dbd6c19dedfe))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`daa0754`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daa0754717651b1a5f94753d036ab0d3cf432feb))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`32c0f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c0f73ded6c2dcc9890cea166f65db09e348c71))
@@ -49,6 +52,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- format ([`c4316fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4316fb1211968445f4572d76c7a363f9d48bda2))
 - smile, 9-way eyes, swim rotation, live-rock house, sticky timeout ([`c665c9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c665c9e4b1a2789fda25e593c39a84e531861e0d))
 
 ### Features
