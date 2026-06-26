@@ -395,7 +395,9 @@
     "SARIF",
     "qls",
     "constexpr",
-    "fnv"
+    "fnv",
+    "pentesting",
+    "slowloris"
   ],
   "ignorePaths": [
     "node_modules/**",
