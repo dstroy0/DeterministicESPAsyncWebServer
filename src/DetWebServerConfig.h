@@ -1143,6 +1143,42 @@
 #define DETWS_ACCEPT_THROTTLE_WINDOW_MS 1000
 #endif
 
+/**
+ * @brief Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4).
+ *
+ * Default off (zero cost / no behavior change). Complements the global accept
+ * throttle: the accept callback rejects a new connection once one source IPv4
+ * address has opened more than DETWS_PER_IP_THROTTLE_MAX connections within a
+ * DETWS_PER_IP_THROTTLE_WINDOW_MS fixed window. A fixed BSS table of
+ * DETWS_PER_IP_THROTTLE_SLOTS buckets tracks the most-recently-seen source
+ * addresses; when a new address arrives and the table is full, an expired or
+ * least-recently-started bucket is reused, so memory stays bounded (no heap).
+ *
+ * This bounds reconnect/brute-force churn from a single host (the gap left by the
+ * global throttle, which cannot tell one noisy client from many). It is
+ * best-effort: an attacker spreading across many source addresses can still churn
+ * the bounded connection pool, so combine it with the global throttle and
+ * network-layer filtering.
+ */
+#ifndef DETWS_ENABLE_PER_IP_THROTTLE
+#define DETWS_ENABLE_PER_IP_THROTTLE 0
+#endif
+
+/** @brief Number of source IPv4 addresses tracked by the per-IP throttle (BSS bucket table). */
+#ifndef DETWS_PER_IP_THROTTLE_SLOTS
+#define DETWS_PER_IP_THROTTLE_SLOTS 16
+#endif
+
+/** @brief Max accepted connections per window from one source IP (see DETWS_ENABLE_PER_IP_THROTTLE). */
+#ifndef DETWS_PER_IP_THROTTLE_MAX
+#define DETWS_PER_IP_THROTTLE_MAX 10
+#endif
+
+/** @brief Per-IP throttle window length in milliseconds (see DETWS_ENABLE_PER_IP_THROTTLE). */
+#ifndef DETWS_PER_IP_THROTTLE_WINDOW_MS
+#define DETWS_PER_IP_THROTTLE_WINDOW_MS 10000
+#endif
+
 // ---------------------------------------------------------------------------
 // Telnet sizing constants  (DETWS_ENABLE_TELNET must be 1)
 // ---------------------------------------------------------------------------
@@ -1526,6 +1562,16 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_AUTH && MAX_AUTH_LEN < 2
 #error "DeterministicESPAsyncWebServer: MAX_AUTH_LEN must be >= 2 when DETWS_ENABLE_AUTH is set"
+#endif
+
+#if DETWS_ENABLE_PER_IP_THROTTLE
+#if DETWS_PER_IP_THROTTLE_SLOTS < 1
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_PER_IP_THROTTLE_SLOTS must be >= 1 when DETWS_ENABLE_PER_IP_THROTTLE is set"
+#endif
+#if DETWS_PER_IP_THROTTLE_MAX < 1
+#error "DeterministicESPAsyncWebServer: DETWS_PER_IP_THROTTLE_MAX must be >= 1 when DETWS_ENABLE_PER_IP_THROTTLE is set"
+#endif
 #endif
 
 #if DETWS_ENABLE_KEEPALIVE && DETWS_KEEPALIVE_MAX_REQUESTS < 1

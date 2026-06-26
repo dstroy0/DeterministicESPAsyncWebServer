@@ -63,6 +63,77 @@ void listener_accept_throttle_reset(void)
     g_accept_count = 0;
 }
 
+// ---------------------------------------------------------------------------
+// Per-IP accept-rate throttle (fixed window per source IPv4). A bounded BSS table
+// of buckets - no heap. Always compiled (unit-testable); only consulted when the
+// feature is enabled.
+// ---------------------------------------------------------------------------
+
+struct IpThrottleBucket
+{
+    uint32_t ip;           ///< source IPv4 word; 0 marks an empty bucket.
+    uint32_t window_start; ///< millis() at the start of this bucket's current window.
+    uint16_t count;        ///< connections counted from this address in the window.
+};
+static IpThrottleBucket g_ip_buckets[DETWS_PER_IP_THROTTLE_SLOTS];
+
+bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms)
+{
+    if (ip == 0)
+        return true; // untrackable source (0 is the empty-bucket sentinel) - defer to the global throttle
+
+    int empty = -1, expired = -1, lru = 0;
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
+    {
+        IpThrottleBucket *b = &g_ip_buckets[i];
+        if (b->ip == ip)
+        {
+            // Unsigned subtraction wraps correctly across the millis() rollover.
+            if ((uint32_t)(now_ms - b->window_start) >= DETWS_PER_IP_THROTTLE_WINDOW_MS)
+            {
+                b->window_start = now_ms;
+                b->count = 0;
+            }
+            if (b->count >= DETWS_PER_IP_THROTTLE_MAX)
+                return false;
+            b->count++;
+            return true;
+        }
+        if (b->ip == 0)
+        {
+            if (empty < 0)
+                empty = i;
+        }
+        else
+        {
+            if (expired < 0 && (uint32_t)(now_ms - b->window_start) >= DETWS_PER_IP_THROTTLE_WINDOW_MS)
+                expired = i;
+            // Track the oldest active bucket (largest elapsed) as the eviction victim.
+            if ((uint32_t)(now_ms - b->window_start) > (uint32_t)(now_ms - g_ip_buckets[lru].window_start))
+                lru = i;
+        }
+    }
+
+    // No bucket yet for this address: claim one - empty, else expired, else evict
+    // the least-recently-started active bucket.
+    int slot = (empty >= 0) ? empty : (expired >= 0) ? expired : lru;
+    IpThrottleBucket *b = &g_ip_buckets[slot];
+    b->ip = ip;
+    b->window_start = now_ms;
+    b->count = 1;
+    return true; // first connection of a fresh window is always allowed
+}
+
+void listener_per_ip_throttle_reset(void)
+{
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
+    {
+        g_ip_buckets[i].ip = 0;
+        g_ip_buckets[i].window_start = 0;
+        g_ip_buckets[i].count = 0;
+    }
+}
+
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
 {
     if (listener_id >= MAX_LISTENERS)
@@ -99,6 +170,22 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     {
         tcp_abort(newpcb);
         return ERR_ABRT;
+    }
+#endif
+
+#if DETWS_ENABLE_PER_IP_THROTTLE
+    // Per-source-IP flood defense: drop accepts beyond one address's per-window
+    // budget (the global throttle cannot tell one noisy client from many).
+    {
+        uint32_t rip = 0;
+#ifdef ARDUINO
+        rip = ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip));
+#endif
+        if (!listener_accept_allowed_ip(rip, millis()))
+        {
+            tcp_abort(newpcb);
+            return ERR_ABRT;
+        }
     }
 #endif
 
