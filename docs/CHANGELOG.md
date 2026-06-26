@@ -6,20 +6,39 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`8dfa303`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8dfa3037178e5ce71165f4cc59eb364b0d68c3cc))
+- update CHANGELOG.md [skip ci] ([`6bf6a3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bf6a3ffc21859c43a0a4d8d0c240214580ae277))
 - update CHANGELOG.md [skip ci] ([`9a67cc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a67cc6bcbef3aaf689025ea88f45f7592957d52))
+
+### Changes
+
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`39d6cb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d6cb7aa8fe7185cb337344fc66db51ab3ff23d))
+
+### Features
+
+- scratch pool, permessage-deflate, time-source + config-store services ([`7333b8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7333b8bd0cfb391b2ed7fcd91f20a4427d41183e))
+
+## [2.1.1] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.1.1 - 2026-06-26</b></summary>
+
+### CI / Build
+
 - update test report [skip ci] ([`0c08469`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c08469f789cbbec9b09ca203d943dab85ae0510))
 - update CHANGELOG.md [skip ci] ([`d70c6aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d70c6aa6fa3939edfc1079fdd0f9c454477073f6))
 - update CHANGELOG.md [skip ci] ([`5d202f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d202f6c49e0d739d3a66f2a4398b6aa855cf5c0))
 
 ### Changes
 
-- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`39d6cb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d6cb7aa8fe7185cb337344fc66db51ab3ff23d))
 - Bump version: 2.1.0 → 2.1.1 ([`fc93b3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc93b3ebf8741f8fd5497dbda81e38e30a765872))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0865c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0865c3c0bc36096274d669bf775bcf5d9fa7bb8e))
 
 ### Refactor
 
 - consolidate generated assets into one unit; template stats() ([`4fdfe11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fdfe11b09efcddecf4628a82f751e1a1416945d))
+
+</details>
 
 ## [2.1.0] - 2026-06-26
 
