@@ -42,13 +42,16 @@ jobs:
         env:
           CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
         run: |
-          # SSH-sign the bot commit so it shows Verified (key: users.noreply.github.com).
-          mkdir -p ~/.ssh
-          printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
-          chmod 600 ~/.ssh/ci_signing_key
-          git config gpg.format ssh
-          git config user.signingkey ~/.ssh/ci_signing_key
-          git config commit.gpgsign true
+          # SSH-sign the bot commit (Verified) when the signing key is available;
+          # skip signing if the secret is unset so CI never breaks.
+          if [ -n "$CI_SIGNING_KEY" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
+            chmod 600 ~/.ssh/ci_signing_key
+            git config gpg.format ssh
+            git config user.signingkey ~/.ssh/ci_signing_key
+            git config commit.gpgsign true
+          fi
 
       - name: Commit changelog
         uses: stefanzweifel/git-auto-commit-action@v7
@@ -57,4 +60,3 @@ jobs:
           file_pattern: docs/CHANGELOG.md
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          commit_options: "-S"
