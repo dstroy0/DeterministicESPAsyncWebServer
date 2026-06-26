@@ -451,6 +451,86 @@ void test_per_ip_throttle_handles_rollover()
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, near_max + DETWS_PER_IP_THROTTLE_WINDOW_MS));
 }
 
+// ====================================================================
+// Source-IP allowlist (accept-time firewall)
+// ====================================================================
+
+// An empty allowlist allows every address (enabling the feature without rules is
+// a no-op and cannot lock the device out).
+void test_ip_allowlist_empty_allows_all()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 10)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(8, 8, 8, 8)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(0));
+}
+
+// A /32 rule admits exactly one host and rejects all others.
+void test_ip_allowlist_host_match()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 10), 32));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 10)));
+    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 11)));
+    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(10, 0, 0, 1)));
+}
+
+// A /24 rule admits the whole subnet and rejects addresses outside it.
+void test_ip_allowlist_cidr_match()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 24));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 1)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 254)));
+    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(192, 168, 2, 1)));
+}
+
+// Host bits below the prefix are masked off when a rule is stored, so a network
+// argument with stray host bits still matches the whole subnet.
+void test_ip_allowlist_masks_host_bits()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 55), 24));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 1)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 200)));
+}
+
+// Multiple rules are OR-ed: an address matching any rule is allowed.
+void test_ip_allowlist_multiple_rules()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 0), 8));
+    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 0, 0), 16));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(10, 1, 2, 3)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 5, 5)));
+    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(172, 16, 0, 1)));
+}
+
+// A /0 rule matches every address.
+void test_ip_allowlist_zero_prefix_matches_all()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add(0, 0));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(1, 2, 3, 4)));
+    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(255, 255, 255, 255)));
+}
+
+// A prefix length above 32 is rejected.
+void test_ip_allowlist_rejects_bad_prefix()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_FALSE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 33));
+}
+
+// The rule table is bounded: it fills to capacity then refuses more rules.
+void test_ip_allowlist_table_full()
+{
+    listener_ip_allowlist_reset();
+    for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
+        TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 0) + (uint32_t)i, 32));
+    TEST_ASSERT_FALSE(listener_ip_allow_add(DETWS_IPV4(10, 1, 0, 0), 32));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -496,6 +576,16 @@ int main()
     RUN_TEST(test_per_ip_throttle_evicts_when_full);
     RUN_TEST(test_per_ip_throttle_zero_ip_always_allowed);
     RUN_TEST(test_per_ip_throttle_handles_rollover);
+
+    // Source-IP allowlist
+    RUN_TEST(test_ip_allowlist_empty_allows_all);
+    RUN_TEST(test_ip_allowlist_host_match);
+    RUN_TEST(test_ip_allowlist_cidr_match);
+    RUN_TEST(test_ip_allowlist_masks_host_bits);
+    RUN_TEST(test_ip_allowlist_multiple_rules);
+    RUN_TEST(test_ip_allowlist_zero_prefix_matches_all);
+    RUN_TEST(test_ip_allowlist_rejects_bad_prefix);
+    RUN_TEST(test_ip_allowlist_table_full);
 
     return UNITY_END();
 }

@@ -1373,6 +1373,31 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Source-IP allowlist  (accept-time firewall; DETWS_ENABLE_IP_ALLOWLIST)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Opt-in source-IP allowlist (accept-time firewall, keyed by source IPv4).
+ *
+ * Default off (zero cost / no behavior change). When set, the accept callback
+ * drops any connection whose source address does not match a configured CIDR
+ * rule (see listener_ip_allow_add()). An empty allowlist allows everything, so
+ * enabling the feature before adding rules never locks the device out. Rules
+ * live in a fixed BSS table of DETWS_IP_ALLOWLIST_SLOTS entries (no heap).
+ *
+ * This is a coarse first-line filter - a spoofed source address can still pass
+ * it - so combine it with the accept throttles and network-layer filtering.
+ */
+#ifndef DETWS_ENABLE_IP_ALLOWLIST
+#define DETWS_ENABLE_IP_ALLOWLIST 0
+#endif
+
+/** @brief Number of CIDR rules the source-IP allowlist can hold (BSS table). */
+#ifndef DETWS_IP_ALLOWLIST_SLOTS
+#define DETWS_IP_ALLOWLIST_SLOTS 8
+#endif
+
+// ---------------------------------------------------------------------------
 // Telnet sizing constants  (DETWS_ENABLE_TELNET must be 1)
 // ---------------------------------------------------------------------------
 
@@ -1780,6 +1805,10 @@ enum DetIface : uint8_t
 #if DETWS_PER_IP_THROTTLE_MAX < 1
 #error "DeterministicESPAsyncWebServer: DETWS_PER_IP_THROTTLE_MAX must be >= 1 when DETWS_ENABLE_PER_IP_THROTTLE is set"
 #endif
+#endif
+
+#if DETWS_ENABLE_IP_ALLOWLIST && DETWS_IP_ALLOWLIST_SLOTS < 1
+#error "DeterministicESPAsyncWebServer: DETWS_IP_ALLOWLIST_SLOTS must be >= 1 when DETWS_ENABLE_IP_ALLOWLIST is set"
 #endif
 
 #if DETWS_ENABLE_WEBDAV
