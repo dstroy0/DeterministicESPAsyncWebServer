@@ -342,18 +342,16 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
               <rect x="3" y="5" width="10" height="1" fill="#00e5ff"/>
               <rect x="2" y="6" width="12" height="1" fill="#00e5ff"/>
 
-              <!-- Eyes & Blush -->
-              <rect x="2" y="7" width="1" height="2" fill="#00e5ff"/>
-              <rect x="3" y="7" width="2" height="2" fill="#ffffff"/> <!-- Left eye white -->
-              <rect id="squid-pupil-l" x="3" y="8" width="1" height="1" fill="#000000"/> <!-- Left pupil -->
-              <rect x="5" y="7" width="6" height="2" fill="#00e5ff"/>
-              <rect x="11" y="7" width="2" height="2" fill="#ffffff"/> <!-- Right eye white -->
-              <rect id="squid-pupil-r" x="11" y="8" width="1" height="1" fill="#000000"/> <!-- Right pupil -->
-              <rect x="13" y="7" width="1" height="2" fill="#00e5ff"/>
-              
+              <!-- Eyes (3x3 whites so the pupil has 9 positions: 8 around + centre) & Blush -->
+              <rect x="2" y="7" width="1" height="3" fill="#00e5ff"/>  <!-- left edge -->
+              <rect x="6" y="7" width="4" height="3" fill="#00e5ff"/>  <!-- bridge between the eyes -->
+              <rect x="13" y="7" width="1" height="3" fill="#00e5ff"/> <!-- right edge -->
+              <rect x="3" y="7" width="3" height="3" fill="#ffffff"/>  <!-- Left eye white -->
+              <rect x="10" y="7" width="3" height="3" fill="#ffffff"/> <!-- Right eye white -->
+              <rect id="squid-pupil-l" x="4" y="8" width="1" height="1" fill="#000000"/> <!-- Left pupil (centre) -->
+              <rect id="squid-pupil-r" x="11" y="8" width="1" height="1" fill="#000000"/> <!-- Right pupil (centre) -->
               <rect x="2" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
               <rect x="13" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
-              <rect x="3" y="9" width="10" height="1" fill="#00e5ff"/>
               <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
               <rect x="4" y="11" width="8" height="1" fill="#00e5ff"/>
 
@@ -386,8 +384,10 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
               <rect x="12" y="6" width="1" height="1" fill="#00b8d4"/>
               <!-- Mantle highlight (lighter rounded top) -->
               <rect x="6" y="0" width="2" height="1" fill="#7df9ff"/>
-              <!-- Mouth -->
-              <rect x="7" y="9" width="2" height="1" fill="#00838f"/>
+              <!-- Smile (corners up at y=10, dip in the middle at y=11) -->
+              <rect x="6" y="10" width="1" height="1" fill="#00838f"/>
+              <rect x="9" y="10" width="1" height="1" fill="#00838f"/>
+              <rect x="7" y="11" width="2" height="1" fill="#00838f"/>
             </svg>
         `;
         
@@ -603,20 +603,25 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 if (posY > limits.maxY) { posY = limits.maxY; velY = -Math.abs(velY) * 0.5; }
             }
 
-            // Face the cursor while hunting/latched, otherwise face travel direction.
-            let flip = 1;
-            let faceDx = (mode === 'idle') ? velX : (mouseX - (posX + 18));
-            if (faceDx < -0.15) flip = -1; else if (faceDx > 0.15) flip = 1;
-
-            // Tilt: gentle swim tilt, or a quick wobble while chewing.
-            if (mode === 'latched') {
-                rotation = Math.sin(now / 55) * 7; // chewing head-shake
-            } else {
-                const targetTilt = velY * 2.5;
-                rotation += (targetTilt - rotation) * 0.15;
+            // Orient the whole body to the swim direction like a real squid -
+            // jetting mantle-first, but leading with the tentacles while hunting -
+            // instead of staying upright. The SVG is drawn mantle-up / tentacles
+            // -down, so "forward up" is -90deg.
+            const speed = Math.hypot(velX, velY);
+            const hunting = (mode === 'hunting' || mode === 'striking' || mode === 'latched');
+            let heading = rotation;
+            if (hunting && mouseX > -9000) {
+                const tx = mouseX - (posX + 18), ty = mouseY - (posY + 18);
+                heading = Math.atan2(-tx, ty) * 180 / Math.PI; // tentacles lead toward prey
+            } else if (speed > 0.6) {
+                heading = Math.atan2(velX, -velY) * 180 / Math.PI; // mantle-first jet
             }
+            // Turn smoothly along the shortest arc; chewing adds a head-shake.
+            const dRot = ((heading - rotation + 540) % 360) - 180;
+            rotation += dRot * 0.18;
+            const shake = (mode === 'latched') ? Math.sin(now / 55) * 7 : 0;
 
-            squid.style.transform = `translate(${posX}px, ${posY}px) scaleX(${flip}) rotate(${rotation}deg)`;
+            squid.style.transform = `translate(${posX}px, ${posY}px) rotate(${rotation + shake}deg)`;
 
             // Chromatophore colour-pulsing while stalking / striking.
             const svgChro = squid.querySelector('.squid-svg');
@@ -653,8 +658,12 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             if (bundle) {
                 if (mode !== 'idle') {
                     const cx = posX + 18, cy = posY + 18;
-                    const ang = Math.atan2(mouseY - cy, (mouseX - cx) * flip) * 180 / Math.PI;
-                    const rot = Math.max(-45, Math.min(45, ang - 90)); // tentacles hang down by default
+                    // Cursor angle in the body's own (rotated) frame; tentacles hang
+                    // at local +90deg, so the extra curl is small once the body has
+                    // already turned to point them at the cursor.
+                    const scr = Math.atan2(mouseY - cy, mouseX - cx) * 180 / Math.PI;
+                    const localAng = ((scr - rotation - 90 + 540) % 360) - 180;
+                    const rot = Math.max(-30, Math.min(30, localAng));
                     bundle.style.transformOrigin = '8px 11px';
                     bundle.style.transform = `rotate(${rot}deg)`;
                 } else {
@@ -662,33 +671,28 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 }
             }
             
-            // Eye tracking logic
+            // Eye tracking: the 1px pupil moves within each 3x3 eye white, giving
+            // 9 states - 8 around the edge plus the centre (cursor near / absent).
             const pupilL = squid.querySelector('#squid-pupil-l');
             const pupilR = squid.querySelector('#squid-pupil-r');
             if (pupilL && pupilR) {
-                const squidCenterX = posX + 16;
-                const squidCenterY = posY + 16;
-                const mDx = mouseX - squidCenterX;
-                const mDy = mouseY - squidCenterY;
-                const mDist = Math.sqrt(mDx * mDx + mDy * mDy);
-                
-                let targetX_L = 3;
-                let targetX_R = 11;
-                let targetY_L = 8;
-                let targetY_R = 8;
-                
-                if (mDist < 250) {
-                    const localDx = mDx * flip;
-                    targetX_L = localDx < 0 ? 3 : 4;
-                    targetX_R = localDx < 0 ? 11 : 12;
-                    targetY_L = mDy < 0 ? 7 : 8;
-                    targetY_R = mDy < 0 ? 7 : 8;
+                let col = 1, row = 1; // 0/1/2 = left|centre|right , up|centre|down
+                if (mouseX > -9000) {
+                    // Cursor delta rotated into the body's own (turned) frame so the
+                    // pupils keep looking at the cursor even as Squirty banks around.
+                    const dx = mouseX - (posX + 16), dy = mouseY - (posY + 16);
+                    const a = rotation * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+                    const localDx = dx * ca + dy * sa;
+                    const localDy = -dx * sa + dy * ca;
+                    const dead = 16; // deadzone (px) that yields the centred pupil
+                    col = localDx < -dead ? 0 : localDx > dead ? 2 : 1;
+                    row = localDy < -dead ? 0 : localDy > dead ? 2 : 1;
                 }
-                
-                pupilL.setAttribute('x', targetX_L);
-                pupilL.setAttribute('y', targetY_L);
-                pupilR.setAttribute('x', targetX_R);
-                pupilR.setAttribute('y', targetY_R);
+                // Left white spans x 3..5, right 10..12; both span y 7..9.
+                pupilL.setAttribute('x', 3 + col);
+                pupilR.setAttribute('x', 10 + col);
+                pupilL.setAttribute('y', 7 + row);
+                pupilR.setAttribute('y', 7 + row);
             }
             
             requestAnimationFrame(updatePhysics);
@@ -893,18 +897,37 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             house.id = 'squirty-house';
             house.title = "Squirty's house";
             house.innerHTML = `
-                <svg viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
-                  <rect x="7" y="1" width="2" height="1" fill="#7df9ff"/>
-                  <rect x="6" y="2" width="4" height="1" fill="#00e5ff"/>
-                  <rect x="5" y="3" width="6" height="1" fill="#00e5ff"/>
-                  <rect x="4" y="4" width="8" height="1" fill="#00e5ff"/>
-                  <rect x="3" y="5" width="10" height="1" fill="#00b8d4"/>
-                  <rect x="4" y="6" width="8" height="7" fill="#00838f"/>
-                  <rect x="4" y="6" width="8" height="1" fill="#00b8d4"/>
-                  <rect x="5" y="7" width="2" height="2" fill="#7df9ff"/>
-                  <rect x="9" y="9" width="2" height="4" fill="#003b44"/>
-                  <rect x="9" y="9" width="2" height="1" fill="#00e5ff"/>
-                  <rect x="3" y="13" width="10" height="1" fill="#00b8d4"/>
+                <svg viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges; overflow: visible;">
+                  <!-- sponge chimney (tube sponge), bubbles puff out the top in timeout -->
+                  <rect x="10" y="3" width="2" height="5" fill="#ff6e40"/>
+                  <rect x="11" y="3" width="1" height="5" fill="#e64a19"/> <!-- shaded edge -->
+                  <rect x="10" y="3" width="2" height="1" fill="#ff8a65"/> <!-- top rim -->
+                  <rect x="10" y="3" width="1" height="1" fill="#7a2f12"/> <!-- osculum (hole) -->
+                  <!-- live rock pile -->
+                  <rect x="6" y="7" width="4" height="1" fill="#6d4c41"/>
+                  <rect x="4" y="8" width="8" height="1" fill="#6d4c41"/>
+                  <rect x="3" y="9" width="10" height="1" fill="#5d4037"/>
+                  <rect x="2" y="10" width="12" height="1" fill="#6d4c41"/>
+                  <rect x="2" y="11" width="12" height="1" fill="#5d4037"/>
+                  <rect x="1" y="12" width="14" height="1" fill="#5d4037"/>
+                  <rect x="1" y="13" width="14" height="1" fill="#6d4c41"/>
+                  <rect x="0" y="14" width="16" height="1" fill="#5d4037"/>
+                  <rect x="0" y="15" width="16" height="1" fill="#4e342e"/>
+                  <!-- cave entrance (Squirty tucks in here during timeout) -->
+                  <rect x="6" y="11" width="3" height="3" fill="#160d10"/>
+                  <rect x="6" y="11" width="3" height="1" fill="#0b070a"/>
+                  <!-- coralline algae: pink / purple spots + a dab of green -->
+                  <rect x="6" y="8" width="1" height="1" fill="#ff7eb6"/>
+                  <rect x="11" y="9" width="1" height="1" fill="#ff7eb6"/>
+                  <rect x="4" y="9" width="1" height="1" fill="#7b4a8a"/>
+                  <rect x="12" y="10" width="1" height="1" fill="#7b4a8a"/>
+                  <rect x="3" y="10" width="1" height="1" fill="#4caf50"/>
+                  <rect x="2" y="14" width="1" height="1" fill="#ff7eb6"/>
+                  <rect x="13" y="14" width="1" height="1" fill="#7b4a8a"/>
+                  <!-- chimney bubbles (animate only while in timeout) -->
+                  <circle class="sq-bubble sq-b1" cx="10.5" cy="2.5" r="0.8" fill="#b3e5fc"/>
+                  <circle class="sq-bubble sq-b2" cx="10.5" cy="2.5" r="0.6" fill="#e1f5fe"/>
+                  <circle class="sq-bubble sq-b3" cx="10.5" cy="2.5" r="0.5" fill="#b3e5fc"/>
                 </svg>`;
             document.body.appendChild(house);
         }
@@ -917,8 +940,23 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             li.addEventListener('click', () => {
                 window.__squirtyTimeout = !window.__squirtyTimeout;
                 li.classList.toggle('active', !!window.__squirtyTimeout);
+                const h = document.getElementById('squirty-house');
+                if (h) h.classList.toggle('timeout', !!window.__squirtyTimeout); // chimney bubbles
+                try { localStorage.setItem('squirty_timeout', window.__squirtyTimeout ? '1' : '0'); } catch (e) {}
             });
             mainMenu.appendChild(li);
+        }
+
+        // Timeout is sticky: if the user sent Squirty to his house, he stays there
+        // across page loads until they let him out.
+        let persisted = false;
+        try { persisted = localStorage.getItem('squirty_timeout') === '1'; } catch (e) {}
+        if (persisted) {
+            window.__squirtyTimeout = true;
+            const h = document.getElementById('squirty-house');
+            if (h) h.classList.add('timeout');
+            const tl = document.querySelector('.navbar-squirty-timeout');
+            if (tl) tl.classList.add('active');
         }
     }
 
