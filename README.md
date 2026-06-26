@@ -80,7 +80,32 @@ Measured on `esp32dev` (Arduino core, `pio ci`). The jump from the bare baseline
 | &nbsp;&nbsp;+ Web terminal (WebSocket)                                              |       747,613 |      64,336 |
 | SSH crypto self-test (Serial only, no WiFi)                                         |       269,585 |      21,476 |
 
-TLS's larger RAM is the fixed mbedTLS arena (`DETWS_TLS_ARENA_SIZE`, 48 KB default). Small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) stay within a few KB of the default server. HTTP keep-alive (`DETWS_ENABLE_KEEPALIVE`) is essentially free - on a fixed build it adds ~556 B flash and 8 B RAM (one `uint16` per connection slot). HTTP Range requests (`DETWS_ENABLE_RANGE`) add ~760 B flash and no RAM over file serving. The outbound HTTP client (`DETWS_ENABLE_HTTP_CLIENT`) links no code unless a sketch actually calls `http_get()` / `http_post()` (unused, the linker strips it - enabling the flag on a server that never calls it costs nothing); the standalone client example builds to 732,961 B flash / 46,752 B RAM, and adding `https://` (`DETWS_ENABLE_TLS` + `DETWS_ENABLE_HTTP_CLIENT_TLS`, which pulls in mbedTLS) makes it 827,853 B / 100,620 B. The MQTT client (`DETWS_ENABLE_MQTT`) example builds to 734,293 B flash / 48,896 B RAM; adding `mqtts://` (`DETWS_ENABLE_TLS` + `DETWS_ENABLE_MQTT_TLS`) makes it 830,285 B / 108,732 B. The WebSocket client (`DETWS_ENABLE_WS_CLIENT`) example builds to 734,329 B / 48,824 B; adding `wss://` makes it 830,165 B / 108,660 B. CoAP resource Observe (`DETWS_ENABLE_COAP_OBSERVE`) adds ~2.7 KB flash over the CoAP server. CoAP block-wise transfer (`DETWS_ENABLE_COAP_BLOCK`) adds ~1.6 KB flash plus the Block1 reassembly buffer (`DETWS_COAP_BLOCK1_MAX`, 1 KB default) and a larger message buffer in RAM. The per-IP accept-throttle (`DETWS_ENABLE_PER_IP_THROTTLE`) is negligible: a small accept-path check plus the bucket table (`DETWS_PER_IP_THROTTLE_SLOTS` × 12 bytes, 192 B default). WebDAV (`DETWS_ENABLE_WEBDAV`) adds ~24 KB flash and ~3 KB RAM over a file-serving server (the handler, the 207 builder, RFC 1123 date formatting, and the `DETWS_WEBDAV_BUF_SIZE` Multi-Status buffer, 2 KB default). The Modbus TCP slave (`DETWS_ENABLE_MODBUS`) adds ~2.1 KB flash and ~0.25 KB RAM (the codec plus the four data-model tables, sized by `DETWS_MODBUS_*`). TLS session resumption (`DETWS_ENABLE_TLS_RESUMPTION`) adds ~1.8 KB flash and ~170 B RAM over TLS (the ticket key context). ESP32 capacity: 1,310,720 B flash / 327,680 B RAM. Per-feature examples are under [`examples/`](examples/).
+TLS's larger RAM is the fixed mbedTLS arena (`DETWS_TLS_ARENA_SIZE`, 48 KB default). The small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) each stay within a few KB of the default server, and an outbound client links no code until a sketch actually calls it (the linker strips an unused client, so enabling its flag alone costs nothing).
+
+Incremental cost of an optional subsystem, over the noted base:
+
+| Optional feature         | Flag                           | + Flash |    + RAM | Over           |
+| ------------------------ | ------------------------------ | ------: | -------: | -------------- |
+| HTTP keep-alive          | `DETWS_ENABLE_KEEPALIVE`       | ~0.5 KB |     ~8 B | default server |
+| HTTP Range requests      | `DETWS_ENABLE_RANGE`           | ~0.8 KB |        - | file serving   |
+| Per-IP accept throttle   | `DETWS_ENABLE_PER_IP_THROTTLE` |      ~0 |   ~192 B | default server |
+| TLS session resumption   | `DETWS_ENABLE_TLS_RESUMPTION`  | ~1.8 KB |   ~170 B | TLS            |
+| CoAP resource Observe    | `DETWS_ENABLE_COAP_OBSERVE`    | ~2.7 KB |        - | CoAP server    |
+| CoAP block-wise transfer | `DETWS_ENABLE_COAP_BLOCK`      | ~1.6 KB | buffers¹ | CoAP server    |
+| Modbus TCP slave         | `DETWS_ENABLE_MODBUS`          | ~2.1 KB | ~0.25 KB | default server |
+| WebDAV                   | `DETWS_ENABLE_WEBDAV`          |  ~24 KB |    ~3 KB | file serving   |
+
+¹ plus the Block1 reassembly buffer (`DETWS_COAP_BLOCK1_MAX`, 1 KB default) and a larger CoAP message buffer.
+
+Outbound clients, as standalone example builds (plain transport vs. over TLS):
+
+| Client           | Flag                       | Plain (flash / RAM) | Over TLS (flash / RAM) |
+| ---------------- | -------------------------- | ------------------- | ---------------------- |
+| HTTP(S) client   | `DETWS_ENABLE_HTTP_CLIENT` | 732,961 / 46,752    | 827,853 / 100,620      |
+| MQTT client      | `DETWS_ENABLE_MQTT`        | 734,293 / 48,896    | 830,285 / 108,732      |
+| WebSocket client | `DETWS_ENABLE_WS_CLIENT`   | 734,329 / 48,824    | 830,165 / 108,660      |
+
+ESP32 capacity: 1,310,720 B flash / 327,680 B RAM. Per-feature examples are under [`examples/`](examples/).
 
 ## Compatibility
 
