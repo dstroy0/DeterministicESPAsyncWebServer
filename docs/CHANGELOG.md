@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [2.5.0] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.5.0 - 2026-06-26</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`e363247`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e363247812ca838c7f3fd3a4ef912f93aa30dadc))
+- update CHANGELOG.md [skip ci] ([`fb354ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb354ab307d56571bff2f6cd7dbcb4d730b0e4df))
 - update test report [skip ci] ([`c637094`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c637094f544fdc2d94b16d969060b5f9699715c2))
 - update CHANGELOG.md [skip ci] ([`53892df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53892dfb9d7ec157faadaea4e00b1f814e8ebcaa))
+
+### Changes
+
+- Bump version: 2.4.1 → 2.5.0 ([`ed99e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed99e0e6a318e8bd3163c04b4ec0b99e8ae33a73))
 
 ### Documentation
 
 - link CodeQL / Roadmap / Known-Limitations pages from the docs index ([`d4a814b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a814bd88a7d4934febdfcb05799262d49d9c57))
+
+### Features
+
+- telemetry math helpers (moving-window stats, rate-of-change, totalizer) ([`87aabf6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87aabf627eb272bfe72d1998e10b215fc874c644))
+
+</details>
 
 ## [2.4.1] - 2026-06-26
 
