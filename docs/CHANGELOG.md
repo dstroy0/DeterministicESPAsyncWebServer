@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d3d0f45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d0f458714d3287a5b31a22fce25e4a70beb4e6))
+- update CHANGELOG.md [skip ci] ([`ca898c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca898c50625fe7023748dd56b5c7cd30c7e92c86))
 - update test report [skip ci] ([`01dda18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01dda1804f496e7124e5b7390566feb7a3939df2))
 - update CHANGELOG.md [skip ci] ([`0602f62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0602f6201356e161764546f0b877b154850faf95))
 - update test report [skip ci] ([`ad9338a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad9338a1797d893c050883b00fd80c6c1236479f))
@@ -31,6 +33,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`daa0754`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daa0754717651b1a5f94753d036ab0d3cf432feb))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`32c0f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c0f73ded6c2dcc9890cea166f65db09e348c71))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`36b92b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36b92b3acb10b7d2c063b52cd5ab689e3a2f7bbe))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`fcebcdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcebcdcc55bff0751f0cdba4d1c5a060123244a2))
@@ -55,6 +58,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - pluggable protocol dispatch, flow control, and outbound TLS auth ([`8d79900`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d7990012a557f1a4ad73cae3a63b5554e1e3ecc))
 - add 10 optional subsystems, harden transport, regroup examples ([`246d353`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/246d35308d17fc29fcc75742fb63febebe11917c))
 - add 10 optional subsystems, harden transport, regroup examples ([`0cfffb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cfffb9ac167ebda47c4c0a54fc42fc3066d6577))
+
+### Refactor
+
+- externalize served strings to src/web with a deterministic asset generator ([`52bea18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52bea1887da509de58c484eccc454dc6f5f7facd))
 
 ## [2.0.0] - 2026-06-24
 
