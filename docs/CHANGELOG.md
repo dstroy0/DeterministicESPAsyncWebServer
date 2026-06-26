@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- expand CodeQL coverage to the new modules and integration paths ([`21786ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21786ab8ecce0d5fe9bb5de3af3fe458ce4bcc4f))
+- update test report [skip ci] ([`0b66a4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b66a4b84fa6d4fba2d74fa7cc3d4039f46f2cb8))
+- update CHANGELOG.md [skip ci] ([`5dddeb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dddeb3fcaa1f590156c5828aa55fe42b55208cc))
 - update test report [skip ci] ([`3f9e8e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f9e8e55c016996076be51f8936dd2e854181722))
 - update CHANGELOG.md [skip ci] ([`e9328ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9328ac76c57cca036b9b0179c90591f41a9a924))
 - only SSH-sign bot commits when the signing key secret is present ([`5148d30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5148d3096410677288329a22b14dd28e319a9bb0))
