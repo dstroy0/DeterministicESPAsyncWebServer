@@ -7,17 +7,21 @@ the application layer so they ship in flash with no filesystem or heap.
 
 ## Layout
 
-| Path                              | What                                                                         |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `input/`                          | One source document per symbol, named by the C identifier it backs.          |
-| `themes/`                         | Reusable CSS themes a document can pull in with a `#theme` directive.        |
-| `wizard/build_assets.py`          | The generator.                                                               |
-| `../network_drivers/application/` | Generated `html.{h,cpp}`, `text.{h,cpp}`, ... (committed; do not hand-edit). |
+| Path                                                | What                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------- |
+| `input/`                                            | One source document per symbol, named by the C identifier it backs.   |
+| `themes/`                                           | Reusable CSS themes a document can pull in with a `#theme` directive. |
+| `wizard/build_assets.py`                            | The generator.                                                        |
+| `../network_drivers/application/web_assets.{h,cpp}` | Generated output (committed; do not hand-edit).                       |
 
-A file's **base name is the C symbol** and its **extension selects the output
-header**: `DETWS_PROV_FORM.html` becomes `extern const char DETWS_PROV_FORM[];`
-in `application/html.h`; `.txt` -> `text.h`, `.css` -> `css.h`, `.json` ->
-`json.h`, `.xml` -> `xml.h`, `.svg` -> `svg.h`, `.js` -> `js.h`.
+A file's **base name is the C symbol**: `DETWS_PROV_FORM.html` becomes
+`extern const char DETWS_PROV_FORM[];`. Every document is emitted into the single
+`application/web_assets.{h,cpp}` translation unit - all generated assets are one
+machine-produced artifact, so they live in one clearly-named unit rather than per
+-content-type files (which would conflate source format with output module and
+collide with real modules, e.g. the JSON codec at `presentation/json.h`). The
+**extension only selects lint and transforms** (`.html`/`.svg`/`.xml` tag checks,
+`.json` validation, etc.), not the output file.
 
 ## Workflow
 

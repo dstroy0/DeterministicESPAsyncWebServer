@@ -112,9 +112,38 @@ def minify_html(html):
     return "".join(out).strip()
 
 
+# Collapse a pretty-printed JSON document to the wire form: drop every whitespace
+# character that sits OUTSIDE a string literal (newlines, indentation, the space
+# after a colon, ...). Whitespace is never significant outside a JSON string, and
+# whitespace inside a string is preserved verbatim - so the source file can stay
+# readable while the served body carries no layout whitespace.
+def minify_json(text):
+    out = []
+    in_str = esc = False
+    for ch in text:
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+            out.append(ch)
+        elif ch in " \t\r\n":
+            continue  # layout whitespace outside a string - drop it
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def apply_transforms(text, directives, asset_type, warn):
     if "theme" in directives and asset_type == "html":
         text = inject_theme(text, directives["theme"], warn)
+    if asset_type == "json":
+        text = minify_json(text)  # source may be pretty; the wire body is compact
     if "minify" in directives:
         if asset_type == "html":
             text = minify_html(text)
@@ -222,7 +251,7 @@ def lint(symbol, text, asset_type, warn):
             c = len(re.findall(r"</%s>" % tag, text, re.IGNORECASE))
             if o != c:
                 warn(f"unbalanced <{tag}> ({o} open / {c} close)")
-    if asset_type == "json":
+    if asset_type == "json" and "{{" not in text:  # a {{name}} template is not literal JSON
         try:
             import json
 
@@ -276,15 +305,27 @@ def load_assets():
 # ---------------------------------------------------------------------------
 
 
-def render_header(asset_type, assets):
-    guard = "DETERMINISTICESPASYNCWEBSERVER_%s_H" % asset_type.upper()
-    lines = [BANNER, "", "/**", " * @file %s.h" % asset_type,
-             " * @brief Layer 7 (Application) - embedded %s assets (generated from src/web/input/)." % asset_type.upper(),
+# All assets land in one translation unit (web_assets.{h,cpp}). The source file's
+# extension only selects lint/transforms - it does NOT name an output file, so a
+# document type can never collide with a module of the same name (e.g. the JSON
+# codec at presentation/json.h).
+ASSET_BASENAME = "web_assets"
+
+
+def render_header(assets):
+    guard = "DETERMINISTICESPASYNCWEBSERVER_WEB_ASSETS_H"
+    lines = [BANNER, "", "/**", " * @file web_assets.h",
+             " * @brief Layer 7 (Application) - embedded web assets generated from src/web/input/.",
              " *",
-             " * On ESP32 these const arrays live in flash (DROM) and are read directly - no",
+             " * One declaration per source document under src/web/input/ (its base name is the",
+             " * C symbol). On ESP32 these const arrays live in flash (DROM), read directly - no",
              " * filesystem or heap. Edit src/web/input/ and re-run src/web/wizard/build_assets.py.",
              " */", "", "#ifndef " + guard, "#define " + guard, ""]
+    last_type = None
     for a in assets:
+        if a.type != last_type:
+            lines.append("// ---- %s ----" % a.type)
+            last_type = a.type
         if a.brief:
             lines.append("/** @brief %s */" % a.brief)
         lines.append("extern const char %s[];" % a.symbol)
@@ -293,9 +334,13 @@ def render_header(asset_type, assets):
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
-def render_source(asset_type, assets):
-    lines = [BANNER, "", '#include "network_drivers/application/%s.h"' % asset_type, ""]
+def render_source(assets):
+    lines = [BANNER, "", '#include "network_drivers/application/web_assets.h"', ""]
+    last_type = None
     for a in assets:
+        if a.type != last_type:
+            lines.append("// ---- %s ----" % a.type)
+            last_type = a.type
         segs = escape_segments(a.served)
         decl = "const char %s[] = " % a.symbol
         oneline = decl + '"' + segs[0] + '";'
@@ -310,14 +355,12 @@ def render_source(asset_type, assets):
 
 def generate(write=True):
     assets = load_assets()
-    by_type = {}
-    for a in assets:
-        by_type.setdefault(a.type, []).append(a)
+    assets.sort(key=lambda a: (a.type, a.symbol))  # stable, grouped output
 
-    files = {}
-    for asset_type, group in by_type.items():
-        files[os.path.join(OUT_DIR, asset_type + ".h")] = render_header(asset_type, group)
-        files[os.path.join(OUT_DIR, asset_type + ".cpp")] = render_source(asset_type, group)
+    files = {
+        os.path.join(OUT_DIR, ASSET_BASENAME + ".h"): render_header(assets),
+        os.path.join(OUT_DIR, ASSET_BASENAME + ".cpp"): render_source(assets),
+    }
 
     stale = []
     for path, content in files.items():

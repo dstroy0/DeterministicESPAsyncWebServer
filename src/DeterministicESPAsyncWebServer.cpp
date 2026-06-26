@@ -56,8 +56,8 @@
 #include "services/webdav/webdav.h"
 #include <time.h> // RFC 1123 Last-Modified formatting
 #endif
-#if DETWS_ENABLE_METRICS
-#include "network_drivers/application/text.h" // DETWS_METRICS_PROM (generated from src/web/input/)
+#if DETWS_ENABLE_METRICS || DETWS_ENABLE_STATS
+#include "network_drivers/application/web_assets.h" // DETWS_METRICS_PROM / DETWS_STATS_JSON (generated)
 #endif
 #include <stdarg.h>
 #include <stdio.h>
@@ -1927,6 +1927,31 @@ const char *DetWebServer::mime_type(const char *path)
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_STATS
+// The stats body is an editable template asset (src/web/input/DETWS_STATS_JSON.json)
+// rendered through the {{name}} engine, like /metrics - values are substituted by
+// name, with no printf-format coupling. Snapshot into statics just before the
+// (twice-invoked, size + emit) resolver runs.
+static char s_s_uptime[12], s_s_requests[12], s_s_2xx[12], s_s_4xx[12], s_s_5xx[12], s_s_active[8], s_s_heap[12];
+
+static const char *stats_var(const char *name)
+{
+    if (!strcmp(name, "uptime_ms"))
+        return s_s_uptime;
+    if (!strcmp(name, "requests"))
+        return s_s_requests;
+    if (!strcmp(name, "http_2xx"))
+        return s_s_2xx;
+    if (!strcmp(name, "http_4xx"))
+        return s_s_4xx;
+    if (!strcmp(name, "http_5xx"))
+        return s_s_5xx;
+    if (!strcmp(name, "active_conns"))
+        return s_s_active;
+    if (!strcmp(name, "free_heap"))
+        return s_s_heap;
+    return nullptr;
+}
+
 void DetWebServer::stats(uint8_t slot_id)
 {
     int active = 0;
@@ -1941,13 +1966,15 @@ void DetWebServer::stats(uint8_t slot_id)
     uint32_t heap = 0;
 #endif
 
-    char body[192];
-    snprintf(body, sizeof(body),
-             "{\"uptime_ms\":%lu,\"requests\":%lu,\"http_2xx\":%lu,\"http_4xx\":%lu,"
-             "\"http_5xx\":%lu,\"active_conns\":%d,\"free_heap\":%u}",
-             up, (unsigned long)_stat_requests, (unsigned long)_stat_2xx, (unsigned long)_stat_4xx,
-             (unsigned long)_stat_5xx, active, (unsigned)heap);
-    send(slot_id, 200, "application/json", body);
+    snprintf(s_s_uptime, sizeof(s_s_uptime), "%lu", up);
+    snprintf(s_s_requests, sizeof(s_s_requests), "%lu", (unsigned long)_stat_requests);
+    snprintf(s_s_2xx, sizeof(s_s_2xx), "%lu", (unsigned long)_stat_2xx);
+    snprintf(s_s_4xx, sizeof(s_s_4xx), "%lu", (unsigned long)_stat_4xx);
+    snprintf(s_s_5xx, sizeof(s_s_5xx), "%lu", (unsigned long)_stat_5xx);
+    snprintf(s_s_active, sizeof(s_s_active), "%d", active);
+    snprintf(s_s_heap, sizeof(s_s_heap), "%u", (unsigned)heap);
+
+    send_template(slot_id, 200, "application/json", DETWS_STATS_JSON, stats_var);
 }
 #endif // DETWS_ENABLE_STATS
 
