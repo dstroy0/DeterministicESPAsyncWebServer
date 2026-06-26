@@ -44,9 +44,12 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 ## TLS
 
-- **One TLS connection at a time** (`MAX_TLS_CONNS` = 1): the per-connection
-  mbedTLS arena (~41.5 KB) overflows DRAM at 2 on a stock Arduino build (a
-  smaller-record ESP-IDF build is needed to raise it).
+- **Concurrent TLS is configurable but defaults to 1.** `MAX_TLS_CONNS` can be
+  raised (up to `MAX_CONNS`); each connection just needs its own large mbedTLS
+  record arena, so going past 1 needs enough DRAM. On a stock Arduino build the
+  extra record buffers (~32 KB each) overflow the static budget - shrink the IDF
+  record sizes (`CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`, an ESP-IDF build) or use
+  a board with more RAM to fit more.
 - **Server-side session resumption only** (RFC 5077 tickets); the outbound client
   does not yet present a ticket on reconnect.
 
@@ -65,7 +68,7 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
   retransmission / de-duplication, no `/.well-known/core` discovery.
 - **WebDAV:** `PROPPATCH` is unsupported (405); `PUT` buffers to `BODY_BUF_SIZE`
   (no streaming large uploads); `COPY` handles files only (collection copy -> 501).
-- **SNMP:** the v3 *inform* is not implemented (the v3 trap is); the engine ID
+- **SNMP:** the v3 _inform_ is not implemented (the v3 trap is); the engine ID
   uses a fixed placeholder enterprise OID.
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN
   (prefer SSH or the WebSocket terminal otherwise).

@@ -8,6 +8,7 @@
 
 #include "ssh_conn.h"
 #include "../../transport/transport.h"
+#include "network_drivers/session/scratch.h"
 #include "ssh_channel.h"
 #include "ssh_keymat.h"
 #include "ssh_packet.h"
@@ -42,9 +43,14 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return;
 
-    static uint8_t wire[SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN];
+    // Borrow the wire buffer from the shared scratch arena (released on return).
+    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    ScratchScope scope;
+    uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
+    if (!wire)
+        return; // arena exhausted: drop the outbound message (fail closed)
     size_t wlen = 0;
-    if (ssh_pkt_send(i, payload, len, wire, &wlen, sizeof(wire)) != 0)
+    if (ssh_pkt_send(i, payload, len, wire, &wlen, wire_cap) != 0)
         return;
     det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
     det_conn_flush(conn->id, conn->pcb);
@@ -73,14 +79,19 @@ int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
 
     // Frame the application bytes as SSH_MSG_CHANNEL_DATA (bounded by the peer
     // window / max packet), then encrypt+MAC and write to the socket.
-    static uint8_t payload[SSH_PKT_BUF_SIZE];
-    size_t plen = 0;
-    if (ssh_channel_build_data(ssh_slot, data, len, payload, &plen, sizeof(payload)) != 0)
+    // Borrow the payload + wire buffers from the shared scratch arena (released on
+    // return); an exhausted arena fails closed.
+    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    ScratchScope scope;
+    uint8_t *payload = (uint8_t *)scratch_alloc(SSH_PKT_BUF_SIZE, 16);
+    uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
+    if (!payload || !wire)
         return -1;
-
-    static uint8_t wire[SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN];
+    size_t plen = 0;
+    if (ssh_channel_build_data(ssh_slot, data, len, payload, &plen, SSH_PKT_BUF_SIZE) != 0)
+        return -1;
     size_t wlen = 0;
-    if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, sizeof(wire)) != 0)
+    if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, wire_cap) != 0)
         return -1;
     det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
     det_conn_flush(conn->id, conn->pcb);

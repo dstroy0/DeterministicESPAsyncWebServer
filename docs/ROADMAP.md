@@ -29,7 +29,7 @@ flag (default off) so it costs nothing when unused.
 
 - [x] WebSocket permessage-deflate inbound _(shipped)_; outbound compress (Phase 2) open (M).
 - [x] REST substrate, AJAX _(shipped)_.
-- [ ] Real-time **dashboard configurator** (L) - user telemetry callback + hand-rolled SVG/Canvas widgets (no external JS), via web_assets, live over SSE/WS. _Flagship._
+- [ ] Real-time **dashboard configurator** (L) - user telemetry callback + hand-rolled SVG/Canvas widgets (no external JS), via the `web_assets` pipeline, live over SSE/WS. **Flagship.**
 - [ ] **Telemetry math** cluster (M, host-testable; feeds the dashboard): moving-window stats (mean/stddev/variance), derivative rate-of-change triggers, run-time totalizers/odometer.
 - [ ] HTTP caching/delivery (S-M): Cache-Control beside ETag, stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
 - [ ] Binary streaming (M-L): CBOR / MessagePack, or Protobuf / FlatBuffers zero-copy instead of JSON.
