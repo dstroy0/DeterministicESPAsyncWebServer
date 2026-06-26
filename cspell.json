@@ -397,7 +397,8 @@
     "constexpr",
     "fnv",
     "pentesting",
-    "slowloris"
+    "slowloris",
+    "sparkline"
   ],
   "ignorePaths": [
     "node_modules/**",

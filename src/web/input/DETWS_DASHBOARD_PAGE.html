@@ -1,0 +1,216 @@
+<!--#brief Real-time SVG telemetry dashboard page (DETWS_ENABLE_DASHBOARD).-->
+<!--#minify-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+        background: #0e1116;
+        color: #e6edf3;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        font-size: 18px;
+        font-weight: 600;
+        border-bottom: 1px solid #30363d;
+      }
+      #dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #f85149;
+      }
+      #dot.live {
+        background: #3fb950;
+      }
+      #status {
+        font-size: 13px;
+        font-weight: 400;
+        color: #8b949e;
+      }
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+        padding: 18px;
+      }
+      .card {
+        background: #1b2230;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .card .label {
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #8b949e;
+      }
+      .card .num {
+        font-size: 30px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .card .unit {
+        margin-left: 4px;
+        font-size: 14px;
+        color: #8b949e;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      svg text {
+        fill: #e6edf3;
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <header><span id="dot"></span> Dashboard <span id="status"></span></header>
+    <div id="grid"></div>
+    <script>
+      (function () {
+        var NS = "http://www.w3.org/2000/svg";
+        var base = location.pathname.replace(/\/+$/, "");
+        var grid = document.getElementById("grid");
+        var dot = document.getElementById("dot");
+        var status = document.getElementById("status");
+        var widgets = {};
+
+        function clamp(f) {
+          return f < 0 ? 0 : f > 1 ? 1 : f;
+        }
+        function frac(v, mn, mx) {
+          return mx > mn ? clamp((v - mn) / (mx - mn)) : 0;
+        }
+        function fmt(v) {
+          return Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1);
+        }
+        function el(tag, attrs) {
+          var e = document.createElementNS(NS, tag);
+          for (var k in attrs) e.setAttribute(k, attrs[k]);
+          return e;
+        }
+        function polar(cx, cy, r, deg) {
+          var a = (deg * Math.PI) / 180;
+          return [cx + r * Math.cos(a), cy - r * Math.sin(a)];
+        }
+        function arc(cx, cy, r, f) {
+          var s = polar(cx, cy, r, 180),
+            e = polar(cx, cy, r, 180 - 180 * f);
+          return "M" + s[0] + " " + s[1] + " A" + r + " " + r + " 0 0 1 " + e[0] + " " + e[1];
+        }
+
+        function card(w) {
+          var c = document.createElement("div");
+          c.className = "card";
+          var lab = document.createElement("div");
+          lab.className = "label";
+          lab.textContent = w.label;
+          c.appendChild(lab);
+          var upd;
+          if (w.type === "gauge") {
+            var g = el("svg", { viewBox: "0 0 120 72" });
+            g.appendChild(el("path", { d: arc(60, 62, 50, 1), fill: "none", stroke: "#30363d", "stroke-width": 10, "stroke-linecap": "round" }));
+            var gv = el("path", { d: arc(60, 62, 50, 0), fill: "none", stroke: "#3fb950", "stroke-width": 10, "stroke-linecap": "round" });
+            g.appendChild(gv);
+            var gt = el("text", { x: 60, y: 58, "text-anchor": "middle", "font-size": 16, "font-weight": 600 });
+            gt.textContent = "-";
+            g.appendChild(gt);
+            c.appendChild(g);
+            upd = function (v) {
+              gv.setAttribute("d", arc(60, 62, 50, frac(v, w.min, w.max)));
+              gt.textContent = fmt(v) + w.unit;
+            };
+          } else if (w.type === "bar") {
+            var b = el("svg", { viewBox: "0 0 200 40" });
+            b.appendChild(el("rect", { x: 0, y: 16, width: 200, height: 12, rx: 6, fill: "#30363d" }));
+            var bf = el("rect", { x: 0, y: 16, width: 0, height: 12, rx: 6, fill: "#3fb950" });
+            b.appendChild(bf);
+            var bt = el("text", { x: 0, y: 11, "font-size": 12 });
+            bt.textContent = "-";
+            b.appendChild(bt);
+            c.appendChild(b);
+            upd = function (v) {
+              bf.setAttribute("width", 200 * frac(v, w.min, w.max));
+              bt.textContent = fmt(v) + w.unit;
+            };
+          } else if (w.type === "sparkline") {
+            var s = el("svg", { viewBox: "0 0 200 50" });
+            var pl = el("polyline", { fill: "none", stroke: "#3fb950", "stroke-width": 2, points: "" });
+            s.appendChild(pl);
+            c.appendChild(s);
+            var sn = document.createElement("div");
+            sn.className = "num";
+            sn.textContent = "-";
+            c.appendChild(sn);
+            var hist = [];
+            upd = function (v) {
+              hist.push(v);
+              if (hist.length > 40) hist.shift();
+              var pts = hist
+                .map(function (y, i) {
+                  return (200 * i) / 39 + "," + (50 - 50 * frac(y, w.min, w.max));
+                })
+                .join(" ");
+              pl.setAttribute("points", pts);
+              sn.textContent = fmt(v) + " " + w.unit;
+            };
+          } else {
+            var n = document.createElement("div");
+            n.className = "num";
+            var tn = document.createTextNode("-");
+            n.appendChild(tn);
+            var u = document.createElement("span");
+            u.className = "unit";
+            u.textContent = w.unit;
+            n.appendChild(u);
+            c.appendChild(n);
+            upd = function (v) {
+              tn.nodeValue = fmt(v);
+            };
+          }
+          grid.appendChild(c);
+          return upd;
+        }
+
+        fetch(base + "/layout")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (list) {
+            list.forEach(function (w) {
+              widgets[w.key] = card(w);
+            });
+            var es = new EventSource(base + "/stream");
+            es.onopen = function () {
+              dot.className = "live";
+              status.textContent = "live";
+            };
+            es.onerror = function () {
+              dot.className = "";
+              status.textContent = "reconnecting...";
+            };
+            es.onmessage = function (ev) {
+              try {
+                var d = JSON.parse(ev.data);
+                for (var k in d) if (widgets[k]) widgets[k](d[k]);
+              } catch (e) {}
+            };
+          });
+      })();
+    </script>
+  </body>
+</html>

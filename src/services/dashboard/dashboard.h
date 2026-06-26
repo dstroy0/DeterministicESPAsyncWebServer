@@ -1,0 +1,92 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file dashboard.h
+ * @brief Real-time SVG telemetry dashboard (DETWS_ENABLE_DASHBOARD).
+ *
+ * Widgets are declared once in a fixed compile-time DetwsWidget table - no heap,
+ * fixed at link. detws_dashboard_begin() serves three things at @p path:
+ *   - GET path           the self-contained SVG dashboard page (from web_assets);
+ *   - GET path/layout    the widget table serialized as a JSON array;
+ *   - SSE path/stream     a live stream of the current values.
+ * The page fetches the layout, renders one SVG widget per entry, and updates them
+ * from the SSE value stream. The application feeds readings with
+ * detws_dashboard_set(key, value) and pushes them with detws_dashboard_publish().
+ *
+ * The widget-table -> JSON serializers (layout + values) are pure and have no
+ * server dependency, so they unit-test on the host. Requires DETWS_ENABLE_SSE.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
+#define DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
+
+#include "DetWebServerConfig.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#if DETWS_ENABLE_DASHBOARD
+
+class DetWebServer;
+
+/** @brief Widget rendering style. */
+enum DetwsWidgetType
+{
+    DETWS_WIDGET_VALUE = 0, ///< plain numeric readout
+    DETWS_WIDGET_GAUGE,     ///< radial arc gauge over [min, max]
+    DETWS_WIDGET_BAR,       ///< horizontal bar over [min, max]
+    DETWS_WIDGET_SPARKLINE  ///< recent-history line over [min, max]
+};
+
+/** @brief One dashboard widget, declared in a fixed compile-time table. */
+struct DetwsWidget
+{
+    DetwsWidgetType type; ///< rendering style.
+    const char *label;    ///< display label.
+    const char *key;      ///< telemetry source key (matches detws_dashboard_set()).
+    float min;            ///< scale minimum (gauge / bar / sparkline).
+    float max;            ///< scale maximum.
+    const char *unit;     ///< unit suffix shown by the widget (may be "").
+};
+
+// ---------------------------------------------------------------------------
+// Host-testable core (no server dependency)
+// ---------------------------------------------------------------------------
+
+/** @brief Bind the widget table and reset every value to 0. */
+void detws_dashboard_configure(const DetwsWidget *widgets, uint8_t count);
+
+/** @brief Set a widget's current value by key. @return false if the key is unknown. */
+bool detws_dashboard_set(const char *key, float value);
+
+/**
+ * @brief Serialize the widget layout as a JSON array into @p out.
+ * @return number of characters written, or 0 if @p cap is too small.
+ */
+int detws_dashboard_layout_json(char *out, size_t cap);
+
+/**
+ * @brief Serialize the current values as a JSON object {key:value,...} into @p out.
+ * @return number of characters written, or 0 if @p cap is too small.
+ */
+int detws_dashboard_values_json(char *out, size_t cap);
+
+// ---------------------------------------------------------------------------
+// Server integration
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Serve the dashboard at @p path (page, layout JSON, and SSE value stream).
+ *
+ * Calls detws_dashboard_configure(@p widgets, @p count). Default path "/dashboard".
+ */
+void detws_dashboard_begin(DetWebServer &server, const char *path, const DetwsWidget *widgets, uint8_t count);
+
+/** @brief Broadcast the current values to all SSE subscribers (after detws_dashboard_set()). */
+void detws_dashboard_publish();
+
+#endif // DETWS_ENABLE_DASHBOARD
+#endif // DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H

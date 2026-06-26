@@ -879,6 +879,30 @@
 #define DETWS_ENABLE_TELEMETRY 0
 #endif
 
+/**
+ * @brief Real-time SVG dashboard (DETWS_ENABLE_DASHBOARD; requires DETWS_ENABLE_SSE).
+ *
+ * Default off. Serves a self-contained, hand-rolled SVG dashboard page whose
+ * widgets are declared in a fixed compile-time DetwsWidget table (zero-heap,
+ * deterministic). The page fetches the widget layout as JSON and subscribes to an
+ * SSE stream of live values; detws_dashboard_set() + detws_dashboard_publish()
+ * push the current readings. The widget-table -> JSON serializers are
+ * host-testable; WebSocket controls are a follow-up.
+ */
+#ifndef DETWS_ENABLE_DASHBOARD
+#define DETWS_ENABLE_DASHBOARD 0
+#endif
+
+/** @brief Maximum widgets in the dashboard table (BSS value array). */
+#ifndef DETWS_DASHBOARD_MAX_WIDGETS
+#define DETWS_DASHBOARD_MAX_WIDGETS 16
+#endif
+
+/** @brief Stack buffer for the dashboard layout / values JSON (bytes). */
+#ifndef DETWS_DASHBOARD_JSON_BUF
+#define DETWS_DASHBOARD_JSON_BUF 1024
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0

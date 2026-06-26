@@ -1,0 +1,125 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file dashboard.cpp
+ * @brief Dashboard widget table + JSON serializers (DETWS_ENABLE_DASHBOARD).
+ *
+ * The host-testable core: it owns the widget table and value array and turns them
+ * into the layout / values JSON the page consumes. No server or web_assets
+ * dependency lives here, so it compiles and unit-tests standalone; the route /
+ * SSE wiring is in dashboard_routes.cpp.
+ */
+
+#include "services/dashboard/dashboard.h"
+
+#if DETWS_ENABLE_DASHBOARD
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
+static const DetwsWidget *s_widgets = nullptr;
+static uint8_t s_count = 0;
+static float s_values[DETWS_DASHBOARD_MAX_WIDGETS];
+
+static const char *widget_type_name(DetwsWidgetType t)
+{
+    switch (t)
+    {
+    case DETWS_WIDGET_GAUGE:
+        return "gauge";
+    case DETWS_WIDGET_BAR:
+        return "bar";
+    case DETWS_WIDGET_SPARKLINE:
+        return "sparkline";
+    default:
+        return "value";
+    }
+}
+
+// Append a formatted fragment at *pos; return -1 (leaving the buffer truncated) if
+// it would not fit, so callers fail closed rather than overflow.
+static int json_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
+{
+    if (*pos >= cap)
+        return -1;
+    va_list ap;
+    va_start(ap, fmt);
+    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap);
+    va_end(ap);
+    if (w < 0 || (size_t)w >= cap - *pos)
+        return -1;
+    *pos += (size_t)w;
+    return 0;
+}
+
+void detws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
+{
+    s_widgets = widgets;
+    s_count = count > DETWS_DASHBOARD_MAX_WIDGETS ? DETWS_DASHBOARD_MAX_WIDGETS : count;
+    for (uint8_t i = 0; i < DETWS_DASHBOARD_MAX_WIDGETS; i++)
+        s_values[i] = 0.0f;
+}
+
+bool detws_dashboard_set(const char *key, float value)
+{
+    if (!key || !s_widgets)
+        return false;
+    for (uint8_t i = 0; i < s_count; i++)
+    {
+        if (s_widgets[i].key && strcmp(s_widgets[i].key, key) == 0)
+        {
+            s_values[i] = value;
+            return true;
+        }
+    }
+    return false;
+}
+
+int detws_dashboard_layout_json(char *out, size_t cap)
+{
+    if (!out || cap == 0)
+        return 0;
+    out[0] = '\0';
+    if (!s_widgets)
+        return 0;
+    size_t pos = 0;
+    if (json_append(out, cap, &pos, "[") != 0)
+        return 0;
+    for (uint8_t i = 0; i < s_count; i++)
+    {
+        const DetwsWidget *w = &s_widgets[i];
+        if (json_append(out, cap, &pos,
+                        "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
+                        i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
+                        (double)w->min, (double)w->max, w->unit ? w->unit : "") != 0)
+            return 0;
+    }
+    if (json_append(out, cap, &pos, "]") != 0)
+        return 0;
+    return (int)pos;
+}
+
+int detws_dashboard_values_json(char *out, size_t cap)
+{
+    if (!out || cap == 0)
+        return 0;
+    out[0] = '\0';
+    if (!s_widgets)
+        return 0;
+    size_t pos = 0;
+    if (json_append(out, cap, &pos, "{") != 0)
+        return 0;
+    for (uint8_t i = 0; i < s_count; i++)
+    {
+        if (json_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "", s_widgets[i].key ? s_widgets[i].key : "",
+                        (double)s_values[i]) != 0)
+            return 0;
+    }
+    if (json_append(out, cap, &pos, "}") != 0)
+        return 0;
+    return (int)pos;
+}
+
+#endif // DETWS_ENABLE_DASHBOARD
