@@ -56,6 +56,9 @@
 #include "services/webdav/webdav.h"
 #include <time.h> // RFC 1123 Last-Modified formatting
 #endif
+#if DETWS_ENABLE_METRICS
+#include "network_drivers/application/text.h" // DETWS_METRICS_PROM (generated from src/web/input/)
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -1949,6 +1952,41 @@ void DetWebServer::stats(uint8_t slot_id)
 #endif // DETWS_ENABLE_STATS
 
 #if DETWS_ENABLE_METRICS
+// The Prometheus exposition is an editable template asset (src/web/input/
+// DETWS_METRICS_PROM.txt) rendered through the {{name}} engine, so values are
+// substituted by name (no printf format coupling). metrics() snapshots the live
+// values into these statics just before send_template(), which invokes the
+// resolver twice (size + emit) - deterministic because the snapshot is fixed.
+static char s_m_uptime[12], s_m_requests[12], s_m_2xx[12], s_m_4xx[12], s_m_5xx[12];
+static char s_m_active[8], s_m_max[8], s_m_heap[12], s_m_minheap[12], s_m_heapsize[12], s_m_maxalloc[12];
+
+static const char *metrics_var(const char *name)
+{
+    if (!strcmp(name, "uptime_seconds"))
+        return s_m_uptime;
+    if (!strcmp(name, "requests_total"))
+        return s_m_requests;
+    if (!strcmp(name, "resp_2xx"))
+        return s_m_2xx;
+    if (!strcmp(name, "resp_4xx"))
+        return s_m_4xx;
+    if (!strcmp(name, "resp_5xx"))
+        return s_m_5xx;
+    if (!strcmp(name, "active_conns"))
+        return s_m_active;
+    if (!strcmp(name, "max_conns"))
+        return s_m_max;
+    if (!strcmp(name, "free_heap"))
+        return s_m_heap;
+    if (!strcmp(name, "min_free_heap"))
+        return s_m_minheap;
+    if (!strcmp(name, "heap_size"))
+        return s_m_heapsize;
+    if (!strcmp(name, "max_alloc_heap"))
+        return s_m_maxalloc;
+    return nullptr;
+}
+
 void DetWebServer::metrics(uint8_t slot_id)
 {
     int active = 0;
@@ -1959,37 +1997,26 @@ void DetWebServer::metrics(uint8_t slot_id)
     unsigned long up = millis();
 #ifdef ARDUINO
     uint32_t heap = ESP.getFreeHeap();
+    uint32_t min_heap = ESP.getMinFreeHeap();
+    uint32_t heap_size = ESP.getHeapSize();
+    uint32_t max_alloc = ESP.getMaxAllocHeap();
 #else
-    uint32_t heap = 0;
+    uint32_t heap = 0, min_heap = 0, heap_size = 0, max_alloc = 0;
 #endif
 
-    // Sized for the full exposition with worst-case numeric widths (the fixed
-    // text plus eight 64-bit-wide conversions): ~881 bytes, so 1024 has margin.
-    char body[1024];
-    snprintf(body, sizeof(body),
-             "# HELP detws_uptime_seconds Device uptime in seconds.\n"
-             "# TYPE detws_uptime_seconds gauge\n"
-             "detws_uptime_seconds %lu\n"
-             "# HELP detws_http_requests_total Total HTTP responses sent.\n"
-             "# TYPE detws_http_requests_total counter\n"
-             "detws_http_requests_total %lu\n"
-             "# HELP detws_http_responses_total HTTP responses by status class.\n"
-             "# TYPE detws_http_responses_total counter\n"
-             "detws_http_responses_total{class=\"2xx\"} %lu\n"
-             "detws_http_responses_total{class=\"4xx\"} %lu\n"
-             "detws_http_responses_total{class=\"5xx\"} %lu\n"
-             "# HELP detws_active_connections Currently active connection slots.\n"
-             "# TYPE detws_active_connections gauge\n"
-             "detws_active_connections %d\n"
-             "# HELP detws_max_connections Connection slot capacity.\n"
-             "# TYPE detws_max_connections gauge\n"
-             "detws_max_connections %d\n"
-             "# HELP detws_free_heap_bytes Free heap in bytes.\n"
-             "# TYPE detws_free_heap_bytes gauge\n"
-             "detws_free_heap_bytes %u\n",
-             up / 1000UL, (unsigned long)_stat_requests, (unsigned long)_stat_2xx, (unsigned long)_stat_4xx,
-             (unsigned long)_stat_5xx, active, (int)MAX_CONNS, (unsigned)heap);
-    send(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", body);
+    snprintf(s_m_uptime, sizeof(s_m_uptime), "%lu", up / 1000UL);
+    snprintf(s_m_requests, sizeof(s_m_requests), "%lu", (unsigned long)_stat_requests);
+    snprintf(s_m_2xx, sizeof(s_m_2xx), "%lu", (unsigned long)_stat_2xx);
+    snprintf(s_m_4xx, sizeof(s_m_4xx), "%lu", (unsigned long)_stat_4xx);
+    snprintf(s_m_5xx, sizeof(s_m_5xx), "%lu", (unsigned long)_stat_5xx);
+    snprintf(s_m_active, sizeof(s_m_active), "%d", active);
+    snprintf(s_m_max, sizeof(s_m_max), "%d", (int)MAX_CONNS);
+    snprintf(s_m_heap, sizeof(s_m_heap), "%u", (unsigned)heap);
+    snprintf(s_m_minheap, sizeof(s_m_minheap), "%u", (unsigned)min_heap);
+    snprintf(s_m_heapsize, sizeof(s_m_heapsize), "%u", (unsigned)heap_size);
+    snprintf(s_m_maxalloc, sizeof(s_m_maxalloc), "%u", (unsigned)max_alloc);
+
+    send_template(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", DETWS_METRICS_PROM, metrics_var);
 }
 #endif // DETWS_ENABLE_METRICS
 
