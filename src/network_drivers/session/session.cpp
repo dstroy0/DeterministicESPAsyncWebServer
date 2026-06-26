@@ -23,6 +23,9 @@
 #if DETWS_ENABLE_TELNET
 #include "../presentation/telnet.h"
 #endif
+#if DETWS_ENABLE_MODBUS
+#include "services/modbus/modbus.h"
+#endif
 
 #if DETWS_ENABLE_TLS
 #include "../presentation/http_parser.h"
@@ -135,6 +138,11 @@ static const ProtoHandler s_telnet_handler = {telnet_accept, telnet_rx, telnet_c
 #if DETWS_ENABLE_SSH
 static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, nullptr};
 #endif
+#if DETWS_ENABLE_MODBUS
+// Modbus keeps no per-connection state (a partial frame waits in the rx ring),
+// so only the data handler is needed.
+static const ProtoHandler s_modbus_handler = {nullptr, modbus_rx, nullptr, nullptr};
+#endif
 
 const ProtoHandler *proto_get(ConnProto proto)
 {
@@ -149,6 +157,9 @@ const ProtoHandler *proto_get(ConnProto proto)
 #endif
 #if DETWS_ENABLE_SSH
         s_proto_handlers[PROTO_SSH] = &s_ssh_handler;
+#endif
+#if DETWS_ENABLE_MODBUS
+        s_proto_handlers[PROTO_MODBUS] = &s_modbus_handler;
 #endif
     }
     const ProtoHandler *h = ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;
