@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`8c9343a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c9343af840c122286242a883fa74606416760e0))
+- update CHANGELOG.md [skip ci] ([`096c111`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/096c11141efebbe8374fa28720fecf0781f82c77))
+- add CodeQL analysis workflow + badge ([`a9e2d41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e2d41191133d570fd1b05e9155d6cbdb43cf84))
 - update test report [skip ci] ([`9aadf15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9aadf157edeca34a55e01f47152f2f91ff9c2a5e))
 - update CHANGELOG.md [skip ci] ([`ceccf9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ceccf9e81732dc269a25c6b308a6438b418f502c))
 - bump actions/checkout from 4 to 7 ([`a1e4517`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1e4517eea492133fc5db849c281205458414c01))
@@ -22,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`1de0fb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1de0fb8e85342da1126b6ee119c5a57cf923969c))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`9418a4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9418a4b6f4cfbcc82a0b9ff45937adbd2051e0bd))
 - Merge pull request #3 from dstroy0/dependabot/github_actions/actions/checkout-7 ([`316c028`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/316c028a4eadf2004138e6e86390ae632a182699))
 - codeql workflow ([`dda3378`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dda3378b7f2fd5fd0c498236709ee7b741708287))
@@ -30,6 +34,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`8c32e03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c32e0365e273f7f19b8c7c03776eaa2f9cefd85))
 - Bump version: 2.1.1 → 2.1.2 ([`9e0f1a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e0f1a765b5ccd43954caacc436c2410c865c980))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`39d6cb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d6cb7aa8fe7185cb337344fc66db51ab3ff23d))
+
+### Documentation
+
+- fill in CodeQL findings (no security issues) ([`11870bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11870bbccf6507120b17da7d43e7959fc289eb29))
 
 ### Features
 
