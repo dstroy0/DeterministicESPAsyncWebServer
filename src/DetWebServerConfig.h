@@ -1437,6 +1437,26 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// CSRF protection  (DETWS_ENABLE_CSRF)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Opt-in CSRF protection for state-changing HTTP requests.
+ *
+ * Default off (zero cost / no behavior change). When set, every POST / PUT /
+ * PATCH / DELETE must carry a valid `X-CSRF-Token` header (a stateless,
+ * HMAC-signed token); requests without one get 403 Forbidden. GET / HEAD /
+ * OPTIONS are exempt (they are not state-changing). Clients fetch a token from
+ * the built-in `GET /csrf` endpoint, which also sets it as the `csrf` cookie.
+ * No server-side session storage - the token self-validates against an HMAC
+ * secret seeded from the hardware RNG at begin(); it is independent of
+ * DETWS_ENABLE_AUTH.
+ */
+#ifndef DETWS_ENABLE_CSRF
+#define DETWS_ENABLE_CSRF 0
+#endif
+
+// ---------------------------------------------------------------------------
 // Telnet sizing constants  (DETWS_ENABLE_TELNET must be 1)
 // ---------------------------------------------------------------------------
 
