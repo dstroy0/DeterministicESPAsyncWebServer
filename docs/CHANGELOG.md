@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.9.0] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.9.0 - 2026-06-26</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c560ef5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c560ef514feb0e5a9a571d9ab1aef4f731b9e2c5))
+- update CHANGELOG.md [skip ci] ([`38d54b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38d54b902b43f178b35ae70f01c90fbc38653616))
+
+### Changes
+
+- Bump version: 2.8.0 → 2.9.0 ([`2b719ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b719ea331646cb677562e474b9f05643c9e94cf))
+
+### Features
+
+- flash partition-map monitor endpoint ([`9094f36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9094f36f5ad27c9a4b6dc9397a55ecdebf82ec56))
+
+</details>
+
 ## [2.8.0] - 2026-06-26
 
 <details>
