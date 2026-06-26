@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f1c64cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1c64cbb7f09ae172e277b69b6e84019e5c5229b))
+- update CHANGELOG.md [skip ci] ([`7c10e22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c10e228f223f68498d5552aca6f382c9f03b4d4))
 - update test report [skip ci] ([`3680129`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/368012928b29c0735fb829fe792457e366de4577))
 - update CHANGELOG.md [skip ci] ([`281429e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/281429e5d3c52ec63093bd6d09ed7155c17877d4))
 - update test report [skip ci] ([`ca5b149`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca5b149dd1527bdd7593f8a50d3b8cbb79add1f6))
@@ -19,12 +21,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5cd3317`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cd3317e84bc9a64056fcf3c6cc7ebbcd8e18c98))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2bcb1ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2bcb1eef81c3c85360df5880b19680ed84f37181))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`96c5029`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96c50291de9dece7e815f911daee742da896a356))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`757ad23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/757ad230929d5989329160faa6eb36c5050eae66))
 
 ### Features
 
+- CoAP resource observation - RFC 7641 (Observe) ([`d9b4189`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9b41893bdc645fd69e74576811e0f4ef8ea18dd))
 - outbound SNMP notifications - traps and informs (v2c + v3) ([`617d0ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/617d0ffd1445cce701cbf245fa9a85e28bf8b5d7))
 - outbound WebSocket client + wss (RFC 6455) ([`6f3e9d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f3e9d91088c9a386c1d378f9a3f5ba00e27774b))
 - MQTT 3.1.1 client + MQTTS, full QoS 0/1/2 ([`f037ef8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f037ef87cc251ecb7e88aa517ade25abd74221d3))
