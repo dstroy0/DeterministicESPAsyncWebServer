@@ -326,12 +326,11 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                     p->headers[h].key[p->current_token_idx] = c;
                 p->current_token_idx++;
             }
-            else if (h < MAX_HEADERS)
-            {
-                p->parse_state = PARSE_ERROR; // key too long for stored header
-            }
-            // Past MAX_HEADERS with an over-long key: the scratch key is already
-            // capped; ignore the excess (it cannot match Host/Content-Length).
+            // An over-long key is silently capped (a capacity limit, not an
+            // error): the scratch/stored key is already full and the excess is
+            // ignored. A truncated key cannot match the short Host/Content-Length
+            // names, and not failing the request keeps long but valid header names
+            // (CORS, Sec-WebSocket-Extensions, ...) working. Mirrors the value path.
         }
         break;
 

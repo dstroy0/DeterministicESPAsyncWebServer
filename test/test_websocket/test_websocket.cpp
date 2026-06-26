@@ -838,6 +838,44 @@ void stress_ws_parse_two_consecutive_frames()
     TEST_ASSERT_EQUAL_STRING(t2, (const char *)ws->buf);
 }
 
+#if DETWS_ENABLE_WS_DEFLATE
+// permessage-deflate: a compressed (RSV1) frame is decompressed before delivery.
+void test_ws_permessage_deflate_inbound()
+{
+    // "Hello, World!" as permessage-deflate (SYNC_FLUSH, marker stripped) - the
+    // same vector the inflate suite uses; the parser appends the marker itself.
+    static const uint8_t comp[] = {242, 72, 205, 201, 201, 215, 81, 8, 207, 47, 202, 73, 81, 4, 0};
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true; // extension negotiated at handshake
+
+    uint8_t frame[64];
+    size_t n = build_frame(frame, WS_OP_TEXT, true, comp, (uint16_t)sizeof(comp), true);
+    frame[0] |= 0x40; // RSV1 = compressed message
+
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_EQUAL_size_t(13, ws->msg_len);
+    TEST_ASSERT_EQUAL_STRING("Hello, World!", (const char *)ws->buf);
+}
+
+// With the feature compiled in but no extension negotiated, an RSV1 frame is
+// still a protocol error.
+void test_ws_rsv1_without_negotiation_closes()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = false;
+    uint8_t frame[16];
+    size_t n = build_frame(frame, WS_OP_TEXT, true, (const uint8_t *)"x", 1, true);
+    frame[0] |= 0x40;
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+#endif // DETWS_ENABLE_WS_DEFLATE
+
 int main()
 {
     UNITY_BEGIN();
@@ -907,6 +945,10 @@ int main()
     RUN_TEST(test_ws_parse_stops_at_frame_ready);
     RUN_TEST(test_ws_reset_frame_clears_fields);
     RUN_TEST(test_ws_parse_mask_applied_correctly);
+#if DETWS_ENABLE_WS_DEFLATE
+    RUN_TEST(test_ws_permessage_deflate_inbound);
+    RUN_TEST(test_ws_rsv1_without_negotiation_closes);
+#endif
 
     // Stress tests
     RUN_TEST(stress_ws_parse_reset_100_cycles);

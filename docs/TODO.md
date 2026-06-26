@@ -11,15 +11,28 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > runtime stats, access-log hook) are all **done** - host-tested where possible
 > and ESP32-firmware-linked. Items marked `[x]` carry a _(done)_ note.
 >
+> **Since v2.0.0** (all opt-in, default off, host-tested where possible +
+> HW-verified): HTTPS/**TLS** server, **mTLS**, and **TLS session resumption**
+> (RFC 5077 tickets); outbound **MQTT** (3.1.1) and **WebSocket** clients, each
+> also over TLS; **SNMP** traps/informs (v2c + v3); **CoAP** resource Observe
+> (RFC 7641) and block-wise transfer (RFC 7959); a **per-IP accept throttle**;
+> **WebDAV** (RFC 4918); and a **Modbus TCP** slave. Plus an architecture pass
+> (pluggable protocol-handler dispatch, flow-control primitives) and the
+> `src/web` asset-generator pipeline.
+>
 > Optional services use only the base SDK + lwIP + mbedTLS (no add-on Arduino
 > libraries): mDNS via the ESP-IDF `mdns` component, the captive-portal DNS via a
 > raw lwIP UDP socket. Each is gated by a `DETWS_ENABLE_*` flag (default off).
 >
-> **Still deferred (YAGNI / large):** TLS (HTTPS) server; SSH multiplexing,
-> per-direction NEWKEYS, and the KDF `K1‖K2…` extension (no current use case);
-> moving `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification
-> of the WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal
-> join) needs WiFi credentials / a phone - only compile+link verified here.
+> **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
+> abstraction (the two architectural tracks); concurrent TLS connections
+> (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); client-side TLS
+> resumption (server tickets are done); WebDAV `PROPPATCH` + streaming (large)
+> PUT; SNMPv3 _inform_ (the v3 trap is done); SSH multiplexing, per-direction
+> NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
+> `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification of the
+> WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal join) needs
+> WiFi credentials / a phone.
 
 ## Feature parity with ESPAsyncWebServer (ESP32Async)
 
@@ -142,6 +155,108 @@ native Unity tests before moving on. Each must keep the "no heap after
 
 </details>
 
+## Round 2 - post-v2.0.0 subsystems
+
+<details>
+<summary><b>Expand Round 2 items</b></summary>
+
+All opt-in (`DETWS_ENABLE_*`, default off), host-tested where a pure codec exists
+and HW-verified on an ESP32 DevKit. Per-feature footprints are in the README.
+
+- [x] **Architecture pass.** Pluggable per-protocol handler dispatch
+      (`network_drivers/session/proto_handler.h` - a `ProtoHandler` table, so a new
+      TCP protocol registers a handler instead of editing the dispatchers),
+      flow-control primitives ([`det_conn_send`](@ref det_conn_send) returns bool,
+      `det_conn_sndbuf`, context-safe `det_conn_raw_send`), response header+body
+      write coalescing, and a TLS-BIO unification that fixed a latent handshake
+      cross-thread race.
+- [x] **Client TLS hardening** (extends [`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS)).
+      Optional CA-chain + hostname verification and SHA-256 cert pinning for
+      outbound TLS; encrypt-only by default. `native_http_client`; HW-verified.
+- [x] **MQTT 3.1.1 client** ([`DETWS_ENABLE_MQTT`](@ref DETWS_ENABLE_MQTT)) + MQTTS.
+      Full QoS 0/1/2 (DUP retransmit + inbound QoS-2 duplicate suppression),
+      Last-Will, keepalive.
+      Host-tested codec (`native_mqtt`); example `46.MqttClient`.
+- [x] **WebSocket client** ([`DETWS_ENABLE_WS_CLIENT`](@ref DETWS_ENABLE_WS_CLIENT))
+      + `wss://`. Masked frames, fragment reassembly, ping/pong. Host-tested codec
+      (`native_ws_client`); example `47.WebSocketClient`.
+- [x] **SNMP notifications** ([`DETWS_ENABLE_SNMP_TRAP`](@ref DETWS_ENABLE_SNMP_TRAP)).
+      Outbound Traps + InformRequests (v2c) and SNMPv3 USM authPriv traps. Host
+      -tested PDU builder (`native_snmp_trap`); example `48.SnmpTrap`.
+- [x] **CoAP server** ([`DETWS_ENABLE_COAP`](@ref DETWS_ENABLE_COAP), RFC 7252) with
+      resource **Observe** (RFC 7641, [`DETWS_ENABLE_COAP_OBSERVE`](@ref DETWS_ENABLE_COAP_OBSERVE))
+      and **block-wise transfer** (RFC 7959, [`DETWS_ENABLE_COAP_BLOCK`](@ref DETWS_ENABLE_COAP_BLOCK)).
+      Host-tested core (`native_coap`); examples `49.CoapObserve`, `50.CoapBlock`.
+- [x] **Per-IP accept throttle** ([`DETWS_ENABLE_PER_IP_THROTTLE`](@ref DETWS_ENABLE_PER_IP_THROTTLE)).
+      Closes the cross-connection flood gap left by the global throttle. Example
+      `51.PerIpThrottle`.
+- [x] **WebDAV** ([`DETWS_ENABLE_WEBDAV`](@ref DETWS_ENABLE_WEBDAV), RFC 4918 class 1
+      + advisory locks): OPTIONS/PROPFIND/GET/HEAD/PUT/DELETE/MKCOL/COPY/MOVE/LOCK/
+      UNLOCK over the FS. Host-tested 207 builder (`native_webdav`); example
+      `52.WebDav`.
+- [x] **Modbus TCP slave** ([`DETWS_ENABLE_MODBUS`](@ref DETWS_ENABLE_MODBUS)). Fixed
+      data model + MBAP/PDU codec, FC 1/2/3/4/5/6/15/16, via a `PROTO_MODBUS`
+      handler. Host-tested (`native_modbus`); example `53.ModbusTcp`.
+- [x] **TLS session resumption** (see the TLS item) and the **web-asset generator**
+      (`src/web/input` -> `web_assets.{h,cpp}` via `build_assets.py`; `/metrics` and
+      `/stats` are editable `{{name}}` templates).
+
+Open follow-ups discovered during the above:
+
+- [ ] **WebDAV: `PROPPATCH`** (currently 405), **streaming (large) PUT** (the body
+      is buffered to [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE)), and **collection `COPY`**
+      (files only - collection copy returns 501).
+- [ ] **Client-side TLS resumption** - the server issues tickets, but the
+      persistent client TLS session does not yet present one on reconnect.
+- [ ] **SNMPv3 _inform_** - the v3 trap is implemented; the confirmed v3 inform is
+      not.
+- [ ] **CoAP server scope** - only the piggybacked-response model is implemented
+      (`coap.h`): CON -> piggybacked ACK, NON -> NON. Separate (deferred) responses,
+      CON retransmission + message de-duplication, and `/.well-known/core` resource
+      discovery are out of scope - add them only if a non-inline responder or a
+      discovery client is needed.
+- [ ] **Concurrent TLS** (`MAX_TLS_CONNS` > 1) - needs a smaller-record ESP-IDF
+      build (~41.5 KB arena per connection overflows DRAM at 2 on a stock Arduino
+      build).
+- [ ] **IPv6 dual-stack** and an **Ethernet PHY abstraction** - the two
+      architectural tracks deferred for a separate decision.
+- [ ] **Shared scratch-buffer pool (decided: build before permessage-deflate).**
+      Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
+      and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming
+      deflate window). These are mutually exclusive in time, so one shared arena
+      cuts peak DRAM. **Model - region-reset-per-dispatch:** one compile-time-sized
+      BSS arena (`DETWS_SCRATCH_ARENA_SIZE`); `scratch_alloc(n, align)`
+      bump-allocates; the arena is reset to empty at the top of every event
+      dispatch in `server_tick()`, before the protocol handler runs.
+      **Race-safety (verified):** all codec/protocol logic runs only in the single
+      loop task (`server_tick` / `handle`); the lwIP callbacks (tcpip_thread, maybe
+      a different core) only fill the rx ring + enqueue events and never touch
+      scratch - so the arena has exactly one accessor and needs no lock. Add a debug
+      owner-task assert (`xTaskGetCurrentTaskHandle`) that fails loud if any foreign
+      context ever borrows. **Exhaustion-safety:** borrows live only within one
+      dispatch and are auto-reclaimed at the reset, so leaks (creeping exhaustion)
+      are impossible; an over-budget `scratch_alloc` returns nullptr and every
+      caller has a defined fail-closed path (WS close 1011, 503, or skip the
+      optimization) - never UB, never block. Sizing = worst-case concurrent borrows
+      in any single dispatch. This generalizes the existing single-loop-confined
+      `crypto_work` pattern (only one SSH KEX runs at a time).
+      _Status:_ arena core + LIFO mark/release + RAII `ScratchScope` landed
+      (`test_scratch`, 14 cases; exhaustion + no-accumulate verified);
+      `scratch_reset()` wired into `server_tick()`; `ssh_pkt_recv` migrated as the
+      first tenant (its ~2 KB stack buffer removed). 602 host tests green and
+      esp32dev links. Next tenant: the permessage-deflate window.
+
+</details>
+
+## Roadmap & known limitations
+
+Forward-looking feature ideas and the future-work backlog have moved to their own
+files so this one stays focused on bugfixes, maintenance, and the record of
+shipped work:
+
+- **Future features / backlog:** [ROADMAP.md](ROADMAP.md)
+- **Deliberate constraints / caveats:** [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
+
 ## Build / toolchain
 
 <details>
@@ -212,7 +327,10 @@ native Unity tests before moving on. Each must keep the "no heap after
       a per-IP table was deliberately not added (YAGNI; the mock PCB carries no
       remote IP and a 1-3 connection device gains little from per-IP state).
       Rollover-safe; tested by `test_accept_throttle*\*`in`test_transport`.
-      Finer-grained / per-IP throttling remains a network-layer concern.
+      A per-IP accept throttle was **since added** (round 2,
+      [`DETWS_ENABLE_PER_IP_THROTTLE`](@ref DETWS_ENABLE_PER_IP_THROTTLE)): a fixed
+      BSS bucket table keyed by source IPv4 with a per-address fixed window,
+      host-tested in `test_transport`.
 
 - [x] **[`base64_decode()`](@ref base64_decode) has no output-capacity guard (Basic-auth ingestion).**
       _(done)_ `base64_decode()` now takes a `dst_cap` parameter
@@ -262,6 +380,14 @@ native Unity tests before moving on. Each must keep the "no heap after
       _(Deferred - YAGNI: every negotiated algorithm needs ≤32 B; add the loop
       only when an algorithm that needs more is introduced.)_
 
+- [ ] **Session rekeying (RFC 4253 §9).** Not implemented. The connection is
+      closed when the send/receive sequence number would wrap (`ssh_keymat.h`
+      DEFENSE 6, `ssh_transport.cpp`) - the safe fallback. There is no
+      data-volume / time-based rekey (the recommended ~1 GB / 1 h triggers), so a
+      very long-lived high-throughput session is dropped instead of rekeyed. Add a
+      KEXINIT-driven rekey if such sessions become a use case. _(Deferred - YAGNI:
+      a headless IoT shell never approaches the 2^32-packet wrap.)_
+
 </details>
 
 ## Performance / hardware acceleration (medium)
@@ -293,17 +419,22 @@ native Unity tests before moving on. Each must keep the "no heap after
 <details>
 <summary><b>Expand HTTP / core (medium) items</b></summary>
 
-- [ ] **No TLS (HTTPS).** Plain HTTP only; relies on a trusted LAN, a TLS
-      terminator, or the SSH channel. A real fix is large (mbedTLS TLS server).
+- [x] **TLS (HTTPS).** _(done)_ Opt-in mbedTLS server on a fixed static arena
+      ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) - see the HTTPS / TLS item under
+      Optional services, plus mTLS, `wss://` / TLS-SSE, and RFC 5077 session
+      resumption.
 
 - [ ] **`Date` response header not emitted.** Acceptable for a clock-less device
       (RFC 7231 §7.1.1.2). A time source now exists ([`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP) +
       [`detws_ntp_http_date()`](@ref detws_ntp_http_date)); auto-injecting `Date` into every response is left
       off the hot path - apps that want it can add the header from a handler.
 
-- [ ] **Recv scratch on the stack.** `ssh_pkt_recv` uses a
-      `SSH_PKT_BUF_SIZE + 32` (~2 KB) stack buffer; size the ESP32 SSH task stack
-      accordingly or move it to BSS.
+- [x] **Recv scratch off the stack.** _(done)_ `ssh_pkt_recv`'s per-packet
+      plaintext buffer (`SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN`, ~2 KB) moved from
+      the stack into the shared per-dispatch scratch arena
+      (`network_drivers/session/scratch.*`), borrowed under an RAII `ScratchScope`
+      so it is reclaimed on every exit path and reused (not accumulated) across
+      packets in one call. See the shared scratch-pool item under Round 2.
 
 </details>
 
@@ -364,6 +495,17 @@ by how often a deployed device needs it.
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
 
+- [x] **Multi-source time fallback ([`DETWS_ENABLE_TIME_SOURCE`](@ref DETWS_ENABLE_TIME_SOURCE)).**
+      _(done)_ A zero-heap registry of user-defined time sources
+      (`src/services/time_source/time_source.*`): each source is a callback
+      returning Unix epoch seconds (0 = no valid time), registered with a priority.
+      `detws_time_now()` queries them in ascending priority and returns the first
+      valid result (stopping early so a costly lower-priority read is skipped), so
+      the device falls back automatically (e.g. GPS fix lost -> RTC -> NTP);
+      `detws_time_source_active()` reports which source answered. Host-tested
+      (`native_time_source`, 9 cases) with mock sources; example
+      `56.TimeSourceFallback` (NTP preferred, RTC fallback); esp32dev links.
+
 - [x] **Zero-copy template slicing.** _(addressed by design)_
       [`send_template()`](@ref DetWebServer::send_template) never buffers the
       expanded body: it walks the template twice (size, then stream each literal
@@ -378,6 +520,10 @@ by how often a deployed device needs it.
       plus top-level object readers `json_get_str()`/`json_get_int()`/
       `json_get_bool()` (`src/network_drivers/presentation/json.*`). ArduinoJson stays optional (it
       heap-allocates). Tested by `test_json` (17); example `10.Json`.
+      _Follow-up:_ string unescaping decodes `\uXXXX` only for code points ≤ 0xFF
+      (one byte); higher code points and UTF-16 surrogate pairs become `?`
+      (`json.cpp`). Add UTF-8 multi-byte emission + surrogate-pair joining if full
+      Unicode reads are needed.
 
 - [x] **Web "serial" terminal ([`DETWS_ENABLE_WEB_TERMINAL`](@ref DETWS_ENABLE_WEB_TERMINAL)).**
       _(done)_ A WebSerial-style browser terminal over the existing WebSocket
@@ -394,9 +540,11 @@ by how often a deployed device needs it.
       CSPRNG RNG; BIO bridged to the raw `tcp_pcb` + rx ring; handshake pumped in
       the session loop. `begin_tls(port, cert, …)` / [`listen_tls()`](@ref DetWebServer::listen_tls).
       HW-verified: `ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+. See SECURITY.md §6.
-      Example `22.HTTPS`. _Follow-ups:_ `wss://` + TLS-SSE (HTTP responses only
-      for now; an upgrade on a TLS conn returns 501), session resumption, and
-      `MAX_TLS_CONNS` > 1 (needs smaller IDF record buffers).
+      Example `22.HTTPS`. `wss://` + TLS-SSE now run over the same record layer,
+      and **session resumption** shipped (RFC 5077 tickets,
+      [`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION), example
+      `54.TlsResumption`). _Still open:_ `MAX_TLS_CONNS` > 1 (needs smaller IDF
+      record buffers) and client-side resumption.
 
 - **SNMP agent v1 / v2c / v3.** Zero-heap ASN.1 BER codec + a fixed MIB
       (OID table) over a raw lwIP UDP socket, GET / GETNEXT / GETBULK / SET.
@@ -434,8 +582,61 @@ by how often a deployed device needs it.
         flag to enable the user). _Follow-up:_ derive the engine ID from the chip
         MAC; persist engineBoots across reboots.
 
-(Deliberately omitted as not worth the footprint for this class of device:
-WebSocket permessage-deflate.)
+- [x] **Telnet console ([`DETWS_ENABLE_TELNET`](@ref DETWS_ENABLE_TELNET)).**
+      _(done)_ Minimal RFC 854 line-oriented Telnet server dispatched from the
+      session layer's `PROTO_TELNET` arm
+      (`src/network_drivers/presentation/telnet.*`): negotiates server echo +
+      suppress-go-ahead (character mode), accumulates a line with backspace
+      handling, hands each completed line to a command callback, and can push
+      output to all connected clients. Plaintext - no auth or encryption, so use
+      it only on a trusted LAN (prefer SSH or the WebSocket terminal otherwise).
+      Example `36.Telnet`.
+
+- [x] **JWT bearer auth ([`DETWS_ENABLE_JWT`](@ref DETWS_ENABLE_JWT)).** _(done)_
+      Stateless `Authorization: Bearer <jwt>` verification, HS256
+      (HMAC-SHA-256, reusing the SSH crypto layer), constant-time signature
+      compare, all in fixed stack/BSS - no sessions, no heap
+      (`src/services/jwt/*`). Host-tested (`native_jwt`); example `21.JWTAuth`.
+      _Follow-up:_ the verifier reads but does not enforce `exp`/`nbf`/`iat` (the
+      device may have no clock); now that [`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP)
+      exists, optionally check time claims when a clock is synced. RS256/ES256 are
+      out of scope (asymmetric, allocation-heavy).
+
+- [x] **Remote syslog ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG)).**
+      _(done)_ RFC 5424 log lines shipped as UDP datagrams via the transport UDP
+      service (`src/services/syslog/*`): a pure host-testable `syslog_format()`
+      builds one line into a caller buffer, an ESP32-only `syslog_log()` sends it.
+      Host-tested (`native_syslog`); example `41.Syslog`.
+
+- [x] **Streaming file upload ([`DETWS_ENABLE_UPLOAD`](@ref DETWS_ENABLE_UPLOAD)).**
+      _(done)_ A `POST` route streams its body straight into a file on an Arduino
+      FS (LittleFS/SPIFFS/SD) in `FILE_CHUNK_SIZE` pieces - the upload never has to
+      fit in RAM (`src/services/upload_service.*`). Reuses the parser's
+      streaming-body hook. Example `30.FileUpload`. _Constraint:_ only one streaming
+      sink exists, so `DETWS_ENABLE_UPLOAD` and [`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)
+      share it - enable at most one per build.
+
+- [x] **WebSocket permessage-deflate - Phase 1 (inbound)**
+      (`DETWS_ENABLE_WS_DEFLATE`, RFC 7692). _(done)_ The handshake negotiates
+      `permessage-deflate` with `client_no_context_takeover; server_no_context_takeover`,
+      so each message decompresses independently. A compressed message (RSV1 on its
+      first frame) is INFLATEd before delivery by a hand-rolled bounded RFC 1951
+      decompressor (`network_drivers/presentation/inflate.*`) whose Huffman tables
+      are borrowed from the shared per-dispatch scratch arena - no per-connection
+      buffer, and the output buffer doubles as the LZ77 window (no separate 32 KB
+      window). Both the compressed input and the decompressed output must fit
+      `WS_FRAME_SIZE`; a malformed stream closes 1002. Outbound frames stay
+      uncompressed (§6 permits). Host-tested: `native_inflate` (12 cases, vectors
+      grounded against zlib) + `native_ws_deflate` (handshake / RSV1 / delivery);
+      esp32dev links; example `55.WebSocketCompression`. _HW test pending a board._
+  - [ ] **Phase 2 - outbound compress.** A bounded static-Huffman DEFLATE encoder
+        (LZ77 match window + small hash table, ~4-8 KB; `no_context_takeover`) so the
+        device also compresses what it sends. Deferred - device->browser payloads
+        are usually small, and INFLATE was the higher-value half.
+
+(Deliberately omitted as not worth the footprint for this class of device: none
+currently. WebSocket permessage-deflate - previously omitted - now ships its
+inbound half; see above.)
 
 </details>
 
@@ -517,10 +718,9 @@ Operator / sysadmin:
       called the removed `DeterministicAsyncTCP::init(80)`; now [`pool_init()`](@ref DeterministicAsyncTCP::pool_init)).
       All 35 cases pass.
 
-- [ ] **Update `docs/CHANGELOG.md`** for this cycle: HTTP RFC fixes (Host,
-      Content-Length, 405/501, HEAD), WebSocket masking/fragmentation, the full
-      SSH server (KEX→auth→channel), publickey auth, [`DETWS_SSH_ALLOW_PASSWORD`](@ref DETWS_SSH_ALLOW_PASSWORD),
-      and the docs reorg.
+- [x] **`docs/CHANGELOG.md` upkeep.** _(done - automated)_ Generated and
+      committed by the `changelog.yml` workflow (`chore: update CHANGELOG.md
+      [skip ci]`), so it tracks each cycle without a manual pass.
 
 - [x] **Add an SSH usage example** _(done)_ - `examples/34.SSH/34.SSH.ino`:
       enables SSH, loads the host key from NVS ([`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey)), installs

@@ -70,9 +70,16 @@
 #define MAX_PATH_LEN 64
 #endif
 
-/** @brief Maximum header field-name length (e.g. `"Content-Type"`). */
+/**
+ * @brief Maximum header field-name length (e.g. `"Content-Type"`).
+ *
+ * Must accommodate the longest header name the app needs to read by key.
+ * Standard names reach 30+ chars (`Sec-WebSocket-Extensions` = 24,
+ * `Access-Control-Request-Headers` = 30), so the default leaves margin; an
+ * over-long key is truncated (not rejected) by the parser.
+ */
 #ifndef MAX_KEY_LEN
-#define MAX_KEY_LEN 24
+#define MAX_KEY_LEN 32
 #endif
 
 /** @brief Maximum header field-value length. */
@@ -360,6 +367,21 @@
 /** @brief WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). */
 #ifndef DETWS_ENABLE_WEBSOCKET
 #define DETWS_ENABLE_WEBSOCKET 1
+#endif
+
+/**
+ * @brief WebSocket permessage-deflate (RFC 7692) - inbound message decompression.
+ *
+ * When set (and DETWS_ENABLE_WEBSOCKET is on), the server negotiates the
+ * `permessage-deflate` extension and decompresses inbound compressed (RSV1)
+ * messages via a bounded INFLATE (network_drivers/presentation/inflate.*), whose
+ * table scratch is borrowed from the shared per-dispatch arena. The extension is
+ * negotiated with `client_no_context_takeover` so each message decompresses
+ * independently. Outbound messages are sent uncompressed (RFC 7692 sec 6 permits
+ * this). Default off.
+ */
+#ifndef DETWS_ENABLE_WS_DEFLATE
+#define DETWS_ENABLE_WS_DEFLATE 0
 #endif
 
 /** @brief Server-Sent Events push support. */
@@ -773,6 +795,54 @@
 #define DETWS_ENABLE_NTP 0
 #endif
 
+/**
+ * @brief Multi-source time fallback (NTP / RTC / GPS / ... by priority).
+ *
+ * When set, src/services/time_source/time_source.h provides a small registry of
+ * user-defined time sources, each a callback returning Unix epoch seconds (0 when
+ * that source has no valid time). detws_time_now() queries them in priority order
+ * (lowest value first) and returns the first valid result, so the device falls
+ * back automatically when its preferred clock is unavailable. Pure and zero-heap
+ * (a fixed source table); host-testable. Default off.
+ */
+#ifndef DETWS_ENABLE_TIME_SOURCE
+#define DETWS_ENABLE_TIME_SOURCE 0
+#endif
+
+/** @brief Maximum registered time sources (DETWS_ENABLE_TIME_SOURCE). */
+#ifndef DETWS_TIME_SOURCE_MAX
+#define DETWS_TIME_SOURCE_MAX 4
+#endif
+
+/**
+ * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
+ *
+ * When set, src/services/config_store/config_store.h provides a typed key/value
+ * API (string / u32 / blob) that routes core settings into the ESP32's native
+ * NVS partition (via `Preferences`) instead of a JSON file on the filesystem -
+ * which survives FS corruption and is the corruption-resistant home for
+ * credentials. On host builds it is backed by a fixed in-memory table so the
+ * typed contract is unit-testable. Default off.
+ */
+#ifndef DETWS_ENABLE_CONFIG_STORE
+#define DETWS_ENABLE_CONFIG_STORE 0
+#endif
+
+/** @brief Max key/value entries in the host (test) config backend. */
+#ifndef DETWS_CONFIG_MAX_ENTRIES
+#define DETWS_CONFIG_MAX_ENTRIES 16
+#endif
+
+/** @brief Max key length incl. null (NVS caps keys at 15 chars). */
+#ifndef DETWS_CONFIG_KEY_MAX
+#define DETWS_CONFIG_KEY_MAX 16
+#endif
+
+/** @brief Max value bytes per entry in the host (test) config backend. */
+#ifndef DETWS_CONFIG_VAL_MAX
+#define DETWS_CONFIG_VAL_MAX 64
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
@@ -899,11 +969,12 @@
  * @brief MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS).
  *
  * Default off. When set, src/services/mqtt/mqtt.h provides a persistent outbound
- * client: connect to a broker, PUBLISH (QoS 0/1) and SUBSCRIBE to topics, receive
+ * client: connect to a broker, PUBLISH (QoS 0/1/2) and SUBSCRIBE to topics, receive
  * incoming messages via a callback, with keep-alive pings - the dominant IoT
  * messaging pattern, for telemetry push and remote command. The packet codec is
  * host-testable; the transport (DNS + raw lwIP TCP, MQTTS via client-side mbedTLS)
- * is ESP32-only. QoS 2 and Last-Will are not implemented.
+ * is ESP32-only. Full QoS 0/1/2 (outbound DUP retransmit, inbound QoS-2
+ * de-duplication by packet id) and Last-Will are supported.
  */
 #ifndef DETWS_ENABLE_MQTT
 #define DETWS_ENABLE_MQTT 0
@@ -1337,6 +1408,20 @@
  */
 #ifndef SSH_CRYPTO_WORK_SIZE
 #define SSH_CRYPTO_WORK_SIZE 1536
+#endif
+
+/**
+ * @brief Size in bytes of the shared per-dispatch scratch arena.
+ *
+ * Codec / protocol handlers borrow transient working memory from this single BSS
+ * arena (see network_drivers/session/scratch.h) instead of each feature owning a
+ * dedicated buffer. The session layer empties it before every event dispatch, so
+ * it only needs to hold the *peak concurrent* scratch of any one dispatch, not
+ * the sum across features. Tune from the scratch_high_water() reading on a real
+ * workload; an over-budget borrow fails closed (scratch_alloc returns nullptr).
+ */
+#ifndef DETWS_SCRATCH_ARENA_SIZE
+#define DETWS_SCRATCH_ARENA_SIZE 6144
 #endif
 
 // ---------------------------------------------------------------------------

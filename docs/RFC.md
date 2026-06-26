@@ -98,7 +98,8 @@ the per-`begin()` nonce rotation bounds the replay window.
 | ----------------------------------------------- | ------- | ------------------------------------------- |
 | Client→server frames must be masked             | §5.1    | Unmasked frame → Close 1002, fail           |
 | Reserved opcodes rejected                       | §5.2    | Opcode ∉ {0,1,2,8,9,A} → Close 1002         |
-| RSV1–3 must be zero                             | §5.2    | Any RSV bit set → Close 1002                |
+| RSV2/RSV3 must be zero                          | §5.2    | RSV2/RSV3 set → Close 1002                  |
+| RSV1 reserved unless deflate negotiated         | §5.2    | RSV1 set without permessage-deflate → 1002  |
 | Control frames ≤ 125 bytes                      | §5.5    | Oversized control frame → Close 1002        |
 | Control frames must not be fragmented           | §5.5    | Control frame with FIN=0 → Close 1002       |
 | Payload ≤ [`WS_FRAME_SIZE`](@ref WS_FRAME_SIZE) | §5.2    | Oversized / 64-bit length → Close 1009      |
@@ -110,6 +111,18 @@ Fragmented data messages (continuation frames, §5.4) are reassembled into the
 per-connection buffer and delivered once the FIN frame arrives; control frames
 may be interleaved between fragments. The reassembled message must fit in
 `WS_FRAME_SIZE` (else Close 1009).
+
+### permessage-deflate (RFC 7692)
+
+Optional inbound message compression ([`DETWS_ENABLE_WS_DEFLATE`](@ref DETWS_ENABLE_WS_DEFLATE),
+default off). When the client offers `permessage-deflate`, the server accepts it
+with `client_no_context_takeover; server_no_context_takeover`, so every message
+decompresses independently. A compressed message (RSV1 set on its first frame) is
+INFLATEd before delivery via a bounded RFC 1951 decompressor whose tables come
+from the shared per-dispatch scratch arena; the 0x00 0x00 0xff 0xff marker
+(§7.2.2) is appended internally. Both the compressed input and the decompressed
+output must fit `WS_FRAME_SIZE` (else Close 1009); a malformed stream closes 1002.
+Outbound frames are sent uncompressed (§6 permits this).
 
 ## Transport security - TLS (RFC 5246 / 8446)
 

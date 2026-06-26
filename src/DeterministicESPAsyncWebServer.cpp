@@ -1167,12 +1167,32 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
         return false;
 
     char hdr[WS_HDR_BUF_SIZE];
-    int hlen = snprintf(hdr, sizeof(hdr),
-                        "HTTP/1.1 101 Switching Protocols\r\n"
-                        "Upgrade: websocket\r\n"
-                        "Connection: Upgrade\r\n"
-                        "Sec-WebSocket-Accept: %s\r\n\r\n",
-                        accept);
+    int hlen;
+#if DETWS_ENABLE_WS_DEFLATE
+    // Negotiate permessage-deflate (RFC 7692) if the client offered it. We force
+    // no_context_takeover in both directions so each message decompresses
+    // independently (the INFLATE window is the message buffer, not a kept window).
+    const char *ws_ext = http_get_header(req, "Sec-WebSocket-Extensions");
+    bool pmd = ws_ext && strstr(ws_ext, "permessage-deflate");
+    hlen = snprintf(hdr, sizeof(hdr),
+                    "HTTP/1.1 101 Switching Protocols\r\n"
+                    "Upgrade: websocket\r\n"
+                    "Connection: Upgrade\r\n"
+                    "Sec-WebSocket-Accept: %s\r\n"
+                    "%s"
+                    "\r\n",
+                    accept,
+                    pmd ? "Sec-WebSocket-Extensions: permessage-deflate; client_no_context_takeover; "
+                          "server_no_context_takeover\r\n"
+                        : "");
+#else
+    hlen = snprintf(hdr, sizeof(hdr),
+                    "HTTP/1.1 101 Switching Protocols\r\n"
+                    "Upgrade: websocket\r\n"
+                    "Connection: Upgrade\r\n"
+                    "Sec-WebSocket-Accept: %s\r\n\r\n",
+                    accept);
+#endif
 
     det_conn_send(slot_id, conn->pcb, hdr, (u16_t)hlen);
     det_conn_flush(slot_id, conn->pcb);
@@ -1190,6 +1210,9 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
         return false;
     }
 
+#if DETWS_ENABLE_WS_DEFLATE
+    ws->pmd = pmd;
+#endif
     if (on_connect)
         on_connect(ws->ws_id);
 

@@ -327,6 +327,32 @@ void test_missing_header_returns_null()
     TEST_ASSERT_NULL(http_get_header(&http_pool[0], "X-Missing"));
 }
 
+void test_long_standard_header_key_accepted()
+{
+    // Regression: "Sec-WebSocket-Extensions" (24 chars) is a standard header that
+    // must parse and be retrievable - the permessage-deflate handshake needs it.
+    // Previously MAX_KEY_LEN was 24 and the over-long-key path returned 400.
+    feed_request(0, "GET /ws HTTP/1.1\r\n"
+                    "Host: x\r\n"
+                    "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n"
+                    "\r\n");
+    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL_STRING("permessage-deflate; client_max_window_bits",
+                             http_get_header(&http_pool[0], "Sec-WebSocket-Extensions"));
+}
+
+void test_overlong_header_key_truncated_not_error()
+{
+    // A header name longer than MAX_KEY_LEN is capped (capacity), not rejected:
+    // the request still parses and the other headers remain readable.
+    feed_request(0, "GET / HTTP/1.1\r\n"
+                    "This-Header-Name-Is-Far-Longer-Than-The-Key-Limit: ignored\r\n"
+                    "X-Real: kept\r\n"
+                    "\r\n");
+    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL_STRING("kept", http_get_header(&http_pool[0], "X-Real"));
+}
+
 // ====================================================================
 // BODY TESTS
 // ====================================================================
@@ -908,6 +934,8 @@ int main()
     RUN_TEST(test_header_key_control_char_is_error);
     RUN_TEST(test_header_key_mid_cr_is_error);
     RUN_TEST(test_header_key_colon_at_start_skips_header);
+    RUN_TEST(test_long_standard_header_key_accepted);
+    RUN_TEST(test_overlong_header_key_truncated_not_error);
 
     // RFC 7230 - header field-value
     RUN_TEST(test_header_val_nul_byte_is_error);
