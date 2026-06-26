@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.8.0] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.8.0 - 2026-06-26</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5d5f19b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d5f19b84d5d8f065373a7721bfd1be45d7ea694))
+- update CHANGELOG.md [skip ci] ([`03c3d5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03c3d5dcbae7b5c45c2977e60bfc94811e583d82))
+
+### Changes
+
+- Bump version: 2.7.0 → 2.8.0 ([`58c4316`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58c43169ca7780e58d2a6b5c65101f32a383da63))
+
+### Features
+
+- egress-interface reporting (det_net_egress) ([`eec8783`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eec8783ececdab0cb22662ef583b9e43d4bd1da1))
+
+</details>
+
 ## [2.7.0] - 2026-06-26
 
 <details>
