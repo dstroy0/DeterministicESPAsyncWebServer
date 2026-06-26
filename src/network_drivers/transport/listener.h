@@ -134,4 +134,22 @@ bool listener_accept_allowed(uint32_t now_ms);
 /** @brief Reset the accept-throttle window counters. */
 void listener_accept_throttle_reset(void);
 
+/**
+ * @brief Fixed-window per-IP accept-rate gate (connection-flood defense, keyed by source IPv4).
+ *
+ * Returns true if a connection from source address @p ip accepted at @p now_ms is
+ * within that address's DETWS_PER_IP_THROTTLE_MAX-per-DETWS_PER_IP_THROTTLE_WINDOW_MS
+ * budget (and counts it), false once that address has exhausted its budget for the
+ * current window. State is a fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets;
+ * a new address reuses an empty, expired, or least-recently-started bucket so memory
+ * stays bounded. @p ip is the raw lwIP IPv4 word (host/native tests pass any
+ * non-zero value). The accept callback consults this only when
+ * DETWS_ENABLE_PER_IP_THROTTLE is set; the function is always compiled so it can be
+ * unit-tested. Call listener_per_ip_throttle_reset() to clear the table.
+ */
+bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms);
+
+/** @brief Reset the per-IP throttle bucket table. */
+void listener_per_ip_throttle_reset(void);
+
 #endif

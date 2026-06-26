@@ -386,6 +386,71 @@ void test_accept_throttle_handles_rollover()
     TEST_ASSERT_TRUE(listener_accept_allowed(near_max + DETWS_ACCEPT_THROTTLE_WINDOW_MS));
 }
 
+// ====================================================================
+// Per-IP accept-rate throttle (per-source connection-flood defense)
+// ====================================================================
+
+// Within one window, a single source IP gets MAX accepts then is rejected.
+void test_per_ip_throttle_blocks_over_budget()
+{
+    listener_per_ip_throttle_reset();
+    const uint32_t ip = 0xC0A80005u; // 192.168.0.5
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 0));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(ip, 0)); // this address's budget exhausted
+}
+
+// One noisy address being throttled does not affect a different address.
+void test_per_ip_throttle_isolates_addresses()
+{
+    listener_per_ip_throttle_reset();
+    const uint32_t noisy = 0x0A000001u, quiet = 0x0A000002u;
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(noisy, 0));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(noisy, 0)); // noisy is blocked
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(quiet, 0));  // a different IP is unaffected
+}
+
+// Crossing into the next window refills that address's budget.
+void test_per_ip_throttle_window_refills()
+{
+    listener_per_ip_throttle_reset();
+    const uint32_t ip = 0x0A000003u;
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 50));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(ip, 50));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 50 + DETWS_PER_IP_THROTTLE_WINDOW_MS));
+}
+
+// When the bucket table is full of distinct addresses, a brand-new address still
+// gets through (the least-recently-started bucket is evicted - bounded memory).
+void test_per_ip_throttle_evicts_when_full()
+{
+    listener_per_ip_throttle_reset();
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(0xAC100001u + (uint32_t)i, 100));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(0xDEADBEEFu, 100)); // evicts an old bucket
+}
+
+// A zero source address is untrackable (it is the empty-bucket sentinel) and is
+// always allowed - it defers to the global throttle rather than being mis-tracked.
+void test_per_ip_throttle_zero_ip_always_allowed()
+{
+    listener_per_ip_throttle_reset();
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX + 5; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(0, 0));
+}
+
+// The per-IP window math survives a millis() rollover near 2^32.
+void test_per_ip_throttle_handles_rollover()
+{
+    listener_per_ip_throttle_reset();
+    const uint32_t ip = 0x0A000009u;
+    uint32_t near_max = 0xFFFFFFFFu - 5;
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, near_max));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, near_max + DETWS_PER_IP_THROTTLE_WINDOW_MS));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -423,6 +488,14 @@ int main()
     RUN_TEST(test_accept_throttle_blocks_over_budget);
     RUN_TEST(test_accept_throttle_window_refills);
     RUN_TEST(test_accept_throttle_handles_rollover);
+
+    // Per-IP accept-rate throttle
+    RUN_TEST(test_per_ip_throttle_blocks_over_budget);
+    RUN_TEST(test_per_ip_throttle_isolates_addresses);
+    RUN_TEST(test_per_ip_throttle_window_refills);
+    RUN_TEST(test_per_ip_throttle_evicts_when_full);
+    RUN_TEST(test_per_ip_throttle_zero_ip_always_allowed);
+    RUN_TEST(test_per_ip_throttle_handles_rollover);
 
     return UNITY_END();
 }
