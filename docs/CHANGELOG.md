@@ -2,6 +2,27 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.6.0] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.6.0 - 2026-06-26</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a7929a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7929a2de5063f10ce384875dd76e82365c99312))
+- update CHANGELOG.md [skip ci] ([`b0dee5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0dee5a144007edbca1d404fa4297004a49ac645))
+
+### Changes
+
+- Bump version: 2.5.0 → 2.6.0 ([`22d37fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22d37fb0af67b1725054d2c74d3f1b1186faa6f8))
+- clang-format the 61.Telemetry example ([`0e08fad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e08fadba1d8e64e6c2d6c0d71502d174e19333a))
+
+### Features
+
+- real-time SVG dashboard over SSE (phase 1) ([`9f0a3b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f0a3b85c964c27dc5a86ddf51c547c00c2bf32b))
+
+</details>
+
 ## [2.5.0] - 2026-06-26
 
 <details>
