@@ -865,6 +865,20 @@
 #define DETWS_ENABLE_DEVICE_ID 0
 #endif
 
+/**
+ * @brief Telemetry math helpers (moving-window stats, rate-of-change, totalizer).
+ *
+ * Default off. When set, src/services/telemetry/telemetry.h provides zero-heap
+ * pure-computation helpers over caller-supplied storage: a moving-window stats
+ * accumulator (mean / variance / stddev / min / max), a derivative / rate-of-
+ * change tracker, and a trapezoidal run-time totalizer. No ESP32 dependency, so
+ * the whole cluster is host-testable; it feeds dashboards, alert triggers, and
+ * odometer-style counters.
+ */
+#ifndef DETWS_ENABLE_TELEMETRY
+#define DETWS_ENABLE_TELEMETRY 0
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0

@@ -22,7 +22,7 @@ flag (default off) so it costs nothing when unused.
    tokens - all shipped.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
    the new NVS config store.
-4. **Dashboard configurator + telemetry math** - the flagship UI track.
+4. **Dashboard configurator** (telemetry math done) - the flagship UI track.
 5. **Architectural (deliberate):** Ethernet PHY + failover, GraphQL, OPC UA.
 
 ## Web / API / UI
@@ -30,7 +30,7 @@ flag (default off) so it costs nothing when unused.
 - [x] WebSocket permessage-deflate inbound _(shipped)_; outbound compress (Phase 2) open (M).
 - [x] REST substrate, AJAX _(shipped)_.
 - [ ] Real-time **dashboard configurator** (L) - user telemetry callback + hand-rolled SVG/Canvas widgets (no external JS), via the `web_assets` pipeline, live over SSE/WS. **Flagship.**
-- [ ] **Telemetry math** cluster (M, host-testable; feeds the dashboard): moving-window stats (mean/stddev/variance), derivative rate-of-change triggers, run-time totalizers/odometer.
+- [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
 - [ ] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
 - [ ] Binary streaming (M-L): CBOR / MessagePack, or Protobuf / FlatBuffers zero-copy instead of JSON.
