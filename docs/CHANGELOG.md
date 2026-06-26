@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`c637094`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c637094f544fdc2d94b16d969060b5f9699715c2))
+- update CHANGELOG.md [skip ci] ([`53892df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53892dfb9d7ec157faadaea4e00b1f814e8ebcaa))
+
+### Documentation
+
+- link CodeQL / Roadmap / Known-Limitations pages from the docs index ([`d4a814b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a814bd88a7d4934febdfcb05799262d49d9c57))
+
 ## [2.4.1] - 2026-06-26
 
 <details>
