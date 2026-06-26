@@ -14,7 +14,7 @@
 #error "DETWS_ENABLE_WEB_TERMINAL requires DETWS_ENABLE_WEBSOCKET"
 #endif
 
-#include "network_drivers/application/html.h" // DETWS_TERMINAL_PAGE
+#include "network_drivers/application/web_assets.h" // DETWS_TERMINAL_PAGE
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
