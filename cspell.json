@@ -393,7 +393,9 @@
     "tracert",
     "CodeQL",
     "SARIF",
-    "qls"
+    "qls",
+    "constexpr",
+    "fnv"
   ],
   "ignorePaths": [
     "node_modules/**",
