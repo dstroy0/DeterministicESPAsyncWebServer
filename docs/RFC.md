@@ -124,7 +124,16 @@ enabled: the WebSocket upgrade and every subsequent frame/event are encrypted,
 transparent to handler code. Optional **mutual TLS**
 ([`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS)) requires and verifies a client
 certificate chaining to a configured CA (RFC 5246 §7.4.6 / RFC 8446 §4.4.2) and
-exposes the verified peer subject DN to handlers. Full properties and caveats:
+exposes the verified peer subject DN to handlers.
+
+Optional **session resumption** ([`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION))
+via session tickets (RFC 5077): the TLS 1.2 server issues an encrypted ticket and
+accepts it on reconnect, so a returning client completes an abbreviated handshake
+(no certificate or ECDHE key exchange) - much less CPU and latency on a constrained
+device. It is stateless: the session is sealed into the client's ticket with a
+server-held AES-256-GCM key that rotates on the
+[`DETWS_TLS_TICKET_LIFETIME_S`](@ref DETWS_TLS_TICKET_LIFETIME_S) schedule, so no
+per-session cache grows in the arena. Full properties and caveats:
 [SECURITY.md](SECURITY.md) §6.
 
 ## SNMP agent (RFC 1157 / 1901 / 3416 / 2578 / 1213)

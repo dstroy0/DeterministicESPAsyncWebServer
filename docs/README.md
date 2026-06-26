@@ -20,7 +20,7 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 - **Server-Sent Events** - persistent connections, per-connection and broadcast push
 - **Authentication** - per-route HTTP Basic (RFC 7617) and Digest (RFC 7616, SHA-256, `qop=auth`)
 - **Static file serving** - chunked reads from any Arduino `FS` (LittleFS, SPIFFS, SD), `index.html` fallback, MIME detection, pre-compressed `.gz`, and `ETag`/`304` conditional GET
-- **HTTPS / TLS** - optional ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) mbedTLS over a fixed static memory pool, so encrypted transport keeps the no-heap guarantee
+- **HTTPS / TLS** - optional ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) mbedTLS over a fixed static memory pool, so encrypted transport keeps the no-heap guarantee; optional **session resumption** (RFC 5077 tickets, [`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION)) gives a returning client an abbreviated handshake while the server stays stateless
 - **Mutual TLS (mTLS)** - optional ([`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS)) client-certificate authentication: the handshake requires a client cert chaining to a configured CA and exposes the verified peer subject DN to handlers
 - **Secure WebSocket & SSE** - WebSocket (`wss://`) and Server-Sent Events run over the TLS record layer when TLS is enabled: the upgrade and every frame/event are encrypted, transparent to handler code
 - **Prometheus metrics** - optional ([`DETWS_ENABLE_METRICS`](@ref DETWS_ENABLE_METRICS)) `/metrics` endpoint in Prometheus text exposition format (0.0.4): uptime, request/response-class counters, active/max connections, free heap - point a Prometheus server straight at the device
