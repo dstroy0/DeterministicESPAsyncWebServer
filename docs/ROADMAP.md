@@ -18,8 +18,8 @@ flag (default off) so it costs nothing when unused.
 1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
    runtime build-flag endpoint (done, `server.diag()`), MAC-derived UUID (done);
    remaining: raw-UDP telemetry helper (S).
-2. **Security hardening cluster:** IP allowlist + brute-force lockout (done);
-   remaining CSRF token - fits the existing middleware + signed-token helper.
+2. **Security hardening cluster:** IP allowlist + brute-force lockout + CSRF
+   tokens - all shipped.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
    the new NVS config store.
 4. **Dashboard configurator + telemetry math** - the flagship UI track.
@@ -65,7 +65,7 @@ flag (default off) so it costs nothing when unused.
 
 - [x] Source-IP allowlist / firewall in the accept callback _(shipped)_ - `listener_ip_allow_add` / `listener_ip_allowed` (CIDR rules, `DETWS_ENABLE_IP_ALLOWLIST`; example 58.IpAllowlist).
 - [x] Brute-force per-IP exponential lockout _(shipped)_ - `DETWS_ENABLE_AUTH_LOCKOUT`; `auth_lockout_*` table issues 429 + Retry-After on the HTTP auth gate (example 59.AuthLockout).
-- [ ] CSRF token verification (M, middleware + signed token).
+- [x] CSRF token verification _(shipped)_ - `DETWS_ENABLE_CSRF`; global enforcement on POST/PUT/PATCH/DELETE via a stateless HMAC-signed `X-CSRF-Token` (built-in `GET /csrf` issues it; example 60.Csrf).
 - [ ] MFA hooks -> external API (S); granular API-token scoping (JWT/bearer) (M; JWT shipped).
 - [ ] Enterprise identity handshakes - SAML / OAuth2 / OIDC (L).
 - [ ] Secure boot + flash encryption (S, docs/eFuse); encrypted config handshake during onboarding (M).

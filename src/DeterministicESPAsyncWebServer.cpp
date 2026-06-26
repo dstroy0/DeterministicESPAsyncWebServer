@@ -58,6 +58,12 @@
 #endif
 #endif
 #endif
+#if DETWS_ENABLE_CSRF
+#include "services/csrf/csrf.h"
+#ifdef ARDUINO
+#include <esp_system.h> // esp_random() for the CSRF HMAC secret
+#endif
+#endif
 #if DETWS_ENABLE_WEBDAV
 #include "services/webdav/webdav.h"
 #include <time.h> // RFC 1123 Last-Modified formatting
@@ -422,6 +428,24 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
     DeterministicAsyncTCP::pool_init(cfg);
 #if DETWS_ENABLE_AUTH
     regen_digest_nonce(); // fresh server nonce per begin()
+#endif
+#if DETWS_ENABLE_CSRF
+    {
+        // Seed the CSRF HMAC secret from the hardware RNG (a fixed dev secret on
+        // native/test builds, which have no esp_random).
+        uint8_t sec[32];
+#ifdef ARDUINO
+        for (int i = 0; i < 8; i++)
+        {
+            uint32_t r = esp_random();
+            memcpy(sec + i * 4, &r, 4);
+        }
+#else
+        for (int i = 0; i < 32; i++)
+            sec[i] = (uint8_t)(0xA5 ^ i);
+#endif
+        csrf_set_secret(sec, sizeof(sec));
+    }
 #endif
     for (uint8_t i = 0; i < MAX_CONNS; i++)
         http_reset(i);
@@ -1421,6 +1445,39 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         send_empty(slot_id, 204);
         return;
     }
+
+#if DETWS_ENABLE_CSRF
+    // Built-in token endpoint: GET /csrf issues a signed token (also set as the
+    // csrf cookie) for clients to echo in X-CSRF-Token on state-changing requests.
+    if (method == HTTP_GET && strcmp(req->path, "/csrf") == 0)
+    {
+        char tok[CSRF_TOKEN_BUF];
+        if (csrf_issue(tok, sizeof(tok)) > 0)
+        {
+            set_cookie(slot_id, "csrf", tok, "Path=/; SameSite=Strict");
+            char body[CSRF_TOKEN_BUF + 16];
+            snprintf(body, sizeof(body), "{\"token\":\"%s\"}", tok);
+            send(slot_id, 200, "application/json", body);
+        }
+        else
+        {
+            send(slot_id, 500, "text/plain", "CSRF unavailable");
+        }
+        return;
+    }
+
+    // Enforce CSRF on every state-changing method: require a valid signed
+    // X-CSRF-Token header (GET / HEAD / OPTIONS are exempt - not state-changing).
+    if (method == HTTP_POST || method == HTTP_PUT || method == HTTP_PATCH || method == HTTP_DELETE)
+    {
+        const char *tok = http_get_header(req, "X-CSRF-Token");
+        if (!tok || !csrf_verify(tok))
+        {
+            send(slot_id, 403, "text/plain", "CSRF token missing or invalid");
+            return;
+        }
+    }
+#endif
 
     // RFC 7230 §3.3.1: reject Transfer-Encoding
     if (http_get_header(req, "Transfer-Encoding") != nullptr)
