@@ -29,8 +29,10 @@
   <rect x="13" y="7" width="1" height="3" fill="#00e5ff"/> <!-- right edge -->
   <rect x="3" y="7" width="3" height="3" fill="#ffffff"/>  <!-- Left eye white -->
   <rect x="10" y="7" width="3" height="3" fill="#ffffff"/> <!-- Right eye white -->
-  <rect x="4" y="8" width="1" height="1" fill="#000000"/>  <!-- Left pupil (centre) -->
-  <rect x="11" y="8" width="1" height="1" fill="#000000"/> <!-- Right pupil (centre) -->
+  <rect x="4" y="8" width="2" height="2" fill="#000000"/>  <!-- Left pupil (big, friendly) -->
+  <rect x="10" y="8" width="2" height="2" fill="#000000"/> <!-- Right pupil (big, friendly) -->
+  <rect x="4" y="8" width="1" height="1" fill="#ffffff"/>  <!-- Left eye glint -->
+  <rect x="11" y="8" width="1" height="1" fill="#ffffff"/> <!-- Right eye glint -->
   <rect x="2" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
   <rect x="13" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
   <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
@@ -55,8 +57,6 @@
   <rect x="12" y="6" width="1" height="1" fill="#00b8d4"/>
   <!-- Mantle highlight (rounded top) -->
   <rect x="6" y="0" width="2" height="1" fill="#7df9ff"/>
-  <!-- Smile -->
-  <rect x="6" y="10" width="1" height="1" fill="#00838f"/>
-  <rect x="9" y="10" width="1" height="1" fill="#00838f"/>
+  <!-- Smile (small and gentle, not manic) -->
   <rect x="7" y="11" width="2" height="1" fill="#00838f"/>
 </svg>
