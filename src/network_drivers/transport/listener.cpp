@@ -23,6 +23,7 @@
 #include "lwip/tcp.h"
 #include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
 #ifdef ARDUINO
+#include "lwip/def.h"     // lwip_ntohl - allowlist host-order conversion
 #include "lwip/ip_addr.h" // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
 #endif
 #include <Arduino.h>
@@ -134,6 +135,58 @@ void listener_per_ip_throttle_reset(void)
     }
 }
 
+// ---------------------------------------------------------------------------
+// Source-IP allowlist (accept-time firewall). A bounded BSS table of CIDR rules
+// in host byte order. Always compiled (unit-testable); only consulted when
+// DETWS_ENABLE_IP_ALLOWLIST is set. An empty table allows everything so enabling
+// the feature before adding rules cannot lock the device out.
+// ---------------------------------------------------------------------------
+
+struct IpAllowRule
+{
+    uint32_t network; ///< host-order network address, already masked to the prefix.
+    uint32_t mask;    ///< host-order netmask derived from the prefix length.
+};
+static IpAllowRule g_ip_allow[DETWS_IP_ALLOWLIST_SLOTS];
+static uint8_t g_ip_allow_count = 0;
+
+bool listener_ip_allow_add(uint32_t network, uint8_t prefix_len)
+{
+    if (prefix_len > 32)
+        return false;
+    if (g_ip_allow_count >= DETWS_IP_ALLOWLIST_SLOTS)
+        return false;
+    // prefix_len 0 -> mask 0 (matches all); 1..32 -> top prefix_len bits set.
+    // (a full 32-bit shift is undefined, so the zero-prefix case is handled apart.)
+    uint32_t mask = (prefix_len == 0) ? 0u : (0xFFFFFFFFu << (32 - prefix_len));
+    g_ip_allow[g_ip_allow_count].network = network & mask;
+    g_ip_allow[g_ip_allow_count].mask = mask;
+    g_ip_allow_count++;
+    return true;
+}
+
+bool listener_ip_allowed(uint32_t ip)
+{
+    if (g_ip_allow_count == 0)
+        return true; // no rules configured -> allow all (fail-open by design)
+    for (uint8_t i = 0; i < g_ip_allow_count; i++)
+    {
+        if ((ip & g_ip_allow[i].mask) == g_ip_allow[i].network)
+            return true;
+    }
+    return false;
+}
+
+void listener_ip_allowlist_reset(void)
+{
+    for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
+    {
+        g_ip_allow[i].network = 0;
+        g_ip_allow[i].mask = 0;
+    }
+    g_ip_allow_count = 0;
+}
+
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
 {
     if (listener_id >= MAX_LISTENERS)
@@ -182,6 +235,23 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
         rip = ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip));
 #endif
         if (!listener_accept_allowed_ip(rip, millis()))
+        {
+            tcp_abort(newpcb);
+            return ERR_ABRT;
+        }
+    }
+#endif
+
+#if DETWS_ENABLE_IP_ALLOWLIST
+    // Source-IP firewall: drop connections from addresses outside the configured
+    // allowlist (an empty allowlist allows all, so this is a no-op until rules are
+    // added). Uses host byte order; lwIP stores remote_ip in network order.
+    {
+        uint32_t rip_host = 0;
+#ifdef ARDUINO
+        rip_host = lwip_ntohl(ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip)));
+#endif
+        if (!listener_ip_allowed(rip_host))
         {
             tcp_abort(newpcb);
             return ERR_ABRT;

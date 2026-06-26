@@ -18,8 +18,8 @@ flag (default off) so it costs nothing when unused.
 1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
    runtime build-flag endpoint (done, `server.diag()`), MAC-derived UUID (done);
    remaining: raw-UDP telemetry helper (S).
-2. **Security hardening cluster:** CSRF token, brute-force lockout, IP whitelist -
-   all fit the existing middleware + accept-callback + per-IP throttle.
+2. **Security hardening cluster:** IP allowlist (done); remaining CSRF token,
+   brute-force lockout - fit the existing middleware + per-IP throttle.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
    the new NVS config store.
 4. **Dashboard configurator + telemetry math** - the flagship UI track.
@@ -63,7 +63,7 @@ flag (default off) so it costs nothing when unused.
 
 ## Security & auth
 
-- [ ] IP whitelist / firewall in the accept callback (M; extends the per-IP throttle).
+- [x] Source-IP allowlist / firewall in the accept callback _(shipped)_ - `listener_ip_allow_add` / `listener_ip_allowed` (CIDR rules, `DETWS_ENABLE_IP_ALLOWLIST`; example 58.IpAllowlist).
 - [ ] CSRF token verification (M, middleware + signed token); brute-force per-IP exponential lockout (M; extends the SSH limiter + per-IP throttle to HTTP auth).
 - [ ] MFA hooks -> external API (S); granular API-token scoping (JWT/bearer) (M; JWT shipped).
 - [ ] Enterprise identity handshakes - SAML / OAuth2 / OIDC (L).

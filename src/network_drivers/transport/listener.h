@@ -152,4 +152,38 @@ bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms);
 /** @brief Reset the per-IP throttle bucket table. */
 void listener_per_ip_throttle_reset(void);
 
+// ---------------------------------------------------------------------------
+// Source-IP allowlist (accept-time firewall)
+// ---------------------------------------------------------------------------
+
+/** @brief Build a host-order IPv4 word from four octets, e.g. DETWS_IPV4(192, 168, 1, 10). */
+#define DETWS_IPV4(a, b, c, d) (((uint32_t)(a) << 24) | ((uint32_t)(b) << 16) | ((uint32_t)(c) << 8) | (uint32_t)(d))
+
+/**
+ * @brief Add a CIDR rule to the source-IP allowlist.
+ *
+ * @param network     Host-order IPv4 network address (use DETWS_IPV4()); host
+ *                    bits outside the prefix are masked off automatically.
+ * @param prefix_len  CIDR prefix length 0..32 (24 for a /24, 32 for a single host,
+ *                    0 to match everything).
+ * @return true if the rule was stored; false if @p prefix_len > 32 or the table
+ *         (DETWS_IP_ALLOWLIST_SLOTS entries) is full.
+ */
+bool listener_ip_allow_add(uint32_t network, uint8_t prefix_len);
+
+/**
+ * @brief Test a source address against the allowlist (accept-time firewall).
+ *
+ * @param ip  Host-order source IPv4 word.
+ * @return true if the address is allowed: always true while the allowlist is
+ *         empty (so enabling the feature without rules never locks the device
+ *         out), otherwise true only if @p ip matches at least one CIDR rule.
+ *         The accept callback consults this only when DETWS_ENABLE_IP_ALLOWLIST
+ *         is set; the function is always compiled so it can be unit-tested.
+ */
+bool listener_ip_allowed(uint32_t ip);
+
+/** @brief Clear all allowlist rules (the allowlist becomes empty = allow all). */
+void listener_ip_allowlist_reset(void);
+
 #endif
