@@ -1398,6 +1398,45 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Brute-force auth lockout  (per-source-IP; DETWS_ENABLE_AUTH_LOCKOUT)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Opt-in per-IP brute-force lockout for HTTP auth (requires DETWS_ENABLE_AUTH).
+ *
+ * Default off (zero cost / no behavior change). When set, the auth gate counts
+ * consecutive failed authentications per source IPv4 in a fixed BSS table; after
+ * DETWS_AUTH_LOCKOUT_THRESHOLD failures the address is locked out for
+ * DETWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to
+ * DETWS_AUTH_LOCKOUT_MAX_MS. A locked address gets 429 (Retry-After) with no
+ * credential check; a successful auth clears it. Bounded memory (no heap); the
+ * table evicts idle, then least-recently-used, addresses when full.
+ */
+#ifndef DETWS_ENABLE_AUTH_LOCKOUT
+#define DETWS_ENABLE_AUTH_LOCKOUT 0
+#endif
+
+/** @brief Number of source IPs the auth lockout tracks (BSS bucket table). */
+#ifndef DETWS_AUTH_LOCKOUT_SLOTS
+#define DETWS_AUTH_LOCKOUT_SLOTS 16
+#endif
+
+/** @brief Consecutive failed auths from one IP before it is locked out. */
+#ifndef DETWS_AUTH_LOCKOUT_THRESHOLD
+#define DETWS_AUTH_LOCKOUT_THRESHOLD 5
+#endif
+
+/** @brief First lockout duration in ms; doubles on each further failure. */
+#ifndef DETWS_AUTH_LOCKOUT_BASE_MS
+#define DETWS_AUTH_LOCKOUT_BASE_MS 1000
+#endif
+
+/** @brief Maximum lockout duration in ms (the exponential backoff cap). */
+#ifndef DETWS_AUTH_LOCKOUT_MAX_MS
+#define DETWS_AUTH_LOCKOUT_MAX_MS 300000
+#endif
+
+// ---------------------------------------------------------------------------
 // Telnet sizing constants  (DETWS_ENABLE_TELNET must be 1)
 // ---------------------------------------------------------------------------
 
@@ -1809,6 +1848,21 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_IP_ALLOWLIST && DETWS_IP_ALLOWLIST_SLOTS < 1
 #error "DeterministicESPAsyncWebServer: DETWS_IP_ALLOWLIST_SLOTS must be >= 1 when DETWS_ENABLE_IP_ALLOWLIST is set"
+#endif
+
+#if DETWS_ENABLE_AUTH_LOCKOUT
+#if !DETWS_ENABLE_AUTH
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_AUTH_LOCKOUT requires DETWS_ENABLE_AUTH"
+#endif
+#if DETWS_AUTH_LOCKOUT_SLOTS < 1
+#error "DeterministicESPAsyncWebServer: DETWS_AUTH_LOCKOUT_SLOTS must be >= 1 when DETWS_ENABLE_AUTH_LOCKOUT is set"
+#endif
+#if DETWS_AUTH_LOCKOUT_THRESHOLD < 1
+#error "DeterministicESPAsyncWebServer: DETWS_AUTH_LOCKOUT_THRESHOLD must be >= 1 when DETWS_ENABLE_AUTH_LOCKOUT is set"
+#endif
+#if DETWS_AUTH_LOCKOUT_BASE_MS < 1 || DETWS_AUTH_LOCKOUT_MAX_MS < DETWS_AUTH_LOCKOUT_BASE_MS
+#error "DeterministicESPAsyncWebServer: need 1 <= DETWS_AUTH_LOCKOUT_BASE_MS <= DETWS_AUTH_LOCKOUT_MAX_MS"
+#endif
 #endif
 
 #if DETWS_ENABLE_WEBDAV
