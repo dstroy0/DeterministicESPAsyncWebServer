@@ -556,6 +556,43 @@
 #endif
 
 /**
+ * @brief CoAP block-wise transfer - RFC 7959 (requires DETWS_ENABLE_COAP).
+ *
+ * Default off. When set, the server understands the Block2 (descriptive,
+ * responses) and Block1 (control, request uploads) options:
+ *  - Block2: a representation larger than one block, or any GET that carries a
+ *    Block2 option, is served one block at a time. A constrained client requests
+ *    a small block size (SZX) and pages through with ascending block numbers; the
+ *    server re-renders the (idempotent) resource and slices out the asked-for
+ *    block, setting the More bit until the last.
+ *  - Block1: a POST/PUT payload larger than one block is reassembled into a
+ *    single BSS buffer. Each non-final block is acknowledged 2.31 Continue; the
+ *    final block dispatches the handler with the whole reassembled payload.
+ *
+ * One block-wise transfer is reassembled at a time (deterministic, single
+ * buffer); an out-of-order or oversized block yields 4.08 / 4.13. Size1/Size2
+ * options and the /.well-known/core listing are out of scope.
+ */
+#ifndef DETWS_ENABLE_COAP_BLOCK
+#define DETWS_ENABLE_COAP_BLOCK 0
+#endif
+
+/** @brief Largest block-size exponent (SZX) the server will use: block size = 2^(SZX+4) bytes, SZX 0..6 (16..1024). */
+#ifndef DETWS_COAP_BLOCK_SZX_MAX
+#define DETWS_COAP_BLOCK_SZX_MAX 6
+#endif
+
+/**
+ * @brief Reassembly buffer for a block-wise (Block1) request upload, in bytes.
+ *
+ * One buffer of this size lives in BSS only when DETWS_ENABLE_COAP_BLOCK is set.
+ * It bounds the largest payload a chunked POST/PUT can deliver to a handler.
+ */
+#ifndef DETWS_COAP_BLOCK1_MAX
+#define DETWS_COAP_BLOCK1_MAX 1024
+#endif
+
+/**
  * @brief Maximum registered CoAP resources (the server's fixed routing table).
  *
  * Each entry holds a path pointer, an allowed-methods bitmask, and a handler.
@@ -590,10 +627,16 @@
  *
  * One buffer of this size lives in BSS (the request is transport-owned). Must
  * hold a 4-byte header + token (<=8) + the Content-Format option + a 0xFF marker
- * + DETWS_COAP_MAX_PAYLOAD bytes.
+ * + DETWS_COAP_MAX_PAYLOAD bytes. When block-wise transfer is enabled it must
+ * also hold one full block (2^(DETWS_COAP_BLOCK_SZX_MAX+4) bytes) + option
+ * overhead, so the default grows accordingly.
  */
 #ifndef DETWS_COAP_MSG_BUF_SIZE
+#if DETWS_ENABLE_COAP_BLOCK
+#define DETWS_COAP_MSG_BUF_SIZE 1152
+#else
 #define DETWS_COAP_MSG_BUF_SIZE 512
+#endif
 #endif
 
 /**
@@ -1519,6 +1562,22 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_COAP_OBSERVE && !DETWS_ENABLE_COAP
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_COAP_OBSERVE requires DETWS_ENABLE_COAP"
+#endif
+
+#if DETWS_ENABLE_COAP_BLOCK
+#if !DETWS_ENABLE_COAP
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_COAP_BLOCK requires DETWS_ENABLE_COAP"
+#endif
+#if DETWS_COAP_BLOCK_SZX_MAX > 6
+#error "DeterministicESPAsyncWebServer: DETWS_COAP_BLOCK_SZX_MAX must be <= 6 (block size 2^(SZX+4); SZX 7 is reserved)"
+#endif
+#if DETWS_COAP_MSG_BUF_SIZE < ((1 << (DETWS_COAP_BLOCK_SZX_MAX + 4)) + 16)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_COAP_MSG_BUF_SIZE must hold one full block (2^(DETWS_COAP_BLOCK_SZX_MAX+4)) + 16 header/option bytes"
+#endif
+#if DETWS_COAP_BLOCK1_MAX < (1 << (DETWS_COAP_BLOCK_SZX_MAX + 4))
+#error "DeterministicESPAsyncWebServer: DETWS_COAP_BLOCK1_MAX must be >= one block (2^(DETWS_COAP_BLOCK_SZX_MAX+4))"
+#endif
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2

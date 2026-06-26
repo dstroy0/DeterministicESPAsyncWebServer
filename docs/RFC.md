@@ -206,6 +206,19 @@ re-renders the resource and pushes a NON notification to each observer from the
 server's port (so the client matches it by token + endpoint). An observer is
 removed by a GET with Observe (1), a Reset, or a failed send.
 
+**Block-wise transfer (RFC 7959, optional [`DETWS_ENABLE_COAP_BLOCK`](@ref DETWS_ENABLE_COAP_BLOCK)):**
+the Block2 (descriptive) and Block1 (control) options carry transfers larger than
+one datagram. For a response, a representation bigger than the server's maximum
+block size, or any request bearing a Block2 option, is served one block at a time:
+the server re-renders the (idempotent) resource and slices out the requested block
+number, clamping an over-large client block size to its own maximum and setting the
+More bit until the last block. For a request, a chunked POST/PUT payload is
+reassembled into a single buffer - each non-final block is acknowledged `2.31
+Continue`, and the final block dispatches the handler with the whole payload. One
+transfer is reassembled at a time; an out-of-order block yields `4.08 Request Entity
+Incomplete` and an oversized one `4.13 Request Entity Too Large`. Size1/Size2 are
+not emitted.
+
 ## Remote logging - syslog (RFC 5424)
 
 Optional ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG), default off) syslog

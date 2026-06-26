@@ -16,10 +16,12 @@
  *
  * Only the message layer's piggybacked-response model is implemented: a CON
  * request is answered with a piggybacked ACK, a NON request with a NON response.
- * Separate responses, retransmission/deduplication, block-wise transfer and
- * /.well-known/core discovery are out of scope (a deterministic, constrained
- * server typically replies in-line). The codec understands the Uri-Path,
- * Uri-Query and Content-Format options; other options are skipped.
+ * Separate responses, retransmission/deduplication and /.well-known/core
+ * discovery are out of scope (a deterministic, constrained server typically
+ * replies in-line). The codec understands the Uri-Path, Uri-Query and
+ * Content-Format options; other options are skipped. Block-wise transfer
+ * (RFC 7959, the Block1/Block2 options) is available under DETWS_ENABLE_COAP_BLOCK;
+ * resource observation (RFC 7641) under DETWS_ENABLE_COAP_OBSERVE.
  *
  * The resource table is a fixed BSS array of DETWS_COAP_MAX_RESOURCES entries.
  * Register handlers with coap_server_add_resource(); the path string is
@@ -66,7 +68,7 @@ enum CoapMethodMask
 /** @brief Build a CoAP response Code byte from its class and detail (e.g. COAP_CODE(2,5) = 2.05). */
 #define COAP_CODE(c, dd) ((uint8_t)(((c) << 5) | ((dd) & 0x1F)))
 
-// Common CoAP response codes (RFC 7252 §5.9).
+// Common CoAP response codes (RFC 7252 §5.9; 2.31 / 4.08 / 4.13 from RFC 7959).
 enum CoapResponseCode
 {
     COAP_RSP_CREATED = COAP_CODE(2, 1),            ///< 2.01
@@ -74,10 +76,14 @@ enum CoapResponseCode
     COAP_RSP_VALID = COAP_CODE(2, 3),              ///< 2.03
     COAP_RSP_CHANGED = COAP_CODE(2, 4),            ///< 2.04
     COAP_RSP_CONTENT = COAP_CODE(2, 5),            ///< 2.05
+    COAP_RSP_CONTINUE = COAP_CODE(2, 31),          ///< 2.31 (block-wise: more Block1 blocks expected)
     COAP_RSP_BAD_REQUEST = COAP_CODE(4, 0),        ///< 4.00
+    COAP_RSP_BAD_OPTION = COAP_CODE(4, 2),         ///< 4.02
     COAP_RSP_NOT_FOUND = COAP_CODE(4, 4),          ///< 4.04
     COAP_RSP_METHOD_NOT_ALLOWED = COAP_CODE(4, 5), ///< 4.05
     COAP_RSP_NOT_ACCEPTABLE = COAP_CODE(4, 6),     ///< 4.06
+    COAP_RSP_REQUEST_INCOMPLETE = COAP_CODE(4, 8), ///< 4.08 (block-wise: out-of-order / lost Block1)
+    COAP_RSP_REQUEST_TOO_LARGE = COAP_CODE(4, 13), ///< 4.13 (block-wise: reassembly buffer exceeded)
     COAP_RSP_INTERNAL_ERROR = COAP_CODE(5, 0),     ///< 5.00
     COAP_RSP_NOT_IMPLEMENTED = COAP_CODE(5, 1),    ///< 5.01
 };
