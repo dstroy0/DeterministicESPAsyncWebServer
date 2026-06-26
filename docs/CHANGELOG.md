@@ -2,10 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [2.4.1] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.4.1 - 2026-06-26</b></summary>
 
 ### CI / Build
 
+- registry-ready library.json (homepage, headers, export rules) ([`436a704`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/436a7040d94c6fe59d195e79d5658a83fb6bec0e))
+- update test report [skip ci] ([`1223bb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1223bb8d6468461e348d449fa715c85cf1464b8a))
+- update CHANGELOG.md [skip ci] ([`018f414`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/018f414320fc4d2a1602cd051560a12e1af70ccb))
 - expand CodeQL coverage to the new modules and integration paths ([`21786ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21786ab8ecce0d5fe9bb5de3af3fe458ce4bcc4f))
 - update test report [skip ci] ([`0b66a4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b66a4b84fa6d4fba2d74fa7cc3d4039f46f2cb8))
 - update CHANGELOG.md [skip ci] ([`5dddeb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dddeb3fcaa1f590156c5828aa55fe42b55208cc))
@@ -15,12 +21,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 2.4.0 → 2.4.1 ([`03985b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03985b9b772ed2a0c8a52a576558369611482427))
 - less homicidal squirty ([`3f5f35c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f5f35cd01f0d15c87b9a324ea47fc8a6629de0c))
 
 ### Documentation
 
 - add pentesting / adversarial suite to roadmap ([`323fcd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/323fcd2e4551aaef11eef9b177ff376fd0351139))
 - group README features by OSI layer in collapsible blocks ([`c5c2b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5c2b1bee4cc14672f1462f23b6dd24132849bd8))
+
+</details>
 
 ## [2.4.0] - 2026-06-26
 
