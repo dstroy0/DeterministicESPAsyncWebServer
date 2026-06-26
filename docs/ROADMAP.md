@@ -16,8 +16,9 @@ flag (default off) so it costs nothing when unused.
 ## Recommended near-term order (value vs. risk)
 
 1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
-   runtime build-flag endpoint (S), Bonjour TXT / `_https._tcp` enrichment (S),
-   raw-UDP telemetry helper (S), MAC-derived UUID (S).
+   runtime build-flag endpoint (done, `server.diag()`), MAC-derived UUID (done);
+   remaining: Bonjour TXT / `_https._tcp` enrichment (S), raw-UDP telemetry
+   helper (S).
 2. **Security hardening cluster:** CSRF token, brute-force lockout, IP whitelist -
    all fit the existing middleware + accept-callback + per-IP throttle.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
@@ -66,7 +67,8 @@ flag (default off) so it costs nothing when unused.
 - [ ] CSRF token verification (M, middleware + signed token); brute-force per-IP exponential lockout (M; extends the SSH limiter + per-IP throttle to HTTP auth).
 - [ ] MFA hooks -> external API (S); granular API-token scoping (JWT/bearer) (M; JWT shipped).
 - [ ] Enterprise identity handshakes - SAML / OAuth2 / OIDC (L).
-- [ ] Secure boot + flash encryption (S, docs/eFuse); encrypted config handshake during onboarding (M); MAC-derived UUID (S).
+- [ ] Secure boot + flash encryption (S, docs/eFuse); encrypted config handshake during onboarding (M).
+- [x] MAC-derived UUID _(shipped)_ - `detws_uuid_from_mac` / `detws_device_uuid` (RFC 4122 v5; example 57.DeviceUuid).
 
 ## Storage & config
 
@@ -87,4 +89,5 @@ flag (default off) so it costs nothing when unused.
 
 ## Build / tooling
 
-- [ ] Runtime build-flag reporter (S, mostly there); hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).
+- [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
+- [ ] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).

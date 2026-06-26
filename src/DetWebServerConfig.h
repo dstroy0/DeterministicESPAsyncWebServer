@@ -853,6 +853,18 @@
 #define DETWS_CONFIG_VAL_MAX 64
 #endif
 
+/**
+ * @brief Stable device UUID derived from the chip MAC (RFC 4122 v5).
+ *
+ * When set, src/services/device_id/device_id.h derives a deterministic v5 UUID
+ * from a MAC (via the library's SHA-1) - a storage-free, stable identity for
+ * mDNS hostnames, MQTT client IDs, etc. The MAC->UUID core is host-testable;
+ * detws_device_uuid() reads the ESP32 factory MAC. Default off.
+ */
+#ifndef DETWS_ENABLE_DEVICE_ID
+#define DETWS_ENABLE_DEVICE_ID 0
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
