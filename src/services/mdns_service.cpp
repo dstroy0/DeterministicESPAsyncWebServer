@@ -28,6 +28,22 @@ bool detws_mdns_begin(const char *hostname, uint16_t http_port)
     return true;
 }
 
+bool detws_mdns_txt(const char *key, const char *value)
+{
+    if (!key || !value)
+        return false;
+    // Attach a TXT key/value to the _http._tcp service (Bonjour browsers show it).
+    return mdns_service_txt_item_set("_http", "_tcp", key, value) == ESP_OK;
+}
+
+bool detws_mdns_add_service(const char *service_type, const char *proto, uint16_t port)
+{
+    if (!service_type || !proto)
+        return false;
+    // Advertise an additional service, e.g. ("_https", "_tcp", 443).
+    return mdns_service_add(nullptr, service_type, proto, port, nullptr, 0) == ESP_OK;
+}
+
 #else
 
 bool detws_mdns_begin(const char *hostname, uint16_t http_port)

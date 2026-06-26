@@ -17,8 +17,7 @@ flag (default off) so it costs nothing when unused.
 
 1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
    runtime build-flag endpoint (done, `server.diag()`), MAC-derived UUID (done);
-   remaining: Bonjour TXT / `_https._tcp` enrichment (S), raw-UDP telemetry
-   helper (S).
+   remaining: raw-UDP telemetry helper (S).
 2. **Security hardening cluster:** CSRF token, brute-force lockout, IP whitelist -
    all fit the existing middleware + accept-callback + per-IP throttle.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
@@ -53,7 +52,8 @@ flag (default off) so it costs nothing when unused.
 - [ ] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L).
 - [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
 - [ ] DNS (M): async resolver + response verification, captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
-- [ ] mDNS (M): TXT/`_https._tcp`/custom services, adaptive/auto-sleep beacons + continuous refresher for crowded RF.
+- [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
+- [ ] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M).
 - [ ] Static-IP fallback automation, dynamic socket recycling, TCP window auto-scaling by free RAM (M); raw-UDP telemetry cast (S).
 
 ## Power & radio management

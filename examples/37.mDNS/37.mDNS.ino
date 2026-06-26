@@ -49,7 +49,13 @@ void setup()
     server.begin(80);
 
     if (detws_mdns_begin(HOSTNAME, 80))
+    {
+        // Bonjour TXT records (shown by DNS-SD browsers) + advertise HTTPS too.
+        detws_mdns_txt("path", "/");
+        detws_mdns_txt("fw", "1.0");
+        detws_mdns_add_service("_https", "_tcp", 443);
         Serial.printf("mDNS: http://%s.local/\n", HOSTNAME);
+    }
 }
 
 void loop()
