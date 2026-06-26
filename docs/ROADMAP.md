@@ -24,7 +24,8 @@ flag (default off) so it costs nothing when unused.
    the new NVS config store.
 4. **Dashboard configurator** - done: telemetry math, the SVG dashboard over SSE,
    and the WebSocket controls + Canvas chart.
-5. **Architectural (deliberate):** Ethernet PHY + failover, GraphQL, OPC UA.
+5. **Architectural (deliberate):** egress-interface reporting done (the stack
+   already owns failover); next Ethernet PHY, GraphQL, OPC UA.
 
 ## Web / API / UI
 
@@ -50,7 +51,8 @@ flag (default off) so it costs nothing when unused.
 
 ## Networking / connectivity
 
-- [ ] Ethernet PHY abstraction (L, greenlit) + network failover / multi-interface bridge + graceful interface escalation (L).
+- [x] Egress-interface reporting _(shipped)_ - `det_net_egress()` / `det_net_egress_ip()` read the live lwIP default route so the app always knows which interface (WiFi STA / softAP / Ethernet) its traffic is leaving on; the stack owns the actual failover, so no manager or polling tick is added (example 63.NetEgress).
+- [ ] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report above already work once both links exist. Multi-interface bridge / graceful escalation (L).
 - [ ] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L).
 - [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
 - [ ] DNS (M): async resolver + response verification, captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
