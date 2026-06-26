@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`01dda18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01dda1804f496e7124e5b7390566feb7a3939df2))
+- update CHANGELOG.md [skip ci] ([`0602f62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0602f6201356e161764546f0b877b154850faf95))
 - update test report [skip ci] ([`ad9338a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad9338a1797d893c050883b00fd80c6c1236479f))
 - update CHANGELOG.md [skip ci] ([`dee66a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dee66a6573b8f25f7a33a016e68bba92bff7c5d1))
 - update test report [skip ci] ([`c8622a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8622a9d75c21aa758f544e0d3bf9be88b29ba5e))
@@ -29,6 +31,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`32c0f73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c0f73ded6c2dcc9890cea166f65db09e348c71))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`36b92b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36b92b3acb10b7d2c063b52cd5ab689e3a2f7bbe))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`fcebcdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcebcdcc55bff0751f0cdba4d1c5a060123244a2))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`94ef784`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94ef7840933ca6857460a98ea9810dafef8b6aa7))
@@ -40,6 +43,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- TLS session resumption - RFC 5077 session tickets ([`52fe5be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52fe5bec77eff303a76e2dad09fb6eebcd0a7b54))
 - Modbus TCP slave - Modbus Application Protocol on TCP/502 ([`8c4f122`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c4f12213cb873dc0f74f920047fdd731d973fef))
 - WebDAV server - RFC 4918 (class 1 + advisory locks) ([`ebaa4d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebaa4d6027f5041fa31845649bb0ec83ba96418a))
 - per-IP accept-rate throttle (connection-flood defense) ([`3b1edfb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b1edfb8047fd108cfb95d258c750f5014870d93))
