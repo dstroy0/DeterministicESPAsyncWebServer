@@ -489,6 +489,28 @@
 #endif
 
 /**
+ * @brief TLS session resumption via RFC 5077 session tickets (requires DETWS_ENABLE_TLS).
+ *
+ * Default off. When set, the TLS 1.2 server issues encrypted session tickets and
+ * accepts them on reconnect, so a returning client completes an abbreviated
+ * handshake (no certificate or full key exchange) - much faster and far less CPU
+ * than the ~RSA/ECDHE full handshake. Resumption is stateless: the session state
+ * lives in the client's ticket, sealed with a server-held key, so there is no
+ * growing per-session cache (the determinism / zero-heap-growth guarantee holds;
+ * only a small fixed ticket key and a little arena headroom are added). The ticket
+ * key rotates automatically on the DETWS_TLS_TICKET_LIFETIME_S schedule. Needs the
+ * mbedTLS build to provide MBEDTLS_SSL_TICKET_C (stock arduino-esp32 does).
+ */
+#ifndef DETWS_ENABLE_TLS_RESUMPTION
+#define DETWS_ENABLE_TLS_RESUMPTION 0
+#endif
+
+/** @brief Session-ticket lifetime / key-rotation period in seconds (see DETWS_ENABLE_TLS_RESUMPTION). */
+#ifndef DETWS_TLS_TICKET_LIFETIME_S
+#define DETWS_TLS_TICKET_LIFETIME_S 86400
+#endif
+
+/**
  * @brief Mutual TLS - require and verify a client certificate (mTLS).
  *
  * Default off. When set (requires DETWS_ENABLE_TLS), the server can be given a
@@ -1682,6 +1704,10 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_MTLS && !DETWS_ENABLE_TLS
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_MTLS requires DETWS_ENABLE_TLS"
+#endif
+
+#if DETWS_ENABLE_TLS_RESUMPTION && !DETWS_ENABLE_TLS
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_TLS_RESUMPTION requires DETWS_ENABLE_TLS"
 #endif
 
 #if DETWS_ENABLE_METRICS && !DETWS_ENABLE_STATS

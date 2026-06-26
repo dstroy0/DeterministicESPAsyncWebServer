@@ -29,6 +29,12 @@
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509_crt.h>
+#if DETWS_ENABLE_TLS_RESUMPTION
+#include <mbedtls/ssl_ticket.h> // RFC 5077 session tickets (server-side resumption)
+#if !defined(MBEDTLS_SSL_TICKET_C) || !defined(MBEDTLS_SSL_SESSION_TICKETS)
+#error "DETWS_ENABLE_TLS_RESUMPTION needs an mbedTLS build with MBEDTLS_SSL_TICKET_C + MBEDTLS_SSL_SESSION_TICKETS"
+#endif
+#endif
 
 // ---------------------------------------------------------------------------
 // Static memory pool - a minimal first-fit allocator over a fixed BSS arena.
@@ -143,6 +149,9 @@ static mbedtls_x509_crt s_cert;
 static mbedtls_pk_context s_key;
 #if DETWS_ENABLE_MTLS
 static mbedtls_x509_crt s_ca; // client-cert trust anchor (mTLS)
+#endif
+#if DETWS_ENABLE_TLS_RESUMPTION
+static mbedtls_ssl_ticket_context s_ticket_ctx; // server-held key for sealing session tickets
 #endif
 
 struct TlsConn
@@ -259,6 +268,18 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
 
     if (mbedtls_ssl_conf_own_cert(&s_conf, &s_cert, &s_key) != 0)
         return false;
+
+#if DETWS_ENABLE_TLS_RESUMPTION
+    // RFC 5077 session tickets: a returning client resumes with an abbreviated
+    // handshake. Stateless (the session lives in the client's sealed ticket), so
+    // no per-session cache grows in the arena. The ticket key rotates on the
+    // configured lifetime. mbedtls_ssl_ticket_write/parse are the default codec.
+    mbedtls_ssl_ticket_init(&s_ticket_ctx);
+    if (mbedtls_ssl_ticket_setup(&s_ticket_ctx, tls_rng, nullptr, MBEDTLS_CIPHER_AES_256_GCM,
+                                 DETWS_TLS_TICKET_LIFETIME_S) != 0)
+        return false;
+    mbedtls_ssl_conf_session_tickets_cb(&s_conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &s_ticket_ctx);
+#endif
 
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
         s_tls[i].active = false;
