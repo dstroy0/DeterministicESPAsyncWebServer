@@ -20,8 +20,8 @@ flag (default off) so it costs nothing when unused.
    remaining: raw-UDP telemetry helper (S).
 2. **Security hardening cluster:** IP allowlist + brute-force lockout + CSRF
    tokens - all shipped.
-3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
-   the new NVS config store.
+3. **Partition-map monitor** (done) + config export / restore - the latter still
+   needs NVS enumeration added to the config store first.
 4. **Dashboard configurator** - done: telemetry math, the SVG dashboard over SSE,
    and the WebSocket controls + Canvas chart.
 5. **Architectural (deliberate):** egress-interface reporting done (the stack
@@ -78,7 +78,7 @@ flag (default off) so it costs nothing when unused.
 ## Storage & config
 
 - [x] Typed NVS config store _(shipped)_.
-- [ ] \*Partition-map status monitor endpoint (M, requested) - `esp_partition` / `esp_ota_get_*` usage breakdown for app/OTA/FS.
+- [x] Partition-map status monitor endpoint _(shipped)_ - `DETWS_ENABLE_PARTITION_MONITOR`: `detws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example 64.PartitionMonitor).
 - [ ] Unified virtual-filesystem wrapper (M); bulk config templates + full export/restore (M); ZTP + graceful multi-stage provisioning (M).
 - [ ] Wear leveling + log offload (server/SD) (M); hot-swap storage safeties (M).
 - [ ] OTA: modular partition swapping + rollback protection + soft-brick safeguards (M).

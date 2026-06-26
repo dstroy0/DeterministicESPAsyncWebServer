@@ -903,6 +903,29 @@
 #define DETWS_DASHBOARD_JSON_BUF 1024
 #endif
 
+/**
+ * @brief Opt-in flash partition-map monitor endpoint (DETWS_ENABLE_PARTITION_MONITOR).
+ *
+ * Default off. When set, services/partition_monitor reports the device's flash
+ * partition table (label, kind, type / subtype, offset, size, and which app slot
+ * is running) as JSON, for diagnostics and OTA dashboards. The partition walk uses
+ * esp_partition / esp_ota_ops; the JSON serializer and the kind classifier are
+ * pure and host-testable.
+ */
+#ifndef DETWS_ENABLE_PARTITION_MONITOR
+#define DETWS_ENABLE_PARTITION_MONITOR 0
+#endif
+
+/** @brief Maximum partitions the monitor reports (BSS table). */
+#ifndef DETWS_PARTITION_MAX
+#define DETWS_PARTITION_MAX 16
+#endif
+
+/** @brief Stack buffer for the partition-map JSON (bytes). */
+#ifndef DETWS_PARTITION_JSON_BUF
+#define DETWS_PARTITION_JSON_BUF 1024
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
