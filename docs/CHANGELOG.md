@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.7.0] - 2026-06-26
+
+<details>
+<summary><b>Show Changelog for version 2.7.0 - 2026-06-26</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9064848`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90648485d930132396f9329b7664633dde03619e))
+- update CHANGELOG.md [skip ci] ([`366ce0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/366ce0a268d3d2e0e88552ffe318eae0a3b2c1b5))
+
+### Changes
+
+- Bump version: 2.6.0 → 2.7.0 ([`45d1843`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45d184376763e4abee0b7c332a52d006bb859ee7))
+
+### Features
+
+- dashboard WebSocket controls and Canvas chart (phase 2) ([`f5893a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5893a8349a83813c2588fe02881f9dfaec28590))
+
+</details>
+
 ## [2.6.0] - 2026-06-26
 
 <details>
