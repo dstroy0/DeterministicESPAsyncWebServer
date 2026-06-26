@@ -210,6 +210,9 @@ enum RouteType
 #if DETWS_ENABLE_FILE_SERVING
     ROUTE_STATIC, ///< Static-file subtree mount (serve_static()).
 #endif
+#if DETWS_ENABLE_WEBDAV
+    ROUTE_DAV, ///< WebDAV subtree mount (dav()).
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -537,6 +540,15 @@ class DetWebServer
                              const char *content_type, const char *content_encoding);
 #endif
 
+#if DETWS_ENABLE_WEBDAV
+    /// @brief If @p req matches a ROUTE_DAV mount, handle it as WebDAV and return true.
+    bool try_serve_dav(uint8_t slot_id, HttpReq *req);
+    /// @brief Dispatch a WebDAV request against the mount @p r (resolves the FS path, then the method).
+    void serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r);
+    /// @brief Send a bodyless WebDAV status with optional extra header lines (each ending in CRLF).
+    void dav_send_status(uint8_t slot_id, int code, const char *extra_headers);
+#endif
+
     /**
      * @brief Look up and invoke the first matching route for the given slot.
      *
@@ -862,6 +874,35 @@ class DetWebServer
      */
     void serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root);
 #endif // DETWS_ENABLE_FILE_SERVING
+
+#if DETWS_ENABLE_WEBDAV
+    /**
+     * @brief Mount a filesystem subtree as a WebDAV share (RFC 4918).
+     *
+     * Registers a wildcard route so every request under @p url_prefix is handled
+     * as WebDAV against @p fs_root on @p file_sys. The supported methods are
+     * OPTIONS, PROPFIND (Depth 0/1), GET, HEAD, PUT, DELETE, MKCOL, COPY, MOVE,
+     * and advisory LOCK/UNLOCK; a client such as rclone, cadaver, curl, or a
+     * mounted network drive can browse and edit files. The request path beyond
+     * the prefix is appended to @p fs_root (paths containing `..` are rejected).
+     *
+     * Limits (see DETWS_ENABLE_WEBDAV): PROPFIND builds a 207 into a
+     * DETWS_WEBDAV_BUF_SIZE buffer and lists at most DETWS_WEBDAV_MAX_ENTRIES
+     * children; PUT buffers the body (bounded by BODY_BUF_SIZE); COPY handles
+     * files (not collections); locks are advisory (issued, not enforced);
+     * PROPPATCH is unsupported. Combine with per-route auth and HTTPS before
+     * exposing a writable share.
+     *
+     * @code
+     * server.dav("/dav", LittleFS, "/dav");   // dav://<ip>/dav -> /dav on flash
+     * @endcode
+     *
+     * @param url_prefix URL prefix to mount (with or without a trailing `*`).
+     * @param file_sys   Filesystem reference (must outlive the server).
+     * @param fs_root    Root directory on the filesystem (persistent string).
+     */
+    void dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root);
+#endif // DETWS_ENABLE_WEBDAV
 
     /**
      * @brief Register a fallback handler for unmatched requests.

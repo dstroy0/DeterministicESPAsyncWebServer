@@ -52,6 +52,10 @@
 #include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
 #endif
 #endif
+#if DETWS_ENABLE_WEBDAV
+#include "services/webdav/webdav.h"
+#include <time.h> // RFC 1123 Last-Modified formatting
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -86,6 +90,10 @@ static const char *status_text(int code)
         return "No Content";
     case 206:
         return "Partial Content";
+#if DETWS_ENABLE_WEBDAV
+    case 207:
+        return "Multi-Status";
+#endif
     case 301:
         return "Moved Permanently";
     case 302:
@@ -112,6 +120,14 @@ static const char *status_text(int code)
         return "Request Timeout";
     case 409:
         return "Conflict";
+#if DETWS_ENABLE_WEBDAV
+    case 412:
+        return "Precondition Failed";
+    case 423:
+        return "Locked";
+    case 502:
+        return "Bad Gateway";
+#endif
     case 413:
         return "Payload Too Large";
     case 414:
@@ -1297,6 +1313,14 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     if (run_middleware(slot_id, req))
         return;
 
+#if DETWS_ENABLE_WEBDAV
+    // A WebDAV mount owns its whole subtree and every method on it (including
+    // PROPFIND/MKCOL/etc., which parse_method() does not recognize), so intercept
+    // before the unknown-method 501 and the normal route loop.
+    if (try_serve_dav(slot_id, req))
+        return;
+#endif
+
     // CORS preflight
     if (method == HTTP_OPTIONS && _cors_enabled)
     {
@@ -1939,7 +1963,9 @@ void DetWebServer::metrics(uint8_t slot_id)
     uint32_t heap = 0;
 #endif
 
-    char body[768];
+    // Sized for the full exposition with worst-case numeric widths (the fixed
+    // text plus eight 64-bit-wide conversions): ~881 bytes, so 1024 has margin.
+    char body[1024];
     snprintf(body, sizeof(body),
              "# HELP detws_uptime_seconds Device uptime in seconds.\n"
              "# TYPE detws_uptime_seconds gauge\n"
@@ -2552,3 +2578,432 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     serve_file_internal(slot_id, head, *r->static_fs, fs_path, ctype, nullptr);
 }
 #endif // DETWS_ENABLE_FILE_SERVING
+
+#if DETWS_ENABLE_WEBDAV
+// ---------------------------------------------------------------------------
+// WebDAV (RFC 4918) - filesystem-backed request handling. The pure core
+// (method classification + 207 XML builder + header parsing) lives in
+// services/webdav/webdav.{h,cpp} and is host-tested; this part needs a real FS.
+// ---------------------------------------------------------------------------
+
+static char g_dav_buf[DETWS_WEBDAV_BUF_SIZE]; // 207 Multi-Status scratch (BSS)
+
+// Format a time_t as an RFC 1123 GMT date (Last-Modified). Leaves @p out empty
+// when the timestamp is zero/unavailable.
+static void dav_rfc1123(time_t t, char *out, size_t cap)
+{
+    out[0] = '\0';
+    if (t <= 0)
+        return;
+    struct tm tmv;
+#ifdef ARDUINO
+    gmtime_r(&t, &tmv);
+#else
+    struct tm *gp = gmtime(&t);
+    if (!gp)
+        return;
+    tmv = *gp;
+#endif
+    strftime(out, cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv);
+}
+
+// Join an FS root and a subpath into @p out (mirrors serve_static_request's
+// separator handling). Returns false on overflow.
+static bool dav_join(const char *root, const char *sub, char *out, size_t cap)
+{
+    size_t rlen = strlen(root);
+    bool root_slash = (rlen > 0 && root[rlen - 1] == '/');
+    if (root_slash && sub[0] == '/')
+        sub++;
+    bool sub_slash = (sub[0] == '/');
+    const char *sep = (root_slash || sub_slash) ? "" : "/";
+    int wn = snprintf(out, cap, "%s%s%s", root, sep, sub);
+    return wn > 0 && wn < (int)cap;
+}
+
+// The basename of an FS entry name (cores differ: name() may be a full path or a
+// bare name).
+static const char *dav_basename(const char *name)
+{
+    const char *slash = strrchr(name, '/');
+    return slash ? slash + 1 : name;
+}
+
+// Recursively delete a file or directory tree (bounded depth). Re-opens the
+// directory after each child removal so iteration is never mutated underneath us.
+static bool dav_rm_recursive(fs::FS &fsys, const char *path, int depth)
+{
+    if (depth > 8)
+        return false; // refuse pathologically deep trees rather than overflow the stack
+    fs::File d = fsys.open(path, "r");
+    if (!d)
+        return false;
+    if (!d.isDirectory())
+    {
+        d.close();
+        return fsys.remove(path);
+    }
+    for (;;)
+    {
+        fs::File c = d.openNextFile();
+        if (!c)
+            break;
+        char cp[256];
+        int wn = snprintf(cp, sizeof(cp), "%s/%s", path, dav_basename(c.name()));
+        c.close();
+        if (wn <= 0 || wn >= (int)sizeof(cp))
+        {
+            d.close();
+            return false;
+        }
+        if (!dav_rm_recursive(fsys, cp, depth + 1))
+        {
+            d.close();
+            return false;
+        }
+        d.close();
+        d = fsys.open(path, "r"); // reset the directory cursor after the deletion
+        if (!d)
+            return false;
+    }
+    d.close();
+    return fsys.rmdir(path);
+}
+
+void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
+{
+    if (_route_count >= MAX_ROUTES)
+        return;
+    Route *r = &_routes[_route_count++];
+
+    char pat[MAX_PATH_LEN];
+    size_t n = strlen(url_prefix);
+    if (n > 0 && url_prefix[n - 1] == '*')
+        snprintf(pat, sizeof(pat), "%s", url_prefix);
+    else
+        snprintf(pat, sizeof(pat), "%s*", url_prefix);
+    fill_route_base(r, pat);
+    r->type = ROUTE_DAV;
+    r->method = HTTP_GET; // unused: WebDAV dispatch keys off the raw method token
+    r->static_fs = &file_sys;
+    r->static_root = fs_root;
+}
+
+void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#endif
+    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
+                        status_text(code), extra_headers ? extra_headers : "", cl);
+    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    resp_end(slot_id, pcb, code, 0, keep);
+}
+
+bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
+{
+    for (uint8_t i = 0; i < _route_count; i++)
+    {
+        Route *r = &_routes[i];
+        if (!r->is_active || r->type != ROUTE_DAV)
+            continue;
+        if (!path_matches(r->path, r->is_wildcard, req->path))
+            continue;
+        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
+            continue;
+        serve_dav_request(slot_id, req, r);
+        return true;
+    }
+    return false;
+}
+
+void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
+{
+    if (!r->static_fs)
+    {
+        dav_send_status(slot_id, 404, "");
+        return;
+    }
+    fs::FS &fsys = *r->static_fs;
+
+    // Request path beyond the mount prefix (route path minus its trailing '*').
+    size_t plen = strlen(r->path);
+    if (plen > 0 && r->path[plen - 1] == '*')
+        plen--;
+    const char *sub = (strlen(req->path) >= plen) ? req->path + plen : "";
+    if (strstr(sub, ".."))
+    {
+        dav_send_status(slot_id, 403, "");
+        return;
+    }
+
+    const char *root = r->static_root ? r->static_root : "";
+    char fs_path[256];
+    if (!dav_join(root, sub, fs_path, sizeof(fs_path)))
+    {
+        dav_send_status(slot_id, 414, "");
+        return;
+    }
+    // Strip a trailing '/' so FS calls see a canonical path (keep a lone "/").
+    size_t fpl = strlen(fs_path);
+    if (fpl > 1 && fs_path[fpl - 1] == '/')
+        fs_path[fpl - 1] = '\0';
+
+    switch (webdav_method(req->method))
+    {
+    case DAV_M_OPTIONS:
+        add_response_header(slot_id, "DAV", "1, 2");
+        add_response_header(slot_id, "Allow",
+                            "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY, MOVE, LOCK, UNLOCK");
+        add_response_header(slot_id, "MS-Author-Via", "DAV");
+        send_empty(slot_id, 200);
+        return;
+
+    case DAV_M_GET:
+    case DAV_M_HEAD: {
+        fs::File f = fsys.open(fs_path, "r");
+        if (!f)
+        {
+            dav_send_status(slot_id, 404, "");
+            return;
+        }
+        bool isdir = f.isDirectory();
+        f.close();
+        if (isdir)
+        {
+            dav_send_status(slot_id, 405, ""); // GET on a collection is not a download
+            return;
+        }
+        serve_file_internal(slot_id, webdav_method(req->method) == DAV_M_HEAD, fsys, fs_path, mime_type(fs_path),
+                            nullptr);
+        return;
+    }
+
+    case DAV_M_PUT: {
+        bool existed = fsys.exists(fs_path);
+        fs::File f = fsys.open(fs_path, "w");
+        if (!f)
+        {
+            dav_send_status(slot_id, 409, ""); // parent missing / not writable
+            return;
+        }
+        if (req->body_len)
+            f.write(req->body, req->body_len);
+        f.close();
+        dav_send_status(slot_id, existed ? 204 : 201, "");
+        return;
+    }
+
+    case DAV_M_DELETE: {
+        if (!fsys.exists(fs_path))
+        {
+            dav_send_status(slot_id, 404, "");
+            return;
+        }
+        dav_send_status(slot_id, dav_rm_recursive(fsys, fs_path, 0) ? 204 : 403, "");
+        return;
+    }
+
+    case DAV_M_MKCOL:
+        if (fsys.exists(fs_path))
+        {
+            dav_send_status(slot_id, 405, ""); // already exists
+            return;
+        }
+        dav_send_status(slot_id, fsys.mkdir(fs_path) ? 201 : 409, "");
+        return;
+
+    case DAV_M_COPY:
+    case DAV_M_MOVE: {
+        const char *dest_hdr = http_get_header(req, "Destination");
+        char dest_url[256];
+        if (!dest_hdr || !webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
+        {
+            dav_send_status(slot_id, 400, "");
+            return;
+        }
+        // The destination must live under this same mount.
+        if (strncmp(dest_url, r->path, plen) != 0)
+        {
+            dav_send_status(slot_id, 502, "");
+            return;
+        }
+        const char *dest_sub = dest_url + plen;
+        if (strstr(dest_sub, ".."))
+        {
+            dav_send_status(slot_id, 403, "");
+            return;
+        }
+        char dest_fs[256];
+        if (!dav_join(root, dest_sub, dest_fs, sizeof(dest_fs)))
+        {
+            dav_send_status(slot_id, 414, "");
+            return;
+        }
+        size_t dpl = strlen(dest_fs);
+        if (dpl > 1 && dest_fs[dpl - 1] == '/')
+            dest_fs[dpl - 1] = '\0';
+
+        const char *ow = http_get_header(req, "Overwrite");
+        bool overwrite = !(ow && (ow[0] == 'F' || ow[0] == 'f'));
+        bool dest_exists = fsys.exists(dest_fs);
+        if (dest_exists && !overwrite)
+        {
+            dav_send_status(slot_id, 412, "");
+            return;
+        }
+
+        if (webdav_method(req->method) == DAV_M_MOVE)
+        {
+            if (dest_exists)
+                dav_rm_recursive(fsys, dest_fs, 0); // replace
+            bool ok = fsys.rename(fs_path, dest_fs);
+            dav_send_status(slot_id, ok ? (dest_exists ? 204 : 201) : 409, "");
+            return;
+        }
+
+        // COPY: files only (collection copy is out of scope).
+        fs::File src = fsys.open(fs_path, "r");
+        if (!src)
+        {
+            dav_send_status(slot_id, 404, "");
+            return;
+        }
+        if (src.isDirectory())
+        {
+            src.close();
+            dav_send_status(slot_id, 501, "");
+            return;
+        }
+        fs::File dst = fsys.open(dest_fs, "w");
+        if (!dst)
+        {
+            src.close();
+            dav_send_status(slot_id, 409, "");
+            return;
+        }
+        uint8_t cbuf[FILE_CHUNK_SIZE];
+        size_t cn;
+        while ((cn = src.read(cbuf, sizeof(cbuf))) > 0)
+            dst.write(cbuf, cn);
+        src.close();
+        dst.close();
+        dav_send_status(slot_id, dest_exists ? 204 : 201, "");
+        return;
+    }
+
+    case DAV_M_LOCK: {
+        // Advisory lock: issue a synthetic exclusive-write token (NOT enforced).
+        unsigned long tok = (unsigned long)millis();
+#ifdef ARDUINO
+        tok ^= (unsigned long)esp_random();
+#endif
+        char token[48];
+        snprintf(token, sizeof(token), "opaquelocktoken:%08lx-detws", tok);
+        snprintf(g_dav_buf, sizeof(g_dav_buf),
+                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                 "<D:prop xmlns:D=\"DAV:\"><D:lockdiscovery><D:activelock>"
+                 "<D:locktype><D:write/></D:locktype>"
+                 "<D:lockscope><D:exclusive/></D:lockscope>"
+                 "<D:depth>infinity</D:depth><D:timeout>Second-3600</D:timeout>"
+                 "<D:locktoken><D:href>%s</D:href></D:locktoken>"
+                 "</D:activelock></D:lockdiscovery></D:prop>\n",
+                 token);
+        // RFC 4918 §10.5: Lock-Token uses a Coded-URL (angle-bracketed).
+        char lt[64];
+        snprintf(lt, sizeof(lt), "<%s>", token);
+        add_response_header(slot_id, "Lock-Token", lt);
+        send(slot_id, 200, "application/xml; charset=utf-8", g_dav_buf);
+        return;
+    }
+
+    case DAV_M_UNLOCK:
+        dav_send_status(slot_id, 204, ""); // advisory: nothing to release
+        return;
+
+    case DAV_M_PROPFIND: {
+        fs::File f = fsys.open(fs_path, "r");
+        if (!f)
+        {
+            dav_send_status(slot_id, 404, "");
+            return;
+        }
+        bool isdir = f.isDirectory();
+        uint32_t fsize = (uint32_t)f.size();
+        time_t mtime = f.getLastWrite();
+
+        int depth = webdav_depth(http_get_header(req, "Depth"), 1);
+
+        // Self href: the request path, with a trailing '/' for a collection.
+        char self_href[MAX_PATH_LEN + 2];
+        snprintf(self_href, sizeof(self_href), "%s", req->path);
+        size_t sl = strlen(self_href);
+        if (isdir && (sl == 0 || self_href[sl - 1] != '/'))
+        {
+            if (sl + 1 < sizeof(self_href))
+            {
+                self_href[sl++] = '/';
+                self_href[sl] = '\0';
+            }
+        }
+
+        size_t cap = sizeof(g_dav_buf), len = 0;
+        len = webdav_ms_begin(g_dav_buf, cap, len);
+        char mt[40];
+        dav_rfc1123(mtime, mt, sizeof(mt));
+        len = webdav_ms_entry(g_dav_buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
+
+        if (isdir && depth >= 1)
+        {
+            int count = 0;
+            for (;;)
+            {
+                fs::File c = f.openNextFile();
+                if (!c)
+                    break;
+                if (count >= DETWS_WEBDAV_MAX_ENTRIES)
+                {
+                    c.close();
+                    break;
+                }
+                const char *base = dav_basename(c.name());
+                bool cdir = c.isDirectory();
+                uint32_t csize = (uint32_t)c.size();
+                time_t cmt = c.getLastWrite();
+                char chref[MAX_PATH_LEN + 80];
+                snprintf(chref, sizeof(chref), "%s%s%s", self_href, base, cdir ? "/" : "");
+                char cmtbuf[40];
+                dav_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
+                c.close();
+                size_t before = len;
+                len = webdav_ms_entry(g_dav_buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
+                if (len == before)
+                    break; // buffer full - stop listing
+                count++;
+            }
+        }
+        f.close();
+        len = webdav_ms_end(g_dav_buf, cap, len);
+        send(slot_id, 207, "application/xml; charset=utf-8", g_dav_buf);
+        return;
+    }
+
+    case DAV_M_PROPPATCH: // properties are read-only on this server
+    case DAV_M_UNSUPPORTED:
+    default:
+        dav_send_status(slot_id, 405,
+                        "Allow: OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY, MOVE, LOCK, UNLOCK\r\n");
+        return;
+    }
+}
+#endif // DETWS_ENABLE_WEBDAV

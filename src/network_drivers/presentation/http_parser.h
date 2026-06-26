@@ -114,9 +114,9 @@ struct HttpReq
     HttpVersion version;    ///< Protocol version parsed from the request line.
     uint32_t _version_hash; ///< FNV-1a accumulator for version validation (internal).
 
-    char method[8];          ///< HTTP method, null-terminated (max 7: OPTIONS).
-    char path[MAX_PATH_LEN]; ///< URL path, null-terminated; no query string.
-    size_t path_idx;         ///< Write cursor into path[].
+    char method[DETWS_METHOD_BUF_SIZE]; ///< HTTP method, null-terminated (OPTIONS, or WebDAV methods when enabled).
+    char path[MAX_PATH_LEN];            ///< URL path, null-terminated; no query string.
+    size_t path_idx;                    ///< Write cursor into path[].
 
     char query[MAX_QUERY_LEN];                 ///< Raw query string (after `?`).
     size_t query_idx;                          ///< Write cursor into query[].

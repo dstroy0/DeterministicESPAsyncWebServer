@@ -186,6 +186,31 @@ yields `416 Range Not Satisfiable` with `Content-Range: bytes */size`. A
 multi-range (comma-separated) request degrades to a full `200` response, which
 RFC 7233 §3.1 explicitly permits, as does a malformed or absent `Range`.
 
+## WebDAV (RFC 4918)
+
+Optional ([`DETWS_ENABLE_WEBDAV`](@ref DETWS_ENABLE_WEBDAV), requires file serving,
+default off). [`dav()`](@ref DetWebServer::dav) mounts a filesystem subtree that
+answers the WebDAV methods, extending HTTP so a client can manage files:
+
+- **OPTIONS** advertises `DAV: 1, 2` and the supported `Allow` set.
+- **PROPFIND** (Depth `0` or `1`) returns `207 Multi-Status` with a `<D:response>`
+  per resource carrying `resourcetype` (collection or empty), `getcontentlength`,
+  `getcontenttype`, and an RFC 1123 `getlastmodified`. A Depth-1 listing is bounded
+  by `DETWS_WEBDAV_MAX_ENTRIES`; the document is built into a `DETWS_WEBDAV_BUF_SIZE`
+  buffer. The builder + XML escaping are host-tested.
+- **GET / HEAD** stream a file (the file-serving path); **PUT** writes the request
+  body (`201 Created` / `204 No Content`); **DELETE** removes a file or recursively
+  a collection (`204`); **MKCOL** creates a collection; **COPY** (files) and
+  **MOVE** honor `Destination` and `Overwrite` (`F` -> `412 Precondition Failed`).
+- **LOCK / UNLOCK** are advisory: a synthetic exclusive-write `opaquelocktoken`
+  is issued (so clients that require a lock can write) but not enforced.
+
+Out of scope: PROPPATCH (properties are read-only -> `405`), shared/real locking,
+and `Depth: infinity` (treated as `1`). PUT buffers the body (bounded by
+`BODY_BUF_SIZE`); large uploads need the streaming-body sink. A destination
+outside the mount yields `502 Bad Gateway`. Pair a writable share with per-route
+auth, HTTPS, and the accept throttles.
+
 ## CoAP server (RFC 7252)
 
 Optional ([`DETWS_ENABLE_COAP`](@ref DETWS_ENABLE_COAP), default off) zero-heap
