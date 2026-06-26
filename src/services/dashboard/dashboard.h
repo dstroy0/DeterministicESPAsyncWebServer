@@ -32,14 +32,23 @@
 
 class DetWebServer;
 
-/** @brief Widget rendering style. */
+/** @brief Widget rendering / interaction style. */
 enum DetwsWidgetType
 {
+    // Display widgets - updated from the SSE value stream.
     DETWS_WIDGET_VALUE = 0, ///< plain numeric readout
     DETWS_WIDGET_GAUGE,     ///< radial arc gauge over [min, max]
     DETWS_WIDGET_BAR,       ///< horizontal bar over [min, max]
-    DETWS_WIDGET_SPARKLINE  ///< recent-history line over [min, max]
+    DETWS_WIDGET_SPARKLINE, ///< recent-history SVG line over [min, max]
+    DETWS_WIDGET_CHART,     ///< dense Canvas line chart over [min, max]
+    // Control widgets - send values back to the device over WebSocket.
+    DETWS_WIDGET_BUTTON, ///< momentary button -> control value 1
+    DETWS_WIDGET_TOGGLE, ///< on/off toggle -> control value 0/1 (reflects SSE state)
+    DETWS_WIDGET_SLIDER  ///< range slider over [min, max] -> control value
 };
+
+/** @brief Control callback: invoked when a control widget sends a value over WebSocket. */
+typedef void (*DetwsControlCb)(const char *key, float value);
 
 /** @brief One dashboard widget, declared in a fixed compile-time table. */
 struct DetwsWidget
@@ -73,6 +82,21 @@ int detws_dashboard_layout_json(char *out, size_t cap);
  * @return number of characters written, or 0 if @p cap is too small.
  */
 int detws_dashboard_values_json(char *out, size_t cap);
+
+/** @brief Register the callback invoked when a control widget sends a value. */
+void detws_dashboard_on_control(DetwsControlCb cb);
+
+/**
+ * @brief Parse a control message `{"k":"<key>","v":<number>}` from the page.
+ * @return true if well-formed; writes the key (bounded by @p key_cap) and value.
+ */
+bool detws_dashboard_parse_control(const char *msg, char *key_out, size_t key_cap, float *value_out);
+
+/**
+ * @brief Parse a control message and invoke the registered control callback.
+ * @return true if the message parsed and a callback was set.
+ */
+bool detws_dashboard_dispatch_control(const char *msg);
 
 // ---------------------------------------------------------------------------
 // Server integration

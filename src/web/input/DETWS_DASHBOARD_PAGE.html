@@ -1,6 +1,6 @@
 <!--#brief Real-time SVG telemetry dashboard page (DETWS_ENABLE_DASHBOARD).-->
 <!--#minify-->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -75,6 +75,33 @@
         fill: #e6edf3;
         font-family: inherit;
       }
+      canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .btn {
+        padding: 8px 14px;
+        font: inherit;
+        color: #fff;
+        background: #238636;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn:active {
+        background: #2ea043;
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: #3fb950;
+      }
+      .sw {
+        width: 42px;
+        height: 22px;
+        cursor: pointer;
+        accent-color: #3fb950;
+      }
     </style>
   </head>
   <body>
@@ -88,6 +115,11 @@
         var dot = document.getElementById("dot");
         var status = document.getElementById("status");
         var widgets = {};
+        var ws = null;
+        function sendCtrl(k, v) {
+          if (ws && ws.readyState === 1)
+            ws.send(JSON.stringify({ k: k, v: v }));
+        }
 
         function clamp(f) {
           return f < 0 ? 0 : f > 1 ? 1 : f;
@@ -110,7 +142,20 @@
         function arc(cx, cy, r, f) {
           var s = polar(cx, cy, r, 180),
             e = polar(cx, cy, r, 180 - 180 * f);
-          return "M" + s[0] + " " + s[1] + " A" + r + " " + r + " 0 0 1 " + e[0] + " " + e[1];
+          return (
+            "M" +
+            s[0] +
+            " " +
+            s[1] +
+            " A" +
+            r +
+            " " +
+            r +
+            " 0 0 1 " +
+            e[0] +
+            " " +
+            e[1]
+          );
         }
 
         function card(w) {
@@ -123,10 +168,30 @@
           var upd;
           if (w.type === "gauge") {
             var g = el("svg", { viewBox: "0 0 120 72" });
-            g.appendChild(el("path", { d: arc(60, 62, 50, 1), fill: "none", stroke: "#30363d", "stroke-width": 10, "stroke-linecap": "round" }));
-            var gv = el("path", { d: arc(60, 62, 50, 0), fill: "none", stroke: "#3fb950", "stroke-width": 10, "stroke-linecap": "round" });
+            g.appendChild(
+              el("path", {
+                d: arc(60, 62, 50, 1),
+                fill: "none",
+                stroke: "#30363d",
+                "stroke-width": 10,
+                "stroke-linecap": "round",
+              }),
+            );
+            var gv = el("path", {
+              d: arc(60, 62, 50, 0),
+              fill: "none",
+              stroke: "#3fb950",
+              "stroke-width": 10,
+              "stroke-linecap": "round",
+            });
             g.appendChild(gv);
-            var gt = el("text", { x: 60, y: 58, "text-anchor": "middle", "font-size": 16, "font-weight": 600 });
+            var gt = el("text", {
+              x: 60,
+              y: 58,
+              "text-anchor": "middle",
+              "font-size": 16,
+              "font-weight": 600,
+            });
             gt.textContent = "-";
             g.appendChild(gt);
             c.appendChild(g);
@@ -136,8 +201,24 @@
             };
           } else if (w.type === "bar") {
             var b = el("svg", { viewBox: "0 0 200 40" });
-            b.appendChild(el("rect", { x: 0, y: 16, width: 200, height: 12, rx: 6, fill: "#30363d" }));
-            var bf = el("rect", { x: 0, y: 16, width: 0, height: 12, rx: 6, fill: "#3fb950" });
+            b.appendChild(
+              el("rect", {
+                x: 0,
+                y: 16,
+                width: 200,
+                height: 12,
+                rx: 6,
+                fill: "#30363d",
+              }),
+            );
+            var bf = el("rect", {
+              x: 0,
+              y: 16,
+              width: 0,
+              height: 12,
+              rx: 6,
+              fill: "#3fb950",
+            });
             b.appendChild(bf);
             var bt = el("text", { x: 0, y: 11, "font-size": 12 });
             bt.textContent = "-";
@@ -149,7 +230,12 @@
             };
           } else if (w.type === "sparkline") {
             var s = el("svg", { viewBox: "0 0 200 50" });
-            var pl = el("polyline", { fill: "none", stroke: "#3fb950", "stroke-width": 2, points: "" });
+            var pl = el("polyline", {
+              fill: "none",
+              stroke: "#3fb950",
+              "stroke-width": 2,
+              points: "",
+            });
             s.appendChild(pl);
             c.appendChild(s);
             var sn = document.createElement("div");
@@ -162,12 +248,79 @@
               if (hist.length > 40) hist.shift();
               var pts = hist
                 .map(function (y, i) {
-                  return (200 * i) / 39 + "," + (50 - 50 * frac(y, w.min, w.max));
+                  return (
+                    (200 * i) / 39 + "," + (50 - 50 * frac(y, w.min, w.max))
+                  );
                 })
                 .join(" ");
               pl.setAttribute("points", pts);
               sn.textContent = fmt(v) + " " + w.unit;
             };
+          } else if (w.type === "chart") {
+            var cv = document.createElement("canvas");
+            cv.width = 240;
+            cv.height = 64;
+            c.appendChild(cv);
+            var cn = document.createElement("div");
+            cn.className = "num";
+            cn.textContent = "-";
+            c.appendChild(cn);
+            var ctx = cv.getContext("2d");
+            var ch = [];
+            upd = function (v) {
+              ch.push(v);
+              if (ch.length > cv.width) ch.shift();
+              ctx.clearRect(0, 0, cv.width, cv.height);
+              ctx.strokeStyle = "#3fb950";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              for (var i = 0; i < ch.length; i++) {
+                var x = (cv.width * i) / (cv.width - 1);
+                var y = cv.height - cv.height * frac(ch[i], w.min, w.max);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+              }
+              ctx.stroke();
+              cn.textContent = fmt(v) + " " + w.unit;
+            };
+          } else if (w.type === "button") {
+            var btn = document.createElement("button");
+            btn.className = "btn";
+            btn.textContent = "Press";
+            btn.onclick = function () {
+              sendCtrl(w.key, 1);
+            };
+            c.appendChild(btn);
+            upd = function () {};
+          } else if (w.type === "toggle") {
+            var tg = document.createElement("input");
+            tg.type = "checkbox";
+            tg.className = "sw";
+            tg.onchange = function () {
+              sendCtrl(w.key, tg.checked ? 1 : 0);
+            };
+            c.appendChild(tg);
+            upd = function (v) {
+              tg.checked = v >= 0.5;
+            };
+          } else if (w.type === "slider") {
+            var sl = document.createElement("input");
+            sl.type = "range";
+            sl.min = w.min;
+            sl.max = w.max;
+            sl.value = w.min;
+            var sv = document.createElement("span");
+            sv.className = "unit";
+            sv.textContent = fmt(w.min) + w.unit;
+            sl.oninput = function () {
+              sv.textContent = fmt(+sl.value) + w.unit;
+            };
+            sl.onchange = function () {
+              sendCtrl(w.key, +sl.value);
+            };
+            c.appendChild(sl);
+            c.appendChild(sv);
+            upd = function () {};
           } else {
             var n = document.createElement("div");
             n.className = "num";
@@ -194,6 +347,18 @@
             list.forEach(function (w) {
               widgets[w.key] = card(w);
             });
+            if (
+              list.some(function (w) {
+                return (
+                  w.type === "button" ||
+                  w.type === "toggle" ||
+                  w.type === "slider"
+                );
+              })
+            ) {
+              var proto = location.protocol === "https:" ? "wss://" : "ws://";
+              ws = new WebSocket(proto + location.host + base + "/ws");
+            }
             var es = new EventSource(base + "/stream");
             es.onopen = function () {
               dot.className = "live";
