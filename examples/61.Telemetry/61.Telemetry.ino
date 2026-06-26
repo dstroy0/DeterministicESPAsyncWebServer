@@ -28,7 +28,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-static float g_window_buf[16];  // caller-owned window storage (no heap)
+static float g_window_buf[16]; // caller-owned window storage (no heap)
 static DetwsWindow g_window;
 static DetwsRate g_rate;
 static DetwsTotalizer g_total;
@@ -57,9 +57,9 @@ void setup()
         snprintf(body, sizeof(body),
                  "{\"samples\":%u,\"mean\":%.3f,\"stddev\":%.3f,\"min\":%.3f,\"max\":%.3f,"
                  "\"rate_per_s\":%.3f,\"total\":%.3f}",
-                 (unsigned)detws_window_count(&g_window), detws_window_mean(&g_window),
-                 detws_window_stddev(&g_window), detws_window_min(&g_window), detws_window_max(&g_window),
-                 g_last_rate, detws_totalizer_total(&g_total));
+                 (unsigned)detws_window_count(&g_window), detws_window_mean(&g_window), detws_window_stddev(&g_window),
+                 detws_window_min(&g_window), detws_window_max(&g_window), g_last_rate,
+                 detws_totalizer_total(&g_total));
         server.send(id, 200, "application/json", body);
     });
 
@@ -78,8 +78,8 @@ void loop()
         last_ms = now;
         float sample = (float)analogRead(34) * (3.3f / 4095.0f); // example: ADC voltage
 
-        detws_window_push(&g_window, sample);          // stats over the last 16 readings
+        detws_window_push(&g_window, sample);                  // stats over the last 16 readings
         g_last_rate = detws_rate_update(&g_rate, sample, now); // slope (units/s)
-        detws_totalizer_add(&g_total, sample, now);    // integrate the reading over time
+        detws_totalizer_add(&g_total, sample, now);            // integrate the reading over time
     }
 }
