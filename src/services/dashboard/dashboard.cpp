@@ -17,6 +17,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const DetwsWidget *s_widgets = nullptr;
@@ -33,6 +34,14 @@ static const char *widget_type_name(DetwsWidgetType t)
         return "bar";
     case DETWS_WIDGET_SPARKLINE:
         return "sparkline";
+    case DETWS_WIDGET_CHART:
+        return "chart";
+    case DETWS_WIDGET_BUTTON:
+        return "button";
+    case DETWS_WIDGET_TOGGLE:
+        return "toggle";
+    case DETWS_WIDGET_SLIDER:
+        return "slider";
     default:
         return "value";
     }
@@ -120,6 +129,76 @@ int detws_dashboard_values_json(char *out, size_t cap)
     if (json_append(out, cap, &pos, "}") != 0)
         return 0;
     return (int)pos;
+}
+
+// ---------------------------------------------------------------------------
+// Controls (inbound WebSocket messages)
+// ---------------------------------------------------------------------------
+
+static DetwsControlCb s_control_cb = nullptr;
+
+void detws_dashboard_on_control(DetwsControlCb cb)
+{
+    s_control_cb = cb;
+}
+
+// Locate the value of "key" in a {"k":...,"v":...} object: a pointer just past
+// the ':' (whitespace skipped), or nullptr. The quoted pattern ("k" / "v") only
+// matches the message's own keys, not a widget key that happens to contain k/v.
+static const char *control_value_ptr(const char *s, const char *key)
+{
+    char pat[8];
+    snprintf(pat, sizeof(pat), "\"%s\"", key);
+    const char *p = strstr(s, pat);
+    if (!p)
+        return nullptr;
+    p += strlen(pat);
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != ':')
+        return nullptr;
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    return p;
+}
+
+bool detws_dashboard_parse_control(const char *msg, char *key_out, size_t key_cap, float *value_out)
+{
+    if (!msg || !key_out || key_cap == 0 || !value_out)
+        return false;
+    key_out[0] = '\0';
+    const char *kp = control_value_ptr(msg, "k");
+    const char *vp = control_value_ptr(msg, "v");
+    if (!kp || !vp || *kp != '"')
+        return false;
+    kp++;
+    size_t i = 0;
+    while (*kp && *kp != '"' && i + 1 < key_cap)
+        key_out[i++] = *kp++;
+    if (*kp != '"')
+    {
+        key_out[0] = '\0';
+        return false; // unterminated or key too long
+    }
+    key_out[i] = '\0';
+    char *end = nullptr;
+    float v = strtof(vp, &end);
+    if (end == vp)
+        return false; // no numeric value
+    *value_out = v;
+    return true;
+}
+
+bool detws_dashboard_dispatch_control(const char *msg)
+{
+    char key[32];
+    float value;
+    if (!detws_dashboard_parse_control(msg, key, sizeof(key), &value))
+        return false;
+    if (s_control_cb)
+        s_control_cb(key, value);
+    return s_control_cb != nullptr;
 }
 
 #endif // DETWS_ENABLE_DASHBOARD

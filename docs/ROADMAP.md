@@ -22,8 +22,8 @@ flag (default off) so it costs nothing when unused.
    tokens - all shipped.
 3. **Partition-map monitor** (\*requested) + config export / restore - rounds out
    the new NVS config store.
-4. **Dashboard configurator** - telemetry math + SVG dashboard (SSE) shipped;
-   WebSocket controls are the remaining phase.
+4. **Dashboard configurator** - done: telemetry math, the SVG dashboard over SSE,
+   and the WebSocket controls + Canvas chart.
 5. **Architectural (deliberate):** Ethernet PHY + failover, GraphQL, OPC UA.
 
 ## Web / API / UI
@@ -31,7 +31,7 @@ flag (default off) so it costs nothing when unused.
 - [x] WebSocket permessage-deflate inbound _(shipped)_; outbound compress (Phase 2) open (M).
 - [x] REST substrate, AJAX _(shipped)_.
 - [x] Real-time **dashboard** _(shipped, phase 1)_ - `DETWS_ENABLE_DASHBOARD`: a compile-time `DetwsWidget` table served as hand-rolled SVG (gauge / value / bar / sparkline, no external JS) via the `web_assets` pipeline, live over SSE; `detws_dashboard_set` / `_publish` (example 62.Dashboard). **Flagship.**
-- [ ] Dashboard phase 2 (M): WebSocket controls (buttons / toggles back to the device), and a Canvas widget option for dense charts.
+- [x] Dashboard phase 2 _(shipped)_ - WebSocket controls (button / toggle / slider widgets send values to a `detws_dashboard_on_control` callback) and a Canvas chart widget for dense series.
 - [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
 - [ ] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching.

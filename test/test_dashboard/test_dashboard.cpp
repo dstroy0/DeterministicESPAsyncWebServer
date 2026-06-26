@@ -5,6 +5,8 @@
 // core). Pure logic - no server - so it runs on the host.
 
 #include "services/dashboard/dashboard.h"
+#include <stdio.h>
+#include <string.h>
 #include <unity.h>
 
 static const DetwsWidget W[] = {
@@ -73,6 +75,80 @@ void test_small_buffer_fails_closed()
     TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, sizeof(buf)));
 }
 
+// A well-formed control message parses into a key + value.
+void test_parse_control_ok()
+{
+    char key[32];
+    float v = -1;
+    TEST_ASSERT_TRUE(detws_dashboard_parse_control("{\"k\":\"toggle1\",\"v\":1}", key, sizeof(key), &v));
+    TEST_ASSERT_EQUAL_STRING("toggle1", key);
+    TEST_ASSERT_EQUAL_FLOAT(1.0f, v);
+}
+
+// Fractional control values parse too.
+void test_parse_control_float()
+{
+    char key[32];
+    float v = 0;
+    TEST_ASSERT_TRUE(detws_dashboard_parse_control("{\"k\":\"speed\",\"v\":3.5}", key, sizeof(key), &v));
+    TEST_ASSERT_EQUAL_STRING("speed", key);
+    TEST_ASSERT_EQUAL_FLOAT(3.5f, v);
+}
+
+// Malformed messages are rejected.
+void test_parse_control_rejects_malformed()
+{
+    char key[32];
+    float v;
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"k\":\"x\"}", key, sizeof(key), &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"v\":1}", key, sizeof(key), &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("not json", key, sizeof(key), &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"k\":\"x\",\"v\":}", key, sizeof(key), &v));
+}
+
+static char g_ctrl_key[32];
+static float g_ctrl_val;
+static int g_ctrl_calls;
+static void ctrl_cb(const char *key, float value)
+{
+    snprintf(g_ctrl_key, sizeof(g_ctrl_key), "%s", key);
+    g_ctrl_val = value;
+    g_ctrl_calls++;
+}
+
+// dispatch parses and invokes the registered callback; malformed -> no call.
+void test_dispatch_control_invokes_cb()
+{
+    g_ctrl_calls = 0;
+    g_ctrl_val = 0;
+    g_ctrl_key[0] = '\0';
+    detws_dashboard_on_control(ctrl_cb);
+    TEST_ASSERT_TRUE(detws_dashboard_dispatch_control("{\"k\":\"led\",\"v\":1}"));
+    TEST_ASSERT_EQUAL_INT(1, g_ctrl_calls);
+    TEST_ASSERT_EQUAL_STRING("led", g_ctrl_key);
+    TEST_ASSERT_EQUAL_FLOAT(1.0f, g_ctrl_val);
+    TEST_ASSERT_FALSE(detws_dashboard_dispatch_control("garbage"));
+    TEST_ASSERT_EQUAL_INT(1, g_ctrl_calls);
+}
+
+// The new control / chart widget types serialize with their type names.
+void test_layout_control_types()
+{
+    static const DetwsWidget CW[] = {
+        {DETWS_WIDGET_CHART, "C", "c", 0, 1, ""},
+        {DETWS_WIDGET_BUTTON, "B", "b", 0, 0, ""},
+        {DETWS_WIDGET_TOGGLE, "T", "t", 0, 1, ""},
+        {DETWS_WIDGET_SLIDER, "S", "s", 0, 100, "%"},
+    };
+    detws_dashboard_configure(CW, 4);
+    char buf[512];
+    detws_dashboard_layout_json(buf, sizeof(buf));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"chart\""));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"button\""));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"toggle\""));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"slider\""));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -82,5 +158,10 @@ int main()
     RUN_TEST(test_set_unknown_key);
     RUN_TEST(test_configure_resets_values);
     RUN_TEST(test_small_buffer_fails_closed);
+    RUN_TEST(test_parse_control_ok);
+    RUN_TEST(test_parse_control_float);
+    RUN_TEST(test_parse_control_rejects_malformed);
+    RUN_TEST(test_dispatch_control_invokes_cb);
+    RUN_TEST(test_layout_control_types);
     return UNITY_END();
 }
