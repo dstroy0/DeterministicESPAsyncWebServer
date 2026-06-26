@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`3f9e8e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f9e8e55c016996076be51f8936dd2e854181722))
+- update CHANGELOG.md [skip ci] ([`e9328ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9328ac76c57cca036b9b0179c90591f41a9a924))
 - only SSH-sign bot commits when the signing key secret is present ([`5148d30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5148d3096410677288329a22b14dd28e319a9bb0))
 
 ### Changes
@@ -14,6 +16,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add pentesting / adversarial suite to roadmap ([`323fcd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/323fcd2e4551aaef11eef9b177ff376fd0351139))
 - group README features by OSI layer in collapsible blocks ([`c5c2b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5c2b1bee4cc14672f1462f23b6dd24132849bd8))
 
 ## [2.4.0] - 2026-06-26
