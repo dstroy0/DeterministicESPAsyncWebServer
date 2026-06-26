@@ -1688,6 +1688,7 @@ enum DetIface : uint8_t
     DETIFACE_ANY = 0, ///< Unknown / no filter (matches any interface).
     DETIFACE_STA = 1, ///< Station interface (joined to an AP / your LAN).
     DETIFACE_AP = 2,  ///< softAP interface (clients joined to the device).
+    DETIFACE_ETH = 3, ///< Ethernet interface (wired PHY).
 };
 
 // ---------------------------------------------------------------------------
