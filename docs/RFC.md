@@ -211,6 +211,24 @@ and `Depth: infinity` (treated as `1`). PUT buffers the body (bounded by
 outside the mount yields `502 Bad Gateway`. Pair a writable share with per-route
 auth, HTTPS, and the accept throttles.
 
+## Modbus TCP slave (Modbus Application Protocol v1.1b3)
+
+Optional ([`DETWS_ENABLE_MODBUS`](@ref DETWS_ENABLE_MODBUS), default off) Modbus
+TCP server on port 502. The MBAP header (Transaction Id, Protocol Id = 0, Length,
+Unit Id) is validated and echoed; the PDU is dispatched against a fixed BSS data
+model of coils, discrete inputs, holding registers, and input registers. Supported
+function codes: 0x01 Read Coils, 0x02 Read Discrete Inputs, 0x03 Read Holding
+Registers, 0x04 Read Input Registers, 0x05 Write Single Coil, 0x06 Write Single
+Register, 0x0F Write Multiple Coils, 0x10 Write Multiple Registers. An unsupported
+function returns exception 0x01 (Illegal Function), an out-of-range address 0x02
+(Illegal Data Address), and a bad quantity/value 0x03 (Illegal Data Value). The
+codec ([`modbus_process_adu()`](@ref modbus_process_adu)) is transport-independent
+and host-tested; the TCP framing (one ADU per MBAP length, pipelined out of the rx
+ring) is dispatched through the PROTO_MODBUS connection handler. The application
+reads and writes the model with the accessor functions and is notified of client
+writes via [`modbus_on_write()`](@ref modbus_on_write). Modbus has no
+authentication or encryption - run it only on a trusted control network.
+
 ## CoAP server (RFC 7252)
 
 Optional ([`DETWS_ENABLE_COAP`](@ref DETWS_ENABLE_COAP), default off) zero-heap

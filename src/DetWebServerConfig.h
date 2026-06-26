@@ -435,6 +435,42 @@
 #endif
 
 /**
+ * @brief Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502.
+ *
+ * Default off. When set, listen(502, PROTO_MODBUS) serves a fixed data model
+ * (coils, discrete inputs, holding + input registers, all in BSS) over Modbus
+ * TCP: Read/Write Coils (FC 1/5/15), Read Discrete Inputs (FC 2), Read/Write
+ * Holding Registers (FC 3/6/16), and Read Input Registers (FC 4). The codec
+ * (MBAP framing + PDU dispatch) is pure and host-tested; the TCP transport is
+ * ESP32-only. The application reads/writes the model with the accessor functions
+ * and is notified of client writes via modbus_on_write(). Modbus has no
+ * authentication or encryption - run it only on a trusted control network.
+ */
+#ifndef DETWS_ENABLE_MODBUS
+#define DETWS_ENABLE_MODBUS 0
+#endif
+
+/** @brief Number of Modbus coils (FC 1/5/15), single-bit R/W (BSS, bit-packed). */
+#ifndef DETWS_MODBUS_COILS
+#define DETWS_MODBUS_COILS 64
+#endif
+
+/** @brief Number of Modbus discrete inputs (FC 2), single-bit read-only (BSS, bit-packed). */
+#ifndef DETWS_MODBUS_DISCRETE_INPUTS
+#define DETWS_MODBUS_DISCRETE_INPUTS 64
+#endif
+
+/** @brief Number of Modbus holding registers (FC 3/6/16), 16-bit R/W (BSS). */
+#ifndef DETWS_MODBUS_HOLDING_REGS
+#define DETWS_MODBUS_HOLDING_REGS 64
+#endif
+
+/** @brief Number of Modbus input registers (FC 4), 16-bit read-only (BSS). */
+#ifndef DETWS_MODBUS_INPUT_REGS
+#define DETWS_MODBUS_INPUT_REGS 64
+#endif
+
+/**
  * @brief TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only).
  *
  * When set, the server can accept TLS connections using mbedTLS configured with
@@ -1386,6 +1422,7 @@ enum ConnProto
     PROTO_HTTP = 1,   ///< HTTP/1.1 with optional WS and SSE upgrades.
     PROTO_TELNET = 2, ///< Telnet (RFC 854).
     PROTO_SSH = 3,    ///< SSH (RFC 4253/4252/4254).
+    PROTO_MODBUS = 4, ///< Modbus TCP slave (Modbus Application Protocol).
 };
 
 /**
@@ -1625,6 +1662,13 @@ enum DetIface : uint8_t
 #endif
 #if DETWS_METHOD_BUF_SIZE < 10
 #error "DeterministicESPAsyncWebServer: DETWS_METHOD_BUF_SIZE must be >= 10 when DETWS_ENABLE_WEBDAV is set (PROPPATCH)"
+#endif
+#endif
+
+#if DETWS_ENABLE_MODBUS
+#if DETWS_MODBUS_COILS < 1 || DETWS_MODBUS_DISCRETE_INPUTS < 1 || DETWS_MODBUS_HOLDING_REGS < 1 ||                     \
+    DETWS_MODBUS_INPUT_REGS < 1
+#error "DeterministicESPAsyncWebServer: each DETWS_MODBUS_* table size must be >= 1 when DETWS_ENABLE_MODBUS is set"
 #endif
 #endif
 

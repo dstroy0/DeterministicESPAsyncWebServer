@@ -1,0 +1,246 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the Modbus TCP slave core (services/modbus): the data model and
+// the MBAP/PDU codec (modbus_process_adu). No sockets - pure host tests.
+
+#include "services/modbus/modbus.h"
+#include <string.h>
+#include <unity.h>
+
+// Last write reported via modbus_on_write().
+static uint8_t g_wfc;
+static uint16_t g_wstart, g_wcount;
+static int g_wcalls;
+static void on_write(uint8_t fc, uint16_t start, uint16_t count)
+{
+    g_wfc = fc;
+    g_wstart = start;
+    g_wcount = count;
+    g_wcalls++;
+}
+
+void setUp()
+{
+    modbus_server_init();
+    modbus_on_write(on_write);
+    g_wfc = 0;
+    g_wstart = g_wcount = 0;
+    g_wcalls = 0;
+}
+void tearDown()
+{
+}
+
+// Build a Modbus TCP ADU: MBAP(tid, pid=0, len, uid) + pdu.
+static size_t build_adu(uint8_t *buf, uint16_t tid, uint8_t uid, const uint8_t *pdu, size_t pdu_len)
+{
+    uint16_t len = (uint16_t)(1 + pdu_len); // uid + pdu
+    buf[0] = (uint8_t)(tid >> 8);
+    buf[1] = (uint8_t)(tid & 0xFF);
+    buf[2] = 0;
+    buf[3] = 0; // protocol id
+    buf[4] = (uint8_t)(len >> 8);
+    buf[5] = (uint8_t)(len & 0xFF);
+    buf[6] = uid;
+    memcpy(buf + 7, pdu, pdu_len);
+    return 7 + pdu_len;
+}
+
+static uint16_t rd16(const uint8_t *p)
+{
+    return (uint16_t)((p[0] << 8) | p[1]);
+}
+
+// ---------------------------------------------------------------------------
+
+void test_read_holding_registers()
+{
+    modbus_set_holding_reg(0, 0x1234);
+    modbus_set_holding_reg(1, 0xABCD);
+    modbus_set_holding_reg(2, 0x0001);
+
+    uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x03}; // FC3, start 0, qty 3
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 0x0001, 0x11, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+
+    TEST_ASSERT_EQUAL_size_t(7 + 2 + 6, n);           // MBAP + fc + bytecount + 3*2
+    TEST_ASSERT_EQUAL_UINT16(0x0001, rd16(resp));     // tid echoed
+    TEST_ASSERT_EQUAL_UINT16(0x0000, rd16(resp + 2)); // pid 0
+    TEST_ASSERT_EQUAL_UINT16(1 + 8, rd16(resp + 4));  // len = uid + 8-byte pdu (fc + count + 3*2)
+    TEST_ASSERT_EQUAL_UINT8(0x11, resp[6]);           // uid echoed
+    TEST_ASSERT_EQUAL_UINT8(0x03, resp[7]);           // fc
+    TEST_ASSERT_EQUAL_UINT8(6, resp[8]);              // byte count
+    TEST_ASSERT_EQUAL_UINT16(0x1234, rd16(resp + 9));
+    TEST_ASSERT_EQUAL_UINT16(0xABCD, rd16(resp + 11));
+    TEST_ASSERT_EQUAL_UINT16(0x0001, rd16(resp + 13));
+}
+
+void test_read_input_registers()
+{
+    modbus_set_input_reg(5, 0xBEEF);
+    uint8_t pdu[] = {0x04, 0x00, 0x05, 0x00, 0x01};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 0x0002, 0x01, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 2 + 2, n);
+    TEST_ASSERT_EQUAL_UINT8(0x04, resp[7]);
+    TEST_ASSERT_EQUAL_UINT16(0xBEEF, rd16(resp + 9));
+}
+
+void test_read_coils_packs_bits()
+{
+    modbus_set_coil(0, true);
+    modbus_set_coil(1, false);
+    modbus_set_coil(2, true);
+    modbus_set_coil(9, true); // second byte, bit 1
+
+    uint8_t pdu[] = {0x01, 0x00, 0x00, 0x00, 0x0A}; // FC1, start 0, qty 10
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 1, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 2 + 2, n); // 10 bits -> 2 bytes
+    TEST_ASSERT_EQUAL_UINT8(0x01, resp[7]);
+    TEST_ASSERT_EQUAL_UINT8(2, resp[8]);
+    TEST_ASSERT_EQUAL_UINT8(0x05, resp[9]);  // bits 0 and 2 set
+    TEST_ASSERT_EQUAL_UINT8(0x02, resp[10]); // bit 9 -> second byte bit 1
+}
+
+void test_write_single_coil()
+{
+    uint8_t pdu[] = {0x05, 0x00, 0x03, 0xFF, 0x00}; // set coil 3 ON
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(pdu, resp + 7, 5); // echo
+    TEST_ASSERT_TRUE(modbus_get_coil(3));
+    TEST_ASSERT_EQUAL_INT(1, g_wcalls);
+    TEST_ASSERT_EQUAL_UINT8(0x05, g_wfc);
+    TEST_ASSERT_EQUAL_UINT16(3, g_wstart);
+}
+
+void test_write_single_register()
+{
+    uint8_t pdu[] = {0x06, 0x00, 0x0A, 0x12, 0x34};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, n);
+    TEST_ASSERT_EQUAL_UINT16(0x1234, modbus_get_holding_reg(10));
+    TEST_ASSERT_EQUAL_INT(1, g_wcalls);
+}
+
+void test_write_multiple_registers()
+{
+    uint8_t pdu[] = {0x10, 0x00, 0x02, 0x00, 0x02, 0x04, 0xAA, 0xBB, 0xCC, 0xDD};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, n);
+    TEST_ASSERT_EQUAL_UINT8(0x10, resp[7]);
+    TEST_ASSERT_EQUAL_UINT16(2, rd16(resp + 8));  // start
+    TEST_ASSERT_EQUAL_UINT16(2, rd16(resp + 10)); // qty
+    TEST_ASSERT_EQUAL_UINT16(0xAABB, modbus_get_holding_reg(2));
+    TEST_ASSERT_EQUAL_UINT16(0xCCDD, modbus_get_holding_reg(3));
+    TEST_ASSERT_EQUAL_UINT16(2, g_wcount);
+}
+
+void test_write_multiple_coils()
+{
+    // qty 5, 1 byte of data: bits 0..4 = 1,0,1,1,0 -> 0x0D
+    uint8_t pdu[] = {0x0F, 0x00, 0x00, 0x00, 0x05, 0x01, 0x0D};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 5, n);
+    TEST_ASSERT_TRUE(modbus_get_coil(0));
+    TEST_ASSERT_FALSE(modbus_get_coil(1));
+    TEST_ASSERT_TRUE(modbus_get_coil(2));
+    TEST_ASSERT_TRUE(modbus_get_coil(3));
+    TEST_ASSERT_FALSE(modbus_get_coil(4));
+    TEST_ASSERT_EQUAL_UINT16(5, g_wcount);
+}
+
+void test_exception_illegal_function()
+{
+    uint8_t pdu[] = {0x7F, 0x00, 0x00}; // unsupported FC
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 2, n);
+    TEST_ASSERT_EQUAL_UINT8(0x7F | 0x80, resp[7]);
+    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);
+}
+
+void test_exception_illegal_address()
+{
+    // Read holding regs beyond the 64-register table.
+    uint8_t pdu[] = {0x03, 0x00, 0x3C, 0x00, 0x0A}; // start 60, qty 10 -> 70 > 64
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 2, n);
+    TEST_ASSERT_EQUAL_UINT8(0x03 | 0x80, resp[7]);
+    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);
+}
+
+void test_exception_illegal_value()
+{
+    uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x00}; // qty 0
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(7 + 2, n);
+    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
+}
+
+void test_write_single_coil_bad_value()
+{
+    uint8_t pdu[] = {0x05, 0x00, 0x00, 0x12, 0x34}; // not 0x0000/0xFF00
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_UINT8(0x05 | 0x80, resp[7]);
+    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
+    TEST_ASSERT_EQUAL_INT(0, g_wcalls); // not applied
+}
+
+void test_non_modbus_protocol_id_ignored()
+{
+    uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    req[3] = 0x01; // corrupt the protocol id (must be 0)
+    size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_size_t(0, n); // not a Modbus frame -> no response
+}
+
+void test_truncated_frame_ignored()
+{
+    uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x03};
+    uint8_t req[260], resp[260];
+    size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
+    size_t n = modbus_process_adu(req, rl - 2, resp, sizeof(resp)); // drop 2 bytes
+    TEST_ASSERT_EQUAL_size_t(0, n);                                 // length field disagrees -> wait/ignore
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_read_holding_registers);
+    RUN_TEST(test_read_input_registers);
+    RUN_TEST(test_read_coils_packs_bits);
+    RUN_TEST(test_write_single_coil);
+    RUN_TEST(test_write_single_register);
+    RUN_TEST(test_write_multiple_registers);
+    RUN_TEST(test_write_multiple_coils);
+    RUN_TEST(test_exception_illegal_function);
+    RUN_TEST(test_exception_illegal_address);
+    RUN_TEST(test_exception_illegal_value);
+    RUN_TEST(test_write_single_coil_bad_value);
+    RUN_TEST(test_non_modbus_protocol_id_ignored);
+    RUN_TEST(test_truncated_frame_ignored);
+    return UNITY_END();
+}
