@@ -48,8 +48,14 @@
 #endif
 #if DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
+#if DETWS_ENABLE_AUTH_LOCKOUT
+#include "services/auth_lockout/auth_lockout.h"
+#endif
 #ifdef ARDUINO
 #include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
+#if DETWS_ENABLE_AUTH_LOCKOUT
+#include "lwip/ip_addr.h" // ip4_addr_get_u32 / ip_2_ip4 for the lockout client-IP key
+#endif
 #endif
 #endif
 #if DETWS_ENABLE_WEBDAV
@@ -1333,6 +1339,57 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
     http_reset(slot_id);
 }
 
+#if DETWS_ENABLE_AUTH_LOCKOUT
+// Raw source IPv4 of the connection in slot_id (0 on native / no pcb). Used only
+// as an identity key for the auth lockout, so byte order is irrelevant.
+static uint32_t lockout_client_ip(uint8_t slot_id)
+{
+    uint32_t ip = 0;
+#ifdef ARDUINO
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->pcb)
+        ip = ip4_addr_get_u32(ip_2_ip4(&conn->pcb->remote_ip));
+#else
+    (void)slot_id;
+#endif
+    return ip;
+}
+
+// 429 Too Many Requests with Retry-After (auth lockout active). Closes the
+// connection - mirrors send_method_not_allowed's PCB lifecycle.
+static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
+{
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    {
+        http_reset(slot_id);
+        return;
+    }
+
+    static const char body[] = "Too Many Requests";
+    char header[RESP_HDR_BUF_SIZE];
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 429 Too Many Requests\r\n"
+                        "Retry-After: %lu\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: %d\r\n"
+                        "Connection: close\r\n\r\n",
+                        (unsigned long)retry_after_s, (int)(sizeof(body) - 1));
+
+    struct tcp_pcb *pcb = conn->pcb;
+    det_conn_detach(pcb);
+    conn->state = CONN_FREE;
+    conn->pcb = nullptr;
+
+    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    if (!req_is_head(slot_id))
+        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    det_conn_flush(slot_id, pcb);
+    det_conn_close(slot_id, pcb);
+    http_reset(slot_id);
+}
+#endif // DETWS_ENABLE_AUTH_LOCKOUT
+
 void DetWebServer::match_and_execute(uint8_t slot_id)
 {
     HttpReq *req = &http_pool[slot_id];
@@ -1468,7 +1525,24 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #if DETWS_ENABLE_AUTH
         if (r->auth_required)
         {
+#if DETWS_ENABLE_AUTH_LOCKOUT
+            uint32_t cip = lockout_client_ip(slot_id);
+            uint32_t now = (uint32_t)millis();
+            uint32_t remain = auth_lockout_remaining_ms(cip, now);
+            if (remain > 0)
+            {
+                // Address is locked out: 429 + Retry-After, no credential check.
+                send_too_many_requests(slot_id, (remain + 999) / 1000);
+                return;
+            }
+#endif
             bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r) : check_basic_auth(slot_id, req, r);
+#if DETWS_ENABLE_AUTH_LOCKOUT
+            if (ok)
+                auth_lockout_succeed(cip);
+            else
+                auth_lockout_fail(cip, now);
+#endif
             if (!ok)
             {
                 send_unauth(slot_id, r);
