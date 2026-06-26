@@ -377,6 +377,48 @@
 #define DETWS_ENABLE_FILE_SERVING 1
 #endif
 
+/**
+ * @brief WebDAV server (RFC 4918, class 1 + advisory locks) over the file system.
+ *
+ * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), dav() mounts an FS
+ * subtree that answers the WebDAV methods - OPTIONS, PROPFIND (Depth 0/1), GET,
+ * HEAD, PUT, DELETE, MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK - so a client
+ * (rclone, cadaver, curl, or a mounted network drive) can browse and edit files.
+ * PROPFIND returns a 207 Multi-Status document built into a fixed buffer
+ * (DETWS_WEBDAV_BUF_SIZE); a Depth-1 listing is capped at
+ * DETWS_WEBDAV_MAX_ENTRIES children. PUT buffers the body (bounded by
+ * BODY_BUF_SIZE - large uploads need the streaming-body sink). Locks are advisory
+ * (a synthetic token is issued but not enforced). PROPPATCH is not supported (the
+ * properties are read-only). See docs/SECURITY.md before exposing it.
+ */
+#ifndef DETWS_ENABLE_WEBDAV
+#define DETWS_ENABLE_WEBDAV 0
+#endif
+
+/** @brief Buffer (BSS) for a WebDAV 207 Multi-Status response, in bytes (see DETWS_ENABLE_WEBDAV). */
+#ifndef DETWS_WEBDAV_BUF_SIZE
+#define DETWS_WEBDAV_BUF_SIZE 2048
+#endif
+
+/** @brief Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). */
+#ifndef DETWS_WEBDAV_MAX_ENTRIES
+#define DETWS_WEBDAV_MAX_ENTRIES 32
+#endif
+
+/**
+ * @brief HTTP method-token buffer size (bytes, including the NUL).
+ *
+ * Sized for the longest method the server must recognize: 8 normally (OPTIONS),
+ * grown to fit the WebDAV methods (PROPPATCH is 9 chars) when WebDAV is enabled.
+ */
+#ifndef DETWS_METHOD_BUF_SIZE
+#if DETWS_ENABLE_WEBDAV
+#define DETWS_METHOD_BUF_SIZE 12
+#else
+#define DETWS_METHOD_BUF_SIZE 8
+#endif
+#endif
+
 /** @brief HTTP Basic Authentication per-route. */
 #ifndef DETWS_ENABLE_AUTH
 #define DETWS_ENABLE_AUTH 1
@@ -1571,6 +1613,18 @@ enum DetIface : uint8_t
 #endif
 #if DETWS_PER_IP_THROTTLE_MAX < 1
 #error "DeterministicESPAsyncWebServer: DETWS_PER_IP_THROTTLE_MAX must be >= 1 when DETWS_ENABLE_PER_IP_THROTTLE is set"
+#endif
+#endif
+
+#if DETWS_ENABLE_WEBDAV
+#if !DETWS_ENABLE_FILE_SERVING
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WEBDAV requires DETWS_ENABLE_FILE_SERVING"
+#endif
+#if DETWS_WEBDAV_BUF_SIZE < 256
+#error "DeterministicESPAsyncWebServer: DETWS_WEBDAV_BUF_SIZE must be >= 256"
+#endif
+#if DETWS_METHOD_BUF_SIZE < 10
+#error "DeterministicESPAsyncWebServer: DETWS_METHOD_BUF_SIZE must be >= 10 when DETWS_ENABLE_WEBDAV is set (PROPPATCH)"
 #endif
 #endif
 
