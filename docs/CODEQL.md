@@ -20,11 +20,18 @@ scanning) so this advanced workflow runs instead.
 
 ## Running locally
 
-Create a database by tracing a native build, then analyze it:
+Create a database by tracing a native build, then analyze it. Use the same env
+set as the workflow so local coverage matches CI - `native_codeql` is the full
+app compiled with every feature flag on, so the integration paths (CSRF /
+lockout / allowlist gates, permessage-deflate) and the new service modules are
+traced, not just the per-feature cores:
 
 ```sh
 codeql database create cpp-db --language=cpp \
-  --command="pio test --without-testing -e native_app -e native_ssh"
+  --command="pio test --without-testing -e native_codeql -e native_ssh \
+    -e native_snmp_v3 -e native_inflate -e native_coap -e native_webdav \
+    -e native_modbus -e native_mqtt -e native_ws_client -e native_http_client \
+    -e native_jwt"
 
 codeql database analyze cpp-db \
   codeql/cpp-queries:codeql-suites/cpp-security-and-quality.qls \
@@ -33,28 +40,33 @@ codeql database analyze cpp-db \
 
 The native environments compile the host-portable code (parsers, codecs, the
 software crypto paths). The ESP32-only wrappers - NVS, the mbedTLS / lwIP glue,
-mDNS - are thin SDK adapters; CI scans a broader env set (see the workflow).
+mDNS - are thin SDK adapters not traced here. A local run reproduces the hosted
+GitHub CodeQL result byte-for-byte (same engine, suite, and traced build).
 
 ## Findings
 
-_Latest local scan: `security-and-quality` suite over `native_app` + `native_ssh`
-(2026-06-26); 84 of 227 C/C++ files analyzed._
+_Latest scan: `security-and-quality` suite over the full CI env set
+(`native_codeql` + 10 protocol / codec envs), 2026-06-26; 113 of 240 C/C++ files
+analyzed. Verified byte-for-byte against the hosted GitHub CodeQL run._
 
 **No security (CWE) findings.** The memory-safety queries (buffer overflow,
 integer overflow, use-after-free, tainted path, invalid pointer deref, etc.) all
-ran and reported nothing in `src/`. The 18 total results are low-severity
-quality / maintainability items - 8 in `src/`, the rest in tests, mocks, and the
+ran and reported nothing in `src/`. The remaining results are low-severity
+quality / maintainability items - 11 in `src/`, the rest in tests, mocks, and the
 vendored Unity headers.
 
 ### `src/` results and disposition
 
-| Rule                         | Location                                                            | Disposition                                                                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cpp/useless-expression`     | `transport/listener.cpp:144`, `:300`                                | **False positive** - `xQueueSend` / `tcp_close` are no-op mocks in the host build (no side effects); on ESP32 they do real work.                        |
-| `cpp/unused-static-function` | `presentation/http_parser.cpp:40`                                   | **False positive** - `fnv1a` is consumed at compile time by the `constexpr HASH_HTTP10` / `HASH_HTTP11` initializers, so no runtime call exists to see. |
-| `cpp/constant-comparison`    | `presentation/sse.cpp:79`                                           | **Benign** - the first `pos < rem` guard is trivially true (`pos == 0`, buffer non-empty); kept for defensive consistency with the later, real checks.  |
-| `cpp/long-switch`            | `http_parser.cpp:187`, `ssh/ssh_server.cpp:39`, `websocket.cpp:279` | **Won't fix (style)** - protocol state machines / message dispatchers; a long `switch` is the clearest form.                                            |
-| `cpp/unused-static-variable` | `DetWebServerConfig.h:1519`                                         | **Cleanup candidate** - `DET_DEFAULT_CONFIG` is vestigial (no reader); left for a deliberate config-struct cleanup.                                     |
+| Rule                             | Location                                                            | Disposition                                                                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cpp/useless-expression`         | `transport/listener.cpp:197`, `:370`                                | **False positive** - `xQueueSend` / `tcp_close` are no-op mocks in the host build (no side effects); on ESP32 they do real work.                                                                                                          |
+| `cpp/unused-static-function`     | `presentation/http_parser.cpp:40`                                   | **False positive** - `fnv1a` is consumed at compile time by the `constexpr HASH_HTTP10` / `HASH_HTTP11` initializers, so no runtime call exists to see.                                                                                   |
+| `cpp/constant-comparison`        | `presentation/sse.cpp:79`                                           | **Benign** - the first `pos < rem` guard is trivially true (`pos == 0`, buffer non-empty); kept for defensive consistency with the later, real checks.                                                                                    |
+| `cpp/constant-comparison`        | `services/auth_lockout/auth_lockout.cpp:105`                        | **Benign (defensive)** - the `dur > (0xFFFFFFFFu >> 1)` overflow guard in the backoff loop is dead under the default `DETWS_AUTH_LOCKOUT_MAX_MS` (the `>= MAX_MS` break fires first) but protects a pathologically large `MAX_MS` config. |
+| `cpp/long-switch`                | `http_parser.cpp:187`, `ssh/ssh_server.cpp:39`, `websocket.cpp:279` | **Won't fix (style)** - protocol state machines / message dispatchers; a long `switch` is the clearest form.                                                                                                                              |
+| `cpp/poorly-documented-function` | `services/modbus/modbus.cpp:112`                                    | **Won't fix (style)** - `modbus_process_pdu` is a function-code dispatcher (documented with a header comment); the heuristic dislikes the size / comment ratio.                                                                           |
+| `cpp/loop-variable-changed`      | `services/webdav/webdav.cpp:166`                                    | **Intentional** - the percent-decode loop does `p += 2` to consume a `%XX` escape; standard and correct.                                                                                                                                  |
+| `cpp/unused-static-variable`     | `DetWebServerConfig.h:1615`                                         | **Cleanup candidate** - `DET_DEFAULT_CONFIG` is vestigial (no reader); left for a deliberate config-struct cleanup.                                                                                                                       |
 
 ### Tests / mocks / vendored (not production code)
 
