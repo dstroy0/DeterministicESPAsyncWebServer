@@ -10,6 +10,8 @@
     "Backpressure",
     "backtracker",
     "base64",
+    "keroppi",
+    "nyancat",
     "getcontentlength",
     "getcontenttype",
     "getlastmodified",

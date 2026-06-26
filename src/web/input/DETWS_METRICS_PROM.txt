@@ -1,0 +1,30 @@
+<!--#brief All available Prometheus metrics; comment a value line out with a leading # to drop it.-->
+# HELP detws_uptime_seconds Device uptime in seconds.
+# TYPE detws_uptime_seconds gauge
+detws_uptime_seconds {{uptime_seconds}}
+# HELP detws_http_requests_total Total HTTP responses sent.
+# TYPE detws_http_requests_total counter
+detws_http_requests_total {{requests_total}}
+# HELP detws_http_responses_total HTTP responses by status class.
+# TYPE detws_http_responses_total counter
+detws_http_responses_total{class="2xx"} {{resp_2xx}}
+detws_http_responses_total{class="4xx"} {{resp_4xx}}
+detws_http_responses_total{class="5xx"} {{resp_5xx}}
+# HELP detws_active_connections Currently active connection slots.
+# TYPE detws_active_connections gauge
+detws_active_connections {{active_conns}}
+# HELP detws_max_connections Connection slot capacity.
+# TYPE detws_max_connections gauge
+detws_max_connections {{max_conns}}
+# HELP detws_free_heap_bytes Free heap in bytes.
+# TYPE detws_free_heap_bytes gauge
+detws_free_heap_bytes {{free_heap}}
+# HELP detws_min_free_heap_bytes Lowest free heap observed since boot, in bytes.
+# TYPE detws_min_free_heap_bytes gauge
+detws_min_free_heap_bytes {{min_free_heap}}
+# HELP detws_heap_size_bytes Total heap size, in bytes.
+# TYPE detws_heap_size_bytes gauge
+detws_heap_size_bytes {{heap_size}}
+# HELP detws_max_alloc_heap_bytes Largest contiguous allocatable heap block, in bytes.
+# TYPE detws_max_alloc_heap_bytes gauge
+detws_max_alloc_heap_bytes {{max_alloc_heap}}

@@ -1,5 +1,63 @@
-# Library HTML Assets
+# Web assets
 
-The `input` directory contains all pages and components served to users by the web server, separated by file.
+User-configurable strings the firmware serves (HTML pages, the Prometheus
+exposition, future CSS/JSON/XML) live here as editable source files instead of
+being buried in `.cpp`. A single generator turns them into C string literals in
+the application layer so they ship in flash with no filesystem or heap.
 
-These files serve as the source templates before they are processed (beautified, decorated, minified) and compressed (only if large enough, gzipped) into C++ binary array buffers (`uint8_t[]`) using the utilities in `web/wizard/`.
+## Layout
+
+| Path                              | What                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `input/`                          | One source document per symbol, named by the C identifier it backs.          |
+| `themes/`                         | Reusable CSS themes a document can pull in with a `#theme` directive.        |
+| `wizard/build_assets.py`          | The generator.                                                               |
+| `../network_drivers/application/` | Generated `html.{h,cpp}`, `text.{h,cpp}`, ... (committed; do not hand-edit). |
+
+A file's **base name is the C symbol** and its **extension selects the output
+header**: `DETWS_PROV_FORM.html` becomes `extern const char DETWS_PROV_FORM[];`
+in `application/html.h`; `.txt` -> `text.h`, `.css` -> `css.h`, `.json` ->
+`json.h`, `.xml` -> `xml.h`, `.svg` -> `svg.h`, `.js` -> `js.h`.
+
+## Workflow
+
+```sh
+# edit a document under input/, then regenerate:
+python src/web/wizard/build_assets.py            # (or: ... generate)
+
+# CI / pre-commit gate - fails if the committed output is stale:
+python src/web/wizard/build_assets.py check
+```
+
+The generated files are committed (Arduino-IDE users do not run Python) and are
+formatted to match clang-format, so re-running the generator produces no spurious
+diff. Run the generator (and `clang-format`) after editing any source document.
+
+## Directives (consumed, never served)
+
+HTML/XML/SVG/text use `<!--#cmd arg-->`; CSS/JS use `/*#cmd arg*/`.
+
+| Directive     | Effect                                                             |
+| ------------- | ------------------------------------------------------------------ |
+| `#brief TEXT` | becomes the Doxygen `@brief` on the generated declaration.         |
+| `#theme NAME` | injects `themes/NAME.css` (minified) before `</head>` (HTML only). |
+| `#minify`     | collapses markup whitespace (`<script>`/`<style>` preserved).      |
+
+By default a document is emitted **byte-for-byte**, so the existing assets are
+served exactly as before; the transforms above are opt-in.
+
+## Themes
+
+Drop-in CSS palettes under `themes/`, pulled into a page with `<!--#theme NAME-->`
+(they share the same selectors, so they are interchangeable). Bundled:
+`crt-green`, `ssh-terminal`, `bubbly`, `cute`, `rainbow`, `nyancat`, `keroppi`.
+The built-in assets ship with their own inline styles and do not use a theme;
+these are for pages you add. Drop a new `.css` in `themes/` to add one.
+
+## Templates
+
+A document may contain `{{name}}` placeholders rendered at request time by
+`send_template()` (the value comes from a resolver in the C code, so there is no
+`printf`-format coupling). The Prometheus exposition (`DETWS_METRICS_PROM.txt`)
+works this way: it lists **every** available metric, and you disable one by
+commenting its value line out with a leading `#` (Prometheus ignores `#` lines).
