@@ -17,6 +17,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_WEB_ASSETS_H
 
 // ---- html ----
+/** @brief Real-time SVG telemetry dashboard page (DETWS_ENABLE_DASHBOARD). */
+extern const char DETWS_DASHBOARD_PAGE[];
+
 /** @brief Captive-portal form for WiFi credential entry (provisioning service). */
 extern const char DETWS_PROV_FORM[];
 
