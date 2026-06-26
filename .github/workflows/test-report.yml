@@ -39,9 +39,18 @@ jobs:
         run: npx prettier --write docs/TEST_REPORT.md
 
       - name: Commit updated test report
+        env:
+          CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
         run: |
+          # SSH-sign the bot commit so it shows Verified (key: users.noreply.github.com).
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
+          chmod 600 ~/.ssh/ci_signing_key
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config gpg.format ssh
+          git config user.signingkey ~/.ssh/ci_signing_key
+          git config commit.gpgsign true
           if ! git diff --quiet -- docs/TEST_REPORT.md; then
             git add docs/TEST_REPORT.md
             git commit -m "ci: update test report [skip ci]"
