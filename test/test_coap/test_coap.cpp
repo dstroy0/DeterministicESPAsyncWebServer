@@ -62,6 +62,23 @@ static void h_resource(const CoapRequest *req, CoapResponse *resp)
     }
 }
 
+// Deterministic 150-byte representation for block-wise (Block2) tests: big[i] =
+// 'A' + (i % 26). Larger than the test env's 64-byte max block (SZX_MAX=2).
+static const size_t BIG_LEN = 150;
+static uint8_t big_expected(size_t i)
+{
+    return (uint8_t)('A' + (int)(i % 26));
+}
+static void h_big(const CoapRequest *req, CoapResponse *resp)
+{
+    record(req);
+    resp->code = COAP_RSP_CONTENT;
+    resp->content_format = COAP_CF_TEXT;
+    resp->payload_len = BIG_LEN;
+    for (size_t i = 0; i < BIG_LEN; i++)
+        resp->payload[i] = big_expected(i);
+}
+
 void setUp()
 {
     g_called = false;
@@ -78,6 +95,7 @@ void setUp()
     coap_server_add_resource("/a/b", COAP_ALLOW_GET, h_resource);
     coap_server_add_resource("/longresourcename12345", COAP_ALLOW_GET, h_resource); // >12 chars: extended opt length
     coap_server_add_resource("/", COAP_ALLOW_GET, h_resource);
+    coap_server_add_resource("/big", COAP_ALLOW_GET | COAP_ALLOW_POST | COAP_ALLOW_PUT, h_big);
 }
 
 void tearDown()
@@ -200,9 +218,16 @@ struct CoapDec
     const uint8_t *token;
     uint16_t content_format;
     int observe; // Observe option value (RFC 7641), or -1 if absent
+    int block1;  // Block1 option value (RFC 7959), or -1 if absent
+    int block2;  // Block2 option value, or -1 if absent
     const uint8_t *payload;
     size_t payload_len;
 };
+
+// Block option field accessors (RFC 7959 §2.2: value = (NUM<<4)|(M<<3)|SZX).
+#define BLK_NUM(v) ((uint32_t)(v) >> 4)
+#define BLK_M(v) (((uint32_t)(v) >> 3) & 1)
+#define BLK_SZX(v) ((uint32_t)(v) & 7)
 
 static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
 {
@@ -216,6 +241,8 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
     d->token = buf + 4;
     d->content_format = COAP_CF_NONE;
     d->observe = -1;
+    d->block1 = -1;
+    d->block2 = -1;
     d->payload = nullptr;
     d->payload_len = 0;
     size_t p = 4 + d->tkl;
@@ -245,19 +272,38 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
             p += 2;
         }
         opt += delta;
-        if (opt == 12 || opt == 6)
+        if (opt == 12 || opt == 6 || opt == 23 || opt == 27)
         {
             uint32_t v = 0;
             for (uint32_t k = 0; k < l; k++)
                 v = (v << 8) | buf[p + k];
             if (opt == 12)
                 d->content_format = (uint16_t)v;
-            else
+            else if (opt == 6)
                 d->observe = (int)v;
+            else if (opt == 23)
+                d->block2 = (int)v;
+            else
+                d->block1 = (int)v;
         }
         p += l;
     }
     return true;
+}
+
+// Encode a Block option (RFC 7959) with the minimal-byte value into the request.
+static void enc_block(CoapEnc *e, uint32_t optnum, uint32_t num, uint8_t m, uint8_t szx)
+{
+    uint32_t v = (num << 4) | ((uint32_t)(m & 1) << 3) | (szx & 7);
+    uint8_t vb[3];
+    uint8_t k = 0;
+    if (v & 0xFF0000)
+        vb[k++] = (uint8_t)(v >> 16);
+    if (v & 0xFFFF00)
+        vb[k++] = (uint8_t)(v >> 8);
+    if (v)
+        vb[k++] = (uint8_t)v;
+    enc_option(e, optnum, vb, k);
 }
 
 // ---------------------------------------------------------------------------
@@ -498,9 +544,223 @@ void test_no_observe_option_when_seq_negative()
     TEST_ASSERT_EQUAL_INT(-1, d.observe); // no Observe option
 }
 
+// ---------------------------------------------------------------------------
+// Block-wise transfer (RFC 7959). The test env builds with a 64-byte max block
+// (SZX_MAX=2) and a 128-byte Block1 reassembly buffer.
+// ---------------------------------------------------------------------------
+
+// Block2: a client paging a 150-byte resource in 64-byte blocks (SZX=2) gets the
+// right block contents with the More bit set until the final (short) block.
+void test_block2_explicit_paging()
+{
+    const uint8_t expect_more[] = {1, 1, 0};             // blocks 0,1 have More; block 2 is last
+    const size_t expect_len[] = {64, 64, BIG_LEN - 128}; // 64, 64, 22
+    for (uint32_t num = 0; num < 3; num++)
+    {
+        uint8_t req[64], resp[256];
+        CoapEnc e;
+        enc_init(&e, req, COAP_TYPE_CON, COAP_GET, nullptr, 0, (uint16_t)(0x3000 + num));
+        enc_option(&e, 11, (const uint8_t *)"big", 3);
+        enc_block(&e, 23, num, 0, 2); // Block2: NUM, M=0, SZX=2 (64 bytes)
+        size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+        TEST_ASSERT_GREATER_THAN_UINT(0, n);
+
+        CoapDec d;
+        TEST_ASSERT_TRUE(dec(resp, n, &d));
+        TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, d.code);
+        TEST_ASSERT_TRUE(d.block2 >= 0);
+        TEST_ASSERT_EQUAL_UINT(num, BLK_NUM(d.block2));
+        TEST_ASSERT_EQUAL_UINT(2, BLK_SZX(d.block2));
+        TEST_ASSERT_EQUAL_UINT(expect_more[num], BLK_M(d.block2));
+        TEST_ASSERT_EQUAL_size_t(expect_len[num], d.payload_len);
+        for (size_t i = 0; i < d.payload_len; i++)
+            TEST_ASSERT_EQUAL_UINT8(big_expected(num * 64 + i), d.payload[i]);
+    }
+}
+
+// Block2: with no Block2 option, a representation larger than the server's max
+// block size is served block-wise starting at block 0 (server max SZX = 2).
+void test_block2_auto_when_large()
+{
+    uint8_t req[64], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x3100);
+    enc_option(&e, 11, (const uint8_t *)"big", 3);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_TRUE(d.block2 >= 0);
+    TEST_ASSERT_EQUAL_UINT(0, BLK_NUM(d.block2));
+    TEST_ASSERT_EQUAL_UINT(1, BLK_M(d.block2));
+    TEST_ASSERT_EQUAL_UINT(2, BLK_SZX(d.block2)); // clamped to server max
+    TEST_ASSERT_EQUAL_size_t(64, d.payload_len);
+}
+
+// Block2: a client requesting a block size larger than the server supports is
+// clamped down to the server's max SZX (2).
+void test_block2_szx_clamped()
+{
+    uint8_t req[64], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x3200);
+    enc_option(&e, 11, (const uint8_t *)"big", 3);
+    enc_block(&e, 23, 0, 0, 6); // ask for 1024-byte blocks
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(2, BLK_SZX(d.block2)); // server clamps to SZX_MAX=2
+    TEST_ASSERT_EQUAL_size_t(64, d.payload_len);
+}
+
+// Block2: a small representation (no Block2 requested) is returned whole, with no
+// Block2 option in the response.
+void test_block2_absent_for_small()
+{
+    const char *paths[] = {"temp"};
+    uint8_t req[64], resp[128];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x3300, paths, 1, nullptr, 0, -1, nullptr, 0);
+    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_INT(-1, d.block2);
+    TEST_ASSERT_EQUAL_size_t(2, d.payload_len);
+}
+
+// Block2: a block number beyond the end of the representation is a bad request.
+void test_block2_out_of_range()
+{
+    uint8_t req[64], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x3400);
+    enc_option(&e, 11, (const uint8_t *)"big", 3);
+    enc_block(&e, 23, 10, 0, 2); // offset 640 > 150
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_REQUEST, d.code);
+}
+
+// Block2: the reserved block-size exponent SZX=7 is rejected with 4.02 Bad Option.
+void test_block2_reserved_szx()
+{
+    uint8_t req[64], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x3500);
+    enc_option(&e, 11, (const uint8_t *)"big", 3);
+    enc_block(&e, 23, 0, 0, 7);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_OPTION, d.code);
+}
+
+// Block1: a two-block POST upload is acknowledged 2.31 Continue on the first
+// block and dispatched (with the full reassembled payload) on the last.
+void test_block1_upload_two_blocks()
+{
+    uint8_t chunk0[64], chunk1[20];
+    for (int i = 0; i < 64; i++)
+        chunk0[i] = (uint8_t)i;
+    for (int i = 0; i < 20; i++)
+        chunk1[i] = (uint8_t)(100 + i);
+
+    // Block 0 (More=1): expect 2.31 Continue, no handler dispatch yet.
+    uint8_t req[128], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_POST, nullptr, 0, 0x3600);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 0, 1, 2); // Block1: NUM=0, M=1, SZX=2
+    enc_payload(&e, chunk0, 64);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTINUE, d.code);
+    TEST_ASSERT_TRUE(d.block1 >= 0);
+    TEST_ASSERT_EQUAL_UINT(0, BLK_NUM(d.block1));
+    TEST_ASSERT_EQUAL_UINT(1, BLK_M(d.block1));
+    TEST_ASSERT_FALSE(g_called);
+
+    // Block 1 (More=0): handler runs with the whole 84-byte payload.
+    enc_init(&e, req, COAP_TYPE_CON, COAP_POST, nullptr, 0, 0x3601);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 1, 0, 2); // Block1: NUM=1, M=0
+    enc_payload(&e, chunk1, 20);
+    n = coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CREATED, d.code);
+    TEST_ASSERT_TRUE(d.block1 >= 0);
+    TEST_ASSERT_EQUAL_UINT(1, BLK_NUM(d.block1));
+    TEST_ASSERT_EQUAL_UINT(0, BLK_M(d.block1));
+
+    TEST_ASSERT_TRUE(g_called);
+    TEST_ASSERT_EQUAL_UINT(84, g_payload_len);
+    for (int i = 0; i < 64; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)i, g_payload[i]);
+    for (int i = 0; i < 20; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)(100 + i), g_payload[64 + i]);
+}
+
+// Block1: a gap in the block sequence (a lost block) yields 4.08 Incomplete.
+void test_block1_out_of_order()
+{
+    uint8_t chunk[64];
+    for (int i = 0; i < 64; i++)
+        chunk[i] = (uint8_t)i;
+    uint8_t req[128], resp[256];
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_POST, nullptr, 0, 0x3700);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 0, 1, 2);
+    enc_payload(&e, chunk, 64);
+    coap_server_process(req, e.len, resp, sizeof(resp)); // block 0 -> Continue
+
+    enc_init(&e, req, COAP_TYPE_CON, COAP_POST, nullptr, 0, 0x3701);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_block(&e, 27, 2, 0, 2); // skip block 1
+    enc_payload(&e, chunk, 64);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_REQUEST_INCOMPLETE, d.code);
+}
+
+// Block1: an upload exceeding the reassembly buffer (128 bytes here) yields 4.13.
+void test_block1_too_large()
+{
+    uint8_t chunk[64];
+    for (int i = 0; i < 64; i++)
+        chunk[i] = (uint8_t)i;
+    uint8_t req[128], resp[256];
+    CoapDec d;
+    for (uint32_t num = 0; num < 3; num++)
+    {
+        CoapEnc e;
+        enc_init(&e, req, COAP_TYPE_CON, COAP_POST, nullptr, 0, (uint16_t)(0x3800 + num));
+        enc_option(&e, 11, (const uint8_t *)"temp", 4);
+        enc_block(&e, 27, num, 1, 2); // all More=1
+        enc_payload(&e, chunk, 64);
+        size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+        TEST_ASSERT_TRUE(dec(resp, n, &d));
+        if (num < 2)
+            TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTINUE, d.code); // 64, 128 bytes buffered
+        else
+            TEST_ASSERT_EQUAL_UINT(COAP_RSP_REQUEST_TOO_LARGE, d.code); // 192 > 128
+    }
+    TEST_ASSERT_FALSE(g_called); // handler never ran
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_block2_explicit_paging);
+    RUN_TEST(test_block2_auto_when_large);
+    RUN_TEST(test_block2_szx_clamped);
+    RUN_TEST(test_block2_absent_for_small);
+    RUN_TEST(test_block2_out_of_range);
+    RUN_TEST(test_block2_reserved_szx);
+    RUN_TEST(test_block1_upload_two_blocks);
+    RUN_TEST(test_block1_out_of_order);
+    RUN_TEST(test_block1_too_large);
     RUN_TEST(test_observe_option_in_response);
     RUN_TEST(test_no_observe_option_when_seq_negative);
     RUN_TEST(test_get_content);
