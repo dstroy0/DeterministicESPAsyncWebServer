@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`bce924e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bce924e87ee1e2f0ba257b7428a045a612787544))
+- update CHANGELOG.md [skip ci] ([`83ae516`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83ae516c7c6f3171d7f40cf692bf65926c078f6e))
 - update test report [skip ci] ([`f1c64cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1c64cbb7f09ae172e277b69b6e84019e5c5229b))
 - update CHANGELOG.md [skip ci] ([`7c10e22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c10e228f223f68498d5552aca6f382c9f03b4d4))
 - update test report [skip ci] ([`3680129`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/368012928b29c0735fb829fe792457e366de4577))
@@ -21,6 +23,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`02d1e6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02d1e6dfcff0e8342ced9046e7e421d415f48759))
 - Merge branches 'main' and 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`5cd3317`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cd3317e84bc9a64056fcf3c6cc7ebbcd8e18c98))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`2bcb1ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2bcb1eef81c3c85360df5880b19680ed84f37181))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`96c5029`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96c50291de9dece7e815f911daee742da896a356))
@@ -28,6 +31,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- CoAP block-wise transfer - RFC 7959 (Block1/Block2) ([`9436a99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9436a996486862a8bf3e34c892671b7e4c0166e2))
 - CoAP resource observation - RFC 7641 (Observe) ([`d9b4189`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9b41893bdc645fd69e74576811e0f4ef8ea18dd))
 - outbound SNMP notifications - traps and informs (v2c + v3) ([`617d0ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/617d0ffd1445cce701cbf245fa9a85e28bf8b5d7))
 - outbound WebSocket client + wss (RFC 6455) ([`6f3e9d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f3e9d91088c9a386c1d378f9a3f5ba00e27774b))
