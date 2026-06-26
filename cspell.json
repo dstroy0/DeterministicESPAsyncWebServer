@@ -390,7 +390,10 @@
     "TXTFILES",
     "CBOR",
     "stddev",
-    "tracert"
+    "tracert",
+    "CodeQL",
+    "SARIF",
+    "qls"
   ],
   "ignorePaths": [
     "node_modules/**",
