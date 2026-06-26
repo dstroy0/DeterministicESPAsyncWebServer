@@ -53,11 +53,14 @@ jobs:
 
       # Host/native build of the security-critical cores; CodeQL traces the
       # compiler. --without-testing skips running the unit tests (the test-report
-      # workflow already does that) - we only need the compilation.
+      # workflow already does that) - we only need the compilation. native_codeql
+      # is the full app with every feature flag ON, so the integration paths
+      # (CSRF / lockout / allowlist gates, permessage-deflate) and the new service
+      # modules are traced too, not just the per-feature cores.
       - name: Build (native, traced by CodeQL)
         run: |
           pio test --without-testing \
-            -e native_app -e native_ssh -e native_snmp_v3 -e native_inflate \
+            -e native_codeql -e native_ssh -e native_snmp_v3 -e native_inflate \
             -e native_coap -e native_webdav -e native_modbus -e native_mqtt \
             -e native_ws_client -e native_http_client -e native_jwt
 
