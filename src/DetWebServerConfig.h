@@ -1338,6 +1338,20 @@
 #endif
 
 /**
+ * @brief OPC UA Binary server, increment 1 (DETWS_ENABLE_OPCUA).
+ *
+ * Default off. services/opcua provides the OPC UA (IEC 62541) foundation: the
+ * little-endian Binary built-in-type codec, UA-TCP (UACP) message framing, and the
+ * Hello/Acknowledge handshake, served on TCP via PROTO_OPCUA
+ * (`listen(4840, PROTO_OPCUA)`). The codec + framing + handshake are pure and
+ * host-tested. SecureChannel (OPN), Session, and the Read service are later
+ * increments; SecurityPolicy is None. No heap, no stdlib.
+ */
+#ifndef DETWS_ENABLE_OPCUA
+#define DETWS_ENABLE_OPCUA 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
@@ -2113,6 +2127,7 @@ enum ConnProto
     PROTO_TELNET = 2, ///< Telnet (RFC 854).
     PROTO_SSH = 3,    ///< SSH (RFC 4253/4252/4254).
     PROTO_MODBUS = 4, ///< Modbus TCP slave (Modbus Application Protocol).
+    PROTO_OPCUA = 5,  ///< OPC UA Binary (UA-TCP) server.
 };
 
 /**
