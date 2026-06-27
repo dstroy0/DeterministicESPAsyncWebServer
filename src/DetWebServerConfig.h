@@ -99,6 +99,18 @@
 #define DETWS_WORKER_CORE 1
 #endif
 
+/**
+ * @brief Depth of each worker's deferred-callback queue.
+ *
+ * App code on loop() or another task submits work to a slot's owning worker via
+ * detws_defer() / detws_defer_slot(); the worker runs it in its own single-thread
+ * context, so an async push (ws_send / sse_send from a timer) is race-free. Each
+ * worker has one queue of this depth (entries are a {fn, arg} pair, ~8 bytes).
+ */
+#ifndef DETWS_DEFER_QUEUE_DEPTH
+#define DETWS_DEFER_QUEUE_DEPTH 8
+#endif
+
 #if DETWS_WORKER_COUNT < 1
 #error "DeterministicESPAsyncWebServer: DETWS_WORKER_COUNT must be >= 1"
 #endif
