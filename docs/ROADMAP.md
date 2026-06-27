@@ -36,7 +36,8 @@ flag (default off) so it costs nothing when unused.
 - [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
 - [ ] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
-- [x] CBOR encoder + decoder _(shipped)_ - `DETWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`cbor_peek` / `cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example 65.Cbor). Remaining (M-L): MessagePack, Protobuf / FlatBuffers zero-copy.
+- [x] CBOR encoder + decoder _(shipped)_ - `DETWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`cbor_peek` / `cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example 65.Cbor).
+- [x] MessagePack encoder _(shipped)_ - `DETWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed; host-tested against the spec encodings (example 66.MsgPack). Remaining (M-L): MessagePack decoder, Protobuf / FlatBuffers zero-copy.
 - [ ] GraphQL bounded subset (L); feature-dependent schema generation (M).
 - [ ] Browser diag tools (M): GPIO pin mapper, ping/tracert panel, web logic analyzer.
 - [ ] SPA micro-routing + conditional UI streaming (M); local SCADA/HMI fallback (M).
