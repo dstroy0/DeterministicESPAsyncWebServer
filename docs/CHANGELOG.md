@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.25.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.25.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`33a186f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33a186f92030b675fd0bc20edf5d0808c99fe927))
+- update CHANGELOG.md [skip ci] ([`e8874ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8874ea5aadd78efda6a3c003d1d7365d68d78dd))
+
+### Changes
+
+- Bump version: 2.24.0 → 2.25.0 ([`1313e73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1313e735b3deb77e99791f4ca5a8ebf9963bd9da))
+
+### Features
+
+- pluggable monotonic clock + compile-time worker poll-rate knob ([`bc3b449`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc3b449f91ff0d02540c6e55db7364acfa324071))
+
+</details>
+
 ## [2.24.0] - 2026-06-27
 
 <details>
