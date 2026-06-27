@@ -1132,6 +1132,25 @@
 #endif
 
 /**
+ * @brief Opt-in OTA rollback protection / soft-brick safeguard (DETWS_ENABLE_OTA_ROLLBACK).
+ *
+ * Default off. After an OTA update the new image boots in PENDING_VERIFY; this
+ * service confirms it (esp_ota_mark_app_valid) once a self-test passes, or rolls
+ * back to the previous image if the self-test fails or the confirm window elapses
+ * without success - so a bad update self-heals instead of soft-bricking. The
+ * decision logic is pure and host-tested; the commit / rollback use esp_ota_ops.
+ * Requires the bootloader's app-rollback support (CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE).
+ */
+#ifndef DETWS_ENABLE_OTA_ROLLBACK
+#define DETWS_ENABLE_OTA_ROLLBACK 0
+#endif
+
+/** @brief Confirm window (ms): a pending image not confirmed within this rolls back. */
+#ifndef DETWS_OTA_CONFIRM_WINDOW_MS
+#define DETWS_OTA_CONFIRM_WINDOW_MS 30000
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
