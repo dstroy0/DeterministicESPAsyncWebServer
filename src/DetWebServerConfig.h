@@ -950,6 +950,29 @@
 #define DETWS_PARTITION_JSON_BUF 1024
 #endif
 
+/**
+ * @brief Opt-in browser GPIO pin-mapper / diagnostics endpoint (DETWS_ENABLE_GPIO_MAP).
+ *
+ * Default off. When set, services/gpio_map serves a compile-time table of GPIO
+ * pins (number, label, direction, live level) as JSON for a browser diag panel,
+ * and accepts a control POST (`pin`, `level`) to drive an output. The live read /
+ * write uses the Arduino digital API on ESP32; the JSON serializer and the control
+ * parser are pure and host-testable.
+ */
+#ifndef DETWS_ENABLE_GPIO_MAP
+#define DETWS_ENABLE_GPIO_MAP 0
+#endif
+
+/** @brief Maximum GPIO pins the mapper reports (BSS table). */
+#ifndef DETWS_GPIO_MAX
+#define DETWS_GPIO_MAX 40
+#endif
+
+/** @brief Stack buffer for the GPIO-map JSON (bytes). */
+#ifndef DETWS_GPIO_JSON_BUF
+#define DETWS_GPIO_JSON_BUF 1024
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
