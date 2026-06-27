@@ -1,0 +1,71 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the webhook builders (services/webhook): IFTTT URL + payload
+// formatting, JSON escaping, omitted values, and fail-closed overflow. Firing
+// goes through the http_client (ESP32) and is not exercised here.
+
+#include "services/webhook/webhook.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp()
+{
+}
+void tearDown()
+{
+}
+
+void test_ifttt_url()
+{
+    char buf[160];
+    int n = detws_ifttt_url("button_pressed", "abc123", buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_STRING("https://maker.ifttt.com/trigger/button_pressed/with/key/abc123", buf);
+}
+
+void test_payload_three_values()
+{
+    char buf[128];
+    int n = detws_ifttt_payload("a", "b", "c", buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_STRING("{\"value1\":\"a\",\"value2\":\"b\",\"value3\":\"c\"}", buf);
+}
+
+void test_payload_omits_nulls()
+{
+    char buf[128];
+    detws_ifttt_payload("only1", nullptr, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_STRING("{\"value1\":\"only1\"}", buf);
+
+    detws_ifttt_payload(nullptr, "mid", nullptr, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_STRING("{\"value2\":\"mid\"}", buf);
+
+    detws_ifttt_payload(nullptr, nullptr, nullptr, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_STRING("{}", buf);
+}
+
+void test_payload_escapes_json()
+{
+    char buf[128];
+    detws_ifttt_payload("he said \"hi\"", "a\\b", nullptr, buf, sizeof(buf));
+    TEST_ASSERT_EQUAL_STRING("{\"value1\":\"he said \\\"hi\\\"\",\"value2\":\"a\\\\b\"}", buf);
+}
+
+void test_overflow_fails_closed()
+{
+    char buf[8];
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_url("event", "key", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("aaaa", "bbbb", "cccc", buf, sizeof(buf)));
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_ifttt_url);
+    RUN_TEST(test_payload_three_values);
+    RUN_TEST(test_payload_omits_nulls);
+    RUN_TEST(test_payload_escapes_json);
+    RUN_TEST(test_overflow_fails_closed);
+    return UNITY_END();
+}
