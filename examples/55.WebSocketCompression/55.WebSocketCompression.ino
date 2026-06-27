@@ -3,7 +3,7 @@
 
 /**
  * @file 55.WebSocketCompression.ino
- * @brief WebSocket permessage-deflate (RFC 7692): transparent inbound compression.
+ * @brief WebSocket permessage-deflate (RFC 7692): transparent two-way compression.
  *
  * Identical to 26.WebSocket (a /ws echo endpoint) except it enables
  * DETWS_ENABLE_WS_DEFLATE. With the extension compiled in, the server advertises
@@ -13,14 +13,17 @@
  * RSV1 bit set, and the library decompresses them transparently before
  * ws_message() runs - the handler still reads plaintext from ws_pool[ws_id].buf.
  *
- * Decompression uses a bounded INFLATE whose tables come from the shared
- * per-dispatch scratch arena (no per-connection buffer). Outbound frames are sent
- * uncompressed, which RFC 7692 sec 6 permits. A message must both arrive and
+ * Replies are compressed too: ws_send_text() / ws_send_binary() DEFLATE the
+ * payload and set RSV1 when the result is smaller (a frame that would not shrink
+ * goes out uncompressed - the per-message flag makes that legal). Both directions
+ * use bounded INFLATE/DEFLATE whose tables come from the shared per-dispatch
+ * scratch arena (no per-connection buffer); a message must both arrive and
  * decompress within WS_FRAME_SIZE.
  *
  * Flash, open Serial @ 115200 for the IP, browse to http://<ip>/ and type. In the
  * browser devtools Network tab the /ws request shows
- * "Sec-WebSocket-Extensions: permessage-deflate" on the 101 response.
+ * "Sec-WebSocket-Extensions: permessage-deflate" on the 101 response, and the
+ * echoed frames show the compressed length under their "Length" column.
  */
 
 // Enable WebSocket permessage-deflate for this sketch (overrides default-off).
