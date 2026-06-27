@@ -17,8 +17,14 @@
  *
  * The codec + framing + handshake are pure and host-tested; opcua_rx() is the
  * PROTO_OPCUA TCP data handler (ESP32) - `listen(4840, PROTO_OPCUA)` and a client
- * gets through the handshake. SecureChannel (OPN), Session, and the Read service
- * are later increments. SecurityPolicy is None (no encryption) for now.
+ * gets through the handshake. Session and the Read service are later increments.
+ * SecurityPolicy is None (no encryption) for now.
+ *
+ * **Increment 2** adds the SecureChannel: NodeId / ExtensionObject / DateTime
+ * encoding on top of the increment-1 codec, then parsing an `OpenSecureChannel`
+ * (OPN) request and answering with an `OpenSecureChannelResponse` - the server
+ * assigns a SecureChannelId + security token (SecurityPolicy None, OPC UA Part 6
+ * §7.1.3 / Part 4 §5.5.2).
  *
  * No heap, no stdlib.
  *
@@ -124,15 +130,80 @@ bool opcua_parse_hello(const uint8_t *msg, size_t len, OpcUaHello *out);
 size_t opcua_build_ack(const OpcUaHello *hello, uint8_t *out, size_t cap);
 
 // ---------------------------------------------------------------------------
+// NodeId / ExtensionObject / DateTime (OPC UA Part 6 §5.2.2)
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeId (the only kind the SecureChannel service needs). */
+struct UaNodeId
+{
+    uint16_t ns;  ///< NamespaceIndex.
+    uint32_t id;  ///< Numeric identifier.
+    bool numeric; ///< false for a String/Guid/ByteString id (value skipped on read).
+};
+
+/** @brief Encode a numeric NodeId, picking the smallest of the TwoByte/FourByte/Numeric forms. */
+void ua_w_nodeid_numeric(UaWriter *w, uint16_t ns, uint32_t id);
+
+/**
+ * @brief Decode a NodeId. Numeric forms fill @p out; String/Guid/ByteString ids
+ *        are skipped (out->numeric=false). Latches @c err on an unknown form.
+ */
+bool ua_r_nodeid(UaReader *r, UaNodeId *out);
+
+/** @brief Convert a Unix epoch (seconds) to an OPC UA DateTime (100 ns ticks since 1601), 0 for <= 0. */
+int64_t opcua_filetime_from_unix(int64_t unix_seconds);
+
+/** @brief Numeric NodeIds (namespace 0) the SecureChannel service uses (binary encoding ids). */
+#define OPCUA_ID_OPEN_REQ 446  ///< OpenSecureChannelRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_OPEN_RESP 449 ///< OpenSecureChannelResponse_Encoding_DefaultBinary.
+
+/** @brief SecurityPolicy "None" URI (no signing/encryption). */
+#define OPCUA_POLICY_NONE_URI "http://opcfoundation.org/UA/SecurityPolicy#None"
+
+// ---------------------------------------------------------------------------
+// SecureChannel - OpenSecureChannel (OPN), SecurityPolicy None
+// ---------------------------------------------------------------------------
+
+/** @brief Fields extracted from an OpenSecureChannelRequest we need to reply. */
+struct OpcUaOpenChannel
+{
+    uint32_t secure_channel_id;           ///< 0 on a fresh issue; non-zero on renew.
+    uint32_t sequence_number;             ///< Client SequenceHeader SequenceNumber.
+    uint32_t request_id;                  ///< Client SequenceHeader RequestId (echoed).
+    uint32_t request_handle;              ///< RequestHeader RequestHandle (echoed).
+    uint32_t client_protocol_version;     ///< ClientProtocolVersion.
+    uint32_t security_token_request_type; ///< 0 = Issue, 1 = Renew.
+    uint32_t message_security_mode;       ///< 1 = None, 2 = Sign, 3 = SignAndEncrypt.
+    uint32_t requested_lifetime;          ///< RequestedLifetime (ms).
+};
+
+/** @brief Parse a complete `OPN` message (SecurityPolicy None). @return true if valid. */
+bool opcua_parse_open(const uint8_t *msg, size_t len, OpcUaOpenChannel *out);
+
+/**
+ * @brief Build the `OPN` OpenSecureChannelResponse to a parsed request.
+ * @param req        the parsed request (RequestId/RequestHandle are echoed).
+ * @param channel_id SecureChannelId the server assigns/keeps.
+ * @param token_id   security TokenId the server issues.
+ * @param seq_number server SequenceNumber for this message.
+ * @param now_ft     OPC UA DateTime for the response/token timestamps (0 = unset).
+ * @param lifetime   RevisedLifetime (ms) granted to the token.
+ * @return total OPN message bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_open_response(const OpcUaOpenChannel *req, uint32_t channel_id, uint32_t token_id,
+                                 uint32_t seq_number, int64_t now_ft, uint32_t lifetime, uint8_t *out, size_t cap);
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)
 // ---------------------------------------------------------------------------
 
 /**
- * @brief PROTO_OPCUA data handler: complete the Hello/Acknowledge handshake.
+ * @brief PROTO_OPCUA data handler: drive the UA-TCP handshake + SecureChannel.
  *
  * Dispatched by the session layer for connections accepted on an OPC UA listener
- * (`listen(4840, PROTO_OPCUA)`). Reads a framed `HEL` from the slot's rx ring and
- * sends the negotiated `ACK`.
+ * (`listen(4840, PROTO_OPCUA)`). Drains framed messages from the slot's rx ring:
+ * `HEL` -> negotiated `ACK`, `OPN` -> OpenSecureChannelResponse (SecurityPolicy
+ * None), `CLO` -> close. Session/Read (`MSG`) are later increments.
  */
 void opcua_rx(uint8_t slot);
 

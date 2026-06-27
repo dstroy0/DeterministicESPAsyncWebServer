@@ -1338,14 +1338,15 @@
 #endif
 
 /**
- * @brief OPC UA Binary server, increment 1 (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server (DETWS_ENABLE_OPCUA).
  *
  * Default off. services/opcua provides the OPC UA (IEC 62541) foundation: the
- * little-endian Binary built-in-type codec, UA-TCP (UACP) message framing, and the
- * Hello/Acknowledge handshake, served on TCP via PROTO_OPCUA
- * (`listen(4840, PROTO_OPCUA)`). The codec + framing + handshake are pure and
- * host-tested. SecureChannel (OPN), Session, and the Read service are later
- * increments; SecurityPolicy is None. No heap, no stdlib.
+ * little-endian Binary built-in-type codec (incl. NodeId / ExtensionObject /
+ * DateTime), UA-TCP (UACP) message framing, the Hello/Acknowledge handshake, and
+ * the SecureChannel (OpenSecureChannel, SecurityPolicy None), served on TCP via
+ * PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). The codec + framing + handshake +
+ * SecureChannel are pure and host-tested. Session and the Read service are later
+ * increments. No heap, no stdlib.
  */
 #ifndef DETWS_ENABLE_OPCUA
 #define DETWS_ENABLE_OPCUA 0
