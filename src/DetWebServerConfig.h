@@ -404,6 +404,18 @@
 #define DETWS_ENABLE_MULTIPART 1
 #endif
 
+/**
+ * @brief Zero-heap CBOR (RFC 8949) encoder for compact binary payloads.
+ *
+ * Default off. When set, network_drivers/presentation/cbor.h provides a writer
+ * that serializes ints, strings, byte strings, arrays, maps, booleans, null, and
+ * float32 into a caller-provided buffer - a compact binary alternative to the JSON
+ * writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.
+ */
+#ifndef DETWS_ENABLE_CBOR
+#define DETWS_ENABLE_CBOR 0
+#endif
+
 /** @brief Static file serving via Arduino FS (LittleFS, SPIFFS, SD). */
 #ifndef DETWS_ENABLE_FILE_SERVING
 #define DETWS_ENABLE_FILE_SERVING 1
