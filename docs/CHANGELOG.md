@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.3.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 3.3.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`90d5a3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90d5a3adcf897c908a9dd0fcb519113214e744a5))
+- update CHANGELOG.md [skip ci] ([`d8b5c9b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d8b5c9b32b9bf692b5021c4878b6686e3eb3856c))
+
+### Changes
+
+- Bump version: 3.2.0 → 3.3.0 ([`c3dab76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3dab7698a38703efb19ae5c35fb58794ec029d9))
+
+### Features
+
+- OPC UA Session (CreateSession + ActivateSession over MSG) ([`a68176d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a68176de7b8a156813694ea256e03f108989c207))
+
+</details>
+
 ## [3.2.0] - 2026-06-27
 
 <details>
