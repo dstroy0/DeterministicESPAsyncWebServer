@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.18.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.18.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`3b1ce86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b1ce8618bafe5a7a5720a60af56b620c6a088f4))
+- update CHANGELOG.md [skip ci] ([`86d26c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86d26c879bbe2cae9b0355189167fb73b97a23a4))
+
+### Changes
+
+- Bump version: 2.17.0 → 2.18.0 ([`39d9813`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d9813d61c5b1be845449ebf66595a7c93115bb))
+
+### Features
+
+- thread-safe deferred-callback path for app pushes to workers ([`101b8a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/101b8a290f015be290112d2cad29a64d6223dfba))
+
+</details>
+
 ## [2.17.0] - 2026-06-27
 
 <details>
