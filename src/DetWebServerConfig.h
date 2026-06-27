@@ -1275,6 +1275,22 @@
 #endif
 
 /**
+ * @brief Unified virtual filesystem wrapper (DETWS_ENABLE_VFS).
+ *
+ * Default off. services/vfs exposes one small file API (open/read/write/close,
+ * exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a
+ * feature can target storage without knowing the medium. A built-in zero-heap RAM
+ * backend (fixed BSS pool - deterministic, host-identical) ships for scratch /
+ * tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD /
+ * SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise.
+ * Pool dimensions are tunable in vfs.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE,
+ * _MAX_OPEN, _NAME_MAX).
+ */
+#ifndef DETWS_ENABLE_VFS
+#define DETWS_ENABLE_VFS 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
