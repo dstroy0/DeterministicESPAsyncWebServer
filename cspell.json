@@ -399,7 +399,13 @@
     "pentesting",
     "slowloris",
     "sparkline",
-    "ints"
+    "ints",
+    "msgpack",
+    "fixint",
+    "fixstr",
+    "fixarray",
+    "fixmap",
+    "fcebcdc"
   ],
   "ignorePaths": [
     "node_modules/**",
