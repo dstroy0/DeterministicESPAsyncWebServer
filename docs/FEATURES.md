@@ -128,13 +128,13 @@ Opt-in browser GPIO pin-mapper / diagnostics endpoint. Default off. When set, se
 
 `DETWS_ENABLE_GRAPHQL`
 
-GraphQL query subset. Default off. services/graphql parses a GraphQL query into a fixed AST node pool (no heap) and emits a `{"data":{...}}` response shaped exactly by the requested selection. Schema-free: a field with a sub-selection is an object (the engine recurses), a leaf field calls your single resolver, and arguments collected along the path are handed to it. Supports nested selections, field arguments, and the anonymous / `query` forms; mutations, subscriptions, fragments, and variables are out of scope. Pure and host-tested; bounds are compile-time (DETWS*GQL*\* in graphql.h). Serve it from a POST /graphql route.
+GraphQL query subset. Default off. services/graphql parses a GraphQL query into a fixed AST node pool (no heap) and emits a `{"data":{...}}` response shaped exactly by the requested selection. Schema-free: a field with a sub-selection is an object (the engine recurses), a leaf field calls your single resolver, and arguments collected along the path are handed to it. Supports nested selections, field arguments, and the anonymous / `query` forms; mutations, subscriptions, fragments, and variables are out of scope. Pure and host-tested; bounds are compile-time (DETWS_GQL_* in graphql.h). Serve it from a POST /graphql route.
 
 ## Guardrails
 
 `DETWS_ENABLE_GUARDRAILS`
 
-Opt-in runtime heap/stack guardrails. Default off. When set, services/guardrails samples free heap, the heap low-water mark, the largest free block (fragmentation), and the calling task's remaining stack, and fires a callback when any crosses its threshold - a proactive fail-safe hook beyond the passive numbers in /metrics. The threshold evaluator and the JSON serializer are pure and host-tested; the sample reads esp\_\* / the FreeRTOS stack high-water on ESP32.
+Opt-in runtime heap/stack guardrails. Default off. When set, services/guardrails samples free heap, the heap low-water mark, the largest free block (fragmentation), and the calling task's remaining stack, and fires a callback when any crosses its threshold - a proactive fail-safe hook beyond the passive numbers in /metrics. The threshold evaluator and the JSON serializer are pure and host-tested; the sample reads esp_* / the FreeRTOS stack high-water on ESP32.
 
 ## HTTP Client
 
@@ -256,6 +256,12 @@ OAuth2 token-endpoint client. Default off. services/oauth2 obtains tokens - the 
 
 OpenID Connect ID-token verification, RS256. Default off. services/oidc verifies an OIDC ID token (JWT) as a relying party: requires alg RS256, selects the issuer key by kid from a JWKS, verifies the RSASSA-PKCS1-v1.5 SHA-256 signature (real RSA modexp via ssh_rsa, mbedTLS- accelerated on ESP32), and checks iss / aud / exp / nbf, extracting sub / email. Pure and host-tested; the caller fetches + caches the JWKS over HTTPS (off the request hot path) and passes the JSON in. Builds on the SSH RSA primitive, not the HS256 JWT module (services/jwt), so the two are independent.
 
+## OPC-UA
+
+`DETWS_ENABLE_OPCUA`
+
+OPC UA Binary server, increment 1. Default off. services/opcua provides the OPC UA (IEC 62541) foundation: the little-endian Binary built-in-type codec, UA-TCP (UACP) message framing, and the Hello/Acknowledge handshake, served on TCP via PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). The codec + framing + handshake are pure and host-tested. SecureChannel (OPN), Session, and the Read service are later increments; SecurityPolicy is None. No heap, no stdlib.
+
 ## OTA
 
 `DETWS_ENABLE_OTA`
@@ -300,7 +306,7 @@ HTTP Range requests / 206 Partial Content for served files. Default off. When se
 
 ## Routing
 
-Exact, wildcard (/\*), :param path parameters, bounded allocation-free regex routes, and per-interface STA/softAP route filters. Always on.
+Exact, wildcard (/*), :param path parameters, bounded allocation-free regex routes, and per-interface STA/softAP route filters. Always on.
 
 ## SNMP
 
@@ -400,7 +406,7 @@ Streaming file upload: POST a body straight to a file on the filesystem. Default
 
 `DETWS_ENABLE_VFS`
 
-Unified virtual filesystem wrapper. Default off. services/vfs exposes one small file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a feature can target storage without knowing the medium. A built-in zero-heap RAM backend (fixed BSS pool - deterministic, host-identical) ships for scratch / tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD / SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise. Pool dimensions are tunable in vfs.h (DETWS_VFS_RAM_FILES, \_RAM_FILE_SIZE, \_MAX_OPEN, \_NAME_MAX).
+Unified virtual filesystem wrapper. Default off. services/vfs exposes one small file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a feature can target storage without knowing the medium. A built-in zero-heap RAM backend (fixed BSS pool - deterministic, host-identical) ships for scratch / tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD / SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise. Pool dimensions are tunable in vfs.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE, _MAX_OPEN, _NAME_MAX).
 
 ## Web Terminal
 

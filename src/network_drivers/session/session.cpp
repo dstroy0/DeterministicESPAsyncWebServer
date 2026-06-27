@@ -27,6 +27,9 @@
 #if DETWS_ENABLE_MODBUS
 #include "services/modbus/modbus.h"
 #endif
+#if DETWS_ENABLE_OPCUA
+#include "services/opcua/opcua.h"
+#endif
 
 #if DETWS_ENABLE_TLS
 #include "../presentation/http_parser.h"
@@ -144,6 +147,10 @@ static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_con
 // so only the data handler is needed.
 static const ProtoHandler s_modbus_handler = {nullptr, modbus_rx, nullptr, nullptr};
 #endif
+#if DETWS_ENABLE_OPCUA
+// OPC UA: the handshake reads from the rx ring, so only a data handler is needed.
+static const ProtoHandler s_opcua_handler = {nullptr, opcua_rx, nullptr, nullptr};
+#endif
 
 const ProtoHandler *proto_get(ConnProto proto)
 {
@@ -161,6 +168,9 @@ const ProtoHandler *proto_get(ConnProto proto)
 #endif
 #if DETWS_ENABLE_MODBUS
         s_proto_handlers[PROTO_MODBUS] = &s_modbus_handler;
+#endif
+#if DETWS_ENABLE_OPCUA
+        s_proto_handlers[PROTO_OPCUA] = &s_opcua_handler;
 #endif
     }
     const ProtoHandler *h = ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;

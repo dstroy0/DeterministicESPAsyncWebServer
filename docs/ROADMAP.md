@@ -77,7 +77,7 @@ flag (default off) so it costs nothing when unused.
 
 ## Protocols & integrations
 
-- [ ] OPC UA server/client (L); Node-RED integration (M).
+- [~] OPC UA server _(in progress)_ - `DETWS_ENABLE_OPCUA`: increment 1 ships the OPC UA Binary built-in-type codec, UA-TCP (UACP) framing, and the Hello/Acknowledge handshake served on PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`; example 84.OpcUa), host-tested + HW-verified. SecureChannel (OPN), Session, and the Read service are later increments; SecurityPolicy None. Node-RED integration (M) and an OPC UA client remain open (L).
 - [x] Modbus master codec + register scanner _(shipped)_ - `DETWS_ENABLE_MODBUS_MASTER`: `services/modbus/modbus_master` builds read-request ADUs and parses responses (register values or exception) so an app can poll / auto-discover a slave's registers; pure, host-tested as a full round-trip against the slave codec, HW-verified via self-scan (example 72.ModbusScan).
 - [ ] Southbound protocol-driver framework (L; Modbus is one today); Modbus atomic register matrix (M).
 - [x] Webhooks + IFTTT _(shipped)_ - `DETWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example 75.Webhook).
