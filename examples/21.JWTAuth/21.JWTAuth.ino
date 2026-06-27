@@ -49,7 +49,24 @@ static void protected_handler(uint8_t id, HttpReq *req)
         server.send(id, 401, "text/plain", "invalid or missing token");
         return;
     }
-    server.send(id, 200, "text/plain", "welcome - your token is valid");
+
+    // Granular authorization from a token claim. jwt_claim_str / jwt_scope_allows
+    // take the bare token, so step past the "Bearer " scheme first.
+    const char *tok = req->authorization + 7;
+    while (*tok == ' ')
+        tok++;
+    char role[16];
+    if (!jwt_claim_str(tok, strlen(tok), "role", role, sizeof(role)) || strcmp(role, "admin") != 0)
+    {
+        server.send(id, 403, "text/plain", "forbidden: admin role required");
+        return;
+    }
+    // For OAuth2 space-separated scopes, gate on the "scope" claim instead:
+    //   char scope[64];
+    //   if (jwt_claim_str(tok, strlen(tok), "scope", scope, sizeof(scope)) &&
+    //       jwt_scope_allows(scope, "telemetry:write")) { ... }
+
+    server.send(id, 200, "text/plain", "welcome admin - your token is valid");
 }
 
 void setup()

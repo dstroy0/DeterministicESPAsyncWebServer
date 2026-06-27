@@ -169,4 +169,74 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     return true;
 }
 
+bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap)
+{
+    if (!token || !name || !out || out_cap == 0)
+        return false;
+    out[0] = '\0';
+
+    const char *d1 = (const char *)memchr(token, '.', token_len);
+    if (!d1)
+        return false;
+    size_t rem = token_len - (size_t)(d1 + 1 - token);
+    const char *d2 = (const char *)memchr(d1 + 1, '.', rem);
+    if (!d2)
+        return false;
+    const char *payload = d1 + 1;
+    size_t payload_len = (size_t)(d2 - payload);
+
+    uint8_t buf[DETWS_JWT_MAX_LEN];
+    size_t n = b64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
+    if (n == 0)
+        return false;
+    buf[n] = '\0';
+
+    char key[40];
+    int kn = snprintf(key, sizeof(key), "\"%s\"", name);
+    if (kn <= 0 || kn >= (int)sizeof(key))
+        return false;
+    const char *p = strstr((const char *)buf, key);
+    if (!p)
+        return false;
+    p += kn;
+    while (*p == ' ' || *p == ':' || *p == '\t')
+        p++;
+    if (*p != '"') // not a string-valued claim
+        return false;
+    p++;
+    size_t i = 0;
+    while (*p && *p != '"' && i + 1 < out_cap)
+    {
+        if (*p == '\\' && p[1]) // minimal unescape: drop the backslash, copy the next char
+            p++;
+        out[i++] = *p++;
+    }
+    if (*p != '"') // unterminated string or value too long for out
+    {
+        out[0] = '\0';
+        return false;
+    }
+    out[i] = '\0';
+    return true;
+}
+
+bool jwt_scope_allows(const char *scope_claim, const char *required)
+{
+    if (!scope_claim || !required || !*required)
+        return false;
+    size_t rlen = strlen(required);
+    const char *p = scope_claim;
+    while (*p)
+    {
+        while (*p == ' ')
+            p++;
+        const char *start = p;
+        while (*p && *p != ' ')
+            p++;
+        if ((size_t)(p - start) == rlen && memcmp(start, required, rlen) == 0)
+            return true;
+    }
+    return false;
+}
+
 #endif // DETWS_ENABLE_JWT

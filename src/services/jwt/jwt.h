@@ -72,6 +72,28 @@ bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t sec
  */
 bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *out);
 
+/**
+ * @brief Read a string claim (e.g. "sub", "role", "scope") from a JWT payload.
+ *
+ * base64url-decodes the payload and copies the top-level string member @p name
+ * into @p out (null-terminated, bounded by @p out_cap). Does not verify the
+ * signature - call jwt_verify_hs256() first. Minimal unescaping (handles `\"` and
+ * `\\`; other escapes are copied without their backslash), which suits
+ * scope / role / sub values.
+ *
+ * @return true if the claim is present and is a string that fit in @p out.
+ */
+bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *out, size_t out_cap);
+
+/**
+ * @brief Test whether a space-separated OAuth2 scope claim grants @p required.
+ *
+ * @param scope_claim the `scope` claim value (space-delimited scopes, RFC 6749 3.3).
+ * @param required    the scope to look for.
+ * @return true if @p required is one of the whole space-separated tokens.
+ */
+bool jwt_scope_allows(const char *scope_claim, const char *required);
+
 #endif // DETWS_ENABLE_JWT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_JWT_H

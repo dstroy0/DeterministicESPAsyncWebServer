@@ -96,6 +96,29 @@ void test_claim_missing()
     TEST_ASSERT_FALSE(jwt_claim_int(TOKEN, strlen(TOKEN), "nbf", &v));
 }
 
+void test_claim_str()
+{
+    char buf[32];
+    TEST_ASSERT_TRUE(jwt_claim_str(TOKEN, strlen(TOKEN), "sub", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("alice", buf);
+    TEST_ASSERT_TRUE(jwt_claim_str(TOKEN, strlen(TOKEN), "role", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("admin", buf);
+    TEST_ASSERT_FALSE(jwt_claim_str(TOKEN, strlen(TOKEN), "nope", buf, sizeof(buf)));
+    TEST_ASSERT_FALSE(jwt_claim_str(TOKEN, strlen(TOKEN), "exp", buf, sizeof(buf))); // numeric, not a string
+}
+
+void test_scope_allows()
+{
+    TEST_ASSERT_TRUE(jwt_scope_allows("read write admin", "read"));
+    TEST_ASSERT_TRUE(jwt_scope_allows("read write admin", "write"));
+    TEST_ASSERT_TRUE(jwt_scope_allows("read write admin", "admin"));
+    TEST_ASSERT_TRUE(jwt_scope_allows("admin", "admin")); // single scope
+    TEST_ASSERT_FALSE(jwt_scope_allows("read write admin", "delete"));
+    TEST_ASSERT_FALSE(jwt_scope_allows("read write admin", "adm")); // whole-token match only
+    TEST_ASSERT_FALSE(jwt_scope_allows("read write admin", ""));
+    TEST_ASSERT_FALSE(jwt_scope_allows(nullptr, "read"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -107,5 +130,7 @@ int main()
     RUN_TEST(test_bearer_header);
     RUN_TEST(test_claim_int);
     RUN_TEST(test_claim_missing);
+    RUN_TEST(test_claim_str);
+    RUN_TEST(test_scope_allows);
     return UNITY_END();
 }
