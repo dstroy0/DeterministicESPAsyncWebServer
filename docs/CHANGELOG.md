@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.13.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.13.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8df7bc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8df7bc6f5fa5d86ec05347dc2a474aa0d1dcf6ec))
+- update CHANGELOG.md [skip ci] ([`06265e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06265e38cdf9b764fbd6be64589486bea28af445))
+
+### Changes
+
+- Bump version: 2.12.0 → 2.13.0 ([`f2ae60a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2ae60a80e4ffb3747ab83a13e52d148b20e223a))
+
+### Features
+
+- zero-heap MessagePack encoder ([`1937b2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1937b2b19d4227fa9e8260ba8d0950213e4e56cb))
+
+</details>
+
 ## [2.12.0] - 2026-06-27
 
 <details>
