@@ -1342,11 +1342,11 @@
  *
  * Default off. services/opcua provides the OPC UA (IEC 62541) foundation: the
  * little-endian Binary built-in-type codec (incl. NodeId / ExtensionObject /
- * DateTime), UA-TCP (UACP) message framing, the Hello/Acknowledge handshake, and
- * the SecureChannel (OpenSecureChannel, SecurityPolicy None), served on TCP via
- * PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). The codec + framing + handshake +
- * SecureChannel are pure and host-tested. Session and the Read service are later
- * increments. No heap, no stdlib.
+ * DateTime), UA-TCP (UACP) message framing, the Hello/Acknowledge handshake, the
+ * SecureChannel (OpenSecureChannel, SecurityPolicy None), and the Session
+ * (CreateSession + ActivateSession), served on TCP via PROTO_OPCUA
+ * (`listen(4840, PROTO_OPCUA)`). All of it is pure and host-tested. The Read
+ * service is a later increment. No heap, no stdlib.
  */
 #ifndef DETWS_ENABLE_OPCUA
 #define DETWS_ENABLE_OPCUA 0
