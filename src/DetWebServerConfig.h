@@ -1031,6 +1031,24 @@
 #define DETWS_GPIO_JSON_BUF 1024
 #endif
 
+/**
+ * @brief Opt-in fire-and-forget UDP telemetry cast (DETWS_ENABLE_UDP_TELEMETRY).
+ *
+ * Default off. When set, services/udp_telemetry casts metric lines (InfluxDB line
+ * protocol: `measurement field=val,field2=val2`) to a configured collector over
+ * UDP via det_udp_sendto - zero-heap, fire-and-forget (no ACK, no retry), ideal
+ * for shipping device metrics to Telegraf/InfluxDB/a log sink. The line builder is
+ * pure and host-tested; only the send touches the network.
+ */
+#ifndef DETWS_ENABLE_UDP_TELEMETRY
+#define DETWS_ENABLE_UDP_TELEMETRY 0
+#endif
+
+/** @brief Stack buffer for one telemetry line (bytes). */
+#ifndef DETWS_UDP_TELEMETRY_BUF
+#define DETWS_UDP_TELEMETRY_BUF 256
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0

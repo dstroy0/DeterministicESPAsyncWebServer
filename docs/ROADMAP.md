@@ -15,9 +15,8 @@ flag (default off) so it costs nothing when unused.
 
 ## Recommended near-term order (value vs. risk)
 
-1. **Quick wins (mostly already there):** Cache-Control beside ETag (done),
-   runtime build-flag endpoint (done, `server.diag()`), MAC-derived UUID (done);
-   remaining: raw-UDP telemetry helper (S).
+1. **Quick wins (all done):** Cache-Control beside ETag, runtime build-flag
+   endpoint (`server.diag()`), MAC-derived UUID, raw-UDP telemetry cast.
 2. **Security hardening cluster:** IP allowlist + brute-force lockout + CSRF
    tokens - all shipped.
 3. **Partition-map monitor** (done) + config export / restore - the latter still
@@ -85,7 +84,8 @@ flag (default off) so it costs nothing when unused.
 - [ ] DNS (M): async resolver + response verification, captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
 - [ ] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M).
-- [ ] Static-IP fallback automation, dynamic socket recycling, TCP window auto-scaling by free RAM (M); raw-UDP telemetry cast (S).
+- [x] Raw-UDP telemetry cast _(shipped)_ - `DETWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `det_udp_sendto`, zero-heap fire-and-forget (example 68.UdpTelemetry).
+- [ ] Static-IP fallback automation, dynamic socket recycling, TCP window auto-scaling by free RAM (M).
 
 ## Power & radio management
 
