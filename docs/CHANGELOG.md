@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.24.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.24.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c003031`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0030313e5c2a5ece77a44ffa0b966dece7fd7e3))
+- update CHANGELOG.md [skip ci] ([`5cb9e76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cb9e76bc6b15d26d9e812833f0f5e8aefe729f4))
+
+### Changes
+
+- Bump version: 2.23.0 → 2.24.0 ([`c6ec151`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6ec151a7d79206c0f8d0ef87595ed28aa94ebbe))
+
+### Features
+
+- OTA rollback protection + soft-brick safeguard ([`512091f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/512091f3f99261c9c95de689582e5f10b4a7618f))
+
+</details>
+
 ## [2.23.0] - 2026-06-27
 
 <details>
