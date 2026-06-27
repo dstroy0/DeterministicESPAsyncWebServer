@@ -1026,7 +1026,13 @@ class DetWebServer
     /**
      * @brief Drive the server - call every Arduino `loop()` iteration.
      *
-     * Internally this:
+     * On ESP32 `begin()` spawns the server worker task(s) (see DETWS_WORKER_COUNT),
+     * which run the pipeline on their own core; `handle()` is then a no-op and your
+     * `loop()` is free for application code. On host builds (and if no worker task
+     * is running) `handle()` drives one service iteration inline, so existing
+     * sketches and the native tests keep working unchanged.
+     *
+     * One service iteration (see service_once()):
      * 1. Calls `DeterministicAsyncTCP::check_timeouts()` to kill stale
      *    connections.
      * 2. Drains the event queue (connections, data, disconnects, errors).
@@ -1035,8 +1041,22 @@ class DetWebServer
      * 4. Auto-sends 400 for any slot stuck in `PARSE_ERROR`.
      * 5. Auto-sends 413 for any slot stuck in `PARSE_ENTITY_TOO_LARGE`.
      * 6. Auto-sends 414 for any slot stuck in `PARSE_URI_TOO_LONG`.
+     *
+     * Threading note: with the worker task running, route/WS/SSE handlers execute
+     * in the worker task. Do server I/O from handlers; pushing from `loop()` (e.g.
+     * SSE broadcast on a timer) runs concurrently with the worker and is made
+     * thread-safe in a later phase.
      */
     void handle();
+
+    /**
+     * @brief Run exactly one service iteration of the pipeline (the body driven by
+     *        the worker task, or by handle() when no task is running).
+     *
+     * Public so the worker task can invoke it; application code should call
+     * handle() rather than this directly.
+     */
+    void service_once();
 
     /**
      * @brief Send an HTTP response with a body and close the connection.
