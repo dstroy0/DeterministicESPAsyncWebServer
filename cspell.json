@@ -412,7 +412,10 @@
     "sendto",
     "InfluxDB",
     "Telegraf",
-    "logbuf"
+    "logbuf",
+    "totp",
+    "hotp",
+    "base32"
   ],
   "ignorePaths": [
     "node_modules/**",

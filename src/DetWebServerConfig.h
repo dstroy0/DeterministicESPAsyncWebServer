@@ -1165,6 +1165,19 @@
 #endif
 
 /**
+ * @brief Opt-in TOTP two-factor auth (RFC 6238) (DETWS_ENABLE_TOTP).
+ *
+ * Default off. services/totp computes and verifies time-based one-time passwords
+ * (HMAC-SHA1 over the existing SHA-1, Google Authenticator compatible) and decodes
+ * base32 shared secrets, for a second factor on top of password / JWT auth. Pure
+ * and host-tested against the RFC 6238 vectors; the verifier checks a +/- step
+ * window for clock skew.
+ */
+#ifndef DETWS_ENABLE_TOTP
+#define DETWS_ENABLE_TOTP 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
