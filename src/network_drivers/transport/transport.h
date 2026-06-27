@@ -15,10 +15,10 @@
  * | lwIP callbacks   | rx_head (to check full)| rx_buffer[], rx_head    |
  * | Arduino loop     | rx_buffer[], rx_tail   | rx_tail                 |
  *
- * `rx_head` and `rx_tail` are `volatile` to prevent the compiler from
- * caching them across the inter-task boundary.  The single-producer /
- * single-consumer ring buffer design guarantees correctness without a mutex
- * as long as writes to each index are atomic (true for 32-bit Xtensa).
+ * `state`, `rx_head`, and `rx_tail` are `DetAtomic` (acquire/release): the
+ * single-producer / single-consumer ring buffer is correct without a mutex
+ * because the release store of an index publishes the preceding buffer writes
+ * and the acquire load observes them, on either core.
  *
  * **Backpressure (lossless)**
  * When a whole inbound segment will not fit the free ring space, the recv
@@ -38,6 +38,50 @@
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
 #include <Arduino.h>
+#include <atomic>
+
+// ---------------------------------------------------------------------------
+// Cross-thread field wrapper
+// ---------------------------------------------------------------------------
+//
+// The slot fields shared across the tcpip_thread/worker boundary (state,
+// rx_head, rx_tail) are wrapped in DetAtomic so the producer/consumer memory
+// ordering is enforced by construction rather than by convention: every read is
+// an acquire load and every write a release store, so a producer's buffer writes
+// are visible before the consumer observes the advanced index (single-producer /
+// single-consumer per slot, so no read-modify-write atomicity is needed - only
+// ordering). On Xtensa/x86 an aligned acquire/release load/store is a plain
+// load/store plus a compiler barrier, so this adds no lock and no measurable cost
+// - determinism (bounded latency) is preserved. The conversion operators keep
+// every existing ==/=/arithmetic call site unchanged; the copy ctor/assignment
+// let the containing TcpConn still be value-reset (conn_pool[i] = {}).
+template <typename T> struct DetAtomic
+{
+    std::atomic<T> v;
+    DetAtomic() noexcept : v(T())
+    {
+    }
+    DetAtomic(T x) noexcept : v(x)
+    {
+    }
+    DetAtomic(const DetAtomic &o) noexcept : v(o.v.load(std::memory_order_acquire))
+    {
+    }
+    DetAtomic &operator=(const DetAtomic &o) noexcept
+    {
+        v.store(o.v.load(std::memory_order_acquire), std::memory_order_release);
+        return *this;
+    }
+    DetAtomic &operator=(T x) noexcept
+    {
+        v.store(x, std::memory_order_release);
+        return *this;
+    }
+    operator T() const noexcept
+    {
+        return v.load(std::memory_order_acquire);
+    }
+};
 
 // ---------------------------------------------------------------------------
 // Connection state
@@ -67,14 +111,14 @@ enum ConnState
  */
 struct TcpConn
 {
-    uint8_t id;                ///< Fixed slot index (0 … MAX_CONNS-1).
-    volatile ConnState state;  ///< Lifecycle state; volatile for inter-task visibility.
-    struct tcp_pcb *pcb;       ///< lwIP PCB; null when slot is free.
-    uint32_t last_activity_ms; ///< `millis()` timestamp of last TX/RX event.
+    uint8_t id;                 ///< Fixed slot index (0 … MAX_CONNS-1).
+    DetAtomic<ConnState> state; ///< Lifecycle state; acquire/release for inter-task visibility.
+    struct tcp_pcb *pcb;        ///< lwIP PCB; null when slot is free.
+    uint32_t last_activity_ms;  ///< `millis()` timestamp of last TX/RX event.
 
     uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
-    volatile size_t rx_head;        ///< Producer write index (lwIP context).
-    volatile size_t rx_tail;        ///< Consumer read index (main-loop context).
+    DetAtomic<size_t> rx_head;      ///< Producer write index (lwIP/tcpip context).
+    DetAtomic<size_t> rx_tail;      ///< Consumer read index (worker context).
 
     uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
     ConnProto proto;     ///< Application protocol for this connection.
