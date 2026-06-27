@@ -17,6 +17,9 @@
  */
 
 #include "presentation.h"
+#if DETWS_ENABLE_WEBSOCKET
+#include "websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
+#endif
 
 #if DETWS_ENABLE_KEEPALIVE
 uint16_t http_req_count[MAX_CONNS];
@@ -44,6 +47,17 @@ void http_parse(uint8_t slot_id)
 {
     if (slot_id >= MAX_CONNS)
         return;
+
+#if DETWS_ENABLE_WEBSOCKET
+    // Once a slot upgrades to WebSocket its rx ring carries WS frames, not HTTP.
+    // The WS frame parser is pumped separately (handle()/the worker loop); feeding
+    // those bytes to the HTTP parser here would consume - and corrupt - the first
+    // WS frame. This guard makes "never HTTP-parse a WS slot" hold for every caller
+    // (the event-queue dispatch raced the WS pump and ate the first frame's header
+    // byte, dropping the first connection after a reboot).
+    if (ws_find(slot_id))
+        return;
+#endif
 
     TcpConn *tcp = &conn_pool[slot_id];
     HttpReq *req = &http_pool[slot_id];

@@ -146,6 +146,36 @@ void test_head_on_post_only_route_405()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));
 }
 
+// ---- WebSocket handoff (regression) ---------------------------------------
+
+#if DETWS_ENABLE_WEBSOCKET
+// Once a slot has upgraded to WebSocket, http_parse() must not consume its rx
+// bytes - they are WS frames the frame parser will drain. The event-queue
+// dispatch used to call http_parse() on an upgraded slot and eat the first
+// frame's header byte, which dropped the first connection after a reboot
+// (the WS parser then read 0x80|len as opcode/RSV and failed the connection).
+void test_http_parse_skips_ws_upgraded_slot()
+{
+    WsConn *ws = ws_alloc(2);
+    TEST_ASSERT_NOT_NULL(ws);
+
+    // A masked client TEXT frame: 0x81 0x85 <mask 4> <payload 5>.
+    const uint8_t frame[] = {0x81, 0x85, 0x01, 0x02, 0x03, 0x04, 0x41, 0x43, 0x42, 0x45, 0x44};
+    TcpConn *c = &conn_pool[2];
+    for (size_t i = 0; i < sizeof(frame); i++)
+    {
+        c->rx_buffer[c->rx_head] = frame[i];
+        c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+    }
+    size_t tail_before = c->rx_tail;
+
+    http_parse(2); // must be a no-op on a WS slot
+
+    TEST_ASSERT_EQUAL_size_t(tail_before, c->rx_tail); // every WS byte preserved
+    ws_free(2);
+}
+#endif
+
 // ---- sanity ---------------------------------------------------------------
 
 void test_correct_method_still_dispatches()
@@ -168,6 +198,9 @@ int main()
     RUN_TEST(test_head_runs_get_handler_without_body);
     RUN_TEST(test_get_route_advertises_head_in_allow);
     RUN_TEST(test_head_on_post_only_route_405);
+#if DETWS_ENABLE_WEBSOCKET
+    RUN_TEST(test_http_parse_skips_ws_upgraded_slot);
+#endif
     RUN_TEST(test_correct_method_still_dispatches);
     return UNITY_END();
 }

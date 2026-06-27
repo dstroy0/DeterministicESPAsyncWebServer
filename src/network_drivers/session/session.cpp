@@ -121,7 +121,7 @@ static void http_evt_data(uint8_t slot)
         return;
     }
 #endif
-    http_parse(slot);
+    http_parse(slot); // a no-op once the slot has upgraded to WebSocket (see http_parse)
 }
 static void http_evt_close(uint8_t slot)
 {
