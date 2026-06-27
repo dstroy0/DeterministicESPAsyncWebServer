@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.35.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.35.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`776e79a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/776e79a5562dff7f2562e0bc8e3ebf25e82f4f38))
+- update CHANGELOG.md [skip ci] ([`3213f47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3213f4745bdeb6103c1e135e71a685c75805548f))
+
+### Changes
+
+- Bump version: 2.34.0 → 2.35.0 ([`ec46adc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec46adc2393f6b8001c07b10fed2f449cd2c1721))
+
+### Features
+
+- ESP-NOW peer messaging (typed envelope + peer registry) ([`1ed22e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ed22e2945ebc830d56788efcb3051f01a19e97b))
+
+</details>
+
 ## [2.34.0] - 2026-06-27
 
 <details>
