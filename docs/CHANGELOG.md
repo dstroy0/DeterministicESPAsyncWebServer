@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.2.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 3.2.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2f91317`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2f91317f795da3aab3e8f38645f94d0c8e8483b6))
+- update CHANGELOG.md [skip ci] ([`d270b8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d270b8b10e0dbec931661f338743b684d4cb0c15))
+
+### Changes
+
+- Bump version: 3.1.0 → 3.2.0 ([`7fff53e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fff53e36e39f22ae9123028d43f5c0e8c199ff7))
+
+### Features
+
+- OPC UA SecureChannel (OpenSecureChannel/OPN, SecurityPolicy None) ([`156e799`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/156e799122aeb71c0b889bce9d586ba1148fadac))
+
+</details>
+
 ## [3.1.0] - 2026-06-27
 
 <details>
@@ -9,16 +29,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`8620346`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/862034619292a3b51176adad69250dd9d76402d8))
-- update CHANGELOG.md [skip ci] ([`a3bc064`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3bc064894fdb5e69b1ac60f4e98331c2ae3c28a))
+- update test report [skip ci] ([`2b2e8db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b2e8dbf6eccc9e95360027cffd2bd969caf358a))
+- update CHANGELOG.md [skip ci] ([`fd34e86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd34e86907b256acc40a3dbdf66ea443fc9c1a91))
 
 ### Changes
 
-- Bump version: 3.0.0 → 3.1.0 ([`ee8ba5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee8ba5be601d207cf43e362a1d75866423cedd11))
+- Bump version: 3.0.0 → 3.1.0 ([`2802752`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/280275233052fe96874a6328a994b7196376b6f3))
 
 ### Features
 
-- OPC UA Binary server, increment 1 (UA-TCP + Hello/Acknowledge) ([`db63505`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db63505270e0a66d50d785edbc89f466c3199e33))
+- OPC UA Binary server, increment 1 (UA-TCP + Hello/Acknowledge) ([`54b86a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54b86a3e28995f31d98d2226fb9ae6f7007184b8))
 
 </details>
 
@@ -29,12 +49,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`f12cb08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f12cb088e09943ba122024320a8265b05692fe40))
-- update CHANGELOG.md [skip ci] ([`f0a5cc5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0a5cc5c799e3308b32fc17ba75209946d407631))
+- update test report [skip ci] ([`320c772`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/320c772ffc7206da8d39b2bfeafea8a973dac592))
+- update CHANGELOG.md [skip ci] ([`44e8902`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44e8902352a7070b406689fff896faa11eb60f34))
 
 ### Changes
 
-- Bump version: 2.36.0 → 3.0.0 ([`0a0af38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a0af3836a6de74dbf02e400a83a831c82f13ac3))
+- Bump version: 2.36.0 → 3.0.0 ([`e87709d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e87709d8fa8938ae86fbfcc0b6d55ec5e019770f))
 
 </details>
 
@@ -45,16 +65,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`b13bd0c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b13bd0cd256560a3bd5e5d0a0a21eadc217636c5))
-- update CHANGELOG.md [skip ci] ([`f96b989`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f96b98949be3effa7bd5b4096603784ed866284c))
+- update test report [skip ci] ([`47a53ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47a53ad4607631b68ecb72ff0627d8c1679ee547))
+- update CHANGELOG.md [skip ci] ([`0b78abd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b78abd91c461bb9fa13ab838f3fdaad6d0d7f93))
 
 ### Changes
 
-- Bump version: 2.35.0 → 2.36.0 ([`ddee022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ddee022bcff9e68a11344f4033e9af78ff2b6898))
+- Bump version: 2.35.0 → 2.36.0 ([`24b65af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b65af18fd166ea3176091dfdcc4fda9605026e))
 
 ### Features
 
-- OAuth2 token-endpoint client (authorization_code + refresh) ([`b32bc7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b32bc7ecd7683fc4b8fcea327e5254c9d49bda26))
+- OAuth2 token-endpoint client (authorization_code + refresh) ([`b7504bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7504bf85702ce2933fe963e4853ca26db3adb6f))
 
 </details>
 
@@ -65,16 +85,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`776e79a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/776e79a5562dff7f2562e0bc8e3ebf25e82f4f38))
-- update CHANGELOG.md [skip ci] ([`3213f47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3213f4745bdeb6103c1e135e71a685c75805548f))
+- update test report [skip ci] ([`377404a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/377404abe9d719a27cacd6c18136875a475d993d))
+- update CHANGELOG.md [skip ci] ([`ef3d980`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef3d9800e56630ba291b7597d6ee0b9b918badcf))
 
 ### Changes
 
-- Bump version: 2.34.0 → 2.35.0 ([`ec46adc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec46adc2393f6b8001c07b10fed2f449cd2c1721))
+- Bump version: 2.34.0 → 2.35.0 ([`7bdfccb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bdfccbda01ee8be4d62f3535a963fad4a01fdd6))
 
 ### Features
 
-- ESP-NOW peer messaging (typed envelope + peer registry) ([`1ed22e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ed22e2945ebc830d56788efcb3051f01a19e97b))
+- ESP-NOW peer messaging (typed envelope + peer registry) ([`9d2d9c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d2d9c2d2772e6a57de052d83b1b3c735031e641))
 
 </details>
 
@@ -85,20 +105,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`15ab984`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15ab984d8bb2e53535b3f78f106bc6d980710cc8))
-- update CHANGELOG.md [skip ci] ([`2b4ce44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ce44e153253605971818fa751f90b6c46ca4c))
+- update test report [skip ci] ([`5adbfaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5adbfaf070788e793eb4659fd8c919c661ea0c46))
+- update CHANGELOG.md [skip ci] ([`392f576`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/392f5765ec3e30dfd68ed847e317a4b247a7fa0d))
 
 ### Changes
 
-- Bump version: 2.33.2 → 2.34.0 ([`ec0080a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec0080a9ba713ecd87e6d7b2ff93df291ef9b93a))
+- Bump version: 2.33.2 → 2.34.0 ([`c1d9a80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c1d9a8011b16bd6532f4985ae16949a8c322c71c))
 
 ### Features
 
-- GraphQL query subset (zero-heap parser + executor) ([`27b2fc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27b2fc68325cff1d651f858639ef90716b92aa39))
+- GraphQL query subset (zero-heap parser + executor) ([`1293d25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1293d252a20e1fa84f96265d41ff5d91e295cd83))
 
 ### Refactor
 
-- drop <stdlib.h> from the library (no-stdlib number parsing) ([`a4b2cea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4b2ceace742aa4dd678ea6057c9b7def7c29d96))
+- drop <stdlib.h> from the library (no-stdlib number parsing) ([`4cf61f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cf61f80773e22f3746005aa71b6dfda7959997b))
 
 </details>
 
@@ -109,16 +129,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`d192579`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d192579771e91803e08292fed4e5d647cfe90398))
-- update CHANGELOG.md [skip ci] ([`39ad898`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39ad898c61895c3e639c7ef29a040c3b78da47cf))
+- update test report [skip ci] ([`7dc0f5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dc0f5a37e13f05268b5c994558a357fb2953bc0))
+- update CHANGELOG.md [skip ci] ([`c0e08ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0e08eaa9781ede259293911db9cbc6b098189e9))
 
 ### Changes
 
-- Bump version: 2.33.1 → 2.33.2 ([`c714ed4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c714ed481dcec17d93e42a128f22c376fe3e1d09))
+- Bump version: 2.33.1 → 2.33.2 ([`e6ee4d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6ee4d0d3600527e64b16f4d74c34ad074063874))
 
 ### Documentation
 
-- ESP32 Secure Boot + Flash Encryption hardening guide ([`433579f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/433579f6cb798868512023d2df08f49738fab392))
+- ESP32 Secure Boot + Flash Encryption hardening guide ([`c00a843`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c00a843c887c108546c3edccd8b8ce1b87f2e712))
 
 </details>
 
@@ -129,16 +149,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`2738414`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27384142b8fc0345de6372abedcb3eae5db7dd45))
-- update CHANGELOG.md [skip ci] ([`18a14b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18a14b27ef24ef0d6b95769f4a601a76cf01eb52))
+- update test report [skip ci] ([`8a584b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a584b36c10cad54808a4a59f9dae037b49d9530))
+- update CHANGELOG.md [skip ci] ([`92d3681`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92d3681f6c82b013a6e913db7f6376556f33b1d0))
 
 ### Changes
 
-- Bump version: 2.33.0 → 2.33.1 ([`12ffa5e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12ffa5ec1438f46ee1fd394a5692870dd21b0296))
+- Bump version: 2.33.0 → 2.33.1 ([`4a0a77c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a0a77c5efde091a965dfba0698dc3e621657212))
 
 ### Documentation
 
-- feature table with hover tooltips + docs/FEATURES.md ([`1450ef1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1450ef109e86a516c70e5cbf05921355acf62726))
+- feature table with hover tooltips + docs/FEATURES.md ([`f0b14d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0b14d1a5ca7511446e54d6de95290e473e1fcd5))
 
 </details>
 
@@ -149,16 +169,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`da888ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da888eff9e8f10308dbb9d19dadf29ea132f4774))
-- update CHANGELOG.md [skip ci] ([`5129891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51298919abe2240343916dd421161d6ffb0fd493))
+- update test report [skip ci] ([`1db2727`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1db2727d24d6870db296a7daa5de8ea56ecdef83))
+- update CHANGELOG.md [skip ci] ([`f4f7bc5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4f7bc5cb3835f79044bd55a52d2c36592abf898))
 
 ### Changes
 
-- Bump version: 2.32.0 → 2.33.0 ([`99f185c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99f185cf02c9b95e3838d31ae516301ef2992626))
+- Bump version: 2.32.0 → 2.33.0 ([`95de0b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95de0b5ecd0289e3dd27ce7a09837c028ede7481))
 
 ### Features
 
-- unified VFS wrapper (RAM + Arduino FS backends) ([`9c80011`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c800110a04e9f2398d4c2055e1063bb0ceb5e2d))
+- unified VFS wrapper (RAM + Arduino FS backends) ([`dc5e978`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc5e9782eb5b928d60ed9b7d8de87bc76a74eeb1))
 
 </details>
 
@@ -169,16 +189,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`d1510b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1510b8f14de65dc0611fe811d2be23ad1524d25))
-- update CHANGELOG.md [skip ci] ([`647d16b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/647d16bd4d75866e487be3977f5eba762402539f))
+- update test report [skip ci] ([`332f881`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/332f88117b23e58cdb06aa48cd0edb0d405362b2))
+- update CHANGELOG.md [skip ci] ([`5a0ffde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a0ffdeb77de72fc4bf7be5e3a7e23816f5c0bc2))
 
 ### Changes
 
-- Bump version: 2.31.0 → 2.32.0 ([`f968084`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f968084ae59e192a5fb7301890e737a0f6f83714))
+- Bump version: 2.31.0 → 2.32.0 ([`2567eea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2567eea9136f52fa3f8be6e6cea547c2faebb5cd))
 
 ### Features
 
-- OpenID Connect ID-token verification (RS256) ([`b346031`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b346031fbda7642b23ec94a5a40d64a30e26df26))
+- OpenID Connect ID-token verification (RS256) ([`b169e9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b169e9d968216715452031ff39780c89dd196a7f))
 
 </details>
 
@@ -189,16 +209,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
-- update test report [skip ci] ([`91b4788`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91b4788e2553bd656eb14671248214299d9ad4fb))
-- update CHANGELOG.md [skip ci] ([`a396ee4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a396ee498ee6bb886a432aebbba1705aa61a1d02))
+- update test report [skip ci] ([`aef74c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aef74c3d6e4ab877335882c300077f45c37ff367))
+- update CHANGELOG.md [skip ci] ([`497473c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/497473cd385f49a29830c63fb3247c15bb0393f5))
 
 ### Changes
 
-- Bump version: 2.30.0 → 2.31.0 ([`ff416ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff416ec336038bdd2980687288ed7dbe8640a022))
+- Bump version: 2.30.0 → 2.31.0 ([`dbe1855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dbe1855c45332f9f5194ef4ca4362c72bb170207))
 
 ### Features
 
-- tamper-evident hash-chained audit log ([`f3c40fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3c40fb27f94e4ea978b3d50cba0058ef79e384b))
+- tamper-evident hash-chained audit log ([`133d050`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/133d05078b6cf6e8a03e084343b1d9cbcc277c2d))
 
 </details>
 
@@ -209,11 +229,11 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
-- Bump version: 2.29.1 → 2.30.0 ([`089b9af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/089b9af8b6eb5b281715d5db26a05023851ef4b8))
+- Bump version: 2.29.1 → 2.30.0 ([`8189baa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8189baa0718c8240bcf96727be92609aff83a6b5))
 
 ### Features
 
-- WebSocket permessage-deflate outbound compression ([`e67a1a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e67a1a05aa42680ad2d523ddade8820076f22f30))
+- WebSocket permessage-deflate outbound compression ([`45bce39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45bce39766e0bc4656a36b02607d86949471ec9a))
 
 </details>
 
@@ -224,7 +244,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
-- never HTTP-parse a WebSocket-upgraded slot (first-connection drop) ([`ed21e8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed21e8a838bbc6ef0f238c05eaca06da441a34a4))
+- never HTTP-parse a WebSocket-upgraded slot (first-connection drop) ([`215a217`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/215a21722250c481eb95e4a0b26627b9fbfe2eaa))
 
 ### CI / Build
 
@@ -233,7 +253,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
-- Bump version: 2.29.0 → 2.29.1 ([`718abb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/718abb88269dc6003d60480fce8443f15a6348f7))
+- Bump version: 2.29.0 → 2.29.1 ([`d22aed2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d22aed2e6674c630cd72f27ce9402768e61c7d56))
 
 </details>
 
