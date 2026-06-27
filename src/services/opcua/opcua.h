@@ -3,7 +3,7 @@
 
 /**
  * @file opcua.h
- * @brief OPC UA Binary codec + UA-TCP transport, increment 1 (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary codec + UA-TCP transport + SecureChannel + Session (DETWS_ENABLE_OPCUA).
  *
  * OPC UA (IEC 62541) is large; this is built in increments. **Increment 1** is the
  * foundation every OPC UA server needs:
@@ -25,6 +25,10 @@
  * (OPN) request and answering with an `OpenSecureChannelResponse` - the server
  * assigns a SecureChannelId + security token (SecurityPolicy None, OPC UA Part 6
  * §7.1.3 / Part 4 §5.5.2).
+ *
+ * **Increment 3** adds the Session: `MSG` (secure conversation) service calls
+ * dispatched by their body TypeId - `CreateSession` (the server assigns a SessionId
+ * and AuthenticationToken) and `ActivateSession` (OPC UA Part 4 §5.6).
  *
  * No heap, no stdlib.
  *
@@ -194,16 +198,67 @@ size_t opcua_build_open_response(const OpcUaOpenChannel *req, uint32_t channel_i
                                  uint32_t seq_number, int64_t now_ft, uint32_t lifetime, uint8_t *out, size_t cap);
 
 // ---------------------------------------------------------------------------
+// Session - CreateSession / ActivateSession (MSG service calls, SecurityPolicy None)
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeIds (namespace 0) for the Session services (binary encoding ids). */
+#define OPCUA_ID_CREATE_SESSION_REQ 461    ///< CreateSessionRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_CREATE_SESSION_RESP 464   ///< CreateSessionResponse_Encoding_DefaultBinary.
+#define OPCUA_ID_ACTIVATE_SESSION_REQ 467  ///< ActivateSessionRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_ACTIVATE_SESSION_RESP 470 ///< ActivateSessionResponse_Encoding_DefaultBinary.
+
+/** @brief Common fields of a `MSG` (secure conversation) service request. */
+struct OpcUaMsg
+{
+    uint32_t token_id;        ///< SymmetricSecurityHeader TokenId.
+    uint32_t sequence_number; ///< SequenceHeader SequenceNumber.
+    uint32_t request_id;      ///< SequenceHeader RequestId (echoed in the response).
+    uint32_t type_id;         ///< Body TypeId NodeId (numeric id; 0 if non-numeric).
+    uint32_t request_handle;  ///< RequestHeader RequestHandle (echoed in the response).
+};
+
+/**
+ * @brief Parse a `MSG` envelope: security + sequence headers, body TypeId, and the
+ *        leading RequestHeader (every service request starts with one).
+ * @return true if valid. @p out->type_id selects the service to dispatch.
+ */
+bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out);
+
+/**
+ * @brief Build a `MSG` CreateSessionResponse (SecurityPolicy None): assign a SessionId
+ *        and AuthenticationToken, empty endpoint/certificate/signature fields.
+ * @param req             the parsed request (TokenId/RequestId/RequestHandle echoed).
+ * @param session_id      numeric SessionId identifier the server assigns (namespace 1).
+ * @param auth_token      numeric AuthenticationToken the server assigns (namespace 1).
+ * @param revised_timeout RevisedSessionTimeout (ms).
+ * @param seq             server SequenceNumber for this message.
+ * @param now_ft          OPC UA DateTime for the response timestamp (0 = unset).
+ * @return total MSG bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_create_session_response(const OpcUaMsg *req, uint32_t session_id, uint32_t auth_token,
+                                           double revised_timeout, uint32_t seq, int64_t now_ft, uint8_t *out,
+                                           size_t cap);
+
+/**
+ * @brief Build a `MSG` ActivateSessionResponse (SecurityPolicy None): ServiceResult Good,
+ *        empty ServerNonce / Results / DiagnosticInfos.
+ * @return total MSG bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_activate_session_response(const OpcUaMsg *req, uint32_t seq, int64_t now_ft, uint8_t *out,
+                                             size_t cap);
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)
 // ---------------------------------------------------------------------------
 
 /**
- * @brief PROTO_OPCUA data handler: drive the UA-TCP handshake + SecureChannel.
+ * @brief PROTO_OPCUA data handler: drive the UA-TCP handshake, SecureChannel, Session.
  *
  * Dispatched by the session layer for connections accepted on an OPC UA listener
  * (`listen(4840, PROTO_OPCUA)`). Drains framed messages from the slot's rx ring:
  * `HEL` -> negotiated `ACK`, `OPN` -> OpenSecureChannelResponse (SecurityPolicy
- * None), `CLO` -> close. Session/Read (`MSG`) are later increments.
+ * None), `MSG` CreateSession/ActivateSession -> their responses, `CLO` -> close.
+ * The Read service is a later increment.
  */
 void opcua_rx(uint8_t slot);
 

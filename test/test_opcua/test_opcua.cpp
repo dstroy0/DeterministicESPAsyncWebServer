@@ -309,6 +309,152 @@ void test_build_open_response()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// ---------------------------------------------------------------------------
+// Increment 3 - Session (CreateSession / ActivateSession over MSG)
+// ---------------------------------------------------------------------------
+
+// Build a minimal MSG service request: envelope + body TypeId + RequestHeader.
+// (The service-specific body after the RequestHeader is not needed by the server.)
+static size_t build_msg(uint8_t *out, size_t cap, uint32_t type_id, uint32_t token, uint32_t seq, uint32_t req_id,
+                        uint32_t handle)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);     // size placeholder
+    ua_w_u32(&w, token); // SymmetricSecurityHeader.TokenId
+    ua_w_u32(&w, seq);   // SequenceHeader.SequenceNumber
+    ua_w_u32(&w, req_id);
+    ua_w_nodeid_numeric(&w, 0, type_id); // body TypeId
+    // RequestHeader
+    ua_w_nodeid_numeric(&w, 0, 0); // AuthenticationToken (null for CreateSession)
+    ua_w_u64(&w, 0);               // Timestamp
+    ua_w_u32(&w, handle);          // RequestHandle
+    ua_w_u32(&w, 0);               // ReturnDiagnostics
+    ua_w_string(&w, nullptr, -1);  // AuditEntryId
+    ua_w_u32(&w, 0);               // TimeoutHint
+    ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader: null NodeId ...
+    ua_w_u8(&w, 0x00);             // ... + no body
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_msg()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_CREATE_SESSION_REQ, 7, 3, 100, 42);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT32(7, m.token_id);
+    TEST_ASSERT_EQUAL_UINT32(3, m.sequence_number);
+    TEST_ASSERT_EQUAL_UINT32(100, m.request_id);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_REQ, m.type_id);
+    TEST_ASSERT_EQUAL_UINT32(42, m.request_handle);
+}
+
+void test_parse_msg_rejects_non_msg()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_CREATE_SESSION_REQ, 7, 3, 100, 42);
+    buf[0] = 'O'; // make it "OSG"
+    OpcUaMsg m;
+    TEST_ASSERT_FALSE(opcua_parse_msg(buf, n, &m));
+}
+
+void test_build_create_session_response()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_CREATE_SESSION_REQ, 7, 3, 100, 42);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+
+    uint8_t resp[256];
+    int64_t now = opcua_filetime_from_unix(1700000000LL);
+    size_t rn = opcua_build_create_session_response(&m, 0x1001, 0x2002, 1200000.0, 5, now, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)rn, h.size);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    char str[16];
+    int32_t sl = 0;
+    TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
+    TEST_ASSERT_EQUAL_UINT32(5, ua_r_u32(&r));   // SequenceNumber
+    TEST_ASSERT_EQUAL_UINT32(100, ua_r_u32(&r)); // RequestId echoed
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_RESP, tid.id);
+    // ResponseHeader
+    TEST_ASSERT_TRUE(ua_r_u64(&r) == (uint64_t)now); // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(42, ua_r_u32(&r));      // RequestHandle echoed
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));       // ServiceResult Good
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));       // DiagnosticInfo
+    TEST_ASSERT_EQUAL_INT32(-1, ua_r_i32(&r));       // StringTable null
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));         // AdditionalHeader NodeId
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));       // AdditionalHeader body none
+    // CreateSessionResponse body
+    UaNodeId sid, atok;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &sid)); // SessionId
+    TEST_ASSERT_EQUAL_UINT32(0x1001, sid.id);
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &atok)); // AuthenticationToken
+    TEST_ASSERT_EQUAL_UINT32(0x2002, atok.id);
+    TEST_ASSERT_TRUE(ua_r_f64(&r) == 1200000.0);              // RevisedSessionTimeout
+    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerNonce null
+    TEST_ASSERT_EQUAL_INT32(-1, sl);
+    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerCertificate null
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));                 // ServerEndpoints[] empty
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));                 // ServerSoftwareCertificates[] empty
+    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerSignature.Algorithm null
+    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerSignature.Signature null
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));                // MaxRequestMessageSize
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_build_activate_session_response()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_ACTIVATE_SESSION_REQ, 7, 4, 101, 43);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+
+    uint8_t resp[128];
+    size_t rn = opcua_build_activate_session_response(&m, 6, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    char str[8];
+    int32_t sl = 0;
+    TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
+    TEST_ASSERT_EQUAL_UINT32(6, ua_r_u32(&r));   // SequenceNumber
+    TEST_ASSERT_EQUAL_UINT32(101, ua_r_u32(&r)); // RequestId echoed
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_ACTIVATE_SESSION_RESP, tid.id);
+    (void)ua_r_u64(&r);                                       // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(43, ua_r_u32(&r));               // RequestHandle echoed
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));                // ServiceResult Good
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));                // DiagnosticInfo
+    TEST_ASSERT_EQUAL_INT32(-1, ua_r_i32(&r));                // StringTable null
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));                  // AdditionalHeader NodeId
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));                // AdditionalHeader body none
+    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerNonce null
+    TEST_ASSERT_EQUAL_INT32(-1, sl);
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r)); // Results[] empty
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r)); // DiagnosticInfos[] empty
+    TEST_ASSERT_FALSE(r.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -325,5 +471,9 @@ int main()
     RUN_TEST(test_parse_open);
     RUN_TEST(test_parse_open_rejects_wrong_type);
     RUN_TEST(test_build_open_response);
+    RUN_TEST(test_parse_msg);
+    RUN_TEST(test_parse_msg_rejects_non_msg);
+    RUN_TEST(test_build_create_session_response);
+    RUN_TEST(test_build_activate_session_response);
     return UNITY_END();
 }
