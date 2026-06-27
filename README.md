@@ -19,7 +19,7 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 
 **[Read the Full Documentation Here 📖](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
-The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md).
+The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md). See the [feature reference](docs/FEATURES.md) for every option and the [secure-boot & flash-encryption hardening guide](docs/SECURE_BOOT.md) for production deployment.
 
 ## Overview
 
