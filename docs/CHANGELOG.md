@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.32.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.32.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d1510b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1510b8f14de65dc0611fe811d2be23ad1524d25))
+- update CHANGELOG.md [skip ci] ([`647d16b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/647d16bd4d75866e487be3977f5eba762402539f))
+
+### Changes
+
+- Bump version: 2.31.0 → 2.32.0 ([`f968084`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f968084ae59e192a5fb7301890e737a0f6f83714))
+
+### Features
+
+- OpenID Connect ID-token verification (RS256) ([`b346031`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b346031fbda7642b23ec94a5a40d64a30e26df26))
+
+</details>
+
 ## [2.31.0] - 2026-06-27
 
 <details>
