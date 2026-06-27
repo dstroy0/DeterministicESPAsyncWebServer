@@ -45,9 +45,13 @@ flag (default off) so it costs nothing when unused.
 - [x] Thread-safe app push path _(shipped)_ - `DetWebServer::defer(slot, fn, arg)`
       runs a callback in the slot's owning worker, so application code on `loop()`
       or another task can push (SSE/WS sends) without racing the worker.
-- [ ] Tuning (S-M): event-queue-blocking worker drain (lower idle CPU/power vs the
-      poll loop), leaner tcpip callbacks, per-workload worker count/affinity, and a
-      published throughput/latency benchmark.
+- [x] Throughput benchmark _(measured)_ - a CPU-bound handler (~0.2s) under 4-way
+      concurrency: N=1 ~5.9 req/s vs N=2 ~9.1 req/s (~1.5x; not a full 2x because
+      worker 1 shares Core 0 with WiFi/lwIP), single-request latency unchanged.
+      Confirms real parallel scaling with determinism intact (no hot-path locks).
+- [ ] Tuning (S): event-queue-blocking worker drain (lower idle CPU/power vs the
+      `vTaskDelay` poll loop), leaner tcpip callbacks, per-workload worker
+      count/affinity.
 
 ## Web / API / UI
 
