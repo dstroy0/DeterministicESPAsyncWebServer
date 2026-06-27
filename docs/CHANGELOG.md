@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- add msgpack encoding terms and changelog hash to cspell dictionary ([`7b04883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b04883c13b62f00fe0eacaf4201787d1f9bf7fd))
+- update test report [skip ci] ([`7b3cee5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b3cee5d60a7d7d852b7e8132ac9d18db3415423))
+- update CHANGELOG.md [skip ci] ([`e440f00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e440f00f2b70f8f29141152d54364b0b86841973))
 - update test report [skip ci] ([`4ce4466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ce4466c01329c36f55431f9889a64fcd4ea8bf7))
 - update CHANGELOG.md [skip ci] ([`e351477`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e351477ad16483b59827c56ec2cbf04e7632f24b))
 
