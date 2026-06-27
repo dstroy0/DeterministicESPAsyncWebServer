@@ -1307,6 +1307,21 @@
 #endif
 
 /**
+ * @brief ESP-NOW peer messaging (DETWS_ENABLE_ESPNOW).
+ *
+ * Default off. services/espnow wraps ESP-NOW connectionless peer-to-peer radio
+ * messaging in a 3-byte typed envelope (magic + type + length) so a receiver can
+ * demux by message type and reject a truncated frame, plus a bounded peer
+ * registry (DETWS_ESPNOW_MAX_PEERS, no heap). The envelope codec + registry are
+ * pure and host-tested; the radio path (begin / add_peer / send / broadcast over
+ * esp_now, decoded frames to a callback) is ESP32-only and can bridge to
+ * WebSocket/SSE. No stdlib.
+ */
+#ifndef DETWS_ENABLE_ESPNOW
+#define DETWS_ENABLE_ESPNOW 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
