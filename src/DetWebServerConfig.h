@@ -1178,6 +1178,18 @@
 #endif
 
 /**
+ * @brief Opt-in outbound webhooks / IFTTT (DETWS_ENABLE_WEBHOOK).
+ *
+ * Default off. Requires DETWS_ENABLE_HTTP_CLIENT. services/webhook builds an IFTTT
+ * Maker URL and a value1/value2/value3 JSON payload (pure, host-tested) and fires
+ * them - or any JSON to any URL - via the outbound http_client (POST). Use it to
+ * push an event from the device to IFTTT, a Slack/Discord hook, or your own API.
+ */
+#ifndef DETWS_ENABLE_WEBHOOK
+#define DETWS_ENABLE_WEBHOOK 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
