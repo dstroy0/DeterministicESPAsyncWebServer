@@ -2,16 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [2.28.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.28.0 - 2026-06-27</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`53863ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53863ed248337c80107cbb9b4a0d09c5ea1138ca))
+- update CHANGELOG.md [skip ci] ([`c63d39b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c63d39b786f066dc51d140524f0d4f46e0e183eb))
 - update test report [skip ci] ([`ac2ef02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac2ef02ffabe39caba1a79392913103d6e6aa122))
 - update CHANGELOG.md [skip ci] ([`91d56dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91d56dc9992bd9c0d16b42a7c5211ac78b003bca))
 
+### Changes
+
+- Bump version: 2.27.0 → 2.28.0 ([`1fac522`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1fac5221d2401009f2481f3dac75f9317225e61b))
+
 ### Features
 
+- WiFi radio power controls (modem-sleep + TX cap) ([`97c0cfe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97c0cfe8b4c11cb2d982241b6fb39b9043396a5e))
 - pentesting / adversarial suite + guide ([`5388e89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5388e894cfaf8168c54157cbf7ce4d2c412ebfcb))
+
+</details>
 
 ## [2.27.0] - 2026-06-27
 
