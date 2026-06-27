@@ -14,8 +14,8 @@
 #if DETWS_ENABLE_CONFIG_IO
 
 #include "services/config_store/config_store.h"
+#include "services/det_numparse.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 namespace
@@ -111,7 +111,7 @@ int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, c
                 int t = field_type(fields, n, key);
                 if (t == DETWS_CFG_U32)
                 {
-                    if (detws_config_set_u32(key, (uint32_t)strtoul(val, nullptr, 10)))
+                    if (detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr)))
                         count++;
                 }
                 else if (t == DETWS_CFG_STR)
