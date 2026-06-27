@@ -20,6 +20,7 @@
 #include <string.h>
 
 #if DETWS_ENABLE_WS_DEFLATE
+#include "deflate.h"
 #include "inflate.h"
 #include "network_drivers/session/scratch.h"
 #endif
@@ -111,11 +112,40 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return false;
 
+    uint8_t rsv1 = 0; // permessage-deflate per-message "compressed" flag (RFC 7692)
+
+#if DETWS_ENABLE_WS_DEFLATE
+    // Compress data frames when permessage-deflate is negotiated. Control frames
+    // (close/ping/pong) are never compressed (RFC 7692 sec 5.1). Scratch + output
+    // are borrowed from the per-dispatch arena and released when this scope exits;
+    // det_conn_send copies (TCP_WRITE_FLAG_COPY) so the buffer can go immediately.
+    ScratchScope scope;
+    if (ws->pmd && len > 0 && (opcode == WS_OP_TEXT || opcode == WS_OP_BINARY))
+    {
+        size_t cap = (size_t)len + len / 8 + 16; // static-Huffman worst-case headroom
+        void *scr = scratch_alloc(DEFLATE_SCRATCH_SIZE, 16);
+        uint8_t *cbuf = (uint8_t *)scratch_alloc(cap, 1);
+        if (scr && cbuf)
+        {
+            size_t clen = 0;
+            int rc = deflate_raw(payload, len, cbuf, cap, &clen, scr, DEFLATE_SCRATCH_SIZE);
+            // Only adopt it if it actually shrank the message; otherwise send it
+            // uncompressed (the per-message RSV1 flag makes that legal).
+            if (rc == DEFLATE_OK && clen < len)
+            {
+                payload = cbuf;
+                len = (uint16_t)clen;
+                rsv1 = 0x40;
+            }
+        }
+    }
+#endif
+
     // Server-to-client frames are never masked (RFC 6455 §5.1)
     uint8_t header[4];
     uint8_t hlen;
 
-    header[0] = 0x80 | (uint8_t)opcode; // FIN=1
+    header[0] = 0x80 | rsv1 | (uint8_t)opcode; // FIN=1 (+ RSV1 if compressed)
 
     if (len <= 125)
     {

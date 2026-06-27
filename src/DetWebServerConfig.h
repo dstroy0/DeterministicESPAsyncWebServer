@@ -452,15 +452,18 @@
 #endif
 
 /**
- * @brief WebSocket permessage-deflate (RFC 7692) - inbound message decompression.
+ * @brief WebSocket permessage-deflate (RFC 7692) - bidirectional compression.
  *
  * When set (and DETWS_ENABLE_WEBSOCKET is on), the server negotiates the
- * `permessage-deflate` extension and decompresses inbound compressed (RSV1)
- * messages via a bounded INFLATE (network_drivers/presentation/inflate.*), whose
- * table scratch is borrowed from the shared per-dispatch arena. The extension is
- * negotiated with `client_no_context_takeover` so each message decompresses
- * independently. Outbound messages are sent uncompressed (RFC 7692 sec 6 permits
- * this). Default off.
+ * `permessage-deflate` extension and both decompresses inbound compressed (RSV1)
+ * messages via a bounded INFLATE (network_drivers/presentation/inflate.*) and
+ * compresses outbound data frames via a bounded DEFLATE
+ * (network_drivers/presentation/deflate.*); both borrow their table scratch from
+ * the shared per-dispatch arena. The extension is negotiated with
+ * `{client,server}_no_context_takeover` so every message (de)compresses
+ * independently - no window is carried between messages. An outbound frame that
+ * would not shrink is sent uncompressed (the per-message RSV1 flag permits this).
+ * Default off.
  */
 #ifndef DETWS_ENABLE_WS_DEFLATE
 #define DETWS_ENABLE_WS_DEFLATE 0

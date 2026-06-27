@@ -29,9 +29,9 @@ traced, not just the per-feature cores:
 ```sh
 codeql database create cpp-db --language=cpp \
   --command="pio test --without-testing -e native_codeql -e native_ssh \
-    -e native_snmp_v3 -e native_inflate -e native_coap -e native_webdav \
-    -e native_modbus -e native_mqtt -e native_ws_client -e native_http_client \
-    -e native_jwt"
+    -e native_snmp_v3 -e native_inflate -e native_deflate -e native_coap \
+    -e native_webdav -e native_modbus -e native_mqtt -e native_ws_client \
+    -e native_http_client -e native_jwt"
 
 codeql database analyze cpp-db \
   codeql/cpp-queries:codeql-suites/cpp-security-and-quality.qls \

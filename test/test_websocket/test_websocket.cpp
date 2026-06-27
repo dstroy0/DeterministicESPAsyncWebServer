@@ -16,6 +16,11 @@
 #include <string.h>
 #include <unity.h>
 
+#if DETWS_ENABLE_WS_DEFLATE
+#include "lwip/tcp.h" // mock write-capture (tcp_capture_reset / tcp_captured)
+#include "network_drivers/presentation/inflate.h"
+#endif
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -874,6 +879,79 @@ void test_ws_rsv1_without_negotiation_closes()
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
 }
+
+// Outbound: a compressible data frame is sent with RSV1 set and a body that
+// inflates back to the original (the on-wire form a browser would decode).
+void test_ws_permessage_deflate_outbound()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    const char *msg = "The quick brown fox. The quick brown fox. The quick brown fox.";
+    uint16_t mlen = (uint16_t)strlen(msg);
+
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)msg, mlen));
+    tcp_capture_disable();
+
+    const uint8_t *sent = (const uint8_t *)tcp_captured();
+    size_t sent_len = tcp_captured_len();
+    TEST_ASSERT_TRUE(sent_len >= 2);
+
+    // FIN + RSV1 + TEXT; compressed body is shorter than the original.
+    TEST_ASSERT_EQUAL_UINT8(0x80 | 0x40 | WS_OP_TEXT, sent[0]);
+    uint16_t plen = sent[1] & 0x7F;
+    size_t hdr = 2;
+    if (plen == 126)
+    {
+        plen = (uint16_t)((sent[2] << 8) | sent[3]);
+        hdr = 4;
+    }
+    TEST_ASSERT_TRUE(plen < mlen); // it actually compressed
+    TEST_ASSERT_EQUAL_size_t(hdr + plen, sent_len);
+
+    // Re-append the RFC 7692 marker and inflate: must equal the original message.
+    uint8_t comp[256];
+    TEST_ASSERT_TRUE(plen + 4 <= sizeof(comp));
+    memcpy(comp, sent + hdr, plen);
+    comp[plen] = 0x00;
+    comp[plen + 1] = 0x00;
+    comp[plen + 2] = 0xff;
+    comp[plen + 3] = 0xff;
+
+    uint8_t out[256];
+    uint8_t scr[INFLATE_SCRATCH_SIZE];
+    size_t out_len = 0;
+    int rc = inflate_raw(comp, plen + 4, out, sizeof(out), &out_len, scr, sizeof(scr));
+    TEST_ASSERT_EQUAL_INT(INFLATE_OK, rc);
+    TEST_ASSERT_EQUAL_size_t(mlen, out_len);
+    TEST_ASSERT_EQUAL_MEMORY(msg, out, mlen);
+}
+
+// Outbound: a payload that would not shrink is sent uncompressed (RSV1 clear),
+// and a control frame is never compressed even on a pmd connection.
+void test_ws_outbound_incompressible_not_flagged()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)"x", 1));
+    tcp_capture_disable();
+    const uint8_t *sent = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_TEXT, sent[0]); // no RSV1: not worth compressing
+    TEST_ASSERT_EQUAL_UINT8(1, sent[1] & 0x7F);
+    TEST_ASSERT_EQUAL_UINT8('x', sent[2]);
+
+    // A PONG control frame is never compressed, even with data-like content.
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_PONG, (const uint8_t *)"AAAAAAAAAAAAAAAA", 16));
+    tcp_capture_disable();
+    sent = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_PONG, sent[0]); // RSV1 clear on control frames
+}
 #endif // DETWS_ENABLE_WS_DEFLATE
 
 int main()
@@ -948,6 +1026,8 @@ int main()
 #if DETWS_ENABLE_WS_DEFLATE
     RUN_TEST(test_ws_permessage_deflate_inbound);
     RUN_TEST(test_ws_rsv1_without_negotiation_closes);
+    RUN_TEST(test_ws_permessage_deflate_outbound);
+    RUN_TEST(test_ws_outbound_incompressible_not_flagged);
 #endif
 
     // Stress tests
