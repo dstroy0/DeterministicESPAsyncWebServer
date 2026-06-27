@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.33.2] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.33.2 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d192579`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d192579771e91803e08292fed4e5d647cfe90398))
+- update CHANGELOG.md [skip ci] ([`39ad898`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39ad898c61895c3e639c7ef29a040c3b78da47cf))
+
+### Changes
+
+- Bump version: 2.33.1 → 2.33.2 ([`c714ed4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c714ed481dcec17d93e42a128f22c376fe3e1d09))
+
+### Documentation
+
+- ESP32 Secure Boot + Flash Encryption hardening guide ([`433579f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/433579f6cb798868512023d2df08f49738fab392))
+
+</details>
+
 ## [2.33.1] - 2026-06-27
 
 <details>
