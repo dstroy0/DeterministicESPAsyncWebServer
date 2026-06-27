@@ -107,7 +107,7 @@ flag (default off) so it costs nothing when unused.
 
 - [x] Typed NVS config store _(shipped)_.
 - [x] Partition-map status monitor endpoint _(shipped)_ - `DETWS_ENABLE_PARTITION_MONITOR`: `detws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example 64.PartitionMonitor).
-- [ ] Unified virtual-filesystem wrapper (M); bulk config templates + full export/restore (M); ZTP + graceful multi-stage provisioning (M).
+- [x] Config export / restore _(shipped, schema-driven)_ - `DETWS_ENABLE_CONFIG_IO`: `services/config_io` serializes a declared schema of fields to a portable `key=value` text blob and parses one back into the NVS config store - backup / migrate / bulk-provision, deterministic and zero-heap (host-tested round-trip; example 71.ConfigExport). Remaining (M): full enumeration-based export (needs NVS key iteration), unified VFS wrapper, ZTP multi-stage provisioning.
 - [ ] Wear leveling + log offload (server/SD) (M); hot-swap storage safeties (M).
 - [ ] OTA: modular partition swapping + rollback protection + soft-brick safeguards (M).
 - [ ] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M).
