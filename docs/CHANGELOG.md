@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.26.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.26.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a61729f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a61729fb645562f8a4ba0edede13049796a59aa3))
+- update CHANGELOG.md [skip ci] ([`af0c80c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af0c80c8cf450a6fc62d56d58ec65239452a1b27))
+
+### Changes
+
+- Bump version: 2.25.0 → 2.26.0 ([`9ca28f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ca28f203c720229c3652241eade7b1017f0d82b))
+
+### Features
+
+- TOTP two-factor auth (RFC 6238) ([`ee58782`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee5878255cf1fcbbd5e62a6be7aa6b0b7121fe6d))
+
+</details>
+
 ## [2.25.0] - 2026-06-27
 
 <details>
