@@ -35,4 +35,27 @@ int detws_worker_self(void);
 /** @brief Bind the calling task/thread to worker id @p id (worker entry / tests). */
 void detws_worker_set_self(int id);
 
+// ---------------------------------------------------------------------------
+// Worker tasks (ESP32)
+// ---------------------------------------------------------------------------
+//
+// On ESP32 the server runs in dedicated FreeRTOS worker tasks instead of the
+// user's loop(): detws_workers_start() spawns DETWS_WORKER_COUNT tasks, each
+// pinned to a core, each binding its worker id and repeatedly invoking the
+// app-supplied pump (so this layer stays free of any app dependency). On host
+// builds there are no tasks - the pipeline is driven inline by handle() / tests -
+// so these are no-ops and detws_workers_running() is false.
+
+/** @brief Pump callback run by each worker task with its worker id. */
+typedef void (*detws_worker_pump_fn)(int worker_id);
+
+/** @brief Spawn the worker task(s) and start them running @p pump. No-op on host. */
+void detws_workers_start(detws_worker_pump_fn pump);
+
+/** @brief Signal the worker task(s) to exit and wait briefly for them. No-op on host. */
+void detws_workers_stop(void);
+
+/** @brief True while worker task(s) are running (always false on host). */
+bool detws_workers_running(void);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_WORKER_H

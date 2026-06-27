@@ -38,6 +38,7 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/session/proto_handler.h"
+#include "network_drivers/session/worker.h"
 #include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
 #if DETWS_ENABLE_WEBSOCKET
@@ -421,6 +422,16 @@ int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
     return DETWS_OK;
 }
 
+// Server instance whose pipeline the worker task pumps, plus the trampoline the
+// generic worker layer calls (it has no DetWebServer type). Set in begin().
+static DetWebServer *s_worker_server = nullptr;
+static void detws_pump_trampoline(int worker_id)
+{
+    (void)worker_id; // single-worker pumps all slots; partitioning lands in Phase 2
+    if (s_worker_server)
+        s_worker_server->service_once();
+}
+
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
 {
     if (_listener_count == 0)
@@ -460,6 +471,12 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         if (listener_add(i, _listen_ports[i], _listen_protos[i], _listen_tls[i]) < 0)
             return DETWS_ERR_LISTEN_FAILED;
     }
+#ifdef ARDUINO
+    // Routes/listeners are now fixed; start the worker task(s) that drive the
+    // pipeline off the user's loop(). On host the pipeline runs inline via handle().
+    s_worker_server = this;
+    detws_workers_start(detws_pump_trampoline);
+#endif
     return DETWS_OK;
 }
 
@@ -522,6 +539,10 @@ int32_t DetWebServer::restart(const WebServerConfig *cfg)
 
 void DetWebServer::stop()
 {
+#ifdef ARDUINO
+    // Stop the worker task(s) before tearing down the slots they service.
+    detws_workers_stop();
+#endif
     listener_stop_all();
     DeterministicAsyncTCP::stop();
     for (uint8_t i = 0; i < MAX_CONNS; i++)
@@ -983,6 +1004,16 @@ void DetWebServer::ws_dispatch_close(WsConn *ws)
 #endif // DETWS_ENABLE_WEBSOCKET
 
 void DetWebServer::handle()
+{
+#ifdef ARDUINO
+    // The worker task drives the pipeline on its own core; loop() is freed.
+    if (detws_workers_running())
+        return;
+#endif
+    service_once();
+}
+
+void DetWebServer::service_once()
 {
     server_tick();
 
