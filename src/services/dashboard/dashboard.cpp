@@ -15,9 +15,9 @@
 
 #if DETWS_ENABLE_DASHBOARD
 
+#include "services/det_numparse.h"
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 static const DetwsWidget *s_widgets = nullptr;
@@ -182,8 +182,8 @@ bool detws_dashboard_parse_control(const char *msg, char *key_out, size_t key_ca
         return false; // unterminated or key too long
     }
     key_out[i] = '\0';
-    char *end = nullptr;
-    float v = strtof(vp, &end);
+    const char *end = nullptr;
+    float v = det_strtof(vp, &end);
     if (end == vp)
         return false; // no numeric value
     *value_out = v;

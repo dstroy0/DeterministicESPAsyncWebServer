@@ -7,8 +7,8 @@
  */
 
 #include "json.h"
+#include "services/det_numparse.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -454,8 +454,8 @@ bool json_get_int(const char *json, const char *key, long *out)
     const char *v = json_find_value(json, key);
     if (!v || *v == '"') // must be a bare number, not a string
         return false;
-    char *end = nullptr;
-    long val = strtol(v, &end, 10);
+    const char *end = nullptr;
+    long val = det_strtol(v, &end);
     if (end == v)
         return false; // no digits parsed
     *out = val;

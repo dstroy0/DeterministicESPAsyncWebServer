@@ -11,8 +11,8 @@
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
+#include "services/det_numparse.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -230,7 +230,7 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
     const char *cl = find_header(buf, hdr_end, "Content-Length");
     if (cl)
     {
-        long n = atol(cl);
+        long n = det_strtol(cl, nullptr);
         if (n < 0)
             n = 0;
         size_t want = (size_t)n;
