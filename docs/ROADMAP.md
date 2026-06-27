@@ -116,7 +116,7 @@ flag (default off) so it costs nothing when unused.
 
 - [ ] Immutable audit logs + store-and-forward + FDA 21 CFR Part 11 (L).
 - [ ] Core dump to SD/FTP + live exception-decoder panel (M); zero-overhead abstract logging (M); log rotation/pruning + traps (S).
-- [ ] Heap high-water tracker (in /metrics already) + runtime stack/heap guardrails (S-M).
+- [x] Runtime heap/stack guardrails _(shipped)_ - `DETWS_ENABLE_GUARDRAILS`: `services/guardrails` samples free heap, the heap low-water mark, the largest free block (fragmentation), and a task's remaining stack, and fires a breach callback when any crosses its `DETWS_GUARDRAIL_*` floor - a proactive fail-safe hook on top of the passive /metrics numbers; evaluator + JSON host-tested, served at `/health` (example 69.Guardrails).
 - [ ] Fail-safe safe-state + deadlock-detection WDT + watchdog-protected coroutine lifelines (M).
 - [ ] Hardware health (M): power-rail voltage-drop logger, SPI-bus CRC audit + clock backoff, GPIO short-circuit test, capacitor-leakage diag.
 
