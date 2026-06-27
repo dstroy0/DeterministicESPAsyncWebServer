@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`4ce4466`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ce4466c01329c36f55431f9889a64fcd4ea8bf7))
+- update CHANGELOG.md [skip ci] ([`e351477`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e351477ad16483b59827c56ec2cbf04e7632f24b))
+
+### Changes
+
+- Bump version: 2.13.0 → 2.14.0 ([`096b229`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/096b229c9931120f089cf6b577eaa3644db6a4fa))
+
+### Features
+
+- browser GPIO pin-mapper diagnostics endpoint ([`918dbbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/918dbbb916233c3974a6a37c0dadceee296dc37f))
+
 ## [2.13.0] - 2026-06-27
 
 <details>
