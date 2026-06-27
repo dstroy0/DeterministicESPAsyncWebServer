@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`fb291b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb291b189e36c93f5dbdc769b28033d14962c21b))
+- update CHANGELOG.md [skip ci] ([`648745f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/648745f55e85065ceaaa5d0db5b0672429c84678))
 - add msgpack encoding terms and changelog hash to cspell dictionary ([`7b04883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b04883c13b62f00fe0eacaf4201787d1f9bf7fd))
 - update test report [skip ci] ([`7b3cee5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b3cee5d60a7d7d852b7e8132ac9d18db3415423))
 - update CHANGELOG.md [skip ci] ([`e440f00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e440f00f2b70f8f29141152d54364b0b86841973))
@@ -14,10 +16,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 2.14.0 → 2.15.0 ([`fd0052d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd0052d163837e7ae0c0e134e85629a813b4ebb4))
 - Bump version: 2.13.0 → 2.14.0 ([`096b229`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/096b229c9931120f089cf6b577eaa3644db6a4fa))
 
 ### Features
 
+- thread-safe transport groundwork for the worker model ([`155fe42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/155fe42bbeca2e1346d0d916b9bb22d80deff545))
 - browser GPIO pin-mapper diagnostics endpoint ([`918dbbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/918dbbb916233c3974a6a37c0dadceee296dc37f))
 
 ## [2.13.0] - 2026-06-27
