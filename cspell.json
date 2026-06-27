@@ -408,7 +408,10 @@
     "fcebcdc",
     "tsan",
     "spsc",
-    "DetAtomic"
+    "DetAtomic",
+    "sendto",
+    "InfluxDB",
+    "Telegraf"
   ],
   "ignorePaths": [
     "node_modules/**",

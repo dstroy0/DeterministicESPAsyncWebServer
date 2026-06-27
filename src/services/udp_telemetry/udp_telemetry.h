@@ -1,0 +1,74 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file udp_telemetry.h
+ * @brief Fire-and-forget UDP telemetry cast (DETWS_ENABLE_UDP_TELEMETRY).
+ *
+ * Builds a metric line in InfluxDB line protocol -
+ * `measurement field=val,field2=val2` (integer fields carry the `i` suffix,
+ * floats are plain) - into a caller buffer, then casts it to a configured
+ * collector over UDP (det_udp_sendto), zero-heap and fire-and-forget (no ACK, no
+ * retry). The line builder is pure and host-tested; only the send touches the
+ * network (ESP32; a no-op on host builds).
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H
+#define DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H
+
+#include "DetWebServerConfig.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#if DETWS_ENABLE_UDP_TELEMETRY
+
+// ---------------------------------------------------------------------------
+// Host-testable line builder (InfluxDB line protocol)
+// ---------------------------------------------------------------------------
+
+/** @brief Builder for one telemetry line over a caller buffer. */
+struct DetwsLine
+{
+    char *buf;        ///< destination buffer.
+    size_t cap;       ///< buffer capacity in bytes.
+    size_t pos;       ///< bytes written so far (excludes the null terminator).
+    bool overflow;    ///< true once a write did not fit (line is then unusable).
+    bool have_fields; ///< true once at least one field is present (comma control).
+};
+
+/** @brief Start a line for @p measurement (bound to @p buf / @p cap). */
+void detws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measurement);
+
+/** @brief Append `field=<v>i` (integer field). */
+void detws_line_add_int(DetwsLine *l, const char *field, int64_t v);
+
+/** @brief Append `field=<v>i` (unsigned integer field). */
+void detws_line_add_uint(DetwsLine *l, const char *field, uint64_t v);
+
+/** @brief Append `field=<v>` (float field, @p decimals places). */
+void detws_line_add_float(DetwsLine *l, const char *field, float v, uint8_t decimals);
+
+/** @brief Encoded length (bytes), excluding the null terminator. */
+size_t detws_line_len(const DetwsLine *l);
+
+/** @brief True if every field fit and the line has at least one field. */
+bool detws_line_ok(const DetwsLine *l);
+
+// ---------------------------------------------------------------------------
+// Cast (ESP32; no-op on host)
+// ---------------------------------------------------------------------------
+
+/** @brief Set the collector endpoint (dotted-quad IPv4 + UDP port). */
+void detws_udp_telemetry_begin(const char *collector_ip, uint16_t port);
+
+/** @brief Cast @p len raw bytes to the collector. @return false if not begun / host. */
+bool detws_udp_telemetry_send(const char *data, size_t len);
+
+/** @brief Cast a built line to the collector (no-op if the line overflowed). */
+bool detws_udp_telemetry_cast(const DetwsLine *l);
+
+#endif // DETWS_ENABLE_UDP_TELEMETRY
+#endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H
