@@ -2,6 +2,41 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.30.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.30.0 - 2026-06-27</b></summary>
+
+### Changes
+
+- Bump version: 2.29.1 → 2.30.0 ([`089b9af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/089b9af8b6eb5b281715d5db26a05023851ef4b8))
+
+### Features
+
+- WebSocket permessage-deflate outbound compression ([`e67a1a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e67a1a05aa42680ad2d523ddade8820076f22f30))
+
+</details>
+
+## [2.29.1] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.29.1 - 2026-06-27</b></summary>
+
+### Bug Fixes
+
+- never HTTP-parse a WebSocket-upgraded slot (first-connection drop) ([`ed21e8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed21e8a838bbc6ef0f238c05eaca06da441a34a4))
+
+### CI / Build
+
+- update test report [skip ci] ([`c972834`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9728349fd33e44a79bff21fef197af5c7481b05))
+- update CHANGELOG.md [skip ci] ([`2c7e23e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c7e23ea15ce6839f7f448d6bc7eb8415aa81282))
+
+### Changes
+
+- Bump version: 2.29.0 → 2.29.1 ([`718abb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/718abb88269dc6003d60480fce8443f15a6348f7))
+
+</details>
+
 ## [2.29.0] - 2026-06-27
 
 <details>
