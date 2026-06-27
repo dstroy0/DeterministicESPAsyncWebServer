@@ -1101,6 +1101,19 @@
 #define DETWS_LOG_LINE_LEN 96
 #endif
 
+/**
+ * @brief Opt-in schema-driven config export / restore (DETWS_ENABLE_CONFIG_IO).
+ *
+ * Default off. Requires DETWS_ENABLE_CONFIG_STORE. The app declares a fixed schema
+ * (key + type); services/config_io serializes the current values to a portable
+ * `key=value` text blob (backup / migrate) and parses one back into the store
+ * (restore / bulk template). Schema-driven rather than enumerating NVS, so it
+ * stays deterministic and zero-heap; the serialize / parse is host-tested.
+ */
+#ifndef DETWS_ENABLE_CONFIG_IO
+#define DETWS_ENABLE_CONFIG_IO 0
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
