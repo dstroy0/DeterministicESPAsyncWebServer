@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.29.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.29.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f5b7fa0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5b7fa0ab1f47c204d0bf53d9d359cde0cc5aabb))
+- update CHANGELOG.md [skip ci] ([`a0d51f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0d51f3bc031a1af9708418d2ec5bbcb4b10de7d))
+
+### Changes
+
+- Bump version: 2.28.0 → 2.29.0 ([`04bcbdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04bcbdda914876cb50d4c4eb5fa5498298aa10e5))
+
+### Features
+
+- DNS resolver with answer verification ([`af1cb3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af1cb3e33941f0b6bc921a15fdc65878046b5b3e))
+
+</details>
+
 ## [2.28.0] - 2026-06-27
 
 <details>
