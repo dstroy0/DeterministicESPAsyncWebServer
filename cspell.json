@@ -415,7 +415,10 @@
     "logbuf",
     "totp",
     "hotp",
-    "base32"
+    "base32",
+    "pentest",
+    "xorshift",
+    "MSVC"
   ],
   "ignorePaths": [
     "node_modules/**",
