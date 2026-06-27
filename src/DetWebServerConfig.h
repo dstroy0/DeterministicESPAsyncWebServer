@@ -1049,6 +1049,35 @@
 #define DETWS_UDP_TELEMETRY_BUF 256
 #endif
 
+/**
+ * @brief Opt-in runtime heap/stack guardrails (DETWS_ENABLE_GUARDRAILS).
+ *
+ * Default off. When set, services/guardrails samples free heap, the heap low-water
+ * mark, the largest free block (fragmentation), and the calling task's remaining
+ * stack, and fires a callback when any crosses its threshold - a proactive
+ * fail-safe hook beyond the passive numbers in /metrics. The threshold evaluator
+ * and the JSON serializer are pure and host-tested; the sample reads esp_* / the
+ * FreeRTOS stack high-water on ESP32.
+ */
+#ifndef DETWS_ENABLE_GUARDRAILS
+#define DETWS_ENABLE_GUARDRAILS 0
+#endif
+
+/** @brief Free-heap floor (bytes); below this trips the heap guardrail. */
+#ifndef DETWS_GUARDRAIL_HEAP_MIN
+#define DETWS_GUARDRAIL_HEAP_MIN 8192
+#endif
+
+/** @brief Largest-free-block floor (bytes); below this trips the fragmentation guardrail. */
+#ifndef DETWS_GUARDRAIL_FRAG_MIN_BLOCK
+#define DETWS_GUARDRAIL_FRAG_MIN_BLOCK 4096
+#endif
+
+/** @brief Task remaining-stack floor (bytes); below this trips the stack guardrail. */
+#ifndef DETWS_GUARDRAIL_STACK_MIN
+#define DETWS_GUARDRAIL_STACK_MIN 512
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0
