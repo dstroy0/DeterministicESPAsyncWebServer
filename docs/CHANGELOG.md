@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.12.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.12.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9003a72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9003a72dbbdb96c67e978b6904f5e14a11cc3df4))
+- update CHANGELOG.md [skip ci] ([`a53368c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a53368c7c7da3b6daaf072a68c8a659baee25c71))
+
+### Changes
+
+- Bump version: 2.11.0 → 2.12.0 ([`9ae9bb5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ae9bb5ee2db164af87237a40d72c53f05281c9a))
+
+### Features
+
+- granular JWT scope/role authorization helpers ([`0d0a06a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d0a06a6750deec9a2e750a652256db58b0c5a31))
+
+</details>
+
 ## [2.11.0] - 2026-06-27
 
 <details>
