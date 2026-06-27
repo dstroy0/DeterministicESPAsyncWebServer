@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`178c5f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/178c5f95301636ba062816090374c7d49707ba94))
+- update CHANGELOG.md [skip ci] ([`b66747a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b66747abd657e77fbd7230776ad26d59507a0b91))
 - update test report [skip ci] ([`61ac7ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61ac7ed7fc30f77cf62f17a43f090c164d3c8eb2))
 - update CHANGELOG.md [skip ci] ([`c57b47b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c57b47b34b006047d089e7b9855bec169226670c))
 
 ### Documentation
 
+- record worker throughput benchmark (N=2 ~1.5x under concurrency) ([`3686a3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3686a3f9360868d87d773df62d29309d5bd678a7))
 - document the worker model (concurrency roadmap + README) ([`a68a1ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a68a1ae58b774515a0dca035aae3098cefce68df))
 
 ## [2.18.0] - 2026-06-27
