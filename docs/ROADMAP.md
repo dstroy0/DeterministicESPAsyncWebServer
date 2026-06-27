@@ -27,6 +27,28 @@ flag (default off) so it costs nothing when unused.
 5. **Architectural (deliberate):** egress-interface reporting done (the stack
    already owns failover); next Ethernet PHY, GraphQL, OPC UA.
 
+## Concurrency / performance
+
+- [x] Thread-safe transport boundary _(shipped)_ - the cross-thread connection
+      fields (state, RX ring head/tail) are `DetAtomic` (acquire/release), so the
+      single-producer/single-consumer ring is race-free by construction; proven
+      under ThreadSanitizer in CI (env `native_tsan`).
+- [x] Dedicated server task _(shipped)_ - `begin()` runs the pipeline in its own
+      pinned FreeRTOS task (Core 1 by default) instead of the user's `loop()`,
+      which is freed; this also removes the first-connection-after-idle stall that
+      came from `loop()`-cadence coupling.
+- [x] Core-partitioned parallel workers _(shipped)_ - `DETWS_WORKER_COUNT` (default 1) workers each own a disjoint set of connection slots (round-robin at
+      accept) with their own event queue + scratch arena: shared-nothing, no
+      hot-path locks, so both cores process disjoint connections in parallel with
+      bounded latency (determinism preserved). N=1 is byte-for-byte the original
+      single pipeline.
+- [x] Thread-safe app push path _(shipped)_ - `DetWebServer::defer(slot, fn, arg)`
+      runs a callback in the slot's owning worker, so application code on `loop()`
+      or another task can push (SSE/WS sends) without racing the worker.
+- [ ] Tuning (S-M): event-queue-blocking worker drain (lower idle CPU/power vs the
+      poll loop), leaner tcpip callbacks, per-workload worker count/affinity, and a
+      published throughput/latency benchmark.
+
 ## Web / API / UI
 
 - [x] WebSocket permessage-deflate inbound _(shipped)_; outbound compress (Phase 2) open (M).

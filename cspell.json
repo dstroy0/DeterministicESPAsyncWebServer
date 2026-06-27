@@ -405,7 +405,10 @@
     "fixstr",
     "fixarray",
     "fixmap",
-    "fcebcdc"
+    "fcebcdc",
+    "tsan",
+    "spsc",
+    "DetAtomic"
   ],
   "ignorePaths": [
     "node_modules/**",
