@@ -39,7 +39,7 @@ flag (default off) so it costs nothing when unused.
 - [x] CBOR encoder + decoder _(shipped)_ - `DETWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`cbor_peek` / `cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example 65.Cbor).
 - [x] MessagePack encoder _(shipped)_ - `DETWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed; host-tested against the spec encodings (example 66.MsgPack). Remaining (M-L): MessagePack decoder, Protobuf / FlatBuffers zero-copy.
 - [ ] GraphQL bounded subset (L); feature-dependent schema generation (M).
-- [ ] Browser diag tools (M): GPIO pin mapper, ping/tracert panel, web logic analyzer.
+- [x] Browser diag tools _(shipped, GPIO mapper)_ - `DETWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example 67.GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
 - [ ] SPA micro-routing + conditional UI streaming (M); local SCADA/HMI fallback (M).
 - [ ] WS MTU-aligned chunking / fragmentation control (M).
 
