@@ -564,6 +564,18 @@
 #define DETWS_ENABLE_MODBUS 0
 #endif
 
+/**
+ * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
+ *
+ * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
+ * and parses the responses (register values or exception), so an app can poll /
+ * auto-discover a slave's registers. Pure and host-tested as a full round-trip
+ * against the slave codec (modbus_process_adu); the actual send is the app's TCP.
+ */
+#ifndef DETWS_ENABLE_MODBUS_MASTER
+#define DETWS_ENABLE_MODBUS_MASTER 0
+#endif
+
 /** @brief Number of Modbus coils (FC 1/5/15), single-bit R/W (BSS, bit-packed). */
 #ifndef DETWS_MODBUS_COILS
 #define DETWS_MODBUS_COILS 64
