@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.34.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.34.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`15ab984`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15ab984d8bb2e53535b3f78f106bc6d980710cc8))
+- update CHANGELOG.md [skip ci] ([`2b4ce44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ce44e153253605971818fa751f90b6c46ca4c))
+
+### Changes
+
+- Bump version: 2.33.2 → 2.34.0 ([`ec0080a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec0080a9ba713ecd87e6d7b2ff93df291ef9b93a))
+
+### Features
+
+- GraphQL query subset (zero-heap parser + executor) ([`27b2fc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27b2fc68325cff1d651f858639ef90716b92aa39))
+
+### Refactor
+
+- drop <stdlib.h> from the library (no-stdlib number parsing) ([`a4b2cea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4b2ceace742aa4dd678ea6057c9b7def7c29d96))
+
+</details>
+
 ## [2.33.2] - 2026-06-27
 
 <details>
