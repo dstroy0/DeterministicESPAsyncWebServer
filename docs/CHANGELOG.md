@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.11.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.11.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`01fa73d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01fa73da24bb2abb2bbdfb5e8fd55a56ee576459))
+- update CHANGELOG.md [skip ci] ([`b10b746`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b10b7469d6ceed67e096cbbbf22051fd8161d500))
+
+### Changes
+
+- Bump version: 2.10.0 → 2.11.0 ([`7db4d6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7db4d6cc8307b7dfed62f2d711ca8c4d226ff8c3))
+
+### Features
+
+- CBOR decoder (cursor reader) ([`e452408`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4524082a9570e3271b2b43ad0b8ac0347f81357))
+
+</details>
+
 ## [2.10.0] - 2026-06-27
 
 <details>
