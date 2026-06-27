@@ -1322,6 +1322,22 @@
 #endif
 
 /**
+ * @brief OAuth2 token-endpoint client (DETWS_ENABLE_OAUTH2).
+ *
+ * Default off. services/oauth2 obtains tokens - the counterpart to the OIDC
+ * ID-token verifier. It builds the percent-encoded form body for the
+ * authorization_code and refresh_token grants (RFC 6749), supporting a
+ * confidential client (client_secret) or a public client with PKCE
+ * (code_verifier, RFC 7636), and parses the JSON token response (reusing the
+ * zero-heap JSON reader). The build + parse core is pure and host-tested; the POST
+ * to the token endpoint uses the HTTP(S) client (needs DETWS_ENABLE_HTTP_CLIENT).
+ * No heap, no stdlib.
+ */
+#ifndef DETWS_ENABLE_OAUTH2
+#define DETWS_ENABLE_OAUTH2 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route

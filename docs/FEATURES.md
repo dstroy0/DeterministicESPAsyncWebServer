@@ -244,6 +244,12 @@ multipart/form-data body parser.
 
 SNTP wall-clock time sync via the ESP-IDF SNTP client.
 
+## OAuth2
+
+`DETWS_ENABLE_OAUTH2`
+
+OAuth2 token-endpoint client. Default off. services/oauth2 obtains tokens - the counterpart to the OIDC ID-token verifier. It builds the percent-encoded form body for the authorization_code and refresh_token grants (RFC 6749), supporting a confidential client (client_secret) or a public client with PKCE (code_verifier, RFC 7636), and parses the JSON token response (reusing the zero-heap JSON reader). The build + parse core is pure and host-tested; the POST to the token endpoint uses the HTTP(S) client (needs HTTP_CLIENT). No heap, no stdlib.
+
 ## OIDC
 
 `DETWS_ENABLE_OIDC`

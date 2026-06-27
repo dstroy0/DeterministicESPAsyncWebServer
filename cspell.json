@@ -16,6 +16,7 @@
     "esptool",
     "hostnames",
     "JTAG",
+    "PKCE",
     "RSASSA",
     "sdkconfig",
     "SIEM",
