@@ -1,0 +1,124 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file graphql.h
+ * @brief Zero-heap GraphQL query subset - parser + executor (DETWS_ENABLE_GRAPHQL).
+ *
+ * A small, deterministic GraphQL *query* engine for a constrained device: it
+ * parses a query document into a fixed AST node pool (no heap), then walks the
+ * selection set emitting a `{"data":{...}}` response that mirrors exactly the
+ * fields requested - the core GraphQL property (the client picks the shape).
+ *
+ * **Schema-free model.** There is no separate schema: a field that carries a
+ * sub-selection (`obj { a b }`) is an object - the engine recurses and emits the
+ * nested object - and a field with no sub-selection is a leaf scalar, for which
+ * the engine calls your single resolver. Arguments encountered along the path
+ * (`sensor(id: 2) { value }`) are collected and handed to the leaf resolver, so a
+ * resolver for `sensor.value` can read `id`. The app implements one function: "the
+ * value of the scalar at this dotted path, given these args."
+ *
+ * Supported: a single query operation (bare `{...}` or `query [Name] {...}`),
+ * nested selection sets, field arguments (int / float / string / bool / null),
+ * and insignificant commas. Out of scope (keeps it bounded + deterministic):
+ * mutations, subscriptions, fragments, variables, directives, aliases, lists of
+ * objects. Malformed input fails closed with `{"errors":[...]}`.
+ *
+ * Pure and host-tested. Bounds are compile-time (DETWS_GQL_*); parsing and
+ * execution allocate nothing.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H
+#define DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H
+
+#include "DetWebServerConfig.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#if DETWS_ENABLE_GRAPHQL
+
+#ifndef DETWS_GQL_MAX_NODES
+#define DETWS_GQL_MAX_NODES 48 ///< Max fields across the whole query.
+#endif
+#ifndef DETWS_GQL_MAX_ARGS
+#define DETWS_GQL_MAX_ARGS 24 ///< Max arguments across the whole query.
+#endif
+#ifndef DETWS_GQL_MAX_DEPTH
+#define DETWS_GQL_MAX_DEPTH 6 ///< Max selection-set nesting depth.
+#endif
+#ifndef DETWS_GQL_NAME_MAX
+#define DETWS_GQL_NAME_MAX 32 ///< Max field / argument name length.
+#endif
+#ifndef DETWS_GQL_PATH_MAX
+#define DETWS_GQL_PATH_MAX 96 ///< Max dotted path length passed to the resolver.
+#endif
+#ifndef DETWS_GQL_STRBUF
+#define DETWS_GQL_STRBUF 256 ///< Pool for decoded string-argument bytes.
+#endif
+
+/** @brief Scalar value kinds a resolver can return. */
+enum DetwsGqlType
+{
+    DETWS_GQL_NULL = 0,
+    DETWS_GQL_INT,
+    DETWS_GQL_FLOAT,
+    DETWS_GQL_BOOL,
+    DETWS_GQL_STR, ///< s points to a NUL-terminated string stable for the call.
+};
+
+/** @brief A scalar value (resolver output, or an argument). */
+struct DetwsGqlValue
+{
+    int type; ///< ::DetwsGqlType
+    long long i;
+    double f;
+    bool b;
+    const char *s;
+};
+
+/** @brief Opaque view of the arguments in scope at a resolved field. */
+struct DetwsGqlArgs;
+
+/** @brief Read an int argument @p name; false if absent / not an int. */
+bool detws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out);
+/** @brief Read a string argument @p name; false if absent / not a string. */
+bool detws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out);
+/** @brief Read a bool argument @p name; false if absent / not a bool. */
+bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
+
+/**
+ * @brief Resolve the scalar leaf at dotted @p path (e.g. "device.uptime").
+ *
+ * Fill @p out with the value and return true; return false to emit JSON null.
+ * @p args exposes every argument in scope along the path.
+ */
+typedef bool (*detws_gql_resolver_fn)(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out);
+
+/** @brief detws_graphql_execute() result codes. */
+enum DetwsGqlResult
+{
+    DETWS_GQL_OK = 0,           ///< Executed; @p out holds `{"data":{...}}`.
+    DETWS_GQL_ERR_PARSE = -1,   ///< Malformed query (syntax / unsupported construct).
+    DETWS_GQL_ERR_LIMIT = -2,   ///< Exceeded a DETWS_GQL_* bound (nodes/args/depth/name).
+    DETWS_GQL_ERR_OVERFLOW = -3 ///< Response did not fit @p cap.
+};
+
+/**
+ * @brief Parse and execute a GraphQL query, writing the JSON response.
+ *
+ * On success writes `{"data":{...}}`; on a parse/limit error writes
+ * `{"errors":[{"message":"..."}]}` (and still returns the negative code) when it
+ * fits, else nothing.
+ *
+ * @param query,len  the query document.
+ * @param resolver   leaf resolver (may be nullptr -> every leaf is null).
+ * @param out,cap    response buffer and capacity.
+ * @return ::DETWS_GQL_OK or a negative ::DetwsGqlResult.
+ */
+int detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out, size_t cap);
+
+#endif // DETWS_ENABLE_GRAPHQL
+#endif // DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H
