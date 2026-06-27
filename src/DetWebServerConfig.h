@@ -1255,6 +1255,26 @@
 // + 41) bytes.
 
 /**
+ * @brief OpenID Connect ID-token verification, RS256 (DETWS_ENABLE_OIDC).
+ *
+ * Default off. services/oidc verifies an OIDC ID token (JWT) as a relying party:
+ * requires alg RS256, selects the issuer key by kid from a JWKS, verifies the
+ * RSASSA-PKCS1-v1.5 SHA-256 signature (real RSA modexp via ssh_rsa, mbedTLS-
+ * accelerated on ESP32), and checks iss / aud / exp / nbf, extracting sub / email.
+ * Pure and host-tested; the caller fetches + caches the JWKS over HTTPS (off the
+ * request hot path) and passes the JSON in. Builds on the SSH RSA primitive, not
+ * the HS256 JWT module (services/jwt), so the two are independent.
+ */
+#ifndef DETWS_ENABLE_OIDC
+#define DETWS_ENABLE_OIDC 0
+#endif
+
+/** @brief Max accepted OIDC ID-token length (also sizes the Authorization buffer). */
+#ifndef DETWS_OIDC_MAX_LEN
+#define DETWS_OIDC_MAX_LEN 1600
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
@@ -1492,7 +1512,7 @@
 // per-request buffer (HttpReq::authorization) when either feature is enabled.
 
 /** @brief True when the parser must capture the full Authorization header value. */
-#if DETWS_ENABLE_AUTH || DETWS_ENABLE_JWT
+#if DETWS_ENABLE_AUTH || DETWS_ENABLE_JWT || DETWS_ENABLE_OIDC
 #define DETWS_CAPTURE_AUTH_HEADER 1
 #else
 #define DETWS_CAPTURE_AUTH_HEADER 0
@@ -1501,14 +1521,24 @@
 /**
  * @brief Capacity of HttpReq::authorization (full Authorization header value).
  *
- * Sized to the larger consumer: a Digest header (DIGEST_AUTH_HDR_MAX) or a
- * `Bearer <jwt>` token (DETWS_JWT_MAX_LEN + the scheme).
+ * Sized to the largest enabled consumer: a Digest header (DIGEST_AUTH_HDR_MAX), a
+ * `Bearer <jwt>` HS256 token (DETWS_JWT_MAX_LEN), or a `Bearer <id_token>` OIDC
+ * RS256 token (DETWS_OIDC_MAX_LEN), each plus the scheme.
  */
-#if DETWS_ENABLE_JWT && (DETWS_JWT_MAX_LEN + 16 > DIGEST_AUTH_HDR_MAX)
-#define DETWS_AUTH_HDR_CAP (DETWS_JWT_MAX_LEN + 16)
+#if DETWS_ENABLE_OIDC
+#define DETWS_AUTH_HDR_CAP_OIDC (DETWS_OIDC_MAX_LEN + 16)
 #else
-#define DETWS_AUTH_HDR_CAP DIGEST_AUTH_HDR_MAX
+#define DETWS_AUTH_HDR_CAP_OIDC 0
 #endif
+#if DETWS_ENABLE_JWT
+#define DETWS_AUTH_HDR_CAP_JWT (DETWS_JWT_MAX_LEN + 16)
+#else
+#define DETWS_AUTH_HDR_CAP_JWT 0
+#endif
+#define DETWS_AUTH_HDR_CAP_M1                                                                                          \
+    (DETWS_AUTH_HDR_CAP_JWT > DIGEST_AUTH_HDR_MAX ? DETWS_AUTH_HDR_CAP_JWT : DIGEST_AUTH_HDR_MAX)
+#define DETWS_AUTH_HDR_CAP                                                                                             \
+    (DETWS_AUTH_HDR_CAP_OIDC > DETWS_AUTH_HDR_CAP_M1 ? DETWS_AUTH_HDR_CAP_OIDC : DETWS_AUTH_HDR_CAP_M1)
 
 /** @brief Runtime stats endpoint (uptime, request/error counts, pool usage, heap). */
 #ifndef DETWS_ENABLE_STATS
