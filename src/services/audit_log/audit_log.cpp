@@ -1,0 +1,296 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file audit_log.cpp
+ * @brief Hash-chained audit log - implementation.
+ *
+ * Fixed RAM ring of records. Each record's hash chains the previous record's
+ * hash; the oldest retained record chains a moving "anchor" (the hash of the
+ * last evicted record, genesis-zero before any eviction), so the retained window
+ * verifies as a complete chain. SHA-256 comes from ssh_sha256 (HW-accelerated on
+ * ESP32); the timestamp comes from the pluggable det_clock.
+ */
+
+#include "services/audit_log/audit_log.h"
+
+#if DETWS_ENABLE_AUDIT_LOG
+
+#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "services/det_clock.h"
+#include <string.h>
+
+namespace
+{
+DetwsAuditEntry s_ring[DETWS_AUDIT_LOG_ENTRIES];
+uint16_t s_head = 0;                    // index of the oldest retained record
+uint16_t s_count = 0;                   // records currently retained
+uint32_t s_seq = 0;                     // last assigned sequence number (monotonic)
+uint8_t s_anchor[DETWS_AUDIT_HASH_LEN]; // prev-hash for the oldest retained record
+detws_audit_sink_fn s_sink = nullptr;
+
+inline uint16_t idx(uint16_t i)
+{
+    return (uint16_t)((s_head + i) % DETWS_AUDIT_LOG_ENTRIES);
+}
+
+void put_le32(uint8_t out[4], uint32_t v)
+{
+    out[0] = (uint8_t)(v & 0xFF);
+    out[1] = (uint8_t)((v >> 8) & 0xFF);
+    out[2] = (uint8_t)((v >> 16) & 0xFF);
+    out[3] = (uint8_t)((v >> 24) & 0xFF);
+}
+
+// hash = SHA-256(prev_hash || seq_le || ts_le || category || msg_len || msg).
+// msg_len is length-prefixed so two records can never serialize ambiguously.
+void chain_hash(const uint8_t prev[DETWS_AUDIT_HASH_LEN], const DetwsAuditEntry *e, uint8_t out[DETWS_AUDIT_HASH_LEN])
+{
+    SshSha256Ctx c;
+    ssh_sha256_init(&c);
+    ssh_sha256_update(&c, prev, DETWS_AUDIT_HASH_LEN);
+    uint8_t le[4];
+    put_le32(le, e->seq);
+    ssh_sha256_update(&c, le, 4);
+    put_le32(le, e->ts);
+    ssh_sha256_update(&c, le, 4);
+    ssh_sha256_update(&c, &e->category, 1);
+    uint8_t mlen = (uint8_t)strnlen(e->msg, DETWS_AUDIT_MSG_LEN - 1);
+    ssh_sha256_update(&c, &mlen, 1);
+    ssh_sha256_update(&c, (const uint8_t *)e->msg, mlen);
+    ssh_sha256_final(&c, out);
+}
+
+// Append @p n JSON-escaped bytes of @p s into out[pos..cap); returns new pos, or
+// cap+1 on overflow (caller checks pos <= cap).
+size_t json_escape(char *out, size_t pos, size_t cap, const char *s)
+{
+    for (size_t i = 0; s[i]; i++)
+    {
+        unsigned char ch = (unsigned char)s[i];
+        const char *esc = nullptr;
+        char ub[7];
+        size_t n;
+        if (ch == '"')
+            esc = "\\\"", n = 2;
+        else if (ch == '\\')
+            esc = "\\\\", n = 2;
+        else if (ch == '\n')
+            esc = "\\n", n = 2;
+        else if (ch == '\r')
+            esc = "\\r", n = 2;
+        else if (ch == '\t')
+            esc = "\\t", n = 2;
+        else if (ch < 0x20)
+        {
+            static const char hex[] = "0123456789abcdef";
+            ub[0] = '\\', ub[1] = 'u', ub[2] = '0', ub[3] = '0';
+            ub[4] = hex[(ch >> 4) & 0xF];
+            ub[5] = hex[ch & 0xF];
+            ub[6] = '\0';
+            esc = ub, n = 6;
+        }
+        else
+        {
+            if (pos + 1 > cap)
+                return cap + 1;
+            out[pos++] = (char)ch;
+            continue;
+        }
+        if (pos + n > cap)
+            return cap + 1;
+        memcpy(out + pos, esc, n);
+        pos += n;
+    }
+    return pos;
+}
+
+size_t hex_hash(char *out, size_t pos, size_t cap, const uint8_t *h)
+{
+    static const char hx[] = "0123456789abcdef";
+    if (pos + DETWS_AUDIT_HASH_LEN * 2 > cap)
+        return cap + 1;
+    for (size_t i = 0; i < DETWS_AUDIT_HASH_LEN; i++)
+    {
+        out[pos++] = hx[(h[i] >> 4) & 0xF];
+        out[pos++] = hx[h[i] & 0xF];
+    }
+    return pos;
+}
+} // namespace
+
+void detws_audit_reset(void)
+{
+    s_head = 0;
+    s_count = 0;
+    s_seq = 0;
+    memset(s_anchor, 0, sizeof(s_anchor)); // genesis
+}
+
+void detws_audit_set_sink(detws_audit_sink_fn sink)
+{
+    s_sink = sink;
+}
+
+uint32_t detws_audit_append(uint8_t category, const char *msg)
+{
+    // prev = hash of the current newest record (anchor if the ring is empty).
+    uint8_t prev[DETWS_AUDIT_HASH_LEN];
+    if (s_count == 0)
+        memcpy(prev, s_anchor, DETWS_AUDIT_HASH_LEN);
+    else
+        memcpy(prev, s_ring[idx((uint16_t)(s_count - 1))].hash, DETWS_AUDIT_HASH_LEN);
+
+    // Full ring: evict the oldest; its hash advances the chain anchor so the
+    // retained window still verifies. (Eviction touches only the oldest, never
+    // the newest we just read as prev.)
+    if (s_count == DETWS_AUDIT_LOG_ENTRIES)
+    {
+        memcpy(s_anchor, s_ring[s_head].hash, DETWS_AUDIT_HASH_LEN);
+        s_head = (uint16_t)((s_head + 1) % DETWS_AUDIT_LOG_ENTRIES);
+        s_count--;
+    }
+
+    DetwsAuditEntry *e = &s_ring[idx(s_count)];
+    e->seq = ++s_seq;
+    e->ts = detws_millis();
+    e->category = category;
+    if (msg)
+    {
+        size_t n = strnlen(msg, DETWS_AUDIT_MSG_LEN - 1);
+        memcpy(e->msg, msg, n);
+        e->msg[n] = '\0';
+    }
+    else
+        e->msg[0] = '\0';
+    chain_hash(prev, e, e->hash);
+    s_count++;
+
+    if (s_sink)
+        s_sink(e);
+    return e->seq;
+}
+
+uint16_t detws_audit_count(void)
+{
+    return s_count;
+}
+
+const DetwsAuditEntry *detws_audit_at(uint16_t i)
+{
+    if (i >= s_count)
+        return nullptr;
+    return &s_ring[idx(i)];
+}
+
+bool detws_audit_verify(uint32_t *first_broken_seq)
+{
+    uint8_t expected[DETWS_AUDIT_HASH_LEN];
+    memcpy(expected, s_anchor, DETWS_AUDIT_HASH_LEN);
+    for (uint16_t i = 0; i < s_count; i++)
+    {
+        const DetwsAuditEntry *e = &s_ring[idx(i)];
+        uint8_t h[DETWS_AUDIT_HASH_LEN];
+        chain_hash(expected, e, h);
+        if (memcmp(h, e->hash, DETWS_AUDIT_HASH_LEN) != 0)
+        {
+            if (first_broken_seq)
+                *first_broken_seq = e->seq;
+            return false;
+        }
+        memcpy(expected, e->hash, DETWS_AUDIT_HASH_LEN);
+    }
+    return true;
+}
+
+const char *detws_audit_cat_name(uint8_t category)
+{
+    switch (category)
+    {
+    case DETWS_AUDIT_AUTH:
+        return "auth";
+    case DETWS_AUDIT_AUTH_FAIL:
+        return "auth_fail";
+    case DETWS_AUDIT_ACCESS:
+        return "access";
+    case DETWS_AUDIT_CONFIG:
+        return "config";
+    case DETWS_AUDIT_ADMIN:
+        return "admin";
+    default:
+        return "system";
+    }
+}
+
+int detws_audit_format(const DetwsAuditEntry *e, char *out, size_t cap)
+{
+    if (!e || !out || cap == 0)
+        return 0;
+    int head = snprintf(out, cap, "{\"seq\":%lu,\"ts\":%lu,\"cat\":\"%s\",\"msg\":\"", (unsigned long)e->seq,
+                        (unsigned long)e->ts, detws_audit_cat_name(e->category));
+    if (head < 0 || (size_t)head >= cap)
+        return 0;
+    size_t pos = (size_t)head;
+    pos = json_escape(out, pos, cap, e->msg);
+    if (pos > cap)
+        return 0;
+    const char *mid = "\",\"hash\":\"";
+    size_t mid_len = strlen(mid);
+    if (pos + mid_len > cap)
+        return 0;
+    memcpy(out + pos, mid, mid_len);
+    pos += mid_len;
+    pos = hex_hash(out, pos, cap, e->hash);
+    if (pos > cap)
+        return 0;
+    if (pos + 2 > cap) // closing "} plus NUL space
+        return 0;
+    out[pos++] = '"';
+    out[pos++] = '}';
+    if (pos >= cap)
+        return 0;
+    out[pos] = '\0';
+    return (int)pos;
+}
+
+int detws_audit_dump_json(char *out, size_t cap)
+{
+    if (!out || cap == 0)
+        return 0;
+    uint32_t broken = 0;
+    bool intact = detws_audit_verify(&broken);
+
+    int head;
+    if (intact)
+        head = snprintf(out, cap, "{\"intact\":true,\"count\":%u,\"entries\":[", (unsigned)s_count);
+    else
+        head = snprintf(out, cap, "{\"intact\":false,\"first_broken\":%lu,\"count\":%u,\"entries\":[",
+                        (unsigned long)broken, (unsigned)s_count);
+    if (head < 0 || (size_t)head >= cap)
+        return 0;
+    size_t pos = (size_t)head;
+
+    for (uint16_t i = 0; i < s_count; i++)
+    {
+        if (i > 0)
+        {
+            if (pos + 1 > cap)
+                return 0;
+            out[pos++] = ',';
+        }
+        int n = detws_audit_format(&s_ring[idx(i)], out + pos, cap - pos);
+        if (n <= 0)
+            return 0;
+        pos += (size_t)n;
+    }
+    if (pos + 2 > cap)
+        return 0;
+    out[pos++] = ']';
+    out[pos++] = '}';
+    if (pos >= cap)
+        return 0;
+    out[pos] = '\0';
+    return (int)pos;
+}
+
+#endif // DETWS_ENABLE_AUDIT_LOG
