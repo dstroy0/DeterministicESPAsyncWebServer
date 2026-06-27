@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.33.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.33.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`da888ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da888eff9e8f10308dbb9d19dadf29ea132f4774))
+- update CHANGELOG.md [skip ci] ([`5129891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51298919abe2240343916dd421161d6ffb0fd493))
+
+### Changes
+
+- Bump version: 2.32.0 → 2.33.0 ([`99f185c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99f185cf02c9b95e3838d31ae516301ef2992626))
+
+### Features
+
+- unified VFS wrapper (RAM + Arduino FS backends) ([`9c80011`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c800110a04e9f2398d4c2055e1063bb0ceb5e2d))
+
+</details>
+
 ## [2.32.0] - 2026-06-27
 
 <details>
