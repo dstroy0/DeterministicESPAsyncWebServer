@@ -416,6 +416,18 @@
 #define DETWS_ENABLE_CBOR 0
 #endif
 
+/**
+ * @brief Zero-heap MessagePack encoder for compact binary payloads.
+ *
+ * Default off. When set, network_drivers/presentation/msgpack.h provides a writer
+ * that serializes ints, strings, byte strings, arrays, maps, booleans, nil, and
+ * float32 into a caller-provided buffer - the MessagePack-format sibling of the
+ * CBOR / JSON writers. Pure, no heap, host-tested against the spec encodings.
+ */
+#ifndef DETWS_ENABLE_MSGPACK
+#define DETWS_ENABLE_MSGPACK 0
+#endif
+
 /** @brief Static file serving via Arduino FS (LittleFS, SPIFFS, SD). */
 #ifndef DETWS_ENABLE_FILE_SERVING
 #define DETWS_ENABLE_FILE_SERVING 1
