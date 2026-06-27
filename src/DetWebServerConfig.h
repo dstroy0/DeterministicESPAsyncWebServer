@@ -1291,6 +1291,22 @@
 #endif
 
 /**
+ * @brief GraphQL query subset (DETWS_ENABLE_GRAPHQL).
+ *
+ * Default off. services/graphql parses a GraphQL query into a fixed AST node pool
+ * (no heap) and emits a `{"data":{...}}` response shaped exactly by the requested
+ * selection. Schema-free: a field with a sub-selection is an object (the engine
+ * recurses), a leaf field calls your single resolver, and arguments collected
+ * along the path are handed to it. Supports nested selections, field arguments,
+ * and the anonymous / `query` forms; mutations, subscriptions, fragments, and
+ * variables are out of scope. Pure and host-tested; bounds are compile-time
+ * (DETWS_GQL_* in graphql.h). Serve it from a POST /graphql route.
+ */
+#ifndef DETWS_ENABLE_GRAPHQL
+#define DETWS_ENABLE_GRAPHQL 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
