@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.36.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.36.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b13bd0c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b13bd0cd256560a3bd5e5d0a0a21eadc217636c5))
+- update CHANGELOG.md [skip ci] ([`f96b989`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f96b98949be3effa7bd5b4096603784ed866284c))
+
+### Changes
+
+- Bump version: 2.35.0 → 2.36.0 ([`ddee022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ddee022bcff9e68a11344f4033e9af78ff2b6898))
+
+### Features
+
+- OAuth2 token-endpoint client (authorization_code + refresh) ([`b32bc7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b32bc7ecd7683fc4b8fcea327e5254c9d49bda26))
+
+</details>
+
 ## [2.35.0] - 2026-06-27
 
 <details>
