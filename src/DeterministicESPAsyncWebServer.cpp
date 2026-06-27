@@ -427,9 +427,8 @@ int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 static DetWebServer *s_worker_server = nullptr;
 static void detws_pump_trampoline(int worker_id)
 {
-    (void)worker_id; // single-worker pumps all slots; partitioning lands in Phase 2
     if (s_worker_server)
-        s_worker_server->service_once();
+        s_worker_server->service_once(worker_id);
 }
 
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
@@ -1013,12 +1012,16 @@ void DetWebServer::handle()
     service_once();
 }
 
-void DetWebServer::service_once()
+void DetWebServer::service_once(int worker_id)
 {
-    server_tick();
+    server_tick(worker_id);
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)
     {
+        // This worker services only the slots it owns (all of them at N=1).
+        if (conn_pool[i].owner != worker_id)
+            continue;
+
         // Non-HTTP protocols (Telnet/SSH and registered services such as
         // MQTT/Modbus) are pumped through their registered poll handler. HTTP -
         // with its WebSocket/SSE upgrades - keeps the inline pump below, which is

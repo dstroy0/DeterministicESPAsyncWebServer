@@ -187,14 +187,46 @@ void listener_ip_allowlist_reset(void)
     g_ip_allow_count = 0;
 }
 
+#if DETWS_WORKER_COUNT > 1
+// Per-worker event queues: each worker drains only its own queue, so connection
+// slots partition across workers with no shared-queue contention. Static BSS, no
+// heap. Created once (idempotent) before the first accept can fire.
+static StaticQueue_t s_wq_struct[DETWS_WORKER_COUNT];
+static uint8_t s_wq_storage[DETWS_WORKER_COUNT][EVT_QUEUE_DEPTH * sizeof(TcpEvt)];
+static QueueHandle_t s_wq[DETWS_WORKER_COUNT] = {nullptr};
+
+void listener_worker_queues_init(void)
+{
+    for (int i = 0; i < DETWS_WORKER_COUNT; i++)
+        if (!s_wq[i])
+            s_wq[i] = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), s_wq_storage[i], &s_wq_struct[i]);
+}
+
+QueueHandle_t listener_worker_queue(int worker_id)
+{
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT)
+        return nullptr;
+    return s_wq[worker_id];
+}
+#endif // DETWS_WORKER_COUNT > 1
+
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
 {
+#if DETWS_WORKER_COUNT > 1
+    // Route by the slot's owner so the owning worker is the sole consumer.
+    (void)listener_id;
+    uint8_t owner = conn_pool[evt->slot_id].owner;
+    if (owner >= DETWS_WORKER_COUNT || !s_wq[owner])
+        return;
+    xQueueSend(s_wq[owner], evt, 0);
+#else
     if (listener_id >= MAX_LISTENERS)
         return;
     Listener *lst = &listener_pool[listener_id];
     if (!lst->active || !lst->queue)
         return;
     xQueueSend(lst->queue, evt, 0);
+#endif
 }
 
 /**
@@ -276,6 +308,17 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     }
 
     TcpConn *slot = &conn_pool[free_slot];
+#if DETWS_WORKER_COUNT > 1
+    // Round-robin the new connection across workers. Runs only in tcpip_thread,
+    // so the counter needs no lock. Set BEFORE the state release store so a worker
+    // that observes CONN_ACTIVE also sees the owner, and so the EVT_CONNECT below
+    // routes to the owner's queue.
+    static uint8_t s_next_owner = 0;
+    slot->owner = s_next_owner;
+    s_next_owner = (uint8_t)((s_next_owner + 1) % DETWS_WORKER_COUNT);
+#else
+    slot->owner = 0;
+#endif
     slot->state = CONN_ACTIVE;
     slot->pcb = newpcb;
     slot->last_activity_ms = millis();
@@ -322,6 +365,10 @@ int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
         return -1;
 
     listener_stop(idx); // clean up if already active
+
+#if DETWS_WORKER_COUNT > 1
+    listener_worker_queues_init(); // create the per-worker event queues once (idempotent)
+#endif
 
     Listener *lst = &listener_pool[idx];
     lst->port = port;

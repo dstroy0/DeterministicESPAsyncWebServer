@@ -118,6 +118,14 @@ void listener_stop_all();
  */
 void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 
+#if DETWS_WORKER_COUNT > 1
+/** @brief Create the per-worker event queues (idempotent; called from listener_add). */
+void listener_worker_queues_init(void);
+
+/** @brief The FreeRTOS event queue for worker @p worker_id (nullptr if out of range). */
+QueueHandle_t listener_worker_queue(int worker_id);
+#endif
+
 /**
  * @brief Fixed-window global accept-rate gate (connection-flood defense).
  *

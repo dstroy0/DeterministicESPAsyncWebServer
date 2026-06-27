@@ -128,7 +128,7 @@ trap 'rm -f "$RAW_FILE" "$CLEAN_FILE"' EXIT
 
 T0=$SECONDS
 set +e
-"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan 2>&1 | format_output | tee "$RAW_FILE"
+"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan -e native_workers 2>&1 | format_output | tee "$RAW_FILE"
 PIO_EXIT="${PIPESTATUS[0]}"
 set -e
 WALL_SECS=$(( SECONDS - T0 ))
@@ -287,7 +287,7 @@ cat <<EOF
 # Test Report
 
 **Generated:** ${DATE_STR}
-**Command:** \`pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan\`
+**Command:** \`pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan -e native_workers\`
 **Result:** ${RES_STR}
 
 ---

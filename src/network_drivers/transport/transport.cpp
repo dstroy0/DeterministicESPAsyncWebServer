@@ -313,12 +313,14 @@ void DeterministicAsyncTCP::stop()
     }
 }
 
-void DeterministicAsyncTCP::check_timeouts()
+void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {
     uint32_t now = millis();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         TcpConn *slot = &conn_pool[i];
+        if (slot->owner != worker_id) // each worker reaps only its own slots
+            continue;
         if (slot->state != CONN_ACTIVE)
             continue;
         if ((now - slot->last_activity_ms) < conn_timeout_ms)

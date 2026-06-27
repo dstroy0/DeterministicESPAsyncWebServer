@@ -121,6 +121,7 @@ struct TcpConn
     DetAtomic<size_t> rx_tail;      ///< Consumer read index (worker context).
 
     uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
+    uint8_t owner;       ///< Worker that owns this slot (round-robin at accept). Always 0 at N=1.
     ConnProto proto;     ///< Application protocol for this connection.
     uint8_t
         proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
@@ -219,8 +220,12 @@ class DeterministicAsyncTCP
      * *before* `tcp_abort()` is called, so any in-flight lwIP callback for
      * that PCB will see `slot->state != CONN_ACTIVE` and exit without
      * touching the slot.
+     *
+     * Only sweeps slots owned by @p worker_id, so each worker reaps just its own
+     * connections (no cross-worker writes). At DETWS_WORKER_COUNT=1 every slot is
+     * owned by worker 0, so it sweeps the whole pool as before.
      */
-    static void check_timeouts();
+    static void check_timeouts(int worker_id = 0);
 
     /**
      * @brief Runtime connection-idle timeout in milliseconds.
