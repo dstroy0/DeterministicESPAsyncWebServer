@@ -1190,6 +1190,28 @@
 #endif
 
 /**
+ * @brief Opt-in radio power controls (DETWS_ENABLE_RADIO_POWER).
+ *
+ * Default off. services/radio_power applies the WiFi modem-sleep mode and an
+ * optional max-TX-power cap in one call (esp_wifi_set_ps / esp_wifi_set_max_tx_power)
+ * - trade throughput/latency for lower average power on a battery device. The mode
+ * names are host-tested; the apply is ESP32-only.
+ */
+#ifndef DETWS_ENABLE_RADIO_POWER
+#define DETWS_ENABLE_RADIO_POWER 0
+#endif
+
+/** @brief WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. */
+#ifndef DETWS_RADIO_WIFI_PS
+#define DETWS_RADIO_WIFI_PS 0
+#endif
+
+/** @brief Max TX power cap in dBm (2..20); 0 = leave the platform default. */
+#ifndef DETWS_RADIO_MAX_TX_DBM
+#define DETWS_RADIO_MAX_TX_DBM 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route

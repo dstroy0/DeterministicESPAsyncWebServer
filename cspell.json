@@ -418,7 +418,8 @@
     "base32",
     "pentest",
     "xorshift",
-    "MSVC"
+    "MSVC",
+    "readback"
   ],
   "ignorePaths": [
     "node_modules/**",
