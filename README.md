@@ -23,7 +23,7 @@ The technical reference documentation has been moved to a dedicated landing page
 
 ## Overview
 
-A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into a fixed event queue that the main loop drains, and every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
+A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
 
 **Key Features** (grouped by OSI layer - click to expand):
 
@@ -31,6 +31,7 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 <summary><strong>Foundation - zero-heap architecture</strong></summary>
 
 - **Zero Heap Allocation**: All request, connection, WebSocket, SSE, TLS, and SNMP storage pools are statically sized in BSS. Zero heap memory is requested after `begin()`.
+- **Threaded, deterministic core**: The server pipeline runs in dedicated FreeRTOS worker task(s) (`DETWS_WORKER_COUNT`, default 1, pinned off the WiFi core) rather than your `loop()`. With more than one worker, connections are partitioned across workers (each owns a disjoint slot set with its own queue and scratch arena) so both cores process traffic in parallel with no hot-path locks - throughput without giving up bounded latency. The cross-thread boundary is `DetAtomic` (acquire/release) and proven race-free under ThreadSanitizer. Push to a connection from `loop()` or another task race-free with `server.defer(slot, fn, arg)`.
 - **Minimal Dependencies**: Beyond the Arduino/ESP-IDF SDK, the only external dependency is mbedTLS (crypto); optional services use the ESP-IDF mDNS component and raw lwIP UDP rather than add-on libraries. Every optional feature is gated by a `DETWS_ENABLE_*` build flag (default off).
 
 </details>
