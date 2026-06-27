@@ -162,6 +162,119 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(5, cbor_len(&w));
 }
 
+// ---- decoder ----
+
+void test_decode_uint()
+{
+    uint8_t buf[16];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_uint(&w, 1000);
+    CborReader r;
+    cbor_reader_init(&r, buf, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_UINT, cbor_peek(&r));
+    uint64_t v;
+    TEST_ASSERT_TRUE(cbor_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(1000, v);
+    TEST_ASSERT_TRUE(cbor_reader_ok(&r));
+}
+
+void test_decode_int()
+{
+    uint8_t buf[16];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_int(&w, -100);
+    CborReader r;
+    cbor_reader_init(&r, buf, cbor_len(&w));
+    int64_t v;
+    TEST_ASSERT_TRUE(cbor_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-100, v);
+}
+
+void test_decode_float_roundtrip()
+{
+    uint8_t buf[8];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_float(&w, 3.5f);
+    CborReader r;
+    cbor_reader_init(&r, buf, cbor_len(&w));
+    float f;
+    TEST_ASSERT_TRUE(cbor_read_float(&r, &f));
+    TEST_ASSERT_EQUAL_FLOAT(3.5f, f);
+}
+
+// Round-trip a whole map: {"heap":42000,"name":"esp","on":true}.
+void test_decode_roundtrip_map()
+{
+    uint8_t buf[64];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_map(&w, 3);
+    cbor_text(&w, "heap");
+    cbor_uint(&w, 42000);
+    cbor_text(&w, "name");
+    cbor_text(&w, "esp");
+    cbor_text(&w, "on");
+    cbor_bool(&w, true);
+
+    CborReader r;
+    cbor_reader_init(&r, buf, cbor_len(&w));
+    size_t n;
+    TEST_ASSERT_TRUE(cbor_read_map(&r, &n));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    const char *k;
+    size_t kl;
+    uint64_t u;
+    const char *s;
+    size_t sl;
+    bool b;
+    TEST_ASSERT_TRUE(cbor_read_text(&r, &k, &kl));
+    TEST_ASSERT_EQUAL_MEMORY("heap", k, 4);
+    TEST_ASSERT_TRUE(cbor_read_uint(&r, &u));
+    TEST_ASSERT_EQUAL_UINT64(42000, u);
+    TEST_ASSERT_TRUE(cbor_read_text(&r, &k, &kl));
+    TEST_ASSERT_EQUAL_MEMORY("name", k, 4);
+    TEST_ASSERT_TRUE(cbor_read_text(&r, &s, &sl));
+    TEST_ASSERT_EQUAL_size_t(3, sl);
+    TEST_ASSERT_EQUAL_MEMORY("esp", s, 3);
+    TEST_ASSERT_TRUE(cbor_read_text(&r, &k, &kl));
+    TEST_ASSERT_EQUAL_MEMORY("on", k, 2);
+    TEST_ASSERT_TRUE(cbor_read_bool(&r, &b));
+    TEST_ASSERT_TRUE(b);
+    TEST_ASSERT_TRUE(cbor_reader_ok(&r));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r)); // everything consumed
+}
+
+// A buffer shorter than the encoded item fails closed.
+void test_decode_truncated()
+{
+    uint8_t buf[8];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_uint(&w, 1000000); // 5 bytes
+    CborReader r;
+    cbor_reader_init(&r, buf, 3); // only 3 bytes visible
+    uint64_t v;
+    TEST_ASSERT_FALSE(cbor_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(cbor_reader_ok(&r));
+}
+
+// Reading the wrong type sets the error flag.
+void test_decode_type_mismatch()
+{
+    uint8_t buf[8];
+    CborWriter w;
+    cbor_init(&w, buf, sizeof(buf));
+    cbor_text(&w, "x");
+    CborReader r;
+    cbor_reader_init(&r, buf, cbor_len(&w));
+    uint64_t v;
+    TEST_ASSERT_FALSE(cbor_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(cbor_reader_ok(&r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -173,5 +286,11 @@ int main()
     RUN_TEST(test_float);
     RUN_TEST(test_array_and_map);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_decode_uint);
+    RUN_TEST(test_decode_int);
+    RUN_TEST(test_decode_float_roundtrip);
+    RUN_TEST(test_decode_roundtrip_map);
+    RUN_TEST(test_decode_truncated);
+    RUN_TEST(test_decode_type_mismatch);
     return UNITY_END();
 }

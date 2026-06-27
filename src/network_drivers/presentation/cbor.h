@@ -56,5 +56,52 @@ void cbor_float(CborWriter *w, float f);                         ///< IEEE-754 s
 void cbor_array(CborWriter *w, size_t count);                    ///< definite-length array header
 void cbor_map(CborWriter *w, size_t count);                      ///< definite-length map header
 
+// ---------------------------------------------------------------------------
+// Decoder (cursor over a CBOR byte buffer)
+// ---------------------------------------------------------------------------
+
+/** @brief Major type of the next item (returned by cbor_peek). */
+enum CborType
+{
+    CBOR_TYPE_UINT = 0,
+    CBOR_TYPE_INT,
+    CBOR_TYPE_BYTES,
+    CBOR_TYPE_TEXT,
+    CBOR_TYPE_ARRAY,
+    CBOR_TYPE_MAP,
+    CBOR_TYPE_BOOL,
+    CBOR_TYPE_NULL,
+    CBOR_TYPE_FLOAT,
+    CBOR_TYPE_INVALID ///< end of buffer, a prior error, or an unsupported item
+};
+
+/** @brief CBOR decoder cursor over a read-only buffer. */
+struct CborReader
+{
+    const uint8_t *buf; ///< source bytes.
+    size_t len;         ///< buffer length.
+    size_t pos;         ///< current read offset.
+    bool err;           ///< sticky: set on any malformed / out-of-bounds read.
+};
+
+/** @brief Bind a reader to @p buf (length @p len) at offset 0. */
+void cbor_reader_init(CborReader *r, const uint8_t *buf, size_t len);
+
+/** @brief Type of the next item without consuming it. */
+CborType cbor_peek(CborReader *r);
+
+/** @brief True while no malformed read has occurred. */
+bool cbor_reader_ok(const CborReader *r);
+
+bool cbor_read_uint(CborReader *r, uint64_t *out);                     ///< unsigned integer
+bool cbor_read_int(CborReader *r, int64_t *out);                       ///< signed integer (also accepts unsigned)
+bool cbor_read_bool(CborReader *r, bool *out);                         ///< true / false
+bool cbor_read_null(CborReader *r);                                    ///< null
+bool cbor_read_float(CborReader *r, float *out);                       ///< float32 (0xfa) or double (0xfb)
+bool cbor_read_text(CborReader *r, const char **out, size_t *len);     ///< text string (points into the buffer)
+bool cbor_read_bytes(CborReader *r, const uint8_t **out, size_t *len); ///< byte string (points into the buffer)
+bool cbor_read_array(CborReader *r, size_t *count);                    ///< definite-length array header
+bool cbor_read_map(CborReader *r, size_t *count);                      ///< definite-length map header
+
 #endif // DETWS_ENABLE_CBOR
 #endif // DETERMINISTICESPASYNCWEBSERVER_CBOR_H
