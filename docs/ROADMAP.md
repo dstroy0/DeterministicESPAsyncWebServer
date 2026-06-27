@@ -71,7 +71,8 @@ flag (default off) so it costs nothing when unused.
 ## Protocols & integrations
 
 - [ ] OPC UA server/client (L); Node-RED integration (M).
-- [ ] Southbound protocol-driver framework (L; Modbus is one today); Modbus register scanner/auto-discovery (M); atomic register matrix (M).
+- [x] Modbus master codec + register scanner _(shipped)_ - `DETWS_ENABLE_MODBUS_MASTER`: `services/modbus/modbus_master` builds read-request ADUs and parses responses (register values or exception) so an app can poll / auto-discover a slave's registers; pure, host-tested as a full round-trip against the slave codec, HW-verified via self-scan (example 72.ModbusScan).
+- [ ] Southbound protocol-driver framework (L; Modbus is one today); Modbus atomic register matrix (M).
 - [ ] Webhooks + IFTTT (M); Email + SMS fallbacks (SMTP + gateway) (M).
 - [ ] ESP-NOW transport + ESP-NOW<->MQTT bridge (M).
 
