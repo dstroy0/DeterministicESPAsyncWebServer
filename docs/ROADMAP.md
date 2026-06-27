@@ -82,7 +82,7 @@ flag (default off) so it costs nothing when unused.
 - [ ] Southbound protocol-driver framework (L; Modbus is one today); Modbus atomic register matrix (M).
 - [x] Webhooks + IFTTT _(shipped)_ - `DETWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example 75.Webhook).
 - [ ] Email + SMS fallbacks (SMTP + gateway) (M).
-- [ ] ESP-NOW transport + ESP-NOW<->MQTT bridge (M).
+- [x] ESP-NOW peer messaging _(shipped)_ - `DETWS_ENABLE_ESPNOW`: `services/espnow` adds a typed 3-byte envelope (demux by type + length check) over connectionless ESP-NOW, a bounded peer registry, and the esp_now radio binding (begin / add_peer / send / broadcast, decoded frames to a callback for bridging to WS/SSE) (example 82.EspNow). Codec + registry host-tested; ESP-NOW<->MQTT auto-bridge remains open (M).
 
 ## Networking / connectivity
 
