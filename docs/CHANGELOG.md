@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.23.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.23.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`da48137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da481371c0a475180ed0509dd8c29dff0ddb6bd7))
+- update CHANGELOG.md [skip ci] ([`cd0b6ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd0b6ea733dffd3d9875eed48b74c1d5116db181))
+
+### Changes
+
+- Bump version: 2.22.0 → 2.23.0 ([`692f6e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/692f6e96a353e65a6509f74a41780702e4e9a4eb))
+
+### Features
+
+- Modbus master codec + register scanner ([`d9b1114`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9b1114ea86920c39917a2e45d5ef567fe347b93))
+
+</details>
+
 ## [2.22.0] - 2026-06-27
 
 <details>
