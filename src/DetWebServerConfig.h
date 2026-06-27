@@ -60,6 +60,52 @@
 #define CONN_TIMEOUT_MS 5000
 #endif
 
+// ---------------------------------------------------------------------------
+// Worker model (server task concurrency)
+// ---------------------------------------------------------------------------
+//
+// The server pipeline (drain events -> dispatch -> send) runs in one or more
+// dedicated FreeRTOS "worker" tasks instead of the user's loop(). Each worker
+// owns a disjoint partition of conn_pool slots (slot i -> worker i %
+// DETWS_WORKER_COUNT) and its own scratch arena, so no two workers ever touch
+// the same slot: shared-nothing, no hot-path locks, latency stays bounded
+// (determinism preserved) while cores run disjoint connections in parallel.
+//
+// DETWS_WORKER_COUNT == 1 (default) is byte-for-byte the single-pipeline model:
+// one worker owns every slot, one arena, the existing single event queue. N > 1
+// is opt-in. The arena BSS cost is DETWS_SCRATCH_ARENA_SIZE * DETWS_WORKER_COUNT.
+
+/** @brief Number of server worker tasks (slots partitioned i % N). Default 1. */
+#ifndef DETWS_WORKER_COUNT
+#define DETWS_WORKER_COUNT 1
+#endif
+
+/** @brief Stack (bytes) for each server worker task (ESP32). */
+#ifndef DETWS_WORKER_TASK_STACK
+#define DETWS_WORKER_TASK_STACK 8192
+#endif
+
+/** @brief FreeRTOS priority for each server worker task (ESP32). */
+#ifndef DETWS_WORKER_TASK_PRIORITY
+#define DETWS_WORKER_TASK_PRIORITY 5
+#endif
+
+/**
+ * @brief Core that worker 0 pins to (ESP32). Worker k pins to (DETWS_WORKER_CORE
+ * + k) % portNUM_PROCESSORS. Default 1 (APP_CPU), keeping Core 0 lean for the
+ * WiFi/lwIP stack and offloading the user's loop().
+ */
+#ifndef DETWS_WORKER_CORE
+#define DETWS_WORKER_CORE 1
+#endif
+
+#if DETWS_WORKER_COUNT < 1
+#error "DeterministicESPAsyncWebServer: DETWS_WORKER_COUNT must be >= 1"
+#endif
+#if DETWS_WORKER_COUNT > MAX_CONNS
+#error "DeterministicESPAsyncWebServer: DETWS_WORKER_COUNT must be <= MAX_CONNS"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

@@ -3,13 +3,16 @@
 
 /**
  * @file scratch.cpp
- * @brief Shared per-dispatch scratch arena - implementation.
+ * @brief Per-worker per-dispatch scratch arenas - implementation.
  *
- * A bump allocator over one fixed BSS buffer. See scratch.h for the model and
- * the race / exhaustion safety argument.
+ * One bump allocator per worker (DETWS_WORKER_COUNT arenas in BSS), selected by
+ * the caller's worker id. Each arena has exactly one accessor (its worker), so
+ * the lock-free / fixed-size guarantees in scratch.h hold per worker. With
+ * DETWS_WORKER_COUNT == 1 this is byte-for-byte the original single arena.
  */
 
 #include "scratch.h"
+#include "network_drivers/session/worker.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -20,41 +23,53 @@
 
 namespace
 {
-uint8_t s_arena[DETWS_SCRATCH_ARENA_SIZE]; // the arena (BSS)
-size_t s_off;                              // bytes currently handed out (bump offset)
-size_t s_high_water;                       // peak s_off since boot
+uint8_t s_arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
+size_t s_off[DETWS_WORKER_COUNT];                              // bump offset per worker
+size_t s_high_water[DETWS_WORKER_COUNT];                       // peak s_off per worker
 
 // Default alignment when the caller passes 0: the strictest the platform needs.
 constexpr size_t SCRATCH_DEFAULT_ALIGN = sizeof(void *) > 8 ? sizeof(void *) : 8;
 
-// Debug tripwire: the arena must only ever be touched from the single session
-// loop task. Record the first caller's task and assert every later call matches.
-// Compiled out on native (no FreeRTOS) and in NDEBUG builds; the structural
-// single-accessor invariant is what makes this lock-free, the assert just makes
-// a future violation loud instead of a silent cross-core race.
-inline void assert_single_owner()
+// Resolve the calling worker, clamped into range so a stray id can never index
+// out of bounds (an unbound caller is worker 0, the only worker by default).
+inline int cur_worker()
+{
+    int w = detws_worker_self();
+    return (w >= 0 && w < DETWS_WORKER_COUNT) ? w : 0;
+}
+
+// Debug tripwire: each arena must only ever be touched from one task (its
+// worker). Record the first caller per arena and assert every later call
+// matches. Compiled out on native (no FreeRTOS) and in NDEBUG builds; the
+// structural single-accessor-per-arena invariant is what makes this lock-free,
+// the assert just makes a future violation loud instead of a silent cross-core
+// race.
+inline void assert_single_owner(int w)
 {
 #if defined(ARDUINO) && !defined(NDEBUG)
-    static TaskHandle_t s_owner = nullptr;
+    static TaskHandle_t s_owner[DETWS_WORKER_COUNT] = {nullptr};
     TaskHandle_t cur = xTaskGetCurrentTaskHandle();
-    if (s_owner == nullptr)
-        s_owner = cur;
+    if (s_owner[w] == nullptr)
+        s_owner[w] = cur;
     else
-        assert(s_owner == cur && "scratch arena borrowed from a foreign task");
+        assert(s_owner[w] == cur && "scratch arena borrowed from a foreign task");
+#else
+    (void)w;
 #endif
 }
 } // namespace
 
 void *scratch_alloc(size_t n, size_t align)
 {
-    assert_single_owner();
+    int w = cur_worker();
+    assert_single_owner(w);
 
     if (align == 0)
         align = SCRATCH_DEFAULT_ALIGN;
     assert((align & (align - 1)) == 0 && "scratch alignment must be a power of two");
 
     // Round the current offset up to the requested alignment.
-    size_t base = (s_off + (align - 1)) & ~(align - 1);
+    size_t base = (s_off[w] + (align - 1)) & ~(align - 1);
 
     // Overflow-safe capacity check: reject if n alone exceeds the arena, or if
     // the aligned allocation would run past the end. (n <= capacity here, so
@@ -62,40 +77,48 @@ void *scratch_alloc(size_t n, size_t align)
     if (n > DETWS_SCRATCH_ARENA_SIZE || base > DETWS_SCRATCH_ARENA_SIZE - n)
         return nullptr;
 
-    void *p = &s_arena[base];
-    s_off = base + n;
-    if (s_off > s_high_water)
-        s_high_water = s_off;
+    void *p = &s_arena[w][base];
+    s_off[w] = base + n;
+    if (s_off[w] > s_high_water[w])
+        s_high_water[w] = s_off[w];
     return p;
 }
 
 void scratch_reset(void)
 {
-    assert_single_owner();
-    s_off = 0;
+    int w = cur_worker();
+    assert_single_owner(w);
+    s_off[w] = 0;
 }
 
 size_t scratch_mark(void)
 {
-    assert_single_owner();
-    return s_off;
+    int w = cur_worker();
+    assert_single_owner(w);
+    return s_off[w];
 }
 
 void scratch_release(size_t mark)
 {
-    assert_single_owner();
-    assert(mark <= s_off && "scratch_release mark is above the current offset");
-    s_off = mark;
+    int w = cur_worker();
+    assert_single_owner(w);
+    assert(mark <= s_off[w] && "scratch_release mark is above the current offset");
+    s_off[w] = mark;
 }
 
 size_t scratch_used(void)
 {
-    return s_off;
+    return s_off[cur_worker()];
 }
 
 size_t scratch_high_water(void)
 {
-    return s_high_water;
+    // Peak any single arena reached - the value to size DETWS_SCRATCH_ARENA_SIZE by.
+    size_t peak = 0;
+    for (int w = 0; w < DETWS_WORKER_COUNT; w++)
+        if (s_high_water[w] > peak)
+            peak = s_high_water[w];
+    return peak;
 }
 
 size_t scratch_capacity(void)
