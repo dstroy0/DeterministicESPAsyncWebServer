@@ -58,4 +58,30 @@ void detws_workers_stop(void);
 /** @brief True while worker task(s) are running (always false on host). */
 bool detws_workers_running(void);
 
+// ---------------------------------------------------------------------------
+// Deferred work (thread-safe app -> worker submission)
+// ---------------------------------------------------------------------------
+//
+// Route a callback to a worker so it runs in that worker's single-thread context.
+// This is how application code on loop() (or any other task) safely pushes to a
+// connection - e.g. an SSE broadcast on a timer, or ws_send from a sensor task:
+// instead of calling the send API directly (which would race the worker that owns
+// the slot), wrap it in a small function and hand it to the owning worker. The
+// worker drains and runs deferred callbacks each service iteration.
+// (DetWebServer::defer(slot, fn, arg) is the app-facing wrapper that resolves the
+// slot's owner; this layer stays free of the transport/conn_pool dependency.)
+//
+// @p arg must remain valid until the callback runs (point it at static/global
+// state, or data you keep alive). On host builds (no worker task) the callback
+// runs inline immediately, so tests and loop()-driven code behave identically.
+
+/** @brief Deferred callback signature. */
+typedef void (*detws_deferred_fn)(void *arg);
+
+/** @brief Run @p fn(@p arg) on worker @p worker_id. Returns false if the queue is full. */
+bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg);
+
+/** @brief Drain and run worker @p worker_id's deferred callbacks (called by the worker). */
+void detws_worker_run_deferred(int worker_id);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_WORKER_H

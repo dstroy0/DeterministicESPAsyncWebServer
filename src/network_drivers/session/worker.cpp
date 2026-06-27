@@ -42,6 +42,7 @@ void detws_worker_set_self(int id)
 #ifdef ARDUINO
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/task.h"
 
 namespace
@@ -67,11 +68,28 @@ void worker_task(void *arg)
 }
 } // namespace
 
+// Per-worker deferred-callback queues: app code on any task hands a {fn, arg} to
+// the owning worker, which runs it in its own context (race-free push path).
+namespace
+{
+struct DeferCmd
+{
+    detws_deferred_fn fn;
+    void *arg;
+};
+StaticQueue_t s_dq_struct[DETWS_WORKER_COUNT];
+uint8_t s_dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
+QueueHandle_t s_dq[DETWS_WORKER_COUNT] = {nullptr};
+} // namespace
+
 void detws_workers_start(detws_worker_pump_fn pump)
 {
     if (s_run.load(std::memory_order_acquire))
         return; // already running
     s_pump = pump;
+    for (int i = 0; i < DETWS_WORKER_COUNT; i++)
+        if (!s_dq[i])
+            s_dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_dq_storage[i], &s_dq_struct[i]);
     s_run.store(true, std::memory_order_release);
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
     {
@@ -79,6 +97,26 @@ void detws_workers_start(detws_worker_pump_fn pump)
         xTaskCreatePinnedToCore(worker_task, "detws_worker", DETWS_WORKER_TASK_STACK, (void *)(intptr_t)i,
                                 DETWS_WORKER_TASK_PRIORITY, &s_tasks[i], core);
     }
+}
+
+bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg)
+{
+    if (!fn)
+        return false;
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_dq[worker_id])
+        return false;
+    DeferCmd cmd = {fn, arg};
+    return xQueueSend(s_dq[worker_id], &cmd, 0) == pdTRUE;
+}
+
+void detws_worker_run_deferred(int worker_id)
+{
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_dq[worker_id])
+        return;
+    DeferCmd cmd;
+    while (xQueueReceive(s_dq[worker_id], &cmd, 0) == pdTRUE)
+        if (cmd.fn)
+            cmd.fn(cmd.arg);
 }
 
 void detws_workers_stop(void)
@@ -107,6 +145,19 @@ void detws_workers_stop(void)
 bool detws_workers_running(void)
 {
     return false;
+}
+
+// No worker task on host: the caller and the pipeline are the same thread, so a
+// deferred callback can run inline immediately (same observable effect, race-free).
+bool detws_defer(int, detws_deferred_fn fn, void *arg)
+{
+    if (!fn)
+        return false;
+    fn(arg);
+    return true;
+}
+void detws_worker_run_deferred(int)
+{
 }
 
 #endif // ARDUINO

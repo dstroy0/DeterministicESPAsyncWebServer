@@ -43,6 +43,7 @@
 #include "network_drivers/presentation/json.h"
 #include "network_drivers/presentation/presentation.h"
 #include "network_drivers/session/session.h"
+#include "network_drivers/session/worker.h"
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket.h"
 #endif
@@ -1059,6 +1060,20 @@ class DetWebServer
      * call handle() rather than this directly.
      */
     void service_once(int worker_id = 0);
+
+    /**
+     * @brief Run @p fn(@p arg) on the worker that owns connection @p slot.
+     *
+     * The thread-safe way to push to a connection from outside a handler - e.g. an
+     * SSE broadcast or a ws_send from loop() or a sensor task. Calling the send API
+     * directly from another task would race the worker that owns the slot; instead
+     * wrap the send in @p fn and defer it, and it runs single-threaded in the
+     * owning worker's context. @p arg must stay valid until the callback runs. On
+     * host builds (no worker task) it runs inline immediately.
+     *
+     * @return false if the slot is invalid or the worker's defer queue is full.
+     */
+    bool defer(uint8_t slot, detws_deferred_fn fn, void *arg);
 
     /**
      * @brief Send an HTTP response with a body and close the connection.

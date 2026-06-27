@@ -1142,6 +1142,18 @@ void DetWebServer::service_once(int worker_id)
             send(i, 414, "text/plain", "URI Too Long");
         }
     }
+
+    // Run any callbacks app code deferred to this worker (race-free push path).
+    detws_worker_run_deferred(worker_id);
+}
+
+bool DetWebServer::defer(uint8_t slot, detws_deferred_fn fn, void *arg)
+{
+    if (slot >= MAX_CONNS)
+        return false;
+    // Route to the worker that owns the slot so the callback runs single-threaded
+    // alongside that slot's own processing.
+    return detws_defer(conn_pool[slot].owner, fn, arg);
 }
 
 // ---------------------------------------------------------------------------
