@@ -1234,6 +1234,27 @@
 #endif
 
 /**
+ * @brief Tamper-evident audit log (DETWS_ENABLE_AUDIT_LOG).
+ *
+ * Default off. services/audit_log keeps an append-only, hash-chained security
+ * log: each record carries SHA-256(prev_hash || fields), so altering, deleting,
+ * or reordering any retained record breaks the chain (detws_audit_verify()
+ * detects it). Storage is a fixed RAM ring of DETWS_AUDIT_LOG_ENTRIES records
+ * (no heap); when it wraps, a moving anchor keeps the retained window verifiable.
+ * Install a sink (detws_audit_set_sink) to forward every record at creation time
+ * to a durable / remote store - SD-card file, syslog or HTTP log service, serial
+ * console - preserving the same chain off-device. Pure and host-tested.
+ */
+#ifndef DETWS_ENABLE_AUDIT_LOG
+#define DETWS_ENABLE_AUDIT_LOG 0
+#endif
+
+// Ring depth and per-record message length are tunable in audit_log.h
+// (DETWS_AUDIT_LOG_ENTRIES, DETWS_AUDIT_MSG_LEN); define them before include to
+// override. The RAM cost is roughly DETWS_AUDIT_LOG_ENTRIES * (DETWS_AUDIT_MSG_LEN
+// + 41) bytes.
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
