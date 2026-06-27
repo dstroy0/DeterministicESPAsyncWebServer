@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`61ac7ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61ac7ed7fc30f77cf62f17a43f090c164d3c8eb2))
+- update CHANGELOG.md [skip ci] ([`c57b47b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c57b47b34b006047d089e7b9855bec169226670c))
+
+### Documentation
+
+- document the worker model (concurrency roadmap + README) ([`a68a1ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a68a1ae58b774515a0dca035aae3098cefce68df))
+
 ## [2.18.0] - 2026-06-27
 
 <details>
