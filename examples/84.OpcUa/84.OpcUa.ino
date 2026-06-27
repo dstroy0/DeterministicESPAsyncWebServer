@@ -3,14 +3,15 @@
 
 /**
  * @file 84.OpcUa.ino
- * @brief OPC UA Binary server, increment 1 - UA-TCP handshake (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server - UA-TCP handshake + SecureChannel (DETWS_ENABLE_OPCUA).
  *
- * Opens an OPC UA endpoint on TCP/4840. Increment 1 implements the OPC UA Binary
- * type codec, UA-TCP (UACP) framing, and the Hello/Acknowledge handshake, so a
- * client (UaExpert, open62541, Python asyncua, ...) completes the transport
- * handshake. SecureChannel / Session / Read are later increments.
+ * Opens an OPC UA endpoint on TCP/4840. Implements the OPC UA Binary type codec,
+ * UA-TCP (UACP) framing, the Hello/Acknowledge handshake, and the SecureChannel
+ * (OpenSecureChannel, SecurityPolicy None) - so a client (UaExpert, open62541,
+ * Python asyncua, ...) completes the transport handshake and opens a secure
+ * channel. Session / Read are later increments.
  *
- *   listen(4840, PROTO_OPCUA)  -> client HEL is answered with ACK
+ *   listen(4840, PROTO_OPCUA)  -> client HEL -> ACK, then OPN -> OpenSecureChannelResponse
  *
  * The HTTP server on :80 runs alongside, sharing the same connection pool and
  * event loop - OPC UA is just another protocol on its own port.
@@ -44,7 +45,7 @@ void setup()
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
     server.listen(4840, PROTO_OPCUA); // OPC UA Binary endpoint - before begin() (it activates listeners)
     server.begin(80);
-    Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (Hello/Acknowledge handshake)");
+    Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (Hello/Acknowledge + OpenSecureChannel)");
 }
 
 void loop()

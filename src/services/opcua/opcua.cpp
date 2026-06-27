@@ -3,10 +3,11 @@
 
 /**
  * @file opcua.cpp
- * @brief OPC UA Binary codec + UACP framing + Hello/Acknowledge (implementation).
+ * @brief OPC UA Binary codec + UACP framing + Hello/Acknowledge + SecureChannel.
  *
- * Pure little-endian codec and handshake logic; the ESP32 section pumps the
- * PROTO_OPCUA rx ring and answers HEL with ACK. No heap, no stdlib.
+ * Pure little-endian codec, handshake, and OpenSecureChannel logic; the ESP32
+ * section pumps the PROTO_OPCUA rx ring and answers HEL with ACK and OPN with an
+ * OpenSecureChannelResponse (SecurityPolicy None). No heap, no stdlib.
  */
 
 #include "services/opcua/opcua.h"
@@ -163,6 +164,112 @@ bool ua_r_string(UaReader *r, char *out, size_t cap, int32_t *out_len)
     return true;
 }
 
+static void r_skip(UaReader *r, size_t n)
+{
+    if (r->err || r->off + n > r->len)
+    {
+        r->err = true;
+        return;
+    }
+    r->off += n;
+}
+
+// ---------------------------------------------------------------------------
+// NodeId / ExtensionObject / DateTime
+// ---------------------------------------------------------------------------
+void ua_w_nodeid_numeric(UaWriter *w, uint16_t ns, uint32_t id)
+{
+    if (ns == 0 && id <= 0xFF) // TwoByte
+    {
+        ua_w_u8(w, 0x00);
+        ua_w_u8(w, (uint8_t)id);
+    }
+    else if (ns <= 0xFF && id <= 0xFFFF) // FourByte
+    {
+        ua_w_u8(w, 0x01);
+        ua_w_u8(w, (uint8_t)ns);
+        ua_w_u16(w, (uint16_t)id);
+    }
+    else // Numeric
+    {
+        ua_w_u8(w, 0x02);
+        ua_w_u16(w, ns);
+        ua_w_u32(w, id);
+    }
+}
+
+bool ua_r_nodeid(UaReader *r, UaNodeId *out)
+{
+    uint8_t enc = ua_r_u8(r);
+    uint8_t kind = enc & 0x0F; // strip the NamespaceUri (0x80) / ServerIndex (0x40) flags
+    out->ns = 0;
+    out->id = 0;
+    out->numeric = true;
+    switch (kind)
+    {
+    case 0x00: // TwoByte
+        out->id = ua_r_u8(r);
+        break;
+    case 0x01: // FourByte
+        out->ns = ua_r_u8(r);
+        out->id = ua_r_u16(r);
+        break;
+    case 0x02: // Numeric
+        out->ns = ua_r_u16(r);
+        out->id = ua_r_u32(r);
+        break;
+    case 0x03: // String
+    case 0x05: // ByteString
+    {
+        out->ns = ua_r_u16(r);
+        out->numeric = false;
+        int32_t l = ua_r_i32(r);
+        if (l > 0)
+            r_skip(r, (size_t)l);
+        break;
+    }
+    case 0x04: // Guid
+        out->ns = ua_r_u16(r);
+        out->numeric = false;
+        r_skip(r, 16);
+        break;
+    default:
+        r->err = true;
+        return false;
+    }
+    if (enc & 0x80) // NamespaceUri (String)
+    {
+        int32_t l = ua_r_i32(r);
+        if (l > 0)
+            r_skip(r, (size_t)l);
+    }
+    if (enc & 0x40) // ServerIndex (UInt32)
+        (void)ua_r_u32(r);
+    return !r->err;
+}
+
+// Skip an ExtensionObject: NodeId TypeId + encoding byte (+ ByteString/XML body).
+static bool r_ext_object_skip(UaReader *r)
+{
+    UaNodeId tid;
+    if (!ua_r_nodeid(r, &tid))
+        return false;
+    uint8_t body_enc = ua_r_u8(r);
+    if (body_enc == 0x00) // no body
+        return !r->err;
+    int32_t l = ua_r_i32(r); // ByteString (0x01) or XmlElement (0x02) body
+    if (l > 0)
+        r_skip(r, (size_t)l);
+    return !r->err;
+}
+
+int64_t opcua_filetime_from_unix(int64_t unix_seconds)
+{
+    if (unix_seconds <= 0)
+        return 0;
+    return (unix_seconds + 11644473600LL) * 10000000LL; // 1601->1970 offset, seconds -> 100 ns ticks
+}
+
 // ---------------------------------------------------------------------------
 // UACP framing + handshake
 // ---------------------------------------------------------------------------
@@ -221,11 +328,125 @@ size_t opcua_build_ack(const OpcUaHello *hello, uint8_t *out, size_t cap)
 }
 
 // ---------------------------------------------------------------------------
+// SecureChannel - OpenSecureChannel (OPN), SecurityPolicy None
+// ---------------------------------------------------------------------------
+bool opcua_parse_open(const uint8_t *msg, size_t len, OpcUaOpenChannel *out)
+{
+    UaMsgHeader h;
+    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "OPN", 3) != 0)
+        return false;
+    if (h.size != len)
+        return false;
+
+    UaReader r = {msg + 8, len - 8, 0, false};
+
+    // Asymmetric security header (SecurityPolicy None -> no certs).
+    out->secure_channel_id = ua_r_u32(&r);
+    int32_t pol = ua_r_i32(&r); // SecurityPolicyUri (String)
+    if (pol > 0)
+        r_skip(&r, (size_t)pol);
+    int32_t sc = ua_r_i32(&r); // SenderCertificate (ByteString)
+    if (sc > 0)
+        r_skip(&r, (size_t)sc);
+    int32_t rt = ua_r_i32(&r); // ReceiverCertificateThumbprint (ByteString)
+    if (rt > 0)
+        r_skip(&r, (size_t)rt);
+
+    // Sequence header.
+    out->sequence_number = ua_r_u32(&r);
+    out->request_id = ua_r_u32(&r);
+
+    // Body: TypeId NodeId (must be OpenSecureChannelRequest).
+    UaNodeId tid;
+    if (!ua_r_nodeid(&r, &tid))
+        return false;
+    if (!(tid.numeric && tid.ns == 0 && tid.id == OPCUA_ID_OPEN_REQ))
+        return false;
+
+    // RequestHeader.
+    UaNodeId auth;
+    ua_r_nodeid(&r, &auth); // AuthenticationToken (null on OPN)
+    (void)ua_r_u64(&r);     // Timestamp (DateTime)
+    out->request_handle = ua_r_u32(&r);
+    (void)ua_r_u32(&r);         // ReturnDiagnostics
+    int32_t aid = ua_r_i32(&r); // AuditEntryId (String)
+    if (aid > 0)
+        r_skip(&r, (size_t)aid);
+    (void)ua_r_u32(&r);         // TimeoutHint
+    if (!r_ext_object_skip(&r)) // AdditionalHeader (ExtensionObject)
+        return false;
+
+    // OpenSecureChannelRequest body.
+    out->client_protocol_version = ua_r_u32(&r);
+    out->security_token_request_type = ua_r_u32(&r);
+    out->message_security_mode = ua_r_u32(&r);
+    int32_t nonce = ua_r_i32(&r); // ClientNonce (ByteString)
+    if (nonce > 0)
+        r_skip(&r, (size_t)nonce);
+    out->requested_lifetime = ua_r_u32(&r);
+    return !r.err;
+}
+
+size_t opcua_build_open_response(const OpcUaOpenChannel *req, uint32_t channel_id, uint32_t token_id,
+                                 uint32_t seq_number, int64_t now_ft, uint32_t lifetime, uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+
+    // Message header (size patched after).
+    ua_w_u8(&w, 'O');
+    ua_w_u8(&w, 'P');
+    ua_w_u8(&w, 'N');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+
+    // Asymmetric security header (SecurityPolicy None: null sender cert + thumbprint).
+    ua_w_u32(&w, channel_id);
+    ua_w_string(&w, OPCUA_POLICY_NONE_URI, (int32_t)strlen(OPCUA_POLICY_NONE_URI));
+    ua_w_string(&w, nullptr, -1); // SenderCertificate
+    ua_w_string(&w, nullptr, -1); // ReceiverCertificateThumbprint
+
+    // Sequence header.
+    ua_w_u32(&w, seq_number);
+    ua_w_u32(&w, req->request_id); // RequestId echoed
+
+    // Body: TypeId = OpenSecureChannelResponse.
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_OPEN_RESP);
+
+    // ResponseHeader.
+    ua_w_u64(&w, (uint64_t)now_ft);    // Timestamp
+    ua_w_u32(&w, req->request_handle); // RequestHandle echoed
+    ua_w_u32(&w, 0);                   // ServiceResult = Good
+    ua_w_u8(&w, 0x00);                 // ServiceDiagnostics (DiagnosticInfo: no fields)
+    ua_w_i32(&w, -1);                  // StringTable (null array)
+    ua_w_nodeid_numeric(&w, 0, 0);     // AdditionalHeader: null NodeId ...
+    ua_w_u8(&w, 0x00);                 // ... + ExtensionObject "no body"
+
+    // OpenSecureChannelResponse body.
+    ua_w_u32(&w, 0);                // ServerProtocolVersion
+    ua_w_u32(&w, channel_id);       // ChannelSecurityToken.ChannelId
+    ua_w_u32(&w, token_id);         // .TokenId
+    ua_w_u64(&w, (uint64_t)now_ft); // .CreatedAt
+    ua_w_u32(&w, lifetime);         // .RevisedLifetime
+    ua_w_string(&w, nullptr, -1);   // ServerNonce (null for None)
+
+    if (!w.ok)
+        return 0;
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = (uint8_t)(w.n >> 16);
+    out[7] = (uint8_t)(w.n >> 24);
+    return w.n;
+}
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA)
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
 
 #include "network_drivers/transport/transport.h"
+#include <time.h>
 
 namespace
 {
@@ -268,6 +489,12 @@ void close_conn(uint8_t slot)
 }
 
 uint8_t s_msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
+uint8_t s_resp[512];            // single-accessor response buffer (ACK / OPN response)
+
+// Per-channel SecureChannel state (single client at a time; one channel/token).
+uint32_t s_channel_id = 0;
+uint32_t s_token_id = 0;
+uint32_t s_seq = 0;
 } // namespace
 
 void opcua_rx(uint8_t slot)
@@ -275,34 +502,71 @@ void opcua_rx(uint8_t slot)
     TcpConn *c = &conn_pool[slot];
     if (c->state != CONN_ACTIVE)
         return;
-    if (ring_avail(c) < 8)
-        return; // need the UACP header
 
-    uint8_t hdr[8];
-    ring_peek(c, 0, hdr, 8);
-    UaMsgHeader h;
-    if (!opcua_parse_header(hdr, 8, &h) || h.size < 8 || h.size > sizeof(s_msg))
+    // Drain every complete UACP message currently in the rx ring (a client may
+    // pipeline HEL then OPN; each arrives framed by an 8-byte header + MessageSize).
+    for (;;)
     {
-        close_conn(slot);
-        return;
-    }
-    if (ring_avail(c) < h.size)
-        return; // wait for the full message
+        if (ring_avail(c) < 8)
+            return; // need the UACP header
 
-    ring_peek(c, 0, s_msg, h.size);
-    ring_consume(c, h.size);
-
-    if (memcmp(h.type, "HEL", 3) == 0)
-    {
-        OpcUaHello hello;
-        uint8_t ack[32];
-        size_t n;
-        if (opcua_parse_hello(s_msg, h.size, &hello) && (n = opcua_build_ack(&hello, ack, sizeof(ack))) > 0)
-            raw_send(slot, ack, n);
-        else
+        uint8_t hdr[8];
+        ring_peek(c, 0, hdr, 8);
+        UaMsgHeader h;
+        if (!opcua_parse_header(hdr, 8, &h) || h.size < 8 || h.size > sizeof(s_msg))
+        {
             close_conn(slot);
+            return;
+        }
+        if (ring_avail(c) < h.size)
+            return; // wait for the full message
+
+        ring_peek(c, 0, s_msg, h.size);
+        ring_consume(c, h.size);
+
+        if (memcmp(h.type, "HEL", 3) == 0)
+        {
+            OpcUaHello hello;
+            size_t n;
+            if (opcua_parse_hello(s_msg, h.size, &hello) && (n = opcua_build_ack(&hello, s_resp, sizeof(s_resp))) > 0)
+                raw_send(slot, s_resp, n);
+            else
+            {
+                close_conn(slot);
+                return;
+            }
+        }
+        else if (memcmp(h.type, "OPN", 3) == 0)
+        {
+            OpcUaOpenChannel oc;
+            if (!opcua_parse_open(s_msg, h.size, &oc))
+            {
+                close_conn(slot);
+                return;
+            }
+            if (oc.secure_channel_id == 0) // fresh issue -> assign a channel id
+                oc.secure_channel_id = ++s_channel_id;
+            uint32_t token = ++s_token_id;
+            uint32_t seq = ++s_seq;
+            uint32_t lifetime = oc.requested_lifetime ? oc.requested_lifetime : 3600000u;
+            int64_t now = opcua_filetime_from_unix((int64_t)time(nullptr));
+            size_t n =
+                opcua_build_open_response(&oc, oc.secure_channel_id, token, seq, now, lifetime, s_resp, sizeof(s_resp));
+            if (n > 0)
+                raw_send(slot, s_resp, n);
+            else
+            {
+                close_conn(slot);
+                return;
+            }
+        }
+        else if (memcmp(h.type, "CLO", 3) == 0)
+        {
+            close_conn(slot);
+            return;
+        }
+        // MSG (Session / Read) is a later increment; the message is consumed and ignored.
     }
-    // OPN / MSG / CLO are later increments; ignore until then.
 }
 
 #else // host build: the codec/handshake are tested directly; rx is a no-op stub
