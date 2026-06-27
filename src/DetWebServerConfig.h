@@ -1078,6 +1078,29 @@
 #define DETWS_GUARDRAIL_STACK_MIN 512
 #endif
 
+/**
+ * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
+ *
+ * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
+ * in a fixed ring (oldest pruned on overflow - no heap, bounded), dumps them
+ * oldest-first for a `/logs` endpoint, and fires a trap callback when a line is
+ * logged at/above a severity threshold (forward criticals as an SNMP trap /
+ * webhook). The ring + trap logic is pure and host-tested.
+ */
+#ifndef DETWS_ENABLE_LOGBUF
+#define DETWS_ENABLE_LOGBUF 0
+#endif
+
+/** @brief Number of log lines retained in the ring. */
+#ifndef DETWS_LOG_LINES
+#define DETWS_LOG_LINES 32
+#endif
+
+/** @brief Maximum length of one stored log line (bytes, including null). */
+#ifndef DETWS_LOG_LINE_LEN
+#define DETWS_LOG_LINE_LEN 96
+#endif
+
 /** @brief Authenticated OTA firmware update (streaming POST to the ESP32 Update API). */
 #ifndef DETWS_ENABLE_OTA
 #define DETWS_ENABLE_OTA 0

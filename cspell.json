@@ -411,7 +411,8 @@
     "DetAtomic",
     "sendto",
     "InfluxDB",
-    "Telegraf"
+    "Telegraf",
+    "logbuf"
   ],
   "ignorePaths": [
     "node_modules/**",
