@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.21.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.21.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2203aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2203aa94e5ba62a62dea3eda88dcc04ef73f3166))
+- update CHANGELOG.md [skip ci] ([`96783ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96783eafac4b6868b74b1444e5968ca3421bf8f8))
+
+### Changes
+
+- Bump version: 2.20.0 → 2.21.0 ([`0fe3bf1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fe3bf1377d7ab1ee454dbb1aefbe0dcece3abe8))
+
+### Features
+
+- fixed-RAM rotating log buffer with severity traps ([`ac77bad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac77bada13cb247cae3c515bed711b55179b09e4))
+
+</details>
+
 ## [2.20.0] - 2026-06-27
 
 <details>
