@@ -419,7 +419,9 @@
     "pentest",
     "xorshift",
     "MSVC",
-    "readback"
+    "readback",
+    "gethostbyname",
+    "rebinding"
   ],
   "ignorePaths": [
     "node_modules/**",
