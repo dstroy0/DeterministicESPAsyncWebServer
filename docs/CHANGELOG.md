@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.17.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.17.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`285d4f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/285d4f574c9f33883f116df5b51e542ba4c693bb))
+- update CHANGELOG.md [skip ci] ([`f78e52f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f78e52f2ab665fdd59991c15f315711216df0dae))
+
+### Changes
+
+- Bump version: 2.16.0 → 2.17.0 ([`ac86475`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac86475d386b50f23168f8ed0787024847effe9f))
+
+### Features
+
+- core-partitioned parallel workers (DETWS_WORKER_COUNT > 1) ([`c0db091`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0db0913d4e3e240abc5150f38d5f2a14647bcf1))
+
+</details>
+
 ## [2.16.0] - 2026-06-27
 
 <details>
