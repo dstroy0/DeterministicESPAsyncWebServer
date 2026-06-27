@@ -398,7 +398,8 @@
     "fnv",
     "pentesting",
     "slowloris",
-    "sparkline"
+    "sparkline",
+    "ints"
   ],
   "ignorePaths": [
     "node_modules/**",
