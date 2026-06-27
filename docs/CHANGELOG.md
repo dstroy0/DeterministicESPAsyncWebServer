@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [2.27.0] - 2026-06-27
+
+<details>
+<summary><b>Show Changelog for version 2.27.0 - 2026-06-27</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`669e80e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/669e80e5cfeffec607b8808a8e7e64f2473310aa))
+- update CHANGELOG.md [skip ci] ([`484cd1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/484cd1b7eef304d67f71481de2032d81e74cdab4))
+
+### Changes
+
+- Bump version: 2.26.0 → 2.27.0 ([`23c1a8c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23c1a8c903ba72d84731be834c1d9b75e6214357))
+
+### Features
+
+- outbound webhooks / IFTTT ([`4efe5d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4efe5d1c56080643c51eb6ed3f88ccb013b84378))
+
+</details>
+
 ## [2.26.0] - 2026-06-27
 
 <details>
