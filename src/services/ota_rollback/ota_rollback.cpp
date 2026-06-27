@@ -24,7 +24,7 @@ DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t m
 #ifdef ARDUINO
 
 #include "esp_ota_ops.h"
-#include <Arduino.h> // millis()
+#include "services/det_clock.h" // detws_millis() (pulls in Arduino millis())
 
 uint8_t detws_ota_img_state(void)
 {
@@ -47,7 +47,8 @@ void detws_ota_rollback(void)
 
 DetwsOtaAction detws_ota_rollback_tick(bool self_test_ok)
 {
-    DetwsOtaAction a = detws_ota_decide(detws_ota_img_state(), self_test_ok, millis(), DETWS_OTA_CONFIRM_WINDOW_MS);
+    DetwsOtaAction a =
+        detws_ota_decide(detws_ota_img_state(), self_test_ok, detws_millis(), DETWS_OTA_CONFIRM_WINDOW_MS);
     if (a == DETWS_OTA_COMMIT)
         detws_ota_commit();
     else if (a == DETWS_OTA_ROLLBACK)
