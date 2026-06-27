@@ -108,7 +108,7 @@ flag (default off) so it costs nothing when unused.
 - [x] CSRF token verification _(shipped)_ - `DETWS_ENABLE_CSRF`; global enforcement on POST/PUT/PATCH/DELETE via a stateless HMAC-signed `X-CSRF-Token` (built-in `GET /csrf` issues it; example 60.Csrf).
 - [x] Granular API-token scoping _(shipped)_ - `jwt_claim_str()` reads string claims (sub / role / scope) and `jwt_scope_allows()` matches a space-separated OAuth2 scope claim, so a handler can authorize per role/scope on the verified JWT (example 21.JWTAuth).
 - [x] MFA - TOTP two-factor _(shipped)_ - `DETWS_ENABLE_TOTP`: `services/totp` computes / verifies RFC 6238 time-based one-time passwords (HMAC-SHA1 on the software SHA-1, Authenticator-compatible) and decodes base32 secrets, for a second factor on top of password / JWT; host-tested against the RFC vectors, HW-verified (example 74.Totp). An external-API verifier can also be called from a handler via the http_client.
-- [ ] Enterprise identity handshakes - SAML / OAuth2 / OIDC (L).
+- [x] OIDC ID-token verification _(shipped)_ - RS256 relying-party verifier (JWKS key selection by kid, real RSA-2048 signature check, iss/aud/exp/nbf, claim extraction); caller fetches/caches the JWKS. SAML and the OAuth2 code-exchange flow remain open (L).
 - [ ] Secure boot + flash encryption (S, docs/eFuse); encrypted config handshake during onboarding (M).
 - [x] MAC-derived UUID _(shipped)_ - `detws_uuid_from_mac` / `detws_device_uuid` (RFC 4122 v5; example 57.DeviceUuid).
 
