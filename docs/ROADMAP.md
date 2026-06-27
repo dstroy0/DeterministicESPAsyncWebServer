@@ -90,7 +90,7 @@ flag (default off) so it costs nothing when unused.
 - [ ] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report above already work once both links exist. Multi-interface bridge / graceful escalation (L).
 - [ ] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L).
 - [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
-- [ ] DNS (M): async resolver + response verification, captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
+- [x] DNS resolver + answer verification _(shipped)_ - `DETWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
 - [ ] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M).
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DETWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `det_udp_sendto`, zero-heap fire-and-forget (example 68.UdpTelemetry).

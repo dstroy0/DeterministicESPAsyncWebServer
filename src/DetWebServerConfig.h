@@ -1212,6 +1212,25 @@
 #endif
 
 /**
+ * @brief Opt-in DNS resolver with answer verification (DETWS_ENABLE_DNS_RESOLVER).
+ *
+ * Default off. services/dns_resolver resolves a hostname to an IPv4 address (lwIP
+ * dns_gethostbyname, marshalled to tcpip_thread like the http_client) and can
+ * reject suspicious answers - 0.0.0.0, broadcast, loopback, multicast - which are
+ * spoofing / DNS-rebinding indicators for a remote host. The address classifier /
+ * verifier is pure and host-tested; the resolve is ESP32-only (blocking, so call
+ * it off the request hot path).
+ */
+#ifndef DETWS_ENABLE_DNS_RESOLVER
+#define DETWS_ENABLE_DNS_RESOLVER 0
+#endif
+
+/** @brief DNS resolve timeout in milliseconds. */
+#ifndef DETWS_DNS_TIMEOUT_MS
+#define DETWS_DNS_TIMEOUT_MS 5000
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
