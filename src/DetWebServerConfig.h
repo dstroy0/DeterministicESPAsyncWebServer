@@ -111,6 +111,20 @@
 #define DETWS_DEFER_QUEUE_DEPTH 8
 #endif
 
+/**
+ * @brief Worker poll cadence in FreeRTOS ticks between service iterations.
+ *
+ * Default 1 = the 1000 Hz cadence the test suite asserts (1 tick at the Arduino
+ * 1 kHz FreeRTOS config). This is a deliberate compile-time-only knob: raise it to
+ * trade latency for lower idle CPU/power on a battery device (e.g. 10 -> ~100 Hz),
+ * accepting that a non-default value runs off the tested-deterministic path. The
+ * internal time base stays 1000 Hz regardless (see services/det_clock.h); this
+ * only changes how often the worker wakes to service connections.
+ */
+#ifndef DETWS_WORKER_POLL_TICKS
+#define DETWS_WORKER_POLL_TICKS 1
+#endif
+
 #if DETWS_WORKER_COUNT < 1
 #error "DeterministicESPAsyncWebServer: DETWS_WORKER_COUNT must be >= 1"
 #endif

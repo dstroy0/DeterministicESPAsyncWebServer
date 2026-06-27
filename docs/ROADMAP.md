@@ -48,9 +48,16 @@ flag (default off) so it costs nothing when unused.
       concurrency: N=1 ~5.9 req/s vs N=2 ~9.1 req/s (~1.5x; not a full 2x because
       worker 1 shares Core 0 with WiFi/lwIP), single-request latency unchanged.
       Confirms real parallel scaling with determinism intact (no hot-path locks).
-- [ ] Tuning (S): event-queue-blocking worker drain (lower idle CPU/power vs the
-      `vTaskDelay` poll loop), leaner tcpip callbacks, per-workload worker
-      count/affinity.
+- [x] Pluggable monotonic clock _(shipped)_ - `services/det_clock.h`: all library
+      timing flows through `detws_millis()` (a single 1000 Hz source). Feed your own
+      clock with `detws_set_clock(fn, ticks_per_second)` and it is divided down to
+      the internal 1000 Hz, so timeouts/polling keep the tested 1 ms granularity
+      whatever your clock's rate; default is the platform `millis()` (host-tested).
+- [x] Compile-time poll-rate knob _(shipped)_ - `DETWS_WORKER_POLL_TICKS` (default
+      1 = the tested 1000 Hz) trades latency for idle CPU/power on a battery build
+      without touching the default deterministic cadence.
+- [ ] Tuning (S): event-queue-blocking worker drain (lower idle CPU than the
+      `vTaskDelay` poll), leaner tcpip callbacks, per-workload worker count/affinity.
 
 ## Web / API / UI
 

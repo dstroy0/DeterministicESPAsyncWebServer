@@ -61,7 +61,7 @@ void worker_task(void *arg)
     {
         if (s_pump)
             s_pump(id);
-        vTaskDelay(1);
+        vTaskDelay(DETWS_WORKER_POLL_TICKS); // default 1 = 1000 Hz (tested cadence)
     }
     s_tasks[id] = nullptr;
     vTaskDelete(nullptr);

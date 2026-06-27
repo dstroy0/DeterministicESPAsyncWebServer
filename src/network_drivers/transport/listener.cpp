@@ -26,6 +26,7 @@
 #include "lwip/def.h"     // lwip_ntohl - allowlist host-order conversion
 #include "lwip/ip_addr.h" // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
 #endif
+#include "services/det_clock.h" // detws_millis() pluggable monotonic clock (host-safe)
 #include <Arduino.h>
 
 // Listener pool - all storage in BSS.
@@ -251,7 +252,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #if DETWS_ENABLE_ACCEPT_THROTTLE
     // Connection-flood defense: drop accepts beyond the per-window budget before
     // claiming a pool slot or doing any per-connection work.
-    if (!listener_accept_allowed(millis()))
+    if (!listener_accept_allowed(detws_millis()))
     {
         tcp_abort(newpcb);
         return ERR_ABRT;
@@ -266,7 +267,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #ifdef ARDUINO
         rip = ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip));
 #endif
-        if (!listener_accept_allowed_ip(rip, millis()))
+        if (!listener_accept_allowed_ip(rip, detws_millis()))
         {
             tcp_abort(newpcb);
             return ERR_ABRT;
@@ -321,7 +322,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #endif
     slot->state = CONN_ACTIVE;
     slot->pcb = newpcb;
-    slot->last_activity_ms = millis();
+    slot->last_activity_ms = detws_millis();
     slot->rx_head = 0;
     slot->rx_tail = 0;
     slot->listener_id = idx;

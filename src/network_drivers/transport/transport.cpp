@@ -28,6 +28,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
+#include "services/det_clock.h" // detws_millis() pluggable monotonic clock
 
 #if DETWS_ENABLE_TLS
 #include "network_drivers/tls/det_tls.h"
@@ -315,7 +316,7 @@ void DeterministicAsyncTCP::stop()
 
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {
-    uint32_t now = millis();
+    uint32_t now = detws_millis();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         TcpConn *slot = &conn_pool[i];
@@ -379,7 +380,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_OK;
     }
 
-    slot->last_activity_ms = millis();
+    slot->last_activity_ms = detws_millis();
 
     /*
      * Backpressure without data loss: if the whole segment will not fit in the
@@ -437,7 +438,7 @@ err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
     TcpConn *slot = (TcpConn *)arg;
     if (slot)
-        slot->last_activity_ms = millis();
+        slot->last_activity_ms = detws_millis();
     (void)tpcb;
     (void)len;
     return ERR_OK;
