@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`ac2ef02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac2ef02ffabe39caba1a79392913103d6e6aa122))
+- update CHANGELOG.md [skip ci] ([`91d56dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91d56dc9992bd9c0d16b42a7c5211ac78b003bca))
+
+### Features
+
+- pentesting / adversarial suite + guide ([`5388e89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5388e894cfaf8168c54157cbf7ce4d2c412ebfcb))
+
 ## [2.27.0] - 2026-06-27
 
 <details>
