@@ -1050,13 +1050,15 @@ class DetWebServer
     void handle();
 
     /**
-     * @brief Run exactly one service iteration of the pipeline (the body driven by
-     *        the worker task, or by handle() when no task is running).
+     * @brief Run exactly one service iteration for worker @p worker_id (the body
+     *        driven by that worker's task, or by handle() when no task is running).
      *
-     * Public so the worker task can invoke it; application code should call
-     * handle() rather than this directly.
+     * Services only the connection slots owned by @p worker_id, so multiple workers
+     * run disjoint slot sets in parallel. At DETWS_WORKER_COUNT=1 worker 0 owns
+     * every slot. Public so the worker task can invoke it; application code should
+     * call handle() rather than this directly.
      */
-    void service_once();
+    void service_once(int worker_id = 0);
 
     /**
      * @brief Send an HTTP response with a body and close the connection.

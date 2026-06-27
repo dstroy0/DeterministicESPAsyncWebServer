@@ -43,7 +43,7 @@
  * @note The event-drain loop is bounded by the queue depth (16 entries).
  *       Even in the absolute worst case this function executes in O(1).
  */
-void server_tick();
+void server_tick(int worker_id = 0);
 
 // ---------------------------------------------------------------------------
 // Forward declarations for Layer 6 functions used by server_tick()

@@ -169,16 +169,61 @@ const ProtoHandler *proto_get(ConnProto proto)
     return h;
 }
 
-void server_tick()
+// Dispatch one drained event to its slot's protocol handler. Shared by the
+// single-queue (N=1) and per-worker-queue (N>1) drain paths below.
+static inline void dispatch_event(const TcpEvt &evt)
+{
+    // Per-dispatch reset of the calling worker's scratch arena: every handler
+    // runs with the whole arena available, and any scratch it borrows is
+    // reclaimed before the next event - the backstop that stops a forgotten
+    // release from accumulating across events.
+    scratch_reset();
+
+    // Route to the slot's protocol handler (PROTO_NONE and any unregistered
+    // protocol fall back to HTTP, preserving legacy behavior).
+    const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);
+    if (!h)
+        return;
+
+    switch (evt.type)
+    {
+    case EVT_CONNECT:
+        if (h->on_accept)
+            h->on_accept(evt.slot_id);
+        break;
+    case EVT_DATA:
+        if (h->on_data)
+            h->on_data(evt.slot_id);
+        break;
+    case EVT_DISCONNECT:
+    case EVT_ERROR:
+        if (h->on_close)
+            h->on_close(evt.slot_id);
+        break;
+    }
+}
+
+void server_tick(int worker_id)
 {
     /*
      * Check timeouts BEFORE draining events.  This ensures that a slot
      * freed by a timeout is already in CONN_FREE state if a coincident
      * EVT_DISCONNECT or EVT_ERROR is dequeued in the same tick - the
-     * http_reset() call for that event is then a clean no-op.
+     * http_reset() call for that event is then a clean no-op. Each worker
+     * sweeps only the slots it owns.
      */
-    DeterministicAsyncTCP::check_timeouts();
+    DeterministicAsyncTCP::check_timeouts(worker_id);
 
+#if DETWS_WORKER_COUNT > 1
+    // Drain only this worker's queue: it is the sole consumer of its slots.
+    QueueHandle_t q = listener_worker_queue(worker_id);
+    if (!q)
+        return;
+    TcpEvt evt;
+    while (xQueueReceive(q, &evt, 0) == pdTRUE)
+        dispatch_event(evt);
+#else
+    (void)worker_id; // single worker owns all slots; drain every listener queue
     for (uint8_t li = 0; li < MAX_LISTENERS; li++)
     {
         Listener *lst = &listener_pool[li];
@@ -187,35 +232,7 @@ void server_tick()
 
         TcpEvt evt;
         while (xQueueReceive(lst->queue, &evt, 0) == pdTRUE)
-        {
-            // Per-dispatch reset of the shared scratch arena: every handler runs
-            // with the whole arena available, and any scratch it borrows is
-            // reclaimed before the next event - the backstop that stops a
-            // forgotten release from accumulating across events.
-            scratch_reset();
-
-            // Route the event to the slot's protocol handler (PROTO_NONE and any
-            // unregistered protocol fall back to HTTP, preserving legacy behavior).
-            const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);
-            if (!h)
-                continue;
-
-            switch (evt.type)
-            {
-            case EVT_CONNECT:
-                if (h->on_accept)
-                    h->on_accept(evt.slot_id);
-                break;
-            case EVT_DATA:
-                if (h->on_data)
-                    h->on_data(evt.slot_id);
-                break;
-            case EVT_DISCONNECT:
-            case EVT_ERROR:
-                if (h->on_close)
-                    h->on_close(evt.slot_id);
-                break;
-            }
-        }
+            dispatch_event(evt);
     }
+#endif
 }
