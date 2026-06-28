@@ -519,7 +519,10 @@
     "mosquitto",
     "hivemq",
     "mbpoll",
-    "regs"
+    "regs",
+    "netif",
+    "softap",
+    "PULLUP"
   ],
   "ignorePaths": [
     "node_modules/**",
