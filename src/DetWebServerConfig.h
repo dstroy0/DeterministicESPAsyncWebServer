@@ -445,6 +445,62 @@
 //
 //   #define DETWS_ENABLE_WEBSOCKET 0
 //   #include <DeterministicESPAsyncWebServer.h>
+//
+// ---------------------------------------------------------------------------
+// BUILD-FLAG DEPENDENCY TREE
+// ---------------------------------------------------------------------------
+// Most features are independent. A few build on another feature and cannot
+// compile without it; those HARD dependencies are enforced near the bottom of
+// this file with a clear #error, so an illegal combination fails fast at
+// compile time instead of producing a cryptic linker error. Enable a child
+// only together with its parent(s).
+//
+// Hard dependencies (child requires parent):
+//
+//   FILE_SERVING
+//     |-- WEBDAV
+//     `-- RANGE
+//   TLS
+//     |-- MTLS
+//     |-- TLS_RESUMPTION
+//     |-- HTTP_CLIENT_TLS   (also requires HTTP_CLIENT)
+//     |-- MQTT_TLS          (also requires MQTT)
+//     `-- WS_CLIENT_TLS     (also requires WS_CLIENT)
+//   WEBSOCKET
+//     |-- WS_DEFLATE
+//     `-- WEB_TERMINAL
+//   SSE
+//     `-- DASHBOARD
+//   STATS
+//     `-- METRICS
+//   AUTH
+//     `-- AUTH_LOCKOUT
+//   SNMP
+//     |-- SNMP_V3
+//     `-- SNMP_TRAP
+//   COAP
+//     |-- COAP_OBSERVE
+//     `-- COAP_BLOCK
+//   OPCUA
+//     `-- OPCUA_CLIENT
+//   CONFIG_STORE
+//     `-- CONFIG_IO
+//
+// Optional integrations (these build fine on their own; the named feature is
+// simply inert or reduced until you also enable the other flag):
+//
+//   WEBHOOK   + HTTP_CLIENT : without it, detws_webhook_post() returns -1
+//   OAUTH2    + HTTP_CLIENT : the token-endpoint POST helpers compile only with it
+//   DASHBOARD + WEBSOCKET   : adds live control widgets; the SSE value stream works alone
+//
+// Auto-derived (do NOT set these yourself; the library computes them):
+//
+//   STREAM_BODY         = OTA || UPLOAD
+//   CLIENT_TLS          = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS
+//   CAPTURE_AUTH_HEADER = AUTH || JWT || OIDC
+//
+// The same tree appears in README.md and examples/Foundation/05.Configuration.
+// ---------------------------------------------------------------------------
 
 /** @brief WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). */
 #ifndef DETWS_ENABLE_WEBSOCKET
@@ -1183,9 +1239,11 @@
 /**
  * @brief Opt-in outbound webhooks / IFTTT (DETWS_ENABLE_WEBHOOK).
  *
- * Default off. Requires DETWS_ENABLE_HTTP_CLIENT. services/webhook builds an IFTTT
- * Maker URL and a value1/value2/value3 JSON payload (pure, host-tested) and fires
- * them - or any JSON to any URL - via the outbound http_client (POST). Use it to
+ * Default off. Needs DETWS_ENABLE_HTTP_CLIENT to actually send: the API always
+ * compiles, but without the HTTP client detws_webhook_post() returns -1.
+ * services/webhook builds an IFTTT Maker URL and a value1/value2/value3 JSON
+ * payload (pure, host-tested) and fires them - or any JSON to any URL - via the
+ * outbound http_client (POST). Use it to
  * push an event from the device to IFTTT, a Slack/Discord hook, or your own API.
  */
 #ifndef DETWS_ENABLE_WEBHOOK
@@ -2470,6 +2528,45 @@ enum DetIface : uint8_t
 #if DETWS_COAP_BLOCK1_MAX < (1 << (DETWS_COAP_BLOCK_SZX_MAX + 4))
 #error "DeterministicESPAsyncWebServer: DETWS_COAP_BLOCK1_MAX must be >= one block (2^(DETWS_COAP_BLOCK_SZX_MAX+4))"
 #endif
+#endif
+
+// --- feature dependency guards (centralized; see the BUILD-FLAG DEPENDENCY TREE
+//     near the top of this file). A child feature requires its parent(s). ---
+
+#if DETWS_ENABLE_WS_DEFLATE && !DETWS_ENABLE_WEBSOCKET
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_DEFLATE requires DETWS_ENABLE_WEBSOCKET"
+#endif
+
+#if DETWS_ENABLE_WEB_TERMINAL && !DETWS_ENABLE_WEBSOCKET
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WEB_TERMINAL requires DETWS_ENABLE_WEBSOCKET"
+#endif
+
+#if DETWS_ENABLE_DASHBOARD && !DETWS_ENABLE_SSE
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_DASHBOARD requires DETWS_ENABLE_SSE"
+#endif
+
+#if DETWS_ENABLE_SNMP_V3 && !DETWS_ENABLE_SNMP
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SNMP_V3 requires DETWS_ENABLE_SNMP"
+#endif
+
+#if DETWS_ENABLE_OPCUA_CLIENT && !DETWS_ENABLE_OPCUA
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_OPCUA_CLIENT requires DETWS_ENABLE_OPCUA (the shared OPC UA codec)"
+#endif
+
+#if DETWS_ENABLE_CONFIG_IO && !DETWS_ENABLE_CONFIG_STORE
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_CONFIG_IO requires DETWS_ENABLE_CONFIG_STORE"
+#endif
+
+#if DETWS_ENABLE_HTTP_CLIENT_TLS && !DETWS_ENABLE_HTTP_CLIENT
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP_CLIENT_TLS requires DETWS_ENABLE_HTTP_CLIENT"
+#endif
+
+#if DETWS_ENABLE_MQTT_TLS && !DETWS_ENABLE_MQTT
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_MQTT_TLS requires DETWS_ENABLE_MQTT"
+#endif
+
+#if DETWS_ENABLE_WS_CLIENT_TLS && !DETWS_ENABLE_WS_CLIENT
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_CLIENT_TLS requires DETWS_ENABLE_WS_CLIENT"
 #endif
 
 #if DETWS_ENABLE_WEBSOCKET && WS_FRAME_SIZE < 2

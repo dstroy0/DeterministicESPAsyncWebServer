@@ -36,9 +36,7 @@
 
 #if DETWS_ENABLE_OPCUA_CLIENT
 
-#if !DETWS_ENABLE_OPCUA
-#error "DETWS_ENABLE_OPCUA_CLIENT requires DETWS_ENABLE_OPCUA (the shared OPC UA codec)"
-#endif
+// Dependency (OPCUA_CLIENT requires OPCUA) is enforced centrally in DetWebServerConfig.h.
 
 /** @brief Per-connection OPC UA client state (SecureChannel + Session + counters). */
 struct OpcUaClient

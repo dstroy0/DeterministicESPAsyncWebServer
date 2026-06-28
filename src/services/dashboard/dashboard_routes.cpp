@@ -13,9 +13,7 @@
 
 #if DETWS_ENABLE_DASHBOARD
 
-#if !DETWS_ENABLE_SSE
-#error "DETWS_ENABLE_DASHBOARD requires DETWS_ENABLE_SSE"
-#endif
+// Dependency (DASHBOARD requires SSE) is enforced centrally in DetWebServerConfig.h.
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/application/web_assets.h" // DETWS_DASHBOARD_PAGE

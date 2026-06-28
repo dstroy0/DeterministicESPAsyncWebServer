@@ -444,7 +444,9 @@
     "cstdlib",
     "atoi",
     "strtoll",
-    "strtod"
+    "strtod",
+    "rclone",
+    "GPIO"
   ],
   "ignorePaths": [
     "node_modules/**",

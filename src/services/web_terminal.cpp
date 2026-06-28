@@ -10,9 +10,7 @@
 
 #if DETWS_ENABLE_WEB_TERMINAL
 
-#if !DETWS_ENABLE_WEBSOCKET
-#error "DETWS_ENABLE_WEB_TERMINAL requires DETWS_ENABLE_WEBSOCKET"
-#endif
+// Dependency (WEB_TERMINAL requires WEBSOCKET) is enforced centrally in DetWebServerConfig.h.
 
 #include "network_drivers/application/web_assets.h" // DETWS_TERMINAL_PAGE
 #include <stdarg.h>
