@@ -8,6 +8,22 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Client transport could deadlock on a large inbound transfer
+
+- **Status:** FIXED (v4.8.0; same fix as the server, found by analysis during the
+  unified-client-transport pass)
+- **Found:** 2026-06-28, reviewing `det_client` against the server's ack-on-consume fix.
+- **Symptom (latent):** an outbound client (http_client / mqtt / ws_client) reading a
+  response larger than the client ring could stall - the same class as the server
+  deadlock below, in the other direction.
+- **Root cause:** `det_client`'s recv callback ACKed on copy (`tcp_recved` in
+  `cc_recv`) with a 4 KB ring (< TCP_WND), so a sustained inbound transfer could fill
+  the ring, get refused (lwIP `refused_data`), and race.
+- **Fix:** ack-on-consume on the client transport too - `cc_recv` no longer ACKs;
+  `det_client_read()` marshals `tcp_recved()` for the bytes it drained. Default
+  `DETWS_CLIENT_RX_BUF` raised 4096 -> 8192 (>= TCP_WND). Client and server transports
+  now share one flow-control model.
+
 ## RX flow-control deadlock on streamed uploads (WebDAV PUT)
 
 - **Status:** FIXED (v4.6.0; host + HW validated)

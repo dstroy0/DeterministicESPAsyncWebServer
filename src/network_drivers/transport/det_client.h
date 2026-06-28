@@ -36,12 +36,15 @@
 /**
  * @brief Per-connection wire receive ring size (bytes).
  *
- * Holds plaintext (plain) or ciphertext (TLS). Must exceed one TCP segment
- * (TCP_MSS) so a full segment can always land; 4096 matches the per-client
- * ciphertext buffers it replaces, sized for a multi-KB TLS handshake flight.
+ * Holds plaintext (plain) or ciphertext (TLS). The transport ACKs on consume
+ * (det_client_read reopens the window), so for a large inbound transfer to never
+ * stall the ring must hold a full TCP receive window: keep DETWS_CLIENT_RX_BUF >=
+ * TCP_WND (~5.7 KB). The 8192 default clears that and a multi-KB TLS handshake
+ * flight; a ring below TCP_WND can deadlock a sustained download (the peer would be
+ * allowed to send more than the ring holds). Must exceed one TCP segment (TCP_MSS).
  */
 #ifndef DETWS_CLIENT_RX_BUF
-#define DETWS_CLIENT_RX_BUF 4096
+#define DETWS_CLIENT_RX_BUF 8192
 #endif
 
 /**

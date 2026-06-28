@@ -57,6 +57,7 @@ static err_t cc_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
     }
     // Wire bytes -> ring with lossless backpressure: if the whole segment will not
     // fit the free space, refuse it (lwIP retains + redelivers).
+    (void)tpcb;
     size_t used = (c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF;
     size_t freesp = (DETWS_CLIENT_RX_BUF - 1) - used;
     if (p->tot_len > freesp)
@@ -72,7 +73,11 @@ static err_t cc_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
         }
         q = q->next;
     }
-    tcp_recved(tpcb, p->tot_len);
+    // Do NOT tcp_recved() here. The window is reopened by det_client_read() as the
+    // caller drains (ack-on-consume), so it tracks ring occupancy and the peer can
+    // never overflow the ring - same model as the server transport. ACKing on copy
+    // would decouple the window from drainage and deadlock a large inbound transfer
+    // once DETWS_CLIENT_RX_BUF < TCP_WND.
     pbuf_free(p);
     return ERR_OK;
 }
@@ -126,6 +131,12 @@ struct CcDnsCall
     const char *host;
     err_t result;
 };
+struct CcRecvedCall
+{
+    struct tcpip_api_call_data base;
+    ClientConn *c;
+    u16_t len;
+};
 
 static err_t cc_do_connect(struct tcpip_api_call_data *cd)
 {
@@ -172,6 +183,14 @@ static err_t cc_do_close(struct tcpip_api_call_data *cd)
             tcp_abort(c->pcb);
         c->pcb = nullptr;
     }
+    return ERR_OK;
+}
+
+static err_t cc_do_recved(struct tcpip_api_call_data *cd)
+{
+    CcRecvedCall *k = (CcRecvedCall *)cd;
+    if (k->c->pcb)
+        tcp_recved(k->c->pcb, k->len); // reopen the window by the consumed bytes
     return ERR_OK;
 }
 
@@ -312,6 +331,15 @@ size_t det_client_read(int cid, uint8_t *buf, size_t cap)
             break;
         buf[n++] = c->rx[c->tail];
         c->tail = (c->tail + 1) % DETWS_CLIENT_RX_BUF;
+    }
+    if (n > 0 && c->pcb)
+    {
+        // Ack-on-consume: reopen the receive window by exactly what we just drained.
+        CcRecvedCall k;
+        memset(&k, 0, sizeof(k));
+        k.c = c;
+        k.len = (u16_t)n;
+        tcpip_api_call(cc_do_recved, &k.base);
     }
     return n;
 }

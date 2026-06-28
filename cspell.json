@@ -6,6 +6,7 @@
     "ABRT",
     "ALPN",
     "asyncua",
+    "csess",
     "HPACK",
     "interlayer",
     "QPACK",

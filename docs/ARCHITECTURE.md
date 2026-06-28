@@ -86,13 +86,23 @@ functions only consume; the window is reopened by the worker's single
 `det_conn_ack_consumed()` per loop - so there is exactly one place that touches the
 ring indices for draining and one that ACKs.
 
-The MQTT and WebSocket **client** modules (`mqtt.cpp`, `ws_client.cpp`) keep their
-own private `s_rx` ring - this is correct, not the same spaghetti. They are
-single-instance outbound clients (the device connecting out), not server slots in
-`conn_pool`; the buffer is filled by the module's own recv/TLS path and is owned
-solely by that module, so nothing cross-layer reaches into it. A unified client
-transport (so clients and the server share one I/O API) is separate future work,
-not part of this server-ring straightening.
+## Outbound clients - the unified client transport (det_client)
+
+The device's clients (`http_client`, `mqtt`, `ws_client`) do not each own a raw lwIP
+stack: they share **`det_client`** (`network_drivers/transport/det_client.*`), the
+client-side peer of the server transport. It is a small fixed pool of outbound
+connections with the same rules - every raw `tcp_*()` marshaled to tcpip_thread, a
+per-connection wire ring, and **ack-on-consume** (`det_client_read()` reopens the
+window as the caller drains; `DETWS_CLIENT_RX_BUF >= TCP_WND`), so client and server
+share one flow-control model. TLS clients layer `det_tls_csess_*` on top, pointing
+the BIO at `det_client_send` / `det_client_read` (the ring carries ciphertext).
+
+The `s_rx` ring inside `mqtt.cpp` / `ws_client.cpp` is a separate **plaintext frame
+buffer** (post-decrypt for TLS, the assembly buffer the protocol parser reads),
+owned solely by that module - the client mirror of the server's `http body[]` vs the
+`conn_pool` wire ring. Not cross-layer, correct as-is. (A deeper unification that
+merges the server `det_conn` and client `det_client` ring implementations into one
+shared primitive remains possible future work.)
 
 ## Streaming-body hooks - slot-aware
 
@@ -105,14 +115,15 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
 
 ## Ownership: current vs target
 
-| Concern              | Owner (target)         | Status                                          |
-| -------------------- | ---------------------- | ----------------------------------------------- |
-| Socket TX            | transport `det_conn_*` | DONE                                            |
-| RX receive window    | transport              | DONE (`det_conn_ack_consumed`, ack-on-consume)  |
-| RX ring read/drain   | transport (read API)   | DONE (`det_conn_read*`; consumers off the ring) |
-| Streaming sink state | per-slot, slot-aware   | DONE (`g_dav_put[MAX_CONNS]`, slot-aware hooks) |
-| Event routing        | session (owner queue)  | DONE                                            |
-| Scratch memory       | session (per-worker)   | DONE                                            |
+| Concern              | Owner (target)           | Status                                            |
+| -------------------- | ------------------------ | ------------------------------------------------- |
+| Socket TX            | transport `det_conn_*`   | DONE                                              |
+| RX receive window    | transport                | DONE (`det_conn_ack_consumed`, ack-on-consume)    |
+| RX ring read/drain   | transport (read API)     | DONE (`det_conn_read*`; consumers off the ring)   |
+| Streaming sink state | per-slot, slot-aware     | DONE (`g_dav_put[MAX_CONNS]`, slot-aware hooks)   |
+| Event routing        | session (owner queue)    | DONE                                              |
+| Scratch memory       | session (per-worker)     | DONE                                              |
+| Outbound client I/O  | transport (`det_client`) | DONE (pooled, ack-on-consume; all clients use it) |
 
 ## Straightening plan (phased; each phase host + HW regresses every consumer)
 
@@ -126,10 +137,13 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
 3. **DONE - slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` +
    per-slot WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixed the concurrent-PUT bug
    (HW: 4 parallel PUTs, distinct payloads, all byte-exact).
-4. **DONE - reconcile private-buffer services** - mqtt / ws_client `s_rx_*` are
-   single-instance outbound clients (not `conn_pool` server slots); each buffer is
-   module-owned and nothing cross-layer touches it, so it is correct as-is. A unified
-   client transport is tracked as separate future work, not this refactor.
+4. **DONE - outbound clients** - all clients (http_client / mqtt / ws_client) share
+   `det_client`, the unified client transport; brought to the same ack-on-consume
+   flow control as the server (`DETWS_CLIENT_RX_BUF >= TCP_WND`). Each module's `s_rx`
+   is its own plaintext frame buffer (the client mirror of the server's `body[]`),
+   module-owned and correct as-is.
 
-All four phases are complete: every cross-layer concern (TX, RX window, RX read,
-streaming sink state, events, scratch) now has exactly one owner behind a clean API.
+All phases complete: every cross-layer concern (server TX/RX, RX window, RX read,
+streaming sink state, events, scratch, outbound client I/O) now has exactly one owner
+behind a clean API. Possible future work: merge the `det_conn` and `det_client` ring
+implementations into one shared primitive (two pools, one ring/read core).
