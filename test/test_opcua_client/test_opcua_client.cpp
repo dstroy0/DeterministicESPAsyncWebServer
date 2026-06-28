@@ -1,0 +1,246 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Round-trip tests for the OPC UA client (services/opcua_client): the client builds
+// each request, the server (services/opcua) parses it and builds its response, and
+// the client parses that response. This proves full client<->server wire interop
+// in-process - the same exchange the board runs over TCP.
+
+#include "services/opcua/opcua.h"
+#include "services/opcua_client/opcua_client.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp()
+{
+}
+void tearDown()
+{
+}
+
+// Browse resolver used by the server side of the round trip.
+static int32_t srv_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+{
+    if (ns == 0 && id == 85 && max >= 2)
+    {
+        const char *names[2] = {"Uptime", "Temperature"};
+        for (int i = 0; i < 2; i++)
+        {
+            out[i].ref_type_id = OPCUA_REFTYPE_ORGANIZES;
+            out[i].is_forward = true;
+            out[i].target_ns = 1;
+            out[i].target_id = i + 1;
+            out[i].browse_name_ns = 1;
+            out[i].browse_name = names[i];
+            out[i].display_name = names[i];
+            out[i].node_class = OPCUA_NODECLASS_VARIABLE;
+            out[i].type_def_id = OPCUA_TYPEDEF_BASE_DATA_VARIABLE;
+        }
+        return 2;
+    }
+    return -1;
+}
+
+void test_hello_ack_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+
+    uint8_t req[128];
+    size_t rn = opcua_client_hello("opc.tcp://host:4840", req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    OpcUaHello hello;
+    TEST_ASSERT_TRUE(opcua_parse_hello(req, rn, &hello));
+    TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, hello.recv_buf_size);
+
+    uint8_t ack[64];
+    size_t an = opcua_build_ack(&hello, ack, sizeof(ack));
+    TEST_ASSERT_TRUE(an > 0);
+
+    OpcUaAckInfo info;
+    TEST_ASSERT_TRUE(opcua_client_on_ack(ack, an, &info));
+    TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, info.recv_buf_size);
+    TEST_ASSERT_EQUAL_UINT32(1, info.max_chunk_count);
+}
+
+void test_open_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+
+    uint8_t req[256];
+    size_t rn = opcua_client_open(&c, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    OpcUaOpenChannel oc;
+    TEST_ASSERT_TRUE(opcua_parse_open(req, rn, &oc));
+    TEST_ASSERT_EQUAL_UINT32(1, oc.message_security_mode); // None
+
+    uint8_t resp[256];
+    size_t sn = opcua_build_open_response(&oc, 77, 88, 1, 0, 3600000, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    TEST_ASSERT_TRUE(opcua_client_on_open(&c, resp, sn));
+    TEST_ASSERT_EQUAL_UINT32(77, c.channel_id);
+    TEST_ASSERT_EQUAL_UINT32(88, c.token_id);
+}
+
+void test_session_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88; // pretend the channel is open
+
+    // CreateSession
+    uint8_t req[256];
+    size_t rn = opcua_client_create_session(&c, "sess", "opc.tcp://host:4840", req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_REQ, m.type_id);
+
+    uint8_t resp[256];
+    size_t sn = opcua_build_create_session_response(&m, 0x500, 0x600, 1200000.0, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_TRUE(opcua_client_on_create_session(&c, resp, sn));
+    TEST_ASSERT_EQUAL_UINT32(0x600, c.session_auth_id); // AuthenticationToken captured
+    TEST_ASSERT_EQUAL_UINT16(1, c.session_auth_ns);
+
+    // ActivateSession (must now carry the session AuthenticationToken)
+    rn = opcua_client_activate_session(&c, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    TEST_ASSERT_TRUE(opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_ACTIVATE_SESSION_REQ, m.type_id);
+    sn = opcua_build_activate_session_response(&m, 2, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+    TEST_ASSERT_TRUE(opcua_client_on_activate_session(resp, sn));
+}
+
+void test_read_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88;
+
+    OpcUaReadItem items[2] = {{1, 1, true, OPCUA_ATTR_VALUE}, {1, 2, true, OPCUA_ATTR_VALUE}};
+    uint8_t req[256];
+    size_t rn = opcua_client_read(&c, items, 2, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(opcua_parse_read(req, rn, &rr));
+    TEST_ASSERT_EQUAL_UINT32(2, rr.count);
+    TEST_ASSERT_EQUAL_UINT32(1, rr.items[0].id);
+    TEST_ASSERT_EQUAL_UINT32(2, rr.items[1].id);
+
+    OpcUaVariant svals[2];
+    uint32_t ssts[2];
+    memset(svals, 0, sizeof(svals));
+    svals[0].type = OPCUA_VAR_UINT32;
+    svals[0].u32 = 4242;
+    ssts[0] = OPCUA_STATUS_GOOD;
+    svals[1].type = OPCUA_VAR_DOUBLE;
+    svals[1].f64 = 2.5;
+    ssts[1] = OPCUA_STATUS_GOOD;
+
+    uint8_t resp[256];
+    size_t sn = opcua_build_read_response(&rr, svals, ssts, 3, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaVariant cvals[2];
+    uint32_t csts[2];
+    int32_t n = opcua_client_on_read(resp, sn, cvals, csts, 2);
+    TEST_ASSERT_EQUAL_INT32(2, n);
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, cvals[0].type);
+    TEST_ASSERT_EQUAL_UINT32(4242, cvals[0].u32);
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, cvals[1].type);
+    TEST_ASSERT_TRUE(cvals[1].f64 == 2.5);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, csts[0]);
+}
+
+void test_browse_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88;
+
+    uint8_t req[256];
+    size_t rn = opcua_client_browse(&c, 0, 85, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(opcua_parse_browse(req, rn, &br));
+    TEST_ASSERT_EQUAL_UINT32(1, br.count);
+    TEST_ASSERT_EQUAL_UINT32(85, br.items[0].id);
+
+    uint8_t resp[512];
+    size_t sn = opcua_build_browse_response(&br, srv_browse, 4, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaClientRef refs[4];
+    int32_t n = opcua_client_on_browse(resp, sn, refs, 4);
+    TEST_ASSERT_EQUAL_INT32(2, n);
+    TEST_ASSERT_EQUAL_STRING("Uptime", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_UINT32(1, refs[0].target_id);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_VARIABLE, refs[0].node_class);
+    TEST_ASSERT_EQUAL_STRING("Temperature", refs[1].browse_name);
+    TEST_ASSERT_EQUAL_UINT32(2, refs[1].target_id);
+}
+
+void test_close_session_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88;
+
+    uint8_t req[128];
+    size_t rn = opcua_client_close_session(&c, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CLOSE_SESSION_REQ, m.type_id);
+
+    uint8_t resp[64];
+    size_t sn = opcua_build_close_session_response(&m, 5, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, sn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+}
+
+void test_close_channel_is_clo()
+{
+    uint8_t req[16];
+    size_t rn = opcua_client_close_channel(req, sizeof(req));
+    TEST_ASSERT_EQUAL_size_t(8, rn);
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(req, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("CLO", h.type, 3);
+}
+
+void test_seq_and_request_id_increment()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    uint8_t req[256];
+    opcua_client_open(&c, req, sizeof(req));                     // seq 1, request 1
+    opcua_client_create_session(&c, "s", "u", req, sizeof(req)); // seq 2, request 2
+    TEST_ASSERT_EQUAL_UINT32(2, c.seq);
+    TEST_ASSERT_EQUAL_UINT32(2, c.request_id);
+    TEST_ASSERT_TRUE(c.request_handle >= 2);
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_hello_ack_roundtrip);
+    RUN_TEST(test_open_roundtrip);
+    RUN_TEST(test_session_roundtrip);
+    RUN_TEST(test_read_roundtrip);
+    RUN_TEST(test_browse_roundtrip);
+    RUN_TEST(test_close_session_roundtrip);
+    RUN_TEST(test_close_channel_is_clo);
+    RUN_TEST(test_seq_and_request_id_increment);
+    return UNITY_END();
+}

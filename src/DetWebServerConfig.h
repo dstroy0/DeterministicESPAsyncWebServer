@@ -1354,6 +1354,20 @@
 #endif
 
 /**
+ * @brief OPC UA Binary client (DETWS_ENABLE_OPCUA_CLIENT).
+ *
+ * Default off. Requires DETWS_ENABLE_OPCUA (shares the codec). services/opcua_client
+ * provides the client side of the OPC UA Binary protocol: request builders (Hello,
+ * OpenSecureChannel, CreateSession, ActivateSession, Read, Browse, CloseSession,
+ * CloseSecureChannel) and response parsers, reusing the opcua.h codec. It is
+ * transport-agnostic - the app supplies the outbound socket (e.g. an Arduino
+ * WiFiClient) and feeds bytes through these pure builders/parsers. No heap, no stdlib.
+ */
+#ifndef DETWS_ENABLE_OPCUA_CLIENT
+#define DETWS_ENABLE_OPCUA_CLIENT 0
+#endif
+
+/**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
  * Default off. When set, src/services/upload_service.h registers a POST route
