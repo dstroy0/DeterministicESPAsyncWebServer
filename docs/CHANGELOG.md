@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- pin Prettier to 3.9.1 and reformat all markdown to match ([`5a7716f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a7716fea6fdd2fe24dc7fe1dee64d8c2a4732c1))
+- update test report [skip ci] ([`33fad91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33fad9111b22e73198421b3f4fdeda08954f0079))
+- update CHANGELOG.md [skip ci] ([`852f046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/852f0466b3cb7f02cea523078d2700219b62acc1))
 - update test report [skip ci] ([`f9e77fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f9e77fb127831bac39cec469dff14150096d749d))
 - update CHANGELOG.md [skip ci] ([`d818aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d818aa9c6f61254827e7f7159f1733281d5cfee4))
 - update test report [skip ci] ([`0c05694`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c05694ec05ee47a220bc642aecd61c873b7b319))
