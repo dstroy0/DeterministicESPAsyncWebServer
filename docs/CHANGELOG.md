@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.12.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.12.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`e90ec65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e90ec651b1181c5f461e568435beff7fb31b33ba))
+- update CHANGELOG.md [skip ci] ([`45d9d9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45d9d9fb9d7572b4379ea5205cb8cd96b2b03558))
+
+### Changes
+
+- Bump version: 3.11.0 → 3.12.0 ([`1aa794f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1aa794fd2adc4724bdfc34e68b8881bff956c237))
+
+### Features
+
+- shared outbound client API; migrate http_client (Bucket 3b, 1/3) ([`a98118b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a98118b1748dad9b71b8b36fbcb4b714472fe16a))
+
+</details>
+
 ## [3.11.0] - 2026-06-28
 
 <details>
