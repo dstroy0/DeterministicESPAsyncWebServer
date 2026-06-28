@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f46099e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f46099e8884ed885d62501b2951b2a9b2ef23f83))
+- update CHANGELOG.md [skip ci] ([`7ce182f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ce182fa7f0dccb70336f3c4f3af4459fee0bf52))
 - pin Prettier to 3.9.1 and reformat all markdown to match ([`5a7716f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a7716fea6fdd2fe24dc7fe1dee64d8c2a4732c1))
 - update test report [skip ci] ([`33fad91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33fad9111b22e73198421b3f4fdeda08954f0079))
 - update CHANGELOG.md [skip ci] ([`852f046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/852f0466b3cb7f02cea523078d2700219b62acc1))
@@ -20,6 +22,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- per-example READMEs for L7-Application 01-10 ([`abe7ab5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abe7ab54ef2dfa229ca3ee7a173459800e4f7f58))
 - add per-example READMEs for the L6-Presentation layer ([`cb80a34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb80a34ea683dd13ab498caf5a79e7507b3fad61))
 - per-example READMEs for L4-Transport; make EXAMPLES.md links-only ([`af42b21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af42b2127dcbc9c1d25639af3a909ab50332b8d8))
 - add per-example READMEs for the L5-Session layer ([`b87472d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b87472d361b9bb3406c1e500aaf5fb32efa9daab))
