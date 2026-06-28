@@ -27,11 +27,11 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 
 ## Troubleshooting
 
--   **`undefined reference to ...`** - the build_flags gotcha above; pass the flags to the library build.
--   **`#error "... requires ..."`** - an illegal flag combination; see the [build-flag dependency tree](../README.md#build-flag-dependencies).
--   **No WiFi** - set `SSID`/`PASSWORD`; TLS examples also need wall-clock time (pair with the SNTP example).
--   **`begin()` returns negative** - a capacity constant is too small for the configured pools (the compile-time checks in `DetWebServerConfig.h` catch most first).
--   **Built but not flashed** - `pio ci` only compiles; use `pio run -t upload` from a project containing the sketch.
+- **`undefined reference to ...`** - the build_flags gotcha above; pass the flags to the library build.
+- **`#error "... requires ..."`** - an illegal flag combination; see the [build-flag dependency tree](../README.md#build-flag-dependencies).
+- **No WiFi** - set `SSID`/`PASSWORD`; TLS examples also need wall-clock time (pair with the SNTP example).
+- **`begin()` returns negative** - a capacity constant is too small for the configured pools (the compile-time checks in `DetWebServerConfig.h` catch most first).
+- **Built but not flashed** - `pio ci` only compiles; use `pio run -t upload` from a project containing the sketch.
 
 ## Foundation
 

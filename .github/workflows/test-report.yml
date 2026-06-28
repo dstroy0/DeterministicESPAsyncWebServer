@@ -36,7 +36,7 @@ jobs:
         run: bash test/run_tests.sh || true
 
       - name: Format TEST_REPORT.md with Prettier
-        run: npx prettier --write docs/TEST_REPORT.md
+        run: npx prettier@3.9.1 --write docs/TEST_REPORT.md
 
       - name: Commit updated test report
         env:

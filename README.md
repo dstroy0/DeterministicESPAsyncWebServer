@@ -30,67 +30,67 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 <details>
 <summary><strong>Foundation - zero-heap architecture</strong></summary>
 
--   **Zero Heap Allocation**: All request, connection, WebSocket, SSE, TLS, and SNMP storage pools are statically sized in BSS. Zero heap memory is requested after `begin()`.
--   **Threaded, deterministic core**: The server pipeline runs in dedicated FreeRTOS worker task(s) (`DETWS_WORKER_COUNT`, default 1, pinned off the WiFi core) rather than your `loop()`. With more than one worker, connections are partitioned across workers (each owns a disjoint slot set with its own queue and scratch arena) so both cores process traffic in parallel with no hot-path locks - throughput without giving up bounded latency. The cross-thread boundary is `DetAtomic` (acquire/release) and proven race-free under ThreadSanitizer. Push to a connection from `loop()` or another task race-free with `server.defer(slot, fn, arg)`.
--   **Minimal Dependencies**: Beyond the Arduino/ESP-IDF SDK, the only external dependency is mbedTLS (crypto); optional services use the ESP-IDF mDNS component and raw lwIP UDP rather than add-on libraries. Every optional feature is gated by a `DETWS_ENABLE_*` build flag (default off).
+- **Zero Heap Allocation**: All request, connection, WebSocket, SSE, TLS, and SNMP storage pools are statically sized in BSS. Zero heap memory is requested after `begin()`.
+- **Threaded, deterministic core**: The server pipeline runs in dedicated FreeRTOS worker task(s) (`DETWS_WORKER_COUNT`, default 1, pinned off the WiFi core) rather than your `loop()`. With more than one worker, connections are partitioned across workers (each owns a disjoint slot set with its own queue and scratch arena) so both cores process traffic in parallel with no hot-path locks - throughput without giving up bounded latency. The cross-thread boundary is `DetAtomic` (acquire/release) and proven race-free under ThreadSanitizer. Push to a connection from `loop()` or another task race-free with `server.defer(slot, fn, arg)`.
+- **Minimal Dependencies**: Beyond the Arduino/ESP-IDF SDK, the only external dependency is mbedTLS (crypto); optional services use the ESP-IDF mDNS component and raw lwIP UDP rather than add-on libraries. Every optional feature is gated by a `DETWS_ENABLE_*` build flag (default off).
 
 </details>
 
 <details>
 <summary><strong>Transport (L4) - connections, encryption and flood defense</strong></summary>
 
--   **HTTPS / TLS**: Optional deterministic TLS via mbedTLS over a fixed static memory pool - encrypted transport with no heap (`ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+). Optional **session resumption** (RFC 5077 tickets, `DETWS_ENABLE_TLS_RESUMPTION`): a returning client completes an abbreviated handshake, skipping the costly key exchange, and the server stays stateless (the session lives in the client's sealed ticket, so nothing grows per session).
--   **Mutual TLS (mTLS)**: Optional client-certificate authentication - the handshake requires and verifies a client cert against a configured CA, and the verified peer's subject DN is exposed to handlers. Strong transport-level client auth with no passwords.
--   **HTTP Keep-Alive**: Optional HTTP/1.1 persistent connections - one TCP connection serves many requests (with a per-connection request cap and the existing idle timeout), transparent to handler code.
--   **Source-IP Allowlist**: Optional accept-time firewall (`DETWS_ENABLE_IP_ALLOWLIST`) - drops connections whose source IPv4 is outside the configured CIDR rules, in front of every listener (fixed BSS table, no heap).
--   **Connection-Flood Defense**: Opt-in global connection accept-throttle and per-source-IP accept-throttle (`DETWS_ENABLE_PER_IP_THROTTLE`) that bounds reconnect/brute-force churn from a single host.
+- **HTTPS / TLS**: Optional deterministic TLS via mbedTLS over a fixed static memory pool - encrypted transport with no heap (`ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+). Optional **session resumption** (RFC 5077 tickets, `DETWS_ENABLE_TLS_RESUMPTION`): a returning client completes an abbreviated handshake, skipping the costly key exchange, and the server stays stateless (the session lives in the client's sealed ticket, so nothing grows per session).
+- **Mutual TLS (mTLS)**: Optional client-certificate authentication - the handshake requires and verifies a client cert against a configured CA, and the verified peer's subject DN is exposed to handlers. Strong transport-level client auth with no passwords.
+- **HTTP Keep-Alive**: Optional HTTP/1.1 persistent connections - one TCP connection serves many requests (with a per-connection request cap and the existing idle timeout), transparent to handler code.
+- **Source-IP Allowlist**: Optional accept-time firewall (`DETWS_ENABLE_IP_ALLOWLIST`) - drops connections whose source IPv4 is outside the configured CIDR rules, in front of every listener (fixed BSS table, no heap).
+- **Connection-Flood Defense**: Opt-in global connection accept-throttle and per-source-IP accept-throttle (`DETWS_ENABLE_PER_IP_THROTTLE`) that bounds reconnect/brute-force churn from a single host.
 
 </details>
 
 <details>
 <summary><strong>Session (L5) - interactive consoles</strong></summary>
 
--   **SSH 2.0 Server**: Zero-heap SSH stack with host-key verification and password/publickey authentication (hardware-accelerated crypto).
--   **Telnet Console**: Plaintext line-oriented console (RFC 854, IAC negotiation + server echo) for trusted networks.
+- **SSH 2.0 Server**: Zero-heap SSH stack with host-key verification and password/publickey authentication (hardware-accelerated crypto).
+- **Telnet Console**: Plaintext line-oriented console (RFC 854, IAC negotiation + server echo) for trusted networks.
 
 </details>
 
 <details>
 <summary><strong>Presentation (L6) - parsing, codecs and crypto</strong></summary>
 
--   **RFC 7230 Compliant Request Parser**: Validates requests byte-by-byte and auto-sends correct status codes (e.g., 400, 404, 405, 413, 414, 501) with required headers.
--   **WebSocket (RFC 6455)**: Built-in frame parser with SHA-1 handshake and ping/pong management, plus a browser "web serial" terminal over WebSocket. Runs encrypted over TLS (`wss://`) when TLS is enabled.
--   **SSE (Server-Sent Events)**: Persistent client connections and push broadcasting, including over TLS (encrypted `text/event-stream`).
--   **Request Data**: Query-string, `x-www-form-urlencoded` form fields, in-place `multipart/form-data` file uploads, and a zero-heap JSON writer/reader.
--   **Authentication**: Per-route HTTP Basic (RFC 7617) and Digest (RFC 7616, SHA-256, `qop=auth`), plus optional stateless JWT bearer-token verification (HS256, constant-time).
--   **Brute-force Lockout**: Optional per-IP exponential-backoff lockout on failed HTTP auth (`DETWS_ENABLE_AUTH_LOCKOUT`) - returns `429` with `Retry-After` after repeated failures from one address and clears on a successful login.
+- **RFC 7230 Compliant Request Parser**: Validates requests byte-by-byte and auto-sends correct status codes (e.g., 400, 404, 405, 413, 414, 501) with required headers.
+- **WebSocket (RFC 6455)**: Built-in frame parser with SHA-1 handshake and ping/pong management, plus a browser "web serial" terminal over WebSocket. Runs encrypted over TLS (`wss://`) when TLS is enabled.
+- **SSE (Server-Sent Events)**: Persistent client connections and push broadcasting, including over TLS (encrypted `text/event-stream`).
+- **Request Data**: Query-string, `x-www-form-urlencoded` form fields, in-place `multipart/form-data` file uploads, and a zero-heap JSON writer/reader.
+- **Authentication**: Per-route HTTP Basic (RFC 7617) and Digest (RFC 7616, SHA-256, `qop=auth`), plus optional stateless JWT bearer-token verification (HS256, constant-time).
+- **Brute-force Lockout**: Optional per-IP exponential-backoff lockout on failed HTTP auth (`DETWS_ENABLE_AUTH_LOCKOUT`) - returns `429` with `Retry-After` after repeated failures from one address and clears on a successful login.
 
 </details>
 
 <details>
 <summary><strong>Application (L7) - routing, protocols, services and clients</strong></summary>
 
--   **Flexible Routing**: Exact, wildcard (`/*`), and `:param` path-parameter routes, bounded allocation-free regex routes, and per-interface (station / softAP) route filters.
--   **Response Tools**: Custom headers + cookies, CORS (with preflight), `{{var}}` templating, `Cache-Control` beside `ETag`, and chunked/streaming responses of unbounded length in constant memory.
--   **CSRF Protection**: Optional stateless HMAC-signed CSRF tokens (`DETWS_ENABLE_CSRF`) - global enforcement on state-changing methods (`POST`/`PUT`/`PATCH`/`DELETE`) via an `X-CSRF-Token` header, issued by a built-in `GET /csrf` endpoint, with no server-side session state.
--   **Middleware & Rate Limiting**: Composable middleware pipeline plus a built-in fixed-window rate limiter.
--   **File Serving**: Stream static assets with chunked reads from LittleFS, SPIFFS, and SD. One-call `serve_static()` subtree mount with `index.html` fallback, MIME auto-detection, pre-compressed `.gz` serving, and `ETag`/`304` conditional GET.
--   **HTTP Range Requests**: Optional `206 Partial Content` (RFC 7233) for served files - single-range `Range: bytes=...` requests stream just the requested bytes (resumable downloads, media seeking), with `Accept-Ranges` advertisement and `416` for unsatisfiable ranges.
--   **WebDAV (RFC 4918)**: Optional (`DETWS_ENABLE_WEBDAV`) read/write file share over the filesystem - one-call `dav()` subtree mount answering OPTIONS, PROPFIND (Depth 0/1, 207 Multi-Status), GET, HEAD, PUT, DELETE (recursive), MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK, so rclone, cadaver, curl, or a mounted network drive can browse and edit files. The 207 builder and header parsing are host-tested.
--   **Modbus TCP Slave**: Optional (`DETWS_ENABLE_MODBUS`) Modbus Application Protocol server on TCP/502 - a fixed BSS data model (coils, discrete inputs, holding + input registers) served via Read/Write Coils (FC 1/5/15), Read Discrete Inputs (FC 2), Read/Write Holding Registers (FC 3/6/16), and Read Input Registers (FC 4), with proper exception responses. The MBAP/PDU codec is host-tested; the application owns the data model and is notified of client writes.
--   **SNMP Agent**: v1/v2c plus optional v3 USM (HMAC-SHA-256 auth + AES-128 privacy) over UDP, with a zero-heap ASN.1 BER codec and a fixed MIB.
--   **SNMP Notifications**: Optional outbound Traps and InformRequests (`DETWS_ENABLE_SNMP_TRAP`) so the agent pushes alerts to a manager - SNMPv2c, and SNMPv3 USM (authPriv) traps reusing the agent's engine ID and localized keys. Each notification carries `sysUpTime.0` + `snmpTrapOID.0` plus caller varbinds; the PDU builder is host-tested.
--   **CoAP Server (RFC 7252)**: Zero-heap Constrained Application Protocol endpoint over UDP - a fixed resource table dispatched on Uri-Path, GET/POST/PUT/DELETE with piggybacked responses, Uri-Query and Content-Format options. Optional resource **Observe** (RFC 7641, `DETWS_ENABLE_COAP_OBSERVE`): clients subscribe with a GET + Observe option and `coap_notify()` pushes the resource's current value to all observers from the server port with an increasing sequence. Optional **block-wise transfer** (RFC 7959, `DETWS_ENABLE_COAP_BLOCK`): the Block2 option pages a large representation one block at a time, and the Block1 option reassembles a chunked POST/PUT upload (`2.31 Continue` per block) before dispatching the handler with the whole payload.
--   **OPC UA Binary Server + Client (IEC 62541)**: Optional (`DETWS_ENABLE_OPCUA`) zero-heap OPC UA Binary server on TCP/4840 - the little-endian built-in-type codec (NodeId, Variant, DataValue, ReferenceDescription, ...), UA-TCP framing, the Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel), Session (CreateSession + ActivateSession), GetEndpoints, and the Read, Write and Browse services driven by registered resolvers, plus CloseSession / CloseSecureChannel and a ServiceFault for unsupported services (SecurityPolicy None). The MSG framing is spec-faithful, so standard clients interoperate (verified with Python `asyncua`: connect, browse, read, write/read-back). An optional matching client (`DETWS_ENABLE_OPCUA_CLIENT`, `services/opcua_client`) builds the requests and parses the responses, transport-agnostic.
--   **mDNS & NTP Services**: Hostname advertisement via the ESP-IDF mDNS component (with TXT records and extra service types) and SNTP wall-clock time synchronization for request logging.
--   **OTA Updates**: Secure, authenticated over-the-air firmware updates that stream the POST body straight into flash (no full-image RAM buffer).
--   **Streaming Uploads**: Optional POST-body streaming straight into a filesystem file (LittleFS / SPIFFS / SD), so an upload never has to fit in RAM.
--   **Captive Portal Provisioning**: Setup wizard (SoftAP + catch-all DNS portal) for first-boot WiFi credential configuration.
--   **Observability**: Optional runtime stats endpoint (uptime, request/error counts, pool usage, heap), a Prometheus `/metrics` endpoint (text exposition format 0.0.4) for scraping, a per-request access-log callback, and a diagnostics endpoint.
--   **Remote Logging**: Optional RFC 5424 syslog client - ship structured log lines to a central syslog server over UDP (zero-heap, fire-and-forget).
--   **Outbound HTTP(S) Client**: Optional zero-heap client for requests _from_ the device (webhooks, telemetry push, REST calls): blocking `http_get()` / `http_post()` over raw lwIP with DNS resolution, Content-Length / chunked response decoding, and `https://` via client-side mbedTLS over the same static arena - encrypt-only by default with optional server authentication (CA trust anchor or SHA-256 certificate pin). It links no code unless a sketch actually calls it.
--   **MQTT Client (3.1.1)**: Optional persistent publish/subscribe client for IoT messaging - connect to a broker with Last-Will and credentials, `PUBLISH` / `SUBSCRIBE` / `UNSUBSCRIBE` at QoS 0, 1, or 2 (full acknowledgement flows with bounded in-flight DUP retransmit and inbound QoS-2 de-duplication), receive messages via a callback, and keep-alive pings; `mqtts://` runs over the same client-side mbedTLS (encrypt-only or CA/pin-verified). The packet codec is host-tested.
--   **WebSocket Client (RFC 6455)**: Optional outbound WebSocket client - the device connects to a remote endpoint (`ws://`, or `wss://` over the same client-side mbedTLS), performs the `Sec-WebSocket-Key`/`Accept` handshake, sends masked text/binary frames, receives server frames via a callback, and answers ping/pong - for streaming to cloud dashboards or bidirectional control. The frame/handshake codec is host-tested.
+- **Flexible Routing**: Exact, wildcard (`/*`), and `:param` path-parameter routes, bounded allocation-free regex routes, and per-interface (station / softAP) route filters.
+- **Response Tools**: Custom headers + cookies, CORS (with preflight), `{{var}}` templating, `Cache-Control` beside `ETag`, and chunked/streaming responses of unbounded length in constant memory.
+- **CSRF Protection**: Optional stateless HMAC-signed CSRF tokens (`DETWS_ENABLE_CSRF`) - global enforcement on state-changing methods (`POST`/`PUT`/`PATCH`/`DELETE`) via an `X-CSRF-Token` header, issued by a built-in `GET /csrf` endpoint, with no server-side session state.
+- **Middleware & Rate Limiting**: Composable middleware pipeline plus a built-in fixed-window rate limiter.
+- **File Serving**: Stream static assets with chunked reads from LittleFS, SPIFFS, and SD. One-call `serve_static()` subtree mount with `index.html` fallback, MIME auto-detection, pre-compressed `.gz` serving, and `ETag`/`304` conditional GET.
+- **HTTP Range Requests**: Optional `206 Partial Content` (RFC 7233) for served files - single-range `Range: bytes=...` requests stream just the requested bytes (resumable downloads, media seeking), with `Accept-Ranges` advertisement and `416` for unsatisfiable ranges.
+- **WebDAV (RFC 4918)**: Optional (`DETWS_ENABLE_WEBDAV`) read/write file share over the filesystem - one-call `dav()` subtree mount answering OPTIONS, PROPFIND (Depth 0/1, 207 Multi-Status), GET, HEAD, PUT, DELETE (recursive), MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK, so rclone, cadaver, curl, or a mounted network drive can browse and edit files. The 207 builder and header parsing are host-tested.
+- **Modbus TCP Slave**: Optional (`DETWS_ENABLE_MODBUS`) Modbus Application Protocol server on TCP/502 - a fixed BSS data model (coils, discrete inputs, holding + input registers) served via Read/Write Coils (FC 1/5/15), Read Discrete Inputs (FC 2), Read/Write Holding Registers (FC 3/6/16), and Read Input Registers (FC 4), with proper exception responses. The MBAP/PDU codec is host-tested; the application owns the data model and is notified of client writes.
+- **SNMP Agent**: v1/v2c plus optional v3 USM (HMAC-SHA-256 auth + AES-128 privacy) over UDP, with a zero-heap ASN.1 BER codec and a fixed MIB.
+- **SNMP Notifications**: Optional outbound Traps and InformRequests (`DETWS_ENABLE_SNMP_TRAP`) so the agent pushes alerts to a manager - SNMPv2c, and SNMPv3 USM (authPriv) traps reusing the agent's engine ID and localized keys. Each notification carries `sysUpTime.0` + `snmpTrapOID.0` plus caller varbinds; the PDU builder is host-tested.
+- **CoAP Server (RFC 7252)**: Zero-heap Constrained Application Protocol endpoint over UDP - a fixed resource table dispatched on Uri-Path, GET/POST/PUT/DELETE with piggybacked responses, Uri-Query and Content-Format options. Optional resource **Observe** (RFC 7641, `DETWS_ENABLE_COAP_OBSERVE`): clients subscribe with a GET + Observe option and `coap_notify()` pushes the resource's current value to all observers from the server port with an increasing sequence. Optional **block-wise transfer** (RFC 7959, `DETWS_ENABLE_COAP_BLOCK`): the Block2 option pages a large representation one block at a time, and the Block1 option reassembles a chunked POST/PUT upload (`2.31 Continue` per block) before dispatching the handler with the whole payload.
+- **OPC UA Binary Server + Client (IEC 62541)**: Optional (`DETWS_ENABLE_OPCUA`) zero-heap OPC UA Binary server on TCP/4840 - the little-endian built-in-type codec (NodeId, Variant, DataValue, ReferenceDescription, ...), UA-TCP framing, the Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel), Session (CreateSession + ActivateSession), GetEndpoints, and the Read, Write and Browse services driven by registered resolvers, plus CloseSession / CloseSecureChannel and a ServiceFault for unsupported services (SecurityPolicy None). The MSG framing is spec-faithful, so standard clients interoperate (verified with Python `asyncua`: connect, browse, read, write/read-back). An optional matching client (`DETWS_ENABLE_OPCUA_CLIENT`, `services/opcua_client`) builds the requests and parses the responses, transport-agnostic.
+- **mDNS & NTP Services**: Hostname advertisement via the ESP-IDF mDNS component (with TXT records and extra service types) and SNTP wall-clock time synchronization for request logging.
+- **OTA Updates**: Secure, authenticated over-the-air firmware updates that stream the POST body straight into flash (no full-image RAM buffer).
+- **Streaming Uploads**: Optional POST-body streaming straight into a filesystem file (LittleFS / SPIFFS / SD), so an upload never has to fit in RAM.
+- **Captive Portal Provisioning**: Setup wizard (SoftAP + catch-all DNS portal) for first-boot WiFi credential configuration.
+- **Observability**: Optional runtime stats endpoint (uptime, request/error counts, pool usage, heap), a Prometheus `/metrics` endpoint (text exposition format 0.0.4) for scraping, a per-request access-log callback, and a diagnostics endpoint.
+- **Remote Logging**: Optional RFC 5424 syslog client - ship structured log lines to a central syslog server over UDP (zero-heap, fire-and-forget).
+- **Outbound HTTP(S) Client**: Optional zero-heap client for requests _from_ the device (webhooks, telemetry push, REST calls): blocking `http_get()` / `http_post()` over raw lwIP with DNS resolution, Content-Length / chunked response decoding, and `https://` via client-side mbedTLS over the same static arena - encrypt-only by default with optional server authentication (CA trust anchor or SHA-256 certificate pin). It links no code unless a sketch actually calls it.
+- **MQTT Client (3.1.1)**: Optional persistent publish/subscribe client for IoT messaging - connect to a broker with Last-Will and credentials, `PUBLISH` / `SUBSCRIBE` / `UNSUBSCRIBE` at QoS 0, 1, or 2 (full acknowledgement flows with bounded in-flight DUP retransmit and inbound QoS-2 de-duplication), receive messages via a callback, and keep-alive pings; `mqtts://` runs over the same client-side mbedTLS (encrypt-only or CA/pin-verified). The packet codec is host-tested.
+- **WebSocket Client (RFC 6455)**: Optional outbound WebSocket client - the device connects to a remote endpoint (`ws://`, or `wss://` over the same client-side mbedTLS), performs the `Sec-WebSocket-Key`/`Accept` handshake, sends masked text/binary frames, receives server frames via a callback, and answers ping/pong - for streaming to cloud dashboards or bidirectional control. The frame/handshake codec is host-tested.
 
 </details>
 
@@ -158,9 +158,9 @@ CONFIG_STORE
 Optional integrations (these build on their own; the named feature is inert or
 reduced until you also enable the other flag):
 
--   **WEBHOOK** uses **HTTP_CLIENT** to send; without it `detws_webhook_post()` returns `-1`.
--   **OAUTH2** compiles its token-endpoint POST helpers only when **HTTP_CLIENT** is on.
--   **DASHBOARD** adds live control widgets when **WEBSOCKET** is on; the SSE value stream works without it.
+- **WEBHOOK** uses **HTTP_CLIENT** to send; without it `detws_webhook_post()` returns `-1`.
+- **OAUTH2** compiles its token-endpoint POST helpers only when **HTTP_CLIENT** is on.
+- **DASHBOARD** adds live control widgets when **WEBSOCKET** is on; the SSE value stream works without it.
 
 Three flags are auto-derived and must not be set by hand: `STREAM_BODY`
 (`OTA || UPLOAD`), `CLIENT_TLS` (any of the three client-TLS flags), and
@@ -220,8 +220,8 @@ ESP32 capacity: 1,310,720 B flash / 327,680 B RAM. Per-feature examples are unde
 
 ## Compatibility
 
--   **Chips**: ESP32 (all variants)
--   **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO
+- **Chips**: ESP32 (all variants)
+- **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO
 
 ## License
 

@@ -36,7 +36,7 @@ jobs:
         run: python docs/utilities/decorate_changelog.py
 
       - name: Format CHANGELOG.md with Prettier
-        run: npx prettier --write docs/CHANGELOG.md
+        run: npx prettier@3.9.1 --write docs/CHANGELOG.md
 
       - name: Configure SSH commit signing
         env:

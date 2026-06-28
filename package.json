@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "cspell": "^8.6.0",
-    "prettier": "^3.3.0"
+    "prettier": "3.9.1"
   },
   "engines": {
     "node": ">=18"

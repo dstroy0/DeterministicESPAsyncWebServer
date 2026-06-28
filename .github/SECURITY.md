@@ -21,11 +21,11 @@ or by email to **dquigg123@gmail.com**.
 
 Please include:
 
--   The affected version and build flags (`DETWS_ENABLE_*`) in use.
--   A description of the issue and its impact (for example: memory disclosure,
-    authentication bypass, protocol-parsing flaw, remote crash).
--   A minimal reproduction: request bytes, a script, or a test case.
--   Any suggested fix, if you have one.
+- The affected version and build flags (`DETWS_ENABLE_*`) in use.
+- A description of the issue and its impact (for example: memory disclosure,
+  authentication bypass, protocol-parsing flaw, remote crash).
+- A minimal reproduction: request bytes, a script, or a test case.
+- Any suggested fix, if you have one.
 
 You can expect an acknowledgment within a few days. Once the issue is confirmed
 and a fix is prepared, we will coordinate disclosure and credit you in the
