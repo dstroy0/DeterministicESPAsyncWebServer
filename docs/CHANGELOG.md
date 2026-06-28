@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.8.3] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.8.3 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`83dd99e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83dd99e90cf95f67aed471d87cf56fc2e02043e0))
+- update CHANGELOG.md [skip ci] ([`ed770ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed770edb158fb6c2760dd6090214225fff477055))
+
+### Changes
+
+- Bump version: 3.8.2 → 3.8.3 ([`54cf817`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54cf8176dcedd5c3f060dc7e9ed2899e84ba22e2))
+
+### Documentation
+
+- fix accuracy gaps found by the documentation audit ([`e83d3f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e83d3f04a61ea12aaef13742133541d5f94c7329))
+
+</details>
+
 ## [3.8.2] - 2026-06-28
 
 <details>
