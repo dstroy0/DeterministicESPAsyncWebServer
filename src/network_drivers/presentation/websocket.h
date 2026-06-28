@@ -70,7 +70,7 @@
 /** @brief WebSocket frame opcodes. */
 enum WsOpcode
 {
-    WS_OP_CONTINUATION = 0x0, ///< Continuation frame (fragmentation -- rejected).
+    WS_OP_CONTINUATION = 0x0, ///< Continuation frame (data-message fragment; reassembled into buf).
     WS_OP_TEXT = 0x1,         ///< UTF-8 text payload.
     WS_OP_BINARY = 0x2,       ///< Binary payload.
     WS_OP_CLOSE = 0x8,        ///< Connection close.
@@ -84,7 +84,7 @@ enum WsCloseCode
     WS_CLOSE_NORMAL = 1000,      ///< Normal closure.
     WS_CLOSE_GOING_AWAY = 1001,  ///< Endpoint going away.
     WS_CLOSE_PROTOCOL = 1002,    ///< Protocol error.
-    WS_CLOSE_UNSUPPORTED = 1003, ///< Unsupported data (e.g. fragmented message).
+    WS_CLOSE_UNSUPPORTED = 1003, ///< Received a data type the endpoint cannot accept (RFC 6455).
     WS_CLOSE_TOO_BIG = 1009      ///< Payload too large for WS_FRAME_SIZE.
 };
 
