@@ -53,11 +53,16 @@ flag (default off) so it costs nothing when unused.
       clock with `detws_set_clock(fn, ticks_per_second)` and it is divided down to
       the internal 1000 Hz, so timeouts/polling keep the tested 1 ms granularity
       whatever your clock's rate; default is the platform `millis()` (host-tested).
-- [x] Compile-time poll-rate knob _(shipped)_ - `DETWS_WORKER_POLL_TICKS` (default
-      1 = the tested 1000 Hz) trades latency for idle CPU/power on a battery build
-      without touching the default deterministic cadence.
-- [ ] Tuning (S): event-queue-blocking worker drain (lower idle CPU than the
-      `vTaskDelay` poll), leaner tcpip callbacks, per-workload worker count/affinity.
+- [x] Notification-driven worker drain _(shipped)_ - the worker blocks on its
+      FreeRTOS task notification instead of free-running the `vTaskDelay` poll;
+      producers (`listener_enqueue`, `detws_defer`) nudge it the moment work is
+      queued, so events are serviced immediately. This decouples event latency from
+      the idle-sweep cadence: `DETWS_WORKER_POLL_TICKS` is now purely the idle
+      interval (default 1, unchanged), so raising it cuts idle wakeups (CPU/power)
+      at no latency cost (HW: GET latency identical at `POLL_TICKS` 1 vs 100). Zero
+      heap (notifications, not a QueueSet).
+- [ ] Tuning (S): leaner tcpip callbacks, per-workload worker count/affinity guide,
+      a published before/after idle-CPU benchmark.
 
 ## Web / API / UI
 
