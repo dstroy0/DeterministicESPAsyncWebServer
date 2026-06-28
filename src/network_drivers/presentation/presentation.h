@@ -6,8 +6,8 @@
  * @brief Layer 6 (Presentation) - wires the transport ring buffer to the HTTP parser.
  *
  * This layer owns two responsibilities:
- *   1. Drain bytes from `conn_pool[slot_id].rx_buffer` (transport ring buffer)
- *      and feed them into the HTTP parser one at a time.
+ *   1. Drain bytes via the transport read API (det_conn_available / det_conn_read_byte)
+ *      and feed them into the HTTP parser one at a time - the ring is transport's.
  *   2. Expose slot-indexed `http_reset()` and `http_parse()` helpers that the
  *      session layer (server_tick) and application layer (handle) call by slot ID.
  *

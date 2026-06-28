@@ -290,14 +290,14 @@ void ws_parse(WsConn *ws)
     if (conn->state != CONN_ACTIVE)
         return;
 
-    while (conn->rx_tail != conn->rx_head)
+    while (det_conn_available(ws->slot_id) > 0)
     {
-        // Stop if we hit a terminal state
+        // Stop if we hit a terminal state (leave the rest in the ring)
         if (ws->parse_state == WS_FRAME_READY || ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
             return;
 
-        uint8_t byte = conn->rx_buffer[conn->rx_tail];
-        conn->rx_tail = (conn->rx_tail + 1) % RX_BUF_SIZE;
+        uint8_t byte;
+        det_conn_read_byte(ws->slot_id, &byte); // available > 0, always succeeds
         ws_feed_byte(ws, byte);
     }
 }

@@ -1057,22 +1057,19 @@ void opcua_set_browse_handler(OpcUaBrowseHandler fn)
 
 namespace
 {
+// Thin adapters over the transport RX read API - the ring is owned by transport;
+// this service never indexes rx_buffer or advances rx_tail itself.
 size_t ring_avail(const TcpConn *c)
 {
-    return (size_t)((c->rx_head - c->rx_tail + RX_BUF_SIZE) % RX_BUF_SIZE);
+    return det_conn_available(c->id);
 }
 void ring_peek(const TcpConn *c, size_t off, uint8_t *dst, size_t n)
 {
-    size_t idx = (c->rx_tail + off) % RX_BUF_SIZE;
-    for (size_t i = 0; i < n; i++)
-    {
-        dst[i] = c->rx_buffer[idx];
-        idx = (idx + 1) % RX_BUF_SIZE;
-    }
+    det_conn_peek(c->id, off, dst, n);
 }
 void ring_consume(TcpConn *c, size_t n)
 {
-    c->rx_tail = (c->rx_tail + n) % RX_BUF_SIZE;
+    det_conn_consume(c->id, n);
 }
 void raw_send(uint8_t slot, const void *data, size_t n)
 {

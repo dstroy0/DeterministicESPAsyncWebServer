@@ -281,27 +281,19 @@ size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 #include "network_drivers/transport/transport.h"
 
 // Bytes available in the slot's rx ring.
+// Thin adapters over the transport RX read API - the ring is owned by transport;
+// this service never indexes rx_buffer or advances rx_tail itself.
 static size_t ring_avail(const TcpConn *c)
 {
-    return (size_t)((c->rx_head - c->rx_tail + RX_BUF_SIZE) % RX_BUF_SIZE);
+    return det_conn_available(c->id);
 }
-
-// Copy @p n bytes from the ring starting @p off bytes ahead of the tail, without
-// consuming them.
 static void ring_peek(const TcpConn *c, size_t off, uint8_t *dst, size_t n)
 {
-    size_t idx = (c->rx_tail + off) % RX_BUF_SIZE;
-    for (size_t i = 0; i < n; i++)
-    {
-        dst[i] = c->rx_buffer[idx];
-        idx = (idx + 1) % RX_BUF_SIZE;
-    }
+    det_conn_peek(c->id, off, dst, n);
 }
-
-// Consume (drop) @p n bytes from the ring tail.
 static void ring_consume(TcpConn *c, size_t n)
 {
-    c->rx_tail = (c->rx_tail + n) % RX_BUF_SIZE;
+    det_conn_consume(c->id, n);
 }
 
 static void raw_send(uint8_t slot, const void *data, size_t n)

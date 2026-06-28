@@ -188,13 +188,7 @@ static int tls_rng(void *ctx, unsigned char *out, size_t len)
 static int server_bio_recv(void *ctx, unsigned char *buf, size_t len)
 {
     TlsConn *e = (TlsConn *)ctx;
-    TcpConn *c = &conn_pool[e->slot];
-    size_t n = 0;
-    while (n < len && c->rx_tail != c->rx_head)
-    {
-        buf[n++] = c->rx_buffer[c->rx_tail];
-        c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
-    }
+    size_t n = det_conn_read(e->slot, buf, len); // ciphertext from the rx ring
     if (n == 0)
         return MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;

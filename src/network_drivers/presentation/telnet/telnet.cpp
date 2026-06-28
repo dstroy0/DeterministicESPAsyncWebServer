@@ -151,13 +151,10 @@ void telnet_rx(uint8_t slot)
     TelnetConn *t = find_conn(slot);
     if (!t)
         return;
-    TcpConn *conn = &conn_pool[slot];
 
-    while (conn->rx_tail != conn->rx_head)
+    uint8_t b;
+    while (det_conn_read_byte(slot, &b))
     {
-        uint8_t b = conn->rx_buffer[conn->rx_tail];
-        conn->rx_tail = (conn->rx_tail + 1) % RX_BUF_SIZE;
-
         switch (t->st)
         {
         case TN_NORMAL:

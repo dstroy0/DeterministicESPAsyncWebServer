@@ -166,14 +166,9 @@ void ssh_conn_rx(uint8_t conn_slot)
     if (j >= MAX_SSH_CONNS || conn_for_ssh[j] != conn_slot)
         return;
 
-    // Drain the ring buffer into a linear scratch buffer.
+    // Drain the ring into a linear scratch buffer via the transport read API.
     static uint8_t buf[RX_BUF_SIZE];
-    size_t n = 0;
-    while (conn->rx_tail != conn->rx_head && n < sizeof(buf))
-    {
-        buf[n++] = conn->rx_buffer[conn->rx_tail];
-        conn->rx_tail = (conn->rx_tail + 1) % RX_BUF_SIZE;
-    }
+    size_t n = det_conn_read(conn_slot, buf, sizeof(buf));
     if (n == 0)
         return;
 

@@ -7,7 +7,8 @@
  *
  * This file is now a thin adapter.  The HTTP parsing logic lives in
  * http_parser.cpp.  This layer only knows about:
- *   - The transport ring buffer (conn_pool[slot].rx_buffer / rx_head / rx_tail)
+ *   - The transport RX read API (det_conn_available / det_conn_read_byte) - it
+ *     never indexes the ring itself; transport owns rx_buffer / rx_head / rx_tail
  *   - Slot-indexed helpers that the session and application layers expect
  *
  * The slot-indexed `http_reset()` pre-stamps slot_id then delegates to
@@ -59,10 +60,12 @@ void http_parse(uint8_t slot_id)
         return;
 #endif
 
-    TcpConn *tcp = &conn_pool[slot_id];
     HttpReq *req = &http_pool[slot_id];
 
-    while (tcp->rx_tail != tcp->rx_head)
+    // Drain via the transport read API - the parser never touches the ring itself.
+    // Check the terminal state BEFORE consuming so a pipelined next request is left
+    // in the ring; the window is reopened by the worker's det_conn_ack_consumed().
+    while (det_conn_available(slot_id) > 0)
     {
         switch (req->parse_state)
         {
@@ -75,8 +78,8 @@ void http_parse(uint8_t slot_id)
             break;
         }
 
-        uint8_t byte = tcp->rx_buffer[tcp->rx_tail];
-        tcp->rx_tail = (tcp->rx_tail + 1) % RX_BUF_SIZE;
+        uint8_t byte;
+        det_conn_read_byte(slot_id, &byte); // available > 0, so this always succeeds
         http_parser_feed(req, byte);
     }
 }

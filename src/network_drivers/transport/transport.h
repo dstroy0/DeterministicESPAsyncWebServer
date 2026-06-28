@@ -287,6 +287,67 @@ void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
  */
 void det_conn_ack_consumed(uint8_t slot);
 
+// ---------------------------------------------------------------------------
+// RX ring read API - the single way any layer drains received bytes.
+//
+// Transport owns the ring; consumers (HTTP/WS/Telnet/SSH/TLS and the framed
+// services) must never index rx_buffer or advance rx_tail themselves - they call
+// these. Consuming functions advance rx_tail only; the window is reopened by the
+// worker's det_conn_ack_consumed() once per loop (one owner, no per-byte ACK).
+// Single-consumer per slot (the owning worker), so no locking here. These are
+// inline because the byte path is hot and the ring internals live in this header.
+// ---------------------------------------------------------------------------
+
+/** @brief Bytes currently available to read from @p slot's ring. */
+static inline size_t det_conn_available(uint8_t slot)
+{
+    const TcpConn *c = &conn_pool[slot];
+    return (c->rx_head + RX_BUF_SIZE - c->rx_tail) % RX_BUF_SIZE;
+}
+
+/** @brief Pop one byte into @p out; false if the ring is empty. */
+static inline bool det_conn_read_byte(uint8_t slot, uint8_t *out)
+{
+    TcpConn *c = &conn_pool[slot];
+    if (c->rx_tail == c->rx_head)
+        return false;
+    *out = c->rx_buffer[c->rx_tail];
+    c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
+    return true;
+}
+
+/** @brief Copy @p n bytes at @p off from the tail into @p dst WITHOUT consuming (lookahead). */
+static inline void det_conn_peek(uint8_t slot, size_t off, uint8_t *dst, size_t n)
+{
+    const TcpConn *c = &conn_pool[slot];
+    size_t idx = (c->rx_tail + off) % RX_BUF_SIZE;
+    for (size_t i = 0; i < n; i++)
+    {
+        dst[i] = c->rx_buffer[idx];
+        idx = (idx + 1) % RX_BUF_SIZE;
+    }
+}
+
+/** @brief Drop @p n bytes from the tail (advance past already-peeked data). */
+static inline void det_conn_consume(uint8_t slot, size_t n)
+{
+    TcpConn *c = &conn_pool[slot];
+    c->rx_tail = (c->rx_tail + n) % RX_BUF_SIZE;
+}
+
+/** @brief Pop up to @p cap bytes into @p buf; returns the count read. */
+static inline size_t det_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
+{
+    TcpConn *c = &conn_pool[slot];
+    size_t n = 0;
+    while (n < cap && c->rx_tail != c->rx_head)
+    {
+        buf[n++] = c->rx_buffer[c->rx_tail];
+        c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
+    }
+    return n;
+}
+
 /**
  * @brief Write raw bytes straight to @p pcb (no TLS), context-safe.
  *

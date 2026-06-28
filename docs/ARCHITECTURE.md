@@ -75,14 +75,18 @@ and a slow consumer cannot overflow the ring. **TCP-level requirement:**
 `RX_BUF_SIZE >= TCP_WND` (you cannot advertise a window larger than your buffer).
 See docs/BUGS.md "RX flow-control deadlock".
 
-**Still spaghetti: the ring itself has no read API.** Nine files outside transport
-read `rx_buffer` and advance `rx_tail` by hand (`rx_tail = (rx_tail + 1) %
-RX_BUF_SIZE`): `presentation.cpp` (HTTP), `websocket.cpp`, `telnet.cpp`,
-`ssh/ssh_conn.cpp`, `tls/det_tls.cpp`, and the conn_pool-ring services
-`modbus.cpp` / `opcua.cpp`. Two services (`mqtt.cpp`, `ws_client.cpp`) instead keep
-their own private `s_rx_head/s_rx_tail` buffers. Drain logic is duplicated and the
-ring's invariants are enforced "by convention" in every consumer - exactly what hid
-the window deadlock and what makes the streaming hooks slot-blind.
+**RX ring read API: now single-owner (transport).** Consumers no longer index
+`rx_buffer` or advance `rx_tail`. They drain through the transport read API -
+`det_conn_available` / `det_conn_read_byte` / `det_conn_read` / `det_conn_peek` /
+`det_conn_consume` (inline in transport.h, single-consumer per slot). Migrated:
+`presentation.cpp` (HTTP), `websocket.cpp`, `telnet.cpp`, `ssh/ssh_conn.cpp`,
+`tls/det_tls.cpp`, and the conn_pool-ring services `modbus.cpp` / `opcua.cpp` (their
+duplicated `ring_peek/consume/avail` are now thin adapters over the API). The read
+functions only consume; the window is reopened by the worker's single
+`det_conn_ack_consumed()` per loop - so there is exactly one place that touches the
+ring indices for draining and one that ACKs. Remaining: two services (`mqtt.cpp`,
+`ws_client.cpp`) still keep their own private `s_rx_head/s_rx_tail` client-side
+buffers (Phase 4 - reconcile or document).
 
 ## Streaming-body hooks - partially slot-aware
 
@@ -95,24 +99,25 @@ slot-aware and hold per-slot sink state.
 
 ## Ownership: current vs target
 
-| Concern              | Owner (target)         | Status                                         |
-| -------------------- | ---------------------- | ---------------------------------------------- |
-| Socket TX            | transport `det_conn_*` | DONE                                           |
-| RX receive window    | transport              | DONE (`det_conn_ack_consumed`, ack-on-consume) |
-| RX ring read/drain   | transport (read API)   | TODO - 9 consumers poke the ring directly      |
-| Streaming sink state | per-slot, slot-aware   | TODO - global state + slot-blind `data` hook   |
-| Event routing        | session (owner queue)  | DONE                                           |
-| Scratch memory       | session (per-worker)   | DONE                                           |
+| Concern              | Owner (target)         | Status                                          |
+| -------------------- | ---------------------- | ----------------------------------------------- |
+| Socket TX            | transport `det_conn_*` | DONE                                            |
+| RX receive window    | transport              | DONE (`det_conn_ack_consumed`, ack-on-consume)  |
+| RX ring read/drain   | transport (read API)   | DONE (`det_conn_read*`; consumers off the ring) |
+| Streaming sink state | per-slot, slot-aware   | TODO - global state + slot-blind `data` hook    |
+| Event routing        | session (owner queue)  | DONE                                            |
+| Scratch memory       | session (per-worker)   | DONE                                            |
 
 ## Straightening plan (phased; each phase host + HW regresses every consumer)
 
-1. **RX read API in transport** - `det_conn_read(slot, buf, cap)` /
-   `det_conn_available(slot)` / `det_conn_peek(...)` that advance `rx_tail` and fold
-   in ack-on-consume (read == consume == reopen window). Migrate `http_parse` first.
-2. **Migrate the rest** - websocket / telnet / ssh / tls + conn_pool-ring services
-   to the read API; delete every external `rx_tail` modulo. `det_conn_ack_consumed`
-   from the worker loop then disappears (acking is automatic inside read).
-3. **Slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` + per-slot
-   WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixes the concurrent-PUT bug.
-4. **Reconcile private-buffer services** - mqtt / ws_client `s_rx_*`: migrate to the
-   model or document why a client-side buffer legitimately differs.
+1. **DONE - RX read API in transport** - `det_conn_available` / `det_conn_read_byte`
+   / `det_conn_read` / `det_conn_peek` / `det_conn_consume` (inline, transport.h).
+2. **DONE - migrate the consumers** - HTTP / websocket / telnet / ssh / tls + the
+   conn_pool-ring services (modbus / opcua) all drain through the API; no external
+   `rx_tail` modulo remains. The read functions consume only; `det_conn_ack_consumed`
+   stays the one place that reopens the window (per loop), so draining and ACKing
+   each have exactly one owner. HW: 10/10 50 KB byte-exact, backpressure 0.
+3. **TODO - slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` +
+   per-slot WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixes the concurrent-PUT bug.
+4. **TODO - reconcile private-buffer services** - mqtt / ws_client `s_rx_*`: migrate
+   to the model or document why a client-side buffer legitimately differs.
