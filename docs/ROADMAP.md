@@ -144,3 +144,39 @@ flag (default off) so it costs nothing when unused.
 - [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
 - [ ] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).
 - [x] **Pentesting / adversarial suite** _(shipped)_ - a separately-runnable harness (env `native_pentest` + a nightly `Pentest` CI job, _not_ part of the per-commit unit-test run) that fuzzes the untrusted-input parsers (HTTP request line/headers/body, Modbus ADU, base32) with malformed, oversized, partial slowloris-style, binary/protocol-confusion, and deterministically-random input, asserting the device's safety invariants: fixed footprint (no buffer index past its bound), fail-closed (defined error states only), and liveness (no hang/over-read). Plus a documented on-device stress playbook (slowloris / floods / brute-force vs the throttle / lockout / allowlist defenses). Full guide: [PENTEST.md](PENTEST.md). Extend it to the remaining codecs (CBOR / SNMP / CoAP / WS / multipart) as you go.
+
+## Protocol & transport versions
+
+The big-ticket transport/protocol upgrades, sequenced last. Each is large (L) and
+gated on the internal-piping straightening (a clean transport read/write API) so a
+new framing/record layer slots in behind one owner instead of threading through
+every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
+(RFC 9110 semantics, RFC 9112 messaging - which obsolete RFC 7230/7231).
+
+- [ ] **TLS 1.2** (L, RFC 5246) - explicit TLS 1.2 record/handshake support with a
+      pinned, audited cipher suite set, session resumption, and the static-pool
+      mbedTLS integration; make the negotiated version observable and configurable.
+- [ ] **TLS 1.3** (L, RFC 8446) - TLS 1.3 handshake (1-RTT, optional 0-RTT early
+      data with replay safeguards), modern AEAD-only suites, after TLS 1.2 lands.
+- [ ] **HTTP/2** (L, RFC 9113) - HPACK header compression (RFC 7541), stream
+      multiplexing + flow control, and `h2` ALPN over the TLS layer above; map
+      streams onto the deterministic per-connection model without per-stream heap.
+- [ ] **HTTP/3** (L, RFC 9114) - QUIC transport (UDP) + HTTP/3 with QPACK
+      (RFC 9204), after HTTP/2; the largest item (a full UDP congestion / loss
+      recovery + TLS 1.3 transport).
+
+### Supporting HTTP specs (smaller, fold in alongside the above)
+
+- [ ] **Cookies** (M, RFC 6265) - `Set-Cookie` / `Cookie` parsing + emission with
+      the security attributes (`Secure`, `HttpOnly`, `SameSite`, `Max-Age`/`Expires`,
+      `Path`, `Domain`); pairs with the existing session/CSRF/auth features.
+- [ ] **HTTP caching** (M, RFC 9111) - conditional requests (`ETag`/`If-None-Match`,
+      `Last-Modified`/`If-Modified-Since` -> 304) and `Cache-Control` on responses;
+      static-file serving is the natural first beneficiary.
+- [ ] **Forwarded header** (S, RFC 7239) - _optional, off by default, trust-proxy
+      gated._ Parse `Forwarded` (and de-facto `X-Forwarded-For`/`-Proto`) to recover
+      the real client IP + scheme when behind a reverse proxy, so the IP allowlist,
+      per-IP auth lockout, audit-by-IP and absolute-URL/scheme logic stay correct.
+      Only honored from a configured trusted upstream (the header is client-spoofable;
+      trusting it blindly would defeat the allowlist/lockout). Needed only for
+      behind-a-proxy deployments - hence optional.

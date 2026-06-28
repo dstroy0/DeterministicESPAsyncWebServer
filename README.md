@@ -9,6 +9,9 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 > [!WARNING]
 > **EXTREMELY ACTIVE DEVELOPMENT - expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks. **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility** - include paths, method signatures, defaults, and wire behavior can change between releases. **We do not write backwards-compatibility shims** (the only compatibility we maintain is platform/toolchain support); removing cruft is the price of a clean, auditable, deterministic core. Pin an exact version if you need stability, and read [CHANGELOG.md](docs/CHANGELOG.md) and [MIGRATION.md](docs/MIGRATION.md) before every upgrade.
 
+> [!WARNING]
+> **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY. YOU ARE THE 3RD PARTY. PLEASE REPORT YOUR FINDINGS, IF THE BUG IS UNTRACKED AND GENUINE YOU WILL BE CREDITED PROMINENTLY (name, handle, email) ABOVE YOUR FIX IN SRC** You have been warned.
+
 ![Version](https://img.shields.io/badge/version-v4.5.0-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
 [![Docs Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml)
