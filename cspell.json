@@ -506,7 +506,11 @@
     "SSPI",
     "APIP",
     "configme",
-    "preflights"
+    "preflights",
+    "uval",
+    "ival",
+    "authpass",
+    "privpass"
   ],
   "ignorePaths": [
     "node_modules/**",
