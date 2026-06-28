@@ -799,6 +799,70 @@ void test_serve_static_etag_conditional_get()
     TEST_ASSERT_NULL(strstr(out2, "<html>hi</html>")); // body suppressed
 }
 
+// A served file carries Last-Modified; If-Modified-Since drives a conditional GET
+// (304 when not newer than the client's date), with If-None-Match taking precedence.
+void test_serve_static_last_modified_conditional_get()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1000); // 1970-01-01 00:16:40 GMT
+    g_server->serve_static("/", g_static_fs, "/www");
+    const char *LM = "Thu, 01 Jan 1970 00:16:40 GMT";
+    char req[200];
+    const char *o;
+
+    // (1) plain GET: 200 carries the Last-Modified header.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(o, "Last-Modified: Thu, 01 Jan 1970 00:16:40 GMT\r\n"));
+
+    // (2) If-Modified-Since == mtime -> not modified -> 304, no body.
+    snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: %s\r\n\r\n", LM);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "304 Not Modified"));
+    TEST_ASSERT_NULL(strstr(o, "<html>hi</html>"));
+
+    // (3) If-Modified-Since one second older than mtime -> file IS newer -> 200 + body.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: Thu, 01 Jan 1970 00:16:39 GMT\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>"));
+
+    // (4) If-Modified-Since newer than mtime -> 304.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: Fri, 02 Jan 1970 00:00:00 GMT\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "304 Not Modified"));
+
+    // (5) If-None-Match (non-matching) takes precedence: If-Modified-Since ignored -> 200.
+    snprintf(req, sizeof(req),
+             "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"deadbeef\"\r\nIf-Modified-Since: %s\r\n\r\n", LM);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>"));
+}
+
 // ====================================================================
 // ACCESS-LOG HOOK + RUNTIME STATS
 // ====================================================================
@@ -969,6 +1033,7 @@ int main()
     RUN_TEST(test_serve_static_traversal_not_leaked);
     RUN_TEST(test_serve_static_missing_is_404);
     RUN_TEST(test_serve_static_etag_conditional_get);
+    RUN_TEST(test_serve_static_last_modified_conditional_get);
     RUN_TEST(test_serve_static_cache_control);
 
     RUN_TEST(test_request_log_hook_fires);

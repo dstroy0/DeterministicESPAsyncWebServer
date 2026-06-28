@@ -1798,11 +1798,15 @@
 #endif
 
 /**
- * @brief Conditional GET via ETag for served files.
+ * @brief Conditional GET (ETag + Last-Modified) for served files.
  *
- * When set, serve_file()/serve_static() emit a strong `ETag` (derived from the
- * file size + last-modified time) and answer a matching `If-None-Match` with
- * `304 Not Modified`, saving bandwidth on repeat fetches of static assets.
+ * When set, serve_file()/serve_static() emit a strong `ETag` (from file size +
+ * mtime) and a `Last-Modified` date, and answer a conditional request with
+ * `304 Not Modified` when either the client's `If-None-Match` matches the ETag or
+ * - per RFC 9110, only if no `If-None-Match` is present - its `If-Modified-Since`
+ * is not older than the file. Saves bandwidth on repeat fetches of static assets.
+ * (If-Modified-Since needs a real wall clock for the file mtime; with no clock the
+ * date validator is skipped and the ETag validator still works.)
  */
 #ifndef DETWS_ENABLE_ETAG
 #define DETWS_ENABLE_ETAG 0

@@ -170,9 +170,11 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
 - [ ] **Cookies** (M, RFC 6265) - `Set-Cookie` / `Cookie` parsing + emission with
       the security attributes (`Secure`, `HttpOnly`, `SameSite`, `Max-Age`/`Expires`,
       `Path`, `Domain`); pairs with the existing session/CSRF/auth features.
-- [ ] **HTTP caching** (M, RFC 9111) - conditional requests (`ETag`/`If-None-Match`,
-      `Last-Modified`/`If-Modified-Since` -> 304) and `Cache-Control` on responses;
-      static-file serving is the natural first beneficiary.
+- [x] **HTTP caching** (RFC 9111) _(shipped)_ - conditional GET on served files via
+      `DETWS_ENABLE_ETAG`: a strong `ETag` + `Last-Modified`, and `304 Not Modified`
+      for a matching `If-None-Match` or (when no `If-None-Match`) an `If-Modified-Since`
+      not older than the file; plus `Cache-Control` via `set_cache_control()`. Remaining
+      (optional): response-side freshness heuristics / `Age`, request `Cache-Control`.
 - [ ] **Forwarded header** (S, RFC 7239) - _optional, off by default, trust-proxy
       gated._ Parse `Forwarded` (and de-facto `X-Forwarded-For`/`-Proto`) to recover
       the real client IP + scheme when behind a reverse proxy, so the IP allowlist,

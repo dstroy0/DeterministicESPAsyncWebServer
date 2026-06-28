@@ -2674,6 +2674,72 @@ static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, siz
 #endif // DETWS_ENABLE_RANGE
 
 #if DETWS_ENABLE_FILE_SERVING
+// HTTP-date helpers (shared by file serving's Last-Modified / If-Modified-Since and
+// WebDAV's getlastmodified / creationdate). WEBDAV requires FILE_SERVING, so this is
+// the single home for both. Format a time_t as an RFC 1123 GMT date; leaves @p out
+// empty when the timestamp is zero/unavailable.
+static void http_rfc1123(time_t t, char *out, size_t cap)
+{
+    out[0] = '\0';
+    if (t <= 0)
+        return;
+    struct tm tmv;
+#ifdef ARDUINO
+    gmtime_r(&t, &tmv);
+#else
+    struct tm *gp = gmtime(&t);
+    if (!gp)
+        return;
+    tmv = *gp;
+#endif
+    strftime(out, cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv);
+}
+
+// True if a resource last modified at @p mtime is NOT newer than the client's
+// If-Modified-Since date @p ims (RFC 1123 form), i.e. a conditional GET should
+// answer 304. Parses the date by hand (sscanf, no stdlib) and compares the two
+// broken-down times field by field, so no timegm()/epoch round-trip is needed.
+// Returns false (serve 200) when there is no usable date - mtime is 0 (no clock),
+// @p ims is absent, or it does not parse.
+static bool http_not_modified_since(time_t mtime, const char *ims)
+{
+    if (mtime <= 0 || !ims)
+        return false;
+    char mon[4] = {0};
+    int day = 0, year = 0, hh = 0, mm = 0, ss = 0;
+    // "Sun, 06 Nov 1994 08:49:37 GMT" - skip the weekday, read the rest.
+    if (sscanf(ims, "%*3s, %d %3s %d %d:%d:%d", &day, mon, &year, &hh, &mm, &ss) != 6)
+        return false;
+    static const char MONTHS[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    const char *mp = strstr(MONTHS, mon);
+    if (!mp)
+        return false;
+    int imon = (int)(mp - MONTHS) / 3; // 0-based, matches struct tm tm_mon
+
+    struct tm tf;
+#ifdef ARDUINO
+    gmtime_r(&mtime, &tf);
+#else
+    struct tm *gp = gmtime(&mtime);
+    if (!gp)
+        return false;
+    tf = *gp;
+#endif
+    // Compare file (tf) vs If-Modified-Since fields, most significant first.
+    int fy = tf.tm_year + 1900;
+    if (fy != year)
+        return fy < year;
+    if (tf.tm_mon != imon)
+        return tf.tm_mon < imon;
+    if (tf.tm_mday != day)
+        return tf.tm_mday < day;
+    if (tf.tm_hour != hh)
+        return tf.tm_hour < hh;
+    if (tf.tm_min != mm)
+        return tf.tm_min < mm;
+    return tf.tm_sec <= ss;
+}
+
 void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
                                        const char *content_type, const char *content_encoding)
 {
@@ -2707,18 +2773,31 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         snprintf(enc_line, sizeof(enc_line), "Content-Encoding: %s\r\n", content_encoding);
 
 #if DETWS_ENABLE_ETAG
-    // Strong validator from size + last-modified time. If the client's
-    // If-None-Match matches, the resource is unchanged -> 304 (no body).
+    // Conditional GET. Strong validator (ETag) from size + mtime; plus a
+    // Last-Modified date validator. A conditional request answers 304 when either
+    // the client's If-None-Match matches the ETag, or - per RFC 9110, only when no
+    // If-None-Match is present - its If-Modified-Since is not older than the file.
+    time_t mtime = f.getLastWrite();
     char etag[40];
-    snprintf(etag, sizeof(etag), "\"%x-%lx\"", (unsigned)file_size, (unsigned long)f.getLastWrite());
+    snprintf(etag, sizeof(etag), "\"%x-%lx\"", (unsigned)file_size, (unsigned long)mtime);
+
+    char lastmod_line[56];
+    lastmod_line[0] = '\0';
+    char lm_date[40];
+    http_rfc1123(mtime, lm_date, sizeof(lm_date));
+    if (lm_date[0])
+        snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
+
     const char *inm = http_get_header(&http_pool[slot_id], "If-None-Match");
-    if (inm && strcmp(inm, etag) == 0)
+    bool not_modified = inm ? (strcmp(inm, etag) == 0)
+                            : http_not_modified_since(mtime, http_get_header(&http_pool[slot_id], "If-Modified-Since"));
+    if (not_modified)
     {
         f.close();
         struct tcp_pcb *p304 = resp_begin(slot_id, keep);
         char h304[RESP_HDR_BUF_SIZE];
-        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s\r\n", etag,
-                            _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
+        int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s%s\r\n", etag,
+                            lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
         det_conn_send(slot_id, p304, h304, (u16_t)n304);
         resp_end(slot_id, p304, 304, 0, keep);
         return;
@@ -2727,6 +2806,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     snprintf(etag_line, sizeof(etag_line), "ETag: %s\r\n", etag);
 #else
     const char *etag_line = "";
+    const char *lastmod_line = "";
 #endif
 
     // Default: full 200 response covering the whole file.
@@ -2769,14 +2849,15 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 #endif
 
     char header[RESP_HDR_BUF_SIZE];
-    int hlen = snprintf(header, sizeof(header),
-                        "HTTP/1.1 %d %s\r\n"
-                        "Content-Type: %s\r\n"
-                        "Content-Length: %u\r\n"
-                        "%s%s%s%s%s%s"
-                        "%s\r\n",
-                        status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line,
-                        enc_line, etag_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
+    int hlen =
+        snprintf(header, sizeof(header),
+                 "HTTP/1.1 %d %s\r\n"
+                 "Content-Type: %s\r\n"
+                 "Content-Length: %u\r\n"
+                 "%s%s%s%s%s%s%s"
+                 "%s\r\n",
+                 status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line, enc_line,
+                 etag_line, lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
@@ -2957,24 +3038,8 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
 
 static char g_dav_buf[DETWS_WEBDAV_BUF_SIZE]; // 207 Multi-Status scratch (BSS)
 
-// Format a time_t as an RFC 1123 GMT date (Last-Modified). Leaves @p out empty
-// when the timestamp is zero/unavailable.
-static void dav_rfc1123(time_t t, char *out, size_t cap)
-{
-    out[0] = '\0';
-    if (t <= 0)
-        return;
-    struct tm tmv;
-#ifdef ARDUINO
-    gmtime_r(&t, &tmv);
-#else
-    struct tm *gp = gmtime(&t);
-    if (!gp)
-        return;
-    tmv = *gp;
-#endif
-    strftime(out, cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv);
-}
+// http_rfc1123() lives in the FILE_SERVING section above (WEBDAV requires
+// FILE_SERVING), shared by both; used here for getlastmodified / creationdate.
 
 // Join an FS root and a subpath into @p out (mirrors serve_static_request's
 // separator handling). Returns false on overflow.
@@ -3459,7 +3524,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         size_t cap = sizeof(g_dav_buf), len = 0;
         len = webdav_ms_begin(g_dav_buf, cap, len);
         char mt[40];
-        dav_rfc1123(mtime, mt, sizeof(mt));
+        http_rfc1123(mtime, mt, sizeof(mt));
         len = webdav_ms_entry(g_dav_buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
 
         if (isdir && depth >= 1)
@@ -3482,7 +3547,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                 char chref[MAX_PATH_LEN + 80];
                 snprintf(chref, sizeof(chref), "%s%s%s", self_href, base, cdir ? "/" : "");
                 char cmtbuf[40];
-                dav_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
+                http_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
                 c.close();
                 size_t before = len;
                 len = webdav_ms_entry(g_dav_buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
