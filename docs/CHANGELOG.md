@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.2.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.2.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`612e587`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/612e587546b51598e807f9bcaa2c7aea060bea09))
+- update CHANGELOG.md [skip ci] ([`c79f997`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c79f9971fb1357884faf867197321dbf296daff4))
+
+### Changes
+
+- Bump version: 4.1.1 → 4.2.0 ([`4f02aac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f02aacafe400b6073764a5aede28dd48d44e427))
+
+### Documentation
+
+- add TUNING.md worker/perf guide; mark concurrency tuning shipped ([`9c0b44a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c0b44a2042b10cf2615a5e5f00c4e719999c366))
+
+### Performance
+
+- bulk-copy received segments into the ring with a single publish ([`1439e88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1439e88991d60f3ff7ab5ab6b5e78af629b7ce2c))
+
+</details>
+
 ## [4.1.1] - 2026-06-28
 
 <details>
