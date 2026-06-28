@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.8.4] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.8.4 - 2026-06-28</b></summary>
+
+### Bug Fixes
+
+- add missing esp_wifi.h include in EspNow; correct stale @file tags ([`2cf1361`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2cf13615d388929de29df3cd31ed7edc1e6084ed))
+
+### CI / Build
+
+- update test report [skip ci] ([`4e931c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e931c6b5eac07fbf990867420032161f9ed4ef4))
+- update CHANGELOG.md [skip ci] ([`6464af1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6464af156756aeacedc205fd7ce54359cb35c62c))
+
+### Changes
+
+- Bump version: 3.8.3 → 3.8.4 ([`52c746c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52c746ce0064d939177a3ad536091a2b19f70212))
+
+</details>
+
 ## [3.8.3] - 2026-06-28
 
 <details>
