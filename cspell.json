@@ -524,7 +524,11 @@
     "softap",
     "PULLUP",
     "bitmask",
-    "bootloader"
+    "bootloader",
+    "Authy",
+    "JBSWY",
+    "DPEHPK",
+    "strtoul"
   ],
   "ignorePaths": [
     "node_modules/**",
