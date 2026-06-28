@@ -56,6 +56,7 @@ bool detws_dns_verify(uint32_t ip)
 #include "lwip/dns.h"
 #include "lwip/ip_addr.h"
 #include "lwip/priv/tcpip_priv.h"
+#include "services/det_clock.h" // detws_millis() - the single pluggable monotonic source
 #include <Arduino.h>
 
 namespace
@@ -121,8 +122,8 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
     k.host = host;
     tcpip_api_call(do_dns, &k.base); // resolve in the lwIP thread
 
-    uint32_t deadline = millis() + DETWS_DNS_TIMEOUT_MS;
-    while (!s_done && (int32_t)(deadline - millis()) > 0)
+    uint32_t deadline = detws_millis() + DETWS_DNS_TIMEOUT_MS;
+    while (!s_done && (int32_t)(deadline - detws_millis()) > 0)
         delay(5);
 
     if (!s_ok)

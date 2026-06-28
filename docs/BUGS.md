@@ -8,6 +8,36 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Byte-range parser integer overflow on a huge Range value
+
+- **Status:** FIXED (v4.9.1; found by the edge-case audit)
+- **Found:** 2026-06-28, agent edge-case test-gap audit.
+- **Symptom (latent):** `parse_byte_range` accumulated `start/end = *10 + digit` with no
+  overflow guard, so a `Range: bytes=99999999999999999999999-` wraps `size_t` to a small
+  value that can pass the `start >= size` check and yield a wrong `206` window.
+- **Fix:** saturate the accumulator at `SIZE_MAX` on overflow, so a huge start is treated
+  as past-EOF (416) and a huge end clamps to the last byte - never a corrupt window.
+
+## If-Modified-Since month token could mis-parse (off-by-alignment)
+
+- **Status:** FIXED (v4.9.1; in v4.9.0's just-shipped conditional-GET code)
+- **Found:** 2026-06-28, agent edge-case test-gap audit.
+- **Symptom (latent):** `http_not_modified_since` matched the month via
+  `strstr(MONTHS, mon)` without checking the match offset is a multiple of 3, so a
+  malformed token like `ebM` (which appears inside "FebMar") parsed as a valid month ->
+  a wrong 304/200 cache decision on malformed input. No memory-safety impact.
+- **Fix:** reject the match unless `(mp - MONTHS) % 3 == 0`.
+
+## DNS resolver ignored the pluggable clock
+
+- **Status:** FIXED (v4.9.1; found by the duplicate-code audit)
+- **Found:** 2026-06-28, agent services duplicate-code audit.
+- **Symptom:** `services/dns_resolver` polled its resolve deadline with `millis()` instead
+  of `detws_millis()`, so it ignored a custom clock (`detws_set_clock`) - violating the
+  pluggable-clock rule that `detws_millis()` is the single monotonic source.
+- **Fix:** use `detws_millis()`. (The bigger dedup - det_client reusing this one resolver
+  - is tracked separately as a shared-primitive task.)
+
 ## Client ring used `volatile` indices (weak cross-core ordering)
 
 - **Status:** FIXED (v4.8.1; found by analysis while unifying the ring primitive)

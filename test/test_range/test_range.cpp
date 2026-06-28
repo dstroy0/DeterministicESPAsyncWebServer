@@ -173,6 +173,34 @@ void test_multirange_falls_back_to_200()
     TEST_ASSERT_EQUAL_UINT(20, body_len());
 }
 
+// A start that overflows size_t must not wrap to a small in-range value -> 416, never
+// a corrupt 206. (Saturating accumulator in parse_byte_range.)
+void test_range_overflow_start_unsatisfiable()
+{
+    request("bytes=99999999999999999999999-");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "416 Range Not Satisfiable"));
+    TEST_ASSERT_NULL(strstr(r, "206"));
+}
+
+// An overflowing end clamps to the last byte (full 206), not a wrapped window.
+void test_range_overflow_end_clamps()
+{
+    request("bytes=0-99999999999999999999999");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "206 Partial Content"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "Content-Range: bytes 0-19/20"));
+}
+
+// Suffix "bytes=-0" requests the last zero bytes -> unsatisfiable (416).
+void test_range_suffix_zero_unsatisfiable()
+{
+    request("bytes=-0");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "416 Range Not Satisfiable"));
+    TEST_ASSERT_NULL(strstr(r, "206"));
+}
+
 void test_head_with_range_no_body()
 {
     push_str(0, "HEAD /data HTTP/1.1\r\nRange: bytes=0-3\r\n\r\n");
@@ -196,6 +224,9 @@ int main()
     RUN_TEST(test_range_clamped_to_eof);
     RUN_TEST(test_range_unsatisfiable_416);
     RUN_TEST(test_malformed_range_ignored);
+    RUN_TEST(test_range_overflow_start_unsatisfiable);
+    RUN_TEST(test_range_overflow_end_clamps);
+    RUN_TEST(test_range_suffix_zero_unsatisfiable);
     RUN_TEST(test_multirange_falls_back_to_200);
     RUN_TEST(test_head_with_range_no_body);
     return UNITY_END();

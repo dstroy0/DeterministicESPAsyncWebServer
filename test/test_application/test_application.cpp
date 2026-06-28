@@ -863,6 +863,35 @@ void test_serve_static_last_modified_conditional_get()
     TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>"));
 }
 
+// A malformed If-Modified-Since must fail safe: serve 200 (the body), never a stale
+// 304. Includes the off-by-alignment month token ("ebM" lives inside "FebMar") that
+// must NOT mis-parse as a real month.
+void test_serve_static_if_modified_since_malformed()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1000); // Jan 1970
+    g_server->serve_static("/", g_static_fs, "/www");
+    const char *bad[] = {
+        "not a date",                    // sscanf field count != 6
+        "Thu, 01",                       // truncated
+        "Thu, 01 ebM 1970 00:00:00 GMT", // bogus month token at a non-3 offset
+        "Thu, 01 Xyz 1970 00:00:00 GMT", // unknown month
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
+    {
+        char req[200];
+        snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: %s\r\n\r\n", bad[i]);
+        arm_slot(0, req);
+        conn_pool[0].pcb = &_mock_pcb;
+        tcp_capture_reset();
+        g_server->handle();
+        const char *o = tcp_captured();
+        tcp_capture_disable();
+        TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK")); // not 304
+        TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>")); // body served
+    }
+}
+
 // ====================================================================
 // ACCESS-LOG HOOK + RUNTIME STATS
 // ====================================================================
@@ -1034,6 +1063,7 @@ int main()
     RUN_TEST(test_serve_static_missing_is_404);
     RUN_TEST(test_serve_static_etag_conditional_get);
     RUN_TEST(test_serve_static_last_modified_conditional_get);
+    RUN_TEST(test_serve_static_if_modified_since_malformed);
     RUN_TEST(test_serve_static_cache_control);
 
     RUN_TEST(test_request_log_hook_fires);

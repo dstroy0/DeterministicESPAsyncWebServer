@@ -2627,11 +2627,16 @@ static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, siz
 
     bool have_start = false, have_end = false;
     size_t start = 0, end = 0;
+    const size_t SZMAX = (size_t)-1;
     if (*p >= '0' && *p <= '9')
     {
         have_start = true;
         while (*p >= '0' && *p <= '9')
-            start = start * 10 + (size_t)(*p++ - '0');
+        {
+            size_t d = (size_t)(*p++ - '0');
+            // Saturate on overflow: a start past SIZE_MAX is past EOF -> 416, never wraps.
+            start = (start > (SZMAX - d) / 10) ? SZMAX : start * 10 + d;
+        }
     }
     if (*p != '-')
         return 0; // malformed
@@ -2641,7 +2646,10 @@ static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, siz
         have_end = true;
         end = 0;
         while (*p >= '0' && *p <= '9')
-            end = end * 10 + (size_t)(*p++ - '0');
+        {
+            size_t d = (size_t)(*p++ - '0');
+            end = (end > (SZMAX - d) / 10) ? SZMAX : end * 10 + d; // saturate -> clamps to last byte
+        }
     }
     while (*p == ' ')
         p++;
@@ -2712,7 +2720,9 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
         return false;
     static const char MONTHS[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
     const char *mp = strstr(MONTHS, mon);
-    if (!mp)
+    // Must align to a 3-char month boundary: a malformed token like "ebM" appears in
+    // the table at a non-multiple-of-3 offset and would otherwise mis-parse as a month.
+    if (!mp || ((mp - MONTHS) % 3) != 0)
         return false;
     int imon = (int)(mp - MONTHS) / 3; // 0-based, matches struct tm tm_mon
 
