@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.4.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.4.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`75bcd52`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75bcd52d0d25e4ee96dac8ed779d424d6ed0cff7))
+- update CHANGELOG.md [skip ci] ([`6eb9968`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6eb99687d1e3f13a55d1f176798ff389537a7fe6))
+
+### Changes
+
+- Bump version: 4.3.0 → 4.4.0 ([`4243e44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4243e4473627a071710eb470ffbce82c08f17d58))
+
+### Features
+
+- answer PROPPATCH with 207 Multi-Status instead of 405 ([`7c51c2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c51c2dc66e2b9819e28a1f738a615df33ae1b61))
+
+</details>
+
 ## [4.3.0] - 2026-06-28
 
 <details>
