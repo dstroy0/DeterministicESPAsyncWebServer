@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 48.SnmpTrap.ino
+ * @file 26.SnmpTrap.ino
  * @brief Outbound SNMP notifications: the agent pushes traps to a manager.
  *
  * Sends an SNMPv2c trap to a manager every few seconds carrying a custom

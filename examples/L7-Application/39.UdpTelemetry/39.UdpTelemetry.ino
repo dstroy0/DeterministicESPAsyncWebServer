@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 68.UdpTelemetry.ino
+ * @file 39.UdpTelemetry.ino
  * @brief Fire-and-forget UDP telemetry cast (DETWS_ENABLE_UDP_TELEMETRY).
  *
  * Builds an InfluxDB line-protocol record (`esp32 heap=...i,rssi=...i,temp=...`)

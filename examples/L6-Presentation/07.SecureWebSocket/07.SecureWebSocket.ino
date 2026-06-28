@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 24.SecureWebSocket.ino
+ * @file 07.SecureWebSocket.ino
  * @brief Secure WebSocket (wss://) and Server-Sent Events over TLS.
  *
  * WebSocket and SSE both run over the deterministic TLS engine: the wss://

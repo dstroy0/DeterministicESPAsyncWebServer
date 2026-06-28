@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 43.PrometheusMetrics.ino
+ * @file 21.PrometheusMetrics.ino
  * @brief Prometheus `/metrics` endpoint (text exposition format 0.0.4).
  *
  * Exposes the server's runtime counters as Prometheus metrics so a Prometheus

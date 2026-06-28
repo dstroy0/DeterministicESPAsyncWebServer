@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 47.WebSocketClient.ino
+ * @file 25.WebSocketClient.ino
  * @brief Outbound WebSocket client: the device connects to a WS server.
  *
  * Connects to a remote WebSocket endpoint, sends a text message once a second,

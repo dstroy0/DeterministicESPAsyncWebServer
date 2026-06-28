@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 70.LogBuffer.ino
+ * @file 41.LogBuffer.ino
  * @brief Fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Keeps the last DETWS_LOG_LINES log lines in RAM (oldest pruned on overflow),

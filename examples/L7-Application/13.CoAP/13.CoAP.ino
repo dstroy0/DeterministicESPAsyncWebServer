@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 32.CoAP.ino
+ * @file 13.CoAP.ino
  * @brief Zero-heap CoAP server (RFC 7252) on UDP/5683 alongside the HTTP server.
  *
  * Exposes three resources, dispatched against the request Uri-Path:

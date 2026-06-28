@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 80.Vfs.ino
+ * @file 51.Vfs.ino
  * @brief Unified VFS over a real filesystem (DETWS_ENABLE_VFS).
  *
  * The same detws_vfs_* API drives a RAM pool in tests and a real filesystem on

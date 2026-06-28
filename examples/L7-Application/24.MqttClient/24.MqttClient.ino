@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 46.MqttClient.ino
+ * @file 24.MqttClient.ino
  * @brief MQTT 3.1.1 client: the device publishes/subscribes to a broker.
  *
  * Connects to a broker, SUBSCRIBEs to a topic, and PUBLISHEs to the same topic

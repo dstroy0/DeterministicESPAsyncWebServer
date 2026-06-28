@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 60.Csrf.ino
+ * @file 33.Csrf.ino
  * @brief CSRF protection for state-changing requests (DETWS_ENABLE_CSRF).
  *
  * When enabled, every POST / PUT / PATCH / DELETE must carry a valid

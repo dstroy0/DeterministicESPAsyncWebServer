@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 54.TlsResumption.ino
+ * @file 06.TlsResumption.ino
  * @brief HTTPS with TLS session resumption (RFC 5077 tickets, DETWS_ENABLE_TLS_RESUMPTION).
  *
  * Same HTTPS server as example 22, but with session tickets enabled: a returning

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 20.DigestAuth.ino
+ * @file 05.DigestAuth.ino
  * @brief Per-route HTTP Digest authentication (RFC 7616, SHA-256, qop="auth").
  *
  * Passing digest=true to the authenticated on() overload protects a route with

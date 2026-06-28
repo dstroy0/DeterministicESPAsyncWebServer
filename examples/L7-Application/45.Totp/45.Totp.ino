@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 74.Totp.ino
+ * @file 45.Totp.ino
  * @brief TOTP two-factor auth (RFC 6238) (DETWS_ENABLE_TOTP).
  *
  * Decodes a base32 shared secret (the kind Google Authenticator / Authy import),

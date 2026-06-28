@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 44.Stats.ino
+ * @file 22.Stats.ino
  * @brief Runtime statistics endpoint (DETWS_ENABLE_STATS).
  *
  * server.stats(slot_id) writes a JSON snapshot - uptime, request/error counts,

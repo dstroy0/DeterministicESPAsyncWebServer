@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 56.TimeSourceFallback.ino
+ * @file 31.TimeSourceFallback.ino
  * @brief Multi-source time fallback (DETWS_ENABLE_TIME_SOURCE).
  *
  * Registers two time sources with priorities and lets the library fall back

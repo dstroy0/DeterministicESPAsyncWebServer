@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 79.OidcAuth.ino
+ * @file 50.OidcAuth.ino
  * @brief OpenID Connect ID-token auth, RS256 (DETWS_ENABLE_OIDC).
  *
  * A client presents `Authorization: Bearer <id_token>`; the device verifies the

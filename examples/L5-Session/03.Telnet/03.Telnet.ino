@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 36.Telnet.ino
+ * @file 03.Telnet.ino
  * @brief Line-oriented Telnet console (RFC 854) on port 23 (DETWS_ENABLE_TELNET).
  *
  * Opens a Telnet listener via server.listen(23, PROTO_TELNET). The server

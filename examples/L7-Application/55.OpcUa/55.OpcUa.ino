@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 84.OpcUa.ino
+ * @file 55.OpcUa.ino
  * @brief OPC UA Binary server - SecureChannel + Session + Read/Write + Browse (DETWS_ENABLE_OPCUA).
  *
  * Opens an OPC UA endpoint on TCP/4840. Implements the OPC UA Binary type codec,

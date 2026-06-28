@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 51.PerIpThrottle.ino
+ * @file 05.PerIpThrottle.ino
  * @brief Per-source-IP connection-flood defense (DETWS_ENABLE_PER_IP_THROTTLE).
  *
  * When enabled, the accept callback rejects a new connection once one source IPv4

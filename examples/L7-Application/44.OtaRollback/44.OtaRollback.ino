@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 73.OtaRollback.ino
+ * @file 44.OtaRollback.ino
  * @brief OTA rollback protection / soft-brick safeguard (DETWS_ENABLE_OTA_ROLLBACK).
  *
  * After an OTA update the new image boots PENDING_VERIFY. Each loop this runs a

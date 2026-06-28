@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 33.SNMP.ino
+ * @file 14.SNMP.ino
  * @brief Zero-heap SNMP v1/v2c agent on UDP/161 (Get / GetNext / GetBulk / Set).
  *
  * Exposes the standard MIB-II system group plus a few private objects under an

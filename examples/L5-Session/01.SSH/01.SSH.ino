@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 34.SSH.ino
+ * @file 01.SSH.ino
  * @brief SSH server example: host key from NVS, auth callbacks, channel echo.
  *
  * Demonstrates the SSH server stack (RFC 4253/4252/4254):

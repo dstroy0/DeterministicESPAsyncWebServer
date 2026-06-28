@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 59.AuthLockout.ino
+ * @file 12.AuthLockout.ino
  * @brief Brute-force lockout for HTTP auth (DETWS_ENABLE_AUTH_LOCKOUT).
  *
  * Adds a per-source-IP guard in front of authenticated routes: after a few wrong

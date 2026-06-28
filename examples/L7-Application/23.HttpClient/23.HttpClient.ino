@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 45.HttpClient.ino
+ * @file 23.HttpClient.ino
  * @brief Outbound HTTP(S) client: the device makes requests to a remote server.
  *
  * A blocking GET/POST over raw lwIP (https:// via client-side mbedTLS), for

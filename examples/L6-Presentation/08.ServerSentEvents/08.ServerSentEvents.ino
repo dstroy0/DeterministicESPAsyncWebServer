@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 25.ServerSentEvents.ino
+ * @file 08.ServerSentEvents.ino
  * @brief Server-Sent Events (text/event-stream) push via on_sse() + sse_broadcast().
  *
  * Subscribes browsers at /events; the loop pushes a counter to every subscriber

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 50.CoapBlock.ino
+ * @file 28.CoapBlock.ino
  * @brief CoAP block-wise transfer (RFC 7959): large responses and uploads.
  *
  * Two resources show both directions of block-wise transfer:

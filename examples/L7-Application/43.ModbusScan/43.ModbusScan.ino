@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 72.ModbusScan.ino
+ * @file 43.ModbusScan.ino
  * @brief Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * The master/client side of Modbus: build read-request ADUs and parse the

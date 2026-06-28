@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 69.Guardrails.ino
+ * @file 40.Guardrails.ino
  * @brief Runtime heap/stack guardrails (DETWS_ENABLE_GUARDRAILS).
  *
  * Installs a breach callback and checks the guardrails once a second: free heap,

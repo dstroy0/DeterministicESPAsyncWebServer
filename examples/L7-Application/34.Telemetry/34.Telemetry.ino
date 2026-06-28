@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 61.Telemetry.ino
+ * @file 34.Telemetry.ino
  * @brief Moving-window stats, rate-of-change, and a totalizer (DETWS_ENABLE_TELEMETRY).
  *
  * Turns a periodic sensor reading into dashboard figures with zero heap: a

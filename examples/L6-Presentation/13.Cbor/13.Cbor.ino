@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 65.Cbor.ino
+ * @file 13.Cbor.ino
  * @brief Serve telemetry as compact binary CBOR (DETWS_ENABLE_CBOR).
  *
  * Encodes a small {heap, uptime, rssi} map with the zero-heap CBOR writer into a
