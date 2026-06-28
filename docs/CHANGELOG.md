@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.4.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.4.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`1b20cee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b20cee6d32a7b492bbb440254e97d7b35a84fed))
+- update CHANGELOG.md [skip ci] ([`dc55185`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc551856dd7d36fde03123534a58da4431616e35))
+
+### Changes
+
+- Bump version: 3.3.0 → 3.4.0 ([`1a4c04a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a4c04a34d126ca9e7cb22177bb59f4cd80dc1c2))
+
+### Features
+
+- OPC UA Read service (Variant/DataValue + registered resolver) ([`c040ad1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c040ad134435e422aaa6abf598a65fdd3d765165))
+
+</details>
+
 ## [3.3.0] - 2026-06-27
 
 <details>
