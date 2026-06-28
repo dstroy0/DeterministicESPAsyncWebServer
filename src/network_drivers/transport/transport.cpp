@@ -618,19 +618,32 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
     }
 
+    // Bulk-copy the segment into the ring with a single head publish. This runs on
+    // the tcpip thread (shared with WiFi on Core 0), so it stays lean: a contiguous
+    // memcpy per pbuf (two across the wrap) instead of a per-byte loop, and the head
+    // is an SPSC release point - we advance a local copy through the segment and
+    // store rx_head once at the end (one release store publishes every byte), rather
+    // than a release store per byte. The free-space check above guarantees the whole
+    // segment fits, so head can never overrun tail here.
+    size_t head = slot->rx_head; // sole producer of head; one acquire load
     size_t bytes_copied = 0;
-    struct pbuf *q = p;
-    while (q != nullptr)
+    for (struct pbuf *q = p; q != nullptr; q = q->next)
     {
-        uint8_t *payload = (uint8_t *)q->payload;
-        for (u16_t i = 0; i < q->len; i++)
+        const uint8_t *payload = (const uint8_t *)q->payload;
+        u16_t remaining = q->len;
+        while (remaining > 0)
         {
-            slot->rx_buffer[slot->rx_head] = payload[i];
-            slot->rx_head = (slot->rx_head + 1) % RX_BUF_SIZE;
-            bytes_copied++;
+            size_t chunk = RX_BUF_SIZE - head; // bytes until the buffer end (wrap point)
+            if (chunk > remaining)
+                chunk = remaining;
+            memcpy(&slot->rx_buffer[head], payload, chunk);
+            head = (head + chunk) % RX_BUF_SIZE; // wraps at most once per pbuf
+            payload += chunk;
+            remaining -= (u16_t)chunk;
+            bytes_copied += chunk;
         }
-        q = q->next;
     }
+    slot->rx_head = head; // single release store: publishes the whole segment at once
 
     // The whole segment was stored, so acknowledge all of it.
     tcp_recved(tpcb, (u16_t)bytes_copied);
