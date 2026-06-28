@@ -510,7 +510,12 @@
     "uval",
     "ival",
     "authpass",
-    "privpass"
+    "privpass",
+    "Avahi",
+    "POSIX",
+    "INET",
+    "DGRAM",
+    "recvfrom"
   ],
   "ignorePaths": [
     "node_modules/**",
