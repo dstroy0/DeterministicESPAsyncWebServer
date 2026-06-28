@@ -515,7 +515,9 @@
     "POSIX",
     "INET",
     "DGRAM",
-    "recvfrom"
+    "recvfrom",
+    "mosquitto",
+    "hivemq"
   ],
   "ignorePaths": [
     "node_modules/**",
