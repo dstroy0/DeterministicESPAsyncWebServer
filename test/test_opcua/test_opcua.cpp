@@ -1,10 +1,11 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for OPC UA (services/opcua): the OPC UA Binary built-in type codec
-// (incl. NodeId / DateTime), UACP header parsing, the Hello/Acknowledge handshake,
-// and the SecureChannel (OpenSecureChannel/OPN, SecurityPolicy None). The TCP data
-// handler (opcua_rx) is ESP32-only and HW-verified.
+// Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl.
+// NodeId / DateTime / Variant / DataValue / ReferenceDescription), UACP framing,
+// the Hello/Acknowledge handshake, the SecureChannel (OPN), the Session
+// (CreateSession/ActivateSession), and the Read / Browse / CloseSession services
+// (SecurityPolicy None). The TCP data handler (opcua_rx) is ESP32-only and HW-verified.
 
 #include "services/opcua/opcua.h"
 #include <string.h>
@@ -603,6 +604,206 @@ void test_build_read_response()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// ---------------------------------------------------------------------------
+// Increment 5 - Browse service + CloseSession
+// ---------------------------------------------------------------------------
+
+// Test Browse resolver: node ns=0;i=85 (Objects) has one child; everything else unknown.
+static int32_t test_browse_handler(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+{
+    if (ns == 0 && id == 85 && max >= 1)
+    {
+        out[0].ref_type_id = OPCUA_REFTYPE_ORGANIZES;
+        out[0].is_forward = true;
+        out[0].target_ns = 1;
+        out[0].target_id = 1;
+        out[0].browse_name_ns = 1;
+        out[0].browse_name = "Uptime";
+        out[0].display_name = "Uptime";
+        out[0].node_class = OPCUA_NODECLASS_VARIABLE;
+        out[0].type_def_id = OPCUA_TYPEDEF_BASE_DATA_VARIABLE;
+        return 1;
+    }
+    return -1; // unknown node
+}
+
+// Build a BrowseRequest MSG that browses one node (ns, id).
+static size_t build_browse(uint8_t *out, size_t cap, uint32_t token, uint32_t seq, uint32_t req_id, uint32_t handle,
+                           uint16_t ns, uint32_t id)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, token);
+    ua_w_u32(&w, seq);
+    ua_w_u32(&w, req_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_BROWSE_REQ);
+    // RequestHeader
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u64(&w, 0);
+    ua_w_u32(&w, handle);
+    ua_w_u32(&w, 0);
+    ua_w_string(&w, nullptr, -1);
+    ua_w_u32(&w, 0);
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u8(&w, 0x00);
+    // BrowseRequest body
+    ua_w_nodeid_numeric(&w, 0, 0);   // View.ViewId
+    ua_w_u64(&w, 0);                 // View.Timestamp
+    ua_w_u32(&w, 0);                 // View.ViewVersion
+    ua_w_u32(&w, 0);                 // RequestedMaxReferencesPerNode
+    ua_w_i32(&w, 1);                 // NodesToBrowse count
+    ua_w_nodeid_numeric(&w, ns, id); // BrowseDescription.NodeId
+    ua_w_u32(&w, 0);                 // BrowseDirection (Forward)
+    ua_w_nodeid_numeric(&w, 0, 0);   // ReferenceTypeId (null = all)
+    ua_w_bool(&w, true);             // IncludeSubtypes
+    ua_w_u32(&w, 0);                 // NodeClassMask
+    ua_w_u32(&w, 0x3F);              // ResultMask (all)
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_browse()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 85);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(opcua_parse_browse(buf, n, &br));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_BROWSE_REQ, br.msg.type_id);
+    TEST_ASSERT_EQUAL_UINT32(70, br.msg.request_handle);
+    TEST_ASSERT_EQUAL_UINT32(1, br.count);
+    TEST_ASSERT_EQUAL_UINT16(0, br.items[0].ns);
+    TEST_ASSERT_EQUAL_UINT32(85, br.items[0].id);
+}
+
+void test_build_browse_response()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 85);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(opcua_parse_browse(buf, n, &br));
+
+    uint8_t resp[512];
+    size_t rn = opcua_build_browse_response(&br, test_browse_handler, 11, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId
+    TEST_ASSERT_EQUAL_UINT32(11, ua_r_u32(&r));  // SequenceNumber
+    TEST_ASSERT_EQUAL_UINT32(300, ua_r_u32(&r)); // RequestId
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_BROWSE_RESP, tid.id);
+    (void)ua_r_u64(&r);                         // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(70, ua_r_u32(&r)); // RequestHandle
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));  // DiagnosticInfo
+    TEST_ASSERT_EQUAL_INT32(-1, ua_r_i32(&r));  // StringTable
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));    // AdditionalHeader NodeId
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));  // AdditionalHeader body
+
+    // Results[] -> one BrowseResult
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, ua_r_u32(&r)); // BrowseResult.StatusCode
+    int32_t cp = 0;
+    char tmp[8];
+    TEST_ASSERT_TRUE(ua_r_string(&r, tmp, sizeof(tmp), &cp)); // ContinuationPoint (null)
+    TEST_ASSERT_EQUAL_INT32(-1, cp);
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r)); // References[] count
+
+    // ReferenceDescription
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid)); // ReferenceTypeId
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_REFTYPE_ORGANIZES, tid.id);
+    TEST_ASSERT_TRUE(ua_r_bool(&r));         // IsForward
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid)); // target NodeId (ExpandedNodeId)
+    TEST_ASSERT_EQUAL_UINT16(1, tid.ns);
+    TEST_ASSERT_EQUAL_UINT32(1, tid.id);
+    // BrowseName (QualifiedName)
+    char name[16];
+    int32_t nl = 0;
+    TEST_ASSERT_EQUAL_UINT16(1, ua_r_u16(&r)); // BrowseName.ns
+    TEST_ASSERT_TRUE(ua_r_string(&r, name, sizeof(name), &nl));
+    TEST_ASSERT_EQUAL_STRING("Uptime", name);
+    // DisplayName (LocalizedText): mask 0x02 (text only)
+    TEST_ASSERT_EQUAL_HEX8(0x02, ua_r_u8(&r));
+    TEST_ASSERT_TRUE(ua_r_string(&r, name, sizeof(name), &nl));
+    TEST_ASSERT_EQUAL_STRING("Uptime", name);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_VARIABLE, ua_r_u32(&r)); // NodeClass
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));                          // TypeDefinition
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_TYPEDEF_BASE_DATA_VARIABLE, tid.id);
+
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r)); // DiagnosticInfos[]
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_build_browse_response_unknown()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 999);
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_TRUE(opcua_parse_browse(buf, n, &br));
+
+    uint8_t resp[256];
+    size_t rn = opcua_build_browse_response(&br, test_browse_handler, 11, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    r.off = 12; // skip TokenId/Seq/RequestId
+    UaNodeId tid;
+    ua_r_nodeid(&r, &tid);                                                   // TypeId
+    (void)ua_r_u64(&r);                                                      // Timestamp
+    (void)ua_r_u32(&r);                                                      // RequestHandle
+    (void)ua_r_u32(&r);                                                      // ServiceResult
+    (void)ua_r_u8(&r);                                                       // DiagnosticInfo
+    (void)ua_r_i32(&r);                                                      // StringTable
+    ua_r_nodeid(&r, &tid);                                                   // AdditionalHeader NodeId
+    (void)ua_r_u8(&r);                                                       // AdditionalHeader body
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));                                // Results count
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, ua_r_u32(&r)); // BrowseResult.StatusCode
+    char tmp[4];
+    int32_t cp = 0;
+    TEST_ASSERT_TRUE(ua_r_string(&r, tmp, sizeof(tmp), &cp)); // ContinuationPoint null
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));                 // References[] empty
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_build_close_session_response()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_CLOSE_SESSION_REQ, 7, 7, 400, 80);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+
+    uint8_t resp[64];
+    size_t rn = opcua_build_close_session_response(&m, 12, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId
+    TEST_ASSERT_EQUAL_UINT32(12, ua_r_u32(&r));  // SequenceNumber
+    TEST_ASSERT_EQUAL_UINT32(400, ua_r_u32(&r)); // RequestId
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CLOSE_SESSION_RESP, tid.id);
+    (void)ua_r_u64(&r);                         // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(80, ua_r_u32(&r)); // RequestHandle
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    TEST_ASSERT_FALSE(r.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -627,5 +828,9 @@ int main()
     RUN_TEST(test_datavalue_bad_status);
     RUN_TEST(test_parse_read);
     RUN_TEST(test_build_read_response);
+    RUN_TEST(test_parse_browse);
+    RUN_TEST(test_build_browse_response);
+    RUN_TEST(test_build_browse_response_unknown);
+    RUN_TEST(test_build_close_session_response);
     return UNITY_END();
 }

@@ -3,17 +3,17 @@
 
 /**
  * @file 84.OpcUa.ino
- * @brief OPC UA Binary server - handshake + SecureChannel + Session + Read (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server - SecureChannel + Session + Read + Browse (DETWS_ENABLE_OPCUA).
  *
  * Opens an OPC UA endpoint on TCP/4840. Implements the OPC UA Binary type codec,
  * UA-TCP (UACP) framing, the Hello/Acknowledge handshake, the SecureChannel
  * (OpenSecureChannel, SecurityPolicy None), the Session (CreateSession +
- * ActivateSession), and the Read service - so a client (UaExpert, open62541,
- * Python asyncua, ...) completes the handshake, opens a secure channel, activates
- * a session, and Reads node values via a registered resolver. Browse and the Close
- * calls are later increments.
+ * ActivateSession), the Read service, the Browse service, and CloseSession /
+ * CloseSecureChannel - so a client (UaExpert, open62541, Python asyncua, ...)
+ * completes the handshake, opens a secure channel, activates a session, browses the
+ * Objects folder, and reads node values, all via registered resolvers.
  *
- *   listen(4840, PROTO_OPCUA)  -> HEL/ACK, OPN, CreateSession, ActivateSession, Read
+ *   listen(4840, PROTO_OPCUA)  -> HEL/ACK, OPN, CreateSession, ActivateSession, Read, Browse, Close
  *
  * The HTTP server on :80 runs alongside, sharing the same connection pool and
  * event loop - OPC UA is just another protocol on its own port.
@@ -61,6 +61,29 @@ static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
     }
 }
 
+// Browse resolver: the standard Objects folder (ns=0;i=85) organizes our three
+// variables (ns=1;i=1..3). Browsing anything else is BadNodeIdUnknown.
+static int32_t opcua_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+{
+    if (ns != 0 || id != 85) // i=85 == Objects folder
+        return -1;
+    static const char *names[3] = {"Uptime", "FreeHeap", "Temperature"};
+    int32_t n = 0;
+    for (uint32_t i = 0; i < 3 && (uint32_t)n < max; i++, n++)
+    {
+        out[n].ref_type_id = OPCUA_REFTYPE_ORGANIZES;
+        out[n].is_forward = true;
+        out[n].target_ns = 1;
+        out[n].target_id = i + 1;
+        out[n].browse_name_ns = 1;
+        out[n].browse_name = names[i];
+        out[n].display_name = names[i];
+        out[n].node_class = OPCUA_NODECLASS_VARIABLE;
+        out[n].type_def_id = OPCUA_TYPEDEF_BASE_DATA_VARIABLE;
+    }
+    return n;
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -72,10 +95,11 @@ void setup()
     WiFi.setSleep(false);
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
-    opcua_set_read_handler(opcua_read); // serve Reads for ns=1;i=1..3
-    server.listen(4840, PROTO_OPCUA);   // OPC UA Binary endpoint - before begin() (it activates listeners)
+    opcua_set_read_handler(opcua_read);     // serve Reads for ns=1;i=1..3
+    opcua_set_browse_handler(opcua_browse); // list those under the Objects folder
+    server.listen(4840, PROTO_OPCUA);       // OPC UA Binary endpoint - before begin() (it activates listeners)
     server.begin(80);
-    Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (handshake + SecureChannel + Session + Read)");
+    Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (handshake + SecureChannel + Session + Read + Browse)");
 }
 
 void loop()

@@ -3,7 +3,7 @@
 
 /**
  * @file opcua.h
- * @brief OPC UA Binary codec + UA-TCP transport + SecureChannel + Session + Read (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read + Browse (DETWS_ENABLE_OPCUA).
  *
  * OPC UA (IEC 62541) is large; this is built in increments. **Increment 1** is the
  * foundation every OPC UA server needs:
@@ -33,6 +33,10 @@
  * **Increment 4** adds the `Read` service (OPC UA Part 4 §5.10): scalar Variant +
  * DataValue encoding and a registered resolver that maps a NodeId/attribute to a
  * value - the first service that returns live data.
+ *
+ * **Increment 5** adds the `Browse` service (OPC UA Part 4 §5.8.2) via a registered
+ * resolver (ReferenceDescription / QualifiedName / LocalizedText encoding) and
+ * `CloseSession`; CloseSecureChannel arrives as a `CLO` message and closes the slot.
  *
  * No heap, no stdlib.
  *
@@ -341,6 +345,95 @@ typedef bool (*OpcUaReadHandler)(uint16_t ns, uint32_t id, uint32_t attribute, O
 void opcua_set_read_handler(OpcUaReadHandler fn);
 
 // ---------------------------------------------------------------------------
+// Browse service + Close (MSG, SecurityPolicy None)
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeIds (namespace 0) for Browse / Close services (binary encoding ids). */
+#define OPCUA_ID_BROWSE_REQ 527         ///< BrowseRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_BROWSE_RESP 530        ///< BrowseResponse_Encoding_DefaultBinary.
+#define OPCUA_ID_CLOSE_SESSION_REQ 473  ///< CloseSessionRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_CLOSE_SESSION_RESP 476 ///< CloseSessionResponse_Encoding_DefaultBinary.
+
+/** @brief Common NodeClass / ReferenceType / TypeDefinition ids (namespace 0) for Browse results. */
+#define OPCUA_NODECLASS_OBJECT 1
+#define OPCUA_NODECLASS_VARIABLE 2
+#define OPCUA_REFTYPE_ORGANIZES 35
+#define OPCUA_REFTYPE_HAS_COMPONENT 47
+#define OPCUA_TYPEDEF_BASE_OBJECT 58
+#define OPCUA_TYPEDEF_BASE_DATA_VARIABLE 63
+
+/** @brief Encode a QualifiedName: NamespaceIndex (UInt16) + Name (String). */
+void ua_w_qualifiedname(UaWriter *w, uint16_t ns, const char *name);
+
+/** @brief Encode a LocalizedText: a present-fields mask then the optional Locale / Text Strings. */
+void ua_w_localizedtext(UaWriter *w, const char *locale, const char *text);
+
+/** @brief One reference (ReferenceDescription) returned by a Browse. Strings are referenced, not copied. */
+struct OpcUaReference
+{
+    uint32_t ref_type_id;     ///< ReferenceType NodeId numeric id (e.g. OPCUA_REFTYPE_ORGANIZES).
+    bool is_forward;          ///< IsForward.
+    uint16_t target_ns;       ///< target NodeId namespace.
+    uint32_t target_id;       ///< target NodeId numeric id.
+    uint16_t browse_name_ns;  ///< BrowseName namespace.
+    const char *browse_name;  ///< BrowseName.Name.
+    const char *display_name; ///< DisplayName text.
+    uint32_t node_class;      ///< NodeClass (e.g. OPCUA_NODECLASS_VARIABLE).
+    uint32_t type_def_id;     ///< TypeDefinition NodeId numeric id (e.g. OPCUA_TYPEDEF_BASE_DATA_VARIABLE).
+};
+
+/** @brief Encode a ReferenceDescription. */
+void ua_w_reference(UaWriter *w, const OpcUaReference *ref);
+
+/** @brief One NodeId the client wants to browse (a BrowseDescription). */
+struct OpcUaBrowseItem
+{
+    uint16_t ns;
+    uint32_t id;
+    bool numeric;
+};
+
+#ifndef DETWS_OPCUA_BROWSE_MAX
+#define DETWS_OPCUA_BROWSE_MAX 4 ///< max NodesToBrowse handled per BrowseRequest.
+#endif
+#ifndef DETWS_OPCUA_REF_MAX
+#define DETWS_OPCUA_REF_MAX 8 ///< max references returned per browsed node.
+#endif
+
+/** @brief Parsed BrowseRequest: the MSG envelope plus the (bounded) NodesToBrowse list. */
+struct OpcUaBrowseRequest
+{
+    OpcUaMsg msg;
+    uint32_t total;
+    uint32_t count;
+    OpcUaBrowseItem items[DETWS_OPCUA_BROWSE_MAX];
+};
+
+/** @brief Parse a `MSG` BrowseRequest. @return true if valid. */
+bool opcua_parse_browse(const uint8_t *msg, size_t len, OpcUaBrowseRequest *out);
+
+/**
+ * @brief Application Browse resolver: write up to @p max references for (ns, id) into
+ *        @p out. @return the count written, or -1 for an unknown node (the server
+ *        answers BadNodeIdUnknown for that BrowseResult).
+ */
+typedef int32_t (*OpcUaBrowseHandler)(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max);
+
+/** @brief Register the Browse resolver the PROTO_OPCUA server calls for each browsed node. */
+void opcua_set_browse_handler(OpcUaBrowseHandler fn);
+
+/**
+ * @brief Build a `MSG` BrowseResponse: one BrowseResult per browsed node, each with the
+ *        references the @p handler returns (up to DETWS_OPCUA_REF_MAX).
+ * @return total MSG bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHandler handler, uint32_t seq,
+                                   int64_t now_ft, uint8_t *out, size_t cap);
+
+/** @brief Build a `MSG` CloseSessionResponse (ResponseHeader only, ServiceResult Good). */
+size_t opcua_build_close_session_response(const OpcUaMsg *req, uint32_t seq, int64_t now_ft, uint8_t *out, size_t cap);
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)
 // ---------------------------------------------------------------------------
 
@@ -350,8 +443,9 @@ void opcua_set_read_handler(OpcUaReadHandler fn);
  * Dispatched by the session layer for connections accepted on an OPC UA listener
  * (`listen(4840, PROTO_OPCUA)`). Drains framed messages from the slot's rx ring:
  * `HEL` -> negotiated `ACK`, `OPN` -> OpenSecureChannelResponse (SecurityPolicy
- * None), `MSG` CreateSession/ActivateSession/Read -> their responses (Read calls
- * the registered resolver, see opcua_set_read_handler), `CLO` -> close.
+ * None), `MSG` CreateSession/ActivateSession/Read/Browse/CloseSession -> their
+ * responses (Read/Browse call the registered resolvers), `CLO` (CloseSecureChannel)
+ * -> close.
  */
 void opcua_rx(uint8_t slot);
 

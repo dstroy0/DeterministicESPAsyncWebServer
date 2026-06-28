@@ -3,13 +3,13 @@
 
 /**
  * @file opcua.cpp
- * @brief OPC UA Binary codec + UACP framing + handshake + SecureChannel + Session + Read.
+ * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read + Browse.
  *
  * Pure little-endian codec, handshake, OpenSecureChannel, CreateSession/
- * ActivateSession, and Read (Variant/DataValue) logic; the ESP32 section pumps the
- * PROTO_OPCUA rx ring and answers HEL with ACK, OPN with an
- * OpenSecureChannelResponse, and the Session/Read MSG calls (SecurityPolicy None).
- * No heap, no stdlib.
+ * ActivateSession, Read (Variant/DataValue), Browse (ReferenceDescription) and
+ * CloseSession logic; the ESP32 section pumps the PROTO_OPCUA rx ring and answers
+ * HEL with ACK, OPN with an OpenSecureChannelResponse, the Session/Read/Browse MSG
+ * calls, and closes on CLO (SecurityPolicy None). No heap, no stdlib.
  */
 
 #include "services/opcua/opcua.h"
@@ -683,6 +683,144 @@ void opcua_set_read_handler(OpcUaReadHandler fn)
 }
 
 // ---------------------------------------------------------------------------
+// Browse service + CloseSession
+// ---------------------------------------------------------------------------
+void ua_w_qualifiedname(UaWriter *w, uint16_t ns, const char *name)
+{
+    ua_w_u16(w, ns);
+    ua_w_string(w, name, name ? (int32_t)strlen(name) : -1);
+}
+
+void ua_w_localizedtext(UaWriter *w, const char *locale, const char *text)
+{
+    uint8_t mask = 0;
+    if (locale)
+        mask |= 0x01; // Locale present
+    if (text)
+        mask |= 0x02; // Text present
+    ua_w_u8(w, mask);
+    if (locale)
+        ua_w_string(w, locale, (int32_t)strlen(locale));
+    if (text)
+        ua_w_string(w, text, (int32_t)strlen(text));
+}
+
+void ua_w_reference(UaWriter *w, const OpcUaReference *ref)
+{
+    if (!ref)
+    {
+        w->ok = false;
+        return;
+    }
+    ua_w_nodeid_numeric(w, 0, ref->ref_type_id);                  // ReferenceTypeId
+    ua_w_bool(w, ref->is_forward);                                // IsForward
+    ua_w_nodeid_numeric(w, ref->target_ns, ref->target_id);       // NodeId (ExpandedNodeId, numeric, no flags)
+    ua_w_qualifiedname(w, ref->browse_name_ns, ref->browse_name); // BrowseName
+    ua_w_localizedtext(w, nullptr, ref->display_name);            // DisplayName
+    ua_w_u32(w, ref->node_class);                                 // NodeClass
+    ua_w_nodeid_numeric(w, 0, ref->type_def_id);                  // TypeDefinition (ExpandedNodeId, numeric)
+}
+
+bool opcua_parse_browse(const uint8_t *msg, size_t len, OpcUaBrowseRequest *out)
+{
+    UaMsgHeader h;
+    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
+        return false;
+    if (h.size != len)
+        return false;
+
+    UaReader r = {msg + 8, len - 8, 0, false};
+    out->msg.token_id = ua_r_u32(&r);
+    out->msg.sequence_number = ua_r_u32(&r);
+    out->msg.request_id = ua_r_u32(&r);
+
+    UaNodeId tid;
+    if (!ua_r_nodeid(&r, &tid)) // body TypeId
+        return false;
+    out->msg.type_id = tid.numeric ? tid.id : 0;
+    if (!r_request_header(&r, &out->msg.request_handle))
+        return false;
+
+    // BrowseRequest body: View (ViewDescription) + RequestedMaxReferencesPerNode + NodesToBrowse.
+    UaNodeId view;
+    ua_r_nodeid(&r, &view); // View.ViewId
+    (void)ua_r_u64(&r);     // View.Timestamp
+    (void)ua_r_u32(&r);     // View.ViewVersion
+    (void)ua_r_u32(&r);     // RequestedMaxReferencesPerNode
+
+    int32_t cnt = ua_r_i32(&r); // NodesToBrowse array length
+    out->total = (cnt < 0) ? 0 : (uint32_t)cnt;
+    out->count = 0;
+    for (int32_t i = 0; i < cnt; i++)
+    {
+        UaNodeId nid;
+        if (!ua_r_nodeid(&r, &nid)) // BrowseDescription.NodeId
+            return false;
+        (void)ua_r_u32(&r); // BrowseDirection
+        UaNodeId rt;
+        ua_r_nodeid(&r, &rt); // ReferenceTypeId
+        (void)ua_r_bool(&r);  // IncludeSubtypes
+        (void)ua_r_u32(&r);   // NodeClassMask
+        (void)ua_r_u32(&r);   // ResultMask
+        if (out->count < DETWS_OPCUA_BROWSE_MAX)
+        {
+            OpcUaBrowseItem *it = &out->items[out->count++];
+            it->ns = nid.ns;
+            it->id = nid.id;
+            it->numeric = nid.numeric;
+        }
+    }
+    return !r.err;
+}
+
+size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHandler handler, uint32_t seq,
+                                   int64_t now_ft, uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+    w_msg_prefix(&w, req->msg.token_id, seq, req->msg.request_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_BROWSE_RESP);
+    w_response_header(&w, now_ft, req->msg.request_handle, 0);
+
+    ua_w_i32(&w, (int32_t)req->count); // Results[] (one BrowseResult per browsed node)
+    for (uint32_t i = 0; i < req->count; i++)
+    {
+        OpcUaReference refs[DETWS_OPCUA_REF_MAX];
+        int32_t n = handler ? handler(req->items[i].ns, req->items[i].id, refs, DETWS_OPCUA_REF_MAX) : -1;
+        uint32_t status = (n < 0) ? OPCUA_STATUS_BAD_NODE_ID_UNKNOWN : OPCUA_STATUS_GOOD;
+        uint32_t nrefs = (n < 0) ? 0 : (uint32_t)n;
+
+        // BrowseResult.
+        ua_w_u32(&w, status);         // StatusCode
+        ua_w_string(&w, nullptr, -1); // ContinuationPoint (ByteString, null)
+        ua_w_i32(&w, (int32_t)nrefs); // References[]
+        for (uint32_t j = 0; j < nrefs; j++)
+            ua_w_reference(&w, &refs[j]);
+    }
+    ua_w_i32(&w, 0); // DiagnosticInfos[] (empty)
+    return patch_size(&w);
+}
+
+size_t opcua_build_close_session_response(const OpcUaMsg *req, uint32_t seq, int64_t now_ft, uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+    w_msg_prefix(&w, req->token_id, seq, req->request_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_CLOSE_SESSION_RESP);
+    w_response_header(&w, now_ft, req->request_handle, 0); // ResponseHeader only
+    return patch_size(&w);
+}
+
+// Application Browse resolver (set via opcua_set_browse_handler), used by opcua_rx.
+static OpcUaBrowseHandler s_browse_handler = nullptr;
+void opcua_set_browse_handler(OpcUaBrowseHandler fn)
+{
+    s_browse_handler = fn;
+}
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA)
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
@@ -731,7 +869,7 @@ void close_conn(uint8_t slot)
 }
 
 uint8_t s_msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
-uint8_t s_resp[1024];           // single-accessor response buffer (ACK / OPN / MSG response)
+uint8_t s_resp[2048];           // single-accessor response buffer (ACK / OPN / MSG response)
 
 // Per-channel SecureChannel + Session state (single client at a time).
 uint32_t s_channel_id = 0;
@@ -839,9 +977,21 @@ void opcua_rx(uint8_t slot)
                 }
                 n = opcua_build_read_response(&rr, vals, sts, seq, now, s_resp, sizeof(s_resp));
             }
+            else if (m.type_id == OPCUA_ID_BROWSE_REQ)
+            {
+                OpcUaBrowseRequest br;
+                if (!opcua_parse_browse(s_msg, h.size, &br))
+                {
+                    close_conn(slot);
+                    return;
+                }
+                n = opcua_build_browse_response(&br, s_browse_handler, seq, now, s_resp, sizeof(s_resp));
+            }
+            else if (m.type_id == OPCUA_ID_CLOSE_SESSION_REQ)
+                n = opcua_build_close_session_response(&m, seq, now, s_resp, sizeof(s_resp));
             if (n > 0)
                 raw_send(slot, s_resp, n);
-            // Other MSG services (Browse, Close, ...) are later increments; consumed and ignored.
+            // Unhandled MSG services are consumed and ignored (a future increment may ServiceFault).
         }
         else if (memcmp(h.type, "CLO", 3) == 0)
         {
