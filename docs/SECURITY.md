@@ -372,7 +372,7 @@ records) is ~41.5 KB; the default arena is 48 KB.
   enabled: a WebSocket/SSE upgrade on a TLS connection is encrypted frame-by-frame
   (transparent to handler code), not rejected. Plain `ws://`/SSE on a non-TLS
   listener is unaffected.
-- The example certificate in `examples/22.HTTPS` is a **public throwaway** -
+- The example certificate in `examples/L4-Transport/03.HTTPS` is a **public throwaway** -
   generate your own key/cert and keep the key secret.
 
 ### When to use what {#tls-guidance}
