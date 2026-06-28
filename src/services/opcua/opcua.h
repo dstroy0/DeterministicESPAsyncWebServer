@@ -3,7 +3,7 @@
 
 /**
  * @file opcua.h
- * @brief OPC UA Binary codec + UA-TCP transport + SecureChannel + Session (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary codec + UA-TCP transport + SecureChannel + Session + Read (DETWS_ENABLE_OPCUA).
  *
  * OPC UA (IEC 62541) is large; this is built in increments. **Increment 1** is the
  * foundation every OPC UA server needs:
@@ -29,6 +29,10 @@
  * **Increment 3** adds the Session: `MSG` (secure conversation) service calls
  * dispatched by their body TypeId - `CreateSession` (the server assigns a SessionId
  * and AuthenticationToken) and `ActivateSession` (OPC UA Part 4 §5.6).
+ *
+ * **Increment 4** adds the `Read` service (OPC UA Part 4 §5.10): scalar Variant +
+ * DataValue encoding and a registered resolver that maps a NodeId/attribute to a
+ * value - the first service that returns live data.
  *
  * No heap, no stdlib.
  *
@@ -248,17 +252,106 @@ size_t opcua_build_activate_session_response(const OpcUaMsg *req, uint32_t seq, 
                                              size_t cap);
 
 // ---------------------------------------------------------------------------
+// Read service (MSG, SecurityPolicy None) + Variant / DataValue encoding
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeIds (namespace 0) for the Read service (binary encoding ids). */
+#define OPCUA_ID_READ_REQ 631  ///< ReadRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_READ_RESP 634 ///< ReadResponse_Encoding_DefaultBinary.
+
+/** @brief The OPC UA Attribute id a Read usually wants (the node's Value). */
+#define OPCUA_ATTR_VALUE 13
+
+/** @brief StatusCodes the Read service returns. */
+#define OPCUA_STATUS_GOOD 0x00000000u
+#define OPCUA_STATUS_BAD_NODE_ID_UNKNOWN 0x80340000u
+
+/** @brief OPC UA built-in type ids for the scalar Variants the Read service encodes. */
+enum OpcUaVariantType
+{
+    OPCUA_VAR_NULL = 0,
+    OPCUA_VAR_BOOL = 1,
+    OPCUA_VAR_INT32 = 6,
+    OPCUA_VAR_UINT32 = 7,
+    OPCUA_VAR_FLOAT = 10,
+    OPCUA_VAR_DOUBLE = 11,
+    OPCUA_VAR_STRING = 12,
+};
+
+/** @brief A scalar OPC UA Variant value (the supported built-in types). */
+struct OpcUaVariant
+{
+    uint8_t type;    ///< OpcUaVariantType (0 = null Variant).
+    bool b;          ///< OPCUA_VAR_BOOL.
+    int32_t i32;     ///< OPCUA_VAR_INT32.
+    uint32_t u32;    ///< OPCUA_VAR_UINT32.
+    float f32;       ///< OPCUA_VAR_FLOAT.
+    double f64;      ///< OPCUA_VAR_DOUBLE.
+    const char *str; ///< OPCUA_VAR_STRING (referenced, not copied).
+    int32_t str_len; ///< string length (-1 = null string).
+};
+
+/** @brief Encode a scalar Variant: encoding byte (built-in type id) then the value. */
+void ua_w_variant(UaWriter *w, const OpcUaVariant *v);
+
+/** @brief Encode a DataValue: a value/status mask byte then the Variant and/or StatusCode. */
+void ua_w_datavalue(UaWriter *w, const OpcUaVariant *v, uint32_t status);
+
+/** @brief One NodeId + attribute the client wants to read (a ReadValueId). */
+struct OpcUaReadItem
+{
+    uint16_t ns;
+    uint32_t id;
+    bool numeric;
+    uint32_t attribute;
+};
+
+#ifndef DETWS_OPCUA_READ_MAX
+#define DETWS_OPCUA_READ_MAX 8 ///< max NodesToRead handled per ReadRequest.
+#endif
+
+/** @brief Parsed ReadRequest: the MSG envelope plus the (bounded) NodesToRead list. */
+struct OpcUaReadRequest
+{
+    OpcUaMsg msg;   ///< envelope + RequestHeader (type_id = ReadRequest).
+    uint32_t total; ///< nodes requested (may exceed the captured count).
+    uint32_t count; ///< nodes captured (clamped to DETWS_OPCUA_READ_MAX).
+    OpcUaReadItem items[DETWS_OPCUA_READ_MAX];
+};
+
+/** @brief Parse a `MSG` ReadRequest. @return true if valid. */
+bool opcua_parse_read(const uint8_t *msg, size_t len, OpcUaReadRequest *out);
+
+/**
+ * @brief Build a `MSG` ReadResponse: one DataValue per captured NodesToRead entry.
+ * @param values   per-node values (values[i] paired with req->items[i]); null type = no value.
+ * @param statuses per-node StatusCodes (0 = Good).
+ * @return total MSG bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_read_response(const OpcUaReadRequest *req, const OpcUaVariant *values, const uint32_t *statuses,
+                                 uint32_t seq, int64_t now_ft, uint8_t *out, size_t cap);
+
+/**
+ * @brief Application Read resolver: fill @p out for (ns, id, attribute). Return false
+ *        for an unknown node/attribute (the server answers BadNodeIdUnknown).
+ */
+typedef bool (*OpcUaReadHandler)(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out);
+
+/** @brief Register the Read resolver the PROTO_OPCUA server calls for each ReadRequest node. */
+void opcua_set_read_handler(OpcUaReadHandler fn);
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)
 // ---------------------------------------------------------------------------
 
 /**
- * @brief PROTO_OPCUA data handler: drive the UA-TCP handshake, SecureChannel, Session.
+ * @brief PROTO_OPCUA data handler: handshake, SecureChannel, Session, Read.
  *
  * Dispatched by the session layer for connections accepted on an OPC UA listener
  * (`listen(4840, PROTO_OPCUA)`). Drains framed messages from the slot's rx ring:
  * `HEL` -> negotiated `ACK`, `OPN` -> OpenSecureChannelResponse (SecurityPolicy
- * None), `MSG` CreateSession/ActivateSession -> their responses, `CLO` -> close.
- * The Read service is a later increment.
+ * None), `MSG` CreateSession/ActivateSession/Read -> their responses (Read calls
+ * the registered resolver, see opcua_set_read_handler), `CLO` -> close.
  */
 void opcua_rx(uint8_t slot);
 
