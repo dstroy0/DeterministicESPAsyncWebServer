@@ -503,7 +503,10 @@
     "memcpy",
     "strchr",
     "strtok",
-    "SSPI"
+    "SSPI",
+    "APIP",
+    "configme",
+    "preflights"
   ],
   "ignorePaths": [
     "node_modules/**",
