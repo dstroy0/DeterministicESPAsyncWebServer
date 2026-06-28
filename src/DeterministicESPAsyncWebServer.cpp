@@ -41,6 +41,7 @@
 #include "network_drivers/session/worker.h"
 #include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
+#include "shared_primitives/det_hex.h"
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/sha1/sha1.h"
@@ -2391,24 +2392,12 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
 // ---------------------------------------------------------------------------
 
 #if DETWS_ENABLE_AUTH
-// Lowercase-hex-encode @p len bytes of @p in into @p out (needs len*2+1 bytes).
-static void hex_encode(const uint8_t *in, size_t len, char *out)
-{
-    static const char hexd[] = "0123456789abcdef";
-    for (size_t i = 0; i < len; i++)
-    {
-        out[i * 2] = hexd[in[i] >> 4];
-        out[i * 2 + 1] = hexd[in[i] & 0x0f];
-    }
-    out[len * 2] = '\0';
-}
-
 // One-shot SHA-256 of @p data, written as 64 lowercase hex chars + NUL.
 static void sha256_hex(const uint8_t *data, size_t len, char out[65])
 {
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(data, len, d);
-    hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
+    det_hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
 }
 
 // Extract the value of @p key from a Digest auth header into @p out.
@@ -2475,7 +2464,7 @@ void DetWebServer::regen_digest_nonce()
     memcpy(seed + 20, &t, 4);
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(seed, sizeof(seed), d);
-    hex_encode(d, 16, _digest_nonce); // 16 bytes -> 32 hex chars
+    det_hex_encode(d, 16, _digest_nonce); // 16 bytes -> 32 hex chars
 }
 
 void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)

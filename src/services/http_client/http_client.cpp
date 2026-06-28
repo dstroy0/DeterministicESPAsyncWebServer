@@ -11,7 +11,7 @@
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
-#include "services/det_numparse.h"
+#include "shared_primitives/det_numparse.h"
 #include <stdio.h>
 #include <string.h>
 

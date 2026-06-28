@@ -8,6 +8,7 @@
  */
 
 #include "services/webdav/webdav.h"
+#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_WEBDAV
 
@@ -117,18 +118,6 @@ size_t webdav_xml_escape(char *dst, size_t cap, const char *src)
     return o;
 }
 
-// Hex digit value, or -1.
-static int hexval(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return -1;
-}
-
 bool webdav_dest_path(const char *destination, char *out, size_t cap)
 {
     if (!destination || !out || cap == 0)
@@ -158,8 +147,8 @@ bool webdav_dest_path(const char *destination, char *out, size_t cap)
         char c = *p;
         if (c == '%')
         {
-            int hi = hexval(p[1]);
-            int lo = (hi >= 0) ? hexval(p[2]) : -1;
+            int hi = det_hex_val(p[1]);
+            int lo = (hi >= 0) ? det_hex_val(p[2]) : -1;
             if (hi < 0 || lo < 0)
                 return false; // malformed escape
             c = (char)((hi << 4) | lo);

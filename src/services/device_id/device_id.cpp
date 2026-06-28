@@ -7,6 +7,7 @@
  */
 
 #include "device_id.h"
+#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_DEVICE_ID
 
@@ -21,11 +22,6 @@ namespace
 // RFC 4122 DNS namespace UUID (6ba7b810-9dad-11d1-80b4-00c04fd430c8).
 const uint8_t NS_DNS[16] = {0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
                             0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8};
-
-inline char hexd(uint8_t nibble)
-{
-    return (char)(nibble < 10 ? '0' + nibble : 'a' + (nibble - 10));
-}
 } // namespace
 
 void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
@@ -36,8 +32,8 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
         input[i] = NS_DNS[i];
     for (int i = 0; i < 6; i++)
     {
-        input[16 + i * 2] = (uint8_t)hexd((uint8_t)(mac[i] >> 4));
-        input[16 + i * 2 + 1] = (uint8_t)hexd((uint8_t)(mac[i] & 0x0F));
+        input[16 + i * 2] = (uint8_t)det_hex_digit((uint8_t)(mac[i] >> 4));
+        input[16 + i * 2 + 1] = (uint8_t)det_hex_digit((uint8_t)(mac[i] & 0x0F));
     }
 
     uint8_t h[SHA1_DIGEST_LEN];
@@ -54,8 +50,8 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
             out[oi++] = '-';
         for (int b = 0; b < groups[g]; b++)
         {
-            out[oi++] = hexd((uint8_t)(h[hi] >> 4));
-            out[oi++] = hexd((uint8_t)(h[hi] & 0x0F));
+            out[oi++] = det_hex_digit((uint8_t)(h[hi] >> 4));
+            out[oi++] = det_hex_digit((uint8_t)(h[hi] & 0x0F));
             hi++;
         }
     }

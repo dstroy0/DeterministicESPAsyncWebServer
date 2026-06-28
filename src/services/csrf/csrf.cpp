@@ -12,6 +12,7 @@
 
 #include "csrf.h"
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "shared_primitives/det_hex.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -22,45 +23,7 @@ uint8_t g_secret[32];
 size_t g_secret_len = 0;
 uint64_t g_counter = 0;
 
-const char HEXC[] = "0123456789abcdef";
-
-void hex_encode(const uint8_t *in, size_t n, char *out)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        out[2 * i] = HEXC[(in[i] >> 4) & 0xF];
-        out[2 * i + 1] = HEXC[in[i] & 0xF];
-    }
-    out[2 * n] = '\0';
-}
-
-int hex_val(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return -1;
-}
-
-// Decode exactly hexlen hex chars into out (hexlen/2 bytes). Returns the byte
-// count, or -1 on odd length / overflow / non-hex input.
-int hex_decode(const char *in, size_t hexlen, uint8_t *out, size_t out_cap)
-{
-    if ((hexlen % 2) != 0 || (hexlen / 2) > out_cap)
-        return -1;
-    for (size_t i = 0; i < hexlen; i += 2)
-    {
-        int hi = hex_val(in[i]);
-        int lo = hex_val(in[i + 1]);
-        if (hi < 0 || lo < 0)
-            return -1;
-        out[i / 2] = (uint8_t)((hi << 4) | lo);
-    }
-    return (int)(hexlen / 2);
-}
+// hex encode/decode now via the shared det_hex.h primitive.
 
 // Constant-time compare of n characters (no early exit on mismatch).
 bool ct_equal(const char *a, const char *b, size_t n)
@@ -76,7 +39,7 @@ void sign_nonce(const uint8_t *nonce, size_t nlen, char *sig_hex)
 {
     uint8_t mac[SSH_HMAC_SHA256_LEN];
     ssh_hmac_sha256(g_secret, g_secret_len, nonce, nlen, mac);
-    hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
+    det_hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
 }
 
 } // namespace
@@ -104,7 +67,7 @@ int csrf_issue(char *out, size_t cap)
 
     char nhex[CSRF_NONCE_BYTES * 2 + 1];
     char shex[CSRF_SIG_BYTES * 2 + 1];
-    hex_encode(nonce, CSRF_NONCE_BYTES, nhex);
+    det_hex_encode(nonce, CSRF_NONCE_BYTES, nhex);
     sign_nonce(nonce, CSRF_NONCE_BYTES, shex);
 
     int n = snprintf(out, cap, "%s.%s", nhex, shex);
@@ -125,7 +88,7 @@ bool csrf_verify(const char *token)
         return false;
 
     uint8_t nonce[CSRF_NONCE_BYTES];
-    if (hex_decode(token, nhexlen, nonce, sizeof(nonce)) != CSRF_NONCE_BYTES)
+    if (det_hex_decode(token, nhexlen, nonce, sizeof(nonce)) != CSRF_NONCE_BYTES)
         return false;
 
     const char *sig = dot + 1;

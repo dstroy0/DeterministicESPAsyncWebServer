@@ -22,7 +22,11 @@ src/network_drivers/
                 into requests/frames
   application/  DetWebServer: routes, handlers, serve_file / send_chunked pumps,
                 WebDAV
-src/services/   mqtt, modbus, opcua, snmp, coap, ... (protocol features)
+src/services/         mqtt, modbus, opcua, snmp, coap, ... (protocol features)
+src/shared_primitives/  layer-agnostic header-only primitives shared across the
+                tree so logic is never duplicated: det_ring.h (SPSC ring, server +
+                client), det_hex.h (hex encode/decode), det_numparse.h (no-stdlib
+                number parsing).
 ```
 
 ## Two threads, two boundaries

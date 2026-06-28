@@ -34,10 +34,10 @@
 #define DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 
 #include "DetWebServerConfig.h"
-#include "det_ring.h" // DetAtomic + the shared SPSC ring drain primitive
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
+#include "shared_primitives/det_ring.h" // DetAtomic + the shared SPSC ring drain primitive
 #include <Arduino.h>
 #include <atomic>
 

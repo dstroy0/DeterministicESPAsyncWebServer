@@ -10,22 +10,12 @@
  */
 
 #include "provisioning_service.h"
+#include "shared_primitives/det_hex.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
 // Form-field parser (always compiled; the only non-trivial logic, unit-tested).
 // ---------------------------------------------------------------------------
-
-static int prov_hexval(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return -1;
-}
 
 bool detws_prov_form_field(const char *body, const char *key, char *out, size_t cap)
 {
@@ -58,8 +48,8 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
         }
         else if (c == '%')
         {
-            int h = prov_hexval(q[1]);
-            int l = (h >= 0) ? prov_hexval(q[2]) : -1;
+            int h = det_hex_val(q[1]);
+            int l = (h >= 0) ? det_hex_val(q[2]) : -1;
             if (h >= 0 && l >= 0)
             {
                 c = (char)((h << 4) | l);

@@ -7,6 +7,7 @@
  */
 
 #include "services/oauth2/oauth2.h"
+#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_OAUTH2
 
@@ -45,7 +46,6 @@ bool unreserved(char c)
 // Percent-encode a value (application/x-www-form-urlencoded; unreserved pass).
 void put_enc(Buf &b, const char *s)
 {
-    static const char hex[] = "0123456789ABCDEF";
     for (; *s; s++)
     {
         unsigned char c = (unsigned char)*s;
@@ -66,8 +66,8 @@ void put_enc(Buf &b, const char *s)
                 return;
             }
             b.o[b.n++] = '%';
-            b.o[b.n++] = hex[(c >> 4) & 0xF];
-            b.o[b.n++] = hex[c & 0xF];
+            b.o[b.n++] = det_hex_digit((c >> 4) & 0xF, true);
+            b.o[b.n++] = det_hex_digit(c & 0xF, true);
         }
     }
 }

@@ -13,6 +13,7 @@
  */
 
 #include "services/audit_log/audit_log.h"
+#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_AUDIT_LOG
 
@@ -83,10 +84,9 @@ size_t json_escape(char *out, size_t pos, size_t cap, const char *s)
             esc = "\\t", n = 2;
         else if (ch < 0x20)
         {
-            static const char hex[] = "0123456789abcdef";
             ub[0] = '\\', ub[1] = 'u', ub[2] = '0', ub[3] = '0';
-            ub[4] = hex[(ch >> 4) & 0xF];
-            ub[5] = hex[ch & 0xF];
+            ub[4] = det_hex_digit((ch >> 4) & 0xF);
+            ub[5] = det_hex_digit(ch & 0xF);
             ub[6] = '\0';
             esc = ub, n = 6;
         }
@@ -107,13 +107,12 @@ size_t json_escape(char *out, size_t pos, size_t cap, const char *s)
 
 size_t hex_hash(char *out, size_t pos, size_t cap, const uint8_t *h)
 {
-    static const char hx[] = "0123456789abcdef";
     if (pos + DETWS_AUDIT_HASH_LEN * 2 > cap)
         return cap + 1;
     for (size_t i = 0; i < DETWS_AUDIT_HASH_LEN; i++)
     {
-        out[pos++] = hx[(h[i] >> 4) & 0xF];
-        out[pos++] = hx[h[i] & 0xF];
+        out[pos++] = det_hex_digit((h[i] >> 4) & 0xF);
+        out[pos++] = det_hex_digit(h[i] & 0xF);
     }
     return pos;
 }

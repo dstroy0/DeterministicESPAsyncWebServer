@@ -15,7 +15,7 @@
 
 #if DETWS_ENABLE_DASHBOARD
 
-#include "services/det_numparse.h"
+#include "shared_primitives/det_numparse.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

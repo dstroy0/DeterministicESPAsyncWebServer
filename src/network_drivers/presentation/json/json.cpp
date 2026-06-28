@@ -7,7 +7,7 @@
  */
 
 #include "json.h"
-#include "services/det_numparse.h"
+#include "shared_primitives/det_numparse.h"
 #include <stdio.h>
 #include <string.h>
 

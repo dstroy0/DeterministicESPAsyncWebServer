@@ -16,12 +16,12 @@
 
 #if defined(ARDUINO)
 
-#include "det_ring.h" // shared DetAtomic + SPSC ring drain (same primitive as the server)
 #include "lwip/dns.h"
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
-#include "services/det_clock.h" // detws_millis()
-#include <Arduino.h>            // delay()
+#include "services/det_clock.h"         // detws_millis()
+#include "shared_primitives/det_ring.h" // shared DetAtomic + SPSC ring drain (same primitive as the server)
+#include <Arduino.h>                    // delay()
 #include <string.h>
 
 struct ClientConn
