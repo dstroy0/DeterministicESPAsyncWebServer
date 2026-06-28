@@ -84,9 +84,15 @@ See docs/BUGS.md "RX flow-control deadlock".
 duplicated `ring_peek/consume/avail` are now thin adapters over the API). The read
 functions only consume; the window is reopened by the worker's single
 `det_conn_ack_consumed()` per loop - so there is exactly one place that touches the
-ring indices for draining and one that ACKs. Remaining: two services (`mqtt.cpp`,
-`ws_client.cpp`) still keep their own private `s_rx_head/s_rx_tail` client-side
-buffers (Phase 4 - reconcile or document).
+ring indices for draining and one that ACKs.
+
+The MQTT and WebSocket **client** modules (`mqtt.cpp`, `ws_client.cpp`) keep their
+own private `s_rx` ring - this is correct, not the same spaghetti. They are
+single-instance outbound clients (the device connecting out), not server slots in
+`conn_pool`; the buffer is filled by the module's own recv/TLS path and is owned
+solely by that module, so nothing cross-layer reaches into it. A unified client
+transport (so clients and the server share one I/O API) is separate future work,
+not part of this server-ring straightening.
 
 ## Streaming-body hooks - slot-aware
 
@@ -120,5 +126,10 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
 3. **DONE - slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` +
    per-slot WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixed the concurrent-PUT bug
    (HW: 4 parallel PUTs, distinct payloads, all byte-exact).
-4. **TODO - reconcile private-buffer services** - mqtt / ws_client `s_rx_*`: migrate
-   to the model or document why a client-side buffer legitimately differs.
+4. **DONE - reconcile private-buffer services** - mqtt / ws_client `s_rx_*` are
+   single-instance outbound clients (not `conn_pool` server slots); each buffer is
+   module-owned and nothing cross-layer touches it, so it is correct as-is. A unified
+   client transport is tracked as separate future work, not this refactor.
+
+All four phases are complete: every cross-layer concern (TX, RX window, RX read,
+streaming sink state, events, scratch) now has exactly one owner behind a clean API.
