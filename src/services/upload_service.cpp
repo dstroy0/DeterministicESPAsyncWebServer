@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_UPLOAD
 
 #include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/presentation/http_parser.h"
+#include "network_drivers/presentation/http_parser/http_parser.h"
 #include <stdio.h>
 #include <string.h>
 

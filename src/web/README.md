@@ -19,7 +19,7 @@ A file's **base name is the C symbol**: `DETWS_PROV_FORM.html` becomes
 `application/web_assets.{h,cpp}` translation unit - all generated assets are one
 machine-produced artifact, so they live in one clearly-named unit rather than per
 -content-type files (which would conflate source format with output module and
-collide with real modules, e.g. the JSON codec at `presentation/json.h`). The
+collide with real modules, e.g. the JSON codec at `presentation/json/json.h`). The
 **extension only selects lint and transforms** (`.html`/`.svg`/`.xml` tag checks,
 `.json` validation, etc.), not the output file.
 

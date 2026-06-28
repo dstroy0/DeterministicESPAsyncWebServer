@@ -11,8 +11,8 @@
 
 #if DETWS_ENABLE_WS_CLIENT
 
-#include "network_drivers/presentation/base64.h"
-#include "network_drivers/presentation/sha1.h"
+#include "network_drivers/presentation/base64/base64.h"
+#include "network_drivers/presentation/sha1/sha1.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_JWT
 
-#include "network_drivers/presentation/base64.h"
+#include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
 #include <stdio.h>
 #include <string.h>

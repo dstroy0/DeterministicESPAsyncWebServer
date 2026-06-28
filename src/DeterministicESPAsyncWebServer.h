@@ -10,7 +10,7 @@
  * @code
  *   DeterministicESPAsyncWebServer.h                  (L7 Application)
  *     ├── network_drivers/presentation/presentation.h (L6 Presentation)
- *     │       ├── network_drivers/presentation/http_parser.h (parser types)
+ *     │       ├── network_drivers/presentation/http_parser/http_parser.h (parser types)
  *     │       └── network_drivers/transport/transport.h      (L4 Transport)
  *     │               └── DetWebServerConfig.h   (compile-time config)
  *     └── network_drivers/session/session.h      (L5 Session - event drain)
@@ -40,18 +40,18 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
-#include "network_drivers/presentation/json.h"
+#include "network_drivers/presentation/json/json.h"
 #include "network_drivers/presentation/presentation.h"
 #include "network_drivers/session/session.h"
 #include "network_drivers/session/worker.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/websocket.h"
+#include "network_drivers/presentation/websocket/websocket.h"
 #endif
 #if DETWS_ENABLE_SSE
-#include "network_drivers/presentation/sse.h"
+#include "network_drivers/presentation/sse/sse.h"
 #endif
 #if DETWS_ENABLE_MULTIPART
-#include "network_drivers/presentation/multipart.h"
+#include "network_drivers/presentation/multipart/multipart.h"
 #endif
 #include <Arduino.h>
 #if DETWS_ENABLE_FILE_SERVING

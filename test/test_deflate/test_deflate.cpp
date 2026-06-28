@@ -8,8 +8,8 @@
 // payload (tail 00 00 ff ff stripped, RFC 7692 sender) gets the marker appended
 // back before inflating, mirroring the receiver.
 
-#include "network_drivers/presentation/deflate.h"
-#include "network_drivers/presentation/inflate.h"
+#include "network_drivers/presentation/deflate/deflate.h"
+#include "network_drivers/presentation/inflate/inflate.h"
 #include <string.h>
 #include <unity.h>
 

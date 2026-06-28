@@ -203,8 +203,8 @@ has buffered data that was never written.
 
 ## 3. Input Validation - RFC 7230 Parser {#input-validation}
 
-**Files:** [src/network_drivers/presentation/http_parser.cpp](@ref http_parser.cpp),
-[src/network_drivers/presentation/http_parser.h](@ref http_parser.h)
+**Files:** [src/network_drivers/presentation/http_parser/http_parser.cpp](@ref http_parser.cpp),
+[src/network_drivers/presentation/http_parser/http_parser.h](@ref http_parser.h)
 
 ### Character-Class Validation {#parser-validation}
 
@@ -250,8 +250,8 @@ the server side.
 
 ## 4. WebSocket Security {#websocket-security}
 
-**Files:** [src/network_drivers/presentation/websocket.cpp](@ref websocket.cpp),
-[src/network_drivers/presentation/websocket.h](@ref websocket.h)
+**Files:** [src/network_drivers/presentation/websocket/websocket.cpp](@ref websocket.cpp),
+[src/network_drivers/presentation/websocket/websocket.h](@ref websocket.h)
 
 ### Handshake Verification {#ws-handshake}
 

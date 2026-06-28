@@ -4,7 +4,7 @@
 // Unit tests for the CBOR encoder (network_drivers/presentation/cbor). Expected
 // byte sequences are the canonical RFC 8949 Appendix A diagnostic vectors.
 
-#include "network_drivers/presentation/cbor.h"
+#include "network_drivers/presentation/cbor/cbor.h"
 #include <unity.h>
 
 void setUp()

@@ -10,15 +10,15 @@
 //   WS PARSER   -- per-state-machine path through ws_parse()
 //   STRESS      -- sustained-load and boundary-value coverage
 
-#include "network_drivers/presentation/base64.h"
-#include "network_drivers/presentation/sha1.h"
-#include "network_drivers/presentation/websocket.h"
+#include "network_drivers/presentation/base64/base64.h"
+#include "network_drivers/presentation/sha1/sha1.h"
+#include "network_drivers/presentation/websocket/websocket.h"
 #include <string.h>
 #include <unity.h>
 
 #if DETWS_ENABLE_WS_DEFLATE
 #include "lwip/tcp.h" // mock write-capture (tcp_capture_reset / tcp_captured)
-#include "network_drivers/presentation/inflate.h"
+#include "network_drivers/presentation/inflate/inflate.h"
 #endif
 
 // ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@
 #include "../presentation/ssh/ssh_conn.h"
 #endif
 #if DETWS_ENABLE_TELNET
-#include "../presentation/telnet.h"
+#include "../presentation/telnet/telnet.h"
 #endif
 #if DETWS_ENABLE_MODBUS
 #include "services/modbus/modbus.h"
@@ -32,10 +32,10 @@
 #endif
 
 #if DETWS_ENABLE_TLS
-#include "../presentation/http_parser.h"
+#include "../presentation/http_parser/http_parser.h"
 #include "../tls/det_tls.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "../presentation/websocket.h"
+#include "../presentation/websocket/websocket.h"
 #endif
 
 // Abort a TLS connection (fatal handshake/read error): free the TLS context and

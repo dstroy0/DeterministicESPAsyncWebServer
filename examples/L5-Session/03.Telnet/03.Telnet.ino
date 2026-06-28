@@ -26,7 +26,7 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/telnet.h"
+#include "network_drivers/presentation/telnet/telnet.h"
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

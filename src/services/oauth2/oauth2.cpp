@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_OAUTH2
 
-#include "network_drivers/presentation/json.h"
+#include "network_drivers/presentation/json/json.h"
 #include <string.h>
 
 namespace

@@ -30,7 +30,7 @@ Opt-in per-IP brute-force lockout for HTTP auth (requires AUTH). Default off (ze
 
 `DETWS_ENABLE_CBOR`
 
-Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When set, network_drivers/presentation/cbor.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, null, and float32 into a caller-provided buffer - a compact binary alternative to the JSON writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.
+Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When set, network_drivers/presentation/cbor/cbor.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, null, and float32 into a caller-provided buffer - a compact binary alternative to the JSON writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.
 
 ## Chunked Responses
 
@@ -190,7 +190,7 @@ mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS.
 
 `DETWS_ENABLE_MSGPACK`
 
-Zero-heap MessagePack encoder for compact binary payloads. Default off. When set, network_drivers/presentation/msgpack.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, nil, and float32 into a caller-provided buffer - the MessagePack-format sibling of the CBOR / JSON writers. Pure, no heap, host-tested against the spec encodings.
+Zero-heap MessagePack encoder for compact binary payloads. Default off. When set, network_drivers/presentation/msgpack/msgpack.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, nil, and float32 into a caller-provided buffer - the MessagePack-format sibling of the CBOR / JSON writers. Pure, no heap, host-tested against the spec encodings.
 
 ## Metrics
 

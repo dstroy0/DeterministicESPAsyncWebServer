@@ -4,7 +4,7 @@
 // Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the
 // json_get_* top-level object readers.
 
-#include "network_drivers/presentation/json.h"
+#include "network_drivers/presentation/json/json.h"
 #include <string.h>
 #include <unity.h>
 

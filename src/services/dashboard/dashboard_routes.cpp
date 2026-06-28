@@ -19,7 +19,7 @@
 #include "network_drivers/application/web_assets.h" // DETWS_DASHBOARD_PAGE
 #include <stdio.h>
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/websocket.h" // ws_pool for inbound control messages
+#include "network_drivers/presentation/websocket/websocket.h" // ws_pool for inbound control messages
 #endif
 
 static DetWebServer *s_srv = nullptr;

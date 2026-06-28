@@ -6,7 +6,7 @@
 // command dispatch via the tcp_write capture mock.
 
 #include "lwip/tcp.h"
-#include "network_drivers/presentation/telnet.h"
+#include "network_drivers/presentation/telnet/telnet.h"
 #include "network_drivers/transport/transport.h"
 #include <stdint.h>
 #include <string.h>

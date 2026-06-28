@@ -8,7 +8,7 @@
 // stripped (RFC 7692 sender); the test appends the marker back before inflating,
 // mirroring the receiver.
 
-#include "network_drivers/presentation/inflate.h"
+#include "network_drivers/presentation/inflate/inflate.h"
 #include <string.h>
 #include <unity.h>
 

@@ -6,7 +6,7 @@
  * @brief Minimal RFC 854 Telnet server implementation.
  */
 
-#include "network_drivers/presentation/telnet.h"
+#include "network_drivers/presentation/telnet/telnet.h"
 
 #if DETWS_ENABLE_TELNET
 

@@ -308,7 +308,7 @@ def load_assets():
 # All assets land in one translation unit (web_assets.{h,cpp}). The source file's
 # extension only selects lint/transforms - it does NOT name an output file, so a
 # document type can never collide with a module of the same name (e.g. the JSON
-# codec at presentation/json.h).
+# codec at presentation/json/json.h).
 ASSET_BASENAME = "web_assets"
 
 

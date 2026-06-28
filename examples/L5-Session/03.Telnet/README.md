@@ -70,7 +70,7 @@ added explanatory comments:
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/telnet.h" // telnet_on_command / telnet_printf
+#include "network_drivers/presentation/telnet/telnet.h" // telnet_on_command / telnet_printf
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

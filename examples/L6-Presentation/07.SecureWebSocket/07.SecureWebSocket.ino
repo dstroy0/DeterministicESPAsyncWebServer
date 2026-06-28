@@ -29,7 +29,7 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/websocket.h" // ws_pool[] for the echo payload
+#include "network_drivers/presentation/websocket/websocket.h" // ws_pool[] for the echo payload
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

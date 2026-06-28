@@ -13,7 +13,7 @@
 
 #if DETWS_ENABLE_TOTP
 
-#include "network_drivers/presentation/sha1.h"
+#include "network_drivers/presentation/sha1/sha1.h"
 #include <string.h>
 
 namespace

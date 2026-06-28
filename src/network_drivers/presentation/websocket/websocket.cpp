@@ -20,8 +20,8 @@
 #include <string.h>
 
 #if DETWS_ENABLE_WS_DEFLATE
-#include "deflate.h"
-#include "inflate.h"
+#include "network_drivers/presentation/deflate/deflate.h"
+#include "network_drivers/presentation/inflate/inflate.h"
 #include "network_drivers/session/scratch.h"
 #endif
 

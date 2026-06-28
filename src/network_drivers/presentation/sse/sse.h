@@ -29,8 +29,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSE_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSE_H
 
-#include "../transport/transport.h"
 #include "DetWebServerConfig.h"
+#include "network_drivers/transport/transport.h"
 
 // ---------------------------------------------------------------------------
 // Per-connection SSE state

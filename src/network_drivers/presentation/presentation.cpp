@@ -18,7 +18,7 @@
 
 #include "presentation.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
+#include "network_drivers/presentation/websocket/websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
 #endif
 
 #if DETWS_ENABLE_KEEPALIVE

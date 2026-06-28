@@ -4,7 +4,7 @@
 // Unit tests for the MessagePack encoder (network_drivers/presentation/msgpack).
 // Expected byte sequences follow the MessagePack spec encodings.
 
-#include "network_drivers/presentation/msgpack.h"
+#include "network_drivers/presentation/msgpack/msgpack.h"
 #include <unity.h>
 
 void setUp()

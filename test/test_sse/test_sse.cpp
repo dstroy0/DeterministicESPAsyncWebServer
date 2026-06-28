@@ -8,7 +8,7 @@
 //   WRITE       -- sse_write() guard conditions and return values
 //   STRESS      -- sustained alloc/free cycles and multi-slot isolation
 
-#include "network_drivers/presentation/sse.h"
+#include "network_drivers/presentation/sse/sse.h"
 #include <string.h>
 #include <unity.h>
 

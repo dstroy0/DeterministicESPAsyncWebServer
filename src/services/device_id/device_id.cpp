@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_DEVICE_ID
 
-#include "network_drivers/presentation/sha1.h"
+#include "network_drivers/presentation/sha1/sha1.h"
 
 #ifdef ARDUINO
 #include <esp_mac.h> // esp_read_mac()

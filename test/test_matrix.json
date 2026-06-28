@@ -5,18 +5,18 @@
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>"
       ],
       "tests": [
         "test_transport",
@@ -39,7 +39,7 @@
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
-      "src": ["+<network_drivers/presentation/http_parser.cpp>"],
+      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>"],
       "tests": ["test_http_ota"]
     },
     "native_prov": {
@@ -98,18 +98,18 @@
       "desc": "SSH wired through the real transport/session layers (PROTO_SSH byte-pump)",
       "flags": ["-DDETWS_ENABLE_SSH=1"],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_aes256ctr.cpp>",
@@ -137,21 +137,21 @@
         "-DDETWS_ENABLE_WEB_TERMINAL=1"
       ],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>",
-        "+<network_drivers/presentation/json.cpp>",
+        "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
         "+<services/web_terminal.cpp>"
       ],
@@ -206,7 +206,7 @@
       "src": [
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>",
-        "+<network_drivers/presentation/telnet.cpp>"
+        "+<network_drivers/presentation/telnet/telnet.cpp>"
       ],
       "tests": ["test_telnet"]
     },
@@ -256,7 +256,7 @@
       "flags": ["-DDETWS_ENABLE_TOTP=1"],
       "src": [
         "+<services/totp/totp.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
       "tests": ["test_totp"]
     },
@@ -321,7 +321,7 @@
       "flags": ["-DDETWS_ENABLE_OAUTH2=1"],
       "src": [
         "+<services/oauth2/oauth2.cpp>",
-        "+<network_drivers/presentation/json.cpp>"
+        "+<network_drivers/presentation/json/json.cpp>"
       ],
       "tests": ["test_oauth2"]
     },
@@ -354,11 +354,11 @@
         "-DDETWS_ENABLE_SNMP=1"
       ],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
-        "+<network_drivers/presentation/json.cpp>",
-        "+<network_drivers/presentation/cbor.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
+        "+<network_drivers/presentation/json/json.cpp>",
+        "+<network_drivers/presentation/cbor/cbor.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
         "+<services/modbus/modbus.cpp>",
         "+<services/modbus/modbus_master.cpp>",
         "+<services/totp/totp.cpp>",
@@ -366,7 +366,7 @@
         "+<services/snmp/snmp_ber.cpp>",
         "+<services/snmp/snmp_agent.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
       "tests": ["test_pentest"]
     },
@@ -378,18 +378,18 @@
         "-DDETWS_KEEPALIVE_MAX_REQUESTS=3"
       ],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>"
       ],
@@ -399,18 +399,18 @@
       "desc": "HTTP Range requests / 206 Partial Content (RFC 7233): full server built with\nDETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with\nseek()) via the tcp_write capture mock.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_RANGE=1"],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>"
       ],
@@ -430,7 +430,7 @@
       "flags": ["-DDETWS_ENABLE_JWT=1"],
       "src": [
         "+<services/jwt/jwt.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>"
       ],
@@ -444,18 +444,18 @@
         "-DBODY_BUF_SIZE=64"
       ],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>",
         "+<services/upload_service.cpp>"
@@ -470,7 +470,7 @@
     },
     "native_compliance": {
       "desc": "RFC-compliance suite: builds with all enforcement at production defaults\n(DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors.",
-      "src": ["+<network_drivers/presentation/http_parser.cpp>"],
+      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>"],
       "tests": ["test_compliance"]
     },
     "native_mqtt": {
@@ -482,8 +482,8 @@
       "flags": ["-DDETWS_ENABLE_WS_CLIENT=1"],
       "src": [
         "+<services/ws_client/ws_client.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>"
       ],
       "tests": ["test_ws_client"]
     },
@@ -506,15 +506,15 @@
     "native_inflate": {
       "desc": "RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). Pure\ncodec - no sockets - so it unit-tests on the host against zlib-generated\nvectors (scratchpad/gen_vectors.py).",
       "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
-      "src": ["+<network_drivers/presentation/inflate.cpp>"],
+      "src": ["+<network_drivers/presentation/inflate/inflate.cpp>"],
       "tests": ["test_inflate"]
     },
     "native_deflate": {
       "desc": "RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). Pure codec\n- no sockets - so it unit-tests on the host by round-tripping through INFLATE\n(which test_inflate validates against zlib), proving the emitted streams are\nvalid RFC 1951.",
       "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
       "src": [
-        "+<network_drivers/presentation/deflate.cpp>",
-        "+<network_drivers/presentation/inflate.cpp>"
+        "+<network_drivers/presentation/deflate/deflate.cpp>",
+        "+<network_drivers/presentation/inflate/inflate.cpp>"
       ],
       "tests": ["test_deflate"]
     },
@@ -522,20 +522,20 @@
       "desc": "WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS\nstack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with\nthe table scratch borrowed from the shared arena). Runs test_websocket with the\nfeature on (the deflate cases are #if-gated).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_WS_DEFLATE=1"],
       "src": [
-        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/presentation/presentation.cpp>",
         "+<network_drivers/session/session.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>",
-        "+<network_drivers/presentation/base64.cpp>",
-        "+<network_drivers/presentation/websocket.cpp>",
-        "+<network_drivers/presentation/sse.cpp>",
-        "+<network_drivers/presentation/multipart.cpp>",
-        "+<network_drivers/presentation/inflate.cpp>",
-        "+<network_drivers/presentation/deflate.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>",
+        "+<network_drivers/presentation/inflate/inflate.cpp>",
+        "+<network_drivers/presentation/deflate/deflate.cpp>"
       ],
       "tests": ["test_websocket"]
     },
@@ -556,7 +556,7 @@
       "flags": ["-DDETWS_ENABLE_DEVICE_ID=1"],
       "src": [
         "+<services/device_id/device_id.cpp>",
-        "+<network_drivers/presentation/sha1.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
       "tests": ["test_device_id"]
     },
@@ -600,13 +600,13 @@
     "native_cbor": {
       "desc": "CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output\ncodec, host-tested against the RFC 8949 Appendix A vectors.",
       "flags": ["-DDETWS_ENABLE_CBOR=1"],
-      "src": ["+<network_drivers/presentation/cbor.cpp>"],
+      "src": ["+<network_drivers/presentation/cbor/cbor.cpp>"],
       "tests": ["test_cbor"]
     },
     "native_msgpack": {
       "desc": "MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output\ncodec, host-tested against the spec encodings.",
       "flags": ["-DDETWS_ENABLE_MSGPACK=1"],
-      "src": ["+<network_drivers/presentation/msgpack.cpp>"],
+      "src": ["+<network_drivers/presentation/msgpack/msgpack.cpp>"],
       "tests": ["test_msgpack"]
     },
     "native_gpio_map": {
@@ -702,16 +702,16 @@
         "+<services/time_source/time_source.cpp>",
         "+<services/config_store/config_store.cpp>",
         "+<services/device_id/device_id.cpp>",
-        "+<network_drivers/presentation/inflate.cpp>",
-        "+<network_drivers/presentation/deflate.cpp>",
+        "+<network_drivers/presentation/inflate/inflate.cpp>",
+        "+<network_drivers/presentation/deflate/deflate.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
         "+<services/telemetry/telemetry.cpp>",
         "+<services/dashboard/dashboard.cpp>",
         "+<services/dashboard/dashboard_routes.cpp>",
         "+<services/partition_monitor/partition_monitor.cpp>",
         "+<services/partition_monitor/partition_monitor_routes.cpp>",
-        "+<network_drivers/presentation/cbor.cpp>",
-        "+<network_drivers/presentation/msgpack.cpp>",
+        "+<network_drivers/presentation/cbor/cbor.cpp>",
+        "+<network_drivers/presentation/msgpack/msgpack.cpp>",
         "+<services/gpio_map/gpio_map.cpp>",
         "+<services/gpio_map/gpio_map_routes.cpp>",
         "+<services/udp_telemetry/udp_telemetry.cpp>",

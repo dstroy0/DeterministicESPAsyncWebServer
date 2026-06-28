@@ -17,8 +17,8 @@
 //   - max parts (MAX_MULTIPART_PARTS) are captured; extras ignored
 //   - whitespace trimming in Content-Disposition header
 
-#include "network_drivers/presentation/http_parser.h"
-#include "network_drivers/presentation/multipart.h"
+#include "network_drivers/presentation/http_parser/http_parser.h"
+#include "network_drivers/presentation/multipart/multipart.h"
 #include "network_drivers/transport/transport.h"
 #include <stdio.h>
 #include <string.h>

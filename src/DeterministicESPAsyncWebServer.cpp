@@ -42,10 +42,10 @@
 #include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/base64.h"
-#include "network_drivers/presentation/sha1.h"
+#include "network_drivers/presentation/base64/base64.h"
+#include "network_drivers/presentation/sha1/sha1.h"
 #elif DETWS_ENABLE_AUTH
-#include "network_drivers/presentation/base64.h"
+#include "network_drivers/presentation/base64/base64.h"
 #endif
 #if DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
