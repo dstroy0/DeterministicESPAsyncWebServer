@@ -10,8 +10,9 @@
  * server (services/opcua) on :4840 AND, once connected, opens a plain Arduino
  * WiFiClient to its own address and walks the full client sequence against it:
  *
- *   Hello/Ack -> OpenSecureChannel -> CreateSession -> ActivateSession
- *             -> Browse(Objects) -> Read(values) -> CloseSession -> CloseSecureChannel
+ *   Hello/Ack -> OpenSecureChannel -> GetEndpoints -> CreateSession -> ActivateSession
+ *             -> Browse(Objects) -> Read(values) -> Write(setpoint)+read-back
+ *             -> CloseSession -> CloseSecureChannel
  *
  * The results are printed over Serial. Point SERVER_HOST at any OPC UA server to use
  * the client on its own; the bundled server just makes the example self-contained.
@@ -34,7 +35,9 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// --- server side: a tiny address space (ns=1;i=1..2) under the Objects folder ---
+// --- server side: a tiny address space (ns=1;i=1,2 read-only, i=3 writable) ---
+static uint32_t setpoint = 100;
+
 static bool srv_read(uint16_t ns, uint32_t id, uint32_t attr, OpcUaVariant *out)
 {
     if (ns != 1 || attr != OPCUA_ATTR_VALUE)
@@ -51,7 +54,23 @@ static bool srv_read(uint16_t ns, uint32_t id, uint32_t attr, OpcUaVariant *out)
         out->f64 = 23.5;
         return true;
     }
+    if (id == 3)
+    {
+        out->type = OPCUA_VAR_UINT32;
+        out->u32 = setpoint;
+        return true;
+    }
     return false;
+}
+
+static uint32_t srv_write(uint16_t ns, uint32_t id, uint32_t attr, const OpcUaVariant *value)
+{
+    if (ns == 1 && id == 3 && attr == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32)
+    {
+        setpoint = value->u32;
+        return 0; // Good
+    }
+    return (ns == 1 && id == 3) ? OPCUA_STATUS_BAD_NOT_WRITABLE : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
 }
 
 static int32_t srv_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
@@ -160,6 +179,26 @@ static void run_client(IPAddress ip)
     if (nv == 2)
         Serial.printf("[opcua-client] read: Uptime=%u Temperature=%.1f\n", vals[0].u32, vals[1].f64);
 
+    // Write the setpoint (ns=1;i=3) then read it back.
+    OpcUaWriteItem wi[1];
+    memset(wi, 0, sizeof(wi));
+    wi[0].ns = 1;
+    wi[0].id = 3;
+    wi[0].numeric = true;
+    wi[0].attribute = OPCUA_ATTR_VALUE;
+    wi[0].value.type = OPCUA_VAR_UINT32;
+    wi[0].value.u32 = 555;
+    n = exchange(sock, opcua_client_write(&c, wi, 1, c_req, sizeof(c_req)));
+    uint32_t wres[1];
+    int32_t nw = n ? opcua_client_on_write(c_resp, n, wres, 1) : -1;
+    OpcUaReadItem rb[1] = {{1, 3, true, OPCUA_ATTR_VALUE}};
+    n = exchange(sock, opcua_client_read(&c, rb, 1, c_req, sizeof(c_req)));
+    OpcUaVariant rbv[1];
+    uint32_t rbs[1];
+    int32_t nrb = n ? opcua_client_on_read(c_resp, n, rbv, rbs, 1) : -1;
+    if (nw == 1 && nrb == 1)
+        Serial.printf("[opcua-client] write setpoint=555 (status 0x%08X), read-back=%u\n", wres[0], rbv[0].u32);
+
     exchange(sock, opcua_client_close_session(&c, c_req, sizeof(c_req)));
     sock.write(c_req, opcua_client_close_channel(c_req, sizeof(c_req)));
     sock.stop();
@@ -180,6 +219,7 @@ void setup()
     snprintf(url, sizeof(url), "opc.tcp://%s:4840", WiFi.localIP().toString().c_str());
     opcua_set_endpoint_url(url); // advertised in GetEndpoints / CreateSession
     opcua_set_read_handler(srv_read);
+    opcua_set_write_handler(srv_write);
     opcua_set_browse_handler(srv_browse);
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA client demo"); });
     server.listen(4840, PROTO_OPCUA); // server endpoint, before begin()

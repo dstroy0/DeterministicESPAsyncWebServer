@@ -82,6 +82,9 @@ size_t opcua_client_read(OpcUaClient *c, const OpcUaReadItem *items, uint32_t n,
 /** @brief Build a `MSG` BrowseRequest for one node (forward references). */
 size_t opcua_client_browse(OpcUaClient *c, uint16_t ns, uint32_t id, uint8_t *out, size_t cap);
 
+/** @brief Build a `MSG` WriteRequest writing @p n values (each item carries its Variant). */
+size_t opcua_client_write(OpcUaClient *c, const OpcUaWriteItem *items, uint32_t n, uint8_t *out, size_t cap);
+
 /** @brief Build a `MSG` CloseSessionRequest. */
 size_t opcua_client_close_session(OpcUaClient *c, uint8_t *out, size_t cap);
 
@@ -139,6 +142,12 @@ struct OpcUaClientRef
  * @return number of references, or -1 on a malformed/non-Good response.
  */
 int32_t opcua_client_on_browse(const uint8_t *msg, size_t len, OpcUaClientRef *refs, uint32_t max);
+
+/**
+ * @brief Parse a WriteResponse into @p results (one StatusCode per written node, capped at @p max).
+ * @return number of results, or -1 on a malformed/non-Good response.
+ */
+int32_t opcua_client_on_write(const uint8_t *msg, size_t len, uint32_t *results, uint32_t max);
 
 #endif // DETWS_ENABLE_OPCUA_CLIENT
 #endif // DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H

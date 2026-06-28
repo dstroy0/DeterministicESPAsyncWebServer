@@ -202,6 +202,22 @@ size_t opcua_client_browse(OpcUaClient *c, uint16_t ns, uint32_t id, uint8_t *ou
     return cw_patch(&w);
 }
 
+size_t opcua_client_write(OpcUaClient *c, const OpcUaWriteItem *items, uint32_t n, uint8_t *out, size_t cap)
+{
+    UaWriter w = {out, cap, 0, true};
+    cw_msg(c, &w, OPCUA_ID_WRITE_REQ);
+    cw_request_header(c, &w, true);
+    ua_w_i32(&w, (int32_t)n); // NodesToWrite count
+    for (uint32_t i = 0; i < n; i++)
+    {
+        ua_w_nodeid_numeric(&w, items[i].ns, items[i].id);      // NodeId
+        ua_w_u32(&w, items[i].attribute);                       // AttributeId
+        ua_w_string(&w, nullptr, -1);                           // IndexRange
+        ua_w_datavalue(&w, &items[i].value, OPCUA_STATUS_GOOD); // Value (DataValue, value-only)
+    }
+    return cw_patch(&w);
+}
+
 size_t opcua_client_close_session(OpcUaClient *c, uint8_t *out, size_t cap)
 {
     UaWriter w = {out, cap, 0, true};
@@ -425,6 +441,29 @@ int32_t opcua_client_on_read(const uint8_t *msg, size_t len, OpcUaVariant *vals,
                 vals[out_n] = v;
             if (statuses)
                 statuses[out_n] = st;
+            out_n++;
+        }
+    }
+    return r.err ? -1 : (int32_t)out_n;
+}
+
+int32_t opcua_client_on_write(const uint8_t *msg, size_t len, uint32_t *results, uint32_t max)
+{
+    UaReader r;
+    uint32_t svc = 0;
+    if (!cr_msg_open(msg, len, &r, OPCUA_ID_WRITE_RESP, &svc) || svc != OPCUA_STATUS_GOOD)
+        return -1;
+    int32_t cnt = ua_r_i32(&r); // Results count
+    if (cnt < 0)
+        return -1;
+    uint32_t out_n = 0;
+    for (int32_t i = 0; i < cnt; i++)
+    {
+        uint32_t st = ua_r_u32(&r);
+        if (out_n < max)
+        {
+            if (results)
+                results[out_n] = st;
             out_n++;
         }
     }

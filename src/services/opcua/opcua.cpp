@@ -3,13 +3,14 @@
 
 /**
  * @file opcua.cpp
- * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read + Browse.
+ * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read/Write + Browse.
  *
  * Pure little-endian codec, handshake, OpenSecureChannel, CreateSession/
- * ActivateSession, Read (Variant/DataValue), Browse (ReferenceDescription) and
- * CloseSession logic; the ESP32 section pumps the PROTO_OPCUA rx ring and answers
- * HEL with ACK, OPN with an OpenSecureChannelResponse, the Session/Read/Browse MSG
- * calls, and closes on CLO (SecurityPolicy None). No heap, no stdlib.
+ * ActivateSession, GetEndpoints, Read/Write (Variant/DataValue), Browse
+ * (ReferenceDescription), CloseSession and a ServiceFault fallback; the ESP32 section
+ * pumps the PROTO_OPCUA rx ring and answers HEL with ACK, OPN with an
+ * OpenSecureChannelResponse, the MSG service calls, and closes on CLO (SecurityPolicy
+ * None). No heap, no stdlib.
  */
 
 #include "services/opcua/opcua.h"
@@ -676,6 +677,85 @@ void ua_w_datavalue(UaWriter *w, const OpcUaVariant *v, uint32_t status)
         ua_w_u32(w, status);
 }
 
+bool ua_r_variant(UaReader *r, OpcUaVariant *out)
+{
+    memset(out, 0, sizeof(*out));
+    uint8_t enc = ua_r_u8(r);
+    if (enc & 0x80) // array bit set: arrays are not supported by this scalar decoder
+    {
+        r->err = true;
+        return false;
+    }
+    out->type = enc & 0x3F; // built-in type id (mask off array dimension flags)
+    switch (out->type)
+    {
+    case OPCUA_VAR_NULL:
+        break;
+    case OPCUA_VAR_BOOL:
+        out->b = ua_r_bool(r);
+        break;
+    case OPCUA_VAR_INT32:
+        out->i32 = ua_r_i32(r);
+        break;
+    case OPCUA_VAR_UINT32:
+        out->u32 = ua_r_u32(r);
+        break;
+    case OPCUA_VAR_FLOAT:
+        out->f32 = ua_r_f32(r);
+        break;
+    case OPCUA_VAR_DOUBLE:
+        out->f64 = ua_r_f64(r);
+        break;
+    case OPCUA_VAR_STRING: {
+        int32_t sl = ua_r_i32(r);
+        out->str_len = sl;
+        if (sl > 0)
+        {
+            if (r->off + (size_t)sl > r->len)
+            {
+                r->err = true;
+                return false;
+            }
+            out->str = (const char *)(r->p + r->off); // points into the source buffer
+            r->off += (size_t)sl;
+        }
+        break;
+    }
+    default:
+        r->err = true; // unsupported built-in type
+        return false;
+    }
+    return !r->err;
+}
+
+bool ua_r_datavalue(UaReader *r, OpcUaVariant *out_value, uint32_t *out_status)
+{
+    memset(out_value, 0, sizeof(*out_value));
+    if (out_status)
+        *out_status = OPCUA_STATUS_GOOD;
+    uint8_t mask = ua_r_u8(r);
+    if (mask & 0x01) // Value (Variant)
+    {
+        if (!ua_r_variant(r, out_value))
+            return false;
+    }
+    if (mask & 0x02) // StatusCode
+    {
+        uint32_t st = ua_r_u32(r);
+        if (out_status)
+            *out_status = st;
+    }
+    if (mask & 0x04) // SourceTimestamp (DateTime)
+        (void)ua_r_u64(r);
+    if (mask & 0x10) // SourcePicoseconds (UInt16)
+        (void)ua_r_u16(r);
+    if (mask & 0x08) // ServerTimestamp (DateTime)
+        (void)ua_r_u64(r);
+    if (mask & 0x20) // ServerPicoseconds (UInt16)
+        (void)ua_r_u16(r);
+    return !r->err;
+}
+
 bool opcua_parse_read(const uint8_t *msg, size_t len, OpcUaReadRequest *out)
 {
     UaMsgHeader h;
@@ -750,6 +830,82 @@ static OpcUaReadHandler s_read_handler = nullptr;
 void opcua_set_read_handler(OpcUaReadHandler fn)
 {
     s_read_handler = fn;
+}
+
+// ---------------------------------------------------------------------------
+// Write service - WriteRequest/WriteResponse
+// ---------------------------------------------------------------------------
+bool opcua_parse_write(const uint8_t *msg, size_t len, OpcUaWriteRequest *out)
+{
+    UaMsgHeader h;
+    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
+        return false;
+    if (h.size != len)
+        return false;
+
+    UaReader r = {msg + 8, len - 8, 0, false};
+    out->msg.secure_channel_id = ua_r_u32(&r);
+    out->msg.token_id = ua_r_u32(&r);
+    out->msg.sequence_number = ua_r_u32(&r);
+    out->msg.request_id = ua_r_u32(&r);
+
+    UaNodeId tid;
+    if (!ua_r_nodeid(&r, &tid)) // body TypeId
+        return false;
+    out->msg.type_id = tid.numeric ? tid.id : 0;
+    if (!r_request_header(&r, &out->msg.request_handle))
+        return false;
+
+    int32_t cnt = ua_r_i32(&r); // NodesToWrite array length
+    out->total = (cnt < 0) ? 0 : (uint32_t)cnt;
+    out->count = 0;
+    for (int32_t i = 0; i < cnt; i++)
+    {
+        UaNodeId nid;
+        if (!ua_r_nodeid(&r, &nid)) // WriteValue.NodeId
+            return false;
+        uint32_t attr = ua_r_u32(&r); // AttributeId
+        int32_t ir = ua_r_i32(&r);    // IndexRange (String)
+        if (ir > 0)
+            r_skip(&r, (size_t)ir);
+        OpcUaVariant val;
+        if (!ua_r_datavalue(&r, &val, nullptr)) // Value (DataValue)
+            return false;
+        if (out->count < DETWS_OPCUA_WRITE_MAX)
+        {
+            OpcUaWriteItem *it = &out->items[out->count++];
+            it->ns = nid.ns;
+            it->id = nid.id;
+            it->numeric = nid.numeric;
+            it->attribute = attr;
+            it->value = val;
+        }
+    }
+    return !r.err;
+}
+
+size_t opcua_build_write_response(const OpcUaWriteRequest *req, const uint32_t *results, uint32_t seq, int64_t now_ft,
+                                  uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+    w_msg_prefix(&w, req->msg.secure_channel_id, req->msg.token_id, seq, req->msg.request_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_WRITE_RESP);
+    w_response_header(&w, now_ft, req->msg.request_handle, 0);
+
+    ua_w_i32(&w, (int32_t)req->count); // Results[] (one StatusCode per node)
+    for (uint32_t i = 0; i < req->count; i++)
+        ua_w_u32(&w, results ? results[i] : OPCUA_STATUS_GOOD);
+    ua_w_i32(&w, 0); // DiagnosticInfos[] (empty)
+    return patch_size(&w);
+}
+
+// Application Write resolver (set via opcua_set_write_handler), used by opcua_rx.
+static OpcUaWriteHandler s_write_handler = nullptr;
+void opcua_set_write_handler(OpcUaWriteHandler fn)
+{
+    s_write_handler = fn;
 }
 
 // ---------------------------------------------------------------------------
@@ -1059,6 +1215,21 @@ void opcua_rx(uint8_t slot)
                     return;
                 }
                 n = opcua_build_browse_response(&br, s_browse_handler, seq, now, s_resp, sizeof(s_resp));
+            }
+            else if (m.type_id == OPCUA_ID_WRITE_REQ)
+            {
+                OpcUaWriteRequest wr;
+                if (!opcua_parse_write(s_msg, h.size, &wr))
+                {
+                    close_conn(slot);
+                    return;
+                }
+                uint32_t res[DETWS_OPCUA_WRITE_MAX];
+                for (uint32_t i = 0; i < wr.count; i++)
+                    res[i] = s_write_handler ? s_write_handler(wr.items[i].ns, wr.items[i].id, wr.items[i].attribute,
+                                                               &wr.items[i].value)
+                                             : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+                n = opcua_build_write_response(&wr, res, seq, now, s_resp, sizeof(s_resp));
             }
             else if (m.type_id == OPCUA_ID_CLOSE_SESSION_REQ)
                 n = opcua_build_close_session_response(&m, seq, now, s_resp, sizeof(s_resp));
