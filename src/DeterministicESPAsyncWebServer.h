@@ -497,6 +497,17 @@ class DetWebServer
     void serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Send a bodyless WebDAV status with optional extra header lines (each ending in CRLF).
     void dav_send_status(uint8_t slot_id, int code, const char *extra_headers);
+#if DETWS_ENABLE_STREAM_BODY
+    /// @brief Stream-begin hook: if @p req is a PUT under a DAV mount, open the file and stream the body.
+    bool dav_stream_put_begin(HttpReq *req);
+    /// @brief Stream-data hook: write one body chunk to the open DAV PUT file.
+    void dav_stream_put_data(const uint8_t *data, size_t len);
+    /// @brief C-callable trampolines (the parser hook takes plain function pointers).
+    static bool dav_put_begin_tramp(HttpReq *req);
+    static void dav_put_data_tramp(const uint8_t *data, size_t len);
+    /// @brief Stream-abort hook: close the half-written PUT file if the transfer is torn down early.
+    static void dav_put_abort_tramp(HttpReq *req);
+#endif
 #endif
 
     /**

@@ -18,11 +18,13 @@ HttpReq http_pool[MAX_CONNS];
 // Streaming-body hooks (OTA / file upload). Null unless the application installs them.
 static HttpStreamBeginCb g_stream_begin = nullptr;
 static HttpStreamDataCb g_stream_data = nullptr;
+static HttpStreamAbortCb g_stream_abort = nullptr;
 
-void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data)
+void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data, HttpStreamAbortCb abort)
 {
     g_stream_begin = begin;
     g_stream_data = data;
+    g_stream_abort = abort;
 }
 #endif // DETWS_ENABLE_STREAM_BODY
 
@@ -162,6 +164,14 @@ static void parse_query_params(HttpReq *req)
 void http_parser_reset(HttpReq *req)
 {
     uint8_t id = req->slot_id;
+#if DETWS_ENABLE_STREAM_BODY
+    // A streamed body that never reached PARSE_COMPLETE is being torn down (peer
+    // reset / timeout / error): let the sink release its resource before we wipe
+    // the state. The normal-completion reset runs while parse_state==PARSE_COMPLETE
+    // (the handler already finished the sink), so this fires only on abort.
+    if (req->body_streaming && req->parse_state != PARSE_COMPLETE && g_stream_abort)
+        g_stream_abort(req);
+#endif
     *req = {};         // zero all fields
     req->slot_id = id; // restore slot identity
     req->parse_state = PARSE_METHOD;

@@ -27,8 +27,9 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
 > abstraction (the two architectural tracks); concurrent TLS connections
 > (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); client-side TLS
-> resumption (server tickets are done); WebDAV streaming (large) PUT (PROPPATCH is
-> done); SNMPv3 _inform_ (the v3 trap is done); SSH multiplexing, per-direction
+> resumption (server tickets are done); WebDAV collection COPY (PROPPATCH and
+> streaming PUT are done); SNMPv3 _inform_ (the v3 trap is done); SSH
+> multiplexing, per-direction
 > NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
 > `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification of the
 > WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal join) needs
@@ -206,10 +207,10 @@ and HW-verified on an ESP32 DevKit. Per-feature footprints are in the README.
 
 Open follow-ups discovered during the above:
 
-- [ ] **WebDAV: streaming (large) PUT** (the body is buffered to
-      [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE)) and **collection `COPY`** (files only -
-      collection copy returns 501). _(PROPPATCH done: answered 207 with each
-      property refused 403, read-only properties.)_
+- [ ] **WebDAV: collection `COPY`** (files only - collection copy returns 501).
+      _(PROPPATCH done: 207 with each property refused 403. Streaming PUT done: the
+      body is written to the file as it arrives, no longer bounded by
+      [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
 - [ ] **Client-side TLS resumption** - the server issues tickets, but the
       persistent client TLS session does not yet present one on reconnect.
 - [ ] **SNMPv3 _inform_** - the v3 trap is implemented; the confirmed v3 inform is

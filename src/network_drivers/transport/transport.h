@@ -119,6 +119,9 @@ struct TcpConn
     uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
     DetAtomic<size_t> rx_head;      ///< Producer write index (lwIP/tcpip context).
     DetAtomic<size_t> rx_tail;      ///< Consumer read index (worker context).
+    size_t rx_acked;                ///< rx_tail position last ACKed to lwIP (tcp_recved). Worker-only:
+                                    ///< the window is reopened by exactly the bytes drained since, so it
+                                    ///< tracks ring occupancy (ack-on-consume) rather than copy.
 
     uint8_t listener_id; ///< Index into listener_pool[]; set at accept time.
     uint8_t owner;       ///< Worker that owns this slot (round-robin at accept). Always 0 at N=1.
@@ -267,6 +270,22 @@ u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb);
 
 /** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
 void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
+
+/**
+ * @brief Reopen the TCP receive window by however much @p slot has drained.
+ *
+ * Ack-on-consume, owned entirely by the transport layer: recv_cb no longer
+ * ACKs on copy. Instead the window tracks how much the application has actually
+ * drained from the ring (rx_tail) since the last ACK, so it never advertises more
+ * than the ring can hold and the peer is paced to the consumer; a slow sink (e.g.
+ * flash writes during a streamed upload) can never overflow the ring and deadlock.
+ *
+ * Other layers do not touch the ring indices to manage flow control - the worker
+ * just calls this once per owned slot per loop and transport does the rest
+ * (computes the delta vs rx_acked, marshals tcp_recved to tcpip_thread, advances
+ * rx_acked). A no-op when nothing was drained or @p slot is not active.
+ */
+void det_conn_ack_consumed(uint8_t slot);
 
 /**
  * @brief Write raw bytes straight to @p pcb (no TLS), context-safe.

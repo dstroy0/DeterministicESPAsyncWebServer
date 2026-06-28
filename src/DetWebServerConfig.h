@@ -49,6 +49,7 @@
 /** @brief Ring-buffer capacity in bytes per connection slot. */
 #ifndef RX_BUF_SIZE
 #define RX_BUF_SIZE 1024
+#define DETWS_RX_BUF_SIZE_DEFAULTED 1 // we chose it; upsized for streaming below (see STREAM_BODY)
 #endif
 
 /**
@@ -599,10 +600,10 @@
  * DETWS_WEBDAV_MAX_ENTRIES children. PROPPATCH returns a 207 with each requested
  * property refused 403 Forbidden (the live properties are read-only, no dead-
  * property store) - this keeps Windows Explorer / macOS Finder, which PROPPATCH a
- * timestamp right after a PUT, from erroring on a 405. PUT buffers the body
- * (bounded by BODY_BUF_SIZE - large uploads need the streaming-body sink). Locks
- * are advisory (a synthetic token is issued but not enforced). See docs/SECURITY.md
- * before exposing it.
+ * timestamp right after a PUT, from erroring on a 405. PUT streams the request
+ * body straight to the file (via the shared streaming-body sink), so an upload is
+ * not bounded by BODY_BUF_SIZE. Locks are advisory (a synthetic token is issued
+ * but not enforced). See docs/SECURITY.md before exposing it.
  */
 #ifndef DETWS_ENABLE_WEBDAV
 #define DETWS_ENABLE_WEBDAV 0
@@ -1467,25 +1468,42 @@
  * SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser
  * streaming-body hook as OTA.
  *
- * For reliable uploads set RX_BUF_SIZE above the largest inbound TCP segment
- * (TCP_MSS, ~1460): the transport refuses-and-redelivers a segment that will not
- * fit the receive ring (lossless backpressure), but a ring smaller than one
- * segment would stall. The 1024 default suits ordinary requests, not uploads.
+ * For reliable streamed uploads the RX ring must hold at least one full TCP
+ * receive window (RX_BUF_SIZE >= TCP_WND, ~5.7 KB by default): the transport
+ * reopens the window only as the consumer drains the ring (ack-on-consume), so a
+ * ring smaller than the window lets the peer overrun it and the transfer
+ * deadlocks - you cannot advertise a window larger than your buffer. When a
+ * streaming feature is enabled and RX_BUF_SIZE was left at its default, it is
+ * automatically upsized below; an explicit RX_BUF_SIZE is honored as-is (set it
+ * >= TCP_WND yourself). The 1024 default suits ordinary requests, not uploads.
  */
 #ifndef DETWS_ENABLE_UPLOAD
 #define DETWS_ENABLE_UPLOAD 0
 #endif
 
 /**
- * @brief Internal: the parser's streaming-body machinery (OTA or file upload).
+ * @brief Internal: the parser's streaming-body machinery (OTA, file upload, WebDAV PUT).
  *
- * Both stream the request body to a sink instead of buffering it into body[];
- * the parser support is shared and compiled when either feature is enabled.
+ * Each streams the request body to a sink instead of buffering it into body[]; the
+ * parser support is shared and compiled when any of these features is enabled. The
+ * sink is a single global hook, so only one streaming consumer is active per build
+ * (the last to register wins) - do not combine OTA / upload / WebDAV streaming in
+ * the same firmware.
  */
-#if DETWS_ENABLE_OTA || DETWS_ENABLE_UPLOAD
+#if DETWS_ENABLE_OTA || DETWS_ENABLE_UPLOAD || DETWS_ENABLE_WEBDAV
 #define DETWS_ENABLE_STREAM_BODY 1
 #else
 #define DETWS_ENABLE_STREAM_BODY 0
+#endif
+
+// Streamed uploads need the RX ring to hold a full TCP receive window or the peer
+// overruns it and the transfer deadlocks (ack-on-consume reopens the window only as
+// the ring drains). If RX_BUF_SIZE was left at its default, upsize it to a value
+// that comfortably exceeds the usual TCP_WND (~5.7 KB) when streaming is enabled.
+// An explicit RX_BUF_SIZE (build flag) is respected unchanged - set it >= TCP_WND.
+#if DETWS_ENABLE_STREAM_BODY && defined(DETWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 8192
+#undef RX_BUF_SIZE
+#define RX_BUF_SIZE 8192
 #endif
 
 /** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */

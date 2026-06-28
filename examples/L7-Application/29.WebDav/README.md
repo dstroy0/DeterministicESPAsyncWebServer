@@ -20,8 +20,8 @@ Supported methods: `OPTIONS`, `PROPFIND` (Depth 0/1), `PROPPATCH`, `GET`, `HEAD`
 `PROPPATCH` is answered `207 Multi-Status` with each requested property refused
 `403 Forbidden` (the properties are read-only) - this keeps Windows Explorer and
 macOS Finder, which `PROPPATCH` a timestamp right after a `PUT`, from erroring on
-a `405`. `PUT` buffers the body (bounded by `BODY_BUF_SIZE`) and the locks are
-advisory only.
+a `405`. `PUT` streams the body straight to the file (so an upload is not bounded
+by `BODY_BUF_SIZE`) and the locks are advisory only.
 
 **Security note.** A writable share is dangerous on an open network: add per-route
 auth ([Foundation/04.Sysadmin](../../Foundation/04.Sysadmin)), HTTPS

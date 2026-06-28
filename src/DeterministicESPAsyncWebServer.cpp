@@ -1042,6 +1042,11 @@ void DetWebServer::service_once(int worker_id)
         if (conn_pool[i].owner != worker_id)
             continue;
 
+        // Ack-on-consume: reopen the TCP receive window by whatever any consumer
+        // (HTTP/WS/TLS/service) drained from this slot's ring on the previous pass.
+        // Transport owns the window math; we just nudge it once per slot per loop.
+        det_conn_ack_consumed(i);
+
         // Non-HTTP protocols (Telnet/SSH and registered services such as
         // MQTT/Modbus) are pumped through their registered poll handler. HTTP -
         // with its WebSocket/SSE upgrades - keeps the inline pump below, which is
@@ -3034,6 +3039,105 @@ static bool dav_rm_recursive(fs::FS &fsys, const char *path, int depth)
     return fsys.rmdir(path);
 }
 
+// Map a WebDAV request path to its on-disk path under the mount @p r. Strips the
+// mount prefix, rejects traversal, joins onto the FS root, and drops a trailing
+// '/'. Returns 0 on success, else the HTTP error code (403 traversal, 414 too
+// long) - the single source of truth for the path check, shared by the request
+// handler and the streaming-PUT begin hook.
+static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size_t cap)
+{
+    size_t plen = strlen(r->path);
+    if (plen > 0 && r->path[plen - 1] == '*')
+        plen--;
+    const char *sub = (strlen(reqpath) >= plen) ? reqpath + plen : "";
+    if (strstr(sub, ".."))
+        return 403;
+    const char *root = r->static_root ? r->static_root : "";
+    if (!dav_join(root, sub, out, cap))
+        return 414;
+    size_t fpl = strlen(out);
+    if (fpl > 1 && out[fpl - 1] == '/')
+        out[fpl - 1] = '\0';
+    return 0;
+}
+
+#if DETWS_ENABLE_STREAM_BODY
+// Streaming-PUT state for WebDAV (one transfer at a time on this single-task
+// device). The body is written to the file as it arrives, so an upload is never
+// bounded by BODY_BUF_SIZE.
+static DetWebServer *g_dav_stream_srv = nullptr;
+static fs::File g_dav_put_file;
+static bool g_dav_put_active = false;  ///< destination file opened for the current PUT.
+static bool g_dav_put_error = false;   ///< a write (or the open) failed.
+static bool g_dav_put_existed = false; ///< the target existed before this PUT (204 vs 201).
+static size_t g_dav_put_written = 0;   ///< bytes written so far.
+
+bool DetWebServer::dav_put_begin_tramp(HttpReq *req)
+{
+    return g_dav_stream_srv && g_dav_stream_srv->dav_stream_put_begin(req);
+}
+void DetWebServer::dav_put_data_tramp(const uint8_t *data, size_t len)
+{
+    if (g_dav_stream_srv)
+        g_dav_stream_srv->dav_stream_put_data(data, len);
+}
+void DetWebServer::dav_put_abort_tramp(HttpReq *req)
+{
+    (void)req;
+    // The PUT was torn down before the handler ran: close the half-written file so
+    // the handle is not leaked (a leak eventually exhausts LittleFS's open slots).
+    if (g_dav_put_active)
+    {
+        g_dav_put_file.close();
+        g_dav_put_active = false;
+    }
+}
+
+bool DetWebServer::dav_stream_put_begin(HttpReq *req)
+{
+    if (strcmp(req->method, "PUT") != 0)
+        return false;
+    uint8_t slot = (uint8_t)(req - http_pool);
+    for (uint8_t i = 0; i < _route_count; i++)
+    {
+        Route *r = &_routes[i];
+        if (!r->is_active || r->type != ROUTE_DAV)
+            continue;
+        if (!path_matches(r->path, r->is_wildcard, req->path))
+            continue;
+        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
+            continue;
+        if (!r->static_fs)
+            return false;
+        char fs_path[256];
+        if (dav_resolve_path(r, req->path, fs_path, sizeof(fs_path)) != 0)
+            return false; // traversal / too long - let it buffer; the handler answers 403/414
+        g_dav_put_active = false;
+        g_dav_put_error = false;
+        g_dav_put_written = 0;
+        g_dav_put_existed = r->static_fs->exists(fs_path);
+        g_dav_put_file = r->static_fs->open(fs_path, "w");
+        if (g_dav_put_file)
+            g_dav_put_active = true;
+        else
+            g_dav_put_error = true;
+        return true; // stream regardless so the body is consumed and the handler replies
+    }
+    return false;
+}
+
+void DetWebServer::dav_stream_put_data(const uint8_t *data, size_t len)
+{
+    if (g_dav_put_active && !g_dav_put_error)
+    {
+        if (g_dav_put_file.write(data, len) != len)
+            g_dav_put_error = true;
+        else
+            g_dav_put_written += len;
+    }
+}
+#endif // DETWS_ENABLE_STREAM_BODY
+
 void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
 {
     if (_route_count >= MAX_ROUTES)
@@ -3051,6 +3155,12 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
     r->method = HTTP_GET; // unused: WebDAV dispatch keys off the raw method token
     r->static_fs = &file_sys;
     r->static_root = fs_root;
+
+#if DETWS_ENABLE_STREAM_BODY
+    // Stream PUT bodies straight to the file (one global sink; see DETWS_ENABLE_STREAM_BODY).
+    g_dav_stream_srv = this;
+    http_parser_set_stream_hooks(dav_put_begin_tramp, dav_put_data_tramp, dav_put_abort_tramp);
+#endif
 }
 
 void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
@@ -3100,28 +3210,19 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     }
     fs::FS &fsys = *r->static_fs;
 
-    // Request path beyond the mount prefix (route path minus its trailing '*').
-    size_t plen = strlen(r->path);
-    if (plen > 0 && r->path[plen - 1] == '*')
-        plen--;
-    const char *sub = (strlen(req->path) >= plen) ? req->path + plen : "";
-    if (strstr(sub, ".."))
+    char fs_path[256];
+    int rc = dav_resolve_path(r, req->path, fs_path, sizeof(fs_path));
+    if (rc != 0)
     {
-        dav_send_status(slot_id, 403, "");
+        dav_send_status(slot_id, rc, ""); // 403 traversal / 414 too long
         return;
     }
 
+    // Mount-prefix length and FS root, used by COPY/MOVE to resolve the Destination.
+    size_t plen = strlen(r->path);
+    if (plen > 0 && r->path[plen - 1] == '*')
+        plen--;
     const char *root = r->static_root ? r->static_root : "";
-    char fs_path[256];
-    if (!dav_join(root, sub, fs_path, sizeof(fs_path)))
-    {
-        dav_send_status(slot_id, 414, "");
-        return;
-    }
-    // Strip a trailing '/' so FS calls see a canonical path (keep a lone "/").
-    size_t fpl = strlen(fs_path);
-    if (fpl > 1 && fs_path[fpl - 1] == '/')
-        fs_path[fpl - 1] = '\0';
 
     switch (webdav_method(req->method))
     {
@@ -3154,6 +3255,30 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     }
 
     case DAV_M_PUT: {
+#if DETWS_ENABLE_STREAM_BODY
+        if (req->body_streaming)
+        {
+            // The body was written to the file as it arrived (dav_stream_put_*).
+            if (g_dav_put_active)
+            {
+                g_dav_put_file.close();
+                g_dav_put_active = false; // closed here: the abort hook must not double-close
+            }
+            else
+            {
+                dav_send_status(slot_id, 409, ""); // parent missing / not writable
+                return;
+            }
+            if (g_dav_put_error)
+            {
+                dav_send_status(slot_id, 507, ""); // a write failed (e.g. disk full)
+                return;
+            }
+            dav_send_status(slot_id, g_dav_put_existed ? 204 : 201, "");
+            return;
+        }
+#endif
+        // Buffered fallback (streaming disabled): body bounded by BODY_BUF_SIZE.
         bool existed = fsys.exists(fs_path);
         fs::File f = fsys.open(fs_path, "w");
         if (!f)

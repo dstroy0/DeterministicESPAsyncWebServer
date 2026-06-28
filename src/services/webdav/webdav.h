@@ -15,8 +15,9 @@
  * Scope: class 1 (PROPFIND Depth 0/1, PROPPATCH, PUT, DELETE, MKCOL, COPY, MOVE)
  * plus OPTIONS and advisory LOCK/UNLOCK (a synthetic token is issued but not
  * enforced). PROPPATCH is answered 207 with every requested property refused 403
- * (read-only live properties, no dead-property store). Large uploads need the
- * streaming-body sink; PUT here buffers the request body.
+ * (read-only live properties, no dead-property store). The filesystem-backed
+ * handler streams a PUT body straight to the file (DetWebServer's stream-body
+ * hook), so uploads are not bounded by BODY_BUF_SIZE.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H

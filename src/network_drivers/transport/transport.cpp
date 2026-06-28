@@ -171,8 +171,9 @@ enum DetTcpOp
     DET_OP_CLOSE,
     DET_OP_ABORT,
     DET_OP_DETACH,
-    DET_OP_RAWSEND,    // raw tcp_write of already-encrypted bytes (TLS BIO), no TLS re-entry
-    DET_OP_CLOSE_CHECK // in tcpip_thread: finalize a CONN_CLOSING slot if its TX has drained
+    DET_OP_RAWSEND,     // raw tcp_write of already-encrypted bytes (TLS BIO), no TLS re-entry
+    DET_OP_CLOSE_CHECK, // in tcpip_thread: finalize a CONN_CLOSING slot if its TX has drained
+    DET_OP_RECVED       // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
 };
 
 // True while det_tcp_do() is executing, i.e. while we are running inside the lwIP
@@ -235,6 +236,9 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         break;
     case DET_OP_CLOSE_CHECK:
         closing_check(k->slot, k->pcb); // safe pcb access: we are in tcpip_thread
+        break;
+    case DET_OP_RECVED:
+        tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
         break;
     }
     s_in_tcpip_thread = false;
@@ -311,6 +315,28 @@ void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
     det_tcp_marshal(DET_OP_OUTPUT, slot, pcb, nullptr, 0);
 #else
     tcp_output(pcb);
+#endif
+}
+
+void det_conn_ack_consumed(uint8_t slot)
+{
+    if (slot >= MAX_CONNS)
+        return;
+    TcpConn *c = &conn_pool[slot];
+    // Only the owning worker calls this, so rx_tail/rx_acked are read race-free
+    // here; rx_head (producer) is not touched. Ack nothing for a slot that is not
+    // actively receiving (the CONN_CLOSING discard path ACKs its own bytes).
+    if (c->state != CONN_ACTIVE || !c->pcb)
+        return;
+    size_t tail = c->rx_tail;
+    size_t consumed = (tail + RX_BUF_SIZE - c->rx_acked) % RX_BUF_SIZE;
+    if (!consumed)
+        return;
+    c->rx_acked = tail; // advance first: the marshaled tcp_recved is the slow part
+#if defined(ARDUINO)
+    det_tcp_marshal(DET_OP_RECVED, slot, c->pcb, nullptr, (u16_t)consumed);
+#else
+    tcp_recved(c->pcb, (u16_t)consumed);
 #endif
 }
 
@@ -451,9 +477,15 @@ static inline void enqueue(TcpConn *slot, const TcpEvt &evt)
 void DeterministicAsyncTCP::pool_init(const WebServerConfig *cfg)
 {
     conn_timeout_ms = cfg ? cfg->conn_timeout_ms : CONN_TIMEOUT_MS;
+    // Reset from a single zeroed template in BSS rather than `conn_pool[i] = {}`:
+    // the latter materializes a full sizeof(TcpConn) temporary on the caller's
+    // stack (the whole rx_buffer[RX_BUF_SIZE]), which overflows the loopTask stack
+    // at begin() once RX_BUF_SIZE is set large. Copy-assigning from the static
+    // template stays in BSS and uses DetAtomic::operator= (no atomic memset UB).
+    static const TcpConn blank = {};
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i] = {}; // zero all fields
+        conn_pool[i] = blank;
         conn_pool[i].id = i;
         conn_pool[i].state = CONN_FREE;
     }
@@ -555,9 +587,10 @@ void DeterministicAsyncTCP::check_timeouts(int worker_id)
 /**
  * @brief lwIP receive callback - fires when data arrives on a connection.
  *
- * Copies pbuf chain bytes into the ring buffer and calls tcp_recved() with
- * only the bytes actually stored, applying TCP-level backpressure when the
- * buffer is full.  A null pbuf signals graceful remote close (FIN received).
+ * Copies pbuf chain bytes into the ring buffer; the window is reopened later by
+ * det_conn_ack_consumed() as the worker drains (ack-on-consume), not here. If the
+ * whole segment will not fit it is refused (ERR_MEM) for lossless backpressure.
+ * A null pbuf signals graceful remote close (FIN received).
  */
 err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
@@ -649,8 +682,11 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
     }
     slot->rx_head = head; // single release store: publishes the whole segment at once
 
-    // The whole segment was stored, so acknowledge all of it.
-    tcp_recved(tpcb, (u16_t)bytes_copied);
+    // Do NOT tcp_recved() here: the window is reopened by det_conn_ack_consumed()
+    // as the worker drains the ring (ack-on-consume), so the advertised window
+    // tracks ring occupancy and a slow consumer cannot overflow the ring. ACKing
+    // on copy decoupled the window from drainage and deadlocked streamed uploads
+    // once RX_BUF_SIZE < TCP_WND (the refused segment past one ring-full stalled).
     pbuf_free(p);
 
     if (bytes_copied > 0)

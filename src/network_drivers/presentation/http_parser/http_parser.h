@@ -175,9 +175,16 @@ extern HttpReq http_pool[MAX_CONNS];
 typedef bool (*HttpStreamBeginCb)(HttpReq *req);
 /** @brief Receive one body chunk for a streamed request. */
 typedef void (*HttpStreamDataCb)(const uint8_t *data, size_t len);
+/**
+ * @brief A streamed request was torn down before PARSE_COMPLETE (peer reset,
+ * timeout, parse error). Lets the sink release its resource (close the file,
+ * abort the Update) so a half-sent upload never leaks a handle.
+ */
+typedef void (*HttpStreamAbortCb)(HttpReq *req);
 
-/** @brief Install the streaming-body hooks (pass nullptr,nullptr to disable). */
-void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data);
+/** @brief Install the streaming-body hooks (pass nullptr to disable; abort optional). */
+void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data,
+                                  HttpStreamAbortCb abort = nullptr);
 #endif // DETWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
