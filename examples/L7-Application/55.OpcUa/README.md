@@ -1,0 +1,179 @@
+# 55.OpcUa - an OPC UA Binary server
+
+**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OPCUA`
+
+## What this example teaches
+
+OPC UA is the dominant industrial interoperability protocol. This opens an OPC UA
+Binary endpoint on TCP/4840 implementing the type codec, UA-TCP (UACP) framing, the
+Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel, SecurityPolicy
+None), the Session (CreateSession + ActivateSession), and the Read / Write / Browse
+services - so a real client (UaExpert, open62541, Python `asyncua`) completes the
+handshake, opens a secure channel, activates a session, browses the Objects folder,
+and reads/writes node values. Like Modbus ([30.ModbusTcp](../30.ModbusTcp)), it is
+just another protocol on its own port, sharing the HTTP server's pool and event loop.
+
+**Three resolvers map a tiny address space onto live values.** Read returns a value
+for a node id (false -> `BadNodeIdUnknown`):
+
+```cpp
+static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out) {
+    if (ns != 1 || attribute != OPCUA_ATTR_VALUE) return false;
+    switch (id) {
+    case 1:  out->type = OPCUA_VAR_UINT32; out->u32 = millis() / 1000;    return true; // Uptime
+    case 2:  out->type = OPCUA_VAR_UINT32; out->u32 = ESP.getFreeHeap();  return true; // FreeHeap
+    case 10: out->type = OPCUA_VAR_UINT32; out->u32 = setpoint;           return true; // writable
+    default: return false;
+    }
+}
+```
+
+Write returns an OPC UA StatusCode - `0` (Good) on success, or a Bad code the client
+surfaces:
+
+```cpp
+static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value) {
+    if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32) {
+        setpoint = value->u32; return 0; // Good
+    }
+    return (ns == 1 && id == 10) ? OPCUA_STATUS_BAD_NOT_WRITABLE : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+}
+```
+
+Browse fills the references under the standard Objects folder (`ns=0;i=85`) so the
+variables show up in a client's address-space tree.
+
+**Register the handlers, then listen before `begin()`:**
+
+```cpp
+opcua_set_read_handler(opcua_read);
+opcua_set_write_handler(opcua_write);
+opcua_set_browse_handler(opcua_browse);
+server.listen(4840, PROTO_OPCUA); // before begin() - it activates the listeners
+server.begin(80);
+```
+
+## Build and run
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_OPCUA=1" \
+  --lib="." examples/L7-Application/55.OpcUa/55.OpcUa.ino
+```
+
+Connect a client to `opc.tcp://<ip>:4840` (UaExpert, or
+`python -m asyncua.tools.uals -u opc.tcp://<ip>:4840`) and browse/read the Objects
+folder.
+
+## Annotated source
+
+The complete sketch ([55.OpcUa.ino](55.OpcUa.ino)), reproduced verbatim with added
+explanatory comments:
+
+```cpp
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+#define DETWS_ENABLE_OPCUA 1
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical/physical.h"
+#include "services/opcua/opcua.h"
+#include <WiFi.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+
+DetWebServer server;
+
+static uint32_t setpoint = 100; // a writable variable, exposed at ns=1;i=10
+
+// Read resolver: map a tiny address space (namespace 1) onto live values. A client
+// Reads node ns=1;i=1 (uptime), i=2 (free heap), i=3 (a Double) or i=10 (the writable
+// setpoint). Return false for anything else and the server answers BadNodeIdUnknown.
+static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
+{
+    if (ns != 1 || attribute != OPCUA_ATTR_VALUE)
+        return false;
+    switch (id)
+    {
+    case 1:
+        out->type = OPCUA_VAR_UINT32;
+        out->u32 = millis() / 1000;
+        return true;
+    case 2:
+        out->type = OPCUA_VAR_UINT32;
+        out->u32 = ESP.getFreeHeap();
+        return true;
+    case 3:
+        out->type = OPCUA_VAR_DOUBLE;
+        out->f64 = 23.5;
+        return true;
+    case 10:
+        out->type = OPCUA_VAR_UINT32;
+        out->u32 = setpoint;
+        return true;
+    default:
+        return false;
+    }
+}
+
+// Write resolver: only ns=1;i=10 (the setpoint) is writable. Returns a StatusCode -
+// Good (0) on success, or a Bad code the client surfaces as the write result.
+static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value)
+{
+    if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32)
+    {
+        setpoint = value->u32;
+        return 0; // Good
+    }
+    return (ns == 1 && id == 10) ? OPCUA_STATUS_BAD_NOT_WRITABLE : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+}
+
+// Browse resolver: the standard Objects folder (ns=0;i=85) organizes our three
+// variables (ns=1;i=1..3). Browsing anything else is BadNodeIdUnknown.
+static int32_t opcua_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max)
+{
+    if (ns != 0 || id != 85) // i=85 == Objects folder
+        return -1;
+    static const char *names[3] = {"Uptime", "FreeHeap", "Temperature"};
+    int32_t n = 0;
+    for (uint32_t i = 0; i < 3 && (uint32_t)n < max; i++, n++)
+    {
+        out[n].ref_type_id = OPCUA_REFTYPE_ORGANIZES;
+        out[n].is_forward = true;
+        out[n].target_ns = 1;
+        out[n].target_id = i + 1;
+        out[n].browse_name_ns = 1;
+        out[n].browse_name = names[i];
+        out[n].display_name = names[i];
+        out[n].node_class = OPCUA_NODECLASS_VARIABLE;
+        out[n].type_def_id = OPCUA_TYPEDEF_BASE_DATA_VARIABLE;
+    }
+    return n;
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    init_wifi_physical(SSID, PASSWORD);
+    while (!wifi_ready())
+        delay(250);
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+    WiFi.setSleep(false);
+
+    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
+    opcua_set_read_handler(opcua_read);     // serve Reads for ns=1;i=1..3,10
+    opcua_set_write_handler(opcua_write);   // accept Writes to ns=1;i=10 (the setpoint)
+    opcua_set_browse_handler(opcua_browse); // list those under the Objects folder
+    server.listen(4840, PROTO_OPCUA);       // OPC UA Binary endpoint - before begin() (it activates listeners)
+    server.begin(80);
+    Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (handshake + SecureChannel + Session + Read/Write + Browse)");
+}
+
+void loop()
+{
+    server.handle();
+}
+```

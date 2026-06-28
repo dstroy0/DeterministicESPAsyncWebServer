@@ -528,7 +528,17 @@
     "Authy",
     "JBSWY",
     "DPEHPK",
-    "strtoul"
+    "strtoul",
+    "uals",
+    "REFTYPE",
+    "NODECLASS",
+    "reqlen",
+    "nrefs",
+    "vals",
+    "wres",
+    "strncasecmp",
+    "swappable",
+    "AQAB"
   ],
   "ignorePaths": [
     "node_modules/**",
