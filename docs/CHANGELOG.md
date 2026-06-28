@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d3fe1db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3fe1db67101a89ca95745af66defdb29ee31c3d))
+
+### Documentation
+
+- close internal-piping Phase 4 (client buffers documented) ([`2d98be1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2d98be104957263cca3c3e719078c3f0c0d4e137))
+
 ## [4.7.0] - 2026-06-28
 
 <details>
