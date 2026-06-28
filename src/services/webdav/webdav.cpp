@@ -252,4 +252,123 @@ size_t webdav_ms_end(char *buf, size_t cap, size_t len)
     return len;
 }
 
+// True for a byte that ends an XML element name (whitespace, '/', '>').
+static bool name_end_char(char c)
+{
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '>';
+}
+
+size_t webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)
+{
+    size_t len = 0;
+    if (cap)
+        buf[0] = '\0'; // always a valid C-string, even if nothing below fits
+    char esc[256];
+    webdav_xml_escape(esc, sizeof(esc), href);
+    if (!app(buf, cap, &len,
+             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n"
+             "  <D:response>\n    <D:href>") ||
+        !app(buf, cap, &len, esc) || !app(buf, cap, &len, "</D:href>\n    <D:propstat>\n      <D:prop>\n"))
+        return 0;
+
+    // Walk the request and echo every element that sits directly inside a <prop>
+    // (across all <set>/<remove> blocks) as a self-closed element. The wrappers
+    // (propertyupdate / set / remove / prop) are skipped; only the properties are
+    // reflected, each refused 403 below.
+    int emitted = 0;
+    bool in_prop = false;
+    size_t i = 0;
+    while (i < body_len && emitted < DETWS_WEBDAV_MAX_PROPS)
+    {
+        if (body[i] != '<')
+        {
+            i++;
+            continue;
+        }
+        size_t start = i + 1;
+        if (start < body_len && (body[start] == '?' || body[start] == '!'))
+        {
+            while (i < body_len && body[i] != '>') // skip PI / comment / declaration
+                i++;
+            i++;
+            continue;
+        }
+        bool closing = (start < body_len && body[start] == '/');
+        if (closing)
+            start++;
+        size_t end = start;
+        while (end < body_len && body[end] != '>')
+            end++;
+        if (end >= body_len)
+            break; // unterminated tag
+        bool self_closed = (end > start && body[end - 1] == '/');
+        size_t name_end = start;
+        while (name_end < end && !name_end_char(body[name_end]))
+            name_end++;
+        size_t local = start; // local name = after the last ':' in the qualified name
+        for (size_t k = start; k < name_end; k++)
+            if (body[k] == ':')
+                local = k + 1;
+        bool is_prop = (name_end - local) == 4 && !strncmp(&body[local], "prop", 4);
+
+        if (closing)
+        {
+            if (is_prop)
+                in_prop = false;
+            i = end + 1;
+            continue;
+        }
+        if (is_prop)
+        {
+            if (!self_closed) // <prop> opens a block; <prop/> is an empty block
+                in_prop = true;
+            i = end + 1;
+            continue;
+        }
+        if (in_prop)
+        {
+            // Echo this property element self-closed. Copy the open-tag content
+            // (name + its own xmlns/attrs), dropping a trailing '/' and trailing
+            // whitespace; reject a span containing '<' so nothing is injected.
+            size_t copy_end = self_closed ? end - 1 : end;
+            while (copy_end > start && (body[copy_end - 1] == ' ' || body[copy_end - 1] == '\t' ||
+                                        body[copy_end - 1] == '\r' || body[copy_end - 1] == '\n'))
+                copy_end--;
+            bool ok = copy_end > start;
+            for (size_t k = start; k < copy_end && ok; k++)
+                if (body[k] == '<')
+                    ok = false;
+            char tag[256];
+            size_t tl = copy_end - start;
+            if (ok && tl < sizeof(tag))
+            {
+                memcpy(tag, &body[start], tl);
+                tag[tl] = '\0';
+                if (app(buf, cap, &len, "        <") && app(buf, cap, &len, tag) && app(buf, cap, &len, "/>\n"))
+                    emitted++;
+            }
+            if (!self_closed)
+            {
+                // Skip the property's value up to its close tag (no nesting expected).
+                size_t j = end + 1;
+                while (j + 1 < body_len && !(body[j] == '<' && body[j + 1] == '/'))
+                    j++;
+                while (j < body_len && body[j] != '>')
+                    j++;
+                i = (j < body_len) ? j + 1 : body_len;
+            }
+            else
+                i = end + 1;
+            continue;
+        }
+        i = end + 1;
+    }
+
+    if (!app(buf, cap, &len,
+             "      </D:prop>\n      <D:status>HTTP/1.1 403 Forbidden</D:status>\n"
+             "    </D:propstat>\n  </D:response>\n</D:multistatus>\n"))
+        return 0;
+    return len;
+}
+
 #endif // DETWS_ENABLE_WEBDAV

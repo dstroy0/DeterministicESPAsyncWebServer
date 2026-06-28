@@ -15,9 +15,13 @@ in one call: here `/dav` on disk is exposed at the URL `/dav`.
 server.dav("/dav", LittleFS, "/dav"); // URL "/dav" -> LittleFS "/dav"
 ```
 
-Supported methods: `OPTIONS`, `PROPFIND` (Depth 0/1), `GET`, `HEAD`, `PUT`,
-`DELETE`, `MKCOL`, `COPY` (files), `MOVE`, and advisory `LOCK`/`UNLOCK`. `PUT`
-buffers the body (bounded by `BODY_BUF_SIZE`) and the locks are advisory only.
+Supported methods: `OPTIONS`, `PROPFIND` (Depth 0/1), `PROPPATCH`, `GET`, `HEAD`,
+`PUT`, `DELETE`, `MKCOL`, `COPY` (files), `MOVE`, and advisory `LOCK`/`UNLOCK`.
+`PROPPATCH` is answered `207 Multi-Status` with each requested property refused
+`403 Forbidden` (the properties are read-only) - this keeps Windows Explorer and
+macOS Finder, which `PROPPATCH` a timestamp right after a `PUT`, from erroring on
+a `405`. `PUT` buffers the body (bounded by `BODY_BUF_SIZE`) and the locks are
+advisory only.
 
 **Security note.** A writable share is dangerous on an open network: add per-route
 auth ([Foundation/04.Sysadmin](../../Foundation/04.Sysadmin)), HTTPS
@@ -36,6 +40,7 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 ```sh
 curl -X PROPFIND -H "Depth: 1" http://<ip>/dav/        # list
 curl -T file.txt http://<ip>/dav/file.txt              # upload (PUT)
+curl -X PROPPATCH --data-binary @patch.xml http://<ip>/dav/file.txt  # 207 (props refused 403)
 curl -X MKCOL http://<ip>/dav/sub                      # make a collection
 curl -X MOVE -H "Destination: /dav/b.txt" http://<ip>/dav/file.txt
 curl -X DELETE http://<ip>/dav/b.txt

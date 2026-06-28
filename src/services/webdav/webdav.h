@@ -12,10 +12,11 @@
  * COPY/MOVE, GET via the file-serving path) lives in DetWebServer::serve_dav_*
  * and runs only on a build with a real Arduino FS.
  *
- * Scope: class 1 (PROPFIND Depth 0/1, PUT, DELETE, MKCOL, COPY, MOVE) plus
- * OPTIONS and advisory LOCK/UNLOCK (a synthetic token is issued but not
- * enforced). PROPPATCH is not supported (properties are read-only). Large uploads
- * need the streaming-body sink; PUT here buffers the request body.
+ * Scope: class 1 (PROPFIND Depth 0/1, PROPPATCH, PUT, DELETE, MKCOL, COPY, MOVE)
+ * plus OPTIONS and advisory LOCK/UNLOCK (a synthetic token is issued but not
+ * enforced). PROPPATCH is answered 207 with every requested property refused 403
+ * (read-only live properties, no dead-property store). Large uploads need the
+ * streaming-body sink; PUT here buffers the request body.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H
@@ -97,6 +98,25 @@ size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool
 
 /** @brief Close the <multistatus> element. */
 size_t webdav_ms_end(char *buf, size_t cap, size_t len);
+
+/**
+ * @brief Build a complete 207 Multi-Status body answering a PROPPATCH.
+ *
+ * The server has no dead-property store and its live properties are read-only, so
+ * every requested property is refused with 403 Forbidden. The property elements
+ * are echoed verbatim (self-closed) from the request @p body so the client sees
+ * exactly which properties it asked for, namespace declarations intact; a property
+ * whose tag would contain a stray '<' is skipped (no XML injection). Up to
+ * DETWS_WEBDAV_MAX_PROPS properties are echoed.
+ *
+ * @param buf       destination buffer (whole document, NUL-terminated).
+ * @param cap       buffer capacity.
+ * @param href      the resource path (XML-escaped here).
+ * @param body      the PROPPATCH request body (not required to be NUL-terminated).
+ * @param body_len  length of @p body.
+ * @return bytes written, or 0 if the document did not fit @p cap.
+ */
+size_t webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len);
 
 #endif // DETWS_ENABLE_WEBDAV
 

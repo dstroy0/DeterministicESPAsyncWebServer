@@ -2995,7 +2995,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     case DAV_M_OPTIONS:
         add_response_header(slot_id, "DAV", "1, 2");
         add_response_header(slot_id, "Allow",
-                            "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY, MOVE, LOCK, UNLOCK");
+                            "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK");
         add_response_header(slot_id, "MS-Author-Via", "DAV");
         send_empty(slot_id, 200);
         return;
@@ -3229,11 +3229,30 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_PROPPATCH: // properties are read-only on this server
+    case DAV_M_PROPPATCH: {
+        // Read-only properties (no dead-property store): answer 207 with each
+        // requested property refused 403, rather than 405 - keeps Explorer/Finder,
+        // which PROPPATCH a timestamp right after a PUT, from erroring.
+        if (!fsys.exists(fs_path))
+        {
+            dav_send_status(slot_id, 404, "");
+            return;
+        }
+        size_t n = webdav_proppatch_ms(g_dav_buf, sizeof(g_dav_buf), req->path, (const char *)req->body, req->body_len);
+        if (!n)
+        {
+            dav_send_status(slot_id, 507, ""); // Insufficient Storage: response did not fit the buffer
+            return;
+        }
+        send(slot_id, 207, "application/xml; charset=utf-8", g_dav_buf);
+        return;
+    }
+
     case DAV_M_UNSUPPORTED:
     default:
-        dav_send_status(slot_id, 405,
-                        "Allow: OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY, MOVE, LOCK, UNLOCK\r\n");
+        dav_send_status(
+            slot_id, 405,
+            "Allow: OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK\r\n");
         return;
     }
 }

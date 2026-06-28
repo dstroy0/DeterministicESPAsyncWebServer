@@ -154,6 +154,137 @@ void test_multistatus_entry_stops_when_full()
     TEST_ASSERT_TRUE(strlen(buf) <= sizeof(buf));
 }
 
+// ---------------------------------------------------------------------------
+// PROPPATCH 207 builder (read-only properties -> 403)
+// ---------------------------------------------------------------------------
+
+// Common scaffold checks: well-formed 207 wrapper around a 403 propstat.
+static void assert_proppatch_envelope(const char *buf, size_t len)
+{
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), len);
+    TEST_ASSERT_TRUE(contains(buf, "<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+    TEST_ASSERT_TRUE(contains(buf, "<D:multistatus xmlns:D=\"DAV:\">"));
+    TEST_ASSERT_TRUE(contains(buf, "<D:status>HTTP/1.1 403 Forbidden</D:status>"));
+    TEST_ASSERT_TRUE(contains(buf, "</D:multistatus>"));
+}
+
+void test_proppatch_windows_timestamp()
+{
+    // The PROPPATCH macOS Finder / Windows Explorer send after a PUT.
+    const char *body = "<?xml version=\"1.0\"?>\n"
+                       "<D:propertyupdate xmlns:D=\"DAV:\" xmlns:Z=\"urn:schemas-microsoft-com:\">"
+                       "<D:set><D:prop>"
+                       "<Z:Win32LastModifiedTime>Tue, 06 Jan 2026 00:00:00 GMT</Z:Win32LastModifiedTime>"
+                       "</D:prop></D:set></D:propertyupdate>";
+    char buf[1024];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:href>/dav/file.txt</D:href>"));
+    // property echoed self-closed with its prefix + xmlns intact
+    TEST_ASSERT_TRUE(contains(buf, "<Z:Win32LastModifiedTime>") == false); // not as an open tag with content
+    TEST_ASSERT_TRUE(contains(buf, "<Z:Win32LastModifiedTime/>"));
+    // wrappers must NOT be echoed as properties
+    TEST_ASSERT_FALSE(contains(buf, "<D:set/>"));
+    TEST_ASSERT_FALSE(contains(buf, "<D:propertyupdate/>"));
+}
+
+void test_proppatch_multiple_and_self_closed()
+{
+    const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop>"
+                       "<D:getlastmodified/>"
+                       "<author xmlns=\"http://ns.example/\">x</author>"
+                       "</D:prop></D:set></D:propertyupdate>";
+    char buf[1024];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/d/", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:getlastmodified/>"));
+    TEST_ASSERT_TRUE(contains(buf, "<author xmlns=\"http://ns.example/\"/>")); // default-ns prop, value dropped
+}
+
+void test_proppatch_remove_block()
+{
+    const char *body = "<D:propertyupdate xmlns:D=\"DAV:\" xmlns:Z=\"urn:x\">"
+                       "<D:remove><D:prop><Z:custom/></D:prop></D:remove></D:propertyupdate>";
+    char buf[512];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<Z:custom/>")); // properties in <remove> are refused too
+}
+
+void test_proppatch_escapes_href()
+{
+    const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop><D:displayname/></D:prop></D:set>"
+                       "</D:propertyupdate>";
+    char buf[512];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/a&b", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_TRUE(contains(buf, "<D:href>/dav/a&amp;b</D:href>"));
+}
+
+void test_proppatch_empty_body_is_valid()
+{
+    char buf[512];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", "", 0);
+    assert_proppatch_envelope(buf, len); // still a well-formed 207 with an empty prop
+    TEST_ASSERT_TRUE(contains(buf, "<D:prop>"));
+}
+
+void test_proppatch_rejects_injection()
+{
+    // A property tag carrying a stray '<' must not be echoed (no XML injection).
+    const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop>"
+                       "<evil attr=\"<broken\"/>"
+                       "</D:prop></D:set></D:propertyupdate>";
+    char buf[512];
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    assert_proppatch_envelope(buf, len);
+    TEST_ASSERT_FALSE(contains(buf, "<broken")); // the malformed tag was skipped
+}
+
+void test_proppatch_fuzz_bounded()
+{
+    // Throw random and partial-XML bytes at the scanner: it must always stay in
+    // bounds, never emit a partial document, and leave a NUL-terminated buffer.
+    uint32_t rng = 0xC0FFEEu;
+    char body[128];
+    char buf[1024];
+    for (int iter = 0; iter < 20000; iter++)
+    {
+        rng ^= rng << 13;
+        rng ^= rng >> 17;
+        rng ^= rng << 5;
+        size_t n = rng % sizeof(body);
+        for (size_t i = 0; i < n; i++)
+        {
+            rng ^= rng << 13;
+            rng ^= rng >> 17;
+            rng ^= rng << 5;
+            // bias toward XML punctuation so the scanner's tag paths are exercised
+            const char *alpha = "<>/:= \"abcZD?!prop";
+            body[i] = (rng & 3) ? alpha[(rng >> 2) % 18] : (char)(rng & 0xFF);
+        }
+        size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/x", body, n);
+        TEST_ASSERT_TRUE(len <= sizeof(buf));
+        if (len)
+        {
+            TEST_ASSERT_EQUAL_size_t(len, strlen(buf));
+            TEST_ASSERT_TRUE(contains(buf, "</D:multistatus>")); // complete document or len 0
+        }
+        else
+            TEST_ASSERT_EQUAL_size_t(0, strlen(buf));
+    }
+}
+
+void test_proppatch_stops_when_full()
+{
+    const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop><D:displayname/></D:prop></D:set>"
+                       "</D:propertyupdate>";
+    char buf[40]; // too small for the whole document
+    size_t len = webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
+    TEST_ASSERT_EQUAL_size_t(0, len);            // signals "did not fit"
+    TEST_ASSERT_TRUE(strlen(buf) < sizeof(buf)); // no overrun
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -168,5 +299,13 @@ int main()
     RUN_TEST(test_multistatus_file_and_collection);
     RUN_TEST(test_multistatus_escapes_href);
     RUN_TEST(test_multistatus_entry_stops_when_full);
+    RUN_TEST(test_proppatch_windows_timestamp);
+    RUN_TEST(test_proppatch_multiple_and_self_closed);
+    RUN_TEST(test_proppatch_remove_block);
+    RUN_TEST(test_proppatch_escapes_href);
+    RUN_TEST(test_proppatch_empty_body_is_valid);
+    RUN_TEST(test_proppatch_rejects_injection);
+    RUN_TEST(test_proppatch_fuzz_bounded);
+    RUN_TEST(test_proppatch_stops_when_full);
     return UNITY_END();
 }

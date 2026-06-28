@@ -589,15 +589,18 @@
  * @brief WebDAV server (RFC 4918, class 1 + advisory locks) over the file system.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), dav() mounts an FS
- * subtree that answers the WebDAV methods - OPTIONS, PROPFIND (Depth 0/1), GET,
- * HEAD, PUT, DELETE, MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK - so a client
- * (rclone, cadaver, curl, or a mounted network drive) can browse and edit files.
- * PROPFIND returns a 207 Multi-Status document built into a fixed buffer
- * (DETWS_WEBDAV_BUF_SIZE); a Depth-1 listing is capped at
- * DETWS_WEBDAV_MAX_ENTRIES children. PUT buffers the body (bounded by
- * BODY_BUF_SIZE - large uploads need the streaming-body sink). Locks are advisory
- * (a synthetic token is issued but not enforced). PROPPATCH is not supported (the
- * properties are read-only). See docs/SECURITY.md before exposing it.
+ * subtree that answers the WebDAV methods - OPTIONS, PROPFIND (Depth 0/1),
+ * PROPPATCH, GET, HEAD, PUT, DELETE, MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK -
+ * so a client (rclone, cadaver, curl, or a mounted network drive) can browse and
+ * edit files. PROPFIND returns a 207 Multi-Status document built into a fixed
+ * buffer (DETWS_WEBDAV_BUF_SIZE); a Depth-1 listing is capped at
+ * DETWS_WEBDAV_MAX_ENTRIES children. PROPPATCH returns a 207 with each requested
+ * property refused 403 Forbidden (the live properties are read-only, no dead-
+ * property store) - this keeps Windows Explorer / macOS Finder, which PROPPATCH a
+ * timestamp right after a PUT, from erroring on a 405. PUT buffers the body
+ * (bounded by BODY_BUF_SIZE - large uploads need the streaming-body sink). Locks
+ * are advisory (a synthetic token is issued but not enforced). See docs/SECURITY.md
+ * before exposing it.
  */
 #ifndef DETWS_ENABLE_WEBDAV
 #define DETWS_ENABLE_WEBDAV 0
@@ -611,6 +614,11 @@
 /** @brief Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). */
 #ifndef DETWS_WEBDAV_MAX_ENTRIES
 #define DETWS_WEBDAV_MAX_ENTRIES 32
+#endif
+
+/** @brief Maximum properties echoed in a WebDAV PROPPATCH 207 response (bounds the response). */
+#ifndef DETWS_WEBDAV_MAX_PROPS
+#define DETWS_WEBDAV_MAX_PROPS 16
 #endif
 
 /**

@@ -14,10 +14,12 @@
  *     curl -X DELETE    http://<ip>/dav/b.txt
  *     rclone lsd :webdav: --webdav-url http://<ip>/dav --webdav-vendor other
  *
- * Supported: OPTIONS, PROPFIND (Depth 0/1), GET, HEAD, PUT, DELETE, MKCOL, COPY
- * (files), MOVE, and advisory LOCK/UNLOCK. PUT buffers the body (bounded by
- * BODY_BUF_SIZE); locks are advisory. Add per-route auth + HTTPS (and the per-IP
- * throttle) before exposing a writable share.
+ * Supported: OPTIONS, PROPFIND (Depth 0/1), PROPPATCH, GET, HEAD, PUT, DELETE,
+ * MKCOL, COPY (files), MOVE, and advisory LOCK/UNLOCK. PROPPATCH is answered 207
+ * with each property refused 403 (read-only properties) - so Explorer/Finder,
+ * which set a timestamp right after a PUT, do not error. PUT buffers the body
+ * (bounded by BODY_BUF_SIZE); locks are advisory. Add per-route auth + HTTPS (and
+ * the per-IP throttle) before exposing a writable share.
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
