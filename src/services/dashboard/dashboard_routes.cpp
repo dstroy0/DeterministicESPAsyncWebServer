@@ -17,6 +17,7 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/application/web_assets.h" // DETWS_DASHBOARD_PAGE
+#include "shared_primitives/det_mime.h"
 #include <stdio.h>
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool for inbound control messages
@@ -32,7 +33,7 @@ static void dash_page_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
     if (s_srv)
-        s_srv->send(slot_id, 200, "text/html", DETWS_DASHBOARD_PAGE);
+        s_srv->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_DASHBOARD_PAGE);
 }
 
 static void dash_layout_handler(uint8_t slot_id, HttpReq *req)
@@ -41,7 +42,7 @@ static void dash_layout_handler(uint8_t slot_id, HttpReq *req)
     char buf[DETWS_DASHBOARD_JSON_BUF];
     detws_dashboard_layout_json(buf, sizeof(buf));
     if (s_srv)
-        s_srv->send(slot_id, 200, "application/json", buf);
+        s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 static void dash_sse_connect(uint8_t sse_id)

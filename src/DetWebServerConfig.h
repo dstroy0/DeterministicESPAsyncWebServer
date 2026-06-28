@@ -1707,6 +1707,14 @@
 #define DETWS_ENABLE_CLIENT_TLS 0
 #endif
 
+// The outbound clients (det_client) resolve hostnames through the shared DNS
+// resolver (detws_dns_resolve), so enabling any client implies the resolver - one
+// owner of the gethostbyname-marshal pattern instead of a private copy per client.
+#if DETWS_ENABLE_HTTP_CLIENT || DETWS_ENABLE_MQTT || DETWS_ENABLE_WS_CLIENT
+#undef DETWS_ENABLE_DNS_RESOLVER
+#define DETWS_ENABLE_DNS_RESOLVER 1
+#endif
+
 // ---------------------------------------------------------------------------
 // Full Authorization-header capture (internal)
 // ---------------------------------------------------------------------------

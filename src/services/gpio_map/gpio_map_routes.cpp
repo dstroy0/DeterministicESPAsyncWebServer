@@ -14,6 +14,7 @@
 #if DETWS_ENABLE_GPIO_MAP
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "shared_primitives/det_mime.h"
 
 static DetWebServer *s_srv = nullptr;
 static DetwsGpioPin *s_pins = nullptr;
@@ -26,7 +27,7 @@ static void gpio_get_handler(uint8_t slot_id, HttpReq *req)
     char buf[DETWS_GPIO_JSON_BUF];
     detws_gpio_json(s_pins, s_count, buf, sizeof(buf));
     if (s_srv)
-        s_srv->send(slot_id, 200, "application/json", buf);
+        s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 static void gpio_post_handler(uint8_t slot_id, HttpReq *req)
@@ -36,19 +37,19 @@ static void gpio_post_handler(uint8_t slot_id, HttpReq *req)
     uint8_t pin, level;
     if (!detws_gpio_parse_set((const char *)req->body, req->body_len, &pin, &level))
     {
-        s_srv->send(slot_id, 400, "text/plain", "bad request");
+        s_srv->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "bad request");
         return;
     }
     if (!detws_gpio_is_output(s_pins, s_count, pin))
     {
-        s_srv->send(slot_id, 403, "text/plain", "pin not a mapped output");
+        s_srv->send(slot_id, 403, DET_MIME_TEXT_PLAIN, "pin not a mapped output");
         return;
     }
     detws_gpio_write(pin, level);
     detws_gpio_read(s_pins, s_count);
     char buf[DETWS_GPIO_JSON_BUF];
     detws_gpio_json(s_pins, s_count, buf, sizeof(buf));
-    s_srv->send(slot_id, 200, "application/json", buf);
+    s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 void detws_gpio_map_begin(DetWebServer &server, const char *path, DetwsGpioPin *pins, uint8_t count)

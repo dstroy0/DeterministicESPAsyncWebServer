@@ -292,6 +292,7 @@
       "flags": ["-DDETWS_ENABLE_OIDC=1"],
       "src": [
         "+<services/oidc/oidc.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
         "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>"

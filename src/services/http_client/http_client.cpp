@@ -11,6 +11,7 @@
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
+#include "shared_primitives/det_mime.h"
 #include "shared_primitives/det_numparse.h"
 #include <stdio.h>
 #include <string.h>
@@ -108,8 +109,7 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
                      "Content-Type: %s\r\n"
                      "Content-Length: %u\r\n"
                      "Connection: close\r\n\r\n",
-                     method, path, hosthdr, content_type ? content_type : "application/octet-stream",
-                     (unsigned)body_len);
+                     method, path, hosthdr, content_type ? content_type : DET_MIME_OCTET_STREAM, (unsigned)body_len);
         if (n < 0 || (size_t)n + body_len > cap)
             return 0;
         memcpy(out + n, body, body_len);

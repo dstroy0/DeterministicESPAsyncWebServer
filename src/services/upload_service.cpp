@@ -12,6 +12,7 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
+#include "shared_primitives/det_mime.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -67,19 +68,19 @@ static void upload_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        g_server->send(slot_id, 400, "text/plain", "POST a file body");
+        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a file body");
         return;
     }
     if (g_active)
         g_file.close();
     if (!g_active || g_error)
     {
-        g_server->send(slot_id, 500, "text/plain", "upload failed");
+        g_server->send(slot_id, 500, DET_MIME_TEXT_PLAIN, "upload failed");
         return;
     }
     char msg[48];
     snprintf(msg, sizeof(msg), "OK %u bytes", (unsigned)g_written);
-    g_server->send(slot_id, 200, "text/plain", msg);
+    g_server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, msg);
 }
 
 size_t detws_upload_last_size()

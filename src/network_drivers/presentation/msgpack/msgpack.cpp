@@ -10,40 +10,35 @@
 
 #if DETWS_ENABLE_MSGPACK
 
+#include "shared_primitives/det_bytes.h"
 #include <string.h>
 
 void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
 {
-    w->buf = buf;
-    w->cap = cap;
-    w->pos = 0;
-    w->overflow = false;
+    det_bw_init(w, buf, cap);
 }
 
 size_t msgpack_len(const MsgpackWriter *w)
 {
-    return w->pos;
+    return det_bw_len(w);
 }
 
 bool msgpack_ok(const MsgpackWriter *w)
 {
-    return !w->overflow;
+    return det_bw_ok(w);
 }
 
+// Thin local names over the shared byte cursor (det_bytes.h) so the call sites
+// below read the same as before; the cursor invariants live in one place.
 static void put(MsgpackWriter *w, uint8_t b)
 {
-    if (w->pos < w->cap)
-        w->buf[w->pos] = b;
-    else
-        w->overflow = true;
-    w->pos++; // keep counting so msgpack_len() reports the needed size
+    det_bw_put(w, b);
 }
 
 // Write the low @p nbytes of @p val, big-endian (MessagePack is network order).
 static void put_be(MsgpackWriter *w, uint64_t val, int nbytes)
 {
-    for (int s = (nbytes - 1) * 8; s >= 0; s -= 8)
-        put(w, (uint8_t)(val >> s));
+    det_bw_put_be(w, val, nbytes);
 }
 
 void msgpack_uint(MsgpackWriter *w, uint64_t v)
@@ -208,33 +203,19 @@ void msgpack_map(MsgpackWriter *w, size_t count)
 
 void msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len)
 {
-    r->buf = buf;
-    r->len = len;
-    r->pos = 0;
-    r->err = false;
+    det_br_init(r, buf, len);
 }
 
 bool msgpack_reader_ok(const MsgpackReader *r)
 {
-    return !r->err;
+    return det_br_ok(r);
 }
 
 // Read @p nbytes big-endian immediately after the format byte at r->pos, advancing
-// pos past the format byte and the argument. Sets err and returns false on a read
-// that runs past the buffer (MessagePack is network/big-endian order).
+// past the format byte and the argument (shared byte cursor, det_bytes.h).
 static bool take_be(MsgpackReader *r, size_t nbytes, uint64_t *out)
 {
-    if (r->pos + 1 + nbytes > r->len)
-    {
-        r->err = true;
-        return false;
-    }
-    uint64_t v = 0;
-    for (size_t i = 0; i < nbytes; i++)
-        v = (v << 8) | r->buf[r->pos + 1 + i];
-    *out = v;
-    r->pos += 1 + nbytes;
-    return true;
+    return det_br_take_be(r, nbytes, out);
 }
 
 MsgpackType msgpack_peek(MsgpackReader *r)

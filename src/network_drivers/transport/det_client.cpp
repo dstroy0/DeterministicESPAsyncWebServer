@@ -16,12 +16,12 @@
 
 #if defined(ARDUINO)
 
-#include "lwip/dns.h"
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
-#include "services/det_clock.h"         // detws_millis()
-#include "shared_primitives/det_ring.h" // shared DetAtomic + SPSC ring drain (same primitive as the server)
-#include <Arduino.h>                    // delay()
+#include "services/det_clock.h"                 // detws_millis()
+#include "services/dns_resolver/dns_resolver.h" // shared host->IP resolve (one DNS owner)
+#include "shared_primitives/det_ring.h"         // shared DetAtomic + SPSC ring drain (same primitive as the server)
+#include <Arduino.h>                            // delay()
 #include <string.h>
 
 struct ClientConn
@@ -37,11 +37,9 @@ struct ClientConn
 
 static ClientConn s_cc[DETWS_CLIENT_CONNS];
 
-// DNS result. open() is the only caller and blocks until done, so one shared
-// result is enough (no concurrent resolves).
-static volatile bool s_dns_done;
-static volatile bool s_dns_ok;
-static ip_addr_t s_dns_addr;
+// Hostname resolution is delegated to the shared DNS resolver (detws_dns_resolve,
+// services/dns_resolver) so there is one owner of the gethostbyname-marshal +
+// deadline-poll pattern instead of a private copy here.
 
 // --- lwIP callbacks (tcpip_thread); arg = the owning ClientConn* -------------
 
@@ -118,12 +116,6 @@ struct CcSendCall
     u16_t len;
     err_t result;
 };
-struct CcDnsCall
-{
-    struct tcpip_api_call_data base;
-    const char *host;
-    err_t result;
-};
 struct CcRecvedCall
 {
     struct tcpip_api_call_data base;
@@ -187,48 +179,6 @@ static err_t cc_do_recved(struct tcpip_api_call_data *cd)
     return ERR_OK;
 }
 
-static void cc_dns_cb(const char *name, const ip_addr_t *addr, void *arg)
-{
-    (void)name;
-    (void)arg;
-    if (addr)
-    {
-        s_dns_addr = *addr;
-        s_dns_ok = true;
-    }
-    s_dns_done = true;
-}
-
-static err_t cc_do_dns(struct tcpip_api_call_data *cd)
-{
-    CcDnsCall *k = (CcDnsCall *)cd;
-    err_t e = dns_gethostbyname(k->host, &s_dns_addr, cc_dns_cb, nullptr);
-    if (e == ERR_OK)
-    {
-        s_dns_ok = true;
-        s_dns_done = true;
-    }
-    else if (e != ERR_INPROGRESS)
-        s_dns_done = true; // hard failure
-    k->result = e;
-    return ERR_OK;
-}
-
-static bool cc_resolve(const char *host, uint32_t deadline)
-{
-    if (ipaddr_aton(host, &s_dns_addr))
-        return true;
-    s_dns_done = false;
-    s_dns_ok = false;
-    CcDnsCall k;
-    memset(&k, 0, sizeof(k));
-    k.host = host;
-    tcpip_api_call(cc_do_dns, &k.base);
-    while (!s_dns_done && (int32_t)(deadline - detws_millis()) > 0)
-        delay(5);
-    return s_dns_ok;
-}
-
 // --- public API --------------------------------------------------------------
 
 int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
@@ -251,17 +201,20 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
     c->tail = 0;
     c->in_use = true;
 
-    uint32_t deadline = detws_millis() + timeout_ms;
-    if (!cc_resolve(host, deadline))
+    // Resolve through the shared DNS owner (its own DETWS_DNS_TIMEOUT_MS budget),
+    // then give the connect its full timeout_ms.
+    uint32_t ip = 0;
+    if (!detws_dns_resolve(host, &ip))
     {
         c->in_use = false;
         return -2; // DNS failure
     }
+    uint32_t deadline = detws_millis() + timeout_ms;
 
     CcConnCall k;
     memset(&k, 0, sizeof(k));
     k.c = c;
-    k.addr = s_dns_addr;
+    IP_ADDR4(&k.addr, (uint8_t)(ip >> 24), (uint8_t)(ip >> 16), (uint8_t)(ip >> 8), (uint8_t)ip);
     k.port = port;
     tcpip_api_call(cc_do_connect, &k.base);
     if (k.result != ERR_OK)

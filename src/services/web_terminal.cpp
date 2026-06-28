@@ -13,6 +13,7 @@
 // Dependency (WEB_TERMINAL requires WEBSOCKET) is enforced centrally in DetWebServerConfig.h.
 
 #include "network_drivers/application/web_assets.h" // DETWS_TERMINAL_PAGE
+#include "shared_primitives/det_mime.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,7 +32,7 @@ static void term_page_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
     if (s_srv)
-        s_srv->send(slot_id, 200, "text/html", DETWS_TERMINAL_PAGE);
+        s_srv->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_TERMINAL_PAGE);
 }
 
 static void term_ws_connect(uint8_t ws_id)

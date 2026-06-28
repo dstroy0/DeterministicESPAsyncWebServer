@@ -10,37 +10,32 @@
 
 #if DETWS_ENABLE_CBOR
 
+#include "shared_primitives/det_bytes.h"
 #include <string.h>
 
 void cbor_init(CborWriter *w, uint8_t *buf, size_t cap)
 {
-    w->buf = buf;
-    w->cap = cap;
-    w->pos = 0;
-    w->overflow = false;
+    det_bw_init(w, buf, cap);
 }
 
 size_t cbor_len(const CborWriter *w)
 {
-    return w->pos;
+    return det_bw_len(w);
 }
 
 bool cbor_ok(const CborWriter *w)
 {
-    return !w->overflow;
+    return det_bw_ok(w);
 }
 
 static void put(CborWriter *w, uint8_t b)
 {
-    if (w->pos < w->cap)
-        w->buf[w->pos] = b;
-    else
-        w->overflow = true;
-    w->pos++; // keep counting so cbor_len() reports the needed size
+    det_bw_put(w, b);
 }
 
 // Write a CBOR head: the major type (top 3 bits) plus the argument, choosing the
-// shortest of the 1/2/3/5/9-byte forms (RFC 8949 section 3).
+// shortest of the 1/2/3/5/9-byte forms (RFC 8949 section 3). The argument after
+// the lead byte is big-endian, the same network order as MessagePack.
 static void head(CborWriter *w, uint8_t major, uint64_t val)
 {
     uint8_t m = (uint8_t)(major << 5);
@@ -51,27 +46,22 @@ static void head(CborWriter *w, uint8_t major, uint64_t val)
     else if (val < 0x100ULL)
     {
         put(w, (uint8_t)(m | 24));
-        put(w, (uint8_t)val);
+        det_bw_put_be(w, val, 1);
     }
     else if (val < 0x10000ULL)
     {
         put(w, (uint8_t)(m | 25));
-        put(w, (uint8_t)(val >> 8));
-        put(w, (uint8_t)val);
+        det_bw_put_be(w, val, 2);
     }
     else if (val < 0x100000000ULL)
     {
         put(w, (uint8_t)(m | 26));
-        put(w, (uint8_t)(val >> 24));
-        put(w, (uint8_t)(val >> 16));
-        put(w, (uint8_t)(val >> 8));
-        put(w, (uint8_t)val);
+        det_bw_put_be(w, val, 4);
     }
     else
     {
         put(w, (uint8_t)(m | 27));
-        for (int s = 56; s >= 0; s -= 8)
-            put(w, (uint8_t)(val >> s));
+        det_bw_put_be(w, val, 8);
     }
 }
 
@@ -122,10 +112,7 @@ void cbor_float(CborWriter *w, float f)
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
     put(w, 0xfa); // major 7, single-precision
-    put(w, (uint8_t)(bits >> 24));
-    put(w, (uint8_t)(bits >> 16));
-    put(w, (uint8_t)(bits >> 8));
-    put(w, (uint8_t)bits);
+    det_bw_put_be(w, bits, 4);
 }
 
 void cbor_array(CborWriter *w, size_t count)
@@ -144,15 +131,12 @@ void cbor_map(CborWriter *w, size_t count)
 
 void cbor_reader_init(CborReader *r, const uint8_t *buf, size_t len)
 {
-    r->buf = buf;
-    r->len = len;
-    r->pos = 0;
-    r->err = false;
+    det_br_init(r, buf, len);
 }
 
 bool cbor_reader_ok(const CborReader *r)
 {
-    return !r->err;
+    return det_br_ok(r);
 }
 
 // Read a CBOR head at r->pos: major type + argument, advancing pos. Sets err and
@@ -192,17 +176,8 @@ static bool read_head(CborReader *r, uint8_t *major, uint64_t *val)
         r->err = true; // 28-31: reserved / indefinite-length, unsupported
         return false;
     }
-    if (r->pos + 1 + need > r->len)
-    {
-        r->err = true;
-        return false;
-    }
-    uint64_t v = 0;
-    for (size_t i = 0; i < need; i++)
-        v = (v << 8) | r->buf[r->pos + 1 + i];
-    *val = v;
-    r->pos += 1 + need;
-    return true;
+    // The argument is the `need` big-endian bytes after this head byte.
+    return det_br_take_be(r, need, val);
 }
 
 CborType cbor_peek(CborReader *r)
@@ -314,31 +289,21 @@ bool cbor_read_float(CborReader *r, float *out)
     uint8_t b = r->buf[r->pos];
     if (b == 0xfa) // single
     {
-        if (r->pos + 5 > r->len)
-        {
-            r->err = true;
+        uint64_t v;
+        if (!det_br_take_be(r, 4, &v))
             return false;
-        }
-        uint32_t bits = ((uint32_t)r->buf[r->pos + 1] << 24) | ((uint32_t)r->buf[r->pos + 2] << 16) |
-                        ((uint32_t)r->buf[r->pos + 3] << 8) | (uint32_t)r->buf[r->pos + 4];
+        uint32_t bits = (uint32_t)v;
         memcpy(out, &bits, sizeof(*out));
-        r->pos += 5;
         return true;
     }
     if (b == 0xfb) // double -> narrow to float
     {
-        if (r->pos + 9 > r->len)
-        {
-            r->err = true;
+        uint64_t bits;
+        if (!det_br_take_be(r, 8, &bits))
             return false;
-        }
-        uint64_t bits = 0;
-        for (int i = 0; i < 8; i++)
-            bits = (bits << 8) | r->buf[r->pos + 1 + i];
         double d;
         memcpy(&d, &bits, sizeof(d));
         *out = (float)d;
-        r->pos += 9;
         return true;
     }
     r->err = true;

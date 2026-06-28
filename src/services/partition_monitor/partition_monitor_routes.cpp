@@ -14,6 +14,7 @@
 #if DETWS_ENABLE_PARTITION_MONITOR
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "shared_primitives/det_mime.h"
 
 static DetWebServer *s_srv = nullptr;
 
@@ -25,7 +26,7 @@ static void partition_handler(uint8_t slot_id, HttpReq *req)
     char buf[DETWS_PARTITION_JSON_BUF];
     detws_partition_json(parts, n, buf, sizeof(buf));
     if (s_srv)
-        s_srv->send(slot_id, 200, "application/json", buf);
+        s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 void detws_partition_monitor_begin(DetWebServer &server, const char *path)

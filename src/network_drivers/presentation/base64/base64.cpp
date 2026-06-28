@@ -150,3 +150,71 @@ size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 }
 
 #endif // ARDUINO
+
+// ---------------------------------------------------------------------------
+// Base64url (RFC 4648 section 5): '-' / '_' replace '+' / '/', no '=' padding.
+// Shared by JWT (HS256) and OIDC (RS256) so the alphabet lives in one place.
+// Platform-independent: encode builds on base64_encode then rewrites the two
+// differing characters in place; decode is a direct streaming decoder that
+// accepts the URL and standard alphabets and stops at '=', so it needs no temp
+// buffer or re-padding.
+// ---------------------------------------------------------------------------
+
+size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst)
+{
+    base64_encode(src, src_len, dst); // standard base64, '='-padded, NUL-terminated
+    size_t n = 0;
+    for (size_t i = 0; dst[i]; i++)
+    {
+        char c = dst[i];
+        if (c == '=')
+            break; // base64url carries no padding
+        if (c == '+')
+            dst[i] = '-';
+        else if (c == '/')
+            dst[i] = '_';
+        n = i + 1;
+    }
+    dst[n] = '\0';
+    return n;
+}
+
+static int base64url_val(char c)
+{
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A';
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 26;
+    if (c >= '0' && c <= '9')
+        return c - '0' + 52;
+    if (c == '-' || c == '+')
+        return 62;
+    if (c == '_' || c == '/')
+        return 63;
+    return -1;
+}
+
+size_t base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap)
+{
+    size_t o = 0;
+    uint32_t acc = 0;
+    int bits = 0;
+    for (size_t i = 0; i < src_len; i++)
+    {
+        if (src[i] == '=')
+            break; // optional padding ends the input
+        int v = base64url_val(src[i]);
+        if (v < 0)
+            return 0;
+        acc = (acc << 6) | (uint32_t)v;
+        bits += 6;
+        if (bits >= 8)
+        {
+            bits -= 8;
+            if (o >= dst_cap)
+                return 0;
+            dst[o++] = (uint8_t)((acc >> bits) & 0xFF);
+        }
+    }
+    return o;
+}

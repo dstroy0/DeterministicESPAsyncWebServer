@@ -11,6 +11,7 @@
 
 #include "provisioning_service.h"
 #include "shared_primitives/det_hex.h"
+#include "shared_primitives/det_mime.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -162,7 +163,7 @@ void detws_provisioning_clear()
 static void prov_form_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    g_server->send(slot_id, 200, "text/html", DETWS_PROV_FORM);
+    g_server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_FORM);
 }
 
 static void prov_save_handler(uint8_t slot_id, HttpReq *req)
@@ -173,7 +174,7 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     detws_prov_form_field((const char *)req->body, "psk", psk, sizeof(psk));
     if (!have_ssid)
     {
-        g_server->send(slot_id, 400, "text/plain", "SSID required");
+        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "SSID required");
         return;
     }
     Preferences prefs;
@@ -181,7 +182,7 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     prefs.putString("ssid", ssid);
     prefs.putString("psk", psk);
     prefs.end();
-    g_server->send(slot_id, 200, "text/html", DETWS_PROV_SAVED_HTML);
+    g_server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
     delay(500);
     ESP.restart();
 }

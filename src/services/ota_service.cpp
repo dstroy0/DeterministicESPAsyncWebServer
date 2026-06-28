@@ -13,6 +13,7 @@
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
+#include "shared_primitives/det_mime.h"
 #include <Arduino.h>
 #include <Update.h>
 #include <string.h>
@@ -87,12 +88,12 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        g_server->send(slot_id, 400, "text/plain", "POST a raw firmware image");
+        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a raw firmware image");
         return;
     }
     if (!g_authed)
     {
-        g_server->send(slot_id, 401, "text/plain", "Unauthorized");
+        g_server->send(slot_id, 401, DET_MIME_TEXT_PLAIN, "Unauthorized");
         return;
     }
     bool ok = g_active && !g_error && Update.end(true);
@@ -100,10 +101,10 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
     {
         if (g_active)
             Update.abort();
-        g_server->send(slot_id, 400, "text/plain", "Update failed");
+        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Update failed");
         return;
     }
-    g_server->send(slot_id, 200, "text/plain", "OK - rebooting");
+    g_server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, "OK - rebooting");
     delay(150); // let the response flush before the reboot
     ESP.restart();
 }

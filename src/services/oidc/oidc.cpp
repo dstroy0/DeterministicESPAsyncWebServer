@@ -5,7 +5,7 @@
  * @file oidc.cpp
  * @brief OIDC ID-token (RS256) verification - implementation.
  *
- * Self-contained: a direct base64url decoder, small bounded JSON field scanners
+ * The shared base64url decoder (base64 module), small bounded JSON field scanners
  * (no full parser, no heap), and the RS256 signature check delegated to
  * ssh_rsa_verify() (real RSA modexp; mbedTLS on ESP32). Claims are read only
  * after the signature verifies.
@@ -15,53 +15,14 @@
 
 #if DETWS_ENABLE_OIDC
 
+#include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
 #include <stdio.h>
 #include <string.h>
 
 namespace
 {
-int b64val(char c)
-{
-    if (c >= 'A' && c <= 'Z')
-        return c - 'A';
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 26;
-    if (c >= '0' && c <= '9')
-        return c - '0' + 52;
-    if (c == '-' || c == '+')
-        return 62;
-    if (c == '_' || c == '/')
-        return 63;
-    return -1;
-}
-
-// Decode base64url (or standard base64) @p n chars; '=' ends input. No temp, no
-// padding needed. Returns bytes written, or 0 on an invalid char / overflow.
-size_t b64url_decode(const char *in, size_t n, uint8_t *out, size_t cap)
-{
-    size_t o = 0;
-    uint32_t acc = 0;
-    int bits = 0;
-    for (size_t i = 0; i < n; i++)
-    {
-        if (in[i] == '=')
-            break;
-        int v = b64val(in[i]);
-        if (v < 0)
-            return 0;
-        acc = (acc << 6) | (uint32_t)v;
-        bits += 6;
-        if (bits >= 8)
-        {
-            bits -= 8;
-            if (o >= cap)
-                return 0;
-            out[o++] = (uint8_t)((acc >> bits) & 0xFF);
-        }
-    }
-    return o;
-}
+// base64url decoding is shared with JWT in the base64 module (base64url_decode).
 
 // Bounded substring search of [hs, he) for the NUL-terminated needle.
 const char *mem_find(const char *hs, const char *he, const char *needle)
@@ -257,14 +218,14 @@ bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
     if (!get_str(s, e, "n", b64, sizeof(b64)))
         return false;
     uint8_t tmp[DETWS_OIDC_RSA_BYTES + 8];
-    size_t nlen = b64url_decode(b64, strlen(b64), tmp, sizeof(tmp));
+    size_t nlen = base64url_decode(b64, strlen(b64), tmp, sizeof(tmp));
     if (nlen == 0 || !right_align(tmp, nlen, key->n, DETWS_OIDC_RSA_BYTES))
         return false;
 
     if (!get_str(s, e, "e", b64, sizeof(b64)))
         return false;
     uint8_t e_tmp[8];
-    size_t elen = b64url_decode(b64, strlen(b64), e_tmp, sizeof(e_tmp));
+    size_t elen = base64url_decode(b64, strlen(b64), e_tmp, sizeof(e_tmp));
     if (elen == 0 || !right_align(e_tmp, elen, key->e, 4))
         return false;
     key->loaded = true;
@@ -281,7 +242,7 @@ bool detws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, si
     if (!split3(token, token_len, seg, seglen))
         return false;
     uint8_t hdr[512];
-    size_t hn = b64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
+    size_t hn = base64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
     if (hn == 0)
         return false;
     hdr[hn] = '\0';
@@ -339,7 +300,7 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
 
     // Header: require alg == RS256 (rejects alg:none / HS256 confusion).
     uint8_t hdr[512];
-    size_t hn = b64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
+    size_t hn = base64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
     if (hn == 0)
         return DETWS_OIDC_ERR_FORMAT;
     hdr[hn] = '\0';
@@ -349,7 +310,7 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
 
     // Signature: RSA-2048 -> exactly 256 bytes.
     uint8_t sig[DETWS_OIDC_RSA_BYTES];
-    if (b64url_decode(seg[2], seglen[2], sig, sizeof(sig)) != DETWS_OIDC_RSA_BYTES)
+    if (base64url_decode(seg[2], seglen[2], sig, sizeof(sig)) != DETWS_OIDC_RSA_BYTES)
         return DETWS_OIDC_ERR_FORMAT;
 
     // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it).
@@ -359,7 +320,7 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
 
     // Claims (trusted only now that the signature is valid).
     uint8_t pl[DETWS_OIDC_MAX_LEN];
-    size_t pn = b64url_decode(seg[1], seglen[1], pl, sizeof(pl) - 1);
+    size_t pn = base64url_decode(seg[1], seglen[1], pl, sizeof(pl) - 1);
     if (pn == 0)
         return DETWS_OIDC_ERR_FORMAT;
     pl[pn] = '\0';

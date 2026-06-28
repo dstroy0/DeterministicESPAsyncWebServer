@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_WEBHOOK
 
+#include "shared_primitives/det_mime.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -109,7 +111,7 @@ int detws_webhook_post(const char *url, const char *json)
     if (!url || !json)
         return HTTP_CLIENT_ERR_URL;
     HttpClientResult r;
-    return http_post(url, "application/json", (const uint8_t *)json, strlen(json), &r);
+    return http_post(url, DET_MIME_JSON, (const uint8_t *)json, strlen(json), &r);
 }
 
 #else // http_client not enabled in this build

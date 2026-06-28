@@ -182,3 +182,11 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       Only honored from a configured trusted upstream (the header is client-spoofable;
       trusting it blindly would defeat the allowlist/lockout). Needed only for
       behind-a-proxy deployments - hence optional.
+
+## Maintenance
+
+- [ ] **Refresh build footprints** (S) - regenerate the per-feature / per-example
+      flash + RAM footprint tables (the example READMEs and docs/FEATURES.md) so the
+      documented numbers track the current build after the shared-primitive dedup
+      (det_mime / det_bytes / base64url / DNS) and any later features. Run after a
+      batch of changes lands, not per commit.

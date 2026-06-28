@@ -463,6 +463,23 @@ class DetWebServer
      */
     void resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep);
 
+    /**
+     * @brief Resolve the Connection response header and report keep-alive intent.
+     *
+     * One owner for the keep-alive decision: returns "Connection: keep-alive\r\n"
+     * or "Connection: close\r\n" and, via @p keep_out, whether the slot is kept
+     * alive. Always reports close when keep-alive is compiled out.
+     */
+    const char *resp_conn_hdr(uint8_t slot_id, bool *keep_out);
+
+    /**
+     * @brief Append the shared response trailer (CORS block, custom headers, the
+     *        Connection header, and the terminating blank line) to a header buffer
+     *        already holding the status line and per-response headers. @p hlen is
+     *        the current length; returns the new total length.
+     */
+    int append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t slot_id, const char *cl);
+
     /// @brief Resume a pending chunked response: pull + frame chunks until the send window is full, finish when
     /// drained.
     void chunk_send_pump(uint8_t slot_id);

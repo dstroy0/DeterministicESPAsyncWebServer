@@ -24,51 +24,8 @@ static bool ct_eq(const char *a, const char *b, size_t n)
     return diff == 0;
 }
 
-// base64url-encode @p in_len bytes into @p out (no '=' padding). @p out must hold
-// 4*ceil(in_len/3)+1 bytes. Returns the number of characters written.
-static size_t b64url_encode(const uint8_t *in, size_t in_len, char *out)
-{
-    base64_encode(in, in_len, out); // standard base64, '='-padded, NUL-terminated
-    size_t n = 0;
-    for (size_t i = 0; out[i]; i++)
-    {
-        char c = out[i];
-        if (c == '=')
-        {
-            out[i] = '\0';
-            break;
-        }
-        if (c == '+')
-            out[i] = '-';
-        else if (c == '/')
-            out[i] = '_';
-        n = i + 1;
-    }
-    out[n] = '\0';
-    return n;
-}
-
-// base64url-decode @p in_len chars into @p out. Returns bytes decoded (0 on error).
-static size_t b64url_decode(const char *in, size_t in_len, uint8_t *out, size_t out_cap)
-{
-    char tmp[DETWS_JWT_MAX_LEN + 4];
-    if (in_len + 4 > sizeof(tmp))
-        return 0;
-    size_t j = 0;
-    for (size_t i = 0; i < in_len; i++)
-    {
-        char c = in[i];
-        if (c == '-')
-            c = '+';
-        else if (c == '_')
-            c = '/';
-        tmp[j++] = c;
-    }
-    while (j % 4)
-        tmp[j++] = '=';
-    tmp[j] = '\0';
-    return base64_decode(tmp, out, out_cap);
-}
+// base64url encode/decode are shared with OIDC in the base64 module
+// (base64url_encode / base64url_decode).
 
 // Split a compact JWT into header.payload (signing input) and the signature.
 // Requires exactly two '.' separators. Returns false on a malformed shape.
@@ -108,7 +65,7 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
     ssh_hmac_sha256(secret, secret_len, (const uint8_t *)token, signing_len, mac);
 
     char computed[48];
-    if (b64url_encode(mac, sizeof(mac), computed) != 43)
+    if (base64url_encode(mac, sizeof(mac), computed) != 43)
         return false;
     return ct_eq(computed, sig, 43);
 }
@@ -139,7 +96,7 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     size_t payload_len = (size_t)(d2 - payload);
 
     uint8_t buf[DETWS_JWT_MAX_LEN];
-    size_t n = b64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
+    size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
     buf[n] = '\0';
@@ -186,7 +143,7 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
     size_t payload_len = (size_t)(d2 - payload);
 
     uint8_t buf[DETWS_JWT_MAX_LEN];
-    size_t n = b64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
+    size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
     buf[n] = '\0';

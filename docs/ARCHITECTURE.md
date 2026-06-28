@@ -26,7 +26,14 @@ src/services/         mqtt, modbus, opcua, snmp, coap, ... (protocol features)
 src/shared_primitives/  layer-agnostic header-only primitives shared across the
                 tree so logic is never duplicated: det_ring.h (SPSC ring, server +
                 client), det_hex.h (hex encode/decode), det_numparse.h (no-stdlib
-                number parsing).
+                number parsing), det_bytes.h (byte-cursor mechanics - bounded put +
+                big-endian put/take - shared by the CBOR and MessagePack codecs),
+                det_mime.h (the Content-Type vocabulary, one copy referenced
+                everywhere). Header-only so nothing has to be added to the per-env
+                test src filters. Two more shared concerns live in their natural
+                module instead of here: base64url (base64 module, used by JWT +
+                OIDC) and host->IP resolution (services/dns_resolver, used by the
+                server-adjacent code AND det_client, so a client has one DNS owner).
 ```
 
 ## Two threads, two boundaries

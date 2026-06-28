@@ -42,6 +42,7 @@
 #include "network_drivers/tls/det_tls.h"
 #include "network_drivers/transport/listener.h"
 #include "shared_primitives/det_hex.h"
+#include "shared_primitives/det_mime.h"
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/sha1/sha1.h"
@@ -373,6 +374,34 @@ void DetWebServer::resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int 
     http_reset(slot_id);
 }
 
+// Resolve the Connection response header (and report keep-alive intent) in one
+// place so every response path agrees. Keep-alive compiled out always closes.
+const char *DetWebServer::resp_conn_hdr(uint8_t slot_id, bool *keep_out)
+{
+    bool keep = false;
+#if DETWS_ENABLE_KEEPALIVE
+    keep = keepalive_eval(slot_id);
+#else
+    (void)slot_id;
+#endif
+    if (keep_out)
+        *keep_out = keep;
+    return keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+}
+
+// Append the shared response trailer (CORS block + custom headers + Connection +
+// the terminating blank line) to a header buffer already holding the status line
+// and per-response headers. One owner for the trailer every dynamic response ends
+// with. Returns the new total length.
+int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t slot_id, const char *cl)
+{
+    if (hlen < 0 || (size_t)hlen >= cap)
+        return hlen;
+    int n = snprintf(buf + hlen, cap - (size_t)hlen, "%s%s%s\r\n", _cors_enabled ? _cors_header_buf : "",
+                     _extra_hdr[slot_id], cl);
+    return (n < 0) ? hlen : hlen + n;
+}
+
 // ---------------------------------------------------------------------------
 // Middleware chain + built-in rate limiter
 // ---------------------------------------------------------------------------
@@ -428,7 +457,7 @@ bool DetWebServer::rate_limit_check(uint8_t slot_id)
     char secs[12];
     snprintf(secs, sizeof(secs), "%lu", (unsigned long)((remain_ms + 999) / 1000));
     add_response_header(slot_id, "Retry-After", secs);
-    send(slot_id, 429, "text/plain", "Too Many Requests");
+    send(slot_id, 429, DET_MIME_TEXT_PLAIN, "Too Many Requests");
     return true;
 }
 
@@ -1173,15 +1202,15 @@ void DetWebServer::service_once(int worker_id)
         }
         else if (http_pool[i].parse_state == PARSE_ERROR)
         {
-            send(i, 400, "text/plain", "Bad Request");
+            send(i, 400, DET_MIME_TEXT_PLAIN, "Bad Request");
         }
         else if (http_pool[i].parse_state == PARSE_ENTITY_TOO_LARGE)
         {
-            send(i, 413, "text/plain", "Payload Too Large");
+            send(i, 413, DET_MIME_TEXT_PLAIN, "Payload Too Large");
         }
         else if (http_pool[i].parse_state == PARSE_URI_TOO_LONG)
         {
-            send(i, 414, "text/plain", "URI Too Long");
+            send(i, 414, DET_MIME_TEXT_PLAIN, "URI Too Long");
         }
     }
 
@@ -1205,7 +1234,7 @@ bool DetWebServer::defer(uint8_t slot, detws_deferred_fn fn, void *arg)
 #if DETWS_ENABLE_DIAG
 void DetWebServer::diag(uint8_t slot_id)
 {
-    send(slot_id, 200, "application/json", DETWS_DIAG_JSON);
+    send(slot_id, 200, DET_MIME_JSON, DETWS_DIAG_JSON);
 }
 #endif
 
@@ -1414,8 +1443,12 @@ static void allow_append(char *buf, size_t cap, const char *m)
         snprintf(buf + len, cap - len, ", %s", m);
 }
 
-// Send 405 Method Not Allowed with the required Allow header (RFC 7231 §6.5.5).
-static void send_method_not_allowed(uint8_t slot_id, const char *allow)
+// Send a terminal text/plain error response that closes the connection: the
+// status reason (e.g. "405 Method Not Allowed"), one optional pre-formatted extra
+// header (CRLF-terminated, e.g. "Allow: GET\r\n"), then Content-Type/Length and
+// "Connection: close". Begins the CONN_CLOSING dwell so the bytes drain before
+// teardown; HEAD omits the body. One owner for the error-and-close path.
+static void send_error_close(uint8_t slot_id, const char *status, const char *extra_hdr, const char *body)
 {
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
@@ -1424,23 +1457,31 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
         return;
     }
 
-    static const char body[] = "Method Not Allowed";
+    int blen = (int)strlen(body);
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
-                        "HTTP/1.1 405 Method Not Allowed\r\n"
-                        "Allow: %s\r\n"
-                        "Content-Type: text/plain\r\n"
+                        "HTTP/1.1 %s\r\n"
+                        "%s"
+                        "Content-Type: %s\r\n"
                         "Content-Length: %d\r\n"
                         "Connection: close\r\n\r\n",
-                        allow, (int)(sizeof(body) - 1));
+                        status, extra_hdr ? extra_hdr : "", DET_MIME_TEXT_PLAIN, blen);
 
     struct tcp_pcb *pcb = conn->pcb;
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    if (!req_is_head(slot_id))
-        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+    if (blen > 0 && !req_is_head(slot_id))
+        det_conn_send(slot_id, pcb, body, (u16_t)blen);
     det_conn_flush(slot_id, pcb);
     det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
     http_reset(slot_id);
+}
+
+// Send 405 Method Not Allowed with the required Allow header (RFC 7231 §6.5.5).
+static void send_method_not_allowed(uint8_t slot_id, const char *allow)
+{
+    char extra[80];
+    snprintf(extra, sizeof(extra), "Allow: %s\r\n", allow);
+    send_error_close(slot_id, "405 Method Not Allowed", extra, "Method Not Allowed");
 }
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
@@ -1455,30 +1496,9 @@ static uint32_t lockout_client_ip(uint8_t slot_id)
 // connection - mirrors send_method_not_allowed's PCB lifecycle.
 static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
-    {
-        http_reset(slot_id);
-        return;
-    }
-
-    static const char body[] = "Too Many Requests";
-    char header[RESP_HDR_BUF_SIZE];
-    int hlen = snprintf(header, sizeof(header),
-                        "HTTP/1.1 429 Too Many Requests\r\n"
-                        "Retry-After: %lu\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: %d\r\n"
-                        "Connection: close\r\n\r\n",
-                        (unsigned long)retry_after_s, (int)(sizeof(body) - 1));
-
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    if (!req_is_head(slot_id))
-        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
-    det_conn_flush(slot_id, pcb);
-    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
-    http_reset(slot_id);
+    char extra[40];
+    snprintf(extra, sizeof(extra), "Retry-After: %lu\r\n", (unsigned long)retry_after_s);
+    send_error_close(slot_id, "429 Too Many Requests", extra, "Too Many Requests");
 }
 #endif // DETWS_ENABLE_AUTH_LOCKOUT
 
@@ -1525,11 +1545,11 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
             set_cookie(slot_id, "csrf", tok, "Path=/; SameSite=Strict");
             char body[CSRF_TOKEN_BUF + 16];
             snprintf(body, sizeof(body), "{\"token\":\"%s\"}", tok);
-            send(slot_id, 200, "application/json", body);
+            send(slot_id, 200, DET_MIME_JSON, body);
         }
         else
         {
-            send(slot_id, 500, "text/plain", "CSRF unavailable");
+            send(slot_id, 500, DET_MIME_TEXT_PLAIN, "CSRF unavailable");
         }
         return;
     }
@@ -1541,7 +1561,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         const char *tok = http_get_header(req, "X-CSRF-Token");
         if (!tok || !csrf_verify(tok))
         {
-            send(slot_id, 403, "text/plain", "CSRF token missing or invalid");
+            send(slot_id, 403, DET_MIME_TEXT_PLAIN, "CSRF token missing or invalid");
             return;
         }
     }
@@ -1550,14 +1570,14 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     // RFC 7230 §3.3.1: reject Transfer-Encoding
     if (http_get_header(req, "Transfer-Encoding") != nullptr)
     {
-        send(slot_id, 501, "text/plain", "Not Implemented");
+        send(slot_id, 501, DET_MIME_TEXT_PLAIN, "Not Implemented");
         return;
     }
 
     // RFC 7231 §6.5.2: a method the server does not implement → 501.
     if (method == HTTP_METHOD_UNKNOWN)
     {
-        send(slot_id, 501, "text/plain", "Not Implemented");
+        send(slot_id, 501, DET_MIME_TEXT_PLAIN, "Not Implemented");
         return;
     }
 
@@ -1593,7 +1613,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         {
             if (!is_ws_upgrade)
             {
-                send(slot_id, 400, "text/plain", "WebSocket upgrade required");
+                send(slot_id, 400, DET_MIME_TEXT_PLAIN, "WebSocket upgrade required");
                 return;
             }
             // RFC 6455 §4.2.1: only version 13 is supported; otherwise 426.
@@ -1604,7 +1624,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
                 return;
             }
             if (!ws_do_upgrade(slot_id, req, r->ws_connect))
-                send(slot_id, 503, "text/plain", "Service Unavailable");
+                send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
             return;
         }
 #endif // DETWS_ENABLE_WEBSOCKET
@@ -1613,7 +1633,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         if (r->type == ROUTE_SSE)
         {
             if (!sse_do_upgrade(slot_id, req, r->sse_connect))
-                send(slot_id, 503, "text/plain", "Service Unavailable");
+                send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
             return;
         }
 #endif // DETWS_ENABLE_SSE
@@ -1689,7 +1709,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     if (_not_found_handler)
         _not_found_handler(slot_id, req);
     else
-        send(slot_id, 404, "text/plain", "Not Found");
+        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
 }
 
 /*
@@ -1719,22 +1739,16 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     int payload_len = (int)strlen(payload);
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
-                        "Content-Length: %d\r\n"
-                        "%s"
-                        "%s"
-                        "%s\r\n",
-                        code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "",
-                        _extra_hdr[slot_id], cl);
+                        "Content-Length: %d\r\n",
+                        code, status_text(code), content_type, payload_len);
+    hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
     // The slot stays CONN_ACTIVE through the write for both paths; resp_end then
     // begins the CONN_CLOSING dwell on the close path (finalized once ACKed).
@@ -1779,20 +1793,15 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         return;
     }
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
-                        "Content-Length: 0\r\n"
-                        "%s"
-                        "%s"
-                        "%s\r\n",
-                        code, status_text(code), _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
+                        "Content-Length: 0\r\n",
+                        code, status_text(code));
+    hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
@@ -1824,22 +1833,16 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
         break;
     }
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
-    int hlen =
-        snprintf(header, sizeof(header),
-                 "HTTP/1.1 %d %s\r\n"
-                 "Location: %s\r\n"
-                 "Content-Length: 0\r\n"
-                 "%s"
-                 "%s"
-                 "%s\r\n",
-                 code, status_text(code), location, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Location: %s\r\n"
+                        "Content-Length: 0\r\n",
+                        code, status_text(code), location);
+    hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
@@ -1916,22 +1919,16 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     // Pass 1: size the rendered body (no writes).
     size_t body_len = tmpl_walk(slot_id, tmpl, resolver, nullptr);
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
-                        "Content-Length: %d\r\n"
-                        "%s"
-                        "%s"
-                        "%s\r\n",
-                        code, status_text(code), content_type, (int)body_len, _cors_enabled ? _cors_header_buf : "",
-                        _extra_hdr[slot_id], cl);
+                        "Content-Length: %d\r\n",
+                        code, status_text(code), content_type, (int)body_len);
+    hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
@@ -1966,22 +1963,16 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
         return;
     }
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     char header[RESP_HDR_BUF_SIZE];
-    int hlen =
-        snprintf(header, sizeof(header),
-                 "HTTP/1.1 %d %s\r\n"
-                 "Content-Type: %s\r\n"
-                 "Transfer-Encoding: chunked\r\n"
-                 "%s"
-                 "%s"
-                 "%s\r\n",
-                 code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
+    int hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Content-Type: %s\r\n"
+                        "Transfer-Encoding: chunked\r\n",
+                        code, status_text(code), content_type);
+    hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
@@ -2109,7 +2100,7 @@ void DetWebServer::clear_response_headers(uint8_t slot_id)
 const char *DetWebServer::mime_type(const char *path)
 {
     if (!path)
-        return "application/octet-stream";
+        return DET_MIME_OCTET_STREAM;
 
     // Find the last '.' after the last '/'.
     const char *dot = nullptr;
@@ -2121,7 +2112,7 @@ const char *DetWebServer::mime_type(const char *path)
             dot = p;
     }
     if (!dot || dot[1] == '\0')
-        return "application/octet-stream";
+        return DET_MIME_OCTET_STREAM;
     const char *ext = dot + 1;
 
     // Case-insensitive compare against a small static table.
@@ -2130,27 +2121,13 @@ const char *DetWebServer::mime_type(const char *path)
         const char *ext;
         const char *type;
     } table[] = {
-        {"html", "text/html"},
-        {"htm", "text/html"},
-        {"css", "text/css"},
-        {"js", "application/javascript"},
-        {"mjs", "application/javascript"},
-        {"json", "application/json"},
-        {"xml", "application/xml"},
-        {"txt", "text/plain"},
-        {"csv", "text/csv"},
-        {"svg", "image/svg+xml"},
-        {"png", "image/png"},
-        {"jpg", "image/jpeg"},
-        {"jpeg", "image/jpeg"},
-        {"gif", "image/gif"},
-        {"ico", "image/x-icon"},
-        {"webp", "image/webp"},
-        {"wasm", "application/wasm"},
-        {"woff", "font/woff"},
-        {"woff2", "font/woff2"},
-        {"ttf", "font/ttf"},
-        {"pdf", "application/pdf"},
+        {"html", DET_MIME_TEXT_HTML}, {"htm", DET_MIME_TEXT_HTML},  {"css", "text/css"},
+        {"js", DET_MIME_JAVASCRIPT},  {"mjs", DET_MIME_JAVASCRIPT}, {"json", DET_MIME_JSON},
+        {"xml", "application/xml"},   {"txt", DET_MIME_TEXT_PLAIN}, {"csv", "text/csv"},
+        {"svg", "image/svg+xml"},     {"png", "image/png"},         {"jpg", "image/jpeg"},
+        {"jpeg", "image/jpeg"},       {"gif", "image/gif"},         {"ico", "image/x-icon"},
+        {"webp", "image/webp"},       {"wasm", "application/wasm"}, {"woff", "font/woff"},
+        {"woff2", "font/woff2"},      {"ttf", "font/ttf"},          {"pdf", "application/pdf"},
         {"gz", "application/gzip"},
     };
     for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++)
@@ -2173,7 +2150,7 @@ const char *DetWebServer::mime_type(const char *path)
         if (eq && *a == '\0' && *b == '\0')
             return table[i].type;
     }
-    return "application/octet-stream";
+    return DET_MIME_OCTET_STREAM;
 }
 
 // ---------------------------------------------------------------------------
@@ -2228,7 +2205,7 @@ void DetWebServer::stats(uint8_t slot_id)
     snprintf(s_s_active, sizeof(s_s_active), "%d", active);
     snprintf(s_s_heap, sizeof(s_s_heap), "%u", (unsigned)heap);
 
-    send_template(slot_id, 200, "application/json", DETWS_STATS_JSON, stats_var);
+    send_template(slot_id, 200, DET_MIME_JSON, DETWS_STATS_JSON, stats_var);
 }
 #endif // DETWS_ENABLE_STATS
 
@@ -2484,11 +2461,8 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
     else
         snprintf(challenge, sizeof(challenge), "WWW-Authenticate: Basic realm=\"%s\"\r\n", r->auth_realm);
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     static const char body[] = "Unauthorized";
     char header[RESP_HDR_BUF_SIZE];
@@ -2745,7 +2719,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     fs::File f = file_sys.open(fs_path, "r");
     if (!f)
     {
-        send(slot_id, 404, "text/plain", "Not Found");
+        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -2759,11 +2733,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 
     size_t file_size = f.size();
 
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
 
     // Optional Content-Encoding line (e.g. gzip for pre-compressed assets).
     char enc_line[40];
@@ -2969,7 +2940,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
 {
     if (!r->static_fs)
     {
-        send(slot_id, 404, "text/plain", "Not Found");
+        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -2982,7 +2953,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     // Reject path traversal before touching the filesystem.
     if (strstr(sub, ".."))
     {
-        send(slot_id, 404, "text/plain", "Not Found");
+        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -3003,7 +2974,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
                  : snprintf(fs_path, sizeof(fs_path), "%s%s%s", root, sep, sub);
     if (wn <= 0 || wn >= (int)sizeof(fs_path))
     {
-        send(slot_id, 404, "text/plain", "Not Found");
+        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -3244,11 +3215,8 @@ void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_
         http_reset(slot_id);
         return;
     }
-    bool keep = false;
-#if DETWS_ENABLE_KEEPALIVE
-    keep = keepalive_eval(slot_id);
-#endif
-    const char *cl = keep ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+    bool keep;
+    const char *cl = resp_conn_hdr(slot_id, &keep);
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
                         status_text(code), extra_headers ? extra_headers : "", cl);
