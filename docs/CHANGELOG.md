@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.14.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.14.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`e63849d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e63849dac7d87464bcf47ad29fa99d71de15de17))
+- update CHANGELOG.md [skip ci] ([`6477f92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6477f9238adc9cc75db9d4d0f0389183c725d906))
+
+### Changes
+
+- Bump version: 3.13.0 → 3.14.0 ([`add0848`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/add084894bee0fd5114b47ba88b2166fac736376))
+
+### Features
+
+- migrate ws_client onto det_client (Bucket 3b, 3/3) ([`5388088`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5388088d7bb20d33d5d6e789a0a52cca48d7104a))
+
+</details>
+
 ## [3.13.0] - 2026-06-28
 
 <details>
