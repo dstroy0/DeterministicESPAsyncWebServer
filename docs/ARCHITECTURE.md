@@ -100,9 +100,14 @@ the BIO at `det_client_send` / `det_client_read` (the ring carries ciphertext).
 The `s_rx` ring inside `mqtt.cpp` / `ws_client.cpp` is a separate **plaintext frame
 buffer** (post-decrypt for TLS, the assembly buffer the protocol parser reads),
 owned solely by that module - the client mirror of the server's `http body[]` vs the
-`conn_pool` wire ring. Not cross-layer, correct as-is. (A deeper unification that
-merges the server `det_conn` and client `det_client` ring implementations into one
-shared primitive remains possible future work.)
+`conn_pool` wire ring. Not cross-layer, correct as-is.
+
+Both transports now drain through ONE shared primitive: `det_ring.h` (the `DetAtomic`
+SPSC index wrapper + the `det_ring_available / read_byte / read / peek / consume`
+math). `det_conn_*` (server) and `det_client_*` (client) are thin wrappers over it,
+so the ring invariants live in a single place and no consumer can reimplement the
+wrap/ordering by hand. The client ring's indices were `volatile`; they are now
+`DetAtomic` like the server, giving correct cross-core acquire/release ordering.
 
 ## Streaming-body hooks - slot-aware
 
@@ -144,6 +149,6 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
    module-owned and correct as-is.
 
 All phases complete: every cross-layer concern (server TX/RX, RX window, RX read,
-streaming sink state, events, scratch, outbound client I/O) now has exactly one owner
-behind a clean API. Possible future work: merge the `det_conn` and `det_client` ring
-implementations into one shared primitive (two pools, one ring/read core).
+streaming sink state, events, scratch, outbound client I/O) has exactly one owner
+behind a clean API, and the server and client ring drain math is a single shared
+primitive (`det_ring.h`) - two pools, one ring/read core.

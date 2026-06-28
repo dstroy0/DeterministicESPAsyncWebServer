@@ -16,6 +16,7 @@
 
 #if defined(ARDUINO)
 
+#include "det_ring.h" // shared DetAtomic + SPSC ring drain (same primitive as the server)
 #include "lwip/dns.h"
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
@@ -30,8 +31,8 @@ struct ClientConn
     volatile bool connected;
     volatile bool closed; // peer FIN or error
     uint8_t rx[DETWS_CLIENT_RX_BUF];
-    volatile size_t head; // producer (lwIP recv cb)
-    volatile size_t tail; // consumer (caller)
+    DetAtomic<size_t> head; // producer (lwIP recv cb); acquire/release SPSC, same as the server ring
+    DetAtomic<size_t> tail; // consumer (caller)
 };
 
 static ClientConn s_cc[DETWS_CLIENT_CONNS];
@@ -62,17 +63,17 @@ static err_t cc_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
     size_t freesp = (DETWS_CLIENT_RX_BUF - 1) - used;
     if (p->tot_len > freesp)
         return ERR_MEM;
-    struct pbuf *q = p;
-    while (q)
+    size_t h = c->head; // sole producer of head; advance a local and publish once
+    for (struct pbuf *q = p; q; q = q->next)
     {
         const uint8_t *d = (const uint8_t *)q->payload;
         for (u16_t i = 0; i < q->len; i++)
         {
-            c->rx[c->head] = d[i];
-            c->head = (c->head + 1) % DETWS_CLIENT_RX_BUF;
+            c->rx[h] = d[i];
+            h = (h + 1) % DETWS_CLIENT_RX_BUF;
         }
-        q = q->next;
     }
+    c->head = h; // single release store publishes the whole segment
     // Do NOT tcp_recved() here. The window is reopened by det_client_read() as the
     // caller drains (ack-on-consume), so it tracks ring occupancy and the peer can
     // never overflow the ring - same model as the server transport. ACKing on copy
@@ -316,7 +317,7 @@ size_t det_client_available(int cid)
     if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
         return 0;
     ClientConn *c = &s_cc[cid];
-    return (c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF;
+    return det_ring_available(c->head, c->tail, DETWS_CLIENT_RX_BUF);
 }
 
 size_t det_client_read(int cid, uint8_t *buf, size_t cap)
@@ -324,14 +325,7 @@ size_t det_client_read(int cid, uint8_t *buf, size_t cap)
     if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
         return 0;
     ClientConn *c = &s_cc[cid];
-    size_t n = 0;
-    while (n < cap)
-    {
-        if (((c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF) == 0)
-            break;
-        buf[n++] = c->rx[c->tail];
-        c->tail = (c->tail + 1) % DETWS_CLIENT_RX_BUF;
-    }
+    size_t n = det_ring_read(c->rx, DETWS_CLIENT_RX_BUF, c->head, c->tail, buf, cap);
     if (n > 0 && c->pcb)
     {
         // Ack-on-consume: reopen the receive window by exactly what we just drained.

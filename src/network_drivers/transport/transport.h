@@ -34,54 +34,12 @@
 #define DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 
 #include "DetWebServerConfig.h"
+#include "det_ring.h" // DetAtomic + the shared SPSC ring drain primitive
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
 #include <Arduino.h>
 #include <atomic>
-
-// ---------------------------------------------------------------------------
-// Cross-thread field wrapper
-// ---------------------------------------------------------------------------
-//
-// The slot fields shared across the tcpip_thread/worker boundary (state,
-// rx_head, rx_tail) are wrapped in DetAtomic so the producer/consumer memory
-// ordering is enforced by construction rather than by convention: every read is
-// an acquire load and every write a release store, so a producer's buffer writes
-// are visible before the consumer observes the advanced index (single-producer /
-// single-consumer per slot, so no read-modify-write atomicity is needed - only
-// ordering). On Xtensa/x86 an aligned acquire/release load/store is a plain
-// load/store plus a compiler barrier, so this adds no lock and no measurable cost
-// - determinism (bounded latency) is preserved. The conversion operators keep
-// every existing ==/=/arithmetic call site unchanged; the copy ctor/assignment
-// let the containing TcpConn still be value-reset (conn_pool[i] = {}).
-template <typename T> struct DetAtomic
-{
-    std::atomic<T> v;
-    DetAtomic() noexcept : v(T())
-    {
-    }
-    DetAtomic(T x) noexcept : v(x)
-    {
-    }
-    DetAtomic(const DetAtomic &o) noexcept : v(o.v.load(std::memory_order_acquire))
-    {
-    }
-    DetAtomic &operator=(const DetAtomic &o) noexcept
-    {
-        v.store(o.v.load(std::memory_order_acquire), std::memory_order_release);
-        return *this;
-    }
-    DetAtomic &operator=(T x) noexcept
-    {
-        v.store(x, std::memory_order_release);
-        return *this;
-    }
-    operator T() const noexcept
-    {
-        return v.load(std::memory_order_acquire);
-    }
-};
 
 // ---------------------------------------------------------------------------
 // Connection state
@@ -298,54 +256,41 @@ void det_conn_ack_consumed(uint8_t slot);
 // inline because the byte path is hot and the ring internals live in this header.
 // ---------------------------------------------------------------------------
 
+// All five delegate to the shared SPSC ring primitive (det_ring.h) over the slot's
+// rx_buffer - the server transport never reimplements the ring math.
+
 /** @brief Bytes currently available to read from @p slot's ring. */
 static inline size_t det_conn_available(uint8_t slot)
 {
     const TcpConn *c = &conn_pool[slot];
-    return (c->rx_head + RX_BUF_SIZE - c->rx_tail) % RX_BUF_SIZE;
+    return det_ring_available(c->rx_head, c->rx_tail, RX_BUF_SIZE);
 }
 
 /** @brief Pop one byte into @p out; false if the ring is empty. */
 static inline bool det_conn_read_byte(uint8_t slot, uint8_t *out)
 {
     TcpConn *c = &conn_pool[slot];
-    if (c->rx_tail == c->rx_head)
-        return false;
-    *out = c->rx_buffer[c->rx_tail];
-    c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
-    return true;
+    return det_ring_read_byte(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, out);
 }
 
 /** @brief Copy @p n bytes at @p off from the tail into @p dst WITHOUT consuming (lookahead). */
 static inline void det_conn_peek(uint8_t slot, size_t off, uint8_t *dst, size_t n)
 {
     const TcpConn *c = &conn_pool[slot];
-    size_t idx = (c->rx_tail + off) % RX_BUF_SIZE;
-    for (size_t i = 0; i < n; i++)
-    {
-        dst[i] = c->rx_buffer[idx];
-        idx = (idx + 1) % RX_BUF_SIZE;
-    }
+    det_ring_peek(c->rx_buffer, RX_BUF_SIZE, c->rx_tail, off, dst, n);
 }
 
 /** @brief Drop @p n bytes from the tail (advance past already-peeked data). */
 static inline void det_conn_consume(uint8_t slot, size_t n)
 {
-    TcpConn *c = &conn_pool[slot];
-    c->rx_tail = (c->rx_tail + n) % RX_BUF_SIZE;
+    det_ring_consume(conn_pool[slot].rx_tail, RX_BUF_SIZE, n);
 }
 
 /** @brief Pop up to @p cap bytes into @p buf; returns the count read. */
 static inline size_t det_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
 {
     TcpConn *c = &conn_pool[slot];
-    size_t n = 0;
-    while (n < cap && c->rx_tail != c->rx_head)
-    {
-        buf[n++] = c->rx_buffer[c->rx_tail];
-        c->rx_tail = (c->rx_tail + 1) % RX_BUF_SIZE;
-    }
-    return n;
+    return det_ring_read(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, buf, cap);
 }
 
 /**

@@ -8,6 +8,20 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Client ring used `volatile` indices (weak cross-core ordering)
+
+- **Status:** FIXED (v4.8.1; found by analysis while unifying the ring primitive)
+- **Found:** 2026-06-28, merging the server/client ring implementations.
+- **Symptom (latent):** the outbound client ring (`det_client`) used `volatile size_t`
+  head/tail. `volatile` blocks compiler reordering but provides no cross-core
+  acquire/release; on the dual-core ESP32 (producer = tcpip_thread, consumer = caller
+  loop, often different cores) the consumer could observe an advanced `head` before
+  the buffer bytes it published were visible -> a rare stale read. The server ring
+  already used `DetAtomic` (correct); the client was inconsistent.
+- **Fix:** both transports now share `det_ring.h` (the `DetAtomic` SPSC index +
+  the drain math); the client ring's indices are `DetAtomic`, matching the server's
+  acquire/release ordering. One ring primitive, no hand-rolled wrap/ordering.
+
 ## Client transport could deadlock on a large inbound transfer
 
 - **Status:** FIXED (v4.8.0; same fix as the server, found by analysis during the
