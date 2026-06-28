@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.7.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.7.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`784398f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/784398f31bb8eaf217811354640dc962f5a8cc18))
+- update CHANGELOG.md [skip ci] ([`a101b2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a101b2fa74e1046da1d61c81a1d61281b9fbede7))
+
+### Changes
+
+- Bump version: 4.6.1 → 4.7.0 ([`ffcab18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffcab18142cc48cecdfeea07ce645ba47ce5dbe9))
+
+### Features
+
+- concurrent streamed PUTs via slot-aware streaming hooks ([`336e69e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336e69ed1ba0da5d3f017dc13596e33d571b874d))
+
+</details>
+
 ## [4.6.1] - 2026-06-28
 
 <details>
