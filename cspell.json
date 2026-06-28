@@ -4,7 +4,11 @@
   "words": [
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
     "ABRT",
+    "ALPN",
     "asyncua",
+    "HPACK",
+    "interlayer",
+    "QPACK",
     "bursty",
     "cpcb",
     "klen",

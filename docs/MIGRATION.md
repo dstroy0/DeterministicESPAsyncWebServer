@@ -5,6 +5,24 @@ This library breaks public APIs between releases when correctness or a cleaner
 design calls for it (see the development-status notice in the README), so check
 here on every upgrade.
 
+## 4.6.x to 4.7.0 - streaming-body data hook is slot-aware
+
+Only affects code that installs the low-level parser streaming hooks directly via
+`http_parser_set_stream_hooks()` (OTA / upload / WebDAV do this internally; most
+applications never touch it). The `data` callback now receives the `HttpReq *` for
+the connection so a sink can keep per-connection state - this is what makes
+concurrent streamed uploads (e.g. parallel WebDAV PUTs) write to their own files
+instead of clobbering one global transfer.
+
+- `HttpStreamDataCb` changed from `void (*)(const uint8_t *data, size_t len)` to
+  `void (*)(HttpReq *req, const uint8_t *data, size_t len)`.
+- Update your data hook's signature; derive the slot with `req - http_pool` if you
+  need per-connection state (ignore `req` if you only ever stream one at a time).
+- `begin` and `abort` hooks are unchanged (they already took `HttpReq *`).
+
+Before: `void on_data(const uint8_t *d, size_t n)`
+After: `void on_data(HttpReq *req, const uint8_t *d, size_t n)`
+
 ## 4.4.x to 4.5.0 - chunked responses are a pull generator
 
 `send_chunked()` no longer takes a one-shot `ChunkFiller(ChunkedResponse&, HttpReq*)`

@@ -488,14 +488,14 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             if (p->body_len == BODY_BUF_SIZE)
             {
                 if (g_stream_data)
-                    g_stream_data(p->body, p->body_len);
+                    g_stream_data(p, p->body, p->body_len);
                 p->body_len = 0;
             }
             p->body_bytes_read++;
             if (p->body_bytes_read >= p->content_length)
             {
                 if (p->body_len && g_stream_data)
-                    g_stream_data(p->body, p->body_len); // flush the tail
+                    g_stream_data(p, p->body, p->body_len); // flush the tail
                 p->body_len = 0;
                 p->body[0] = '\0';
                 p->parse_state = PARSE_COMPLETE;

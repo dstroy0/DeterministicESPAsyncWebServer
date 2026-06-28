@@ -500,11 +500,11 @@ class DetWebServer
 #if DETWS_ENABLE_STREAM_BODY
     /// @brief Stream-begin hook: if @p req is a PUT under a DAV mount, open the file and stream the body.
     bool dav_stream_put_begin(HttpReq *req);
-    /// @brief Stream-data hook: write one body chunk to the open DAV PUT file.
-    void dav_stream_put_data(const uint8_t *data, size_t len);
+    /// @brief Stream-data hook: write one body chunk to @p req's slot's DAV PUT file.
+    void dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len);
     /// @brief C-callable trampolines (the parser hook takes plain function pointers).
     static bool dav_put_begin_tramp(HttpReq *req);
-    static void dav_put_data_tramp(const uint8_t *data, size_t len);
+    static void dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len);
     /// @brief Stream-abort hook: close the half-written PUT file if the transfer is torn down early.
     static void dav_put_abort_tramp(HttpReq *req);
 #endif

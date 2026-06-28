@@ -88,14 +88,14 @@ ring indices for draining and one that ACKs. Remaining: two services (`mqtt.cpp`
 `ws_client.cpp`) still keep their own private `s_rx_head/s_rx_tail` client-side
 buffers (Phase 4 - reconcile or document).
 
-## Streaming-body hooks - partially slot-aware
+## Streaming-body hooks - slot-aware
 
 `http_parser_set_stream_hooks(begin, data, abort)` are global singletons
-(last-registered-wins, so OTA / upload / WebDAV streaming are mutually exclusive).
-`begin` and `abort` take `HttpReq*` (so they know the slot); **`data` does not**
-(`HttpStreamDataCb(const uint8_t*, size_t)`), so a sink cannot keep per-connection
-state - the cause of the concurrent-PUT bug (docs/BUGS.md). Target: make `data`
-slot-aware and hold per-slot sink state.
+(last-registered-wins, so OTA / upload / WebDAV streaming are still mutually
+exclusive per build). All three now take `HttpReq*`, so a sink can keep
+per-connection state: WebDAV holds per-slot PUT state (`g_dav_put[MAX_CONNS]`) and
+each connection streams to its own file. This fixed the concurrent-PUT clobber
+(docs/BUGS.md) - HW: 4 parallel PUTs with distinct payloads, all byte-exact.
 
 ## Ownership: current vs target
 
@@ -104,7 +104,7 @@ slot-aware and hold per-slot sink state.
 | Socket TX            | transport `det_conn_*` | DONE                                            |
 | RX receive window    | transport              | DONE (`det_conn_ack_consumed`, ack-on-consume)  |
 | RX ring read/drain   | transport (read API)   | DONE (`det_conn_read*`; consumers off the ring) |
-| Streaming sink state | per-slot, slot-aware   | TODO - global state + slot-blind `data` hook    |
+| Streaming sink state | per-slot, slot-aware   | DONE (`g_dav_put[MAX_CONNS]`, slot-aware hooks) |
 | Event routing        | session (owner queue)  | DONE                                            |
 | Scratch memory       | session (per-worker)   | DONE                                            |
 
@@ -117,7 +117,8 @@ slot-aware and hold per-slot sink state.
    `rx_tail` modulo remains. The read functions consume only; `det_conn_ack_consumed`
    stays the one place that reopens the window (per loop), so draining and ACKing
    each have exactly one owner. HW: 10/10 50 KB byte-exact, backpressure 0.
-3. **TODO - slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` +
-   per-slot WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixes the concurrent-PUT bug.
+3. **DONE - slot-aware streaming hooks** - `HttpStreamDataCb(HttpReq*, ...)` +
+   per-slot WebDAV PUT state `g_dav_put[MAX_CONNS]`; fixed the concurrent-PUT bug
+   (HW: 4 parallel PUTs, distinct payloads, all byte-exact).
 4. **TODO - reconcile private-buffer services** - mqtt / ws_client `s_rx_*`: migrate
    to the model or document why a client-side buffer legitimately differs.

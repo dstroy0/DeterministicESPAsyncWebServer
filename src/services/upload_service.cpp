@@ -50,8 +50,9 @@ static bool upload_stream_begin(HttpReq *req)
 }
 
 /// @brief Stream-data hook: write one body chunk to the destination file.
-static void upload_stream_data(const uint8_t *data, size_t len)
+static void upload_stream_data(HttpReq *req, const uint8_t *data, size_t len)
 {
+    (void)req; // a single upload streams at a time
     if (g_active && !g_error)
     {
         if (g_file.write(data, len) != len)

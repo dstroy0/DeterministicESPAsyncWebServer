@@ -61,18 +61,19 @@ TCP_WND` the ring can never hold a full receive window, so refusals were constan
 
 ## WebDAV concurrent streamed PUTs clobber each other
 
-- **Status:** OPEN
+- **Status:** FIXED (v4.7.0; host + HW validated)
 - **Found:** 2026-06-28, concurrent (4x) 50 KB PUT stress test.
 - **Symptom:** 4 simultaneous PUTs -> one 201, the rest 409/timeout (the file was
   not actually written for the losers).
 - **Root cause:** the WebDAV streaming-PUT state (`g_dav_put_file/active/error/...`)
-  is a single global, and `HttpStreamDataCb` carries no slot/connection, so the
-  data hook cannot route bytes to per-connection state. Overlapping PUTs share and
-  clobber the one global transfer.
-- **Planned fix:** make the streaming-body data/abort hooks slot-aware (pass the
-  `HttpReq*`/slot) and hold per-slot WebDAV PUT state (`g_dav_put[MAX_CONNS]`), so
-  each connection streams to its own file. Aligns with the no-spaghetti directive
-  (the data hook lacking connection context is the interlayer gap).
+  was a single global, and `HttpStreamDataCb` carried no slot/connection, so the
+  data hook could not route bytes to per-connection state. Overlapping PUTs shared
+  and clobbered the one global transfer.
+- **Fix:** made the streaming-body `data` hook slot-aware (`HttpStreamDataCb(HttpReq*,
+...)`; `begin`/`abort` already had it) and replaced the global state with per-slot
+  `g_dav_put[MAX_CONNS]`, so each connection streams to its own file. Aligns with the
+  no-spaghetti directive (the data hook lacking connection context was the interlayer
+  gap). HW: 4 concurrent PUTs with distinct payloads, all 4 byte-exact (was 0/4).
 
 ## TX truncation on large responses (serve_file, send_chunked)
 

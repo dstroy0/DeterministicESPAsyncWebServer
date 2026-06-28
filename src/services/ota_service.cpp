@@ -72,8 +72,9 @@ static bool ota_stream_begin(HttpReq *req)
 }
 
 /// @brief Stream-data hook: write one chunk of the image to Update.
-static void ota_stream_data(const uint8_t *data, size_t len)
+static void ota_stream_data(HttpReq *req, const uint8_t *data, size_t len)
 {
+    (void)req; // a single OTA image streams at a time
     if (g_authed && g_active && !g_error)
     {
         if (Update.write((uint8_t *)data, len) != len)

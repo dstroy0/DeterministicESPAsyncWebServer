@@ -3062,34 +3062,38 @@ static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size
 }
 
 #if DETWS_ENABLE_STREAM_BODY
-// Streaming-PUT state for WebDAV (one transfer at a time on this single-task
-// device). The body is written to the file as it arrives, so an upload is never
-// bounded by BODY_BUF_SIZE.
+// Per-connection streaming-PUT state for WebDAV: each slot streams its body to its
+// own file, so concurrent PUTs never clobber one another, and a transfer is never
+// bounded by BODY_BUF_SIZE. Indexed by the request's slot (req - http_pool).
 static DetWebServer *g_dav_stream_srv = nullptr;
-static fs::File g_dav_put_file;
-static bool g_dav_put_active = false;  ///< destination file opened for the current PUT.
-static bool g_dav_put_error = false;   ///< a write (or the open) failed.
-static bool g_dav_put_existed = false; ///< the target existed before this PUT (204 vs 201).
-static size_t g_dav_put_written = 0;   ///< bytes written so far.
+struct DavPut
+{
+    fs::File file;  ///< destination file for this slot's PUT.
+    bool active;    ///< file opened for the current PUT.
+    bool error;     ///< a write (or the open) failed.
+    bool existed;   ///< target existed before this PUT (204 vs 201).
+    size_t written; ///< bytes written so far.
+};
+static DavPut g_dav_put[MAX_CONNS];
 
 bool DetWebServer::dav_put_begin_tramp(HttpReq *req)
 {
     return g_dav_stream_srv && g_dav_stream_srv->dav_stream_put_begin(req);
 }
-void DetWebServer::dav_put_data_tramp(const uint8_t *data, size_t len)
+void DetWebServer::dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len)
 {
     if (g_dav_stream_srv)
-        g_dav_stream_srv->dav_stream_put_data(data, len);
+        g_dav_stream_srv->dav_stream_put_data(req, data, len);
 }
 void DetWebServer::dav_put_abort_tramp(HttpReq *req)
 {
-    (void)req;
     // The PUT was torn down before the handler ran: close the half-written file so
     // the handle is not leaked (a leak eventually exhausts LittleFS's open slots).
-    if (g_dav_put_active)
+    uint8_t slot = (uint8_t)(req - http_pool);
+    if (slot < MAX_CONNS && g_dav_put[slot].active)
     {
-        g_dav_put_file.close();
-        g_dav_put_active = false;
+        g_dav_put[slot].file.close();
+        g_dav_put[slot].active = false;
     }
 }
 
@@ -3112,28 +3116,33 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
         char fs_path[256];
         if (dav_resolve_path(r, req->path, fs_path, sizeof(fs_path)) != 0)
             return false; // traversal / too long - let it buffer; the handler answers 403/414
-        g_dav_put_active = false;
-        g_dav_put_error = false;
-        g_dav_put_written = 0;
-        g_dav_put_existed = r->static_fs->exists(fs_path);
-        g_dav_put_file = r->static_fs->open(fs_path, "w");
-        if (g_dav_put_file)
-            g_dav_put_active = true;
+        DavPut *d = &g_dav_put[slot];
+        d->active = false;
+        d->error = false;
+        d->written = 0;
+        d->existed = r->static_fs->exists(fs_path);
+        d->file = r->static_fs->open(fs_path, "w");
+        if (d->file)
+            d->active = true;
         else
-            g_dav_put_error = true;
+            d->error = true;
         return true; // stream regardless so the body is consumed and the handler replies
     }
     return false;
 }
 
-void DetWebServer::dav_stream_put_data(const uint8_t *data, size_t len)
+void DetWebServer::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len)
 {
-    if (g_dav_put_active && !g_dav_put_error)
+    uint8_t slot = (uint8_t)(req - http_pool);
+    if (slot >= MAX_CONNS)
+        return;
+    DavPut *d = &g_dav_put[slot];
+    if (d->active && !d->error)
     {
-        if (g_dav_put_file.write(data, len) != len)
-            g_dav_put_error = true;
+        if (d->file.write(data, len) != len)
+            d->error = true;
         else
-            g_dav_put_written += len;
+            d->written += len;
     }
 }
 #endif // DETWS_ENABLE_STREAM_BODY
@@ -3258,23 +3267,24 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
 #if DETWS_ENABLE_STREAM_BODY
         if (req->body_streaming)
         {
-            // The body was written to the file as it arrived (dav_stream_put_*).
-            if (g_dav_put_active)
+            // The body was written to this slot's file as it arrived (dav_stream_put_*).
+            DavPut *d = &g_dav_put[slot_id];
+            if (d->active)
             {
-                g_dav_put_file.close();
-                g_dav_put_active = false; // closed here: the abort hook must not double-close
+                d->file.close();
+                d->active = false; // closed here: the abort hook must not double-close
             }
             else
             {
                 dav_send_status(slot_id, 409, ""); // parent missing / not writable
                 return;
             }
-            if (g_dav_put_error)
+            if (d->error)
             {
                 dav_send_status(slot_id, 507, ""); // a write failed (e.g. disk full)
                 return;
             }
-            dav_send_status(slot_id, g_dav_put_existed ? 204 : 201, "");
+            dav_send_status(slot_id, d->existed ? 204 : 201, "");
             return;
         }
 #endif

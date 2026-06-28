@@ -173,8 +173,8 @@ extern HttpReq http_pool[MAX_CONNS];
 
 /** @brief Decide whether to stream this request's body; begin the sink if so. */
 typedef bool (*HttpStreamBeginCb)(HttpReq *req);
-/** @brief Receive one body chunk for a streamed request. */
-typedef void (*HttpStreamDataCb)(const uint8_t *data, size_t len);
+/** @brief Receive one body chunk for a streamed request (@p req identifies the connection). */
+typedef void (*HttpStreamDataCb)(HttpReq *req, const uint8_t *data, size_t len);
 /**
  * @brief A streamed request was torn down before PARSE_COMPLETE (peer reset,
  * timeout, parse error). Lets the sink release its resource (close the file,

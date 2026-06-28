@@ -19,8 +19,9 @@ static bool begin_cb(HttpReq *req)
 {
     return strcmp(req->method, "POST") == 0 && strcmp(req->path, "/update") == 0;
 }
-static void data_cb(const uint8_t *d, size_t n)
+static void data_cb(HttpReq *req, const uint8_t *d, size_t n)
 {
+    (void)req;
     if (g_total + n <= sizeof(g_capture))
         memcpy(g_capture + g_total, d, n);
     g_total += n;
