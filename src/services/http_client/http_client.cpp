@@ -250,10 +250,8 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "lwip/dns.h"
-#include "lwip/priv/tcpip_priv.h"
-#include "lwip/tcp.h"
-#include <Arduino.h>
+#include "network_drivers/transport/det_client.h" // shared outbound TCP client (L4)
+#include <Arduino.h>                              // delay() / millis()
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
 #include "network_drivers/tls/det_tls.h"
@@ -268,243 +266,27 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 #define CL_DBG(...) ((void)0)
 #endif
 
-// Single in-flight request (one loop task). All buffers static (no heap).
-// s_rx holds the *response to parse*: the raw wire bytes for http, or (for https)
-// the plaintext decrypted by the TLS engine.
+// Single in-flight request (one loop task). s_rx holds the *response to parse*:
+// the raw wire bytes for http, or (for https) the plaintext decrypted by the TLS
+// engine. The TCP connection lives in the shared client pool (det_client).
 static uint8_t s_rx[DETWS_HTTP_CLIENT_BUF_SIZE];
-static volatile size_t s_rx_len;
-static volatile bool s_connected;
-static volatile bool s_closed;
-static volatile bool s_aborted;
-static struct tcp_pcb *s_pcb;
+static int s_cid = -1; // active outbound connection id (det_client pool)
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
-// For https the lwIP recv callback feeds *ciphertext* into a draining ring (the
-// TLS engine pulls from it during the handshake/read), so a modest buffer holds
-// the multi-KB handshake flight without loss: when the ring is full the callback
-// refuses the segment (ERR_MEM, no pbuf_free) and lwIP redelivers it once the
-// engine drains some bytes. The ring must exceed one TCP segment (TCP_MSS) or a
-// full segment could never fit. Plaintext output goes to s_rx (above).
-static uint8_t s_ct[DETWS_HTTP_CLIENT_CT_BUF_SIZE];
-static volatile size_t s_ct_head;
-static volatile size_t s_ct_tail;
-static volatile bool s_tls_mode; // recv routes wire bytes to the ciphertext ring
-#endif
-
-// DNS resolution result (filled from tcpip_thread).
-static volatile bool s_dns_done;
-static volatile bool s_dns_ok;
-static ip_addr_t s_dns_addr;
-
-// --- tcpip_thread-marshaled raw-lwIP ops (see transport.cpp for the rationale) ---
-struct ClConnCall
-{
-    struct tcpip_api_call_data base;
-    ip_addr_t addr;
-    uint16_t port;
-    err_t result;
-};
-struct ClSendCall
-{
-    struct tcpip_api_call_data base;
-    const void *data;
-    u16_t len;
-    err_t result;
-};
-
-static err_t cl_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-
-static err_t cl_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
-{
-    (void)arg;
-    (void)tpcb;
-    CL_DBG("[hc] connected cb err=%d\n", (int)err);
-    if (err == ERR_OK)
-        s_connected = true;
-    else
-        s_aborted = true;
-    return ERR_OK;
-}
-
-static void cl_err(void *arg, err_t err)
-{
-    (void)arg;
-    CL_DBG("[hc] err cb err=%d\n", (int)err);
-    s_pcb = nullptr; // lwIP already freed the pcb
-    s_aborted = true;
-}
-
-static err_t cl_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
-{
-    (void)arg;
-    (void)err;
-    if (p == nullptr)
-    {
-        CL_DBG("[hc] recv cb: peer closed\n");
-        s_closed = true; // peer closed
-        return ERR_OK;
-    }
-    CL_DBG("[hc] recv cb: %u bytes\n", (unsigned)p->tot_len);
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-    if (s_tls_mode)
-    {
-        // Ciphertext -> draining ring with lossless backpressure: if the whole
-        // segment will not fit the free space, refuse it (lwIP retains and
-        // redelivers) so no handshake bytes are dropped.
-        size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-        size_t freesp = (sizeof(s_ct) - 1) - used;
-        if (p->tot_len > freesp)
-            return ERR_MEM;
-        struct pbuf *q = p;
-        while (q)
-        {
-            const uint8_t *d = (const uint8_t *)q->payload;
-            for (u16_t i = 0; i < q->len; i++)
-            {
-                s_ct[s_ct_head] = d[i];
-                s_ct_head = (s_ct_head + 1) % sizeof(s_ct);
-            }
-            q = q->next;
-        }
-        tcp_recved(tpcb, p->tot_len);
-        pbuf_free(p);
-        return ERR_OK;
-    }
-#endif
-    struct pbuf *q = p;
-    while (q)
-    {
-        const uint8_t *d = (const uint8_t *)q->payload;
-        for (u16_t i = 0; i < q->len; i++)
-            if (s_rx_len < sizeof(s_rx))
-                s_rx[s_rx_len++] = d[i];
-        q = q->next;
-    }
-    tcp_recved(tpcb, p->tot_len);
-    pbuf_free(p);
-    return ERR_OK;
-}
-
-static err_t cl_do_connect(struct tcpip_api_call_data *c)
-{
-    ClConnCall *k = (ClConnCall *)c;
-    // Outbound IPv4 connection (DNS resolves an IPv4 address); match the pcb type.
-    s_pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
-    if (!s_pcb)
-    {
-        k->result = ERR_MEM;
-        return ERR_OK;
-    }
-    tcp_recv(s_pcb, cl_recv);
-    tcp_err(s_pcb, cl_err);
-    k->result = tcp_connect(s_pcb, &k->addr, k->port, cl_connected);
-    return ERR_OK;
-}
-
-static err_t cl_do_send(struct tcpip_api_call_data *c)
-{
-    ClSendCall *k = (ClSendCall *)c;
-    if (!s_pcb)
-    {
-        k->result = ERR_CONN;
-        return ERR_OK;
-    }
-    k->result = tcp_write(s_pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
-    if (k->result == ERR_OK)
-        tcp_output(s_pcb);
-    return ERR_OK;
-}
-
-static err_t cl_do_close(struct tcpip_api_call_data *c)
-{
-    (void)c;
-    if (s_pcb)
-    {
-        tcp_recv(s_pcb, nullptr);
-        tcp_err(s_pcb, nullptr);
-        if (tcp_close(s_pcb) != ERR_OK)
-            tcp_abort(s_pcb);
-        s_pcb = nullptr;
-    }
-    return ERR_OK;
-}
-
-// Close from the main loop: marshal the raw tcp_* teardown into tcpip_thread so
-// it never races the stack (the same cross-thread rule as the server transport).
-static void cl_close()
-{
-    ClConnCall k;
-    memset(&k, 0, sizeof(k));
-    tcpip_api_call(cl_do_close, &k.base);
-}
-
-static void cl_dns_cb(const char *name, const ip_addr_t *addr, void *arg)
-{
-    (void)name;
-    (void)arg;
-    if (addr)
-    {
-        s_dns_addr = *addr;
-        s_dns_ok = true;
-    }
-    s_dns_done = true;
-}
-
-static err_t cl_do_dns(struct tcpip_api_call_data *c)
-{
-    const char *host = (const char *)((ClSendCall *)c)->data;
-    err_t e = dns_gethostbyname(host, &s_dns_addr, cl_dns_cb, nullptr);
-    if (e == ERR_OK)
-    {
-        s_dns_ok = true;
-        s_dns_done = true;
-    }
-    else if (e != ERR_INPROGRESS)
-        s_dns_done = true; // hard failure
-    return ERR_OK;
-}
-
-// Resolve @p host (dotted-quad fast path, else DNS) into s_dns_addr.
-static bool cl_resolve(const char *host, uint32_t deadline)
-{
-    if (ipaddr_aton(host, &s_dns_addr))
-        return true;
-    s_dns_done = false;
-    s_dns_ok = false;
-    ClSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = host;
-    tcpip_api_call(cl_do_dns, &k.base);
-    while (!s_dns_done && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    return s_dns_ok;
-}
-
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-// mbedTLS BIO over the raw client pcb: send via the marshaled tcp_write, recv by
-// draining the ciphertext ring the lwIP recv callback fills.
+// mbedTLS BIO over the shared client transport: send wire bytes through the pool,
+// recv by draining its wire ring (which carries ciphertext for https).
 static int cl_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
-    ClSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = buf;
-    k.len = (u16_t)(len > 0xFFFF ? 0xFFFF : len);
-    tcpip_api_call(cl_do_send, &k.base);
-    return (k.result == ERR_OK) ? (int)k.len : -1;
+    size_t cap = len > 0xFFFF ? 0xFFFF : len;
+    return det_client_send(s_cid, buf, cap) ? (int)cap : -1;
 }
 static int cl_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-    if (used == 0)
-        return s_closed ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
-    size_t n = used < len ? used : len;
-    for (size_t i = 0; i < n; i++)
-    {
-        buf[i] = s_ct[s_ct_tail];
-        s_ct_tail = (s_ct_tail + 1) % sizeof(s_ct);
-    }
+    size_t n = det_client_read(s_cid, buf, len);
+    if (n == 0)
+        return det_client_is_closed(s_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 #endif // DETWS_ENABLE_HTTP_CLIENT_TLS
@@ -539,37 +321,11 @@ static int http_request(const char *method, const char *url, const char *content
 
     uint32_t deadline = millis() + DETWS_HTTP_CLIENT_TIMEOUT_MS;
 
-    if (!cl_resolve(host, deadline))
-        return HTTP_CLIENT_ERR_DNS;
-    CL_DBG("[hc] resolved ip=%s\n", ipaddr_ntoa(&s_dns_addr));
-
-    // Reset connection state and connect.
-    s_rx_len = 0;
-    s_connected = false;
-    s_closed = false;
-    s_aborted = false;
-    s_pcb = nullptr;
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-    s_tls_mode = is_https; // route wire bytes to the ciphertext ring for https
-    s_ct_head = 0;
-    s_ct_tail = 0;
-#endif
-    ClConnCall cc;
-    memset(&cc, 0, sizeof(cc));
-    cc.addr = s_dns_addr;
-    cc.port = port;
-    tcpip_api_call(cl_do_connect, &cc.base);
-    CL_DBG("[hc] connect dispatch result=%d\n", (int)cc.result);
-    if (cc.result != ERR_OK)
-        return HTTP_CLIENT_ERR_CONNECT;
-    while (!s_connected && !s_aborted && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    CL_DBG("[hc] connect poll connected=%d aborted=%d\n", (int)s_connected, (int)s_aborted);
-    if (!s_connected)
-    {
-        cl_close();
-        return s_aborted ? HTTP_CLIENT_ERR_CONNECT : HTTP_CLIENT_ERR_TIMEOUT;
-    }
+    // Open the connection (DNS + connect) via the shared client transport.
+    s_cid = det_client_open(host, port, DETWS_HTTP_CLIENT_TIMEOUT_MS);
+    CL_DBG("[hc] det_client_open cid=%d\n", s_cid);
+    if (s_cid < 0)
+        return (s_cid == -2) ? HTTP_CLIENT_ERR_DNS : HTTP_CLIENT_ERR_CONNECT;
 
     // The response to parse: raw wire bytes (http) or decrypted plaintext (https),
     // both land in s_rx.
@@ -583,35 +339,42 @@ static int http_request(const char *method, const char *url, const char *content
         CL_DBG("[hc] tls rc=%d pt_len=%u\n", rc, (unsigned)resp_len);
         if (rc < 0)
         {
-            cl_close();
+            det_client_close(s_cid);
+            s_cid = -1;
             return HTTP_CLIENT_ERR_TLS;
         }
 #else
-        cl_close();
+        det_client_close(s_cid);
+        s_cid = -1;
         return HTTP_CLIENT_ERR_TLS;
 #endif
     }
     else
     {
-        // Plaintext: send the request, then read until close / timeout / buffer full.
-        ClSendCall sc;
-        memset(&sc, 0, sizeof(sc));
-        sc.data = req;
-        sc.len = (u16_t)reqlen;
-        tcpip_api_call(cl_do_send, &sc.base);
-        CL_DBG("[hc] send result=%d reqlen=%u\n", (int)sc.result, (unsigned)reqlen);
-        if (sc.result != ERR_OK)
+        // Plaintext: send the request, then drain wire bytes into s_rx until the
+        // peer closes (and the ring is empty), the buffer fills, or we time out.
+        if (!det_client_send(s_cid, req, reqlen))
         {
-            cl_close();
+            det_client_close(s_cid);
+            s_cid = -1;
             return HTTP_CLIENT_ERR_SEND;
         }
-        while (!s_closed && s_rx_len < sizeof(s_rx) && (int32_t)(deadline - millis()) > 0)
-            delay(5);
-        resp_len = s_rx_len;
+        while ((int32_t)(deadline - millis()) > 0)
+        {
+            size_t n = det_client_read(s_cid, s_rx + resp_len, sizeof(s_rx) - resp_len);
+            resp_len += n;
+            if (resp_len >= sizeof(s_rx))
+                break;
+            if (det_client_is_closed(s_cid) && det_client_available(s_cid) == 0)
+                break;
+            if (n == 0)
+                delay(5);
+        }
     }
 
-    CL_DBG("[hc] done rx_len=%u closed=%d resp_len=%u\n", (unsigned)s_rx_len, (int)s_closed, (unsigned)resp_len);
-    cl_close();
+    CL_DBG("[hc] done resp_len=%u\n", (unsigned)resp_len);
+    det_client_close(s_cid);
+    s_cid = -1;
 
     if (resp_len == 0)
         return HTTP_CLIENT_ERR_TIMEOUT;

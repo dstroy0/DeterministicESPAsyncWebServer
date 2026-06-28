@@ -1,0 +1,360 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file det_client.cpp
+ * @brief Layer 4 outbound TCP client transport (pooled). See det_client.h.
+ *
+ * Mirrors the server transport's cross-thread rule: every raw lwIP call runs in
+ * tcpip_thread via tcpip_api_call(). Each slot owns its pcb and an SPSC wire ring
+ * (producer = the lwIP recv callback in tcpip_thread; consumer = the caller's
+ * loop/blocking task). The rings use `volatile` indices, matching the shipped
+ * per-client implementations this consolidates.
+ */
+
+#include "det_client.h"
+
+#if defined(ARDUINO)
+
+#include "lwip/dns.h"
+#include "lwip/priv/tcpip_priv.h"
+#include "lwip/tcp.h"
+#include "services/det_clock.h" // detws_millis()
+#include <Arduino.h>            // delay()
+#include <string.h>
+
+struct ClientConn
+{
+    struct tcp_pcb *pcb;
+    volatile bool in_use;
+    volatile bool connected;
+    volatile bool closed; // peer FIN or error
+    uint8_t rx[DETWS_CLIENT_RX_BUF];
+    volatile size_t head; // producer (lwIP recv cb)
+    volatile size_t tail; // consumer (caller)
+};
+
+static ClientConn s_cc[DETWS_CLIENT_CONNS];
+
+// DNS result. open() is the only caller and blocks until done, so one shared
+// result is enough (no concurrent resolves).
+static volatile bool s_dns_done;
+static volatile bool s_dns_ok;
+static ip_addr_t s_dns_addr;
+
+// --- lwIP callbacks (tcpip_thread); arg = the owning ClientConn* -------------
+
+static err_t cc_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+{
+    (void)err;
+    ClientConn *c = (ClientConn *)arg;
+    if (!c)
+        return ERR_OK;
+    if (p == nullptr)
+    {
+        c->closed = true; // peer closed
+        return ERR_OK;
+    }
+    // Wire bytes -> ring with lossless backpressure: if the whole segment will not
+    // fit the free space, refuse it (lwIP retains + redelivers).
+    size_t used = (c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF;
+    size_t freesp = (DETWS_CLIENT_RX_BUF - 1) - used;
+    if (p->tot_len > freesp)
+        return ERR_MEM;
+    struct pbuf *q = p;
+    while (q)
+    {
+        const uint8_t *d = (const uint8_t *)q->payload;
+        for (u16_t i = 0; i < q->len; i++)
+        {
+            c->rx[c->head] = d[i];
+            c->head = (c->head + 1) % DETWS_CLIENT_RX_BUF;
+        }
+        q = q->next;
+    }
+    tcp_recved(tpcb, p->tot_len);
+    pbuf_free(p);
+    return ERR_OK;
+}
+
+static err_t cc_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
+{
+    (void)tpcb;
+    ClientConn *c = (ClientConn *)arg;
+    if (c)
+    {
+        if (err == ERR_OK)
+            c->connected = true;
+        else
+            c->closed = true;
+    }
+    return ERR_OK;
+}
+
+static void cc_err(void *arg, err_t err)
+{
+    (void)err;
+    ClientConn *c = (ClientConn *)arg;
+    if (c)
+    {
+        c->pcb = nullptr; // lwIP already freed it
+        c->closed = true;
+    }
+}
+
+// --- tcpip_thread-marshaled ops ---------------------------------------------
+
+struct CcConnCall
+{
+    struct tcpip_api_call_data base;
+    ClientConn *c;
+    ip_addr_t addr;
+    uint16_t port;
+    err_t result;
+};
+struct CcSendCall
+{
+    struct tcpip_api_call_data base;
+    ClientConn *c;
+    const void *data;
+    u16_t len;
+    err_t result;
+};
+struct CcDnsCall
+{
+    struct tcpip_api_call_data base;
+    const char *host;
+    err_t result;
+};
+
+static err_t cc_do_connect(struct tcpip_api_call_data *cd)
+{
+    CcConnCall *k = (CcConnCall *)cd;
+    ClientConn *c = k->c;
+    c->pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
+    if (!c->pcb)
+    {
+        k->result = ERR_MEM;
+        return ERR_OK;
+    }
+    tcp_arg(c->pcb, c);
+    tcp_recv(c->pcb, cc_recv);
+    tcp_err(c->pcb, cc_err);
+    k->result = tcp_connect(c->pcb, &k->addr, k->port, cc_connected);
+    return ERR_OK;
+}
+
+static err_t cc_do_send(struct tcpip_api_call_data *cd)
+{
+    CcSendCall *k = (CcSendCall *)cd;
+    ClientConn *c = k->c;
+    if (!c->pcb)
+    {
+        k->result = ERR_CONN;
+        return ERR_OK;
+    }
+    k->result = tcp_write(c->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
+    if (k->result == ERR_OK)
+        tcp_output(c->pcb);
+    return ERR_OK;
+}
+
+static err_t cc_do_close(struct tcpip_api_call_data *cd)
+{
+    CcSendCall *k = (CcSendCall *)cd;
+    ClientConn *c = k->c;
+    if (c->pcb)
+    {
+        tcp_arg(c->pcb, nullptr);
+        tcp_recv(c->pcb, nullptr);
+        tcp_err(c->pcb, nullptr);
+        if (tcp_close(c->pcb) != ERR_OK)
+            tcp_abort(c->pcb);
+        c->pcb = nullptr;
+    }
+    return ERR_OK;
+}
+
+static void cc_dns_cb(const char *name, const ip_addr_t *addr, void *arg)
+{
+    (void)name;
+    (void)arg;
+    if (addr)
+    {
+        s_dns_addr = *addr;
+        s_dns_ok = true;
+    }
+    s_dns_done = true;
+}
+
+static err_t cc_do_dns(struct tcpip_api_call_data *cd)
+{
+    CcDnsCall *k = (CcDnsCall *)cd;
+    err_t e = dns_gethostbyname(k->host, &s_dns_addr, cc_dns_cb, nullptr);
+    if (e == ERR_OK)
+    {
+        s_dns_ok = true;
+        s_dns_done = true;
+    }
+    else if (e != ERR_INPROGRESS)
+        s_dns_done = true; // hard failure
+    k->result = e;
+    return ERR_OK;
+}
+
+static bool cc_resolve(const char *host, uint32_t deadline)
+{
+    if (ipaddr_aton(host, &s_dns_addr))
+        return true;
+    s_dns_done = false;
+    s_dns_ok = false;
+    CcDnsCall k;
+    memset(&k, 0, sizeof(k));
+    k.host = host;
+    tcpip_api_call(cc_do_dns, &k.base);
+    while (!s_dns_done && (int32_t)(deadline - detws_millis()) > 0)
+        delay(5);
+    return s_dns_ok;
+}
+
+// --- public API --------------------------------------------------------------
+
+int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
+{
+    int cid = -1;
+    for (int i = 0; i < DETWS_CLIENT_CONNS; i++)
+        if (!s_cc[i].in_use)
+        {
+            cid = i;
+            break;
+        }
+    if (cid < 0)
+        return -1; // pool full
+
+    ClientConn *c = &s_cc[cid];
+    c->pcb = nullptr;
+    c->connected = false;
+    c->closed = false;
+    c->head = 0;
+    c->tail = 0;
+    c->in_use = true;
+
+    uint32_t deadline = detws_millis() + timeout_ms;
+    if (!cc_resolve(host, deadline))
+    {
+        c->in_use = false;
+        return -2; // DNS failure
+    }
+
+    CcConnCall k;
+    memset(&k, 0, sizeof(k));
+    k.c = c;
+    k.addr = s_dns_addr;
+    k.port = port;
+    tcpip_api_call(cc_do_connect, &k.base);
+    if (k.result != ERR_OK)
+    {
+        det_client_close(cid);
+        return -3; // connect issue
+    }
+    while (!c->connected && !c->closed && (int32_t)(deadline - detws_millis()) > 0)
+        delay(5);
+    if (!c->connected)
+    {
+        det_client_close(cid);
+        return -4; // connect timeout / refused
+    }
+    return cid;
+}
+
+bool det_client_connected(int cid)
+{
+    return cid >= 0 && cid < DETWS_CLIENT_CONNS && s_cc[cid].in_use && s_cc[cid].connected && !s_cc[cid].closed;
+}
+
+bool det_client_is_closed(int cid)
+{
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
+        return true;
+    return s_cc[cid].closed;
+}
+
+bool det_client_send(int cid, const void *data, size_t len)
+{
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_cc[cid].in_use)
+        return false;
+    CcSendCall k;
+    memset(&k, 0, sizeof(k));
+    k.c = &s_cc[cid];
+    k.data = data;
+    k.len = (u16_t)(len > 0xFFFF ? 0xFFFF : len);
+    tcpip_api_call(cc_do_send, &k.base);
+    return k.result == ERR_OK;
+}
+
+size_t det_client_available(int cid)
+{
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
+        return 0;
+    ClientConn *c = &s_cc[cid];
+    return (c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF;
+}
+
+size_t det_client_read(int cid, uint8_t *buf, size_t cap)
+{
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
+        return 0;
+    ClientConn *c = &s_cc[cid];
+    size_t n = 0;
+    while (n < cap)
+    {
+        if (((c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF) == 0)
+            break;
+        buf[n++] = c->rx[c->tail];
+        c->tail = (c->tail + 1) % DETWS_CLIENT_RX_BUF;
+    }
+    return n;
+}
+
+void det_client_close(int cid)
+{
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_cc[cid].in_use)
+        return;
+    CcSendCall k;
+    memset(&k, 0, sizeof(k));
+    k.c = &s_cc[cid];
+    tcpip_api_call(cc_do_close, &k.base);
+    s_cc[cid].in_use = false;
+}
+
+#else // !ARDUINO - host stub (the clients are ARDUINO-only; host builds no-op)
+
+int det_client_open(const char *, uint16_t, uint32_t)
+{
+    return -1;
+}
+bool det_client_connected(int)
+{
+    return false;
+}
+bool det_client_is_closed(int)
+{
+    return true;
+}
+bool det_client_send(int, const void *, size_t)
+{
+    return false;
+}
+size_t det_client_available(int)
+{
+    return 0;
+}
+size_t det_client_read(int, uint8_t *, size_t)
+{
+    return 0;
+}
+void det_client_close(int)
+{
+}
+
+#endif // ARDUINO
