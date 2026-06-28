@@ -1,0 +1,134 @@
+# 28.CoapBlock - CoAP block-wise transfer (large responses and uploads)
+
+**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_COAP`, `DETWS_ENABLE_COAP_BLOCK`, `DETWS_COAP_MAX_PAYLOAD`
+
+## What this example teaches
+
+A single CoAP message has to fit in one datagram, which is small. Block-wise
+transfer (RFC 7959) pages a large representation across many messages, in both
+directions. Two resources show each direction, building on the plain CoAP server
+in [13.CoAP](../13.CoAP):
+
+- **GET /big** returns a representation larger than one datagram. A client pages it
+  with the Block2 option, one block at a time; a whole-datagram client still gets
+  it inline.
+- **PUT /upload** accepts a payload uploaded with the Block1 option. Each non-final
+  block is acknowledged `2.31 Continue`; the final block delivers the whole
+  reassembled payload to the handler in one call.
+
+**The handlers are ordinary - the library does the slicing/reassembly.** `h_big`
+just fills the full representation; the library carves it into blocks per the
+client's Block2 size:
+
+```cpp
+void h_big(const CoapRequest *req, CoapResponse *resp) {
+    const size_t n = 512;
+    for (size_t i = 0; i < n && i < resp->payload_cap; i++)
+        resp->payload[i] = (uint8_t)('0' + (int)(i % 10));
+    resp->payload_len = (n < resp->payload_cap) ? n : resp->payload_cap;
+    resp->content_format = COAP_CF_TEXT;
+    resp->code = COAP_RSP_CONTENT;
+}
+```
+
+`h_upload` is called **once**, with the complete reassembled payload:
+
+```cpp
+void h_upload(const CoapRequest *req, CoapResponse *resp) {
+    uint32_t sum = 0;
+    for (size_t i = 0; i < req->payload_len; i++) sum += req->payload[i];
+    Serial.printf("upload: %u bytes, checksum=%lu\n", (unsigned)req->payload_len, (unsigned long)sum);
+    resp->payload_len = 0; resp->code = COAP_RSP_CHANGED;
+}
+```
+
+`DETWS_COAP_MAX_PAYLOAD` sizes the static reassembly buffer; set it to the largest
+representation/upload you need (here 1024).
+
+## Build and run
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_MAX_PAYLOAD=1024" \
+  --lib="." examples/L7-Application/28.CoapBlock/28.CoapBlock.ino
+```
+
+```sh
+coap-client -m get -b 64 coap://<ip>/big              # libcoap, -b = block size
+coap-client -m put -b 64 -f firmware.bin coap://<ip>/upload
+```
+
+## Annotated source
+
+The complete sketch ([28.CoapBlock.ino](28.CoapBlock.ino)), reproduced verbatim
+with added explanatory comments:
+
+```cpp
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+#define DETWS_ENABLE_COAP 1
+#define DETWS_ENABLE_COAP_BLOCK 1
+#define DETWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical/physical.h"
+#include "services/coap/coap.h"
+#include <WiFi.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+
+// GET /big: render a 512-byte representation. The library slices it into blocks
+// for any client that asks (Block2); a whole-datagram client still gets it inline.
+void h_big(const CoapRequest *req, CoapResponse *resp)
+{
+    (void)req;
+    const size_t n = 512;
+    for (size_t i = 0; i < n && i < resp->payload_cap; i++)
+        resp->payload[i] = (uint8_t)('0' + (int)(i % 10)); // "0123456789012..."
+    resp->payload_len = (n < resp->payload_cap) ? n : resp->payload_cap;
+    resp->content_format = COAP_CF_TEXT;
+    resp->code = COAP_RSP_CONTENT;
+}
+
+// PUT /upload: the library reassembles a block-wise upload and calls this once,
+// with the complete payload. Summarize it (length + byte sum) over Serial.
+void h_upload(const CoapRequest *req, CoapResponse *resp)
+{
+    uint32_t sum = 0;
+    for (size_t i = 0; i < req->payload_len; i++)
+        sum += req->payload[i];
+    Serial.printf("upload: %u bytes, checksum=%lu\n", (unsigned)req->payload_len, (unsigned long)sum);
+    resp->payload_len = 0;
+    resp->code = COAP_RSP_CHANGED;
+}
+
+void setup()
+{
+    Serial.begin(115200);
+
+    init_wifi_physical(SSID, PASSWORD);
+    Serial.print("Connecting to WiFi");
+    while (!wifi_ready())
+    {
+        delay(250);
+        Serial.print('.');
+    }
+    Serial.print("\nIP: ");
+    Serial.println(WiFi.localIP());
+    WiFi.setSleep(false);
+
+    coap_server_init();
+    coap_server_add_resource("/big", COAP_ALLOW_GET, h_big);
+    coap_server_add_resource("/upload", COAP_ALLOW_PUT, h_upload);
+    coap_server_begin_udp(5683);
+    Serial.println("CoAP server on :5683");
+    Serial.println("  GET coap://<ip>/big      (block-wise responses)");
+    Serial.println("  PUT coap://<ip>/upload   (block-wise uploads)");
+}
+
+void loop()
+{
+}
+```
