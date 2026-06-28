@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [3.9.4] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.4 - 2026-06-28</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`1f12c61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f12c61f41ec8cf719e1e152c5c54a0e22ef18a8))
+- update CHANGELOG.md [skip ci] ([`710813e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/710813ef979be7c8084c57ceef01302ecd7f9fbe))
 - update test report [skip ci] ([`f46099e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f46099e8884ed885d62501b2951b2a9b2ef23f83))
 - update CHANGELOG.md [skip ci] ([`7ce182f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ce182fa7f0dccb70336f3c4f3af4459fee0bf52))
 - pin Prettier to 3.9.1 and reformat all markdown to match ([`5a7716f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a7716fea6fdd2fe24dc7fe1dee64d8c2a4732c1))
@@ -20,13 +25,28 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report [skip ci] ([`123d67c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/123d67c499eeefcafcab888bcf0d6894f840159c))
 - update CHANGELOG.md [skip ci] ([`dad72c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dad72c0d27950b29f2e7378b72145c39c4502386))
 
+### Changes
+
+- Bump version: 3.9.3 → 3.9.4 ([`d0fd5f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0fd5f572cb743d75d3b9785cfd1e3f26b8e8cd3))
+
 ### Documentation
 
+- add annotated READMEs for L7 50-56 (Oidc, Vfs, GraphQL, EspNow, OAuth2, OpcUa, OpcUaClient) ([`3e33dd1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e33dd141e44f4bad71d15343ef6497da658c5d1))
+- add annotated READMEs for L7 45-49 (Totp, Webhook, RadioPower, DnsResolver, AuditLog) ([`deb0575`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/deb05759a4158eaad31c6fa66559294db5ac6b6d))
+- add annotated READMEs for L7 40-44 (Guardrails, LogBuffer, ConfigExport, ModbusScan, OtaRollback) ([`32f9c46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32f9c469dd335ca501a0e915f97070370e077091))
+- add annotated READMEs for L7 35-39 (Dashboard, NetEgress, PartitionMonitor, GpioMap, UdpTelemetry) ([`7c5575b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c5575b0d83602182b2b7d2a3680fd1240dacfb9))
+- add annotated READMEs for L7 30-34 (Modbus, TimeFallback, DeviceUuid, Csrf, Telemetry) ([`2495122`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/249512288df3e230018a55d64ee79df7d3d6ef10))
+- add annotated READMEs for L7 25-29 (WsClient, SnmpTrap, CoapObserve, CoapBlock, WebDav) ([`7306282`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7306282ed3b64a17b45d491874d4130a4893411d))
+- add annotated READMEs for L7 20-24 (Diagnostics, Prometheus, Stats, HttpClient, MqttClient) ([`78d37fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78d37fddfba81c7073f213801c60f818bfec8a88))
+- add annotated READMEs for L7 15-19 (mDNS, OTA, Provisioning, SNTP, Syslog) ([`040d550`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/040d550744ea18ea5b6de91a12904285a67ce373))
+- add annotated READMEs for L7 11-14 (Upload, Range, CoAP, SNMP) ([`9d5d4db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d5d4db8e12a0d039871b6fd9a4924ba6fc12462))
 - per-example READMEs for L7-Application 01-10 ([`abe7ab5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abe7ab54ef2dfa229ca3ee7a173459800e4f7f58))
 - add per-example READMEs for the L6-Presentation layer ([`cb80a34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb80a34ea683dd13ab498caf5a79e7507b3fad61))
 - per-example READMEs for L4-Transport; make EXAMPLES.md links-only ([`af42b21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af42b2127dcbc9c1d25639af3a909ab50332b8d8))
 - add per-example READMEs for the L5-Session layer ([`b87472d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b87472d361b9bb3406c1e500aaf5fb32efa9daab))
 - add per-example READMEs (Foundation layer) and the examples index ([`fa55d2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa55d2c718f186390f003de0d856e61416eb80fe))
+
+</details>
 
 ## [3.9.3] - 2026-06-28
 
