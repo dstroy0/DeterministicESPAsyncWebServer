@@ -260,7 +260,7 @@ OpenID Connect ID-token verification, RS256. Default off. services/oidc verifies
 
 `DETWS_ENABLE_OPCUA`
 
-OPC UA Binary server. Default off. services/opcua provides the OPC UA (IEC 62541) foundation: the little-endian Binary built-in-type codec (incl. NodeId / ExtensionObject / DateTime / Variant / DataValue), UA-TCP (UACP) message framing, the Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel, SecurityPolicy None), the Session (CreateSession + ActivateSession), and the Read service (a registered resolver maps a NodeId to a value), served on TCP via PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). All of it is pure and host-tested. Browse and the Close calls are later increments. No heap, no stdlib.
+OPC UA Binary server. Default off. services/opcua provides an OPC UA (IEC 62541) Binary server: the little-endian built-in-type codec (incl. NodeId / ExtensionObject / DateTime / Variant / DataValue / ReferenceDescription), UA-TCP (UACP) message framing, the Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel, SecurityPolicy None), the Session (CreateSession + ActivateSession), the Read service and the Browse service (registered resolvers map a NodeId to a value / child references), plus CloseSession + CloseSecureChannel, served on TCP via PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). All of it is pure and host-tested. No heap, no stdlib.
 
 ## OTA
 
