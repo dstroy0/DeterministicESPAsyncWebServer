@@ -2,15 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.8.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.8.0 - 2026-06-28</b></summary>
+
+### Bug Fixes
+
+- ack-on-consume on the outbound transport (det_client) ([`93e2b4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93e2b4e3d789746c5f55a939d33cb4bd424584ed))
 
 ### CI / Build
 
+- update test report [skip ci] ([`bc3daac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc3daaca507f1e5a533709f2577e5ae82825887d))
+- update CHANGELOG.md [skip ci] ([`d76c88d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d76c88df335f5d0121c198623a4c8c6b8ef26308))
 - update CHANGELOG.md [skip ci] ([`d3fe1db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3fe1db67101a89ca95745af66defdb29ee31c3d))
+
+### Changes
+
+- Bump version: 4.7.0 → 4.8.0 ([`94159c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94159c27869adb573656ee9f1d791e3232efee9c))
 
 ### Documentation
 
 - close internal-piping Phase 4 (client buffers documented) ([`2d98be1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2d98be104957263cca3c3e719078c3f0c0d4e137))
+
+</details>
 
 ## [4.7.0] - 2026-06-28
 
