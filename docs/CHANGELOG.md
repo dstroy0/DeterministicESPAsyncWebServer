@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.9.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.9.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`cc7e80e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc7e80e175b941f34af33935cfa5fd9806fbf026))
+- update CHANGELOG.md [skip ci] ([`6ce81ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ce81ecb36cf893450e69bf3d141679aacfbed39))
+
+### Changes
+
+- Bump version: 4.8.2 → 4.9.0 ([`5beca83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5beca83fd244cd5e409cf073cdebfecf3eef0303))
+
+### Features
+
+- Last-Modified + If-Modified-Since conditional GET on served files ([`9a88341`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a883418fdc8f4b79f9746ff9691d71205e004d4))
+
+</details>
+
 ## [4.8.2] - 2026-06-28
 
 <details>
