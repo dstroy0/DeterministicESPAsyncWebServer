@@ -5,12 +5,12 @@
  * @file sse.h
  * @brief Layer 6 (Presentation) -- Server-Sent Events connection pool.
  *
- * SSE (RFC 8895 / W3C EventSource) is a long-lived HTTP GET response with
- * Content-Type: text/event-stream.  After the initial headers the connection
- * stays open indefinitely; the server pushes newline-delimited event records
- * at any time.
+ * SSE (WHATWG HTML Living Standard, Server-sent events; the W3C EventSource
+ * API) is a long-lived HTTP GET response with Content-Type: text/event-stream.
+ * After the initial headers the connection stays open indefinitely; the server
+ * pushes newline-delimited event records at any time.
  *
- * **Event record format (RFC 8895 §9.2.6)**
+ * **Event record format** (WHATWG HTML, Server-sent events)
  * ```
  * [event: <name>\n]
  * [id: <id>\n]

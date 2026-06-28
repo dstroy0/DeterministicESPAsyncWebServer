@@ -69,11 +69,15 @@ bool detws_espnow_decode(const uint8_t *buf, size_t len, uint8_t *type, const ui
 // Host-testable core: bounded peer registry
 // ---------------------------------------------------------------------------
 
+/** @brief Forget all registered peers. */
 void detws_espnow_peers_reset(void);
 /** @brief Register @p mac (idempotent). @return false if the table is full. */
 bool detws_espnow_peer_add(const uint8_t mac[6]);
+/** @brief @return true if @p mac is in the peer registry. */
 bool detws_espnow_peer_has(const uint8_t mac[6]);
+/** @brief Remove @p mac from the registry. @return true if it was present. */
 bool detws_espnow_peer_remove(const uint8_t mac[6]);
+/** @brief @return the number of registered peers. */
 int detws_espnow_peer_count(void);
 
 // ---------------------------------------------------------------------------

@@ -44,6 +44,10 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 
 /**
  * @brief Load stored WiFi credentials from NVS.
+ * @param ssid      Destination for the stored SSID (always null-terminated).
+ * @param ssid_cap  Capacity of @p ssid.
+ * @param psk       Destination for the stored passphrase (always null-terminated).
+ * @param psk_cap   Capacity of @p psk.
  * @return true if a non-empty SSID is stored (the app should connect in STA mode).
  */
 bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap);

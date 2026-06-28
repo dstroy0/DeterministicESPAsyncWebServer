@@ -91,13 +91,21 @@ void detws_vfs_ram_format(void);
 // Unified API - dispatches to the mounted backend (fails closed if unmounted).
 // ---------------------------------------------------------------------------
 
+/** @brief Open @p path with @p mode (DetwsVfsMode). @return a handle (>= 0), or -1 on error. */
 int detws_vfs_open(const char *path, int mode);
+/** @brief Read up to @p n bytes from @p handle into @p buf. @return bytes read, or -1. */
 int detws_vfs_read(int handle, void *buf, size_t n);
+/** @brief Write @p n bytes from @p buf to @p handle. @return bytes written, or -1. */
 int detws_vfs_write(int handle, const void *buf, size_t n);
+/** @brief Close the open @p handle. */
 void detws_vfs_close(int handle);
+/** @brief Size of the file at @p path. @return the size in bytes, or -1 if absent. */
 long detws_vfs_size(const char *path);
+/** @brief @return true if @p path exists. */
 bool detws_vfs_exists(const char *path);
+/** @brief Delete @p path. @return true on success. */
 bool detws_vfs_remove(const char *path);
+/** @brief Rename @p from to @p to. @return true on success. */
 bool detws_vfs_rename(const char *from, const char *to);
 
 /**
