@@ -11,10 +11,11 @@
  *
  * **Ring buffer write ordering**
  * The producer (recv callback) writes payload bytes into `rx_buffer[]` and
- * then advances `rx_head`.  The consumer (main loop) reads from `rx_buffer[]`
- * at `rx_tail` and advances `rx_tail`.  Because Xtensa LX7 stores are
- * in-order and `rx_head`/`rx_tail` are `volatile`, no memory barriers are
- * needed beyond the `volatile` annotation.
+ * then advances `rx_head`.  The consumer (worker) reads from `rx_buffer[]` at
+ * `rx_tail` and advances `rx_tail`.  `rx_head`/`rx_tail` are `DetAtomic`
+ * (acquire/release): the producer's buffer writes are published by the release
+ * store of `rx_head` and observed by the consumer's acquire load, correct on
+ * either core. The ring math itself is the shared `det_ring.h` primitive.
  *
  * **Listener coupling**
  * Each TcpConn carries `listener_id` (set at accept time by listener_accept_cb
@@ -645,9 +646,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
      * (TCP_MSS) so a full segment can eventually fit; smaller rings only ever see
      * sub-MSS requests, which always fit.
      */
-    size_t used = (slot->rx_head + RX_BUF_SIZE - slot->rx_tail) % RX_BUF_SIZE;
-    size_t free_space = (RX_BUF_SIZE - 1) - used; // keep one slot to tell full from empty
-    if (p->tot_len > free_space)
+    if (p->tot_len > det_ring_free(slot->rx_head, slot->rx_tail, RX_BUF_SIZE))
     {
         DETWS_OBS_NOTICE(slot->id, CONN_ACTIVE, DET_CONN_R_BACKPRESSURE);
         TcpEvt evt = {EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
@@ -655,32 +654,15 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
     }
 
-    // Bulk-copy the segment into the ring with a single head publish. This runs on
-    // the tcpip thread (shared with WiFi on Core 0), so it stays lean: a contiguous
-    // memcpy per pbuf (two across the wrap) instead of a per-byte loop, and the head
-    // is an SPSC release point - we advance a local copy through the segment and
-    // store rx_head once at the end (one release store publishes every byte), rather
-    // than a release store per byte. The free-space check above guarantees the whole
-    // segment fits, so head can never overrun tail here.
+    // Bulk-copy the segment into the ring via the shared producer primitive: a
+    // contiguous memcpy per pbuf (two across the wrap), advancing a LOCAL head and
+    // publishing rx_head once at the end (one release store for the whole segment).
+    // The free-space check above guarantees it fits, so head can never overrun tail.
     size_t head = slot->rx_head; // sole producer of head; one acquire load
-    size_t bytes_copied = 0;
     for (struct pbuf *q = p; q != nullptr; q = q->next)
-    {
-        const uint8_t *payload = (const uint8_t *)q->payload;
-        u16_t remaining = q->len;
-        while (remaining > 0)
-        {
-            size_t chunk = RX_BUF_SIZE - head; // bytes until the buffer end (wrap point)
-            if (chunk > remaining)
-                chunk = remaining;
-            memcpy(&slot->rx_buffer[head], payload, chunk);
-            head = (head + chunk) % RX_BUF_SIZE; // wraps at most once per pbuf
-            payload += chunk;
-            remaining -= (u16_t)chunk;
-            bytes_copied += chunk;
-        }
-    }
-    slot->rx_head = head; // single release store: publishes the whole segment at once
+        head = det_ring_write_span(slot->rx_buffer, RX_BUF_SIZE, head, (const uint8_t *)q->payload, q->len);
+    slot->rx_head = head;             // single release store: publishes the whole segment at once
+    size_t bytes_copied = p->tot_len; // the whole segment fit (checked above)
 
     // Do NOT tcp_recved() here: the window is reopened by det_conn_ack_consumed()
     // as the worker drains the ring (ack-on-consume), so the advertised window

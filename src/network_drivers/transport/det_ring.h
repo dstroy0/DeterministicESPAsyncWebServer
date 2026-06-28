@@ -22,6 +22,7 @@
 #include <atomic>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h> // memcpy (producer span copy)
 
 // ---------------------------------------------------------------------------
 // Cross-thread field wrapper
@@ -120,6 +121,42 @@ static inline void det_ring_peek(const uint8_t *buf, size_t cap, const DetAtomic
 static inline void det_ring_consume(DetAtomic<size_t> &tail, size_t cap, size_t n)
 {
     tail = ((size_t)tail + n) % cap;
+}
+
+// ---------------------------------------------------------------------------
+// SPSC ring fill (producer side)
+// ---------------------------------------------------------------------------
+// The producer owns `head`. The recv callback checks det_ring_free() against the
+// whole inbound segment (refuse it for lossless backpressure if it will not fit),
+// then copies each source span with det_ring_write_span() advancing a LOCAL head,
+// and publishes that head once at the end (one release store, not per byte).
+
+/** @brief Free space to write: (cap-1) - used, one slot reserved to tell full from empty. */
+static inline size_t det_ring_free(const DetAtomic<size_t> &head, const DetAtomic<size_t> &tail, size_t cap)
+{
+    size_t used = ((size_t)head + cap - (size_t)tail) % cap;
+    return (cap - 1) - used;
+}
+
+/**
+ * @brief Copy @p len bytes from @p src into @p buf at local index @p head, wrap-aware
+ * (a contiguous memcpy, at most two spans across the wrap), returning the advanced
+ * local head. Caller checks det_ring_free() first and publishes the returned head
+ * once. Bulk memcpy, not a per-byte loop.
+ */
+static inline size_t det_ring_write_span(uint8_t *buf, size_t cap, size_t head, const uint8_t *src, size_t len)
+{
+    while (len > 0)
+    {
+        size_t chunk = cap - head; // bytes until the buffer end (wrap point)
+        if (chunk > len)
+            chunk = len;
+        memcpy(&buf[head], src, chunk);
+        head = (head + chunk) % cap;
+        src += chunk;
+        len -= chunk;
+    }
+    return head;
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_RING_H

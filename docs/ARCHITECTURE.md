@@ -102,12 +102,15 @@ buffer** (post-decrypt for TLS, the assembly buffer the protocol parser reads),
 owned solely by that module - the client mirror of the server's `http body[]` vs the
 `conn_pool` wire ring. Not cross-layer, correct as-is.
 
-Both transports now drain through ONE shared primitive: `det_ring.h` (the `DetAtomic`
-SPSC index wrapper + the `det_ring_available / read_byte / read / peek / consume`
-math). `det_conn_*` (server) and `det_client_*` (client) are thin wrappers over it,
-so the ring invariants live in a single place and no consumer can reimplement the
-wrap/ordering by hand. The client ring's indices were `volatile`; they are now
-`DetAtomic` like the server, giving correct cross-core acquire/release ordering.
+Both transports use ONE shared primitive for the whole ring: `det_ring.h` (the
+`DetAtomic` SPSC index wrapper + the drain math `det_ring_available / read_byte /
+read / peek / consume` AND the fill math `det_ring_free / det_ring_write_span`). The
+server (`det_conn_*` + `recv_cb`) and client (`det_client_*` + `cc_recv`) are thin
+wrappers over it, so the ring invariants - wrap, ordering, lossless backpressure -
+live in a single place and no layer reimplements them by hand. Both recv callbacks
+bulk-memcpy each pbuf span and publish `head` once. The client ring's indices were
+`volatile`; they are now `DetAtomic` like the server (correct cross-core
+acquire/release ordering).
 
 ## Streaming-body hooks - slot-aware
 

@@ -56,23 +56,15 @@ static err_t cc_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
         c->closed = true; // peer closed
         return ERR_OK;
     }
-    // Wire bytes -> ring with lossless backpressure: if the whole segment will not
-    // fit the free space, refuse it (lwIP retains + redelivers).
+    // Wire bytes -> ring via the shared producer primitive (same as the server): if
+    // the whole segment will not fit, refuse it (lwIP retains + redelivers); else
+    // bulk-memcpy each pbuf span and publish head once.
     (void)tpcb;
-    size_t used = (c->head + DETWS_CLIENT_RX_BUF - c->tail) % DETWS_CLIENT_RX_BUF;
-    size_t freesp = (DETWS_CLIENT_RX_BUF - 1) - used;
-    if (p->tot_len > freesp)
+    if (p->tot_len > det_ring_free(c->head, c->tail, DETWS_CLIENT_RX_BUF))
         return ERR_MEM;
     size_t h = c->head; // sole producer of head; advance a local and publish once
     for (struct pbuf *q = p; q; q = q->next)
-    {
-        const uint8_t *d = (const uint8_t *)q->payload;
-        for (u16_t i = 0; i < q->len; i++)
-        {
-            c->rx[h] = d[i];
-            h = (h + 1) % DETWS_CLIENT_RX_BUF;
-        }
-    }
+        h = det_ring_write_span(c->rx, DETWS_CLIENT_RX_BUF, h, (const uint8_t *)q->payload, q->len);
     c->head = h; // single release store publishes the whole segment
     // Do NOT tcp_recved() here. The window is reopened by det_client_read() as the
     // caller drains (ack-on-consume), so it tracks ring occupancy and the peer can
