@@ -66,6 +66,9 @@ size_t opcua_client_hello(const char *endpoint_url, uint8_t *out, size_t cap);
 /** @brief Build an `OPN` OpenSecureChannelRequest (Issue, SecurityPolicy None). */
 size_t opcua_client_open(OpcUaClient *c, uint8_t *out, size_t cap);
 
+/** @brief Build a `MSG` GetEndpointsRequest (no session needed). */
+size_t opcua_client_get_endpoints(OpcUaClient *c, const char *endpoint_url, uint8_t *out, size_t cap);
+
 /** @brief Build a `MSG` CreateSessionRequest. */
 size_t opcua_client_create_session(OpcUaClient *c, const char *session_name, const char *endpoint_url, uint8_t *out,
                                    size_t cap);
@@ -103,6 +106,9 @@ bool opcua_client_on_ack(const uint8_t *msg, size_t len, OpcUaAckInfo *out);
 
 /** @brief Parse an `OPN` OpenSecureChannelResponse; sets channel_id + token_id. @return true if Good. */
 bool opcua_client_on_open(OpcUaClient *c, const uint8_t *msg, size_t len);
+
+/** @brief Parse a GetEndpointsResponse. @return the advertised endpoint count, or -1 on error. */
+int32_t opcua_client_on_get_endpoints(const uint8_t *msg, size_t len);
 
 /** @brief Parse a CreateSessionResponse; stores the session AuthenticationToken. @return true if Good. */
 bool opcua_client_on_create_session(OpcUaClient *c, const uint8_t *msg, size_t len);

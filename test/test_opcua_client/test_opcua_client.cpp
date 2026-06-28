@@ -100,8 +100,9 @@ void test_session_roundtrip()
     TEST_ASSERT_TRUE(opcua_parse_msg(req, rn, &m));
     TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_CREATE_SESSION_REQ, m.type_id);
 
-    uint8_t resp[256];
-    size_t sn = opcua_build_create_session_response(&m, 0x500, 0x600, 1200000.0, 1, 0, resp, sizeof(resp));
+    uint8_t resp[512];
+    OpcUaServerInfo si = {"opc.tcp://host:4840", "urn:test", "TestServer"};
+    size_t sn = opcua_build_create_session_response(&m, 0x500, 0x600, 1200000.0, &si, 1, 0, resp, sizeof(resp));
     TEST_ASSERT_TRUE(sn > 0);
     TEST_ASSERT_TRUE(opcua_client_on_create_session(&c, resp, sn));
     TEST_ASSERT_EQUAL_UINT32(0x600, c.session_auth_id); // AuthenticationToken captured
@@ -188,6 +189,46 @@ void test_browse_roundtrip()
     TEST_ASSERT_EQUAL_UINT32(2, refs[1].target_id);
 }
 
+void test_get_endpoints_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88;
+
+    uint8_t req[256];
+    size_t rn = opcua_client_get_endpoints(&c, "opc.tcp://host:4840", req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(req, rn, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_GET_ENDPOINTS_REQ, m.type_id);
+
+    OpcUaServerInfo si = {"opc.tcp://host:4840", "urn:test", "TestServer"};
+    uint8_t resp[512];
+    size_t sn = opcua_build_get_endpoints_response(&m, &si, 7, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    int32_t ep = opcua_client_on_get_endpoints(resp, sn);
+    TEST_ASSERT_EQUAL_INT32(1, ep);
+}
+
+void test_service_fault_rejected_by_parsers()
+{
+    // An unknown service draws a ServiceFault; a typed parser must reject it (wrong TypeId).
+    OpcUaMsg m;
+    memset(&m, 0, sizeof(m));
+    m.token_id = 88;
+    m.request_id = 9;
+    m.request_handle = 3;
+    uint8_t resp[64];
+    size_t sn = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaVariant vals[1];
+    uint32_t sts[1];
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn, vals, sts, 1));
+    TEST_ASSERT_FALSE(opcua_client_on_activate_session(resp, sn));
+}
+
 void test_close_session_roundtrip()
 {
     OpcUaClient c;
@@ -237,6 +278,8 @@ int main()
     RUN_TEST(test_hello_ack_roundtrip);
     RUN_TEST(test_open_roundtrip);
     RUN_TEST(test_session_roundtrip);
+    RUN_TEST(test_get_endpoints_roundtrip);
+    RUN_TEST(test_service_fault_rejected_by_parsers);
     RUN_TEST(test_read_roundtrip);
     RUN_TEST(test_browse_roundtrip);
     RUN_TEST(test_close_session_roundtrip);
