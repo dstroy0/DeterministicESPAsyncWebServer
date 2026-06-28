@@ -126,14 +126,21 @@
 #endif
 
 /**
- * @brief Worker poll cadence in FreeRTOS ticks between service iterations.
+ * @brief Idle-sweep timeout, in FreeRTOS ticks, that a worker blocks between
+ *        service iterations when no events are pending.
  *
- * Default 1 = the 1000 Hz cadence the test suite asserts (1 tick at the Arduino
- * 1 kHz FreeRTOS config). This is a deliberate compile-time-only knob: raise it to
- * trade latency for lower idle CPU/power on a battery device (e.g. 10 -> ~100 Hz),
- * accepting that a non-default value runs off the tested-deterministic path. The
- * internal time base stays 1000 Hz regardless (see services/det_clock.h); this
- * only changes how often the worker wakes to service connections.
+ * The worker no longer free-runs a poll: it blocks on a task notification and a
+ * producer (a new connection event or a deferred submission) wakes it the moment
+ * work arrives, so event latency is independent of this value. The block still
+ * times out after this many ticks so the idle timeout sweep (check_timeouts) keeps
+ * reaping stale connections when nothing is in flight.
+ *
+ * Default 1 (1 tick at the Arduino 1 kHz FreeRTOS config) preserves the original
+ * idle cadence byte-for-byte. Because events now wake the worker immediately,
+ * raising it lowers idle wakeups (CPU/power on a battery device) WITHOUT the
+ * latency penalty the old poll-based knob carried - e.g. 100 -> a ~10 Hz idle
+ * sweep, still far below any connection timeout. The internal time base stays
+ * 1000 Hz regardless (see services/det_clock.h).
  */
 #ifndef DETWS_WORKER_POLL_TICKS
 #define DETWS_WORKER_POLL_TICKS 1

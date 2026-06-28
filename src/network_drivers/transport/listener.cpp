@@ -23,8 +23,9 @@
 #include "lwip/tcp.h"
 #include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
 #ifdef ARDUINO
-#include "lwip/def.h"     // lwip_ntohl - allowlist host-order conversion
-#include "lwip/ip_addr.h" // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
+#include "lwip/def.h"                       // lwip_ntohl - allowlist host-order conversion
+#include "lwip/ip_addr.h"                   // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
+#include "network_drivers/session/worker.h" // detws_worker_wake() - nudge the owning worker task
 #endif
 #include "services/det_clock.h" // detws_millis() pluggable monotonic clock (host-safe)
 #include <Arduino.h>
@@ -219,15 +220,24 @@ bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
     uint8_t owner = conn_pool[evt->slot_id].owner;
     if (owner >= DETWS_WORKER_COUNT || !s_wq[owner])
         return false;
-    return xQueueSend(s_wq[owner], evt, 0) == pdTRUE;
+    if (xQueueSend(s_wq[owner], evt, 0) != pdTRUE)
+        return false;
+#ifdef ARDUINO
+    detws_worker_wake(owner); // nudge the owning worker so it services this now
+#endif
 #else
     if (listener_id >= MAX_LISTENERS)
         return false;
     Listener *lst = &listener_pool[listener_id];
     if (!lst->active || !lst->queue)
         return false;
-    return xQueueSend(lst->queue, evt, 0) == pdTRUE;
+    if (xQueueSend(lst->queue, evt, 0) != pdTRUE)
+        return false;
+#ifdef ARDUINO
+    detws_worker_wake(0); // single worker owns every slot - nudge it now
 #endif
+#endif
+    return true;
 }
 
 /**

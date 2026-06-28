@@ -51,8 +51,14 @@ detws_worker_pump_fn s_pump = nullptr;
 TaskHandle_t s_tasks[DETWS_WORKER_COUNT] = {nullptr};
 std::atomic<bool> s_run{false}; // release on start publishes s_pump; acquire in the task
 
-// Each worker binds its id, then pumps until asked to stop. A 1-tick yield keeps
-// the lower-priority idle/loop tasks alive without adding latency past one tick.
+// Each worker binds its id, then pumps until asked to stop. Between iterations it
+// blocks on its task notification instead of free-running the poll: a producer
+// (listener_enqueue, detws_defer) nudges it the moment work arrives, so events are
+// serviced immediately rather than on the next tick. The block still times out
+// after DETWS_WORKER_POLL_TICKS so the idle timeout sweep (check_timeouts) keeps
+// reaping stale connections with no events in flight; raising that knob now lowers
+// idle wakeups without costing event latency. A nudge that races the pump is
+// latched in the notify count, so ulTaskNotifyTake returns at once - no lost wake.
 void worker_task(void *arg)
 {
     int id = (int)(intptr_t)arg;
@@ -61,7 +67,7 @@ void worker_task(void *arg)
     {
         if (s_pump)
             s_pump(id);
-        vTaskDelay(DETWS_WORKER_POLL_TICKS); // default 1 = 1000 Hz (tested cadence)
+        ulTaskNotifyTake(pdTRUE, DETWS_WORKER_POLL_TICKS); // wake on event, else idle-sweep timeout
     }
     s_tasks[id] = nullptr;
     vTaskDelete(nullptr);
@@ -106,7 +112,19 @@ bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg)
     if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_dq[worker_id])
         return false;
     DeferCmd cmd = {fn, arg};
-    return xQueueSend(s_dq[worker_id], &cmd, 0) == pdTRUE;
+    if (xQueueSend(s_dq[worker_id], &cmd, 0) != pdTRUE)
+        return false;
+    detws_worker_wake(worker_id); // run the callback now, not on the next idle sweep
+    return true;
+}
+
+void detws_worker_wake(int worker_id)
+{
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT)
+        return;
+    TaskHandle_t t = s_tasks[worker_id];
+    if (t)
+        xTaskNotifyGive(t);
 }
 
 void detws_worker_run_deferred(int worker_id)
@@ -146,6 +164,9 @@ bool detws_workers_running(void)
 {
     return false;
 }
+void detws_worker_wake(int)
+{
+} // no worker task on host - nothing to wake
 
 // No worker task on host: the caller and the pipeline are the same thread, so a
 // deferred callback can run inline immediately (same observable effect, race-free).

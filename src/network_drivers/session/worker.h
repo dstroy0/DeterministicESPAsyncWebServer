@@ -52,6 +52,19 @@ typedef void (*detws_worker_pump_fn)(int worker_id);
 /** @brief Spawn the worker task(s) and start them running @p pump. No-op on host. */
 void detws_workers_start(detws_worker_pump_fn pump);
 
+/**
+ * @brief Wake worker @p worker_id so it services a freshly-queued event now.
+ *
+ * Each worker blocks between service iterations (it no longer free-runs the poll),
+ * so a producer that posts to a worker's event/defer queue must nudge it. This is
+ * a FreeRTOS task notification (no allocation, task- and tcpip-thread safe); a
+ * nudge that lands between the worker's pump and its block is latched in the
+ * notification count, so the next block returns at once and no event is missed.
+ * No-op on host (no worker task; the pipeline runs inline). Safe to call with an
+ * out-of-range id or before the task exists.
+ */
+void detws_worker_wake(int worker_id);
+
 /** @brief Signal the worker task(s) to exit and wait briefly for them. No-op on host. */
 void detws_workers_stop(void);
 
