@@ -245,10 +245,12 @@
 #endif
 
 /**
- * @brief Stack scratch buffer for ChunkedResponse::printf() (see send_chunked()).
+ * @brief Per-chunk staging buffer for send_chunked()'s ChunkSource (max bytes a
+ *        source produces per call, hence the largest single chunk on the wire).
  *
- * One formatted chunk must fit in this many bytes (longer output is truncated).
- * Allocated on the stack only while printf() runs - no persistent RAM cost.
+ * Allocated on the worker stack only while a chunk is being framed - no persistent
+ * RAM cost. The pump asks the source for at most this many bytes (or fewer when the
+ * send window is smaller), so it bounds the chunk size, not the total body.
  */
 #ifndef CHUNK_BUF_SIZE
 #define CHUNK_BUF_SIZE 256

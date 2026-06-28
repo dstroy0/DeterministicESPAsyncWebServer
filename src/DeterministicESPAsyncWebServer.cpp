@@ -102,6 +102,19 @@ struct FileSend
 static FileSend g_file_send[MAX_CONNS];
 #endif
 
+// Per-slot chunked-send continuation. Mirrors FileSend but pulls body pieces from
+// a ChunkSource generator and adds the HTTP chunk framing; paged across loops.
+struct ChunkSend
+{
+    ChunkSource source; ///< body generator (active==false means none).
+    void *ctx;          ///< caller state passed to source (must outlive the send).
+    int status;         ///< response status, for note_response.
+    int total;          ///< body bytes emitted so far (excludes framing).
+    bool keep;          ///< keep-alive vs close at completion.
+    bool active;        ///< a chunked response is in progress on this slot.
+};
+static ChunkSend g_chunk_send[MAX_CONNS];
+
 /**
  * @brief Convert an HTTP status code to its standard reason phrase.
  *
@@ -1054,6 +1067,12 @@ void DetWebServer::service_once(int worker_id)
             continue;
         }
 #endif
+        // Likewise a chunked response in flight: pull + frame the next window.
+        if (g_chunk_send[i].active)
+        {
+            chunk_send_pump(i);
+            continue;
+        }
 
 #if DETWS_ENABLE_WEBSOCKET
         // WebSocket slot - drain ring buffer and dispatch ready frames
@@ -1923,50 +1942,16 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 // ---------------------------------------------------------------------------
 // Chunked (streaming) responses
 //
-// Each write emits one HTTP/1.1 chunk - "<hexlen>\r\n<data>\r\n" - straight to
-// the socket (RFC 7230 §4.1). send_chunked() writes the headers, runs the
-// filler, then writes the terminating "0\r\n\r\n". The body is never buffered
-// whole, so a response may be arbitrarily large in constant memory.
+// send_chunked() writes the headers, then pulls the body from a ChunkSource one
+// piece at a time, emitting each as an HTTP/1.1 chunk ("<hexlen>\r\n<data>\r\n",
+// RFC 7230 §4.1) and finally the terminating "0\r\n\r\n". Like the file pump, the
+// body pages across worker loops as the TCP send window drains (chunk_send_pump,
+// resumed by the sent callback), so a response is unbounded in constant memory and
+// never truncated at the window. The source's ctx must outlive the response (see
+// ChunkSource). One chunked response per slot at a time.
 // ---------------------------------------------------------------------------
 
-bool ChunkedResponse::write(const char *s)
-{
-    return write(s, s ? strlen(s) : 0);
-}
-
-bool ChunkedResponse::write(const char *data, size_t len)
-{
-    // A zero-length chunk is the terminator, so never emit one here; HEAD
-    // responses suppress the body entirely.
-    if (!_ok || _head || _pcb == nullptr || data == nullptr || len == 0)
-        return _ok;
-
-    char sz[12];
-    int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)len);
-    det_conn_send(_slot, _pcb, sz, (u16_t)sn);
-    det_conn_send(_slot, _pcb, data, (u16_t)len);
-    det_conn_send(_slot, _pcb, "\r\n", 2);
-    _total += len;
-    return true;
-}
-
-bool ChunkedResponse::printf(const char *fmt, ...)
-{
-    if (!_ok || _head || _pcb == nullptr)
-        return _ok;
-
-    char buf[CHUNK_BUF_SIZE];
-    va_list ap;
-    va_start(ap, fmt);
-    int n = vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-    if (n < 0)
-        return _ok;
-    size_t len = (n < (int)sizeof(buf)) ? (size_t)n : (sizeof(buf) - 1);
-    return write(buf, len);
-}
-
-void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkFiller filler)
+void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkSource source, void *ctx)
 {
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
@@ -1993,21 +1978,76 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
                  code, status_text(code), content_type, _cors_enabled ? _cors_header_buf : "", _extra_hdr[slot_id], cl);
 
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-
-    bool head = req_is_head(slot_id);
-
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
 
-    ChunkedResponse res(slot_id, pcb, head);
-    // HEAD carries the headers (incl. Transfer-Encoding) but no body, so the
-    // filler and terminating chunk are skipped entirely.
-    if (!head && filler)
+    // HEAD carries the headers (incl. Transfer-Encoding) but no body or terminator.
+    if (req_is_head(slot_id) || !source)
     {
-        filler(res, &http_pool[slot_id]);
-        det_conn_send(slot_id, pcb, "0\r\n\r\n", 5);
+        resp_end(slot_id, pcb, code, 0, keep);
+        return;
     }
 
-    resp_end(slot_id, pcb, code, head ? 0 : (int)res.total(), keep);
+    ChunkSend &s = g_chunk_send[slot_id];
+    s.source = source;
+    s.ctx = ctx;
+    s.status = code;
+    s.total = 0;
+    s.keep = keep;
+    s.active = true;
+    chunk_send_pump(slot_id);
+}
+
+// Page a pending chunked response: pull pieces from the source and frame them into
+// the send window each worker loop, resuming on later loops as the window drains.
+void DetWebServer::chunk_send_pump(uint8_t slot_id)
+{
+    ChunkSend &s = g_chunk_send[slot_id];
+    if (!s.active)
+        return;
+
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    {
+        s.active = false; // connection gone mid-stream
+        return;
+    }
+    struct tcp_pcb *pcb = conn->pcb;
+
+    // Reserve room for the largest framing around one CHUNK_BUF_SIZE chunk:
+    // "<hex>\r\n" (size line) + "\r\n" trailer. 12 bytes covers a 4-hex-digit size.
+    const u16_t FRAME = 12;
+    for (;;)
+    {
+        u16_t avail = det_conn_sndbuf(slot_id, pcb);
+        if (avail <= FRAME)
+        {
+            det_conn_flush(slot_id, pcb); // no room for a useful chunk; resume next loop
+            return;
+        }
+        size_t cap = (size_t)(avail - FRAME);
+        if (cap > CHUNK_BUF_SIZE)
+            cap = CHUNK_BUF_SIZE;
+
+        uint8_t buf[CHUNK_BUF_SIZE];
+        size_t n = s.source(buf, cap, s.ctx);
+        if (n == 0)
+        {
+            det_conn_send(slot_id, pcb, "0\r\n\r\n", 5); // terminating chunk
+            det_conn_flush(slot_id, pcb);
+            s.active = false;
+            resp_end(slot_id, pcb, s.status, s.total, s.keep);
+            return;
+        }
+        if (n > cap)
+            n = cap; // defensive: a misbehaving source must not overrun the window
+
+        char szhdr[12];
+        int sn = snprintf(szhdr, sizeof(szhdr), "%x\r\n", (unsigned)n);
+        det_conn_send(slot_id, pcb, szhdr, (u16_t)sn);
+        det_conn_send(slot_id, pcb, buf, (u16_t)n);
+        det_conn_send(slot_id, pcb, "\r\n", 2);
+        s.total += (int)n;
+    }
 }
 
 // ---------------------------------------------------------------------------

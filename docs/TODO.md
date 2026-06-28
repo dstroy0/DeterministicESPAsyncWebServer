@@ -118,18 +118,21 @@ native Unity tests before moving on. Each must keep the "no heap after
       user `use()` middleware. _Follow-up:_ per-route middleware attachment (a
       middleware can already gate on `req->path` in user code).
 
-- [x] **7. Chunked / streaming app responses (medium / medium).** _(done)_
-      [`send_chunked(slot, code, type, filler)`](@ref DetWebServer::send_chunked)
+- [x] **7. Chunked / streaming app responses (medium / medium).** _(done; pull
+      generator since v4.5.0)_
+      [`send_chunked(slot, code, type, source, ctx)`](@ref DetWebServer::send_chunked)
       writes the status + headers (`Transfer-Encoding: chunked`, plus CORS /
-      queued custom headers), runs a [`ChunkFiller`](@ref ChunkFiller) callback
-      that emits body pieces through a small [`ChunkedResponse`](@ref ChunkedResponse)
-      writer (`write()` / `write(buf,len)` / `printf()`), then writes the
-      terminating `0\r\n\r\n` and closes. Each call emits exactly one RFC 7230
-      §4.1 chunk straight to the socket - the body is never buffered whole, so
-      output size is unbounded in constant memory. Zero-length writes are
-      no-ops (never a premature terminator); HEAD sends headers only;
-      [`on_request_log()`](@ref DetWebServer::on_request_log) reports the summed
-      body length. Tested by `test_chunked` (8 cases).
+      queued custom headers), then pulls the body from a
+      [`ChunkSource`](@ref ChunkSource) generator one piece at a time, frames each
+      as an RFC 7230 §4.1 chunk, and emits the terminating `0\r\n\r\n`. The body is
+      never buffered whole AND the send paces with the TCP window, paging across
+      worker loops (`chunk_send_pump`, resumed by the sent callback) - so output is
+      unbounded in constant memory and a body past the send window is never
+      truncated (the old one-shot `ChunkedResponse` writer silently truncated
+      there). The source returns 0 to end and tracks its position in `ctx` (which
+      must outlive the response). HEAD sends headers only;
+      [`on_request_log()`](@ref DetWebServer::on_request_log) reports the total body
+      length. Tested by `test_chunked` (10 cases, incl. a 16 KB body).
       _Follow-up:_ no `tcp_sndbuf()` backpressure check (mirrors `serve_file()`)
       - for very large streams add a per-chunk `tcp_output()` / send-window
       check before relying on it under load.

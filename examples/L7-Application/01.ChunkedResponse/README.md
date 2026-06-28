@@ -7,24 +7,34 @@
 When you do not know the response size up front (or it is large), you stream it
 with HTTP chunked transfer encoding instead of building the whole body in a
 buffer. `send_chunked()` writes the status and headers
-(`Transfer-Encoding: chunked`), then calls your filler, then writes the
-terminating chunk - so output size is unbounded but memory stays constant.
+(`Transfer-Encoding: chunked`), then pulls the body from your generator one piece
+at a time, frames each as a chunk, and writes the terminating chunk - so output
+size is unbounded but memory stays constant, and the send paces with the TCP
+window (paging across loops) so a body larger than the send buffer is never
+truncated.
 
-**A filler callback that writes pieces.** You pass a `ChunkFiller` that receives a
-`ChunkedResponse &`; each `write()` / `printf()` emits one chunk straight to the
-socket - nothing is buffered whole:
+**A pull generator (`ChunkSource`).** You pass a function that writes the next
+body bytes into `buf` (up to `cap`) and returns the count, or `0` to end. It
+tracks its position in a `ctx` you provide - one call produces one chunk:
 
 ```cpp
-static void stream_lines(ChunkedResponse &res, HttpReq *req) {
-    for (int i = 1; i <= 50; i++) res.printf("line %d of 50\n", i);   // 50 chunks
+struct LinesCtx { int i, n; };
+static size_t lines_source(uint8_t *buf, size_t cap, void *vctx) {
+    LinesCtx *c = (LinesCtx *)vctx;
+    if (c->i >= c->n) return 0;                                  // end of body
+    int len = snprintf((char *)buf, cap, "line %d of %d\n", c->i + 1, c->n);
+    c->i++;
+    return (size_t)(len < (int)cap ? len : (int)cap);            // one chunk
 }
 ...
-server.send_chunked(slot_id, 200, "text/plain", stream_lines);
+static LinesCtx ctx; ctx.i = 0; ctx.n = 50;                      // must outlive the call
+server.send_chunked(slot_id, 200, "text/plain", lines_source, &ctx);
 ```
 
-You can mix literal and formatted writes freely (the `/count` route does), and
-the same `send_chunked()` is what the binary [CBOR](../../L6-Presentation/13.Cbor)
-and [MessagePack](../../L6-Presentation/14.MsgPack) examples use to stream binary
+The `ctx` must outlive `send_chunked()` (a large body finishes on a later loop),
+so it is `static`, not on the stack. The same `send_chunked()` is what the binary
+[CBOR](../../L6-Presentation/13.Cbor) and
+[MessagePack](../../L6-Presentation/14.MsgPack) examples use to stream binary
 payloads.
 
 ## Build and run
@@ -36,7 +46,7 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 
 ```sh
 curl -N http://<ip>/stream     # 50 lines arrive incrementally
-curl -N http://<ip>/count      # printf-built chunks
+curl -N http://<ip>/count      # one number per chunk
 ```
 
 ## Annotated source
@@ -57,34 +67,54 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Filler: emit 50 lines, one chunk each, with no large intermediate buffer.
-static void stream_lines(ChunkedResponse &res, HttpReq *req)
+// Source: emit `n` numbered lines, one line per chunk, resuming from ctx->i.
+struct LinesCtx
 {
-    (void)req;
-    for (int i = 1; i <= 50; i++)
-        res.printf("line %d of 50\n", i); // each printf() is one chunk on the wire
+    int i, n;
+};
+static size_t lines_source(uint8_t *buf, size_t cap, void *vctx)
+{
+    LinesCtx *c = (LinesCtx *)vctx;
+    if (c->i >= c->n)
+        return 0; // done
+    int len = snprintf((char *)buf, cap, "line %d of %d\n", c->i + 1, c->n);
+    c->i++;
+    return (size_t)(len < (int)cap ? len : (int)cap);
 }
 
-// Filler: mix literal writes and formatted writes.
-static void stream_count(ChunkedResponse &res, HttpReq *req)
+// Source: "counting up", then 0..10, then "done", one piece per chunk.
+struct CountCtx
 {
-    (void)req;
-    res.write("counting up:\n");
-    for (int i = 0; i <= 10; i++)
-        res.printf("  %d\n", i);
-    res.write("done\n");
+    int step;
+};
+static size_t count_source(uint8_t *buf, size_t cap, void *vctx)
+{
+    CountCtx *c = (CountCtx *)vctx;
+    int s = c->step++;
+    if (s == 0)
+        return (size_t)snprintf((char *)buf, cap, "counting up:\n");
+    if (s <= 11)
+        return (size_t)snprintf((char *)buf, cap, "  %d\n", s - 1);
+    if (s == 12)
+        return (size_t)snprintf((char *)buf, cap, "done\n");
+    return 0; // done
 }
 
 void handle_stream(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    server.send_chunked(slot_id, 200, "text/plain", stream_lines); // headers + filler + terminator
+    static LinesCtx ctx; // static: must outlive send_chunked (body may span loops)
+    ctx.i = 0;
+    ctx.n = 50;
+    server.send_chunked(slot_id, 200, "text/plain", lines_source, &ctx);
 }
 
 void handle_count(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    server.send_chunked(slot_id, 200, "text/plain", stream_count);
+    static CountCtx ctx;
+    ctx.step = 0;
+    server.send_chunked(slot_id, 200, "text/plain", count_source, &ctx);
 }
 
 void setup()

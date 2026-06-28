@@ -21,16 +21,26 @@ cbor_map(&w, 3);                    // a 3-entry map
 cbor_text(&w, "heap"); cbor_uint(&w, ESP.getFreeHeap());
 cbor_text(&w, "uptime"); cbor_uint(&w, millis() / 1000);
 cbor_text(&w, "rssi"); cbor_int(&w, WiFi.RSSI());   // signed
-if (cbor_ok(&w)) res.write((const char *)buf, cbor_len(&w));
+ctx.len = cbor_ok(&w) ? cbor_len(&w) : 0;           // page these bytes out below
 ```
 
-**Why the chunked writer.** The response is binary, so it is sent with
-`send_chunked()` (which is binary-safe) rather than the C-string `send()`. The
-encode callback receives a `ChunkedResponse &` and writes the raw bytes:
+**Why `send_chunked()`.** The response is binary, so it is sent with the
+binary-safe `send_chunked()` rather than the C-string `send()`. `send_chunked()`
+pulls the body from a `ChunkSource` generator, which hands back the encoded bytes a
+slice at a time (here the whole small map in one go) and returns 0 to finish:
 
 ```cpp
-server.on("/telemetry.cbor", HTTP_GET,
-          [](uint8_t id, HttpReq *) { server.send_chunked(id, 200, "application/cbor", cbor_telemetry); });
+struct CborCtx { uint8_t buf[64]; size_t len, off; };
+static size_t cbor_source(uint8_t *out, size_t cap, void *vctx) {
+    CborCtx *c = (CborCtx *)vctx;
+    if (c->off >= c->len) return 0;                 // done
+    size_t n = c->len - c->off; if (n > cap) n = cap;
+    memcpy(out, c->buf + c->off, n); c->off += n; return n;
+}
+...
+static CborCtx ctx;                                 // static: must outlive the call
+/* encode into ctx.buf, set ctx.len/off ... */
+server.send_chunked(id, 200, "application/cbor", cbor_source, &ctx);
 ```
 
 For a text-based compact binary alternative, see [14.MsgPack](../14.MsgPack).
@@ -68,22 +78,24 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Streams one CBOR map: {"heap": <uint>, "uptime": <uint>, "rssi": <int>}.
-static void cbor_telemetry(ChunkedResponse &res, HttpReq *req)
+// One CBOR map {"heap","uptime","rssi"}, encoded into a ctx buffer and paged out
+// by the chunk source (the same pattern scales to an arbitrarily large body).
+struct CborCtx
 {
-    (void)req;
     uint8_t buf[64];
-    CborWriter w;
-    cbor_init(&w, buf, sizeof(buf));
-    cbor_map(&w, 3);              // declare a 3-pair map up front
-    cbor_text(&w, "heap");
-    cbor_uint(&w, ESP.getFreeHeap());
-    cbor_text(&w, "uptime");
-    cbor_uint(&w, millis() / 1000);
-    cbor_text(&w, "rssi");
-    cbor_int(&w, WiFi.RSSI());    // signed value
-    if (cbor_ok(&w))             // false if buf overflowed
-        res.write((const char *)buf, cbor_len(&w)); // raw bytes via the binary-safe writer
+    size_t len, off;
+};
+static size_t cbor_source(uint8_t *out, size_t cap, void *vctx)
+{
+    CborCtx *c = (CborCtx *)vctx;
+    if (c->off >= c->len)
+        return 0; // done
+    size_t n = c->len - c->off;
+    if (n > cap)
+        n = cap;
+    memcpy(out, c->buf + c->off, n);
+    c->off += n;
+    return n;
 }
 
 void setup()
@@ -100,8 +112,21 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/telemetry.cbor", HTTP_GET,
-              [](uint8_t id, HttpReq *) { server.send_chunked(id, 200, "application/cbor", cbor_telemetry); });
+    server.on("/telemetry.cbor", HTTP_GET, [](uint8_t id, HttpReq *) {
+        static CborCtx ctx; // static: must outlive send_chunked
+        CborWriter w;
+        cbor_init(&w, ctx.buf, sizeof(ctx.buf));
+        cbor_map(&w, 3);
+        cbor_text(&w, "heap");
+        cbor_uint(&w, ESP.getFreeHeap());
+        cbor_text(&w, "uptime");
+        cbor_uint(&w, millis() / 1000);
+        cbor_text(&w, "rssi");
+        cbor_int(&w, WiFi.RSSI());
+        ctx.len = cbor_ok(&w) ? cbor_len(&w) : 0;
+        ctx.off = 0;
+        server.send_chunked(id, 200, "application/cbor", cbor_source, &ctx);
+    });
     server.begin(80);
 }
 

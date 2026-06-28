@@ -23,11 +23,13 @@ msgpack_map(&w, 3);
 msgpack_str(&w, "heap"); msgpack_uint(&w, ESP.getFreeHeap());
 msgpack_str(&w, "uptime"); msgpack_uint(&w, millis() / 1000);
 msgpack_str(&w, "rssi"); msgpack_int(&w, WiFi.RSSI());
-if (msgpack_ok(&w)) res.write((const char *)buf, msgpack_len(&w));
+ctx.len = msgpack_ok(&w) ? msgpack_len(&w) : 0;   // page these bytes out below
 ```
 
 As with CBOR, the payload is binary so it is delivered through the binary-safe
-`send_chunked()` writer rather than the C-string `send()`.
+`send_chunked()`, which pulls the encoded bytes from a `ChunkSource` generator
+(slice by slice, returning 0 to finish) rather than the C-string `send()`. The
+generator's `ctx` must outlive the call, so it is `static`.
 
 **Decoding with `MsgpackReader`.** The cursor decoder is the mirror image: bind a
 reader to the bytes, read the map header, then each key/value, and check
@@ -86,22 +88,24 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Streams one MessagePack map: {"heap": <uint>, "uptime": <uint>, "rssi": <int>}.
-static void msgpack_telemetry(ChunkedResponse &res, HttpReq *req)
+// One MessagePack map {"heap","uptime","rssi"}, encoded into a ctx buffer and
+// paged out by the chunk source (the same pattern scales to an arbitrarily large body).
+struct MpCtx
 {
-    (void)req;
     uint8_t buf[64];
-    MsgpackWriter w;
-    msgpack_init(&w, buf, sizeof(buf));
-    msgpack_map(&w, 3);
-    msgpack_str(&w, "heap");
-    msgpack_uint(&w, ESP.getFreeHeap());
-    msgpack_str(&w, "uptime");
-    msgpack_uint(&w, millis() / 1000);
-    msgpack_str(&w, "rssi");
-    msgpack_int(&w, WiFi.RSSI()); // signed
-    if (msgpack_ok(&w))
-        res.write((const char *)buf, msgpack_len(&w)); // raw bytes via the binary-safe writer
+    size_t len, off;
+};
+static size_t msgpack_source(uint8_t *out, size_t cap, void *vctx)
+{
+    MpCtx *c = (MpCtx *)vctx;
+    if (c->off >= c->len)
+        return 0; // done
+    size_t n = c->len - c->off;
+    if (n > cap)
+        n = cap;
+    memcpy(out, c->buf + c->off, n);
+    c->off += n;
+    return n;
 }
 
 // Decodes a posted MessagePack map of {string: integer} and echoes "key=value".
@@ -148,8 +152,21 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/telemetry.msgpack", HTTP_GET,
-              [](uint8_t id, HttpReq *) { server.send_chunked(id, 200, "application/msgpack", msgpack_telemetry); });
+    server.on("/telemetry.msgpack", HTTP_GET, [](uint8_t id, HttpReq *) {
+        static MpCtx ctx; // static: must outlive send_chunked
+        MsgpackWriter w;
+        msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
+        msgpack_map(&w, 3);
+        msgpack_str(&w, "heap");
+        msgpack_uint(&w, ESP.getFreeHeap());
+        msgpack_str(&w, "uptime");
+        msgpack_uint(&w, millis() / 1000);
+        msgpack_str(&w, "rssi");
+        msgpack_int(&w, WiFi.RSSI());
+        ctx.len = msgpack_ok(&w) ? msgpack_len(&w) : 0;
+        ctx.off = 0;
+        server.send_chunked(id, 200, "application/msgpack", msgpack_source, &ctx);
+    });
     server.on("/decode", HTTP_POST, on_decode); // decode side
     server.begin(80);
 }

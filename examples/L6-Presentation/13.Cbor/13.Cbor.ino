@@ -30,22 +30,25 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DetWebServer server;
 
-// Streams one CBOR map: {"heap": <uint>, "uptime": <uint>, "rssi": <int>}.
-static void cbor_telemetry(ChunkedResponse &res, HttpReq *req)
+// One CBOR map {"heap","uptime","rssi"}, encoded once into a ctx buffer and then
+// paged out by the chunk source. (The body is tiny, but the same pattern serves an
+// arbitrarily large one: produce the next slice each call, return 0 when drained.)
+struct CborCtx
 {
-    (void)req;
     uint8_t buf[64];
-    CborWriter w;
-    cbor_init(&w, buf, sizeof(buf));
-    cbor_map(&w, 3);
-    cbor_text(&w, "heap");
-    cbor_uint(&w, ESP.getFreeHeap());
-    cbor_text(&w, "uptime");
-    cbor_uint(&w, millis() / 1000);
-    cbor_text(&w, "rssi");
-    cbor_int(&w, WiFi.RSSI());
-    if (cbor_ok(&w))
-        res.write((const char *)buf, cbor_len(&w));
+    size_t len, off;
+};
+static size_t cbor_source(uint8_t *out, size_t cap, void *vctx)
+{
+    CborCtx *c = (CborCtx *)vctx;
+    if (c->off >= c->len)
+        return 0;
+    size_t n = c->len - c->off;
+    if (n > cap)
+        n = cap;
+    memcpy(out, c->buf + c->off, n);
+    c->off += n;
+    return n;
 }
 
 void setup()
@@ -62,8 +65,21 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/telemetry.cbor", HTTP_GET,
-              [](uint8_t id, HttpReq *) { server.send_chunked(id, 200, "application/cbor", cbor_telemetry); });
+    server.on("/telemetry.cbor", HTTP_GET, [](uint8_t id, HttpReq *) {
+        static CborCtx ctx; // static: must outlive send_chunked
+        CborWriter w;
+        cbor_init(&w, ctx.buf, sizeof(ctx.buf));
+        cbor_map(&w, 3);
+        cbor_text(&w, "heap");
+        cbor_uint(&w, ESP.getFreeHeap());
+        cbor_text(&w, "uptime");
+        cbor_uint(&w, millis() / 1000);
+        cbor_text(&w, "rssi");
+        cbor_int(&w, WiFi.RSSI());
+        ctx.len = cbor_ok(&w) ? cbor_len(&w) : 0;
+        ctx.off = 0;
+        server.send_chunked(id, 200, "application/cbor", cbor_source, &ctx);
+    });
     server.begin(80);
 }
 

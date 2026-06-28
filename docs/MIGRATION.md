@@ -1,7 +1,48 @@
 # Migration guide
 
-Breaking changes between major versions, with the minimal edits needed to move
-forward.
+Breaking changes, newest first, with the minimal edits needed to move forward.
+This library breaks public APIs between releases when correctness or a cleaner
+design calls for it (see the development-status notice in the README), so check
+here on every upgrade.
+
+## 4.4.x to 4.5.0 - chunked responses are a pull generator
+
+`send_chunked()` no longer takes a one-shot `ChunkFiller(ChunkedResponse&, HttpReq*)`
+that pushes pieces with `res.write()` / `res.printf()`. That model truncated any
+body larger than the TCP send buffer (it ignored backpressure). It is replaced by
+a pull generator that the server pages across loops, so a body of any size streams
+in constant memory without truncation.
+
+- `ChunkedResponse` (and its `write` / `printf` / `total`) is **removed**.
+- The new signature is
+  `send_chunked(slot, code, content_type, ChunkSource source, void *ctx = nullptr)`.
+- `ChunkSource` is `size_t (*)(uint8_t *buf, size_t cap, void *ctx)`: write up to
+  `cap` bytes of the next body piece into `buf` and return the count, or `0` to
+  end. Track your position in `ctx`.
+- `ctx` **must outlive the response** (a large body finishes on a later loop), so
+  it must be static / global, not on the handler's stack.
+
+Before:
+
+```cpp
+void fill(ChunkedResponse &res, HttpReq *) {
+    for (int i = 0; i < 100; i++) res.printf("line %d\n", i);
+}
+server.send_chunked(slot, 200, "text/plain", fill);
+```
+
+After:
+
+```cpp
+struct Ctx { int i; };
+size_t src(uint8_t *buf, size_t cap, void *vctx) {
+    Ctx *c = (Ctx *)vctx;
+    if (c->i >= 100) return 0;
+    return (size_t)snprintf((char *)buf, cap, "line %d\n", c->i++);
+}
+static Ctx ctx; ctx.i = 0;            // static: outlives the response
+server.send_chunked(slot, 200, "text/plain", src, &ctx);
+```
 
 ## 3.x to 4.0.0
 

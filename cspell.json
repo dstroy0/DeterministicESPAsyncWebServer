@@ -10,6 +10,7 @@
     "klen",
     "propertyupdate",
     "retransmittable",
+    "vctx",
     "wakeup",
     "wakeups",
     "aes-256-ctr",

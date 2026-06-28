@@ -286,91 +286,28 @@ struct tcp_pcb; // forward decl (full type pulled in via the transport layer)
 class DetWebServer;
 
 /**
- * @class ChunkedResponse
- * @brief Writer handle for a streaming `Transfer-Encoding: chunked` response.
+ * @brief Source callback that produces a chunked response body incrementally.
  *
- * An instance is created by DetWebServer::send_chunked() and handed to a
- * @ref ChunkFiller callback. Each write() / printf() emits exactly one HTTP/1.1
- * chunk straight to the socket - the body is never buffered whole, so a response
- * may be arbitrarily large with constant memory. The framework writes the
- * status line + headers before the callback and the terminating zero-length
- * chunk after it; the application only emits body pieces.
+ * Passed to DetWebServer::send_chunked() and called repeatedly - possibly across
+ * several server loops, as the TCP send window drains - until it returns 0. Each
+ * call writes up to @p cap bytes of the next body piece into @p buf and returns
+ * the count; the HTTP chunk framing (size line + CRLFs + terminator) is added by
+ * the server. Track your position across calls in @p ctx. This pull/generator
+ * model lets the server page an arbitrarily large body to the socket in constant
+ * memory without ever blocking the worker or truncating at the send window.
  *
- * @code
- * void fill(ChunkedResponse &res, HttpReq *req) {
- *     for (int i = 0; i < 100; i++)
- *         res.printf("line %d\n", i);     // 100 chunks, no big buffer
- * }
- * void handler(uint8_t slot, HttpReq *req) {
- *     server.send_chunked(slot, 200, "text/plain", fill);
- * }
- * @endcode
+ * @warning @p ctx must stay valid until the body is fully sent. A body that fits
+ * in a single send window finishes during the send_chunked() call, but a larger
+ * one resumes on later loops, so @p ctx must NOT point at the caller's stack: use
+ * static / global storage (a per-connection instance if requests can overlap), or
+ * generate the body from durable state.
+ *
+ * @param buf  destination for the next body bytes.
+ * @param cap  maximum bytes to write into @p buf on this call.
+ * @param ctx  caller state pointer, passed through from send_chunked().
+ * @return bytes written into @p buf (<= @p cap), or 0 to end the body.
  */
-class ChunkedResponse
-{
-  public:
-    /**
-     * @brief Emit one chunk from a null-terminated string.
-     * @param s Null-terminated data (a null or empty string is a no-op).
-     * @return false once any write has failed; true otherwise.
-     */
-    bool write(const char *s);
-
-    /**
-     * @brief Emit one chunk of exactly @p len bytes.
-     * @param data Chunk payload (may contain NULs).
-     * @param len  Byte count (0 is a no-op - a 0-length chunk would terminate).
-     * @return false once any write has failed; true otherwise.
-     */
-    bool write(const char *data, size_t len);
-
-    /**
-     * @brief Emit one chunk built with printf-style formatting.
-     *
-     * The formatted text must fit in CHUNK_BUF_SIZE bytes (longer output is
-     * truncated). Produces a single chunk.
-     *
-     * @param fmt printf format string.
-     * @return false once any write has failed; true otherwise.
-     */
-    bool printf(const char *fmt, ...)
-#if defined(__GNUC__)
-        __attribute__((format(printf, 2, 3)))
-#endif
-        ;
-
-    /** @brief Total body bytes emitted so far (excludes chunk framing). */
-    size_t total() const
-    {
-        return _total;
-    }
-
-  private:
-    friend class DetWebServer;
-    ChunkedResponse(uint8_t slot, struct tcp_pcb *pcb, bool head)
-        : _pcb(pcb), _total(0), _slot(slot), _ok(true), _head(head)
-    {
-    }
-
-    struct tcp_pcb *_pcb; ///< Socket to stream to (slot already detached).
-    size_t _total;        ///< Running count of body bytes (no framing).
-    uint8_t _slot;        ///< Connection slot (for the TLS-aware write path).
-    bool _ok;             ///< Cleared if a tcp_write reported an error.
-    bool _head;           ///< HEAD request: suppress all body output.
-};
-
-/**
- * @brief Callback that streams a chunked response body (see DetWebServer::send_chunked()).
- *
- * Invoked once, synchronously, between the response headers and the terminating
- * chunk. Emit body pieces via @p res; read request data from @p request if
- * needed. Do NOT call send()/send_empty()/etc. from here - the response is
- * already in progress.
- *
- * @param res     Chunk writer for this response.
- * @param request The parsed request (valid for the duration of the callback).
- */
-typedef void (*ChunkFiller)(ChunkedResponse &res, HttpReq *request);
+typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
 
 // ---------------------------------------------------------------------------
 // DetWebServer - the main application class
@@ -525,6 +462,10 @@ class DetWebServer
      *        resets the HTTP parser either way.
      */
     void resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep);
+
+    /// @brief Resume a pending chunked response: pull + frame chunks until the send window is full, finish when
+    /// drained.
+    void chunk_send_pump(uint8_t slot_id);
 
 #if DETWS_ENABLE_AUTH
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
@@ -1112,19 +1053,22 @@ class DetWebServer
      * @brief Stream a response body of unknown length via chunked transfer.
      *
      * Writes the status line and headers (including `Transfer-Encoding: chunked`,
-     * plus any CORS / queued custom headers), then invokes @p filler with a
-     * @ref ChunkedResponse it uses to emit body pieces, then writes the
-     * terminating chunk and closes. The body is never buffered whole, so output
-     * size is unbounded with constant memory - the complement to send(), which
-     * needs the full payload up front. A HEAD request sends the headers only
-     * (the filler is not called).
+     * plus any CORS / queued custom headers), then pulls the body from @p source
+     * one piece at a time, adding the chunk framing and the terminating chunk. The
+     * body is never buffered whole and the send paces with the TCP window - paging
+     * across server loops as it drains - so output size is unbounded in constant
+     * memory and a body larger than the send buffer is never truncated. This is the
+     * complement to send(), which needs the full payload up front. A HEAD request
+     * sends the headers only (@p source is not called).
      *
      * @param slot_id      Connection slot index.
      * @param code         HTTP status code.
      * @param content_type Response Content-Type.
-     * @param filler       Callback that emits the body (must not be nullptr).
+     * @param source       Generator that produces the body (must not be nullptr).
+     * @param ctx          Opaque state handed to @p source; see @ref ChunkSource
+     *                     for the lifetime requirement (must outlive the response).
      */
-    void send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkFiller filler);
+    void send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkSource source, void *ctx = nullptr);
 
     /**
      * @brief Queue a custom response header for the next send on this slot.
