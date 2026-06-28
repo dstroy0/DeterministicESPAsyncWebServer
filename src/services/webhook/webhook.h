@@ -8,7 +8,8 @@
  * Builds an IFTTT Maker webhook URL and its value1/value2/value3 JSON payload
  * (pure, host-tested), and fires them - or any JSON to any URL - via the outbound
  * http_client (a POST). Lets the device push an event to IFTTT, a Slack/Discord
- * incoming webhook, or your own REST endpoint. Requires DETWS_ENABLE_HTTP_CLIENT.
+ * incoming webhook, or your own REST endpoint. Needs DETWS_ENABLE_HTTP_CLIENT to
+ * send; without it the API still compiles but detws_webhook_post() returns -1.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

@@ -23,6 +23,23 @@
  *   DETWS_ENABLE_DIAG         default 0  /diag JSON of the compile-time config
  *
  * ============================================================
+ * FEATURE DEPENDENCIES  (a child needs its parent; illegal combos #error)
+ * ============================================================
+ *   FILE_SERVING -> WEBDAV, RANGE
+ *   TLS          -> MTLS, TLS_RESUMPTION, HTTP_CLIENT_TLS (+HTTP_CLIENT),
+ *                   MQTT_TLS (+MQTT), WS_CLIENT_TLS (+WS_CLIENT)
+ *   WEBSOCKET    -> WS_DEFLATE, WEB_TERMINAL
+ *   SSE          -> DASHBOARD
+ *   STATS        -> METRICS
+ *   AUTH         -> AUTH_LOCKOUT
+ *   SNMP         -> SNMP_V3, SNMP_TRAP
+ *   COAP         -> COAP_OBSERVE, COAP_BLOCK
+ *   OPCUA        -> OPCUA_CLIENT
+ *   CONFIG_STORE -> CONFIG_IO
+ *   Optional: WEBHOOK/OAUTH2 use HTTP_CLIENT to send; DASHBOARD uses WEBSOCKET
+ *   for live controls. Full tree: README.md and src/DetWebServerConfig.h.
+ *
+ * ============================================================
  * CAPACITY CONSTANTS  (affect static array sizes → RAM / flash)
  * ============================================================
  *   MAX_CONNS         default 4    simultaneous TCP connections (1–255)
