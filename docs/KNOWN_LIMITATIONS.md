@@ -18,7 +18,7 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
   `Authorization` value, which has its own larger buffer); `MAX_PATH_LEN` path;
   `BODY_BUF_SIZE` body (larger gets 413 unless a streaming sink is installed).
 - **No `Date` response header by default** (a clock-less device; RFC 7231
-  6.5.2). With `DETWS_ENABLE_NTP` an app can add it from a handler.
+  §7.1.1.2). With `DETWS_ENABLE_NTP` an app can add it from a handler.
 - **Chunked responses have no `tcp_sndbuf()` backpressure check** - very large
   streams under load may need a per-chunk send-window check.
 

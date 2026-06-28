@@ -142,7 +142,7 @@ All numbers use default configuration values.
 | Symbol                    | Type | Notes                                            |
 | ------------------------- | ---- | ------------------------------------------------ |
 | `ssh_pkt[MAX_SSH_CONNS]`  | BSS  | Packet state + RX reassembly buffers             |
-| `ssh_keys[MAX_SSH_CONNS]` | BSS  | AES contexts + 4 × 32-byte MAC/IV keys           |
+| `ssh_keys[MAX_SSH_CONNS]` | BSS  | 2 AES-CTR contexts + 2 × 32-byte MAC keys (IV/counter lives inside each AES-CTR ctx) |
 | `ssh_dh[MAX_SSH_CONNS]`   | BSS  | DH scalars y, f, K (wiped post-KEX) + H          |
 | `ssh_sess[MAX_SSH_CONNS]` | BSS  | Handshake phase, V_C/I_C/I_S, session id         |
 | `crypto_work[1536]`       | BSS  | Montgomery bignum scratch; zeroed after each use |
