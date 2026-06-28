@@ -1,6 +1,6 @@
 # Documentation
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 ![Version](https://img.shields.io/badge/version-v3.8.0-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
@@ -125,7 +125,17 @@ L2  src/network_drivers/datalink/
         datalink.h/cpp                            Espressif WiFi driver stub
 L1  src/network_drivers/physical/
         physical.h/cpp                            WiFi.begin() wrapper
+
+    src/network_drivers/tls/                      mbedTLS over a fixed static pool (HTTPS / wss)
+    src/network_drivers/application/              Generated web assets (dashboard, terminal)
+    src/network_drivers/presentation/ssh/         Zero-heap SSH-2.0 server
+    src/services/                                 Optional L7 subsystems, one folder each:
+        opcua/ + opcua_client/, modbus/, mqtt/, coap/, snmp/, dns_resolver/, oidc/,
+        oauth2/, totp/, audit_log/, vfs/, graphql/, espnow/, ...  (see FEATURES.md)
 ```
+
+(Representative, not exhaustive - the full file set is under `src/`; each optional
+service is gated by a `DETWS_ENABLE_*` flag.)
 
 </details>
 

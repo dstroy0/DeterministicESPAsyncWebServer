@@ -4,7 +4,7 @@
 
 # DeterministicESPAsyncWebServer (@dstroy0)
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 ![Version](https://img.shields.io/badge/version-v3.8.0-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
@@ -23,7 +23,7 @@ The technical reference documentation has been moved to a dedicated landing page
 
 ## Overview
 
-A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, and CoAP.
+A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 **Key Features** (grouped by OSI layer - click to expand):
 
@@ -81,6 +81,7 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 - **SNMP Agent**: v1/v2c plus optional v3 USM (HMAC-SHA-256 auth + AES-128 privacy) over UDP, with a zero-heap ASN.1 BER codec and a fixed MIB.
 - **SNMP Notifications**: Optional outbound Traps and InformRequests (`DETWS_ENABLE_SNMP_TRAP`) so the agent pushes alerts to a manager - SNMPv2c, and SNMPv3 USM (authPriv) traps reusing the agent's engine ID and localized keys. Each notification carries `sysUpTime.0` + `snmpTrapOID.0` plus caller varbinds; the PDU builder is host-tested.
 - **CoAP Server (RFC 7252)**: Zero-heap Constrained Application Protocol endpoint over UDP - a fixed resource table dispatched on Uri-Path, GET/POST/PUT/DELETE with piggybacked responses, Uri-Query and Content-Format options. Optional resource **Observe** (RFC 7641, `DETWS_ENABLE_COAP_OBSERVE`): clients subscribe with a GET + Observe option and `coap_notify()` pushes the resource's current value to all observers from the server port with an increasing sequence. Optional **block-wise transfer** (RFC 7959, `DETWS_ENABLE_COAP_BLOCK`): the Block2 option pages a large representation one block at a time, and the Block1 option reassembles a chunked POST/PUT upload (`2.31 Continue` per block) before dispatching the handler with the whole payload.
+- **OPC UA Binary Server + Client (IEC 62541)**: Optional (`DETWS_ENABLE_OPCUA`) zero-heap OPC UA Binary server on TCP/4840 - the little-endian built-in-type codec (NodeId, Variant, DataValue, ReferenceDescription, ...), UA-TCP framing, the Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel), Session (CreateSession + ActivateSession), GetEndpoints, and the Read, Write and Browse services driven by registered resolvers, plus CloseSession / CloseSecureChannel and a ServiceFault for unsupported services (SecurityPolicy None). The MSG framing is spec-faithful, so standard clients interoperate (verified with Python `asyncua`: connect, browse, read, write/read-back). An optional matching client (`DETWS_ENABLE_OPCUA_CLIENT`, `services/opcua_client`) builds the requests and parses the responses, transport-agnostic.
 - **mDNS & NTP Services**: Hostname advertisement via the ESP-IDF mDNS component (with TXT records and extra service types) and SNTP wall-clock time synchronization for request logging.
 - **OTA Updates**: Secure, authenticated over-the-air firmware updates that stream the POST body straight into flash (no full-image RAM buffer).
 - **Streaming Uploads**: Optional POST-body streaming straight into a filesystem file (LittleFS / SPIFFS / SD), so an upload never has to fit in RAM.
