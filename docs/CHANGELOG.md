@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f6b7d86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6b7d86f8986553cfa0f15a584854f47f735a772))
+- update CHANGELOG.md [skip ci] ([`a30effb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a30effb50fe067628591066a9ceeb303d638d717))
 - update test report [skip ci] ([`123d67c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/123d67c499eeefcafcab888bcf0d6894f840159c))
 - update CHANGELOG.md [skip ci] ([`dad72c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dad72c0d27950b29f2e7378b72145c39c4502386))
 
 ### Documentation
 
+- add per-example READMEs for the L5-Session layer ([`b87472d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b87472d361b9bb3406c1e500aaf5fb32efa9daab))
 - add per-example READMEs (Foundation layer) and the examples index ([`fa55d2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa55d2c718f186390f003de0d856e61416eb80fe))
 
 ## [3.9.3] - 2026-06-28
