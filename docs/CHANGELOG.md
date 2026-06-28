@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.1.1] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.1.1 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f86666b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f86666b3478dc3ce63d479dfda3e9f1d49d23ba7))
+
+### Changes
+
+- Bump version: 4.1.0 → 4.1.1 ([`7c8a8d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c8a8d4a927e2f62b9493952562169569f43302b))
+
+### Documentation
+
+- mark notification-driven worker drain shipped ([`abd1626`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abd1626b677ecb8f5201c0585655d82cec291ae0))
+
+</details>
+
 ## [4.1.0] - 2026-06-28
 
 <details>
