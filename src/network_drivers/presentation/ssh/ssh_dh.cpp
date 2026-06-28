@@ -102,30 +102,38 @@ int ssh_dh_finish(uint8_t i, const uint8_t e_be[256], const uint8_t *hash_input,
 static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
                        const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t out[SSH_SHA256_DIGEST_LEN])
 {
-    // RFC 4253 §7.2: K is encoded as an SSH mpint (big-endian, preceded by
-    // 4-byte length, with a leading 0x00 if the MSB is set).
-    // For a 2048-bit DH result the MSB of K_be[0] may be set (K is positive
-    // but spans the full 256-byte group), so we prepend 0x00.
+    // RFC 4251 §5 / RFC 4253 §7.2: K is encoded as an SSH mpint - big-endian,
+    // 4-byte length prefix, a leading 0x00 only if the MSB is set, and with all
+    // UNNECESSARY leading 0x00 bytes stripped (canonical form). The exchange hash
+    // encodes K the same way (hash_mpint), so the KDF must too: if K has any
+    // high-order zero bytes (the top byte is 0 in ~1/256 of handshakes) a
+    // spec-compliant peer strips them and would otherwise derive different keys.
     SshSha256Ctx ctx;
     ssh_sha256_init(&ctx);
 
-    // mpint(K): 4-byte big-endian length + optional 0x00 prefix + 256 bytes
-    uint8_t mpint_hdr[5];
-    mpint_hdr[0] = 0;
-    mpint_hdr[1] = 0;
-    mpint_hdr[2] = 1;
-    if (K_be[0] & 0x80u)
+    // mpint(K): strip leading zero bytes, then 4-byte BE length + optional 0x00 + value.
+    size_t off = 0;
+    while (off < 256 && K_be[off] == 0x00u)
+        off++;
+    if (off == 256)
     {
-        mpint_hdr[3] = 1; // extra length byte for 0x00 prefix
-        mpint_hdr[4] = 0x00u;
-        ssh_sha256_update(&ctx, mpint_hdr, 5);
+        // K == 0: mpint is an empty string (length 0). (Not reachable for a real DH secret.)
+        uint8_t len_be[4] = {0, 0, 0, 0};
+        ssh_sha256_update(&ctx, len_be, 4);
     }
     else
     {
-        mpint_hdr[3] = 0; // no prefix
-        ssh_sha256_update(&ctx, mpint_hdr, 4);
+        bool pad = (K_be[off] & 0x80u) != 0;
+        uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
+        uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
+        ssh_sha256_update(&ctx, len_be, 4);
+        if (pad)
+        {
+            uint8_t zero = 0x00u;
+            ssh_sha256_update(&ctx, &zero, 1);
+        }
+        ssh_sha256_update(&ctx, K_be + off, 256 - off);
     }
-    ssh_sha256_update(&ctx, K_be, 256);
 
     // || H
     ssh_sha256_update(&ctx, H, SSH_SHA256_DIGEST_LEN);

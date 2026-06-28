@@ -67,7 +67,7 @@ void detws_line_add_int(DetwsLine *l, const char *field, int64_t v)
 void detws_line_add_uint(DetwsLine *l, const char *field, uint64_t v)
 {
     char num[24];
-    snprintf(num, sizeof(num), "%llui", (unsigned long long)v);
+    snprintf(num, sizeof(num), "%lluu", (unsigned long long)v); // InfluxDB UInteger suffix 'u' (not signed 'i')
     line_sep(l);
     line_append(l, field);
     line_append(l, "=");

@@ -24,8 +24,8 @@ void test_int_and_uint_fields()
     detws_line_add_int(&l, "rssi", -42);
     detws_line_add_uint(&l, "uptime", 1234u);
     TEST_ASSERT_TRUE(detws_line_ok(&l));
-    TEST_ASSERT_EQUAL_STRING("env rssi=-42i,uptime=1234i", buf);
-    TEST_ASSERT_EQUAL_size_t(strlen("env rssi=-42i,uptime=1234i"), detws_line_len(&l));
+    TEST_ASSERT_EQUAL_STRING("env rssi=-42i,uptime=1234u", buf); // signed 'i' vs unsigned 'u'
+    TEST_ASSERT_EQUAL_size_t(strlen("env rssi=-42i,uptime=1234u"), detws_line_len(&l));
 }
 
 void test_float_field()

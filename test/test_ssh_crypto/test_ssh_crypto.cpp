@@ -836,6 +836,49 @@ void tearDown(void)
 {
 }
 
+// Regression: the KDF must encode the shared secret K as a CANONICAL mpint
+// (leading zero bytes stripped, RFC 4251), exactly like the exchange-hash encoder.
+// With a K that has a high-order zero byte, an independent canonical computation
+// must match the derived key; the old non-canonical encoder (hashing the full
+// 256 bytes) would diverge here - and so would a spec-compliant peer.
+static void test_ssh_kdf_canonical_mpint_k(void)
+{
+    uint8_t K_be[256], H[SSH_SHA256_DIGEST_LEN];
+    K_be[0] = 0x00; // leading zero -> MUST be stripped
+    for (int i = 1; i < 256; i++)
+        K_be[i] = (uint8_t)(i * 7 + 1); // K_be[1] = 8 (MSB clear)
+    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+        H[i] = (uint8_t)(0x40 + i);
+
+    ssh_dh_derive_keys(0, K_be, H); // session_id == H (first KEX)
+
+    // Independently compute MAC key C->S (label 'E') with a canonical mpint(K):
+    // SHA256( mpint(K) || H || 'E' || session_id ).
+    size_t off = 0;
+    while (off < 256 && K_be[off] == 0x00u)
+        off++;
+    bool pad = (K_be[off] & 0x80u) != 0;
+    uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
+    uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
+    SshSha256Ctx c;
+    ssh_sha256_init(&c);
+    ssh_sha256_update(&c, len_be, 4);
+    if (pad)
+    {
+        uint8_t z = 0x00u;
+        ssh_sha256_update(&c, &z, 1);
+    }
+    ssh_sha256_update(&c, K_be + off, 256 - off);
+    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    uint8_t lbl = 'E';
+    ssh_sha256_update(&c, &lbl, 1);
+    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    uint8_t expected[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256_final(&c, expected);
+
+    TEST_ASSERT_EQUAL_MEMORY(expected, ssh_keys[0].mac_key_c2s, SSH_SHA256_DIGEST_LEN);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -894,6 +937,7 @@ int main(void)
     RUN_TEST(test_pkt_encrypted_roundtrip);
     RUN_TEST(test_pkt_encrypted_fragmented);
     RUN_TEST(test_pkt_encrypted_two_packets);
+    RUN_TEST(test_ssh_kdf_canonical_mpint_k);
 
     return UNITY_END();
 }
