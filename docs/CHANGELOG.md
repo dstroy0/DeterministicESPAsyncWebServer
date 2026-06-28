@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.8.2] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.8.2 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`28231cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28231cf5a3fe8328f415d58b5d934083062e79dd))
+- update CHANGELOG.md [skip ci] ([`ee91d0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee91d0e18182288d6bc61638b73b98e99fc12333))
+
+### Changes
+
+- Bump version: 3.8.1 → 3.8.2 ([`f3a0f11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3a0f11b525b143e07263894d9930d3e1341850f))
+
+### Refactor
+
+- regroup all 85 examples into OSI-layer folders ([`41c6224`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41c6224771a738e53d757b6ab11989457cd21646))
+
+</details>
+
 ## [3.8.1] - 2026-06-28
 
 <details>
