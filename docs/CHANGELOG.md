@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f9e77fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f9e77fb127831bac39cec469dff14150096d749d))
+- update CHANGELOG.md [skip ci] ([`d818aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d818aa9c6f61254827e7f7159f1733281d5cfee4))
 - update test report [skip ci] ([`0c05694`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c05694ec05ee47a220bc642aecd61c873b7b319))
 - update CHANGELOG.md [skip ci] ([`13adc05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13adc05fe1fdef4722ab814009d522e3ce4f6e20))
 - update test report [skip ci] ([`f6b7d86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6b7d86f8986553cfa0f15a584854f47f735a772))
@@ -15,6 +17,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add per-example READMEs for the L6-Presentation layer ([`cb80a34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb80a34ea683dd13ab498caf5a79e7507b3fad61))
 - per-example READMEs for L4-Transport; make EXAMPLES.md links-only ([`af42b21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af42b2127dcbc9c1d25639af3a909ab50332b8d8))
 - add per-example READMEs for the L5-Session layer ([`b87472d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b87472d361b9bb3406c1e500aaf5fb32efa9daab))
 - add per-example READMEs (Foundation layer) and the examples index ([`fa55d2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa55d2c718f186390f003de0d856e61416eb80fe))
