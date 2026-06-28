@@ -75,32 +75,34 @@ void test_each_reason_bumps_its_counter()
     TEST_ASSERT_EQUAL_UINT32(1, c.defer_drops);
 }
 
-void test_closing_gauge_tracks_dwell()
+void test_closing_gauge_is_derived_from_pool()
 {
-    DetConnCounters c = det_conn_counters();
-    TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);
 
-    detws_obs_transition(1, CONN_ACTIVE, CONN_CLOSING, DET_CONN_R_CLOSE_LOCAL); // enter
-    c = det_conn_counters();
-    TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge);
+    conn_pool[1].state = CONN_CLOSING; // a slot actually dwelling
+    TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closing_gauge);
+    conn_pool[2].state = CONN_CLOSING;
+    TEST_ASSERT_EQUAL_UINT32(2, det_conn_counters().closing_gauge);
 
-    detws_obs_transition(1, CONN_CLOSING, CONN_FREE, DET_CONN_R_DRAINED); // leave
-    c = det_conn_counters();
-    TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);
+    conn_pool[1].state = CONN_FREE;
+    conn_pool[2].state = CONN_FREE;
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);
+
     // DRAINED is gauge-only: it must not inflate any cumulative close counter.
-    TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);
+    detws_obs_transition(1, CONN_CLOSING, CONN_FREE, DET_CONN_R_DRAINED);
+    DetConnCounters c = det_conn_counters();
+    TEST_ASSERT_EQUAL_UINT32(0, c.closes_local);
     TEST_ASSERT_EQUAL_UINT32(0, c.closes_remote);
 }
 
-void test_reset_clears_cumulative_not_gauge()
+void test_reset_clears_cumulative_not_derived_gauge()
 {
     detws_obs_transition(0, CONN_FREE, CONN_ACTIVE, DET_CONN_R_ACCEPT);
-    detws_obs_transition(0, CONN_ACTIVE, CONN_CLOSING, DET_CONN_R_CLOSE_LOCAL);
+    conn_pool[0].state = CONN_CLOSING; // a slot is genuinely closing
     det_conn_counters_reset();
     DetConnCounters c = det_conn_counters();
-    TEST_ASSERT_EQUAL_UINT32(0, c.accepts);
-    TEST_ASSERT_EQUAL_UINT32(0, c.closes_local);
-    TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge); // live gauge survives a reset
+    TEST_ASSERT_EQUAL_UINT32(0, c.accepts);       // cumulative cleared
+    TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge); // derived from the pool, not by reset
 }
 
 void test_no_hook_after_unregister()
@@ -168,18 +170,113 @@ void test_backpressure_counts_when_ring_full()
     TEST_ASSERT_EQUAL(DET_CONN_R_BACKPRESSURE, g_reason);
 }
 
+// ---- CONN_CLOSING real dwell (part 2) -------------------------------------
+
+void test_begin_close_dwells_then_drains_on_ack()
+{
+    struct tcp_pcb pcb;
+    pcb.snd_queuelen = 1; // response still in flight -> must dwell
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+
+    det_conn_begin_close(0);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[0].state); // dwelling
+    DetConnCounters c = det_conn_counters();
+    TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);
+    TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge);
+    TEST_ASSERT_EQUAL(DET_CONN_R_CLOSE_LOCAL, g_reason);
+
+    // Peer ACKs the whole response -> the sent callback finalizes the close.
+    pcb.snd_queuelen = 0;
+    lowlevel_sent_cb(&conn_pool[0], &pcb, 100);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    c = det_conn_counters();
+    TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);
+    TEST_ASSERT_EQUAL(DET_CONN_R_DRAINED, g_reason);
+}
+
+void test_begin_close_finalizes_immediately_when_already_drained()
+{
+    struct tcp_pcb pcb;
+    pcb.snd_queuelen = 0; // nothing pending -> close now, no dwell
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+
+    det_conn_begin_close(0);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    DetConnCounters c = det_conn_counters();
+    TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);
+    TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);
+}
+
+void test_begin_close_noop_if_not_active()
+{
+    conn_pool[0].state = CONN_FREE;
+    det_conn_begin_close(0);
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closes_local);
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);
+}
+
+void test_closing_timeout_reaps_stuck_slot()
+{
+    struct tcp_pcb pcb;
+    pcb.snd_queuelen = 1; // peer never ACKs -> would dwell forever
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    conn_pool[0].owner = 0;
+    set_millis(1000);
+
+    det_conn_begin_close(0);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[0].state);
+
+    // Before the bound: not reaped.
+    set_millis(1000 + DETWS_CLOSING_TIMEOUT_MS - 1);
+    DeterministicAsyncTCP::check_timeouts(0);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[0].state);
+
+    // Past the bound: the sweep force-frees it (no pool leak).
+    set_millis(1000 + DETWS_CLOSING_TIMEOUT_MS + 1);
+    DeterministicAsyncTCP::check_timeouts(0);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);
+}
+
+void test_recv_during_closing_is_drained_not_processed()
+{
+    struct tcp_pcb pcb;
+    pcb.snd_queuelen = 1;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    det_conn_begin_close(0);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[0].state);
+
+    // Late inbound data while closing: acked + dropped, slot stays CLOSING.
+    struct pbuf p;
+    memset(&p, 0, sizeof(p));
+    p.tot_len = 8;
+    err_t rc = lowlevel_recv_cb(&conn_pool[0], &pcb, &p, ERR_OK);
+    TEST_ASSERT_EQUAL(ERR_OK, rc);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[0].state);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_transition_fires_hook_with_args);
     RUN_TEST(test_each_reason_bumps_its_counter);
-    RUN_TEST(test_closing_gauge_tracks_dwell);
-    RUN_TEST(test_reset_clears_cumulative_not_gauge);
+    RUN_TEST(test_closing_gauge_is_derived_from_pool);
+    RUN_TEST(test_reset_clears_cumulative_not_derived_gauge);
     RUN_TEST(test_no_hook_after_unregister);
     RUN_TEST(test_recv_fin_counts_remote_close);
     RUN_TEST(test_err_cb_counts_error_close);
     RUN_TEST(test_timeout_sweep_counts_timeout);
     RUN_TEST(test_local_close_counts_local);
     RUN_TEST(test_backpressure_counts_when_ring_full);
+    // CONN_CLOSING real dwell
+    RUN_TEST(test_begin_close_dwells_then_drains_on_ack);
+    RUN_TEST(test_begin_close_finalizes_immediately_when_already_drained);
+    RUN_TEST(test_begin_close_noop_if_not_active);
+    RUN_TEST(test_closing_timeout_reaps_stuck_slot);
+    RUN_TEST(test_recv_during_closing_is_drained_not_processed);
     return UNITY_END();
 }

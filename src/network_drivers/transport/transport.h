@@ -302,6 +302,18 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
  */
 void det_conn_close(uint8_t slot, struct tcp_pcb *pcb);
 
+/**
+ * @brief Begin a graceful close that dwells in CONN_CLOSING until the peer ACKs.
+ *
+ * Unlike det_conn_close() (immediate teardown), this leaves the slot's PCB and
+ * callbacks live and moves it ACTIVE -> CONN_CLOSING. The slot finalizes (PCB
+ * closed, slot freed) from the sent callback once the response has fully drained,
+ * or from the idle sweep after DETWS_CLOSING_TIMEOUT_MS if the peer never ACKs.
+ * The caller must already have queued (det_conn_send) + flushed the response.
+ * A no-op if the slot is not CONN_ACTIVE (e.g. an error freed it mid-write).
+ */
+void det_conn_begin_close(uint8_t slot_id);
+
 /** @brief Detach @p pcb from its slot's lwIP callbacks before the slot is freed. */
 void det_conn_detach(struct tcp_pcb *pcb);
 

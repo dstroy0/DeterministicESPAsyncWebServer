@@ -323,31 +323,26 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 }
 #endif // DETWS_ENABLE_KEEPALIVE
 
-// Capture the slot's PCB for the response. On the close path the slot is
-// detached + freed before the write so an lwIP error callback fired during the
-// write sees CONN_FREE; on the keep-alive path the slot stays ACTIVE so it can
-// be reused for the next request on the same socket.
+// Capture the slot's PCB for the response. The slot stays CONN_ACTIVE through the
+// write for BOTH paths (callbacks live - the same model keep-alive has always
+// used); the close path then dwells in CONN_CLOSING from resp_end, so the slot is
+// reclaimed only once the peer ACKs the response (or the CLOSING timeout fires),
+// not torn down before it is delivered.
 struct tcp_pcb *DetWebServer::resp_begin(uint8_t slot_id, bool keep)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    struct tcp_pcb *pcb = conn->pcb;
-    if (!keep)
-    {
-        det_conn_detach(pcb);
-        conn->state = CONN_FREE;
-        conn->pcb = nullptr;
-    }
-    return pcb;
+    (void)keep;
+    return conn_pool[slot_id].pcb;
 }
 
-// Finish a response: flush, then either close (close path) or leave the slot
-// active for reuse (keep-alive). The HTTP parser is reset either way, returning
-// a kept-alive slot to PARSE_METHOD ready for the next request.
+// Finish a response: flush, then either begin the graceful CONN_CLOSING dwell
+// (close path) or leave the slot active for reuse (keep-alive). The HTTP parser
+// is reset either way, returning a kept-alive slot to PARSE_METHOD ready for the
+// next request.
 void DetWebServer::resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep)
 {
     det_conn_flush(slot_id, pcb);
     if (!keep)
-        det_conn_close(slot_id, pcb);
+        det_conn_begin_close(slot_id); // ACTIVE -> CONN_CLOSING; finalizes on ACK
     note_response(slot_id, code, body_len);
     http_reset(slot_id);
 }
@@ -1228,13 +1223,9 @@ static void ws_send_version_required(uint8_t slot_id)
                                "Connection: close\r\n\r\n";
 
     struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
-
     det_conn_send(slot_id, pcb, resp, (u16_t)(sizeof(resp) - 1));
     det_conn_flush(slot_id, pcb);
-    det_conn_close(slot_id, pcb);
+    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
 
     http_reset(slot_id);
 }
@@ -1397,15 +1388,11 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
                         allow, (int)(sizeof(body) - 1));
 
     struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
-
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
         det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
     det_conn_flush(slot_id, pcb);
-    det_conn_close(slot_id, pcb);
+    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
 
@@ -1439,15 +1426,11 @@ static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
                         (unsigned long)retry_after_s, (int)(sizeof(body) - 1));
 
     struct tcp_pcb *pcb = conn->pcb;
-    det_conn_detach(pcb);
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
-
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
         det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
     det_conn_flush(slot_id, pcb);
-    det_conn_close(slot_id, pcb);
+    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
 #endif // DETWS_ENABLE_AUTH_LOCKOUT
@@ -1706,8 +1689,8 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
                         code, status_text(code), content_type, payload_len, _cors_enabled ? _cors_header_buf : "",
                         _extra_hdr[slot_id], cl);
 
-    // resp_begin frees the slot before the write on the close path (so an lwIP
-    // error callback sees CONN_FREE); on keep-alive the slot stays active.
+    // The slot stays CONN_ACTIVE through the write for both paths; resp_end then
+    // begins the CONN_CLOSING dwell on the close path (finalized once ACKed).
     struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     bool head = req_is_head(slot_id);

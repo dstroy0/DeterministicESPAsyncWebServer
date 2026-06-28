@@ -61,6 +61,19 @@
 #define CONN_TIMEOUT_MS 5000
 #endif
 
+/**
+ * @brief Upper bound (ms) a slot may dwell in CONN_CLOSING after a graceful close
+ *        before the idle sweep force-aborts it.
+ *
+ * On a graceful (local) close the slot stays in CONN_CLOSING - keeping its PCB and
+ * callbacks - until the peer ACKs the response (then it frees itself in the sent
+ * callback). If the peer never ACKs (dead/black-holed), this bound lets the
+ * timeout sweep reclaim the slot so the fixed pool cannot leak.
+ */
+#ifndef DETWS_CLOSING_TIMEOUT_MS
+#define DETWS_CLOSING_TIMEOUT_MS 2000
+#endif
+
 // ---------------------------------------------------------------------------
 // Worker model (server task concurrency)
 // ---------------------------------------------------------------------------
