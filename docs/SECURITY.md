@@ -994,4 +994,4 @@ Use this checklist before deploying to a production environment.
 
 - [ ] Build with `-Os` (default in ESP-IDF) - do not disable optimisation, as it is not needed for security and `ssh_wipe` is already volatile-correct
 - [ ] Confirm the final binary does not include the native test PRNG mock (it is excluded by the `#ifdef ARDUINO` guard in production builds)
-- [ ] Run `pio test -e native_ssh` to verify all 29 SSH crypto test vectors pass before deployment
+- [ ] Run `pio test -e native_ssh` to verify all SSH crypto test vectors pass before deployment

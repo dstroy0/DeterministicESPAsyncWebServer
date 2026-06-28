@@ -225,7 +225,7 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 | [`MAX_ROUTES`](@ref MAX_ROUTES)             | 16      | Registered route handlers                             |
 | [`MAX_HEADERS`](@ref MAX_HEADERS)           | 8       | Headers stored per request                            |
 | [`MAX_PATH_LEN`](@ref MAX_PATH_LEN)         | 64      | URL path bytes including leading `/`                  |
-| [`MAX_KEY_LEN`](@ref MAX_KEY_LEN)           | 24      | Header field-name bytes                               |
+| [`MAX_KEY_LEN`](@ref MAX_KEY_LEN)           | 32      | Header field-name bytes                               |
 | [`MAX_VAL_LEN`](@ref MAX_VAL_LEN)           | 48      | Header field-value bytes                              |
 | [`MAX_QUERY_LEN`](@ref MAX_QUERY_LEN)       | 128     | Raw query string bytes (after `?`)                    |
 | [`MAX_QUERY_PARAMS`](@ref MAX_QUERY_PARAMS) | 8       | Parsed query key=value pairs                          |
@@ -236,7 +236,7 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 
 | Constant                                      | Default | Minimum | Description                                                           |
 | --------------------------------------------- | ------- | ------- | --------------------------------------------------------------------- |
-| [`RESP_HDR_BUF_SIZE`](@ref RESP_HDR_BUF_SIZE) | 512     | 128     | Stack buffer for HTTP response headers                                |
+| [`RESP_HDR_BUF_SIZE`](@ref RESP_HDR_BUF_SIZE) | 768     | 128     | Stack buffer for HTTP response headers                                |
 | [`WS_HDR_BUF_SIZE`](@ref WS_HDR_BUF_SIZE)     | 256     | 128     | Stack buffer for WebSocket 101 response                               |
 | [`CORS_HDR_BUF_SIZE`](@ref CORS_HDR_BUF_SIZE) | 192     | 64      | Buffer for pre-built CORS header block; must be ≤ `RESP_HDR_BUF_SIZE` |
 
@@ -420,9 +420,9 @@ WebSocket          ws_pool[2 × (512 + 29)]                1,082     WS frame + 
 
 SSE                sse_pool[2 × (64 + 3)]                   134     SSE path + state
 
-SSH                ssh_pkt[2 × ~1,034]                    2,068     Pkt state + RX buf
-                   ssh_keys[2 × ~240]                       480     AES CTR ctx + MAC keys
-                   ssh_dh[2 × ~800]                        1,600     DH scalars + H
+SSH                ssh_pkt[1 × ~1,034]                    1,034     Pkt state + RX buf
+                   ssh_keys[1 × ~240]                       240     AES CTR ctx + MAC keys
+                   ssh_dh[1 × ~800]                          800     DH scalars + H
                    crypto_work[1536]                        1,536     Bignum scratch (zeroed)
                    group14_p + group14_g                     512     RFC 3526 constants
                    ssh_host_pubkey                            260     RSA-2048 public key
@@ -430,20 +430,20 @@ SSH                ssh_pkt[2 × ~1,034]                    2,068     Pkt state +
 Application        _routes[16 × ~32]                        512     Route table
 
 ────────────────── ──────────────────────────────── ─────────────── ──────────────────────────
-GRAND TOTAL (all features, default config)               ~20,162 B  ≈ 20 KB
+GRAND TOTAL (all features, default config)               ~18,088 B  ≈ 18 KB
 ```
 
 </details>
 
 ### Default Build Footprint
 
-A default compiled build of the minimal web server (including the Arduino/ESP-IDF framework core, ESP32 WiFi drivers, lwIP TCP/IP stack, and all library features active) consumes:
+The **Default server** in the Build Footprint table above - HTTP + WebSocket + SSE + multipart + file serving + Basic auth, including the Arduino/ESP-IDF framework core, ESP32 WiFi drivers, and the lwIP TCP/IP stack - measures:
 
-- **Flash Footprint**: **307,857 bytes (~307.9 KB)** (approx. **23.5%** of a standard 1.3 MB application partition).
-- **RAM Footprint (BSS + Core RAM)**: **39,264 bytes (~39.3 KB)** (approx. **12.0%** of the 320 KB internal SRAM).
-- **Zero Dynamic Allocations**: The library requests exactly **0 bytes** of heap memory after `begin()`, managing all session and packet buffers statically (including event queues created via `xQueueCreateStatic()`).
+- **Flash**: **745,133 bytes** (~56.8% of a 1.31 MB application partition); the WiFi/lwIP stack dominates (an empty no-WiFi sketch is already ~233 KB).
+- **Static RAM**: **64,264 bytes** (~19.6% of the 320 KB internal SRAM), all statically placed.
+- **Zero dynamic allocations**: the library requests exactly **0 bytes** of heap after `begin()`, managing every session and packet buffer statically (event queues via `xQueueCreateStatic()`).
 
-ESP32 has 320 KB of DRAM; this library consumes < 7% of that at maximum configuration.
+Optional subsystems (HTTPS/TLS, SSH, SNMP, ...) add to this - see the per-row deltas in the Build Footprint table above.
 
 ## Utility Tools
 
@@ -497,8 +497,9 @@ python docs/utilities/decorate_changelog.py
 
 ## Testing
 
-**498 Unity tests across 19 suites**, all runnable on a native x86/x64 host (no
-hardware required):
+**600+ Unity tests** across the native suites, all runnable on a native x86/x64 host
+(no hardware required). See **[TEST_REPORT.md](TEST_REPORT.md)** for the current
+per-suite breakdown and totals. Run a representative subset with:
 
 ```
 pio test -e native -e native_app -e native_ssh \
