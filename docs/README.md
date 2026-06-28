@@ -527,6 +527,7 @@ Other documentation files in this repository:
 | [TODO.md](TODO.md)                             | Outstanding fixes and maintenance                                 |
 | [ROADMAP.md](ROADMAP.md)                       | Forward-looking feature backlog (sized S/M/L)                     |
 | [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)   | Deliberate constraints and caveats                                |
+| [TUNING.md](TUNING.md)                         | Performance tuning: worker count, core/affinity, poll knobs       |
 | [MIGRATION.md](MIGRATION.md)                   | Breaking-change migration guide (3.x to 4.0.0)                    |
 | [CHANGELOG.md](CHANGELOG.md)                   | Release history                                                   |
 

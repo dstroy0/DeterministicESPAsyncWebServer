@@ -61,8 +61,11 @@ flag (default off) so it costs nothing when unused.
       interval (default 1, unchanged), so raising it cuts idle wakeups (CPU/power)
       at no latency cost (HW: GET latency identical at `POLL_TICKS` 1 vs 100). Zero
       heap (notifications, not a QueueSet).
-- [ ] Tuning (S): leaner tcpip callbacks, per-workload worker count/affinity guide,
-      a published before/after idle-CPU benchmark.
+- [x] Tuning _(shipped)_ - leaner tcpip recv callback (a received segment is now
+      bulk-copied into the slot ring with a single SPSC publish instead of a
+      per-byte loop with a per-byte atomic store), and a worker count / core /
+      poll-knob tuning guide with the measured latency and idle-wakeup data in
+      [TUNING.md](TUNING.md).
 
 ## Web / API / UI
 
