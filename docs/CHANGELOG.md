@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.9.5] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.5 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0cb531e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cb531ef4026ba2947b685859e1d010cb76a8a5a))
+- update CHANGELOG.md [skip ci] ([`7dce8d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dce8d55aae3e7200333d0db152f3c26e373b8d6))
+
+### Changes
+
+- Bump version: 3.9.4 → 3.9.5 ([`659a3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/659a3c5998c6ae44fd333d1231626d203e0db039))
+
+### Testing
+
+- expand host fuzz to 23 targets + add live adversarial driver ([`397f656`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/397f65644e9f49e8fd3be5cbfa663f46948c9bec))
+
+</details>
+
 ## [3.9.4] - 2026-06-28
 
 <details>
