@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.6.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.6.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`72255ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72255ec7ff09a62a47b4a56503819cddb8c22121))
+- update CHANGELOG.md [skip ci] ([`b94ab83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b94ab83c6816f4c08b5d67a71745799e02489a68))
+
+### Changes
+
+- Bump version: 4.5.0 → 4.6.0 ([`987c90d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/987c90d7379a0acd354c0dcc209c713a1d4aab9d))
+
+### Documentation
+
+- roadmap TLS 1.2/1.3 + HTTP/2/3 (RFCs); README not-audited notice ([`17f78d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17f78d59b336d6e98bc53d98db358d2179bbae73))
+
+### Features
+
+- stream PUT bodies to disk; make RX flow control deadlock-proof ([`a15545e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a15545e7b080d72714b89fb1b17a703844d35e61))
+
+</details>
+
 ## [4.5.0] - 2026-06-28
 
 <details>
