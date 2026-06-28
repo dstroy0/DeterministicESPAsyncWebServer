@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: DeterministicESPAsyncWebServer
+abstract: >-
+  Zero-heap, asynchronous, multi-protocol network server for the ESP32 with a
+  fully deterministic memory footprint. RFC 7230 HTTP/1.1 plus WebSocket,
+  Server-Sent Events, authentication, file serving, and optional TLS, SSH,
+  Telnet, SNMP, CoAP, and more. All buffers are statically sized at compile time.
+type: software
+authors:
+  - given-names: Douglas
+    family-names: Quigg
+    email: dquigg123@gmail.com
+    alias: dstroy0
+repository-code: "https://github.com/dstroy0/DeterministicESPAsyncWebServer"
+url: "https://dstroy0.github.io/DeterministicESPAsyncWebServer/"
+license: AGPL-3.0-or-later
+version: 3.8.4
+date-released: "2026-06-27"
+keywords:
+  - esp32
+  - http
+  - websocket
+  - deterministic
+  - zero-heap
+  - rfc7230
+  - lwip
+  - embedded

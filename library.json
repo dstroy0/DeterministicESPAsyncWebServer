@@ -31,6 +31,8 @@
       "cspell.json",
       ".clang-format",
       ".prettierignore",
+      ".editorconfig",
+      "package.json",
       "docs/html",
       "docs/utilities",
       "docs/Doxyfile",
