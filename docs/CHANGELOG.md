@@ -2,10 +2,19 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.4.1] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.4.1 - 2026-06-28</b></summary>
+
+### Bug Fixes
+
+- page large file responses across loops, never truncate ([`08c581e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08c581e70414f70c739c49c94aa04758f45115c5))
 
 ### CI / Build
 
+- update test report [skip ci] ([`1c71d19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c71d19c3206976f229c665b63ef116d14e7d3b1))
+- update CHANGELOG.md [skip ci] ([`bd81088`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd81088db2d1dbaea663ac9cb87a3d03edb852b0))
 - bump actions/checkout from 4 to 7 ([`b1a087b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a087bc407fbd31cc5f73b9f157748bedb8b97f))
 - bump github/codeql-action from 3 to 4 ([`320b945`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/320b9456bb31f5b6120eeb27e1d05f20456de3dd))
 - update test report [skip ci] ([`dc54755`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc54755251d0721c29658aee947a8cc89de9cfe6))
@@ -13,8 +22,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 4.4.0 → 4.4.1 ([`0cb529f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cb529fe7205bc289bf6970a6fa5849b91502a50))
 - Merge pull request #4 from dstroy0/dependabot/github_actions/actions/checkout-7 ([`a8b296a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8b296a655c3654f3ea064dbf1362adc39293d8c))
 - Merge pull request #5 from dstroy0/dependabot/github_actions/github/codeql-action-4 ([`88bc621`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88bc6216ae07487d35e4472442da167de6dad041))
+
+### Documentation
+
+- add a prominent active-development / breaking-changes notice ([`aadf4f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aadf4f35b9a0c84577cc7034c070e778f2fe61d0))
+
+</details>
 
 ## [4.4.0] - 2026-06-28
 
