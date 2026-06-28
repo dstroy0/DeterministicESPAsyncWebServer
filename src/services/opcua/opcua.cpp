@@ -468,15 +468,16 @@ static size_t patch_size(UaWriter *w)
     return w->n;
 }
 
-// Write a MSG envelope prefix: UACP header (size placeholder) + SymmetricSecurityHeader
-// (TokenId) + SequenceHeader (SequenceNumber, RequestId).
-static void w_msg_prefix(UaWriter *w, uint32_t token_id, uint32_t seq, uint32_t request_id)
+// Write a MSG envelope prefix: UACP header (size placeholder) + SecureChannelId +
+// SymmetricSecurityHeader (TokenId) + SequenceHeader (SequenceNumber, RequestId).
+static void w_msg_prefix(UaWriter *w, uint32_t channel_id, uint32_t token_id, uint32_t seq, uint32_t request_id)
 {
     ua_w_u8(w, 'M');
     ua_w_u8(w, 'S');
     ua_w_u8(w, 'G');
     ua_w_u8(w, 'F');
     ua_w_u32(w, 0);          // size placeholder
+    ua_w_u32(w, channel_id); // SecureChannelId
     ua_w_u32(w, token_id);   // SymmetricSecurityHeader.TokenId
     ua_w_u32(w, seq);        // SequenceHeader.SequenceNumber
     ua_w_u32(w, request_id); // SequenceHeader.RequestId
@@ -503,9 +504,10 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
         return false;
 
     UaReader r = {msg + 8, len - 8, 0, false};
-    out->token_id = ua_r_u32(&r);        // SymmetricSecurityHeader.TokenId
-    out->sequence_number = ua_r_u32(&r); // SequenceHeader.SequenceNumber
-    out->request_id = ua_r_u32(&r);      // SequenceHeader.RequestId
+    out->secure_channel_id = ua_r_u32(&r); // SecureChannelId
+    out->token_id = ua_r_u32(&r);          // SymmetricSecurityHeader.TokenId
+    out->sequence_number = ua_r_u32(&r);   // SequenceHeader.SequenceNumber
+    out->request_id = ua_r_u32(&r);        // SequenceHeader.RequestId
 
     UaNodeId tid;
     if (!ua_r_nodeid(&r, &tid)) // body TypeId
@@ -515,14 +517,54 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
     return r_request_header(&r, &out->request_handle);
 }
 
+// Transport profile URI for UA-TCP / UA-SecureConversation / UA Binary.
+static const char *const OPCUA_TRANSPORT_URI = "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary";
+
+// Server identity advertised in endpoint descriptions (settable via opcua_set_endpoint_url).
+static OpcUaServerInfo s_server_info = {"opc.tcp://localhost:4840", "urn:det:opcua:server", "DetOpcUaServer"};
+
+void opcua_set_endpoint_url(const char *url)
+{
+    s_server_info.endpoint_url = url;
+}
+
+void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info)
+{
+    const char *url = (info && info->endpoint_url) ? info->endpoint_url : "opc.tcp://localhost:4840";
+    const char *auri = (info && info->application_uri) ? info->application_uri : "urn:det:opcua:server";
+    const char *aname = (info && info->application_name) ? info->application_name : "DetOpcUaServer";
+
+    ua_w_string(w, url, (int32_t)strlen(url)); // EndpointUrl
+    // Server (ApplicationDescription).
+    ua_w_string(w, auri, (int32_t)strlen(auri)); // ApplicationUri
+    ua_w_string(w, "urn:det:opcua", 13);         // ProductUri
+    ua_w_localizedtext(w, nullptr, aname);       // ApplicationName
+    ua_w_u32(w, 0);                              // ApplicationType = Server
+    ua_w_string(w, nullptr, -1);                 // GatewayServerUri
+    ua_w_string(w, nullptr, -1);                 // DiscoveryProfileUri
+    ua_w_i32(w, -1);                             // DiscoveryUrls[] (null)
+    ua_w_string(w, nullptr, -1);                 // ServerCertificate (ByteString, null)
+    ua_w_u32(w, 1);                              // MessageSecurityMode = None
+    ua_w_string(w, OPCUA_POLICY_NONE_URI, (int32_t)strlen(OPCUA_POLICY_NONE_URI)); // SecurityPolicyUri
+    // UserIdentityTokens[] - one Anonymous policy.
+    ua_w_i32(w, 1);
+    ua_w_string(w, "anonymous", 9);                                            // UserTokenPolicy.PolicyId
+    ua_w_u32(w, 0);                                                            // TokenType = Anonymous
+    ua_w_string(w, nullptr, -1);                                               // IssuedTokenType
+    ua_w_string(w, nullptr, -1);                                               // IssuerEndpointUrl
+    ua_w_string(w, nullptr, -1);                                               // SecurityPolicyUri
+    ua_w_string(w, OPCUA_TRANSPORT_URI, (int32_t)strlen(OPCUA_TRANSPORT_URI)); // TransportProfileUri
+    ua_w_u8(w, 0);                                                             // SecurityLevel (Byte)
+}
+
 size_t opcua_build_create_session_response(const OpcUaMsg *req, uint32_t session_id, uint32_t auth_token,
-                                           double revised_timeout, uint32_t seq, int64_t now_ft, uint8_t *out,
-                                           size_t cap)
+                                           double revised_timeout, const OpcUaServerInfo *info, uint32_t seq,
+                                           int64_t now_ft, uint8_t *out, size_t cap)
 {
     if (!req || !out)
         return 0;
     UaWriter w = {out, cap, 0, true};
-    w_msg_prefix(&w, req->token_id, seq, req->request_id);
+    w_msg_prefix(&w, req->secure_channel_id, req->token_id, seq, req->request_id);
     ua_w_nodeid_numeric(&w, 0, OPCUA_ID_CREATE_SESSION_RESP);
     w_response_header(&w, now_ft, req->request_handle, 0);
 
@@ -531,11 +573,38 @@ size_t opcua_build_create_session_response(const OpcUaMsg *req, uint32_t session
     ua_w_f64(&w, revised_timeout);          // RevisedSessionTimeout (ms)
     ua_w_string(&w, nullptr, -1);           // ServerNonce (none for SecurityPolicy None)
     ua_w_string(&w, nullptr, -1);           // ServerCertificate
-    ua_w_i32(&w, 0);                        // ServerEndpoints[] (empty)
-    ua_w_i32(&w, 0);                        // ServerSoftwareCertificates[] (empty)
-    ua_w_string(&w, nullptr, -1);           // ServerSignature.Algorithm (null String)
-    ua_w_string(&w, nullptr, -1);           // ServerSignature.Signature (null ByteString)
-    ua_w_u32(&w, 0);                        // MaxRequestMessageSize (0 = no limit)
+    ua_w_i32(&w, 1);                        // ServerEndpoints[] - advertise one None endpoint
+    ua_w_endpoint_description(&w, info);
+    ua_w_i32(&w, 0);              // ServerSoftwareCertificates[] (empty)
+    ua_w_string(&w, nullptr, -1); // ServerSignature.Algorithm (null String)
+    ua_w_string(&w, nullptr, -1); // ServerSignature.Signature (null ByteString)
+    ua_w_u32(&w, 0);              // MaxRequestMessageSize (0 = no limit)
+    return patch_size(&w);
+}
+
+size_t opcua_build_get_endpoints_response(const OpcUaMsg *req, const OpcUaServerInfo *info, uint32_t seq,
+                                          int64_t now_ft, uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+    w_msg_prefix(&w, req->secure_channel_id, req->token_id, seq, req->request_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_GET_ENDPOINTS_RESP);
+    w_response_header(&w, now_ft, req->request_handle, 0);
+    ua_w_i32(&w, 1); // Endpoints[] - one SecurityPolicy None endpoint
+    ua_w_endpoint_description(&w, info);
+    return patch_size(&w);
+}
+
+size_t opcua_build_service_fault(const OpcUaMsg *req, uint32_t service_result, uint32_t seq, int64_t now_ft,
+                                 uint8_t *out, size_t cap)
+{
+    if (!req || !out)
+        return 0;
+    UaWriter w = {out, cap, 0, true};
+    w_msg_prefix(&w, req->secure_channel_id, req->token_id, seq, req->request_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_SERVICE_FAULT);
+    w_response_header(&w, now_ft, req->request_handle, service_result); // ServiceFault = ResponseHeader only
     return patch_size(&w);
 }
 
@@ -545,7 +614,7 @@ size_t opcua_build_activate_session_response(const OpcUaMsg *req, uint32_t seq, 
     if (!req || !out)
         return 0;
     UaWriter w = {out, cap, 0, true};
-    w_msg_prefix(&w, req->token_id, seq, req->request_id);
+    w_msg_prefix(&w, req->secure_channel_id, req->token_id, seq, req->request_id);
     ua_w_nodeid_numeric(&w, 0, OPCUA_ID_ACTIVATE_SESSION_RESP);
     w_response_header(&w, now_ft, req->request_handle, 0);
 
@@ -616,6 +685,7 @@ bool opcua_parse_read(const uint8_t *msg, size_t len, OpcUaReadRequest *out)
         return false;
 
     UaReader r = {msg + 8, len - 8, 0, false};
+    out->msg.secure_channel_id = ua_r_u32(&r); // SecureChannelId
     out->msg.token_id = ua_r_u32(&r);
     out->msg.sequence_number = ua_r_u32(&r);
     out->msg.request_id = ua_r_u32(&r);
@@ -664,7 +734,7 @@ size_t opcua_build_read_response(const OpcUaReadRequest *req, const OpcUaVariant
     if (!req || !out)
         return 0;
     UaWriter w = {out, cap, 0, true};
-    w_msg_prefix(&w, req->msg.token_id, seq, req->msg.request_id);
+    w_msg_prefix(&w, req->msg.secure_channel_id, req->msg.token_id, seq, req->msg.request_id);
     ua_w_nodeid_numeric(&w, 0, OPCUA_ID_READ_RESP);
     w_response_header(&w, now_ft, req->msg.request_handle, 0);
 
@@ -730,6 +800,7 @@ bool opcua_parse_browse(const uint8_t *msg, size_t len, OpcUaBrowseRequest *out)
         return false;
 
     UaReader r = {msg + 8, len - 8, 0, false};
+    out->msg.secure_channel_id = ua_r_u32(&r); // SecureChannelId
     out->msg.token_id = ua_r_u32(&r);
     out->msg.sequence_number = ua_r_u32(&r);
     out->msg.request_id = ua_r_u32(&r);
@@ -779,7 +850,7 @@ size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHan
     if (!req || !out)
         return 0;
     UaWriter w = {out, cap, 0, true};
-    w_msg_prefix(&w, req->msg.token_id, seq, req->msg.request_id);
+    w_msg_prefix(&w, req->msg.secure_channel_id, req->msg.token_id, seq, req->msg.request_id);
     ua_w_nodeid_numeric(&w, 0, OPCUA_ID_BROWSE_RESP);
     w_response_header(&w, now_ft, req->msg.request_handle, 0);
 
@@ -807,7 +878,7 @@ size_t opcua_build_close_session_response(const OpcUaMsg *req, uint32_t seq, int
     if (!req || !out)
         return 0;
     UaWriter w = {out, cap, 0, true};
-    w_msg_prefix(&w, req->token_id, seq, req->request_id);
+    w_msg_prefix(&w, req->secure_channel_id, req->token_id, seq, req->request_id);
     ua_w_nodeid_numeric(&w, 0, OPCUA_ID_CLOSE_SESSION_RESP);
     w_response_header(&w, now_ft, req->request_handle, 0); // ResponseHeader only
     return patch_size(&w);
@@ -953,9 +1024,11 @@ void opcua_rx(uint8_t slot)
             int64_t now = opcua_filetime_from_unix((int64_t)time(nullptr));
             uint32_t seq = ++s_seq;
             size_t n = 0;
-            if (m.type_id == OPCUA_ID_CREATE_SESSION_REQ)
-                n = opcua_build_create_session_response(&m, ++s_session_id, ++s_auth_token, 1200000.0, seq, now, s_resp,
-                                                        sizeof(s_resp));
+            if (m.type_id == OPCUA_ID_GET_ENDPOINTS_REQ)
+                n = opcua_build_get_endpoints_response(&m, &s_server_info, seq, now, s_resp, sizeof(s_resp));
+            else if (m.type_id == OPCUA_ID_CREATE_SESSION_REQ)
+                n = opcua_build_create_session_response(&m, ++s_session_id, ++s_auth_token, 1200000.0, &s_server_info,
+                                                        seq, now, s_resp, sizeof(s_resp));
             else if (m.type_id == OPCUA_ID_ACTIVATE_SESSION_REQ)
                 n = opcua_build_activate_session_response(&m, seq, now, s_resp, sizeof(s_resp));
             else if (m.type_id == OPCUA_ID_READ_REQ)
@@ -989,9 +1062,11 @@ void opcua_rx(uint8_t slot)
             }
             else if (m.type_id == OPCUA_ID_CLOSE_SESSION_REQ)
                 n = opcua_build_close_session_response(&m, seq, now, s_resp, sizeof(s_resp));
+            else // unknown/unsupported service -> ServiceFault (so the client never hangs)
+                n = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, seq, now, s_resp,
+                                              sizeof(s_resp));
             if (n > 0)
                 raw_send(slot, s_resp, n);
-            // Unhandled MSG services are consumed and ignored (a future increment may ServiceFault).
         }
         else if (memcmp(h.type, "CLO", 3) == 0)
         {

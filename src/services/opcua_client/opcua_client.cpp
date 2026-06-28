@@ -59,7 +59,8 @@ static void cw_msg(OpcUaClient *c, UaWriter *w, uint32_t type_id)
     ua_w_u8(w, 'G');
     ua_w_u8(w, 'F');
     ua_w_u32(w, 0);               // size placeholder
-    ua_w_u32(w, c->token_id);     // TokenId
+    ua_w_u32(w, c->channel_id);   // SecureChannelId
+    ua_w_u32(w, c->token_id);     // SymmetricSecurityHeader.TokenId
     ua_w_u32(w, ++c->seq);        // SequenceNumber
     ua_w_u32(w, ++c->request_id); // RequestId
     ua_w_nodeid_numeric(w, 0, type_id);
@@ -106,6 +107,17 @@ size_t opcua_client_open(OpcUaClient *c, uint8_t *out, size_t cap)
     ua_w_u32(&w, 1);              // MessageSecurityMode = None
     ua_w_string(&w, nullptr, -1); // ClientNonce
     ua_w_u32(&w, 3600000);        // RequestedLifetime (ms)
+    return cw_patch(&w);
+}
+
+size_t opcua_client_get_endpoints(OpcUaClient *c, const char *endpoint_url, uint8_t *out, size_t cap)
+{
+    UaWriter w = {out, cap, 0, true};
+    cw_msg(c, &w, OPCUA_ID_GET_ENDPOINTS_REQ);
+    cw_request_header(c, &w, false);                                                  // GetEndpoints needs no session
+    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strlen(endpoint_url) : -1); // EndpointUrl
+    ua_w_i32(&w, -1);                                                                 // LocaleIds[] (null)
+    ua_w_i32(&w, -1);                                                                 // ProfileUris[] (null)
     return cw_patch(&w);
 }
 
@@ -261,6 +273,7 @@ static bool cr_msg_open(const uint8_t *msg, size_t len, UaReader *r, uint32_t ex
     if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0 || h.size != len)
         return false;
     *r = UaReader{msg + 8, len - 8, 0, false};
+    (void)ua_r_u32(r); // SecureChannelId
     (void)ua_r_u32(r); // TokenId
     (void)ua_r_u32(r); // SequenceNumber
     (void)ua_r_u32(r); // RequestId
@@ -315,6 +328,16 @@ bool opcua_client_on_open(OpcUaClient *c, const uint8_t *msg, size_t len)
     (void)ua_r_u64(&r);           // CreatedAt
     (void)ua_r_u32(&r);           // RevisedLifetime
     return !r.err && svc == OPCUA_STATUS_GOOD;
+}
+
+int32_t opcua_client_on_get_endpoints(const uint8_t *msg, size_t len)
+{
+    UaReader r;
+    uint32_t svc = 0;
+    if (!cr_msg_open(msg, len, &r, OPCUA_ID_GET_ENDPOINTS_RESP, &svc) || svc != OPCUA_STATUS_GOOD)
+        return -1;
+    int32_t cnt = ua_r_i32(&r); // Endpoints[] count
+    return (cnt < 0 || r.err) ? -1 : cnt;
 }
 
 bool opcua_client_on_create_session(OpcUaClient *c, const uint8_t *msg, size_t len)

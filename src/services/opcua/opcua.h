@@ -218,11 +218,12 @@ size_t opcua_build_open_response(const OpcUaOpenChannel *req, uint32_t channel_i
 /** @brief Common fields of a `MSG` (secure conversation) service request. */
 struct OpcUaMsg
 {
-    uint32_t token_id;        ///< SymmetricSecurityHeader TokenId.
-    uint32_t sequence_number; ///< SequenceHeader SequenceNumber.
-    uint32_t request_id;      ///< SequenceHeader RequestId (echoed in the response).
-    uint32_t type_id;         ///< Body TypeId NodeId (numeric id; 0 if non-numeric).
-    uint32_t request_handle;  ///< RequestHeader RequestHandle (echoed in the response).
+    uint32_t secure_channel_id; ///< SecureChannelId (echoed in the response).
+    uint32_t token_id;          ///< SymmetricSecurityHeader TokenId.
+    uint32_t sequence_number;   ///< SequenceHeader SequenceNumber.
+    uint32_t request_id;        ///< SequenceHeader RequestId (echoed in the response).
+    uint32_t type_id;           ///< Body TypeId NodeId (numeric id; 0 if non-numeric).
+    uint32_t request_handle;    ///< RequestHeader RequestHandle (echoed in the response).
 };
 
 /**
@@ -232,20 +233,30 @@ struct OpcUaMsg
  */
 bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out);
 
+/** @brief Identity the server advertises in GetEndpoints / CreateSession endpoint descriptions. */
+struct OpcUaServerInfo
+{
+    const char *endpoint_url;     ///< e.g. "opc.tcp://192.168.1.85:4840".
+    const char *application_uri;  ///< server ApplicationUri.
+    const char *application_name; ///< server ApplicationName (display text).
+};
+
 /**
  * @brief Build a `MSG` CreateSessionResponse (SecurityPolicy None): assign a SessionId
- *        and AuthenticationToken, empty endpoint/certificate/signature fields.
+ *        and AuthenticationToken and advertise one None endpoint in ServerEndpoints so
+ *        a client's endpoint validation matches GetEndpoints.
  * @param req             the parsed request (TokenId/RequestId/RequestHandle echoed).
  * @param session_id      numeric SessionId identifier the server assigns (namespace 1).
  * @param auth_token      numeric AuthenticationToken the server assigns (namespace 1).
  * @param revised_timeout RevisedSessionTimeout (ms).
+ * @param info            server identity for the advertised endpoint (may be null for defaults).
  * @param seq             server SequenceNumber for this message.
  * @param now_ft          OPC UA DateTime for the response timestamp (0 = unset).
  * @return total MSG bytes written, or 0 if it does not fit @p cap.
  */
 size_t opcua_build_create_session_response(const OpcUaMsg *req, uint32_t session_id, uint32_t auth_token,
-                                           double revised_timeout, uint32_t seq, int64_t now_ft, uint8_t *out,
-                                           size_t cap);
+                                           double revised_timeout, const OpcUaServerInfo *info, uint32_t seq,
+                                           int64_t now_ft, uint8_t *out, size_t cap);
 
 /**
  * @brief Build a `MSG` ActivateSessionResponse (SecurityPolicy None): ServiceResult Good,
@@ -432,6 +443,35 @@ size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHan
 
 /** @brief Build a `MSG` CloseSessionResponse (ResponseHeader only, ServiceResult Good). */
 size_t opcua_build_close_session_response(const OpcUaMsg *req, uint32_t seq, int64_t now_ft, uint8_t *out, size_t cap);
+
+// ---------------------------------------------------------------------------
+// GetEndpoints + ServiceFault (third-party client interop)
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeIds (namespace 0) for GetEndpoints / ServiceFault (binary encoding ids). */
+#define OPCUA_ID_GET_ENDPOINTS_REQ 428  ///< GetEndpointsRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_GET_ENDPOINTS_RESP 431 ///< GetEndpointsResponse_Encoding_DefaultBinary.
+#define OPCUA_ID_SERVICE_FAULT 397      ///< ServiceFault_Encoding_DefaultBinary.
+
+/** @brief StatusCode for an unsupported service (returned in a ServiceFault). */
+#define OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED 0x800B0000u
+
+/** @brief Encode one EndpointDescription (SecurityMode/Policy None, one Anonymous user-token policy). */
+void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info);
+
+/** @brief Build a `MSG` GetEndpointsResponse advertising a single SecurityPolicy None endpoint. */
+size_t opcua_build_get_endpoints_response(const OpcUaMsg *req, const OpcUaServerInfo *info, uint32_t seq,
+                                          int64_t now_ft, uint8_t *out, size_t cap);
+
+/**
+ * @brief Build a `MSG` ServiceFault (TypeId i=397) - a bare ResponseHeader carrying
+ *        @p service_result, the reply for an unsupported/unknown service request.
+ */
+size_t opcua_build_service_fault(const OpcUaMsg *req, uint32_t service_result, uint32_t seq, int64_t now_ft,
+                                 uint8_t *out, size_t cap);
+
+/** @brief Set the endpoint URL the PROTO_OPCUA server advertises (GetEndpoints / CreateSession). */
+void opcua_set_endpoint_url(const char *url);
 
 // ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)

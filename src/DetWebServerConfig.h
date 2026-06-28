@@ -1344,10 +1344,13 @@
  * little-endian built-in-type codec (incl. NodeId / ExtensionObject / DateTime /
  * Variant / DataValue / ReferenceDescription), UA-TCP (UACP) message framing, the
  * Hello/Acknowledge handshake, the SecureChannel (OpenSecureChannel, SecurityPolicy
- * None), the Session (CreateSession + ActivateSession), the Read service and the
- * Browse service (registered resolvers map a NodeId to a value / child references),
- * plus CloseSession + CloseSecureChannel, served on TCP via PROTO_OPCUA
- * (`listen(4840, PROTO_OPCUA)`). All of it is pure and host-tested. No heap, no stdlib.
+ * None), the Session (CreateSession + ActivateSession), GetEndpoints, the Read and
+ * Browse services (registered resolvers map a NodeId to a value / child references),
+ * plus CloseSession + CloseSecureChannel and a ServiceFault for unsupported services,
+ * served on TCP via PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`). The MSG framing is
+ * spec-faithful (incl. SecureChannelId), so standard clients interoperate (verified
+ * with python asyncua: connect + browse + read). All pure and host-tested. No heap,
+ * no stdlib.
  */
 #ifndef DETWS_ENABLE_OPCUA
 #define DETWS_ENABLE_OPCUA 0

@@ -126,6 +126,9 @@ static void run_client(IPAddress ip)
         Serial.println("[opcua-client] OpenSecureChannel failed");
         return;
     }
+    n = exchange(sock, opcua_client_get_endpoints(&c, "opc.tcp://self:4840", c_req, sizeof(c_req)));
+    Serial.printf("[opcua-client] GetEndpoints -> %d endpoint(s)\n",
+                  n ? (int)opcua_client_on_get_endpoints(c_resp, n) : -1);
     n = exchange(sock, opcua_client_create_session(&c, "esp32", "opc.tcp://self:4840", c_req, sizeof(c_req)));
     if (!n || !opcua_client_on_create_session(&c, c_resp, n))
     {
@@ -173,6 +176,9 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
+    static char url[48];
+    snprintf(url, sizeof(url), "opc.tcp://%s:4840", WiFi.localIP().toString().c_str());
+    opcua_set_endpoint_url(url); // advertised in GetEndpoints / CreateSession
     opcua_set_read_handler(srv_read);
     opcua_set_browse_handler(srv_browse);
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA client demo"); });

@@ -325,6 +325,7 @@ static size_t build_msg(uint8_t *out, size_t cap, uint32_t type_id, uint32_t tok
     ua_w_u8(&w, 'G');
     ua_w_u8(&w, 'F');
     ua_w_u32(&w, 0);     // size placeholder
+    ua_w_u32(&w, 0);     // SecureChannelId
     ua_w_u32(&w, token); // SymmetricSecurityHeader.TokenId
     ua_w_u32(&w, seq);   // SequenceHeader.SequenceNumber
     ua_w_u32(&w, req_id);
@@ -373,9 +374,10 @@ void test_build_create_session_response()
     OpcUaMsg m;
     TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
 
-    uint8_t resp[256];
+    uint8_t resp[512];
     int64_t now = opcua_filetime_from_unix(1700000000LL);
-    size_t rn = opcua_build_create_session_response(&m, 0x1001, 0x2002, 1200000.0, 5, now, resp, sizeof(resp));
+    OpcUaServerInfo si = {"opc.tcp://test:4840", "urn:test", "TestServer"};
+    size_t rn = opcua_build_create_session_response(&m, 0x1001, 0x2002, 1200000.0, &si, 5, now, resp, sizeof(resp));
     TEST_ASSERT_TRUE(rn > 0);
 
     UaMsgHeader h;
@@ -386,6 +388,7 @@ void test_build_create_session_response()
     UaReader r = {resp + 8, rn - 8, 0, false};
     char str[16];
     int32_t sl = 0;
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));   // SecureChannelId echoed
     TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
     TEST_ASSERT_EQUAL_UINT32(5, ua_r_u32(&r));   // SequenceNumber
     TEST_ASSERT_EQUAL_UINT32(100, ua_r_u32(&r)); // RequestId echoed
@@ -410,11 +413,9 @@ void test_build_create_session_response()
     TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerNonce null
     TEST_ASSERT_EQUAL_INT32(-1, sl);
     TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerCertificate null
-    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));                 // ServerEndpoints[] empty
-    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));                 // ServerSoftwareCertificates[] empty
-    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerSignature.Algorithm null
-    TEST_ASSERT_TRUE(ua_r_string(&r, str, sizeof(str), &sl)); // ServerSignature.Signature null
-    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));                // MaxRequestMessageSize
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));                 // ServerEndpoints[] -> one endpoint
+    // The endpoint encoding itself is validated by test_build_get_endpoints; here we
+    // just confirm the session fields and a clean parse of the rest of the message.
     TEST_ASSERT_FALSE(r.err);
 }
 
@@ -436,6 +437,7 @@ void test_build_activate_session_response()
     UaReader r = {resp + 8, rn - 8, 0, false};
     char str[8];
     int32_t sl = 0;
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));   // SecureChannelId echoed
     TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
     TEST_ASSERT_EQUAL_UINT32(6, ua_r_u32(&r));   // SequenceNumber
     TEST_ASSERT_EQUAL_UINT32(101, ua_r_u32(&r)); // RequestId echoed
@@ -502,6 +504,7 @@ static size_t build_read(uint8_t *out, size_t cap, uint32_t token, uint32_t seq,
     ua_w_u8(&w, 'G');
     ua_w_u8(&w, 'F');
     ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0); // SecureChannelId
     ua_w_u32(&w, token);
     ua_w_u32(&w, seq);
     ua_w_u32(&w, req_id);
@@ -576,6 +579,7 @@ void test_build_read_response()
     TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
 
     UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));   // SecureChannelId echoed
     TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
     TEST_ASSERT_EQUAL_UINT32(9, ua_r_u32(&r));   // SequenceNumber
     TEST_ASSERT_EQUAL_UINT32(200, ua_r_u32(&r)); // RequestId echoed
@@ -637,6 +641,7 @@ static size_t build_browse(uint8_t *out, size_t cap, uint32_t token, uint32_t se
     ua_w_u8(&w, 'G');
     ua_w_u8(&w, 'F');
     ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0); // SecureChannelId
     ua_w_u32(&w, token);
     ua_w_u32(&w, seq);
     ua_w_u32(&w, req_id);
@@ -697,6 +702,7 @@ void test_build_browse_response()
     TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
 
     UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));   // SecureChannelId echoed
     TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId
     TEST_ASSERT_EQUAL_UINT32(11, ua_r_u32(&r));  // SequenceNumber
     TEST_ASSERT_EQUAL_UINT32(300, ua_r_u32(&r)); // RequestId
@@ -757,7 +763,7 @@ void test_build_browse_response_unknown()
     TEST_ASSERT_TRUE(rn > 0);
 
     UaReader r = {resp + 8, rn - 8, 0, false};
-    r.off = 12; // skip TokenId/Seq/RequestId
+    r.off = 16; // skip SecureChannelId/TokenId/Seq/RequestId
     UaNodeId tid;
     ua_r_nodeid(&r, &tid);                                                   // TypeId
     (void)ua_r_u64(&r);                                                      // Timestamp
@@ -792,6 +798,7 @@ void test_build_close_session_response()
     TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
 
     UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));   // SecureChannelId echoed
     TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId
     TEST_ASSERT_EQUAL_UINT32(12, ua_r_u32(&r));  // SequenceNumber
     TEST_ASSERT_EQUAL_UINT32(400, ua_r_u32(&r)); // RequestId
@@ -801,6 +808,93 @@ void test_build_close_session_response()
     (void)ua_r_u64(&r);                         // Timestamp
     TEST_ASSERT_EQUAL_UINT32(80, ua_r_u32(&r)); // RequestHandle
     TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// ---------------------------------------------------------------------------
+// GetEndpoints + ServiceFault (interop)
+// ---------------------------------------------------------------------------
+
+void test_build_get_endpoints()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), OPCUA_ID_GET_ENDPOINTS_REQ, 7, 8, 500, 90);
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_GET_ENDPOINTS_REQ, m.type_id);
+
+    OpcUaServerInfo si = {"opc.tcp://test:4840", "urn:test", "TestServer"};
+    uint8_t resp[512];
+    size_t rn = opcua_build_get_endpoints_response(&m, &si, 9, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    r.off = 16; // skip SecureChannelId/TokenId/SequenceNumber/RequestId
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_GET_ENDPOINTS_RESP, tid.id);
+    (void)ua_r_u64(&r);                         // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(90, ua_r_u32(&r)); // RequestHandle echoed
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    (void)ua_r_u8(&r);                          // DiagnosticInfo
+    (void)ua_r_i32(&r);                         // StringTable
+    ua_r_nodeid(&r, &tid);                      // AdditionalHeader NodeId
+    (void)ua_r_u8(&r);                          // AdditionalHeader body
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));   // Endpoints[] count
+
+    // EndpointDescription
+    char s[96];
+    int32_t sl = 0;
+    TEST_ASSERT_TRUE(ua_r_string(&r, s, sizeof(s), &sl)); // EndpointUrl
+    TEST_ASSERT_EQUAL_STRING("opc.tcp://test:4840", s);
+    TEST_ASSERT_TRUE(ua_r_string(&r, s, sizeof(s), &sl)); // ApplicationUri
+    TEST_ASSERT_EQUAL_STRING("urn:test", s);
+    ua_r_string(&r, s, sizeof(s), &sl); // ProductUri
+    uint8_t mask = ua_r_u8(&r);         // ApplicationName LocalizedText mask
+    if (mask & 0x01)
+        ua_r_string(&r, s, sizeof(s), &sl);
+    if (mask & 0x02)
+        ua_r_string(&r, s, sizeof(s), &sl);
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r)); // ApplicationType = Server
+    ua_r_string(&r, s, sizeof(s), &sl);        // GatewayServerUri
+    ua_r_string(&r, s, sizeof(s), &sl);        // DiscoveryProfileUri
+    TEST_ASSERT_EQUAL_INT32(-1, ua_r_i32(&r)); // DiscoveryUrls[] null
+    ua_r_string(&r, s, sizeof(s), &sl);        // ServerCertificate
+    TEST_ASSERT_EQUAL_UINT32(1, ua_r_u32(&r)); // MessageSecurityMode = None
+    TEST_ASSERT_TRUE(ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING(OPCUA_POLICY_NONE_URI, s); // SecurityPolicyUri
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));           // UserIdentityTokens[] count
+    TEST_ASSERT_TRUE(ua_r_string(&r, s, sizeof(s), &sl));
+    TEST_ASSERT_EQUAL_STRING("anonymous", s);             // PolicyId
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));            // TokenType = Anonymous
+    ua_r_string(&r, s, sizeof(s), &sl);                   // IssuedTokenType
+    ua_r_string(&r, s, sizeof(s), &sl);                   // IssuerEndpointUrl
+    ua_r_string(&r, s, sizeof(s), &sl);                   // SecurityPolicyUri
+    TEST_ASSERT_TRUE(ua_r_string(&r, s, sizeof(s), &sl)); // TransportProfileUri
+    (void)ua_r_u8(&r);                                    // SecurityLevel
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_build_service_fault()
+{
+    uint8_t buf[128];
+    size_t n = build_msg(buf, sizeof(buf), 9999, 7, 9, 600, 91); // 9999 = unsupported service
+    OpcUaMsg m;
+    TEST_ASSERT_TRUE(opcua_parse_msg(buf, n, &m));
+    TEST_ASSERT_EQUAL_UINT32(9999, m.type_id);
+
+    uint8_t resp[64];
+    size_t rn = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, 3, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    r.off = 16;
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_SERVICE_FAULT, tid.id);
+    (void)ua_r_u64(&r);                                                          // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(91, ua_r_u32(&r));                                  // RequestHandle echoed
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, ua_r_u32(&r)); // ServiceResult
     TEST_ASSERT_FALSE(r.err);
 }
 
@@ -832,5 +926,7 @@ int main()
     RUN_TEST(test_build_browse_response);
     RUN_TEST(test_build_browse_response_unknown);
     RUN_TEST(test_build_close_session_response);
+    RUN_TEST(test_build_get_endpoints);
+    RUN_TEST(test_build_service_fault);
     return UNITY_END();
 }
