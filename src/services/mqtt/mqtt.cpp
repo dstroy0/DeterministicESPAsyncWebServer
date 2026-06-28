@@ -324,10 +324,7 @@ bool mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *pac
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "lwip/dns.h"
-#include "lwip/priv/tcpip_priv.h"
-#include "lwip/tcp.h"
-#include "network_drivers/transport/transport.h" // det_conn_raw_send (MQTTS ciphertext write)
+#include "network_drivers/transport/det_client.h" // shared outbound TCP client (L4)
 #include <Arduino.h>
 
 #if DETWS_ENABLE_MQTT_TLS
@@ -343,18 +340,12 @@ bool mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *pac
 
 // --- connection state (one broker at a time; all static, no heap) ---
 static MqttMessageCb s_cb;
-static struct tcp_pcb *s_pcb;
-static volatile bool s_tcp_up;
-static volatile bool s_closed;
-static volatile bool s_aborted;
-static volatile bool s_dns_done;
-static volatile bool s_dns_ok;
-static ip_addr_t s_dns_addr;
+static int s_cid = -1;         // outbound connection id (det_client pool)
+static volatile bool s_closed; // peer closed / error (set when the pump sees it)
 
-// Inbound plaintext byte ring. Plain TCP: producer = lwIP recv cb (lwIP thread).
-// MQTTS: producer = the main loop (mq_pump_tls drains decrypted bytes into it);
-// the recv cb instead fills the ciphertext ring s_ct below. Consumer is always
-// the main loop (process_rx).
+// Inbound plaintext byte ring (consumer = process_rx). It is fed by a pump in
+// process_rx: for plain TCP from det_client_read, for MQTTS from the TLS session
+// (det_tls_csess_read), whose BIO in turn reads ciphertext from det_client.
 static uint8_t s_rx[DETWS_MQTT_BUF_SIZE];
 static volatile size_t s_rx_head;
 static volatile size_t s_rx_tail;
@@ -362,14 +353,6 @@ static volatile size_t s_rx_tail;
 static uint8_t s_pkt[DETWS_MQTT_BUF_SIZE]; // contiguous scratch a packet is copied into to parse
 static uint8_t s_tx[DETWS_MQTT_BUF_SIZE];  // outgoing packet scratch
 static bool s_use_tls;                     // mqtts:// mode
-
-#if DETWS_ENABLE_MQTT_TLS
-// Ciphertext receive ring for MQTTS (producer = lwIP recv cb; consumer = the TLS
-// BIO via det_tls_csess_read), with the same lossless refuse-and-redeliver rule.
-static uint8_t s_ct[DETWS_MQTT_CT_BUF_SIZE];
-static volatile size_t s_ct_head;
-static volatile size_t s_ct_tail;
-#endif
 
 static bool s_mqtt_up;
 static uint16_t s_keepalive_s;
@@ -419,193 +402,56 @@ static inline void ring_advance(size_t n)
     s_rx_tail = (s_rx_tail + n) % sizeof(s_rx);
 }
 
-// --- raw-lwIP callbacks + marshaled ops (same pattern as the HTTP client) ---
-struct MqConnCall
-{
-    struct tcpip_api_call_data base;
-    ip_addr_t addr;
-    uint16_t port;
-    err_t result;
-};
-struct MqSendCall
-{
-    struct tcpip_api_call_data base;
-    const void *data;
-    u16_t len;
-    err_t result;
-};
+// --- transport over the shared outbound client (det_client) ---
 
-static err_t mq_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+// Send raw plaintext bytes to the broker.
+static bool mq_tx_plain(const uint8_t *data, size_t len)
 {
-    (void)arg;
-    (void)err;
-    if (p == nullptr)
+    return det_client_send(s_cid, data, len);
+}
+
+// Drain plaintext wire bytes from the client into the s_rx ring (plain TCP).
+// det_client's own ring applies lossless backpressure to the peer when s_rx is
+// full and we stop draining.
+static void mq_pump_plain()
+{
+    uint8_t tmp[256];
+    for (;;)
     {
-        s_closed = true;
-        return ERR_OK;
-    }
-#if DETWS_ENABLE_MQTT_TLS
-    if (s_use_tls)
-    {
-        // Ciphertext -> s_ct ring, lossless backpressure.
-        size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-        size_t freesp = (sizeof(s_ct) - 1) - used;
-        if (p->tot_len > freesp)
-            return ERR_MEM;
-        for (struct pbuf *q = p; q; q = q->next)
+        size_t freey = (sizeof(s_rx) - 1) - ring_avail();
+        if (freey == 0)
+            break;
+        size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
+        size_t n = det_client_read(s_cid, tmp, want);
+        if (n == 0)
         {
-            const uint8_t *d = (const uint8_t *)q->payload;
-            for (u16_t i = 0; i < q->len; i++)
-            {
-                s_ct[s_ct_head] = d[i];
-                s_ct_head = (s_ct_head + 1) % sizeof(s_ct);
-            }
+            if (det_client_is_closed(s_cid))
+                s_closed = true;
+            break;
         }
-        tcp_recved(tpcb, p->tot_len);
-        pbuf_free(p);
-        return ERR_OK;
-    }
-#endif
-    // Plaintext -> s_rx ring. Lossless backpressure: refuse a segment that will
-    // not fit the free ring (lwIP retains + redelivers).
-    size_t used = ring_avail();
-    size_t freesp = (sizeof(s_rx) - 1) - used;
-    if (p->tot_len > freesp)
-        return ERR_MEM;
-    for (struct pbuf *q = p; q; q = q->next)
-    {
-        const uint8_t *d = (const uint8_t *)q->payload;
-        for (u16_t i = 0; i < q->len; i++)
+        for (size_t i = 0; i < n; i++)
         {
-            s_rx[s_rx_head] = d[i];
+            s_rx[s_rx_head] = tmp[i];
             s_rx_head = (s_rx_head + 1) % sizeof(s_rx);
         }
     }
-    tcp_recved(tpcb, p->tot_len);
-    pbuf_free(p);
-    return ERR_OK;
-}
-
-static err_t mq_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
-{
-    (void)arg;
-    (void)tpcb;
-    if (err == ERR_OK)
-        s_tcp_up = true;
-    else
-        s_aborted = true;
-    return ERR_OK;
-}
-
-static void mq_err(void *arg, err_t err)
-{
-    (void)arg;
-    (void)err;
-    s_pcb = nullptr;
-    s_aborted = true;
-}
-
-static err_t mq_do_connect(struct tcpip_api_call_data *c)
-{
-    MqConnCall *k = (MqConnCall *)c;
-    s_pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
-    if (!s_pcb)
-    {
-        k->result = ERR_MEM;
-        return ERR_OK;
-    }
-    tcp_recv(s_pcb, mq_recv);
-    tcp_err(s_pcb, mq_err);
-    k->result = tcp_connect(s_pcb, &k->addr, k->port, mq_connected);
-    return ERR_OK;
-}
-
-static err_t mq_do_send(struct tcpip_api_call_data *c)
-{
-    MqSendCall *k = (MqSendCall *)c;
-    if (!s_pcb)
-    {
-        k->result = ERR_CONN;
-        return ERR_OK;
-    }
-    k->result = tcp_write(s_pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
-    if (k->result == ERR_OK)
-        tcp_output(s_pcb);
-    return ERR_OK;
-}
-
-static err_t mq_do_close(struct tcpip_api_call_data *c)
-{
-    (void)c;
-    if (s_pcb)
-    {
-        tcp_recv(s_pcb, nullptr);
-        tcp_err(s_pcb, nullptr);
-        if (tcp_close(s_pcb) != ERR_OK)
-            tcp_abort(s_pcb);
-        s_pcb = nullptr;
-    }
-    return ERR_OK;
-}
-
-static void mq_dns_cb(const char *name, const ip_addr_t *addr, void *arg)
-{
-    (void)name;
-    (void)arg;
-    if (addr)
-    {
-        s_dns_addr = *addr;
-        s_dns_ok = true;
-    }
-    s_dns_done = true;
-}
-
-static err_t mq_do_dns(struct tcpip_api_call_data *c)
-{
-    const char *host = (const char *)((MqSendCall *)c)->data;
-    err_t e = dns_gethostbyname(host, &s_dns_addr, mq_dns_cb, nullptr);
-    if (e == ERR_OK)
-    {
-        s_dns_ok = true;
-        s_dns_done = true;
-    }
-    else if (e != ERR_INPROGRESS)
-        s_dns_done = true;
-    return ERR_OK;
-}
-
-// Send raw plaintext bytes to the broker (marshaled into the lwIP thread).
-static bool mq_tx_plain(const uint8_t *data, size_t len)
-{
-    MqSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = data;
-    k.len = (u16_t)len;
-    tcpip_api_call(mq_do_send, &k.base);
-    return k.result == ERR_OK;
 }
 
 #if DETWS_ENABLE_MQTT_TLS
-// TLS BIO: write ciphertext via the transport's context-safe raw send; read
-// ciphertext by draining the s_ct ring the recv callback fills.
+// TLS BIO over the shared client: write ciphertext through the pool, read
+// ciphertext by draining the client's wire ring.
 static int mq_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
-    u16_t n = (u16_t)(len > 0xFFFF ? 0xFFFF : len);
-    return det_conn_raw_send(s_pcb, buf, n) ? (int)n : MBEDTLS_ERR_SSL_WANT_WRITE;
+    size_t cap = len > 0xFFFF ? 0xFFFF : len;
+    return det_client_send(s_cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 static int mq_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-    if (used == 0)
-        return s_closed ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
-    size_t n = used < len ? used : len;
-    for (size_t i = 0; i < n; i++)
-    {
-        buf[i] = s_ct[s_ct_tail];
-        s_ct_tail = (s_ct_tail + 1) % sizeof(s_ct);
-    }
+    size_t n = det_client_read(s_cid, buf, len);
+    if (n == 0)
+        return det_client_is_closed(s_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 // Drain decrypted plaintext from the TLS session into the s_rx ring (main loop).
@@ -655,11 +501,10 @@ static void mq_close()
     if (s_use_tls)
         det_tls_csess_end();
 #endif
-    MqConnCall k;
-    memset(&k, 0, sizeof(k));
-    tcpip_api_call(mq_do_close, &k.base);
+    if (s_cid >= 0)
+        det_client_close(s_cid);
+    s_cid = -1;
     s_mqtt_up = false;
-    s_tcp_up = false;
 }
 
 static int inflight_find(uint16_t pid)
@@ -779,8 +624,10 @@ static void process_rx()
 {
 #if DETWS_ENABLE_MQTT_TLS
     if (s_use_tls)
-        mq_pump_tls(); // decrypt ciphertext from s_ct into the plaintext ring first
+        mq_pump_tls(); // decrypt ciphertext into the plaintext ring first
+    else
 #endif
+        mq_pump_plain(); // drain plaintext wire bytes into the ring
     for (;;)
     {
         size_t avail = ring_avail();
@@ -810,21 +657,6 @@ static void process_rx()
     }
 }
 
-static bool cl_resolve(const char *host, uint32_t deadline)
-{
-    if (ipaddr_aton(host, &s_dns_addr))
-        return true;
-    s_dns_done = false;
-    s_dns_ok = false;
-    MqSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = host;
-    tcpip_api_call(mq_do_dns, &k.base);
-    while (!s_dns_done && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    return s_dns_ok;
-}
-
 void mqtt_on_message(MqttMessageCb cb)
 {
     s_cb = cb;
@@ -843,32 +675,17 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
     memset(s_inflight, 0, sizeof(s_inflight));
     memset(s_rx_qos2, 0, sizeof(s_rx_qos2));
     s_rx_head = s_rx_tail = 0;
-    s_tcp_up = s_closed = s_aborted = s_mqtt_up = s_ping_pending = false;
+    s_closed = s_mqtt_up = s_ping_pending = false;
     s_connack_code = -1;
     s_keepalive_s = opts->keepalive_s;
     s_use_tls = use_tls;
-#if DETWS_ENABLE_MQTT_TLS
-    s_ct_head = s_ct_tail = 0;
-#endif
 
     uint32_t deadline = millis() + 8000;
-    if (!cl_resolve(host, deadline))
-        return false;
 
-    MqConnCall cc;
-    memset(&cc, 0, sizeof(cc));
-    cc.addr = s_dns_addr;
-    cc.port = port;
-    tcpip_api_call(mq_do_connect, &cc.base);
-    if (cc.result != ERR_OK)
+    // Open the TCP connection (DNS + connect) via the shared client transport.
+    s_cid = det_client_open(host, port, 8000);
+    if (s_cid < 0)
         return false;
-    while (!s_tcp_up && !s_aborted && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    if (!s_tcp_up)
-    {
-        mq_close();
-        return false;
-    }
 
 #if DETWS_ENABLE_MQTT_TLS
     if (s_use_tls)
@@ -879,7 +696,7 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
             return false;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && !s_closed && !s_aborted && (int32_t)(deadline - millis()) > 0)
+        while ((h = det_tls_csess_handshake()) == 0 && !s_closed && (int32_t)(deadline - millis()) > 0)
             delay(5);
         if (h != 1)
         {
@@ -898,7 +715,7 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
     }
 
     // Wait for CONNACK.
-    while (!s_mqtt_up && s_connack_code < 0 && !s_closed && !s_aborted && (int32_t)(deadline - millis()) > 0)
+    while (!s_mqtt_up && s_connack_code < 0 && !s_closed && (int32_t)(deadline - millis()) > 0)
     {
         process_rx();
         delay(5);
@@ -965,7 +782,7 @@ bool mqtt_loop()
     if (!s_mqtt_up)
         return false;
     process_rx();
-    if (s_closed || s_aborted)
+    if (s_closed)
     {
         mq_close();
         return false;
@@ -1022,7 +839,7 @@ bool mqtt_connected()
 
 void mqtt_disconnect()
 {
-    if (s_pcb && s_mqtt_up)
+    if (s_cid >= 0 && s_mqtt_up)
     {
         size_t n = mqtt_build_disconnect(s_tx, sizeof(s_tx));
         mq_tx(s_tx, n);
