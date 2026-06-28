@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.1.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.1.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`41b7ebb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41b7ebb63f4a44a3aec405ba3168bef89f8ce3c8))
+- update CHANGELOG.md [skip ci] ([`331c757`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/331c75769b9f091a837f61913dad08585cb3432a))
+
+### Changes
+
+- Bump version: 4.0.0 → 4.1.0 ([`825e32a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/825e32abdbdab465000d2bdb7fdc7470ae6ae03e))
+
+### Performance
+
+- notification-driven blocking drain instead of the fixed poll ([`c6070ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6070abc9923c21d5e6c3c83cdc3fa0f3abceb57))
+
+</details>
+
 ## [4.0.0] - 2026-06-28
 
 <details>
