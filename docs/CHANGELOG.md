@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.13.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.13.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2a2cae8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a2cae81167a6bf5624762ca6ea6bb424dcb5bb4))
+- update CHANGELOG.md [skip ci] ([`a6db1c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6db1c96549b42667b70138fbae6df17bfa65355))
+
+### Changes
+
+- Bump version: 3.12.0 → 3.13.0 ([`1dddc77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1dddc776a98bada124b54a55953a87adbc02de0c))
+
+### Features
+
+- migrate mqtt onto det_client (Bucket 3b, 2/3) ([`28a11cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28a11cd26ca000f7cabaa39b8ea4ca202b75e91d))
+
+</details>
+
 ## [3.12.0] - 2026-06-28
 
 <details>
