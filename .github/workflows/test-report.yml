@@ -32,6 +32,9 @@ jobs:
       - name: Install PlatformIO
         run: pip install --upgrade platformio
 
+      - name: Check platformio.ini is in sync with the test matrix
+        run: python3 test/gen_test_envs.py --check
+
       - name: Run tests and regenerate docs/TEST_REPORT.md
         run: bash test/run_tests.sh || true
 

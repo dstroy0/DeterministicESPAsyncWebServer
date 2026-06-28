@@ -126,9 +126,36 @@ RAW_FILE="$(mktemp)"
 CLEAN_FILE="$(mktemp)"
 trap 'rm -f "$RAW_FILE" "$CLEAN_FILE"' EXIT
 
+# Auto-discover every native_* env from platformio.ini (the single source of
+# truth, generated from test/test_matrix.json). This replaces a hand-maintained
+# env list that had drifted out of date - nothing is silently skipped now.
+# A few envs are intentionally not part of this report:
+#   native_pentest - heavy adversarial fuzzer, run separately (pentest.yml)
+#   native_codeql  - compile-only umbrella for the CodeQL workflow
+#   native_tsan    - ThreadSanitizer; Linux/clang only (run in CI, skipped elsewhere)
+EXCLUDE=("native_pentest" "native_codeql")
+if [[ "$(uname -s 2>/dev/null)" != Linux* ]]; then
+    EXCLUDE+=("native_tsan")
+fi
+
+mapfile -t ALL_ENVS < <(grep -oE '^\[env:native[A-Za-z0-9_]*\]' "${PROJECT_ROOT}/platformio.ini" \
+    | sed -E 's/^\[env:(.*)\]$/\1/')
+
+ENV_ARGS=()
+ENV_NAMES=()
+for _env in "${ALL_ENVS[@]}"; do
+    _skip=0
+    for _x in "${EXCLUDE[@]}"; do [[ "$_env" == "$_x" ]] && _skip=1; done
+    [[ $_skip -eq 0 ]] || continue
+    ENV_ARGS+=("-e" "$_env")
+    ENV_NAMES+=("$_env")
+done
+
+echo "Running ${#ENV_NAMES[@]} native envs: ${ENV_NAMES[*]}"
+
 T0=$SECONDS
 set +e
-"$PIO" test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan -e native_workers 2>&1 | format_output | tee "$RAW_FILE"
+"$PIO" test "${ENV_ARGS[@]}" 2>&1 | format_output | tee "$RAW_FILE"
 PIO_EXIT="${PIPESTATUS[0]}"
 set -e
 WALL_SECS=$(( SECONDS - T0 ))
@@ -287,7 +314,7 @@ cat <<EOF
 # Test Report
 
 **Generated:** ${DATE_STR}
-**Command:** \`pio test -e native -e native_app -e native_ssh -e native_ssh_hardened -e native_ssh_conn -e native_compliance -e native_tsan -e native_workers\`
+**Command:** \`pio test\` over ${#ENV_NAMES[@]} auto-discovered native envs (excludes native_pentest, native_codeql$([[ "$(uname -s 2>/dev/null)" != Linux* ]] && echo ", native_tsan"))
 **Result:** ${RES_STR}
 
 ---

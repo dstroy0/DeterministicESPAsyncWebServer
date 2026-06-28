@@ -1,0 +1,739 @@
+{
+  "_note": "Single source of truth for native test envs; run test/gen_test_envs.py to regenerate platformio.ini.",
+  "envs": {
+    "native": {
+      "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>"
+      ],
+      "tests": [
+        "test_transport",
+        "test_presentation",
+        "test_session",
+        "test_http_parser",
+        "test_websocket",
+        "test_sse"
+      ]
+    },
+    "native_ota": {
+      "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
+      "src": ["+<network_drivers/presentation/http_parser.cpp>"],
+      "tests": ["test_http_ota"]
+    },
+    "native_prov": {
+      "desc": "Provisioning form-field parser - the only host-testable part of the captive\nportal (softAP / lwIP UDP / NVS are ESP32-only and compiled out here).",
+      "src": ["+<services/provisioning_service.cpp>"],
+      "tests": ["test_provisioning"]
+    },
+    "native_ssh": {
+      "desc": "SSH crypto layer (native software paths only, no mbedtls dependency)",
+      "src": [
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_server.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": [
+        "test_ssh_crypto",
+        "test_ssh_transport",
+        "test_ssh_auth",
+        "test_ssh_channel",
+        "test_ssh_server"
+      ]
+    },
+    "native_ssh_hardened": {
+      "desc": "SSH built with password auth disabled (publickey-only hardening)",
+      "flags": ["-DDETWS_SSH_ALLOW_PASSWORD=0"],
+      "src": [
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_server.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_ssh_hardening"]
+    },
+    "native_ssh_conn": {
+      "desc": "SSH wired through the real transport/session layers (PROTO_SSH byte-pump)",
+      "flags": ["-DDETWS_ENABLE_SSH=1"],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_server.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_conn.cpp>"
+      ],
+      "tests": ["test_ssh_conn"]
+    },
+    "native_app": {
+      "desc": "Full stack including Layer 7 application",
+      "flags": [
+        "-DBODY_BUF_SIZE=512",
+        "-DDETWS_ENFORCE_HOST_HEADER=0",
+        "-DDETWS_ENABLE_STATS=1",
+        "-DDETWS_ENABLE_METRICS=1",
+        "-DDETWS_ENABLE_ETAG=1",
+        "-DDETWS_ENABLE_WEB_TERMINAL=1"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<DeterministicESPAsyncWebServer.cpp>",
+        "+<network_drivers/presentation/json.cpp>",
+        "+<network_drivers/application/web_assets.cpp>",
+        "+<services/web_terminal.cpp>"
+      ],
+      "tests": [
+        "test_auth",
+        "test_file_serving",
+        "test_multipart",
+        "test_dispatch",
+        "test_application",
+        "test_response_headers",
+        "test_form_params",
+        "test_path_params",
+        "test_digest_auth",
+        "test_digest_vectors",
+        "test_template",
+        "test_middleware",
+        "test_chunked",
+        "test_json",
+        "test_iface",
+        "test_regex",
+        "test_web_terminal",
+        "test_defer"
+      ]
+    },
+    "native_snmp": {
+      "desc": "SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). Pure\ncodec - no lwIP/UDP - so it unit-tests on the host.",
+      "flags": ["-DDETWS_ENABLE_SNMP=1"],
+      "src": [
+        "+<services/snmp/snmp_ber.cpp>",
+        "+<services/snmp/snmp_agent.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>"
+      ],
+      "tests": ["test_snmp_ber", "test_snmp_agent"]
+    },
+    "native_snmp_v3": {
+      "desc": "SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery,\ntimeliness. Pulls in the SHA-256/HMAC primitives from the SSH crypto layer.",
+      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_V3=1"],
+      "src": [
+        "+<services/snmp/snmp_ber.cpp>",
+        "+<services/snmp/snmp_agent.cpp>",
+        "+<services/snmp/snmp_crypto.cpp>",
+        "+<services/snmp/snmp_v3.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>"
+      ],
+      "tests": ["test_snmp_v3"]
+    },
+    "native_telnet": {
+      "desc": "Telnet server (RFC 854 IAC negotiation + line editing) wired through the real\ntransport ring buffer; output checked via the tcp_write capture mock.",
+      "flags": ["-DDETWS_ENABLE_TELNET=1"],
+      "src": [
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/presentation/telnet.cpp>"
+      ],
+      "tests": ["test_telnet"]
+    },
+    "native_coap": {
+      "desc": "CoAP server (RFC 7252) message codec + resource dispatch. Pure core - no\nlwIP/UDP - so it unit-tests on the host (udp_transport provides host stubs).",
+      "flags": [
+        "-DDETWS_ENABLE_COAP=1",
+        "-DDETWS_ENABLE_COAP_BLOCK=1",
+        "-DDETWS_COAP_BLOCK_SZX_MAX=2",
+        "-DDETWS_COAP_BLOCK1_MAX=128"
+      ],
+      "src": [
+        "+<services/coap/coap.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>"
+      ],
+      "tests": ["test_coap"]
+    },
+    "native_webdav": {
+      "desc": "WebDAV server core (RFC 4918): method classification, header parsing, XML\nescaping, and the 207 Multi-Status builder. Pure core - no FS/sockets - so it\nunit-tests on the host. The FS-backed handling is HW-tested on a real LittleFS.",
+      "flags": ["-DDETWS_ENABLE_WEBDAV=1"],
+      "src": ["+<services/webdav/webdav.cpp>"],
+      "tests": ["test_webdav"]
+    },
+    "native_modbus": {
+      "desc": "Modbus TCP slave core (Modbus Application Protocol): the data model + MBAP/PDU\ncodec. Pure core - the TCP transport is ARDUINO-gated - so it unit-tests on the\nhost from modbus.cpp alone.",
+      "flags": ["-DDETWS_ENABLE_MODBUS=1"],
+      "src": ["+<services/modbus/modbus.cpp>"],
+      "tests": ["test_modbus"]
+    },
+    "native_modbus_master": {
+      "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
+      "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
+      "src": [
+        "+<services/modbus/modbus.cpp>",
+        "+<services/modbus/modbus_master.cpp>"
+      ],
+      "tests": ["test_modbus_master"]
+    },
+    "native_ota_rollback": {
+      "desc": "OTA rollback decision (services/ota_rollback): pure decision matrix host-tested;\nthe esp_ota commit/rollback are ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_OTA_ROLLBACK=1"],
+      "src": ["+<services/ota_rollback/ota_rollback.cpp>"],
+      "tests": ["test_ota_rollback"]
+    },
+    "native_totp": {
+      "desc": "TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested\nagainst the RFC 6238 vectors (builds on the software SHA-1).",
+      "flags": ["-DDETWS_ENABLE_TOTP=1"],
+      "src": [
+        "+<services/totp/totp.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>"
+      ],
+      "tests": ["test_totp"]
+    },
+    "native_webhook": {
+      "desc": "Webhook / IFTTT builders (services/webhook): IFTTT URL + value1/2/3 JSON payload,\nhost-tested. Firing is via the http_client (ESP32).",
+      "flags": ["-DDETWS_ENABLE_WEBHOOK=1"],
+      "src": ["+<services/webhook/webhook.cpp>"],
+      "tests": ["test_webhook"]
+    },
+    "native_radio_power": {
+      "desc": "WiFi radio power controls (services/radio_power): modem-sleep mode names\nhost-tested; the apply/readback are ESP32-only (esp_wifi).",
+      "flags": ["-DDETWS_ENABLE_RADIO_POWER=1"],
+      "src": ["+<services/radio_power/radio_power.cpp>"],
+      "tests": ["test_radio_power"]
+    },
+    "native_dns_resolver": {
+      "desc": "DNS resolver answer classifier/verifier (services/dns_resolver): host-tested;\nthe lwIP resolve is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_DNS_RESOLVER=1"],
+      "src": ["+<services/dns_resolver/dns_resolver.cpp>"],
+      "tests": ["test_dns_resolver"]
+    },
+    "native_audit_log": {
+      "desc": "Tamper-evident hash-chained audit log (services/audit_log). Pure - the chain is\nidentical on host and ESP32 - so it unit-tests on the host; SHA-256 comes from\nssh_sha256 (software path on native), the timestamp from the pluggable clock.",
+      "flags": ["-DDETWS_ENABLE_AUDIT_LOG=1"],
+      "src": [
+        "+<services/audit_log/audit_log.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_audit_log"]
+    },
+    "native_oidc": {
+      "desc": "OIDC RS256 ID-token verifier (services/oidc). Pure relying-party verification -\nthe signature check is real RSA modexp (ssh_rsa + ssh_bignum), so it host-tests\nagainst openssl-signed RS256 vectors with the matching JWKS public key.",
+      "flags": ["-DDETWS_ENABLE_OIDC=1"],
+      "src": [
+        "+<services/oidc/oidc.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_oidc"]
+    },
+    "native_vfs": {
+      "desc": "Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM\nbackend (the Arduino FS backend is ESP32-only and HW-verified). Pure, no heap.",
+      "flags": ["-DDETWS_ENABLE_VFS=1"],
+      "src": ["+<services/vfs/vfs.cpp>"],
+      "tests": ["test_vfs"]
+    },
+    "native_graphql": {
+      "desc": "GraphQL query subset (services/graphql) - pure parser + executor, host-tested\nwith a demo resolver. No heap; bounds are compile-time.",
+      "flags": ["-DDETWS_ENABLE_GRAPHQL=1"],
+      "src": ["+<services/graphql/graphql.cpp>"],
+      "tests": ["test_graphql"]
+    },
+    "native_espnow": {
+      "desc": "ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry\nare host-tested here; the esp_now radio binding is ESP32-only. No heap.",
+      "flags": ["-DDETWS_ENABLE_ESPNOW=1"],
+      "src": ["+<services/espnow/espnow.cpp>"],
+      "tests": ["test_espnow"]
+    },
+    "native_oauth2": {
+      "desc": "OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON\ntoken-response parser are host-tested (the parser reuses the JSON reader); the\nHTTP exchange is ESP32-only. No heap, no stdlib.",
+      "flags": ["-DDETWS_ENABLE_OAUTH2=1"],
+      "src": [
+        "+<services/oauth2/oauth2.cpp>",
+        "+<network_drivers/presentation/json.cpp>"
+      ],
+      "tests": ["test_oauth2"]
+    },
+    "native_opcua": {
+      "desc": "OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and\nHello/Acknowledge handshake are host-tested here; the TCP server (opcua_rx) is\nESP32-only. No heap, no stdlib.",
+      "flags": ["-DDETWS_ENABLE_OPCUA=1"],
+      "src": ["+<services/opcua/opcua.cpp>"],
+      "tests": ["test_opcua"]
+    },
+    "native_opcua_client": {
+      "flags": ["-DDETWS_ENABLE_OPCUA=1", "-DDETWS_ENABLE_OPCUA_CLIENT=1"],
+      "src": [
+        "+<services/opcua/opcua.cpp>",
+        "+<services/opcua_client/opcua_client.cpp>"
+      ],
+      "tests": ["test_opcua_client"]
+    },
+    "native_pentest": {
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, JSON, base64/base32) with malformed/oversized/\npartial/random input and asserts bounded buffers + fail-closed + no crash.\nPairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
+      "flags": [
+        "-DDETWS_ENABLE_MODBUS=1",
+        "-DDETWS_ENABLE_MODBUS_MASTER=1",
+        "-DDETWS_ENABLE_TOTP=1",
+        "-DDETWS_ENABLE_MULTIPART=1",
+        "-DDETWS_ENABLE_CBOR=1",
+        "-DDETWS_ENABLE_COAP=1",
+        "-DDETWS_ENABLE_COAP_BLOCK=1",
+        "-DDETWS_COAP_BLOCK_SZX_MAX=2",
+        "-DDETWS_COAP_BLOCK1_MAX=128",
+        "-DDETWS_ENABLE_SNMP=1"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/json.cpp>",
+        "+<network_drivers/presentation/cbor.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<services/modbus/modbus.cpp>",
+        "+<services/modbus/modbus_master.cpp>",
+        "+<services/totp/totp.cpp>",
+        "+<services/coap/coap.cpp>",
+        "+<services/snmp/snmp_ber.cpp>",
+        "+<services/snmp/snmp_agent.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>"
+      ],
+      "tests": ["test_pentest"]
+    },
+    "native_keepalive": {
+      "desc": "HTTP/1.1 keep-alive (persistent connections): full server built with\nDETWS_ENABLE_KEEPALIVE=1; a small per-connection request cap makes the\nfairness-bound test fast. Drives requests through the real transport ring +\ntcp_write capture mock.",
+      "flags": [
+        "-DDETWS_ENFORCE_HOST_HEADER=0",
+        "-DDETWS_ENABLE_KEEPALIVE=1",
+        "-DDETWS_KEEPALIVE_MAX_REQUESTS=3"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<DeterministicESPAsyncWebServer.cpp>"
+      ],
+      "tests": ["test_keepalive"]
+    },
+    "native_range": {
+      "desc": "HTTP Range requests / 206 Partial Content (RFC 7233): full server built with\nDETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with\nseek()) via the tcp_write capture mock.",
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_RANGE=1"],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<DeterministicESPAsyncWebServer.cpp>"
+      ],
+      "tests": ["test_range"]
+    },
+    "native_syslog": {
+      "desc": "Syslog client (RFC 5424) line formatter. Pure formatter - no lwIP/UDP - so it\nunit-tests on the host (udp_transport provides host stubs for det_udp_sendto).",
+      "flags": ["-DDETWS_ENABLE_SYSLOG=1"],
+      "src": [
+        "+<services/syslog/syslog.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>"
+      ],
+      "tests": ["test_syslog"]
+    },
+    "native_jwt": {
+      "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
+      "flags": ["-DDETWS_ENABLE_JWT=1"],
+      "src": [
+        "+<services/jwt/jwt.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>"
+      ],
+      "tests": ["test_jwt"]
+    },
+    "native_upload": {
+      "desc": "Streaming file upload: POST body -> FS file via the parser streaming hook.\nSmall BODY_BUF_SIZE exercises multi-chunk streaming; the mock FS captures the\nwritten bytes (test/mocks/FS.h write-capture).",
+      "flags": [
+        "-DDETWS_ENFORCE_HOST_HEADER=0",
+        "-DDETWS_ENABLE_UPLOAD=1",
+        "-DBODY_BUF_SIZE=64"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<DeterministicESPAsyncWebServer.cpp>",
+        "+<services/upload_service.cpp>"
+      ],
+      "tests": ["test_upload"]
+    },
+    "native_http_client": {
+      "desc": "Outbound HTTP client: URL parser + request builder + response parser. Pure\nstring logic (the lwIP/mbedTLS transport is ESP32-only) so it unit-tests host.",
+      "flags": ["-DDETWS_ENABLE_HTTP_CLIENT=1"],
+      "src": ["+<services/http_client/http_client.cpp>"],
+      "tests": ["test_http_client"]
+    },
+    "native_compliance": {
+      "desc": "RFC-compliance suite: builds with all enforcement at production defaults\n(DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors.",
+      "src": ["+<network_drivers/presentation/http_parser.cpp>"],
+      "tests": ["test_compliance"]
+    },
+    "native_mqtt": {
+      "flags": ["-DDETWS_ENABLE_MQTT=1"],
+      "src": ["+<services/mqtt/mqtt.cpp>"],
+      "tests": ["test_mqtt"]
+    },
+    "native_ws_client": {
+      "flags": ["-DDETWS_ENABLE_WS_CLIENT=1"],
+      "src": [
+        "+<services/ws_client/ws_client.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>"
+      ],
+      "tests": ["test_ws_client"]
+    },
+    "native_scratch": {
+      "desc": "Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset\nsemantics, alignment, and fail-closed exhaustion. Pure host tests - no\nlwIP/sockets - so it builds from scratch.cpp alone.",
+      "src": [
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_scratch"]
+    },
+    "native_snmp_trap": {
+      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_TRAP=1"],
+      "src": [
+        "+<services/snmp/snmp_notify.cpp>",
+        "+<services/snmp/snmp_ber.cpp>"
+      ],
+      "tests": ["test_snmp_trap"]
+    },
+    "native_inflate": {
+      "desc": "RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). Pure\ncodec - no sockets - so it unit-tests on the host against zlib-generated\nvectors (scratchpad/gen_vectors.py).",
+      "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
+      "src": ["+<network_drivers/presentation/inflate.cpp>"],
+      "tests": ["test_inflate"]
+    },
+    "native_deflate": {
+      "desc": "RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). Pure codec\n- no sockets - so it unit-tests on the host by round-tripping through INFLATE\n(which test_inflate validates against zlib), proving the emitted streams are\nvalid RFC 1951.",
+      "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
+      "src": [
+        "+<network_drivers/presentation/deflate.cpp>",
+        "+<network_drivers/presentation/inflate.cpp>"
+      ],
+      "tests": ["test_deflate"]
+    },
+    "native_ws_deflate": {
+      "desc": "WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS\nstack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with\nthe table scratch borrowed from the shared arena). Runs test_websocket with the\nfeature on (the deflate cases are #if-gated).",
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_WS_DEFLATE=1"],
+      "src": [
+        "+<network_drivers/presentation/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>",
+        "+<network_drivers/presentation/base64.cpp>",
+        "+<network_drivers/presentation/websocket.cpp>",
+        "+<network_drivers/presentation/sse.cpp>",
+        "+<network_drivers/presentation/multipart.cpp>",
+        "+<network_drivers/presentation/inflate.cpp>",
+        "+<network_drivers/presentation/deflate.cpp>"
+      ],
+      "tests": ["test_websocket"]
+    },
+    "native_time_source": {
+      "desc": "Multi-source time fallback matrix (services/time_source): priority-ordered\nquery of user time sources with first-valid-wins fallback. Pure core - no\nsockets/RTC - so it unit-tests on the host with mock sources.",
+      "flags": ["-DDETWS_ENABLE_TIME_SOURCE=1"],
+      "src": ["+<services/time_source/time_source.cpp>"],
+      "tests": ["test_time_source"]
+    },
+    "native_config_store": {
+      "desc": "Typed NVS config store (services/config_store): string/u32/blob round-trips,\ndefaults, capacity, erase/clear - run against the host in-memory backend (the\nESP32 Preferences/NVS backend is compiled in only on-target).",
+      "flags": ["-DDETWS_ENABLE_CONFIG_STORE=1"],
+      "src": ["+<services/config_store/config_store.cpp>"],
+      "tests": ["test_config_store"]
+    },
+    "native_device_id": {
+      "desc": "MAC-derived device UUID (services/device_id): RFC 4122 v5 from a MAC via SHA-1.\nPure core - the ESP32 MAC read is ARDUINO-gated - so it unit-tests on the host\nagainst Python uuid.uuid5 reference values.",
+      "flags": ["-DDETWS_ENABLE_DEVICE_ID=1"],
+      "src": [
+        "+<services/device_id/device_id.cpp>",
+        "+<network_drivers/presentation/sha1.cpp>"
+      ],
+      "tests": ["test_device_id"]
+    },
+    "native_auth_lockout": {
+      "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. The enable flag is not set here (it would require\nDETWS_ENABLE_AUTH); the functions and sizing constants compile unconditionally.",
+      "src": ["+<services/auth_lockout/auth_lockout.cpp>"],
+      "tests": ["test_auth_lockout"]
+    },
+    "native_csrf": {
+      "desc": "Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed\nsecret unit-tests on the host. Pulls in the SSH HMAC-SHA256 + SHA-256 core.",
+      "src": [
+        "+<services/csrf/csrf.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_csrf"]
+    },
+    "native_telemetry": {
+      "desc": "Telemetry math (services/telemetry): moving-window stats, rate-of-change, and\ntotalizer. Pure computation (synthetic clock passed in), so it unit-tests on\nthe host.",
+      "flags": ["-DDETWS_ENABLE_TELEMETRY=1"],
+      "src": ["+<services/telemetry/telemetry.cpp>"],
+      "tests": ["test_telemetry"]
+    },
+    "native_dashboard": {
+      "desc": "Dashboard widget-table JSON serializers (services/dashboard core). Pure logic;\nthe route/SSE wiring (dashboard_routes.cpp) is excluded so this tests on the\nhost without the server.",
+      "flags": ["-DDETWS_ENABLE_DASHBOARD=1"],
+      "src": ["+<services/dashboard/dashboard.cpp>"],
+      "tests": ["test_dashboard"]
+    },
+    "native_net_egress": {
+      "desc": "Egress-interface reporting (network_drivers/physical). The esp_netif default-\nroute lookups are ESP32-only; the pure interface-key classifier host-tests here.",
+      "src": ["+<network_drivers/physical/physical.cpp>"],
+      "tests": ["test_net_egress"]
+    },
+    "native_partition": {
+      "desc": "Flash partition-map monitor (services/partition_monitor core): the kind\nclassifier + JSON serializer host-test here; the esp_partition walk is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_PARTITION_MONITOR=1"],
+      "src": ["+<services/partition_monitor/partition_monitor.cpp>"],
+      "tests": ["test_partition_monitor"]
+    },
+    "native_cbor": {
+      "desc": "CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output\ncodec, host-tested against the RFC 8949 Appendix A vectors.",
+      "flags": ["-DDETWS_ENABLE_CBOR=1"],
+      "src": ["+<network_drivers/presentation/cbor.cpp>"],
+      "tests": ["test_cbor"]
+    },
+    "native_msgpack": {
+      "desc": "MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output\ncodec, host-tested against the spec encodings.",
+      "flags": ["-DDETWS_ENABLE_MSGPACK=1"],
+      "src": ["+<network_drivers/presentation/msgpack.cpp>"],
+      "tests": ["test_msgpack"]
+    },
+    "native_gpio_map": {
+      "desc": "GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON\nserializer, control-POST parser, output guard - all pure and host-tested.",
+      "flags": ["-DDETWS_ENABLE_GPIO_MAP=1"],
+      "src": ["+<services/gpio_map/gpio_map.cpp>"],
+      "tests": ["test_gpio_map"]
+    },
+    "native_udp_telemetry": {
+      "desc": "UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol\nformatting, host-tested. The UDP cast is ESP32-only (#ifdef ARDUINO).",
+      "flags": ["-DDETWS_ENABLE_UDP_TELEMETRY=1"],
+      "src": ["+<services/udp_telemetry/udp_telemetry.cpp>"],
+      "tests": ["test_udp_telemetry"]
+    },
+    "native_guardrails": {
+      "desc": "Heap/stack guardrails (services/guardrails): threshold evaluator + JSON,\nhost-tested. Live sampling is ESP32-only (#ifdef ARDUINO).",
+      "flags": ["-DDETWS_ENABLE_GUARDRAILS=1"],
+      "src": ["+<services/guardrails/guardrails.cpp>"],
+      "tests": ["test_guardrails"]
+    },
+    "native_logbuf": {
+      "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
+      "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
+      "src": ["+<services/logbuf/logbuf.cpp>"],
+      "tests": ["test_logbuf"]
+    },
+    "native_config_io": {
+      "desc": "Schema-driven config export/restore (services/config_io) over the config store;\nround-trip host-tested against the in-memory backend.",
+      "flags": ["-DDETWS_ENABLE_CONFIG_STORE=1", "-DDETWS_ENABLE_CONFIG_IO=1"],
+      "src": [
+        "+<services/config_store/config_store.cpp>",
+        "+<services/config_io/config_io.cpp>"
+      ],
+      "tests": ["test_config_io"]
+    },
+    "native_workers": {
+      "desc": "Core-partitioning invariant at N=2 (DETWS_WORKER_COUNT=2): each worker reaps\nonly its owned slots (check_timeouts ownership). Per-worker queue routing is\nhardware-verified (the host queue mock ignores the handle).",
+      "flags": ["-DDETWS_WORKER_COUNT=2"],
+      "src": [
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_workers"]
+    },
+    "native_codeql": {
+      "desc": "CodeQL coverage env: the full app compiled with every new feature flag ON so\nCodeQL traces the integration paths (CSRF / lockout / allowlist gates,\npermessage-deflate) AND the new service modules, which the per-feature envs scan\nonly in isolation. Built (--without-testing) by the CodeQL workflow; one test\nin the filter is enough to pull in the whole src set.",
+      "base": "env:native_app",
+      "flags": [
+        "-DDETWS_ENABLE_CSRF=1",
+        "-DDETWS_ENABLE_AUTH_LOCKOUT=1",
+        "-DDETWS_ENABLE_IP_ALLOWLIST=1",
+        "-DDETWS_ENABLE_WS_DEFLATE=1",
+        "-DDETWS_ENABLE_TIME_SOURCE=1",
+        "-DDETWS_ENABLE_CONFIG_STORE=1",
+        "-DDETWS_ENABLE_DEVICE_ID=1",
+        "-DDETWS_ENABLE_TELEMETRY=1",
+        "-DDETWS_ENABLE_DASHBOARD=1",
+        "-DDETWS_ENABLE_PARTITION_MONITOR=1",
+        "-DDETWS_ENABLE_CBOR=1",
+        "-DDETWS_ENABLE_MSGPACK=1",
+        "-DDETWS_ENABLE_GPIO_MAP=1",
+        "-DDETWS_ENABLE_UDP_TELEMETRY=1",
+        "-DDETWS_ENABLE_GUARDRAILS=1",
+        "-DDETWS_ENABLE_LOGBUF=1",
+        "-DDETWS_ENABLE_OTA_ROLLBACK=1",
+        "-DDETWS_ENABLE_TOTP=1",
+        "-DDETWS_ENABLE_WEBHOOK=1",
+        "-DDETWS_ENABLE_RADIO_POWER=1",
+        "-DDETWS_ENABLE_AUDIT_LOG=1",
+        "-DDETWS_ENABLE_OIDC=1",
+        "-DDETWS_ENABLE_VFS=1",
+        "-DDETWS_ENABLE_GRAPHQL=1",
+        "-DDETWS_ENABLE_ESPNOW=1",
+        "-DDETWS_ENABLE_OAUTH2=1",
+        "-DDETWS_ENABLE_OPCUA=1",
+        "-DDETWS_ENABLE_OPCUA_CLIENT=1"
+      ],
+      "src": [
+        "${env:native_app.build_src_filter}",
+        "+<services/audit_log/audit_log.cpp>",
+        "+<services/oidc/oidc.cpp>",
+        "+<services/vfs/vfs.cpp>",
+        "+<services/graphql/graphql.cpp>",
+        "+<services/espnow/espnow.cpp>",
+        "+<services/oauth2/oauth2.cpp>",
+        "+<services/opcua/opcua.cpp>",
+        "+<services/opcua_client/opcua_client.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
+        "+<services/csrf/csrf.cpp>",
+        "+<services/auth_lockout/auth_lockout.cpp>",
+        "+<services/time_source/time_source.cpp>",
+        "+<services/config_store/config_store.cpp>",
+        "+<services/device_id/device_id.cpp>",
+        "+<network_drivers/presentation/inflate.cpp>",
+        "+<network_drivers/presentation/deflate.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<services/telemetry/telemetry.cpp>",
+        "+<services/dashboard/dashboard.cpp>",
+        "+<services/dashboard/dashboard_routes.cpp>",
+        "+<services/partition_monitor/partition_monitor.cpp>",
+        "+<services/partition_monitor/partition_monitor_routes.cpp>",
+        "+<network_drivers/presentation/cbor.cpp>",
+        "+<network_drivers/presentation/msgpack.cpp>",
+        "+<services/gpio_map/gpio_map.cpp>",
+        "+<services/gpio_map/gpio_map_routes.cpp>",
+        "+<services/udp_telemetry/udp_telemetry.cpp>",
+        "+<services/guardrails/guardrails.cpp>",
+        "+<services/logbuf/logbuf.cpp>",
+        "+<services/ota_rollback/ota_rollback.cpp>",
+        "+<services/totp/totp.cpp>",
+        "+<services/webhook/webhook.cpp>",
+        "+<services/radio_power/radio_power.cpp>"
+      ],
+      "tests": ["test_dispatch"]
+    },
+    "native_clock": {
+      "desc": "Pluggable monotonic clock (services/det_clock): default millis(), custom clock\ndivided down to the internal 1000 Hz. Header-only, so no src to build.",
+      "src": ["-<*>"],
+      "tests": ["test_clock"],
+      "test_build_src": "no"
+    },
+    "native_concurrency": {
+      "desc": "Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /\nrx_tail). Two threads drive one slot's SPSC ring with the production access\npattern; asserts byte-exact in-order delivery. Portable (-pthread), runs on any\nhost including Windows - this verifies the data integrity / logic.",
+      "flags": ["-O1", "-pthread"],
+      "src": ["-<*>"],
+      "tests": ["test_concurrency"],
+      "test_build_src": "no"
+    },
+    "native_tsan": {
+      "desc": "Same harness under ThreadSanitizer: proves ZERO data races on the slot fields\n(the DetAtomic acquire/release happens-before lets the plain rx_buffer[] writes\nbe read on the other core safely). TSan ships with clang/gcc on Linux, so this\nenv is run by the test CI (ubuntu); it is not buildable on the Windows host.",
+      "flags": ["-g", "-O1", "-fsanitize=thread", "-pthread"],
+      "src": ["-<*>"],
+      "tests": ["test_concurrency"],
+      "test_build_src": "no"
+    }
+  }
+}

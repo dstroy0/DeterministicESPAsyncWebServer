@@ -545,7 +545,8 @@
     "issubset",
     "sendall",
     "fetc",
-    "fpasswd"
+    "fpasswd",
+    "pthread"
   ],
   "ignorePaths": [
     "node_modules/**",

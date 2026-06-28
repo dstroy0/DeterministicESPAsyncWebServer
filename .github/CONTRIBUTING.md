@@ -32,11 +32,25 @@ The architecture is deliberately split so the logic compiles and runs on your
 host machine, separate from the `#ifdef ARDUINO` hardware wrappers.
 
 - **Native tests** (fast, no hardware): every feature has a `native_*` test
-  environment in [platformio.ini](../platformio.ini). Run one with:
+  environment. Run one with:
 
     ```sh
     pio test -e <native_env>      # pick the env for the area you touched
     ```
+
+    The `native_*` env blocks in [platformio.ini](../platformio.ini) are
+    **generated** from a single table, [test/test_matrix.json](../test/test_matrix.json).
+    To add or change a test env, edit that table (each entry keeps its own flags,
+    src filter, and test dirs - per-feature isolation is the point) and regenerate:
+
+    ```sh
+    python3 test/gen_test_envs.py            # rewrite the env blocks in platformio.ini
+    python3 test/gen_test_envs.py --check    # CI: fail if the ini is out of date
+    ```
+
+    Do not hand-edit the generated region of `platformio.ini`. The full suite
+    (`test/run_tests.sh`) auto-discovers every native env, so a new entry is run
+    and reported automatically.
 
 - **Compile for hardware:**
 
