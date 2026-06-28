@@ -722,24 +722,41 @@ details[open] > *:not(summary) {
     transform-origin: 10px 12px;
 }
 
-/* Flapping mantle fins / wings: smooth undulating rotation about the
-   point where each fin meets the mantle. */
+/* Mantle fins / wings: an undulating wave ripple (rotate + skew through a
+   sine-ish cycle), not a mechanical back-and-forth tilt. Each fin's hinge is
+   set inline on the group in 64-grid coordinates. */
 @keyframes squid-fin-flap-l {
-    0%, 100% { transform: rotate(12deg); }
-    50%      { transform: rotate(-14deg); }
+    0%   { transform: rotate(9deg)  skewY(0deg); }
+    25%  { transform: rotate(3deg)  skewY(7deg); }
+    50%  { transform: rotate(-7deg) skewY(0deg); }
+    75%  { transform: rotate(1deg)  skewY(-7deg); }
+    100% { transform: rotate(9deg)  skewY(0deg); }
 }
 @keyframes squid-fin-flap-r {
-    0%, 100% { transform: rotate(-12deg); }
-    50%      { transform: rotate(14deg); }
+    0%   { transform: rotate(-9deg) skewY(0deg); }
+    25%  { transform: rotate(-3deg) skewY(-7deg); }
+    50%  { transform: rotate(7deg)  skewY(0deg); }
+    75%  { transform: rotate(-1deg) skewY(7deg); }
+    100% { transform: rotate(-9deg) skewY(0deg); }
 }
-.squid-fin-left {
-    transform-origin: 5px 1px; /* hinge at the mantle apex */
-    animation: squid-fin-flap-l 0.5s ease-in-out infinite;
+.squid-fin-left  { animation: squid-fin-flap-l 1.15s ease-in-out infinite; }
+.squid-fin-right { animation: squid-fin-flap-r 1.15s ease-in-out infinite 0.3s; }
+
+/* Cloak: while approaching (hunting) or fleeing, Squirty fades to a refracting
+   outline (a light-bending shimmer), then pops back out on the strike. The
+   transition is re-enabled only for opacity/filter (transform stays instant). */
+.squid-svg { transition: opacity 0.16s ease-out, filter 0.16s ease-out !important; }
+.squid-svg.squid-cloaked {
+    opacity: 0.16;
+    filter: drop-shadow(0 0 0.6px #00e5ff) drop-shadow(0 0 0.6px #00e5ff) drop-shadow(0 0 2px rgba(125, 249, 255, 0.8));
 }
-.squid-fin-right {
-    transform-origin: 11px 1px; /* hinge at the mantle apex */
-    animation: squid-fin-flap-r 0.5s ease-in-out infinite;
+#squid-container.cloaking {
+    backdrop-filter: blur(2px) saturate(1.4) hue-rotate(-8deg);
+    -webkit-backdrop-filter: blur(2px) saturate(1.4) hue-rotate(-8deg);
+    border-radius: 46% 46% 40% 40%;
 }
+@keyframes squid-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.squid-svg.squid-pop-active { animation: squid-pop 0.32s cubic-bezier(0.2, 1.4, 0.4, 1); }
 
 /* Hunting: tentacles wiggle faster/agitated as Squirty stalks the cursor. */
 .squid-svg.squid-hunting .pixel-tentacle-1,
@@ -817,7 +834,7 @@ details[open] > *:not(summary) {
     filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.85));
 }
 
-/* Chromatophore colour-pulsing while hunting/striking: quick "weird" steps
+/* Chromatophore color-pulsing while hunting/striking: quick "weird" steps
    through cyan -> magenta -> amber -> green, like a hunting squid flashing. */
 @keyframes squid-chromatophore {
     0%   { filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.7)) hue-rotate(0deg) saturate(1.2) brightness(1); }

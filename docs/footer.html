@@ -312,84 +312,50 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         const squid = document.createElement('div');
         squid.id = 'squid-container';
         squid.style.setProperty('transition', 'none', 'important');
-        squid.innerHTML = `
-            <svg class="squid-svg" viewBox="0 0 16 16" width="100%" height="100%" style="shape-rendering: crispEdges;">
-              <!-- Flapping triangular sail fins, hinged at the mantle apex
-                   and flaring out then tapering down (animated in CSS) -->
-              <g class="squid-fin-left">
-                <rect x="1" y="1" width="4" height="1" fill="#00e5ff"/>
-                <rect x="1" y="2" width="4" height="1" fill="#00e5ff"/>
-                <rect x="2" y="3" width="2" height="1" fill="#00e5ff"/>
-                <rect x="3" y="4" width="1" height="1" fill="#00e5ff"/>
-                <rect x="1" y="1" width="1" height="2" fill="#00b8d4"/> <!-- outer edge -->
-                <rect x="3" y="4" width="1" height="1" fill="#00b8d4"/> <!-- lower tip -->
-              </g>
-              <g class="squid-fin-right">
-                <rect x="11" y="1" width="4" height="1" fill="#00e5ff"/>
-                <rect x="11" y="2" width="4" height="1" fill="#00e5ff"/>
-                <rect x="12" y="3" width="2" height="1" fill="#00e5ff"/>
-                <rect x="12" y="4" width="1" height="1" fill="#00e5ff"/>
-                <rect x="14" y="1" width="1" height="2" fill="#00b8d4"/> <!-- outer edge -->
-                <rect x="12" y="4" width="1" height="1" fill="#00b8d4"/> <!-- lower tip -->
-              </g>
 
-              <!-- Mantle: rounded squid body (domed top, not a sharp point) -->
-              <rect x="6" y="0" width="4" height="1" fill="#00e5ff"/>
-              <rect x="5" y="1" width="6" height="1" fill="#00e5ff"/>
-              <rect x="5" y="2" width="6" height="1" fill="#00e5ff"/>
-              <rect x="4" y="3" width="8" height="1" fill="#00e5ff"/>
-              <rect x="4" y="4" width="8" height="1" fill="#00e5ff"/>
-              <rect x="3" y="5" width="10" height="1" fill="#00e5ff"/>
-              <rect x="2" y="6" width="12" height="1" fill="#00e5ff"/>
+        // ---- Squirty art + expression system (procedural 64-grid; matches the design preview) ----
+        const _CY='#00e5ff',_SH='#00b8d4',_HI='#7df9ff',_WT='#ffffff',_BK='#000000',_BL='#ff4081',_MO='#00838f';
+        const _r=(x,y,w,h,f,ex)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"${ex||''}/>`;
+        const _disc=(dx,dy,rad,f,ex)=>{let s='';for(let y=Math.round(dy-rad);y<=Math.round(dy+rad);y++){const dd=rad*rad-(y-dy)*(y-dy);if(dd<0)continue;const w=Math.sqrt(dd);s+=_r(Math.round(dx-w),y,Math.round(2*w)+1,1,f,ex);}return s;};
+        const _ell=(ex,ey,rx,ry,f)=>{let s='';for(let y=Math.round(ey-ry);y<=Math.round(ey+ry);y++){const tt=(y-ey)/ry,dd=1-tt*tt;if(dd<0)continue;const w=rx*Math.sqrt(dd);s+=_r(Math.round(ex-w),y,Math.round(2*w)+1,1,f);}return s;};
+        const _FX=32,_EYECY=30,_EDX=10,_EWR=6.5,_EPR=3.9,_MY=40,_MD=4,_MH=6;
+        function squidSVG(){
+          const cx=32,apexY=2,domeEndY=26,sideEndY=42,baseY=49,halfMax=21,baseHalf=16;
+          const hw=(y)=>{ if(y<apexY||y>=baseY)return -1; if(y<=domeEndY){const tt=(y-apexY)/(domeEndY-apexY);return halfMax*Math.pow(tt,1.1);} if(y<=sideEndY)return halfMax; const tt=(y-sideEndY)/(baseY-sideEndY); return halfMax+(baseHalf-halfMax)*tt; };
+          const span=(yT,yB,lf,rf,f,ex)=>{let s='';for(let y=yT;y<=yB;y++){const xl=Math.round(lf(y)),xr=Math.round(rf(y));if(xr>=xl)s+=_r(xl,y,xr-xl+1,1,f,ex);}return s;};
+          const body=span(apexY,baseY-1,y=>cx-hw(y),y=>cx+hw(y),_CY);
+          let shade='';for(let y=apexY+6;y<baseY;y++){const w=hw(y);if(w>5)shade+=_r(Math.round(cx+w)-3,y,3,1,_SH);}
+          let hi='';for(let y=apexY+2;y<apexY+10;y++){const w=hw(y);if(w>3)hi+=_r(Math.round(cx-w)+1,y,Math.max(2,Math.round(w*0.45)),1,_HI);}
+          const blush=_r(cx-19,37,5,3,_BL,' opacity="0.8"')+_r(cx+15,37,5,3,_BL,' opacity="0.8"');
+          const fY0=6,fY1=22,fMax=10; const finOut=(y)=>fMax*Math.sin(Math.PI*(y-fY0)/(fY1-fY0));
+          const finL=`<g class="squid-fin-left" style="transform-origin:${Math.round(cx-hw(13))}px 13px">`+span(fY0,fY1,y=>cx-hw(y)-finOut(y),y=>cx-hw(y),_CY)+span(fY0,fY1,y=>cx-hw(y)-finOut(y),y=>cx-hw(y)-finOut(y)+1.5,_SH)+`</g>`;
+          const finR=`<g class="squid-fin-right" style="transform-origin:${Math.round(cx+hw(13))}px 13px">`+span(fY0,fY1,y=>cx+hw(y),y=>cx+hw(y)+finOut(y),_CY)+span(fY0,fY1,y=>cx+hw(y)+finOut(y)-1.5,y=>cx+hw(y)+finOut(y),_SH)+`</g>`;
+          const legX=[cx-12,cx-4,cx+4,cx+12];let tents='';legX.forEach((lx,i)=>{tents+=`<g class="pixel-tentacle-${i+1}" style="transform-origin:${lx}px ${baseY}px">`+span(baseY-3,baseY+13,y=>{const tt=(y-(baseY-3))/16;return lx-3*(1-tt);},y=>{const tt=(y-(baseY-3))/16;return lx+3*(1-tt);},(i%2?_SH:_CY))+`</g>`;});
+          return `<svg class="squid-svg" viewBox="0 0 64 64" width="100%" height="100%" style="shape-rendering:crispEdges">${finL}${finR}${tents}${body}${shade}${hi}${blush}<g id="face"></g></svg>`;
+        }
+        function faceSVG(p){ let s='';
+          if(p.brow>0.06){ const drop=Math.round(4*p.brow),topY=Math.round(_EYECY-_EWR-2); for(const side of [-1,1]){ const ex=_FX+side*_EDX; for(let i=0;i<7;i++){ const x=ex+(side<0?(-4+i):(4-i)); const y=topY+Math.round(drop*(i/6)); s+=_r(x,y,1,2,_BK);} } }
+          for(const side of [-1,1]){ const ex=_FX+side*_EDX,o=Math.max(0.12,Math.min(1.3,p.eyeOpen)); s+=_disc(ex,_EYECY,_EWR*o,_WT); if(o>0.32){ s+=_disc(ex+(p.lookx||0)*2.2,_EYECY+1+(p.looky||0)*2.2,_EPR*Math.min(1,o),_BK)+_disc(ex-1,_EYECY-2,1.4,_WT);} }
+          if(p.mouthOpen>0.28){ s+=_ell(_FX,_MY+1,2.6+2.6*p.mouthOpen,2+2.6*p.mouthOpen,_MO); } else { for(let i=-_MH;i<=_MH;i++){ const yy=Math.round(_MY+p.mouthCurve*_MD*(1-(i/_MH)*(i/_MH))); s+=_r(_FX+i,yy,1,2,_MO);} }
+          return s;
+        }
+        let expr={brow:0,eyeOpen:1,mouthCurve:0.9,mouthOpen:0,lookx:0,looky:0};
+        let blinkUntil=0,nextBlink=Date.now()+2000,gx=0,gy=0,scaredUntil=0;
+        let wariness=parseFloat(localStorage.getItem('squirty_wariness')||'0')||0;
+        function learnWary(d){ wariness=Math.max(0,Math.min(1,wariness+d)); try{localStorage.setItem('squirty_wariness',wariness.toFixed(3));}catch(e){} }
+        function moodName(){ if(isScared||mode==='fleeing')return 'scared'; if(mode==='hunting'||mode==='striking')return 'angry'; if(mode==='latched')return 'chomp'; return 'happy'; }
+        function targetExpr(now){ const m=moodName(); let tg;
+          if(m==='angry') tg={brow:1,eyeOpen:0.68,mouthCurve:-0.35,mouthOpen:0.12};
+          else if(m==='scared') tg={brow:0,eyeOpen:1.22,mouthCurve:0,mouthOpen:0.5};
+          else if(m==='chomp') tg={brow:0,eyeOpen:0.85,mouthCurve:0.5,mouthOpen:0.6+0.4*Math.sin(now/70)};
+          else tg={brow:0,eyeOpen:1,mouthCurve:0.88+0.12*Math.sin(now/600),mouthOpen:0};
+          if(m!=='angry'){ if(now>nextBlink){ blinkUntil=now+120; nextBlink=now+1800+Math.random()*2600; } if(now<blinkUntil) tg.eyeOpen=0.12; }
+          return tg;
+        }
+        function cloak(on){ const s=squid.querySelector('.squid-svg'); if(s)s.classList.toggle('squid-cloaked',on); squid.classList.toggle('cloaking',on); }
+        function popOut(){ const s=squid.querySelector('.squid-svg'); if(!s)return; cloak(false); s.classList.remove('squid-pop-active'); void s.offsetWidth; s.classList.add('squid-pop-active'); }
 
-              <!-- Eyes (3x3 whites so the pupil has 9 positions: 8 around + centre) & Blush -->
-              <rect x="2" y="7" width="1" height="3" fill="#00e5ff"/>  <!-- left edge -->
-              <rect x="6" y="7" width="4" height="3" fill="#00e5ff"/>  <!-- bridge between the eyes -->
-              <rect x="13" y="7" width="1" height="3" fill="#00e5ff"/> <!-- right edge -->
-              <rect x="3" y="7" width="3" height="3" fill="#ffffff"/>  <!-- Left eye white -->
-              <rect x="10" y="7" width="3" height="3" fill="#ffffff"/> <!-- Right eye white -->
-              <rect id="squid-pupil-l" x="4" y="8" width="1" height="1" fill="#000000"/> <!-- Left pupil (centre) -->
-              <rect id="squid-pupil-r" x="11" y="8" width="1" height="1" fill="#000000"/> <!-- Right pupil (centre) -->
-              <rect x="2" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
-              <rect x="13" y="9" width="1" height="1" fill="#ff4081" opacity="0.85"/> <!-- Blush -->
-              <rect x="3" y="10" width="10" height="1" fill="#00e5ff"/>
-              <rect x="4" y="11" width="8" height="1" fill="#00e5ff"/>
-
-              <!-- Tentacles (animated in CSS); bundle rotates to track cursor -->
-              <g id="squid-tentacle-bundle">
-              <g class="pixel-tentacle-1">
-                <rect x="4" y="12" width="2" height="3" fill="#00e5ff"/>
-                <rect x="4" y="13" width="1" height="1" fill="#00b8d4"/>
-              </g>
-              <g class="pixel-tentacle-2">
-                <rect x="6" y="12" width="1" height="3" fill="#00b8d4"/>
-                <rect x="7" y="12" width="1" height="3" fill="#00e5ff"/>
-              </g>
-              <g class="pixel-tentacle-3">
-                <rect x="8" y="12" width="1" height="3" fill="#00e5ff"/>
-                <rect x="9" y="12" width="1" height="3" fill="#00b8d4"/>
-              </g>
-              <g class="pixel-tentacle-4">
-                <rect x="10" y="12" width="2" height="3" fill="#00e5ff"/>
-                <rect x="11" y="13" width="1" height="1" fill="#00b8d4"/>
-              </g>
-              </g>
-
-              <!-- Mantle shading (darker cyan on the right edge for depth) -->
-              <rect x="9" y="1" width="1" height="1" fill="#00b8d4"/>
-              <rect x="9" y="2" width="1" height="1" fill="#00b8d4"/>
-              <rect x="10" y="3" width="1" height="1" fill="#00b8d4"/>
-              <rect x="10" y="4" width="1" height="1" fill="#00b8d4"/>
-              <rect x="11" y="5" width="1" height="1" fill="#00b8d4"/>
-              <rect x="12" y="6" width="1" height="1" fill="#00b8d4"/>
-              <!-- Mantle highlight (lighter rounded top) -->
-              <rect x="6" y="0" width="2" height="1" fill="#7df9ff"/>
-              <!-- Smile (corners up at y=10, dip in the middle at y=11) -->
-              <rect x="6" y="10" width="1" height="1" fill="#00838f"/>
-              <rect x="9" y="10" width="1" height="1" fill="#00838f"/>
-              <rect x="7" y="11" width="2" height="1" fill="#00838f"/>
-            </svg>
-        `;
+        squid.innerHTML = squidSVG();
         
         document.body.appendChild(squid);
         
@@ -438,6 +404,7 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 const dt = Math.max(8, now - lastMoveT);
                 // approximate cursor speed in px per animation frame
                 const sp = Math.hypot(e.clientX - lastMX, e.clientY - lastMY) / dt * 16;
+                cvx = (e.clientX - lastMX) / dt * 16; cvy = (e.clientY - lastMY) / dt * 16;
                 // While Squirty is latched on, shaking the cursor fast drains his grip.
                 if (mode === 'latched' && sp > 8) {
                     grip -= (sp - 8) * 1.8;
@@ -456,7 +423,8 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
         let grip = 0;
         const GRIP_MAX = 100;
         const GRAB_RANGE = 52;        // distance (px) from cursor that triggers the grab
-        const HUNT_SPEED = 5.0;
+        const HUNT_SPEED = 4.25;   // slowed ~15% so the hunt/latch is less twitchy
+        let cvx = 0, cvy = 0, strikeStart = 0, strikeDur = 560, fleeUntil = 0;
         let striking = false;         // tentacle strike in progress
         let reach = 0;                // 0..1 how far the hunting tentacles have shot out
         const STRIKE_RANGE = 190;     // ~5x body length the hunting tentacles can lash
@@ -473,14 +441,24 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             mode = 'striking';   // tentacles spring out, then reel him in (see updatePhysics)
             reach = 0;
             striking = true;
+            strikeStart = Date.now(); strikeDur = 500 + Math.random() * 150; // latch within 0.5-0.65s
+            popOut();            // de-cloak with a pop
             setSquidState('squid-attacking');
             const svgEl = squid.querySelector('.squid-svg');
             if (svgEl) { svgEl.classList.remove('squid-pulse-active'); void svgEl.offsetWidth; svgEl.classList.add('squid-pulse-active'); }
         };
 
+        const startFlee = () => {
+            isScared = true; cloak(true);
+            const hide = 1100 + wariness * 2400; scaredUntil = Date.now() + hide;
+            nextHuntTime = Date.now() + hide + 4000;
+            const a = Math.atan2((posY + 18) - mouseY, (posX + 18) - mouseX);
+            const burst = 10 + wariness * 7; velX = Math.cos(a) * burst; velY = Math.sin(a) * burst;
+        };
         const detach = () => {
             mode = 'idle';
             setSquidState(null);
+            cloak(false);
             grip = 0;
             nextHuntTime = Date.now() + 12000 + Math.random() * 10000;
             // fling away from the cursor like he got shaken loose
@@ -542,11 +520,22 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             }
             squid.classList.remove('squid-tucked');
 
+            // He is smart: if the cursor bears down on him fast, he bolts and hides.
+            if (mode !== 'latched' && !isScared && mouseX > -9000) {
+                const hcx = posX + 18, hcy = posY + 18, hdx = hcx - mouseX, hdy = hcy - mouseY;
+                const hdist = Math.hypot(hdx, hdy) || 1;
+                if (hdist < (70 + wariness * 120) && (cvx * hdx + cvy * hdy) > 0 && Math.hypot(cvx, cvy) > 6) {
+                    learnWary(0.04); if (mode !== 'idle') setSquidState(null); startFlee();
+                }
+            }
+            if (isScared && now > scaredUntil) { isScared = false; cloak(false); }
+
             // Every now and then, go hunt the cursor.
             if (mode === 'idle' && !isScared && mouseX > -9000 && now > nextHuntTime) {
                 mode = 'hunting';
                 huntEndTime = now + 7000;
                 setSquidState('squid-hunting');
+                cloak(true);   // cloak while approaching
             }
 
             if (mode === 'latched') {
@@ -558,14 +547,14 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 if (grip <= 0) detach();
             } else if (mode === 'striking') {
                 // Tentacles have shot out; spring them taut and reel him in fast.
-                reach += (1 - reach) * 0.28;
+                reach += (1 - reach) * 0.24;
                 if (reach > 0.5) {
-                    posX += ((mouseX - 18) - posX) * 0.34; // rapid reel-in
-                    posY += ((mouseY - 9) - posY) * 0.34;
+                    posX += ((mouseX - 18) - posX) * 0.29; // reel-in (slowed ~15%)
+                    posY += ((mouseY - 9) - posY) * 0.29;
                 }
                 velX = 0; velY = 0;
                 const cx = posX + 18, cy = posY + 18;
-                if (Math.hypot(mouseX - cx, mouseY - cy) < GRAB_RANGE) {
+                if (Math.hypot(mouseX - cx, mouseY - cy) < GRAB_RANGE || now - strikeStart >= strikeDur) {
                     mode = 'latched'; grip = GRIP_MAX; setSquidState('squid-chewing'); striking = false;
                 } else if (now > huntEndTime + 1500) {
                     mode = 'idle'; setSquidState(null); striking = false;
@@ -579,8 +568,8 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                     if (d < STRIKE_RANGE) {
                         startStrike();
                     } else {
-                        velX += (dx / d) * 0.75;
-                        velY += (dy / d) * 0.75;
+                        velX += (dx / d) * 0.64;
+                        velY += (dy / d) * 0.64;
                         const sp = Math.hypot(velX, velY);
                         if (sp > HUNT_SPEED) { velX = velX / sp * HUNT_SPEED; velY = velY / sp * HUNT_SPEED; }
                         if (now > huntEndTime) { // gave up the chase
@@ -623,7 +612,7 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
 
             squid.style.transform = `translate(${posX}px, ${posY}px) rotate(${rotation + shake}deg)`;
 
-            // Chromatophore colour-pulsing while stalking / striking.
+            // Chromatophore color-pulsing while stalking / striking.
             const svgChro = squid.querySelector('.squid-svg');
             if (svgChro) svgChro.classList.toggle('squid-chromatophore', mode === 'hunting' || mode === 'striking');
 
@@ -671,29 +660,20 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
                 }
             }
             
-            // Eye tracking: the 1px pupil moves within each 3x3 eye white, giving
-            // 9 states - 8 around the edge plus the centre (cursor near / absent).
-            const pupilL = squid.querySelector('#squid-pupil-l');
-            const pupilR = squid.querySelector('#squid-pupil-r');
-            if (pupilL && pupilR) {
-                let col = 1, row = 1; // 0/1/2 = left|centre|right , up|centre|down
-                if (mouseX > -9000) {
-                    // Cursor delta rotated into the body's own (turned) frame so the
-                    // pupils keep looking at the cursor even as Squirty banks around.
-                    const dx = mouseX - (posX + 16), dy = mouseY - (posY + 16);
-                    const a = rotation * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
-                    const localDx = dx * ca + dy * sa;
-                    const localDy = -dx * sa + dy * ca;
-                    const dead = 16; // deadzone (px) that yields the centred pupil
-                    col = localDx < -dead ? 0 : localDx > dead ? 2 : 1;
-                    row = localDy < -dead ? 0 : localDy > dead ? 2 : 1;
-                }
-                // Left white spans x 3..5, right 10..12; both span y 7..9.
-                pupilL.setAttribute('x', 3 + col);
-                pupilR.setAttribute('x', 10 + col);
-                pupilL.setAttribute('y', 7 + row);
-                pupilR.setAttribute('y', 7 + row);
-            }
+            // Fluid expression: mood comes from state; gaze follows the cursor.
+            if (mouseX > -9000) {
+                const gdx = mouseX - (posX + 18), gdy = mouseY - (posY + 18);
+                const ga = rotation * Math.PI / 180, gca = Math.cos(ga), gsa = Math.sin(ga);
+                const gldx = gdx * gca + gdy * gsa, gldy = -gdx * gsa + gdy * gca;
+                gx += (Math.max(-1, Math.min(1, gldx / 36)) - gx) * 0.2;
+                gy += (Math.max(-1, Math.min(1, gldy / 36)) - gy) * 0.2;
+            } else { gx += (0 - gx) * 0.1; gy += (0 - gy) * 0.1; }
+            const _tgt = targetExpr(now);
+            const _k = (mode === 'striking' || isScared) ? 0.3 : 0.16;
+            for (const _key in _tgt) { expr[_key] += (_tgt[_key] - expr[_key]) * _k; }
+            expr.lookx += (gx - expr.lookx) * 0.3; expr.looky += (gy - expr.looky) * 0.3;
+            const faceEl = squid.querySelector('#face');
+            if (faceEl) faceEl.innerHTML = faceSVG(expr);
             
             requestAnimationFrame(updatePhysics);
         }
@@ -756,7 +736,7 @@ $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="foote
             nextHuntTime = Date.now() + 12000 + Math.random() * 10000;
 
             // Dart away fast (returns the angle the squid escapes in)
-            isScared = true;
+            isScared = true; scaredUntil = Date.now() + 1600; cloak(true); learnWary(0.06);
             const angle = pulseSwim(14); // Escape speed
             
             // Spawn ink
