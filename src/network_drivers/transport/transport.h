@@ -308,6 +308,14 @@ void det_conn_detach(struct tcp_pcb *pcb);
 /** @brief Hard-abort @p pcb (RST) for a fatal condition; no graceful FIN. */
 void det_conn_abort(struct tcp_pcb *pcb);
 
+/**
+ * @brief Raw source IPv4 of the connection in @p slot, or 0 if the slot has no
+ *        active pcb (or on host builds). Byte order is irrelevant: this is an
+ *        identity key (e.g. for the auth lockout), not for display. Keeps the
+ *        lwIP pcb access inside L4 so callers never reach into the pcb directly.
+ */
+uint32_t det_conn_remote_ip(uint8_t slot);
+
 // ---------------------------------------------------------------------------
 // Per-connection lwIP callbacks (defined in transport.cpp, used in listener.cpp)
 // ---------------------------------------------------------------------------

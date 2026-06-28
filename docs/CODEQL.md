@@ -66,7 +66,6 @@ vendored Unity headers.
 | `cpp/long-switch`                | `http_parser.cpp:187`, `ssh/ssh_server.cpp:39`, `websocket.cpp:279` | **Won't fix (style)** - protocol state machines / message dispatchers; a long `switch` is the clearest form.                                                                                                                              |
 | `cpp/poorly-documented-function` | `services/modbus/modbus.cpp:112`                                    | **Won't fix (style)** - `modbus_process_pdu` is a function-code dispatcher (documented with a header comment); the heuristic dislikes the size / comment ratio.                                                                           |
 | `cpp/loop-variable-changed`      | `services/webdav/webdav.cpp:166`                                    | **Intentional** - the percent-decode loop does `p += 2` to consume a `%XX` escape; standard and correct.                                                                                                                                  |
-| `cpp/unused-static-variable`     | `DetWebServerConfig.h:1615`                                         | **Cleanup candidate** - `DET_DEFAULT_CONFIG` is vestigial (no reader); left for a deliberate config-struct cleanup.                                                                                                                       |
 
 ### Tests / mocks / vendored (not production code)
 

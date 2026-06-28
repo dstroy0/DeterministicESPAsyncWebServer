@@ -1414,15 +1414,7 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
 // as an identity key for the auth lockout, so byte order is irrelevant.
 static uint32_t lockout_client_ip(uint8_t slot_id)
 {
-    uint32_t ip = 0;
-#ifdef ARDUINO
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->pcb)
-        ip = ip4_addr_get_u32(ip_2_ip4(&conn->pcb->remote_ip));
-#else
-    (void)slot_id;
-#endif
-    return ip;
+    return det_conn_remote_ip(slot_id);
 }
 
 // 429 Too Many Requests with Retry-After (auth lockout active). Closes the
