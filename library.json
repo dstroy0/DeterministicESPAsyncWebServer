@@ -22,7 +22,6 @@
   "headers": ["DeterministicESPAsyncWebServer.h"],
   "export": {
     "exclude": [
-      "",
       ".github",
       ".gitignore",
       "test",

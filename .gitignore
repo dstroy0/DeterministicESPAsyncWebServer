@@ -1,5 +1,6 @@
 .pio
 .vscode/
+/
 docs/html
 # Python (asset generator tooling)
 __pycache__/
