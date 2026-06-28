@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.9.3] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.3 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`e5527fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5527fba8cfffc92006d6beb21a40491eef6619b))
+- update CHANGELOG.md [skip ci] ([`2ddc42b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ddc42b03ec2203c30800aa411190869427a69f2))
+
+### Changes
+
+- Bump version: 3.9.2 → 3.9.3 ([`a1f96d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1f96d7f58fcc9b1bfe1a623932e3e4c646ea0b9))
+
+### Documentation
+
+- redraw Squirty the mascot (smooth 64-grid squid) with live expressions ([`4d2ba96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d2ba969aa6994579019ab2801aff92cea751ccd))
+
+</details>
+
 ## [3.9.2] - 2026-06-28
 
 <details>
