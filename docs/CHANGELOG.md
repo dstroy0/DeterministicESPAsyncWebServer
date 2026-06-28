@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.7.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.7.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d23aca1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d23aca12636819c8efa0e61e3e7902ea7abbe862))
+- update CHANGELOG.md [skip ci] ([`57da106`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57da106044e9c8d774da8aa78cd55560e81eb749))
+
+### Changes
+
+- Bump version: 3.6.0 → 3.7.0 ([`3ba7b0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ba7b0d753ff4fb39e5956ea054e9a2dd8f3b185))
+
+### Features
+
+- OPC UA GetEndpoints + ServiceFault + spec-compliant MSG framing (real-client interop) ([`723bd20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/723bd20e31550e4a59443d9051c74fa7e11f5463))
+
+</details>
+
 ## [3.6.0] - 2026-06-28
 
 <details>
