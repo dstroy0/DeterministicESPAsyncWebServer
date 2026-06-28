@@ -3,7 +3,7 @@
 
 /**
  * @file msgpack.cpp
- * @brief Zero-heap MessagePack encoder implementation.
+ * @brief Zero-heap MessagePack encoder and decoder implementation.
  */
 
 #include "msgpack.h"
@@ -200,6 +200,380 @@ void msgpack_map(MsgpackWriter *w, size_t count)
         put(w, 0xdf);
         put_be(w, count, 4);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Decoder
+// ---------------------------------------------------------------------------
+
+void msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len)
+{
+    r->buf = buf;
+    r->len = len;
+    r->pos = 0;
+    r->err = false;
+}
+
+bool msgpack_reader_ok(const MsgpackReader *r)
+{
+    return !r->err;
+}
+
+// Read @p nbytes big-endian immediately after the format byte at r->pos, advancing
+// pos past the format byte and the argument. Sets err and returns false on a read
+// that runs past the buffer (MessagePack is network/big-endian order).
+static bool take_be(MsgpackReader *r, size_t nbytes, uint64_t *out)
+{
+    if (r->pos + 1 + nbytes > r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint64_t v = 0;
+    for (size_t i = 0; i < nbytes; i++)
+        v = (v << 8) | r->buf[r->pos + 1 + i];
+    *out = v;
+    r->pos += 1 + nbytes;
+    return true;
+}
+
+MsgpackType msgpack_peek(MsgpackReader *r)
+{
+    if (r->err || r->pos >= r->len)
+        return MSGPACK_TYPE_INVALID;
+    uint8_t b = r->buf[r->pos];
+    if (b <= 0x7f)
+        return MSGPACK_TYPE_UINT; // positive fixint
+    if (b >= 0xe0)
+        return MSGPACK_TYPE_INT; // negative fixint
+    if (b >= 0x80 && b <= 0x8f)
+        return MSGPACK_TYPE_MAP; // fixmap
+    if (b >= 0x90 && b <= 0x9f)
+        return MSGPACK_TYPE_ARRAY; // fixarray
+    if (b >= 0xa0 && b <= 0xbf)
+        return MSGPACK_TYPE_STR; // fixstr
+    switch (b)
+    {
+    case 0xc0:
+        return MSGPACK_TYPE_NIL;
+    case 0xc2:
+    case 0xc3:
+        return MSGPACK_TYPE_BOOL;
+    case 0xc4:
+    case 0xc5:
+    case 0xc6:
+        return MSGPACK_TYPE_BIN;
+    case 0xca:
+    case 0xcb:
+        return MSGPACK_TYPE_FLOAT;
+    case 0xcc:
+    case 0xcd:
+    case 0xce:
+    case 0xcf:
+        return MSGPACK_TYPE_UINT;
+    case 0xd0:
+    case 0xd1:
+    case 0xd2:
+    case 0xd3:
+        return MSGPACK_TYPE_INT;
+    case 0xd9:
+    case 0xda:
+    case 0xdb:
+        return MSGPACK_TYPE_STR;
+    case 0xdc:
+    case 0xdd:
+        return MSGPACK_TYPE_ARRAY;
+    case 0xde:
+    case 0xdf:
+        return MSGPACK_TYPE_MAP;
+    default:
+        return MSGPACK_TYPE_INVALID; // 0xc1, ext (0xc7-0xc9, 0xd4-0xd8)
+    }
+}
+
+bool msgpack_read_uint(MsgpackReader *r, uint64_t *out)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    if (b <= 0x7f) // positive fixint
+    {
+        *out = b;
+        r->pos += 1;
+        return true;
+    }
+    uint64_t v;
+    switch (b)
+    {
+    case 0xcc:
+        if (!take_be(r, 1, &v))
+            return false;
+        break;
+    case 0xcd:
+        if (!take_be(r, 2, &v))
+            return false;
+        break;
+    case 0xce:
+        if (!take_be(r, 4, &v))
+            return false;
+        break;
+    case 0xcf:
+        if (!take_be(r, 8, &v))
+            return false;
+        break;
+    default:
+        r->err = true;
+        return false;
+    }
+    *out = v;
+    return true;
+}
+
+bool msgpack_read_int(MsgpackReader *r, int64_t *out)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    if (b <= 0x7f) // positive fixint
+    {
+        *out = b;
+        r->pos += 1;
+        return true;
+    }
+    if (b >= 0xe0) // negative fixint (two's-complement byte)
+    {
+        *out = (int8_t)b;
+        r->pos += 1;
+        return true;
+    }
+    uint64_t v;
+    switch (b)
+    {
+    case 0xcc: // uint8
+        if (!take_be(r, 1, &v))
+            return false;
+        *out = (int64_t)v;
+        return true;
+    case 0xcd: // uint16
+        if (!take_be(r, 2, &v))
+            return false;
+        *out = (int64_t)v;
+        return true;
+    case 0xce: // uint32
+        if (!take_be(r, 4, &v))
+            return false;
+        *out = (int64_t)v;
+        return true;
+    case 0xcf: // uint64 (may exceed int64 range; wraps as two's-complement)
+        if (!take_be(r, 8, &v))
+            return false;
+        *out = (int64_t)v;
+        return true;
+    case 0xd0: // int8
+        if (!take_be(r, 1, &v))
+            return false;
+        *out = (int8_t)(uint8_t)v;
+        return true;
+    case 0xd1: // int16
+        if (!take_be(r, 2, &v))
+            return false;
+        *out = (int16_t)(uint16_t)v;
+        return true;
+    case 0xd2: // int32
+        if (!take_be(r, 4, &v))
+            return false;
+        *out = (int32_t)(uint32_t)v;
+        return true;
+    case 0xd3: // int64
+        if (!take_be(r, 8, &v))
+            return false;
+        *out = (int64_t)v;
+        return true;
+    default:
+        r->err = true;
+        return false;
+    }
+}
+
+bool msgpack_read_bool(MsgpackReader *r, bool *out)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    if (b == 0xc2)
+        *out = false;
+    else if (b == 0xc3)
+        *out = true;
+    else
+    {
+        r->err = true;
+        return false;
+    }
+    r->pos += 1;
+    return true;
+}
+
+bool msgpack_read_nil(MsgpackReader *r)
+{
+    if (r->err || r->pos >= r->len || r->buf[r->pos] != 0xc0)
+    {
+        r->err = true;
+        return false;
+    }
+    r->pos += 1;
+    return true;
+}
+
+bool msgpack_read_float(MsgpackReader *r, float *out)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    uint64_t v;
+    if (b == 0xca) // float32
+    {
+        if (!take_be(r, 4, &v))
+            return false;
+        uint32_t bits = (uint32_t)v;
+        memcpy(out, &bits, sizeof(*out));
+        return true;
+    }
+    if (b == 0xcb) // float64 -> narrow to float
+    {
+        if (!take_be(r, 8, &v))
+            return false;
+        double d;
+        memcpy(&d, &v, sizeof(d));
+        *out = (float)d;
+        return true;
+    }
+    r->err = true;
+    return false;
+}
+
+// Shared body for the str family (fixstr / str8/16/32) and bin family (bin8/16/32).
+static bool read_blob(MsgpackReader *r, bool want_str, const uint8_t **out, size_t *len)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    size_t n;
+    uint64_t v;
+    if (want_str && b >= 0xa0 && b <= 0xbf) // fixstr
+    {
+        n = (size_t)(b & 0x1f);
+        r->pos += 1;
+    }
+    else
+    {
+        const uint8_t f8 = want_str ? 0xd9 : 0xc4;
+        const uint8_t f16 = want_str ? 0xda : 0xc5;
+        const uint8_t f32 = want_str ? 0xdb : 0xc6;
+        if (b == f8)
+        {
+            if (!take_be(r, 1, &v))
+                return false;
+        }
+        else if (b == f16)
+        {
+            if (!take_be(r, 2, &v))
+                return false;
+        }
+        else if (b == f32)
+        {
+            if (!take_be(r, 4, &v))
+                return false;
+        }
+        else
+        {
+            r->err = true;
+            return false;
+        }
+        n = (size_t)v;
+    }
+    if (r->pos + n > r->len) // payload bounds
+    {
+        r->err = true;
+        return false;
+    }
+    *out = &r->buf[r->pos];
+    *len = n;
+    r->pos += n;
+    return true;
+}
+
+bool msgpack_read_str(MsgpackReader *r, const char **out, size_t *len)
+{
+    return read_blob(r, true, (const uint8_t **)out, len);
+}
+
+bool msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len)
+{
+    return read_blob(r, false, out, len);
+}
+
+// Shared body for the array family (fixarray / array16/32) and map family.
+static bool read_count(MsgpackReader *r, bool want_map, size_t *count)
+{
+    if (r->err || r->pos >= r->len)
+    {
+        r->err = true;
+        return false;
+    }
+    uint8_t b = r->buf[r->pos];
+    const uint8_t fix_lo = want_map ? 0x80 : 0x90;
+    const uint8_t fix_hi = want_map ? 0x8f : 0x9f;
+    const uint8_t f16 = want_map ? 0xde : 0xdc;
+    const uint8_t f32 = want_map ? 0xdf : 0xdd;
+    if (b >= fix_lo && b <= fix_hi)
+    {
+        *count = (size_t)(b & 0x0f);
+        r->pos += 1;
+        return true;
+    }
+    uint64_t v;
+    if (b == f16)
+    {
+        if (!take_be(r, 2, &v))
+            return false;
+    }
+    else if (b == f32)
+    {
+        if (!take_be(r, 4, &v))
+            return false;
+    }
+    else
+    {
+        r->err = true;
+        return false;
+    }
+    *count = (size_t)v;
+    return true;
+}
+
+bool msgpack_read_array(MsgpackReader *r, size_t *count)
+{
+    return read_count(r, false, count);
+}
+
+bool msgpack_read_map(MsgpackReader *r, size_t *count)
+{
+    return read_count(r, true, count);
 }
 
 #endif // DETWS_ENABLE_MSGPACK

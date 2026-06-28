@@ -7,6 +7,8 @@
     "asyncua",
     "bursty",
     "cpcb",
+    "klen",
+    "retransmittable",
     "wakeup",
     "wakeups",
     "aes-256-ctr",

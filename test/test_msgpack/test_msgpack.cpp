@@ -1,8 +1,10 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the MessagePack encoder (network_drivers/presentation/msgpack).
-// Expected byte sequences follow the MessagePack spec encodings.
+// Unit tests for the MessagePack encoder and decoder
+// (network_drivers/presentation/msgpack). Expected byte sequences follow the
+// MessagePack spec encodings; the decoder tests parse spec-form bytes and
+// round-trip the encoder output.
 
 #include "network_drivers/presentation/msgpack/msgpack.h"
 #include <unity.h>
@@ -158,6 +160,202 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(5, msgpack_len(&w));
 }
 
+// ---------------------------------------------------------------------------
+// Decoder
+// ---------------------------------------------------------------------------
+
+void test_decode_uint()
+{
+    // positive fixint, uint8, uint16, uint32, uint64
+    uint8_t in[] = {0x00, 0x7f, 0xcc, 0x80, 0xcd, 0x01, 0x00, 0xce, 0x00, 0x01, 0x00,
+                    0x00, 0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
+    MsgpackReader r;
+    msgpack_reader_init(&r, in, sizeof(in));
+    uint64_t v;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_UINT, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(0, v);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(127, v);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(128, v);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(256, v);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(65536, v);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(0x100000000ULL, v);
+    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r)); // exhausted
+}
+
+void test_decode_int()
+{
+    // negative fixint (-1, -32), int8 (-128), int16 (-32768), int32 (-2147483648)
+    uint8_t in[] = {0xff, 0xe0, 0xd0, 0x80, 0xd1, 0x80, 0x00, 0xd2, 0x80, 0x00, 0x00, 0x00};
+    MsgpackReader r;
+    msgpack_reader_init(&r, in, sizeof(in));
+    int64_t v;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INT, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-1, v);
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-32, v);
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-128, v);
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-32768, v);
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(-2147483648LL, v);
+    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
+    // read_int also accepts an unsigned encoding
+    uint8_t u[] = {0xcc, 0x80};
+    msgpack_reader_init(&r, u, sizeof(u));
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
+    TEST_ASSERT_EQUAL_INT64(128, v);
+}
+
+void test_decode_str_and_bytes()
+{
+    uint8_t in[] = {0xa3, 'a', 'b', 'c', 0xc4, 0x02, 0xde, 0xad}; // fixstr "abc", bin8 {de ad}
+    MsgpackReader r;
+    msgpack_reader_init(&r, in, sizeof(in));
+    const char *s;
+    size_t n;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_STR, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_EQUAL_size_t(3, n);
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("abc", s, 3);
+    const uint8_t *bin;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_BIN, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_bytes(&r, &bin, &n));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_EQUAL_UINT8(0xde, bin[0]);
+    TEST_ASSERT_EQUAL_UINT8(0xad, bin[1]);
+}
+
+void test_decode_simple_and_float()
+{
+    uint8_t in[] = {0xc0, 0xc2, 0xc3, 0xca, 0x3f, 0x80, 0x00, 0x00}; // nil false true float32(1.0)
+    MsgpackReader r;
+    msgpack_reader_init(&r, in, sizeof(in));
+    bool bv;
+    float fv;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_NIL, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_nil(&r));
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_BOOL, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_FALSE(bv);
+    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_TRUE(bv);
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_FLOAT, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    TEST_ASSERT_EQUAL_FLOAT(1.0f, fv);
+    // float64 (0xcb) narrows to float
+    uint8_t d[] = {0xcb, 0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18}; // pi as double
+    msgpack_reader_init(&r, d, sizeof(d));
+    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.14159f, fv);
+}
+
+void test_decode_array_and_map()
+{
+    uint8_t in[] = {0x93, 0x01, 0x02, 0x03, 0x81, 0xa1, 'k', 0x2a}; // [1,2,3] {"k":42}
+    MsgpackReader r;
+    msgpack_reader_init(&r, in, sizeof(in));
+    size_t count;
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_ARRAY, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_array(&r, &count));
+    TEST_ASSERT_EQUAL_size_t(3, count);
+    uint64_t v;
+    for (size_t i = 0; i < count; i++)
+    {
+        TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+        TEST_ASSERT_EQUAL_UINT64(i + 1, v);
+    }
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_MAP, msgpack_peek(&r));
+    TEST_ASSERT_TRUE(msgpack_read_map(&r, &count));
+    TEST_ASSERT_EQUAL_size_t(1, count);
+    const char *s;
+    size_t n;
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("k", s, 1);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(42, v);
+}
+
+void test_decode_roundtrip()
+{
+    // Encode a small document, then decode it back and check each field.
+    uint8_t b[64];
+    MsgpackWriter w;
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_map(&w, 3);
+    msgpack_str(&w, "id");
+    msgpack_uint(&w, 4242);
+    msgpack_str(&w, "t");
+    msgpack_float(&w, 21.5f);
+    msgpack_str(&w, "ok");
+    msgpack_bool(&w, true);
+    TEST_ASSERT_TRUE(msgpack_ok(&w));
+
+    MsgpackReader r;
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    size_t count;
+    TEST_ASSERT_TRUE(msgpack_read_map(&r, &count));
+    TEST_ASSERT_EQUAL_size_t(3, count);
+    const char *k;
+    size_t kn;
+    uint64_t uv;
+    float fv;
+    bool bv;
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("id", k, 2);
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+    TEST_ASSERT_EQUAL_UINT64(4242, uv);
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("t", k, 1);
+    TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
+    TEST_ASSERT_EQUAL_FLOAT(21.5f, fv);
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &k, &kn));
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("ok", k, 2);
+    TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
+    TEST_ASSERT_TRUE(bv);
+    TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
+}
+
+void test_decode_fails_closed()
+{
+    MsgpackReader r;
+    // truncated uint16 (header says read 2 more bytes, only 1 present)
+    uint8_t t1[] = {0xcd, 0x01};
+    msgpack_reader_init(&r, t1, sizeof(t1));
+    uint64_t v;
+    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    // truncated str (len 5, only 2 bytes present)
+    uint8_t t2[] = {0xa5, 'h', 'i'};
+    msgpack_reader_init(&r, t2, sizeof(t2));
+    const char *s;
+    size_t n;
+    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    // type mismatch: read_uint on a bool
+    uint8_t t3[] = {0xc3};
+    msgpack_reader_init(&r, t3, sizeof(t3));
+    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    // unsupported byte (0xc1) peeks INVALID and any read fails
+    uint8_t t4[] = {0xc1};
+    msgpack_reader_init(&r, t4, sizeof(t4));
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r));
+    TEST_ASSERT_FALSE(msgpack_read_int(&r, (int64_t *)&v));
+    // empty buffer
+    msgpack_reader_init(&r, t4, 0);
+    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r));
+    TEST_ASSERT_FALSE(msgpack_read_nil(&r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -169,5 +367,12 @@ int main()
     RUN_TEST(test_float);
     RUN_TEST(test_array_and_map);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_decode_uint);
+    RUN_TEST(test_decode_int);
+    RUN_TEST(test_decode_str_and_bytes);
+    RUN_TEST(test_decode_simple_and_float);
+    RUN_TEST(test_decode_array_and_map);
+    RUN_TEST(test_decode_roundtrip);
+    RUN_TEST(test_decode_fails_closed);
     return UNITY_END();
 }

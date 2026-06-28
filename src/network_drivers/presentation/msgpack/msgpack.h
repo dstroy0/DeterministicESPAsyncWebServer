@@ -3,7 +3,7 @@
 
 /**
  * @file msgpack.h
- * @brief Layer 6 (Presentation) - zero-heap MessagePack encoder.
+ * @brief Layer 6 (Presentation) - zero-heap MessagePack encoder and decoder.
  *
  * A streaming encoder that writes directly into a caller-provided buffer (no
  * heap), the MessagePack-format sibling of the CBOR / JSON writers. Each value is
@@ -15,6 +15,11 @@
  * Overflow is tracked, not crashed on: writes past the buffer set the overflow
  * flag and stop, while msgpack_len() keeps counting the bytes the full payload
  * would need, so a caller can size the buffer and check msgpack_ok().
+ *
+ * The decoder is a cursor: msgpack_peek() reports the next object's type and the
+ * msgpack_read_* calls consume it (strings and binary point into the source buffer,
+ * no copy). Any malformed or out-of-bounds read sets a sticky error - check
+ * msgpack_reader_ok(). ext and the unused 0xc1 byte are reported as INVALID.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -57,6 +62,53 @@ void msgpack_nil(MsgpackWriter *w);                                    ///< nil
 void msgpack_float(MsgpackWriter *w, float f);                         ///< IEEE-754 single (float32, 0xca)
 void msgpack_array(MsgpackWriter *w, size_t count);                    ///< array header
 void msgpack_map(MsgpackWriter *w, size_t count);                      ///< map header
+
+// ---------------------------------------------------------------------------
+// Decoder (cursor over a MessagePack byte buffer)
+// ---------------------------------------------------------------------------
+
+/** @brief Type of the next object (returned by msgpack_peek). */
+enum MsgpackType
+{
+    MSGPACK_TYPE_UINT = 0,
+    MSGPACK_TYPE_INT,
+    MSGPACK_TYPE_BIN,
+    MSGPACK_TYPE_STR,
+    MSGPACK_TYPE_ARRAY,
+    MSGPACK_TYPE_MAP,
+    MSGPACK_TYPE_BOOL,
+    MSGPACK_TYPE_NIL,
+    MSGPACK_TYPE_FLOAT,
+    MSGPACK_TYPE_INVALID ///< end of buffer, a prior error, or an unsupported object (ext / 0xc1)
+};
+
+/** @brief MessagePack decoder cursor over a read-only buffer. */
+struct MsgpackReader
+{
+    const uint8_t *buf; ///< source bytes.
+    size_t len;         ///< buffer length.
+    size_t pos;         ///< current read offset.
+    bool err;           ///< sticky: set on any malformed / out-of-bounds read.
+};
+
+/** @brief Bind a reader to @p buf (length @p len) at offset 0. */
+void msgpack_reader_init(MsgpackReader *r, const uint8_t *buf, size_t len);
+
+/** @brief Type of the next object without consuming it. */
+MsgpackType msgpack_peek(MsgpackReader *r);
+
+/** @brief True while no malformed read has occurred. */
+bool msgpack_reader_ok(const MsgpackReader *r);
+
+bool msgpack_read_uint(MsgpackReader *r, uint64_t *out);                     ///< unsigned integer (fixint / uint8..64)
+bool msgpack_read_int(MsgpackReader *r, int64_t *out);                       ///< signed integer (also accepts unsigned)
+bool msgpack_read_bool(MsgpackReader *r, bool *out);                         ///< true / false
+bool msgpack_read_nil(MsgpackReader *r);                                     ///< nil
+bool msgpack_read_float(MsgpackReader *r, float *out);                       ///< float32 (0xca) or float64 (0xcb)
+bool msgpack_read_str(MsgpackReader *r, const char **out, size_t *len);      ///< str family (points into the buffer)
+bool msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len); ///< bin family (points into the buffer)
+bool msgpack_read_array(MsgpackReader *r, size_t *count);                    ///< array header (object count)
+bool msgpack_read_map(MsgpackReader *r, size_t *count);                      ///< map header (key/value pair count)
 
 #endif // DETWS_ENABLE_MSGPACK
 #endif // DETERMINISTICESPASYNCWEBSERVER_MSGPACK_H

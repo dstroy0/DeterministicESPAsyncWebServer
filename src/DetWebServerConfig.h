@@ -567,12 +567,14 @@
 #endif
 
 /**
- * @brief Zero-heap MessagePack encoder for compact binary payloads.
+ * @brief Zero-heap MessagePack encoder and decoder for compact binary payloads.
  *
- * Default off. When set, network_drivers/presentation/msgpack/msgpack.h provides a writer
- * that serializes ints, strings, byte strings, arrays, maps, booleans, nil, and
- * float32 into a caller-provided buffer - the MessagePack-format sibling of the
- * CBOR / JSON writers. Pure, no heap, host-tested against the spec encodings.
+ * Default off. When set, network_drivers/presentation/msgpack/msgpack.h provides a
+ * writer that serializes ints, strings, byte strings, arrays, maps, booleans, nil,
+ * and float32 into a caller-provided buffer, plus a cursor decoder (msgpack_peek /
+ * msgpack_read_*, no-copy strings) over a caller buffer - the MessagePack-format
+ * sibling of the CBOR / JSON readers and writers. Pure, no heap, host-tested
+ * against the spec encodings and round-trip.
  */
 #ifndef DETWS_ENABLE_MSGPACK
 #define DETWS_ENABLE_MSGPACK 0

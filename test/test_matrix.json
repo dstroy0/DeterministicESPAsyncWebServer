@@ -340,13 +340,14 @@
       "tests": ["test_opcua_client"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, JSON, base64/base32) with malformed/oversized/\npartial/random input and asserts bounded buffers + fail-closed + no crash.\nPairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32) with malformed/\noversized/partial/random input and asserts bounded buffers + fail-closed + no\ncrash. Pairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
       "flags": [
         "-DDETWS_ENABLE_MODBUS=1",
         "-DDETWS_ENABLE_MODBUS_MASTER=1",
         "-DDETWS_ENABLE_TOTP=1",
         "-DDETWS_ENABLE_MULTIPART=1",
         "-DDETWS_ENABLE_CBOR=1",
+        "-DDETWS_ENABLE_MSGPACK=1",
         "-DDETWS_ENABLE_COAP=1",
         "-DDETWS_ENABLE_COAP_BLOCK=1",
         "-DDETWS_COAP_BLOCK_SZX_MAX=2",
@@ -358,6 +359,7 @@
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/presentation/cbor/cbor.cpp>",
+        "+<network_drivers/presentation/msgpack/msgpack.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>",
         "+<services/modbus/modbus.cpp>",
         "+<services/modbus/modbus_master.cpp>",
