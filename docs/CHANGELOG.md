@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.5.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.5.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c30d04c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c30d04c26c05788a7be4ffe60e22bd944476e9bb))
+- update CHANGELOG.md [skip ci] ([`f9a4a4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f9a4a4d469ed10562bee6ce729c27574058aea1b))
+
+### Changes
+
+- Bump version: 4.4.2 → 4.5.0 ([`2738048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2738048911a8e679c2aa62a55ff4a3d8d2fe73e1))
+
+### Documentation
+
+- expand the educators note; sync README -> docs/README ([`00eb43d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00eb43d8dc4e6b802b961a710cb0b7d8b7a215ed))
+
+### Refactor
+
+- pull-generator send_chunked, paged across loops (no truncation) ([`da33623`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da33623e0663b0dfa5756a66cfd51fa1e47d1103))
+
+</details>
+
 ## [4.4.2] - 2026-06-28
 
 <details>
