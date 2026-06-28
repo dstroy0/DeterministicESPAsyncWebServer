@@ -2,9 +2,9 @@
 
 This document details the standards conformance of DeterministicESPAsyncWebServer's
 HTTP/1.1 (request parsing, response generation, keep-alive, Range), authentication
-(Basic / Digest / JWT), WebSocket (server and client), TLS / mTLS, CoAP, SNMP,
-syslog, the outbound HTTP and MQTT clients, and error-handling behavior. (SSH
-conformance lives in [SSH.md](SSH.md); the TLS posture is in [SECURITY.md](SECURITY.md).)
+(Basic / Digest / JWT), WebSocket (server and client), TLS / mTLS, CoAP, SNMP, Modbus
+TCP, OPC UA, syslog, the outbound HTTP and MQTT clients, and error-handling behavior.
+(SSH conformance lives in [SSH.md](SSH.md); the TLS posture is in [SECURITY.md](SECURITY.md).)
 
 ## HTTP/1.1 request parsing (RFC 7230)
 
@@ -283,6 +283,44 @@ Continue`, and the final block dispatches the handler with the whole payload. On
 transfer is reassembled at a time; an out-of-order block yields `4.08 Request Entity
 Incomplete` and an oversized one `4.13 Request Entity Too Large`. Size1/Size2 are
 not emitted.
+
+## OPC UA Binary server (IEC 62541 / OPC UA Part 4 + Part 6)
+
+Optional ([`DETWS_ENABLE_OPCUA`](@ref DETWS_ENABLE_OPCUA), default off) zero-heap OPC
+UA Binary server on TCP/4840 (`listen(4840, PROTO_OPCUA)`). Transport is UA-TCP /
+UA-SecureConversation (Part 6): every message is `MessageType + chunk + MessageSize`,
+and a secure message carries `SecureChannelId + SymmetricSecurityHeader(TokenId) +
+SequenceHeader(SequenceNumber, RequestId)` before the body (the SecureChannelId field
+is mandatory - omitting it is rejected by compliant clients). Supported flow:
+
+- **Discovery / transport:** `HEL`/`ACK` handshake (buffer-size negotiation), `OPN`
+  OpenSecureChannel (the server assigns a SecureChannelId + security token), and
+  `GetEndpoints` (advertises one endpoint).
+- **Session (Part 4 §5.6):** `CreateSession` (assigns a SessionId + AuthenticationToken,
+  returns ServerEndpoints) and `ActivateSession`.
+- **Attribute / view services:** `Read` (Part 4 §5.10) and `Write` decode/encode scalar
+  `Variant`/`DataValue` (Boolean, Int32, UInt32, Float, Double, String); `Browse` (Part 4
+  §5.8.2) returns `ReferenceDescription`s. The application supplies the address space via
+  registered resolvers ([`opcua_set_read_handler`](@ref opcua_set_read_handler) /
+  [`opcua_set_write_handler`](@ref opcua_set_write_handler) /
+  [`opcua_set_browse_handler`](@ref opcua_set_browse_handler)); an unknown NodeId yields
+  `BadNodeIdUnknown`.
+- **Teardown / errors:** `CloseSession`, `CLO` CloseSecureChannel (closes the socket),
+  and a `ServiceFault` (`BadServiceUnsupported`) for any unsupported service so a client
+  never stalls.
+
+The built-in-type codec, framing, and all service request/response builders are
+transport-independent and host-tested; only [`opcua_rx()`](@ref opcua_rx) (the
+PROTO_OPCUA data handler) is ESP32-specific. Interoperability is verified against a
+third-party client (Python `asyncua`): connect (handshake → secure channel → session →
+activate), browse the Objects folder, and read/write live values. An optional matching
+**client** ([`DETWS_ENABLE_OPCUA_CLIENT`](@ref DETWS_ENABLE_OPCUA_CLIENT),
+`services/opcua_client`) builds the requests and parses the responses, transport-agnostic.
+
+**Security properties:** SecurityPolicy is `None` - messages are neither signed nor
+encrypted and the user identity is Anonymous, so (like cleartext SNMP v1/v2c) the OPC UA
+endpoint must run only on a trusted network or behind a separate transport-security
+layer. Sign / SignAndEncrypt policies are not implemented.
 
 ## Remote logging - syslog (RFC 5424)
 
