@@ -522,7 +522,9 @@
     "regs",
     "netif",
     "softap",
-    "PULLUP"
+    "PULLUP",
+    "bitmask",
+    "bootloader"
   ],
   "ignorePaths": [
     "node_modules/**",
