@@ -183,8 +183,7 @@ typedef void (*HttpStreamDataCb)(HttpReq *req, const uint8_t *data, size_t len);
 typedef void (*HttpStreamAbortCb)(HttpReq *req);
 
 /** @brief Install the streaming-body hooks (pass nullptr to disable; abort optional). */
-void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data,
-                                  HttpStreamAbortCb abort = nullptr);
+void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data, HttpStreamAbortCb abort = nullptr);
 #endif // DETWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
