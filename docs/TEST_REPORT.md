@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-06-28 08:58:18
-**Command:** `pio test` over 61 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 1157 passed - 105s
+**Generated:** 2026-06-28 09:20:49
+**Command:** `pio test` over 62 auto-discovered native envs (excludes native_pentest, native_codeql)
+**Result:** ✅ 1167 passed - 103s
 
 ---
 
@@ -10,94 +10,95 @@
 
 | Suite                    | Environment            | Tests | Status |     Duration |
 | :----------------------- | :--------------------- | ----: | :----: | -----------: |
-| `test_sse`               | `native`               |    37 |   ✅   | 00:00:11.901 |
-| `test_session`           | `native`               |    19 |   ✅   | 00:00:00.559 |
-| `test_presentation`      | `native`               |    63 |   ✅   | 00:00:00.604 |
-| `test_transport`         | `native`               |    42 |   ✅   | 00:00:00.583 |
+| `test_sse`               | `native`               |    37 |   ✅   | 00:00:06.688 |
+| `test_session`           | `native`               |    19 |   ✅   | 00:00:00.556 |
+| `test_presentation`      | `native`               |    63 |   ✅   | 00:00:00.592 |
+| `test_transport`         | `native`               |    42 |   ✅   | 00:00:00.573 |
 | `test_websocket`         | `native`               |    63 |   ✅   | 00:00:00.603 |
-| `test_http_parser`       | `native`               |    82 |   ✅   | 00:00:00.549 |
-| `test_http_ota`          | `native_ota`           |     3 |   ✅   | 00:00:00.674 |
-| `test_provisioning`      | `native_prov`          |     5 |   ✅   | 00:00:00.679 |
-| `test_ssh_crypto`        | `native_ssh`           |    38 |   ✅   | 00:00:03.851 |
-| `test_ssh_auth`          | `native_ssh`           |    12 |   ✅   | 00:00:00.568 |
-| `test_ssh_server`        | `native_ssh`           |     7 |   ✅   | 00:00:00.673 |
-| `test_ssh_transport`     | `native_ssh`           |    23 |   ✅   | 00:00:00.896 |
-| `test_ssh_channel`       | `native_ssh`           |    12 |   ✅   | 00:00:00.532 |
-| `test_ssh_hardening`     | `native_ssh_hardened`  |     2 |   ✅   | 00:00:00.887 |
-| `test_ssh_conn`          | `native_ssh_conn`      |     2 |   ✅   | 00:00:01.237 |
-| `test_regex`             | `native_app`           |     9 |   ✅   | 00:00:01.085 |
-| `test_template`          | `native_app`           |     6 |   ✅   | 00:00:00.574 |
-| `test_path_params`       | `native_app`           |     8 |   ✅   | 00:00:00.575 |
-| `test_digest_vectors`    | `native_app`           |     4 |   ✅   | 00:00:00.515 |
-| `test_form_params`       | `native_app`           |     5 |   ✅   | 00:00:00.571 |
+| `test_http_parser`       | `native`               |    82 |   ✅   | 00:00:00.573 |
+| `test_observability`     | `native_observability` |    10 |   ✅   | 00:00:00.695 |
+| `test_http_ota`          | `native_ota`           |     3 |   ✅   | 00:00:00.685 |
+| `test_provisioning`      | `native_prov`          |     5 |   ✅   | 00:00:00.665 |
+| `test_ssh_crypto`        | `native_ssh`           |    38 |   ✅   | 00:00:03.886 |
+| `test_ssh_auth`          | `native_ssh`           |    12 |   ✅   | 00:00:00.577 |
+| `test_ssh_server`        | `native_ssh`           |     7 |   ✅   | 00:00:00.688 |
+| `test_ssh_transport`     | `native_ssh`           |    23 |   ✅   | 00:00:00.886 |
+| `test_ssh_channel`       | `native_ssh`           |    12 |   ✅   | 00:00:00.535 |
+| `test_ssh_hardening`     | `native_ssh_hardened`  |     2 |   ✅   | 00:00:00.880 |
+| `test_ssh_conn`          | `native_ssh_conn`      |     2 |   ✅   | 00:00:01.214 |
+| `test_regex`             | `native_app`           |     9 |   ✅   | 00:00:01.103 |
+| `test_template`          | `native_app`           |     6 |   ✅   | 00:00:00.569 |
+| `test_path_params`       | `native_app`           |     8 |   ✅   | 00:00:00.583 |
+| `test_digest_vectors`    | `native_app`           |     4 |   ✅   | 00:00:00.519 |
+| `test_form_params`       | `native_app`           |     5 |   ✅   | 00:00:00.564 |
 | `test_iface`             | `native_app`           |     7 |   ✅   | 00:00:00.573 |
-| `test_json`              | `native_app`           |    17 |   ✅   | 00:00:00.532 |
-| `test_response_headers`  | `native_app`           |     9 |   ✅   | 00:00:00.580 |
-| `test_middleware`        | `native_app`           |     9 |   ✅   | 00:00:00.582 |
-| `test_digest_auth`       | `native_app`           |     5 |   ✅   | 00:00:00.589 |
-| `test_web_terminal`      | `native_app`           |     7 |   ✅   | 00:00:00.579 |
-| `test_defer`             | `native_app`           |     3 |   ✅   | 00:00:00.557 |
-| `test_multipart`         | `native_app`           |    19 |   ✅   | 00:00:00.581 |
-| `test_auth`              | `native_app`           |    13 |   ✅   | 00:00:00.581 |
-| `test_file_serving`      | `native_app`           |    12 |   ✅   | 00:00:00.595 |
-| `test_dispatch`          | `native_app`           |    11 |   ✅   | 00:00:00.577 |
+| `test_json`              | `native_app`           |    17 |   ✅   | 00:00:00.533 |
+| `test_response_headers`  | `native_app`           |     9 |   ✅   | 00:00:00.581 |
+| `test_middleware`        | `native_app`           |     9 |   ✅   | 00:00:00.572 |
+| `test_digest_auth`       | `native_app`           |     5 |   ✅   | 00:00:00.573 |
+| `test_web_terminal`      | `native_app`           |     7 |   ✅   | 00:00:00.566 |
+| `test_defer`             | `native_app`           |     3 |   ✅   | 00:00:00.538 |
+| `test_multipart`         | `native_app`           |    19 |   ✅   | 00:00:00.595 |
+| `test_auth`              | `native_app`           |    13 |   ✅   | 00:00:00.574 |
+| `test_file_serving`      | `native_app`           |    12 |   ✅   | 00:00:00.593 |
+| `test_dispatch`          | `native_app`           |    11 |   ✅   | 00:00:00.574 |
 | `test_chunked`           | `native_app`           |     8 |   ✅   | 00:00:00.575 |
-| `test_application`       | `native_app`           |    50 |   ✅   | 00:00:00.669 |
-| `test_snmp_ber`          | `native_snmp`          |     9 |   ✅   | 00:00:00.694 |
-| `test_snmp_agent`        | `native_snmp`          |    13 |   ✅   | 00:00:00.500 |
-| `test_snmp_v3`           | `native_snmp_v3`       |     9 |   ✅   | 00:00:01.378 |
-| `test_telnet`            | `native_telnet`        |     8 |   ✅   | 00:00:00.772 |
-| `test_coap`              | `native_coap`          |    26 |   ✅   | 00:00:00.667 |
-| `test_webdav`            | `native_webdav`        |    11 |   ✅   | 00:00:00.653 |
-| `test_modbus`            | `native_modbus`        |    13 |   ✅   | 00:00:00.658 |
+| `test_application`       | `native_app`           |    50 |   ✅   | 00:00:00.671 |
+| `test_snmp_ber`          | `native_snmp`          |     9 |   ✅   | 00:00:00.683 |
+| `test_snmp_agent`        | `native_snmp`          |    13 |   ✅   | 00:00:00.515 |
+| `test_snmp_v3`           | `native_snmp_v3`       |     9 |   ✅   | 00:00:01.377 |
+| `test_telnet`            | `native_telnet`        |     8 |   ✅   | 00:00:00.765 |
+| `test_coap`              | `native_coap`          |    26 |   ✅   | 00:00:00.669 |
+| `test_webdav`            | `native_webdav`        |    11 |   ✅   | 00:00:00.646 |
+| `test_modbus`            | `native_modbus`        |    13 |   ✅   | 00:00:00.657 |
 | `test_modbus_master`     | `native_modbus_master` |     5 |   ✅   | 00:00:00.674 |
-| `test_ota_rollback`      | `native_ota_rollback`  |     5 |   ✅   | 00:00:00.640 |
-| `test_totp`              | `native_totp`          |     4 |   ✅   | 00:00:00.651 |
-| `test_webhook`           | `native_webhook`       |     5 |   ✅   | 00:00:00.658 |
-| `test_radio_power`       | `native_radio_power`   |     2 |   ✅   | 00:00:00.643 |
-| `test_dns_resolver`      | `native_dns_resolver`  |     4 |   ✅   | 00:00:00.641 |
-| `test_audit_log`         | `native_audit_log`     |    12 |   ✅   | 00:00:00.663 |
-| `test_oidc`              | `native_oidc`          |    13 |   ✅   | 00:00:00.837 |
-| `test_vfs`               | `native_vfs`           |    11 |   ✅   | 00:00:00.657 |
-| `test_graphql`           | `native_graphql`       |    13 |   ✅   | 00:00:00.650 |
-| `test_espnow`            | `native_espnow`        |     7 |   ✅   | 00:00:00.647 |
-| `test_oauth2`            | `native_oauth2`        |     8 |   ✅   | 00:00:00.682 |
-| `test_opcua`             | `native_opcua`         |    29 |   ✅   | 00:00:00.684 |
-| `test_opcua_client`      | `native_opcua_client`  |    11 |   ✅   | 00:00:00.693 |
-| `test_keepalive`         | `native_keepalive`     |    10 |   ✅   | 00:00:01.049 |
-| `test_range`             | `native_range`         |    10 |   ✅   | 00:00:01.036 |
-| `test_syslog`            | `native_syslog`        |     6 |   ✅   | 00:00:00.662 |
-| `test_jwt`               | `native_jwt`           |    10 |   ✅   | 00:00:00.698 |
-| `test_upload`            | `native_upload`        |     3 |   ✅   | 00:00:01.068 |
-| `test_http_client`       | `native_http_client`   |    10 |   ✅   | 00:00:00.669 |
-| `test_compliance`        | `native_compliance`    |    12 |   ✅   | 00:00:00.656 |
-| `test_mqtt`              | `native_mqtt`          |    16 |   ✅   | 00:00:00.646 |
-| `test_ws_client`         | `native_ws_client`     |    10 |   ✅   | 00:00:00.683 |
-| `test_scratch`           | `native_scratch`       |    14 |   ✅   | 00:00:00.691 |
-| `test_snmp_trap`         | `native_snmp_trap`     |     3 |   ✅   | 00:00:00.667 |
+| `test_ota_rollback`      | `native_ota_rollback`  |     5 |   ✅   | 00:00:00.635 |
+| `test_totp`              | `native_totp`          |     4 |   ✅   | 00:00:00.655 |
+| `test_webhook`           | `native_webhook`       |     5 |   ✅   | 00:00:00.646 |
+| `test_radio_power`       | `native_radio_power`   |     2 |   ✅   | 00:00:00.642 |
+| `test_dns_resolver`      | `native_dns_resolver`  |     4 |   ✅   | 00:00:00.650 |
+| `test_audit_log`         | `native_audit_log`     |    12 |   ✅   | 00:00:00.672 |
+| `test_oidc`              | `native_oidc`          |    13 |   ✅   | 00:00:00.835 |
+| `test_vfs`               | `native_vfs`           |    11 |   ✅   | 00:00:00.642 |
+| `test_graphql`           | `native_graphql`       |    13 |   ✅   | 00:00:00.649 |
+| `test_espnow`            | `native_espnow`        |     7 |   ✅   | 00:00:00.634 |
+| `test_oauth2`            | `native_oauth2`        |     8 |   ✅   | 00:00:00.687 |
+| `test_opcua`             | `native_opcua`         |    29 |   ✅   | 00:00:00.677 |
+| `test_opcua_client`      | `native_opcua_client`  |    11 |   ✅   | 00:00:00.692 |
+| `test_keepalive`         | `native_keepalive`     |    10 |   ✅   | 00:00:01.047 |
+| `test_range`             | `native_range`         |    10 |   ✅   | 00:00:01.035 |
+| `test_syslog`            | `native_syslog`        |     6 |   ✅   | 00:00:00.666 |
+| `test_jwt`               | `native_jwt`           |    10 |   ✅   | 00:00:00.696 |
+| `test_upload`            | `native_upload`        |     3 |   ✅   | 00:00:01.079 |
+| `test_http_client`       | `native_http_client`   |    10 |   ✅   | 00:00:00.668 |
+| `test_compliance`        | `native_compliance`    |    12 |   ✅   | 00:00:00.660 |
+| `test_mqtt`              | `native_mqtt`          |    16 |   ✅   | 00:00:00.662 |
+| `test_ws_client`         | `native_ws_client`     |    10 |   ✅   | 00:00:00.688 |
+| `test_scratch`           | `native_scratch`       |    14 |   ✅   | 00:00:00.676 |
+| `test_snmp_trap`         | `native_snmp_trap`     |     3 |   ✅   | 00:00:00.677 |
 | `test_inflate`           | `native_inflate`       |    12 |   ✅   | 00:00:00.652 |
-| `test_deflate`           | `native_deflate`       |    10 |   ✅   | 00:00:00.687 |
-| `test_websocket`         | `native_ws_deflate`    |    67 |   ✅   | 00:00:01.022 |
-| `test_time_source`       | `native_time_source`   |     9 |   ✅   | 00:00:00.645 |
-| `test_config_store`      | `native_config_store`  |    14 |   ✅   | 00:00:00.664 |
-| `test_device_id`         | `native_device_id`     |     4 |   ✅   | 00:00:00.680 |
-| `test_auth_lockout`      | `native_auth_lockout`  |    10 |   ✅   | 00:00:00.646 |
-| `test_csrf`              | `native_csrf`          |     9 |   ✅   | 00:00:00.681 |
-| `test_telemetry`         | `native_telemetry`     |     8 |   ✅   | 00:00:00.648 |
-| `test_dashboard`         | `native_dashboard`     |    11 |   ✅   | 00:00:00.667 |
+| `test_deflate`           | `native_deflate`       |    10 |   ✅   | 00:00:00.704 |
+| `test_websocket`         | `native_ws_deflate`    |    67 |   ✅   | 00:00:01.006 |
+| `test_time_source`       | `native_time_source`   |     9 |   ✅   | 00:00:00.640 |
+| `test_config_store`      | `native_config_store`  |    14 |   ✅   | 00:00:00.648 |
+| `test_device_id`         | `native_device_id`     |     4 |   ✅   | 00:00:00.672 |
+| `test_auth_lockout`      | `native_auth_lockout`  |    10 |   ✅   | 00:00:00.642 |
+| `test_csrf`              | `native_csrf`          |     9 |   ✅   | 00:00:00.666 |
+| `test_telemetry`         | `native_telemetry`     |     8 |   ✅   | 00:00:00.640 |
+| `test_dashboard`         | `native_dashboard`     |    11 |   ✅   | 00:00:00.672 |
 | `test_net_egress`        | `native_net_egress`    |     5 |   ✅   | 00:00:00.644 |
-| `test_partition_monitor` | `native_partition`     |     5 |   ✅   | 00:00:00.640 |
-| `test_cbor`              | `native_cbor`          |    14 |   ✅   | 00:00:00.656 |
-| `test_msgpack`           | `native_msgpack`       |     8 |   ✅   | 00:00:00.639 |
-| `test_gpio_map`          | `native_gpio_map`      |     8 |   ✅   | 00:00:00.650 |
-| `test_udp_telemetry`     | `native_udp_telemetry` |     4 |   ✅   | 00:00:00.642 |
-| `test_guardrails`        | `native_guardrails`    |     6 |   ✅   | 00:00:00.644 |
-| `test_logbuf`            | `native_logbuf`        |     4 |   ✅   | 00:00:00.640 |
-| `test_config_io`         | `native_config_io`     |     4 |   ✅   | 00:00:00.669 |
-| `test_workers`           | `native_workers`       |     3 |   ✅   | 00:00:00.746 |
-| `test_clock`             | `native_clock`         |     4 |   ✅   | 00:00:00.633 |
+| `test_partition_monitor` | `native_partition`     |     5 |   ✅   | 00:00:00.663 |
+| `test_cbor`              | `native_cbor`          |    14 |   ✅   | 00:00:00.675 |
+| `test_msgpack`           | `native_msgpack`       |     8 |   ✅   | 00:00:00.646 |
+| `test_gpio_map`          | `native_gpio_map`      |     8 |   ✅   | 00:00:00.666 |
+| `test_udp_telemetry`     | `native_udp_telemetry` |     4 |   ✅   | 00:00:00.668 |
+| `test_guardrails`        | `native_guardrails`    |     6 |   ✅   | 00:00:00.664 |
+| `test_logbuf`            | `native_logbuf`        |     4 |   ✅   | 00:00:00.665 |
+| `test_config_io`         | `native_config_io`     |     4 |   ✅   | 00:00:00.677 |
+| `test_workers`           | `native_workers`       |     3 |   ✅   | 00:00:00.769 |
+| `test_clock`             | `native_clock`         |     4 |   ✅   | 00:00:00.682 |
 | `test_concurrency`       | `native_concurrency`   |     2 |   ✅   | 00:00:00.847 |
-| `test_concurrency`       | `native_tsan`          |     2 |   ✅   | 00:00:01.321 |
+| `test_concurrency`       | `native_tsan`          |     2 |   ✅   | 00:00:01.352 |
 
 ---
 
@@ -486,6 +487,30 @@ _Comprehensive unit tests for the standalone HTTP/1.1 parser._
 |  80 | `stress_many_requests_same_slot`                         |   ✅   | Stress - Many requests same slot                                                |
 |  81 | `stress_max_headers`                                     |   ✅   | Build a request with MAX_HEADERS header lines                                   |
 |  82 | `stress_max_query_params`                                |   ✅   | Build a query string with MAX_QUERY_PARAMS parameters                           |
+
+</details>
+
+---
+
+## test_observability - ✅ 10 passed
+
+<details>
+<summary><b>Expand Suite Details</b></summary>
+
+_Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event_
+
+|   # | Test                                      | Status | Description                        |
+| --: | :---------------------------------------- | :----: | :--------------------------------- |
+|   1 | `test_transition_fires_hook_with_args`    |   ✅   | Transition fires hook with args    |
+|   2 | `test_each_reason_bumps_its_counter`      |   ✅   | Each reason bumps its counter      |
+|   3 | `test_closing_gauge_tracks_dwell`         |   ✅   | Closing gauge tracks dwell         |
+|   4 | `test_reset_clears_cumulative_not_gauge`  |   ✅   | Reset clears cumulative not gauge  |
+|   5 | `test_no_hook_after_unregister`           |   ✅   | No hook after unregister           |
+|   6 | `test_recv_fin_counts_remote_close`       |   ✅   | Recv fin counts remote close       |
+|   7 | `test_err_cb_counts_error_close`          |   ✅   | Err cb counts error close          |
+|   8 | `test_timeout_sweep_counts_timeout`       |   ✅   | Timeout sweep counts timeout       |
+|   9 | `test_local_close_counts_local`           |   ✅   | Local close counts local           |
+|  10 | `test_backpressure_counts_when_ring_full` |   ✅   | Backpressure counts when ring full |
 
 </details>
 
@@ -2504,7 +2529,7 @@ If you like PlatformIO, please:
 ********************************************************************************
 
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 Platform Manager: Installing native
 Downloading 0% 10%
 Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
@@ -2559,7 +2584,7 @@ test/test_sse/test_sse.cpp:415: stress_sse_alloc_free_both_slots_alternating [PA
 test/test_sse/test_sse.cpp:416: stress_sse_write_100_calls              [PASSED]
 test/test_sse/test_sse.cpp:417: stress_sse_find_with_full_pool          [PASSED]
 test/test_sse/test_sse.cpp:418: stress_sse_write_slot_isolation         [PASSED]
------------------ native:test_sse [PASSED] Took 11.90 seconds ------------------
+------------------ native:test_sse [PASSED] Took 6.69 seconds ------------------
 
 Processing test_session in native environment
 --------------------------------------------------------------------------------
@@ -2653,7 +2678,7 @@ test/test_presentation/test_presentation.cpp:913: race_reset_during_parse_header
 test/test_presentation/test_presentation.cpp:914: race_reset_during_parse_query [PASSED]
 test/test_presentation/test_presentation.cpp:915: race_reset_during_parse_body [PASSED]
 test/test_presentation/test_presentation.cpp:916: race_parse_after_complete_is_nop [PASSED]
-------------- native:test_presentation [PASSED] Took 0.60 seconds --------------
+------------- native:test_presentation [PASSED] Took 0.59 seconds --------------
 
 Processing test_transport in native environment
 --------------------------------------------------------------------------------
@@ -2701,7 +2726,7 @@ test/test_transport/test_transport.cpp:585: test_ip_allowlist_multiple_rules [PA
 test/test_transport/test_transport.cpp:586: test_ip_allowlist_zero_prefix_matches_all [PASSED]
 test/test_transport/test_transport.cpp:587: test_ip_allowlist_rejects_bad_prefix [PASSED]
 test/test_transport/test_transport.cpp:588: test_ip_allowlist_table_full [PASSED]
---------------- native:test_transport [PASSED] Took 0.58 seconds ---------------
+--------------- native:test_transport [PASSED] Took 0.57 seconds ---------------
 
 Processing test_websocket in native environment
 --------------------------------------------------------------------------------
@@ -2858,20 +2883,47 @@ test/test_http_parser/test_http_parser.cpp:963: test_incremental_two_chunks [PAS
 test/test_http_parser/test_http_parser.cpp:966: stress_many_requests_same_slot [PASSED]
 test/test_http_parser/test_http_parser.cpp:967: stress_max_headers      [PASSED]
 test/test_http_parser/test_http_parser.cpp:968: stress_max_query_params [PASSED]
--------------- native:test_http_parser [PASSED] Took 0.55 seconds --------------
+-------------- native:test_http_parser [PASSED] Took 0.57 seconds --------------
 
 =================================== SUMMARY ===================================
 Environment    Test               Status    Duration
 -------------  -----------------  --------  ------------
-native         test_sse           PASSED    00:00:11.901
-native         test_session       PASSED    00:00:00.559
-native         test_presentation  PASSED    00:00:00.604
-native         test_transport     PASSED    00:00:00.583
+native         test_sse           PASSED    00:00:06.688
+native         test_session       PASSED    00:00:00.556
+native         test_presentation  PASSED    00:00:00.592
+native         test_transport     PASSED    00:00:00.573
 native         test_websocket     PASSED    00:00:00.603
-native         test_http_parser   PASSED    00:00:00.549
-================ 306 test cases: 306 succeeded in 00:00:14.798 ================
+native         test_http_parser   PASSED    00:00:00.573
+================ 306 test cases: 306 succeeded in 00:00:09.586 ================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
+
+Processing test_observability in native_observability environment
+--------------------------------------------------------------------------------
+Building...
+Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
+Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+Library Manager: Unity@2.6.1 has been installed!
+Testing...
+test/test_observability/test_observability.cpp:174: test_transition_fires_hook_with_args [PASSED]
+test/test_observability/test_observability.cpp:175: test_each_reason_bumps_its_counter [PASSED]
+test/test_observability/test_observability.cpp:176: test_closing_gauge_tracks_dwell [PASSED]
+test/test_observability/test_observability.cpp:177: test_reset_clears_cumulative_not_gauge [PASSED]
+test/test_observability/test_observability.cpp:178: test_no_hook_after_unregister [PASSED]
+test/test_observability/test_observability.cpp:179: test_recv_fin_counts_remote_close [PASSED]
+test/test_observability/test_observability.cpp:180: test_err_cb_counts_error_close [PASSED]
+test/test_observability/test_observability.cpp:181: test_timeout_sweep_counts_timeout [PASSED]
+test/test_observability/test_observability.cpp:182: test_local_close_counts_local [PASSED]
+test/test_observability/test_observability.cpp:183: test_backpressure_counts_when_ring_full [PASSED]
+------ native_observability:test_observability [PASSED] Took 0.69 seconds ------
+
+=================================== SUMMARY ===================================
+Environment           Test                Status    Duration
+--------------------  ------------------  --------  ------------
+native_observability  test_observability  PASSED    00:00:00.695
+================= 10 test cases: 10 succeeded in 00:00:00.695 =================
+Verbosity level can be increased via `-v, -vv, or -vvv` option
+Collected 88 tests
 
 Processing test_http_ota in native_ota environment
 --------------------------------------------------------------------------------
@@ -2883,15 +2935,15 @@ Testing...
 test/test_http_ota/test_http_ota.cpp:94: test_large_body_streams_to_completion [PASSED]
 test/test_http_ota/test_http_ota.cpp:95: test_no_hooks_large_body_is_413 [PASSED]
 test/test_http_ota/test_http_ota.cpp:96: test_nonmatching_path_not_streamed [PASSED]
-------------- native_ota:test_http_ota [PASSED] Took 0.67 seconds --------------
+------------- native_ota:test_http_ota [PASSED] Took 0.68 seconds --------------
 
 =================================== SUMMARY ===================================
 Environment    Test           Status    Duration
 -------------  -------------  --------  ------------
-native_ota     test_http_ota  PASSED    00:00:00.674
-================== 3 test cases: 3 succeeded in 00:00:00.674 ==================
+native_ota     test_http_ota  PASSED    00:00:00.685
+================== 3 test cases: 3 succeeded in 00:00:00.685 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_provisioning in native_prov environment
 --------------------------------------------------------------------------------
@@ -2905,15 +2957,15 @@ test/test_provisioning/test_provisioning.cpp:67: test_url_decoding      [PASSED]
 test/test_provisioning/test_provisioning.cpp:68: test_missing_field     [PASSED]
 test/test_provisioning/test_provisioning.cpp:69: test_no_substring_match [PASSED]
 test/test_provisioning/test_provisioning.cpp:70: test_capacity_bound    [PASSED]
------------ native_prov:test_provisioning [PASSED] Took 0.68 seconds -----------
+----------- native_prov:test_provisioning [PASSED] Took 0.66 seconds -----------
 
 =================================== SUMMARY ===================================
 Environment    Test               Status    Duration
 -------------  -----------------  --------  ------------
-native_prov    test_provisioning  PASSED    00:00:00.679
-================== 5 test cases: 5 succeeded in 00:00:00.679 ==================
+native_prov    test_provisioning  PASSED    00:00:00.665
+================== 5 test cases: 5 succeeded in 00:00:00.665 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_ssh_crypto in native_ssh environment
 --------------------------------------------------------------------------------
@@ -2960,7 +3012,7 @@ test/test_ssh_crypto/test_ssh_crypto.cpp:937: test_pkt_encrypted_roundtrip [PASS
 test/test_ssh_crypto/test_ssh_crypto.cpp:938: test_pkt_encrypted_fragmented [PASSED]
 test/test_ssh_crypto/test_ssh_crypto.cpp:939: test_pkt_encrypted_two_packets [PASSED]
 test/test_ssh_crypto/test_ssh_crypto.cpp:940: test_ssh_kdf_canonical_mpint_k [PASSED]
------------- native_ssh:test_ssh_crypto [PASSED] Took 3.85 seconds -------------
+------------ native_ssh:test_ssh_crypto [PASSED] Took 3.89 seconds -------------
 
 Processing test_ssh_auth in native_ssh environment
 --------------------------------------------------------------------------------
@@ -2978,7 +3030,7 @@ test/test_ssh_auth/test_ssh_auth.cpp:345: test_pubkey_probe_returns_pk_ok [PASSE
 test/test_ssh_auth/test_ssh_auth.cpp:346: test_pubkey_valid_signature_succeeds [PASSED]
 test/test_ssh_auth/test_ssh_auth.cpp:347: test_pubkey_tampered_signature_fails [PASSED]
 test/test_ssh_auth/test_ssh_auth.cpp:348: test_pubkey_unauthorized_key_fails [PASSED]
-------------- native_ssh:test_ssh_auth [PASSED] Took 0.57 seconds --------------
+------------- native_ssh:test_ssh_auth [PASSED] Took 0.58 seconds --------------
 
 Processing test_ssh_server in native_ssh environment
 --------------------------------------------------------------------------------
@@ -2991,7 +3043,7 @@ test/test_ssh_server/test_ssh_server.cpp:365: test_ignore_is_noop       [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:366: test_auth_bruteforce_disconnect [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:367: test_auth_success_after_failures [PASSED]
 test/test_ssh_server/test_ssh_server.cpp:368: test_unimplemented_reply_for_unknown_message [PASSED]
------------- native_ssh:test_ssh_server [PASSED] Took 0.67 seconds -------------
+------------ native_ssh:test_ssh_server [PASSED] Took 0.69 seconds -------------
 
 Processing test_ssh_transport in native_ssh environment
 --------------------------------------------------------------------------------
@@ -3020,7 +3072,7 @@ test/test_ssh_transport/test_ssh_transport.cpp:534: test_kexdh_handle_rejects_in
 test/test_ssh_transport/test_ssh_transport.cpp:535: test_derive_keys_session_id_affects_output [PASSED]
 test/test_ssh_transport/test_ssh_transport.cpp:536: test_rekey_needed_threshold [PASSED]
 test/test_ssh_transport/test_ssh_transport.cpp:537: test_begin_rekey_preserves_session_and_auth [PASSED]
------------ native_ssh:test_ssh_transport [PASSED] Took 0.90 seconds -----------
+----------- native_ssh:test_ssh_transport [PASSED] Took 0.89 seconds -----------
 
 Processing test_ssh_channel in native_ssh environment
 --------------------------------------------------------------------------------
@@ -3038,19 +3090,19 @@ test/test_ssh_channel/test_ssh_channel.cpp:285: test_outbound_data_frames_and_de
 test/test_ssh_channel/test_ssh_channel.cpp:286: test_outbound_data_exceeding_peer_window_rejected [PASSED]
 test/test_ssh_channel/test_ssh_channel.cpp:287: test_window_adjust_grows_peer_window [PASSED]
 test/test_ssh_channel/test_ssh_channel.cpp:288: test_build_close_emits_eof_and_close [PASSED]
------------- native_ssh:test_ssh_channel [PASSED] Took 0.53 seconds ------------
+------------ native_ssh:test_ssh_channel [PASSED] Took 0.54 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment    Test                Status    Duration
 -------------  ------------------  --------  ------------
-native_ssh     test_ssh_crypto     PASSED    00:00:03.851
-native_ssh     test_ssh_auth       PASSED    00:00:00.568
-native_ssh     test_ssh_server     PASSED    00:00:00.673
-native_ssh     test_ssh_transport  PASSED    00:00:00.896
-native_ssh     test_ssh_channel    PASSED    00:00:00.532
-================= 92 test cases: 92 succeeded in 00:00:06.520 =================
+native_ssh     test_ssh_crypto     PASSED    00:00:03.886
+native_ssh     test_ssh_auth       PASSED    00:00:00.577
+native_ssh     test_ssh_server     PASSED    00:00:00.688
+native_ssh     test_ssh_transport  PASSED    00:00:00.886
+native_ssh     test_ssh_channel    PASSED    00:00:00.535
+================= 92 test cases: 92 succeeded in 00:00:06.572 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_ssh_hardening in native_ssh_hardened environment
 --------------------------------------------------------------------------------
@@ -3061,15 +3113,15 @@ Library Manager: Unity@2.6.1 has been installed!
 Testing...
 test/test_ssh_hardening/test_ssh_hardening.cpp:87: test_password_refused_even_with_correct_callback [PASSED]
 test/test_ssh_hardening/test_ssh_hardening.cpp:88: test_failure_advertises_publickey_only [PASSED]
------- native_ssh_hardened:test_ssh_hardening [PASSED] Took 0.89 seconds -------
+------ native_ssh_hardened:test_ssh_hardening [PASSED] Took 0.88 seconds -------
 
 =================================== SUMMARY ===================================
 Environment          Test                Status    Duration
 -------------------  ------------------  --------  ------------
-native_ssh_hardened  test_ssh_hardening  PASSED    00:00:00.887
-================== 2 test cases: 2 succeeded in 00:00:00.887 ==================
+native_ssh_hardened  test_ssh_hardening  PASSED    00:00:00.880
+================== 2 test cases: 2 succeeded in 00:00:00.880 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_ssh_conn in native_ssh_conn environment
 --------------------------------------------------------------------------------
@@ -3080,15 +3132,15 @@ Library Manager: Unity@2.6.1 has been installed!
 Testing...
 test/test_ssh_conn/test_ssh_conn.cpp:137: test_accept_sends_server_banner [PASSED]
 test/test_ssh_conn/test_ssh_conn.cpp:138: test_banner_then_kexinit_advances_and_replies [PASSED]
------------ native_ssh_conn:test_ssh_conn [PASSED] Took 1.24 seconds -----------
+----------- native_ssh_conn:test_ssh_conn [PASSED] Took 1.21 seconds -----------
 
 =================================== SUMMARY ===================================
 Environment      Test           Status    Duration
 ---------------  -------------  --------  ------------
-native_ssh_conn  test_ssh_conn  PASSED    00:00:01.237
-================== 2 test cases: 2 succeeded in 00:00:01.237 ==================
+native_ssh_conn  test_ssh_conn  PASSED    00:00:01.214
+================== 2 test cases: 2 succeeded in 00:00:01.214 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_regex in native_app environment
 --------------------------------------------------------------------------------
@@ -3106,7 +3158,7 @@ test/test_regex/test_regex.cpp:160: test_negated_class                  [PASSED]
 test/test_regex/test_regex.cpp:161: test_anchored_full_match            [PASSED]
 test/test_regex/test_regex.cpp:162: test_method_still_enforced          [PASSED]
 test/test_regex/test_regex.cpp:163: test_pathological_pattern_terminates_no_match [PASSED]
---------------- native_app:test_regex [PASSED] Took 1.09 seconds ---------------
+--------------- native_app:test_regex [PASSED] Took 1.10 seconds ---------------
 
 Processing test_template in native_app environment
 --------------------------------------------------------------------------------
@@ -3132,7 +3184,7 @@ test/test_path_params/test_path_params.cpp:173: test_extra_segment_does_not_matc
 test/test_path_params/test_path_params.cpp:174: test_empty_param_value_does_not_match [PASSED]
 test/test_path_params/test_path_params.cpp:175: test_exact_route_still_matches [PASSED]
 test/test_path_params/test_path_params.cpp:176: test_param_route_wrong_method_405 [PASSED]
------------- native_app:test_path_params [PASSED] Took 0.57 seconds ------------
+------------ native_app:test_path_params [PASSED] Took 0.58 seconds ------------
 
 Processing test_digest_vectors in native_app environment
 --------------------------------------------------------------------------------
@@ -3153,7 +3205,7 @@ test/test_form_params/test_form_params.cpp:135: test_form_missing_key_returns_fa
 test/test_form_params/test_form_params.cpp:136: test_form_empty_value   [PASSED]
 test/test_form_params/test_form_params.cpp:137: test_form_wrong_content_type_ignored [PASSED]
 test/test_form_params/test_form_params.cpp:138: test_form_value_truncated_to_buffer [PASSED]
------------- native_app:test_form_params [PASSED] Took 0.57 seconds ------------
+------------ native_app:test_form_params [PASSED] Took 0.56 seconds ------------
 
 Processing test_iface in native_app environment
 --------------------------------------------------------------------------------
@@ -3219,7 +3271,7 @@ test/test_middleware/test_middleware.cpp:250: test_use_respects_capacity_cap [PA
 test/test_middleware/test_middleware.cpp:251: test_rate_limit_allows_then_rejects [PASSED]
 test/test_middleware/test_middleware.cpp:252: test_rate_limit_window_resets [PASSED]
 test/test_middleware/test_middleware.cpp:253: test_rate_limit_disabled_by_default [PASSED]
------------- native_app:test_middleware [PASSED] Took 0.58 seconds -------------
+------------ native_app:test_middleware [PASSED] Took 0.57 seconds -------------
 
 Processing test_digest_auth in native_app environment
 --------------------------------------------------------------------------------
@@ -3230,7 +3282,7 @@ test/test_digest_auth/test_digest_auth.cpp:232: test_valid_digest_authenticates 
 test/test_digest_auth/test_digest_auth.cpp:233: test_wrong_password_rejected [PASSED]
 test/test_digest_auth/test_digest_auth.cpp:234: test_bad_nonce_rejected [PASSED]
 test/test_digest_auth/test_digest_auth.cpp:235: test_nonce_is_128bit_hex [PASSED]
------------- native_app:test_digest_auth [PASSED] Took 0.59 seconds ------------
+------------ native_app:test_digest_auth [PASSED] Took 0.57 seconds ------------
 
 Processing test_web_terminal in native_app environment
 --------------------------------------------------------------------------------
@@ -3243,7 +3295,7 @@ test/test_web_terminal/test_web_terminal.cpp:180: test_broadcast_reaches_client 
 test/test_web_terminal/test_web_terminal.cpp:181: test_printf_broadcast [PASSED]
 test/test_web_terminal/test_web_terminal.cpp:182: test_no_broadcast_without_clients [PASSED]
 test/test_web_terminal/test_web_terminal.cpp:183: test_close_clears_client [PASSED]
------------ native_app:test_web_terminal [PASSED] Took 0.58 seconds ------------
+----------- native_app:test_web_terminal [PASSED] Took 0.57 seconds ------------
 
 Processing test_defer in native_app environment
 --------------------------------------------------------------------------------
@@ -3252,7 +3304,7 @@ Testing...
 test/test_defer/test_defer.cpp:56: test_defer_runs_inline_on_host       [PASSED]
 test/test_defer/test_defer.cpp:57: test_server_defer_routes_by_owner    [PASSED]
 test/test_defer/test_defer.cpp:58: test_defer_null_fn_fails             [PASSED]
---------------- native_app:test_defer [PASSED] Took 0.56 seconds ---------------
+--------------- native_app:test_defer [PASSED] Took 0.54 seconds ---------------
 
 Processing test_multipart in native_app environment
 --------------------------------------------------------------------------------
@@ -3277,7 +3329,7 @@ test/test_multipart/test_multipart.cpp:509: test_part_without_content_type_has_n
 test/test_multipart/test_multipart.cpp:510: test_long_boundary_string   [PASSED]
 test/test_multipart/test_multipart.cpp:511: stress_parse_100_requests   [PASSED]
 test/test_multipart/test_multipart.cpp:512: stress_get_field_100_lookups [PASSED]
-------------- native_app:test_multipart [PASSED] Took 0.58 seconds -------------
+------------- native_app:test_multipart [PASSED] Took 0.60 seconds -------------
 
 Processing test_auth in native_app environment
 --------------------------------------------------------------------------------
@@ -3296,7 +3348,7 @@ test/test_auth/test_auth.cpp:260: test_auth_route_returns_404_for_wrong_path [PA
 test/test_auth/test_auth.cpp:261: test_auth_checked_per_method          [PASSED]
 test/test_auth/test_auth.cpp:263: stress_auth_50_valid_requests         [PASSED]
 test/test_auth/test_auth.cpp:264: stress_auth_50_invalid_requests       [PASSED]
---------------- native_app:test_auth [PASSED] Took 0.58 seconds ----------------
+--------------- native_app:test_auth [PASSED] Took 0.57 seconds ----------------
 
 Processing test_file_serving in native_app environment
 --------------------------------------------------------------------------------
@@ -3314,7 +3366,7 @@ test/test_file_serving/test_file_serving.cpp:332: test_serve_file_does_not_affec
 test/test_file_serving/test_file_serving.cpp:333: test_multiple_content_types [PASSED]
 test/test_file_serving/test_file_serving.cpp:334: stress_serve_file_50_requests [PASSED]
 test/test_file_serving/test_file_serving.cpp:335: stress_alternate_missing_and_found [PASSED]
------------ native_app:test_file_serving [PASSED] Took 0.60 seconds ------------
+----------- native_app:test_file_serving [PASSED] Took 0.59 seconds ------------
 
 Processing test_dispatch in native_app environment
 --------------------------------------------------------------------------------
@@ -3331,7 +3383,7 @@ test/test_dispatch/test_dispatch.cpp:199: test_get_route_advertises_head_in_allo
 test/test_dispatch/test_dispatch.cpp:200: test_head_on_post_only_route_405 [PASSED]
 test/test_dispatch/test_dispatch.cpp:202: test_http_parse_skips_ws_upgraded_slot [PASSED]
 test/test_dispatch/test_dispatch.cpp:204: test_correct_method_still_dispatches [PASSED]
-------------- native_app:test_dispatch [PASSED] Took 0.58 seconds --------------
+------------- native_app:test_dispatch [PASSED] Took 0.57 seconds --------------
 
 Processing test_chunked in native_app environment
 --------------------------------------------------------------------------------
@@ -3406,27 +3458,27 @@ test/test_application/test_application.cpp:975: test_metrics_emits_prometheus [P
 =================================== SUMMARY ===================================
 Environment    Test                   Status    Duration
 -------------  ---------------------  --------  ------------
-native_app     test_regex             PASSED    00:00:01.085
-native_app     test_template          PASSED    00:00:00.574
-native_app     test_path_params       PASSED    00:00:00.575
-native_app     test_digest_vectors    PASSED    00:00:00.515
-native_app     test_form_params       PASSED    00:00:00.571
+native_app     test_regex             PASSED    00:00:01.103
+native_app     test_template          PASSED    00:00:00.569
+native_app     test_path_params       PASSED    00:00:00.583
+native_app     test_digest_vectors    PASSED    00:00:00.519
+native_app     test_form_params       PASSED    00:00:00.564
 native_app     test_iface             PASSED    00:00:00.573
-native_app     test_json              PASSED    00:00:00.532
-native_app     test_response_headers  PASSED    00:00:00.580
-native_app     test_middleware        PASSED    00:00:00.582
-native_app     test_digest_auth       PASSED    00:00:00.589
-native_app     test_web_terminal      PASSED    00:00:00.579
-native_app     test_defer             PASSED    00:00:00.557
-native_app     test_multipart         PASSED    00:00:00.581
-native_app     test_auth              PASSED    00:00:00.581
-native_app     test_file_serving      PASSED    00:00:00.595
-native_app     test_dispatch          PASSED    00:00:00.577
+native_app     test_json              PASSED    00:00:00.533
+native_app     test_response_headers  PASSED    00:00:00.581
+native_app     test_middleware        PASSED    00:00:00.572
+native_app     test_digest_auth       PASSED    00:00:00.573
+native_app     test_web_terminal      PASSED    00:00:00.566
+native_app     test_defer             PASSED    00:00:00.538
+native_app     test_multipart         PASSED    00:00:00.595
+native_app     test_auth              PASSED    00:00:00.574
+native_app     test_file_serving      PASSED    00:00:00.593
+native_app     test_dispatch          PASSED    00:00:00.574
 native_app     test_chunked           PASSED    00:00:00.575
-native_app     test_application       PASSED    00:00:00.669
-================ 202 test cases: 202 succeeded in 00:00:10.891 ================
+native_app     test_application       PASSED    00:00:00.671
+================ 202 test cases: 202 succeeded in 00:00:10.855 ================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_snmp_ber in native_snmp environment
 --------------------------------------------------------------------------------
@@ -3444,7 +3496,7 @@ test/test_snmp_ber/test_snmp_ber.cpp:203: test_oid_roundtrip            [PASSED]
 test/test_snmp_ber/test_snmp_ber.cpp:204: test_large_arc_roundtrip      [PASSED]
 test/test_snmp_ber/test_snmp_ber.cpp:205: test_encoder_overflow_sets_not_ok [PASSED]
 test/test_snmp_ber/test_snmp_ber.cpp:206: test_decoder_truncated_length_fails [PASSED]
-------------- native_snmp:test_snmp_ber [PASSED] Took 0.69 seconds -------------
+------------- native_snmp:test_snmp_ber [PASSED] Took 0.68 seconds -------------
 
 Processing test_snmp_agent in native_snmp environment
 --------------------------------------------------------------------------------
@@ -3463,16 +3515,16 @@ test/test_snmp_agent/test_snmp_agent.cpp:366: test_dynamic_counter_value [PASSED
 test/test_snmp_agent/test_snmp_agent.cpp:367: test_uptime_is_timeticks  [PASSED]
 test/test_snmp_agent/test_snmp_agent.cpp:368: test_unknown_community_no_response [PASSED]
 test/test_snmp_agent/test_snmp_agent.cpp:369: test_v3_message_dropped   [PASSED]
------------- native_snmp:test_snmp_agent [PASSED] Took 0.50 seconds ------------
+------------ native_snmp:test_snmp_agent [PASSED] Took 0.52 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment    Test             Status    Duration
 -------------  ---------------  --------  ------------
-native_snmp    test_snmp_ber    PASSED    00:00:00.694
-native_snmp    test_snmp_agent  PASSED    00:00:00.500
-================= 22 test cases: 22 succeeded in 00:00:01.194 =================
+native_snmp    test_snmp_ber    PASSED    00:00:00.683
+native_snmp    test_snmp_agent  PASSED    00:00:00.515
+================= 22 test cases: 22 succeeded in 00:00:01.198 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_snmp_v3 in native_snmp_v3 environment
 --------------------------------------------------------------------------------
@@ -3495,10 +3547,10 @@ test/test_snmp_v3/test_snmp_v3.cpp:460: test_not_in_time_window_reports [PASSED]
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_snmp_v3  test_snmp_v3  PASSED    00:00:01.378
-================== 9 test cases: 9 succeeded in 00:00:01.378 ==================
+native_snmp_v3  test_snmp_v3  PASSED    00:00:01.377
+================== 9 test cases: 9 succeeded in 00:00:01.377 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_telnet in native_telnet environment
 --------------------------------------------------------------------------------
@@ -3515,15 +3567,15 @@ test/test_telnet/test_telnet.cpp:169: test_iac_do_unsupported_gets_wont [PASSED]
 test/test_telnet/test_telnet.cpp:170: test_iac_do_echo_is_silent        [PASSED]
 test/test_telnet/test_telnet.cpp:171: test_iac_stripped_from_data       [PASSED]
 test/test_telnet/test_telnet.cpp:172: test_print_broadcast              [PASSED]
-------------- native_telnet:test_telnet [PASSED] Took 0.77 seconds -------------
+------------- native_telnet:test_telnet [PASSED] Took 0.76 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_telnet  test_telnet  PASSED    00:00:00.772
-================== 8 test cases: 8 succeeded in 00:00:00.772 ==================
+native_telnet  test_telnet  PASSED    00:00:00.765
+================== 8 test cases: 8 succeeded in 00:00:00.765 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_coap in native_coap environment
 --------------------------------------------------------------------------------
@@ -3563,10 +3615,10 @@ test/test_coap/test_coap.cpp:780: test_unknown_method_not_implemented   [PASSED]
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_coap    test_coap  PASSED    00:00:00.667
-================= 26 test cases: 26 succeeded in 00:00:00.667 =================
+native_coap    test_coap  PASSED    00:00:00.669
+================= 26 test cases: 26 succeeded in 00:00:00.669 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_webdav in native_webdav environment
 --------------------------------------------------------------------------------
@@ -3591,10 +3643,10 @@ test/test_webdav/test_webdav.cpp:170: test_multistatus_entry_stops_when_full [PA
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_webdav  test_webdav  PASSED    00:00:00.653
-================= 11 test cases: 11 succeeded in 00:00:00.653 =================
+native_webdav  test_webdav  PASSED    00:00:00.646
+================= 11 test cases: 11 succeeded in 00:00:00.646 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_modbus in native_modbus environment
 --------------------------------------------------------------------------------
@@ -3621,10 +3673,10 @@ test/test_modbus/test_modbus.cpp:244: test_truncated_frame_ignored      [PASSED]
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_modbus  test_modbus  PASSED    00:00:00.658
-================= 13 test cases: 13 succeeded in 00:00:00.658 =================
+native_modbus  test_modbus  PASSED    00:00:00.657
+================= 13 test cases: 13 succeeded in 00:00:00.657 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_modbus_master in native_modbus_master environment
 --------------------------------------------------------------------------------
@@ -3646,7 +3698,7 @@ Environment           Test                Status    Duration
 native_modbus_master  test_modbus_master  PASSED    00:00:00.674
 ================== 5 test cases: 5 succeeded in 00:00:00.674 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_ota_rollback in native_ota_rollback environment
 --------------------------------------------------------------------------------
@@ -3660,15 +3712,15 @@ test/test_ota_rollback/test_ota_rollback.cpp:50: test_pending_self_test_ok_commi
 test/test_ota_rollback/test_ota_rollback.cpp:51: test_pending_within_window_waits [PASSED]
 test/test_ota_rollback/test_ota_rollback.cpp:52: test_pending_window_elapsed_rolls_back [PASSED]
 test/test_ota_rollback/test_ota_rollback.cpp:53: test_self_test_ok_beats_window [PASSED]
-------- native_ota_rollback:test_ota_rollback [PASSED] Took 0.64 seconds -------
+------- native_ota_rollback:test_ota_rollback [PASSED] Took 0.63 seconds -------
 
 =================================== SUMMARY ===================================
 Environment          Test               Status    Duration
 -------------------  -----------------  --------  ------------
-native_ota_rollback  test_ota_rollback  PASSED    00:00:00.640
-================== 5 test cases: 5 succeeded in 00:00:00.640 ==================
+native_ota_rollback  test_ota_rollback  PASSED    00:00:00.635
+================== 5 test cases: 5 succeeded in 00:00:00.635 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_totp in native_totp environment
 --------------------------------------------------------------------------------
@@ -3681,15 +3733,15 @@ test/test_totp/test_totp.cpp:68: test_rfc6238_vectors                   [PASSED]
 test/test_totp/test_totp.cpp:69: test_verify_window                     [PASSED]
 test/test_totp/test_totp.cpp:70: test_base32_decode                     [PASSED]
 test/test_totp/test_totp.cpp:71: test_base32_rejects_invalid            [PASSED]
---------------- native_totp:test_totp [PASSED] Took 0.65 seconds ---------------
+--------------- native_totp:test_totp [PASSED] Took 0.66 seconds ---------------
 
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_totp    test_totp  PASSED    00:00:00.651
-================== 4 test cases: 4 succeeded in 00:00:00.651 ==================
+native_totp    test_totp  PASSED    00:00:00.655
+================== 4 test cases: 4 succeeded in 00:00:00.655 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_webhook in native_webhook environment
 --------------------------------------------------------------------------------
@@ -3703,15 +3755,15 @@ test/test_webhook/test_webhook.cpp:66: test_payload_three_values        [PASSED]
 test/test_webhook/test_webhook.cpp:67: test_payload_omits_nulls         [PASSED]
 test/test_webhook/test_webhook.cpp:68: test_payload_escapes_json        [PASSED]
 test/test_webhook/test_webhook.cpp:69: test_overflow_fails_closed       [PASSED]
------------- native_webhook:test_webhook [PASSED] Took 0.66 seconds ------------
+------------ native_webhook:test_webhook [PASSED] Took 0.65 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_webhook  test_webhook  PASSED    00:00:00.658
-================== 5 test cases: 5 succeeded in 00:00:00.658 ==================
+native_webhook  test_webhook  PASSED    00:00:00.646
+================== 5 test cases: 5 succeeded in 00:00:00.646 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_radio_power in native_radio_power environment
 --------------------------------------------------------------------------------
@@ -3727,10 +3779,10 @@ test/test_radio_power/test_radio_power.cpp:35: test_apply_is_noop_on_host [PASSE
 =================================== SUMMARY ===================================
 Environment         Test              Status    Duration
 ------------------  ----------------  --------  ------------
-native_radio_power  test_radio_power  PASSED    00:00:00.643
-================== 2 test cases: 2 succeeded in 00:00:00.643 ==================
+native_radio_power  test_radio_power  PASSED    00:00:00.642
+================== 2 test cases: 2 succeeded in 00:00:00.642 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_dns_resolver in native_dns_resolver environment
 --------------------------------------------------------------------------------
@@ -3743,15 +3795,15 @@ test/test_dns_resolver/test_dns_resolver.cpp:59: test_classify          [PASSED]
 test/test_dns_resolver/test_dns_resolver.cpp:60: test_verify_rejects_suspicious [PASSED]
 test/test_dns_resolver/test_dns_resolver.cpp:61: test_verify_accepts_plausible [PASSED]
 test/test_dns_resolver/test_dns_resolver.cpp:62: test_resolve_is_noop_on_host [PASSED]
-------- native_dns_resolver:test_dns_resolver [PASSED] Took 0.64 seconds -------
+------- native_dns_resolver:test_dns_resolver [PASSED] Took 0.65 seconds -------
 
 =================================== SUMMARY ===================================
 Environment          Test               Status    Duration
 -------------------  -----------------  --------  ------------
-native_dns_resolver  test_dns_resolver  PASSED    00:00:00.641
-================== 4 test cases: 4 succeeded in 00:00:00.641 ==================
+native_dns_resolver  test_dns_resolver  PASSED    00:00:00.650
+================== 4 test cases: 4 succeeded in 00:00:00.650 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_audit_log in native_audit_log environment
 --------------------------------------------------------------------------------
@@ -3772,15 +3824,15 @@ test/test_audit_log/test_audit_log.cpp:187: test_sink_receives_each_record [PASS
 test/test_audit_log/test_audit_log.cpp:188: test_format_and_dump_json   [PASSED]
 test/test_audit_log/test_audit_log.cpp:189: test_dump_json_reports_broken_chain [PASSED]
 test/test_audit_log/test_audit_log.cpp:190: test_format_fails_closed_on_small_buffer [PASSED]
----------- native_audit_log:test_audit_log [PASSED] Took 0.66 seconds ----------
+---------- native_audit_log:test_audit_log [PASSED] Took 0.67 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_audit_log  test_audit_log  PASSED    00:00:00.663
-================= 12 test cases: 12 succeeded in 00:00:00.663 =================
+native_audit_log  test_audit_log  PASSED    00:00:00.672
+================= 12 test cases: 12 succeeded in 00:00:00.672 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_oidc in native_oidc environment
 --------------------------------------------------------------------------------
@@ -3802,15 +3854,15 @@ test/test_oidc/test_oidc.cpp:173: test_reject_tampered_payload          [PASSED]
 test/test_oidc/test_oidc.cpp:174: test_reject_tampered_signature        [PASSED]
 test/test_oidc/test_oidc.cpp:175: test_reject_unknown_key               [PASSED]
 test/test_oidc/test_oidc.cpp:176: test_reject_malformed                 [PASSED]
---------------- native_oidc:test_oidc [PASSED] Took 0.84 seconds ---------------
+--------------- native_oidc:test_oidc [PASSED] Took 0.83 seconds ---------------
 
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_oidc    test_oidc  PASSED    00:00:00.837
-================= 13 test cases: 13 succeeded in 00:00:00.837 =================
+native_oidc    test_oidc  PASSED    00:00:00.835
+================= 13 test cases: 13 succeeded in 00:00:00.835 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_vfs in native_vfs environment
 --------------------------------------------------------------------------------
@@ -3830,15 +3882,15 @@ test/test_vfs/test_vfs.cpp:181: test_file_full_is_bounded               [PASSED]
 test/test_vfs/test_vfs.cpp:182: test_file_pool_exhaustion               [PASSED]
 test/test_vfs/test_vfs.cpp:183: test_handle_pool_exhaustion             [PASSED]
 test/test_vfs/test_vfs.cpp:184: test_unmounted_fails_closed             [PASSED]
----------------- native_vfs:test_vfs [PASSED] Took 0.66 seconds ----------------
+---------------- native_vfs:test_vfs [PASSED] Took 0.64 seconds ----------------
 
 =================================== SUMMARY ===================================
 Environment    Test      Status    Duration
 -------------  --------  --------  ------------
-native_vfs     test_vfs  PASSED    00:00:00.657
-================= 11 test cases: 11 succeeded in 00:00:00.657 =================
+native_vfs     test_vfs  PASSED    00:00:00.642
+================= 11 test cases: 11 succeeded in 00:00:00.642 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_graphql in native_graphql environment
 --------------------------------------------------------------------------------
@@ -3865,10 +3917,10 @@ test/test_graphql/test_graphql.cpp:181: test_overflow_fails_closed      [PASSED]
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_graphql  test_graphql  PASSED    00:00:00.650
-================= 13 test cases: 13 succeeded in 00:00:00.650 =================
+native_graphql  test_graphql  PASSED    00:00:00.649
+================= 13 test cases: 13 succeeded in 00:00:00.649 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_espnow in native_espnow environment
 --------------------------------------------------------------------------------
@@ -3884,15 +3936,15 @@ test/test_espnow/test_espnow.cpp:124: test_decode_rejects_corrupt       [PASSED]
 test/test_espnow/test_espnow.cpp:125: test_peer_registry                [PASSED]
 test/test_espnow/test_espnow.cpp:126: test_peer_table_full_fails_closed [PASSED]
 test/test_espnow/test_espnow.cpp:127: test_broadcast_address            [PASSED]
-------------- native_espnow:test_espnow [PASSED] Took 0.65 seconds -------------
+------------- native_espnow:test_espnow [PASSED] Took 0.63 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_espnow  test_espnow  PASSED    00:00:00.647
-================== 7 test cases: 7 succeeded in 00:00:00.647 ==================
+native_espnow  test_espnow  PASSED    00:00:00.634
+================== 7 test cases: 7 succeeded in 00:00:00.634 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_oauth2 in native_oauth2 environment
 --------------------------------------------------------------------------------
@@ -3909,15 +3961,15 @@ test/test_oauth2/test_oauth2.cpp:103: test_build_overflows_fail_closed  [PASSED]
 test/test_oauth2/test_oauth2.cpp:104: test_parse_token_response         [PASSED]
 test/test_oauth2/test_oauth2.cpp:105: test_parse_minimal_response       [PASSED]
 test/test_oauth2/test_oauth2.cpp:106: test_parse_error_response_fails   [PASSED]
-------------- native_oauth2:test_oauth2 [PASSED] Took 0.68 seconds -------------
+------------- native_oauth2:test_oauth2 [PASSED] Took 0.69 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_oauth2  test_oauth2  PASSED    00:00:00.682
-================== 8 test cases: 8 succeeded in 00:00:00.682 ==================
+native_oauth2  test_oauth2  PASSED    00:00:00.687
+================== 8 test cases: 8 succeeded in 00:00:00.687 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_opcua in native_opcua environment
 --------------------------------------------------------------------------------
@@ -3960,10 +4012,10 @@ test/test_opcua/test_opcua.cpp:1030: test_parse_and_build_write         [PASSED]
 =================================== SUMMARY ===================================
 Environment    Test        Status    Duration
 -------------  ----------  --------  ------------
-native_opcua   test_opcua  PASSED    00:00:00.684
-================= 29 test cases: 29 succeeded in 00:00:00.684 =================
+native_opcua   test_opcua  PASSED    00:00:00.677
+================= 29 test cases: 29 succeeded in 00:00:00.677 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_opcua_client in native_opcua_client environment
 --------------------------------------------------------------------------------
@@ -3988,10 +4040,10 @@ test/test_opcua_client/test_opcua_client.cpp:325: test_seq_and_request_id_increm
 =================================== SUMMARY ===================================
 Environment          Test               Status    Duration
 -------------------  -----------------  --------  ------------
-native_opcua_client  test_opcua_client  PASSED    00:00:00.693
-================= 11 test cases: 11 succeeded in 00:00:00.693 =================
+native_opcua_client  test_opcua_client  PASSED    00:00:00.692
+================= 11 test cases: 11 succeeded in 00:00:00.692 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_keepalive in native_keepalive environment
 --------------------------------------------------------------------------------
@@ -4015,10 +4067,10 @@ test/test_keepalive/test_keepalive.cpp:201: test_fresh_connection_resets_count [
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_keepalive  test_keepalive  PASSED    00:00:01.049
-================= 10 test cases: 10 succeeded in 00:00:01.049 =================
+native_keepalive  test_keepalive  PASSED    00:00:01.047
+================= 10 test cases: 10 succeeded in 00:00:01.047 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_range in native_range environment
 --------------------------------------------------------------------------------
@@ -4037,15 +4089,15 @@ test/test_range/test_range.cpp:196: test_range_unsatisfiable_416        [PASSED]
 test/test_range/test_range.cpp:197: test_malformed_range_ignored        [PASSED]
 test/test_range/test_range.cpp:198: test_multirange_falls_back_to_200   [PASSED]
 test/test_range/test_range.cpp:199: test_head_with_range_no_body        [PASSED]
--------------- native_range:test_range [PASSED] Took 1.04 seconds --------------
+-------------- native_range:test_range [PASSED] Took 1.03 seconds --------------
 
 =================================== SUMMARY ===================================
 Environment    Test        Status    Duration
 -------------  ----------  --------  ------------
-native_range   test_range  PASSED    00:00:01.036
-================= 10 test cases: 10 succeeded in 00:00:01.036 =================
+native_range   test_range  PASSED    00:00:01.035
+================= 10 test cases: 10 succeeded in 00:00:01.035 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_syslog in native_syslog environment
 --------------------------------------------------------------------------------
@@ -4060,15 +4112,15 @@ test/test_syslog/test_syslog.cpp:73: test_nilvalue_for_empty_fields     [PASSED]
 test/test_syslog/test_syslog.cpp:74: test_empty_message_ok              [PASSED]
 test/test_syslog/test_syslog.cpp:75: test_overflow_returns_zero         [PASSED]
 test/test_syslog/test_syslog.cpp:76: test_length_matches_strlen         [PASSED]
-------------- native_syslog:test_syslog [PASSED] Took 0.66 seconds -------------
+------------- native_syslog:test_syslog [PASSED] Took 0.67 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_syslog  test_syslog  PASSED    00:00:00.662
-================== 6 test cases: 6 succeeded in 00:00:00.662 ==================
+native_syslog  test_syslog  PASSED    00:00:00.666
+================== 6 test cases: 6 succeeded in 00:00:00.666 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_jwt in native_jwt environment
 --------------------------------------------------------------------------------
@@ -4092,10 +4144,10 @@ test/test_jwt/test_jwt.cpp:134: test_scope_allows                       [PASSED]
 =================================== SUMMARY ===================================
 Environment    Test      Status    Duration
 -------------  --------  --------  ------------
-native_jwt     test_jwt  PASSED    00:00:00.698
-================= 10 test cases: 10 succeeded in 00:00:00.698 =================
+native_jwt     test_jwt  PASSED    00:00:00.696
+================= 10 test cases: 10 succeeded in 00:00:00.696 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_upload in native_upload environment
 --------------------------------------------------------------------------------
@@ -4107,15 +4159,15 @@ Testing...
 test/test_upload/test_upload.cpp:110: test_upload_streams_body_to_file  [PASSED]
 test/test_upload/test_upload.cpp:111: test_small_body_single_chunk      [PASSED]
 test/test_upload/test_upload.cpp:112: test_empty_body_not_streamed      [PASSED]
-------------- native_upload:test_upload [PASSED] Took 1.07 seconds -------------
+------------- native_upload:test_upload [PASSED] Took 1.08 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_upload  test_upload  PASSED    00:00:01.068
-================== 3 test cases: 3 succeeded in 00:00:01.068 ==================
+native_upload  test_upload  PASSED    00:00:01.079
+================== 3 test cases: 3 succeeded in 00:00:01.079 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_http_client in native_http_client environment
 --------------------------------------------------------------------------------
@@ -4139,10 +4191,10 @@ test/test_http_client/test_http_client.cpp:145: test_parse_malformed    [PASSED]
 =================================== SUMMARY ===================================
 Environment         Test              Status    Duration
 ------------------  ----------------  --------  ------------
-native_http_client  test_http_client  PASSED    00:00:00.669
-================= 10 test cases: 10 succeeded in 00:00:00.669 =================
+native_http_client  test_http_client  PASSED    00:00:00.668
+================= 10 test cases: 10 succeeded in 00:00:00.668 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_compliance in native_compliance environment
 --------------------------------------------------------------------------------
@@ -4168,10 +4220,10 @@ test/test_compliance/test_compliance.cpp:155: test_content_length_valid_body [PA
 =================================== SUMMARY ===================================
 Environment        Test             Status    Duration
 -----------------  ---------------  --------  ------------
-native_compliance  test_compliance  PASSED    00:00:00.656
-================= 12 test cases: 12 succeeded in 00:00:00.656 =================
+native_compliance  test_compliance  PASSED    00:00:00.660
+================= 12 test cases: 12 succeeded in 00:00:00.660 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_mqtt in native_mqtt environment
 --------------------------------------------------------------------------------
@@ -4196,15 +4248,15 @@ test/test_mqtt/test_mqtt.cpp:280: test_connack                          [PASSED]
 test/test_mqtt/test_mqtt.cpp:281: test_suback                           [PASSED]
 test/test_mqtt/test_mqtt.cpp:282: test_ping_disconnect                  [PASSED]
 test/test_mqtt/test_mqtt.cpp:283: test_fixed_header_multibyte_remlen    [PASSED]
---------------- native_mqtt:test_mqtt [PASSED] Took 0.65 seconds ---------------
+--------------- native_mqtt:test_mqtt [PASSED] Took 0.66 seconds ---------------
 
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_mqtt    test_mqtt  PASSED    00:00:00.646
-================= 16 test cases: 16 succeeded in 00:00:00.646 =================
+native_mqtt    test_mqtt  PASSED    00:00:00.662
+================= 16 test cases: 16 succeeded in 00:00:00.662 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_ws_client in native_ws_client environment
 --------------------------------------------------------------------------------
@@ -4223,15 +4275,15 @@ test/test_ws_client/test_ws_client.cpp:138: test_build_frame_extended_len [PASSE
 test/test_ws_client/test_ws_client.cpp:139: test_parse_frame_server_text [PASSED]
 test/test_ws_client/test_ws_client.cpp:140: test_parse_frame_incomplete [PASSED]
 test/test_ws_client/test_ws_client.cpp:141: test_parse_frame_extended_len [PASSED]
----------- native_ws_client:test_ws_client [PASSED] Took 0.68 seconds ----------
+---------- native_ws_client:test_ws_client [PASSED] Took 0.69 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_ws_client  test_ws_client  PASSED    00:00:00.683
-================= 10 test cases: 10 succeeded in 00:00:00.683 =================
+native_ws_client  test_ws_client  PASSED    00:00:00.688
+================= 10 test cases: 10 succeeded in 00:00:00.688 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_scratch in native_scratch environment
 --------------------------------------------------------------------------------
@@ -4254,15 +4306,15 @@ test/test_scratch/test_scratch.cpp:170: test_release_allows_reuse_of_same_region
 test/test_scratch/test_scratch.cpp:171: test_scratch_scope_releases_on_scope_exit [PASSED]
 test/test_scratch/test_scratch.cpp:172: test_nested_scopes_reclaim_lifo [PASSED]
 test/test_scratch/test_scratch.cpp:173: test_sequential_scopes_do_not_accumulate [PASSED]
------------- native_scratch:test_scratch [PASSED] Took 0.69 seconds ------------
+------------ native_scratch:test_scratch [PASSED] Took 0.68 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_scratch  test_scratch  PASSED    00:00:00.691
-================= 14 test cases: 14 succeeded in 00:00:00.691 =================
+native_scratch  test_scratch  PASSED    00:00:00.676
+================= 14 test cases: 14 succeeded in 00:00:00.676 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_snmp_trap in native_snmp_trap environment
 --------------------------------------------------------------------------------
@@ -4274,15 +4326,15 @@ Testing...
 test/test_snmp_trap/test_snmp_trap.cpp:125: test_trap_v2c_structure     [PASSED]
 test/test_snmp_trap/test_snmp_trap.cpp:126: test_inform_tag             [PASSED]
 test/test_snmp_trap/test_snmp_trap.cpp:127: test_buffer_too_small       [PASSED]
----------- native_snmp_trap:test_snmp_trap [PASSED] Took 0.67 seconds ----------
+---------- native_snmp_trap:test_snmp_trap [PASSED] Took 0.68 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_snmp_trap  test_snmp_trap  PASSED    00:00:00.667
-================== 3 test cases: 3 succeeded in 00:00:00.667 ==================
+native_snmp_trap  test_snmp_trap  PASSED    00:00:00.677
+================== 3 test cases: 3 succeeded in 00:00:00.677 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_inflate in native_inflate environment
 --------------------------------------------------------------------------------
@@ -4311,7 +4363,7 @@ Environment     Test          Status    Duration
 native_inflate  test_inflate  PASSED    00:00:00.652
 ================= 12 test cases: 12 succeeded in 00:00:00.652 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_deflate in native_deflate environment
 --------------------------------------------------------------------------------
@@ -4330,15 +4382,15 @@ test/test_deflate/test_deflate.cpp:167: test_fuzz_roundtrip             [PASSED]
 test/test_deflate/test_deflate.cpp:168: test_fuzz_low_entropy_roundtrip [PASSED]
 test/test_deflate/test_deflate.cpp:169: test_output_overflow_fails_closed [PASSED]
 test/test_deflate/test_deflate.cpp:170: test_scratch_too_small_fails_closed [PASSED]
------------- native_deflate:test_deflate [PASSED] Took 0.69 seconds ------------
+------------ native_deflate:test_deflate [PASSED] Took 0.70 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_deflate  test_deflate  PASSED    00:00:00.687
-================= 10 test cases: 10 succeeded in 00:00:00.687 =================
+native_deflate  test_deflate  PASSED    00:00:00.704
+================= 10 test cases: 10 succeeded in 00:00:00.704 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_websocket in native_ws_deflate environment
 --------------------------------------------------------------------------------
@@ -4414,15 +4466,15 @@ test/test_websocket/test_websocket.cpp:1035: stress_ws_alloc_free_pool_cycle [PA
 test/test_websocket/test_websocket.cpp:1036: stress_ws_parse_incremental_byte_by_byte [PASSED]
 test/test_websocket/test_websocket.cpp:1037: stress_ws_parse_max_payload [PASSED]
 test/test_websocket/test_websocket.cpp:1038: stress_ws_parse_two_consecutive_frames [PASSED]
---------- native_ws_deflate:test_websocket [PASSED] Took 1.02 seconds ----------
+--------- native_ws_deflate:test_websocket [PASSED] Took 1.01 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment        Test            Status    Duration
 -----------------  --------------  --------  ------------
-native_ws_deflate  test_websocket  PASSED    00:00:01.022
-================= 67 test cases: 67 succeeded in 00:00:01.022 =================
+native_ws_deflate  test_websocket  PASSED    00:00:01.006
+================= 67 test cases: 67 succeeded in 00:00:01.006 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_time_source in native_time_source environment
 --------------------------------------------------------------------------------
@@ -4440,15 +4492,15 @@ test/test_time_source/test_time_source.cpp:134: test_fallback_queries_in_priorit
 test/test_time_source/test_time_source.cpp:135: test_table_full_rejects [PASSED]
 test/test_time_source/test_time_source.cpp:136: test_null_fn_rejected   [PASSED]
 test/test_time_source/test_time_source.cpp:137: test_reset_clears_sources [PASSED]
--------- native_time_source:test_time_source [PASSED] Took 0.65 seconds --------
+-------- native_time_source:test_time_source [PASSED] Took 0.64 seconds --------
 
 =================================== SUMMARY ===================================
 Environment         Test              Status    Duration
 ------------------  ----------------  --------  ------------
-native_time_source  test_time_source  PASSED    00:00:00.645
-================== 9 test cases: 9 succeeded in 00:00:00.645 ==================
+native_time_source  test_time_source  PASSED    00:00:00.640
+================== 9 test cases: 9 succeeded in 00:00:00.640 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_config_store in native_config_store environment
 --------------------------------------------------------------------------------
@@ -4471,15 +4523,15 @@ test/test_config_store/test_config_store.cpp:159: test_clear_wipes_namespace [PA
 test/test_config_store/test_config_store.cpp:160: test_table_full_rejects_new_key [PASSED]
 test/test_config_store/test_config_store.cpp:161: test_existing_key_overwrites_even_when_full [PASSED]
 test/test_config_store/test_config_store.cpp:162: test_key_too_long_rejected [PASSED]
-------- native_config_store:test_config_store [PASSED] Took 0.66 seconds -------
+------- native_config_store:test_config_store [PASSED] Took 0.65 seconds -------
 
 =================================== SUMMARY ===================================
 Environment          Test               Status    Duration
 -------------------  -----------------  --------  ------------
-native_config_store  test_config_store  PASSED    00:00:00.664
-================= 14 test cases: 14 succeeded in 00:00:00.664 =================
+native_config_store  test_config_store  PASSED    00:00:00.648
+================= 14 test cases: 14 succeeded in 00:00:00.648 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_device_id in native_device_id environment
 --------------------------------------------------------------------------------
@@ -4492,15 +4544,15 @@ test/test_device_id/test_device_id.cpp:58: test_uuid_matches_reference_aabbccdde
 test/test_device_id/test_device_id.cpp:59: test_uuid_matches_reference_001122334455 [PASSED]
 test/test_device_id/test_device_id.cpp:60: test_uuid_is_deterministic   [PASSED]
 test/test_device_id/test_device_id.cpp:61: test_uuid_version_and_variant_bits [PASSED]
----------- native_device_id:test_device_id [PASSED] Took 0.68 seconds ----------
+---------- native_device_id:test_device_id [PASSED] Took 0.67 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_device_id  test_device_id  PASSED    00:00:00.680
-================== 4 test cases: 4 succeeded in 00:00:00.680 ==================
+native_device_id  test_device_id  PASSED    00:00:00.672
+================== 4 test cases: 4 succeeded in 00:00:00.672 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_auth_lockout in native_auth_lockout environment
 --------------------------------------------------------------------------------
@@ -4519,15 +4571,15 @@ test/test_auth_lockout/test_auth_lockout.cpp:150: test_isolates_addresses [PASSE
 test/test_auth_lockout/test_auth_lockout.cpp:151: test_zero_ip_never_locked [PASSED]
 test/test_auth_lockout/test_auth_lockout.cpp:152: test_table_full_tracks_new_address [PASSED]
 test/test_auth_lockout/test_auth_lockout.cpp:153: test_active_lockout_survives_eviction [PASSED]
-------- native_auth_lockout:test_auth_lockout [PASSED] Took 0.65 seconds -------
+------- native_auth_lockout:test_auth_lockout [PASSED] Took 0.64 seconds -------
 
 =================================== SUMMARY ===================================
 Environment          Test               Status    Duration
 -------------------  -----------------  --------  ------------
-native_auth_lockout  test_auth_lockout  PASSED    00:00:00.646
-================= 10 test cases: 10 succeeded in 00:00:00.646 =================
+native_auth_lockout  test_auth_lockout  PASSED    00:00:00.642
+================= 10 test cases: 10 succeeded in 00:00:00.642 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_csrf in native_csrf environment
 --------------------------------------------------------------------------------
@@ -4545,15 +4597,15 @@ test/test_csrf/test_csrf.cpp:119: test_different_secret_rejects         [PASSED]
 test/test_csrf/test_csrf.cpp:120: test_no_secret_fails_closed           [PASSED]
 test/test_csrf/test_csrf.cpp:121: test_issue_unique                     [PASSED]
 test/test_csrf/test_csrf.cpp:122: test_issue_rejects_small_buffer       [PASSED]
---------------- native_csrf:test_csrf [PASSED] Took 0.68 seconds ---------------
+--------------- native_csrf:test_csrf [PASSED] Took 0.67 seconds ---------------
 
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_csrf    test_csrf  PASSED    00:00:00.681
-================== 9 test cases: 9 succeeded in 00:00:00.681 ==================
+native_csrf    test_csrf  PASSED    00:00:00.666
+================== 9 test cases: 9 succeeded in 00:00:00.666 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_telemetry in native_telemetry environment
 --------------------------------------------------------------------------------
@@ -4570,15 +4622,15 @@ test/test_telemetry/test_telemetry.cpp:125: test_rate_basic             [PASSED]
 test/test_telemetry/test_telemetry.cpp:126: test_rate_zero_dt           [PASSED]
 test/test_telemetry/test_telemetry.cpp:127: test_totalizer_constant_rate [PASSED]
 test/test_telemetry/test_telemetry.cpp:128: test_totalizer_trapezoid_and_reset [PASSED]
----------- native_telemetry:test_telemetry [PASSED] Took 0.65 seconds ----------
+---------- native_telemetry:test_telemetry [PASSED] Took 0.64 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_telemetry  test_telemetry  PASSED    00:00:00.648
-================== 8 test cases: 8 succeeded in 00:00:00.648 ==================
+native_telemetry  test_telemetry  PASSED    00:00:00.640
+================== 8 test cases: 8 succeeded in 00:00:00.640 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_dashboard in native_dashboard environment
 --------------------------------------------------------------------------------
@@ -4603,10 +4655,10 @@ test/test_dashboard/test_dashboard.cpp:165: test_layout_control_types   [PASSED]
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_dashboard  test_dashboard  PASSED    00:00:00.667
-================= 11 test cases: 11 succeeded in 00:00:00.667 =================
+native_dashboard  test_dashboard  PASSED    00:00:00.672
+================= 11 test cases: 11 succeeded in 00:00:00.672 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_net_egress in native_net_egress environment
 --------------------------------------------------------------------------------
@@ -4628,7 +4680,7 @@ Environment        Test             Status    Duration
 native_net_egress  test_net_egress  PASSED    00:00:00.644
 ================== 5 test cases: 5 succeeded in 00:00:00.644 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_partition_monitor in native_partition environment
 --------------------------------------------------------------------------------
@@ -4642,15 +4694,15 @@ test/test_partition_monitor/test_partition_monitor.cpp:72: test_kind_data [PASSE
 test/test_partition_monitor/test_partition_monitor.cpp:73: test_json    [PASSED]
 test/test_partition_monitor/test_partition_monitor.cpp:74: test_json_small_buffer_fails_closed [PASSED]
 test/test_partition_monitor/test_partition_monitor.cpp:75: test_collect_host_stub [PASSED]
------- native_partition:test_partition_monitor [PASSED] Took 0.64 seconds ------
+------ native_partition:test_partition_monitor [PASSED] Took 0.66 seconds ------
 
 =================================== SUMMARY ===================================
 Environment       Test                    Status    Duration
 ----------------  ----------------------  --------  ------------
-native_partition  test_partition_monitor  PASSED    00:00:00.640
-================== 5 test cases: 5 succeeded in 00:00:00.640 ==================
+native_partition  test_partition_monitor  PASSED    00:00:00.663
+================== 5 test cases: 5 succeeded in 00:00:00.663 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_cbor in native_cbor environment
 --------------------------------------------------------------------------------
@@ -4673,15 +4725,15 @@ test/test_cbor/test_cbor.cpp:291: test_decode_float_roundtrip           [PASSED]
 test/test_cbor/test_cbor.cpp:292: test_decode_roundtrip_map             [PASSED]
 test/test_cbor/test_cbor.cpp:293: test_decode_truncated                 [PASSED]
 test/test_cbor/test_cbor.cpp:294: test_decode_type_mismatch             [PASSED]
---------------- native_cbor:test_cbor [PASSED] Took 0.66 seconds ---------------
+--------------- native_cbor:test_cbor [PASSED] Took 0.68 seconds ---------------
 
 =================================== SUMMARY ===================================
 Environment    Test       Status    Duration
 -------------  ---------  --------  ------------
-native_cbor    test_cbor  PASSED    00:00:00.656
-================= 14 test cases: 14 succeeded in 00:00:00.656 =================
+native_cbor    test_cbor  PASSED    00:00:00.675
+================= 14 test cases: 14 succeeded in 00:00:00.675 =================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_msgpack in native_msgpack environment
 --------------------------------------------------------------------------------
@@ -4698,15 +4750,15 @@ test/test_msgpack/test_msgpack.cpp:168: test_simple                     [PASSED]
 test/test_msgpack/test_msgpack.cpp:169: test_float                      [PASSED]
 test/test_msgpack/test_msgpack.cpp:170: test_array_and_map              [PASSED]
 test/test_msgpack/test_msgpack.cpp:171: test_overflow_fails_closed      [PASSED]
------------- native_msgpack:test_msgpack [PASSED] Took 0.64 seconds ------------
+------------ native_msgpack:test_msgpack [PASSED] Took 0.65 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_msgpack  test_msgpack  PASSED    00:00:00.639
-================== 8 test cases: 8 succeeded in 00:00:00.639 ==================
+native_msgpack  test_msgpack  PASSED    00:00:00.646
+================== 8 test cases: 8 succeeded in 00:00:00.646 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_gpio_map in native_gpio_map environment
 --------------------------------------------------------------------------------
@@ -4723,15 +4775,15 @@ test/test_gpio_map/test_gpio_map.cpp:111: test_parse_set                [PASSED]
 test/test_gpio_map/test_gpio_map.cpp:112: test_parse_set_rejects_partial [PASSED]
 test/test_gpio_map/test_gpio_map.cpp:113: test_parse_set_no_prefix_match [PASSED]
 test/test_gpio_map/test_gpio_map.cpp:114: test_is_output                [PASSED]
------------ native_gpio_map:test_gpio_map [PASSED] Took 0.65 seconds -----------
+----------- native_gpio_map:test_gpio_map [PASSED] Took 0.67 seconds -----------
 
 =================================== SUMMARY ===================================
 Environment      Test           Status    Duration
 ---------------  -------------  --------  ------------
-native_gpio_map  test_gpio_map  PASSED    00:00:00.650
-================== 8 test cases: 8 succeeded in 00:00:00.650 ==================
+native_gpio_map  test_gpio_map  PASSED    00:00:00.666
+================== 8 test cases: 8 succeeded in 00:00:00.666 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_udp_telemetry in native_udp_telemetry environment
 --------------------------------------------------------------------------------
@@ -4744,15 +4796,15 @@ test/test_udp_telemetry/test_udp_telemetry.cpp:63: test_int_and_uint_fields [PAS
 test/test_udp_telemetry/test_udp_telemetry.cpp:64: test_float_field     [PASSED]
 test/test_udp_telemetry/test_udp_telemetry.cpp:65: test_no_fields_not_ok [PASSED]
 test/test_udp_telemetry/test_udp_telemetry.cpp:66: test_overflow_fails_closed [PASSED]
------- native_udp_telemetry:test_udp_telemetry [PASSED] Took 0.64 seconds ------
+------ native_udp_telemetry:test_udp_telemetry [PASSED] Took 0.67 seconds ------
 
 =================================== SUMMARY ===================================
 Environment           Test                Status    Duration
 --------------------  ------------------  --------  ------------
-native_udp_telemetry  test_udp_telemetry  PASSED    00:00:00.642
-================== 4 test cases: 4 succeeded in 00:00:00.642 ==================
+native_udp_telemetry  test_udp_telemetry  PASSED    00:00:00.668
+================== 4 test cases: 4 succeeded in 00:00:00.668 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_guardrails in native_guardrails environment
 --------------------------------------------------------------------------------
@@ -4767,15 +4819,15 @@ test/test_guardrails/test_guardrails.cpp:65: test_eval_frag_and_stack   [PASSED]
 test/test_guardrails/test_guardrails.cpp:66: test_eval_all_breached     [PASSED]
 test/test_guardrails/test_guardrails.cpp:67: test_json                  [PASSED]
 test/test_guardrails/test_guardrails.cpp:68: test_json_small_buffer_fails_closed [PASSED]
---------- native_guardrails:test_guardrails [PASSED] Took 0.64 seconds ---------
+--------- native_guardrails:test_guardrails [PASSED] Took 0.66 seconds ---------
 
 =================================== SUMMARY ===================================
 Environment        Test             Status    Duration
 -----------------  ---------------  --------  ------------
-native_guardrails  test_guardrails  PASSED    00:00:00.644
-================== 6 test cases: 6 succeeded in 00:00:00.644 ==================
+native_guardrails  test_guardrails  PASSED    00:00:00.664
+================== 6 test cases: 6 succeeded in 00:00:00.664 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_logbuf in native_logbuf environment
 --------------------------------------------------------------------------------
@@ -4788,15 +4840,15 @@ test/test_logbuf/test_logbuf.cpp:81: test_append_and_order              [PASSED]
 test/test_logbuf/test_logbuf.cpp:82: test_dump                          [PASSED]
 test/test_logbuf/test_logbuf.cpp:83: test_rotation_drops_oldest         [PASSED]
 test/test_logbuf/test_logbuf.cpp:84: test_trap_threshold                [PASSED]
-------------- native_logbuf:test_logbuf [PASSED] Took 0.64 seconds -------------
+------------- native_logbuf:test_logbuf [PASSED] Took 0.66 seconds -------------
 
 =================================== SUMMARY ===================================
 Environment    Test         Status    Duration
 -------------  -----------  --------  ------------
-native_logbuf  test_logbuf  PASSED    00:00:00.640
-================== 4 test cases: 4 succeeded in 00:00:00.640 ==================
+native_logbuf  test_logbuf  PASSED    00:00:00.665
+================== 4 test cases: 4 succeeded in 00:00:00.665 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_config_io in native_config_io environment
 --------------------------------------------------------------------------------
@@ -4809,15 +4861,15 @@ test/test_config_io/test_config_io.cpp:81: test_export_format           [PASSED]
 test/test_config_io/test_config_io.cpp:82: test_round_trip              [PASSED]
 test/test_config_io/test_config_io.cpp:83: test_import_skips_unknown_keys [PASSED]
 test/test_config_io/test_config_io.cpp:84: test_export_overflow_fails_closed [PASSED]
----------- native_config_io:test_config_io [PASSED] Took 0.67 seconds ----------
+---------- native_config_io:test_config_io [PASSED] Took 0.68 seconds ----------
 
 =================================== SUMMARY ===================================
 Environment       Test            Status    Duration
 ----------------  --------------  --------  ------------
-native_config_io  test_config_io  PASSED    00:00:00.669
-================== 4 test cases: 4 succeeded in 00:00:00.669 ==================
+native_config_io  test_config_io  PASSED    00:00:00.677
+================== 4 test cases: 4 succeeded in 00:00:00.677 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_workers in native_workers environment
 --------------------------------------------------------------------------------
@@ -4829,15 +4881,15 @@ Testing...
 test/test_workers/test_workers.cpp:62: test_worker_count_is_two         [PASSED]
 test/test_workers/test_workers.cpp:63: test_check_timeouts_reaps_only_owned_slots [PASSED]
 test/test_workers/test_workers.cpp:64: test_pool_init_defaults_owner_zero [PASSED]
------------- native_workers:test_workers [PASSED] Took 0.75 seconds ------------
+------------ native_workers:test_workers [PASSED] Took 0.77 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment     Test          Status    Duration
 --------------  ------------  --------  ------------
-native_workers  test_workers  PASSED    00:00:00.746
-================== 3 test cases: 3 succeeded in 00:00:00.746 ==================
+native_workers  test_workers  PASSED    00:00:00.769
+================== 3 test cases: 3 succeeded in 00:00:00.769 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_clock in native_clock environment
 --------------------------------------------------------------------------------
@@ -4850,15 +4902,15 @@ test/test_clock/test_clock.cpp:67: test_default_is_platform_millis      [PASSED]
 test/test_clock/test_clock.cpp:68: test_custom_clock_divides_to_1000hz  [PASSED]
 test/test_clock/test_clock.cpp:69: test_sub_khz_source_not_divided      [PASSED]
 test/test_clock/test_clock.cpp:70: test_revert_to_default               [PASSED]
--------------- native_clock:test_clock [PASSED] Took 0.63 seconds --------------
+-------------- native_clock:test_clock [PASSED] Took 0.68 seconds --------------
 
 =================================== SUMMARY ===================================
 Environment    Test        Status    Duration
 -------------  ----------  --------  ------------
-native_clock   test_clock  PASSED    00:00:00.633
-================== 4 test cases: 4 succeeded in 00:00:00.633 ==================
+native_clock   test_clock  PASSED    00:00:00.682
+================== 4 test cases: 4 succeeded in 00:00:00.682 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_concurrency in native_concurrency environment
 --------------------------------------------------------------------------------
@@ -4877,7 +4929,7 @@ Environment         Test              Status    Duration
 native_concurrency  test_concurrency  PASSED    00:00:00.847
 ================== 2 test cases: 2 succeeded in 00:00:00.847 ==================
 Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 87 tests
+Collected 88 tests
 
 Processing test_concurrency in native_tsan environment
 --------------------------------------------------------------------------------
@@ -4888,13 +4940,13 @@ Library Manager: Unity@2.6.1 has been installed!
 Testing...
 test/test_concurrency/test_concurrency.cpp:109: test_spsc_ring_no_race  [PASSED]
 test/test_concurrency/test_concurrency.cpp:110: test_state_handoff_no_race [PASSED]
------------ native_tsan:test_concurrency [PASSED] Took 1.32 seconds ------------
+----------- native_tsan:test_concurrency [PASSED] Took 1.35 seconds ------------
 
 =================================== SUMMARY ===================================
 Environment    Test              Status    Duration
 -------------  ----------------  --------  ------------
-native_tsan    test_concurrency  PASSED    00:00:01.321
-================== 2 test cases: 2 succeeded in 00:00:01.321 ==================
+native_tsan    test_concurrency  PASSED    00:00:01.352
+================== 2 test cases: 2 succeeded in 00:00:01.352 ==================
 ```
 
 </details>
