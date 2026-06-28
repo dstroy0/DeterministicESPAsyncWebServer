@@ -28,7 +28,8 @@
  *
  *   server.begin(80, &my_cfg);
  * @endcode
- * Pass `nullptr` (or omit the argument) to use `DET_DEFAULT_CONFIG`.
+ * Pass `nullptr` (or omit the argument) to use the built-in default
+ * (`CONN_TIMEOUT_MS`, 5000 ms idle timeout).
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CONFIG_H
@@ -2178,9 +2179,6 @@ struct WebServerConfig
     /** Milliseconds of inactivity before a connection is force-closed. */
     uint32_t conn_timeout_ms;
 };
-
-/** @brief Built-in defaults used when no config is supplied to begin(). */
-static const WebServerConfig DET_DEFAULT_CONFIG = {5000u};
 
 // ---------------------------------------------------------------------------
 // Protocol identifier

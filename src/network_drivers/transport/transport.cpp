@@ -314,6 +314,20 @@ void DeterministicAsyncTCP::stop()
     }
 }
 
+uint32_t det_conn_remote_ip(uint8_t slot)
+{
+#ifdef ARDUINO
+    if (slot >= MAX_CONNS)
+        return 0;
+    TcpConn *conn = &conn_pool[slot];
+    if (conn->state == CONN_ACTIVE && conn->pcb)
+        return ip4_addr_get_u32(ip_2_ip4(&conn->pcb->remote_ip));
+#else
+    (void)slot;
+#endif
+    return 0;
+}
+
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {
     uint32_t now = detws_millis();

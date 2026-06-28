@@ -12,8 +12,8 @@
  *  - snmp_agent_process() takes a complete request datagram and produces a
  *    complete response datagram in a caller buffer - no sockets, no heap. It is
  *    unit-tested on the host (env:native_snmp).
- *  - snmp_agent_begin_udp() binds a raw lwIP `udp_pcb` on :161 (Arduino only)
- *    and feeds received datagrams through snmp_agent_process().
+ *  - snmp_agent_begin_udp() binds the agent on :161 via the det_udp_* transport
+ *    API (Arduino only) and feeds received datagrams through snmp_agent_process().
  *
  * The MIB is a fixed BSS table of SNMP_MAX_MIB_ENTRIES objects. Register objects
  * with snmp_agent_add_*; values are either static (stored in the entry) or
