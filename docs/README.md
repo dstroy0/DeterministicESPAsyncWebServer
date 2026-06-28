@@ -97,7 +97,7 @@ void loop()
 }
 ```
 
-See `examples/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
+See `examples/Foundation/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
 
 ## Architecture
 
