@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`7eab22b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7eab22b89c3a482880aa927ac9201ed6b67e1889))
+- update CHANGELOG.md [skip ci] ([`0d572c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d572c94d6af6580f3a2baa63802425b29953fca))
+
+### Documentation
+
+- fix BUGS.md nested-list formatting (prettier) ([`489137f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/489137fc69fd08c9f664eefbb995de0f3debadfb))
+
 ## [4.10.0] - 2026-06-28
 
 <details>
