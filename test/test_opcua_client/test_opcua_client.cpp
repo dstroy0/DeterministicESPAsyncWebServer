@@ -229,6 +229,43 @@ void test_service_fault_rejected_by_parsers()
     TEST_ASSERT_FALSE(opcua_client_on_activate_session(resp, sn));
 }
 
+void test_write_roundtrip()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    c.token_id = 88;
+
+    OpcUaWriteItem items[1];
+    memset(items, 0, sizeof(items));
+    items[0].ns = 1;
+    items[0].id = 10;
+    items[0].numeric = true;
+    items[0].attribute = OPCUA_ATTR_VALUE;
+    items[0].value.type = OPCUA_VAR_UINT32;
+    items[0].value.u32 = 4242;
+
+    uint8_t req[128];
+    size_t rn = opcua_client_write(&c, items, 1, req, sizeof(req));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_TRUE(opcua_parse_write(req, rn, &wr));
+    TEST_ASSERT_EQUAL_UINT32(1, wr.count);
+    TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, wr.items[0].value.type);
+    TEST_ASSERT_EQUAL_UINT32(4242, wr.items[0].value.u32);
+
+    uint32_t res[1] = {OPCUA_STATUS_GOOD};
+    uint8_t resp[64];
+    size_t sn = opcua_build_write_response(&wr, res, 9, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    uint32_t got[1] = {0xFFFFFFFFu};
+    int32_t nres = opcua_client_on_write(resp, sn, got, 1);
+    TEST_ASSERT_EQUAL_INT32(1, nres);
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, got[0]);
+}
+
 void test_close_session_roundtrip()
 {
     OpcUaClient c;
@@ -282,6 +319,7 @@ int main()
     RUN_TEST(test_service_fault_rejected_by_parsers);
     RUN_TEST(test_read_roundtrip);
     RUN_TEST(test_browse_roundtrip);
+    RUN_TEST(test_write_roundtrip);
     RUN_TEST(test_close_session_roundtrip);
     RUN_TEST(test_close_channel_is_clo);
     RUN_TEST(test_seq_and_request_id_increment);

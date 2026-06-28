@@ -4,8 +4,9 @@
 // Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl.
 // NodeId / DateTime / Variant / DataValue / ReferenceDescription), UACP framing,
 // the Hello/Acknowledge handshake, the SecureChannel (OPN), the Session
-// (CreateSession/ActivateSession), and the Read / Browse / CloseSession services
-// (SecurityPolicy None). The TCP data handler (opcua_rx) is ESP32-only and HW-verified.
+// (CreateSession/ActivateSession), GetEndpoints, the Read / Write / Browse / CloseSession
+// services and the ServiceFault fallback (SecurityPolicy None). The TCP data handler
+// (opcua_rx) is ESP32-only and HW-verified (incl. python asyncua interop).
 
 #include "services/opcua/opcua.h"
 #include <string.h>
@@ -898,6 +899,103 @@ void test_build_service_fault()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// ---------------------------------------------------------------------------
+// Write service (DataValue decode + WriteRequest/Response)
+// ---------------------------------------------------------------------------
+
+void test_datavalue_roundtrip()
+{
+    uint8_t buf[32];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OPCUA_VAR_DOUBLE;
+    v.f64 = 3.25;
+    ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
+
+    UaReader r = {buf, w.n, 0, false};
+    OpcUaVariant got;
+    uint32_t st = 0xFFFFFFFFu;
+    TEST_ASSERT_TRUE(ua_r_datavalue(&r, &got, &st));
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, got.type);
+    TEST_ASSERT_TRUE(got.f64 == 3.25);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, st);
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_parse_and_build_write()
+{
+    // Build a WriteRequest writing one Int32 to ns=1;i=10 (value-only DataValue).
+    uint8_t buf[128];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);   // size placeholder
+    ua_w_u32(&w, 0);   // SecureChannelId
+    ua_w_u32(&w, 7);   // TokenId
+    ua_w_u32(&w, 5);   // SequenceNumber
+    ua_w_u32(&w, 700); // RequestId
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_WRITE_REQ);
+    ua_w_nodeid_numeric(&w, 0, 0); // RequestHeader: AuthenticationToken
+    ua_w_u64(&w, 0);               // Timestamp
+    ua_w_u32(&w, 95);              // RequestHandle
+    ua_w_u32(&w, 0);               // ReturnDiagnostics
+    ua_w_string(&w, nullptr, -1);  // AuditEntryId
+    ua_w_u32(&w, 0);               // TimeoutHint
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u8(&w, 0x00);
+    ua_w_i32(&w, 1);                // NodesToWrite count
+    ua_w_nodeid_numeric(&w, 1, 10); // NodeId ns=1;i=10
+    ua_w_u32(&w, OPCUA_ATTR_VALUE); // AttributeId
+    ua_w_string(&w, nullptr, -1);   // IndexRange
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OPCUA_VAR_INT32;
+    v.i32 = -1234;
+    ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD); // Value
+    buf[4] = (uint8_t)w.n;
+    buf[5] = (uint8_t)(w.n >> 8);
+    buf[6] = buf[7] = 0;
+
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_TRUE(opcua_parse_write(buf, w.n, &wr));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_WRITE_REQ, wr.msg.type_id);
+    TEST_ASSERT_EQUAL_UINT32(95, wr.msg.request_handle);
+    TEST_ASSERT_EQUAL_UINT32(1, wr.count);
+    TEST_ASSERT_EQUAL_UINT16(1, wr.items[0].ns);
+    TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ATTR_VALUE, wr.items[0].attribute);
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, wr.items[0].value.type);
+    TEST_ASSERT_EQUAL_INT32(-1234, wr.items[0].value.i32);
+
+    // Build + parse the WriteResponse.
+    uint32_t res[1] = {OPCUA_STATUS_GOOD};
+    uint8_t resp[64];
+    size_t rn = opcua_build_write_response(&wr, res, 6, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    r.off = 16; // skip SecureChannelId/TokenId/Seq/RequestId
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_WRITE_RESP, tid.id);
+    (void)ua_r_u64(&r);                         // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(95, ua_r_u32(&r)); // RequestHandle
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    (void)ua_r_u8(&r);                          // DiagnosticInfo
+    (void)ua_r_i32(&r);                         // StringTable
+    ua_r_nodeid(&r, &tid);                      // AdditionalHeader NodeId
+    (void)ua_r_u8(&r);                          // AdditionalHeader body
+    TEST_ASSERT_EQUAL_INT32(1, ua_r_i32(&r));   // Results count
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, ua_r_u32(&r));
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r)); // DiagnosticInfos
+    TEST_ASSERT_FALSE(r.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -928,5 +1026,7 @@ int main()
     RUN_TEST(test_build_close_session_response);
     RUN_TEST(test_build_get_endpoints);
     RUN_TEST(test_build_service_fault);
+    RUN_TEST(test_datavalue_roundtrip);
+    RUN_TEST(test_parse_and_build_write);
     return UNITY_END();
 }

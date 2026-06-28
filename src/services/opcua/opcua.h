@@ -3,7 +3,7 @@
 
 /**
  * @file opcua.h
- * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read + Browse (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read/Write + Browse (DETWS_ENABLE_OPCUA).
  *
  * OPC UA (IEC 62541) is large; this is built in increments. **Increment 1** is the
  * foundation every OPC UA server needs:
@@ -37,6 +37,10 @@
  * **Increment 5** adds the `Browse` service (OPC UA Part 4 §5.8.2) via a registered
  * resolver (ReferenceDescription / QualifiedName / LocalizedText encoding) and
  * `CloseSession`; CloseSecureChannel arrives as a `CLO` message and closes the slot.
+ *
+ * Later increments add `GetEndpoints` + a `ServiceFault` fallback (so standard
+ * clients interoperate) and the `Write` service (DataValue/Variant decode + a
+ * registered write resolver). Verified end to end with python asyncua.
  *
  * No heap, no stdlib.
  *
@@ -312,6 +316,20 @@ void ua_w_variant(UaWriter *w, const OpcUaVariant *v);
 /** @brief Encode a DataValue: a value/status mask byte then the Variant and/or StatusCode. */
 void ua_w_datavalue(UaWriter *w, const OpcUaVariant *v, uint32_t status);
 
+/**
+ * @brief Decode a scalar Variant. A decoded OPCUA_VAR_STRING points into the source
+ *        buffer (keep it alive). Non-scalar/array Variants latch @c err.
+ */
+bool ua_r_variant(UaReader *r, OpcUaVariant *out);
+
+/**
+ * @brief Decode a DataValue: the mask byte, then (if present) the Variant value and
+ *        StatusCode; SourceTimestamp/ServerTimestamp (and picoseconds) are skipped.
+ * @param out_value filled with the value (type 0 if no value field present).
+ * @param out_status set to the StatusCode (0 if not present).
+ */
+bool ua_r_datavalue(UaReader *r, OpcUaVariant *out_value, uint32_t *out_status);
+
 /** @brief One NodeId + attribute the client wants to read (a ReadValueId). */
 struct OpcUaReadItem
 {
@@ -474,6 +492,61 @@ size_t opcua_build_service_fault(const OpcUaMsg *req, uint32_t service_result, u
 void opcua_set_endpoint_url(const char *url);
 
 // ---------------------------------------------------------------------------
+// Write service (MSG, SecurityPolicy None)
+// ---------------------------------------------------------------------------
+
+/** @brief Numeric NodeIds (namespace 0) for the Write service (binary encoding ids). */
+#define OPCUA_ID_WRITE_REQ 673  ///< WriteRequest_Encoding_DefaultBinary.
+#define OPCUA_ID_WRITE_RESP 676 ///< WriteResponse_Encoding_DefaultBinary.
+
+/** @brief StatusCode for a node/attribute that cannot be written. */
+#define OPCUA_STATUS_BAD_NOT_WRITABLE 0x803B0000u
+
+/** @brief One value the client wants to write (a WriteValue). */
+struct OpcUaWriteItem
+{
+    uint16_t ns;
+    uint32_t id;
+    bool numeric;
+    uint32_t attribute;
+    OpcUaVariant value; ///< the DataValue's Variant (string values point into the source buffer).
+};
+
+#ifndef DETWS_OPCUA_WRITE_MAX
+#define DETWS_OPCUA_WRITE_MAX 8 ///< max NodesToWrite handled per WriteRequest.
+#endif
+
+/** @brief Parsed WriteRequest: the MSG envelope plus the (bounded) NodesToWrite list. */
+struct OpcUaWriteRequest
+{
+    OpcUaMsg msg;
+    uint32_t total;
+    uint32_t count;
+    OpcUaWriteItem items[DETWS_OPCUA_WRITE_MAX];
+};
+
+/** @brief Parse a `MSG` WriteRequest. @return true if valid. */
+bool opcua_parse_write(const uint8_t *msg, size_t len, OpcUaWriteRequest *out);
+
+/**
+ * @brief Build a `MSG` WriteResponse: one StatusCode per NodesToWrite entry.
+ * @param results per-node StatusCodes (0 = Good); may be null (all Good).
+ * @return total MSG bytes written, or 0 if it does not fit @p cap.
+ */
+size_t opcua_build_write_response(const OpcUaWriteRequest *req, const uint32_t *results, uint32_t seq, int64_t now_ft,
+                                  uint8_t *out, size_t cap);
+
+/**
+ * @brief Application Write resolver: apply @p value to (ns, id, attribute) and return a
+ *        StatusCode (0 = Good). Return a Bad code (e.g. OPCUA_STATUS_BAD_NODE_ID_UNKNOWN
+ *        or OPCUA_STATUS_BAD_NOT_WRITABLE) to reject the write.
+ */
+typedef uint32_t (*OpcUaWriteHandler)(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value);
+
+/** @brief Register the Write resolver the PROTO_OPCUA server calls for each WriteRequest node. */
+void opcua_set_write_handler(OpcUaWriteHandler fn);
+
+// ---------------------------------------------------------------------------
 // ESP32 TCP server (PROTO_OPCUA data handler)
 // ---------------------------------------------------------------------------
 
@@ -483,9 +556,9 @@ void opcua_set_endpoint_url(const char *url);
  * Dispatched by the session layer for connections accepted on an OPC UA listener
  * (`listen(4840, PROTO_OPCUA)`). Drains framed messages from the slot's rx ring:
  * `HEL` -> negotiated `ACK`, `OPN` -> OpenSecureChannelResponse (SecurityPolicy
- * None), `MSG` CreateSession/ActivateSession/Read/Browse/CloseSession -> their
- * responses (Read/Browse call the registered resolvers), `CLO` (CloseSecureChannel)
- * -> close.
+ * None), `MSG` GetEndpoints/CreateSession/ActivateSession/Read/Write/Browse/
+ * CloseSession -> their responses (Read/Write/Browse call the registered resolvers;
+ * an unknown service draws a ServiceFault), `CLO` (CloseSecureChannel) -> close.
  */
 void opcua_rx(uint8_t slot);
 
