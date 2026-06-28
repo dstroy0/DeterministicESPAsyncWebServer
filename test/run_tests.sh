@@ -141,23 +141,63 @@ fi
 mapfile -t ALL_ENVS < <(grep -oE '^\[env:native[A-Za-z0-9_]*\]' "${PROJECT_ROOT}/platformio.ini" \
     | sed -E 's/^\[env:(.*)\]$/\1/')
 
-ENV_ARGS=()
 ENV_NAMES=()
 for _env in "${ALL_ENVS[@]}"; do
     _skip=0
     for _x in "${EXCLUDE[@]}"; do [[ "$_env" == "$_x" ]] && _skip=1; done
     [[ $_skip -eq 0 ]] || continue
-    ENV_ARGS+=("-e" "$_env")
     ENV_NAMES+=("$_env")
 done
 
-echo "Running ${#ENV_NAMES[@]} native envs: ${ENV_NAMES[*]}"
+# An explicit env list as positional args overrides discovery (targeted runs /
+# quick checks), e.g.  ./test/run_tests.sh native_coap native_clock
+if [[ $# -gt 0 ]]; then
+    ENV_NAMES=("$@")
+fi
 
+echo "Running ${#ENV_NAMES[@]} native envs"
+
+# Run each env on its own so progress is visible (a counter + percent + spinner),
+# rather than one long silent block. Each env's output is formatted and appended
+# to RAW_FILE for the report parser below; the progress line goes only to the
+# terminal, never into RAW.
 T0=$SECONDS
-set +e
-"$PIO" test "${ENV_ARGS[@]}" 2>&1 | format_output | tee "$RAW_FILE"
-PIO_EXIT="${PIPESTATUS[0]}"
-set -e
+PIO_EXIT=0
+: > "$RAW_FILE"
+TOTAL=${#ENV_NAMES[@]}
+SPIN='|/-\'
+IS_TTY=0; [[ -t 1 ]] && IS_TTY=1
+
+for _i in "${!ENV_NAMES[@]}"; do
+    _env="${ENV_NAMES[$_i]}"
+    _k=$(( _i + 1 ))
+    _pct=$(( _k * 100 / TOTAL ))
+    _envout="$(mktemp)"
+
+    set +e
+    "$PIO" test -e "$_env" > "$_envout" 2>&1 &
+    _pid=$!
+    if [[ $IS_TTY -eq 1 ]]; then
+        _s=0
+        while kill -0 "$_pid" 2>/dev/null; do
+            printf '\r\033[K[%2d/%2d %3d%%] %s  building/testing %s ' \
+                "$_k" "$TOTAL" "$_pct" "${SPIN:$((_s++ % 4)):1}" "$_env"
+            sleep 0.2
+        done
+        wait "$_pid"; _rc=$?
+        [[ $_rc -eq 0 ]] && _mark='[ ok ]' || _mark='[FAIL]'
+        printf '\r\033[K[%2d/%2d %3d%%] %s %s\n' "$_k" "$TOTAL" "$_pct" "$_mark" "$_env"
+    else
+        printf '[%2d/%2d %3d%%] %s\n' "$_k" "$TOTAL" "$_pct" "$_env"
+        wait "$_pid"; _rc=$?
+    fi
+    set -e
+
+    [[ $_rc -ne 0 ]] && PIO_EXIT=$_rc
+    # Show this env's results and capture them for the report.
+    format_output < "$_envout" | tee -a "$RAW_FILE"
+    rm -f "$_envout"
+done
 WALL_SECS=$(( SECONDS - T0 ))
 
 # Strip ANSI codes for parsing
