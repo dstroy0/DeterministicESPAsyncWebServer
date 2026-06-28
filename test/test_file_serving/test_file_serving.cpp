@@ -171,24 +171,38 @@ void test_empty_file_returns_200_with_zero_length()
 
 void test_large_file_body_fully_sent()
 {
-    // Build a body larger than one FILE_CHUNK_SIZE to exercise chunked streaming
-    char large_body[FILE_CHUNK_SIZE * 2 + 16];
-    memset(large_body, 'A', sizeof(large_body) - 1);
-    large_body[sizeof(large_body) - 1] = '\0';
+    // A body far larger than one send-buffer window: the cross-loop file pump must
+    // deliver every byte, not truncate at the window. (The host mock never returns
+    // ERR_MEM, so this guards the pump's body-length accounting; the real TCP
+    // send-window paging is verified on hardware.)
+    static const size_t N = 16000;
+    static uint8_t big[N];
+    for (size_t i = 0; i < N; i++)
+        big[i] = (uint8_t)('A' + (i % 26)); // printable, no NUL, position-dependent
 
     server.on("/big", HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
         (void)req;
         fs::FS fs;
         server.serve_file(slot_id, fs, "/big.bin", "application/octet-stream");
     });
-    fs::mock_fs_set(large_body);
+    fs::mock_fs_set(big, N);
 
     feed_and_handle(0, "GET /big HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
 
     char expected_cl[64];
-    snprintf(expected_cl, sizeof(expected_cl), "Content-Length: %u", (unsigned)(sizeof(large_body) - 1));
+    snprintf(expected_cl, sizeof(expected_cl), "Content-Length: %u", (unsigned)N);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), expected_cl));
+
+    // The whole body must be present after the header boundary, byte-exact.
+    const char *cap = tcp_captured();
+    const char *body = strstr(cap, "\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(body);
+    body += 4;
+    size_t body_len = tcp_captured_len() - (size_t)(body - cap);
+    TEST_ASSERT_EQUAL_size_t(N, body_len); // no truncation
+    for (size_t i = 0; i < N; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)('A' + (i % 26)), (uint8_t)body[i]);
 }
 
 void test_serve_file_does_not_affect_other_routes()

@@ -30,6 +30,10 @@
 #include "lwip/tcp.h"
 #include "services/det_clock.h" // detws_millis() pluggable monotonic clock
 
+#ifdef ARDUINO
+#include "network_drivers/session/worker.h" // detws_worker_wake() - resume a paced send when the window drains
+#endif
+
 #if DETWS_ENABLE_TLS
 #include "network_drivers/tls/det_tls.h"
 #endif
@@ -673,6 +677,12 @@ err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
         slot->last_activity_ms = detws_millis();
         if (slot->state == CONN_CLOSING)
             closing_check(slot->id, tpcb); // drained? -> tear down + free the slot
+#ifdef ARDUINO
+        // The send window just freed: wake the owning worker so a paced response
+        // (e.g. a large file) resumes now rather than on the next idle sweep.
+        else
+            detws_worker_wake(slot->owner);
+#endif
     }
     (void)len;
     return ERR_OK;

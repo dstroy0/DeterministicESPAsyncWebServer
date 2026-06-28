@@ -545,6 +545,8 @@ class DetWebServer
     /// @brief Open @p fs_path and stream it as 200 with the given type and optional Content-Encoding.
     void serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
                              const char *content_type, const char *content_encoding);
+    /// @brief Resume a pending file response: page out one send-buffer window, finishing when drained.
+    void file_send_pump(uint8_t slot_id);
 #endif
 
 #if DETWS_ENABLE_WEBDAV

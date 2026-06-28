@@ -81,6 +81,27 @@
 static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 #endif
 
+#if DETWS_ENABLE_FILE_SERVING
+// Cross-loop file-send continuation. A file response larger than the TCP send
+// buffer cannot be blasted out in one dispatch (tcp_write returns ERR_MEM once the
+// window fills and the rest would be dropped). Instead serve_file_internal sends
+// the headers, opens the file, and hands it to this per-slot state; file_send_pump
+// pages out at most det_conn_sndbuf() bytes per worker loop and resumes on the next
+// loop (woken promptly by the sent callback) as the window drains - no truncation,
+// no blocking the worker. One transfer per slot at a time.
+struct FileSend
+{
+    fs::File file;    ///< open source file (held across loops).
+    size_t off;       ///< absolute file offset of the next byte to send.
+    size_t remaining; ///< body bytes still to send.
+    int status;       ///< response status (200 / 206) for note_response.
+    int total;        ///< total body length, for the access log.
+    bool keep;        ///< keep-alive vs close at completion.
+    bool active;      ///< a transfer is in progress on this slot.
+};
+static FileSend g_file_send[MAX_CONNS];
+#endif
+
 /**
  * @brief Convert an HTTP status code to its standard reason phrase.
  *
@@ -1023,6 +1044,16 @@ void DetWebServer::service_once(int worker_id)
             }
             continue;
         }
+
+#if DETWS_ENABLE_FILE_SERVING
+        // A file response in flight owns the slot: page out the next window and
+        // skip the rest of the pipeline until the whole body has been sent.
+        if (g_file_send[i].active)
+        {
+            file_send_pump(i);
+            continue;
+        }
+#endif
 
 #if DETWS_ENABLE_WEBSOCKET
         // WebSocket slot - drain ring buffer and dispatch ready frames
@@ -2656,6 +2687,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     // Default: full 200 response covering the whole file.
     int status = 200;
     size_t body_len = file_size;
+    size_t body_off = 0; // file offset the body starts at (nonzero for a Range)
     const char *accept_ranges = "";
     char range_line[64];
     range_line[0] = '\0';
@@ -2687,6 +2719,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         snprintf(range_line, sizeof(range_line), "Content-Range: bytes %u-%u/%u\r\n", (unsigned)r_start,
                  (unsigned)r_end, (unsigned)file_size);
         f.seek((uint32_t)r_start);
+        body_off = r_start;
     }
 #endif
 
@@ -2704,22 +2737,82 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 
     det_conn_send(slot_id, pcb, header, (u16_t)hlen);
 
-    // HEAD: headers only (Content-Length reflects the body that would be sent).
-    if (!head)
+    // HEAD or empty body: headers only, finish now.
+    if (head || body_len == 0)
     {
-        uint8_t chunk[FILE_CHUNK_SIZE];
-        size_t remaining = body_len;
-        size_t n;
-        while (remaining > 0 && (n = f.read(chunk, remaining < sizeof(chunk) ? remaining : sizeof(chunk))) > 0)
-        {
-            det_conn_send(slot_id, pcb, chunk, (u16_t)n);
-            remaining -= n;
-        }
+        f.close();
+        resp_end(slot_id, pcb, status, 0, keep);
+        return;
     }
 
-    f.close();
+    // Hand the body to the cross-loop pump: it pages out at most one send-buffer
+    // window now and resumes on later loops as the window drains, so a file larger
+    // than TCP_SND_BUF is never truncated. The pump owns the file and calls
+    // resp_end() at completion - do not close f or end the response here.
+    FileSend &s = g_file_send[slot_id];
+    s.file = f; // shared handle on ARDUINO; the local f going out of scope keeps it open
+    s.off = body_off;
+    s.remaining = body_len;
+    s.status = status;
+    s.total = (int)body_len;
+    s.keep = keep;
+    s.active = true;
+    file_send_pump(slot_id);
+}
 
-    resp_end(slot_id, pcb, status, head ? 0 : (int)body_len, keep);
+// Page out a pending file response across worker loops: send up to det_conn_sndbuf()
+// bytes now and return; the next loop resumes (woken by the sent callback) until the
+// whole body has been queued, then finish the response. Bounded per loop, never
+// truncates, never blocks the worker.
+void DetWebServer::file_send_pump(uint8_t slot_id)
+{
+    FileSend &s = g_file_send[slot_id];
+    if (!s.active)
+        return;
+
+    TcpConn *conn = &conn_pool[slot_id];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    {
+        // Connection went away mid-transfer: drop the source and the continuation.
+        s.file.close();
+        s.active = false;
+        return;
+    }
+    struct tcp_pcb *pcb = conn->pcb;
+
+    uint8_t chunk[FILE_CHUNK_SIZE];
+    while (s.remaining > 0)
+    {
+        u16_t avail = det_conn_sndbuf(slot_id, pcb);
+        if (avail == 0)
+        {
+            det_conn_flush(slot_id, pcb); // push what is queued; resume on a later loop
+            return;
+        }
+        size_t want = s.remaining < sizeof(chunk) ? s.remaining : sizeof(chunk);
+        if (want > avail)
+            want = avail;
+        size_t n = s.file.read(chunk, want);
+        if (n == 0)
+        {
+            s.remaining = 0; // read error / short file: stop (response will be short)
+            break;
+        }
+        if (!det_conn_send(slot_id, pcb, chunk, (u16_t)n))
+        {
+            s.file.seek((uint32_t)s.off); // un-read the bytes that did not go out; retry next loop
+            det_conn_flush(slot_id, pcb);
+            return;
+        }
+        s.off += n;
+        s.remaining -= n;
+    }
+
+    // Whole body queued: finish the response (flush, keep-alive/close, log, reset).
+    s.file.close();
+    s.active = false;
+    det_conn_flush(slot_id, pcb);
+    resp_end(slot_id, pcb, s.status, s.total, s.keep);
 }
 
 void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)

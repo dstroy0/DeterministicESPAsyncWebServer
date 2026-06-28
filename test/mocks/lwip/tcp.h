@@ -77,7 +77,7 @@ inline void tcp_abort(struct tcp_pcb *)
 
 struct TcpCapture
 {
-    char buf[4096];
+    char buf[65536]; // large enough to capture a multi-window file response whole
     size_t len;
 };
 
