@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.4.2] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.4.2 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`7b9cdf6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9cdf6f7e8b2b8a85089bb7e63bb893a16799c0))
+- update CHANGELOG.md [skip ci] ([`71f6aa2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71f6aa2ae19b6bd4d4e5ad8af06f900ab61a3e63))
+
+### Changes
+
+- Bump version: 4.4.1 → 4.4.2 ([`d512762`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5127620451cb7450b3a9916ee2c8f67335be096))
+
+### Documentation
+
+- dual-license section (AGPLv3 always-open + commercial + educators) ([`1e848ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e848ce1bdeb8ae466c28f67e2996bb92706def8))
+
+</details>
+
 ## [4.4.1] - 2026-06-28
 
 <details>
