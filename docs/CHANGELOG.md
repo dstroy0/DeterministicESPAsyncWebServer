@@ -2,6 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- add contributor/maintainer health files and npm tooling manifest ([`c6f7841`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6f78415512ec99832dec127a120aaf1a6d6adc0))
+- update test report [skip ci] ([`6c13453`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c1345312943b3ee227fa263b74a8ed51c782578))
+- update CHANGELOG.md [skip ci] ([`ab19947`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab19947bacc3c9e8ea51eb91403b40817f54b62e))
+
 ## [3.8.4] - 2026-06-28
 
 <details>
@@ -1459,7 +1467,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - fix markdown formatting style check issues ([`d0399c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0399c23ca11bb2576ec1fdb6e484118be16a06a))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`566095c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/566095cc8065a74a9afe6b4e258628d1d15ea717))
 - formatting ([`216902c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216902c416b2bed37e5465073cdb05129ce35c2e))
-- - Add optional system services: ([`5b3c5f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3c5f2bb500d4d4eafbafb1650c4292514a558d))
+-   - Add optional system services: ([`5b3c5f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3c5f2bb500d4d4eafbafb1650c4292514a558d))
 - add toc ([`9f165c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f165c53fedb4e40fddd532b4aaf2797010fe847))
 - update md formatting; add collapsible sections ([`0b77665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b776659877417ad63f6eaf141918194480b8201))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`89dcb6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89dcb6ee2fdab0adff07f5c954f2322059d4b612))
