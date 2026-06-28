@@ -6,12 +6,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`42be65b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42be65b93c021e12c48a5cf683aeb394874a474c))
+- update CHANGELOG.md [skip ci] ([`26aa917`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26aa917ce9ebd1da4e6593ccff76e29ad4b96a71))
 - update test report [skip ci] ([`845d447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/845d4477c541822c3f431f66d241c82bcbb59f92))
 - update CHANGELOG.md [skip ci] ([`7f7c4e7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f7c4e753a756167d27689dffbe444ba403a7343))
 
 ### Changes
 
 - clang-format hook decl + cspell add doc/test words (fix CI) ([`fe7651b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe7651b74ecd9784c5de9b83d7999b8d524cdd62))
+
+### Documentation
+
+- record HW validation of the client-transport ack-on-consume fix ([`87c96ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87c96ef83caae8d49ed8594ae6c8e6d1197090c0))
 
 ## [4.8.0] - 2026-06-28
 
