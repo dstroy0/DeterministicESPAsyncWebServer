@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`123d67c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/123d67c499eeefcafcab888bcf0d6894f840159c))
+- update CHANGELOG.md [skip ci] ([`dad72c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dad72c0d27950b29f2e7378b72145c39c4502386))
+
+### Documentation
+
+- add per-example READMEs (Foundation layer) and the examples index ([`fa55d2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa55d2c718f186390f003de0d856e61416eb80fe))
+
 ## [3.9.3] - 2026-06-28
 
 <details>
