@@ -13,11 +13,11 @@ write the same routes; the server decides keep-alive vs close and emits the righ
 
 **The behavior rules.** Keep-alive follows the HTTP spec, with safety bounds:
 
--   HTTP/1.1: the connection stays open unless the client sends `Connection: close`.
--   HTTP/1.0: it closes unless the client sends `Connection: keep-alive`.
--   Error responses (400/413/414) always close - the next request boundary is unknown after a parse error.
--   Each connection serves at most `DETWS_KEEPALIVE_MAX_REQUESTS`, then closes.
--   Idle connections are still reclaimed by the `conn_timeout` sweep.
+- HTTP/1.1: the connection stays open unless the client sends `Connection: close`.
+- HTTP/1.0: it closes unless the client sends `Connection: keep-alive`.
+- Error responses (400/413/414) always close - the next request boundary is unknown after a parse error.
+- Each connection serves at most `DETWS_KEEPALIVE_MAX_REQUESTS`, then closes.
+- Idle connections are still reclaimed by the `conn_timeout` sweep.
 
 **There is no API to learn.** Enabling the flag changes the transport behavior;
 the handlers below are ordinary. The `/time` route exists just so a client can

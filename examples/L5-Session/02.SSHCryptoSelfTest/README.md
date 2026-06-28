@@ -15,9 +15,9 @@ on the host too (native tests use the same vectors), which is why
 **Known-answer testing (KAT).** Each block sets up an input with a known output
 from an authoritative source, runs the primitive, and compares bytes:
 
--   `SHA-256("abc")` - FIPS 180-4
--   HMAC-SHA-256 - RFC 4231 test case 1 (`"Hi There"`, key = `0x0b * 20`)
--   AES-256-CTR - NIST SP 800-38A F.5.5 (first block)
+- `SHA-256("abc")` - FIPS 180-4
+- HMAC-SHA-256 - RFC 4231 test case 1 (`"Hi There"`, key = `0x0b * 20`)
+- AES-256-CTR - NIST SP 800-38A F.5.5 (first block)
 
 **Streaming is exercised on purpose.** The SHA test feeds the message in two
 chunks (`"a"` then `"bc"`) so the incremental `init`/`update`/`final` path is
