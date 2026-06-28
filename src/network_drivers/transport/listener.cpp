@@ -211,22 +211,22 @@ QueueHandle_t listener_worker_queue(int worker_id)
 }
 #endif // DETWS_WORKER_COUNT > 1
 
-void listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
+bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
 {
 #if DETWS_WORKER_COUNT > 1
     // Route by the slot's owner so the owning worker is the sole consumer.
     (void)listener_id;
     uint8_t owner = conn_pool[evt->slot_id].owner;
     if (owner >= DETWS_WORKER_COUNT || !s_wq[owner])
-        return;
-    xQueueSend(s_wq[owner], evt, 0);
+        return false;
+    return xQueueSend(s_wq[owner], evt, 0) == pdTRUE;
 #else
     if (listener_id >= MAX_LISTENERS)
-        return;
+        return false;
     Listener *lst = &listener_pool[listener_id];
     if (!lst->active || !lst->queue)
-        return;
-    xQueueSend(lst->queue, evt, 0);
+        return false;
+    return xQueueSend(lst->queue, evt, 0) == pdTRUE;
 #endif
 }
 
@@ -354,8 +354,11 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     tcp_sent(newpcb, lowlevel_sent_cb);
     tcp_err(newpcb, lowlevel_err_cb);
 
+    DETWS_OBS_TRANSITION((uint8_t)free_slot, CONN_FREE, CONN_ACTIVE, DET_CONN_R_ACCEPT);
+
     TcpEvt evt = {EVT_CONNECT, (uint8_t)free_slot, 0};
-    listener_enqueue(idx, &evt);
+    if (!listener_enqueue(idx, &evt))
+        DETWS_OBS_NOTICE((uint8_t)free_slot, CONN_ACTIVE, DET_CONN_R_DEFER_DROP);
 
     return ERR_OK;
 }

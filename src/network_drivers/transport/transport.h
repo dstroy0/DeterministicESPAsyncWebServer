@@ -317,6 +317,74 @@ void det_conn_abort(struct tcp_pcb *pcb);
 uint32_t det_conn_remote_ip(uint8_t slot);
 
 // ---------------------------------------------------------------------------
+// Observability (DETWS_ENABLE_OBSERVABILITY) - connection event hook + counters
+// ---------------------------------------------------------------------------
+#if DETWS_ENABLE_OBSERVABILITY
+
+/** @brief Why a connection event fired (the reason for a transition or notice). */
+enum DetConnReason
+{
+    DET_CONN_R_ACCEPT,       ///< New connection accepted (CONN_FREE -> CONN_ACTIVE).
+    DET_CONN_R_CLOSE_REMOTE, ///< Peer closed gracefully (FIN received).
+    DET_CONN_R_CLOSE_LOCAL,  ///< Application initiated the close.
+    DET_CONN_R_ERROR,        ///< lwIP reported a fatal error on the connection.
+    DET_CONN_R_TIMEOUT,      ///< Idle-timeout sweep reaped the slot.
+    DET_CONN_R_ABORT,        ///< Forced abort (server stop / pool reset).
+    DET_CONN_R_DRAINED,      ///< CONN_CLOSING slot finished draining -> closed.
+    DET_CONN_R_BACKPRESSURE, ///< RX segment refused (ring full); no state change.
+    DET_CONN_R_DEFER_DROP    ///< Event queue full; an event was dropped (no state change).
+};
+
+/** @brief Snapshot of the transport's lifetime counters (plus a live gauge). */
+struct DetConnCounters
+{
+    uint32_t accepts;        ///< Connections accepted.
+    uint32_t closes_remote;  ///< Closed by peer FIN.
+    uint32_t closes_local;   ///< Closed by the application.
+    uint32_t closes_error;   ///< Closed by an lwIP error.
+    uint32_t closes_timeout; ///< Reaped by the idle-timeout sweep.
+    uint32_t closes_abort;   ///< Force-aborted (stop / reset).
+    uint32_t backpressure;   ///< RX segments refused for lack of ring space.
+    uint32_t defer_drops;    ///< Deferred events dropped because the queue was full.
+    uint32_t closing_gauge;  ///< Slots currently in CONN_CLOSING (live, not cumulative).
+};
+
+/**
+ * @brief Callback fired on every connection state transition.
+ *
+ * Runs in whichever task drove the transition (tcpip_thread for accept / recv /
+ * error, a worker for close / timeout), so keep it short and non-blocking and do
+ * not call back into the server from it. @p old_state == @p new_state for the
+ * non-transition notices (backpressure, defer-drop).
+ */
+typedef void (*DetConnEventCb)(uint8_t slot, ConnState old_state, ConnState new_state, DetConnReason reason);
+
+/** @brief Register (or clear, with nullptr) the connection event callback. */
+void det_conn_on_event(DetConnEventCb cb);
+
+/** @brief Read a consistent snapshot of the transport counters. */
+DetConnCounters det_conn_counters();
+
+/** @brief Zero the cumulative counters (the live CONN_CLOSING gauge is untouched). */
+void det_conn_counters_reset();
+
+// Internal notify points (transport.cpp), reached via the macros below so both
+// transport.cpp and listener.cpp (accept) record through one path.
+void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason);
+void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason);
+#define DETWS_OBS_TRANSITION(slot, olds, news, reason) detws_obs_transition((slot), (olds), (news), (reason))
+#define DETWS_OBS_NOTICE(slot, st, reason) detws_obs_notice((slot), (st), (reason))
+
+#else // !DETWS_ENABLE_OBSERVABILITY
+
+// Compile to nothing; the arguments (incl. DetConnReason names, only declared
+// when the feature is on) are dropped unparsed by the preprocessor.
+#define DETWS_OBS_TRANSITION(slot, olds, news, reason) ((void)0)
+#define DETWS_OBS_NOTICE(slot, st, reason) ((void)0)
+
+#endif // DETWS_ENABLE_OBSERVABILITY
+
+// ---------------------------------------------------------------------------
 // Per-connection lwIP callbacks (defined in transport.cpp, used in listener.cpp)
 // ---------------------------------------------------------------------------
 
@@ -345,7 +413,9 @@ void lowlevel_err_cb(void *arg, err_t err);
 /*
  * Forward declaration of listener_enqueue() to break the circular include.
  * See listener.h for the full documentation of this function.
+ * Returns true if the event was queued, false if it was dropped (queue full or
+ * inactive listener) - the transport observes drops as DET_CONN_R_DEFER_DROP.
  */
-void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
+bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 
 #endif

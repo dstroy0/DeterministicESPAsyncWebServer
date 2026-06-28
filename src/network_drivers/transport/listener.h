@@ -115,8 +115,9 @@ void listener_stop_all();
  *
  * @param listener_id  Index into listener_pool[]; must be < MAX_LISTENERS.
  * @param evt          Event to copy into the queue.
+ * @return true if queued; false if dropped (full queue / inactive listener).
  */
-void listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
+bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 
 #if DETWS_WORKER_COUNT > 1
 /** @brief Create the per-worker event queues (idempotent; called from listener_add). */

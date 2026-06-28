@@ -27,6 +27,15 @@
         "test_sse"
       ]
     },
+    "native_observability": {
+      "desc": "Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event\nhook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP\ncallbacks (recv FIN / error / timeout / local close / backpressure) drive the\nright counter. Pure L4 core - host-tested.",
+      "flags": ["-DDETWS_ENABLE_OBSERVABILITY=1"],
+      "src": [
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/transport/listener.cpp>"
+      ],
+      "tests": ["test_observability"]
+    },
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],

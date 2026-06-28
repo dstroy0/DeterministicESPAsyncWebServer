@@ -35,6 +35,105 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Observability (DETWS_ENABLE_OBSERVABILITY) - event hook + lock-free counters.
+// Zero cost when off: OBS_TRANSITION / OBS_NOTICE expand to nothing and their
+// arguments (incl. the DetConnReason names, which are only declared when the
+// feature is on) are dropped unparsed by the preprocessor.
+// ---------------------------------------------------------------------------
+#if DETWS_ENABLE_OBSERVABILITY
+#include <atomic>
+
+static DetConnEventCb g_conn_event_cb = nullptr;
+// 0..7 cumulative (by reason), 8 = live CONN_CLOSING gauge.
+static std::atomic<uint32_t> g_obs_ctr[9];
+
+void det_conn_on_event(DetConnEventCb cb)
+{
+    g_conn_event_cb = cb;
+}
+
+DetConnCounters det_conn_counters()
+{
+    DetConnCounters c;
+    c.accepts = g_obs_ctr[0].load(std::memory_order_relaxed);
+    c.closes_remote = g_obs_ctr[1].load(std::memory_order_relaxed);
+    c.closes_local = g_obs_ctr[2].load(std::memory_order_relaxed);
+    c.closes_error = g_obs_ctr[3].load(std::memory_order_relaxed);
+    c.closes_timeout = g_obs_ctr[4].load(std::memory_order_relaxed);
+    c.closes_abort = g_obs_ctr[5].load(std::memory_order_relaxed);
+    c.backpressure = g_obs_ctr[6].load(std::memory_order_relaxed);
+    c.defer_drops = g_obs_ctr[7].load(std::memory_order_relaxed);
+    c.closing_gauge = g_obs_ctr[8].load(std::memory_order_relaxed);
+    return c;
+}
+
+void det_conn_counters_reset()
+{
+    for (int i = 0; i < 8; i++) // leave the live gauge [8] alone
+        g_obs_ctr[i].store(0, std::memory_order_relaxed);
+}
+
+static void obs_bump(DetConnReason reason)
+{
+    int idx = -1;
+    switch (reason)
+    {
+    case DET_CONN_R_ACCEPT:
+        idx = 0;
+        break;
+    case DET_CONN_R_CLOSE_REMOTE:
+        idx = 1;
+        break;
+    case DET_CONN_R_CLOSE_LOCAL:
+        idx = 2;
+        break;
+    case DET_CONN_R_ERROR:
+        idx = 3;
+        break;
+    case DET_CONN_R_TIMEOUT:
+        idx = 4;
+        break;
+    case DET_CONN_R_ABORT:
+        idx = 5;
+        break;
+    case DET_CONN_R_BACKPRESSURE:
+        idx = 6;
+        break;
+    case DET_CONN_R_DEFER_DROP:
+        idx = 7;
+        break;
+    case DET_CONN_R_DRAINED:
+        idx = -1; // the entering close reason was already counted; DRAINED is gauge-only
+        break;
+    }
+    if (idx >= 0)
+        g_obs_ctr[idx].fetch_add(1, std::memory_order_relaxed);
+}
+
+// A real state transition: bump the reason counter, maintain the CONN_CLOSING
+// gauge, and fire the callback. Non-static so listener.cpp (accept) can notify
+// through the DETWS_OBS_TRANSITION macro declared in transport.h.
+void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason)
+{
+    obs_bump(reason);
+    if (news == CONN_CLOSING && olds != CONN_CLOSING)
+        g_obs_ctr[8].fetch_add(1, std::memory_order_relaxed);
+    else if (olds == CONN_CLOSING && news != CONN_CLOSING)
+        g_obs_ctr[8].fetch_sub(1, std::memory_order_relaxed);
+    if (g_conn_event_cb)
+        g_conn_event_cb(slot, olds, news, reason);
+}
+
+// A non-transition notice (backpressure / defer-drop): bump + fire with old==new.
+void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason)
+{
+    obs_bump(reason);
+    if (g_conn_event_cb)
+        g_conn_event_cb(slot, st, st, reason);
+}
+#endif // DETWS_ENABLE_OBSERVABILITY
+
+// ---------------------------------------------------------------------------
 // Cross-thread TCP serialization
 // ---------------------------------------------------------------------------
 // The raw lwIP API is not thread-safe: its callbacks run in the tcpip_thread
@@ -228,6 +327,9 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
 void det_conn_close(uint8_t slot, struct tcp_pcb *pcb)
 {
     (void)slot;
+    // The application-initiated close path (L4 primitive). Remote FIN, error, and
+    // timeout closes are observed at their own sites, so this is uniquely "local".
+    DETWS_OBS_TRANSITION(slot, CONN_ACTIVE, CONN_FREE, DET_CONN_R_CLOSE_LOCAL);
 #if defined(ARDUINO)
     det_tcp_marshal(DET_OP_CLOSE, slot, pcb, nullptr, 0); // TLS teardown + FIN in tcpip_thread
 #else
@@ -271,7 +373,8 @@ void det_conn_abort(struct tcp_pcb *pcb)
  */
 static inline void enqueue(TcpConn *slot, const TcpEvt &evt)
 {
-    listener_enqueue(slot->listener_id, &evt);
+    if (!listener_enqueue(slot->listener_id, &evt))
+        DETWS_OBS_NOTICE(slot->id, slot->state, DET_CONN_R_DEFER_DROP);
 }
 
 size_t DeterministicAsyncTCP::heap_needed()
@@ -308,6 +411,7 @@ void DeterministicAsyncTCP::stop()
             conn_pool[i].pcb = nullptr;
             det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
             det_conn_abort(pcb);
+            DETWS_OBS_TRANSITION((uint8_t)i, CONN_ACTIVE, CONN_FREE, DET_CONN_R_ABORT);
         }
         conn_pool[i].state = CONN_FREE;
         conn_pool[i].pcb = nullptr;
@@ -354,6 +458,7 @@ void DeterministicAsyncTCP::check_timeouts(int worker_id)
             det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
             det_conn_abort(pcb);
         }
+        DETWS_OBS_TRANSITION((uint8_t)i, CONN_ACTIVE, CONN_FREE, DET_CONN_R_TIMEOUT);
         TcpEvt evt = {EVT_ERROR, (uint8_t)i, 0};
         enqueue(slot, evt);
     }
@@ -389,6 +494,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         tcp_arg(tpcb, nullptr);
         if (tcp_close(tpcb) != ERR_OK)
             tcp_abort(tpcb);
+        DETWS_OBS_TRANSITION(slot->id, CONN_ACTIVE, CONN_FREE, DET_CONN_R_CLOSE_REMOTE);
         TcpEvt evt = {EVT_DISCONNECT, slot->id, 0};
         enqueue(slot, evt);
         return ERR_OK;
@@ -410,6 +516,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
     size_t free_space = (RX_BUF_SIZE - 1) - used; // keep one slot to tell full from empty
     if (p->tot_len > free_space)
     {
+        DETWS_OBS_NOTICE(slot->id, CONN_ACTIVE, DET_CONN_R_BACKPRESSURE);
         TcpEvt evt = {EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
         enqueue(slot, evt);
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
@@ -479,6 +586,7 @@ void lowlevel_err_cb(void *arg, err_t err)
     slot->state = CONN_FREE;
     slot->pcb = nullptr;
 
+    DETWS_OBS_TRANSITION(slot->id, CONN_ACTIVE, CONN_FREE, DET_CONN_R_ERROR);
     TcpEvt evt = {EVT_ERROR, slot->id, 0};
     enqueue(slot, evt);
     (void)err;

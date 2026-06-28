@@ -1701,6 +1701,21 @@
 #endif
 
 /**
+ * @brief Transport-layer observability: connection event hook + counters.
+ *
+ * Default off (zero cost when unset - the notify points compile to nothing).
+ * When set, the transport (L4) fires an application callback on every connection
+ * state transition - det_conn_on_event(slot, old_state, new_state, reason) - and
+ * maintains lock-free counters (accepts, closes by reason, idle timeouts, RX
+ * backpressure events, dropped deferred events, and a live CONN_CLOSING gauge)
+ * readable via det_conn_counters(). This is the only state-transition trace the
+ * L4/L5 core exposes; pair it with DETWS_ENABLE_STATS for request-level metrics.
+ */
+#ifndef DETWS_ENABLE_OBSERVABILITY
+#define DETWS_ENABLE_OBSERVABILITY 0
+#endif
+
+/**
  * @brief Prometheus `/metrics` endpoint (text exposition format 0.0.4).
  *
  * Default off (requires DETWS_ENABLE_STATS for the underlying counters). When
