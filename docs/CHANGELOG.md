@@ -2,13 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [3.9.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.0 - 2026-06-28</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`ea8ca42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea8ca42a78592ce9ad7ce26506f293f4bf8526c9))
+- update CHANGELOG.md [skip ci] ([`8213860`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8213860ac85632140812bcdb6286f712365bbde8))
 - add contributor/maintainer health files and npm tooling manifest ([`c6f7841`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6f78415512ec99832dec127a120aaf1a6d6adc0))
 - update test report [skip ci] ([`6c13453`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c1345312943b3ee227fa263b74a8ed51c782578))
 - update CHANGELOG.md [skip ci] ([`ab19947`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab19947bacc3c9e8ea51eb91403b40817f54b62e))
+
+### Changes
+
+- Bump version: 3.8.4 → 3.9.0 ([`7a33a73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a33a738f959c575df10b131aa2b58a50a71d0dd))
+
+### Features
+
+- validate build-flag dependencies and document the dependency tree ([`fe63a02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe63a020051c5c7492dcfa5645a134c711db16f7))
+
+</details>
 
 ## [3.8.4] - 2026-06-28
 
