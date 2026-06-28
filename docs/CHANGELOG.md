@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.8.2] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.8.2 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`bb35b76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb35b7685f1ed5d39d8597d7a2dd1002ee532928))
+- update CHANGELOG.md [skip ci] ([`d1bfab9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1bfab986e50e0f7ee69bb41b6c2794ef3e7673f))
+
+### Changes
+
+- Bump version: 4.8.1 → 4.8.2 ([`b29c0fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b29c0fefbc5d851b13a8231ad9b3b0073c1d0fe9))
+
+### Performance
+
+- share the ring producer too (bulk memcpy both sides) ([`944eee0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/944eee07590e11dc2e4a4ee8f068a2a10ac98887))
+
+</details>
+
 ## [4.8.1] - 2026-06-28
 
 <details>
