@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`845d447`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/845d4477c541822c3f431f66d241c82bcbb59f92))
+- update CHANGELOG.md [skip ci] ([`7f7c4e7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f7c4e753a756167d27689dffbe444ba403a7343))
+
+### Changes
+
+- clang-format hook decl + cspell add doc/test words (fix CI) ([`fe7651b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe7651b74ecd9784c5de9b83d7999b8d524cdd62))
+
 ## [4.8.0] - 2026-06-28
 
 <details>
