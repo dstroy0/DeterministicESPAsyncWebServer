@@ -50,6 +50,7 @@ jobs:
         with:
           languages: cpp
           queries: security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
 
       # Host/native build of the security-critical cores; CodeQL traces the
       # compiler. --without-testing skips running the unit tests (the test-report
