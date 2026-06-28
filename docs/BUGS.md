@@ -23,6 +23,9 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   `det_client_read()` marshals `tcp_recved()` for the bytes it drained. Default
   `DETWS_CLIENT_RX_BUF` raised 4096 -> 8192 (>= TCP_WND). Client and server transports
   now share one flow-control model.
+- **HW proof:** device `http_get()` of a 12 KB body (> the 8 KB client ring, so it
+  wraps the ring and exercises the ack-on-consume read path) returned the full
+  `len:12000`, 5/5 - no truncation or deadlock.
 
 ## RX flow-control deadlock on streamed uploads (WebDAV PUT)
 
