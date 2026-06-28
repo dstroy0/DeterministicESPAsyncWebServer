@@ -35,8 +35,8 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 - **Symptom:** `services/dns_resolver` polled its resolve deadline with `millis()` instead
   of `detws_millis()`, so it ignored a custom clock (`detws_set_clock`) - violating the
   pluggable-clock rule that `detws_millis()` is the single monotonic source.
-- **Fix:** use `detws_millis()`. (The bigger dedup - det_client reusing this one resolver
-  - is tracked separately as a shared-primitive task.)
+- **Fix:** use `detws_millis()`. (The bigger dedup, det_client reusing this one resolver,
+  shipped later as the shared-primitive DNS-owner change.)
 
 ## Client ring used `volatile` indices (weak cross-core ordering)
 
