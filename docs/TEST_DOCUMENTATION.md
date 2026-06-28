@@ -1,6 +1,6 @@
 # Test Documentation
 
-![Version](https://img.shields.io/badge/version-v3.9.2-blue)
+![Version](https://img.shields.io/badge/version-v3.9.3-blue)
 
 Welcome to the testing documentation for `DeterministicESPAsyncWebServer`. This repository is designed to be extremely robust, employing **100% hardware-free, deterministic testing**.
 
