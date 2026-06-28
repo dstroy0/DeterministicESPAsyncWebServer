@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.9.1] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.1 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c37f5b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c37f5b69558682ff1639d3378cee0e646877d56b))
+- update CHANGELOG.md [skip ci] ([`8cf0e02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8cf0e02cf743e8d02d779773a3b2a61fe9e0ff14))
+
+### Changes
+
+- Bump version: 3.9.0 → 3.9.1 ([`d460c18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d460c184ef71f0397524191fefbd13087229aec9))
+
+### Refactor
+
+- move the connection source-IP read into L4 and drop dead config ([`86b79fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86b79fad85af69e57760696be112e0241d052181))
+
+</details>
+
 ## [3.9.0] - 2026-06-28
 
 <details>
