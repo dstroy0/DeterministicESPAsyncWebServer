@@ -538,7 +538,14 @@
     "wres",
     "strncasecmp",
     "swappable",
-    "AQAB"
+    "AQAB",
+    "CFAA",
+    "cleartext",
+    "reassembler",
+    "issubset",
+    "sendall",
+    "fetc",
+    "fpasswd"
   ],
   "ignorePaths": [
     "node_modules/**",
