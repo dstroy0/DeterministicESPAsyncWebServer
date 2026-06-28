@@ -2,6 +2,27 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.0.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 4.0.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`fdb9af4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdb9af4c3262fd4732d0b6c15c19805a183fa1b8))
+- update CHANGELOG.md [skip ci] ([`57e238f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57e238fa67ea99f9f74a33560fbff87ea20bbdc0))
+
+### Changes
+
+- Bump version: 3.14.0 → 4.0.0 ([`c3bb0f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3bb0f7af2ab7fa794bfbb2f21b67ab3938ba659))
+
+### Refactor
+
+- remove heap_needed/heap_available shims and the PROTO_NONE HTTP fallback ([`7b0c326`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b0c3267953e0614e186e57fdddeb8007b002ad5))
+- fold the 12 codecs into per-component subfolders ([`8248293`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82482936ec05500b6bed37a35d52a9be362e1f08))
+
+</details>
+
 ## [3.14.0] - 2026-06-28
 
 <details>
