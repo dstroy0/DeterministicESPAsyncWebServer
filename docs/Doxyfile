@@ -10,7 +10,7 @@
 #---------------------------------------------------------------------------
 PROJECT_NAME           = "DeterministicESPAsyncWebServer"
 PROJECT_BRIEF          = "Zero-allocation, bounded-execution async HTTP server for ESP32"
-PROJECT_NUMBER         = "v4.9.2"
+PROJECT_NUMBER         = "v4.10.0"
 PROJECT_LOGO           =
 
 #---------------------------------------------------------------------------
