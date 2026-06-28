@@ -226,9 +226,15 @@ ESP32 capacity: 1,310,720 B flash / 327,680 B RAM. Per-feature examples are unde
 - **Chips**: ESP32 (all variants)
 - **Frameworks**: Arduino Core (2.x and 3.x), PlatformIO
 
-## License
+## Licensing & Commercial Use
 
-This project is licensed under the AGPL-3.0-or-later License - see the `LICENSE` file for details.
+This library is dual-licensed.
+
+**Open Source.** This library is, and will **always remain, fully open-source** under the AGPLv3 (or later). We commit to maintaining a fully featured, parity-matched open-source version available to everyone - from hobbyists and educators to professionals - without hiding core features behind a commercial paywall. It will always be free to use under the AGPLv3 (or later) in any environment that complies with the AGPLv3 (or later) terms. See the `LICENSE` file.
+
+**Commercial.** For teams and applications that cannot meet the AGPLv3 copyleft requirements, a commercial license is available. Contact: Douglas Quigg (dstroy0), dquigg123@gmail.com
+
+**Educators.** Teaching with this? We'd love that. If sharing your source under the AGPLv3 isn't practical for a classroom or lab, email Douglas Quigg (dstroy0) at dquigg123@gmail.com from your school address and we'll see what we can do. ESP32 boards are cheap and a hands-on HTTP / IoT-edge stack is a great way into embedded networking, so we're glad to look at education-focused requests one by one. We can't promise an exception for every situation, but please ask. (This is just for genuine educational use; for products, see the commercial option above.)
 
 ---
 
