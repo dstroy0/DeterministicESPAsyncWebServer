@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.8.1] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.8.1 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a1b5b4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1b5b4edef448c2012b7179c5c9ab887324a8906))
+- update CHANGELOG.md [skip ci] ([`5ceefc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ceefc8696c983a250176938115539fdad7cf4e0))
+
+### Changes
+
+- Bump version: 3.8.0 → 3.8.1 ([`f00b4cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f00b4cb2db98493cecff8a611c2945e7d57e6781))
+
+### Documentation
+
+- surface OPC UA + full protocol set across the apex docs (audit) ([`863a61c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/863a61cb551817322742eb80bfc7f0d28daf0d23))
+
+</details>
+
 ## [3.8.0] - 2026-06-28
 
 <details>
