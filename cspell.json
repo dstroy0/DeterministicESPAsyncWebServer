@@ -502,7 +502,8 @@
     "sprintf",
     "memcpy",
     "strchr",
-    "strtok"
+    "strtok",
+    "SSPI"
   ],
   "ignorePaths": [
     "node_modules/**",
