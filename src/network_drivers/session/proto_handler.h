@@ -42,8 +42,8 @@ void proto_register(ConnProto proto, const ProtoHandler *h);
 
 /**
  * @brief Look up the handler for @p proto.
- * @return the registered handler, or the PROTO_HTTP handler as a fallback
- *         (PROTO_NONE and unregistered protocols dispatch as HTTP).
+ * @return the registered handler, or nullptr if @p proto is PROTO_NONE or has
+ *         no registered handler (no implicit fallback; the event is dropped).
  */
 const ProtoHandler *proto_get(ConnProto proto);
 

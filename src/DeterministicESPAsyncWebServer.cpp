@@ -218,15 +218,6 @@ static const char *method_name(HttpMethod m)
     }
 }
 
-size_t DetWebServer::heap_needed()
-{
-    return DeterministicAsyncTCP::heap_needed();
-}
-bool DetWebServer::heap_available()
-{
-    return DeterministicAsyncTCP::heap_available();
-}
-
 DetWebServer::DetWebServer()
     : _route_count(0), _not_found_handler(nullptr), _cors_enabled(false), _log_cb(nullptr), _listener_count(0),
       _middleware_count(0), _rl_max(0), _rl_window_ms(0), _rl_window_start(0), _rl_count(0)
@@ -1022,7 +1013,7 @@ void DetWebServer::service_once(int worker_id)
         // with its WebSocket/SSE upgrades - keeps the inline pump below, which is
         // bound to this DetWebServer instance (it dispatches into routes).
         ConnProto proto = conn_pool[i].proto;
-        if (proto != PROTO_HTTP && proto != PROTO_NONE)
+        if (proto != PROTO_HTTP)
         {
             if (conn_pool[i].state == CONN_ACTIVE)
             {

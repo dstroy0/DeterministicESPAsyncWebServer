@@ -224,9 +224,7 @@ enum RouteType
  * @brief Result codes for listen(), begin(), and restart().
  *
  * Success is a positive value (DETWS_OK). Failures are distinct negative codes
- * so a caller can tell why startup failed. NOTE: a negative result is NOT a
- * heap byte count - use heap_needed() / heap_available() to check heap before
- * begin().
+ * so a caller can tell why startup failed.
  */
 enum DetWebServerResult : int32_t
 {
@@ -395,7 +393,7 @@ typedef void (*ChunkFiller)(ChunkedResponse &res, HttpReq *request);
  *     server.on("/api/*", HTTP_GET, handle_api);
  *     server.set_cors("*");
  *     int32_t result = server.begin(80);
- *     if (result < 0) { } // DetWebServerResult code; check heap_needed() for heap
+ *     if (result < 0) { } // DetWebServerResult code: startup failed
  * }
  *
  * void loop() {
@@ -577,33 +575,6 @@ class DetWebServer
 #endif
 
   public:
-    /**
-     * @brief Bytes of contiguous heap that begin() will allocate.
-     *
-     * The event queue is the library's only dynamic allocation.  Compare
-     * this value against heap_caps_get_largest_free_block(MALLOC_CAP_8BIT)
-     * to verify a suitable block exists before calling begin().
-     *
-     * @code
-     *   if (!DetWebServer::heap_available()) {
-     *       Serial.printf("need %u contiguous bytes, largest block is %u\n",
-     *                     DetWebServer::heap_needed(),
-     *                     heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-     *       return;
-     *   }
-     *   server.begin(80);
-     * @endcode
-     */
-    static size_t heap_needed();
-
-    /**
-     * @brief True if the largest contiguous free heap block >= heap_needed().
-     *
-     * A false return means begin() will fail; check heap fragmentation or
-     * reduce EVT_QUEUE_DEPTH.
-     */
-    static bool heap_available();
-
     /**
      * @brief Construct a DetWebServer with an empty routing table.
      *

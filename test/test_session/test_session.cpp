@@ -37,6 +37,7 @@ void setUp()
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
         http_reset(i);
     }
 }

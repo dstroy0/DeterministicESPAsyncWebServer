@@ -32,6 +32,7 @@ static void arm_slot(uint8_t slot, const char *raw)
     conn_pool[slot] = {};
     conn_pool[slot].id = slot;
     conn_pool[slot].state = CONN_ACTIVE;
+    conn_pool[slot].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[slot].pcb = nullptr;
 
     TcpConn *s = &conn_pool[slot];
@@ -68,6 +69,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = i;
         conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
         http_reset(i);
     }
     handler_called = false;
@@ -586,6 +588,7 @@ void test_transfer_encoding_identity_is_501()
 void test_redirect_emits_location_and_status()
 {
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->redirect(0, 301, "/index.html");
@@ -600,6 +603,7 @@ void test_redirect_emits_location_and_status()
 void test_redirect_invalid_code_defaults_to_302()
 {
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->redirect(0, 200, "/elsewhere"); // 200 is not a redirect code
@@ -855,6 +859,7 @@ void test_metrics_emits_prometheus()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
     tcp_capture_reset();
@@ -880,6 +885,7 @@ void test_sse_broadcast_after_upgrade_matches_path()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     push_bytes(0, "GET /events HTTP/1.1\r\n\r\n");
     http_reset(0);

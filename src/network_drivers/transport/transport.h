@@ -234,21 +234,6 @@ class DeterministicAsyncTCP
      * Defaults to CONN_TIMEOUT_MS if no config is supplied.
      */
     static uint32_t conn_timeout_ms;
-
-    /**
-     * @brief Always returns 0 - the library makes no heap allocations.
-     *
-     * Each listener's event queue is backed by statically-allocated BSS
-     * storage inside the Listener struct.  Retained for API compatibility.
-     */
-    static size_t heap_needed();
-
-    /**
-     * @brief Always returns true - no heap allocation means no pre-flight needed.
-     *
-     * Retained for API compatibility.  Safe to call or omit.
-     */
-    static bool heap_available();
 };
 
 // ---------------------------------------------------------------------------

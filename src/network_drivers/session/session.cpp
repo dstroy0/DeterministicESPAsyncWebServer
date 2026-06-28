@@ -10,8 +10,9 @@
  * always sees the most up-to-date state before checking http_pool[].
  *
  * Events are routed to the correct protocol handler via TcpConn::proto.
- * PROTO_NONE falls through to PROTO_HTTP for backward compatibility with
- * test code that sets up conn_pool slots manually without setting proto.
+ * A slot must carry an explicit protocol (assigned from its listener on
+ * accept); PROTO_NONE and any unregistered protocol resolve to no handler
+ * and the event is dropped.
  */
 
 #include "session.h"
@@ -173,10 +174,9 @@ const ProtoHandler *proto_get(ConnProto proto)
         s_proto_handlers[PROTO_OPCUA] = &s_opcua_handler;
 #endif
     }
-    const ProtoHandler *h = ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;
-    if (!h)
-        h = s_proto_handlers[PROTO_HTTP]; // PROTO_NONE / unregistered -> HTTP
-    return h;
+    // No implicit fallback: a slot must carry an explicit, registered protocol.
+    // PROTO_NONE and any unregistered protocol resolve to nullptr (event dropped).
+    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;
 }
 
 // Dispatch one drained event to its slot's protocol handler. Shared by the
@@ -189,8 +189,8 @@ static inline void dispatch_event(const TcpEvt &evt)
     // release from accumulating across events.
     scratch_reset();
 
-    // Route to the slot's protocol handler (PROTO_NONE and any unregistered
-    // protocol fall back to HTTP, preserving legacy behavior).
+    // Route to the slot's protocol handler. PROTO_NONE and any unregistered
+    // protocol have no handler, so the event is dropped.
     const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);
     if (!h)
         return;

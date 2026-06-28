@@ -698,7 +698,8 @@ Operator / sysadmin:
 - [x] **`begin()` heap-bytes contract mismatch.** _(done)_ The misleading
       "abs(result) == heap bytes needed" docstring/example was corrected; `begin()`
       now returns a `DetWebServerResult` code (see the named-failure-codes item
-      above), and [`heap_needed()`](@ref DetWebServer::heap_needed)/[`heap_available()`](@ref DetWebServer::heap_available) remain the way to check heap.
+      above). The `heap_needed()`/`heap_available()` no-op shims were removed in
+      v4.0.0 (the library makes no heap allocations).
 
 </details>
 

@@ -444,16 +444,6 @@ static inline void enqueue(TcpConn *slot, const TcpEvt &evt)
         DETWS_OBS_NOTICE(slot->id, slot->state, DET_CONN_R_DEFER_DROP);
 }
 
-size_t DeterministicAsyncTCP::heap_needed()
-{
-    return 0; // all queues are statically allocated in BSS (inside Listener structs)
-}
-
-bool DeterministicAsyncTCP::heap_available()
-{
-    return true; // no heap allocation; always safe to call begin()
-}
-
 void DeterministicAsyncTCP::pool_init(const WebServerConfig *cfg)
 {
     conn_timeout_ms = cfg ? cfg->conn_timeout_ms : CONN_TIMEOUT_MS;

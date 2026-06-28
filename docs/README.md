@@ -158,7 +158,7 @@ Every byte of memory the library uses is accounted for at compile time:
 
 </details>
 
-[`begin()`](@ref DetWebServer::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. [`DetWebServer::heap_needed()`](@ref DetWebServer::heap_needed) returns 0 and [`heap_available()`](@ref DetWebServer::heap_available) returns `true`.
+[`begin()`](@ref DetWebServer::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. The library makes no heap allocations.
 
 The only post-`begin()` allocation that can occur is inside `fs::File` construction in `serve_file()`, which is an Arduino FS implementation detail outside the library's control.
 
@@ -299,8 +299,6 @@ Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@re
 | [`stop()`](@ref DetWebServer::stop)     | Abort all connections, close listener, reset all pools.                         |
 | `restart(cfg = nullptr)`                | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`. |
 | [`handle()`](@ref DetWebServer::handle) | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.             |
-| `static heap_needed()`                  | Returns 0 - no heap allocation.                                                 |
-| `static heap_available()`               | Returns `true` - always safe to call `begin()`.                                 |
 
 **DetWebServer - HTTP Routes**
 
@@ -529,6 +527,7 @@ Other documentation files in this repository:
 | [TODO.md](TODO.md)                             | Outstanding fixes and maintenance                                 |
 | [ROADMAP.md](ROADMAP.md)                       | Forward-looking feature backlog (sized S/M/L)                     |
 | [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)   | Deliberate constraints and caveats                                |
+| [MIGRATION.md](MIGRATION.md)                   | Breaking-change migration guide (3.x to 4.0.0)                    |
 | [CHANGELOG.md](CHANGELOG.md)                   | Release history                                                   |
 
 </details>

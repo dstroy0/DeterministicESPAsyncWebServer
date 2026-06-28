@@ -37,6 +37,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
     }
@@ -57,6 +58,7 @@ static bool hit(const char *method, const char *path)
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
     tcp_capture_reset();

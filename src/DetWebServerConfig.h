@@ -381,9 +381,7 @@
  *   heap = sizeof(StaticQueue_t) + EVT_QUEUE_DEPTH * sizeof(TcpEvt)
  *
  * Must be large enough to absorb a burst of MAX_CONNS * 4 events without
- * blocking the lwIP thread.  DeterministicAsyncTCP::heap_needed() returns
- * the exact byte count; call DetWebServer::heap_available() before begin()
- * to verify a contiguous block exists.
+ * blocking the lwIP thread.
  */
 #ifndef EVT_QUEUE_DEPTH
 #define EVT_QUEUE_DEPTH 16

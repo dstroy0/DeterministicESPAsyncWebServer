@@ -41,6 +41,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_conn_open(i); // resets parser + keep-alive request tally
     }
@@ -177,6 +178,7 @@ void test_fresh_connection_resets_count()
 
     // Simulate a new connection landing in the same slot.
     conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_conn_open(0);
 
