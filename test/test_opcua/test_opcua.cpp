@@ -455,6 +455,154 @@ void test_build_activate_session_response()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// ---------------------------------------------------------------------------
+// Increment 4 - Read service (Variant / DataValue + ReadRequest/Response)
+// ---------------------------------------------------------------------------
+
+void test_datavalue_good_int32()
+{
+    uint8_t buf[32];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OPCUA_VAR_INT32;
+    v.i32 = -7;
+    ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
+    TEST_ASSERT_TRUE(w.ok);
+
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));            // mask: value present
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r)); // Variant encoding byte
+    TEST_ASSERT_EQUAL_INT32(-7, ua_r_i32(&r));
+    TEST_ASSERT_FALSE(r.err);
+}
+
+void test_datavalue_bad_status()
+{
+    uint8_t buf[16];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v)); // null Variant
+    ua_w_datavalue(&w, &v, OPCUA_STATUS_BAD_NODE_ID_UNKNOWN);
+
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_EQUAL_HEX8(0x02, ua_r_u8(&r)); // mask: status only
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, ua_r_u32(&r));
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// Build a ReadRequest MSG reading ns=1 numeric ids (AttributeId = Value).
+static size_t build_read(uint8_t *out, size_t cap, uint32_t token, uint32_t seq, uint32_t req_id, uint32_t handle,
+                         const uint32_t *ids, uint32_t n)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, token);
+    ua_w_u32(&w, seq);
+    ua_w_u32(&w, req_id);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_READ_REQ);
+    // RequestHeader
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u64(&w, 0);
+    ua_w_u32(&w, handle);
+    ua_w_u32(&w, 0);
+    ua_w_string(&w, nullptr, -1);
+    ua_w_u32(&w, 0);
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u8(&w, 0x00);
+    // ReadRequest body
+    ua_w_f64(&w, 0.0);        // MaxAge
+    ua_w_u32(&w, 0);          // TimestampsToReturn
+    ua_w_i32(&w, (int32_t)n); // NodesToRead count
+    for (uint32_t i = 0; i < n; i++)
+    {
+        ua_w_nodeid_numeric(&w, 1, ids[i]); // NodeId (ns=1)
+        ua_w_u32(&w, OPCUA_ATTR_VALUE);     // AttributeId
+        ua_w_string(&w, nullptr, -1);       // IndexRange
+        ua_w_u16(&w, 0);                    // DataEncoding QualifiedName.ns
+        ua_w_string(&w, nullptr, -1);       // QualifiedName.name
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_read()
+{
+    uint8_t buf[256];
+    uint32_t ids[2] = {1001, 1002};
+    size_t n = build_read(buf, sizeof(buf), 7, 5, 200, 60, ids, 2);
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(opcua_parse_read(buf, n, &rr));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_READ_REQ, rr.msg.type_id);
+    TEST_ASSERT_EQUAL_UINT32(60, rr.msg.request_handle);
+    TEST_ASSERT_EQUAL_UINT32(2, rr.total);
+    TEST_ASSERT_EQUAL_UINT32(2, rr.count);
+    TEST_ASSERT_EQUAL_UINT16(1, rr.items[0].ns);
+    TEST_ASSERT_EQUAL_UINT32(1001, rr.items[0].id);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ATTR_VALUE, rr.items[0].attribute);
+    TEST_ASSERT_EQUAL_UINT32(1002, rr.items[1].id);
+}
+
+void test_build_read_response()
+{
+    uint8_t buf[256];
+    uint32_t ids[2] = {1001, 1002};
+    size_t n = build_read(buf, sizeof(buf), 7, 5, 200, 60, ids, 2);
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(opcua_parse_read(buf, n, &rr));
+
+    OpcUaVariant vals[2];
+    uint32_t sts[2];
+    memset(vals, 0, sizeof(vals));
+    vals[0].type = OPCUA_VAR_INT32;
+    vals[0].i32 = 4242;
+    sts[0] = OPCUA_STATUS_GOOD;
+    vals[1].type = OPCUA_VAR_NULL;
+    sts[1] = OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+
+    uint8_t resp[256];
+    size_t rn = opcua_build_read_response(&rr, vals, sts, 9, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(rn > 0);
+
+    UaMsgHeader h;
+    TEST_ASSERT_TRUE(opcua_parse_header(resp, rn, &h));
+    TEST_ASSERT_EQUAL_MEMORY("MSG", h.type, 3);
+
+    UaReader r = {resp + 8, rn - 8, 0, false};
+    TEST_ASSERT_EQUAL_UINT32(7, ua_r_u32(&r));   // TokenId echoed
+    TEST_ASSERT_EQUAL_UINT32(9, ua_r_u32(&r));   // SequenceNumber
+    TEST_ASSERT_EQUAL_UINT32(200, ua_r_u32(&r)); // RequestId echoed
+    UaNodeId tid;
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_ID_READ_RESP, tid.id);
+    (void)ua_r_u64(&r);                         // Timestamp
+    TEST_ASSERT_EQUAL_UINT32(60, ua_r_u32(&r)); // RequestHandle echoed
+    TEST_ASSERT_EQUAL_UINT32(0, ua_r_u32(&r));  // ServiceResult Good
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));  // DiagnosticInfo
+    TEST_ASSERT_EQUAL_INT32(-1, ua_r_i32(&r));  // StringTable null
+    TEST_ASSERT_TRUE(ua_r_nodeid(&r, &tid));    // AdditionalHeader NodeId
+    TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));  // AdditionalHeader body none
+
+    // Results[]
+    TEST_ASSERT_EQUAL_INT32(2, ua_r_i32(&r)); // count
+    // result 0: Good Int32 4242
+    TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));
+    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r));
+    TEST_ASSERT_EQUAL_INT32(4242, ua_r_i32(&r));
+    // result 1: Bad status, no value
+    TEST_ASSERT_EQUAL_HEX8(0x02, ua_r_u8(&r));
+    TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, ua_r_u32(&r));
+    // DiagnosticInfos[]
+    TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r));
+    TEST_ASSERT_FALSE(r.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -475,5 +623,9 @@ int main()
     RUN_TEST(test_parse_msg_rejects_non_msg);
     RUN_TEST(test_build_create_session_response);
     RUN_TEST(test_build_activate_session_response);
+    RUN_TEST(test_datavalue_good_int32);
+    RUN_TEST(test_datavalue_bad_status);
+    RUN_TEST(test_parse_read);
+    RUN_TEST(test_build_read_response);
     return UNITY_END();
 }
