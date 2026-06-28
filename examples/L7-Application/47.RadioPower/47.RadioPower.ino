@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 76.RadioPower.ino
+ * @file 47.RadioPower.ino
  * @brief WiFi radio power controls (DETWS_ENABLE_RADIO_POWER).
  *
  * Applies a WiFi modem-sleep mode (and an optional max-TX cap) after the link is

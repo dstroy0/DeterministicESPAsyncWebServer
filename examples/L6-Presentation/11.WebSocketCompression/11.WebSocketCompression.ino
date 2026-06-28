@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 55.WebSocketCompression.ino
+ * @file 11.WebSocketCompression.ino
  * @brief WebSocket permessage-deflate (RFC 7692): transparent two-way compression.
  *
  * Identical to 26.WebSocket (a /ws echo endpoint) except it enables

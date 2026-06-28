@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 66.MsgPack.ino
+ * @file 14.MsgPack.ino
  * @brief Serve telemetry as compact binary MessagePack (DETWS_ENABLE_MSGPACK).
  *
  * Encodes a small {heap, uptime, rssi} map with the zero-heap MessagePack writer

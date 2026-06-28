@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 62.Dashboard.ino
+ * @file 35.Dashboard.ino
  * @brief Real-time SVG dashboard with live telemetry and WebSocket controls
  *        (DETWS_ENABLE_DASHBOARD).
  *

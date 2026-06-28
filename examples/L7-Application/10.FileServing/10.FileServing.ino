@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 29.FileServing.ino
+ * @file 10.FileServing.ino
  * @brief Serve a static site from LittleFS with serve_static().
  *
  * serve_static(url_prefix, fs, fs_root) mounts a filesystem subtree at a URL

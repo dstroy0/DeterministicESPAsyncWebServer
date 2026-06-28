@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 31.Range.ino
+ * @file 12.Range.ino
  * @brief HTTP Range requests / 206 Partial Content (RFC 7233) for served files.
  *
  * With DETWS_ENABLE_RANGE the file-serving paths (serve_file / serve_static)

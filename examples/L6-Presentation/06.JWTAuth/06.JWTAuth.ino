@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 21.JWTAuth.ino
+ * @file 06.JWTAuth.ino
  * @brief Stateless route protection with JWT bearer tokens (HS256).
  *
  * A client presents `Authorization: Bearer <jwt>`; the device verifies the

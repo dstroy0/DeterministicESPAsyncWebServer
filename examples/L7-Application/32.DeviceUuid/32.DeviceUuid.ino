@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 57.DeviceUuid.ino
+ * @file 32.DeviceUuid.ino
  * @brief Stable MAC-derived device UUID (DETWS_ENABLE_DEVICE_ID).
  *
  * detws_device_uuid() derives a deterministic RFC 4122 v5 UUID from the chip's

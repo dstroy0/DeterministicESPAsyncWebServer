@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 67.GpioMap.ino
+ * @file 38.GpioMap.ino
  * @brief Browser GPIO pin-mapper / diagnostics panel (DETWS_ENABLE_GPIO_MAP).
  *
  * Declares a compile-time table of GPIO pins (number, label, direction) and serves

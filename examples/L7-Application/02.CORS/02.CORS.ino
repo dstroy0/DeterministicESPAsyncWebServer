@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 07.CORS.ino
+ * @file 02.CORS.ino
  * @brief Cross-Origin Resource Sharing headers via set_cors().
  *
  * set_cors(origin) builds an Access-Control-Allow-* block once and injects it

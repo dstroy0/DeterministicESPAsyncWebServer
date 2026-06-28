@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 28.ETag.ino
+ * @file 09.ETag.ino
  * @brief Conditional GET with ETag for served files (DETWS_ENABLE_ETAG).
  *
  * With ETag enabled, serve_file()/serve_static() emit a strong ETag (derived

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 49.CoapObserve.ino
+ * @file 27.CoapObserve.ino
  * @brief CoAP resource observation (RFC 7641): the server pushes updates.
  *
  * Serves an observable "/count" resource over CoAP/UDP. A client that sends a GET

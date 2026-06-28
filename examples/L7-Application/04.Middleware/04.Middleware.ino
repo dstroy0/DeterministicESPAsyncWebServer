@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 12.Middleware.ino
+ * @file 04.Middleware.ino
  * @brief Composable middleware chain + the built-in rate limiter.
  *
  * use() registers a Middleware that runs - in registration order - before every

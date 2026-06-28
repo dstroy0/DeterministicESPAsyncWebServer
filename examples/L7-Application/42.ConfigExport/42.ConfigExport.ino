@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 71.ConfigExport.ino
+ * @file 42.ConfigExport.ino
  * @brief Schema-driven config export / restore (DETWS_ENABLE_CONFIG_IO).
  *
  * Declares a schema of persisted fields and serves them as a portable text blob:

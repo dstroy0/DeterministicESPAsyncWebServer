@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 77.DnsResolver.ino
+ * @file 48.DnsResolver.ino
  * @brief DNS resolver with answer verification (DETWS_ENABLE_DNS_RESOLVER).
  *
  * Resolves a hostname to an IPv4 address and rejects suspicious answers (0.0.0.0,

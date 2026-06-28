@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 18.AcceptThrottle.ino
+ * @file 02.AcceptThrottle.ino
  * @brief Connection-flood defense via the accept-rate throttle (DETWS_ENABLE_ACCEPT_THROTTLE).
  *
  * When enabled, the accept callback rejects new connections once more than

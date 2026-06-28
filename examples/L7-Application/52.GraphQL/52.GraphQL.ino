@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 81.GraphQL.ino
+ * @file 52.GraphQL.ino
  * @brief GraphQL query endpoint (DETWS_ENABLE_GRAPHQL).
  *
  * POST a GraphQL query to /graphql; the device resolves the selected fields and

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 11.KeepAlive.ino
+ * @file 01.KeepAlive.ino
  * @brief HTTP/1.1 persistent connections (keep-alive).
  *
  * With DETWS_ENABLE_KEEPALIVE the server reuses one TCP connection for many

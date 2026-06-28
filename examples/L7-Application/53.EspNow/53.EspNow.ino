@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 82.EspNow.ino
+ * @file 53.EspNow.ino
  * @brief ESP-NOW peer messaging (DETWS_ENABLE_ESPNOW).
  *
  * Connectionless peer-to-peer radio messaging - no AP, no IP. Each board
@@ -22,6 +22,7 @@
 
 #include "services/espnow/espnow.h"
 #include <WiFi.h>
+#include <esp_wifi.h> // esp_wifi_set_channel(); not pulled in transitively by WiFi.h
 
 static const uint8_t MSG_COUNTER = 1;
 static const uint8_t CHANNEL = 1;

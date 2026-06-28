@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 85.OpcUaClient.ino
+ * @file 56.OpcUaClient.ino
  * @brief OPC UA Binary client - drive a server over TCP (DETWS_ENABLE_OPCUA_CLIENT).
  *
  * services/opcua_client builds OPC UA requests and parses responses; it is

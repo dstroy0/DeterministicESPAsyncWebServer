@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 83.OAuth2.ino
+ * @file 54.OAuth2.ino
  * @brief OAuth2 authorization-code exchange (DETWS_ENABLE_OAUTH2).
  *
  * The redirect-callback half of an OAuth/OIDC login: after the user authorizes at

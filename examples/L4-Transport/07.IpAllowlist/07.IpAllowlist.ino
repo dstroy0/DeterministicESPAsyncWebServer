@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 58.IpAllowlist.ino
+ * @file 07.IpAllowlist.ino
  * @brief Restrict who may connect with a source-IP allowlist (DETWS_ENABLE_IP_ALLOWLIST).
  *
  * The accept callback drops any TCP connection whose source address falls

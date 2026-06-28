@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 78.AuditLog.ino
+ * @file 49.AuditLog.ino
  * @brief Tamper-evident, hash-chained audit log (DETWS_ENABLE_AUDIT_LOG).
  *
  * Records security-relevant events in an append-only log where each record

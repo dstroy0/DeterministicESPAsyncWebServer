@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 41.Syslog.ino
+ * @file 19.Syslog.ino
  * @brief Remote logging to a syslog server (RFC 5424 over UDP).
  *
  * Ships device log lines to a central syslog server as RFC 5424 UDP datagrams -

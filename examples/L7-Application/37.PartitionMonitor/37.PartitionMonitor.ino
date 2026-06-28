@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file 64.PartitionMonitor.ino
+ * @file 37.PartitionMonitor.ino
  * @brief Flash partition-map monitor endpoint (DETWS_ENABLE_PARTITION_MONITOR).
  *
  * Serves the device's flash partition table as JSON at /partitions: each entry's
