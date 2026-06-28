@@ -195,10 +195,7 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "lwip/dns.h"
-#include "lwip/priv/tcpip_priv.h"
-#include "lwip/tcp.h"
-#include "network_drivers/transport/transport.h" // det_conn_raw_send (wss ciphertext write)
+#include "network_drivers/transport/det_client.h" // shared outbound TCP client (L4)
 #include <Arduino.h>
 #include <esp_system.h> // esp_fill_random (per-frame masking key)
 
@@ -214,17 +211,13 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 #endif
 
 static WsClientMessageCb s_cb;
-static struct tcp_pcb *s_pcb;
-static volatile bool s_tcp_up;
-static volatile bool s_closed;
-static volatile bool s_aborted;
-static volatile bool s_dns_done;
-static volatile bool s_dns_ok;
-static ip_addr_t s_dns_addr;
+static int s_cid = -1;         // outbound connection id (det_client pool)
+static volatile bool s_closed; // peer closed / error (set when the pump sees it)
 static bool s_ws_up;
 static bool s_use_tls;
 
-// Inbound plaintext ring (see the MQTT client for the producer/consumer rules).
+// Inbound plaintext ring, fed by a pump in the loop: from det_client_read for
+// plain ws, from the TLS session (det_tls_csess_read) for wss.
 static uint8_t s_rx[DETWS_WS_CLIENT_BUF_SIZE];
 static volatile size_t s_rx_head;
 static volatile size_t s_rx_tail;
@@ -235,12 +228,6 @@ static uint8_t s_tx[DETWS_WS_CLIENT_BUF_SIZE];  // outgoing frame scratch
 static uint8_t s_msg[DETWS_WS_CLIENT_BUF_SIZE];
 static size_t s_msg_len;
 static uint8_t s_msg_op;
-
-#if DETWS_ENABLE_WS_CLIENT_TLS
-static uint8_t s_ct[DETWS_WS_CLIENT_CT_BUF_SIZE];
-static volatile size_t s_ct_head;
-static volatile size_t s_ct_tail;
-#endif
 
 static inline size_t ring_avail()
 {
@@ -260,180 +247,53 @@ static void ring_copy(uint8_t *dst, size_t n)
         dst[i] = s_rx[(s_rx_tail + i) % sizeof(s_rx)];
 }
 
-struct WsConnCall
-{
-    struct tcpip_api_call_data base;
-    ip_addr_t addr;
-    uint16_t port;
-    err_t result;
-};
-struct WsSendCall
-{
-    struct tcpip_api_call_data base;
-    const void *data;
-    u16_t len;
-    err_t result;
-};
-
-static err_t ws_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
-{
-    (void)arg;
-    (void)err;
-    if (p == nullptr)
-    {
-        s_closed = true;
-        return ERR_OK;
-    }
-#if DETWS_ENABLE_WS_CLIENT_TLS
-    if (s_use_tls)
-    {
-        size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-        size_t freesp = (sizeof(s_ct) - 1) - used;
-        if (p->tot_len > freesp)
-            return ERR_MEM;
-        for (struct pbuf *q = p; q; q = q->next)
-        {
-            const uint8_t *d = (const uint8_t *)q->payload;
-            for (u16_t i = 0; i < q->len; i++)
-            {
-                s_ct[s_ct_head] = d[i];
-                s_ct_head = (s_ct_head + 1) % sizeof(s_ct);
-            }
-        }
-        tcp_recved(tpcb, p->tot_len);
-        pbuf_free(p);
-        return ERR_OK;
-    }
-#endif
-    size_t used = ring_avail();
-    size_t freesp = (sizeof(s_rx) - 1) - used;
-    if (p->tot_len > freesp)
-        return ERR_MEM;
-    for (struct pbuf *q = p; q; q = q->next)
-    {
-        const uint8_t *d = (const uint8_t *)q->payload;
-        for (u16_t i = 0; i < q->len; i++)
-        {
-            s_rx[s_rx_head] = d[i];
-            s_rx_head = (s_rx_head + 1) % sizeof(s_rx);
-        }
-    }
-    tcp_recved(tpcb, p->tot_len);
-    pbuf_free(p);
-    return ERR_OK;
-}
-
-static err_t ws_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
-{
-    (void)arg;
-    (void)tpcb;
-    if (err == ERR_OK)
-        s_tcp_up = true;
-    else
-        s_aborted = true;
-    return ERR_OK;
-}
-static void ws_err(void *arg, err_t err)
-{
-    (void)arg;
-    (void)err;
-    s_pcb = nullptr;
-    s_aborted = true;
-}
-static err_t ws_do_connect(struct tcpip_api_call_data *c)
-{
-    WsConnCall *k = (WsConnCall *)c;
-    s_pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
-    if (!s_pcb)
-    {
-        k->result = ERR_MEM;
-        return ERR_OK;
-    }
-    tcp_recv(s_pcb, ws_recv);
-    tcp_err(s_pcb, ws_err);
-    k->result = tcp_connect(s_pcb, &k->addr, k->port, ws_connected);
-    return ERR_OK;
-}
-static err_t ws_do_send(struct tcpip_api_call_data *c)
-{
-    WsSendCall *k = (WsSendCall *)c;
-    if (!s_pcb)
-    {
-        k->result = ERR_CONN;
-        return ERR_OK;
-    }
-    k->result = tcp_write(s_pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
-    if (k->result == ERR_OK)
-        tcp_output(s_pcb);
-    return ERR_OK;
-}
-static err_t ws_do_close(struct tcpip_api_call_data *c)
-{
-    (void)c;
-    if (s_pcb)
-    {
-        tcp_recv(s_pcb, nullptr);
-        tcp_err(s_pcb, nullptr);
-        if (tcp_close(s_pcb) != ERR_OK)
-            tcp_abort(s_pcb);
-        s_pcb = nullptr;
-    }
-    return ERR_OK;
-}
-static void ws_dns_cb(const char *name, const ip_addr_t *addr, void *arg)
-{
-    (void)name;
-    (void)arg;
-    if (addr)
-    {
-        s_dns_addr = *addr;
-        s_dns_ok = true;
-    }
-    s_dns_done = true;
-}
-static err_t ws_do_dns(struct tcpip_api_call_data *c)
-{
-    const char *host = (const char *)((WsSendCall *)c)->data;
-    err_t e = dns_gethostbyname(host, &s_dns_addr, ws_dns_cb, nullptr);
-    if (e == ERR_OK)
-    {
-        s_dns_ok = true;
-        s_dns_done = true;
-    }
-    else if (e != ERR_INPROGRESS)
-        s_dns_done = true;
-    return ERR_OK;
-}
+// --- transport over the shared outbound client (det_client) ---
 
 static bool ws_tx_plain(const uint8_t *data, size_t len)
 {
-    WsSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = data;
-    k.len = (u16_t)len;
-    tcpip_api_call(ws_do_send, &k.base);
-    return k.result == ERR_OK;
+    return det_client_send(s_cid, data, len);
+}
+
+// Drain plaintext wire bytes from the client into the s_rx ring (plain ws).
+static void ws_pump_plain()
+{
+    uint8_t tmp[256];
+    for (;;)
+    {
+        size_t freey = (sizeof(s_rx) - 1) - ring_avail();
+        if (freey == 0)
+            break;
+        size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
+        size_t n = det_client_read(s_cid, tmp, want);
+        if (n == 0)
+        {
+            if (det_client_is_closed(s_cid))
+                s_closed = true;
+            break;
+        }
+        for (size_t i = 0; i < n; i++)
+        {
+            s_rx[s_rx_head] = tmp[i];
+            s_rx_head = (s_rx_head + 1) % sizeof(s_rx);
+        }
+    }
 }
 
 #if DETWS_ENABLE_WS_CLIENT_TLS
+// TLS BIO over the shared client: write ciphertext through the pool, read
+// ciphertext by draining the client's wire ring.
 static int ws_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
-    u16_t n = (u16_t)(len > 0xFFFF ? 0xFFFF : len);
-    return det_conn_raw_send(s_pcb, buf, n) ? (int)n : MBEDTLS_ERR_SSL_WANT_WRITE;
+    size_t cap = len > 0xFFFF ? 0xFFFF : len;
+    return det_client_send(s_cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 static int ws_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t used = (s_ct_head + sizeof(s_ct) - s_ct_tail) % sizeof(s_ct);
-    if (used == 0)
-        return s_closed ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
-    size_t n = used < len ? used : len;
-    for (size_t i = 0; i < n; i++)
-    {
-        buf[i] = s_ct[s_ct_tail];
-        s_ct_tail = (s_ct_tail + 1) % sizeof(s_ct);
-    }
+    size_t n = det_client_read(s_cid, buf, len);
+    if (n == 0)
+        return det_client_is_closed(s_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 static void ws_pump_tls()
@@ -488,11 +348,10 @@ static void ws_close_tcp()
     if (s_use_tls)
         det_tls_csess_end();
 #endif
-    WsConnCall k;
-    memset(&k, 0, sizeof(k));
-    tcpip_api_call(ws_do_close, &k.base);
+    if (s_cid >= 0)
+        det_client_close(s_cid);
+    s_cid = -1;
     s_ws_up = false;
-    s_tcp_up = false;
 }
 
 static void deliver(uint8_t op, const uint8_t *payload, size_t len)
@@ -549,7 +408,9 @@ static void process_rx()
 #if DETWS_ENABLE_WS_CLIENT_TLS
     if (s_use_tls)
         ws_pump_tls();
+    else
 #endif
+        ws_pump_plain();
     for (;;)
     {
         size_t avail = ring_avail();
@@ -577,21 +438,6 @@ static void process_rx()
     }
 }
 
-static bool cl_resolve(const char *host, uint32_t deadline)
-{
-    if (ipaddr_aton(host, &s_dns_addr))
-        return true;
-    s_dns_done = false;
-    s_dns_ok = false;
-    WsSendCall k;
-    memset(&k, 0, sizeof(k));
-    k.data = host;
-    tcpip_api_call(ws_do_dns, &k.base);
-    while (!s_dns_done && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    return s_dns_ok;
-}
-
 void ws_client_on_message(WsClientMessageCb cb)
 {
     s_cb = cb;
@@ -606,36 +452,17 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
         return false;
 #endif
     s_rx_head = s_rx_tail = 0;
-    s_tcp_up = s_closed = s_aborted = s_ws_up = false;
+    s_closed = s_ws_up = false;
     s_msg_len = 0;
     s_use_tls = use_tls;
-#if DETWS_ENABLE_WS_CLIENT_TLS
-    s_ct_head = s_ct_tail = 0;
-#endif
 
     uint32_t deadline = millis() + 8000;
-    if (!cl_resolve(host, deadline))
-    {
-        WSC_DBG("[wsc] dns failed\n");
-        return false;
-    }
 
-    WsConnCall cc;
-    memset(&cc, 0, sizeof(cc));
-    cc.addr = s_dns_addr;
-    cc.port = port;
-    tcpip_api_call(ws_do_connect, &cc.base);
-    if (cc.result != ERR_OK)
+    // Open the TCP connection (DNS + connect) via the shared client transport.
+    s_cid = det_client_open(host, port, 8000);
+    if (s_cid < 0)
     {
-        WSC_DBG("[wsc] connect dispatch=%d\n", (int)cc.result);
-        return false;
-    }
-    while (!s_tcp_up && !s_aborted && (int32_t)(deadline - millis()) > 0)
-        delay(5);
-    if (!s_tcp_up)
-    {
-        WSC_DBG("[wsc] tcp connect failed aborted=%d\n", (int)s_aborted);
-        ws_close_tcp();
+        WSC_DBG("[wsc] det_client_open failed (%d)\n", s_cid);
         return false;
     }
 
@@ -649,11 +476,11 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
             return false;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && !s_closed && !s_aborted && (int32_t)(deadline - millis()) > 0)
+        while ((h = det_tls_csess_handshake()) == 0 && !s_closed && (int32_t)(deadline - millis()) > 0)
             delay(5);
         if (h != 1)
         {
-            WSC_DBG("[wsc] TLS handshake h=%d closed=%d aborted=%d\n", h, (int)s_closed, (int)s_aborted);
+            WSC_DBG("[wsc] TLS handshake h=%d closed=%d\n", h, (int)s_closed);
             ws_close_tcp();
             return false;
         }
@@ -680,12 +507,14 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     uint8_t hs[512];
     size_t hl = 0;
     bool done = false;
-    while (!done && !s_closed && !s_aborted && (int32_t)(deadline - millis()) > 0)
+    while (!done && !s_closed && (int32_t)(deadline - millis()) > 0)
     {
 #if DETWS_ENABLE_WS_CLIENT_TLS
         if (s_use_tls)
             ws_pump_tls();
+        else
 #endif
+            ws_pump_plain();
         while (ring_avail() > 0 && hl < sizeof(hs))
         {
             hs[hl++] = ring_peek(0);
@@ -723,7 +552,7 @@ bool ws_client_loop()
     if (!s_ws_up)
         return false;
     process_rx();
-    if (s_closed || s_aborted)
+    if (s_closed)
     {
         ws_close_tcp();
         return false;
