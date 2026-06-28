@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.11.0] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.11.0 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9e9fd08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e9fd0842f60ae8c9c72cd1dd533f1c60ec9722c))
+- update CHANGELOG.md [skip ci] ([`450eb12`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450eb12c493e689e31132b088eed900e15ff40b7))
+
+### Changes
+
+- Bump version: 3.10.0 → 3.11.0 ([`6c46bca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c46bcac1f0ca9e61c001680f0075d16795d5a6f))
+
+### Features
+
+- make CONN_CLOSING a real dwell (Bucket 3a part 2) ([`9e9959c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e9959c1f31d47afd1bc4e55a44b3194cc231312))
+
+</details>
+
 ## [3.10.0] - 2026-06-28
 
 <details>
