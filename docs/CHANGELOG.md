@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [3.9.6] - 2026-06-28
+
+<details>
+<summary><b>Show Changelog for version 3.9.6 - 2026-06-28</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`75f293b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75f293bdaf3a5bde002ca30c8e4a8b28c67622a1))
+- update CHANGELOG.md [skip ci] ([`dd17a78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd17a7814ef93033d082d4b043168ef0979559f3))
+
+### Changes
+
+- Bump version: 3.9.5 → 3.9.6 ([`5de5483`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5de548350767ce56bde875816f4ab3eb074aa4b9))
+
+### Testing
+
+- table-driven env generator; runner auto-discovers all 60 envs ([`8c5d177`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c5d177c6a36d49d1ab664756f850bd654fe90b0))
+
+</details>
+
 ## [3.9.5] - 2026-06-28
 
 <details>
