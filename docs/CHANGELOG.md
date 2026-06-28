@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- bump actions/checkout from 4 to 7 ([`b1a087b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a087bc407fbd31cc5f73b9f157748bedb8b97f))
+- bump github/codeql-action from 3 to 4 ([`320b945`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/320b9456bb31f5b6120eeb27e1d05f20456de3dd))
+- update test report [skip ci] ([`dc54755`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc54755251d0721c29658aee947a8cc89de9cfe6))
+- update CHANGELOG.md [skip ci] ([`5a3cdf5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a3cdf547e2b60c37e402faacad601c9556b8028))
+
+### Changes
+
+- Merge pull request #4 from dstroy0/dependabot/github_actions/actions/checkout-7 ([`a8b296a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8b296a655c3654f3ea064dbf1362adc39293d8c))
+- Merge pull request #5 from dstroy0/dependabot/github_actions/github/codeql-action-4 ([`88bc621`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88bc6216ae07487d35e4472442da167de6dad041))
+
 ## [4.4.0] - 2026-06-28
 
 <details>
