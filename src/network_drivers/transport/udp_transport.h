@@ -107,4 +107,15 @@ bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_ca
 bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
                              size_t len);
 
+#if !defined(ARDUINO)
+// Host-only test hooks: capture the last datagram passed to det_udp_sendto() so a
+// unit test can inspect what an outbound UDP service (SNMP trap/inform, syslog,
+// telemetry) actually built. Off by default; enable per test. Mirrors the
+// tcp_capture() seam in the lwIP mock.
+void det_udp_capture_enable();
+void det_udp_capture_reset();
+const uint8_t *det_udp_captured(); ///< bytes of the last captured datagram (nullptr if none)
+size_t det_udp_captured_len();     ///< length of the last captured datagram
+#endif
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H

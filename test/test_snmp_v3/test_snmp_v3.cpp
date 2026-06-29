@@ -10,10 +10,13 @@
 // the AES-128 block cipher is checked against the FIPS-197 Appendix C.1 KAT.
 
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/transport/udp_transport.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
 #include "services/snmp/snmp_crypto.h"
+#include "services/snmp/snmp_notify.h"
 #include "services/snmp/snmp_v3.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -446,6 +449,62 @@ void test_not_in_time_window_reports()
     TEST_ASSERT_EQUAL_UINT8(0x01, v.flags & 0x03); // time reports are authenticated
 }
 
+// Scan a captured datagram for an InformRequest PDU (tag 0xA6) whose request-id
+// matches @p reqid. Robust against a stray 0xA6 in the auth digest: a real match
+// must be followed by a well-formed INTEGER request-id equal to reqid.
+static bool find_inform_with_reqid(const uint8_t *d, size_t n, uint32_t reqid)
+{
+    for (size_t i = 0; i + 2 < n; i++)
+    {
+        if (d[i] != 0xA6) // InformRequest PDU tag
+            continue;
+        // Skip the PDU length field (the BER encoder always emits long-form 0x82 XX XX).
+        size_t j = i + 1;
+        uint8_t l = d[j++];
+        if (l & 0x80)
+            j += (l & 0x7F);
+        // The first field of the PDU is the request-id INTEGER.
+        if (j + 2 >= n || d[j] != 0x02)
+            continue;
+        uint8_t ilen = d[j + 1];
+        if (ilen == 0 || ilen > 4 || j + 2 + ilen > n)
+            continue;
+        uint32_t v = 0;
+        for (uint8_t k = 0; k < ilen; k++)
+            v = (v << 8) | d[j + 2 + k];
+        if (v == reqid)
+            return true;
+    }
+    return false;
+}
+
+// SNMPv3 USM InformRequest (the confirmed counterpart to the v3 trap): with
+// authNoPriv the scopedPDU is plaintext, so the captured datagram must be a v3
+// message (version 3) carrying an InformRequest PDU with our request-id.
+void test_inform_v3_builds_informrequest()
+{
+    snmp_v3_set_user("myuser", "authpass12", ""); // auth-only -> plaintext scopedPDU
+    det_udp_capture_enable();
+    det_udp_capture_reset();
+
+    const uint32_t reqid = 0x4321;
+    bool ok = snmp_inform_v3("127.0.0.1", 162, reqid, OID_SYSDESCR, 9, nullptr, 0);
+    TEST_ASSERT_TRUE(ok); // built + "sent" through the capturing stub
+
+    const uint8_t *d = det_udp_captured();
+    size_t n = det_udp_captured_len();
+    TEST_ASSERT_NOT_NULL(d);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_EQUAL_HEX8(0x30, d[0]); // outer SEQUENCE
+    // Skip the (possibly long-form) outer length to reach the msgVersion INTEGER.
+    size_t off = 1;
+    uint8_t l0 = d[off++];
+    if (l0 & 0x80)
+        off += (l0 & 0x7F);
+    TEST_ASSERT_TRUE(d[off] == 0x02 && d[off + 1] == 0x01 && d[off + 2] == 0x03); // msgVersion = 3
+    TEST_ASSERT_TRUE(find_inform_with_reqid(d, n, reqid));                        // InformRequest PDU + our request-id
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -458,5 +517,6 @@ int main()
     RUN_TEST(test_wrong_auth_password_reports_wrong_digest);
     RUN_TEST(test_unknown_user_reports);
     RUN_TEST(test_not_in_time_window_reports);
+    RUN_TEST(test_inform_v3_builds_informrequest);
     return UNITY_END();
 }

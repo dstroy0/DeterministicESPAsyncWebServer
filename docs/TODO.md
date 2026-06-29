@@ -27,7 +27,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
 > abstraction (the two architectural tracks); concurrent TLS connections
 > (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); client-side TLS
-> resumption (server tickets are done); SNMPv3 _inform_ (the v3 trap is done); SSH
+> resumption (server tickets are done); SSH
 > multiplexing, per-direction
 > NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
 > `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification of the
@@ -219,8 +219,13 @@ Open follow-ups discovered during the above:
       [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
 - [ ] **Client-side TLS resumption** - the server issues tickets, but the
       persistent client TLS session does not yet present one on reconnect.
-- [ ] **SNMPv3 _inform_** - the v3 trap is implemented; the confirmed v3 inform is
-      not.
+- [x] **SNMPv3 _inform_** _(done)_ - `snmp_inform_v3()` (symmetric with
+      `snmp_inform_v2c()` / `snmp_trap_v3()`) builds + sends an authenticated (authPriv
+      when a privacy password is set) USM `InformRequest`; the caller owns the
+      `request_id` the receiver echoes in its Response and retransmits for confirmed
+      delivery. Host-tested via a new opt-in UDP capture seam (`test_snmp_v3`
+      `test_inform_v3_builds_informrequest`: a v3 message carrying the InformRequest PDU
+      + request-id).
 - [ ] **CoAP server scope** - only the piggybacked-response model is implemented
       (`coap.h`): CON -> piggybacked ACK, NON -> NON. Separate (deferred) responses,
       CON retransmission + message de-duplication, and `/.well-known/core` resource

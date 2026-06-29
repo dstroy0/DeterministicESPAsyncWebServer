@@ -89,6 +89,7 @@
     "pysnmp",
     "amqtt",
     "subcollection",
+    "informrequest",
     "unbuildable",
     "HSET",
     "IPFIX",

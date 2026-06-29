@@ -226,12 +226,13 @@
     },
     "native_snmp_v3": {
       "desc": "SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery,\ntimeliness. Pulls in the SHA-256/HMAC primitives from the SSH crypto layer.",
-      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_V3=1"],
+      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_V3=1", "-DDETWS_ENABLE_SNMP_TRAP=1"],
       "src": [
         "+<services/snmp/snmp_ber.cpp>",
         "+<services/snmp/snmp_agent.cpp>",
         "+<services/snmp/snmp_crypto.cpp>",
         "+<services/snmp/snmp_v3.cpp>",
+        "+<services/snmp/snmp_notify.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>",
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>"

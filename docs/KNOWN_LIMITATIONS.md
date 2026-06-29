@@ -69,8 +69,9 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 - **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403); `LOCK`
   is advisory (a token is issued but not enforced). `PUT` streams to the file as the
   body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).
-- **SNMP:** the v3 _inform_ is not implemented (the v3 trap is); the engine ID
-  uses a fixed placeholder enterprise OID.
+- **SNMP:** the engine ID uses a fixed placeholder enterprise OID. (Trap and the
+  confirmed _inform_ are implemented for both v2c and v3; the caller drives inform
+  retransmission until the receiver's Response arrives.)
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN
   (prefer SSH or the WebSocket terminal otherwise).
 - **Multipart:** at most `MAX_MULTIPART_PARTS` parts; a binary part containing the

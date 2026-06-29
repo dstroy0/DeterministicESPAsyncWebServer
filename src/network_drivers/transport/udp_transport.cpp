@@ -8,11 +8,12 @@
 
 #include "network_drivers/transport/udp_transport.h"
 
+#include <string.h> // memcpy (both the lwIP and host builds)
+
 #if defined(ARDUINO)
 
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
-#include <string.h>
 
 // A small fixed pool of bound UDP ports (e.g. SNMP :161 + captive DNS :53). No
 // heap: the pool and the shared receive scratch live in BSS.
@@ -166,10 +167,39 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
     return false;
 }
 
+// Host capture seam (test-only): the last datagram handed to det_udp_sendto().
+static bool s_udp_cap_on = false;
+static uint8_t s_udp_cap_buf[2048];
+static size_t s_udp_cap_len = 0;
+
+void det_udp_capture_enable()
+{
+    s_udp_cap_on = true;
+    s_udp_cap_len = 0;
+}
+void det_udp_capture_reset()
+{
+    s_udp_cap_len = 0;
+}
+const uint8_t *det_udp_captured()
+{
+    return s_udp_cap_len ? s_udp_cap_buf : nullptr;
+}
+size_t det_udp_captured_len()
+{
+    return s_udp_cap_len;
+}
+
 bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
 {
     (void)dst_ip;
     (void)dst_port;
+    if (s_udp_cap_on && data && len && len <= sizeof(s_udp_cap_buf))
+    {
+        memcpy(s_udp_cap_buf, data, len);
+        s_udp_cap_len = len;
+        return true; // a captured "send" succeeds so the caller's success path is exercised
+    }
     (void)data;
     (void)len;
     return false;

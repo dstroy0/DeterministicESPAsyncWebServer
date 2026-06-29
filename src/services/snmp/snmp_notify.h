@@ -112,6 +112,18 @@ bool snmp_inform_v2c(const char *dst_ip, uint16_t port, const char *community, u
  */
 bool snmp_trap_v3(const char *dst_ip, uint16_t port, const uint32_t *trap_oid, size_t trap_oid_len,
                   const SnmpVarbind *vbs, size_t n);
+
+/**
+ * @brief Send an SNMPv3 USM InformRequest (authPriv) - the confirmed counterpart
+ *        to snmp_trap_v3(), symmetric with snmp_inform_v2c().
+ *
+ * Builds an authenticated (and, if a privacy password is set, encrypted) v3
+ * InformRequest. @p request_id is echoed by the receiver in its Response; the
+ * caller owns it and, for confirmed delivery, retransmits until that Response
+ * arrives. @return true if the datagram was queued.
+ */
+bool snmp_inform_v3(const char *dst_ip, uint16_t port, uint32_t request_id, const uint32_t *trap_oid,
+                    size_t trap_oid_len, const SnmpVarbind *vbs, size_t n);
 #endif
 
 #endif // DETWS_ENABLE_SNMP_TRAP
