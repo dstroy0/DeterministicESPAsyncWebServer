@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.48.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.48.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`af8ebf5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af8ebf5dd3bcaf1b93b16d3ab71bf913f9868dc2))
+- update CHANGELOG.md [skip ci] ([`e542f8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e542f8b10c29a8d18696545283a1d339fad03b13))
+
+### Changes
+
+- Bump version: 4.47.0 → 4.48.0 ([`1a5abdb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a5abdb7164f452860c1a79d19df7dea6c8ed27c))
+
+### Features
+
+- HAProxy PROXY protocol v1/v2 codec (DETWS_ENABLE_PROXY_PROTOCOL) ([`b0e4674`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0e46746983917d400fc1d8eae0c33864c9ac132))
+
+</details>
+
 ## [4.47.0] - 2026-06-29
 
 <details>
