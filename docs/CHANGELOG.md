@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`6b953f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b953f778d1e4044c631d0175137b79ed3783855))
+- update CHANGELOG.md [skip ci] ([`2614b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2614b1b411036d06215921f961f94e49c56095c2))
 - update test report [skip ci] ([`80e7f9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80e7f9c4166474ad7dd9f65fdecb18d3333d232c))
 - update CHANGELOG.md [skip ci] ([`10a406a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10a406a732f451222b31ab5c7f8ee1aaf9ca3c0c))
 - update test report [skip ci] ([`9a43b18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a43b1889c98bdb990c842c1d743fd53998477eb))
@@ -16,6 +18,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- standing front-end assumption (SPI/UART/I2C adapters + ADC for 4-20mA) so no protocol is hardware-blocked ([`235f669`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/235f66930171d9de5f94b3b1a90b7b4b407849cb))
 - raw-L2 enabler + real-time timing model; ESC/motor protocols; real-protocol interop harness ([`91fd148`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91fd14801030032a334ce00c371f9e53f8650592))
 - add IoT/messaging/DB protocols (LwM2M, STOMP, gRPC/Protobuf, DDS, WAMP, CloudEvents, MQTT-SN, NetFlow/IPFIX, BACnet/IP+SC, XMPP-IoT, InfluxDB line, Redis/NoSQL) ([`8430840`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8430840755a2ed86fa99813dc780322c4ed424b1))
 - add ITS / V2X / traffic-cabinet protocols (NTCIP 1202/1203/1211, UTMC, OCIT, SAE J2735, IEEE 1609 WAVE, NEMA TS 2, ATC) ([`1a12665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a12665d240199fead0606d0f1b23c83c29d2883))
