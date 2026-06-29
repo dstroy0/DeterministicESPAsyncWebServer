@@ -29,6 +29,8 @@
     "PCCC",
     "TPKT",
     "multidrop",
+    "RMII",
+    "THVD",
     "ACSI",
     "APCI",
     "APDU",

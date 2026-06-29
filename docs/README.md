@@ -533,6 +533,7 @@ Other documentation files in this repository:
 | [SSH.md](SSH.md)                               | SSH-2.0 server: features, RFC/FIPS compliance, auth, memory       |
 | [SECURITY.md](SECURITY.md)                     | Security posture (good/ok/bad) and per-feature security treatment |
 | [CODEQL.md](CODEQL.md)                         | CodeQL static-analysis setup, coverage, and findings disposition  |
+| [HARDWARE_HOOKUP.md](HARDWARE_HOOKUP.md)       | Wiring and settings for codecs that talk to external hardware     |
 | [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md) | Test suites, environments, and how to run them                    |
 | [TEST_REPORT.md](TEST_REPORT.md)               | Latest test results (auto-generated)                              |
 | [TODO.md](TODO.md)                             | Outstanding fixes and maintenance                                 |
