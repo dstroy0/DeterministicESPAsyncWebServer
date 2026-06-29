@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.44.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.44.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`4a012b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a012b40c650cd45d18ff01bd674202eb178a9a5))
+- update CHANGELOG.md [skip ci] ([`d423288`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d423288345445daa55eb435ac65259a037750aa3))
+
+### Changes
+
+- Bump version: 4.43.0 → 4.44.0 ([`4a95ef6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a95ef6acfac1004382041c77a93a67fcd3a783a))
+
+### Features
+
+- EtherNet/IP encapsulation codec (DETWS_ENABLE_ENIP) ([`55a4124`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55a4124ec1d8ba1e73a6df768af6694cf35dee6b))
+
+</details>
+
 ## [4.43.0] - 2026-06-29
 
 <details>
