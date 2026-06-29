@@ -803,6 +803,19 @@
 #endif
 
 /**
+ * @brief SunSpec Modbus device-information-model codec (`services/sunspec`).
+ *
+ * Default off. A zero-heap codec for the SunSpec Alliance register maps layered on the
+ * holding-register model: a model-chain walker (verify the `SunS` marker, then iterate each
+ * model's id / length / body) + typed point readers (u16 / i16 / u32 / i32 / string) and a
+ * map writer (marker, model headers + points, end model). Makes a solar inverter / meter /
+ * battery interoperable. Pure codec, host-tested; pairs with the Modbus service.
+ */
+#ifndef DETWS_ENABLE_SUNSPEC
+#define DETWS_ENABLE_SUNSPEC 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

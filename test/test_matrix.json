@@ -338,6 +338,12 @@
       "src": ["+<services/wamp/wamp.cpp>", "+<network_drivers/presentation/json/json.cpp>"],
       "tests": ["test_wamp"]
     },
+    "native_sunspec": {
+      "desc": "SunSpec Modbus model codec (services/sunspec): the map writer (marker / model\nheaders / points / end model) + the model-chain walker + typed point readers\n(u16 / i16 / u32 / i32 / string). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SUNSPEC=1"],
+      "src": ["+<services/sunspec/sunspec.cpp>"],
+      "tests": ["test_sunspec"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

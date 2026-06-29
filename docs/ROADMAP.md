@@ -447,12 +447,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       and 3.0 which is REST/JSON + OAuth): the VEN (and optionally VTN) roles exchanging
       events / reports. 3.0 rides the existing HTTP client/server + OAuth2 + JSON cleanly
       (the 2.0 XML/EXI profile is heavier); fixed BSS event/report model, no heap.
-- [ ] **SunSpec Modbus** (M, DER device models) - the SunSpec Alliance standard register
-      maps (the model-discovery chain + common/inverter/meter/battery models) layered on
-      the Modbus service - a SunSpec model dictionary over the existing holding-register
-      model, so a solar inverter / meter is interoperable. Builds directly on the shipped
-      Modbus ([modbus](../src/services/modbus/)) plus the planned Modbus RTU; fixed BSS
-      model table, no heap.
+- [x] **SunSpec Modbus** (M, DER device models) _(shipped)_ - `DETWS_ENABLE_SUNSPEC`
+      (`services\sunspec`): a zero-heap codec for the SunSpec Alliance register maps layered
+      on the holding-register model. A model-chain walker (`sunspec_check_marker` /
+      `sunspec_begin` / `sunspec_next_model` - verify the `SunS` 0x53756E53 marker, then
+      iterate each model's id / length / body to the 0xFFFF end model) + typed point readers
+      (`sunspec_u16` / `_i16` / `_u32` / `_i32` / `_string`) and a map writer
+      (`sunspec_write_marker` / `_model_header` / point writers / `_write_end_model`), so a
+      solar inverter / meter / battery is interoperable. Marker + header format verified
+      against the SunSpec spec; pure, host-tested. Pairs with the shipped Modbus
+      ([modbus](../src/services/modbus/)).
 - [ ] **ICCP / TASE.2** (XL, IEC 60870-6) - the Inter-Control-Center Communications
       Protocol: utility control-center-to-control-center data exchange (data sets,
       transfer sets, devices) carried over **MMS** (ISO-on-TCP 102), so it builds on the
