@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.47.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.47.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`1d87137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d871375fdcd456ef352b2240966e0277683ef73))
+- update CHANGELOG.md [skip ci] ([`0d2c69f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d2c69f5b2ccd751c956aba8f7d05f56991f8e8d))
+
+### Changes
+
+- Bump version: 4.46.0 → 4.47.0 ([`132ae14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/132ae14463bd64ee27446ca64b6d11e00bbf4d69))
+
+### Features
+
+- NATS client protocol codec (DETWS_ENABLE_NATS) ([`3110c64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3110c64173bb10ea6020b07fd47172b042f06264))
+
+</details>
+
 ## [4.46.0] - 2026-06-29
 
 <details>
