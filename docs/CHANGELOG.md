@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.53.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.53.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`ef9a27e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef9a27ecf09a50f3e127fd15eac99ab4e8710ac1))
+- update CHANGELOG.md [skip ci] ([`e289a5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e289a5a0c05704636566b81806c48bf1eb7b5a45))
+
+### Changes
+
+- Bump version: 4.52.0 → 4.53.0 ([`e904459`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e904459853284ae4e53db81f08212e34123c6232))
+
+### Features
+
+- NMEA 2000 codec (Fast Packet over J1939) ([`192101b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/192101bba345fcf90ba080eab2a54634af39e78a))
+
+</details>
+
 ## [4.52.0] - 2026-06-29
 
 <details>
