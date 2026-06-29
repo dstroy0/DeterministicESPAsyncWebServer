@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.11.6] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.6 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- If-None-Match weak comparison + list + "*" (RFC 9110 13.1.2) (audit batch 2c) ([`ae1e131`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae1e1313e768461a135f7375bc73ec16029918fc))
+
+### CI / Build
+
+- update test report [skip ci] ([`c7b91f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7b91f182cf562a731f4dac4fa3952b18639bfad))
+- update CHANGELOG.md [skip ci] ([`f002bb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f002bb96c2802dbea0308fe2254d5de8d300366a))
+
+### Changes
+
+- Bump version: 4.11.5 → 4.11.6 ([`a08ef33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a08ef3368ff1a4933b8265d1b309899026a8d781))
+
+</details>
+
 ## [4.11.5] - 2026-06-29
 
 <details>
