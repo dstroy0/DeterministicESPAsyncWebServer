@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.28.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.28.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`7e6f9f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e6f9f12ee119b73a3c6ed0ab5f6a78bc7778402))
+- update CHANGELOG.md [skip ci] ([`59f8b8c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59f8b8c2a70671476e4566a7f14fd87e4d62f646))
+
+### Changes
+
+- Bump version: 4.27.0 → 4.28.0 ([`3ae3291`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ae3291bb477afb5f0b4030b90d865b5cbc0caa5))
+
+### Features
+
+- NetFlow v5/v9 + IPFIX exporter codec (DETWS_ENABLE_FLOW_EXPORT) ([`792bb36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/792bb36fb99cd7376ff62f78cee8936dcef7dda2))
+
+</details>
+
 ## [4.27.0] - 2026-06-29
 
 <details>
