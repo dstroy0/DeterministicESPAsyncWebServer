@@ -66,8 +66,9 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 - **CoAP:** piggybacked responses only - no separate (deferred) responses, no CON
   retransmission / de-duplication, no `/.well-known/core` discovery.
-- **WebDAV:** `PROPPATCH` is unsupported (405); `PUT` buffers to `BODY_BUF_SIZE`
-  (no streaming large uploads); `COPY` handles files only (collection copy -> 501).
+- **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403); `LOCK`
+  is advisory (a token is issued but not enforced). `PUT` streams to the file as the
+  body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).
 - **SNMP:** the v3 _inform_ is not implemented (the v3 trap is); the engine ID
   uses a fixed placeholder enterprise OID.
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN

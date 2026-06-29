@@ -87,6 +87,8 @@
     "websockets",
     "paho",
     "pysnmp",
+    "amqtt",
+    "subcollection",
     "unbuildable",
     "HSET",
     "IPFIX",

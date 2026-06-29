@@ -222,8 +222,9 @@ answers the WebDAV methods, extending HTTP so a client can manage files:
   buffer. The builder + XML escaping are host-tested.
 - **GET / HEAD** stream a file (the file-serving path); **PUT** writes the request
   body (`201 Created` / `204 No Content`); **DELETE** removes a file or recursively
-  a collection (`204`); **MKCOL** creates a collection; **COPY** (files) and
-  **MOVE** honor `Destination` and `Overwrite` (`F` -> `412 Precondition Failed`).
+  a collection (`204`); **MKCOL** creates a collection; **COPY** (files and
+  collections, recursive, honoring `Depth: 0`/`infinity`) and **MOVE** honor
+  `Destination` and `Overwrite` (`F` -> `412 Precondition Failed`).
 - **LOCK / UNLOCK** are advisory: a synthetic exclusive-write `opaquelocktoken`
   is issued (so clients that require a lock can write) but not enforced.
 

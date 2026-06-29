@@ -15,7 +15,7 @@
  *     rclone lsd :webdav: --webdav-url http://<ip>/dav --webdav-vendor other
  *
  * Supported: OPTIONS, PROPFIND (Depth 0/1), PROPPATCH, GET, HEAD, PUT, DELETE,
- * MKCOL, COPY (files), MOVE, and advisory LOCK/UNLOCK. PROPPATCH is answered 207
+ * MKCOL, COPY (files + collections), MOVE, and advisory LOCK/UNLOCK. PROPPATCH is answered 207
  * with each property refused 403 (read-only properties) - so Explorer/Finder,
  * which set a timestamp right after a PUT, do not error. PUT streams the body
  * straight to the file, so an upload is not bounded by BODY_BUF_SIZE; locks are

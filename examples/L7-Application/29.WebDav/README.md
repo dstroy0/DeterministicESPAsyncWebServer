@@ -16,7 +16,7 @@ server.dav("/dav", LittleFS, "/dav"); // URL "/dav" -> LittleFS "/dav"
 ```
 
 Supported methods: `OPTIONS`, `PROPFIND` (Depth 0/1), `PROPPATCH`, `GET`, `HEAD`,
-`PUT`, `DELETE`, `MKCOL`, `COPY` (files), `MOVE`, and advisory `LOCK`/`UNLOCK`.
+`PUT`, `DELETE`, `MKCOL`, `COPY` (files + collections), `MOVE`, and advisory `LOCK`/`UNLOCK`.
 `PROPPATCH` is answered `207 Multi-Status` with each requested property refused
 `403 Forbidden` (the properties are read-only) - this keeps Windows Explorer and
 macOS Finder, which `PROPPATCH` a timestamp right after a `PUT`, from erroring on

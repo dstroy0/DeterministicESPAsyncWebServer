@@ -3220,6 +3220,73 @@ static bool dav_rm_recursive(fs::FS &fsys, const char *path, int depth)
     return fsys.rmdir(path);
 }
 
+// Recursively copy a file or directory tree from @p src to @p dst (bounded depth).
+// Unlike dav_rm_recursive we cannot re-open + take the first child each step (the
+// source is not consumed, so that would loop forever); instead we re-open and skip
+// to child #idx, which is safe even if a core invalidates an open dir handle across
+// the writes the copy makes to the destination tree.
+static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, int depth)
+{
+    if (depth > 8)
+        return false; // refuse pathologically deep trees rather than overflow the stack
+
+    fs::File s = fsys.open(src, "r");
+    if (!s)
+        return false;
+    if (!s.isDirectory())
+    {
+        fs::File d = fsys.open(dst, "w");
+        if (!d)
+        {
+            s.close();
+            return false;
+        }
+        uint8_t cbuf[FILE_CHUNK_SIZE];
+        size_t cn;
+        while ((cn = s.read(cbuf, sizeof(cbuf))) > 0)
+            d.write(cbuf, cn);
+        s.close();
+        d.close();
+        return true;
+    }
+    s.close();
+
+    if (!fsys.mkdir(dst)) // create the destination collection (caller cleared any existing dst)
+        return false;
+
+    for (int idx = 0;; idx++)
+    {
+        fs::File d = fsys.open(src, "r");
+        if (!d)
+            return false;
+        fs::File c;
+        for (int i = 0; i <= idx; i++)
+        {
+            c = d.openNextFile();
+            if (!c)
+                break;
+        }
+        if (!c)
+        {
+            d.close();
+            break; // no child at this index - done
+        }
+        char base[128];
+        snprintf(base, sizeof(base), "%s", dav_basename(c.name()));
+        c.close();
+        d.close();
+
+        char sp[256], dp[256];
+        int wn1 = snprintf(sp, sizeof(sp), "%s/%s", src, base);
+        int wn2 = snprintf(dp, sizeof(dp), "%s/%s", dst, base);
+        if (wn1 <= 0 || wn1 >= (int)sizeof(sp) || wn2 <= 0 || wn2 >= (int)sizeof(dp))
+            return false;
+        if (!dav_copy_recursive(fsys, sp, dp, depth + 1))
+            return false;
+    }
+    return true;
+}
+
 // Map a WebDAV request path to its on-disk path under the mount @p r. Strips the
 // mount prefix, rejects traversal, joins onto the FS root, and drops a trailing
 // '/'. Returns 0 on success, else the HTTP error code (403 traversal, 414 too
@@ -3548,33 +3615,30 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             return;
         }
 
-        // COPY: files only (collection copy is out of scope).
+        // COPY: a file or a whole collection (RFC 4918 9.8). Depth applies to a
+        // collection source: "0" copies just the collection itself, "infinity"
+        // (the default, also when absent) copies the entire tree.
         fs::File src = fsys.open(fs_path, "r");
         if (!src)
         {
             dav_send_status(slot_id, 404, "");
             return;
         }
-        if (src.isDirectory())
-        {
-            src.close();
-            dav_send_status(slot_id, 501, "");
-            return;
-        }
-        fs::File dst = fsys.open(dest_fs, "w");
-        if (!dst)
-        {
-            src.close();
-            dav_send_status(slot_id, 409, "");
-            return;
-        }
-        uint8_t cbuf[FILE_CHUNK_SIZE];
-        size_t cn;
-        while ((cn = src.read(cbuf, sizeof(cbuf))) > 0)
-            dst.write(cbuf, cn);
+        bool src_is_dir = src.isDirectory();
         src.close();
-        dst.close();
-        dav_send_status(slot_id, dest_exists ? 204 : 201, "");
+
+        const char *depth_h = http_get_header(req, "Depth");
+        bool shallow = depth_h && depth_h[0] == '0'; // Depth: 0
+
+        if (dest_exists)
+            dav_rm_recursive(fsys, dest_fs, 0); // overwrite: clear the target first
+
+        bool ok;
+        if (src_is_dir && shallow)
+            ok = fsys.mkdir(dest_fs); // collection, Depth:0 - just the collection, no members
+        else
+            ok = dav_copy_recursive(fsys, fs_path, dest_fs, 0);
+        dav_send_status(slot_id, ok ? (dest_exists ? 204 : 201) : 409, "");
         return;
     }
 

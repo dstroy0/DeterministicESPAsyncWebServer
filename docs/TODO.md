@@ -27,8 +27,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
 > abstraction (the two architectural tracks); concurrent TLS connections
 > (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); client-side TLS
-> resumption (server tickets are done); WebDAV collection COPY (PROPPATCH and
-> streaming PUT are done); SNMPv3 _inform_ (the v3 trap is done); SSH
+> resumption (server tickets are done); SNMPv3 _inform_ (the v3 trap is done); SSH
 > multiplexing, per-direction
 > NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
 > `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification of the
@@ -207,7 +206,13 @@ and HW-verified on an ESP32 DevKit. Per-feature footprints are in the README.
 
 Open follow-ups discovered during the above:
 
-- [ ] **WebDAV: collection `COPY`** (files only - collection copy returns 501).
+- [x] **WebDAV: collection `COPY`** _(done, HW-verified)_ - recursive collection copy
+      (RFC 4918 9.8) via `dav_copy_recursive` (bounded depth 8): honors `Depth: 0`
+      (collection only) vs `infinity`/absent (full tree), and `Overwrite` (clears the
+      target first, 204 vs 201, `Overwrite: F` -> 412). HW-tested on LittleFS (nested
+      subcollection + files copied byte-exact). _Host coverage is pending a
+      directory-capable FS mock (the current `test/mocks/FS.h` models files only, so no
+      native env compiles the WebDAV handler's recursive paths)._
       _(PROPPATCH done: 207 with each property refused 403. Streaming PUT done: the
       body is written to the file as it arrives, no longer bounded by
       [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
