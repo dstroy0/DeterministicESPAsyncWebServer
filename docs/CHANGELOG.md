@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.21.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.21.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`903db92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/903db922e26e9a8c769fbcd7060df38313058f65))
+- update CHANGELOG.md [skip ci] ([`fb0eb3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb0eb3fd12353eb556aaeae1e7f4ba1b0c89874c))
+
+### Changes
+
+- Bump version: 4.20.0 → 4.21.0 ([`88c4fe0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88c4fe0ef50fb2de7ea639f856503979fc5d55c5))
+
+### Features
+
+- Forwarded / X-Forwarded-For parser (RFC 7239) ([`d7c4e3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7c4e3cf4fd74edfb71f8ad365318c93a16c02a2))
+
+</details>
+
 ## [4.20.0] - 2026-06-29
 
 <details>
