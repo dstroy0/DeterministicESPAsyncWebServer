@@ -62,6 +62,7 @@
     "varint",
     "sint",
     "sunspec",
+    "grpcweb",
     "framesize",
     "idcode",
     "fracsec",

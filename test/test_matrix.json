@@ -356,6 +356,12 @@
       "src": ["+<services/dnp3/dnp3.cpp>"],
       "tests": ["test_dnp3"]
     },
+    "native_grpcweb": {
+      "desc": "gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed\nmessage frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame\nparser. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_GRPC_WEB=1"],
+      "src": ["+<services/grpcweb/grpcweb.cpp>"],
+      "tests": ["test_grpcweb"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

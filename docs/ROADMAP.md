@@ -552,9 +552,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   `pb_bytes` / `pb_string`, embedded messages via a sub-buffer + `pb_bytes`) and a
   cursor reader (`pb_read_field` over varint / ZigZag / I32 / I64 / length-delimited),
   host-tested against the spec vectors (`08 96 01`, the `"testing"` string, ZigZag
-  mapping). **gRPC** (framed Protobuf RPC over **HTTP/2**, the length-prefixed message
-  framing + `application/grpc`) remains gated on the HTTP/2 roadmap item above;
-  gRPC-Web over HTTP/1.1 is the earlier, reachable subset. Fixed BSS, no heap.
+  mapping). **gRPC-Web framing also shipped** - `DETWS_ENABLE_GRPC_WEB`
+  (`services\grpcweb`): the 5-octet `[flags][len BE32]` message frame
+  (`grpcweb_frame_message`), the 0x80 trailers frame (`grpcweb_frame_trailer`,
+  `grpc-status` / `grpc-message`), and `grpcweb_parse`, wrapping the Protobuf codec over the
+  shipped HTTP/1.1 server/client (host-tested). Full **gRPC** (the same framing but over
+  **HTTP/2** with `application/grpc`) remains gated on the HTTP/2 roadmap item above. Fixed
+  BSS, no heap.
 - [ ] **DDS** (XL, OMG DDS) - Data Distribution Service: a decentralized peer-to-peer
       data-bus standard built on **RTPS** (the Real-Time Publish-Subscribe wire protocol
       over UDP, with SPDP/SEDP discovery). Implement an RTPS participant with the QoS

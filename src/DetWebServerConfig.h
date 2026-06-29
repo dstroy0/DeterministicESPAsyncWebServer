@@ -844,6 +844,20 @@
 #endif
 
 /**
+ * @brief gRPC-Web message framing (`services/grpcweb`).
+ *
+ * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the
+ * HTTP/1.1-reachable subset of gRPC (gRPC proper needs HTTP/2). `grpcweb_frame_message`
+ * wraps a Protobuf message in the 5-octet `[flags][len BE32]` prefix, `grpcweb_frame_trailer`
+ * emits the 0x80 trailers frame (`grpc-status` / `grpc-message`), and `grpcweb_parse` reads
+ * one frame back. Wraps the Protobuf codec (`DETWS_ENABLE_PROTOBUF`) over the shipped
+ * HTTP/1.1 server/client. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_GRPC_WEB
+#define DETWS_ENABLE_GRPC_WEB 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
