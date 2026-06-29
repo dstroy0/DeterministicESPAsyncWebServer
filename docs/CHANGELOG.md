@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.46.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.46.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5986372`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5986372d7ee7ccd876d9bed217a3a170e588c743))
+- update CHANGELOG.md [skip ci] ([`fee8a4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fee8a4e4dd07fa1857b12b49e751c50edd2875c6))
+
+### Changes
+
+- Bump version: 4.45.0 → 4.46.0 ([`f12447b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f12447b5c1023f028327c93a131a45797172c34f))
+
+### Features
+
+- CIP message codec (DETWS_ENABLE_CIP) ([`925efe8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/925efe867099ad9bcdb08af4d61812063a3e23a7))
+
+</details>
+
 ## [4.45.0] - 2026-06-29
 
 <details>
