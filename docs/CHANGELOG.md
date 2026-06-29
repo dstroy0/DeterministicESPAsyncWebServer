@@ -2,13 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.14.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.14.0 - 2026-06-29</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`fa0daf6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa0daf60aaaf407c91734b939011391f2d884635))
+- update CHANGELOG.md [skip ci] ([`51bacc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51bacc28b1ebd8388446106c3e3bf3a3c5c354b5))
 - guard the interop harness (compile + list peers) ([`ba9dca5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba9dca5e1e140eabdd0ae4b6aa0b280420f5f179))
 - update test report [skip ci] ([`5ddf350`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ddf3508fe26c603c6fb5bed4b059a70afb77150))
 - update CHANGELOG.md [skip ci] ([`ad4e850`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad4e850ddaa3b87a8510dcad2038410fb372442e))
+
+### Changes
+
+- Bump version: 4.13.3 → 4.14.0 ([`502b0f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/502b0f6de1ecebd5b1413bf644064f6131b4968a))
+
+### Features
+
+- recursive collection COPY (RFC 4918 9.8) ([`af6cd33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af6cd332217a66395e2103af9e8677e5b562a396))
+
+</details>
 
 ## [4.13.3] - 2026-06-29
 
