@@ -2531,6 +2531,17 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
     if (strcmp(qop, "auth") != 0)
         return false;
 
+    // RFC 7616 3.4: the resource named by the "uri" parameter MUST be the same as the
+    // request target; otherwise a Digest response captured for one route could be
+    // replayed against another route under the same realm/nonce.
+    char target[MAX_PATH_LEN + MAX_QUERY_LEN + 2];
+    if (req->query[0])
+        snprintf(target, sizeof(target), "%s?%s", req->path, req->query);
+    else
+        snprintf(target, sizeof(target), "%s", req->path);
+    if (strcmp(uri, target) != 0)
+        return false;
+
     char tmp[3 * MAX_AUTH_LEN + 4];
     char ha1[65];
     char ha2[65];

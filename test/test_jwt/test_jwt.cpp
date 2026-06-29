@@ -5,6 +5,8 @@
 // with Python (hmac+hashlib) for secret "s3cr3t-key" and payload
 // {"sub":"alice","role":"admin","exp":2000000000,"iat":1700000000}.
 
+#include "network_drivers/presentation/base64/base64.h"
+#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
 #include "services/jwt/jwt.h"
 #include <stdio.h>
 #include <string.h>
@@ -68,6 +70,41 @@ void test_malformed_rejected()
     TEST_ASSERT_FALSE(jwt_verify_hs256("", 0, sec(), seclen()));
 }
 
+// RFC 7515 5.2: the verifier must check the header "alg". A token whose header
+// declares a non-HS256 algorithm must be rejected even when its signature is a VALID
+// HMAC-SHA256 over header.payload (algorithm-substitution defense). Built here with
+// the library's own HMAC + base64url so it is self-contained.
+void test_alg_not_hs256_rejected()
+{
+    const char *hdr_json = "{\"alg\":\"none\",\"typ\":\"JWT\"}";
+    const char *pl_json = "{\"sub\":\"alice\"}";
+    char hdr[64], payload[64];
+    base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), hdr);
+    base64url_encode((const uint8_t *)pl_json, strlen(pl_json), payload);
+
+    char signing[160];
+    int sl = snprintf(signing, sizeof(signing), "%s.%s", hdr, payload);
+    uint8_t mac[SSH_HMAC_SHA256_LEN];
+    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    char sig[48];
+    base64url_encode(mac, sizeof(mac), sig);
+
+    char token[256];
+    snprintf(token, sizeof(token), "%s.%s.%s", hdr, payload, sig);
+    // The HMAC is valid for these bytes, but alg is "none" -> must be rejected.
+    TEST_ASSERT_FALSE(jwt_verify_hs256(token, strlen(token), sec(), seclen()));
+
+    // Sanity: the same construction with alg "HS256" verifies (proves the test rig).
+    const char *ok_hdr_json = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
+    char ok_hdr[64];
+    base64url_encode((const uint8_t *)ok_hdr_json, strlen(ok_hdr_json), ok_hdr);
+    sl = snprintf(signing, sizeof(signing), "%s.%s", ok_hdr, payload);
+    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    base64url_encode(mac, sizeof(mac), sig);
+    snprintf(token, sizeof(token), "%s.%s.%s", ok_hdr, payload, sig);
+    TEST_ASSERT_TRUE(jwt_verify_hs256(token, strlen(token), sec(), seclen()));
+}
+
 void test_bearer_header()
 {
     char hdr[400];
@@ -127,6 +164,7 @@ int main()
     RUN_TEST(test_tampered_payload_rejects);
     RUN_TEST(test_tampered_signature_rejects);
     RUN_TEST(test_malformed_rejected);
+    RUN_TEST(test_alg_not_hs256_rejected);
     RUN_TEST(test_bearer_header);
     RUN_TEST(test_claim_int);
     RUN_TEST(test_claim_missing);

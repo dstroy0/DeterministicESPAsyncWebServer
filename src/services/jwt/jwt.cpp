@@ -47,6 +47,28 @@ static bool jwt_split(const char *token, size_t token_len, size_t *signing_len, 
     return true;
 }
 
+// RFC 7515 §5.2: the algorithm used MUST be the one named by the JWS header "alg".
+// Decode the header segment and require alg == "HS256" - this rejects "none",
+// RS256, HS384, and any other algorithm-substitution attempt before the HMAC check.
+static bool jwt_header_alg_is_hs256(const char *header, size_t hlen)
+{
+    uint8_t buf[96];
+    size_t n = base64url_decode(header, hlen, buf, sizeof(buf) - 1);
+    if (n == 0)
+        return false;
+    buf[n] = '\0';
+    const char *p = strstr((const char *)buf, "\"alg\"");
+    if (!p)
+        return false;
+    p += 5;
+    while (*p == ' ' || *p == ':' || *p == '\t')
+        p++;
+    if (*p != '"')
+        return false;
+    p++;
+    return strncmp(p, "HS256", 5) == 0 && p[5] == '"';
+}
+
 bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len)
 {
     if (!token || token_len < 5 || token_len > DETWS_JWT_MAX_LEN)
@@ -55,6 +77,11 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
     size_t signing_len, sig_len;
     const char *sig;
     if (!jwt_split(token, token_len, &signing_len, &sig, &sig_len))
+        return false;
+
+    // Validate the declared algorithm matches what we verify (RFC 7515 §5.2).
+    const char *d1 = (const char *)memchr(token, '.', token_len);
+    if (!jwt_header_alg_is_hs256(token, (size_t)(d1 - token)))
         return false;
 
     // HS256 -> 32-byte MAC -> 43 base64url chars (no padding).

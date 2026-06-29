@@ -287,6 +287,30 @@ void test_basic_scheme_on_digest_route_rejected()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
 }
 
+// RFC 7616 3.4: the "uri" parameter must match the request target. A response
+// computed for /other must not authenticate a request to /secure (replay defense).
+void test_uri_mismatch_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    // Compute a fully valid response for uri "/other", then present it on /secure.
+    char resp[65];
+    compute_response(kUser, kRealm, kPass, "GET", "/other", nonce, "00000001", "abc", resp);
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/other\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce, resp);
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
 void test_nonce_is_128bit_hex()
 {
     // The hardened nonce is SHA-256(CSPRNG + counter + millis) truncated to 16
@@ -315,6 +339,7 @@ int main()
     RUN_TEST(test_wrong_qop_rejected);
     RUN_TEST(test_missing_response_field_rejected);
     RUN_TEST(test_basic_scheme_on_digest_route_rejected);
+    RUN_TEST(test_uri_mismatch_rejected);
     RUN_TEST(test_nonce_is_128bit_hex);
     return UNITY_END();
 }

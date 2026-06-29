@@ -8,6 +8,29 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 2a (auth: JWT alg, Digest uri)
+
+- **Status:** FIXED (found by the auth/crypto conformance audit)
+- **Found:** 2026-06-29, multi-agent conformance audit (auth module).
+- **JWT: the `alg` header was never validated (RFC 7515 5.2, MED).** `jwt_verify_hs256`
+  computed HMAC-SHA256 and compared without checking the token's declared algorithm, so
+  a token whose header said `none` / `RS256` / `HS384` was accepted as long as its
+  signature equaled base64url(HMAC-SHA256(secret, signing_input)) - an algorithm-
+  substitution hazard (not directly exploitable since the HMAC is still enforced and
+  empty-sig `none` fails the length gate, hence MED). Fix: decode the header and require
+  `alg":"HS256"` before verifying. Test: `test_jwt` `test_alg_not_hs256_rejected` (a
+  valid-HMAC token with alg `none` is rejected).
+- **Digest: the `uri` parameter was not matched to the request target (RFC 7616 3.4,
+  MED).** `check_digest_auth` folded the client-supplied `uri` into HA2 but never
+  compared it to the actual request target, so a Digest response captured for route A
+  was structurally valid against any route under the same realm/nonce. Fix: reconstruct
+  the request target (`path[?query]`) and require it equals `uri`. Test:
+  `test_digest_auth` `test_uri_mismatch_rejected`.
+- Audited clean: Basic auth (first-colon split), OIDC RS256 (strict alg/exp/nbf/iss/aud
+    - constant-time RSA block compare), TOTP/HOTP (RFC 4226 truncation), OAuth2 client,
+      constant-time HMAC compare. Noted for later (SHOULD/LOW): Digest nonce rotation + `nc`
+      replay tracking; stricter base64url; constant-time Digest response compare.
+
 ## Standards-conformance audit, batch 1 (WS / MQTT / CoAP / Telnet)
 
 - **Status:** FIXED (found by the parallel standards-conformance audit; specs read from
