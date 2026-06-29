@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.16.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.16.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9fce9bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fce9bf31ecfa03495e1eaa083c4b31cef83f32d))
+- update CHANGELOG.md [skip ci] ([`80303a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80303a7621f3370a88b75c7a591f6995cf97e699))
+
+### Changes
+
+- Bump version: 4.15.0 → 4.16.0 ([`25a007b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25a007b14a863a5130803801189513e5bae8a6e5))
+
+### Features
+
+- RFC 6690 /.well-known/core resource discovery ([`e0fb976`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0fb976571ac0bc9ffa28788c48a919ace672199))
+
+</details>
+
 ## [4.15.0] - 2026-06-29
 
 <details>
