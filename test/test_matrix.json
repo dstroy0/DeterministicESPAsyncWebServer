@@ -37,6 +37,12 @@
       "src": ["+<services/iec60870/iec60870.cpp>"],
       "tests": ["test_iec60870"]
     },
+    "native_sdi12": {
+      "desc": "SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement\nresponse parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify).\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_SDI12=1"],
+      "src": ["+<services/sdi12/sdi12.cpp>"],
+      "tests": ["test_sdi12"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],

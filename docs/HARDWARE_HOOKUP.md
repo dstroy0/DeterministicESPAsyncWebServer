@@ -31,6 +31,7 @@ numbers to type into your sketch.
     - [Host Link (Omron)](#host-link-omron)
     - [DNP3 and C37.118 over serial](#dnp3-and-c37118-over-serial)
     - [M-Bus (meters)](#m-bus-meters)
+    - [SDI-12 (environmental sensors)](#sdi-12-environmental-sensors)
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
@@ -104,6 +105,7 @@ the matching header in `src/services/` and its description in
 | DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP              | transceiver or Wi-Fi            | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
 | C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP         | transceiver or Wi-Fi            | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
 | M-Bus         | `DETWS_ENABLE_MBUS`          | Serial (M-Bus bus)         | M-Bus level converter (TSS721)  | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
+| SDI-12        | `DETWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
 | IEC 60870     | `DETWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
@@ -280,6 +282,28 @@ The codec is the framing + record layer:
 A natural **wireless meter gateway**: poll meters over the M-Bus and publish the
 readings over MQTT / HTTP. Only the LVAR raw/ASCII variable form is decoded; the
 BCD-length LVAR variants are not. See `src/services/mbus/mbus.h`.
+
+### SDI-12 (environmental sensors)
+
+`DETWS_ENABLE_SDI12`. SDI-12 is the **1200-baud single-wire** bus for soil,
+water, and weather sensors. One data line carries both directions (half-duplex,
+**7E1**); the recorder addresses a sensor by one character (0-9, A-Z, a-z). The
+electrical layer is a 5 V line with a marking/break convention, so on a 3.3 V
+ESP32 you add a small level + direction circuit (a couple of transistors, or one
+of the ready-made SDI-12 interface boards) between a UART and the bus.
+
+A measurement is two steps: start it, wait, then fetch:
+
+- `sdi12_build_measure(buf, cap, addr, false)` sends `aM!`; parse the reply with
+  `sdi12_parse_measure()` to learn how many seconds to wait and how many values
+  to expect.
+- After the wait, `sdi12_build_data(buf, cap, addr, 0)` sends `aD0!`; split the
+  reply into floats with `sdi12_parse_values()`.
+- For the CRC-protected forms (`aMC!` / `aCC!`), check the reply with
+  `sdi12_check_crc()`.
+
+Poll a sensor string and publish the readings over Wi-Fi. See
+`src/services/sdi12/sdi12.h`.
 
 ## CAN field-bus codecs (you wire a transceiver)
 

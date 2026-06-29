@@ -66,6 +66,7 @@ CODEC_HEADINGS = {
     "Proxy Protocol",
     "Redis",
     "S7comm",
+    "SDI-12",
     "SenML",
     "Sparkplug",
     "Stomp",

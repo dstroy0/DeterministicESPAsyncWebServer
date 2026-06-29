@@ -488,6 +488,12 @@ Exact, wildcard (/*), :param path parameters, bounded allocation-free regex rout
 
 Siemens S7comm PDU codec. Default off. services/s7comm builds + parses the S7-300/400 communication PDUs carried inside a COTP Data TPDU (DETWS_ENABLE_COTP) over ISO-on-TCP (port 102): `s7_build_setup` (Setup Communication), `s7_build_read_request` (Read Var with S7-ANY items over the DB / I / Q / M areas, encoding the byte address as a 24-bit bit-address), `s7_parse_header`, and `s7_read_next_item` which walks the response data items honoring the length-in-bits transport sizes (BIT/BYTE/INT) and the even-item padding. All constants (protocol id 0x32, ROSCTR, function/area/transport codes) are verified against the Wireshark S7comm dissector. Pure and host-tested; wrap the PDU with `cotp_build_dt` + `tpkt_build`. See src/services/s7comm/s7comm.h.
 
+## SDI-12
+
+`DETWS_ENABLE_SDI12`
+
+SDI-12 sensor-bus codec. Default off. services/sdi12 is a zero-heap command / response codec for the 1200-baud single-wire ASCII bus used by environmental / agricultural sensors (soil moisture, water level, weather). `sdi12_build` and the `sdi12_build_measure` / `_concurrent` / `_data` / `_identify` / `_ack` / `_change_address` / `_query_address` helpers emit the standard `<addr><command>!` requests; `sdi12_parse_measure` reads the `atttn` measurement response (seconds-until-ready + value count, both the 1-digit `aM!` and 2-digit `aC!` forms); `sdi12_parse_values` splits a data response into floats; and `sdi12_crc16` / `sdi12_crc_encode` / `sdi12_check_crc` implement the SDI-12 CRC (poly 0xA001, encoded as 3 printable octets) for the CRC-protected `aMC!` / `aCC!` variants. Command set + CRC verified against the SDI-12 specification; pure and host-tested. Drive the single 1200-baud line over a UART and bridge sensor readings onto Wi-Fi. See src/services/sdi12/sdi12.h.
+
 ## SenML
 
 `DETWS_ENABLE_SENML`

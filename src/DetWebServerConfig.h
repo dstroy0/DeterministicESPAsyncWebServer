@@ -940,6 +940,22 @@
 #endif
 
 /**
+ * @brief SDI-12 sensor-bus codec (`services/sdi12`).
+ *
+ * Default off. A zero-heap command / response codec for the 1200-baud single-wire ASCII bus
+ * used by environmental / agricultural sensors: builders for the standard commands
+ * (`sdi12_build_measure` / `_concurrent` / `_data` / `_identify` / `_change_address` /
+ * `_query_address`), a parser for the measurement response (`sdi12_parse_measure`: seconds
+ * until ready + value count), a data-value splitter (`sdi12_parse_values`), and the SDI-12
+ * CRC (`sdi12_crc16` / `sdi12_crc_encode` / `sdi12_check_crc`) for the CRC-protected `aMC!` /
+ * `aCC!` variants. Pure codec, host-tested. Drive the single 1200-baud line over a UART (with
+ * a small level / direction circuit) and bridge sensor readings onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_SDI12
+#define DETWS_ENABLE_SDI12 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the
