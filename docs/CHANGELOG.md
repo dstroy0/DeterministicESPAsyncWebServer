@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.50.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.50.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`6073f0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6073f0ad1f2ebf31f19d649140e7b7aaf58650c6))
+- update CHANGELOG.md [skip ci] ([`147834d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/147834d7c1b13a8f7042fe8e10ff5489eac3a8ab))
+
+### Changes
+
+- Bump version: 4.49.9 → 4.50.0 ([`a61819d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a61819de59f42aafe874867c62d024277d05027a))
+
+### Features
+
+- CANopen (CiA 301) message codec over CAN ([`8330d6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8330d6f3df8f2c8872d34739f283900f89f64fc8))
+
+</details>
+
 ## [4.49.9] - 2026-06-29
 
 <details>
