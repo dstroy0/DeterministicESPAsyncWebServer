@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`bd7277b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd7277b8cf9ba6d159bbcb51a5a04529c304630e))
+- update CHANGELOG.md [skip ci] ([`8a3b216`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3b216aa00e1876fa82726afb2af8586027c4f3))
+
+### Testing
+
+- host coverage for recursive COPY/MOVE/DELETE ([`89cd53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89cd53b06e914a865878becd97eb4726beb3c233))
+
 ## [4.14.0] - 2026-06-29
 
 <details>
