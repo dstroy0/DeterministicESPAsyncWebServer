@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.45.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.45.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f21be0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f21be0d212538de5b5e8f22e9d4c199f018281c7))
+- update CHANGELOG.md [skip ci] ([`0ca02dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ca02dd101ba48af61d17b1034c1125691edcf49))
+
+### Changes
+
+- Bump version: 4.44.0 → 4.45.0 ([`573f6b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/573f6b2bbddc3b456a6ecac901b7724b0096b8cf))
+
+### Features
+
+- AMQP 0-9-1 frame codec (DETWS_ENABLE_AMQP) ([`be0bc98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be0bc98ddc434663ed56d3b00a935fc5548c8b00))
+
+</details>
+
 ## [4.44.0] - 2026-06-29
 
 <details>
