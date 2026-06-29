@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`1c5e46e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c5e46e8a2f50e14b24c047bfef411d400d1e96e))
+- update CHANGELOG.md [skip ci] ([`04c4d39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04c4d3993aba64181fabb53be273a722fd98f888))
+
+### Documentation
+
+- add DER / smart-grid protocols (IEEE 2030.5/SEP2, OpenADR, SunSpec Modbus, ICCP/TASE.2) ([`89973e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89973e5d72f289238e4a2db3475c5075b133b29e))
+- add power-grid SCADA protocols (IEC 60870-5-101/104, IEC 61850 MMS/GOOSE, IEEE C37.118) ([`ccb5f5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ccb5f5a987ebc033b150e22ab1520390ad49d3b2))
+
 ## [4.11.0] - 2026-06-29
 
 <details>
