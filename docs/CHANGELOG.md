@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.15.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.15.0 - 2026-06-29</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`54112a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54112a6249e6259bb6eed90dad5e27d834b9ead3))
+- update CHANGELOG.md [skip ci] ([`5422af4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5422af43eb7b3afba15bc879956c8eb02f426f1b))
 - update test report [skip ci] ([`5ed99af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ed99aff51804abea275999493f2206a6b997d31))
 - update CHANGELOG.md [skip ci] ([`93422ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93422ff1db7497330615cab40ec8ecb0b6ecd546))
 - update test report [skip ci] ([`99582ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99582ab72dd2cd4714f98b428fc1c489745f1638))
@@ -17,13 +22,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 4.14.0 → 4.15.0 ([`eee12c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eee12c3438eaa23bb4a4f4d633240fdb352b1dce))
 - clang-format the WebDAV handler test + FS mock ([`0a1d1d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a1d1d8cc52bd3b613e7a3a43ac5a043c7e5ae86))
+
+### Features
+
+- SNMPv3 USM InformRequest (snmp_inform_v3) ([`bf30a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf30a201b40167595fb68bb9713e0dc882df6db3))
 
 ### Testing
 
 - host tests for OPTIONS, GET-through-mount, LOCK/UNLOCK ([`1371644`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/137164412d03795a61ff9e309979aad9eea475f9))
 - host tests for PROPFIND Depth 0/1, MKCOL, single DELETE ([`713b3ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/713b3ce30bfbcbd9878f575fbe8a14da87199d4e))
 - host coverage for recursive COPY/MOVE/DELETE ([`89cd53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89cd53b06e914a865878becd97eb4726beb3c233))
+
+</details>
 
 ## [4.14.0] - 2026-06-29
 
