@@ -789,6 +789,20 @@
 #endif
 
 /**
+ * @brief WAMP messaging codec (`services/wamp`).
+ *
+ * Default off. A zero-heap codec for the Web Application Messaging Protocol (unified RPC +
+ * PubSub over WebSocket): builders for HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER /
+ * YIELD / GOODBYE (JSON arrays emitted via the shared JsonWriter) and a positional parser
+ * that pulls the message type, ids, and URIs out of an inbound array. Rides the shipped
+ * WebSocket layer; the session / subscription / registration tables are the application's.
+ * Pure codec, host-tested. Builds on the always-on JSON writer.
+ */
+#ifndef DETWS_ENABLE_WAMP
+#define DETWS_ENABLE_WAMP 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

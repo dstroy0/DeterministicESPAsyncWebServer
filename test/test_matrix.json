@@ -332,6 +332,12 @@
       "src": ["+<services/protobuf/protobuf.cpp>"],
       "tests": ["test_protobuf"]
     },
+    "native_wamp": {
+      "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_WAMP=1"],
+      "src": ["+<services/wamp/wamp.cpp>", "+<network_drivers/presentation/json/json.cpp>"],
+      "tests": ["test_wamp"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

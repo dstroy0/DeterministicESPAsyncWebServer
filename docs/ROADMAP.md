@@ -551,11 +551,17 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       (discovery + the reliability/heartbeat protocol); **DDS-XRCE** (the eXtremely
       Resource Constrained Environments agent/client profile over a single agent link)
       is the more MCU-appropriate entry point - target that first.
-- [ ] **WAMP** (M, web messaging) - Web Application Messaging Protocol: unified RPC +
-      PubSub over WebSocket, so it rides the shipped WebSocket layer directly. Implement
-      the WAMP roles (caller/callee, publisher/subscriber) with the JSON (and optionally
-      MessagePack/CBOR) serialization the codecs already provide; fixed BSS
-      registration/subscription tables, no heap. Good fit - WS + JSON/CBOR already exist.
+- [x] **WAMP** (M, web messaging) _(shipped)_ - `DETWS_ENABLE_WAMP` (`services\wamp`): a
+      zero-heap codec for the Web Application Messaging Protocol (unified RPC + PubSub over
+      WebSocket, subprotocol `wamp.2.json`). Builders for HELLO / SUBSCRIBE / UNSUBSCRIBE /
+      PUBLISH / CALL / REGISTER / YIELD / GOODBYE (JSON arrays emitted via the shared
+      `JsonWriter`; Options/Details default to `{}`, Arguments / ArgumentsKw passed as JSON
+      literals) and a nesting-aware positional parser (`wamp_get_type` / `wamp_get_uint` /
+      `wamp_get_uri` / `wamp_element`) that pulls the message type, ids, and URIs out of an
+      inbound WELCOME / SUBSCRIBED / EVENT / RESULT / INVOCATION / ERROR. Message codes
+      verified against the WAMP spec; pure, host-tested. It rides the shipped WebSocket
+      layer; the session / subscription / registration tables are the application's. The
+      caller can still serialize payloads with the MessagePack / CBOR codecs.
 - [x] **CloudEvents** (S-M, CNCF spec) _(shipped)_ - `DETWS_ENABLE_CLOUDEVENTS`,
       `services/cloudevents`: `cloudevents_build_json()` emits a structured
       `application/cloudevents+json` envelope (required `id` / `source` / `type` +
