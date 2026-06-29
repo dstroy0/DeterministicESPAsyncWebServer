@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`e600342`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e600342f64f643f024bfbbed4bb4efade42355a5))
+- update CHANGELOG.md [skip ci] ([`b4ebab4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4ebab42584fd59218d5edfc7d2b1ddec1a0dff9))
+
+### Documentation
+
+- wrap interop CLI example so prettier accepts the code span ([`d136dfa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d136dfa1cfe2c59e7bedf3ce0105251954650ab3))
+
 ## [4.13.0] - 2026-06-29
 
 <details>
