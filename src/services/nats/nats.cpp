@@ -278,9 +278,11 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
         size_t size;
         if (!parse_uint(tok[ntok - 1], tlen[ntok - 1], &size)) // the last token is the byte count
             return false;
-        size_t total = after_line + size + 2; // payload + trailing CRLF
-        if (total > len)
-            return false; // payload not fully buffered
+        // Bound the byte count against the remaining capacity without adding it (a 32-bit
+        // size_t would wrap if we computed after_line + size + 2 first).
+        if (after_line + 2 > len || size > len - after_line - 2)
+            return false; // payload + trailing CRLF not fully buffered
+        size_t total = after_line + size + 2;
         out->type = NATS_MSG;
         out->subject = tok[0];
         out->subject_len = tlen[0];

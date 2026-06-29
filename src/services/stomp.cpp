@@ -101,7 +101,8 @@ size_t stomp_build_frame(char *buf, size_t cap, const char *command, const char 
     return pos;
 }
 
-// Parse an unsigned base-10 length from [s, s+len). Returns false on empty / non-digit.
+// Parse an unsigned base-10 length from [s, s+len). Returns false on empty / non-digit /
+// overflow (a content-length larger than size_t can never be satisfied by the buffer).
 static bool parse_len(const char *s, size_t len, size_t *out)
 {
     if (len == 0)
@@ -110,6 +111,8 @@ static bool parse_len(const char *s, size_t len, size_t *out)
     for (size_t i = 0; i < len; i++)
     {
         if (s[i] < '0' || s[i] > '9')
+            return false;
+        if (v > (SIZE_MAX - 9) / 10) // would overflow on the next digit
             return false;
         v = v * 10 + (size_t)(s[i] - '0');
     }
@@ -186,10 +189,15 @@ bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *con
             h->key_len = colon - cur;
             h->val = buf + colon + 1;
             h->val_len = line_end - (colon + 1);
-            // content-length drives the body length (only the first occurrence is used).
+            // content-length drives the body length (only the first occurrence is used). A
+            // present-but-unparseable / overflowing value is a malformed frame, not a fall-back
+            // to NUL-delimited parsing.
             if (!have_content_length && h->key_len == 14 && memcmp(h->key, "content-length", 14) == 0)
-                if (parse_len(h->val, h->val_len, &content_length))
-                    have_content_length = true;
+            {
+                if (!parse_len(h->val, h->val_len, &content_length))
+                    return false;
+                have_content_length = true;
+            }
         }
         cur = nl + 1;
         if (cur > len)

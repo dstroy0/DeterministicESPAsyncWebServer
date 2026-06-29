@@ -109,6 +109,9 @@ void test_parse_rejects_bad()
     // Truncated (declares 5 payload octets, buffer too short).
     const uint8_t trunc[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00};
     TEST_ASSERT_FALSE(amqp_parse_frame(trunc, sizeof(trunc), &f, &c));
+    // A size field of 0xFFFFFFFF must fail closed, not wrap the bounds check (32-bit hardening).
+    const uint8_t huge[] = {0x01, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x00};
+    TEST_ASSERT_FALSE(amqp_parse_frame(huge, sizeof(huge), &f, &c));
     // A method payload shorter than the 4-octet class/method id.
     const uint8_t short_method[] = {0x00, 0x0A};
     uint16_t cls, meth;

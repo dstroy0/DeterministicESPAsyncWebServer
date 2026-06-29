@@ -244,7 +244,11 @@ size_t flow_export_finish(FlowWriter *w)
     if (w->version == 9)
         patch16(w, 2, w->records); // count = total records
     else
+    {
+        if (w->pos > 0xFFFF) // the IPFIX length field is 16-bit; fail closed rather than truncate
+            return 0;
         patch16(w, 2, (uint16_t)w->pos); // IPFIX message length in octets
+    }
     return w->pos;
 }
 

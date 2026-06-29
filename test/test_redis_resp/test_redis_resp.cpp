@@ -117,6 +117,8 @@ void test_parse_incomplete_and_malformed()
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"$5\r\nhel", 7, &r, &c));     // bulk body incomplete
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"?bad\r\n", 6, &r, &c));      // unknown type byte
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)":notanum\r\n", 10, &r, &c)); // non-numeric integer
+    // A bulk length near SIZE_MAX must fail closed, not wrap the bounds check (32-bit hardening).
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"$999999999999\r\nhi\r\n", 19, &r, &c));
 }
 
 int main()

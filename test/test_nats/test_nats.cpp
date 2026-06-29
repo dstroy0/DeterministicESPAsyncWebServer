@@ -114,6 +114,8 @@ void test_parse_incomplete()
     size_t c;
     TEST_ASSERT_FALSE(nats_parse("PING", 4, &m, &c));                // no CRLF yet
     TEST_ASSERT_FALSE(nats_parse("MSG foo 1 5\r\nhel", 16, &m, &c)); // payload short
+    // A byte count near SIZE_MAX must fail closed, not wrap the bounds check (32-bit hardening).
+    TEST_ASSERT_FALSE(nats_parse("MSG foo 1 999999999999\r\nhi\r\n", 28, &m, &c));
 }
 
 void test_build_overflow_fails_closed()

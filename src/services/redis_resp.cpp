@@ -126,9 +126,11 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
             *consumed = after_header;
             return true;
         }
+        // Bound the bulk length against the remaining capacity without adding it (a 32-bit
+        // size_t would wrap if we computed after_header + blen + 2 first).
+        if (after_header + 2 > len || (uint64_t)blen > (uint64_t)(len - after_header - 2))
+            return false;                              // bulk body + trailing CRLF not fully buffered
         size_t need = after_header + (size_t)blen + 2; // body + trailing CRLF
-        if (need > len)
-            return false; // bulk body not fully buffered
         if (buf[after_header + (size_t)blen] != '\r' || buf[after_header + (size_t)blen + 1] != '\n')
             return false; // malformed terminator
         out->type = RESP_BULK;

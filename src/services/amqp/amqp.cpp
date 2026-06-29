@@ -108,9 +108,11 @@ bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *co
     if (!buf || !out || len < AMQP_FRAME_OVERHEAD)
         return false;
     uint32_t size = get32(buf + 3);
-    size_t total = 7 + (size_t)size + 1; // header(7) + payload + frame-end(1)
-    if (total > len)
-        return false; // not fully buffered
+    // Compare against the remaining capacity without adding (a 32-bit size_t would wrap if we
+    // computed 8 + size first), so an attacker-controlled size can't slip past the bound.
+    if (size > len - AMQP_FRAME_OVERHEAD)
+        return false;                                  // not fully buffered
+    size_t total = AMQP_FRAME_OVERHEAD + (size_t)size; // header(7) + payload + frame-end(1)
     if (buf[7 + size] != AMQP_FRAME_END)
         return false; // missing / corrupt frame terminator
     out->type = buf[0];

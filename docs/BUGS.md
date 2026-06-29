@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Codec length fields could wrap the bounds check on a 32-bit target
+
+- **Status:** FIXED (multi-agent codebase audit; host-tested).
+- **Found:** 2026-06-29, the codec bug-hunt audit of the v4.x protocol codecs.
+- **Three text/binary parsers computed `overhead + declared_length` before comparing to the
+  buffer length, which wraps on a 32-bit `size_t` (the ESP32 target) for an attacker-controlled
+  length field — so the `> len` guard could falsely pass and hand the caller an out-of-bounds
+  slice.** Affected: `amqp_parse_frame` (AMQP 0-9-1 32-bit size, `services/amqp/amqp.cpp`),
+  `nats_parse` MSG byte count (`services/nats/nats.cpp`), and `resp_parse` `$` bulk length
+  (`services/redis_resp.cpp`). The 64-bit host tests never exercised the wrap, so it was latent.
+  Fix: in each, compare the declared length against the _remaining capacity_ (`len - overhead`)
+  without adding, so no addition can wrap. Added oversized-length rejection tests to
+  test_amqp / test_nats / test_redis_resp.
+- **Related hardening in the same pass:** `stomp` `content-length` parse now rejects on overflow
+  AND a present-but-invalid `content-length` is a malformed frame (previously it silently
+  fell back to NUL-delimited body parsing - a request-smuggling-style differential); `parse_len`
+  caps at `SIZE_MAX`. `flow_export` IPFIX `finish` now fails closed when the message exceeds the
+  16-bit length field instead of truncating it. Tests added/updated accordingly.
+
+---
+
 ## det_client.cpp failed to compile on a server-only Arduino build
 
 - **Status:** FIXED (found while building the interop rig; HW build verified on COM3).

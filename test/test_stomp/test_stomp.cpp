@@ -135,6 +135,8 @@ void test_parse_incomplete_and_malformed()
     TEST_ASSERT_FALSE(stomp_parse_frame("\n\n\n", 3, &f, &c));                 // only heart-beats
     // content-length that overruns the buffer.
     TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99\n\nhi\0", 30, &f, &c));
+    // An absurd content-length must fail closed, not overflow the length parse (32-bit hardening).
+    TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99999999999999999999\n\nhi\0", 49, &f, &c));
 }
 
 void test_unescape()
