@@ -33,6 +33,7 @@ numbers to type into your sketch.
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
+    - [J1939](#j1939)
 - [Networked industrial codecs (over Wi-Fi or Ethernet)](#networked-industrial-codecs-over-wi-fi-or-ethernet)
     - [Getting on the network](#getting-on-the-network)
     - [Modbus TCP and Modbus master](#modbus-tcp-and-modbus-master)
@@ -99,6 +100,7 @@ the matching header in `src/services/` and its description in
 | DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP           | transceiver or Wi-Fi         | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
 | C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP      | transceiver or Wi-Fi         | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver              | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
+| J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)       | CAN transceiver              | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
 | OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet               | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
 | OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet               | port 4840                       | OPC UA servers                     |
 | SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet               | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
@@ -290,6 +292,29 @@ This is the classic **wireless bridge**: poll CANopen drives over the wire and
 publish their state over MQTT / HTTP / a WebSocket. SDO transfers are expedited
 (<= 4 octets); segmented / block transfer is a future addition. See
 `src/services/canopen/canopen.h`.
+
+### J1939
+
+`DETWS_ENABLE_J1939`. The CAN higher-layer protocol for heavy-duty vehicles,
+agriculture, marine, and gensets - same wiring as above (transceiver +
+terminators), but it uses **29-bit extended** ids, almost always at **250
+kbit/s**. The codec packs and unpacks the id (priority / PGN / source /
+destination) and handles multi-packet messages:
+
+- Decode a received frame: `j1939_decode_id(frame.id, &id)` gives you the PGN,
+  source, and destination; the 8 data octets are the parameter group's signals
+  (SPNs), which you scale per the PGN definition.
+- Ask a device for a PGN: `j1939_build_request(&frame, my_addr, dest, pgn)`.
+- Announce your address: `j1939_build_address_claim(&frame, my_addr,
+j1939_build_name(...))`.
+- Long messages (> 8 octets, e.g. diagnostics): feed every received frame to
+  `j1939_tp_feed(&rx, &frame)`; when it returns `J1939_TP_COMPLETE`, `rx.buf`
+  holds the reassembled message for `rx.pgn`. To send one, `j1939_build_bam_cm()`
+  then a `j1939_build_tp_dt()` per 7-octet chunk.
+
+A classic **wireless gateway**: decode engine / transmission / genset PGNs off
+the bus and publish them over MQTT or a web dashboard. See
+`src/services/j1939/j1939.h`.
 
 ## Networked industrial codecs (over Wi-Fi or Ethernet)
 

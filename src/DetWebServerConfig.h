@@ -859,6 +859,22 @@
 #endif
 
 /**
+ * @brief SAE J1939 message codec (`services/j1939`).
+ *
+ * Default off. A zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset
+ * CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/det_can.h`):
+ * `j1939_encode_id` / `j1939_decode_id` pack and unpack the priority / PGN / SA / DA
+ * identifier (PDU1 peer + PDU2 broadcast), `j1939_build_message` emits single frames,
+ * `j1939_build_request` / `j1939_build_address_claim` (+ `j1939_build_name`) handle the
+ * Request PGN and Address Claimed messages, and the Transport Protocol (BAM announce +
+ * TP.DT packets) reassembles multi-packet messages up to `DETWS_J1939_TP_MAX` octets. Pure
+ * codec, host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI.
+ */
+#ifndef DETWS_ENABLE_J1939
+#define DETWS_ENABLE_J1939 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

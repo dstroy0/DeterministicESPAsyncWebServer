@@ -49,6 +49,7 @@ CODEC_HEADINGS = {
     "Flow Export",
     "gRPC-Web",
     "Host Link",
+    "J1939",
     "JSON",
     "LwM2M",
     "MELSEC",

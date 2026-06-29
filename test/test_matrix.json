@@ -7,6 +7,12 @@
       "src": ["+<services/canopen/canopen.cpp>"],
       "tests": ["test_canopen"]
     },
+    "native_j1939": {
+      "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_J1939=1"],
+      "src": ["+<services/j1939/j1939.cpp>"],
+      "tests": ["test_j1939"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
