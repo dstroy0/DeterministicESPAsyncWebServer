@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.19.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.19.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`67019b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67019b09e5b92ed95650246e25b5a7a418aed723))
+- update CHANGELOG.md [skip ci] ([`f71b8be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f71b8be92968d228ac5562e7e9bc66c95318655d))
+
+### Changes
+
+- Bump version: 4.18.0 → 4.19.0 ([`3be074f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3be074f3189eaed70f1e323cb2921d3e45bee6c4))
+
+### Features
+
+- RFC 4253 7.2 key-derivation length extension ([`7a5d60f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a5d60f3e65397b78727a3908859f8caf37753bb))
+
+</details>
+
 ## [4.18.0] - 2026-06-29
 
 <details>
