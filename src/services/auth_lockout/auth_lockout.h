@@ -8,11 +8,11 @@
  * Tracks consecutive failed authentications per source IPv4 in a fixed BSS table
  * (no heap). After DETWS_AUTH_LOCKOUT_THRESHOLD consecutive failures an address
  * is locked out for DETWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure
- * up to DETWS_AUTH_LOCKOUT_MAX_MS; a successful auth clears the address. The HTTP
- * auth gate consults this only when the feature is enabled, but the functions are
- * always compiled so they can be unit-tested with a synthetic millisecond clock.
- * Addresses are identity keys only (byte order does not matter); 0 is the
- * empty-bucket sentinel and is treated as untrackable (never locked).
+ * up to DETWS_AUTH_LOCKOUT_MAX_MS; a successful auth clears the address. Compiled
+ * only when DETWS_ENABLE_AUTH_LOCKOUT is set (the host unit tests enable it and
+ * drive it with a synthetic millisecond clock). Addresses are identity keys only
+ * (byte order does not matter); 0 is the empty-bucket sentinel and is treated as
+ * untrackable (never locked).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -22,6 +22,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H
 
 #include "DetWebServerConfig.h"
+
+#if DETWS_ENABLE_AUTH_LOCKOUT
+
 #include <stdint.h>
 
 /**
@@ -41,5 +44,7 @@ void auth_lockout_succeed(uint32_t ip);
 
 /** @brief Reset the whole lockout table (e.g. between tests). */
 void auth_lockout_reset(void);
+
+#endif // DETWS_ENABLE_AUTH_LOCKOUT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H

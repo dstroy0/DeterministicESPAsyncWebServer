@@ -814,12 +814,14 @@
       "tests": ["test_device_id"]
     },
     "native_auth_lockout": {
-      "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. The enable flag is not set here (it would require\nDETWS_ENABLE_AUTH); the functions and sizing constants compile unconditionally.",
+      "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. DETWS_ENABLE_AUTH_LOCKOUT (and its required parent\nDETWS_ENABLE_AUTH) are set so the flag-guarded code compiles.",
+      "flags": ["-DDETWS_ENABLE_AUTH=1", "-DDETWS_ENABLE_AUTH_LOCKOUT=1"],
       "src": ["+<services/auth_lockout/auth_lockout.cpp>"],
       "tests": ["test_auth_lockout"]
     },
     "native_csrf": {
-      "desc": "Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed\nsecret unit-tests on the host. Pulls in the SSH HMAC-SHA256 + SHA-256 core.",
+      "desc": "Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed\nsecret unit-tests on the host (DETWS_ENABLE_CSRF set). Pulls in the SSH\nHMAC-SHA256 + SHA-256 core.",
+      "flags": ["-DDETWS_ENABLE_CSRF=1"],
       "src": [
         "+<services/csrf/csrf.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",

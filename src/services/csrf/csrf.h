@@ -13,7 +13,7 @@
  *
  * The token is sized to fit a single MAX_VAL_LEN header value and a `csrf=`
  * cookie. These functions are pure (no Arduino dependency) so they unit-test on
- * the host with a fixed secret.
+ * the host (with DETWS_ENABLE_CSRF set) using a fixed secret.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -21,6 +21,10 @@
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CSRF_H
 #define DETERMINISTICESPASYNCWEBSERVER_CSRF_H
+
+#include "DetWebServerConfig.h"
+
+#if DETWS_ENABLE_CSRF
 
 #include <stddef.h>
 #include <stdint.h>
@@ -59,5 +63,7 @@ bool csrf_verify(const char *token);
 
 /** @brief Clear the secret and nonce counter (e.g. between tests). */
 void csrf_reset(void);
+
+#endif // DETWS_ENABLE_CSRF
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CSRF_H

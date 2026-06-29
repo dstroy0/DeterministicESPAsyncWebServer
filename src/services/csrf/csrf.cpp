@@ -11,6 +11,9 @@
  */
 
 #include "csrf.h"
+
+#if DETWS_ENABLE_CSRF
+
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
 #include "shared_primitives/det_hex.h"
 #include <stdio.h>
@@ -106,3 +109,5 @@ void csrf_reset(void)
     g_secret_len = 0;
     g_counter = 0;
 }
+
+#endif // DETWS_ENABLE_CSRF

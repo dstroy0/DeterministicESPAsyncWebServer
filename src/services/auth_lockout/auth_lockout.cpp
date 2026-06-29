@@ -7,11 +7,13 @@
  *
  * A bounded BSS table of buckets keyed by source IPv4. Each bucket holds the
  * consecutive-failure count and, once the threshold is crossed, the start and
- * duration of the current lockout (exponential backoff, capped). Always compiled
- * so it can be unit-tested; the HTTP auth gate only consults it when enabled.
+ * duration of the current lockout (exponential backoff, capped). Compiled only
+ * when DETWS_ENABLE_AUTH_LOCKOUT is set; the host unit tests enable it.
  */
 
 #include "auth_lockout.h"
+
+#if DETWS_ENABLE_AUTH_LOCKOUT
 
 namespace
 {
@@ -142,3 +144,5 @@ void auth_lockout_reset(void)
         g_buckets[i].fails = 0;
     }
 }
+
+#endif // DETWS_ENABLE_AUTH_LOCKOUT
