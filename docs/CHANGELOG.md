@@ -2,10 +2,19 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.11.1] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.1 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- reject Transfer-Encoding on inbound requests (request-smuggling) + test-gap hardening ([`f45eafb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f45eafb40bbe716963329266ec9b689060b4298f))
 
 ### CI / Build
 
+- update test report [skip ci] ([`7a77905`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a779052e3dee71f37b4d2151894e51534946c63))
+- update CHANGELOG.md [skip ci] ([`d14e248`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d14e248e63c98f730412780fc8b44804c9bf6368))
 - update test report [skip ci] ([`6b953f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b953f778d1e4044c631d0175137b79ed3783855))
 - update CHANGELOG.md [skip ci] ([`2614b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2614b1b411036d06215921f961f94e49c56095c2))
 - update test report [skip ci] ([`80e7f9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80e7f9c4166474ad7dd9f65fdecb18d3333d232c))
@@ -16,6 +25,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report [skip ci] ([`1c5e46e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c5e46e8a2f50e14b24c047bfef411d400d1e96e))
 - update CHANGELOG.md [skip ci] ([`04c4d39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04c4d3993aba64181fabb53be273a722fd98f888))
 
+### Changes
+
+- Bump version: 4.11.0 → 4.11.1 ([`2f284ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2f284ab4700753893f6d74c844620abdd5d53d8b))
+
 ### Documentation
 
 - standing front-end assumption (SPI/UART/I2C adapters + ADC for 4-20mA) so no protocol is hardware-blocked ([`235f669`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/235f66930171d9de5f94b3b1a90b7b4b407849cb))
@@ -24,6 +37,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - add ITS / V2X / traffic-cabinet protocols (NTCIP 1202/1203/1211, UTMC, OCIT, SAE J2735, IEEE 1609 WAVE, NEMA TS 2, ATC) ([`1a12665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a12665d240199fead0606d0f1b23c83c29d2883))
 - add DER / smart-grid protocols (IEEE 2030.5/SEP2, OpenADR, SunSpec Modbus, ICCP/TASE.2) ([`89973e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89973e5d72f289238e4a2db3475c5075b133b29e))
 - add power-grid SCADA protocols (IEC 60870-5-101/104, IEC 61850 MMS/GOOSE, IEEE C37.118) ([`ccb5f5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ccb5f5a987ebc033b150e22ab1520390ad49d3b2))
+
+</details>
 
 ## [4.11.0] - 2026-06-29
 
