@@ -816,6 +816,20 @@
 #endif
 
 /**
+ * @brief IEEE C37.118.2 synchrophasor frame codec (`services/c37118`).
+ *
+ * Default off. A zero-heap builder + CRC-validating parser for the PMU / PDC wide-area
+ * measurement wire protocol: `c37118_build_frame` / `c37118_build_command` emit a
+ * `SYNC FRAMESIZE IDCODE SOC FRACSEC DATA CHK` frame (CHK = CRC-CCITT) and
+ * `c37118_parse_frame` validates the CRC and reports the frame type / ids / timestamp /
+ * payload slice. Frames any payload and fully handles the fixed Command frame. Pure codec,
+ * host-tested.
+ */
+#ifndef DETWS_ENABLE_C37118
+#define DETWS_ENABLE_C37118 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

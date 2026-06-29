@@ -432,11 +432,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       the APDU encode/decode + dataset model + the fast-retransmit cadence are in scope).
       SCL (the SCD/CID config) drives a fixed BSS model; no heap. Heaviest of the grid
       protocols - sequence behind 60870-5-104.
-- [ ] **IEEE C37.118** (M-L, synchrophasors) - the PMU synchrophasor protocol: the
-      four frame types (configuration, header, data, command) over TCP/UDP 4712/4713,
-      carrying time-stamped phasor / frequency / ROCOF measurements. Fixed BSS phasor
-      configuration + data model, no heap; the data frame streams via the chunked /
-      UDP cast path. Pairs with the telemetry-math service for on-device PMU analytics.
+- [~] **IEEE C37.118** (M-L, synchrophasors) - _frame codec shipped._
+  `DETWS_ENABLE_C37118` (`services\c37118`): a zero-heap builder + CRC-validating parser
+  for the PMU synchrophasor wire frame (`SYNC FRAMESIZE IDCODE SOC FRACSEC DATA CHK`,
+  CHK = CRC-CCITT) - `c37118_build_frame` frames any payload, `c37118_build_command`
+  handles the fixed Command frame, and `c37118_parse_frame` validates the CRC and reports
+  the frame type / id / timestamp / payload, with `c37118_parse_command`. CRC verified
+  against the canonical CRC-CCITT-FALSE check value; pure, host-tested. The fixed phasor
+  configuration / data model (encoding the CFG-2 channel layout and the matching data
+  frame, over TCP/UDP 4712/4713, streamed via the chunked / UDP cast path) remains to be
+  layered on top. Pairs with the telemetry-math service for on-device PMU analytics.
 - [ ] **IEEE 2030.5 (SEP 2.0)** (M-L, DER / smart energy) - the Smart Energy Profile:
       a RESTful resource model (the function-set resources - DER, metering, demand
       response, pricing) over HTTP + TLS with client-cert auth. This is the best fit of

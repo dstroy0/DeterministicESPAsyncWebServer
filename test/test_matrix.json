@@ -344,6 +344,12 @@
       "src": ["+<services/sunspec/sunspec.cpp>"],
       "tests": ["test_sunspec"]
     },
+    "native_c37118": {
+      "desc": "IEEE C37.118.2 synchrophasor frame codec (services/c37118): CRC-CCITT, the frame\nbuilder + Command frame, and the CRC-validating parser (type / ids / timestamp / payload).\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_C37118=1"],
+      "src": ["+<services/c37118/c37118.cpp>"],
+      "tests": ["test_c37118"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
