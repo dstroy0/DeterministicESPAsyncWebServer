@@ -292,6 +292,16 @@
       "src": ["+<services/modbus/modbus.cpp>"],
       "tests": ["test_modbus"]
     },
+    "native_cloudevents": {
+      "desc": "CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder\n(over the JSON writer) + the binary-mode ce-* header reader. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_CLOUDEVENTS=1"],
+      "src": [
+        "+<services/cloudevents.cpp>",
+        "+<network_drivers/presentation/json/json.cpp>",
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>"
+      ],
+      "tests": ["test_cloudevents"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

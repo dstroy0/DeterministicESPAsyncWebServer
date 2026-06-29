@@ -705,6 +705,19 @@
 #endif
 
 /**
+ * @brief CloudEvents v1.0 (CNCF) event envelope (structured JSON + binary headers).
+ *
+ * Default off. Adds `services/cloudevents`: `cloudevents_build_json()` emits a
+ * structured `application/cloudevents+json` envelope (required `id`/`source`/`type`
+ * + optional `subject`/`datacontenttype`/`data`) via the JSON writer, and
+ * `cloudevents_from_headers()` reads an inbound binary-mode event's `ce-*` headers.
+ * Makes the device's events interoperable with serverless / event-mesh consumers.
+ */
+#ifndef DETWS_ENABLE_CLOUDEVENTS
+#define DETWS_ENABLE_CLOUDEVENTS 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

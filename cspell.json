@@ -92,6 +92,8 @@
     "informrequest",
     "clockless",
     "DQUOTE",
+    "datacontenttype",
+    "specversion",
     "unbuildable",
     "HSET",
     "IPFIX",

@@ -552,14 +552,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       the WAMP roles (caller/callee, publisher/subscriber) with the JSON (and optionally
       MessagePack/CBOR) serialization the codecs already provide; fixed BSS
       registration/subscription tables, no heap. Good fit - WS + JSON/CBOR already exist.
-- [ ] **CloudEvents** (S-M, CNCF spec) - not a wire protocol but the application-layer
-      event-metadata envelope (the required `id` / `source` / `specversion` / `type`
-      attributes + extensions). Implement the structured + binary content modes for the
-      bindings this library already has: **HTTP** (binary mode = `ce-*` headers, or
-      structured `application/cloudevents+json`), **MQTT**, and **WebHook**, plus the
-      JSON event format using the existing JSON codec. Small, high-leverage: it makes the
-      device's events interoperable with serverless / event-mesh consumers. Fixed BSS,
-      no heap, one build flag.
+- [x] **CloudEvents** (S-M, CNCF spec) _(shipped)_ - `DETWS_ENABLE_CLOUDEVENTS`,
+      `services/cloudevents`: `cloudevents_build_json()` emits a structured
+      `application/cloudevents+json` envelope (required `id` / `source` / `type` +
+      `specversion` 1.0, optional `subject` / `datacontenttype` / `data` - `data` either a
+      verbatim JSON value or an escaped string) over the existing JSON writer, and
+      `cloudevents_from_headers()` reads an inbound binary-mode event's `ce-*` headers.
+      Host-tested (`test_cloudevents`, 7 cases). The HTTP body / `ce-*` header bindings
+      are emitted with the normal send / `add_response_header` paths; an app reuses the
+      same envelope over MQTT / WebHook. Fixed BSS, no heap, one build flag.
 - [ ] **MQTT-SN** (M, sensor networks) - MQTT for Sensor Networks: the UDP / non-TCP
       variant for constrained, lossy links (topic IDs instead of strings, gateway
       discovery `ADVERTISE`/`SEARCHGW`, `REGISTER`, sleeping-client `PINGREQ` keep-alive).
