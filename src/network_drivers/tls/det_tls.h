@@ -188,6 +188,16 @@ int det_tls_csess_write(const uint8_t *data, size_t len);
 
 /** @brief Send close_notify and tear down the session. */
 void det_tls_csess_end();
+
+/**
+ * @brief Discard the saved TLS session so the next csess handshake is a full one.
+ *
+ * With DETWS_ENABLE_TLS_RESUMPTION the client keeps the last session's ticket and
+ * presents it on the next det_tls_csess_begin() for an abbreviated handshake. Call
+ * this to force a fresh full handshake (e.g. after a credential change). A no-op
+ * when resumption is disabled.
+ */
+void det_tls_csess_forget_session();
 #endif // DETWS_ENABLE_CLIENT_TLS
 
 #else // stubs (TLS disabled or native build)
@@ -271,6 +281,9 @@ static inline int det_tls_csess_write(const uint8_t *, size_t)
     return -1;
 }
 static inline void det_tls_csess_end()
+{
+}
+static inline void det_tls_csess_forget_session()
 {
 }
 #endif // DETWS_ENABLE_CLIENT_TLS

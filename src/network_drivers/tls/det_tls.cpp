@@ -525,6 +525,11 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
 #else
     mbedtls_ssl_conf_min_version(conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 #endif
+#if DETWS_ENABLE_TLS_RESUMPTION
+    // Accept a server-issued session ticket (RFC 5077) so the client can resume an
+    // abbreviated handshake on reconnect (see the csess save/restore below).
+    mbedtls_ssl_conf_session_tickets(conf, MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
+#endif
     return 0;
 }
 
@@ -669,6 +674,25 @@ static mbedtls_ssl_context s_csess_ssl;
 static mbedtls_ssl_config s_csess_conf;
 static bool s_csess_active = false;
 
+#if DETWS_ENABLE_TLS_RESUMPTION
+// Session saved from the last successful csess handshake (holds the server's
+// ticket). Presented on the next begin() for an abbreviated handshake. Lives in
+// the static arena like every other mbedTLS object - no heap growth.
+static mbedtls_ssl_session s_csess_saved;
+static bool s_csess_saved_valid = false;
+
+void det_tls_csess_forget_session()
+{
+    if (s_csess_saved_valid)
+        mbedtls_ssl_session_free(&s_csess_saved);
+    s_csess_saved_valid = false;
+}
+#else
+void det_tls_csess_forget_session()
+{
+}
+#endif
+
 bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn)
 {
     if (!send_fn || !recv_fn)
@@ -686,6 +710,12 @@ bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_
     }
     if (host)
         mbedtls_ssl_set_hostname(&s_csess_ssl, host);
+#if DETWS_ENABLE_TLS_RESUMPTION
+    // Present the saved session (server ticket) so this handshake resumes if the
+    // server still honors it; a full handshake transparently replaces it below.
+    if (s_csess_saved_valid)
+        mbedtls_ssl_set_session(&s_csess_ssl, &s_csess_saved);
+#endif
     mbedtls_ssl_set_bio(&s_csess_ssl, nullptr, send_fn, recv_fn, nullptr);
     s_csess_active = true;
     return true;
@@ -697,7 +727,17 @@ int det_tls_csess_handshake()
         return -1;
     int ret = mbedtls_ssl_handshake(&s_csess_ssl);
     if (ret == 0)
-        return client_pin_ok(&s_csess_ssl) ? 1 : -1; // verify the pin once established
+    {
+        if (!client_pin_ok(&s_csess_ssl)) // verify the pin once established
+            return -1;
+#if DETWS_ENABLE_TLS_RESUMPTION
+        // Capture the established session (incl. any new ticket) for next time.
+        det_tls_csess_forget_session();
+        mbedtls_ssl_session_init(&s_csess_saved);
+        s_csess_saved_valid = (mbedtls_ssl_get_session(&s_csess_ssl, &s_csess_saved) == 0);
+#endif
+        return 1;
+    }
     if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         return 0;
     return -1;

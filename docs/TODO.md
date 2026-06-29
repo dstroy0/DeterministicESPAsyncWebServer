@@ -26,8 +26,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 >
 > **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
 > abstraction (the two architectural tracks); concurrent TLS connections
-> (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); client-side TLS
-> resumption (server tickets are done); SSH
+> (`MAX_TLS_CONNS` > 1 needs a smaller-record ESP-IDF build); SSH
 > multiplexing, per-direction
 > NEWKEYS, and the KDF `K1‖K2…` extension (no current use case); moving
 > `ssh_pkt_recv`'s ~2 KB scratch off the stack. Full runtime verification of the
@@ -217,8 +216,16 @@ Open follow-ups discovered during the above:
       _(PROPPATCH done: 207 with each property refused 403. Streaming PUT done: the
       body is written to the file as it arrives, no longer bounded by
       [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
-- [ ] **Client-side TLS resumption** - the server issues tickets, but the
-      persistent client TLS session does not yet present one on reconnect.
+- [x] **Client-side TLS resumption** _(done, ESP32 compile-verified)_ - the persistent
+      client session (`csess`, e.g. MQTTS/WSS) now enables client session tickets
+      ([`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION)), saves the
+      established session with `mbedtls_ssl_get_session()` after each successful
+      handshake, and presents it with `mbedtls_ssl_set_session()` on the next
+      `det_tls_csess_begin()` for an abbreviated handshake;
+      `det_tls_csess_forget_session()` forces a fresh full handshake. Compiles on the
+      ESP32 toolchain. _Full abbreviated-handshake HW proof is blocked by the same
+      stock-Arduino DRAM limit as concurrent TLS (the ~48 KB `DETWS_TLS_ARENA_SIZE`
+      plus MQTT + transport overflows DRAM; needs a smaller-record ESP-IDF build)._
 - [x] **SNMPv3 _inform_** _(done)_ - `snmp_inform_v3()` (symmetric with
       `snmp_inform_v2c()` / `snmp_trap_v3()`) builds + sends an authenticated (authPriv
       when a privacy password is set) USM `InformRequest`; the caller owns the
