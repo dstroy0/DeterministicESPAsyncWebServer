@@ -2,6 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.7] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.7 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2fe507d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fe507d73e0f7764465426e72cc6b7fdbda3b331))
+- update CHANGELOG.md [skip ci] ([`675fa61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/675fa61005631404485a3e2661599f520ac04f4b))
+
+### Changes
+
+- Bump version: 4.49.6 → 4.49.7 ([`f34a77e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f34a77efd50dbc568bd884ce1e8ca78e70e49dbc))
+
+### Documentation
+
+- log the OIDC stack frame and L7 tcp_pcb teardown as debt ([`347b307`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/347b307e1380d50cf8a15a817d32a669d9906850))
+
+### Refactor
+
+- gate csrf/auth_lockout behind their feature flags ([`cea8a25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cea8a25f07416206cbe3b65cdfe25b25b873d32d))
+- name DNP3/MELSEC/COTP frame-geometry constants ([`b38cf9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b38cf9df885dcaf907469900717f2775bf4783da))
+- drop the now-dead lwIP include (close an L7 leak) ([`7de4bf8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7de4bf897c96f2b8a39bdc00c110649635490540))
+
+</details>
+
 ## [4.49.6] - 2026-06-29
 
 <details>
