@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ed56bb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed56bb650f0f969d3d3343934b8698098512a9c6))
 - update test report [skip ci] ([`c267b27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c267b276e20af44e66963e7d7789257565f38ca9))
 - update CHANGELOG.md [skip ci] ([`d0d9288`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0d9288f31eecee76d9494bed76faa9433b07a78))
 - update test report [skip ci] ([`90077e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90077e63321b7f4f8cc1a8c1b2a9036bcb563bfc))
@@ -13,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- link the learn series + STANDARDS.md from the docs landing page ([`c4f0222`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4f02223894ef0a719ea416041cb5c4c96faee0d))
 - beginner from-scratch primers (OSI model, TCP/IP, languages) ([`0ceadac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ceadacd98d99b5b6a20abf917c1e188cad05e76))
 - add STANDARDS.md (links every standard the lib uses) + roadmap 'audit against standards' item ([`06db79f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06db79f0e8e7426866ad0ad03398d548ccd2278d))
 
