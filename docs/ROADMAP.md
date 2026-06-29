@@ -534,14 +534,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       `MESSAGE` / `ACK` ... against ActiveMQ / RabbitMQ / Artemis over the shipped outbound
       client transport (or STOMP-over-WebSocket via the WS client); pure, host-tested. The
       connection / subscription state is the application's.
-- [ ] **gRPC / Protocol Buffers** (L) - two related pieces. **Protobuf**: a zero-heap
-      wire codec (varint + length-delimited fields, the same streaming
-      writer/cursor-reader shape as the shipped CBOR / MessagePack codecs, generated or
-      hand-written message structs over caller buffers) - the standalone deliverable,
-      host-testable against spec vectors. **gRPC**: framed Protobuf RPC over **HTTP/2**
-      (the length-prefixed message framing + the `application/grpc` content type), so it
-      is gated on the HTTP/2 roadmap item above; gRPC-Web over HTTP/1.1 is the earlier,
-      reachable subset. Fixed BSS, no heap.
+- [~] **gRPC / Protocol Buffers** (L) - _Protobuf wire codec shipped._
+  `DETWS_ENABLE_PROTOBUF` (`services\protobuf`): a zero-heap streaming writer
+  (`pb_uint64` / `pb_sint64` / `pb_fixed32` / `pb_fixed64` / `pb_float` / `pb_double` /
+  `pb_bytes` / `pb_string`, embedded messages via a sub-buffer + `pb_bytes`) and a
+  cursor reader (`pb_read_field` over varint / ZigZag / I32 / I64 / length-delimited),
+  host-tested against the spec vectors (`08 96 01`, the `"testing"` string, ZigZag
+  mapping). **gRPC** (framed Protobuf RPC over **HTTP/2**, the length-prefixed message
+  framing + `application/grpc`) remains gated on the HTTP/2 roadmap item above;
+  gRPC-Web over HTTP/1.1 is the earlier, reachable subset. Fixed BSS, no heap.
 - [ ] **DDS** (XL, OMG DDS) - Data Distribution Service: a decentralized peer-to-peer
       data-bus standard built on **RTPS** (the Real-Time Publish-Subscribe wire protocol
       over UDP, with SPDP/SEDP discovery). Implement an RTPS participant with the QoS

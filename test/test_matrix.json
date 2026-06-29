@@ -326,6 +326,12 @@
       "src": ["+<services/flow_export/flow_export.cpp>"],
       "tests": ["test_flow_export"]
     },
+    "native_protobuf": {
+      "desc": "Protocol Buffers wire codec (services/protobuf): the zero-heap streaming writer\n(varint / ZigZag / fixed32 / fixed64 / length-delimited) + the cursor reader, host-tested\nagainst the spec vectors. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PROTOBUF=1"],
+      "src": ["+<services/protobuf/protobuf.cpp>"],
+      "tests": ["test_protobuf"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

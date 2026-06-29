@@ -60,6 +60,7 @@
     "cloudevents",
     "specversion",
     "varint",
+    "sint",
     "ASHRAE",
     "BACnet",
     "BBMD",

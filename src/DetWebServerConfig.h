@@ -776,6 +776,19 @@
 #endif
 
 /**
+ * @brief Protocol Buffers wire codec (`services/protobuf`).
+ *
+ * Default off. A zero-heap streaming Protobuf encoder + cursor reader over caller buffers
+ * (the same shape as the CBOR / MessagePack codecs): varint / ZigZag / fixed32 / fixed64 /
+ * length-delimited fields, with embedded messages built into a sub-buffer and added via
+ * `pb_bytes`. Pure codec, host-tested against the spec vectors. This is the standalone
+ * Protobuf deliverable; gRPC (framed Protobuf over HTTP/2) is gated on the HTTP/2 item.
+ */
+#ifndef DETWS_ENABLE_PROTOBUF
+#define DETWS_ENABLE_PROTOBUF 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
