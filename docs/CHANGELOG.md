@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`5ed99af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ed99aff51804abea275999493f2206a6b997d31))
+- update CHANGELOG.md [skip ci] ([`93422ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93422ff1db7497330615cab40ec8ecb0b6ecd546))
 - update test report [skip ci] ([`99582ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99582ab72dd2cd4714f98b428fc1c489745f1638))
 - update CHANGELOG.md [skip ci] ([`0bd20c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bd20c3a989c4538b6d4e8769fb89f68178feaed))
 - update test report [skip ci] ([`9a3e17b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a3e17bd3b37e03a64329154d747db613c661d4f))
@@ -19,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- host tests for OPTIONS, GET-through-mount, LOCK/UNLOCK ([`1371644`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/137164412d03795a61ff9e309979aad9eea475f9))
 - host tests for PROPFIND Depth 0/1, MKCOL, single DELETE ([`713b3ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/713b3ce30bfbcbd9878f575fbe8a14da87199d4e))
 - host coverage for recursive COPY/MOVE/DELETE ([`89cd53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89cd53b06e914a865878becd97eb4726beb3c233))
 
