@@ -173,8 +173,7 @@ class File
     int _cursor;      ///< next node index to scan for openNextFile
 
   public:
-    File()
-        : _data(nullptr), _size(0), _pos(0), _open(false), _mtime(0), _wnode(nullptr), _is_dir(false), _cursor(0)
+    File() : _data(nullptr), _size(0), _pos(0), _open(false), _mtime(0), _wnode(nullptr), _is_dir(false), _cursor(0)
     {
         _dir[0] = '\0';
     }

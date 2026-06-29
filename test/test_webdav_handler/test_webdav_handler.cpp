@@ -154,8 +154,8 @@ void test_copy_overwrite_semantics()
     tree_put("/dav/dst/stale.txt", "old");
 
     feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/dst\r\n\r\n");
-    TEST_ASSERT_TRUE(resp_status(204));                  // replaced
-    TEST_ASSERT_FALSE(tree_has("/dav/dst/stale.txt"));   // target cleared first
+    TEST_ASSERT_TRUE(resp_status(204));                // replaced
+    TEST_ASSERT_FALSE(tree_has("/dav/dst/stale.txt")); // target cleared first
     TEST_ASSERT_TRUE(tree_content_eq("/dav/dst/a.txt", "alpha"));
 
     rearm();
