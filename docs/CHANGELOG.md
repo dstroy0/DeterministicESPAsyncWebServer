@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`90077e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90077e63321b7f4f8cc1a8c1b2a9036bcb563bfc))
+- update CHANGELOG.md [skip ci] ([`80463fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80463fb724f937b247859b7e50abb8614215c4a9))
+
+### Documentation
+
+- add STANDARDS.md (links every standard the lib uses) + roadmap 'audit against standards' item ([`06db79f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06db79f0e8e7426866ad0ad03398d548ccd2278d))
+
 ## [4.11.2] - 2026-06-29
 
 <details>
