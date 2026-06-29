@@ -143,6 +143,15 @@ flag (default off) so it costs nothing when unused.
 
 - [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
 - [ ] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).
+- [ ] **Real-protocol interop test harness** (M, per protocol) - for every protocol
+      feature, a build/test script that drives the device with the _real_ reference
+      implementation (a genuine peer / server / client), not just our own round-trip -
+      e.g. `mosquitto` for MQTT, `pymodbus` for Modbus, `aiocoap` for CoAP, `net-snmp`
+      for SNMP, `asyncua` for OPC UA, a real browser/`websocat` for WebSocket, `curl`/`h2`
+      for HTTP. Scripted, runnable in CI (containers) + against the HW board, asserting
+      byte-exact / spec-conformant interop. This is the standing rule (verify against an
+      authoritative third-party impl) turned into reusable harnesses, so each new
+      protocol ships with a real-peer conformance check, not a self-fulfilling test.
 - [x] **Pentesting / adversarial suite** _(shipped)_ - a separately-runnable harness (env `native_pentest` + a nightly `Pentest` CI job, _not_ part of the per-commit unit-test run) that fuzzes the untrusted-input parsers (HTTP request line/headers/body, Modbus ADU, base32) with malformed, oversized, partial slowloris-style, binary/protocol-confusion, and deterministically-random input, asserting the device's safety invariants: fixed footprint (no buffer index past its bound), fail-closed (defined error states only), and liveness (no hang/over-read). Plus a documented on-device stress playbook (slowloris / floods / brute-force vs the throttle / lockout / allowlist defenses). Full guide: [PENTEST.md](PENTEST.md). Extend it to the remaining codecs (CBOR / SNMP / CoAP / WS / multipart) as you go.
 
 ## Protocol & transport versions
@@ -202,6 +211,34 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       (det_mime / det_bytes / base64url / DNS) and any later features. Run after a
       batch of changes lands, not per commit.
 
+## Low-level networking (raw Layer 2)
+
+The ESP32 _does_ expose raw Layer-2 access on both interfaces, and the hard-real-time
+cyclic timing is reachable too - so the earlier "PHY can't do raw L2 / can't hit the
+timing" caveats are corrected here. **Timing model:** build the device as a
+_single feature + the base web server_, and run the protocol's cyclic loop as a
+hardware-timer / RMT ISR feeding a **high-priority preempting task** (a top-priority,
+core-pinned FreeRTOS task that preempts the web server) off a small interrupt queue.
+The web server runs underneath at lower priority; the cyclic deadline owns the CPU
+when it fires. With the whole device budgeted to one cyclic loop, the sub-millisecond
+isochronous deadlines are achievable - the determinism guarantees (fixed buffers, no
+heap, bounded work) are exactly what makes a hard real-time loop tractable here.
+
+- [ ] **Raw L2 frame TX/RX** (M, platform enabler) - a thin, zero-heap raw-frame API
+      the raw-L2 protocols build on:
+    - **Wi-Fi (802.11):** `esp_wifi_80211_tx()` injects arbitrary management / data
+      frames (custom beacons, proprietary MAC headers) - bypasses the Wi-Fi state
+      machine. Also the basis for the pentest/observability angle (beacon/mgmt crafting).
+    - **Wired (802.3):** `esp_eth_transmit()` + `esp_eth_update_input_path()` detach the
+      Ethernet MAC from lwIP so the app reads/writes raw Ethernet frames at L2 directly -
+      this is what makes PROFINET-RT / EtherCAT / GOOSE / POWERLINK / SERCOS framing
+      reachable - the cyclic deadline is met by the high-priority preempting-ISR/task
+      model above (single-feature build), not blocked by the platform.
+    - **L2 transparent bridge:** capture raw L2 on Wi-Fi and map onto the wire via the
+      Ethernet MAC (and back) so the device acts as an unmanaged Wi-Fi-to-wired L2 switch.
+      Fixed BSS frame buffers, no heap; one build flag, off by default (raw injection is
+      powerful - keep it opt-in).
+
 ## Industrial / standards protocols
 
 - [ ] **MTConnect** (L, ANSI/MTC1.4-2018) - implement the MTConnect agent standard:
@@ -218,10 +255,12 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       Ethernet stacks. Start with **EtherNet/IP** (CIP over TCP/UDP 44818/2222): it
       rides ordinary TCP/UDP, so the CIP object model + explicit/implicit messaging fit
       the existing transport with a fixed object dictionary. **PROFINET** (RT, raw L2
-      frames) and **EtherCAT** (slave needs an ESC / special MAC) require deterministic
-      sub-millisecond timing and MAC features the stock ESP32 PHY does not provide -
-      document the hardware gating and scope these to "as the platform allows" (likely
-      a PROFINET-over-UDP/`DCP` discovery subset rather than IRT). Each: fixed BSS
+      frames) and **EtherCAT** rely on raw L2, which the ESP32 _does_ provide (see
+      Low-level networking above - `esp_eth_transmit` / `esp_eth_update_input_path`), and
+      the IRT/isochronous cyclic deadline is met by the high-priority preempting-ISR/task
+      model in a single-feature build (this protocol + base web server only). So the full
+      cyclic RT/IRT stack is on the table, not just a discovery subset; PROFINET `DCP` is
+      the easy first milestone, EtherCAT/IRT the hard one. Each: fixed BSS
       object/process-image model, no heap.
 - [ ] **Fieldbuses** (L, classic serial/CAN buses) - the pre-Ethernet field protocols
       built on the existing zero-heap codec pattern: **CANopen** (CiA 301: object
@@ -279,13 +318,15 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       hardware-gated; scope the protocol/state-machine + ISDU layer first. Fixed BSS
       device model, no heap.
 - [ ] **POWERLINK** (XL, EPSG) - Ethernet POWERLINK managed-node stack: the cyclic
-      isochronous SoC/PReq/PRes/SoA slot schedule plus asynchronous SDO. Like
-      EtherCAT/PROFINET-IRT, the sub-ms isochronous timing is gated on hardware the
-      stock ESP32 lacks - scope to the protocol/object-dictionary + asynchronous-SDO
-      layer; document the timing gating.
+      isochronous SoC/PReq/PRes/SoA slot schedule plus asynchronous SDO. Raw L2 +
+      the high-priority preempting-task timing model (single-feature build) are both
+      reachable (see Low-level networking), so the full isochronous managed-node cycle is
+      in scope - object dictionary + the SoC/PReq/PRes slot schedule. Fixed BSS, no heap.
 - [ ] **SERCOS III** (XL, motion bus) - the real-time motion/drive bus over Ethernet:
-      the IDN parameter model + cyclic MDT/AT telegrams. Hard-real-time slot timing is
-      PHY/timing-gated on ESP32 (same caveat as EtherCAT) - scope the IDN service-channel + frame layer, document the gating. Fixed BSS, no heap.
+      the IDN parameter model + cyclic MDT/AT telegrams. Raw L2 + the preempting-task
+      cyclic timing (single-feature build) are reachable (see Low-level networking), so
+      the hard-real-time slot schedule is in scope alongside the IDN service channel.
+      Fixed BSS, no heap.
 - [ ] **DeviceNet** (L, CIP over CAN) - already noted under Fieldbuses: the CIP object
       model (shared with EtherNet/IP) over the ESP32 TWAI/CAN controller -
       predefined master/slave connection set, explicit + I/O messaging. Fixed BSS
@@ -354,10 +395,12 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
 - [ ] **IEC 61850** (XL, substation automation) - the substation standard: **MMS**
       (Manufacturing Message Specification over ISO-on-TCP 102, the ACSI object model -
       logical devices/nodes, data objects, datasets, reports) as the host-reachable
-      client/server core, and **GOOSE** (the raw-L2 multicast event publish for
-      fast trips - hardware/timing-gated like the other raw-Ethernet buses, scope to
-      the APDU encode/decode + dataset model). SCL (the SCD/CID config) drives a fixed
-      BSS model; no heap. Heaviest of the grid protocols - sequence behind 60870-5-104.
+      client/server core, and **GOOSE** (the raw-L2 multicast event publish for fast
+      trips - raw L2 via `esp_eth_*` plus the high-priority preempting-task model (see
+      Low-level networking) meet the sub-ms trip deadline in a single-feature build, so
+      the APDU encode/decode + dataset model + the fast-retransmit cadence are in scope).
+      SCL (the SCD/CID config) drives a fixed BSS model; no heap. Heaviest of the grid
+      protocols - sequence behind 60870-5-104.
 - [ ] **IEEE C37.118** (M-L, synchrophasors) - the PMU synchrophasor protocol: the
       four frame types (configuration, header, data, command) over TCP/UDP 4712/4713,
       carrying time-stamped phasor / frequency / ROCOF measurements. Fixed BSS phasor
@@ -533,3 +576,26 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       stream store). Heavier candidates (MongoDB wire protocol, Postgres frontend/backend
       protocol) are larger and lower-priority. Scope RESP first; fixed BSS, no heap, one
       flag per backend. (Exploratory - sized as a candidate, not committed.)
+
+### Motor / actuator control (ESC protocols)
+
+For drone / robotics use - drive ESCs and ingest their telemetry straight from the
+web server, using the ESP32's hardware timing peripherals (RMT / MCPWM) so the
+microsecond-precise pulse trains run without locking the CPU. Each behind a build
+flag; fixed BSS, no heap.
+
+- [ ] **DShot** (M, RMT) - the digital ESC standard (DShot150 / 300 / 600 / 1200): the
+      16-bit packet (11-bit throttle, 1-bit telemetry-request, 4-bit CRC) emitted as
+      microsecond-precise pulses via the **RMT** peripheral (no CPU lock). The bit-pack + CRC is host-testable; RMT is the HW timing backend. Expose throttle + arming over
+      an HTTP/WS/dashboard control.
+- [ ] **Bidirectional / Extended DShot (EDShot)** (M, RMT) - DShot with the return
+      channel: read live ESC diagnostics (eRPM, temperature, voltage, current, error
+      rate) back over the same signal wire, so the server streams real-time ESC telemetry
+      (pairs with the telemetry-math + dashboard services). Builds on DShot.
+- [ ] **ProShot** (S, RMT) - the hybrid analog/digital ESC protocol (pulse-position
+      carries the digital value) - less timing-critical than high-speed DShot, faster
+      than PWM. Same RMT backend + packet model as DShot.
+- [ ] **OneShot / Multishot** (S, MCPWM) - the fast legacy analog PWM ESC protocols
+      (OneShot125 / OneShot42, Multishot) synced to the control loop, driven by the
+      **MCPWM** (motor-control PWM) peripheral. A thin pulse-width mapping over MCPWM;
+      pairs with the DShot control surface as the legacy fallback.
