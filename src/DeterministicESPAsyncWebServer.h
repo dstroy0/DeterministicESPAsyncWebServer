@@ -450,18 +450,12 @@ class DetWebServer
 #endif
 
     /**
-     * @brief Begin a response: capture the slot's PCB and, unless keeping the
-     *        connection alive, detach + free the slot before the write (so an
-     *        lwIP error callback during the write sees CONN_FREE). Returns the PCB.
+     * @brief Finish a response: flush, then close the connection (close path) or
+     *        recycle the slot for the next request (keep-alive). Records the
+     *        response and resets the HTTP parser either way. Addresses the
+     *        connection by slot alone; the transport resolves the pcb internally.
      */
-    struct tcp_pcb *resp_begin(uint8_t slot_id, bool keep);
-
-    /**
-     * @brief Finish a response: flush, then close the PCB (close path) or recycle
-     *        the slot for the next request (keep-alive). Records the response and
-     *        resets the HTTP parser either way.
-     */
-    void resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep);
+    void resp_end(uint8_t slot_id, int code, int body_len, bool keep);
 
     /**
      * @brief Resolve the Connection response header and report keep-alive intent.

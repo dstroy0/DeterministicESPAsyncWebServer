@@ -185,8 +185,163 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
 
 ## Maintenance
 
+- [x] **API directional symmetry pass** _(audited)_ - swept the paired ingress/egress
+      surfaces (codec encode/decode, transport read/send, server/client, HTTP
+      request/response, the protocol-service parse/build pairs) against the rule that a
+      value at a position on ingress sits at the same position on egress. Result: the
+      surfaces are symmetric, with one real fix applied - the egress transport API
+      (`det_conn_send` / `det_conn_sndbuf` / `det_conn_flush`, plus the private
+      `resp_end`) no longer threads a `tcp_pcb *`; it resolves the slot's pcb
+      internally, exactly as the RX read path and the client surface already do, so a
+      caller can no longer pass a pcb that disagrees with the slot. The remaining LOW
+      findings (CBOR `text` vs MessagePack `str`; builder-returns-length vs
+      parser-returns-bool) are spec-faithful, consistent house style - left as is.
 - [ ] **Refresh build footprints** (S) - regenerate the per-feature / per-example
       flash + RAM footprint tables (the example READMEs and docs/FEATURES.md) so the
       documented numbers track the current build after the shared-primitive dedup
       (det_mime / det_bytes / base64url / DNS) and any later features. Run after a
       batch of changes lands, not per commit.
+
+## Industrial / standards protocols
+
+- [ ] **MTConnect** (L, ANSI/MTC1.4-2018) - implement the MTConnect agent standard:
+      the four HTTP request types (`probe`, `current`, `sample`, `asset`) returning
+      the MTConnect XML response documents (`MTConnectDevices`, `MTConnectStreams`,
+      `MTConnectAssets`, `MTConnectError`) per the schema, with a fixed-capacity
+      in-memory data model (Devices -> Components -> DataItems) and a bounded circular
+      sample buffer keyed by `instanceId` + `sequence` (the `from`/`count`/`interval`
+      semantics, including HTTP long-poll streaming of `sample`). Zero-heap: the device
+      model and sample buffer are fixed BSS, the XML is streamed via the chunked
+      response pump. Pairs with the existing data-source services (gpio_map / dashboard)
+      as MTConnect DataItems.
+- [ ] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - real-time
+      Ethernet stacks. Start with **EtherNet/IP** (CIP over TCP/UDP 44818/2222): it
+      rides ordinary TCP/UDP, so the CIP object model + explicit/implicit messaging fit
+      the existing transport with a fixed object dictionary. **PROFINET** (RT, raw L2
+      frames) and **EtherCAT** (slave needs an ESC / special MAC) require deterministic
+      sub-millisecond timing and MAC features the stock ESP32 PHY does not provide -
+      document the hardware gating and scope these to "as the platform allows" (likely
+      a PROFINET-over-UDP/`DCP` discovery subset rather than IRT). Each: fixed BSS
+      object/process-image model, no heap.
+- [ ] **Fieldbuses** (L, classic serial/CAN buses) - the pre-Ethernet field protocols
+      built on the existing zero-heap codec pattern: **CANopen** (CiA 301: object
+      dictionary, PDO/SDO, NMT, heartbeat) over the ESP32 TWAI/CAN controller;
+      **PROFIBUS-DP** and **DeviceNet** as scope allows (DeviceNet is CIP-over-CAN, so
+      it shares the EtherNet/IP object model). Modbus TCP already ships
+      ([modbus](../src/services/modbus/)); these extend the same data-model + ADU
+      parse/build approach to the CAN/serial fieldbus families, each behind its own
+      build flag.
+- [ ] **Modbus RTU** (M, serial / RS-485) - add the serial framing to the existing
+      Modbus data model + PDU codec ([modbus](../src/services/modbus/), which today is
+      TCP-only: MBAP header, port 502). RTU wraps the same PDU in a serial frame -
+      `unit-id + PDU + CRC-16/Modbus` with the 3.5-character inter-frame gap for frame
+      sync - so it reuses the entire data model and function-code dispatch; only the
+      ADU encode/decode (CRC instead of MBAP) and a UART transport are new. Host-test
+      the CRC + frame split, HW-verify over RS-485. (Modbus ASCII is a lower-priority
+      follow-on.)
+- [ ] **PROFINET / PROFIBUS** (XL, Siemens automation) - the Siemens factory-automation
+      stack as a focused target: **PROFIBUS-DP** (RS-485 master/slave, the cyclic DP-V0
+      I/O exchange + a GSD-described slave model) and **PROFINET IO** (the Ethernet
+      successor: `DCP` device discovery/naming over raw L2, the IO-Device cyclic data
+      exchange, and a GSDML device description). RT/IRT timing classes are gated on PHY + timing the stock ESP32 lacks, so scope to the DP-V0 cyclic subset and the
+      PROFINET `DCP`/acyclic-record subset first - fixed BSS process image, no heap,
+      one build flag each. (Overlaps the broader Industrial-Ethernet and Fieldbus items
+      above; this is the dedicated Siemens-interop slice.)
+- [ ] **DNP3** (L, IEEE 1815) - the SCADA / utility outstation protocol: the 3-layer
+      stack (data-link with CRC per block, transport segmentation, application objects
+      with groups/variations), over serial and TCP/UDP 20000. Class 0/1/2/3 polling,
+      unsolicited responses, and time-sync; fixed BSS point database (binary/analog
+      in/out, counters), no heap. Optional Secure Authentication (IEEE 1815 SAv5) later.
+- [ ] **HART** (M, FieldComm) - process-instrument protocol: the FSK digital signal
+      riding the 4-20 mA loop (and HART-IP over UDP 5094 as the gateway-friendly path).
+      Command set (universal + common-practice), the device-variable + status model,
+      and burst mode; fixed BSS device model, no heap. HART-IP first (no analog front
+      end needed); the FSK modem is hardware-gated.
+- [ ] **CC-Link / CC-Link IE** (L, CLPA) - Mitsubishi's factory networks: **CC-Link**
+      (the RS-485 cyclic remote-I/O / remote-device station model) and **CC-Link IE
+      Field** (the Gigabit-Ethernet successor, cyclic + transient messaging). The
+      cyclic process-image + station model reuse the existing data-model pattern; IE's
+      Gbit timing is PHY-gated, so scope to the protocol/cyclic-frame layer as the
+      platform allows. Fixed BSS, one build flag per variant.
+- [ ] **PROFIBUS PA** (M, process automation) - the process-automation profile of
+      PROFIBUS: the same DP-V0/V1 application as PROFINET/PROFIBUS-DP above but over the
+      MBP (Manchester Bus Powered, IEC 61158-2) physical layer for hazardous areas,
+      with the PA device profiles (transmitters/valves). Builds on the PROFIBUS-DP work;
+      the MBP physical layer is hardware-gated (couples to a DP segment via a
+      segment coupler in practice).
+- [ ] **CANopen** (M, CiA 301) - first-class CANopen over the ESP32 TWAI/CAN
+      controller (also noted under Fieldbuses): the object dictionary, PDO/SDO
+      transfer, NMT state machine, and heartbeat/node-guarding; fixed BSS object
+      dictionary, no heap. The DS401 generic-I/O device profile as the first profile.
+- [ ] **IO-Link** (M, IEC 61131-9) - point-to-point sensor/actuator link: the device
+      stack (the SIO/SDCI cyclic process data + on-request ISDU parameter service, and
+      the IODD-described device model). The 3-wire UART-style physical layer is
+      hardware-gated; scope the protocol/state-machine + ISDU layer first. Fixed BSS
+      device model, no heap.
+- [ ] **POWERLINK** (XL, EPSG) - Ethernet POWERLINK managed-node stack: the cyclic
+      isochronous SoC/PReq/PRes/SoA slot schedule plus asynchronous SDO. Like
+      EtherCAT/PROFINET-IRT, the sub-ms isochronous timing is gated on hardware the
+      stock ESP32 lacks - scope to the protocol/object-dictionary + asynchronous-SDO
+      layer; document the timing gating.
+- [ ] **SERCOS III** (XL, motion bus) - the real-time motion/drive bus over Ethernet:
+      the IDN parameter model + cyclic MDT/AT telegrams. Hard-real-time slot timing is
+      PHY/timing-gated on ESP32 (same caveat as EtherCAT) - scope the IDN service-channel + frame layer, document the gating. Fixed BSS, no heap.
+- [ ] **DeviceNet** (L, CIP over CAN) - already noted under Fieldbuses: the CIP object
+      model (shared with EtherNet/IP) over the ESP32 TWAI/CAN controller -
+      predefined master/slave connection set, explicit + I/O messaging. Fixed BSS
+      object model, no heap; pairs with the EtherNet/IP CIP work.
+- [ ] **LonWorks / LON** (L, ISO/IEC 14908) - the building-automation network: the
+      LonTalk protocol + network-variable (SNVT) model. The native TP/FT-10 physical
+      layer needs a Neuron/transceiver, so target **LON/IP** (IEC 14908-4, ISO/IEC
+      14908 over UDP) first as the host-reachable path. Fixed BSS NV table, no heap.
+- [ ] **Modbus Plus** (L, HDLC token bus) - Schneider's token-passing peer bus: the
+      HDLC framing + token-rotation MAC and the path/routing model over the Modbus Plus
+      data link. Niche and physical-layer-gated (custom 1 Mbit/s bus); scope the
+      framing/token layer as the platform allows, reusing the existing Modbus PDU model.
+- [ ] **INTERBUS** (L, Phoenix Contact) - the ring/summation-frame fieldbus: the single
+      rotating summation frame (each device a shift-register slice) + the PCP parameter
+      channel. Ring physical layer is hardware-gated; scope the summation-frame protocol + process-image model, document the gating. Fixed BSS, no heap.
+- [ ] **AMQP** (L, OASIS AMQP 1.0 / 0-9-1) - enterprise message-queue client alongside
+      the existing MQTT client: the AMQP 1.0 type system + framing (open / begin /
+      attach / transfer / disposition) for broker links, or the 0-9-1 method frames for
+      RabbitMQ interop. Zero-heap: fixed link/session state, the payload streamed
+      through the client transport (det_client), one build flag. Pairs with the MQTT /
+      webhook outbound integrations as a heavier-duty queueing option.
+- [ ] **DF1 / DH+** (M-L, Allen-Bradley / Rockwell) - the legacy Rockwell PLC link:
+      **DF1** (the serial point-to-point/multidrop protocol - full/half-duplex framing
+      with BCC/CRC, the PCCC command set for PLC-5 / SLC-500 data-table reads/writes)
+      and **DH+** (Data Highway Plus, the token-passing LAN carrying the same PCCC
+      messages). DF1 first (UART, host-testable framing + PCCC codec); DH+ is
+      physical-layer-gated (the 57.6k/115.2k/230.4k blue-hose bus needs a transceiver)
+      so scope it to the PCCC/token layer. Reuses the data-model + ADU parse/build
+      pattern; fixed BSS, no heap.
+- [ ] **S7comm / S7comm-Plus** (L, Siemens S7) - the Siemens PLC communication
+      protocol over ISO-on-TCP (RFC 1006, TPKT + COTP on port 102): **S7comm** (the
+      classic S7-300/400 job/ack-data PDUs - read/write of DB/M/I/Q areas, the item
+      addressing model) and **S7comm-Plus** (the S7-1200/1500 successor with its
+      session/integrity wrapping). S7comm first (host-testable TPKT/COTP framing + the
+      S7 item codec); S7comm-Plus is heavier (object model + integrity). Fixed BSS data
+      model, no heap, one build flag.
+- [ ] **MELSECNET** (L, Mitsubishi) - the Mitsubishi MELSEC PLC networks: the MC
+      protocol (MELSEC Communication, the 1E/3E/4E binary + ASCII frames for device
+      batch read/write over TCP/UDP) first as the host-reachable path, then
+      **MELSECNET/H** and **MELSECNET/10** (the cyclic control-network layer, which is
+      PHY/timing-gated). Reuses the data-model + frame parse/build pattern; fixed BSS
+      device model, no heap.
+- [ ] **FINS** (M-L, Omron) - the Omron Factory Interface Network Service: the FINS
+      command/response frames (memory-area read/write, run/stop, clock) over **FINS/UDP**
+      and **FINS/TCP** (ports 9600) first as the host-reachable paths, with the
+      FINS/Hostlink-gateway addressing model. Fixed BSS device model, no heap, one
+      build flag.
+- [ ] **Host Link** (M, Omron) - Omron's serial C-mode protocol (the `@`-framed ASCII
+      commands with FCS over RS-232/RS-485) for CJ/CS/CP PLCs - memory read/write of the
+      DM/CIO areas. UART transport, host-testable frame + FCS codec; pairs with the FINS
+      work (Host Link is the serial sibling). Fixed BSS, no heap.
+- [ ] **SNP** (M, GE Fanuc Series Ninety Protocol) - the GE Fanuc Series 90 (90-30 /
+      90-70) serial protocol: the SNP / SNP-X master-slave framing over RS-485 for
+      register/bit read/write. UART transport, host-testable frame + checksum codec;
+      reuses the data-model + ADU parse/build pattern. Fixed BSS, no heap.
+- [ ] **DirectNET** (M, AutomationDirect) - the AutomationDirect / Koyo serial protocol
+      (the DirectNET HostLink-style framed read/write of V-memory) for DirectLOGIC PLCs.
+      UART transport, host-testable framing + checksum codec; pairs with the Modbus-RTU
+      and other serial fieldbus work. Fixed BSS, no heap.

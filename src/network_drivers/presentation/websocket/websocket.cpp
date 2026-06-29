@@ -160,9 +160,9 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
         hlen = 4;
     }
 
-    det_conn_send(conn->id, conn->pcb, header, hlen);
+    det_conn_send(conn->id, header, hlen);
     if (len > 0 && payload)
-        det_conn_send(conn->id, conn->pcb, payload, len);
+        det_conn_send(conn->id, payload, len);
 
     return true;
 }
@@ -175,7 +175,7 @@ void ws_close(WsConn *ws, WsCloseCode code)
 
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
-        det_conn_flush(conn->id, conn->pcb);
+        det_conn_flush(conn->id);
 
     ws->parse_state = WS_CLOSED;
 }
@@ -206,7 +206,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         {
             ws_send_frame(ws, WS_OP_PONG, ws->ctl_buf, (uint16_t)ws->payload_idx);
             if (conn->pcb)
-                det_conn_flush(conn->id, conn->pcb);
+                det_conn_flush(conn->id);
         }
         else if (ws->opcode == WS_OP_CLOSE)
         {

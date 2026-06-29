@@ -1076,8 +1076,8 @@ void raw_send(uint8_t slot, const void *data, size_t n)
     TcpConn *c = &conn_pool[slot];
     if (c->state != CONN_ACTIVE || !c->pcb || n == 0)
         return;
-    det_conn_send(c->id, c->pcb, data, (u16_t)n);
-    det_conn_flush(c->id, c->pcb);
+    det_conn_send(c->id, data, (u16_t)n);
+    det_conn_flush(c->id);
 }
 void close_conn(uint8_t slot)
 {

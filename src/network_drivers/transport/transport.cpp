@@ -275,23 +275,24 @@ uint32_t DeterministicAsyncTCP::conn_timeout_ms = CONN_TIMEOUT_MS;
 // they go out as plaintext (tcp_write) or through the TLS record layer. With
 // DETWS_ENABLE_TLS off this is byte-identical to a direct tcp_write/tcp_output.
 
-bool det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+bool det_conn_send(uint8_t slot, const void *data, u16_t len)
 {
+    // The write target is always the slot's own pcb (ingress reads resolve it the
+    // same way) - callers no longer thread it through, so it cannot disagree.
 #if defined(ARDUINO)
-    return det_tcp_marshal(DET_OP_SEND, slot, pcb, data, len) == ERR_OK; // write runs in tcpip_thread
+    return det_tcp_marshal(DET_OP_SEND, slot, conn_pool[slot].pcb, data, len) == ERR_OK; // write runs in tcpip_thread
 #else
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
         return det_tls_write(slot, data, len) >= 0;
 #endif
-    (void)slot;
-    return tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY) == ERR_OK;
+    return tcp_write(conn_pool[slot].pcb, data, len, TCP_WRITE_FLAG_COPY) == ERR_OK;
 #endif
 }
 
-u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb)
+u16_t det_conn_sndbuf(uint8_t slot)
 {
-    (void)slot;
+    struct tcp_pcb *pcb = conn_pool[slot].pcb;
     if (!pcb)
         return 0;
     u16_t avail = tcp_sndbuf(pcb);
@@ -304,18 +305,17 @@ u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb)
     return avail;
 }
 
-void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb)
+void det_conn_flush(uint8_t slot)
 {
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
         return; // ciphertext was already pushed by the TLS BIO (tcp_output per record);
                 // flush must NOT end the session - persistent TLS (wss / TLS SSE) reuses it
 #endif
-    (void)slot;
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_OUTPUT, slot, pcb, nullptr, 0);
+    det_tcp_marshal(DET_OP_OUTPUT, slot, conn_pool[slot].pcb, nullptr, 0);
 #else
-    tcp_output(pcb);
+    tcp_output(conn_pool[slot].pcb);
 #endif
 }
 

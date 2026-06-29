@@ -86,6 +86,6 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
     if (pos <= 0 || pos >= rem)
         return false;
 
-    det_conn_send(conn->id, conn->pcb, buf, (u16_t)pos);
+    det_conn_send(conn->id, buf, (u16_t)pos);
     return true;
 }

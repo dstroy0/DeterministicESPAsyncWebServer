@@ -350,24 +350,19 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 }
 #endif // DETWS_ENABLE_KEEPALIVE
 
-// Capture the slot's PCB for the response. The slot stays CONN_ACTIVE through the
-// write for BOTH paths (callbacks live - the same model keep-alive has always
-// used); the close path then dwells in CONN_CLOSING from resp_end, so the slot is
-// reclaimed only once the peer ACKs the response (or the CLOSING timeout fires),
-// not torn down before it is delivered.
-struct tcp_pcb *DetWebServer::resp_begin(uint8_t slot_id, bool keep)
-{
-    (void)keep;
-    return conn_pool[slot_id].pcb;
-}
-
 // Finish a response: flush, then either begin the graceful CONN_CLOSING dwell
 // (close path) or leave the slot active for reuse (keep-alive). The HTTP parser
 // is reset either way, returning a kept-alive slot to PARSE_METHOD ready for the
-// next request.
-void DetWebServer::resp_end(uint8_t slot_id, struct tcp_pcb *pcb, int code, int body_len, bool keep)
+// next request. The slot stays CONN_ACTIVE through the write for BOTH paths
+// (callbacks live - the model keep-alive has always used); the close path then
+// dwells in CONN_CLOSING from here, so the slot is reclaimed only once the peer
+// ACKs the response (or the CLOSING timeout fires), not before it is delivered.
+// Every response path now addresses the connection by slot alone - the transport
+// resolves the pcb internally, the same way the RX read path does (no pcb is
+// threaded through the app layer, so the send target can never disagree).
+void DetWebServer::resp_end(uint8_t slot_id, int code, int body_len, bool keep)
 {
-    det_conn_flush(slot_id, pcb);
+    det_conn_flush(slot_id);
     if (!keep)
         det_conn_begin_close(slot_id); // ACTIVE -> CONN_CLOSING; finalizes on ACK
     note_response(slot_id, code, body_len);
@@ -1298,9 +1293,8 @@ static void ws_send_version_required(uint8_t slot_id)
                                "Content-Length: 0\r\n"
                                "Connection: close\r\n\r\n";
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_send(slot_id, pcb, resp, (u16_t)(sizeof(resp) - 1));
-    det_conn_flush(slot_id, pcb);
+    det_conn_send(slot_id, resp, (u16_t)(sizeof(resp) - 1));
+    det_conn_flush(slot_id);
     det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
 
     http_reset(slot_id);
@@ -1348,8 +1342,8 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
                     accept);
 #endif
 
-    det_conn_send(slot_id, conn->pcb, hdr, (u16_t)hlen);
-    det_conn_flush(slot_id, conn->pcb);
+    det_conn_send(slot_id, hdr, (u16_t)hlen);
+    det_conn_flush(slot_id);
 
     // Reset HTTP parser but keep the TCP slot -- WS owns it now
     http_reset(slot_id);
@@ -1393,8 +1387,8 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_c
                                   "Cache-Control: no-cache\r\n"
                                   "Connection: keep-alive\r\n\r\n";
 
-    det_conn_send(slot_id, conn->pcb, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
-    det_conn_flush(slot_id, conn->pcb);
+    det_conn_send(slot_id, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
+    det_conn_flush(slot_id);
 
     // Copy the path BEFORE resetting the parser: http_reset() zeroes the whole
     // HttpReq (including req->path), so a pointer into it would dangle. The saved
@@ -1467,11 +1461,10 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
                         "Connection: close\r\n\r\n",
                         status, extra_hdr ? extra_hdr : "", DET_MIME_TEXT_PLAIN, blen);
 
-    struct tcp_pcb *pcb = conn->pcb;
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, header, (u16_t)hlen);
     if (blen > 0 && !req_is_head(slot_id))
-        det_conn_send(slot_id, pcb, body, (u16_t)blen);
-    det_conn_flush(slot_id, pcb);
+        det_conn_send(slot_id, body, (u16_t)blen);
+    det_conn_flush(slot_id);
     det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
@@ -1752,7 +1745,6 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     // The slot stays CONN_ACTIVE through the write for both paths; resp_end then
     // begins the CONN_CLOSING dwell on the close path (finalized once ACKed).
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
 
     bool head = req_is_head(slot_id);
 
@@ -1762,16 +1754,16 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     if (!head && payload_len > 0 && (size_t)hlen + (size_t)payload_len <= sizeof(header))
     {
         memcpy(header + hlen, payload, (size_t)payload_len);
-        det_conn_send(slot_id, pcb, header, (u16_t)(hlen + payload_len));
+        det_conn_send(slot_id, header, (u16_t)(hlen + payload_len));
     }
     else
     {
-        det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+        det_conn_send(slot_id, header, (u16_t)hlen);
         if (!head && payload_len > 0)
-            det_conn_send(slot_id, pcb, payload, (u16_t)payload_len);
+            det_conn_send(slot_id, payload, (u16_t)payload_len);
     }
 
-    resp_end(slot_id, pcb, code, payload_len, keep);
+    resp_end(slot_id, code, payload_len, keep);
 }
 
 /*
@@ -1803,11 +1795,9 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
                         code, status_text(code));
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
+    det_conn_send(slot_id, header, (u16_t)hlen);
 
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-
-    resp_end(slot_id, pcb, code, 0, keep);
+    resp_end(slot_id, code, 0, keep);
 }
 
 void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
@@ -1844,11 +1834,9 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
                         code, status_text(code), location);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
+    det_conn_send(slot_id, header, (u16_t)hlen);
 
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-
-    resp_end(slot_id, pcb, code, 0, keep);
+    resp_end(slot_id, code, 0, keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -1861,7 +1849,8 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
 // passes. A "{{" with no matching "}}", or a name longer than 32 chars, is
 // emitted literally.
 // ---------------------------------------------------------------------------
-static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, struct tcp_pcb *pcb)
+// Two-pass: pass 1 sizes the body (emit=false), pass 2 streams it (emit=true).
+static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bool emit)
 {
     size_t total = 0;
     const char *p = tmpl;
@@ -1881,15 +1870,15 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, st
                     val = "";
                 size_t vlen = strlen(val);
                 total += vlen;
-                if (pcb && vlen)
-                    det_conn_send(slot, pcb, val, (u16_t)vlen);
+                if (emit && vlen)
+                    det_conn_send(slot, val, (u16_t)vlen);
                 p = end + 2;
                 continue;
             }
             // Unterminated or over-long placeholder: emit "{{" literally.
             total += 2;
-            if (pcb)
-                det_conn_send(slot, pcb, "{{", 2);
+            if (emit)
+                det_conn_send(slot, "{{", 2);
             p += 2;
             continue;
         }
@@ -1900,8 +1889,8 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, st
             p++;
         size_t rlen = (size_t)(p - run);
         total += rlen;
-        if (pcb && rlen)
-            det_conn_send(slot, pcb, run, (u16_t)rlen);
+        if (emit && rlen)
+            det_conn_send(slot, run, (u16_t)rlen);
     }
     return total;
 }
@@ -1917,7 +1906,7 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     }
 
     // Pass 1: size the rendered body (no writes).
-    size_t body_len = tmpl_walk(slot_id, tmpl, resolver, nullptr);
+    size_t body_len = tmpl_walk(slot_id, tmpl, resolver, false);
 
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);
@@ -1930,16 +1919,14 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
                         code, status_text(code), content_type, (int)body_len);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-
     bool head = req_is_head(slot_id);
 
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, header, (u16_t)hlen);
     // Pass 2: stream the rendered body (HEAD carries headers only).
     if (!head && body_len > 0)
-        tmpl_walk(slot_id, tmpl, resolver, pcb);
+        tmpl_walk(slot_id, tmpl, resolver, true);
 
-    resp_end(slot_id, pcb, code, (int)body_len, keep);
+    resp_end(slot_id, code, (int)body_len, keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -1974,13 +1961,12 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
                         code, status_text(code), content_type);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, header, (u16_t)hlen);
 
     // HEAD carries the headers (incl. Transfer-Encoding) but no body or terminator.
     if (req_is_head(slot_id) || !source)
     {
-        resp_end(slot_id, pcb, code, 0, keep);
+        resp_end(slot_id, code, 0, keep);
         return;
     }
 
@@ -2008,17 +1994,16 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         s.active = false; // connection gone mid-stream
         return;
     }
-    struct tcp_pcb *pcb = conn->pcb;
 
     // Reserve room for the largest framing around one CHUNK_BUF_SIZE chunk:
     // "<hex>\r\n" (size line) + "\r\n" trailer. 12 bytes covers a 4-hex-digit size.
     const u16_t FRAME = 12;
     for (;;)
     {
-        u16_t avail = det_conn_sndbuf(slot_id, pcb);
+        u16_t avail = det_conn_sndbuf(slot_id);
         if (avail <= FRAME)
         {
-            det_conn_flush(slot_id, pcb); // no room for a useful chunk; resume next loop
+            det_conn_flush(slot_id); // no room for a useful chunk; resume next loop
             return;
         }
         size_t cap = (size_t)(avail - FRAME);
@@ -2029,10 +2014,10 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         size_t n = s.source(buf, cap, s.ctx);
         if (n == 0)
         {
-            det_conn_send(slot_id, pcb, "0\r\n\r\n", 5); // terminating chunk
-            det_conn_flush(slot_id, pcb);
+            det_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk
+            det_conn_flush(slot_id);
             s.active = false;
-            resp_end(slot_id, pcb, s.status, s.total, s.keep);
+            resp_end(slot_id, s.status, s.total, s.keep);
             return;
         }
         if (n > cap)
@@ -2040,9 +2025,9 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 
         char szhdr[12];
         int sn = snprintf(szhdr, sizeof(szhdr), "%x\r\n", (unsigned)n);
-        det_conn_send(slot_id, pcb, szhdr, (u16_t)sn);
-        det_conn_send(slot_id, pcb, buf, (u16_t)n);
-        det_conn_send(slot_id, pcb, "\r\n", 2);
+        det_conn_send(slot_id, szhdr, (u16_t)sn);
+        det_conn_send(slot_id, buf, (u16_t)n);
+        det_conn_send(slot_id, "\r\n", 2);
         s.total += (int)n;
     }
 }
@@ -2295,7 +2280,7 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
-            det_conn_flush(conn->id, conn->pcb);
+            det_conn_flush(conn->id);
     }
 }
 
@@ -2310,7 +2295,7 @@ void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t l
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
-            det_conn_flush(conn->id, conn->pcb);
+            det_conn_flush(conn->id);
     }
 }
 
@@ -2322,7 +2307,7 @@ void DetWebServer::ws_disconnect(uint8_t ws_id)
     ws_close(ws, WS_CLOSE_NORMAL);
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
-        det_conn_flush(conn->id, conn->pcb);
+        det_conn_flush(conn->id);
     // handle() detects WS_CLOSED next tick and fires ws_close callback
 }
 #endif // DETWS_ENABLE_WEBSOCKET
@@ -2341,7 +2326,7 @@ void DetWebServer::sse_send(uint8_t sse_id, const char *data, const char *event,
     {
         TcpConn *conn = &conn_pool[sse->slot_id];
         if (conn->pcb)
-            det_conn_flush(conn->id, conn->pcb);
+            det_conn_flush(conn->id);
     }
 }
 
@@ -2358,7 +2343,7 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
         {
             TcpConn *conn = &conn_pool[sse->slot_id];
             if (conn->pcb)
-                det_conn_flush(conn->id, conn->pcb);
+                det_conn_flush(conn->id);
         }
     }
 }
@@ -2475,13 +2460,11 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
                         "%s\r\n",
                         challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "", cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, header, (u16_t)hlen);
     if (!req_is_head(slot_id))
-        det_conn_send(slot_id, pcb, body, (u16_t)(sizeof(body) - 1));
+        det_conn_send(slot_id, body, (u16_t)(sizeof(body) - 1));
 
-    resp_end(slot_id, pcb, 401, (int)(sizeof(body) - 1), keep);
+    resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep);
 }
 
 bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
@@ -2764,12 +2747,11 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     if (not_modified)
     {
         f.close();
-        struct tcp_pcb *p304 = resp_begin(slot_id, keep);
         char h304[RESP_HDR_BUF_SIZE];
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s%s\r\n", etag,
                             lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send(slot_id, p304, h304, (u16_t)n304);
-        resp_end(slot_id, p304, 304, 0, keep);
+        det_conn_send(slot_id, h304, (u16_t)n304);
+        resp_end(slot_id, 304, 0, keep);
         return;
     }
     char etag_line[48];
@@ -2795,7 +2777,6 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     {
         // Unsatisfiable range -> 416 with Content-Range: bytes */<size>.
         f.close();
-        struct tcp_pcb *p416 = resp_begin(slot_id, keep);
         char h416[RESP_HDR_BUF_SIZE];
         int n416 = snprintf(h416, sizeof(h416),
                             "HTTP/1.1 416 Range Not Satisfiable\r\n"
@@ -2803,8 +2784,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                             "Content-Length: 0\r\n"
                             "%s%s\r\n",
                             (unsigned)file_size, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send(slot_id, p416, h416, (u16_t)n416);
-        resp_end(slot_id, p416, 416, 0, keep);
+        det_conn_send(slot_id, h416, (u16_t)n416);
+        resp_end(slot_id, 416, 0, keep);
         return;
     }
     if (rr > 0)
@@ -2829,15 +2810,13 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                  status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line, enc_line,
                  etag_line, lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
 
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
+    det_conn_send(slot_id, header, (u16_t)hlen);
 
     // HEAD or empty body: headers only, finish now.
     if (head || body_len == 0)
     {
         f.close();
-        resp_end(slot_id, pcb, status, 0, keep);
+        resp_end(slot_id, status, 0, keep);
         return;
     }
 
@@ -2874,15 +2853,14 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
         s.active = false;
         return;
     }
-    struct tcp_pcb *pcb = conn->pcb;
 
     uint8_t chunk[FILE_CHUNK_SIZE];
     while (s.remaining > 0)
     {
-        u16_t avail = det_conn_sndbuf(slot_id, pcb);
+        u16_t avail = det_conn_sndbuf(slot_id);
         if (avail == 0)
         {
-            det_conn_flush(slot_id, pcb); // push what is queued; resume on a later loop
+            det_conn_flush(slot_id); // push what is queued; resume on a later loop
             return;
         }
         size_t want = s.remaining < sizeof(chunk) ? s.remaining : sizeof(chunk);
@@ -2894,10 +2872,10 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
             s.remaining = 0; // read error / short file: stop (response will be short)
             break;
         }
-        if (!det_conn_send(slot_id, pcb, chunk, (u16_t)n))
+        if (!det_conn_send(slot_id, chunk, (u16_t)n))
         {
             s.file.seek((uint32_t)s.off); // un-read the bytes that did not go out; retry next loop
-            det_conn_flush(slot_id, pcb);
+            det_conn_flush(slot_id);
             return;
         }
         s.off += n;
@@ -2907,8 +2885,8 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
     // Whole body queued: finish the response (flush, keep-alive/close, log, reset).
     s.file.close();
     s.active = false;
-    det_conn_flush(slot_id, pcb);
-    resp_end(slot_id, pcb, s.status, s.total, s.keep);
+    det_conn_flush(slot_id);
+    resp_end(slot_id, s.status, s.total, s.keep);
 }
 
 void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
@@ -3220,9 +3198,8 @@ void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
                         status_text(code), extra_headers ? extra_headers : "", cl);
-    struct tcp_pcb *pcb = resp_begin(slot_id, keep);
-    det_conn_send(slot_id, pcb, header, (u16_t)hlen);
-    resp_end(slot_id, pcb, code, 0, keep);
+    det_conn_send(slot_id, header, (u16_t)hlen);
+    resp_end(slot_id, code, 0, keep);
 }
 
 bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)

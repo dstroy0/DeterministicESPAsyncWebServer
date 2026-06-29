@@ -52,8 +52,8 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
     size_t wlen = 0;
     if (ssh_pkt_send(i, payload, len, wire, &wlen, wire_cap) != 0)
         return;
-    det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
-    det_conn_flush(conn->id, conn->pcb);
+    det_conn_send(conn->id, wire, (u16_t)wlen);
+    det_conn_flush(conn->id);
 }
 
 // ssh_pkt_recv handler: dispatch one decrypted message, remember fatal results.
@@ -93,8 +93,8 @@ int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
     size_t wlen = 0;
     if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, wire_cap) != 0)
         return -1;
-    det_conn_send(conn->id, conn->pcb, wire, (u16_t)wlen);
-    det_conn_flush(conn->id, conn->pcb);
+    det_conn_send(conn->id, wire, (u16_t)wlen);
+    det_conn_flush(conn->id);
     return (int)len;
 }
 
@@ -141,8 +141,8 @@ void ssh_conn_accept(uint8_t conn_slot)
     size_t blen = 0;
     if (ssh_transport_server_banner(banner, &blen, sizeof(banner)) == 0 && conn->pcb)
     {
-        det_conn_send(conn->id, conn->pcb, banner, (u16_t)blen);
-        det_conn_flush(conn->id, conn->pcb);
+        det_conn_send(conn->id, banner, (u16_t)blen);
+        det_conn_flush(conn->id);
     }
 }
 

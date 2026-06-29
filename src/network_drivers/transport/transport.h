@@ -213,7 +213,7 @@ class DeterministicAsyncTCP
  *         det_conn_sndbuf() and resume on a later loop; existing fixed-size
  *         senders may ignore the result.
  */
-bool det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len);
+bool det_conn_send(uint8_t slot, const void *data, u16_t len);
 
 /**
  * @brief Bytes that can currently be queued for sending on @p slot.
@@ -222,12 +222,12 @@ bool det_conn_send(uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t le
  * many bytes per handle() loop and resume on the next loop as the window drains
  * (the on_poll hook is the natural resume point). For a TLS slot the usable
  * plaintext is somewhat less (TLS record + cipher overhead). Returns 0 when
- * @p pcb is null.
+ * the slot has no pcb.
  */
-u16_t det_conn_sndbuf(uint8_t slot, struct tcp_pcb *pcb);
+u16_t det_conn_sndbuf(uint8_t slot);
 
 /** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
-void det_conn_flush(uint8_t slot, struct tcp_pcb *pcb);
+void det_conn_flush(uint8_t slot);
 
 /**
  * @brief Reopen the TCP receive window by however much @p slot has drained.
