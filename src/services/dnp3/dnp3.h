@@ -39,6 +39,14 @@
 #define DNP3_START1 0x64
 #define DNP3_MAX_USER_DATA 250 ///< LEN max 255 minus the 5 header octets it counts
 
+// Frame geometry (octets). The header is one CRC'd block; user data is carried in
+// fixed-size CRC'd blocks. These are wire constants from IEEE 1815, not tunables.
+#define DNP3_BLOCK_LEN 16        ///< user-data octets per data block (the last may be shorter)
+#define DNP3_CRC_LEN 2           ///< CRC-16/DNP appended after each block, low octet first
+#define DNP3_HEADER_LEN 8        ///< header octets the header CRC covers: 0x0564 LEN CTRL DEST SRC
+#define DNP3_HEADER_BLOCK_LEN 10 ///< whole header block = DNP3_HEADER_LEN + DNP3_CRC_LEN
+#define DNP3_LEN_OVERHEAD 5      ///< octets LEN counts beyond user data: CTRL + DEST + SRC
+
 /** @brief CRC-16/DNP (poly 0x3D65, init 0, reflected, final XOR 0xFFFF). */
 uint16_t dnp3_crc(const uint8_t *data, size_t len);
 

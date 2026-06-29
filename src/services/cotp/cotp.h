@@ -46,6 +46,7 @@
 
 #define COTP_EOT 0x80             ///< end-of-TSDU bit in the DT TPDU-NR octet
 #define COTP_PARAM_TPDU_SIZE 0xC0 ///< variable-parameter code: TPDU size (value = size exponent)
+#define COTP_DT_HEADER_LEN 3      ///< DT TPDU header octets: LI + code + (EOT|NR)
 
 // ---- TPKT ----
 

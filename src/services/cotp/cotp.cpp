@@ -50,14 +50,14 @@ size_t cotp_build_dt(uint8_t *buf, size_t cap, const uint8_t *data, size_t data_
 {
     if (!buf || (data_len && !data))
         return 0;
-    size_t total = 3 + data_len; // LI + code + (EOT|NR) + data
+    size_t total = COTP_DT_HEADER_LEN + data_len;
     if (total > cap)
         return 0;
-    buf[0] = 2;                             // LI = octets after LI (code + nr/eot)
+    buf[0] = COTP_DT_HEADER_LEN - 1;        // LI = octets after LI (code + nr/eot)
     buf[1] = COTP_DT;                       // Data TPDU
     buf[2] = (uint8_t)(eot ? COTP_EOT : 0); // EOT flag | TPDU-NR (0 for class 0)
     if (data_len)
-        memcpy(buf + 3, data, data_len);
+        memcpy(buf + COTP_DT_HEADER_LEN, data, data_len);
     return total;
 }
 

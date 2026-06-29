@@ -71,6 +71,15 @@
 
 #define MELSEC_ENDCODE_OK 0x0000 ///< response end code: success
 
+// Binary 3E frame geometry (octet offsets and fixed lengths).
+#define MELSEC_3E_READ_REQ_LEN 21      ///< total octets in a batch-read request frame
+#define MELSEC_3E_READ_REQ_DATA_LEN 12 ///< batch-read request data-length field: timer..points
+#define MELSEC_3E_RES_MIN_LEN 11       ///< shortest valid response: subheader through end code
+#define MELSEC_3E_RES_LEN_OFFSET 7     ///< offset of the response data-length field
+#define MELSEC_3E_RES_DATALEN_BASE 9   ///< offset where the data-length-counted region (end code) begins
+#define MELSEC_3E_RES_DATA_OFFSET 11   ///< offset of the response read data (after the end code)
+#define MELSEC_ENDCODE_LEN 2           ///< end-code octets (counted inside the data length)
+
 /**
  * @brief Build a binary 3E batch-read (word units) request.
  * @param device_code      MELSEC_DEV_* (or a raw device code).

@@ -28,7 +28,7 @@ static uint16_t get16le(const uint8_t *p)
 size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t head_device, uint16_t points,
                          uint16_t monitoring_timer)
 {
-    if (!buf || cap < 21)
+    if (!buf || cap < MELSEC_3E_READ_REQ_LEN)
         return 0;
     size_t p = 0;
     buf[p++] = MELSEC_3E_REQ_SUBHEADER0;
@@ -39,7 +39,7 @@ size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t
     buf[p++] = MELSEC_DEST_MULTIDROP_DEFAULT;
     // request data length = the octets from the monitoring timer onward:
     // timer(2) + command(2) + subcommand(2) + head device(3) + device code(1) + points(2) = 12
-    p += put16le(buf + p, 12);
+    p += put16le(buf + p, MELSEC_3E_READ_REQ_DATA_LEN);
     p += put16le(buf + p, monitoring_timer);
     p += put16le(buf + p, MELSEC_CMD_BATCH_READ);
     p += put16le(buf + p, MELSEC_SUBCMD_WORD);
@@ -48,23 +48,24 @@ size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t
     buf[p++] = (uint8_t)((head_device >> 16) & 0xFF);
     buf[p++] = device_code;
     p += put16le(buf + p, points);
-    return p; // 21
+    return p; // == MELSEC_3E_READ_REQ_LEN
 }
 
 bool melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out)
 {
-    if (!buf || !out || len < 11) // subheader(2)+net(1)+pc(1)+io(2)+multidrop(1)+length(2)+endcode(2)
+    // subheader(2)+net(1)+pc(1)+io(2)+multidrop(1)+length(2)+endcode(2) = MELSEC_3E_RES_MIN_LEN
+    if (!buf || !out || len < MELSEC_3E_RES_MIN_LEN)
         return false;
     if (buf[0] != MELSEC_3E_RES_SUBHEADER0 || buf[1] != MELSEC_3E_RES_SUBHEADER1)
         return false;
-    uint16_t data_length = get16le(buf + 7); // covers the end code + the response data
-    if (data_length < 2)
+    uint16_t data_length = get16le(buf + MELSEC_3E_RES_LEN_OFFSET); // covers the end code + the response data
+    if (data_length < MELSEC_ENDCODE_LEN)
         return false;
-    if (9 + (size_t)data_length > len) // 9 = octets before the length-counted region
+    if (MELSEC_3E_RES_DATALEN_BASE + (size_t)data_length > len)
         return false;
-    out->end_code = get16le(buf + 9);
-    out->data = buf + 11;
-    out->data_len = (size_t)data_length - 2; // minus the 2-octet end code
+    out->end_code = get16le(buf + MELSEC_3E_RES_DATALEN_BASE);
+    out->data = buf + MELSEC_3E_RES_DATA_OFFSET;
+    out->data_len = (size_t)data_length - MELSEC_ENDCODE_LEN; // minus the 2-octet end code
     return true;
 }
 
