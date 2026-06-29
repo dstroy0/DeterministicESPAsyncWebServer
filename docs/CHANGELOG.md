@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.55.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.55.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`6699c0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6699c0b72a6098c893faa956b8968b6acc68f613))
+- update CHANGELOG.md [skip ci] ([`fb482f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb482f6691d5b536e03fa6ffc19a2b8ee0b2d7d6))
+
+### Changes
+
+- Bump version: 4.54.0 → 4.55.0 ([`38ba000`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38ba0006e9f1d00bf645d62bf4a1455af1c1e146))
+
+### Features
+
+- IEC 60870-5-101/-104 telecontrol (SCADA) codec ([`17b27f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17b27f6bdecfa650ccad285785fe792098943f49))
+
+</details>
+
 ## [4.54.0] - 2026-06-29
 
 <details>
