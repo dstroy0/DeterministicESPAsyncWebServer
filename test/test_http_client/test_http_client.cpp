@@ -111,6 +111,20 @@ void test_parse_chunked()
     TEST_ASSERT_EQUAL_MEMORY("Wikipedia", resp + off, 9);
 }
 
+// A chunk size that overflows size_t (16 hex digits = 0xFFFFFFFFFFFFFFFF) must be clamped to
+// the bytes actually present, not trusted. The pre-fix bound `in + csz > len` wrapped and
+// skipped the clamp, leaving a gigantic memmove (this crashes the old code even on a 64-bit
+// host). The wrap-safe `csz > len - in` clamps it to the buffered bytes.
+void test_parse_chunked_oversize_size_clamped()
+{
+    char resp[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nFFFFFFFFFFFFFFFF\r\nAB";
+    size_t off, blen;
+    int st = http_client_parse_response((uint8_t *)resp, strlen(resp), &off, &blen);
+    TEST_ASSERT_EQUAL_INT(200, st);
+    TEST_ASSERT_EQUAL_UINT(2, blen); // clamped to the 2 bytes actually buffered ("AB")
+    TEST_ASSERT_EQUAL_MEMORY("AB", resp + off, 2);
+}
+
 void test_parse_connection_close_body()
 {
     // No Content-Length / chunked: body is everything after the headers.
@@ -141,6 +155,7 @@ int main()
     RUN_TEST(test_parse_content_length);
     RUN_TEST(test_parse_status_404);
     RUN_TEST(test_parse_chunked);
+    RUN_TEST(test_parse_chunked_oversize_size_clamped);
     RUN_TEST(test_parse_connection_close_body);
     RUN_TEST(test_parse_malformed);
     return UNITY_END();

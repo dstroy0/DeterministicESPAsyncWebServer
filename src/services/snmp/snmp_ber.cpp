@@ -238,7 +238,11 @@ bool ber_read_header(BerDec *d, uint8_t *tag, size_t *length)
         for (int i = 0; i < k; i++)
             length_val = (length_val << 8) | d->buf[d->pos++];
     }
-    if (d->pos + length_val > d->len)
+    // Wrap-safe bound: a 4-octet long-form length can be up to 0xFFFFFFFF, so on a 32-bit
+    // target d->pos + length_val would overflow and slip under d->len, letting an
+    // attacker-supplied length past the check. Compare against the remaining capacity
+    // instead (d->pos <= d->len holds here: the count-byte check above bounded d->pos).
+    if (length_val > d->len - d->pos)
     {
         d->ok = false;
         return false;
@@ -312,7 +316,7 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
 
 bool ber_skip(BerDec *d, size_t length)
 {
-    if (!d->ok || d->pos + length > d->len)
+    if (!d->ok || d->pos > d->len || length > d->len - d->pos) // wrap-safe (see ber_read_header)
     {
         d->ok = false;
         return false;

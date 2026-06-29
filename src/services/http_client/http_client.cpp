@@ -213,8 +213,11 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
                 break;
             if (csz == 0)
                 break; // last chunk
-            if (in + csz > len)
-                csz = (in < len) ? (len - in) : 0; // truncated; take what we have
+            // Wrap-safe: csz is an unbounded attacker-controlled hex size; on a 32-bit target
+            // in + csz could overflow below len and skip this clamp, leaving a huge memmove.
+            // Compare against the bytes remaining instead (in <= len here).
+            if (csz > len - in)
+                csz = len - in; // truncated; take what we have
             memmove(buf + out, buf + in, csz);
             out += csz;
             in += csz;

@@ -254,6 +254,21 @@ void test_decoder_longform_length_content_past_buffer_fails()
     TEST_ASSERT_FALSE(d.ok);
 }
 
+// A maximal 4-octet long-form length (0x84 FF FF FF FF = 0xFFFFFFFF) must be rejected, not
+// admitted. On a 32-bit target `d->pos + 0xFFFFFFFF` wraps below `d->len` and would slip the
+// bound; the wrap-safe `length_val > d->len - d->pos` check rejects it. (Host is 64-bit so it
+// cannot wrap here - this guards the wrap-safe formulation against regression.)
+void test_decoder_longform_length_max_uint32_fails()
+{
+    const uint8_t bad[] = {0x04, 0x84, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA};
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
 // An indefinite-length encoding (0x80) is not valid in DER/this decoder.
 void test_decoder_indefinite_length_fails()
 {
@@ -293,6 +308,7 @@ int main()
     RUN_TEST(test_decoder_longform_length_count_past_buffer_fails);
     RUN_TEST(test_decoder_longform_length_too_wide_fails);
     RUN_TEST(test_decoder_longform_length_content_past_buffer_fails);
+    RUN_TEST(test_decoder_longform_length_max_uint32_fails);
     RUN_TEST(test_decoder_indefinite_length_fails);
     RUN_TEST(test_decoder_oversized_integer_fails);
     return UNITY_END();

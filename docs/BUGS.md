@@ -8,6 +8,38 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Two more 32-bit length-wrap bounds bypasses: SNMP BER decoder + HTTP chunked decode
+
+- **Status:** FIXED (follow-up bug-hunt; host-tested, incl. a regression that crashes the
+  pre-fix code even on a 64-bit host).
+- **Found:** 2026-06-29, a second bug-hunt sweeping the wrap class across the parsers the first
+  pass did not cover.
+- **The same 32-bit `size_t` wrap as the codec entry below, in two network-facing parsers the
+  first pass missed:**
+    - **SNMP BER decoder (`ber_read_header`, `services/snmp/snmp_ber.cpp`).** A long-form ASN.1
+      length is read as a full 4-octet value (up to `0xFFFFFFFF`), then checked with
+      `d->pos + length_val > d->len`. On the 32-bit ESP32 an attacker-supplied length of
+      `0xFFFFFFFF` makes `d->pos + length_val` wrap to `d->pos - 1` (`< d->len`), so the bound
+      is bypassed and a bogus huge length is returned; downstream `ber_read_oid`'s `i < len`
+      loop then reads out of bounds. SNMP is an attacker-reachable UDP agent. `ber_skip` had the
+      same pattern. Fix: compare against the remaining capacity (`length_val > d->len - d->pos`,
+      valid because `d->pos <= d->len` holds after the count-byte check).
+    - **HTTP client chunked decode (`http_client_parse_response`, `services/http_client/http_client.cpp`).**
+      The hex chunk size `csz` is accumulated unbounded from the response, then clamped with
+      `if (in + csz > len)`. A malicious / MITM'd server sending an oversized chunk size makes
+      `in + csz` wrap below `len`, skipping the clamp and leaving a multi-gigabyte `memmove`. Fix:
+      `if (csz > len - in)` (wrap-safe; `in <= len` here).
+- The 64-bit host never wrapped on the 4-octet BER case, so it stayed latent; the HTTP
+  regression uses a 16-hex-digit size (`0xFFFFFFFFFFFFFFFF`) that wraps a 64-bit `size_t` too,
+  so it crashes the old code on the host and proves the fix. Tests added to test_snmp_ber and
+  test_http_client.
+- **Related hardening (same sweep):** audited the rest of the wrap class clean - `opcua`
+  (`r_skip`/`ua_r_string` lengths are `int32`, capped at `0x7FFFFFFF`, and all callers guard
+  `> 0`), `protobuf` (`PB_WT_LEN` compares in `uint64_t`; varints reject `> 10` bytes), `lwm2m`
+  (24-bit length bounded), and `wamp_get_uri` (`body + 1 > out_cap`) are all correctly bounded.
+
+---
+
 ## Codec length fields could wrap the bounds check on a 32-bit target
 
 - **Status:** FIXED (multi-agent codebase audit; host-tested).
