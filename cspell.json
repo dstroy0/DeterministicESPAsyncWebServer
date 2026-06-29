@@ -71,6 +71,8 @@
     "kbit",
     "genset",
     "gensets",
+    "devicenet",
+    "xid",
     "sint",
     "sunspec",
     "grpcweb",

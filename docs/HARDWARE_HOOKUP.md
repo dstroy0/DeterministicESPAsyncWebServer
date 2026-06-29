@@ -34,6 +34,7 @@ numbers to type into your sketch.
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
     - [J1939](#j1939)
+    - [DeviceNet](#devicenet)
 - [Networked industrial codecs (over Wi-Fi or Ethernet)](#networked-industrial-codecs-over-wi-fi-or-ethernet)
     - [Getting on the network](#getting-on-the-network)
     - [Modbus TCP and Modbus master](#modbus-tcp-and-modbus-master)
@@ -101,6 +102,7 @@ the matching header in `src/services/` and its description in
 | C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP      | transceiver or Wi-Fi         | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver              | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)       | CAN transceiver              | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
+| DeviceNet     | `DETWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)       | CAN transceiver (+ 24 V bus) | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
 | OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet               | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
 | OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet               | port 4840                       | OPC UA servers                     |
 | SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet               | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
@@ -315,6 +317,30 @@ j1939_build_name(...))`.
 A classic **wireless gateway**: decode engine / transmission / genset PGNs off
 the bus and publish them over MQTT or a web dashboard. See
 `src/services/j1939/j1939.h`.
+
+### DeviceNet
+
+`DETWS_ENABLE_DEVICENET`. DeviceNet is **CIP over CAN** (the same CIP objects as
+EtherNet/IP, but on a CAN wire). Electrically it is CAN with a twist: a DeviceNet
+cable carries **24 V power** alongside CAN_H / CAN_L, so a real drop also needs
+the power conductors and the standard 5-pin connector - but the signalling is
+ordinary CAN, so the **same transceiver wiring** as above applies (use 125, 250,
+or 500 kbit/s; each node has a MAC id 0-63).
+
+This module supplies the DeviceNet-specific link layer; you build the CIP message
+body with the `cip_*` functions (enable `DETWS_ENABLE_CIP`):
+
+- Address a frame: `devicenet_encode_id(&id, DEVICENET_GROUP_2, msg_id, mac)`
+  picks the message group + MAC id; `devicenet_decode_id()` reverses it.
+- Send a short explicit request: build the CIP body with `cip_*`, then
+  `devicenet_build_explicit(&frame, group, msg_id, mac, body, len)` prepends the
+  message-header octet (fits when the body is <= 7 octets).
+- Receive a long response: feed each frame's data octets to
+  `devicenet_frag_feed(&rx, body, len)`; on `DEVICENET_FRAG_COMPLETE`, `rx.buf`
+  holds the reassembled CIP response to parse with `cip_*`.
+
+Bridge a DeviceNet segment onto Wi-Fi the same way as the other CAN buses. See
+`src/services/devicenet/devicenet.h`.
 
 ## Networked industrial codecs (over Wi-Fi or Ethernet)
 

@@ -130,6 +130,12 @@ Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-co
 
 Stable device UUID derived from the chip MAC (RFC 4122 v5). When set, src/services/device_id/device_id.h derives a deterministic v5 UUID from a MAC (via the library's SHA-1) - a storage-free, stable identity for mDNS hostnames, MQTT client IDs, etc. The MAC->UUID core is host-testable; detws_device_uuid() reads the ESP32 factory MAC. Default off.
 
+## DeviceNet
+
+`DETWS_ENABLE_DEVICENET`
+
+DeviceNet link-adaptation codec. Default off. services/devicenet is the CAN-specific layer of "CIP over CAN": `devicenet_encode_id` / `devicenet_decode_id` pack and unpack the 11-bit DeviceNet identifier as a Message Group (1..4) + Message ID + MAC ID (the four identifier ranges 0x000-0x3FF / 0x400-0x5FF / 0x600-0x7BF / 0x7C0-0x7EF), `devicenet_msg_header` / `devicenet_frag_octet` build the explicit-message header and fragmentation octets, `devicenet_build_explicit` emits a single-frame explicit message, and `devicenet_frag_feed` reassembles a fragmented body (first / middle / last, modulo-64 count) up to `DETWS_DEVICENET_MSG_MAX` octets. The CIP application layer (services / EPATH / data) is the same one EtherNet/IP uses, so build the message body with the existing cip codec (`DETWS_ENABLE_CIP`). Identifier allocation + fragmentation verified against the ODVA DeviceNet spec; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a DeviceNet segment onto Wi-Fi. See src/services/devicenet/devicenet.h.
+
 ## DF1
 
 `DETWS_ENABLE_DF1`

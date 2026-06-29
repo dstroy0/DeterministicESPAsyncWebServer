@@ -875,6 +875,21 @@
 #endif
 
 /**
+ * @brief DeviceNet link-adaptation codec (`services/devicenet`).
+ *
+ * Default off. The CAN-specific layer of "CIP over CAN": the 11-bit DeviceNet identifier as a
+ * Message Group (1..4) + Message ID + MAC ID (`devicenet_encode_id` / `devicenet_decode_id`),
+ * the explicit-message header octet, single-frame explicit messages, and the fragmentation
+ * protocol with a reassembler (`devicenet_frag_feed`) for bodies longer than one CAN frame.
+ * The CIP application layer (services / EPATH / data) is the same one EtherNet/IP uses, so
+ * build the body with the existing `cip_*` functions (`DETWS_ENABLE_CIP`). Pure codec,
+ * host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI.
+ */
+#ifndef DETWS_ENABLE_DEVICENET
+#define DETWS_ENABLE_DEVICENET 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

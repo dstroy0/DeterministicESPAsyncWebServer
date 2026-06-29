@@ -42,6 +42,7 @@ CODEC_HEADINGS = {
     "CIP",
     "CloudEvents",
     "COTP",
+    "DeviceNet",
     "DF1",
     "DNP3",
     "EtherNet/IP",
