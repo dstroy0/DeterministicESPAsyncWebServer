@@ -224,6 +224,17 @@ when it fires. With the whole device budgeted to one cyclic loop, the sub-millis
 isochronous deadlines are achievable - the determinism guarantees (fixed buffers, no
 heap, bounded work) are exactly what makes a hard real-time loop tractable here.
 
+**Front-end assumption (applies to every "hardware-gated" item below):** the user can
+attach an external adapter on **SPI / UART / I2C** to supply any missing PHY, radio,
+or line transceiver - so the deliverable is always the protocol + a small adapter
+driver, never "impossible." Canonical examples: an **EtherCAT Slave Controller**
+(e.g. LAN9252) over SPI, a **HART FSK modem** over UART, a **DSRC / C-V2X radio**
+module over SPI/UART, an **IO-Link master IC** over SPI, **RS-485 / CAN / SDLC /
+MBP / LON** transceivers, etc. **Analog I/O** is native: a **4-20 mA** current loop
+(or 0-10 V) is read straight off the ESP32 **ADC** over a known-range sense resistor
+(scale = known full-scale range), and driven out via the DAC / PWM - so analog
+instrument variables (incl. HART's 4-20 mA primary value) need no special front end.
+
 - [ ] **Raw L2 frame TX/RX** (M, platform enabler) - a thin, zero-heap raw-frame API
       the raw-L2 protocols build on:
     - **Wi-Fi (802.11):** `esp_wifi_80211_tx()` injects arbitrary management / data
@@ -294,8 +305,10 @@ heap, bounded work) are exactly what makes a hard real-time loop tractable here.
 - [ ] **HART** (M, FieldComm) - process-instrument protocol: the FSK digital signal
       riding the 4-20 mA loop (and HART-IP over UDP 5094 as the gateway-friendly path).
       Command set (universal + common-practice), the device-variable + status model,
-      and burst mode; fixed BSS device model, no heap. HART-IP first (no analog front
-      end needed); the FSK modem is hardware-gated.
+      and burst mode; fixed BSS device model, no heap. Three reachable paths: **HART-IP**
+      (pure software, no front end), the **4-20 mA primary value read straight off the
+      ADC** (known-range shunt - see Front-end assumption), and the full **FSK digital**
+      channel via a HART modem IC over UART. No part is a blocker.
 - [ ] **CC-Link / CC-Link IE** (L, CLPA) - Mitsubishi's factory networks: **CC-Link**
       (the RS-485 cyclic remote-I/O / remote-device station model) and **CC-Link IE
       Field** (the Gigabit-Ethernet successor, cyclic + transient messaging). The
@@ -456,14 +469,15 @@ heap, bounded work) are exactly what makes a hard real-time loop tractable here.
       **SPaT** (Signal Phase and Timing - live signal state + countdown pushed to
       vehicles, pairs with the NTCIP signal-controller work above), and **MAP**
       (intersection lane geometry / turn paths). The UPER codec is host-testable and
-      zero-heap; the radio link (DSRC / C-V2X) is hardware-gated, so the message layer
-      is the deliverable and a gateway carries it over the existing IP transport.
+      zero-heap; the DSRC / C-V2X radio is supplied by an external module over SPI/UART
+      (see Front-end assumption) or bridged via an IP gateway - the message + security
+      layer is the deliverable either way.
 - [ ] **IEEE 1609 (WAVE)** (XL, vehicular radio stack) - Wireless Access in Vehicular
       Environments: the architecture (1609.3 networking / WSMP, 1609.2 security) for
       secure low-latency highway-speed vehicle networks that carries J2735. The DSRC
-      radio/MAC is hardware-gated on ESP32; scope to the WSMP message framing + 1609.2
-      security envelope codec on a fixed BSS model (pairs with the J2735 work above),
-      with a gateway over the existing transport. No heap.
+      radio/MAC comes from an external V2X module (SPI/UART, see Front-end assumption);
+      the deliverable is the WSMP message framing + the 1609.2 security envelope codec on
+      a fixed BSS model (pairs with the J2735 work above). No heap.
 - [ ] **NEMA TS 2** (M, traffic cabinet bus) - the North-American control-cabinet
       internal bus: a synchronous serial (SDLC) topology linking the controller, the
       Malfunction Management Unit / conflict monitor, and the detector/BIU racks (the
