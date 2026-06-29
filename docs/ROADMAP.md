@@ -578,13 +578,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### Network telemetry
 
-- [ ] **NetFlow / IPFIX** (M, flow export) - flow-record export over UDP: **IPFIX**
-      (RFC 7011) and **NetFlow v9** share the template-then-data model (the exporter
-      sends template records describing field layout, then data records), and **v5** is
-      the fixed legacy format. Implement the exporter side - a fixed BSS flow cache
-      (5-tuple + counters) emitted as template/data sets via the existing UDP transport.
-      Zero-heap; pairs with the telemetry / observability services for on-device flow
-      accounting. One build flag.
+- [x] **NetFlow / IPFIX** (M, flow export) _(shipped)_ - `DETWS_ENABLE_FLOW_EXPORT`
+      (`services\flow_export`): a zero-heap exporter-side codec for on-device flow
+      accounting. **NetFlow v5** is fixed (`flow_v5_write_header` + `flow_v5_write_record`,
+      24- and 48-octet layouts); **NetFlow v9** (RFC 3954) and **IPFIX** (RFC 7011) share a
+      small cursor (`FlowWriter`) - `flow_ipfix_begin` / `flow_v9_begin`, then
+      `flow_export_template()` (a Template Set/FlowSet), `flow_export_data_begin/record/end`
+      (matching Data Set), and `flow_export_finish()` which patches the IPFIX message length
+      or the v9 record count (and pads each v9 FlowSet to a 4-octet boundary). Field offsets
+      verified against RFC 7011 / RFC 3954 / the published v5 layout; pure, host-tested. The
+      flow cache (5-tuple + counters) and the UDP send (`det_udp_sendto`) are the app's.
 
 ### Building automation
 

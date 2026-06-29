@@ -762,6 +762,20 @@
 #endif
 
 /**
+ * @brief Flow-record export codec (`services/flow_export`).
+ *
+ * Default off. A zero-heap exporter-side codec for on-device flow accounting: NetFlow v5
+ * (fixed 24-octet header + 48-octet records), NetFlow v9 (RFC 3954), and IPFIX (RFC 7011),
+ * the latter two via a small cursor that emits a Template then matching Data records and
+ * patches the message length (IPFIX) or record count (v9) on finish. Pure codec,
+ * host-tested; the flow cache (5-tuple + counters) and the UDP send (det_udp_sendto) are
+ * the application's. Pairs with the telemetry / observability services.
+ */
+#ifndef DETWS_ENABLE_FLOW_EXPORT
+#define DETWS_ENABLE_FLOW_EXPORT 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

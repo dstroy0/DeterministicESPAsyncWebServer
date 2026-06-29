@@ -320,6 +320,12 @@
       "src": ["+<services/mqtt/mqtt_sn.cpp>"],
       "tests": ["test_mqtt_sn"]
     },
+    "native_flow_export": {
+      "desc": "Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record\nbuilders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching,\nv9 4-octet padding). Pure host tests with wire-byte assertions.",
+      "flags": ["-DDETWS_ENABLE_FLOW_EXPORT=1"],
+      "src": ["+<services/flow_export/flow_export.cpp>"],
+      "tests": ["test_flow_export"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
