@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.6] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.6 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`cd60e27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd60e2707e6bced502e2fb9bfc88bd8ec390ecfe))
+- update CHANGELOG.md [skip ci] ([`d379cb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d379cb70464d275238f0fdd76dd2eda04a4a5046))
+
+### Changes
+
+- Bump version: 4.49.5 → 4.49.6 ([`6271fce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6271fcec3603193e2f28289588152434239d3e13))
+
+### Documentation
+
+- generate README feature/codec tables from FEATURES.md ([`262fba3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/262fba3ce47bc3920b32896fc809deca57b7af1d))
+
+</details>
+
 ## [4.49.5] - 2026-06-29
 
 <details>
