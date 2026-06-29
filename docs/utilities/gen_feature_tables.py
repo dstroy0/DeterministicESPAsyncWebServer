@@ -44,6 +44,7 @@ CODEC_HEADINGS = {
     "COTP",
     "DeviceNet",
     "DF1",
+    "DMX512",
     "DNP3",
     "EtherNet/IP",
     "FINS",

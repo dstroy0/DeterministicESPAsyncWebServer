@@ -148,6 +148,12 @@ Allen-Bradley DF1 full-duplex frame codec. Default off. services/df1 is a zero-h
 
 Expose a diagnostic JSON endpoint via server.diag(). Disabled by default - enabling it exposes compile-time configuration (buffer sizes, feature flags) which could aid an attacker. Only enable in development or behind an authenticated route. When enabled, DETWS_DIAG_JSON is a compile-time string constant you can serve from any route handler:
 
+## DMX512
+
+`DETWS_ENABLE_DMX`
+
+DMX512 + RDM (ANSI E1.20) lighting codec. Default off. services/dmx covers stage / architectural lighting over RS-485: `dmx_build` and `dmx_get_channel` assemble and read the positional DMX512 slot packet (a start code, 0x00 for dimmer data, followed by up to 512 channel slots - no checksum or in-frame addressing), and the RDM (Remote Device Management) functions build / parse the addressed management packet that shares the wire: `rdm_build` / `rdm_parse` carry 48-bit source / destination UIDs (`rdm_uid`), a transaction number, a command class (GET / SET / DISCOVERY) + parameter id, optional parameter data, and the 16-bit additive checksum (`rdm_checksum`), with named command-class / response-type / PID constants. RDM packet layout + checksum verified against ANSI E1.20; pure and host-tested. Drive a MAX485-class transceiver on a UART (250 kbit/s, 8N2; the break is the application's) and bridge a lighting rig onto Wi-Fi. See src/services/dmx/dmx.h.
+
 ## DNP3
 
 `DETWS_ENABLE_DNP3`

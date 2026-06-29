@@ -956,6 +956,21 @@
 #endif
 
 /**
+ * @brief DMX512 + RDM (ANSI E1.20) lighting codec (`services/dmx`).
+ *
+ * Default off. A zero-heap codec for stage / architectural lighting over RS-485: `dmx_build` /
+ * `dmx_get_channel` assemble and read the positional DMX512 slot packet (a start code + up to
+ * 512 channels), and the RDM (Remote Device Management) functions build / parse the addressed
+ * management packet that shares the wire - `rdm_build` / `rdm_parse` with 48-bit source /
+ * destination UIDs (`rdm_uid`), a command class + parameter id, and the 16-bit additive
+ * checksum (`rdm_checksum`). Pure codec, host-tested. Drive a `MAX485`-class transceiver on a
+ * UART (250 kbit/s, 8N2; the break is the application's) and bridge a lighting rig onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_DMX
+#define DETWS_ENABLE_DMX 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

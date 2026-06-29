@@ -32,6 +32,7 @@ numbers to type into your sketch.
     - [DNP3 and C37.118 over serial](#dnp3-and-c37118-over-serial)
     - [M-Bus (meters)](#m-bus-meters)
     - [SDI-12 (environmental sensors)](#sdi-12-environmental-sensors)
+    - [DMX512 / RDM (lighting)](#dmx512--rdm-lighting)
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
@@ -106,6 +107,7 @@ the matching header in `src/services/` and its description in
 | C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP         | transceiver or Wi-Fi            | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
 | M-Bus         | `DETWS_ENABLE_MBUS`          | Serial (M-Bus bus)         | M-Bus level converter (TSS721)  | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
 | SDI-12        | `DETWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
+| DMX512 / RDM  | `DETWS_ENABLE_DMX`           | Serial (RS-485)            | RS-485 transceiver (MAX485)     | 250k 8N2, up to 512 channels    | Stage / architectural lighting     |
 | IEC 60870     | `DETWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
@@ -304,6 +306,24 @@ A measurement is two steps: start it, wait, then fetch:
 
 Poll a sensor string and publish the readings over Wi-Fi. See
 `src/services/sdi12/sdi12.h`.
+
+### DMX512 / RDM (lighting)
+
+`DETWS_ENABLE_DMX`. DMX512 drives stage and architectural lighting over **RS-485**
+at **250 kbit/s, 8N2** - so wire the same RS-485 transceiver (a `MAX485` is the
+classic cheap part) as in the RS-485 section above. DMX is one-way and positional:
+each fixture listens on a start address and reads N consecutive channel slots.
+
+- Send a universe: fill a channel array and `dmx_build(buf, cap, DMX_SC_DIMMER,
+channels, n)`; your transport sends a **break** then the returned bytes.
+- `dmx_get_channel()` reads a 1-based channel from a received packet.
+
+**RDM** (ANSI E1.20) adds two-way device management on the same pair (the
+transceiver must be switched to receive for the reply, and RDM needs proper
+direction timing). Build a request with `rdm_build()` (set the destination /
+source `rdm_uid()`, command class, and PID) and read a reply with `rdm_parse()`,
+which checks the RDM checksum. Discover, address, and configure fixtures from a
+web UI - a tidy **wireless lighting controller**. See `src/services/dmx/dmx.h`.
 
 ## CAN field-bus codecs (you wire a transceiver)
 
