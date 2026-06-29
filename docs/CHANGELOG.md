@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.11.2] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.2 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- Observe used millis() (host-unbuildable + pluggable-clock violation) + CI coverage for gated features ([`4333bc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4333bc8036e3fd2a57bb8bc29256086840960e2d))
+
+### CI / Build
+
+- update test report [skip ci] ([`3c3e0ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c3e0cea03c3233cfac6ba6ca4aa6a2c52406dd4))
+- update CHANGELOG.md [skip ci] ([`65b9a26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65b9a269a638462d7ad4b1a81404ac053aed2b3c))
+
+### Changes
+
+- Bump version: 4.11.1 → 4.11.2 ([`7e4b710`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e4b710fca4175f842daf66c08240f9b65cdec83))
+
+</details>
+
 ## [4.11.1] - 2026-06-29
 
 <details>
