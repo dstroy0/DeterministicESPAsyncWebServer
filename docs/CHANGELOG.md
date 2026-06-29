@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.1] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.1 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- harden length-field parsing against 32-bit size_t overflow ([`785e6d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/785e6d8fbaa3e4bac5f7e624ef04355bbaa8653c))
+
+### CI / Build
+
+- update test report [skip ci] ([`21b16c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21b16c7f8a1cbc14f2d43d7ba0d60f895980d808))
+- update CHANGELOG.md [skip ci] ([`89260d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89260d9ffa14430af6e940d4b0aa33a20cf56abe))
+
+### Changes
+
+- Bump version: 4.49.0 → 4.49.1 ([`5915141`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/591514178e017cf124ee40ed74aa4e93dd8abe88))
+
+</details>
+
 ## [4.49.0] - 2026-06-29
 
 <details>
