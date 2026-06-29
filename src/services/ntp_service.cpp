@@ -85,13 +85,13 @@ size_t detws_ntp_http_date(char *out, size_t out_cap)
         out[0] = '\0';
         return 0;
     }
-    struct tm *gp = gmtime(&s_host_test_epoch); // host (MinGW) lacks gmtime_r; gmtime is fine for a test seam
-    if (!gp)
+    struct tm tmv; // reentrant: gmtime_r, never the shared static buffer (worker-safe)
+    if (!gmtime_r(&s_host_test_epoch, &tmv))
     {
         out[0] = '\0';
         return 0;
     }
-    return strftime(out, out_cap, "%a, %d %b %Y %H:%M:%S GMT", gp); // RFC 7231 IMF-fixdate
+    return strftime(out, out_cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv); // RFC 7231 IMF-fixdate
 }
 
 #endif // DETWS_ENABLE_NTP && ARDUINO

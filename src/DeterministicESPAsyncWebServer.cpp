@@ -2778,14 +2778,8 @@ static void http_rfc1123(time_t t, char *out, size_t cap)
     if (t <= 0)
         return;
     struct tm tmv;
-#ifdef ARDUINO
-    gmtime_r(&t, &tmv);
-#else
-    struct tm *gp = gmtime(&t);
-    if (!gp)
+    if (!gmtime_r(&t, &tmv)) // reentrant: never the shared static buffer (worker-safe)
         return;
-    tmv = *gp;
-#endif
     strftime(out, cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv);
 }
 
@@ -2813,14 +2807,8 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
     int imon = (int)(mp - MONTHS) / 3; // 0-based, matches struct tm tm_mon
 
     struct tm tf;
-#ifdef ARDUINO
-    gmtime_r(&mtime, &tf);
-#else
-    struct tm *gp = gmtime(&mtime);
-    if (!gp)
+    if (!gmtime_r(&mtime, &tf)) // reentrant: never the shared static buffer (worker-safe)
         return false;
-    tf = *gp;
-#endif
     // Compare file (tf) vs If-Modified-Since fields, most significant first.
     int fy = tf.tm_year + 1900;
     if (fy != year)
