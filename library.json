@@ -1,6 +1,6 @@
 {
   "name": "DeterministicESPAsyncWebServer",
-  "version": "4.19.0",
+  "version": "4.20.0",
   "description": "Zero-heap, asynchronous multi-protocol network server for ESP32 with a fully deterministic memory footprint. RFC 7230 HTTP/1.1 plus WebSocket (RFC 6455), Server-Sent Events, Basic/Digest auth, file serving, multipart, JSON, templating, and a middleware pipeline; optional HTTPS/TLS, SSH, Telnet, and SNMP (v1/v2c/v3). All buffers statically sized at compile time; feature flags strip unused subsystems.",
   "keywords": ["esp32", "http", "web server", "websocket", "sse", "ssh", "telnet", "tls", "https", "snmp", "async", "deterministic", "rfc7230", "lwip"],
   "homepage": "https://dstroy0.github.io/DeterministicESPAsyncWebServer/",
