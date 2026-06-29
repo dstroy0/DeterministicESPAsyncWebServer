@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.27.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.27.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d06cadb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d06cadbaeca97219edd99d1cccdb370944fdff3d))
+- update CHANGELOG.md [skip ci] ([`d0098dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0098dd1c6f36c2634e2f96822db667241f202df))
+
+### Changes
+
+- Bump version: 4.26.0 → 4.27.0 ([`4613dc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4613dc164b1551e4f0c4e78fc229e92048db377d))
+
+### Features
+
+- MQTT-SN v1.2 wire codec (DETWS_ENABLE_MQTT_SN) ([`2682eff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2682eff47977ebfa15830993bf0201dd23158912))
+
+</details>
+
 ## [4.26.0] - 2026-06-29
 
 <details>
