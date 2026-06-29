@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.42.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.42.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`142c45b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/142c45ba7992186b07c4034b5c330d41b643f2e2))
+- update CHANGELOG.md [skip ci] ([`f30a2ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f30a2ab2104cb85dcbd345a716aaf4512a99a5e1))
+
+### Changes
+
+- Bump version: 4.41.0 → 4.42.0 ([`5053deb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5053deb8f08a6fc97ff739edaaa38cac4a6a48ba))
+
+### Features
+
+- Mitsubishi MELSEC MC binary 3E codec (DETWS_ENABLE_MELSEC) ([`ca230e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca230e8227da548c02b25b59cbda74db4364aa5a))
+
+</details>
+
 ## [4.41.0] - 2026-06-29
 
 <details>
