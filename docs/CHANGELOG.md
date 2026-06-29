@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.56.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.56.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`18093c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18093c8b49471577bf849bc4e54c08a449d9cf2d))
+- update CHANGELOG.md [skip ci] ([`282cef3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/282cef3e48c8592cacd5bbdfa972fcfa1b1cbbc3))
+
+### Changes
+
+- Bump version: 4.55.0 → 4.56.0 ([`cdf94f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdf94f5b14add28ee082ee6e8fcd18f3d9d43a35))
+
+### Features
+
+- SDI-12 sensor-bus command / response codec ([`4ef0a90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ef0a90bb76f65b5522b681ae467f82c78f78cf3))
+
+</details>
+
 ## [4.55.0] - 2026-06-29
 
 <details>
