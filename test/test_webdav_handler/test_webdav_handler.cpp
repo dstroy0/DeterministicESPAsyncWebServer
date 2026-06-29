@@ -185,6 +185,51 @@ void test_delete_collection_recursive()
     TEST_ASSERT_FALSE(tree_has("/dav/src/sub/c.txt"));
 }
 
+// PROPFIND Depth: 0 returns a 207 describing only the collection itself.
+void test_propfind_depth0_collection_only()
+{
+    populate_src();
+    feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: 0\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(resp_status(207));
+    TEST_ASSERT_NOT_NULL(strstr(r, "/dav/src"));
+    TEST_ASSERT_NULL(strstr(r, "a.txt")); // members are not listed at Depth 0
+}
+
+// PROPFIND Depth: 1 lists the collection and its immediate members.
+void test_propfind_depth1_lists_members()
+{
+    populate_src();
+    feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(resp_status(207));
+    TEST_ASSERT_NOT_NULL(strstr(r, "a.txt"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "b.txt"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "sub")); // the subcollection is a member
+}
+
+// MKCOL creates a collection (201); repeating it on an existing path is 405.
+void test_mkcol_create_and_conflict()
+{
+    feed_and_handle(0, "MKCOL /dav/newdir HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(tree_is_dir("/dav/newdir"));
+
+    rearm();
+    feed_and_handle(0, "MKCOL /dav/newdir HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(405)); // already exists
+}
+
+// DELETE of a single file removes just that file (204), leaving siblings intact.
+void test_delete_single_file()
+{
+    populate_src();
+    feed_and_handle(0, "DELETE /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_FALSE(tree_has("/dav/src/a.txt"));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/src/b.txt", "bravo")); // sibling untouched
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -193,5 +238,9 @@ int main()
     RUN_TEST(test_copy_overwrite_semantics);
     RUN_TEST(test_move_collection_recursive);
     RUN_TEST(test_delete_collection_recursive);
+    RUN_TEST(test_propfind_depth0_collection_only);
+    RUN_TEST(test_propfind_depth1_lists_members);
+    RUN_TEST(test_mkcol_create_and_conflict);
+    RUN_TEST(test_delete_single_file);
     return UNITY_END();
 }
