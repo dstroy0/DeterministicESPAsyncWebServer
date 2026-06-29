@@ -52,6 +52,15 @@ size_t detws_ntp_http_date(char *out, size_t out_cap)
 
 #else
 
+// Host build: no SNTP. A test seam lets a unit test inject a wall-clock epoch so
+// the Date-header path (and any time-dependent code) is exercisable off-device.
+#include <time.h>
+static time_t s_host_test_epoch = 0;
+void detws_ntp_set_test_epoch(time_t epoch)
+{
+    s_host_test_epoch = epoch;
+}
+
 bool detws_ntp_begin(const char *tz, const char *server1, const char *server2)
 {
     (void)tz;
@@ -61,17 +70,28 @@ bool detws_ntp_begin(const char *tz, const char *server1, const char *server2)
 }
 bool detws_ntp_synced()
 {
-    return false;
+    return s_host_test_epoch != 0;
 }
 time_t detws_ntp_epoch()
 {
-    return 0;
+    return s_host_test_epoch;
 }
 size_t detws_ntp_http_date(char *out, size_t out_cap)
 {
-    if (out && out_cap)
+    if (!out || out_cap == 0)
+        return 0;
+    if (s_host_test_epoch == 0)
+    {
         out[0] = '\0';
-    return 0;
+        return 0;
+    }
+    struct tm *gp = gmtime(&s_host_test_epoch); // host (MinGW) lacks gmtime_r; gmtime is fine for a test seam
+    if (!gp)
+    {
+        out[0] = '\0';
+        return 0;
+    }
+    return strftime(out, out_cap, "%a, %d %b %Y %H:%M:%S GMT", gp); // RFC 7231 IMF-fixdate
 }
 
 #endif // DETWS_ENABLE_NTP && ARDUINO

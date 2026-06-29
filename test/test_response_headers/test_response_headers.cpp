@@ -14,6 +14,7 @@
 //   - An oversized header is dropped whole (no malformed half-line)
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "services/ntp_service.h" // detws_ntp_set_test_epoch() for the Date-header tests
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
@@ -116,11 +117,13 @@ void setUp()
     ws_init();
     sse_init();
     tcp_capture_reset();
+    detws_ntp_set_test_epoch(0); // clockless by default; Date tests opt in
 }
 
 void tearDown()
 {
     tcp_capture_disable();
+    detws_ntp_set_test_epoch(0);
 }
 
 static void feed_and_handle(uint8_t slot, const char *req_str)
@@ -221,9 +224,32 @@ void test_oversized_header_dropped_whole()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Small: ok\r\n"));
 }
 
+// DETWS_HTTP_EMIT_DATE: with a valid wall-clock time, every response carries the
+// RFC 7231 IMF-fixdate Date header (epoch 784111777 = the RFC's example date).
+void test_date_header_emitted_when_time_set()
+{
+    detws_ntp_set_test_epoch(784111777); // Sun, 06 Nov 1994 08:49:37 GMT
+    server.on("/h", HTTP_GET, h_plain);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Date: Sun, 06 Nov 1994 08:49:37 GMT\r\n"));
+}
+
+// Clock-less (no time source / NTP unsynced): the Date header is omitted rather
+// than emitting a wrong date (RFC 7231 7.1.1.2).
+void test_date_header_omitted_when_clockless()
+{
+    detws_ntp_set_test_epoch(0);
+    server.on("/h", HTTP_GET, h_plain);
+    feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Date:"));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_date_header_emitted_when_time_set);
+    RUN_TEST(test_date_header_omitted_when_clockless);
     RUN_TEST(test_single_custom_header_present);
     RUN_TEST(test_multiple_custom_headers_present);
     RUN_TEST(test_set_cookie_basic);

@@ -62,4 +62,12 @@ time_t detws_ntp_epoch();
  */
 size_t detws_ntp_http_date(char *out, size_t out_cap);
 
+#if !defined(ARDUINO)
+/**
+ * @brief Host-only test seam: inject a wall-clock epoch so time-dependent paths
+ *        (e.g. the optional HTTP Date header) are exercisable off-device. 0 = none.
+ */
+void detws_ntp_set_test_epoch(time_t epoch);
+#endif
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H

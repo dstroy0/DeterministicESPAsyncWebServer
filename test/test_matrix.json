@@ -134,7 +134,8 @@
         "-DDETWS_ENABLE_STATS=1",
         "-DDETWS_ENABLE_METRICS=1",
         "-DDETWS_ENABLE_ETAG=1",
-        "-DDETWS_ENABLE_WEB_TERMINAL=1"
+        "-DDETWS_ENABLE_WEB_TERMINAL=1",
+        "-DDETWS_HTTP_EMIT_DATE=1"
       ],
       "src": [
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
@@ -153,7 +154,8 @@
         "+<DeterministicESPAsyncWebServer.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
-        "+<services/web_terminal.cpp>"
+        "+<services/web_terminal.cpp>",
+        "+<services/ntp_service.cpp>"
       ],
       "tests": [
         "test_auth",

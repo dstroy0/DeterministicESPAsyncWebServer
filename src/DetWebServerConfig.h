@@ -1021,6 +1021,21 @@
 #endif
 
 /**
+ * @brief Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock
+ *        time is available.
+ *
+ * Default off: a clock-less device must not emit a wrong `Date`, and most embedded
+ * responses do not need one, so it stays off the hot path. When set, every dynamic
+ * response carries `Date: <IMF-fixdate>` - but only once a real time exists
+ * (`detws_ntp_http_date()` returns non-empty, i.e. NTP has synced); before sync, or
+ * with no time source, it is silently omitted (still correct for a clock-less boot).
+ * Needs a time source (e.g. DETWS_ENABLE_NTP) to ever emit.
+ */
+#ifndef DETWS_HTTP_EMIT_DATE
+#define DETWS_HTTP_EMIT_DATE 0
+#endif
+
+/**
  * @brief Multi-source time fallback (NTP / RTC / GPS / ... by priority).
  *
  * When set, src/services/time_source/time_source.h provides a small registry of

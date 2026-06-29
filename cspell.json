@@ -90,6 +90,7 @@
     "amqtt",
     "subcollection",
     "informrequest",
+    "clockless",
     "unbuildable",
     "HSET",
     "IPFIX",

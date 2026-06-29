@@ -75,6 +75,9 @@
 #if DETWS_ENABLE_METRICS || DETWS_ENABLE_STATS
 #include "network_drivers/application/web_assets.h" // DETWS_METRICS_PROM / DETWS_STATS_JSON (generated)
 #endif
+#if DETWS_HTTP_EMIT_DATE
+#include "services/ntp_service.h" // detws_ntp_http_date() for the optional Date header
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -397,7 +400,17 @@ int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t s
 {
     if (hlen < 0 || (size_t)hlen >= cap)
         return hlen;
-    int n = snprintf(buf + hlen, cap - (size_t)hlen, "%s%s%s\r\n", _cors_enabled ? _cors_header_buf : "",
+#if DETWS_HTTP_EMIT_DATE
+    // RFC 7231 7.1.1.2: emit Date only when a real wall-clock time exists; a
+    // clock-less device (or one whose NTP has not synced yet) omits it.
+    char date_hdr[48] = "";
+    char imf[40];
+    if (detws_ntp_http_date(imf, sizeof(imf)) > 0)
+        snprintf(date_hdr, sizeof(date_hdr), "Date: %s\r\n", imf);
+#else
+    const char *date_hdr = "";
+#endif
+    int n = snprintf(buf + hlen, cap - (size_t)hlen, "%s%s%s%s\r\n", date_hdr, _cors_enabled ? _cors_header_buf : "",
                      _extra_hdr[slot_id], cl);
     return (n < 0) ? hlen : hlen + n;
 }

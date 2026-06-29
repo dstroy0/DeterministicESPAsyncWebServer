@@ -443,10 +443,13 @@ shipped work:
       Optional services, plus mTLS, `wss://` / TLS-SSE, and RFC 5077 session
       resumption.
 
-- [ ] **`Date` response header not emitted.** Acceptable for a clock-less device
-      (RFC 7231 §7.1.1.2). A time source now exists ([`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP) +
-      [`detws_ntp_http_date()`](@ref detws_ntp_http_date)); auto-injecting `Date` into every response is left
-      off the hot path - apps that want it can add the header from a handler.
+- [x] **`Date` response header** _(done, opt-in)_ - [`DETWS_HTTP_EMIT_DATE`](@ref DETWS_HTTP_EMIT_DATE)
+      (default off, so the hot path is unchanged unless enabled) auto-injects
+      `Date: <IMF-fixdate>` into every dynamic response once a wall-clock time exists
+      ([`detws_ntp_http_date()`](@ref detws_ntp_http_date) non-empty); a clock-less / pre-sync device omits it
+      (RFC 7231 §7.1.1.2). Host-tested via a time-injection seam
+      (`test_response_headers`: emitted-when-set / omitted-when-clockless) and HW-verified
+      with NTP (`Date: Mon, 29 Jun 2026 ... GMT`). Apps can still add it from a handler.
 
 - [x] **Recv scratch off the stack.** _(done)_ `ssh_pkt_recv`'s per-packet
       plaintext buffer (`SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN`, ~2 KB) moved from
