@@ -55,6 +55,12 @@
       "src": ["+<services/nmea0183/nmea0183.cpp>"],
       "tests": ["test_nmea0183"]
     },
+    "native_iolink": {
+      "desc": "IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control\noctets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a\nhand-computed known-answer vector. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_IOLINK=1"],
+      "src": ["+<services/iolink/iolink.cpp>"],
+      "tests": ["test_iolink"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],

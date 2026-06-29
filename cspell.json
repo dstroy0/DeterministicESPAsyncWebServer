@@ -87,6 +87,8 @@
     "gpgga",
     "strtof",
     "strtol",
+    "iolink",
+    "sdci",
     "sint",
     "sunspec",
     "grpcweb",

@@ -986,6 +986,22 @@
 #endif
 
 /**
+ * @brief IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`).
+ *
+ * Default off. The point-to-point smart-sensor link's data-link message layer: the M-sequence
+ * Control octet (`iol_mc` + decoders), the checksum / type octet of a master message
+ * (`iol_ckt`), the checksum / status octet of a device reply (`iol_cks`), and the SDCI message
+ * checksum (`iol_checksum6` / `iol_finalize` / `iol_verify`) implemented straight from IO-Link
+ * spec v1.1.4 Annex A.1.6 (the 0x52 seed + the 8-to-6-bit compression of equation A.1). Lay
+ * the M-sequence / ISDU octets out per your device profile, then finalize / verify with this
+ * codec. Pure codec, host-tested. The wire is a UART through an IO-Link transceiver
+ * (e.g. MAX14819 / L6360); bridge sensor data onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_IOLINK
+#define DETWS_ENABLE_IOLINK 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

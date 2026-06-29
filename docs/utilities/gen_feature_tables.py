@@ -52,6 +52,7 @@ CODEC_HEADINGS = {
     "gRPC-Web",
     "Host Link",
     "IEC 60870",
+    "IO-Link",
     "J1939",
     "JSON",
     "LwM2M",

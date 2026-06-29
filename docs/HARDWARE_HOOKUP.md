@@ -34,6 +34,7 @@ numbers to type into your sketch.
     - [SDI-12 (environmental sensors)](#sdi-12-environmental-sensors)
     - [DMX512 / RDM (lighting)](#dmx512--rdm-lighting)
     - [NMEA 0183 (GPS / marine)](#nmea-0183-gps--marine)
+    - [IO-Link (smart sensors)](#io-link-smart-sensors)
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
@@ -110,6 +111,7 @@ the matching header in `src/services/` and its description in
 | SDI-12        | `DETWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
 | DMX512 / RDM  | `DETWS_ENABLE_DMX`           | Serial (RS-485)            | RS-485 transceiver (MAX485)     | 250k 8N2, up to 512 channels    | Stage / architectural lighting     |
 | NMEA 0183     | `DETWS_ENABLE_NMEA0183`      | Serial (UART / RS-422)     | none (TTL) or RS-422 receiver   | 4800 or 9600 8N1                | GPS / marine instruments           |
+| IO-Link       | `DETWS_ENABLE_IOLINK`        | Serial (3-wire SDCI)       | IO-Link transceiver (MAX14819)  | 4.8 / 38.4 / 230.4 kbit/s       | Smart sensors / actuators          |
 | IEC 60870     | `DETWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
@@ -345,6 +347,29 @@ one-way (the receiver talks; you listen).
 Decode position / speed / heading and republish it over Wi-Fi (a web map, MQTT,
 or an NMEA-0183-to-NMEA-2000 bridge with the codec next door). See
 `src/services/nmea0183/nmea0183.h`.
+
+### IO-Link (smart sensors)
+
+`DETWS_ENABLE_IOLINK`. IO-Link (SDCI) is the point-to-point link to modern smart
+sensors and actuators - a single device per port over a 3-wire cable (L+, L-, and
+the C/Q data line). The data line is **not** plain UART levels: it swings to the
+24 V supply, so you need a dedicated **IO-Link master transceiver** (a `MAX14819`
+or `L6360`-class chip) between an ESP32 UART and the port. The transceiver also
+generates the wake-up pulse and handles the line driving; the UART runs at one of
+the three SDCI rates (**COM1 4.8 / COM2 38.4 / COM3 230.4 kbit/s**).
+
+This codec is the data-link **message** layer - in particular the SDCI checksum,
+which is the easy thing to get wrong:
+
+- Master message: lay out the M-sequence (the `iol_mc()` control octet, any
+  on-request / process octets, and an `iol_ckt()` checksum/type octet), then
+  `iol_finalize(msg, len, check_index)` fills the checksum.
+- Device reply: `iol_verify(msg, len, check_index)` checks the reply's
+  checksum/status octet; read its Event and PD-valid flags.
+
+The per-device M-sequence and ISDU layout come from the device's IODD profile.
+This gets a sensor's data onto Wi-Fi via a single transceiver. See
+`src/services/iolink/iolink.h`.
 
 ## CAN field-bus codecs (you wire a transceiver)
 
