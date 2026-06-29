@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.22.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.22.0 - 2026-06-29</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`4635a8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4635a8b9a612ceea07d9bc55d217c5a9c4bfaf14))
+- update CHANGELOG.md [skip ci] ([`8b2168a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b2168a674c438d5a043d7555c924011ae62d4af))
 - update test report [skip ci] ([`c18e970`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c18e9707dbfc619d013a033a30763186d83a6a76))
 - update CHANGELOG.md [skip ci] ([`b757454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7574549ef7bab62ef7602a5196dccc381b1837c))
+
+### Changes
+
+- Bump version: 4.21.0 → 4.22.0 ([`d863a05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d863a0537618d29fb8c2a1d5d4066dca0b8f4b78))
 
 ### Documentation
 
 - keep Forwarded ROADMAP code span on one line for prettier ([`3b3d0ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b3d0ea64f9b506daf6ec389a93539028a948ef0))
+
+### Features
+
+- RTU serial framing (DETWS_ENABLE_MODBUS_RTU) ([`b8b20e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8b20e1e11e74d25f7931d3d8fa407e27bc1254a))
+
+</details>
 
 ## [4.21.0] - 2026-06-29
 
