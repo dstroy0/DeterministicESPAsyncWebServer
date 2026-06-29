@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.11.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.0 - 2026-06-29</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`608abb4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/608abb4498cea660a8939eca32512fafaefe1547))
+- update CHANGELOG.md [skip ci] ([`43476ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43476ad288c12f461203f27a1973b3a5c98f002e))
 - update test report [skip ci] ([`7eab22b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7eab22b89c3a482880aa927ac9201ed6b67e1889))
 - update CHANGELOG.md [skip ci] ([`0d572c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d572c94d6af6580f3a2baa63802425b29953fca))
+
+### Changes
+
+- Bump version: 4.10.0 → 4.11.0 ([`b01b560`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b01b56036e5893a86ce881cd1fc3813c8bf88051))
 
 ### Documentation
 
 - fix BUGS.md nested-list formatting (prettier) ([`489137f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/489137fc69fd08c9f664eefbb995de0f3debadfb))
+
+### Refactor
+
+- drop redundant pcb threading from the egress API (ingress/egress symmetry) ([`cfea4c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cfea4c4a566b32bb88234ef0d902b9ff758f4f41))
+
+</details>
 
 ## [4.10.0] - 2026-06-28
 
