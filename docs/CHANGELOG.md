@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.4] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.4 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`bd349b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd349b6e86a48877c25c44d064499df4bb3ffacb))
+- update CHANGELOG.md [skip ci] ([`d1827f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1827f5f5fd013b3aae97d5de11025c06f0ccecd))
+
+### Changes
+
+- Bump version: 4.49.3 → 4.49.4 ([`5e45c8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e45c8fdd7347cb1b98bc526b076baa99b0eb96f))
+
+### Testing
+
+- close codec edge-case gaps (varint width, TLV lengths, WAMP URI) ([`439d2e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/439d2e454fd5adebd1bcd41a4182bb7528f04cec))
+
+</details>
+
 ## [4.49.3] - 2026-06-29
 
 <details>
