@@ -102,6 +102,14 @@ void loop()
 
 See `examples/Foundation/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
 
+## New to this? Start here
+
+If networking is new to you, the [**learn series**](learn/) is a from-scratch on-ramp
+that assumes no prior knowledge: the [OSI model](learn/osi-model.md),
+[TCP/IP](learn/tcp-ip.md), and [a primer on every language](learn/languages.md) in the
+project - each tied back to the code below. Every protocol the library implements is
+mapped to its authoritative spec in [STANDARDS.md](STANDARDS.md).
+
 ## Architecture
 
 Each OSI layer lives in its own subdirectory under `src/network_drivers/`:
