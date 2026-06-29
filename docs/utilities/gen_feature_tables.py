@@ -50,6 +50,7 @@ CODEC_HEADINGS = {
     "Flow Export",
     "gRPC-Web",
     "Host Link",
+    "IEC 60870",
     "J1939",
     "JSON",
     "LwM2M",

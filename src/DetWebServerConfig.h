@@ -924,6 +924,22 @@
 #endif
 
 /**
+ * @brief IEC 60870-5-101 / -104 telecontrol (SCADA) codec (`services/iec60870`).
+ *
+ * Default off. The utility-SCADA protocol in both transports: the -104 APCI over TCP
+ * (`68 LEN` + 4 control octets in I / S / U formats via `iec104_build_i/_s/_u` + `iec104_parse`),
+ * the shared ASDU header + 3-octet Information Object Address (`iec_asdu_build_header` /
+ * `iec_asdu_parse_header`, `iec_put_ioa` / `iec_get_ioa`), and the -101 FT1.2 serial link
+ * frames (fixed + variable, 8-bit sum checksum, via `iec101_build_fixed` / `_variable` +
+ * `iec101_parse`). Named type-id / cause-of-transmission constants are provided; the
+ * per-type information elements are the application's. Pure codec, host-tested. Run -104 over
+ * the shipped TCP stack or -101 over a UART/RS-485 transceiver to bridge an RTU onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_IEC60870
+#define DETWS_ENABLE_IEC60870 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

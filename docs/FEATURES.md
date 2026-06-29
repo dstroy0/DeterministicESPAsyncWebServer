@@ -242,6 +242,12 @@ HTTPS client support inside the HTTP client (needs TLS).
 
 RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.
 
+## IEC 60870
+
+`DETWS_ENABLE_IEC60870`
+
+IEC 60870-5-101 / -104 telecontrol (SCADA) codec. Default off. services/iec60870 covers the utility-SCADA protocol in both transports: the -104 APCI over TCP (`iec104_build_i` / `_s` / `_u` and `iec104_parse` for the I / S / U formats - numbered information transfer with 15-bit send/receive sequence numbers, the supervisory acknowledge, and the STARTDT / STOPDT / TESTFR unnumbered commands), the shared ASDU header (`iec_asdu_build_header` / `iec_asdu_parse_header` - type id, variable structure qualifier, cause of transmission, common address) with the 3-octet Information Object Address (`iec_put_ioa` / `iec_get_ioa`), and the -101 FT1.2 serial link frames (`iec101_build_fixed` / `_variable` and `iec101_parse`, 8-bit sum checksum). Named type-id and cause-of-transmission constants are provided; the per-type information elements are the application's. Frame + APCI + ASDU layout verified against IEC 60870-5-101/-104; pure and host-tested. Run -104 over the shipped TCP stack or -101 over a UART / RS-485 transceiver to bridge an RTU or outstation onto Wi-Fi. See src/services/iec60870/iec60870.h.
+
 ## IP Allowlist
 
 `DETWS_ENABLE_IP_ALLOWLIST`
