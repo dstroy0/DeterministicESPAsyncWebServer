@@ -210,9 +210,10 @@ Open follow-ups discovered during the above:
       (RFC 4918 9.8) via `dav_copy_recursive` (bounded depth 8): honors `Depth: 0`
       (collection only) vs `infinity`/absent (full tree), and `Overwrite` (clears the
       target first, 204 vs 201, `Overwrite: F` -> 412). HW-tested on LittleFS (nested
-      subcollection + files copied byte-exact). _Host coverage is pending a
-      directory-capable FS mock (the current `test/mocks/FS.h` models files only, so no
-      native env compiles the WebDAV handler's recursive paths)._
+      subcollection + files copied byte-exact) and host-tested: `test/mocks/FS.h` gained
+      an opt-in directory tree (`mock_fs_tree_enable()`), and the new
+      `native_webdav_handler` env (`test_webdav_handler`) drives the real handler through
+      recursive COPY / MOVE / DELETE against it.
       _(PROPPATCH done: 207 with each property refused 403. Streaming PUT done: the
       body is written to the file as it arrives, no longer bounded by
       [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
