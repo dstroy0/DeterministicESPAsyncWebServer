@@ -315,11 +315,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       PROFINET `DCP`/acyclic-record subset first - fixed BSS process image, no heap,
       one build flag each. (Overlaps the broader Industrial-Ethernet and Fieldbus items
       above; this is the dedicated Siemens-interop slice.)
-- [ ] **DNP3** (L, IEEE 1815) - the SCADA / utility outstation protocol: the 3-layer
-      stack (data-link with CRC per block, transport segmentation, application objects
-      with groups/variations), over serial and TCP/UDP 20000. Class 0/1/2/3 polling,
-      unsolicited responses, and time-sync; fixed BSS point database (binary/analog
-      in/out, counters), no heap. Optional Secure Authentication (IEEE 1815 SAv5) later.
+- [~] **DNP3** (L, IEEE 1815) - _data-link frame codec shipped._ `DETWS_ENABLE_DNP3`
+  (`services\dnp3`): a zero-heap builder + CRC-validating parser for the data-link layer - `dnp3_build_frame` emits the `0x0564 LEN CTRL DEST SRC CRC` header block plus the
+  CRC'd 16-octet user-data blocks, and `dnp3_parse_frame` validates the header and every
+  block CRC (CRC-16/DNP, verified against the canonical 0xEA82 check value) and de-blocks
+  the user data. The remaining layers (transport-function segmentation, the application
+  objects with groups/variations, Class 0/1/2/3 polling, unsolicited responses,
+  time-sync) layer on the de-blocked user data; fixed BSS point database, no heap.
+  Optional Secure Authentication (IEEE 1815 SAv5) later.
 - [ ] **HART** (M, FieldComm) - process-instrument protocol: the FSK digital signal
       riding the 4-20 mA loop (and HART-IP over UDP 5094 as the gateway-friendly path).
       Command set (universal + common-practice), the device-variable + status model,

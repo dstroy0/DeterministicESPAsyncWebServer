@@ -350,6 +350,12 @@
       "src": ["+<services/c37118/c37118.cpp>"],
       "tests": ["test_c37118"]
     },
+    "native_dnp3": {
+      "desc": "DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame\nbuilder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking\nparser. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_DNP3=1"],
+      "src": ["+<services/dnp3/dnp3.cpp>"],
+      "tests": ["test_dnp3"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

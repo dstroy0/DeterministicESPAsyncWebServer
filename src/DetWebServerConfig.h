@@ -830,6 +830,20 @@
 #endif
 
 /**
+ * @brief DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`).
+ *
+ * Default off. A zero-heap builder + CRC-validating parser for the SCADA / utility
+ * outstation data-link layer: `dnp3_build_frame` emits the `0x0564 LEN CTRL DEST SRC CRC`
+ * header block + the CRC'd 16-octet user-data blocks, and `dnp3_parse_frame` validates the
+ * header and every block CRC (CRC-16/DNP) and de-blocks the user data. Pure codec,
+ * host-tested; the transport-function reassembly and the application layer are layered on
+ * the de-blocked user data.
+ */
+#ifndef DETWS_ENABLE_DNP3
+#define DETWS_ENABLE_DNP3 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
