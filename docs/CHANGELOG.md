@@ -2,6 +2,23 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.9] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.9 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- add memmove and varints to the dictionary ([`1d4e06a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d4e06a679a723794502e05c5dfaf131d79aca18))
+- update test report [skip ci] ([`9fa0dc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fa0dc2577ba7e304ad48f9ce742b7398f8ce725))
+- update CHANGELOG.md [skip ci] ([`d4bb8de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4bb8ded1655a9cec44537aa8e78e9bab3ac29c7))
+
+### Changes
+
+- Bump version: 4.49.8 → 4.49.9 ([`bfd1c64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfd1c64aa21d4c8ad3f78916bc6ce99a33c3d407))
+
+</details>
+
 ## [4.49.8] - 2026-06-29
 
 <details>
