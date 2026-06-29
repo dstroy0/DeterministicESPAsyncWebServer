@@ -395,6 +395,17 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                 p->content_length_count++;
             }
 
+            // RFC 9112 §6.1/§6.3: this server does not decode chunked request bodies,
+            // and a Transfer-Encoding present with (or instead of) Content-Length is a
+            // request-smuggling vector - the chunked octets would otherwise be left in
+            // the buffer and reparsed as the next request. Reject any request bearing
+            // Transfer-Encoding (fail closed).
+            if (strcasecmp(p->cur_key, "Transfer-Encoding") == 0)
+            {
+                p->parse_state = PARSE_ERROR;
+                break;
+            }
+
             if (h < MAX_HEADERS)
                 p->header_count++;
 

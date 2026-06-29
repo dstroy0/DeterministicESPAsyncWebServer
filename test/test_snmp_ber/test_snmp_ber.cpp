@@ -192,6 +192,68 @@ void test_decoder_truncated_length_fails()
     TEST_ASSERT_FALSE(d.ok);
 }
 
+// Long-form length whose count byte (0x84 = "4 length octets follow") runs past
+// the buffer: the count-byte bounds check must reject it, not over-read.
+void test_decoder_longform_length_count_past_buffer_fails()
+{
+    const uint8_t bad[] = {0x04, 0x84, 0x00, 0x00}; // says 4 len octets, only 2 present
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
+// Long-form length with an over-wide count (> 4 octets) is rejected (a huge
+// length can't be represented / is a malformed/attack input).
+void test_decoder_longform_length_too_wide_fails()
+{
+    const uint8_t bad[] = {0x04, 0x85, 0x01, 0x00, 0x00, 0x00, 0x00}; // 5 length octets
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
+// Long-form length that parses but then claims more content than is present.
+void test_decoder_longform_length_content_past_buffer_fails()
+{
+    // 0x82 0x01 0x00 = long form, length 256; only a few content bytes follow.
+    const uint8_t bad[] = {0x04, 0x82, 0x01, 0x00, 0xAA, 0xBB};
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
+// An indefinite-length encoding (0x80) is not valid in DER/this decoder.
+void test_decoder_indefinite_length_fails()
+{
+    const uint8_t bad[] = {0x30, 0x80, 0x00, 0x00};
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_FALSE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
+// An INTEGER whose length exceeds the supported width (> 8 octets) is rejected.
+void test_decoder_oversized_integer_fails()
+{
+    const uint8_t bad[] = {0x02, 0x09, 0, 0, 0, 0, 0, 0, 0, 0, 1}; // 9-octet INTEGER
+    BerDec d;
+    ber_dec_init(&d, bad, sizeof(bad));
+    long v;
+    TEST_ASSERT_FALSE(ber_read_integer(&d, &v));
+    TEST_ASSERT_FALSE(d.ok);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -204,5 +266,10 @@ int main()
     RUN_TEST(test_large_arc_roundtrip);
     RUN_TEST(test_encoder_overflow_sets_not_ok);
     RUN_TEST(test_decoder_truncated_length_fails);
+    RUN_TEST(test_decoder_longform_length_count_past_buffer_fails);
+    RUN_TEST(test_decoder_longform_length_too_wide_fails);
+    RUN_TEST(test_decoder_longform_length_content_past_buffer_fails);
+    RUN_TEST(test_decoder_indefinite_length_fails);
+    RUN_TEST(test_decoder_oversized_integer_fails);
     return UNITY_END();
 }

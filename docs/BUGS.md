@@ -8,6 +8,22 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## HTTP request smuggling: Transfer-Encoding ignored on inbound requests
+
+- **Status:** FIXED (found by the test-gap hardening pass)
+- **Found:** 2026-06-29, request-parser test-gap review.
+- **Symptom:** the HTTP parser only framed request bodies by `Content-Length` and
+  ignored `Transfer-Encoding` entirely. A `Transfer-Encoding: chunked` request with no
+  `Content-Length` was treated as body-length-0, so the chunk octets
+  (`5\r\nhello\r\n0\r\n\r\n`) were left in the RX buffer and re-parsed as the next request
+    - a classic TE request-smuggling / desync vector on a keep-alive connection (and the
+      CL+TE combination is the canonical CL.TE desync).
+- **Fix:** the server does not decode chunked request bodies, so reject any request
+  bearing `Transfer-Encoding` -> `PARSE_ERROR` (400), fail-closed, matching the existing
+  conflicting-`Content-Length` rejection (RFC 9112 §6.1/§6.3). Tests:
+  `test_compliance` `test_transfer_encoding_chunked_rejected` /
+  `_with_content_length_rejected` / `_case_insensitive_rejected`.
+
 ## Byte-range parser integer overflow on a huge Range value
 
 - **Status:** FIXED (v4.9.1; found by the edge-case audit)

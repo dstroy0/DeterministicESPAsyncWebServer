@@ -136,6 +136,31 @@ void test_content_length_valid_body()
     TEST_ASSERT_EQUAL_MEMORY("hello", http_pool[0].body, 5);
 }
 
+// ---- Transfer-Encoding (RFC 9112 §6.1/§6.3) -------------------------------
+// The server does not decode chunked request bodies; a Transfer-Encoding alone
+// (the chunk octets would otherwise be reparsed as the next request) or together
+// with Content-Length is a request-smuggling vector. Both must be rejected.
+
+void test_transfer_encoding_chunked_rejected()
+{
+    feed_request(0, "POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n");
+    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+}
+
+void test_transfer_encoding_with_content_length_rejected()
+{
+    // CL + TE present: the classic CL.TE smuggling desync - must be rejected.
+    feed_request(0, "POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n");
+    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+}
+
+void test_transfer_encoding_case_insensitive_rejected()
+{
+    // Header-name match must be case-insensitive (RFC 7230 §3.2).
+    feed_request(0, "POST / HTTP/1.1\r\nHost: x\r\ntRaNsFeR-eNcOdInG: chunked\r\n\r\n0\r\n\r\n");
+    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -153,6 +178,10 @@ int main()
     RUN_TEST(test_content_length_conflicting_duplicate_rejected);
     RUN_TEST(test_content_length_matching_duplicate_ok);
     RUN_TEST(test_content_length_valid_body);
+
+    RUN_TEST(test_transfer_encoding_chunked_rejected);
+    RUN_TEST(test_transfer_encoding_with_content_length_rejected);
+    RUN_TEST(test_transfer_encoding_case_insensitive_rejected);
 
     return UNITY_END();
 }

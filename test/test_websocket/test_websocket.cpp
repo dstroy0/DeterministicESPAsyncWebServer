@@ -614,6 +614,33 @@ void test_ws_control_frame_interleaved_in_fragments()
     TEST_ASSERT_EQUAL_MEMORY("Hello", ws->buf, 5);
 }
 
+// A multi-fragment message whose running total exceeds WS_FRAME_SIZE must be
+// rejected even though each individual fragment fits - the per-frame check is
+// against the accumulated msg_len, not just the current frame.
+void test_ws_fragment_accumulation_overflow_rejected()
+{
+    WsConn *ws = ws_alloc(0);
+    static uint8_t payload[WS_FRAME_SIZE];
+    static uint8_t frame[WS_FRAME_SIZE + 8];
+    for (int i = 0; i < WS_FRAME_SIZE; i++)
+        payload[i] = (uint8_t)(i & 0xFF);
+
+    // Fragment 1 (FIN=0): exactly WS_FRAME_SIZE bytes - fits, starts reassembly.
+    size_t n1 = build_frame(frame, WS_OP_TEXT, false, payload, (uint16_t)WS_FRAME_SIZE, true);
+    push_bytes(0, frame, n1);
+    ws_parse(ws);
+    TEST_ASSERT_TRUE(ws->fragmenting);
+    TEST_ASSERT_NOT_EQUAL(WS_ERROR, ws->parse_state);
+
+    // Fragment 2 (CONTINUATION, FIN=1): one more byte pushes the total over the
+    // buffer - must be rejected with CLOSE_TOO_BIG, not overrun ws->buf.
+    uint8_t one = 'x';
+    size_t n2 = build_frame(frame, WS_OP_CONTINUATION, true, &one, 1, true);
+    push_bytes(0, frame, n2);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
 void test_ws_continuation_without_start_rejected()
 {
     WsConn *ws = ws_alloc(0);
@@ -1015,6 +1042,7 @@ int main()
     RUN_TEST(test_ws_fragment_start_waits_for_continuation);
     RUN_TEST(test_ws_fragmented_message_reassembled);
     RUN_TEST(test_ws_control_frame_interleaved_in_fragments);
+    RUN_TEST(test_ws_fragment_accumulation_overflow_rejected);
     RUN_TEST(test_ws_continuation_without_start_rejected);
     RUN_TEST(test_ws_new_data_frame_during_fragmentation_rejected);
     RUN_TEST(test_ws_parse_ping_auto_pong_resets_frame);
