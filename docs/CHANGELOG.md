@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.3] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.3 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5b64d35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b64d35ccf417c76c9d92bce91c6db3f5ed53d65))
+- update CHANGELOG.md [skip ci] ([`59669df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59669dfb8cf686b0a5dbbccae32f65d0fb700ed5))
+
+### Changes
+
+- Bump version: 4.49.2 → 4.49.3 ([`a67f942`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a67f9429234fea8574419b4a3e9572c99aa3b2be))
+
+### Testing
+
+- cover the accept-time connection gates (audit gap) ([`55b64ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55b64ec7416c3b34c2c42d3becaeb97ac8396fff))
+
+</details>
+
 ## [4.49.2] - 2026-06-29
 
 <details>
