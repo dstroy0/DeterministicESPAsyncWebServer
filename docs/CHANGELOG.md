@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.18.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.18.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9bed8fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bed8fe26f88e5e3f6f27f8458de9d2e903b6294))
+- update CHANGELOG.md [skip ci] ([`4118445`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41184458f22954e36ac2d8d905bd6ca03b501b52))
+
+### Changes
+
+- Bump version: 4.17.0 → 4.18.0 ([`8119fdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8119fdc604ef592ffb041d4245260e790da7c68e))
+
+### Features
+
+- client-side session resumption (csess) ([`5145ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5145ec9eb8b2f5ee67dda81f16f386355f8d2d6f))
+
+</details>
+
 ## [4.17.0] - 2026-06-29
 
 <details>
