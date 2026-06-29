@@ -25,9 +25,10 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 ## WebSocket
 
 - A reassembled message must fit `WS_FRAME_SIZE` (else Close 1009).
-- **permessage-deflate is inbound-only** (RFC 7692): the server decompresses
-  compressed messages but sends its own uncompressed (outbound compression is on
-  the roadmap). No other extensions; RSV2/RSV3 are always rejected.
+- **permessage-deflate is bidirectional** (RFC 7692, `DETWS_ENABLE_WS_DEFLATE`): the
+  server decompresses inbound compressed messages and compresses outbound data frames
+  with bounded fixed-Huffman DEFLATE (RSV1), falling back to uncompressed when the result
+  would not shrink. No other extensions; RSV2/RSV3 are always rejected.
 
 ## JSON
 

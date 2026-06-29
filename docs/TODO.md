@@ -515,9 +515,10 @@ by how often a deployed device needs it.
       `f.size()` + `f.getLastWrite()`) and answer a matching `If-None-Match` with
       `304 Not Modified` (no body). The FS test mock gained `getLastWrite()` so it
       is host-tested (`test_serve_static_etag_conditional_get`); ESP32 path
-      compile-verified against the real `fs::File`. (`Last-Modified`/
-      `If-Modified-Since` intentionally skipped - ETag alone is sufficient and
-      avoids HTTP-date parsing.)
+      compile-verified against the real `fs::File`. Now also emits a `Last-Modified`
+      date and honors `If-Modified-Since` (per RFC 9110, only when no `If-None-Match`
+      is present); with no wall clock the date validator is skipped and the ETag
+      validator still works.
 
 - [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ [`detws_ntp_begin()`](@ref detws_ntp_begin)/
       `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
@@ -659,10 +660,11 @@ by how often a deployed device needs it.
       uncompressed (§6 permits). Host-tested: `native_inflate` (12 cases, vectors
       grounded against zlib) + `native_ws_deflate` (handshake / RSV1 / delivery);
       esp32dev links; example `55.WebSocketCompression`. _HW test pending a board._
-  - [ ] **Phase 2 - outbound compress.** A bounded static-Huffman DEFLATE encoder
-        (LZ77 match window + small hash table, ~4-8 KB; `no_context_takeover`) so the
-        device also compresses what it sends. Deferred - device->browser payloads
-        are usually small, and INFLATE was the higher-value half.
+  - [x] **Phase 2 - outbound compress _(shipped)_.** A bounded fixed-Huffman DEFLATE
+        encoder compresses outbound data frames (RSV1) under `DETWS_ENABLE_WS_DEFLATE`,
+        with an uncompressed fallback when the result would not shrink. permessage-deflate
+        is now bidirectional (see ROADMAP "WebSocket permessage-deflate, inbound and
+        outbound"); host-tested via `native_deflate` + `native_ws_deflate`.
 
 (Deliberately omitted as not worth the footprint for this class of device: none
 currently. WebSocket permessage-deflate - previously omitted - now ships its
