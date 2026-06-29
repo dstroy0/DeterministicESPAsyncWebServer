@@ -37,6 +37,7 @@ CODEC_HEADINGS = {
     "AMQP",
     "BACnet",
     "C37.118",
+    "CANopen",
     "CBOR",
     "CIP",
     "CloudEvents",

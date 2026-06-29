@@ -1,6 +1,12 @@
 {
   "_note": "Single source of truth for native test envs; run test/gen_test_envs.py to regenerate platformio.ini.",
   "envs": {
+    "native_canopen": {
+      "desc": "CANopen (CiA 301) message codec (services/canopen): NMT, SYNC, heartbeat, EMCY,\nPDO, and expedited SDO read/write/abort + the COB-ID classifier, over the shared CAN\nframe (shared_primitives/det_can.h). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_CANOPEN=1"],
+      "src": ["+<services/canopen/canopen.cpp>"],
+      "tests": ["test_canopen"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],

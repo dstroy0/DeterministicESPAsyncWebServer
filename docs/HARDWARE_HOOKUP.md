@@ -30,6 +30,9 @@ numbers to type into your sketch.
     - [DF1 (Allen-Bradley)](#df1-allen-bradley)
     - [Host Link (Omron)](#host-link-omron)
     - [DNP3 and C37.118 over serial](#dnp3-and-c37118-over-serial)
+- [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
+    - [CAN wiring](#can-wiring)
+    - [CANopen](#canopen)
 - [Networked industrial codecs (over Wi-Fi or Ethernet)](#networked-industrial-codecs-over-wi-fi-or-ethernet)
     - [Getting on the network](#getting-on-the-network)
     - [Modbus TCP and Modbus master](#modbus-tcp-and-modbus-master)
@@ -67,11 +70,12 @@ the matching header in `src/services/` and its description in
 
 ## The three ways a codec reaches its device
 
-| Family               | What carries the bytes                           | Extra hardware you supply                                  |
-| -------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| **Serial field bus** | A UART pin pair, through an adapter chip         | An RS-485 or RS-232 transceiver, wiring, termination       |
-| **Networked**        | TCP or UDP over the ESP32's Wi-Fi (or wired PHY) | Usually none beyond Wi-Fi; the device and a shared network |
-| **Radio (ESP-NOW)**  | The ESP32's built-in 2.4 GHz radio               | None; just a second ESP-class board as the peer            |
+| Family               | What carries the bytes                           | Extra hardware you supply                                   |
+| -------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| **Serial field bus** | A UART pin pair, through an adapter chip         | An RS-485 or RS-232 transceiver, wiring, termination        |
+| **CAN field bus**    | The ESP32 TWAI controller (or MCP2515 over SPI)  | A CAN transceiver (SN65HVD230), wiring, 120 ohm terminators |
+| **Networked**        | TCP or UDP over the ESP32's Wi-Fi (or wired PHY) | Usually none beyond Wi-Fi; the device and a shared network  |
+| **Radio (ESP-NOW)**  | The ESP32's built-in 2.4 GHz radio               | None; just a second ESP-class board as the peer             |
 
 ## Quick-reference table
 
@@ -94,6 +98,7 @@ the matching header in `src/services/` and its description in
 | CIP           | `DETWS_ENABLE_CIP`           | over EtherNet/IP        | Wi-Fi/Ethernet               | (rides ENIP)                    | CIP objects on ODVA devices        |
 | DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP           | transceiver or Wi-Fi         | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
 | C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP      | transceiver or Wi-Fi         | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
+| CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver              | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet               | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
 | OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet               | port 4840                       | OPC UA servers                     |
 | SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet               | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
@@ -241,6 +246,50 @@ Both can run over serial as well as IP. Wire them like Modbus RTU (RS-485 or
 RS-232 transceiver) and see their entries under
 [networked codecs](#dnp3-and-c37118-over-ip) for addressing and the codec calls;
 the framing is transport-independent.
+
+## CAN field-bus codecs (you wire a transceiver)
+
+CAN (Controller Area Network) is a two-wire differential bus (CAN_H / CAN_L)
+used across factory automation and vehicles. It is cheap and robust, and the
+ESP32 already has a CAN controller built in (called **TWAI**), so you only add a
+**transceiver** chip to drive the differential pair.
+
+### CAN wiring
+
+You need a CAN transceiver between the ESP32 and the bus. Two cheap options:
+
+- **SN65HVD230 breakout (~$1)** — 3.3 V, pairs directly with the ESP32's TWAI
+  controller. Connect ESP32 `TX` GPIO -> transceiver `D` (TXD), transceiver `R`
+  (RXD) -> ESP32 `RX` GPIO, plus 3V3 and GND. CAN_H / CAN_L go to the bus.
+- **MCP2515 + TJA1050 module (~$2)** — a standalone CAN controller you talk to
+  over **SPI** (use this if you would rather not use the internal TWAI, or need a
+  second CAN channel). Wire SPI (SCK/MOSI/MISO/CS) + an interrupt GPIO.
+
+Bus rules that matter: terminate **both ends** of the bus with a **120 ohm**
+resistor (many breakouts have a jumper for it), keep stubs short, and set every
+node to the **same bit rate** (125 kbit/s, 250 k, 500 k, and 1 Mbit/s are
+common). All nodes on a CAN bus must agree on the bit rate.
+
+### CANopen
+
+`DETWS_ENABLE_CANOPEN`. CANopen (CiA 301) is the dominant higher-layer protocol
+for CAN in factory automation: motion drives, I/O blocks, sensors. Each node has
+an id 1-127. The codec builds and parses the messages; your sketch moves the
+frames with the TWAI driver (or the MCP2515):
+
+- Bring a node up: `canopen_build_nmt(&frame, CANOPEN_NMT_START, node)`.
+- Read an object (expedited SDO): `canopen_build_sdo_read(&frame, node, index,
+sub)`, send it, then `canopen_parse_sdo_response()` on the reply.
+- Write an object: `canopen_build_sdo_write(...)`.
+- Watch liveness: `canopen_parse_heartbeat()` on each `0x700+node` frame;
+  `canopen_parse_emcy()` on emergencies.
+- Receive process data: `canopen_parse()` classifies each frame, and a TPDO's
+  `data[]` is the raw mapped payload.
+
+This is the classic **wireless bridge**: poll CANopen drives over the wire and
+publish their state over MQTT / HTTP / a WebSocket. SDO transfers are expedited
+(<= 4 octets); segmented / block transfer is a future addition. See
+`src/services/canopen/canopen.h`.
 
 ## Networked industrial codecs (over Wi-Fi or Ethernet)
 

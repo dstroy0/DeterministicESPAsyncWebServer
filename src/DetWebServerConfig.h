@@ -844,6 +844,21 @@
 #endif
 
 /**
+ * @brief CANopen (CiA 301) message codec (`services/canopen`).
+ *
+ * Default off. A zero-heap builder + parser for the CANopen messaging set over classic CAN
+ * frames (`shared_primitives/det_can.h`): NMT node control, SYNC, TIME, heartbeat / boot-up,
+ * EMCY, PDO process data, and expedited SDO read / write / abort. The 11-bit COB-ID is a
+ * 4-bit function code plus a 7-bit node id; builders compute it, parsers classify it back.
+ * The object dictionary is the application's; SDO is expedited only (segmented / block not
+ * yet covered). Pure codec, host-tested. Drive it from the ESP32 TWAI peripheral or an
+ * MCP2515 over SPI to bridge a CANopen bus onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_CANOPEN
+#define DETWS_ENABLE_CANOPEN 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the
