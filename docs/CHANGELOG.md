@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.58.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.58.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`189316d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/189316d539bc7003b7c10463a47bcbf6353863af))
+- update CHANGELOG.md [skip ci] ([`31b3fda`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31b3fda0829dbc991495c94705a286210bbcfc0d))
+
+### Changes
+
+- Bump version: 4.57.0 → 4.58.0 ([`692694d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/692694d8a27a125d6a189eba8a9b00947f3556c4))
+
+### Features
+
+- NMEA 0183 marine / GPS sentence codec ([`fd8df3d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd8df3dcfe8213d2a82acb53f099cbe9922d04fe))
+
+</details>
+
 ## [4.57.0] - 2026-06-29
 
 <details>
