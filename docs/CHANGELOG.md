@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`1d15c72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d15c72636e28273e226541de56e977b0ba4151d))
+- update CHANGELOG.md [skip ci] ([`9b614f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b614f2920193467c8d9951e83b995a48bf044bc))
+
+### Changes
+
+- Bump version: 4.48.0 → 4.49.0 ([`3cb8bcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3cb8bcda064fd5024438263e02d723b918c4e81e))
+
+### Features
+
+- Sparkplug B payload + topic codec (DETWS_ENABLE_SPARKPLUG) ([`e5e43a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5e43a45686dd8522a8869ae9c0e1505a3536c2f))
+
+</details>
+
 ## [4.48.0] - 2026-06-29
 
 <details>
