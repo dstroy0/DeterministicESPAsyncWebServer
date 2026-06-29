@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.13.2] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.13.2 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a11beb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a11beb03d1fa41ad2456c1cd3d826f2dacfd8b00))
+- update CHANGELOG.md [skip ci] ([`34eec1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34eec1cefdcd257aae3e67fbaf80db484e48b798))
+
+### Changes
+
+- Bump version: 4.13.1 → 4.13.2 ([`3b83417`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b83417378a0bc8d7b9f11e1efb98b08c07e2ffe))
+
+### Testing
+
+- amqtt mqtt-broker fallback; MQTT HW-verified ([`81703dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81703ddbc456c9d9b176d78907a44ab1720eed3f))
+
+</details>
+
 ## [4.13.1] - 2026-06-29
 
 <details>
