@@ -909,6 +909,21 @@
 #endif
 
 /**
+ * @brief Wired M-Bus (Meter-Bus, EN 13757) frame codec (`services/mbus`).
+ *
+ * Default off. A zero-heap builder + parser for the M-Bus link-layer frames used by utility
+ * meters (water / gas / heat / electricity): the single-character ACK, the short frame
+ * (`10 C A CS 16`), and the long / control frame (`68 L L 68 C A CI ... CS 16`, 8-bit sum
+ * checksum), plus `mbus_record_next` which walks the EN 13757-3 variable-data records
+ * (DIF / VIF, skipping DIFE / VIFE extension chains and decoding the data length). Pure codec,
+ * host-tested. Talk to the powered two-wire bus over a UART through an M-Bus level converter
+ * (e.g. a TSS721-based master) and bridge meter readings onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_MBUS
+#define DETWS_ENABLE_MBUS 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

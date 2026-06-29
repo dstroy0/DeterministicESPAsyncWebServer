@@ -25,6 +25,12 @@
       "src": ["+<services/nmea2000/nmea2000.cpp>", "+<services/j1939/j1939.cpp>"],
       "tests": ["test_nmea2000"]
     },
+    "native_mbus": {
+      "desc": "Wired M-Bus codec (services/mbus): the ACK / short / long frame builders + parser\n(start/stop, doubled length, 8-bit sum checksum) and the EN 13757-3 variable-data record\nwalker (DIF/VIF, DIFE/VIFE chains, LVAR). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_MBUS=1"],
+      "src": ["+<services/mbus/mbus.cpp>"],
+      "tests": ["test_mbus"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],

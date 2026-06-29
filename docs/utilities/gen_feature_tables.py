@@ -53,6 +53,7 @@ CODEC_HEADINGS = {
     "J1939",
     "JSON",
     "LwM2M",
+    "M-Bus",
     "MELSEC",
     "MessagePack",
     "Modbus RTU",

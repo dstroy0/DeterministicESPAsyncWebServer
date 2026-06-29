@@ -282,6 +282,12 @@ Opt-in fixed-RAM rotating log buffer with severity traps. Default off. When set,
 
 OMA LwM2M TLV codec. Default off. services/lwm2m is a zero-heap writer + cursor reader for the LwM2M `application/vnd.oma.lwm2m+tlv` resource encoding carried over the shipped CoAP service for device management: `lwm2m_tlv_write` (with typed `lwm2m_tlv_write_int` shortest-form / `lwm2m_tlv_write_bool` / `lwm2m_tlv_write_string` / `lwm2m_tlv_write_float` helpers), `lwm2m_tlv_read`, and `lwm2m_tlv_value_int`. Handles 8-/16-bit identifiers, inline / 8- / 16- / 24-bit lengths, and the Object-Instance / Resource / Multiple-Resource / Resource-Instance kinds; type-byte layout verified against the LwM2M spec. Pure and host-tested. The registration interface and the standard object model layer on top. See src/services/lwm2m/lwm2m_tlv.h.
 
+## M-Bus
+
+`DETWS_ENABLE_MBUS`
+
+Wired M-Bus (Meter-Bus, EN 13757) frame codec. Default off. services/mbus is a zero-heap builder + parser for the M-Bus link-layer frames used by utility meters (water / gas / heat / electricity): `mbus_build_ack` (the single-character 0xE5), `mbus_build_short` (`10 C A CS 16`), and `mbus_build_long` (`68 L L 68 C A CI ... CS 16`, with convenience `mbus_build_snd_nke` / `mbus_build_req_ud2`), plus `mbus_parse` which validates the start / stop octets, the doubled length, and the 8-bit sum checksum. `mbus_record_next` walks the EN 13757-3 variable-data records, skipping the DIFE / VIFE extension chains and decoding the data length from the DIF coding (incl. the LVAR variable form) so the app can read each value. Frame formats + checksum verified against EN 13757-2; pure and host-tested. Talk to the powered two-wire bus over a UART through an M-Bus level converter (a TSS721-based master) and bridge meter readings onto Wi-Fi. See src/services/mbus/mbus.h.
+
 ## MDNS
 
 `DETWS_ENABLE_MDNS`

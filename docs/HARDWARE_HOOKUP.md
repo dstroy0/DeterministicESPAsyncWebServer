@@ -30,6 +30,7 @@ numbers to type into your sketch.
     - [DF1 (Allen-Bradley)](#df1-allen-bradley)
     - [Host Link (Omron)](#host-link-omron)
     - [DNP3 and C37.118 over serial](#dnp3-and-c37118-over-serial)
+    - [M-Bus (meters)](#m-bus-meters)
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
@@ -85,30 +86,31 @@ the matching header in `src/services/` and its description in
 "Flag" is the `DETWS_ENABLE_*` macro you set to compile the codec in (all default
 **off**). "Talks to" is the machine on the other end.
 
-| Codec         | Flag                         | Transport               | External hardware            | Typical settings                | Talks to                           |
-| ------------- | ---------------------------- | ----------------------- | ---------------------------- | ------------------------------- | ---------------------------------- |
-| Modbus RTU    | `DETWS_ENABLE_MODBUS_RTU`    | Serial (RS-485/232)     | RS-485 transceiver           | 19200 8E1, unit 1-247           | Modbus sensors, drives, meters     |
-| Modbus TCP    | `DETWS_ENABLE_MODBUS`        | TCP                     | Wi-Fi/Ethernet               | port 502                        | Modbus PLCs and gateways           |
-| Modbus master | `DETWS_ENABLE_MODBUS_MASTER` | TCP (client)            | Wi-Fi/Ethernet               | port 502                        | Modbus slave devices               |
-| SunSpec       | `DETWS_ENABLE_SUNSPEC`       | Modbus (RTU or TCP)     | per Modbus row               | model base reg 40000            | Solar inverters, meters, batteries |
-| DF1           | `DETWS_ENABLE_DF1`           | Serial (RS-232/485)     | RS-232 or RS-485 transceiver | 19200, full-duplex              | Allen-Bradley (Rockwell) PLCs      |
-| Host Link     | `DETWS_ENABLE_HOSTLINK`      | Serial (RS-232/422/485) | transceiver                  | 9600 7E2, unit 00-31            | Omron PLCs (C-mode)                |
-| FINS          | `DETWS_ENABLE_FINS`          | UDP                     | Wi-Fi/Ethernet               | UDP port 9600                   | Omron PLCs (FINS)                  |
-| MELSEC        | `DETWS_ENABLE_MELSEC`        | TCP or UDP              | Wi-Fi/Ethernet               | port set on the PLC             | Mitsubishi PLCs (MC 3E)            |
-| S7comm        | `DETWS_ENABLE_S7COMM`        | TCP (ISO-on-TCP)        | Wi-Fi/Ethernet               | port 102, rack/slot             | Siemens S7-300/400/1200/1500       |
-| BACnet/IP     | `DETWS_ENABLE_BACNET`        | UDP                     | Wi-Fi/Ethernet               | UDP port 47808                  | Building automation controllers    |
-| EtherNet/IP   | `DETWS_ENABLE_ENIP`          | TCP + UDP               | Wi-Fi/Ethernet               | TCP 44818, UDP 2222             | Allen-Bradley / ODVA devices       |
-| CIP           | `DETWS_ENABLE_CIP`           | over EtherNet/IP        | Wi-Fi/Ethernet               | (rides ENIP)                    | CIP objects on ODVA devices        |
-| DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP           | transceiver or Wi-Fi         | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
-| C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP      | transceiver or Wi-Fi         | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
-| CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver              | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
-| J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)       | CAN transceiver              | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
-| DeviceNet     | `DETWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)       | CAN transceiver (+ 24 V bus) | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
-| NMEA 2000     | `DETWS_ENABLE_NMEA2000`      | CAN (TWAI or SPI)       | CAN transceiver (+ N2K tap)  | 250k bit/s, Fast Packet         | Marine GPS / wind / depth / engine |
-| OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet               | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
-| OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet               | port 4840                       | OPC UA servers                     |
-| SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet               | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
-| ESP-NOW       | `DETWS_ENABLE_ESPNOW`        | 2.4 GHz radio           | none (a peer ESP board)      | shared channel, peer MAC        | Other ESP32 / ESP8266 boards       |
+| Codec         | Flag                         | Transport               | External hardware              | Typical settings                | Talks to                           |
+| ------------- | ---------------------------- | ----------------------- | ------------------------------ | ------------------------------- | ---------------------------------- |
+| Modbus RTU    | `DETWS_ENABLE_MODBUS_RTU`    | Serial (RS-485/232)     | RS-485 transceiver             | 19200 8E1, unit 1-247           | Modbus sensors, drives, meters     |
+| Modbus TCP    | `DETWS_ENABLE_MODBUS`        | TCP                     | Wi-Fi/Ethernet                 | port 502                        | Modbus PLCs and gateways           |
+| Modbus master | `DETWS_ENABLE_MODBUS_MASTER` | TCP (client)            | Wi-Fi/Ethernet                 | port 502                        | Modbus slave devices               |
+| SunSpec       | `DETWS_ENABLE_SUNSPEC`       | Modbus (RTU or TCP)     | per Modbus row                 | model base reg 40000            | Solar inverters, meters, batteries |
+| DF1           | `DETWS_ENABLE_DF1`           | Serial (RS-232/485)     | RS-232 or RS-485 transceiver   | 19200, full-duplex              | Allen-Bradley (Rockwell) PLCs      |
+| Host Link     | `DETWS_ENABLE_HOSTLINK`      | Serial (RS-232/422/485) | transceiver                    | 9600 7E2, unit 00-31            | Omron PLCs (C-mode)                |
+| FINS          | `DETWS_ENABLE_FINS`          | UDP                     | Wi-Fi/Ethernet                 | UDP port 9600                   | Omron PLCs (FINS)                  |
+| MELSEC        | `DETWS_ENABLE_MELSEC`        | TCP or UDP              | Wi-Fi/Ethernet                 | port set on the PLC             | Mitsubishi PLCs (MC 3E)            |
+| S7comm        | `DETWS_ENABLE_S7COMM`        | TCP (ISO-on-TCP)        | Wi-Fi/Ethernet                 | port 102, rack/slot             | Siemens S7-300/400/1200/1500       |
+| BACnet/IP     | `DETWS_ENABLE_BACNET`        | UDP                     | Wi-Fi/Ethernet                 | UDP port 47808                  | Building automation controllers    |
+| EtherNet/IP   | `DETWS_ENABLE_ENIP`          | TCP + UDP               | Wi-Fi/Ethernet                 | TCP 44818, UDP 2222             | Allen-Bradley / ODVA devices       |
+| CIP           | `DETWS_ENABLE_CIP`           | over EtherNet/IP        | Wi-Fi/Ethernet                 | (rides ENIP)                    | CIP objects on ODVA devices        |
+| DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP           | transceiver or Wi-Fi           | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
+| C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP      | transceiver or Wi-Fi           | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
+| M-Bus         | `DETWS_ENABLE_MBUS`          | Serial (M-Bus bus)      | M-Bus level converter (TSS721) | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
+| CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver                | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
+| J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)       | CAN transceiver                | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
+| DeviceNet     | `DETWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)       | CAN transceiver (+ 24 V bus)   | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
+| NMEA 2000     | `DETWS_ENABLE_NMEA2000`      | CAN (TWAI or SPI)       | CAN transceiver (+ N2K tap)    | 250k bit/s, Fast Packet         | Marine GPS / wind / depth / engine |
+| OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet                 | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
+| OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet                 | port 4840                       | OPC UA servers                     |
+| SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet                 | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
+| ESP-NOW       | `DETWS_ENABLE_ESPNOW`        | 2.4 GHz radio           | none (a peer ESP board)        | shared channel, peer MAC        | Other ESP32 / ESP8266 boards       |
 
 ## Serial field-bus codecs (you wire a transceiver)
 
@@ -252,6 +254,30 @@ Both can run over serial as well as IP. Wire them like Modbus RTU (RS-485 or
 RS-232 transceiver) and see their entries under
 [networked codecs](#dnp3-and-c37118-over-ip) for addressing and the codec calls;
 the framing is transport-independent.
+
+### M-Bus (meters)
+
+`DETWS_ENABLE_MBUS`. Wired M-Bus is the European utility-meter bus (water, gas,
+heat, electricity). Electrically it is **not** RS-485: it is its own powered
+two-wire bus where the master sends by voltage modulation and the meter replies
+by current modulation. So you need an **M-Bus master level converter** (a
+TSS721-based module is the cheap option) between an ESP32 UART and the bus. Wire
+the ESP32 `TX`/`RX` to the module's UART side and the two M-Bus terminals to the
+meters. Typical line settings are **2400 baud, 8E1**; meters have a primary
+address 1-250.
+
+The codec is the framing + record layer:
+
+- Wake / address a meter: `mbus_build_snd_nke(buf, cap, addr)` (link reset), then
+  `mbus_build_req_ud2(buf, cap, addr, fcb)` to request data (toggle `fcb` each
+  poll).
+- Parse the reply: `mbus_parse()` validates the frame and gives you C / A / CI +
+  the user data; then walk the values with `mbus_record_next()` (each record's
+  DIF gives the data type/length, the VIF the unit).
+
+A natural **wireless meter gateway**: poll meters over the M-Bus and publish the
+readings over MQTT / HTTP. Only the LVAR raw/ASCII variable form is decoded; the
+BCD-length LVAR variants are not. See `src/services/mbus/mbus.h`.
 
 ## CAN field-bus codecs (you wire a transceiver)
 
