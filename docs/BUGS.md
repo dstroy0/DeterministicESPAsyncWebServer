@@ -8,6 +8,20 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## CoAP Observe used millis() (would not build on host + pluggable-clock violation)
+
+- **Status:** FIXED (found by the test-gap hardening pass)
+- **Found:** 2026-06-29, adding a CI env that compiles the Observe-gated code.
+- **Symptom:** `coap_notify()` (under `DETWS_ENABLE_COAP_OBSERVE`) built the notification
+  message-id with `millis()` and pulled `<Arduino.h>` for it. The flag was enabled by no
+  test env, so the code had never been compiled on host - it failed to build there
+  (`'millis' was not declared`), and even on ESP32 it violated the pluggable-clock rule
+  that `detws_millis()` is the single monotonic source (same class as the dns_resolver
+  bug above). Latent because the whole Observe path was never compiled in CI.
+- **Fix:** use `detws_millis()` (include `services/det_clock.h`), drop the Arduino.h
+  include; added a `native_coap_observe` env so the Observe-gated code is compiled + the
+  CoAP suite runs under the flag in CI (no longer bit-rots).
+
 ## HTTP request smuggling: Transfer-Encoding ignored on inbound requests
 
 - **Status:** FIXED (found by the test-gap hardening pass)

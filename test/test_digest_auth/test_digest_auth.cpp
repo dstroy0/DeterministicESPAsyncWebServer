@@ -210,6 +210,83 @@ void test_bad_nonce_rejected()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
 }
 
+void test_wrong_username_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    // A different username than the route is configured for: rejected before hashing.
+    char resp[65];
+    compute_response("attacker", kRealm, kPass, "GET", "/secure", nonce, "00000001", "abc", resp);
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"attacker\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kRealm, nonce, resp);
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
+void test_wrong_qop_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    // Only qop=auth is accepted; qop=auth-int must be rejected (it also changes the
+    // HA2 computation, which this server does not implement).
+    char resp[65];
+    compute_response(kUser, kRealm, kPass, "GET", "/secure", nonce, "00000001", "abc", resp);
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth-int, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce, resp);
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
+void test_missing_response_field_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[40];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    // No response= field at all: a required field is missing -> rejected.
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\"\r\n\r\n",
+             kUser, kRealm, nonce);
+    rearm_slot(0);
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
+void test_basic_scheme_on_digest_route_rejected()
+{
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+    // A Basic Authorization header on a Digest-protected route must not authenticate.
+    char authreq[256];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\nAuthorization: Basic YWRtaW46czNjcmV0\r\n\r\n");
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
+}
+
 void test_nonce_is_128bit_hex()
 {
     // The hardened nonce is SHA-256(CSPRNG + counter + millis) truncated to 16
@@ -234,6 +311,10 @@ int main()
     RUN_TEST(test_valid_digest_authenticates);
     RUN_TEST(test_wrong_password_rejected);
     RUN_TEST(test_bad_nonce_rejected);
+    RUN_TEST(test_wrong_username_rejected);
+    RUN_TEST(test_wrong_qop_rejected);
+    RUN_TEST(test_missing_response_field_rejected);
+    RUN_TEST(test_basic_scheme_on_digest_route_rejected);
     RUN_TEST(test_nonce_is_128bit_hex);
     return UNITY_END();
 }

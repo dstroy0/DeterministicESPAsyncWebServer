@@ -12,8 +12,8 @@
 
 #include "network_drivers/transport/udp_transport.h"
 #include <string.h>
-#if defined(ARDUINO)
-#include <Arduino.h> // millis() for Observe notification message IDs / sequencing
+#if DETWS_ENABLE_COAP_OBSERVE
+#include "services/det_clock.h" // detws_millis() for Observe notification message IDs / sequencing
 #endif
 
 // CoAP option numbers we understand (RFC 7252 §5.10, RFC 7959). Others are skipped.
@@ -630,7 +630,7 @@ void coap_notify(const char *path)
             cresp.payload_len = sizeof(g_pl);
 
         // Build a NON notification: header + token + Observe(seq) + body.
-        uint16_t mid = (uint16_t)millis();
+        uint16_t mid = (uint16_t)detws_millis();
         g_obs[i].seq = (g_obs[i].seq + 1) & 0xFFFFFF;
         size_t n =
             emit_header(g_coap_tx, sizeof(g_coap_tx), COAP_TYPE_NON, cresp.code, mid, g_obs[i].token, g_obs[i].tkl);

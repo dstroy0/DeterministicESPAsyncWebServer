@@ -176,6 +176,13 @@
         "test_defer"
       ]
     },
+    "native_diag": {
+      "desc": "Runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG). The gated\ndiag() method + the compile-time DETWS_DIAG_JSON build-info string are enabled by\nno other env, so this one keeps them compiled + exercised in CI. Reuses the full\napp src via the native_app base.",
+      "base": "env:native_app",
+      "flags": ["-DDETWS_ENABLE_DIAG=1"],
+      "src": ["${env:native_app.build_src_filter}"],
+      "tests": ["test_diag"]
+    },
     "native_snmp": {
       "desc": "SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). Pure\ncodec - no lwIP/UDP - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_SNMP=1"],
@@ -217,6 +224,21 @@
         "-DDETWS_ENABLE_COAP_BLOCK=1",
         "-DDETWS_COAP_BLOCK_SZX_MAX=2",
         "-DDETWS_COAP_BLOCK1_MAX=128"
+      ],
+      "src": [
+        "+<services/coap/coap.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>"
+      ],
+      "tests": ["test_coap"]
+    },
+    "native_coap_observe": {
+      "desc": "CoAP with resource observation (RFC 7641) enabled. Compiles + runs test_coap\nwith DETWS_ENABLE_COAP_OBSERVE on, so the Observe-gated code (request Observe\nrecording, the observer registry, coap_notify) is actually built in CI instead\nof bit-rotting (it is enabled by no other env).",
+      "flags": [
+        "-DDETWS_ENABLE_COAP=1",
+        "-DDETWS_ENABLE_COAP_BLOCK=1",
+        "-DDETWS_COAP_BLOCK_SZX_MAX=2",
+        "-DDETWS_COAP_BLOCK1_MAX=128",
+        "-DDETWS_ENABLE_COAP_OBSERVE=1"
       ],
       "src": [
         "+<services/coap/coap.cpp>",
