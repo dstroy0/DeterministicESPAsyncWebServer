@@ -523,16 +523,19 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### IoT device management
 
-- [ ] **LwM2M** (L, OMA LwM2M) - Lightweight M2M device management, which builds
-      directly on the shipped CoAP service ([coap](../src/services/coap/)): the client
-      interfaces (Bootstrap, Registration, Device Management & Service Enablement,
-      Information Reporting / Observe) and the standard object model (Security/0,
-      Server/1, Device/3, Connectivity, Firmware Update/5, ...) addressed as
-      `/objId/instId/resId` resources with the OMA TLV / SenML-CBOR / SenML-JSON
-      content formats (reuses the existing CBOR + JSON codecs). Strong fit - CoAP +
-      Observe + the codecs already exist; the work is the LwM2M object/resource model
-      and the registration state machine on a fixed BSS model. DTLS is gated on the
-      TLS work; scope the NoSec + registration/observe core first. No heap, one flag.
+- [~] **LwM2M** (L, OMA LwM2M) - _TLV content format shipped._ `DETWS_ENABLE_LWM2M`
+  (`services\lwm2m`): a zero-heap writer + cursor reader for the OMA TLV
+  (`application/vnd.oma.lwm2m+tlv`) resource encoding - `lwm2m_tlv_write` (+ typed
+  `_write_int` shortest-form / `_write_bool` / `_write_string` / `_write_float` helpers),
+  `lwm2m_tlv_read`, and `lwm2m_tlv_value_int`, handling 8-/16-bit ids and inline / 8- /
+  16- / 24-bit lengths and the Object-Instance / Resource / Multiple-Resource /
+  Resource-Instance kinds; type-byte layout verified against the spec, host-tested. Built
+  on the shipped CoAP service ([coap](../src/services/coap/)). Remaining: the client
+  interfaces (Bootstrap, Registration, Device Management, Information Reporting / Observe)
+  and the standard object model (Security/0, Server/1, Device/3, Firmware Update/5, ...)
+  on a fixed BSS model, plus the SenML-CBOR / SenML-JSON formats (the CBOR + JSON codecs
+  already exist). DTLS is gated on the TLS work; scope the NoSec + registration/observe
+  core first. No heap, one flag.
 
 ### Messaging & RPC
 

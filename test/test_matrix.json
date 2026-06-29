@@ -362,6 +362,12 @@
       "src": ["+<services/grpcweb/grpcweb.cpp>"],
       "tests": ["test_grpcweb"]
     },
+    "native_lwm2m_tlv": {
+      "desc": "OMA LwM2M TLV codec (services/lwm2m): the writer (raw + int / bool / string /\nfloat value helpers, 8-/16-bit ids, inline / 8-/16-/24-bit lengths) + the cursor reader\n+ integer value decoding. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_LWM2M=1"],
+      "src": ["+<services/lwm2m/lwm2m_tlv.cpp>"],
+      "tests": ["test_lwm2m_tlv"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

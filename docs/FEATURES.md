@@ -204,6 +204,12 @@ HTTP/1.1 persistent connections (keep-alive). Default off (every response carrie
 
 Opt-in fixed-RAM rotating log buffer with severity traps. Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines in a fixed ring (oldest pruned on overflow - no heap, bounded), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback when a line is logged at/above a severity threshold (forward criticals as an SNMP trap / webhook). The ring + trap logic is pure and host-tested.
 
+## LwM2M
+
+`DETWS_ENABLE_LWM2M`
+
+OMA LwM2M TLV codec. Default off. services/lwm2m is a zero-heap writer + cursor reader for the LwM2M `application/vnd.oma.lwm2m+tlv` resource encoding carried over the shipped CoAP service for device management: `lwm2m_tlv_write` (with typed `lwm2m_tlv_write_int` shortest-form / `lwm2m_tlv_write_bool` / `lwm2m_tlv_write_string` / `lwm2m_tlv_write_float` helpers), `lwm2m_tlv_read`, and `lwm2m_tlv_value_int`. Handles 8-/16-bit identifiers, inline / 8- / 16- / 24-bit lengths, and the Object-Instance / Resource / Multiple-Resource / Resource-Instance kinds; type-byte layout verified against the LwM2M spec. Pure and host-tested. The registration interface and the standard object model layer on top. See src/services/lwm2m/lwm2m_tlv.h.
+
 ## MDNS
 
 `DETWS_ENABLE_MDNS`

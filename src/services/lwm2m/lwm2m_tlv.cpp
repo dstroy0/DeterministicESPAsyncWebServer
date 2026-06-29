@@ -1,0 +1,170 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file lwm2m_tlv.cpp
+ * @brief OMA LwM2M TLV writer + reader (pure, host-tested).
+ */
+
+#include "services/lwm2m/lwm2m_tlv.h"
+
+#if DETWS_ENABLE_LWM2M
+
+#include <string.h>
+
+void lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap)
+{
+    w->buf = buf;
+    w->cap = cap;
+    w->pos = 0;
+    w->error = false;
+}
+
+bool lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint8_t *value, size_t value_len)
+{
+    if (!w || (value_len && !value))
+        return false;
+    uint8_t type = (uint8_t)(id_type & 0xC0);
+    bool id16 = id > 0xFF;
+    if (id16)
+        type |= 0x20;
+
+    size_t lenbytes;
+    if (value_len <= 7)
+    {
+        lenbytes = 0; // inline length in bits 2-0
+        type |= (uint8_t)value_len;
+    }
+    else if (value_len <= 0xFF)
+    {
+        lenbytes = 1;
+        type |= (uint8_t)(1 << 3);
+    }
+    else if (value_len <= 0xFFFF)
+    {
+        lenbytes = 2;
+        type |= (uint8_t)(2 << 3);
+    }
+    else if (value_len <= 0xFFFFFF)
+    {
+        lenbytes = 3;
+        type |= (uint8_t)(3 << 3);
+    }
+    else
+        return false;
+
+    size_t need = 1 + (id16 ? 2 : 1) + lenbytes + value_len;
+    if (w->error || w->pos + need > w->cap)
+    {
+        w->error = true;
+        return false;
+    }
+
+    w->buf[w->pos++] = type;
+    if (id16)
+        w->buf[w->pos++] = (uint8_t)(id >> 8);
+    w->buf[w->pos++] = (uint8_t)id;
+    for (size_t i = 0; i < lenbytes; i++)
+        w->buf[w->pos++] = (uint8_t)(value_len >> (8 * (lenbytes - 1 - i)));
+    if (value_len)
+    {
+        memcpy(w->buf + w->pos, value, value_len);
+        w->pos += value_len;
+    }
+    return true;
+}
+
+bool lwm2m_tlv_write_int(Lwm2mTlvWriter *w, uint16_t id, int64_t v)
+{
+    size_t n;
+    if (v >= -128 && v <= 127)
+        n = 1;
+    else if (v >= -32768 && v <= 32767)
+        n = 2;
+    else if (v >= -2147483648LL && v <= 2147483647LL)
+        n = 4;
+    else
+        n = 8;
+    uint8_t b[8];
+    for (size_t i = 0; i < n; i++)
+        b[i] = (uint8_t)((uint64_t)v >> (8 * (n - 1 - i)));
+    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, n);
+}
+
+bool lwm2m_tlv_write_bool(Lwm2mTlvWriter *w, uint16_t id, bool v)
+{
+    uint8_t b = v ? 1 : 0;
+    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, &b, 1);
+}
+
+bool lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s)
+{
+    if (!s)
+        return false;
+    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, (const uint8_t *)s, strlen(s));
+}
+
+bool lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v)
+{
+    uint64_t bits;
+    memcpy(&bits, &v, 8);
+    uint8_t b[8];
+    for (size_t i = 0; i < 8; i++)
+        b[i] = (uint8_t)(bits >> (8 * (7 - i))); // big-endian
+    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, b, 8);
+}
+
+size_t lwm2m_tlv_finish(Lwm2mTlvWriter *w)
+{
+    return w->error ? 0 : w->pos;
+}
+
+bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
+{
+    if (!buf || !pos || !out || *pos >= len)
+        return false;
+    size_t p = *pos;
+    uint8_t type = buf[p++];
+    bool id16 = (type & 0x20) != 0;
+    if (p + (id16 ? 2u : 1u) > len)
+        return false;
+    uint16_t id = buf[p++];
+    if (id16)
+        id = (uint16_t)((id << 8) | buf[p++]);
+
+    uint8_t lentype = (uint8_t)((type >> 3) & 0x03);
+    size_t vlen;
+    if (lentype == 0)
+        vlen = type & 0x07;
+    else
+    {
+        if (p + lentype > len)
+            return false;
+        vlen = 0;
+        for (uint8_t i = 0; i < lentype; i++)
+            vlen = (vlen << 8) | buf[p++];
+    }
+    if (p + vlen > len)
+        return false;
+
+    out->id_type = (uint8_t)(type & 0xC0);
+    out->id = id;
+    out->value = buf + p;
+    out->value_len = vlen;
+    *pos = p + vlen;
+    return true;
+}
+
+bool lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out)
+{
+    if (!value || (len != 1 && len != 2 && len != 4 && len != 8))
+        return false;
+    int64_t r = (value[0] & 0x80) ? -1 : 0; // sign-extend from the MSB
+    for (size_t i = 0; i < len; i++)
+        r = (int64_t)(((uint64_t)r << 8) | value[i]);
+    if (out)
+        *out = r;
+    return true;
+}
+
+#endif // DETWS_ENABLE_LWM2M

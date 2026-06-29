@@ -858,6 +858,18 @@
 #endif
 
 /**
+ * @brief OMA LwM2M TLV codec (`services/lwm2m`).
+ *
+ * Default off. A zero-heap writer + cursor reader for the LwM2M `application/vnd.oma.lwm2m+tlv`
+ * resource encoding (Type / Identifier / Length / Value, 8-/16-bit ids, 0-/8-/16-/24-bit
+ * lengths), carried over the shipped CoAP service for device management. Value helpers for
+ * shortest-form integers, booleans, strings, and floats. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_LWM2M
+#define DETWS_ENABLE_LWM2M 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
