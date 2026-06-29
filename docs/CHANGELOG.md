@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.13.1] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.13.1 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- compile det_client only when a client transport is enabled ([`87b94f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87b94f1010e27af2f49aaf3d687938a28c9ea316))
 
 ### CI / Build
 
+- update test report [skip ci] ([`d082813`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0828130f1556c1fac9dc5b89f698ff36ef90e58))
+- update CHANGELOG.md [skip ci] ([`635e1e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/635e1e9cb8c98d73b8de07d205c03b9e17c1fc8a))
 - update test report [skip ci] ([`e600342`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e600342f64f643f024bfbbed4bb4efade42355a5))
 - update CHANGELOG.md [skip ci] ([`b4ebab4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4ebab42584fd59218d5edfc7d2b1ddec1a0dff9))
+
+### Changes
+
+- Bump version: 4.13.0 → 4.13.1 ([`0223ea2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0223ea21b2f296954c5d9b4fa00f1b15e5a43d8b))
 
 ### Documentation
 
 - wrap interop CLI example so prettier accepts the code span ([`d136dfa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d136dfa1cfe2c59e7bedf3ce0105251954650ab3))
+
+</details>
 
 ## [4.13.0] - 2026-06-29
 
