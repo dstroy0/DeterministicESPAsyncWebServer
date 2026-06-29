@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.34.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.34.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`7cc32ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7cc32abf647e3e3329c4925880bc5cf20bde90cd))
+- update CHANGELOG.md [skip ci] ([`773c9c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/773c9c4817b536e2d4deb5648ccc1a4819a0af71))
+
+### Changes
+
+- Bump version: 4.33.0 → 4.34.0 ([`fd6300f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd6300f147d6970713c930cbed9204069742d7e1))
+
+### Features
+
+- gRPC-Web message framing codec (DETWS_ENABLE_GRPC_WEB) ([`f041f26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f041f266f67c33016cbaf762c7bf498392c9890b))
+
+</details>
+
 ## [4.33.0] - 2026-06-29
 
 <details>
