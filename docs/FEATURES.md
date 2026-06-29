@@ -166,6 +166,12 @@ gRPC-Web message framing. Default off. services/grpcweb is a zero-heap length-pr
 
 Opt-in runtime heap/stack guardrails. Default off. When set, services/guardrails samples free heap, the heap low-water mark, the largest free block (fragmentation), and the calling task's remaining stack, and fires a callback when any crosses its threshold - a proactive fail-safe hook beyond the passive numbers in /metrics. The threshold evaluator and the JSON serializer are pure and host-tested; the sample reads esp_* / the FreeRTOS stack high-water on ESP32.
 
+## Host Link
+
+`DETWS_ENABLE_HOSTLINK`
+
+Omron Host Link (C-mode) frame codec. Default off. services/hostlink is a zero-heap ASCII command/response codec for Omron's serial host-link protocol (the RS-232/485 sibling of FINS): `hostlink_build` emits `@UU` + 2-char header code + text + FCS + `*`CR, and `hostlink_parse` FCS-validates and splits a frame (`hostlink_end_code` reads a response's end code). The FCS is the 8-bit XOR from `@` through the text, rendered as two hex digits (verified against the `@00RD00000010` -> `57` example). Pure and host-tested; the UART transport is the application's. See src/services/hostlink/hostlink.h.
+
 ## HTTP Client
 
 `DETWS_ENABLE_HTTP_CLIENT`

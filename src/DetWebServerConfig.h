@@ -883,6 +883,19 @@
 #endif
 
 /**
+ * @brief Omron Host Link (C-mode) frame codec (`services/hostlink`).
+ *
+ * Default off. A zero-heap ASCII command/response codec for the Omron serial host-link
+ * protocol (the RS-232/485 sibling of FINS): `hostlink_build` emits `@UU` + header code +
+ * text + FCS + `*`CR, and `hostlink_parse` FCS-validates and splits a frame
+ * (`hostlink_end_code` reads a response's end code). FCS is the 8-bit XOR from `@` through
+ * the text. Pure codec, host-tested; the serial transport is the application's.
+ */
+#ifndef DETWS_ENABLE_HOSTLINK
+#define DETWS_ENABLE_HOSTLINK 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

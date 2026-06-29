@@ -410,10 +410,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   verified against the FINS spec; pure, host-tested. Remaining: the full command set
   (memory-area write / run-stop / clock) and the FINS/TCP framing + the
   FINS/Hostlink-gateway addressing model. Fixed BSS device model, no heap.
-- [ ] **Host Link** (M, Omron) - Omron's serial C-mode protocol (the `@`-framed ASCII
-      commands with FCS over RS-232/RS-485) for CJ/CS/CP PLCs - memory read/write of the
-      DM/CIO areas. UART transport, host-testable frame + FCS codec; pairs with the FINS
-      work (Host Link is the serial sibling). Fixed BSS, no heap.
+- [~] **Host Link** (M, Omron) - _C-mode frame codec shipped._ `DETWS_ENABLE_HOSTLINK`
+  (`services\hostlink`): a zero-heap ASCII frame builder + FCS-validating parser for
+  Omron's serial C-mode protocol - `hostlink_build` emits `@UU` + header code + text +
+  FCS + `*`CR (FCS = the 8-bit XOR from `@` through the text, verified against the
+  `@00RD00000010` -> `57` vector), and `hostlink_parse` / `hostlink_end_code` validate and
+  split a frame. Pairs with the FINS work (Host Link is the serial sibling); pure,
+  host-tested. Remaining: the per-command text encoders (RD/WD/... of the DM/CIO areas)
+  and the UART transport. Fixed BSS, no heap.
 - [ ] **SNP** (M, GE Fanuc Series Ninety Protocol) - the GE Fanuc Series 90 (90-30 /
       90-70) serial protocol: the SNP / SNP-X master-slave framing over RS-485 for
       register/bit read/write. UART transport, host-testable frame + checksum codec;

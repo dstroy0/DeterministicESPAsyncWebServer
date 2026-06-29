@@ -374,6 +374,12 @@
       "src": ["+<services/fins/fins.cpp>"],
       "tests": ["test_fins"]
     },
+    "native_hostlink": {
+      "desc": "Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII\ncommand builder (@UU + header + text + FCS + *CR), and the FCS-validating parser +\nend-code reader. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HOSTLINK=1"],
+      "src": ["+<services/hostlink/hostlink.cpp>"],
+      "tests": ["test_hostlink"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
