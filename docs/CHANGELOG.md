@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`c18e970`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c18e9707dbfc619d013a033a30763186d83a6a76))
+- update CHANGELOG.md [skip ci] ([`b757454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7574549ef7bab62ef7602a5196dccc381b1837c))
+
+### Documentation
+
+- keep Forwarded ROADMAP code span on one line for prettier ([`3b3d0ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b3d0ea64f9b506daf6ec389a93539028a948ef0))
+
 ## [4.21.0] - 2026-06-29
 
 <details>
