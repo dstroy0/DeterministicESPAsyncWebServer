@@ -363,3 +363,24 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       carrying time-stamped phasor / frequency / ROCOF measurements. Fixed BSS phasor
       configuration + data model, no heap; the data frame streams via the chunked /
       UDP cast path. Pairs with the telemetry-math service for on-device PMU analytics.
+- [ ] **IEEE 2030.5 (SEP 2.0)** (M-L, DER / smart energy) - the Smart Energy Profile:
+      a RESTful resource model (the function-set resources - DER, metering, demand
+      response, pricing) over HTTP + TLS with client-cert auth. This is the best fit of
+      the grid protocols for this library - it rides the existing HTTP server, routes,
+      and TLS; the work is the SEP resource schema (XML, optionally EXI) + the function
+      sets, on a fixed BSS model. Strong near-term candidate among the DER protocols.
+- [ ] **OpenADR** (L, demand response) - Open Automated Demand Response (OpenADR 2.0a/b,
+      and 3.0 which is REST/JSON + OAuth): the VEN (and optionally VTN) roles exchanging
+      events / reports. 3.0 rides the existing HTTP client/server + OAuth2 + JSON cleanly
+      (the 2.0 XML/EXI profile is heavier); fixed BSS event/report model, no heap.
+- [ ] **SunSpec Modbus** (M, DER device models) - the SunSpec Alliance standard register
+      maps (the model-discovery chain + common/inverter/meter/battery models) layered on
+      the Modbus service - a SunSpec model dictionary over the existing holding-register
+      model, so a solar inverter / meter is interoperable. Builds directly on the shipped
+      Modbus ([modbus](../src/services/modbus/)) plus the planned Modbus RTU; fixed BSS
+      model table, no heap.
+- [ ] **ICCP / TASE.2** (XL, IEC 60870-6) - the Inter-Control-Center Communications
+      Protocol: utility control-center-to-control-center data exchange (data sets,
+      transfer sets, devices) carried over **MMS** (ISO-on-TCP 102), so it builds on the
+      IEC 61850 MMS stack above. Heavy (the full MMS/ACSI object model + bilateral
+      tables); sequence after IEC 61850. Fixed BSS object model, no heap.
