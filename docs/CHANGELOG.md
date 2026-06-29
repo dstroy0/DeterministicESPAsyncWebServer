@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.11.5] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.5 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- WS text UTF-8 (1007), SSH padding>=4, syslog PRI clamp, BER OID first-subid (audit batch 2b) ([`90267f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90267f6bf8195f8c3abd47986e9c4dd80936eda5))
+
+### CI / Build
+
+- update test report [skip ci] ([`d64c77f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d64c77f3025232aecb37dd5e94b749fc9cc47a2b))
+- update CHANGELOG.md [skip ci] ([`5a36a7f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a36a7f649c2586ac46a903129b73b5ad6987958))
+
+### Changes
+
+- Bump version: 4.11.4 → 4.11.5 ([`a0c4c36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0c4c3645b699f876e290151baf2163bcd258eb5))
+
+</details>
+
 ## [4.11.4] - 2026-06-29
 
 <details>
