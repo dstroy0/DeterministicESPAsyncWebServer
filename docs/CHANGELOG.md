@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.57.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.57.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`69d00c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69d00c000ffbb21f15e4cb3b16b8e57136c2db35))
+- update CHANGELOG.md [skip ci] ([`b435fbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b435fbef12c00381c4873a24afea5c03c7549baa))
+
+### Changes
+
+- Bump version: 4.56.0 → 4.57.0 ([`853a093`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/853a09343e62beb69d646758e3d36bd77b4efbd3))
+
+### Features
+
+- DMX512 framing + RDM (ANSI E1.20) lighting codec ([`4b477c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b477c43bb77fa2227f728e34014b08db2154ca1))
+
+</details>
+
 ## [4.56.0] - 2026-06-29
 
 <details>
