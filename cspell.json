@@ -86,6 +86,7 @@
     "websocat",
     "websockets",
     "paho",
+    "pysnmp",
     "unbuildable",
     "HSET",
     "IPFIX",

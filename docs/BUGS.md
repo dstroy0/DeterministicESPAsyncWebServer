@@ -8,6 +8,23 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## det_client.cpp failed to compile on a server-only Arduino build
+
+- **Status:** FIXED (found while building the interop rig; HW build verified on COM3).
+- **Found:** 2026-06-29, bringing up the real-protocol interop harness (test/servers).
+- **A server-only Arduino build (no HTTP client / MQTT / WS client) did not compile
+  (build break).** `det_client.cpp` guarded its body with only `#if defined(ARDUINO)` yet
+  calls `detws_dns_resolve()`, whose declaration lives behind `DETWS_ENABLE_DNS_RESOLVER`.
+  That flag is force-enabled only by a client transport (`HTTP_CLIENT || MQTT || WS_CLIENT`,
+  DetWebServerConfig.h), so a build that enabled, e.g., WebSocket + SNMP + CoAP + Modbus but
+  no client left the symbol undeclared: `error: 'detws_dns_resolve' was not declared in this
+scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`), so the
+  native suites never caught it. Fix: add `DETWS_NEED_DET_CLIENT` (set alongside the
+  DNS-resolver force-enable) and gate the translation unit on
+  `#if defined(ARDUINO) && DETWS_NEED_DET_CLIENT`, so det_client compiles exactly when a
+  client transport needs it. Verified: a WebSocket+SNMP+CoAP+Modbus rig now builds and
+  flashes, and the interop harness drives all four against real peers.
+
 ## Standards-conformance audit, batch 2e (LOW/SHOULD closeout)
 
 - **Status:** FIXED (standards-conformance audit; host + HW-verified on COM3)

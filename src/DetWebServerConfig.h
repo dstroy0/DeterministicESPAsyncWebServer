@@ -1726,9 +1726,16 @@
 // The outbound clients (det_client) resolve hostnames through the shared DNS
 // resolver (detws_dns_resolve), so enabling any client implies the resolver - one
 // owner of the gethostbyname-marshal pattern instead of a private copy per client.
+// DETWS_NEED_DET_CLIENT marks when the client transport is actually used; the
+// det_client translation unit compiles its body only then (a server-only Arduino
+// build that does not enable a client must not reference the resolver symbols).
 #if DETWS_ENABLE_HTTP_CLIENT || DETWS_ENABLE_MQTT || DETWS_ENABLE_WS_CLIENT
 #undef DETWS_ENABLE_DNS_RESOLVER
 #define DETWS_ENABLE_DNS_RESOLVER 1
+#define DETWS_NEED_DET_CLIENT 1
+#endif
+#ifndef DETWS_NEED_DET_CLIENT
+#define DETWS_NEED_DET_CLIENT 0
 #endif
 
 // ---------------------------------------------------------------------------

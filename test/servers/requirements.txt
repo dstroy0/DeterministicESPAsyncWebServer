@@ -3,12 +3,14 @@
 #
 # Some peers also need a native binary on PATH (not pip-installable):
 #   snmp         -> net-snmp tools (snmpget, snmpwalk)   apt install snmp / choco install net-snmp
+#                   (optional: the snmp peer falls back to the pysnmp package below)
 #   mqtt-broker  -> mosquitto                            apt install mosquitto / choco install mosquitto
 #
 # http uses only the Python standard library (no entry here).
 
 websockets>=12.0      # ws peer (RFC 6455 client)
-pymodbus>=3.5         # modbus-client / modbus-server
+pymodbus>=3.5         # modbus-client / modbus-server (unit kwarg auto-detected across 3.x)
 aiocoap>=0.4.7        # coap peer (RFC 7252 client)
 paho-mqtt>=1.6        # mqtt-broker monitor/publisher
 asyncua>=1.0          # opcua-client / opcua-server
+pysnmp>=7.0           # snmp peer fallback when net-snmp tools are not on PATH

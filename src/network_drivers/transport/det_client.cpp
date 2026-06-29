@@ -14,7 +14,11 @@
 
 #include "det_client.h"
 
-#if defined(ARDUINO)
+// Compiles only on Arduino AND only when a client transport is actually enabled
+// (HTTP client / MQTT / WS client). A server-only build leaves DNS_RESOLVER off,
+// so the resolver symbols this unit calls would not be declared - see
+// DETWS_NEED_DET_CLIENT in DetWebServerConfig.h.
+#if defined(ARDUINO) && DETWS_NEED_DET_CLIENT
 
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"

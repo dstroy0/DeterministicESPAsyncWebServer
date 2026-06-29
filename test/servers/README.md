@@ -37,14 +37,23 @@ runs. Two shapes:
 pip install -r test/servers/requirements.txt
 ```
 
-Two peers also need a native binary on PATH (they are not Python packages):
+Two peers prefer a native binary on PATH (they are not Python packages):
 
 | peer          | needs              | install                                             |
 | ------------- | ------------------ | --------------------------------------------------- |
 | `snmp`        | net-snmp CLI tools | `apt install snmp` / `choco install net-snmp`       |
 | `mqtt-broker` | `mosquitto` broker | `apt install mosquitto` / `choco install mosquitto` |
 
-`http` uses only the Python standard library.
+`http` uses only the Python standard library. `snmp` falls back to the `pysnmp`
+package (in requirements.txt) when the net-snmp tools are not on PATH, so it also
+works pip-only.
+
+### Verified against hardware
+
+Driven against the device on real third-party stacks: `http` (stdlib) 4/4,
+`ws` (`websockets`) 3/3, `coap` (`aiocoap`) 2/2, `modbus-client` (`pymodbus`) 6/6,
+`snmp` (`pysnmp`) 3/3. `mqtt-broker` (needs `mosquitto`) and the OPC UA peers (the
+library's OPC UA server is still an early increment) are not yet HW-checked.
 
 ## Usage
 

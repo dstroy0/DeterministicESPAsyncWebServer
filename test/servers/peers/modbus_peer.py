@@ -37,24 +37,26 @@ class Client:
         from pymodbus.client import ModbusTcpClient  # pymodbus >= 3
 
         pr = Probe(f"modbus-client {args.host}:{args.port} unit={args.unit}")
-        # pymodbus 3.7+ renamed the keyword slave= (was unit=); pass via kwargs that work on both.
-        kw = {"slave": args.unit}
         cli = ModbusTcpClient(args.host, port=args.port, timeout=args.timeout)
+        # pymodbus renamed the slave/unit keyword repeatedly (unit -> slave -> device_id);
+        # discover the name this version uses from the method signature so the peer works
+        # across 3.x without pinning a version. count is keyword-only in 3.7+.
+        unit_kw = _unit_kw(cli.read_holding_registers, args.unit)
         try:
             pr.check("TCP connect", cli.connect(), f"{args.host}:{args.port}")
 
-            rr = cli.read_holding_registers(0, count=4, **kw) if _supports_count() else cli.read_holding_registers(0, 4, **kw)
+            rr = cli.read_holding_registers(0, count=4, **unit_kw)
             pr.check("FC3 read holding registers", not rr.isError(), _vals(rr, "registers"))
 
-            wr = cli.write_register(0, 0x1234, **kw)
+            wr = cli.write_register(0, 0x1234, **unit_kw)
             pr.check("FC6 write single register", not wr.isError())
-            rr = cli.read_holding_registers(0, count=1, **kw) if _supports_count() else cli.read_holding_registers(0, 1, **kw)
+            rr = cli.read_holding_registers(0, count=1, **unit_kw)
             ok = not rr.isError() and getattr(rr, "registers", [None])[0] == 0x1234
             pr.check("read back written register", ok, _vals(rr, "registers"))
 
-            wc = cli.write_coil(0, True, **kw)
+            wc = cli.write_coil(0, True, **unit_kw)
             pr.check("FC5 write single coil", not wc.isError())
-            rc = cli.read_coils(0, count=1, **kw) if _supports_count() else cli.read_coils(0, 1, **kw)
+            rc = cli.read_coils(0, count=1, **unit_kw)
             ok = not rc.isError() and bool(getattr(rc, "bits", [False])[0]) is True
             pr.check("read back written coil", ok, _vals(rc, "bits"))
         except Exception as exc:  # noqa: BLE001
@@ -105,15 +107,20 @@ class Server:
         return True
 
 
-def _supports_count() -> bool:
-    """pymodbus 3.7 made read_* signatures keyword-only (count=...); 3.0-3.6 took positional."""
-    try:
-        import pymodbus
+def _unit_kw(method, unit_id: int) -> dict:
+    """Return {<unit-kwarg>: unit_id} using whichever name this pymodbus exposes.
 
-        major, minor = (int(x) for x in pymodbus.__version__.split(".")[:2])
-        return (major, minor) >= (3, 7)
-    except Exception:  # noqa: BLE001
-        return True
+    The slave-address keyword has been renamed across releases: unit= (<=3.6),
+    slave= (3.7-3.8), device_id= (3.9+). Inspect the bound method's signature and
+    pick the one it actually accepts so the peer is version-independent.
+    """
+    import inspect
+
+    params = inspect.signature(method).parameters
+    for name in ("device_id", "slave", "unit"):
+        if name in params:
+            return {name: unit_id}
+    return {}  # very old pymodbus: unit defaulted positionally
 
 
 def _vals(resp, attr: str) -> str:
