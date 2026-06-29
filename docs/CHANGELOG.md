@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.33.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.33.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f126c4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f126c4e557ab76d47db090dbb81ab0ad5ef53a59))
+- update CHANGELOG.md [skip ci] ([`04541f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04541f978dba7bd96c756ef8bdeec0b057891c74))
+
+### Changes
+
+- Bump version: 4.32.0 → 4.33.0 ([`7969224`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7969224919793e6db96e6b679b8b3d688ee5768e))
+
+### Features
+
+- DNP3 (IEEE 1815) data-link frame codec (DETWS_ENABLE_DNP3) ([`5d1ded2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d1ded28c315fef8c81cdedac45fce99f52ac282))
+
+</details>
+
 ## [4.32.0] - 2026-06-29
 
 <details>
