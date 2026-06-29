@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.52.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.52.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`47da9f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47da9f0250ba951b56a16dca6e2a2dc5dc04810e))
+- update CHANGELOG.md [skip ci] ([`14071c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14071c8c35333d591b7af9c0f0215a29f65be44e))
+
+### Changes
+
+- Bump version: 4.51.0 → 4.52.0 ([`92216c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92216c963a4b5468619c91e777d5b816028c4263))
+
+### Features
+
+- DeviceNet link-adaptation codec (CIP over CAN) ([`e5feb37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5feb3710525477c94f20215491ea745722bc51e))
+
+</details>
+
 ## [4.51.0] - 2026-06-29
 
 <details>
