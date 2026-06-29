@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.59.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8b4903b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b4903bdd8c7326b11aa4e645be6a24b49c82129))
+- update CHANGELOG.md [skip ci] ([`bc1a918`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc1a9181cb5575a6aa9e103c4904922593944e2b))
+
+### Changes
+
+- Bump version: 4.58.0 → 4.59.0 ([`67515d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67515d33f83e09e6d1eea9da1cff5f355ee060ae))
+
+### Features
+
+- IO-Link (SDCI) data-link message codec ([`c4383b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4383b15d5ac7077c87d4801104436d43279c38d))
+
+</details>
+
 ## [4.58.0] - 2026-06-29
 
 <details>
