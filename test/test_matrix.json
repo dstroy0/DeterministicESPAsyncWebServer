@@ -36,6 +36,36 @@
       ],
       "tests": ["test_observability"]
     },
+    "native_accept_gate": {
+      "desc": "Accept-time connection gates with their flags ON (DETWS_ENABLE_ACCEPT_THROTTLE\n/ PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP\nbucket table (independent budgets, window rollover, the millis() wrap, bounded LRU\neviction), and the CIDR source-IP allowlist. Compiles the flag-guarded accept-callback\npaths that no other env builds. Budgets overridden small so the boundaries are explicit.",
+      "flags": [
+        "-DDETWS_ENFORCE_HOST_HEADER=0",
+        "-DDETWS_ENABLE_ACCEPT_THROTTLE=1",
+        "-DDETWS_ENABLE_PER_IP_THROTTLE=1",
+        "-DDETWS_ENABLE_IP_ALLOWLIST=1",
+        "-DDETWS_ACCEPT_THROTTLE_MAX=3",
+        "-DDETWS_ACCEPT_THROTTLE_WINDOW_MS=1000",
+        "-DDETWS_PER_IP_THROTTLE_MAX=2",
+        "-DDETWS_PER_IP_THROTTLE_WINDOW_MS=1000",
+        "-DDETWS_PER_IP_THROTTLE_SLOTS=4",
+        "-DDETWS_IP_ALLOWLIST_SLOTS=4"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
+        "+<network_drivers/transport/listener.cpp>",
+        "+<network_drivers/transport/transport.cpp>",
+        "+<network_drivers/presentation/presentation.cpp>",
+        "+<network_drivers/session/session.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>",
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<network_drivers/presentation/base64/base64.cpp>",
+        "+<network_drivers/presentation/websocket/websocket.cpp>",
+        "+<network_drivers/presentation/sse/sse.cpp>",
+        "+<network_drivers/presentation/multipart/multipart.cpp>"
+      ],
+      "tests": ["test_accept_gate"]
+    },
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
