@@ -927,6 +927,19 @@
 #endif
 
 /**
+ * @brief TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`).
+ *
+ * Default off. A zero-heap "ISO transport on TCP" framing codec - the reusable foundation
+ * under S7comm and IEC 61850 MMS. `tpkt_build` / `tpkt_parse` handle the 4-octet TPKT
+ * envelope; `cotp_build_dt` wraps user data in a Data TPDU, `cotp_build_cr` builds a
+ * Connection Request (with the TPDU-size parameter + caller TSAP params), and `cotp_parse`
+ * reports the TPDU type and the DT data / CR-CC refs. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_COTP
+#define DETWS_ENABLE_COTP 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

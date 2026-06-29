@@ -392,13 +392,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   data-table read/write) inside the application data, the half-duplex master/slave
   framing, and **DH+** (Data Highway Plus token LAN, physical-layer-gated). Fixed BSS,
   no heap.
-- [ ] **S7comm / S7comm-Plus** (L, Siemens S7) - the Siemens PLC communication
-      protocol over ISO-on-TCP (RFC 1006, TPKT + COTP on port 102): **S7comm** (the
-      classic S7-300/400 job/ack-data PDUs - read/write of DB/M/I/Q areas, the item
-      addressing model) and **S7comm-Plus** (the S7-1200/1500 successor with its
-      session/integrity wrapping). S7comm first (host-testable TPKT/COTP framing + the
-      S7 item codec); S7comm-Plus is heavier (object model + integrity). Fixed BSS data
-      model, no heap, one build flag.
+- [~] **S7comm / S7comm-Plus** (L, Siemens S7) - _the ISO-on-TCP framing is shipped._
+  The TPKT + COTP transport (RFC 1006 / X.224, port 102) that S7comm rides is now a
+  reusable codec - `DETWS_ENABLE_COTP` (`services\cotp`): `tpkt_build` / `tpkt_parse`,
+  `cotp_build_dt` (Data TPDU), `cotp_build_cr` (Connection Request + TSAP params), and
+  `cotp_parse`; host-tested. Remaining: **S7comm** itself (the classic S7-300/400
+  job/ack-data PDUs - read/write of DB/M/I/Q areas, the item addressing model) carried
+  in the COTP DT payload, and **S7comm-Plus** (the S7-1200/1500 successor with its
+  session/integrity wrapping). Fixed BSS data model, no heap, one build flag.
 - [ ] **MELSECNET** (L, Mitsubishi) - the Mitsubishi MELSEC PLC networks: the MC
       protocol (MELSEC Communication, the 1E/3E/4E binary + ASCII frames for device
       batch read/write over TCP/UDP) first as the host-reachable path, then

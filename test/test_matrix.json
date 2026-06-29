@@ -396,6 +396,12 @@
       "src": ["+<services/df1/df1.cpp>"],
       "tests": ["test_df1"]
     },
+    "native_cotp": {
+      "desc": "TPKT (RFC 1006) + COTP X.224 class-0 frame codec (services/cotp): the TPKT\nenvelope, the COTP Data TPDU + Connection Request builders, and the COTP parser. The\nISO-on-TCP foundation under S7comm / IEC 61850 MMS. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_COTP=1"],
+      "src": ["+<services/cotp/cotp.cpp>"],
+      "tests": ["test_cotp"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
