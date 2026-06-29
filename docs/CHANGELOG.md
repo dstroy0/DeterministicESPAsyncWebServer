@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.25.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.25.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b0cda4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0cda4fb44b214b66dbd7627c7e9277fb68cedbe))
+- update CHANGELOG.md [skip ci] ([`f03f7d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f03f7d7fc77d7f9ed480ce6ddc04a511c42ae97c))
+
+### Changes
+
+- Bump version: 4.24.0 → 4.25.0 ([`833d98c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/833d98cdc7984954b2894454ca4498d2f2cbbf71))
+
+### Features
+
+- RESP2 wire codec (DETWS_ENABLE_REDIS) ([`7d674a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d674a3e59d5b85032678127bb320d0c8cfbf6be))
+
+</details>
+
 ## [4.24.0] - 2026-06-29
 
 <details>
