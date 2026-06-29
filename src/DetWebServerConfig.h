@@ -968,6 +968,19 @@
 #endif
 
 /**
+ * @brief BACnet/IP BVLC + NPDU codec (`services/bacnet`).
+ *
+ * Default off. A zero-heap framing codec for the ASHRAE 135 building-automation network
+ * layer over UDP (47808): `bvlc_build` / `bvlc_parse` handle the BVLC envelope (type 0x81,
+ * function, length), and `npdu_build` / `npdu_parse` handle the NPDU (version + NPCI control
+ * + optional DNET/DADR destination addressing + hop count) and slice the APDU. The APDU
+ * (application-layer services / object model) layers on top. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_BACNET
+#define DETWS_ENABLE_BACNET 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

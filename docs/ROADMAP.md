@@ -635,15 +635,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### Building automation
 
-- [ ] **BACnet/IP & BACnet/SC** (L, ASHRAE 135) - the global commercial building
-      automation standard. **BACnet/IP** (BVLL/NPDU/APDU over UDP 47808, with the BBMD
-      foreign-device registration) carries the object model (Device / Analog-Input /
-      Binary-Output / ... objects, properties, the ReadProperty / WriteProperty / COV
-      subscription services). **BACnet/SC** (Secure Connect) is the modern hub-and-spoke
-      transport over **WebSocket + TLS** - a strong fit since this library already ships
-      WS + the static-pool TLS, so BACnet/SC reuses them and the work is the BVLC-SC
-      framing + the same APDU/object model. Fixed BSS object database, no heap; scope
-      the APDU + object model first (shared by both), then the BACnet/SC WS transport.
+- [~] **BACnet/IP & BACnet/SC** (L, ASHRAE 135) - _the BVLC + NPDU framing is shipped._
+  `DETWS_ENABLE_BACNET` (`services\bacnet`): `bvlc_build` / `bvlc_parse` (the BACnet/IP
+  virtual-link envelope - type 0x81, function, length) and `npdu_build` / `npdu_parse`
+  (the network layer - version + NPCI control + optional DNET/DADR destination addressing + hop count, slicing the APDU); layout per ASHRAE 135 Annex J / Clause 6, host-tested.
+  Remaining: the **APDU** application layer (the object model - Device / Analog-Input /
+  Binary-Output / ... objects, properties, ReadProperty / WriteProperty / COV) and the
+  BBMD foreign-device registration; then **BACnet/SC** (Secure Connect) reuses the shipped
+  WebSocket + static-pool TLS for its BVLC-SC framing + the same APDU/object model. Fixed
+  BSS object database, no heap.
 - [ ] **XMPP (IoT profile)** (L, XSF) - XMPP with the IoT extensions (XEP-0030 service
       discovery, XEP-0060 pub/sub, XEP-0323 sensor data, XEP-0325 control). The XML
       stream protocol over TCP (with the SASL/TLS handshake) is the heavy part; scope a
