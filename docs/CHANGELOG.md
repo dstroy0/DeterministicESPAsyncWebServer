@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`80e7f9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80e7f9c4166474ad7dd9f65fdecb18d3333d232c))
+- update CHANGELOG.md [skip ci] ([`10a406a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10a406a732f451222b31ab5c7f8ee1aaf9ca3c0c))
 - update test report [skip ci] ([`9a43b18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a43b1889c98bdb990c842c1d743fd53998477eb))
 - update CHANGELOG.md [skip ci] ([`4dd142e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4dd142eb79d88c3ea43fbc043ec5b316567cc3bd))
 - update CHANGELOG.md [skip ci] ([`50fcafc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50fcafcc986e9bb45584912a2b7aa6560a484729))
@@ -14,6 +16,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- raw-L2 enabler + real-time timing model; ESC/motor protocols; real-protocol interop harness ([`91fd148`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91fd14801030032a334ce00c371f9e53f8650592))
 - add IoT/messaging/DB protocols (LwM2M, STOMP, gRPC/Protobuf, DDS, WAMP, CloudEvents, MQTT-SN, NetFlow/IPFIX, BACnet/IP+SC, XMPP-IoT, InfluxDB line, Redis/NoSQL) ([`8430840`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8430840755a2ed86fa99813dc780322c4ed424b1))
 - add ITS / V2X / traffic-cabinet protocols (NTCIP 1202/1203/1211, UTMC, OCIT, SAE J2735, IEEE 1609 WAVE, NEMA TS 2, ATC) ([`1a12665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a12665d240199fead0606d0f1b23c83c29d2883))
 - add DER / smart-grid protocols (IEEE 2030.5/SEP2, OpenADR, SunSpec Modbus, ICCP/TASE.2) ([`89973e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89973e5d72f289238e4a2db3475c5075b133b29e))
