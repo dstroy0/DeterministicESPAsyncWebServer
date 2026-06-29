@@ -12,7 +12,7 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 > [!WARNING]
 > **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY. YOU ARE THE 3RD PARTY. PLEASE REPORT YOUR FINDINGS, IF THE BUG IS UNTRACKED AND GENUINE YOU WILL BE CREDITED PROMINENTLY (name, handle, email) ABOVE YOUR FIX IN SRC** You have been warned.
 
-![Version](https://img.shields.io/badge/version-v4.13.1-blue)
+![Version](https://img.shields.io/badge/version-v4.13.2-blue)
 [![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
 [![Docs Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml)
 [![Changelog Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml)
