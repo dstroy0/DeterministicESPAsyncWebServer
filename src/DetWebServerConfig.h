@@ -890,6 +890,25 @@
 #endif
 
 /**
+ * @brief NMEA 2000 codec (`services/nmea2000`).
+ *
+ * Default off; implies DETWS_ENABLE_J1939 (NMEA 2000 is J1939 at the transport layer). A
+ * zero-heap codec for the marine instrumentation network over CAN: it reuses the J1939 29-bit
+ * identifier codec and adds the NMEA-specific Fast Packet transport - `n2k_fastpacket_build_frame`
+ * splits a 9..223-octet message across frames (a control octet of sequence + frame counter,
+ * the first frame carrying the total length) and `n2k_fastpacket_feed` reassembles it;
+ * `n2k_build_single` wraps a single-frame message. Pure codec, host-tested. Drive it from the
+ * ESP32 TWAI peripheral or an MCP2515 over SPI to bridge an NMEA 2000 backbone onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_NMEA2000
+#define DETWS_ENABLE_NMEA2000 0
+#endif
+#if DETWS_ENABLE_NMEA2000 && !DETWS_ENABLE_J1939
+#undef DETWS_ENABLE_J1939
+#define DETWS_ENABLE_J1939 1 // NMEA 2000 reuses the J1939 identifier codec
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

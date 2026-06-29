@@ -73,6 +73,8 @@
     "gensets",
     "devicenet",
     "xid",
+    "nmea",
+    "fastpacket",
     "sint",
     "sunspec",
     "grpcweb",

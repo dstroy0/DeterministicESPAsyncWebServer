@@ -35,6 +35,7 @@ numbers to type into your sketch.
     - [CANopen](#canopen)
     - [J1939](#j1939)
     - [DeviceNet](#devicenet)
+    - [NMEA 2000](#nmea-2000)
 - [Networked industrial codecs (over Wi-Fi or Ethernet)](#networked-industrial-codecs-over-wi-fi-or-ethernet)
     - [Getting on the network](#getting-on-the-network)
     - [Modbus TCP and Modbus master](#modbus-tcp-and-modbus-master)
@@ -103,6 +104,7 @@ the matching header in `src/services/` and its description in
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)       | CAN transceiver              | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)       | CAN transceiver              | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
 | DeviceNet     | `DETWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)       | CAN transceiver (+ 24 V bus) | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
+| NMEA 2000     | `DETWS_ENABLE_NMEA2000`      | CAN (TWAI or SPI)       | CAN transceiver (+ N2K tap)  | 250k bit/s, Fast Packet         | Marine GPS / wind / depth / engine |
 | OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                     | Wi-Fi/Ethernet               | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
 | OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)            | Wi-Fi/Ethernet               | port 4840                       | OPC UA servers                     |
 | SNMP          | `DETWS_ENABLE_SNMP`          | UDP                     | Wi-Fi/Ethernet               | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
@@ -341,6 +343,28 @@ body with the `cip_*` functions (enable `DETWS_ENABLE_CIP`):
 
 Bridge a DeviceNet segment onto Wi-Fi the same way as the other CAN buses. See
 `src/services/devicenet/devicenet.h`.
+
+### NMEA 2000
+
+`DETWS_ENABLE_NMEA2000`. The marine instrumentation backbone (GPS, wind, depth,
+AIS, engine data) - electrically it is CAN at **250 kbit/s**, and protocol-wise
+it is J1939, so the wiring is the same transceiver setup. A real N2K backbone
+uses a powered trunk with drop "tees"; tap a drop with your transceiver (it only
+needs CAN_H / CAN_L / GND - leave the N2K power to the backbone).
+
+NMEA 2000 carries most data either in a single 8-octet frame or via **Fast
+Packet** (up to 223 octets). The codec reuses the J1939 id functions and adds
+Fast Packet:
+
+- Receive: decode the id with `j1939_decode_id()`; for a single-frame PGN read
+  the 8 octets directly, and for a Fast Packet PGN feed each frame to
+  `n2k_fastpacket_feed(&rx, &frame)` until `N2K_FP_COMPLETE`, then parse
+  `rx.buf` per the PGN definition.
+- Send: `n2k_build_single()` for short PGNs, or loop
+  `n2k_fastpacket_build_frame()` over `n2k_fastpacket_num_frames()` for long ones.
+
+Bridge the backbone onto Wi-Fi: turn boat data into a web dashboard or MQTT feed.
+See `src/services/nmea2000/nmea2000.h`.
 
 ## Networked industrial codecs (over Wi-Fi or Ethernet)
 

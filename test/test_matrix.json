@@ -19,6 +19,12 @@
       "src": ["+<services/devicenet/devicenet.cpp>"],
       "tests": ["test_devicenet"]
     },
+    "native_nmea2000": {
+      "desc": "NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet\ntransport (frame count, build, reassembly), built on the J1939 id codec (implied). Pure\nhost tests.",
+      "flags": ["-DDETWS_ENABLE_NMEA2000=1"],
+      "src": ["+<services/nmea2000/nmea2000.cpp>", "+<services/j1939/j1939.cpp>"],
+      "tests": ["test_nmea2000"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
