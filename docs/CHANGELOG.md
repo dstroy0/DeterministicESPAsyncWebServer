@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.20.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.20.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f686439`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6864397e71960ad5c1a9305ee658661f5603942))
+- update CHANGELOG.md [skip ci] ([`d154203`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d154203d23d64d6abe5ed73996083efa2887efab))
+
+### Changes
+
+- Bump version: 4.19.0 → 4.20.0 ([`6fdcce2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6fdcce2ca71d30df7b60ab0b44949cf163790bd8))
+
+### Features
+
+- inbound Cookie parsing (RFC 6265) - http_get_cookie ([`a69bb5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a69bb5aa1cae3787b55d7cbe53ec843853848ddf))
+
+</details>
+
 ## [4.19.0] - 2026-06-29
 
 <details>
