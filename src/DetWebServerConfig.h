@@ -1010,6 +1010,20 @@
 #endif
 
 /**
+ * @brief CIP (Common Industrial Protocol) message codec (`services/cip`).
+ *
+ * Default off. A zero-heap CIP request builder + response parser for the message that rides
+ * inside an EtherNet/IP Unconnected Data item (DETWS_ENABLE_ENIP): `cip_build_epath` (the
+ * class/instance/attribute logical-segment EPATH), `cip_build_request` /
+ * `cip_build_get_attr_single`, and `cip_parse_response` (service / general status / data).
+ * Service codes + the logical-segment encoding verified against the Wireshark CIP dissector.
+ * Pure codec, host-tested; wrap the request with `eip_build_send_rr_data` for a working read.
+ */
+#ifndef DETWS_ENABLE_CIP
+#define DETWS_ENABLE_CIP 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

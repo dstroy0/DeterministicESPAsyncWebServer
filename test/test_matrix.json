@@ -432,6 +432,12 @@
       "src": ["+<services/amqp/amqp.cpp>"],
       "tests": ["test_amqp"]
     },
+    "native_cip": {
+      "desc": "CIP message codec (services/cip): the EPATH logical-segment builder, the request\nbuilders (Get_Attribute_Single), and the response parser (service / status / data). Rides\nan EtherNet/IP Unconnected Data item. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_CIP=1"],
+      "src": ["+<services/cip/cip.cpp>"],
+      "tests": ["test_cip"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

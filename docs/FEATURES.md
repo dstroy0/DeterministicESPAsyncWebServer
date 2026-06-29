@@ -54,6 +54,12 @@ Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When
 
 Streaming / chunked responses of unbounded length in constant memory via send_chunked(). Always on.
 
+## CIP
+
+`DETWS_ENABLE_CIP`
+
+CIP (Common Industrial Protocol) message codec - the message that rides inside an EtherNet/IP Unconnected Data item (DETWS_ENABLE_ENIP). Default off. services/cip builds the request - `cip_build_epath` encodes a class/instance/attribute EPATH from logical segments (`0x20 | type | format`, 8- or 16-bit ids), `cip_build_get_attr_single` / `cip_build_request` prepend the service code + path size - and `cip_parse_response` splits a reply into service / general status / additional status / data. Service codes and the segment encoding are verified against the Wireshark CIP dissector. Pure and host-tested; wrap the request with `eip_build_send_rr_data` for a working CIP read path. See src/services/cip/cip.h.
+
 ## CoAP
 
 `DETWS_ENABLE_COAP`

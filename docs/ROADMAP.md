@@ -281,14 +281,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       model and sample buffer are fixed BSS, the XML is streamed via the chunked
       response pump. Pairs with the existing data-source services (gpio_map / dashboard)
       as MTConnect DataItems.
-- [~] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - _EtherNet/IP
-  encapsulation shipped._ `DETWS_ENABLE_ENIP` (`services/enip`): a zero-heap codec for the
-  EtherNet/IP encapsulation layer (TCP/UDP 44818) - `eip_build` / `eip_parse` (the 24-octet
-  header), `eip_build_register_session`, and `eip_build_send_rr_data` /
-  `eip_parse_send_rr_data` (wrap/unwrap a CIP message as an unconnected message via the
-  Common Packet Format); commands + CPF item types verified against the Wireshark ENIP
-  dissector, host-tested. Remaining: the **CIP** object model + explicit/implicit messaging
-  carried in the Unconnected Data item (a fixed object dictionary). **PROFINET** (RT, raw L2
+- [~] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - _EtherNet/IP + CIP
+  messaging shipped._ `DETWS_ENABLE_ENIP` (`services/enip`): the encapsulation layer (TCP/UDP 44818) - `eip_build` / `eip_parse` (the 24-octet header), `eip_build_register_session`, and
+  `eip_build_send_rr_data` / `eip_parse_send_rr_data` (wrap/unwrap a CIP message via the Common
+  Packet Format). `DETWS_ENABLE_CIP` (`services/cip`): the CIP message inside it -
+  `cip_build_epath` (class/instance/attribute logical segments), `cip_build_get_attr_single` /
+  `cip_build_request`, and `cip_parse_response`. Together they form a working CIP read path
+  (wrap the CIP request with `eip_build_send_rr_data`); both verified against the Wireshark
+  ENIP/CIP dissectors, host-tested. Remaining: the broader CIP object dictionary +
+  implicit/IO messaging. **PROFINET** (RT, raw L2
   frames) and **EtherCAT** rely on raw L2, which the ESP32 _does_ provide (see
   Low-level networking above - `esp_eth_transmit` / `esp_eth_update_input_path`), and
   the IRT/isochronous cyclic deadline is met by the high-priority preempting-ISR/task
