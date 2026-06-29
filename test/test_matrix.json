@@ -308,6 +308,12 @@
       "src": ["+<services/redis_resp.cpp>"],
       "tests": ["test_redis_resp"]
     },
+    "native_stomp": {
+      "desc": "STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command +\nescaped headers + NUL body) + the non-mutating parser (command/header slices/body,\nhonoring content-length) + escape/unescape. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_STOMP=1"],
+      "src": ["+<services/stomp.cpp>"],
+      "tests": ["test_stomp"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

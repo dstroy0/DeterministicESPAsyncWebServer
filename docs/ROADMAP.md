@@ -524,13 +524,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### Messaging & RPC
 
-- [ ] **STOMP** (M, messaging) - Simple/Streaming Text Oriented Messaging Protocol: a
-      human-readable frame protocol (`CONNECT` / `SEND` / `SUBSCRIBE` / `MESSAGE` /
-      `ACK` ... - command line, headers, NUL-terminated body) for brokers like ActiveMQ
-      / RabbitMQ. The text framing parses like HTTP and rides the existing client
-      transport (det_client), so it is a light addition next to the MQTT / AMQP clients;
-      fixed BSS subscription table, no heap, one build flag. STOMP-over-WebSocket reuses
-      the WS client.
+- [x] **STOMP** (M, messaging) _(shipped)_ - `DETWS_ENABLE_STOMP` (`services\stomp`):
+      a zero-heap STOMP 1.2 frame codec - `stomp_build_frame()` writes a frame (command +
+      escaped `key:value` headers + blank line + NUL-terminated body) and
+      `stomp_parse_frame()` is a non-mutating cursor that reports the command, header
+      key/value slices, and body (honoring `content-length`, tolerating `\r\n` endings,
+      skipping broker heart-beats), with `stomp_header()` lookup and `stomp_unescape()` for
+      header escapes (`\r` `\n` `\c` `\\`). Drives `CONNECT` / `SEND` / `SUBSCRIBE` /
+      `MESSAGE` / `ACK` ... against ActiveMQ / RabbitMQ / Artemis over the shipped outbound
+      client transport (or STOMP-over-WebSocket via the WS client); pure, host-tested. The
+      connection / subscription state is the application's.
 - [ ] **gRPC / Protocol Buffers** (L) - two related pieces. **Protobuf**: a zero-heap
       wire codec (varint + length-delimited fields, the same streaming
       writer/cursor-reader shape as the shipped CBOR / MessagePack codecs, generated or

@@ -1,0 +1,171 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the STOMP 1.2 frame codec (services/stomp): the frame builder, the
+// non-mutating parser, header lookup, content-length bodies, and escape/unescape.
+// Pure host tests.
+
+#include "services/stomp.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp()
+{
+}
+void tearDown()
+{
+}
+
+// A SEND frame builds with the blank-line separator and a NUL-terminated body.
+void test_build_send()
+{
+    const char *keys[] = {"destination", "content-type"};
+    const char *vals[] = {"/queue/a", "text/plain"};
+    char buf[128];
+    size_t n = stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 2, "hi", 2);
+    const char expect[] = "SEND\ndestination:/queue/a\ncontent-type:text/plain\n\nhi\0";
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n); // sizeof includes the source-string NUL == our frame NUL
+    TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
+}
+
+// The builder has no headers / no body too (e.g. a DISCONNECT or a heart-beat-less probe).
+void test_build_no_headers_no_body()
+{
+    char buf[32];
+    size_t n = stomp_build_frame(buf, sizeof(buf), "DISCONNECT", nullptr, nullptr, 0, nullptr, 0);
+    const char expect[] = "DISCONNECT\n\n\0";
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n);
+    TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
+}
+
+// Header values escape the special octets (CR LF colon backslash) per STOMP 1.2.
+void test_build_escapes_header()
+{
+    const char *keys[] = {"k"};
+    const char *vals[] = {"a:b\\c\nd"};
+    char buf[64];
+    size_t n = stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, nullptr, 0);
+    const char expect[] = "SEND\nk:a\\cb\\\\c\\nd\n\n\0";
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect) - 1, n);
+    TEST_ASSERT_EQUAL_MEMORY(expect, buf, n);
+}
+
+void test_build_overflow_fails_closed()
+{
+    const char *keys[] = {"destination"};
+    const char *vals[] = {"/queue/a"};
+    char buf[8];
+    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(buf, sizeof(buf), "SEND", keys, vals, 1, "hi", 2));
+}
+
+// Build then parse round-trips the command, headers, and body.
+void test_round_trip()
+{
+    const char *keys[] = {"destination", "id"};
+    const char *vals[] = {"/topic/x", "0"};
+    char buf[128];
+    size_t n = stomp_build_frame(buf, sizeof(buf), "SUBSCRIBE", keys, vals, 2, nullptr, 0);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(stomp_parse_frame(buf, n, &f, &c));
+    TEST_ASSERT_EQUAL_size_t(n, c);
+    TEST_ASSERT_EQUAL_MEMORY("SUBSCRIBE", f.command, f.command_len);
+    TEST_ASSERT_EQUAL_size_t(2, f.header_count);
+
+    const char *v;
+    size_t vl;
+    TEST_ASSERT_TRUE(stomp_header(&f, "destination", &v, &vl));
+    TEST_ASSERT_EQUAL_MEMORY("/topic/x", v, vl);
+    TEST_ASSERT_TRUE(stomp_header(&f, "id", &v, &vl));
+    TEST_ASSERT_EQUAL_MEMORY("0", v, vl);
+    TEST_ASSERT_FALSE(stomp_header(&f, "missing", &v, &vl));
+    TEST_ASSERT_EQUAL_size_t(0, f.body_len);
+}
+
+// A MESSAGE frame parses; \r\n line endings are tolerated; the body runs to the NUL.
+void test_parse_message_crlf()
+{
+    const char raw[] = "MESSAGE\r\nsubscription:0\r\nmessage-id:7\r\ndestination:/topic/x\r\n\r\npayload\0extra";
+    size_t len = sizeof(raw) - 1; // drop only the implicit terminator; keep the embedded NUL + "extra"
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_EQUAL_MEMORY("MESSAGE", f.command, f.command_len);
+    TEST_ASSERT_EQUAL_size_t(3, f.header_count);
+    TEST_ASSERT_EQUAL_MEMORY("payload", f.body, f.body_len);
+    TEST_ASSERT_EQUAL_size_t(7, f.body_len);
+    // consumed lands just past the body's NUL, before the trailing "extra".
+    TEST_ASSERT_EQUAL_MEMORY("extra", raw + c, 5);
+}
+
+// content-length makes the body length explicit, so a body may contain NULs.
+void test_parse_content_length_body_with_nul()
+{
+    const char raw[] = "MESSAGE\ncontent-length:5\n\nab\0cd\0";
+    size_t len = sizeof(raw) - 1; // include the body NUL and the terminating NUL
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_EQUAL_size_t(5, f.body_len);
+    TEST_ASSERT_EQUAL_MEMORY("ab\0cd", f.body, 5);
+    TEST_ASSERT_EQUAL_size_t(len, c);
+}
+
+// Leading EOL octets (broker heart-beats) before a frame are skipped and counted.
+void test_parse_skips_leading_heartbeats()
+{
+    const char raw[] = "\n\nRECEIPT\nreceipt-id:1\n\n\0";
+    size_t len = sizeof(raw) - 1;
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_TRUE(stomp_parse_frame(raw, len, &f, &c));
+    TEST_ASSERT_EQUAL_MEMORY("RECEIPT", f.command, f.command_len);
+    TEST_ASSERT_EQUAL_size_t(len, c);
+}
+
+void test_parse_incomplete_and_malformed()
+{
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n", 5, &f, &c));            // no header/body terminator yet
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n\nbody", 10, &f, &c));     // body NUL not buffered
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\nbadheader\n\n\0", 17, &f, &c)); // header without a colon
+    TEST_ASSERT_FALSE(stomp_parse_frame("\n\n\n", 3, &f, &c));            // only heart-beats
+    // content-length that overruns the buffer.
+    TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99\n\nhi\0", 30, &f, &c));
+}
+
+void test_unescape()
+{
+    char dst[32];
+    size_t n = stomp_unescape(dst, sizeof(dst), "a\\cb\\\\c\\nd\\r", 12);
+    TEST_ASSERT_EQUAL_size_t(8, n);                  // a : b \ c LF d CR
+    TEST_ASSERT_EQUAL_MEMORY("a:b\\c\nd\r", dst, 8); // ':' from \c, '\' from \\, LF from \n, CR from \r
+}
+
+void test_unescape_rejects_bad()
+{
+    char dst[32];
+    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), "a\\x", 3)); // invalid escape
+    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), "a\\", 2));  // dangling escape
+    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, 2, "abc", 3));            // overflow
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_build_send);
+    RUN_TEST(test_build_no_headers_no_body);
+    RUN_TEST(test_build_escapes_header);
+    RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_round_trip);
+    RUN_TEST(test_parse_message_crlf);
+    RUN_TEST(test_parse_content_length_body_with_nul);
+    RUN_TEST(test_parse_skips_leading_heartbeats);
+    RUN_TEST(test_parse_incomplete_and_malformed);
+    RUN_TEST(test_unescape);
+    RUN_TEST(test_unescape_rejects_bad);
+    return UNITY_END();
+}

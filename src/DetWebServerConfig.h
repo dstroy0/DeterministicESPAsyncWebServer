@@ -730,6 +730,24 @@
 #endif
 
 /**
+ * @brief STOMP 1.2 frame codec (`services/stomp`).
+ *
+ * Default off. A zero-heap frame builder (`stomp_build_frame`, command + escaped
+ * headers + NUL-terminated body) + a non-mutating parser (`stomp_parse_frame`,
+ * command / header slices / body, honoring `content-length`) so the device can talk
+ * to a STOMP broker (ActiveMQ / RabbitMQ / Artemis) over the shipped outbound client
+ * transport, or STOMP-over-WebSocket via the WS client. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_STOMP
+#define DETWS_ENABLE_STOMP 0
+#endif
+
+/** @brief Max header lines parsed per STOMP frame (extras beyond this are ignored). */
+#ifndef DETWS_STOMP_MAX_HEADERS
+#define DETWS_STOMP_MAX_HEADERS 16
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
