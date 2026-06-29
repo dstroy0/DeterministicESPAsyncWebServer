@@ -6,8 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`9a3e17b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a3e17bd3b37e03a64329154d747db613c661d4f))
+- update CHANGELOG.md [skip ci] ([`e8636fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8636fc795f03fda8c42555cd5c63b808b36a295))
 - update test report [skip ci] ([`bd7277b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd7277b8cf9ba6d159bbcb51a5a04529c304630e))
 - update CHANGELOG.md [skip ci] ([`8a3b216`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3b216aa00e1876fa82726afb2af8586027c4f3))
+
+### Changes
+
+- clang-format the WebDAV handler test + FS mock ([`0a1d1d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a1d1d8cc52bd3b613e7a3a43ac5a043c7e5ae86))
 
 ### Testing
 
