@@ -40,9 +40,10 @@ class Client:
             try:
                 await cli.connect()
                 pr.check("connect + create session", True, url)
-                root = cli.nodes.root
-                children = await root.get_children()
-                pr.check("browse root", len(children) >= 1, f"{len(children)} children")
+                # Browse the Objects folder (ns=0;i=85), where a server organizes its
+                # user variables, rather than Root - so the check finds real content.
+                children = await cli.nodes.objects.get_children()
+                pr.check("browse Objects folder", len(children) >= 1, f"{len(children)} children")
                 if args.node:
                     val = await cli.get_node(args.node).read_value()
                     pr.check(f"read {args.node}", True, repr(val))

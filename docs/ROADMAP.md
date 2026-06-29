@@ -85,7 +85,7 @@ flag (default off) so it costs nothing when unused.
 
 ## Protocols & integrations
 
-- [~] OPC UA server _(in progress)_ - `DETWS_ENABLE_OPCUA`: increment 1 ships the OPC UA Binary built-in-type codec, UA-TCP (UACP) framing, and the Hello/Acknowledge handshake served on PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`; example 84.OpcUa), host-tested + HW-verified. SecureChannel (OPN), Session, and the Read service are later increments; SecurityPolicy None. Node-RED integration (M) and an OPC UA client remain open (L).
+- [x] OPC UA server + client _(shipped, SecurityPolicy None)_ - `DETWS_ENABLE_OPCUA`: the OPC UA Binary built-in-type codec, UA-TCP (UACP) framing, Hello/Acknowledge handshake, OpenSecureChannel, CreateSession/ActivateSession, GetEndpoints, Read/Write (Variant/DataValue), and Browse, served on PROTO_OPCUA (`listen(4840, PROTO_OPCUA)`; example 55.OpcUa), plus an OPC UA client (example 56.OpcUaClient). Host-tested (`native_opcua`, `native_opcua_client`) and HW-verified end-to-end against the `asyncua` reference stack via the interop harness (`opcua-client` 3/3: connect+session, browse Objects, read node). Remaining (L): a secure SecurityPolicy (Basic256Sha256 encryption/signing), subscriptions / monitored items, and Node-RED integration (M).
 - [x] Modbus master codec + register scanner _(shipped)_ - `DETWS_ENABLE_MODBUS_MASTER`: `services/modbus/modbus_master` builds read-request ADUs and parses responses (register values or exception) so an app can poll / auto-discover a slave's registers; pure, host-tested as a full round-trip against the slave codec, HW-verified via self-scan (example 72.ModbusScan).
 - [ ] Southbound protocol-driver framework (L; Modbus is one today); Modbus atomic register matrix (M).
 - [x] Webhooks + IFTTT _(shipped)_ - `DETWS_ENABLE_WEBHOOK`: `services/webhook` builds an IFTTT Maker URL + value1/2/3 JSON payload (pure, host-tested with JSON escaping) and fires it - or any JSON to any URL (Slack/Discord/your API) - via the outbound http_client; HW-verified by a self-loopback POST (example 75.Webhook).
@@ -153,10 +153,10 @@ flag (default off) so it costs nothing when unused.
   (the harness probes it, `--host ...`) or the client (the harness serves a reference
   peer the device connects to), reports uniform PASS/FAIL, and exits 0/1/2.
   HW-verified against the board on real third-party stacks: HTTP 4/4, WebSocket 3/3,
-  CoAP 2/2, Modbus 6/6, SNMP 3/3, and MQTT (device client -> real `mosquitto`). Adding
-  a protocol is one module in `peers/` (documented in its README). Remaining: OPC UA HW
-  check (the OPC UA server is still an early increment), wiring it into CI containers,
-  and a peer per new protocol as it lands.
+  CoAP 2/2, Modbus 6/6, SNMP 3/3, MQTT (device client -> real `mosquitto`), and OPC UA
+  (`asyncua`) 3/3 - all seven protocol families. Adding a protocol is one module in
+  `peers/` (documented in its README). Remaining: wiring it into CI containers, and a
+  peer per new protocol as it lands.
 - [x] **Pentesting / adversarial suite** _(shipped)_ - a separately-runnable harness (env `native_pentest` + a nightly `Pentest` CI job, _not_ part of the per-commit unit-test run) that fuzzes the untrusted-input parsers (HTTP request line/headers/body, Modbus ADU, base32) with malformed, oversized, partial slowloris-style, binary/protocol-confusion, and deterministically-random input, asserting the device's safety invariants: fixed footprint (no buffer index past its bound), fail-closed (defined error states only), and liveness (no hang/over-read). Plus a documented on-device stress playbook (slowloris / floods / brute-force vs the throttle / lockout / allowlist defenses). Full guide: [PENTEST.md](PENTEST.md). Extend it to the remaining codecs (CBOR / SNMP / CoAP / WS / multipart) as you go.
 
 ## Protocol & transport versions

@@ -50,13 +50,13 @@ native tools are not on PATH, so those peers also work pip-only.
 
 ### Verified against hardware
 
-Driven against the device on real third-party stacks: `http` (stdlib) 4/4,
-`ws` (`websockets`) 3/3, `coap` (`aiocoap`) 2/2, `modbus-client` (`pymodbus`) 6/6,
-`snmp` (`pysnmp`) 3/3, and MQTT (device client -> real `mosquitto`). The MQTT check
-used the public `test.mosquitto.org` broker because this dev box blocks inbound
-1883; on a host that accepts inbound, `mqtt-broker --seconds N` does the same check
-locally. Only the OPC UA peers are unchecked (the library's OPC UA server is still
-an early increment without SecureChannel/Session, so asyncua cannot fully session).
+Driven against the device on real third-party stacks - all seven families:
+`http` (stdlib) 4/4, `ws` (`websockets`) 3/3, `coap` (`aiocoap`) 2/2,
+`modbus-client` (`pymodbus`) 6/6, `snmp` (`pysnmp`) 3/3, MQTT (device client ->
+real `mosquitto`), and `opcua-client` (`asyncua`) 3/3 (connect+session, browse
+Objects, read node). The MQTT check used the public `test.mosquitto.org` broker
+because this dev box blocks inbound 1883; on a host that accepts inbound,
+`mqtt-broker --seconds N` does the same check locally.
 
 ## Usage
 
