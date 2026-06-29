@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.39.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.39.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`1471224`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1471224f17d3e1396dd94cf89423f6c3a7aad563))
+- update CHANGELOG.md [skip ci] ([`f3e3d5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3e3d5cc971d8837aee101f4fbf5cb91029244c3))
+
+### Changes
+
+- Bump version: 4.38.0 → 4.39.0 ([`e0696c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0696c72407ef45931e7363627c4199b59cab2c6))
+
+### Features
+
+- Allen-Bradley DF1 full-duplex frame codec (DETWS_ENABLE_DF1) ([`23780e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23780e5530e694e07a32204f985c6b86e4bd68c1))
+
+</details>
+
 ## [4.38.0] - 2026-06-29
 
 <details>
