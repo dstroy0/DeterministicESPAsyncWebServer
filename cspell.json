@@ -82,6 +82,8 @@
     "SADR",
     "DLEN",
     "SLEN",
+    "ENIP",
+    "ODVA",
     "BVLL",
     "melsec",
     "framesize",

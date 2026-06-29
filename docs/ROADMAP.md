@@ -281,17 +281,21 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       model and sample buffer are fixed BSS, the XML is streamed via the chunked
       response pump. Pairs with the existing data-source services (gpio_map / dashboard)
       as MTConnect DataItems.
-- [ ] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - real-time
-      Ethernet stacks. Start with **EtherNet/IP** (CIP over TCP/UDP 44818/2222): it
-      rides ordinary TCP/UDP, so the CIP object model + explicit/implicit messaging fit
-      the existing transport with a fixed object dictionary. **PROFINET** (RT, raw L2
-      frames) and **EtherCAT** rely on raw L2, which the ESP32 _does_ provide (see
-      Low-level networking above - `esp_eth_transmit` / `esp_eth_update_input_path`), and
-      the IRT/isochronous cyclic deadline is met by the high-priority preempting-ISR/task
-      model in a single-feature build (this protocol + base web server only). So the full
-      cyclic RT/IRT stack is on the table, not just a discovery subset; PROFINET `DCP` is
-      the easy first milestone, EtherCAT/IRT the hard one. Each: fixed BSS
-      object/process-image model, no heap.
+- [~] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - _EtherNet/IP
+  encapsulation shipped._ `DETWS_ENABLE_ENIP` (`services/enip`): a zero-heap codec for the
+  EtherNet/IP encapsulation layer (TCP/UDP 44818) - `eip_build` / `eip_parse` (the 24-octet
+  header), `eip_build_register_session`, and `eip_build_send_rr_data` /
+  `eip_parse_send_rr_data` (wrap/unwrap a CIP message as an unconnected message via the
+  Common Packet Format); commands + CPF item types verified against the Wireshark ENIP
+  dissector, host-tested. Remaining: the **CIP** object model + explicit/implicit messaging
+  carried in the Unconnected Data item (a fixed object dictionary). **PROFINET** (RT, raw L2
+  frames) and **EtherCAT** rely on raw L2, which the ESP32 _does_ provide (see
+  Low-level networking above - `esp_eth_transmit` / `esp_eth_update_input_path`), and
+  the IRT/isochronous cyclic deadline is met by the high-priority preempting-ISR/task
+  model in a single-feature build (this protocol + base web server only). So the full
+  cyclic RT/IRT stack is on the table, not just a discovery subset; PROFINET `DCP` is
+  the easy first milestone, EtherCAT/IRT the hard one. Each: fixed BSS
+  object/process-image model, no heap.
 - [ ] **Fieldbuses** (L, classic serial/CAN buses) - the pre-Ethernet field protocols
       built on the existing zero-heap codec pattern: **CANopen** (CiA 301: object
       dictionary, PDO/SDO, NMT, heartbeat) over the ESP32 TWAI/CAN controller;

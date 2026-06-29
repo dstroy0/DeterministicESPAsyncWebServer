@@ -981,6 +981,21 @@
 #endif
 
 /**
+ * @brief EtherNet/IP encapsulation codec (`services/enip`).
+ *
+ * Default off. A zero-heap builder + parser for the ODVA EtherNet/IP encapsulation layer
+ * (TCP/UDP 44818) that carries CIP: `eip_build` / `eip_parse` handle the 24-octet header
+ * (little-endian command / length / session handle / status / sender context / options),
+ * `eip_build_register_session` opens a session, and `eip_build_send_rr_data` /
+ * `eip_parse_send_rr_data` wrap + unwrap a CIP message as an unconnected message (Common
+ * Packet Format: Null Address + Unconnected Data items). Commands + CPF item types verified
+ * against the Wireshark ENIP dissector. Pure codec, host-tested; the CIP message is the app's.
+ */
+#ifndef DETWS_ENABLE_ENIP
+#define DETWS_ENABLE_ENIP 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
