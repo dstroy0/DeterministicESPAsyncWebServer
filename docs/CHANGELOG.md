@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.13.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.13.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2a3c936`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a3c936638b5c58c01d8528bbe0a6966a3c770f4))
+- update CHANGELOG.md [skip ci] ([`ae4c869`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae4c8693cff8ef41c6771f6ffb59e230ea2fa2fe))
+
+### Changes
+
+- Bump version: 4.12.0 → 4.13.0 ([`c3c04fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3c04fdc36dd496adb95acac06a93721bbbbfa49))
+
+### Features
+
+- real-protocol interop harness (test/servers) ([`2ff7086`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ff7086d447ccbb36fe7a359b11c5cd594bcf191))
+
+</details>
+
 ## [4.12.0] - 2026-06-29
 
 <details>
