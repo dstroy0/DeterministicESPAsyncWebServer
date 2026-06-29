@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.26.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.26.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0749764`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/074976494725f1ac730ea47a0a0f848b8f81e6e2))
+- update CHANGELOG.md [skip ci] ([`ce52c22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce52c2247da58460f960f3fda87631669367533f))
+
+### Changes
+
+- Bump version: 4.25.0 → 4.26.0 ([`a8834da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8834daf9f06fa2e17c5a438492efe56ef96df41))
+
+### Features
+
+- STOMP 1.2 frame codec (DETWS_ENABLE_STOMP) ([`076b223`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/076b223cd14b7180b3d6ab159d696b3e9b3ed0d3))
+
+</details>
+
 ## [4.25.0] - 2026-06-29
 
 <details>
