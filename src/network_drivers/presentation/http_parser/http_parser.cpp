@@ -591,6 +591,110 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
     return false;
 }
 
+// Copy an IPv4 token (strip surrounding quotes, IPv6 brackets are rejected, drop a
+// trailing :port) from [s, s+n) into out. Returns true if it looks like dotted IPv4.
+static bool fwd_copy_ipv4(const char *s, size_t n, char *out, size_t cap)
+{
+    // Trim leading/trailing OWS and a wrapping DQUOTE.
+    while (n > 0 && (*s == ' ' || *s == '\t'))
+    {
+        s++;
+        n--;
+    }
+    while (n > 0 && (s[n - 1] == ' ' || s[n - 1] == '\t'))
+        n--;
+    if (n >= 2 && s[0] == '"' && s[n - 1] == '"')
+    {
+        s++;
+        n -= 2;
+    }
+    if (n == 0 || s[0] == '[')
+        return false; // empty, or IPv6 ("[...]") which this IPv4 stack does not key on
+    // Drop a trailing ":port" (only one colon, IPv4 has none).
+    size_t ip_len = 0;
+    int dots = 0, digits = 0;
+    for (; ip_len < n; ip_len++)
+    {
+        char c = s[ip_len];
+        if (c == ':')
+            break;
+        if (c == '.')
+            dots++;
+        else if (c >= '0' && c <= '9')
+            digits++;
+        else
+            return false; // not a bare IPv4 (could be "unknown" / "_obf")
+    }
+    if (dots != 3 || digits == 0 || ip_len + 1 > cap)
+        return false;
+    memcpy(out, s, ip_len);
+    out[ip_len] = '\0';
+    return true;
+}
+
+bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool *is_https)
+{
+    if (is_https)
+        *is_https = false;
+    if (!ip_out || ip_cap == 0 || !req)
+        return false;
+    ip_out[0] = '\0';
+
+    // Prefer RFC 7239 "Forwarded" (the leftmost element is the original client):
+    //   Forwarded: for=192.0.2.60;proto=https, for=198.51.100.1
+    const char *fwd = http_get_header(req, "Forwarded");
+    if (fwd)
+    {
+        // First element = up to the first ','. Within it, find for= and proto=.
+        const char *elem_end = strchr(fwd, ',');
+        size_t elen = elem_end ? (size_t)(elem_end - fwd) : strlen(fwd);
+        // proto=
+        if (is_https)
+        {
+            const char *pr = fwd;
+            while (pr && (size_t)(pr - fwd) < elen)
+            {
+                const char *hit = strstr(pr, "proto=");
+                if (!hit || (size_t)(hit - fwd) >= elen)
+                    break;
+                const char *pv = hit + 6;
+                *is_https = (strncasecmp(pv, "https", 5) == 0);
+                break;
+            }
+        }
+        // for=
+        const char *f = strstr(fwd, "for=");
+        if (f && (size_t)(f - fwd) < elen)
+        {
+            const char *fv = f + 4;
+            const char *fend = fv;
+            size_t lim = elen - (size_t)(fv - fwd);
+            size_t k = 0;
+            while (k < lim && fend[k] != ';' && fend[k] != ',')
+                k++;
+            if (fwd_copy_ipv4(fv, k, ip_out, ip_cap))
+                return true;
+        }
+    }
+
+    // De-facto X-Forwarded-For (comma list; leftmost = original client) + X-Forwarded-Proto.
+    if (is_https)
+    {
+        const char *xfp = http_get_header(req, "X-Forwarded-Proto");
+        if (xfp && strncasecmp(xfp, "https", 5) == 0)
+            *is_https = true;
+    }
+    const char *xff = http_get_header(req, "X-Forwarded-For");
+    if (xff)
+    {
+        const char *end = strchr(xff, ',');
+        size_t len = end ? (size_t)(end - xff) : strlen(xff);
+        if (fwd_copy_ipv4(xff, len, ip_out, ip_cap))
+            return true;
+    }
+    return false;
+}
+
 const char *http_get_query(const HttpReq *req, const char *key)
 {
     for (uint8_t i = 0; i < req->query_count; i++)

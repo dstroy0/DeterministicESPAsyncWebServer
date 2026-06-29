@@ -193,13 +193,15 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       for a matching `If-None-Match` or (when no `If-None-Match`) an `If-Modified-Since`
       not older than the file; plus `Cache-Control` via `set_cache_control()`. Remaining
       (optional): response-side freshness heuristics / `Age`, request `Cache-Control`.
-- [ ] **Forwarded header** (S, RFC 7239) - _optional, off by default, trust-proxy
-      gated._ Parse `Forwarded` (and de-facto `X-Forwarded-For`/`-Proto`) to recover
-      the real client IP + scheme when behind a reverse proxy, so the IP allowlist,
-      per-IP auth lockout, audit-by-IP and absolute-URL/scheme logic stay correct.
-      Only honored from a configured trusted upstream (the header is client-spoofable;
-      trusting it blindly would defeat the allowlist/lockout). Needed only for
-      behind-a-proxy deployments - hence optional.
+- [~] **Forwarded header** (S, RFC 7239) - _parser shipped._ `http_forwarded_client(req,
+      ip_out, cap, &is_https)` recovers the original client IPv4 + scheme from `Forwarded`
+      (RFC 7239) or the de-facto `X-Forwarded-For` / `X-Forwarded-Proto` (leftmost = the
+      client; strips DQUOTE / `:port`; IPv6 / `unknown` not keyed). Host-tested
+      (`test_http_parser`, 4 cases). It is a helper (like `http_get_cookie`) the app
+      reads in a handler; auto-wiring the recovered IP into the per-IP auth lockout /
+      audit, gated on a configured trusted upstream (the header is client-spoofable),
+      is the optional remaining step. The IP allowlist stays accept-time (the proxy's
+      real TCP source).
 
 ## Maintenance
 

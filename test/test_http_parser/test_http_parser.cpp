@@ -330,6 +330,53 @@ void test_cookie_quoted_and_value_with_equals()
     TEST_ASSERT_EQUAL_STRING("YWJj===", v); // '=' inside a value preserved (base64 padding)
 }
 
+// --- http_forwarded_client (RFC 7239 Forwarded / X-Forwarded-For) ----------
+
+void test_forwarded_rfc7239()
+{
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=192.0.2.60;proto=https;by=203.0.113.1\r\n\r\n");
+    char ip[24];
+    bool https = false;
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), &https));
+    TEST_ASSERT_EQUAL_STRING("192.0.2.60", ip);
+    TEST_ASSERT_TRUE(https);
+}
+
+void test_forwarded_leftmost_client()
+{
+    // Both header forms list the original client leftmost.
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=198.51.100.7, for=203.0.113.9\r\n\r\n");
+    char ip[24];
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("198.51.100.7", ip);
+
+    feed_request(1, "GET / HTTP/1.1\r\nX-Forwarded-For: 198.51.100.23, 10.0.0.1, 10.0.0.2\r\n"
+                    "X-Forwarded-Proto: https\r\n\r\n");
+    bool https = false;
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[1], ip, sizeof(ip), &https));
+    TEST_ASSERT_EQUAL_STRING("198.51.100.23", ip);
+    TEST_ASSERT_TRUE(https);
+}
+
+void test_forwarded_strips_quotes_and_port()
+{
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=\"192.0.2.43:47011\"\r\n\r\n");
+    char ip[24];
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("192.0.2.43", ip); // DQUOTE + :port removed
+}
+
+void test_forwarded_ipv6_and_unknown_not_keyed()
+{
+    char ip[24];
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=\"[2001:db8::1]:8080\"\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr)); // IPv6 not keyed
+    feed_request(1, "GET / HTTP/1.1\r\nX-Forwarded-For: unknown\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[1], ip, sizeof(ip), nullptr)); // not an IPv4
+    feed_request(2, "GET / HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[2], ip, sizeof(ip), nullptr)); // no header
+}
+
 void test_header_leading_space_stripped()
 {
     feed_request(0, "GET / HTTP/1.1\r\nX-Val:   trimmed\r\n\r\n");
@@ -936,6 +983,10 @@ int main()
     RUN_TEST(test_cookie_missing_and_no_header);
     RUN_TEST(test_cookie_exact_name_not_substring);
     RUN_TEST(test_cookie_quoted_and_value_with_equals);
+    RUN_TEST(test_forwarded_rfc7239);
+    RUN_TEST(test_forwarded_leftmost_client);
+    RUN_TEST(test_forwarded_strips_quotes_and_port);
+    RUN_TEST(test_forwarded_ipv6_and_unknown_not_keyed);
     RUN_TEST(test_header_leading_space_stripped);
     RUN_TEST(test_content_length_header_parsed);
     RUN_TEST(test_content_length_in_headers_array);

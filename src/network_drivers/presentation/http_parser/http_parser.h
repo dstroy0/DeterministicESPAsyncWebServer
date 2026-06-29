@@ -233,6 +233,20 @@ const char *http_get_header(const HttpReq *req, const char *key);
 bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out_size);
 
 /**
+ * @brief Recover the original client from a reverse-proxy `Forwarded` (RFC 7239)
+ *        or de-facto `X-Forwarded-For` / `X-Forwarded-Proto` header.
+ *
+ * Copies the leftmost (original-client) IPv4 into @p ip_out (dotted, bounded by
+ * @p ip_cap; a `:port` and DQUOTE/IPv6-bracket forms are handled) and sets
+ * @p is_https from `proto=https` / `X-Forwarded-Proto: https`. IPv6 `for=` values
+ * are not keyed (this is an IPv4 stack). The CALLER must only trust this when the
+ * TCP peer is a configured trusted upstream - the header is client-spoofable.
+ *
+ * @return true if an IPv4 client address was extracted (in @p ip_out).
+ */
+bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool *is_https);
+
+/**
  * @brief Look up a query parameter value by name (case-sensitive).
  *
  * @param req  Parsed request.
