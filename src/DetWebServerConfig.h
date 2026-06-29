@@ -686,6 +686,25 @@
 #endif
 
 /**
+ * @brief Modbus RTU framing (serial / RS-485) over the same data model + PDU dispatch.
+ *
+ * Default off; implies DETWS_ENABLE_MODBUS. Adds the RTU ADU codec
+ * `modbus_rtu_process_adu()` - a `[slave addr][PDU][CRC16]` frame (CRC16-Modbus,
+ * little-endian) around the existing host-tested PDU dispatch: a CRC mismatch or a
+ * non-matching unit address is dropped silently (no reply, per the spec), and a
+ * broadcast (address 0) is executed without a reply. The codec is pure and
+ * host-tested; feed it from a UART/RS-485 driver (the serial transport is the
+ * application's, framed by the 3.5-char inter-frame idle).
+ */
+#ifndef DETWS_ENABLE_MODBUS_RTU
+#define DETWS_ENABLE_MODBUS_RTU 0
+#endif
+#if DETWS_ENABLE_MODBUS_RTU && !DETWS_ENABLE_MODBUS
+#undef DETWS_ENABLE_MODBUS
+#define DETWS_ENABLE_MODBUS 1
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

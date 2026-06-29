@@ -272,6 +272,53 @@ size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, siz
     return 7 + rlen;
 }
 
+#if DETWS_ENABLE_MODBUS_RTU
+// CRC16-Modbus (init 0xFFFF, reflected poly 0xA001); transmitted low byte first.
+static uint16_t modbus_crc16(const uint8_t *data, size_t len)
+{
+    uint16_t crc = 0xFFFFu;
+    for (size_t i = 0; i < len; i++)
+    {
+        crc ^= data[i];
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 1u) ? (uint16_t)((crc >> 1) ^ 0xA001u) : (uint16_t)(crc >> 1);
+    }
+    return crc;
+}
+
+size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap, uint8_t my_addr)
+{
+    if (req_len < 4 || resp_cap < 4) // addr(1) + min PDU(1) + CRC(2)
+        return 0;
+
+    // Validate the trailing CRC over [addr .. last PDU byte] (low byte first).
+    uint16_t want = modbus_crc16(req, req_len - 2);
+    uint16_t got = (uint16_t)(req[req_len - 2] | (req[req_len - 1] << 8));
+    if (want != got)
+        return 0; // corrupt frame - drop silently (no response), per Modbus RTU
+
+    uint8_t addr = req[0];
+    bool broadcast = (addr == 0);
+    if (!broadcast && addr != my_addr)
+        return 0; // not addressed to this slave
+
+    const uint8_t *pdu = req + 1;
+    size_t pdu_len = req_len - 3; // strip addr + 2 CRC bytes
+
+    size_t rlen = modbus_process_pdu(pdu, pdu_len, resp + 1, resp_cap - 3); // leave addr + CRC room
+    if (rlen == 0)
+        return 0;
+    if (broadcast)
+        return 0; // executed, but a broadcast gets no reply
+
+    resp[0] = my_addr;
+    uint16_t crc = modbus_crc16(resp, 1 + rlen);
+    resp[1 + rlen] = (uint8_t)(crc & 0xFFu);
+    resp[2 + rlen] = (uint8_t)(crc >> 8);
+    return 1 + rlen + 2;
+}
+#endif // DETWS_ENABLE_MODBUS_RTU
+
 // ---------------------------------------------------------------------------
 // TCP transport (ESP32-only; the core above is host-tested standalone)
 // ---------------------------------------------------------------------------

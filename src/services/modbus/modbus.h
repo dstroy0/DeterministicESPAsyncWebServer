@@ -108,6 +108,21 @@ void modbus_set_input_reg(uint16_t addr, uint16_t value);   ///< Set an input re
  */
 size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
 
+#if DETWS_ENABLE_MODBUS_RTU
+/**
+ * @brief Process one complete Modbus RTU ADU (`[addr][PDU][CRC16]`) for slave
+ *        @p my_addr against the data model, writing the RTU response ADU.
+ *
+ * Validates the trailing CRC16-Modbus (drops the frame silently on mismatch) and
+ * the unit address (frames for another slave are dropped); a broadcast
+ * (address 0) is executed but draws no reply. Pure / host-tested; feed it a
+ * complete frame from a UART/RS-485 driver (delimited by the 3.5-char idle gap).
+ *
+ * @return number of RTU response bytes written, or 0 to send nothing.
+ */
+size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap, uint8_t my_addr);
+#endif
+
 // ---------------------------------------------------------------------------
 // TCP transport (PROTO_MODBUS data handler; ESP32-only)
 // ---------------------------------------------------------------------------

@@ -300,14 +300,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       ([modbus](../src/services/modbus/)); these extend the same data-model + ADU
       parse/build approach to the CAN/serial fieldbus families, each behind its own
       build flag.
-- [ ] **Modbus RTU** (M, serial / RS-485) - add the serial framing to the existing
-      Modbus data model + PDU codec ([modbus](../src/services/modbus/), which today is
-      TCP-only: MBAP header, port 502). RTU wraps the same PDU in a serial frame -
-      `unit-id + PDU + CRC-16/Modbus` with the 3.5-character inter-frame gap for frame
-      sync - so it reuses the entire data model and function-code dispatch; only the
-      ADU encode/decode (CRC instead of MBAP) and a UART transport are new. Host-test
-      the CRC + frame split, HW-verify over RS-485. (Modbus ASCII is a lower-priority
-      follow-on.)
+- [~] **Modbus RTU** (M, serial / RS-485) - _codec shipped._ `DETWS_ENABLE_MODBUS_RTU`
+  adds `modbus_rtu_process_adu()`: the `[unit-id][PDU][CRC-16/Modbus]` serial frame
+  around the existing data model + function-code dispatch - a CRC mismatch or a
+  non-matching unit address is dropped silently, a broadcast (address 0) executes
+  with no reply. Host-tested (`test_modbus`, 5 RTU cases incl. the 0xCDC5 CRC vector + read round-trip + bad-CRC/wrong-addr/broadcast). The pure codec is fed a complete
+  frame; a UART/RS-485 driver (3.5-char inter-frame idle) + HW-over-RS-485 verify are
+  the remaining transport step. (Modbus ASCII is a lower-priority follow-on.)
 - [ ] **PROFINET / PROFIBUS** (XL, Siemens automation) - the Siemens factory-automation
       stack as a focused target: **PROFIBUS-DP** (RS-485 master/slave, the cyclic DP-V0
       I/O exchange + a GSD-described slave model) and **PROFINET IO** (the Ethernet

@@ -287,8 +287,8 @@
       "tests": ["test_webdav"]
     },
     "native_modbus": {
-      "desc": "Modbus TCP slave core (Modbus Application Protocol): the data model + MBAP/PDU\ncodec. Pure core - the TCP transport is ARDUINO-gated - so it unit-tests on the\nhost from modbus.cpp alone.",
-      "flags": ["-DDETWS_ENABLE_MODBUS=1"],
+      "desc": "Modbus TCP slave core + RTU framing (Modbus Application Protocol): the data\nmodel + MBAP/PDU codec + the RTU ADU codec (CRC16 + [addr][PDU][CRC]). Pure core\n- the transports are ARDUINO-gated - so it unit-tests on the host from modbus.cpp alone.",
+      "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_RTU=1"],
       "src": ["+<services/modbus/modbus.cpp>"],
       "tests": ["test_modbus"]
     },

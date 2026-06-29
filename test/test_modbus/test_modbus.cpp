@@ -226,6 +226,85 @@ void test_truncated_frame_ignored()
     TEST_ASSERT_EQUAL_size_t(0, n);                                 // length field disagrees -> wait/ignore
 }
 
+#if DETWS_ENABLE_MODBUS_RTU
+// Independent CRC16-Modbus (init 0xFFFF, reflected poly 0xA001) for building RTU
+// frames + verifying response CRCs. Anchored to a known vector below.
+static uint16_t t_crc16(const uint8_t *d, size_t n)
+{
+    uint16_t c = 0xFFFF;
+    for (size_t i = 0; i < n; i++)
+    {
+        c ^= d[i];
+        for (int b = 0; b < 8; b++)
+            c = (c & 1u) ? (uint16_t)((c >> 1) ^ 0xA001u) : (uint16_t)(c >> 1);
+    }
+    return c;
+}
+
+// Build an RTU ADU: [addr][pdu][crc_lo][crc_hi].
+static size_t build_rtu(uint8_t *buf, uint8_t addr, const uint8_t *pdu, size_t pdu_len)
+{
+    buf[0] = addr;
+    memcpy(buf + 1, pdu, pdu_len);
+    uint16_t c = t_crc16(buf, 1 + pdu_len);
+    buf[1 + pdu_len] = (uint8_t)(c & 0xFF);
+    buf[2 + pdu_len] = (uint8_t)(c >> 8);
+    return 1 + pdu_len + 2;
+}
+
+void test_rtu_crc16_known_vector()
+{
+    const uint8_t f[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x0A};
+    TEST_ASSERT_EQUAL_HEX16(0xCDC5, t_crc16(f, sizeof(f))); // wire bytes C5 CD
+}
+
+void test_rtu_read_holding_roundtrip()
+{
+    modbus_set_holding_reg(0, 0x1234);
+    modbus_set_holding_reg(1, 0xABCD);
+    const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x02}; // read 2 holding regs @0
+    uint8_t req[16], resp[64];
+    size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
+    size_t n = modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11);
+    TEST_ASSERT_GREATER_THAN(0, n);
+    TEST_ASSERT_EQUAL_HEX8(0x11, resp[0]); // echoed slave address
+    TEST_ASSERT_EQUAL_HEX8(0x03, resp[1]); // function code
+    TEST_ASSERT_EQUAL_HEX8(0x04, resp[2]); // byte count
+    TEST_ASSERT_EQUAL_HEX16(0x1234, rd16(resp + 3));
+    TEST_ASSERT_EQUAL_HEX16(0xABCD, rd16(resp + 5));
+    // Response CRC must validate.
+    uint16_t c = t_crc16(resp, n - 2);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)(c & 0xFF), resp[n - 2]);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)(c >> 8), resp[n - 1]);
+}
+
+void test_rtu_bad_crc_dropped()
+{
+    const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
+    uint8_t req[16], resp[64];
+    size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
+    req[rl - 1] ^= 0xFF; // corrupt the CRC
+    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11));
+}
+
+void test_rtu_wrong_address_dropped()
+{
+    const uint8_t pdu[] = {0x03, 0x00, 0x00, 0x00, 0x01};
+    uint8_t req[16], resp[64];
+    size_t rl = build_rtu(req, 0x05, pdu, sizeof(pdu));
+    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // addressed to 0x05, not us
+}
+
+void test_rtu_broadcast_executes_without_reply()
+{
+    const uint8_t pdu[] = {0x06, 0x00, 0x00, 0xBE, 0xEF}; // write single reg @0 = 0xBEEF
+    uint8_t req[16], resp[64];
+    size_t rl = build_rtu(req, 0x00, pdu, sizeof(pdu));                                     // broadcast address 0
+    TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, sizeof(resp), 0x11)); // no reply
+    TEST_ASSERT_EQUAL_HEX16(0xBEEF, modbus_get_holding_reg(0));                             // but executed
+}
+#endif // DETWS_ENABLE_MODBUS_RTU
+
 int main()
 {
     UNITY_BEGIN();
@@ -242,5 +321,12 @@ int main()
     RUN_TEST(test_write_single_coil_bad_value);
     RUN_TEST(test_non_modbus_protocol_id_ignored);
     RUN_TEST(test_truncated_frame_ignored);
+#if DETWS_ENABLE_MODBUS_RTU
+    RUN_TEST(test_rtu_crc16_known_vector);
+    RUN_TEST(test_rtu_read_holding_roundtrip);
+    RUN_TEST(test_rtu_bad_crc_dropped);
+    RUN_TEST(test_rtu_wrong_address_dropped);
+    RUN_TEST(test_rtu_broadcast_executes_without_reply);
+#endif
     return UNITY_END();
 }
