@@ -402,6 +402,12 @@
       "src": ["+<services/cotp/cotp.cpp>"],
       "tests": ["test_cotp"]
     },
+    "native_s7comm": {
+      "desc": "Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var\nrequest builders, the header parser, and the response data-item reader (length-in-bits +\neven padding). Constants per the Wireshark dissector. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_S7COMM=1"],
+      "src": ["+<services/s7comm/s7comm.cpp>"],
+      "tests": ["test_s7comm"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

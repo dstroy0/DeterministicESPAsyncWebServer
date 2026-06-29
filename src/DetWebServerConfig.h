@@ -940,6 +940,20 @@
 #endif
 
 /**
+ * @brief Siemens S7comm PDU codec (`services/s7comm`).
+ *
+ * Default off. A zero-heap builder + parser for the S7-300/400 communication PDUs carried
+ * inside a COTP Data TPDU (DETWS_ENABLE_COTP) over ISO-on-TCP (port 102): `s7_build_setup`
+ * (Setup Communication), `s7_build_read_request` (Read Var, S7-ANY items over DB/I/Q/M),
+ * `s7_parse_header`, and `s7_read_next_item` (the response data items, honoring the
+ * length-in-bits transport sizes + even-item padding). Constants verified against the
+ * Wireshark S7comm dissector. Pure codec, host-tested; wrap the PDU with COTP + TPKT.
+ */
+#ifndef DETWS_ENABLE_S7COMM
+#define DETWS_ENABLE_S7COMM 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
