@@ -65,6 +65,8 @@
     "sint",
     "sunspec",
     "grpcweb",
+    "ethernetip",
+    "messagepack",
     "MRES",
     "SRES",
     "senml",

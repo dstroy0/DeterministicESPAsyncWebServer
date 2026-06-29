@@ -16,3 +16,6 @@ jobs:
 
       - name: Run Prettier check
         run: npx prettier@3.9.1 --check "**/*.md"
+
+      - name: Feature/codec tables in sync with FEATURES.md
+        run: python3 docs/utilities/gen_feature_tables.py --check
