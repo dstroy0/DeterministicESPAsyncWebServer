@@ -372,6 +372,30 @@ shipped work:
       banner ([`SSH_VERSION_MAX`](@ref SSH_VERSION_MAX) + explicit lengths), and the WS handshake
       (`strnlen(client_key, WS_MAX_KEY_LEN+1)`) are all correctly bounded.
 
+- [ ] **Connection close/abort is driven from L7 holding the raw `tcp_pcb`.**
+      _(tracked debt - core refactor, wants a HW soak)_ Several sites in
+      `DeterministicESPAsyncWebServer.cpp` reach into `conn_pool[i].pcb` and run the
+      teardown by hand (`det_conn_detach(pcb)` plus a manual slot reset) instead of
+      going through one transport-owned `det_conn_close(slot)` / `det_conn_abort(slot)`.
+      It works, but it leaks the `struct tcp_pcb *` abstraction into L7 and repeats the
+      teardown order at every site. The fix is a `det_conn_close(slot)` /
+      `det_conn_abort(slot)` in `network_drivers/transport/` that owns the detach plus
+      slot reset, with every L7 close routed through it. Deferred because it touches the
+      lwIP teardown path and needs a connection-churn soak (slot-leak / use-after-free
+      watch) on real hardware before shipping.
+
+- [ ] **`detws_oidc_verify_with_key()` has a multi-KB stack frame.**
+      _(tracked debt - wants the per-worker scratch arena + a HW stack soak)_ The
+      verifier stacks `hdr[512]` + `sig[DETWS_OIDC_RSA_BYTES]` + `pl[DETWS_OIDC_MAX_LEN]`
+      + `iss[256]` and then calls the RSA modexp (itself stack-heavy), so a worker
+      verifying an OIDC token uses several KB of stack. The naive fix (move the buffers
+      to `static`) is **unsafe**: with `DETWS_WORKER_COUNT > 1` two core-partitioned
+      workers can verify concurrently and would race the shared buffers. The correct fix
+      routes the scratch through the per-worker dispatch arena
+      (region-reset-per-dispatch, single-worker-race-safe); deferred until that arena is
+      threaded into the pure verifier and validated with a stack high-water soak on
+      hardware.
+
 </details>
 
 ## SSH protocol completeness (medium)
