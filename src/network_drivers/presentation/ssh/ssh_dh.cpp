@@ -96,56 +96,78 @@ int ssh_dh_finish(uint8_t i, const uint8_t e_be[256], const uint8_t *hash_input,
 // Session key derivation (RFC 4253 §7.2)
 // ---------------------------------------------------------------------------
 
-// Helper: SHA256(mpint(K) || H || label || session_id)
-// For the first KEX session_id == H; on a re-key it is the H from the first KEX.
-// K is already big-endian in K_be[256] here.
-static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                       const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t out[SSH_SHA256_DIGEST_LEN])
+// Hash the shared secret K as an SSH mpint into @p ctx (RFC 4251 §5 / RFC 4253
+// §7.2): big-endian, 4-byte length prefix, a leading 0x00 only if the MSB is set,
+// and all UNNECESSARY leading 0x00 bytes stripped (canonical form). The exchange
+// hash encodes K the same way (hash_mpint), so the KDF must too: if K has any
+// high-order zero bytes (~1/256 of handshakes) a spec-compliant peer strips them
+// and would otherwise derive different keys.
+static void hash_mpint_K(SshSha256Ctx *ctx, const uint8_t K_be[256])
 {
-    // RFC 4251 §5 / RFC 4253 §7.2: K is encoded as an SSH mpint - big-endian,
-    // 4-byte length prefix, a leading 0x00 only if the MSB is set, and with all
-    // UNNECESSARY leading 0x00 bytes stripped (canonical form). The exchange hash
-    // encodes K the same way (hash_mpint), so the KDF must too: if K has any
-    // high-order zero bytes (the top byte is 0 in ~1/256 of handshakes) a
-    // spec-compliant peer strips them and would otherwise derive different keys.
-    SshSha256Ctx ctx;
-    ssh_sha256_init(&ctx);
-
-    // mpint(K): strip leading zero bytes, then 4-byte BE length + optional 0x00 + value.
     size_t off = 0;
     while (off < 256 && K_be[off] == 0x00u)
         off++;
-    if (off == 256)
+    if (off == 256) // K == 0: empty mpint (not reachable for a real DH secret)
     {
-        // K == 0: mpint is an empty string (length 0). (Not reachable for a real DH secret.)
         uint8_t len_be[4] = {0, 0, 0, 0};
-        ssh_sha256_update(&ctx, len_be, 4);
+        ssh_sha256_update(ctx, len_be, 4);
+        return;
     }
-    else
+    bool pad = (K_be[off] & 0x80u) != 0;
+    uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
+    uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
+    ssh_sha256_update(ctx, len_be, 4);
+    if (pad)
     {
-        bool pad = (K_be[off] & 0x80u) != 0;
-        uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
-        uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
-        ssh_sha256_update(&ctx, len_be, 4);
-        if (pad)
-        {
-            uint8_t zero = 0x00u;
-            ssh_sha256_update(&ctx, &zero, 1);
-        }
-        ssh_sha256_update(&ctx, K_be + off, 256 - off);
+        uint8_t zero = 0x00u;
+        ssh_sha256_update(ctx, &zero, 1);
     }
+    ssh_sha256_update(ctx, K_be + off, 256 - off);
+}
 
-    // || H
+// RFC 4253 §7.2 key derivation extended to any length:
+//   K1 = HASH(mpint(K) || H || X || session_id)   (X = label byte)
+//   K2 = HASH(mpint(K) || H || K1)
+//   K3 = HASH(mpint(K) || H || K1 || K2)  ...   key = K1 || K2 || K3 || ...
+// @p out_len up to SSH_KDF_MAX. For the first KEX session_id == H; on a re-key it
+// is the H from the first KEX.
+void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
+                    const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t *out, size_t out_len)
+{
+    if (out_len > SSH_KDF_MAX)
+        out_len = SSH_KDF_MAX; // bounded: every negotiated algorithm needs <= 32 B today
+    uint8_t acc[SSH_KDF_MAX];  // K1 || K2 || ... accumulated for the chain hash
+    size_t have = 0;
+
+    // K1 = HASH(mpint(K) || H || label || session_id)
+    SshSha256Ctx ctx;
+    ssh_sha256_init(&ctx);
+    hash_mpint_K(&ctx, K_be);
     ssh_sha256_update(&ctx, H, SSH_SHA256_DIGEST_LEN);
-
-    // || label character
     uint8_t lbl = (uint8_t)label;
     ssh_sha256_update(&ctx, &lbl, 1);
-
-    // || session_id (first KEX == H; on re-key it is the original H)
     ssh_sha256_update(&ctx, session_id, SSH_SHA256_DIGEST_LEN);
+    ssh_sha256_final(&ctx, acc); // acc[0..31] = K1
+    have = SSH_SHA256_DIGEST_LEN;
 
-    ssh_sha256_final(&ctx, out);
+    // Ki+1 = HASH(mpint(K) || H || K1..Ki) until enough material.
+    while (have < out_len && have + SSH_SHA256_DIGEST_LEN <= SSH_KDF_MAX)
+    {
+        ssh_sha256_init(&ctx);
+        hash_mpint_K(&ctx, K_be);
+        ssh_sha256_update(&ctx, H, SSH_SHA256_DIGEST_LEN);
+        ssh_sha256_update(&ctx, acc, have); // all prior blocks
+        ssh_sha256_final(&ctx, acc + have);
+        have += SSH_SHA256_DIGEST_LEN;
+    }
+    memcpy(out, acc, out_len);
+}
+
+// One 32-byte derived value (the only size any negotiated algorithm needs today).
+static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
+                       const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t out[SSH_SHA256_DIGEST_LEN])
+{
+    ssh_kdf_derive(K_be, H, session_id, label, out, SSH_SHA256_DIGEST_LEN);
 }
 
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],

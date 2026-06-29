@@ -400,11 +400,12 @@ shipped work:
       correct; splitting it is churn with no behavioral change until an
       out-of-order activation path exists.)_
 
-- [ ] **Key-derivation extension (RFC 4253 §7.2).** `derive_key()` produces a
-      single 32-byte block. Fine for AES-256/HMAC-SHA256/IV (≤32 B), but add the
-      `K1‖K2‖…` extension loop before introducing any algorithm needing >32 bytes.
-      _(Deferred - YAGNI: every negotiated algorithm needs ≤32 B; add the loop
-      only when an algorithm that needs more is introduced.)_
+- [x] **Key-derivation extension (RFC 4253 §7.2).** _(done)_ `ssh_kdf_derive()`
+      produces any length up to `SSH_KDF_MAX` (4 blocks) via the `K1‖K2‖…` chain
+      (Ki+1 = HASH(mpint(K) ‖ H ‖ K1..Ki)); `derive_key()` is now the 32-byte wrapper,
+      so the existing KEX is byte-identical (all negotiated algorithms still use one
+      block). Host-tested: `test_ssh_crypto` `test_ssh_kdf_extension_chain` verifies K1
+      equals the single-block derive and K2 chains correctly.
 
 - [ ] **Session rekeying (RFC 4253 §9).** Not implemented. The connection is
       closed when the send/receive sequence number would wrap (`ssh_keymat.h`

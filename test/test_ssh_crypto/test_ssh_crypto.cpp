@@ -879,6 +879,64 @@ static void test_ssh_kdf_canonical_mpint_k(void)
     TEST_ASSERT_EQUAL_MEMORY(expected, ssh_keys[0].mac_key_c2s, SSH_SHA256_DIGEST_LEN);
 }
 
+// Hash a canonical mpint(K) into @p c (mirrors the production encoder; tests may
+// use any helpers - only src/ is constrained).
+static void kdf_hash_mpint(SshSha256Ctx *c, const uint8_t K_be[256])
+{
+    size_t off = 0;
+    while (off < 256 && K_be[off] == 0x00u)
+        off++;
+    bool pad = (K_be[off] & 0x80u) != 0;
+    uint32_t mlen = (uint32_t)(256 - off) + (pad ? 1u : 0u);
+    uint8_t len_be[4] = {(uint8_t)(mlen >> 24), (uint8_t)(mlen >> 16), (uint8_t)(mlen >> 8), (uint8_t)mlen};
+    ssh_sha256_update(c, len_be, 4);
+    if (pad)
+    {
+        uint8_t z = 0x00u;
+        ssh_sha256_update(c, &z, 1);
+    }
+    ssh_sha256_update(c, K_be + off, 256 - off);
+}
+
+// RFC 4253 §7.2 length extension: ssh_kdf_derive() past one block must chain
+// K2 = HASH(mpint(K) || H || K1), and K1 must equal the single-block derivation.
+static void test_ssh_kdf_extension_chain(void)
+{
+    uint8_t K_be[256], H[SSH_SHA256_DIGEST_LEN], sid[SSH_SHA256_DIGEST_LEN];
+    K_be[0] = 0x00; // leading zero -> stripped by the canonical mpint encoding
+    for (int i = 1; i < 256; i++)
+        K_be[i] = (uint8_t)(i * 7 + 1);
+    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+    {
+        H[i] = (uint8_t)(0x40 + i);
+        sid[i] = (uint8_t)(0x90 + i);
+    }
+
+    uint8_t out[2 * SSH_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K_be, H, sid, 'C', out, sizeof(out));
+
+    // K1 = HASH(mpint(K) || H || 'C' || sid) - same as a single-block derive.
+    uint8_t k1[SSH_SHA256_DIGEST_LEN];
+    SshSha256Ctx c;
+    ssh_sha256_init(&c);
+    kdf_hash_mpint(&c, K_be);
+    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    uint8_t lbl = 'C';
+    ssh_sha256_update(&c, &lbl, 1);
+    ssh_sha256_update(&c, sid, SSH_SHA256_DIGEST_LEN);
+    ssh_sha256_final(&c, k1);
+    TEST_ASSERT_EQUAL_MEMORY(k1, out, SSH_SHA256_DIGEST_LEN);
+
+    // K2 = HASH(mpint(K) || H || K1).
+    uint8_t k2[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256_init(&c);
+    kdf_hash_mpint(&c, K_be);
+    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    ssh_sha256_update(&c, k1, SSH_SHA256_DIGEST_LEN);
+    ssh_sha256_final(&c, k2);
+    TEST_ASSERT_EQUAL_MEMORY(k2, out + SSH_SHA256_DIGEST_LEN, SSH_SHA256_DIGEST_LEN);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -938,6 +996,7 @@ int main(void)
     RUN_TEST(test_pkt_encrypted_fragmented);
     RUN_TEST(test_pkt_encrypted_two_packets);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
+    RUN_TEST(test_ssh_kdf_extension_chain);
 
     return UNITY_END();
 }
