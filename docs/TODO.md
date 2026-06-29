@@ -226,11 +226,14 @@ Open follow-ups discovered during the above:
       delivery. Host-tested via a new opt-in UDP capture seam (`test_snmp_v3`
       `test_inform_v3_builds_informrequest`: a v3 message carrying the InformRequest PDU
       + request-id).
-- [ ] **CoAP server scope** - only the piggybacked-response model is implemented
-      (`coap.h`): CON -> piggybacked ACK, NON -> NON. Separate (deferred) responses,
-      CON retransmission + message de-duplication, and `/.well-known/core` resource
-      discovery are out of scope - add them only if a non-inline responder or a
-      discovery client is needed.
+- [~] **CoAP server scope** - `/.well-known/core` resource discovery (RFC 6690) is
+      now served: GET returns the registered resources in Link Format
+      (`application/link-format`, CF 40), paged with Block2 if large; non-GET -> 4.05.
+      Host-tested (`test_coap` `test_well_known_core_discovery` /
+      `_rejects_post`) and HW-verified against `aiocoap` (interop `coap` peer).
+      Still out of scope (add only if needed): separate (deferred) responses, and CON
+      retransmission + message de-duplication - the model stays piggybacked-only
+      (CON -> piggybacked ACK, NON -> NON).
 - [ ] **Concurrent TLS** (`MAX_TLS_CONNS` > 1) - needs a smaller-record ESP-IDF
       build (~41.5 KB arena per connection overflows DRAM at 2 on a stock Arduino
       build).

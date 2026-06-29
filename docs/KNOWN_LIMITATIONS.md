@@ -65,7 +65,8 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 ## Protocol services
 
 - **CoAP:** piggybacked responses only - no separate (deferred) responses, no CON
-  retransmission / de-duplication, no `/.well-known/core` discovery.
+  retransmission / de-duplication. (`/.well-known/core` resource discovery, RFC 6690,
+  is supported.)
 - **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403); `LOCK`
   is advisory (a token is issued but not enforced). `PUT` streams to the file as the
   body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).

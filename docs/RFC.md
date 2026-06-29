@@ -264,6 +264,11 @@ dispatches GET/POST/PUT/DELETE against a fixed resource table by reconstructed
 Uri-Path. The codec ([`coap_server_process()`](@ref coap_server_process)) is
 transport-independent and host-tested; only the UDP socket is ESP32-specific.
 
+**Resource discovery (RFC 6690):** a GET to `/.well-known/core` returns the
+registered resources in CoRE Link Format (`application/link-format`, Content-Format
+40), e.g. `</hello>,</time>` - paged with Block2 when large; a non-GET to it is
+`4.05 Method Not Allowed`.
+
 **Resource observation (RFC 7641, optional [`DETWS_ENABLE_COAP_OBSERVE`](@ref DETWS_ENABLE_COAP_OBSERVE)):**
 a GET carrying the Observe option (value 0) registers the client as an observer;
 the registration response and every subsequent notification carry the Observe

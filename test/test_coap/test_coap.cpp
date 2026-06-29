@@ -7,6 +7,7 @@
 
 #include "services/coap/coap.h"
 #include <string.h>
+#include <string> // std::string (test code may use the full STL; only src/ is constrained)
 #include <unity.h>
 
 // ---------------------------------------------------------------------------
@@ -777,6 +778,39 @@ void test_block1_too_large()
     TEST_ASSERT_FALSE(g_called); // handler never ran
 }
 
+// RFC 6690: GET /.well-known/core returns the CoRE Link Format listing of the
+// registered resources, as application/link-format (CF 40), without invoking any
+// handler. The body lists each resource as "<path>", comma-separated.
+void test_well_known_core_discovery()
+{
+    const char *paths[] = {".well-known", "core"};
+    uint8_t req[160], resp[256];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x0CDE, paths, 2, nullptr, 0, -1, nullptr, 0);
+    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, d.code);
+    TEST_ASSERT_EQUAL_UINT(COAP_CF_LINK, d.content_format);
+    TEST_ASSERT_FALSE(g_called); // discovery is synthesized, not dispatched to a handler
+    // The body must list the registered resources in Link Format.
+    std::string body((const char *)d.payload, d.payload_len);
+    TEST_ASSERT_TRUE(body.find("</temp>") != std::string::npos);
+    TEST_ASSERT_TRUE(body.find("</ro>") != std::string::npos);
+    TEST_ASSERT_TRUE(body.find("</a/b>") != std::string::npos);
+}
+
+// A non-GET to /.well-known/core is 4.05 Method Not Allowed (discovery is read-only).
+void test_well_known_core_rejects_post()
+{
+    const char *paths[] = {".well-known", "core"};
+    uint8_t req[160], resp[256];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_POST, nullptr, 0, 0x0CDF, paths, 2, nullptr, 0, -1, nullptr, 0);
+    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_METHOD_NOT_ALLOWED, d.code);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -807,5 +841,7 @@ int main()
     RUN_TEST(test_root_path);
     RUN_TEST(test_unknown_method_not_allowed);
     RUN_TEST(test_unknown_critical_option_bad_option);
+    RUN_TEST(test_well_known_core_discovery);
+    RUN_TEST(test_well_known_core_rejects_post);
     return UNITY_END();
 }

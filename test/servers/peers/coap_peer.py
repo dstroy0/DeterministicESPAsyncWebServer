@@ -47,6 +47,12 @@ def run(args) -> bool:
             pr.check("GET -> 2.05 Content", resp.code == Code.CONTENT, str(resp.code))
             pr.info(f"payload: {bytes(resp.payload)[:64]!r}")
 
+            # RFC 6690 resource discovery: GET /.well-known/core lists the resources.
+            disc = Message(code=GET, uri=f"coap://{args.host}:{args.port}/.well-known/core")
+            dr = await asyncio.wait_for(ctx.request(disc).response, timeout=args.timeout)
+            pr.check(".well-known/core discovery -> 2.05", dr.code == Code.CONTENT, str(dr.code))
+            pr.info(f"link-format: {bytes(dr.payload)[:96]!r}")
+
             # An unknown resource should yield 4.04, not a hang or malformed reply.
             req = Message(code=GET, uri=f"coap://{args.host}:{args.port}/_nope_interop")
             resp = await asyncio.wait_for(ctx.request(req).response, timeout=args.timeout)

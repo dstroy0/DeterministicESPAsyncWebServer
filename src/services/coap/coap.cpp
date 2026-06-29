@@ -402,83 +402,112 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     if ((code >> 5) != 0 || code < COAP_GET || code > COAP_DELETE)
         return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
 
-    const CoapResource *r = find_resource(g_path);
-    if (!r)
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_NOT_FOUND, mid, token, tkl);
-    if (!(r->methods & (1u << code)))
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
-
-    const uint8_t *eff_payload = payload;
-    size_t eff_payload_len = payload_len;
-    int32_t block1_echo = -1; // Block1 option to echo on the final-block response
-
-#if DETWS_ENABLE_COAP_BLOCK
-    // --- Block1: reassemble a chunked POST/PUT payload (RFC 7959 §2.5) ---
-    if (req_block1 >= 0 && (code == COAP_POST || code == COAP_PUT))
-    {
-        uint32_t b = (uint32_t)req_block1;
-        uint32_t num = b >> 4;
-        uint8_t more = (uint8_t)((b >> 3) & 1);
-        uint8_t szx = (uint8_t)(b & 7);
-        if (szx == 7) // reserved block size
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
-        uint32_t bsize = 1u << (szx + 4);
-        if (num == 0) // first block starts a fresh transfer
-        {
-            g_b1_len = 0;
-            g_b1_szx = szx;
-        }
-        // The block size is fixed for a transfer; an offset gap means a lost or
-        // reordered block. Either way the reassembly cannot continue: 4.08.
-        if (szx != g_b1_szx || (size_t)num * bsize != g_b1_len)
-        {
-            g_b1_len = 0;
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_INCOMPLETE, mid, token, tkl);
-        }
-        if (g_b1_len + payload_len > sizeof(g_b1))
-        {
-            g_b1_len = 0;
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_TOO_LARGE, mid, token, tkl);
-        }
-        if (payload_len)
-            memcpy(g_b1 + g_b1_len, payload, payload_len);
-        g_b1_len += payload_len;
-
-        if (more)
-        {
-            // More blocks coming: acknowledge with 2.31 Continue + Block1 echo
-            // (no representation yet; the handler runs only on the final block).
-            size_t cn = emit_header(resp, resp_cap, rsp_type, COAP_RSP_CONTINUE, mid, token, tkl);
-            if (cn == 0)
-                return 0;
-            return emit_options_payload(resp, resp_cap, cn, COAP_RSP_CONTINUE, -1, COAP_CF_NONE, -1,
-                                        (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
-        }
-        // Final block: hand the whole reassembled payload to the handler.
-        eff_payload = g_b1;
-        eff_payload_len = g_b1_len;
-        block1_echo = (int32_t)((num << 4) | szx); // More = 0
-    }
-#endif
-
-    CoapRequest creq;
-    creq.method = code;
-    creq.path = g_path;
-    creq.query = g_query;
-    creq.payload = eff_payload;
-    creq.payload_len = eff_payload_len;
-    creq.content_format = req_cf;
-
+    // The response the emit path below serializes (block-wise if large). Filled
+    // either by the .well-known/core discovery listing or by a resource handler.
     CoapResponse cresp;
     cresp.code = COAP_RSP_CONTENT;
     cresp.content_format = COAP_CF_NONE;
     cresp.payload = g_pl;
     cresp.payload_cap = sizeof(g_pl);
     cresp.payload_len = 0;
+    int32_t block1_echo = -1; // Block1 option to echo on the final-block response
 
-    r->handler(&creq, &cresp);
-    if (cresp.payload_len > sizeof(g_pl))
-        cresp.payload_len = sizeof(g_pl); // defensive clamp
+    // RFC 6690: GET /.well-known/core returns the CoRE Link Format listing of the
+    // registered resources, e.g. "</info>,</led>". Block2 (below) pages it if large.
+    if (strcmp(g_path, "/.well-known/core") == 0)
+    {
+        if (code != COAP_GET)
+            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
+        size_t pl = 0;
+        for (size_t i = 0; i < g_res_count; i++)
+        {
+            const char *p = g_res[i].path;
+            size_t plen = strlen(p);
+            size_t need = (pl ? 1u : 0u) + 2u + plen; // optional ',' + '<' + path + '>'
+            if (pl + need > sizeof(g_pl))
+                break; // listing exceeds the payload buffer; truncate at a resource boundary
+            if (pl)
+                g_pl[pl++] = ',';
+            g_pl[pl++] = '<';
+            memcpy(g_pl + pl, p, plen);
+            pl += plen;
+            g_pl[pl++] = '>';
+        }
+        cresp.content_format = COAP_CF_LINK;
+        cresp.payload_len = pl;
+    }
+    else
+    {
+        const CoapResource *r = find_resource(g_path);
+        if (!r)
+            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_NOT_FOUND, mid, token, tkl);
+        if (!(r->methods & (1u << code)))
+            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
+
+        const uint8_t *eff_payload = payload;
+        size_t eff_payload_len = payload_len;
+
+#if DETWS_ENABLE_COAP_BLOCK
+        // --- Block1: reassemble a chunked POST/PUT payload (RFC 7959 §2.5) ---
+        if (req_block1 >= 0 && (code == COAP_POST || code == COAP_PUT))
+        {
+            uint32_t b = (uint32_t)req_block1;
+            uint32_t num = b >> 4;
+            uint8_t more = (uint8_t)((b >> 3) & 1);
+            uint8_t szx = (uint8_t)(b & 7);
+            if (szx == 7) // reserved block size
+                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
+            uint32_t bsize = 1u << (szx + 4);
+            if (num == 0) // first block starts a fresh transfer
+            {
+                g_b1_len = 0;
+                g_b1_szx = szx;
+            }
+            // The block size is fixed for a transfer; an offset gap means a lost or
+            // reordered block. Either way the reassembly cannot continue: 4.08.
+            if (szx != g_b1_szx || (size_t)num * bsize != g_b1_len)
+            {
+                g_b1_len = 0;
+                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_INCOMPLETE, mid, token, tkl);
+            }
+            if (g_b1_len + payload_len > sizeof(g_b1))
+            {
+                g_b1_len = 0;
+                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_TOO_LARGE, mid, token, tkl);
+            }
+            if (payload_len)
+                memcpy(g_b1 + g_b1_len, payload, payload_len);
+            g_b1_len += payload_len;
+
+            if (more)
+            {
+                // More blocks coming: acknowledge with 2.31 Continue + Block1 echo
+                // (no representation yet; the handler runs only on the final block).
+                size_t cn = emit_header(resp, resp_cap, rsp_type, COAP_RSP_CONTINUE, mid, token, tkl);
+                if (cn == 0)
+                    return 0;
+                return emit_options_payload(resp, resp_cap, cn, COAP_RSP_CONTINUE, -1, COAP_CF_NONE, -1,
+                                            (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
+            }
+            // Final block: hand the whole reassembled payload to the handler.
+            eff_payload = g_b1;
+            eff_payload_len = g_b1_len;
+            block1_echo = (int32_t)((num << 4) | szx); // More = 0
+        }
+#endif
+
+        CoapRequest creq;
+        creq.method = code;
+        creq.path = g_path;
+        creq.query = g_query;
+        creq.payload = eff_payload;
+        creq.payload_len = eff_payload_len;
+        creq.content_format = req_cf;
+
+        r->handler(&creq, &cresp);
+        if (cresp.payload_len > sizeof(g_pl))
+            cresp.payload_len = sizeof(g_pl); // defensive clamp
+    }
 
     int32_t block2_echo = -1;
 
