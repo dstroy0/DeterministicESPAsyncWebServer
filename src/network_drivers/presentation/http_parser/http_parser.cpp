@@ -539,6 +539,58 @@ const char *http_get_header(const HttpReq *req, const char *key)
     return nullptr;
 }
 
+bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out_size)
+{
+    if (out == nullptr || out_size == 0)
+        return false;
+    out[0] = '\0';
+    if (req == nullptr || name == nullptr || name[0] == '\0')
+        return false;
+
+    // RFC 6265 4.2.1: the request "Cookie" header is "name1=value1; name2=value2".
+    // Names are case-sensitive; a value may be DQUOTE-wrapped.
+    const char *c = http_get_header(req, "Cookie");
+    if (c == nullptr)
+        return false;
+    size_t nlen = strlen(name);
+
+    const char *p = c;
+    while (*p != '\0')
+    {
+        while (*p == ' ' || *p == '\t' || *p == ';') // skip inter-pair separators/spaces
+            p++;
+        if (*p == '\0')
+            break;
+        const char *eq = p;
+        while (*eq != '\0' && *eq != '=' && *eq != ';') // cookie-name runs up to '='
+            eq++;
+        if (*eq == '=' && (size_t)(eq - p) == nlen && strncmp(p, name, nlen) == 0)
+        {
+            const char *v = eq + 1;
+            const char *end = v;
+            while (*end != '\0' && *end != ';') // value runs up to the next ';'
+                end++;
+            while (end > v && (end[-1] == ' ' || end[-1] == '\t')) // trim trailing OWS
+                end--;
+            size_t vlen = (size_t)(end - v);
+            if (vlen >= 2 && v[0] == '"' && v[vlen - 1] == '"') // strip a quoted cookie-value
+            {
+                v++;
+                vlen -= 2;
+            }
+            if (vlen >= out_size)
+                vlen = out_size - 1;
+            memcpy(out, v, vlen);
+            out[vlen] = '\0';
+            return true;
+        }
+        p = eq;
+        while (*p != '\0' && *p != ';') // advance past this pair
+            p++;
+    }
+    return false;
+}
+
 const char *http_get_query(const HttpReq *req, const char *key)
 {
     for (uint8_t i = 0; i < req->query_count; i++)

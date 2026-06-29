@@ -181,9 +181,13 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
 
 ### Supporting HTTP specs (smaller, fold in alongside the above)
 
-- [ ] **Cookies** (M, RFC 6265) - `Set-Cookie` / `Cookie` parsing + emission with
-      the security attributes (`Secure`, `HttpOnly`, `SameSite`, `Max-Age`/`Expires`,
-      `Path`, `Domain`); pairs with the existing session/CSRF/auth features.
+- [x] **Cookies** (M, RFC 6265) _(shipped)_ - emission via `set_cookie()` (name/value
+      plus a freeform attributes string for `Secure` / `HttpOnly` / `SameSite` /
+      `Max-Age` / `Expires` / `Path` / `Domain`), and inbound reading via
+      `http_get_cookie(req, name, out, cap)` - parses the request `Cookie` header
+      (case-sensitive names, DQUOTE-stripped values, `=` preserved in values),
+      mirroring `http_get_header()`. Host-tested (`test_http_parser`, 4 cookie cases);
+      pairs with the session / CSRF / auth features.
 - [x] **HTTP caching** (RFC 9111) _(shipped)_ - conditional GET on served files via
       `DETWS_ENABLE_ETAG`: a strong `ETag` + `Last-Modified`, and `304 Not Modified`
       for a matching `If-None-Match` or (when no `If-None-Match`) an `If-Modified-Since`

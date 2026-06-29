@@ -221,6 +221,18 @@ void http_parser_feed(HttpReq *req, uint8_t byte);
 const char *http_get_header(const HttpReq *req, const char *key);
 
 /**
+ * @brief Read a named cookie from the request `Cookie` header (RFC 6265 4.2.1).
+ *
+ * Parses the `name1=value1; name2=value2` list and copies the value of cookie
+ * @p name (case-sensitive) into @p out (null-terminated, bounded by @p out_size;
+ * a surrounding DQUOTE pair is stripped). Pairs with the session / CSRF / auth
+ * features (e.g. reading a session-id cookie).
+ *
+ * @return true if the cookie was found (value in @p out), false otherwise.
+ */
+bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out_size);
+
+/**
  * @brief Look up a query parameter value by name (case-sensitive).
  *
  * @param req  Parsed request.

@@ -286,6 +286,50 @@ void test_header_lookup_case_insensitive()
     TEST_ASSERT_EQUAL_STRING("application/json", http_get_header(&http_pool[0], "Content-Type"));
 }
 
+// --- http_get_cookie (RFC 6265 request Cookie parsing) ---------------------
+
+void test_cookie_basic_and_positions()
+{
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: a=1; b=2; c=3\r\n\r\n");
+    char v[32];
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "a", v, sizeof(v))); // first
+    TEST_ASSERT_EQUAL_STRING("1", v);
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "b", v, sizeof(v))); // middle
+    TEST_ASSERT_EQUAL_STRING("2", v);
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "c", v, sizeof(v))); // last
+    TEST_ASSERT_EQUAL_STRING("3", v);
+}
+
+void test_cookie_missing_and_no_header()
+{
+    char v[32];
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: a=1; b=2\r\n\r\n");
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], "z", v, sizeof(v))); // absent name
+    TEST_ASSERT_EQUAL_STRING("", v);
+    feed_request(1, "GET / HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[1], "a", v, sizeof(v))); // no Cookie header
+}
+
+void test_cookie_exact_name_not_substring()
+{
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: session=x; sess=y\r\n\r\n");
+    char v[32];
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "sess", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("y", v); // not "x" (no prefix/substring match)
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "session", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("x", v);
+}
+
+void test_cookie_quoted_and_value_with_equals()
+{
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: q=\"hello world\"; t=YWJj===\r\n\r\n");
+    char v[32];
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "q", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("hello world", v); // surrounding quotes stripped
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "t", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("YWJj===", v); // '=' inside a value preserved (base64 padding)
+}
+
 void test_header_leading_space_stripped()
 {
     feed_request(0, "GET / HTTP/1.1\r\nX-Val:   trimmed\r\n\r\n");
@@ -888,6 +932,10 @@ int main()
     // Headers
     RUN_TEST(test_single_header_stored);
     RUN_TEST(test_header_lookup_case_insensitive);
+    RUN_TEST(test_cookie_basic_and_positions);
+    RUN_TEST(test_cookie_missing_and_no_header);
+    RUN_TEST(test_cookie_exact_name_not_substring);
+    RUN_TEST(test_cookie_quoted_and_value_with_equals);
     RUN_TEST(test_header_leading_space_stripped);
     RUN_TEST(test_content_length_header_parsed);
     RUN_TEST(test_content_length_in_headers_array);
