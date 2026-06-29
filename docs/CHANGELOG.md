@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.23.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.23.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`388b78f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/388b78f45f966e0e45cda9bf7ee806dc26cf883f))
+- update CHANGELOG.md [skip ci] ([`21ed634`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21ed6349d33c94ba12c6f62526edec1543b6a1a9))
+
+### Changes
+
+- Bump version: 4.22.0 → 4.23.0 ([`4fa831c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fa831cf0725210fac4d7fd2ea6e07731b764630))
+
+### Features
+
+- CloudEvents v1.0 envelope (DETWS_ENABLE_CLOUDEVENTS) ([`5c41111`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c411117895e8bbd2f1a29ac633e6c63ea233e84))
+
+</details>
+
 ## [4.22.0] - 2026-06-29
 
 <details>
