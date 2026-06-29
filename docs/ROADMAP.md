@@ -345,3 +345,21 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       (the DirectNET HostLink-style framed read/write of V-memory) for DirectLOGIC PLCs.
       UART transport, host-testable framing + checksum codec; pairs with the Modbus-RTU
       and other serial fieldbus work. Fixed BSS, no heap.
+- [ ] **IEC 60870-5-101 / -104** (L, power-grid SCADA) - the tele-control telemetry
+      protocol: the ASDU information-object model (type IDs, cause-of-transmission,
+      single/double points, measured values, commands) shared by **-104** (over TCP
+      2404, the APCI/APDU framing with the I/S/U frames + k/w sequence flow control)
+      and **-101** (the serial FT 1.2 link layer). -104 first (host-reachable TCP);
+      -101 is the serial sibling. Fixed BSS point database, no heap, one build flag.
+- [ ] **IEC 61850** (XL, substation automation) - the substation standard: **MMS**
+      (Manufacturing Message Specification over ISO-on-TCP 102, the ACSI object model -
+      logical devices/nodes, data objects, datasets, reports) as the host-reachable
+      client/server core, and **GOOSE** (the raw-L2 multicast event publish for
+      fast trips - hardware/timing-gated like the other raw-Ethernet buses, scope to
+      the APDU encode/decode + dataset model). SCL (the SCD/CID config) drives a fixed
+      BSS model; no heap. Heaviest of the grid protocols - sequence behind 60870-5-104.
+- [ ] **IEEE C37.118** (M-L, synchrophasors) - the PMU synchrophasor protocol: the
+      four frame types (configuration, header, data, command) over TCP/UDP 4712/4713,
+      carrying time-stamped phasor / frequency / ROCOF measurements. Fixed BSS phasor
+      configuration + data model, no heap; the data frame streams via the chunked /
+      UDP cast path. Pairs with the telemetry-math service for on-device PMU analytics.
