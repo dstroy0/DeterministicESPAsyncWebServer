@@ -57,6 +57,44 @@ void test_overflow_fails_closed()
     TEST_ASSERT_FALSE(detws_line_ok(&l)); // did not fit
 }
 
+// Tags sit between the measurement and the fields (series key); a trailing
+// timestamp is space-separated after the fields.
+void test_tags_and_timestamp()
+{
+    char buf[128];
+    DetwsLine l;
+    detws_line_init(&l, buf, sizeof(buf), "env");
+    detws_line_add_tag(&l, "host", "esp32-1");
+    detws_line_add_tag(&l, "room", "lab");
+    detws_line_add_int(&l, "rssi", -42);
+    detws_line_set_timestamp(&l, 1465839830100400200LL);
+    TEST_ASSERT_TRUE(detws_line_ok(&l));
+    TEST_ASSERT_EQUAL_STRING("env,host=esp32-1,room=lab rssi=-42i 1465839830100400200", buf);
+}
+
+// Tag keys/values escape comma, equals and space (line protocol special chars).
+void test_tag_escaping()
+{
+    char buf[128];
+    DetwsLine l;
+    detws_line_init(&l, buf, sizeof(buf), "m");
+    detws_line_add_tag(&l, "a b", "x,y=z");
+    detws_line_add_int(&l, "f", 1);
+    TEST_ASSERT_TRUE(detws_line_ok(&l));
+    TEST_ASSERT_EQUAL_STRING("m,a\\ b=x\\,y\\=z f=1i", buf);
+}
+
+// A tag added after a field is a misuse -> the line fails closed.
+void test_tag_after_field_fails_closed()
+{
+    char buf[64];
+    DetwsLine l;
+    detws_line_init(&l, buf, sizeof(buf), "m");
+    detws_line_add_int(&l, "f", 1);
+    detws_line_add_tag(&l, "late", "nope"); // invalid ordering
+    TEST_ASSERT_FALSE(detws_line_ok(&l));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -64,5 +102,8 @@ int main()
     RUN_TEST(test_float_field);
     RUN_TEST(test_no_fields_not_ok);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_tags_and_timestamp);
+    RUN_TEST(test_tag_escaping);
+    RUN_TEST(test_tag_after_field_fails_closed);
     return UNITY_END();
 }

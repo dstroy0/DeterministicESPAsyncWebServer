@@ -597,11 +597,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### Databases & time-series
 
-- [ ] **InfluxDB Line Protocol** (S, time-series ingest) - the text line format
-      (`measurement,tag=v field=v timestamp`) POSTed to InfluxDB `/write` (or v2
-      `/api/v2/write`). Tiny, high-leverage: a zero-heap line builder over a caller
-      buffer plus the HTTP client already shipped, so the device pushes metrics straight
-      to a TSDB. Pairs with the telemetry-math service. One build flag, no heap.
+- [x] **InfluxDB Line Protocol** (S, time-series ingest) _(shipped)_ - the
+      `DetwsLine` builder (`services/udp_telemetry`, `DETWS_ENABLE_UDP_TELEMETRY`) emits
+      the full `measurement,tag=v field=v timestamp` form: `detws_line_add_tag()` (escaped
+      tag set, must precede fields) + `detws_line_set_timestamp()` on top of the existing
+      int/uint/float fields. Host-tested (`test_udp_telemetry`: tags+timestamp ordering,
+      special-char escaping, tag-after-field fail-closed). Cast over UDP
+      (`detws_udp_telemetry_cast`) or POST the same line to InfluxDB `/write` with the
+      shipped HTTP client. Pairs with the telemetry-math service. One build flag, no heap.
 - [ ] **NoSQL / database clients** (M-L, candidate) - direct datastore clients so the
       device persists/queries without a middle tier. The MCU-appropriate first target is
       **Redis** (the RESP wire protocol is trivial - a tiny zero-heap encoder/decoder

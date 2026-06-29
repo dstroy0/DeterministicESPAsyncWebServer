@@ -54,6 +54,55 @@ void detws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measuremen
     line_append(l, measurement ? measurement : "");
 }
 
+// Append a string with InfluxDB tag/key escaping: comma, equals and space are
+// backslash-escaped (line protocol, "Special characters").
+static void line_append_escaped(DetwsLine *l, const char *s)
+{
+    if (!s)
+        return;
+    for (const char *p = s; *p; p++)
+    {
+        if (*p == ',' || *p == '=' || *p == ' ')
+        {
+            char esc[3] = {'\\', *p, '\0'};
+            line_append(l, esc);
+        }
+        else
+        {
+            char one[2] = {*p, '\0'};
+            line_append(l, one);
+        }
+    }
+}
+
+void detws_line_add_tag(DetwsLine *l, const char *key, const char *val)
+{
+    // Tags are part of the series key: they come right after the measurement,
+    // comma-separated, BEFORE the space-separated fields. Adding one after a field
+    // is a misuse -> fail the line closed.
+    if (l->have_fields)
+    {
+        l->overflow = true;
+        return;
+    }
+    line_append(l, ",");
+    line_append_escaped(l, key);
+    line_append(l, "=");
+    line_append_escaped(l, val);
+}
+
+void detws_line_set_timestamp(DetwsLine *l, int64_t timestamp)
+{
+    if (!l->have_fields) // a line needs at least one field before the timestamp
+    {
+        l->overflow = true;
+        return;
+    }
+    char num[24];
+    snprintf(num, sizeof(num), " %lld", (long long)timestamp); // space-separated trailing timestamp
+    line_append(l, num);
+}
+
 void detws_line_add_int(DetwsLine *l, const char *field, int64_t v)
 {
     char num[24];
