@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.11.7] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.7 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- reject PROPFIND Depth: infinity with 403 propfind-finite-depth (audit batch 2d) ([`71b8b32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71b8b328c0d5865d68bc6e7bda8c542cca89f3ff))
+
+### CI / Build
+
+- update test report [skip ci] ([`8b99388`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b9938831e4585b981a6da932293dc1f87aa965f))
+- update CHANGELOG.md [skip ci] ([`4ff4dbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ff4dbc5a162d66ec500195cffc13393f797a7b0))
+
+### Changes
+
+- Bump version: 4.11.6 → 4.11.7 ([`cf56025`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf56025c45fb0072b267f958c4908caf1f49fc85))
+
+</details>
+
 ## [4.11.6] - 2026-06-29
 
 <details>
