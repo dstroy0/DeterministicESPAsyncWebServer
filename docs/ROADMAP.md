@@ -144,9 +144,10 @@ flag (default off) so it costs nothing when unused.
 - [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
 - [ ] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).
 - [~] **Real-protocol interop test harness** (M, per protocol) - _harness shipped_ in
-  [test/servers/](../test/servers/): one CLI (`python test/servers/interop.py
-    <protocol>`) that drives the device against the _real_ reference implementation, not
-  just our own round-trip. Peers so far: HTTP (stdlib client), WebSocket (`websockets`),
+  [test/servers/](../test/servers/): one CLI,
+  `python test/servers/interop.py <protocol>`, drives the device against the _real_
+  reference implementation, not just our own round-trip. Peers so far: HTTP (stdlib
+  client), WebSocket (`websockets`),
   SNMP (`net-snmp` snmpget/snmpwalk), Modbus client + server (`pymodbus`), CoAP
   (`aiocoap`), MQTT broker (`mosquitto` + `paho`), OPC UA client + server (`asyncua`).
   Each peer says whether the device is the server (the harness probes it, `--host ...`)
