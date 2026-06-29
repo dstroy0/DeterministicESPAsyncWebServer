@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.36.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.36.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d34f5ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d34f5eadb939302a5a1bf1dd5d2be0181ffc20b0))
+- update CHANGELOG.md [skip ci] ([`bae9d5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bae9d5c81d0d9091384f9b0ce30b61006f792ffe))
+
+### Changes
+
+- Bump version: 4.35.0 → 4.36.0 ([`083e6ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/083e6acca288c8500ef49179902893028def948c))
+
+### Features
+
+- Omron FINS frame codec (DETWS_ENABLE_FINS) ([`b1f1d1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1f1d1c7ebbb7c1e48841919a9306e9e8f5dd7dd))
+
+</details>
+
 ## [4.35.0] - 2026-06-29
 
 <details>
