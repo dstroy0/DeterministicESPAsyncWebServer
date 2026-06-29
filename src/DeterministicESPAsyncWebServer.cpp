@@ -3506,6 +3506,19 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
 
         int depth = webdav_depth(http_get_header(req, "Depth"), 1);
 
+        // RFC 4918 9.1.1: this server lists at most one level, so a Depth: infinity
+        // PROPFIND is rejected with 403 + the propfind-finite-depth precondition rather
+        // than silently returning a partial (one-level) 207 the client would read as
+        // complete. Clients wanting a listing use Depth: 0 or 1.
+        if (depth == DAV_DEPTH_INFINITY)
+        {
+            f.close();
+            static const char body[] = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n"
+                                       "<D:error xmlns:D=\"DAV:\"><D:propfind-finite-depth/></D:error>\r\n";
+            send(slot_id, 403, "application/xml", body);
+            return;
+        }
+
         // Self href: the request path, with a trailing '/' for a collection.
         char self_href[MAX_PATH_LEN + 2];
         snprintf(self_href, sizeof(self_href), "%s", req->path);

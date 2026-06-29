@@ -8,6 +8,17 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 2d (WebDAV PROPFIND Depth: infinity)
+
+- **Status:** FIXED (standards-conformance audit; HW-verified)
+- **Found:** 2026-06-29, multi-agent conformance audit (WebDAV).
+- **PROPFIND `Depth: infinity` was silently truncated to one level (MED, RFC 4918
+  9.1.1).** A collection PROPFIND with `Depth: infinity` returned a one-level 207 the
+  client would read as a complete tree. The server lists at most one level, so it now
+  rejects infinity with `403` + the `<D:propfind-finite-depth/>` precondition body;
+  `Depth: 0`/`1` are unchanged. HW: `Depth: infinity` -> 403 (precondition body present),
+  `Depth: 1` -> 207.
+
 ## Standards-conformance audit, batch 2c (HTTP If-None-Match comparison)
 
 - **Status:** FIXED (standards-conformance audit)
@@ -41,10 +52,9 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   first subid 43) decode identically. Test: test_oid_large_first_subidentifier_roundtrip.
 - **Still OPEN (tracked for the standards-audit roadmap item):** HTTP chunked sent to
   non-1.1 clients (RFC 9112 6.1; low impact - HTTP/1.0 clients are extinct - and needs
-  streaming-pump changes); WebDAV PROPFIND Depth infinity should 403 propfind-finite-depth
-  (RFC 4918 9.1); SNMP v2c noSuchInstance vs noSuchObject; Digest nonce rotation + nc
-  replay (SHOULD); stricter base64url; WS handshake Connection:Upgrade token + key-length
-  check; MQTT topic UTF-8/wildcard.
+  streaming-pump changes); SNMP v2c noSuchInstance vs noSuchObject; Digest nonce rotation
+    - nc replay (SHOULD); stricter base64url; WS handshake Connection:Upgrade token +
+      key-length check; MQTT topic UTF-8/wildcard.
 
 ## Standards-conformance audit, batch 2a (auth: JWT alg, Digest uri)
 
