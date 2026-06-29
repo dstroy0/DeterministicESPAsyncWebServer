@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.40.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.40.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f647b2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f647b2e3e3f009394edca1359fb2ed15aebdc431))
+- update CHANGELOG.md [skip ci] ([`d5fce4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5fce4bfcaa9c7b9f8f5c96e90415a499662178c))
+
+### Changes
+
+- Bump version: 4.39.0 → 4.40.0 ([`991886e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/991886e5986dccf8a9670c92d21754c7d2b5e4c8))
+
+### Features
+
+- TPKT (RFC 1006) + COTP X.224 frame codec (DETWS_ENABLE_COTP) ([`7039c9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7039c9f01c269baec72bd44a1a96c91d88157903))
+
+</details>
+
 ## [4.39.0] - 2026-06-29
 
 <details>
