@@ -799,6 +799,69 @@ void test_serve_static_etag_conditional_get()
     TEST_ASSERT_NULL(strstr(out2, "<html>hi</html>")); // body suppressed
 }
 
+// RFC 9110 13.1.2: If-None-Match supports "*", a comma-separated list, and weak
+// comparison (W/"x" matches our strong "x"). All three must yield 304.
+void test_serve_static_inm_star_list_weak()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1000);
+    g_server->serve_static("/", g_static_fs, "/www");
+
+    // First GET to capture the strong ETag (with quotes).
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out1 = tcp_captured();
+    tcp_capture_disable();
+    const char *etp = strstr(out1, "ETag: ");
+    TEST_ASSERT_NOT_NULL(etp);
+    char etag[40];
+    etp += 6;
+    size_t i = 0;
+    while (etp[i] && etp[i] != '\r' && i < sizeof(etag) - 1)
+    {
+        etag[i] = etp[i];
+        i++;
+    }
+    etag[i] = '\0';
+
+    char req[200];
+    // (a) "*" matches any current representation -> 304.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: *\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    tcp_capture_disable();
+
+    // (b) weak validator W/"x" matches our strong "x" -> 304.
+    snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: W/%s\r\n\r\n", etag);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    tcp_capture_disable();
+
+    // (c) a list containing the tag (after a non-matching one) -> 304.
+    snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"nope\", %s\r\n\r\n", etag);
+    arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "304 Not Modified"));
+    tcp_capture_disable();
+
+    // (d) a list with only non-matching tags -> 200 (full response).
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"a\", \"b\"\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "HTTP/1.1 200 OK"));
+    tcp_capture_disable();
+}
+
 // A served file carries Last-Modified; If-Modified-Since drives a conditional GET
 // (304 when not newer than the client's date), with If-None-Match taking precedence.
 void test_serve_static_last_modified_conditional_get()
@@ -1062,6 +1125,7 @@ int main()
     RUN_TEST(test_serve_static_traversal_not_leaked);
     RUN_TEST(test_serve_static_missing_is_404);
     RUN_TEST(test_serve_static_etag_conditional_get);
+    RUN_TEST(test_serve_static_inm_star_list_weak);
     RUN_TEST(test_serve_static_last_modified_conditional_get);
     RUN_TEST(test_serve_static_if_modified_since_malformed);
     RUN_TEST(test_serve_static_cache_control);

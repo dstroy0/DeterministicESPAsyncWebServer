@@ -8,6 +8,19 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 2c (HTTP If-None-Match comparison)
+
+- **Status:** FIXED (standards-conformance audit)
+- **Found:** 2026-06-29, multi-agent conformance audit (HTTP semantics).
+- **If-None-Match used exact strong `strcmp` (MED, RFC 9110 13.1.2).** Conditional GET
+  only matched a single, byte-identical strong tag, so it ignored `*`, a comma-separated
+  tag list, and the mandated weak comparison (an inbound `W/"x"` for our strong `"x"`).
+  A standards-compliant cache revalidating with `W/` tags, a list, or `*` got a full 200
+  instead of 304. Fix: `inm_matches()` handles `*` (matches the current representation),
+  splits a list, and weak-compares (ignores a `W/` prefix). Test: `test_application`
+  `test_serve_static_inm_star_list_weak` (`*` / `W/"x"` / list-with-tag -> 304;
+  list-without-tag -> 200).
+
 ## Standards-conformance audit, batch 2b (WS UTF-8, SSH padding, syslog PRI, BER OID)
 
 - **Status:** FIXED (standards-conformance audit)
@@ -27,10 +40,11 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   read only one octet (encoder was already correct). Fixed; common OIDs (1.3.6.1...,
   first subid 43) decode identically. Test: test_oid_large_first_subidentifier_roundtrip.
 - **Still OPEN (tracked for the standards-audit roadmap item):** HTTP chunked sent to
-  non-1.1 clients (RFC 9112 6.1); If-None-Match strong/list/`*` comparison (RFC 9110
-  13.1.2); WebDAV PROPFIND Depth default + infinity handling (RFC 4918 9.1); SNMP v2c
-  noSuchInstance vs noSuchObject; Digest nonce rotation + nc replay; stricter base64url;
-  WS handshake Connection:Upgrade token + key-length check; MQTT topic UTF-8/wildcard.
+  non-1.1 clients (RFC 9112 6.1; low impact - HTTP/1.0 clients are extinct - and needs
+  streaming-pump changes); WebDAV PROPFIND Depth infinity should 403 propfind-finite-depth
+  (RFC 4918 9.1); SNMP v2c noSuchInstance vs noSuchObject; Digest nonce rotation + nc
+  replay (SHOULD); stricter base64url; WS handshake Connection:Upgrade token + key-length
+  check; MQTT topic UTF-8/wildcard.
 
 ## Standards-conformance audit, batch 2a (auth: JWT alg, Digest uri)
 

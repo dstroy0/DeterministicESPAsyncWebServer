@@ -2712,6 +2712,44 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
     return tf.tm_sec <= ss;
 }
 
+// RFC 9110 13.1.2: If-None-Match comparison. Supports "*" (matches any current
+// representation), a comma-separated list of entity-tags, and weak comparison
+// (an inbound W/"x" matches our strong "x"). @p etag is our tag, quotes included.
+static bool inm_matches(const char *inm, const char *etag)
+{
+    while (*inm == ' ' || *inm == '\t')
+        inm++;
+    if (inm[0] == '*')
+        return true; // "*" matches the existing representation
+    size_t etlen = strlen(etag);
+    const char *p = inm;
+    while (*p)
+    {
+        while (*p == ' ' || *p == '\t' || *p == ',')
+            p++;
+        if (!*p)
+            break;
+        const char *tag = p;
+        if (tag[0] == 'W' && tag[1] == '/') // weak validator: ignore the W/ prefix
+            tag += 2;
+        if (tag[0] == '"')
+        {
+            const char *end = strchr(tag + 1, '"');
+            if (end)
+            {
+                size_t tlen = (size_t)(end - tag + 1);
+                if (tlen == etlen && strncmp(tag, etag, etlen) == 0)
+                    return true;
+            }
+        }
+        const char *comma = strchr(p, ',');
+        if (!comma)
+            break;
+        p = comma + 1;
+    }
+    return false;
+}
+
 void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
                                        const char *content_type, const char *content_encoding)
 {
@@ -2758,7 +2796,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
 
     const char *inm = http_get_header(&http_pool[slot_id], "If-None-Match");
-    bool not_modified = inm ? (strcmp(inm, etag) == 0)
+    bool not_modified = inm ? inm_matches(inm, etag)
                             : http_not_modified_since(mtime, http_get_header(&http_pool[slot_id], "If-Modified-Since"));
     if (not_modified)
     {
