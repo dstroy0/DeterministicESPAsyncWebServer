@@ -384,3 +384,52 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       transfer sets, devices) carried over **MMS** (ISO-on-TCP 102), so it builds on the
       IEC 61850 MMS stack above. Heavy (the full MMS/ACSI object model + bilateral
       tables); sequence after IEC 61850. Fixed BSS object model, no heap.
+
+### Intelligent Transportation Systems (ITS)
+
+- [ ] **NTCIP** (L, US ITS) - National Transportation Communications for ITS Protocol.
+      It rides **SNMP** (and STMP), which this library already ships
+      ([snmp](../src/services/snmp/)), so the work is the NTCIP object definitions
+      (MIBs) on top of the existing agent, on a fixed BSS model. Target the common
+      device classes: **1202** (Actuated Traffic Signal Controllers - phase timing,
+      signal states, lane/detector triggers), **1203** (Dynamic Message Signs / variable
+      message boards - pushing live road messages), and **1211** (Signal Control and
+      Prioritization - emergency-vehicle / transit green-light priority requests). One
+      build flag per device class over the shared SNMP core; no heap.
+- [ ] **UTMC** (L, UK/EU ITS) - Urban Traffic Management and Control: the modular
+      data-sharing framework used in the UK and parts of Europe, designed to share data
+      across heterogeneous legacy municipal systems. Implement the UTMC datex/HTTP data
+      exchange subset on the existing HTTP server + a fixed object model; scope to the
+      common-database message set first. Fixed BSS, no heap.
+- [ ] **OCIT** (L, DE/AT/CH ITS) - Open Communication Interface for Road Traffic
+      Control: the dominant open field-controller interface in Germany, Austria, and
+      Switzerland, defining decentralized communication between field controllers,
+      vehicle detectors, and central traffic computers. Implement the OCIT-Outstations
+      message set over the existing transport; fixed BSS device/detector model, no heap.
+- [ ] **V2X / SAE J2735** (XL, connected vehicle) - the Vehicle-to-Everything message
+      dictionary that feeds automated routing + AV safety. Implement the J2735 message
+      codec (ASN.1 UPER) for the core messages on a fixed BSS model: **BSM** (Basic
+      Safety Message - a vehicle's high-rate position / speed / heading / brake status),
+      **SPaT** (Signal Phase and Timing - live signal state + countdown pushed to
+      vehicles, pairs with the NTCIP signal-controller work above), and **MAP**
+      (intersection lane geometry / turn paths). The UPER codec is host-testable and
+      zero-heap; the radio link (DSRC / C-V2X) is hardware-gated, so the message layer
+      is the deliverable and a gateway carries it over the existing IP transport.
+- [ ] **IEEE 1609 (WAVE)** (XL, vehicular radio stack) - Wireless Access in Vehicular
+      Environments: the architecture (1609.3 networking / WSMP, 1609.2 security) for
+      secure low-latency highway-speed vehicle networks that carries J2735. The DSRC
+      radio/MAC is hardware-gated on ESP32; scope to the WSMP message framing + 1609.2
+      security envelope codec on a fixed BSS model (pairs with the J2735 work above),
+      with a gateway over the existing transport. No heap.
+- [ ] **NEMA TS 2** (M, traffic cabinet bus) - the North-American control-cabinet
+      internal bus: a synchronous serial (SDLC) topology linking the controller, the
+      Malfunction Management Unit / conflict monitor, and the detector/BIU racks (the
+      TS 2 frame set - command/status/detector frames). The SDLC frame + cabinet object
+      model is host-testable; the synchronous serial PHY (and the SCdetector/BIU timing)
+      is hardware-gated, so scope the frame codec + cabinet model. Fixed BSS, no heap.
+- [ ] **ATC** (S, platform note) - the Advanced Traffic Controller spec moves cabinets
+      from closed microcontrollers to a standard Linux engine API (the ITS Cabinet /
+      ATC API for field-device I/O) for local video analytics + sensor fusion. This is
+      a host-platform specification more than a wire protocol; the relevant slice for
+      this library is interop - exposing NTCIP / NEMA-TS2 data to an ATC engine over the
+      existing HTTP/SNMP surface rather than implementing the Linux ATC stack itself.
