@@ -81,11 +81,12 @@ enum WsOpcode
 /** @brief WebSocket close status codes (RFC 6455 §7.4.1). */
 enum WsCloseCode
 {
-    WS_CLOSE_NORMAL = 1000,      ///< Normal closure.
-    WS_CLOSE_GOING_AWAY = 1001,  ///< Endpoint going away.
-    WS_CLOSE_PROTOCOL = 1002,    ///< Protocol error.
-    WS_CLOSE_UNSUPPORTED = 1003, ///< Received a data type the endpoint cannot accept (RFC 6455).
-    WS_CLOSE_TOO_BIG = 1009      ///< Payload too large for WS_FRAME_SIZE.
+    WS_CLOSE_NORMAL = 1000,          ///< Normal closure.
+    WS_CLOSE_GOING_AWAY = 1001,      ///< Endpoint going away.
+    WS_CLOSE_PROTOCOL = 1002,        ///< Protocol error.
+    WS_CLOSE_UNSUPPORTED = 1003,     ///< Received a data type the endpoint cannot accept (RFC 6455).
+    WS_CLOSE_INVALID_PAYLOAD = 1007, ///< Text message that is not valid UTF-8 (RFC 6455 8.1).
+    WS_CLOSE_TOO_BIG = 1009          ///< Payload too large for WS_FRAME_SIZE.
 };
 
 // ---------------------------------------------------------------------------

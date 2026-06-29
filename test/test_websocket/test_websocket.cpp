@@ -495,9 +495,11 @@ void test_ws_parse_16bit_length_frame()
     for (int i = 0; i < 130; i++)
         payload[i] = (uint8_t)(i & 0xFF);
 
-    // Frame: FIN|TEXT, MASK|126, hi, lo, 4-byte mask, 130 payload bytes
+    // Frame: FIN|BINARY, MASK|126, hi, lo, 4-byte mask, 130 payload bytes. BINARY
+    // (not TEXT) since the 0..129 byte ramp is not valid UTF-8; this test exercises
+    // the 16-bit length field, not text validation.
     static uint8_t frame[142];
-    size_t flen = build_frame(frame, WS_OP_TEXT, true, payload, 130, true);
+    size_t flen = build_frame(frame, WS_OP_BINARY, true, payload, 130, true);
 
     push_bytes(0, frame, flen);
     ws_parse(ws);
@@ -759,6 +761,43 @@ void test_ws_parse_mask_applied_correctly()
     ws_parse(ws);
     TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
     TEST_ASSERT_EQUAL('H', (char)ws->buf[0]); // 0x7F ^ 0x37 = 0x48 = 'H'
+}
+
+// RFC 6455 8.1: a TEXT message that is not valid UTF-8 must fail the connection (1007).
+void test_ws_text_invalid_utf8_rejected()
+{
+    WsConn *ws = ws_alloc(0);
+    const uint8_t bad[] = {0xC3, 0x28}; // 0xC3 starts a 2-byte seq; 0x28 is not a continuation
+    uint8_t frame[16];
+    size_t n = build_frame(frame, WS_OP_TEXT, true, bad, 2, true);
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state);
+}
+
+// Valid multi-byte UTF-8 in a TEXT frame is accepted ("h" + U+00E9 + "llo").
+void test_ws_text_valid_utf8_accepted()
+{
+    WsConn *ws = ws_alloc(0);
+    const uint8_t ok[] = {'h', 0xC3, 0xA9, 'l', 'l', 'o'};
+    uint8_t frame[16];
+    size_t n = build_frame(frame, WS_OP_TEXT, true, ok, (uint16_t)sizeof(ok), true);
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
+    TEST_ASSERT_EQUAL((int)sizeof(ok), (int)ws->payload_len);
+}
+
+// A BINARY frame is never UTF-8-validated: arbitrary bytes are accepted.
+void test_ws_binary_arbitrary_bytes_accepted()
+{
+    WsConn *ws = ws_alloc(0);
+    const uint8_t bin[] = {0xFF, 0xFE, 0x00, 0xC3, 0x28};
+    uint8_t frame[16];
+    size_t n = build_frame(frame, WS_OP_BINARY, true, bin, (uint16_t)sizeof(bin), true);
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_FRAME_READY, ws->parse_state);
 }
 
 // ====================================================================
@@ -1051,6 +1090,9 @@ int main()
     RUN_TEST(test_ws_parse_stops_at_frame_ready);
     RUN_TEST(test_ws_reset_frame_clears_fields);
     RUN_TEST(test_ws_parse_mask_applied_correctly);
+    RUN_TEST(test_ws_text_invalid_utf8_rejected);
+    RUN_TEST(test_ws_text_valid_utf8_accepted);
+    RUN_TEST(test_ws_binary_arbitrary_bytes_accepted);
 #if DETWS_ENABLE_WS_DEFLATE
     RUN_TEST(test_ws_permessage_deflate_inbound);
     RUN_TEST(test_ws_rsv1_without_negotiation_closes);

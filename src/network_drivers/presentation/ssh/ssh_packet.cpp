@@ -255,7 +255,9 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
 
             // Extract payload: scratch[5 .. 5 + payload_len - 1]
             uint8_t pad_len_byte = scratch[4];
-            if (pad_len_byte >= pkt_len)
+            // RFC 4253 6: there MUST be at least 4 bytes of padding, and it cannot
+            // exceed the packet (which would underflow payload_len).
+            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
             {
                 ssh_wipe(scratch, scratch_sz);
                 return -1;

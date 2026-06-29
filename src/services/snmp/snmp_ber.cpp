@@ -276,15 +276,25 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
     }
     const uint8_t *p = d->buf + d->pos;
     size_t count = 0;
-    // First byte splits into the first two arcs.
-    uint32_t first = p[0];
-    arcs[count++] = first / 40u;
-    arcs[count++] = first % 40u;
     uint32_t acc = 0;
-    for (size_t i = 1; i < len; i++)
+    bool first_done = false;
+    // X.690 8.19: each subidentifier is base-128 (high bit = continuation). The FIRST
+    // subidentifier is itself multi-octet-capable and encodes 40*arc0 + arc1.
+    for (size_t i = 0; i < len; i++)
     {
-        acc = (acc << 7) | (p[i] & 0x7F);
-        if (!(p[i] & 0x80))
+        acc = (acc << 7) | (uint32_t)(p[i] & 0x7F);
+        if (p[i] & 0x80)
+            continue; // more octets in this subidentifier
+        if (!first_done)
+        {
+            uint32_t arc0 = acc / 40u;
+            if (arc0 > 2u)
+                arc0 = 2u;        // arc0 is 0..2; the remainder goes to arc1 (may exceed 39)
+            arcs[count++] = arc0; // count==0 here, max>=2 guaranteed above
+            arcs[count++] = acc - 40u * arc0;
+            first_done = true;
+        }
+        else
         {
             if (count >= max)
             {
@@ -292,8 +302,8 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
                 return false;
             }
             arcs[count++] = acc;
-            acc = 0;
         }
+        acc = 0;
     }
     d->pos += len;
     *n = count;

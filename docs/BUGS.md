@@ -8,6 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 2b (WS UTF-8, SSH padding, syslog PRI, BER OID)
+
+- **Status:** FIXED (standards-conformance audit)
+- **Found:** 2026-06-29, multi-agent conformance audit.
+- **WebSocket: TEXT messages were not UTF-8-validated (MED, RFC 6455 8.1).** An invalid-
+  UTF-8 text message was delivered to the app instead of failing the connection. Fix:
+  validate the fully reassembled + decompressed TEXT message and close 1007
+  (WS_CLOSE_INVALID_PAYLOAD) on invalid UTF-8 (strict: rejects overlong / surrogate /
+  out-of-range / truncated). BINARY frames are not validated. Tests: test_websocket.
+- **SSH: padding_length < 4 was not rejected (LOW, RFC 4253 6).** The receive path only
+  checked padding < packet length. Now also rejects padding < 4 (gated behind MAC
+  verification, so a robustness gap, not a vulnerability).
+- **syslog: PRI not range-bounded (LOW, RFC 5424 6.2.1).** An out-of-range caller
+  facility/severity could emit a malformed PRI. Now clamped to 0..191.
+- **SNMP/BER: OID decoder mishandled a first subidentifier >= 128 (LOW, X.690 8.19.4).**
+  The first subidentifier (40*arc0 + arc1) is base-128 and may span octets; the decoder
+  read only one octet (encoder was already correct). Fixed; common OIDs (1.3.6.1...,
+  first subid 43) decode identically. Test: test_oid_large_first_subidentifier_roundtrip.
+- **Still OPEN (tracked for the standards-audit roadmap item):** HTTP chunked sent to
+  non-1.1 clients (RFC 9112 6.1); If-None-Match strong/list/`*` comparison (RFC 9110
+  13.1.2); WebDAV PROPFIND Depth default + infinity handling (RFC 4918 9.1); SNMP v2c
+  noSuchInstance vs noSuchObject; Digest nonce rotation + nc replay; stricter base64url;
+  WS handshake Connection:Upgrade token + key-length check; MQTT topic UTF-8/wildcard.
+
 ## Standards-conformance audit, batch 2a (auth: JWT alg, Digest uri)
 
 - **Status:** FIXED (found by the auth/crypto conformance audit)

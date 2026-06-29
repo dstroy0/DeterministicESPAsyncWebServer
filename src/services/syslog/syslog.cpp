@@ -49,7 +49,13 @@ size_t syslog_format(char *out, size_t cap, int facility, int severity, const ch
 {
     if (!out || cap == 0)
         return 0;
+    // RFC 5424 6.2.1: PRIVAL = facility*8 + severity, range 0..191. Clamp defensively
+    // so an out-of-range caller value can never emit a malformed PRI (e.g. <-8>/<400>).
     int pri = facility * 8 + severity;
+    if (pri < 0)
+        pri = 0;
+    else if (pri > 191)
+        pri = 191;
     const char *h = (hostname && hostname[0]) ? hostname : "-";
     const char *a = (appname && appname[0]) ? appname : "-";
     // <PRI>VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID SP SD SP MSG

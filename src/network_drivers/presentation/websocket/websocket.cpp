@@ -190,6 +190,57 @@ static inline bool ws_is_control(WsOpcode op)
     return ((uint8_t)op & 0x08) != 0;
 }
 
+// Strict UTF-8 validation (RFC 3629 / RFC 6455 8.1): rejects overlong encodings,
+// surrogate code points (U+D800..U+DFFF), values > U+10FFFF, and truncated sequences.
+static bool utf8_valid(const uint8_t *s, size_t n)
+{
+    size_t i = 0;
+    while (i < n)
+    {
+        uint8_t c = s[i];
+        if (c < 0x80)
+        {
+            i++;
+            continue;
+        }
+        size_t need;
+        uint32_t cp, lo;
+        if ((c & 0xE0) == 0xC0)
+        {
+            need = 1;
+            cp = c & 0x1F;
+            lo = 0x80;
+        }
+        else if ((c & 0xF0) == 0xE0)
+        {
+            need = 2;
+            cp = c & 0x0F;
+            lo = 0x800;
+        }
+        else if ((c & 0xF8) == 0xF0)
+        {
+            need = 3;
+            cp = c & 0x07;
+            lo = 0x10000;
+        }
+        else
+            return false; // 0x80..0xBF lead or 0xF8.. invalid
+        if (i + need >= n)
+            return false; // truncated multi-byte sequence
+        for (size_t k = 1; k <= need; k++)
+        {
+            uint8_t cc = s[i + k];
+            if ((cc & 0xC0) != 0x80)
+                return false; // bad continuation byte
+            cp = (cp << 6) | (cc & 0x3F);
+        }
+        if (cp < lo || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return false; // overlong, out-of-range, or surrogate
+        i += need + 1;
+    }
+    return true;
+}
+
 // Called once a frame's full payload has been received (payload_idx ==
 // payload_len, also true immediately for zero-length frames once the masking
 // key is consumed).  Control frames are handled in place; data frames are
@@ -269,6 +320,14 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 #endif
         // Whole message received - surface it to the application.
         size_t n = ws->msg_len < WS_FRAME_SIZE ? ws->msg_len : WS_FRAME_SIZE;
+        // RFC 6455 8.1: a TEXT message MUST be valid UTF-8 (checked on the fully
+        // reassembled + decompressed message); otherwise fail the connection with 1007.
+        if (ws->msg_opcode == WS_OP_TEXT && !utf8_valid(ws->buf, n))
+        {
+            ws_close(ws, WS_CLOSE_INVALID_PAYLOAD);
+            ws->parse_state = WS_ERROR;
+            return;
+        }
         ws->buf[n] = '\0';
         ws->opcode = ws->msg_opcode;   // report the original TEXT/BINARY opcode
         ws->payload_len = ws->msg_len; // app reads payload_len / payload_idx

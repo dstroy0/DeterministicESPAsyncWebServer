@@ -169,6 +169,29 @@ void test_large_arc_roundtrip()
     TEST_ASSERT_EQUAL_UINT32(8072u, out[6]);
 }
 
+// X.690 8.19.4: the FIRST subidentifier (40*arc0 + arc1) is itself base-128 and can
+// span multiple octets when arc1 is large. OID 2.100.3 -> first subid = 40*2+100 = 180
+// (>= 128, two octets). The decoder must split it back to {2, 100, 3}, not misread it.
+void test_oid_large_first_subidentifier_roundtrip()
+{
+    uint32_t in[] = {2, 100, 3};
+    uint8_t buf[16];
+    BerEnc e;
+    ber_enc_init(&e, buf, sizeof(buf));
+    ber_put_oid(&e, in, 3);
+    TEST_ASSERT_TRUE(e.ok);
+
+    BerDec d;
+    ber_dec_init(&d, buf, e.len);
+    uint32_t out[SNMP_MAX_OID_LEN];
+    size_t n = 0;
+    TEST_ASSERT_TRUE(ber_read_oid(&d, out, SNMP_MAX_OID_LEN, &n));
+    TEST_ASSERT_EQUAL_UINT(3, n);
+    TEST_ASSERT_EQUAL_UINT32(2u, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(100u, out[1]);
+    TEST_ASSERT_EQUAL_UINT32(3u, out[2]);
+}
+
 // ==================== bounds / error handling ====================
 
 void test_encoder_overflow_sets_not_ok()
@@ -264,6 +287,7 @@ int main()
     RUN_TEST(test_sequence_roundtrip);
     RUN_TEST(test_oid_roundtrip);
     RUN_TEST(test_large_arc_roundtrip);
+    RUN_TEST(test_oid_large_first_subidentifier_roundtrip);
     RUN_TEST(test_encoder_overflow_sets_not_ok);
     RUN_TEST(test_decoder_truncated_length_fails);
     RUN_TEST(test_decoder_longform_length_count_past_buffer_fails);
