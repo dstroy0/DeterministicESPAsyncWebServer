@@ -380,12 +380,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 - [ ] **INTERBUS** (L, Phoenix Contact) - the ring/summation-frame fieldbus: the single
       rotating summation frame (each device a shift-register slice) + the PCP parameter
       channel. Ring physical layer is hardware-gated; scope the summation-frame protocol + process-image model, document the gating. Fixed BSS, no heap.
-- [ ] **AMQP** (L, OASIS AMQP 1.0 / 0-9-1) - enterprise message-queue client alongside
-      the existing MQTT client: the AMQP 1.0 type system + framing (open / begin /
-      attach / transfer / disposition) for broker links, or the 0-9-1 method frames for
-      RabbitMQ interop. Zero-heap: fixed link/session state, the payload streamed
-      through the client transport (det_client), one build flag. Pairs with the MQTT /
-      webhook outbound integrations as a heavier-duty queueing option.
+- [~] **AMQP** (L, OASIS AMQP 1.0 / 0-9-1) - _the 0-9-1 frame codec is shipped._
+  `DETWS_ENABLE_AMQP` (`services\amqp`): `amqp_protocol_header` (the `"AMQP" 0 0 9 1`
+  preamble), `amqp_build_frame` / `amqp_parse_frame` (type + channel + size + payload +
+  the 0xCE frame-end), `amqp_build_method` / `amqp_parse_method` (a METHOD frame's
+  class-id / method-id / arguments), and `amqp_build_heartbeat`; host-tested. Remaining:
+  the 0-9-1 method-argument field encoding (the connection/channel/exchange/queue/basic
+  classes) for RabbitMQ interop, and the **AMQP 1.0** type system + framing (open / begin
+  / attach / transfer / disposition) for broker links. Zero-heap: fixed link/session
+  state, the payload streamed through the client transport, one build flag. Pairs with the
+  MQTT / webhook outbound integrations.
 - [~] **DF1 / DH+** (M-L, Allen-Bradley / Rockwell) - _DF1 full-duplex frame codec
   shipped._ `DETWS_ENABLE_DF1` (`services\df1`): a zero-heap framing + DLE byte-stuffing +
   BCC/CRC codec for the serial link layer (pub. 1770-6.5.16) - `df1_build_frame` wraps

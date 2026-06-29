@@ -996,6 +996,20 @@
 #endif
 
 /**
+ * @brief AMQP 0-9-1 frame codec (`services/amqp`).
+ *
+ * Default off. A zero-heap frame builder + parser for the RabbitMQ wire protocol so a device
+ * can be an AMQP client: `amqp_protocol_header` (the `"AMQP" 0 0 9 1` preamble),
+ * `amqp_build_frame` / `amqp_parse_frame` (type + channel + size + payload + the 0xCE
+ * frame-end), `amqp_build_method` / `amqp_parse_method` (a METHOD frame's class-id /
+ * method-id / arguments), and `amqp_build_heartbeat`. Pure codec, host-tested; the method
+ * arguments and the connection are the application's. Rides the outbound client transport.
+ */
+#ifndef DETWS_ENABLE_AMQP
+#define DETWS_ENABLE_AMQP 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
