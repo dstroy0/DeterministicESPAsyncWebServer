@@ -372,6 +372,8 @@
     "MQTT",
     "mqtts",
     "MQTTS",
+    "mqttsn",
+    "REGACK",
     "CONNACK",
     "PINGREQ",
     "PINGRESP",

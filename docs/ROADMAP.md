@@ -564,12 +564,17 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       Host-tested (`test_cloudevents`, 7 cases). The HTTP body / `ce-*` header bindings
       are emitted with the normal send / `add_response_header` paths; an app reuses the
       same envelope over MQTT / WebHook. Fixed BSS, no heap, one build flag.
-- [ ] **MQTT-SN** (M, sensor networks) - MQTT for Sensor Networks: the UDP / non-TCP
-      variant for constrained, lossy links (topic IDs instead of strings, gateway
-      discovery `ADVERTISE`/`SEARCHGW`, `REGISTER`, sleeping-client `PINGREQ` keep-alive).
-      Reuses the shipped MQTT data model + the UDP transport; the work is the SN packet
-      codec + topic-ID registry + the gateway/sleep state machine on a fixed BSS model.
-      Pairs with the existing MQTT client; no heap, one build flag.
+- [x] **MQTT-SN** (M, sensor networks) _(shipped)_ - `DETWS_ENABLE_MQTT_SN`
+      (`services\mqtt\mqtt_sn`): a zero-heap MQTT-SN v1.2 wire codec for the UDP / non-TCP
+      MQTT variant on constrained, lossy links (numeric topic IDs instead of strings,
+      gateway discovery, sleeping-client keep-alive). Builders for CONNECT / REGISTER /
+      PUBLISH / SUBSCRIBE (by name or pre-defined id) / PINGREQ / DISCONNECT / SEARCHGW and
+      a `mqttsn_parse_header()` (both the 1- and 3-octet Length forms, big-endian fields) +
+      typed parsers for CONNACK / REGACK / PUBACK / SUBACK / PUBLISH / REGISTER, with a
+      `mqttsn_make_flags()` helper (DUP / QoS / retain / will / clean / TopicIdType). Wire
+      bytes verified against the spec + the Eclipse Paho reference; pure, host-tested. The
+      datagram send (`det_udp_sendto`), topic-ID registry, and sleep/retransmit state are
+      the application's. Pairs with the existing MQTT client.
 
 ### Network telemetry
 

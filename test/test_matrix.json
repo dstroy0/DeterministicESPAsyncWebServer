@@ -314,6 +314,12 @@
       "src": ["+<services/stomp.cpp>"],
       "tests": ["test_stomp"]
     },
+    "native_mqtt_sn": {
+      "desc": "MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders\n(CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType\nheader parser (1- and 3-octet forms) + typed payload parsers. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_MQTT_SN=1"],
+      "src": ["+<services/mqtt/mqtt_sn.cpp>"],
+      "tests": ["test_mqtt_sn"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

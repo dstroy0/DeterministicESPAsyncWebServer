@@ -129,10 +129,10 @@ void test_parse_incomplete_and_malformed()
 {
     StompFrame f;
     size_t c;
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n", 5, &f, &c));            // no header/body terminator yet
-    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n\nbody", 10, &f, &c));     // body NUL not buffered
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n", 5, &f, &c));                 // no header/body terminator yet
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\n\nbody", 10, &f, &c));          // body NUL not buffered
     TEST_ASSERT_FALSE(stomp_parse_frame("SEND\nbadheader\n\n\0", 17, &f, &c)); // header without a colon
-    TEST_ASSERT_FALSE(stomp_parse_frame("\n\n\n", 3, &f, &c));            // only heart-beats
+    TEST_ASSERT_FALSE(stomp_parse_frame("\n\n\n", 3, &f, &c));                 // only heart-beats
     // content-length that overruns the buffer.
     TEST_ASSERT_FALSE(stomp_parse_frame("MESSAGE\ncontent-length:99\n\nhi\0", 30, &f, &c));
 }

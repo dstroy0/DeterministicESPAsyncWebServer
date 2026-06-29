@@ -748,6 +748,20 @@
 #endif
 
 /**
+ * @brief MQTT-SN v1.2 wire codec (`services/mqtt/mqtt_sn`).
+ *
+ * Default off. A zero-heap message builder + parser for MQTT for Sensor Networks - the
+ * UDP / non-TCP MQTT variant for constrained, lossy links (numeric topic IDs instead of
+ * strings, gateway discovery, sleeping-client keep-alive). Builds CONNECT / REGISTER /
+ * PUBLISH / SUBSCRIBE / PINGREQ / DISCONNECT / SEARCHGW and parses CONNACK / REGACK /
+ * PUBACK / SUBACK / PUBLISH / REGISTER, including the 1- and 3-octet Length forms. Pure
+ * codec, host-tested; the datagram send (det_udp_sendto) and topic registry are the app's.
+ */
+#ifndef DETWS_ENABLE_MQTT_SN
+#define DETWS_ENABLE_MQTT_SN 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
