@@ -57,9 +57,6 @@
 #endif
 #ifdef ARDUINO
 #include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
-#if DETWS_ENABLE_AUTH_LOCKOUT
-#include "lwip/ip_addr.h" // ip4_addr_get_u32 / ip_2_ip4 for the lockout client-IP key
-#endif
 #endif
 #endif
 #if DETWS_ENABLE_CSRF
