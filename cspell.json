@@ -65,6 +65,7 @@
     "grpcweb",
     "MRES",
     "SRES",
+    "senml",
     "framesize",
     "idcode",
     "fracsec",

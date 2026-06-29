@@ -539,9 +539,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   on the shipped CoAP service ([coap](../src/services/coap/)). Remaining: the client
   interfaces (Bootstrap, Registration, Device Management, Information Reporting / Observe)
   and the standard object model (Security/0, Server/1, Device/3, Firmware Update/5, ...)
-  on a fixed BSS model, plus the SenML-CBOR / SenML-JSON formats (the CBOR + JSON codecs
-  already exist). DTLS is gated on the TLS work; scope the NoSec + registration/observe
-  core first. No heap, one flag.
+  on a fixed BSS model. The **SenML-CBOR / SenML-JSON** content formats are now shipped
+  separately - `DETWS_ENABLE_SENML` (`services\senml`): `senml_json_build` /
+  `senml_cbor_build` emit a SenML (RFC 8428) pack (base name/time, name, unit, one value,
+  time per record) over the JSON / CBOR writers, integral numbers kept as integers; verified
+  against the RFC example, host-tested. DTLS is gated on the TLS work; scope the NoSec +
+  registration/observe core first. No heap, one flag.
 
 ### Messaging & RPC
 

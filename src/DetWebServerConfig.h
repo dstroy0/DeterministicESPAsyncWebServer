@@ -896,6 +896,24 @@
 #endif
 
 /**
+ * @brief SenML (RFC 8428) measurement-pack builder (`services/senml`).
+ *
+ * Default off; implies DETWS_ENABLE_CBOR (the SenML-CBOR form uses the CBOR writer). A
+ * zero-heap SenML-JSON + SenML-CBOR encoder over the shipped JSON / CBOR codecs: the caller
+ * fills a `SenmlRecord` array (base name/time, name, unit, one value, time) and
+ * `senml_json_build` / `senml_cbor_build` emit the whole pack. Numbers are emitted as
+ * integers when integral (so timestamps keep precision), else floats. The standard
+ * measurement format for CoAP / LwM2M / HTTP telemetry. Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_SENML
+#define DETWS_ENABLE_SENML 0
+#endif
+#if DETWS_ENABLE_SENML && !DETWS_ENABLE_CBOR
+#undef DETWS_ENABLE_CBOR
+#define DETWS_ENABLE_CBOR 1
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
