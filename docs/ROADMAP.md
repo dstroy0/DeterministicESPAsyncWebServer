@@ -143,15 +143,18 @@ flag (default off) so it costs nothing when unused.
 
 - [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
 - [ ] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M).
-- [ ] **Real-protocol interop test harness** (M, per protocol) - for every protocol
-      feature, a build/test script that drives the device with the _real_ reference
-      implementation (a genuine peer / server / client), not just our own round-trip -
-      e.g. `mosquitto` for MQTT, `pymodbus` for Modbus, `aiocoap` for CoAP, `net-snmp`
-      for SNMP, `asyncua` for OPC UA, a real browser/`websocat` for WebSocket, `curl`/`h2`
-      for HTTP. Scripted, runnable in CI (containers) + against the HW board, asserting
-      byte-exact / spec-conformant interop. This is the standing rule (verify against an
-      authoritative third-party impl) turned into reusable harnesses, so each new
-      protocol ships with a real-peer conformance check, not a self-fulfilling test.
+- [~] **Real-protocol interop test harness** (M, per protocol) - _harness shipped_ in
+  [test/servers/](../test/servers/): one CLI (`python test/servers/interop.py
+    <protocol>`) that drives the device against the _real_ reference implementation, not
+  just our own round-trip. Peers so far: HTTP (stdlib client), WebSocket (`websockets`),
+  SNMP (`net-snmp` snmpget/snmpwalk), Modbus client + server (`pymodbus`), CoAP
+  (`aiocoap`), MQTT broker (`mosquitto` + `paho`), OPC UA client + server (`asyncua`).
+  Each peer says whether the device is the server (the harness probes it, `--host ...`)
+  or the client (the harness serves a reference peer the device connects to), reports
+  uniform PASS/FAIL, and exits 0/1/2. HTTP peer HW-verified against the board. Adding a
+  protocol is one module in `peers/` (documented in its README). Remaining: wire it into
+  CI containers, and add peers as new protocols land (the standing rule turned into a
+  reusable check, so each protocol ships with a real-peer conformance test).
 - [x] **Pentesting / adversarial suite** _(shipped)_ - a separately-runnable harness (env `native_pentest` + a nightly `Pentest` CI job, _not_ part of the per-commit unit-test run) that fuzzes the untrusted-input parsers (HTTP request line/headers/body, Modbus ADU, base32) with malformed, oversized, partial slowloris-style, binary/protocol-confusion, and deterministically-random input, asserting the device's safety invariants: fixed footprint (no buffer index past its bound), fail-closed (defined error states only), and liveness (no hang/over-read). Plus a documented on-device stress playbook (slowloris / floods / brute-force vs the throttle / lockout / allowlist defenses). Full guide: [PENTEST.md](PENTEST.md). Extend it to the remaining codecs (CBOR / SNMP / CoAP / WS / multipart) as you go.
 
 ## Protocol & transport versions

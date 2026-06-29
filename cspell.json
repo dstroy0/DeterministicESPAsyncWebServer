@@ -84,6 +84,8 @@
     "mgmt",
     "pymodbus",
     "websocat",
+    "websockets",
+    "paho",
     "unbuildable",
     "HSET",
     "IPFIX",
