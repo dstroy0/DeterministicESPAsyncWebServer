@@ -433,3 +433,103 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       a host-platform specification more than a wire protocol; the relevant slice for
       this library is interop - exposing NTCIP / NEMA-TS2 data to an ATC engine over the
       existing HTTP/SNMP surface rather than implementing the Linux ATC stack itself.
+
+### IoT device management
+
+- [ ] **LwM2M** (L, OMA LwM2M) - Lightweight M2M device management, which builds
+      directly on the shipped CoAP service ([coap](../src/services/coap/)): the client
+      interfaces (Bootstrap, Registration, Device Management & Service Enablement,
+      Information Reporting / Observe) and the standard object model (Security/0,
+      Server/1, Device/3, Connectivity, Firmware Update/5, ...) addressed as
+      `/objId/instId/resId` resources with the OMA TLV / SenML-CBOR / SenML-JSON
+      content formats (reuses the existing CBOR + JSON codecs). Strong fit - CoAP +
+      Observe + the codecs already exist; the work is the LwM2M object/resource model
+      and the registration state machine on a fixed BSS model. DTLS is gated on the
+      TLS work; scope the NoSec + registration/observe core first. No heap, one flag.
+
+### Messaging & RPC
+
+- [ ] **STOMP** (M, messaging) - Simple/Streaming Text Oriented Messaging Protocol: a
+      human-readable frame protocol (`CONNECT` / `SEND` / `SUBSCRIBE` / `MESSAGE` /
+      `ACK` ... - command line, headers, NUL-terminated body) for brokers like ActiveMQ
+      / RabbitMQ. The text framing parses like HTTP and rides the existing client
+      transport (det_client), so it is a light addition next to the MQTT / AMQP clients;
+      fixed BSS subscription table, no heap, one build flag. STOMP-over-WebSocket reuses
+      the WS client.
+- [ ] **gRPC / Protocol Buffers** (L) - two related pieces. **Protobuf**: a zero-heap
+      wire codec (varint + length-delimited fields, the same streaming
+      writer/cursor-reader shape as the shipped CBOR / MessagePack codecs, generated or
+      hand-written message structs over caller buffers) - the standalone deliverable,
+      host-testable against spec vectors. **gRPC**: framed Protobuf RPC over **HTTP/2**
+      (the length-prefixed message framing + the `application/grpc` content type), so it
+      is gated on the HTTP/2 roadmap item above; gRPC-Web over HTTP/1.1 is the earlier,
+      reachable subset. Fixed BSS, no heap.
+- [ ] **DDS** (XL, OMG DDS) - Data Distribution Service: a decentralized peer-to-peer
+      data-bus standard built on **RTPS** (the Real-Time Publish-Subscribe wire protocol
+      over UDP, with SPDP/SEDP discovery). Implement an RTPS participant with the QoS
+      subset that fits a fixed footprint (reliability, history depth), the CDR
+      serialization, and a bounded reader/writer/topic table - all zero-heap BSS. Large
+      (discovery + the reliability/heartbeat protocol); **DDS-XRCE** (the eXtremely
+      Resource Constrained Environments agent/client profile over a single agent link)
+      is the more MCU-appropriate entry point - target that first.
+- [ ] **WAMP** (M, web messaging) - Web Application Messaging Protocol: unified RPC +
+      PubSub over WebSocket, so it rides the shipped WebSocket layer directly. Implement
+      the WAMP roles (caller/callee, publisher/subscriber) with the JSON (and optionally
+      MessagePack/CBOR) serialization the codecs already provide; fixed BSS
+      registration/subscription tables, no heap. Good fit - WS + JSON/CBOR already exist.
+- [ ] **CloudEvents** (S-M, CNCF spec) - not a wire protocol but the application-layer
+      event-metadata envelope (the required `id` / `source` / `specversion` / `type`
+      attributes + extensions). Implement the structured + binary content modes for the
+      bindings this library already has: **HTTP** (binary mode = `ce-*` headers, or
+      structured `application/cloudevents+json`), **MQTT**, and **WebHook**, plus the
+      JSON event format using the existing JSON codec. Small, high-leverage: it makes the
+      device's events interoperable with serverless / event-mesh consumers. Fixed BSS,
+      no heap, one build flag.
+- [ ] **MQTT-SN** (M, sensor networks) - MQTT for Sensor Networks: the UDP / non-TCP
+      variant for constrained, lossy links (topic IDs instead of strings, gateway
+      discovery `ADVERTISE`/`SEARCHGW`, `REGISTER`, sleeping-client `PINGREQ` keep-alive).
+      Reuses the shipped MQTT data model + the UDP transport; the work is the SN packet
+      codec + topic-ID registry + the gateway/sleep state machine on a fixed BSS model.
+      Pairs with the existing MQTT client; no heap, one build flag.
+
+### Network telemetry
+
+- [ ] **NetFlow / IPFIX** (M, flow export) - flow-record export over UDP: **IPFIX**
+      (RFC 7011) and **NetFlow v9** share the template-then-data model (the exporter
+      sends template records describing field layout, then data records), and **v5** is
+      the fixed legacy format. Implement the exporter side - a fixed BSS flow cache
+      (5-tuple + counters) emitted as template/data sets via the existing UDP transport.
+      Zero-heap; pairs with the telemetry / observability services for on-device flow
+      accounting. One build flag.
+
+### Building automation
+
+- [ ] **BACnet/IP & BACnet/SC** (L, ASHRAE 135) - the global commercial building
+      automation standard. **BACnet/IP** (BVLL/NPDU/APDU over UDP 47808, with the BBMD
+      foreign-device registration) carries the object model (Device / Analog-Input /
+      Binary-Output / ... objects, properties, the ReadProperty / WriteProperty / COV
+      subscription services). **BACnet/SC** (Secure Connect) is the modern hub-and-spoke
+      transport over **WebSocket + TLS** - a strong fit since this library already ships
+      WS + the static-pool TLS, so BACnet/SC reuses them and the work is the BVLC-SC
+      framing + the same APDU/object model. Fixed BSS object database, no heap; scope
+      the APDU + object model first (shared by both), then the BACnet/SC WS transport.
+- [ ] **XMPP (IoT profile)** (L, XSF) - XMPP with the IoT extensions (XEP-0030 service
+      discovery, XEP-0060 pub/sub, XEP-0323 sensor data, XEP-0325 control). The XML
+      stream protocol over TCP (with the SASL/TLS handshake) is the heavy part; scope a
+      bounded streaming XML parser + the core IoT XEPs on a fixed BSS roster/node model,
+      no heap. TLS reuses the shipped client TLS.
+
+### Databases & time-series
+
+- [ ] **InfluxDB Line Protocol** (S, time-series ingest) - the text line format
+      (`measurement,tag=v field=v timestamp`) POSTed to InfluxDB `/write` (or v2
+      `/api/v2/write`). Tiny, high-leverage: a zero-heap line builder over a caller
+      buffer plus the HTTP client already shipped, so the device pushes metrics straight
+      to a TSDB. Pairs with the telemetry-math service. One build flag, no heap.
+- [ ] **NoSQL / database clients** (M-L, candidate) - direct datastore clients so the
+      device persists/queries without a middle tier. The MCU-appropriate first target is
+      **Redis** (the RESP wire protocol is trivial - a tiny zero-heap encoder/decoder
+      over the existing client transport, covering SET/GET/HSET/XADD for a key-value or
+      stream store). Heavier candidates (MongoDB wire protocol, Postgres frontend/backend
+      protocol) are larger and lower-priority. Scope RESP first; fixed BSS, no heap, one
+      flag per backend. (Exploratory - sized as a candidate, not committed.)
