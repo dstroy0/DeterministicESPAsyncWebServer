@@ -503,16 +503,44 @@ void test_root_path()
     TEST_ASSERT_EQUAL_STRING("/", g_path);
 }
 
-void test_unknown_method_not_implemented()
+void test_unknown_method_not_allowed()
 {
     const char *paths[] = {"temp"};
     uint8_t req[128], resp[128];
-    // Code 0.05 (FETCH) is a valid class-0 code we don't implement.
+    // Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8:
+    // an unrecognized/unsupported Method Code MUST get 4.05 Method Not Allowed.
     size_t rl = build(req, COAP_TYPE_CON, COAP_CODE(0, 5), nullptr, 0, 0x000C, paths, 1, nullptr, 0, -1, nullptr, 0);
     size_t n = coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
-    TEST_ASSERT_EQUAL_UINT(COAP_RSP_NOT_IMPLEMENTED, d.code);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_METHOD_NOT_ALLOWED, d.code);
+}
+
+// RFC 7252 5.4.1: an unrecognized option of class "critical" (odd option number) in
+// a CON request MUST cause a 4.02 (Bad Option). Option 17 (Accept) is critical and
+// not implemented here, so it must be rejected rather than silently ignored.
+void test_unknown_critical_option_bad_option()
+{
+    uint8_t resp[128];
+    // Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a
+    // critical option we do not implement (delta 11->17 = 6, len 1).
+    uint8_t m[32];
+    size_t k = 0;
+    m[k++] = 0x40;                // ver=1, type=CON, TKL=0
+    m[k++] = (uint8_t)COAP_GET;   // 0.01
+    m[k++] = 0x00;                // MID hi
+    m[k++] = 0x0C;                // MID lo
+    m[k++] = (uint8_t)(0xB0 | 4); // option delta=11 (Uri-Path), len=4
+    m[k++] = 't';
+    m[k++] = 'e';
+    m[k++] = 'm';
+    m[k++] = 'p';
+    m[k++] = (uint8_t)((6 << 4) | 1); // option delta=6 -> opt 17 (Accept, critical), len=1
+    m[k++] = 0x00;                    // Accept value
+    size_t n = coap_server_process(m, k, resp, sizeof(resp));
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_OPTION, d.code);
 }
 
 // RFC 7641: coap_server_process_ex() includes an Observe option (6, before
@@ -777,6 +805,7 @@ int main()
     RUN_TEST(test_extended_option_length);
     RUN_TEST(test_ack_ignored);
     RUN_TEST(test_root_path);
-    RUN_TEST(test_unknown_method_not_implemented);
+    RUN_TEST(test_unknown_method_not_allowed);
+    RUN_TEST(test_unknown_critical_option_bad_option);
     return UNITY_END();
 }

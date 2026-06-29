@@ -68,6 +68,32 @@ static void raw_send(uint8_t slot, const void *data, size_t n)
     det_conn_flush(c->id);
 }
 
+// Send Telnet *data* (echo + application output): a literal IAC byte (0xFF) MUST be
+// doubled so the client does not read it as a command introducer (RFC 854). Sends
+// runs of non-IAC bytes directly and emits "\xff\xff" for each IAC. Protocol commands
+// (IAC WILL/DO/...) use raw_send directly - they send IAC intentionally.
+static void send_escaped(uint8_t slot, const void *data, size_t n)
+{
+    TcpConn *c = &conn_pool[slot];
+    if (c->state != CONN_ACTIVE || !c->pcb || n == 0)
+        return;
+    const uint8_t *b = (const uint8_t *)data;
+    size_t start = 0;
+    for (size_t i = 0; i < n; i++)
+    {
+        if (b[i] == 0xFF)
+        {
+            if (i > start)
+                det_conn_send(c->id, b + start, (u16_t)(i - start));
+            det_conn_send(c->id, "\xff\xff", 2); // doubled IAC
+            start = i + 1;
+        }
+    }
+    if (n > start)
+        det_conn_send(c->id, b + start, (u16_t)(n - start));
+    det_conn_flush(c->id);
+}
+
 // ---------------------------------------------------------------------------
 // Connection lifecycle (called from the session layer)
 // ---------------------------------------------------------------------------
@@ -142,7 +168,7 @@ static void handle_data(uint8_t slot, TelnetConn *t, uint8_t b)
     if (t->len < sizeof(t->line) - 1)
     {
         t->line[t->len++] = (char)b;
-        raw_send(slot, &b, 1); // echo
+        send_escaped(slot, &b, 1); // echo (doubles a literal IAC per RFC 854)
     }
 }
 
@@ -216,7 +242,7 @@ static void broadcast(const char *s, size_t n)
 {
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
         if (g_tn[i].used)
-            raw_send(g_tn[i].slot, s, n);
+            send_escaped(g_tn[i].slot, s, n); // app output: escape IAC (RFC 854)
 }
 
 void telnet_print(const char *s)

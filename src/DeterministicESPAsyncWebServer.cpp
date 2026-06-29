@@ -1163,6 +1163,11 @@ void DetWebServer::service_once(int worker_id)
             {
                 ws_dispatch_close(ws);
                 ws_free(i);
+                // RFC 6455 5.5.1: close the underlying TCP connection after the close
+                // handshake. begin_close moves the slot out of CONN_ACTIVE so the
+                // post-close bytes are NOT re-parsed as a new HTTP request (the
+                // close-frame the WS layer queued still flushes during the dwell).
+                det_conn_begin_close(i);
                 http_reset(i);
             }
             continue; // slot is owned by WS; skip HTTP dispatch

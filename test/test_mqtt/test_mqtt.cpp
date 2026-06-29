@@ -177,6 +177,25 @@ void test_publish_topic_overflow_rejected()
     TEST_ASSERT_FALSE(mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
 }
 
+// MQTT-3.3.1-4: a PUBLISH with both QoS bits set (QoS 3) is malformed and must be
+// rejected (the handler then closes the connection). Build a valid QoS-1 PUBLISH and
+// flip the flags to QoS 3.
+void test_publish_qos3_rejected()
+{
+    uint8_t buf[64];
+    size_t len = mqtt_build_publish(buf, sizeof(buf), "t", (const uint8_t *)"x", 1, 1, 1, false, false);
+    uint8_t type, flags;
+    uint32_t rl;
+    size_t hl;
+    mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl);
+    flags |= 0x06; // force both QoS bits (bits 1-2) set
+    char topic[16];
+    size_t tlen, plen;
+    const uint8_t *payload;
+    uint16_t pid;
+    TEST_ASSERT_FALSE(mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
+}
+
 // --- SUBSCRIBE / UNSUBSCRIBE ---
 
 void test_subscribe()
@@ -274,6 +293,7 @@ int main(int, char **)
     RUN_TEST(test_publish_qos0_roundtrip);
     RUN_TEST(test_publish_qos1_flags_and_id);
     RUN_TEST(test_publish_topic_overflow_rejected);
+    RUN_TEST(test_publish_qos3_rejected);
     RUN_TEST(test_subscribe);
     RUN_TEST(test_unsubscribe);
     RUN_TEST(test_ack_packets);

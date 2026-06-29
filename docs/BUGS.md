@@ -8,6 +8,33 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 1 (WS / MQTT / CoAP / Telnet)
+
+- **Status:** FIXED (found by the parallel standards-conformance audit; specs read from
+  the downloaded RFC texts, mapped in docs/STANDARDS.md)
+- **Found:** 2026-06-29, multi-agent conformance audit against the live specs.
+- Five real conformance gaps, fixed with tests:
+    - **WebSocket close left the TCP socket open (HIGH, RFC 6455 5.5.1).** The plaintext
+      WS close/error path (DeterministicESPAsyncWebServer.cpp) only freed the WS slot and
+      `http_reset`'d it - it never closed the TCP connection (the TLS path did). The slot
+      stayed CONN_ACTIVE and re-armed as an HTTP parser, so bytes after the Close frame
+      were re-interpreted as a new HTTP request (state confusion). Fix: `det_conn_begin_close`
+      on the slot so it leaves CONN_ACTIVE (the queued Close frame still flushes).
+    - **MQTT PUBLISH QoS=3 accepted (HIGH, MQTT-3.3.1-4 / 4.8.0-1).** A PUBLISH with both
+      QoS bits set was treated as QoS 2; the spec says it is malformed and the receiver
+      MUST close the connection. Fix: `mqtt_parse_publish` rejects qos==3; the handler
+      `mq_close()`s on a malformed PUBLISH.
+    - **CoAP unsupported method returned 5.01 (MED, RFC 7252 5.8).** Must be 4.05 Method
+      Not Allowed. Fixed.
+    - **CoAP unrecognized critical option silently ignored (MED, RFC 7252 5.4.1).** An
+      unknown odd-numbered (critical) option must yield 4.02 Bad Option (so e.g. Accept,
+      or Block when COAP_BLOCK is off, is rejected, not ignored). Fixed.
+    - **Telnet literal IAC (0xFF) in output not doubled (MED, RFC 854).** Echoed/printed
+      0xFF bytes were sent un-doubled, desyncing the client's command stream. Fix: a
+      `send_escaped` data path doubles IAC for echo + app output (protocol commands still
+      use the raw path).
+    - SNMP/BER, SSH, WebDAV, syslog, OIDC/TOTP/Basic-auth/OAuth2 audited clean.
+
 ## CoAP Observe used millis() (would not build on host + pluggable-clock violation)
 
 - **Status:** FIXED (found by the test-gap hardening pass)

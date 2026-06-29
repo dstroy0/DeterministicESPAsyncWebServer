@@ -270,6 +270,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     size_t payload_len = 0;
     uint32_t opt_num = 0;
     bool bad = false;
+    bool bad_option = false; // unrecognized critical (odd-numbered) option seen (RFC 7252 5.4.1)
 #if DETWS_ENABLE_COAP_BLOCK
     int32_t req_block1 = -1; // request Block1 option value (RFC 7959), or -1 if absent
     int32_t req_block2 = -1; // request Block2 option value, or -1 if absent
@@ -372,7 +373,13 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             break;
 #endif
         default:
-            break; // skip options we don't act on
+            // RFC 7252 5.4.1: an unrecognized option of class "critical" (odd option
+            // number) in a request must cause a 4.02 (Bad Option). Elective (even)
+            // unknown options are silently ignored. Block1/Block2 are critical, so a
+            // build without COAP_BLOCK correctly rejects them here.
+            if (opt_num & 1)
+                bad_option = true;
+            break;
         }
         if (bad)
             break;
@@ -380,6 +387,8 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
 
     if (bad)
         return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_REQUEST, mid, token, tkl);
+    if (bad_option)
+        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
 
     if (path_len == 0)
     {
@@ -387,9 +396,11 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         g_path[1] = '\0';
     }
 
-    // Only class-0 GET/POST/PUT/DELETE are supported request methods.
+    // Only class-0 GET/POST/PUT/DELETE are supported request methods. RFC 7252 5.8:
+    // "A request with an unrecognized or unsupported Method Code MUST generate a 4.05
+    // (Method Not Allowed) piggybacked response."
     if ((code >> 5) != 0 || code < COAP_GET || code > COAP_DELETE)
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_NOT_IMPLEMENTED, mid, token, tkl);
+        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
 
     const CoapResource *r = find_resource(g_path);
     if (!r)

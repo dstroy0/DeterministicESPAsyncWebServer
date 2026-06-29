@@ -278,6 +278,8 @@ bool mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flag
     off += tlen;
 
     uint8_t qos = (uint8_t)((flags >> 1) & 0x03);
+    if (qos == 3)
+        return false; // MQTT-3.3.1-4: a PUBLISH MUST NOT have both QoS bits set (malformed)
     *packet_id = 0;
     if (qos > 0)
     {
@@ -555,7 +557,10 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
         const uint8_t *payload;
         uint16_t pid;
         if (!mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
+        {
+            mq_close(); // MQTT-4.8.0-1: a malformed PUBLISH (incl. QoS=3) MUST close the connection
             break;
+        }
         uint8_t qos = (uint8_t)((flags >> 1) & 0x03);
         if (qos < 2)
         {
