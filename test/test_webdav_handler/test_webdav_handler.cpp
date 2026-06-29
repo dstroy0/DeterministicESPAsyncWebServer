@@ -230,6 +230,40 @@ void test_delete_single_file()
     TEST_ASSERT_TRUE(tree_content_eq("/dav/src/b.txt", "bravo")); // sibling untouched
 }
 
+// OPTIONS advertises WebDAV: a DAV compliance-class header and an Allow list.
+void test_options_advertises_dav()
+{
+    feed_and_handle(0, "OPTIONS /dav/ HTTP/1.1\r\nHost: x\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(resp_status(200) || resp_status(204));
+    TEST_ASSERT_NOT_NULL(strstr(r, "DAV:"));     // compliance class header
+    TEST_ASSERT_NOT_NULL(strstr(r, "PROPFIND")); // Allow lists the DAV methods
+}
+
+// GET through the DAV mount streams a stored file's bytes (file-serving path).
+void test_get_file_through_mount()
+{
+    populate_src();
+    feed_and_handle(0, "GET /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(r, "alpha"));
+}
+
+// LOCK issues an advisory token (200 + Lock-Token); UNLOCK answers 204.
+void test_lock_unlock_advisory()
+{
+    populate_src();
+    feed_and_handle(0, "LOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_TRUE(resp_status(200));
+    TEST_ASSERT_NOT_NULL(strstr(r, "Lock-Token"));
+
+    rearm();
+    feed_and_handle(0, "UNLOCK /dav/src/a.txt HTTP/1.1\r\nHost: x\r\nLock-Token: <urn:x>\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(204));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -242,5 +276,8 @@ int main()
     RUN_TEST(test_propfind_depth1_lists_members);
     RUN_TEST(test_mkcol_create_and_conflict);
     RUN_TEST(test_delete_single_file);
+    RUN_TEST(test_options_advertises_dav);
+    RUN_TEST(test_get_file_through_mount);
+    RUN_TEST(test_lock_unlock_advisory);
     return UNITY_END();
 }
