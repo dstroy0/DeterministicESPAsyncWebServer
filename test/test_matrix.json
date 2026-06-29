@@ -302,6 +302,12 @@
       ],
       "tests": ["test_cloudevents"]
     },
+    "native_redis": {
+      "desc": "Redis RESP2 codec (services/redis_resp): the zero-heap command encoder + the\ncursor reply parser (simple/error/integer/bulk/array/nil). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_REDIS=1"],
+      "src": ["+<services/redis_resp.cpp>"],
+      "tests": ["test_redis_resp"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

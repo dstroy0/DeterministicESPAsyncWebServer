@@ -718,6 +718,18 @@
 #endif
 
 /**
+ * @brief Redis RESP2 wire codec (`services/redis_resp`).
+ *
+ * Default off. A zero-heap command encoder (`resp_encode_command`, array of bulk
+ * strings) + a cursor reply parser (`resp_parse`: simple / error / integer / bulk /
+ * array / nil) so the device can drive a Redis server over the shipped outbound
+ * client transport. Pure codec, host-tested; the connection is the application's.
+ */
+#ifndef DETWS_ENABLE_REDIS
+#define DETWS_ENABLE_REDIS 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

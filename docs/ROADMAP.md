@@ -605,13 +605,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       special-char escaping, tag-after-field fail-closed). Cast over UDP
       (`detws_udp_telemetry_cast`) or POST the same line to InfluxDB `/write` with the
       shipped HTTP client. Pairs with the telemetry-math service. One build flag, no heap.
-- [ ] **NoSQL / database clients** (M-L, candidate) - direct datastore clients so the
-      device persists/queries without a middle tier. The MCU-appropriate first target is
-      **Redis** (the RESP wire protocol is trivial - a tiny zero-heap encoder/decoder
-      over the existing client transport, covering SET/GET/HSET/XADD for a key-value or
-      stream store). Heavier candidates (MongoDB wire protocol, Postgres frontend/backend
-      protocol) are larger and lower-priority. Scope RESP first; fixed BSS, no heap, one
-      flag per backend. (Exploratory - sized as a candidate, not committed.)
+- [~] **NoSQL / database clients** (M-L, candidate) - _Redis RESP codec shipped._
+  `DETWS_ENABLE_REDIS` (`services/redis_resp`): a zero-heap `resp_encode_command()`
+  (array of bulk strings, binary-safe via explicit arg lengths - drives any command
+  incl. SET/GET/HSET/XADD) + a cursor `resp_parse()` reply decoder (simple / error /
+  integer / bulk / array / nil; incomplete + malformed fail closed). Host-tested
+  (`test_redis_resp`, 8 cases). Drive it over the shipped outbound client transport.
+  Heavier candidates (MongoDB wire protocol, Postgres frontend/backend protocol) are
+  larger and lower-priority. Fixed BSS, no heap, one flag per backend.
 
 ### Motor / actuator control (ESC protocols)
 
