@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.29.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.29.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d4c4dda`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4c4dda93a02932427c9f74e8de5cd181057e9a7))
+- update CHANGELOG.md [skip ci] ([`fad4a9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fad4a9e4e832603bc841a7d4a4ce987d94889cf4))
+
+### Changes
+
+- Bump version: 4.28.0 → 4.29.0 ([`8e87b2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e87b2a89cb9ccc4e6686a5a5ca64a78b814b9e7))
+
+### Features
+
+- Protocol Buffers wire codec (DETWS_ENABLE_PROTOBUF) ([`dc4c9fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc4c9fee8e17e58d4f7642e194024d95508daf92))
+
+</details>
+
 ## [4.28.0] - 2026-06-29
 
 <details>
