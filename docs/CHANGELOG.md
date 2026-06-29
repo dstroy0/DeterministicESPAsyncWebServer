@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.24.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.24.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`81d74c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81d74c1057e1281e35dec431d2599b601269d5ad))
+- update CHANGELOG.md [skip ci] ([`75350fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75350fcd8e10c12e420b279ca64c5943c5c5ee63))
+
+### Changes
+
+- Bump version: 4.23.0 → 4.24.0 ([`58a0c1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58a0c1e56a7ae4f02fa348eab0fc3b4af39dfedb))
+
+### Features
+
+- full InfluxDB line protocol - tags + timestamp ([`e013750`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e013750722bfc4c0f8cfcf24e062305e3468ee70))
+
+</details>
+
 ## [4.23.0] - 2026-06-29
 
 <details>
