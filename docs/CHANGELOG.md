@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.54.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.54.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`3dcd433`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3dcd433fbef47d60dcfe7eb7c82e1b9eb6ad0097))
+- update CHANGELOG.md [skip ci] ([`ec35755`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec3575501fc28681e257bb9c80de04cd313f8d27))
+
+### Changes
+
+- Bump version: 4.53.0 → 4.54.0 ([`ec8c2c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec8c2c6db464fc6ec4a26a701af11a603bc18432))
+
+### Features
+
+- wired M-Bus (EN 13757) frame + data-record codec ([`3874e97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3874e97c23950c83df403cdad2874a58663ad9ca))
+
+</details>
+
 ## [4.53.0] - 2026-06-29
 
 <details>
