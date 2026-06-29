@@ -328,6 +328,12 @@ Mutual TLS - require and verify a client certificate (mTLS). Default off. When s
 
 multipart/form-data body parser.
 
+## NATS
+
+`DETWS_ENABLE_NATS`
+
+NATS client protocol codec - the text-based NATS pub/sub messaging protocol. Default off. services/nats lets a device be a NATS client over the outbound client transport: builders for `CONNECT`, `PUB` (with optional reply-to), `SUB` (with optional queue group), `UNSUB`, `PING`, and `PONG`, plus `nats_parse` which decodes an inbound `MSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (a MSG yields subject / sid / reply-to / payload). Line-oriented (CRLF, space-delimited); only PUB and MSG carry a payload. Pure and host-tested; the connection and subscription state are the application's. See src/services/nats/nats.h.
+
 ## NTP
 
 `DETWS_ENABLE_NTP`

@@ -1024,6 +1024,20 @@
 #endif
 
 /**
+ * @brief NATS client protocol codec (`services/nats`).
+ *
+ * Default off. A zero-heap builder + parser for the text-based NATS pub/sub protocol so a
+ * device can be a NATS client: `nats_build_connect` / `nats_build_pub` / `nats_build_sub` /
+ * `nats_build_unsub` / `nats_build_ping` / `nats_build_pong`, and `nats_parse` which decodes
+ * an inbound MSG / INFO / PING / PONG / +OK / -ERR (MSG yields subject / sid / reply-to /
+ * payload). Line-oriented (CRLF), space-delimited; only PUB and MSG carry a payload. Pure
+ * codec, host-tested; rides the outbound client transport.
+ */
+#ifndef DETWS_ENABLE_NATS
+#define DETWS_ENABLE_NATS 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

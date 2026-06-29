@@ -576,6 +576,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       `MESSAGE` / `ACK` ... against ActiveMQ / RabbitMQ / Artemis over the shipped outbound
       client transport (or STOMP-over-WebSocket via the WS client); pure, host-tested. The
       connection / subscription state is the application's.
+- [x] **NATS** (M, messaging) _(shipped)_ - `DETWS_ENABLE_NATS` (`services\nats`): a
+      zero-heap codec for the text-based NATS pub/sub protocol - builders for
+      `CONNECT` / `PUB` (with optional reply-to) / `SUB` (with optional queue group) /
+      `UNSUB` / `PING` / `PONG`, and `nats_parse()` which decodes an inbound
+      `MSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (MSG yields subject / sid / reply-to /
+      payload). Line-oriented (CRLF), space-delimited, payload only on PUB/MSG; pure,
+      host-tested. Rides the outbound client transport; the connection / subscription state is
+      the application's.
 - [~] **gRPC / Protocol Buffers** (L) - _Protobuf wire codec shipped._
   `DETWS_ENABLE_PROTOBUF` (`services\protobuf`): a zero-heap streaming writer
   (`pb_uint64` / `pb_sint64` / `pb_fixed32` / `pb_fixed64` / `pb_float` / `pb_double` /

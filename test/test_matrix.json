@@ -438,6 +438,12 @@
       "src": ["+<services/cip/cip.cpp>"],
       "tests": ["test_cip"]
     },
+    "native_nats": {
+      "desc": "NATS client protocol codec (services/nats): the CONNECT / PUB / SUB / UNSUB / PING /\nPONG builders + the inbound MSG / INFO / PING / +OK / -ERR parser (subject/sid/reply/payload).\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_NATS=1"],
+      "src": ["+<services/nats/nats.cpp>"],
+      "tests": ["test_nats"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
