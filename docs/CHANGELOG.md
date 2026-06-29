@@ -2,21 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.11.3] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.3 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- WS close, MQTT QoS=3, CoAP method/option codes, Telnet IAC (audit batch 1) ([`a45da5f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a45da5f22d5c4fc4f8cdc9f8d9bb379ad334fb72))
 
 ### CI / Build
 
+- update test report [skip ci] ([`452137e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/452137e3be950d6a419cdae90345502dcdefecbf))
+- update CHANGELOG.md [skip ci] ([`854a80f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/854a80f52af4906527c5b7b68fe5df4a72de2e34))
 - update CHANGELOG.md [skip ci] ([`ed56bb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed56bb650f0f969d3d3343934b8698098512a9c6))
 - update test report [skip ci] ([`c267b27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c267b276e20af44e66963e7d7789257565f38ca9))
 - update CHANGELOG.md [skip ci] ([`d0d9288`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0d9288f31eecee76d9494bed76faa9433b07a78))
 - update test report [skip ci] ([`90077e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90077e63321b7f4f8cc1a8c1b2a9036bcb563bfc))
 - update CHANGELOG.md [skip ci] ([`80463fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80463fb724f937b247859b7e50abb8614215c4a9))
 
+### Changes
+
+- Bump version: 4.11.2 → 4.11.3 ([`a313038`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a313038b8d7892d6a6788815bacb2ff6048e25c6))
+
 ### Documentation
 
 - link the learn series + STANDARDS.md from the docs landing page ([`c4f0222`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4f02223894ef0a719ea416041cb5c4c96faee0d))
 - beginner from-scratch primers (OSI model, TCP/IP, languages) ([`0ceadac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ceadacd98d99b5b6a20abf917c1e188cad05e76))
 - add STANDARDS.md (links every standard the lib uses) + roadmap 'audit against standards' item ([`06db79f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06db79f0e8e7426866ad0ad03398d548ccd2278d))
+
+</details>
 
 ## [4.11.2] - 2026-06-29
 
