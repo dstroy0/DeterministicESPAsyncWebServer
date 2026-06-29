@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.38.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.38.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`3edf678`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3edf678f74f560d0c50d0f924b161dd90e72f80a))
+- update CHANGELOG.md [skip ci] ([`a67e20b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a67e20bc6f1a18a0c92d14c0ecf3cdfb56578565))
+
+### Changes
+
+- Bump version: 4.37.0 → 4.38.0 ([`a3ce4c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3ce4c10aca8e4c2353c0e51262125424dd00697))
+
+### Features
+
+- SenML (RFC 8428) pack builder (DETWS_ENABLE_SENML) ([`f2d18e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2d18e8437484bb7d7bc34396f2a4457d76f6998))
+
+</details>
+
 ## [4.37.0] - 2026-06-29
 
 <details>
