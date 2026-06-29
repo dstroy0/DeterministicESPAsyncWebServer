@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.31.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.31.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8f5c874`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f5c8744c6827a6e5fe6cc76396989d468a11679))
+- update CHANGELOG.md [skip ci] ([`a579480`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a57948050c60955f2c91ca3f2221ea0b9772f5a2))
+
+### Changes
+
+- Bump version: 4.30.0 → 4.31.0 ([`8878863`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8878863658a2c88327034b91cfb5f464c7210768))
+
+### Features
+
+- SunSpec Modbus model codec (DETWS_ENABLE_SUNSPEC) ([`6807c9b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6807c9be342cdecc6e71bdfc06ba93c8b4c15f44))
+
+</details>
+
 ## [4.30.0] - 2026-06-29
 
 <details>
