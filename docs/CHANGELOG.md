@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.51.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.51.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b8fcb6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8fcb6e80ce2e602dcc1beb1790058d44e9f1680))
+- update CHANGELOG.md [skip ci] ([`288b114`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/288b114590b489c4f7932f12360ead4a43559d03))
+
+### Changes
+
+- Bump version: 4.50.0 → 4.51.0 ([`c983a88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c983a882236964b4803d6591aebee56b3f55afc8))
+
+### Features
+
+- SAE J1939 codec over 29-bit CAN ([`6535135`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6535135601ca3f71eb827437cfc7c57095819e3d))
+
+</details>
+
 ## [4.50.0] - 2026-06-29
 
 <details>
