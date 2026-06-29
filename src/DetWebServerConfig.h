@@ -1052,6 +1052,28 @@
 #endif
 
 /**
+ * @brief Sparkplug B payload + topic codec (`services/sparkplug`).
+ *
+ * Default off; implies DETWS_ENABLE_PROTOBUF (the payload is a Protobuf message). A zero-heap
+ * builder for the Eclipse Sparkplug B industrial-IoT MQTT payload (`spb_build_payload` /
+ * `spb_build_metric`, over the protobuf codec) and its topic namespace (`spb_build_topic`,
+ * `spBv1.0/group/type/node[/device]`). Field numbers + datatype codes verified against the
+ * Eclipse Tahu sparkplug_b.proto. Pure codec, host-tested; publish it with the MQTT client.
+ */
+#ifndef DETWS_ENABLE_SPARKPLUG
+#define DETWS_ENABLE_SPARKPLUG 0
+#endif
+#if DETWS_ENABLE_SPARKPLUG && !DETWS_ENABLE_PROTOBUF
+#undef DETWS_ENABLE_PROTOBUF
+#define DETWS_ENABLE_PROTOBUF 1
+#endif
+
+/** @brief Max serialized size of one Sparkplug B metric submessage (stack temp, bytes). */
+#ifndef DETWS_SPB_METRIC_MAX
+#define DETWS_SPB_METRIC_MAX 256
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

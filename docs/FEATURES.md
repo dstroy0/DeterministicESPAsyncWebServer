@@ -452,6 +452,12 @@ Outbound SNMP notifications - traps and informs (requires SNMP). Default off. Wh
 
 Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). Default off.
 
+## Sparkplug
+
+`DETWS_ENABLE_SPARKPLUG`
+
+Sparkplug B payload + topic codec - the Eclipse Sparkplug B industrial-IoT format over MQTT. Default off; implies PROTOBUF (the payload is a Protobuf message). services/sparkplug builds the topic (`spb_build_topic` -> `spBv1.0/group/type/node[/device]`) and serializes the payload over the protobuf codec: `spb_build_metric` emits one Tahu Metric (name / alias / timestamp / datatype + a value - int / long / float / double / boolean / string), and `spb_build_payload` wraps the timestamp + metrics + seq. Field numbers and datatype codes are verified against the Eclipse Tahu sparkplug_b.proto. Pure and host-tested; publish the payload with the MQTT client. See src/services/sparkplug/sparkplug.h.
+
 ## SSE
 
 `DETWS_ENABLE_SSE`

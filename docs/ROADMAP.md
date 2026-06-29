@@ -584,6 +584,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       payload). Line-oriented (CRLF), space-delimited, payload only on PUB/MSG; pure,
       host-tested. Rides the outbound client transport; the connection / subscription state is
       the application's.
+- [x] **Sparkplug B** (M, industrial IoT) _(shipped)_ - `DETWS_ENABLE_SPARKPLUG`
+      (`services\sparkplug`, implies Protobuf): a zero-heap builder for the Eclipse Sparkplug B
+      MQTT payload + topic - `spb_build_topic()` (`spBv1.0/group/type/node[/device]`),
+      `spb_build_metric()` (a Tahu Metric: name / alias / timestamp / datatype + an int / long
+      / float / double / boolean / string value), and `spb_build_payload()` (timestamp +
+      metrics + seq) over the Protobuf codec. Field numbers + datatype codes verified against
+      the Eclipse Tahu sparkplug_b.proto; pure, host-tested. Publish it with the MQTT client.
 - [~] **gRPC / Protocol Buffers** (L) - _Protobuf wire codec shipped._
   `DETWS_ENABLE_PROTOBUF` (`services\protobuf`): a zero-heap streaming writer
   (`pb_uint64` / `pb_sint64` / `pb_fixed32` / `pb_fixed64` / `pb_float` / `pb_double` /
