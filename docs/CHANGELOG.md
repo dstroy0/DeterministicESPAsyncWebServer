@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.13.3] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.13.3 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b5b329c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5b329c7c84922443a126feb9345174f0ac03632))
+- update CHANGELOG.md [skip ci] ([`ae506ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae506caf7f06a7d1fd2e159cb60d82775ec1d1ac))
+
+### Changes
+
+- Bump version: 4.13.2 → 4.13.3 ([`617f8eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/617f8ebd29660988b5f7ab78df6664dc62e81d19))
+
+### Testing
+
+- OPC UA HW-verified (7/7 families); fix stale OPC UA docs ([`ab0feb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab0feb65f6c437ced69069dfe0c1fdec1341eec7))
+
+</details>
+
 ## [4.13.2] - 2026-06-29
 
 <details>
