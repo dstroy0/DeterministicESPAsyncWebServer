@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.41.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.41.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b05b856`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b05b856c35a0508c31d678b6168d3d9e56da1190))
+- update CHANGELOG.md [skip ci] ([`b823f83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b823f83f3b07813119ab763f72675e2191633820))
+
+### Changes
+
+- Bump version: 4.40.0 → 4.41.0 ([`693fb0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/693fb0eaebd8840f1f0b148a52775f231c60ef8a))
+
+### Features
+
+- Siemens S7comm PDU codec (DETWS_ENABLE_S7COMM) ([`4026fd8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4026fd8550a190046ce6a834f3fe59384aae8376))
+
+</details>
+
 ## [4.40.0] - 2026-06-29
 
 <details>
