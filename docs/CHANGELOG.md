@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.43.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.43.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`1021dfb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1021dfb99231967c196336ee0e57ae23a2b4dc58))
+- update CHANGELOG.md [skip ci] ([`d9874aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9874aa5adfeaf42d15252f2dc3c0dea05eb1147))
+
+### Changes
+
+- Bump version: 4.42.0 → 4.43.0 ([`4f49a1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f49a1b9c880904c2876bdfc086cf86dae79f2fa))
+
+### Features
+
+- BACnet/IP BVLC + NPDU codec (DETWS_ENABLE_BACNET) ([`2e8f209`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e8f209cf7d50ec88747b9961013a354e111d7cc))
+
+</details>
+
 ## [4.42.0] - 2026-06-29
 
 <details>
