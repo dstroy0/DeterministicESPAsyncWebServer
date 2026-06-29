@@ -403,12 +403,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       host-tested. Remaining: S7comm **write** (function 0x05) + the userdata services, and
       **S7comm-Plus** (the S7-1200/1500 successor with its session/integrity wrapping). Fixed
       BSS data model, no heap.
-- [ ] **MELSECNET** (L, Mitsubishi) - the Mitsubishi MELSEC PLC networks: the MC
-      protocol (MELSEC Communication, the 1E/3E/4E binary + ASCII frames for device
-      batch read/write over TCP/UDP) first as the host-reachable path, then
-      **MELSECNET/H** and **MELSECNET/10** (the cyclic control-network layer, which is
-      PHY/timing-gated). Reuses the data-model + frame parse/build pattern; fixed BSS
-      device model, no heap.
+- [~] **MELSECNET** (L, Mitsubishi) - _MC protocol binary 3E batch-read shipped._
+  `DETWS_ENABLE_MELSEC` (`services\melsec`): `melsec_build_read` emits the binary 3E
+  batch-read (word) frame (little-endian fields, subheader 0x5000, command 0x0401, the
+  device code + 24-bit head device + point count) and `melsec_parse_response` validates
+  the 0xD000 response and reports the end code + data; layout + device codes verified
+  against a third-party MC impl, host-tested. Completes the major-vendor PLC read set
+  (Omron FINS / Host Link, AB DF1, Siemens S7comm). Remaining: MC batch write + the
+  1E/4E + ASCII frame variants, and **MELSECNET/H** / **/10** (the cyclic control
+  network, PHY/timing-gated). Fixed BSS device model, no heap.
 - [~] **FINS** (M-L, Omron) - _FINS/UDP frame codec shipped._ `DETWS_ENABLE_FINS`
   (`services\fins`): a zero-heap command/response builder + parser - `fins_build_command`
   / `fins_build_memory_area_read` emit the 10-octet routing header + MRC/SRC command code + parameters, and `fins_parse_command` / `fins_parse_response` read them back (the

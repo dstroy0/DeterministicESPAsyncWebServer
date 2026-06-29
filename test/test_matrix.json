@@ -408,6 +408,12 @@
       "src": ["+<services/s7comm/s7comm.cpp>"],
       "tests": ["test_s7comm"]
     },
+    "native_melsec": {
+      "desc": "Mitsubishi MELSEC MC binary 3E codec (services/melsec): the batch-read request\nbuilder (little-endian, subheader 0x5000, command 0x0401, device code + 24-bit head device)\n+ the 0xD000 response parser. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_MELSEC=1"],
+      "src": ["+<services/melsec/melsec.cpp>"],
+      "tests": ["test_melsec"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

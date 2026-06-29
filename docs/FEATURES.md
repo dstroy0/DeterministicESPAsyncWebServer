@@ -240,6 +240,12 @@ OMA LwM2M TLV codec. Default off. services/lwm2m is a zero-heap writer + cursor 
 
 mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS.
 
+## MELSEC
+
+`DETWS_ENABLE_MELSEC`
+
+Mitsubishi MELSEC MC protocol (binary 3E frame) codec. Default off. services/melsec builds + parses the QnA-compatible binary 3E frames for MELSEC PLCs over TCP/UDP: `melsec_build_read` emits a batch-read (word units) request (little-endian fields, request subheader 0x5000, command 0x0401, a device code - D 0xA8 / M 0x90 / X / Y / R / ... - plus a 24-bit head device number and a point count), and `melsec_parse_response` validates the 0xD000 response and reports the end code (0x0000 = success) and the read data. Frame layout + device codes verified against a third-party MC implementation; pure and host-tested. Completes the major-vendor PLC read set alongside FINS / Host Link (Omron), DF1 (Allen-Bradley), and S7comm (Siemens). See src/services/melsec/melsec.h.
+
 ## MessagePack
 
 `DETWS_ENABLE_MSGPACK`

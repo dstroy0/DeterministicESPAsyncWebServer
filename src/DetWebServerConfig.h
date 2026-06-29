@@ -954,6 +954,20 @@
 #endif
 
 /**
+ * @brief Mitsubishi MELSEC MC protocol (binary 3E) codec (`services/melsec`).
+ *
+ * Default off. A zero-heap batch-read request builder + response parser for MELSEC PLCs over
+ * TCP/UDP: `melsec_build_read` emits the binary 3E batch-read (word) frame (little-endian
+ * fields, subheader 0x5000, command 0x0401, the device code + 24-bit head device + point
+ * count), and `melsec_parse_response` validates the 0xD000 response and reports the end code
+ * + the read data. Frame layout + device codes verified against a third-party MC impl. Pure
+ * codec, host-tested. Completes the major-vendor PLC read set (FINS / Host Link / DF1 / S7).
+ */
+#ifndef DETWS_ENABLE_MELSEC
+#define DETWS_ENABLE_MELSEC 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
