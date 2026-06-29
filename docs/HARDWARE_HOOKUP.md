@@ -33,6 +33,7 @@ numbers to type into your sketch.
     - [M-Bus (meters)](#m-bus-meters)
     - [SDI-12 (environmental sensors)](#sdi-12-environmental-sensors)
     - [DMX512 / RDM (lighting)](#dmx512--rdm-lighting)
+    - [NMEA 0183 (GPS / marine)](#nmea-0183-gps--marine)
 - [CAN field-bus codecs (you wire a transceiver)](#can-field-bus-codecs-you-wire-a-transceiver)
     - [CAN wiring](#can-wiring)
     - [CANopen](#canopen)
@@ -108,6 +109,7 @@ the matching header in `src/services/` and its description in
 | M-Bus         | `DETWS_ENABLE_MBUS`          | Serial (M-Bus bus)         | M-Bus level converter (TSS721)  | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
 | SDI-12        | `DETWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
 | DMX512 / RDM  | `DETWS_ENABLE_DMX`           | Serial (RS-485)            | RS-485 transceiver (MAX485)     | 250k 8N2, up to 512 channels    | Stage / architectural lighting     |
+| NMEA 0183     | `DETWS_ENABLE_NMEA0183`      | Serial (UART / RS-422)     | none (TTL) or RS-422 receiver   | 4800 or 9600 8N1                | GPS / marine instruments           |
 | IEC 60870     | `DETWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
 | CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
 | J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
@@ -324,6 +326,25 @@ direction timing). Build a request with `rdm_build()` (set the destination /
 source `rdm_uid()`, command class, and PID) and read a reply with `rdm_parse()`,
 which checks the RDM checksum. Discover, address, and configure fixtures from a
 web UI - a tidy **wireless lighting controller**. See `src/services/dmx/dmx.h`.
+
+### NMEA 0183 (GPS / marine)
+
+`DETWS_ENABLE_NMEA0183`. The classic GPS / marine sentence protocol. A hobby GPS
+breakout outputs **3.3 V TTL serial** that wires straight to an ESP32 RX pin (no
+transceiver) - typically **9600 baud, 8N1** (older units 4800). Full-size marine
+instruments use **RS-422**, so for those add an RS-422 receiver. It is mostly
+one-way (the receiver talks; you listen).
+
+- Read a fix: accumulate a line, then `nmea0183_parse(line, len, &m)`. Check
+  `m.type` ("GGA", "RMC", "VTG", ...) and pull fields with
+  `nmea0183_field_float()` / `nmea0183_field_int()` (field 0 is the address;
+  data fields are 1..n).
+- To send (e.g. configuration to a receiver), `nmea0183_build()` adds the `$`,
+  checksum, and CR/LF around your comma-separated body.
+
+Decode position / speed / heading and republish it over Wi-Fi (a web map, MQTT,
+or an NMEA-0183-to-NMEA-2000 bridge with the codec next door). See
+`src/services/nmea0183/nmea0183.h`.
 
 ## CAN field-bus codecs (you wire a transceiver)
 

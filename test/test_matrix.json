@@ -49,6 +49,12 @@
       "src": ["+<services/dmx/dmx.cpp>"],
       "tests": ["test_dmx"]
     },
+    "native_nmea0183": {
+      "desc": "NMEA 0183 sentence codec (services/nmea0183): the XOR checksum, sentence build, parse\n(field splitting, talker/type, checksum validation) against the canonical GGA vector, and the\nfield-value helpers. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_NMEA0183=1"],
+      "src": ["+<services/nmea0183/nmea0183.cpp>"],
+      "tests": ["test_nmea0183"]
+    },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],

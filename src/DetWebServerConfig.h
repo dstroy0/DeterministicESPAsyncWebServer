@@ -971,6 +971,21 @@
 #endif
 
 /**
+ * @brief NMEA 0183 sentence codec (`services/nmea0183`).
+ *
+ * Default off. A zero-heap codec for the marine / GPS ASCII protocol (`$GPGGA,...*47`):
+ * `nmea0183_build` emits a sentence (adding the `$`, XOR checksum, and CR/LF), `nmea0183_parse`
+ * validates the `*HH` checksum and splits the comma-separated fields (deriving talker id +
+ * sentence type from the address field), and `nmea0183_field_float` / `_int` decode field
+ * values. Sentence framing + checksum verified against the NMEA 0183 standard (the canonical
+ * GGA example); pure and host-tested. GPS / marine receivers are cheap UART breakouts, so this
+ * is a plain HardwareSerial link (4800 / 9600 baud); bridge position / wind / depth onto Wi-Fi.
+ */
+#ifndef DETWS_ENABLE_NMEA0183
+#define DETWS_ENABLE_NMEA0183 0
+#endif
+
+/**
  * @brief gRPC-Web message framing (`services/grpcweb`).
  *
  * Default off. A zero-heap length-prefixed frame builder + parser for gRPC-Web, the

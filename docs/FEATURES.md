@@ -382,6 +382,12 @@ multipart/form-data body parser.
 
 NATS client protocol codec - the text-based NATS pub/sub messaging protocol. Default off. services/nats lets a device be a NATS client over the outbound client transport: builders for `CONNECT`, `PUB` (with optional reply-to), `SUB` (with optional queue group), `UNSUB`, `PING`, and `PONG`, plus `nats_parse` which decodes an inbound `MSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (a MSG yields subject / sid / reply-to / payload). Line-oriented (CRLF, space-delimited); only PUB and MSG carry a payload. Pure and host-tested; the connection and subscription state are the application's. See src/services/nats/nats.h.
 
+## NMEA 0183
+
+`DETWS_ENABLE_NMEA0183`
+
+NMEA 0183 sentence codec. Default off. services/nmea0183 is a zero-heap codec for the marine / GPS ASCII protocol (sentences like `$GPGGA,123519,4807.038,N,...*47`): `nmea0183_build` emits a sentence (adding the `$`, the XOR checksum, and CR/LF), `nmea0183_checksum` computes the XOR check, `nmea0183_parse` validates the `*HH` checksum and splits the comma-separated fields (deriving the talker id + sentence type from the address field), and `nmea0183_field_float` / `nmea0183_field_int` decode field values (the field substrings are delimited so `det_strtof` / `det_strtol` stop cleanly). Sentence framing + checksum verified against the NMEA 0183 standard (the canonical GGA example checks to 0x47); pure and host-tested. GPS / marine receivers are cheap UART breakouts, so this is a plain HardwareSerial link; bridge position / wind / depth data onto Wi-Fi. See src/services/nmea0183/nmea0183.h.
+
 ## NMEA 2000
 
 `DETWS_ENABLE_NMEA2000`

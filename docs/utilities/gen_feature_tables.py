@@ -62,6 +62,7 @@ CODEC_HEADINGS = {
     "MQTT SN",
     "Multipart",
     "NATS",
+    "NMEA 0183",
     "NMEA 2000",
     "Protobuf",
     "Proxy Protocol",
