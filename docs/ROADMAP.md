@@ -210,6 +210,14 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       documented numbers track the current build after the shared-primitive dedup
       (det_mime / det_bytes / base64url / DNS) and any later features. Run after a
       batch of changes lands, not per commit.
+- [ ] **Audit the library against its standards** (L) - go through every standard in
+      [STANDARDS.md](STANDARDS.md) with the live spec text open and check the
+      implementation against its MUST / SHOULD list + conformance vectors, to catch
+      anything missed while building the foundation. Pull each spec into the scratchpad
+      first; turn each gap into a bug (docs/BUGS.md) + a test (ideally a real-peer
+      conformance check, see the interop harness item above). The HTTP request-smuggling
+      and CoAP-Observe-clock fixes came out of exactly this kind of review, so expect
+      more. Track per-standard pass/fail status as it proceeds.
 
 ## Low-level networking (raw Layer 2)
 

@@ -68,6 +68,8 @@
     "Cnet",
     "MCPWM",
     "Multishot",
+    "WHATWG",
+    "fixdate",
     "mgmt",
     "pymodbus",
     "websocat",
