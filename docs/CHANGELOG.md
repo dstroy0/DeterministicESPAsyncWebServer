@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.11.4] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.11.4 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- validate JWT alg header + match Digest uri to request target (audit batch 2a) ([`2c6f0c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c6f0c10158ec881d0e1dbd56c4e1758b20ad6ba))
+
+### CI / Build
+
+- update test report [skip ci] ([`6de236b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6de236b3a158a8ce57aa9bdc8e3329547bb73ee9))
+- update CHANGELOG.md [skip ci] ([`b75d0db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b75d0db98294ff734f16bbe1aba2672759bd05fe))
+
+### Changes
+
+- Bump version: 4.11.3 → 4.11.4 ([`952ea51`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/952ea513c2b2573de74d1884f40498186dca6c67))
+
+</details>
+
 ## [4.11.3] - 2026-06-29
 
 <details>
