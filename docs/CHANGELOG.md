@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.49.8] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.49.8 - 2026-06-29</b></summary>
+
+### Bug Fixes
+
+- wrap-safe length bounds in SNMP BER + HTTP chunked decode ([`626372c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/626372c436c89fcf38346f2e33191fea941cbb74))
+
+### CI / Build
+
+- update test report [skip ci] ([`9486b7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9486b7e5427bac7cebf3d0898343479230460fbc))
+- update CHANGELOG.md [skip ci] ([`968a402`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/968a4024b1bc68f3d9abb1a854175675cb1404fe))
+
+### Changes
+
+- Bump version: 4.49.7 → 4.49.8 ([`b30a297`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b30a2977f7bc1250b9cb9d1176da4cb4bfab61e0))
+
+### Refactor
+
+- use reentrant gmtime_r everywhere (worker-safe) ([`804a8a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804a8a1bf6e607d4163b13daec963fc00c262270))
+
+</details>
+
 ## [4.49.7] - 2026-06-29
 
 <details>
