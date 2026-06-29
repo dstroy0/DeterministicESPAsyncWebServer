@@ -14,3 +14,4 @@ aiocoap>=0.4.7        # coap peer (RFC 7252 client)
 paho-mqtt>=1.6        # mqtt-broker monitor/publisher
 asyncua>=1.0          # opcua-client / opcua-server
 pysnmp>=7.0           # snmp peer fallback when net-snmp tools are not on PATH
+amqtt>=0.11           # mqtt-broker fallback when mosquitto is not on PATH
