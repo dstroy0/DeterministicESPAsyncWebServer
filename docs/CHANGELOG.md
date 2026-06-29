@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.17.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.17.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8360b4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8360b4a838bb5f22ec2f28c71aa95188e25426c7))
+- update CHANGELOG.md [skip ci] ([`bdd7c80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdd7c805e69c2a28a0202016daf0a0b78e72faf9))
+
+### Changes
+
+- Bump version: 4.16.0 → 4.17.0 ([`5a48dc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a48dc88c0b4a8f365ba273773ca7e82fc1b6759))
+
+### Features
+
+- optional Date response header (DETWS_HTTP_EMIT_DATE) ([`c65471b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c65471b3559490a954ba719a0eb21c62c5a5bea4))
+
+</details>
+
 ## [4.16.0] - 2026-06-29
 
 <details>
