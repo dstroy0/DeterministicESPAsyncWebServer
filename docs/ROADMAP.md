@@ -382,14 +382,16 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       RabbitMQ interop. Zero-heap: fixed link/session state, the payload streamed
       through the client transport (det_client), one build flag. Pairs with the MQTT /
       webhook outbound integrations as a heavier-duty queueing option.
-- [ ] **DF1 / DH+** (M-L, Allen-Bradley / Rockwell) - the legacy Rockwell PLC link:
-      **DF1** (the serial point-to-point/multidrop protocol - full/half-duplex framing
-      with BCC/CRC, the PCCC command set for PLC-5 / SLC-500 data-table reads/writes)
-      and **DH+** (Data Highway Plus, the token-passing LAN carrying the same PCCC
-      messages). DF1 first (UART, host-testable framing + PCCC codec); DH+ is
-      physical-layer-gated (the 57.6k/115.2k/230.4k blue-hose bus needs a transceiver)
-      so scope it to the PCCC/token layer. Reuses the data-model + ADU parse/build
-      pattern; fixed BSS, no heap.
+- [~] **DF1 / DH+** (M-L, Allen-Bradley / Rockwell) - _DF1 full-duplex frame codec
+  shipped._ `DETWS_ENABLE_DF1` (`services\df1`): a zero-heap framing + DLE byte-stuffing +
+  BCC/CRC codec for the serial link layer (pub. 1770-6.5.16) - `df1_build_frame` wraps
+  application data in `DLE STX ... DLE ETX` (doubled-DLE escape) with a BCC (2's
+  complement of the data sum) or CRC-16/ARC (over the data + ETX, low byte first), and
+  `df1_parse_frame` validates and un-stuffs; vectors verified against the manual (BCC
+  `0x20`->`0xE0`, CRC `0xBB3D`). Remaining: the **PCCC** command set (PLC-5 / SLC-500
+  data-table read/write) inside the application data, the half-duplex master/slave
+  framing, and **DH+** (Data Highway Plus token LAN, physical-layer-gated). Fixed BSS,
+  no heap.
 - [ ] **S7comm / S7comm-Plus** (L, Siemens S7) - the Siemens PLC communication
       protocol over ISO-on-TCP (RFC 1006, TPKT + COTP on port 102): **S7comm** (the
       classic S7-300/400 job/ack-data PDUs - read/write of DB/M/I/Q areas, the item

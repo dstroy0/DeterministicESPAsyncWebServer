@@ -94,6 +94,12 @@ Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-co
 
 Stable device UUID derived from the chip MAC (RFC 4122 v5). When set, src/services/device_id/device_id.h derives a deterministic v5 UUID from a MAC (via the library's SHA-1) - a storage-free, stable identity for mDNS hostnames, MQTT client IDs, etc. The MAC->UUID core is host-testable; detws_device_uuid() reads the ESP32 factory MAC. Default off.
 
+## DF1
+
+`DETWS_ENABLE_DF1`
+
+Allen-Bradley DF1 full-duplex frame codec. Default off. services/df1 is a zero-heap framing + DLE byte-stuffing + BCC/CRC codec for the Rockwell serial PLC data-link layer (pub. 1770-6.5.16): `df1_build_frame` wraps application data in `DLE STX ... DLE ETX` (a data byte equal to DLE/0x10 is doubled) with either a BCC (the 2's complement of the modulo-256 data sum) or a CRC-16/ARC (poly 0x8005, init 0, over the data plus the ETX, sent low byte first), and `df1_parse_frame` validates the check and un-stuffs the data. Vectors verified against the manual (BCC 0x20->0xE0, CRC "123456789"->0xBB3D). Pure and host-tested; the PCCC application header lives inside the data. See src/services/df1/df1.h.
+
 ## Diag
 
 `DETWS_ENABLE_DIAG`

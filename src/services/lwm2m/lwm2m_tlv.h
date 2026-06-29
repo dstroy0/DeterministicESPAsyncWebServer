@@ -40,6 +40,13 @@
 #define LWM2M_TLV_MULTIPLE_RESOURCE 0x80
 #define LWM2M_TLV_RESOURCE 0xC0
 
+// Type-byte bit-field layout (Type byte = idkind | id16 | lentype | inline-len).
+#define LWM2M_TLV_IDKIND_MASK 0xC0     ///< bits 7-6: identifier kind (the LWM2M_TLV_* above)
+#define LWM2M_TLV_ID16_FLAG 0x20       ///< bit 5: identifier is 16-bit (else 8-bit)
+#define LWM2M_TLV_LENTYPE_SHIFT 3      ///< bits 4-3: length-type field position
+#define LWM2M_TLV_LENTYPE_MASK 0x03    ///< 0 = inline, 1 = 8-bit, 2 = 16-bit, 3 = 24-bit length
+#define LWM2M_TLV_INLINE_LEN_MASK 0x07 ///< bits 2-0: the value length when length-type == 0
+
 /** @brief Cursor for building a TLV payload. Treat the fields as opaque. */
 struct Lwm2mTlvWriter
 {

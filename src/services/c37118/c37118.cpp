@@ -59,8 +59,8 @@ size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t versio
     if (total > 0xFFFF || total > cap)
         return 0;
     size_t p = 0;
-    buf[p++] = 0xAA;
-    buf[p++] = (uint8_t)(((type & 0x07) << 4) | (version & 0x0F));
+    buf[p++] = C37118_SYNC_LEADER;
+    buf[p++] = (uint8_t)(((type & C37118_TYPE_MASK) << C37118_TYPE_SHIFT) | (version & C37118_VERSION_MASK));
     p += put16(buf + p, (uint16_t)total);
     p += put16(buf + p, idcode);
     p += put32(buf + p, soc);
@@ -86,7 +86,7 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
 {
     if (!buf || !out || len < C37118_MIN_FRAME)
         return false;
-    if (buf[0] != 0xAA)
+    if (buf[0] != C37118_SYNC_LEADER)
         return false;
     uint16_t framesize = get16(buf + 2);
     if (framesize < C37118_MIN_FRAME || framesize > len)
@@ -95,8 +95,8 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
     uint16_t got = get16(buf + framesize - 2);
     if (want != got)
         return false; // CHK mismatch
-    out->type = (uint8_t)((buf[1] >> 4) & 0x07);
-    out->version = (uint8_t)(buf[1] & 0x0F);
+    out->type = (uint8_t)((buf[1] >> C37118_TYPE_SHIFT) & C37118_TYPE_MASK);
+    out->version = (uint8_t)(buf[1] & C37118_VERSION_MASK);
     out->framesize = framesize;
     out->idcode = get16(buf + 4);
     out->soc = get32(buf + 6);

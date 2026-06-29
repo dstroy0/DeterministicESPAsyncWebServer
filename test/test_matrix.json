@@ -390,6 +390,12 @@
       ],
       "tests": ["test_senml"]
     },
+    "native_df1": {
+      "desc": "Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the\nframe builder with DLE byte-stuffing, and the validating, un-stuffing parser. Vectors from\nAB pub. 1770-6.5.16. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_DF1=1"],
+      "src": ["+<services/df1/df1.cpp>"],
+      "tests": ["test_df1"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

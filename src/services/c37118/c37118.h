@@ -36,6 +36,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define C37118_SYNC_LEADER 0xAA  ///< SYNC byte 0 (frame leader)
+#define C37118_TYPE_SHIFT 4      ///< SYNC byte 1: frame type occupies bits 6-4
+#define C37118_TYPE_MASK 0x07    ///< frame-type field width (after the shift)
+#define C37118_VERSION_MASK 0x0F ///< SYNC byte 1: version occupies bits 3-0
+
 // Frame types (SYNC byte 1, bits 6-4).
 #define C37118_TYPE_DATA 0
 #define C37118_TYPE_HEADER 1

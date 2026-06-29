@@ -24,31 +24,31 @@ bool lwm2m_tlv_write(Lwm2mTlvWriter *w, uint8_t id_type, uint16_t id, const uint
 {
     if (!w || (value_len && !value))
         return false;
-    uint8_t type = (uint8_t)(id_type & 0xC0);
-    bool id16 = id > 0xFF;
+    uint8_t type = (uint8_t)(id_type & LWM2M_TLV_IDKIND_MASK);
+    bool id16 = id > 0xFF; // a 16-bit identifier is needed past 255
     if (id16)
-        type |= 0x20;
+        type |= LWM2M_TLV_ID16_FLAG;
 
     size_t lenbytes;
-    if (value_len <= 7)
+    if (value_len <= LWM2M_TLV_INLINE_LEN_MASK) // 0..7 fits inline (length-type 0)
     {
-        lenbytes = 0; // inline length in bits 2-0
+        lenbytes = 0;
         type |= (uint8_t)value_len;
     }
-    else if (value_len <= 0xFF)
+    else if (value_len <= 0xFF) // 8-bit length field (length-type 1)
     {
         lenbytes = 1;
-        type |= (uint8_t)(1 << 3);
+        type |= (uint8_t)(1 << LWM2M_TLV_LENTYPE_SHIFT);
     }
-    else if (value_len <= 0xFFFF)
+    else if (value_len <= 0xFFFF) // 16-bit length field (length-type 2)
     {
         lenbytes = 2;
-        type |= (uint8_t)(2 << 3);
+        type |= (uint8_t)(2 << LWM2M_TLV_LENTYPE_SHIFT);
     }
-    else if (value_len <= 0xFFFFFF)
+    else if (value_len <= 0xFFFFFF) // 24-bit length field (length-type 3)
     {
         lenbytes = 3;
-        type |= (uint8_t)(3 << 3);
+        type |= (uint8_t)(3 << LWM2M_TLV_LENTYPE_SHIFT);
     }
     else
         return false;
@@ -125,17 +125,17 @@ bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
         return false;
     size_t p = *pos;
     uint8_t type = buf[p++];
-    bool id16 = (type & 0x20) != 0;
+    bool id16 = (type & LWM2M_TLV_ID16_FLAG) != 0;
     if (p + (id16 ? 2u : 1u) > len)
         return false;
     uint16_t id = buf[p++];
     if (id16)
         id = (uint16_t)((id << 8) | buf[p++]);
 
-    uint8_t lentype = (uint8_t)((type >> 3) & 0x03);
+    uint8_t lentype = (uint8_t)((type >> LWM2M_TLV_LENTYPE_SHIFT) & LWM2M_TLV_LENTYPE_MASK);
     size_t vlen;
     if (lentype == 0)
-        vlen = type & 0x07;
+        vlen = type & LWM2M_TLV_INLINE_LEN_MASK;
     else
     {
         if (p + lentype > len)
@@ -147,7 +147,7 @@ bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out)
     if (p + vlen > len)
         return false;
 
-    out->id_type = (uint8_t)(type & 0xC0);
+    out->id_type = (uint8_t)(type & LWM2M_TLV_IDKIND_MASK);
     out->id = id;
     out->value = buf + p;
     out->value_len = vlen;

@@ -36,6 +36,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define MQTTSN_LEN3_PREFIX 0x01 ///< a first Length octet of 0x01 signals the 3-octet length form
+
 // Message types (MQTT-SN v1.2 Table 5).
 #define MQTTSN_ADVERTISE 0x00
 #define MQTTSN_SEARCHGW 0x01

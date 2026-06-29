@@ -28,10 +28,10 @@ bool pb_write_varint(PbWriter *w, uint64_t v)
     size_t n = 0;
     do
     {
-        uint8_t b = (uint8_t)(v & 0x7F);
+        uint8_t b = (uint8_t)(v & 0x7F); // low 7 bits of payload
         v >>= 7;
         if (v)
-            b |= 0x80;
+            b |= 0x80; // high bit = "more bytes follow" (continuation)
         tmp[n++] = b;
     } while (v);
     if (w->pos + n > w->cap)
@@ -46,7 +46,7 @@ bool pb_write_varint(PbWriter *w, uint64_t v)
 
 bool pb_write_tag(PbWriter *w, uint32_t field, uint8_t wire_type)
 {
-    return pb_write_varint(w, ((uint64_t)field << 3) | (wire_type & 0x07));
+    return pb_write_varint(w, ((uint64_t)field << 3) | (wire_type & 0x07)); // tag = field<<3 | wire(low 3 bits)
 }
 
 // Append @p n raw little-endian octets of @p v.
@@ -154,8 +154,8 @@ bool pb_read_varint(const uint8_t *buf, size_t len, size_t *pos, uint64_t *out)
         if (i >= len)
             return false; // truncated
         uint8_t c = buf[i++];
-        v |= (uint64_t)(c & 0x7F) << shift;
-        if (!(c & 0x80))
+        v |= (uint64_t)(c & 0x7F) << shift; // accumulate 7 payload bits, little-endian
+        if (!(c & 0x80))                    // continuation bit clear -> last byte
         {
             *out = v;
             *pos = i;
@@ -173,8 +173,8 @@ bool pb_read_field(const uint8_t *buf, size_t len, size_t *pos, PbField *out)
     uint64_t tag;
     if (!pb_read_varint(buf, len, pos, &tag))
         return false;
-    out->field_number = (uint32_t)(tag >> 3);
-    out->wire_type = (uint8_t)(tag & 0x07);
+    out->field_number = (uint32_t)(tag >> 3); // tag high bits = field number
+    out->wire_type = (uint8_t)(tag & 0x07);   // tag low 3 bits = wire type
     out->value = 0;
     out->data = nullptr;
     out->len = 0;

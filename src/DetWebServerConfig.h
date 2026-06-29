@@ -914,6 +914,19 @@
 #endif
 
 /**
+ * @brief Allen-Bradley DF1 full-duplex frame codec (`services/df1`).
+ *
+ * Default off. A zero-heap framing + DLE byte-stuffing + BCC/CRC codec for the Rockwell
+ * serial PLC data-link layer (pub. 1770-6.5.16): `df1_build_frame` wraps application data in
+ * `DLE STX ... DLE ETX` with a doubled-DLE escape and a BCC (2's complement of the data sum)
+ * or CRC-16 (over the data + ETX, low byte first), and `df1_parse_frame` validates the check
+ * and un-stuffs the data. Pure codec, host-tested; the application header is the app's.
+ */
+#ifndef DETWS_ENABLE_DF1
+#define DETWS_ENABLE_DF1 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

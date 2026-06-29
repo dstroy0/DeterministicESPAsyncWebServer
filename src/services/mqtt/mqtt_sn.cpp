@@ -54,7 +54,7 @@ static size_t frame_header(uint8_t *buf, size_t cap, uint8_t msg_type, size_t bo
         buf[pos++] = (uint8_t)t;
     else
     {
-        buf[pos++] = 0x01;
+        buf[pos++] = MQTTSN_LEN3_PREFIX;
         buf[pos++] = (uint8_t)(t >> 8);
         buf[pos++] = (uint8_t)(t & 0xFF);
     }
@@ -224,7 +224,7 @@ bool mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size
     if (!buf || !out || !consumed || len < 2)
         return false;
     size_t lenfield, total;
-    if (buf[0] == 0x01)
+    if (buf[0] == MQTTSN_LEN3_PREFIX)
     {
         if (len < 3)
             return false;
