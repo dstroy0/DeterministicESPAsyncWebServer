@@ -187,9 +187,12 @@ static int base64url_val(char c)
         return c - 'a' + 26;
     if (c >= '0' && c <= '9')
         return c - '0' + 52;
-    if (c == '-' || c == '+')
+    // RFC 4648 section 5: the URL-safe alphabet uses '-'/'_'. The standard '+'/'/'
+    // are NOT valid here; a strict JWS/JWT decoder rejects them rather than
+    // silently treating two alphabets as one (RFC 7515).
+    if (c == '-')
         return 62;
-    if (c == '_' || c == '/')
+    if (c == '_')
         return 63;
     return -1;
 }

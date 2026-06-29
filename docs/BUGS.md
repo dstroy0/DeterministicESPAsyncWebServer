@@ -8,6 +8,51 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Standards-conformance audit, batch 2e (LOW/SHOULD closeout)
+
+- **Status:** FIXED (standards-conformance audit; host + HW-verified on COM3)
+- **Found:** 2026-06-29, multi-agent conformance audit (the batch-2b "Still OPEN" list).
+- **Closes the remaining LOW/SHOULD items so the audit is 100% addressed.**
+- **WebSocket handshake accepted a malformed upgrade (LOW, RFC 6455 4.2.1).** The upgrade
+  test did not require an `upgrade` token in the `Connection` header, nor that
+  `Sec-WebSocket-Key` base64-decode to 16 bytes. Both are now required; a bad handshake
+  gets `400` and no upgrade. Tests: `test_web_terminal`
+  `test_ws_upgrade_requires_connection_token`, `test_ws_upgrade_rejects_bad_key_length`.
+- **MQTT topic validation (LOW, MQTT-3.3.2-2 / 1.5.3).** `mqtt_build_publish` now rejects a
+  Topic Name containing wildcards (`+`/`#`); `mqtt_parse_publish` rejects a Topic Name that
+  is not well-formed UTF-8 or contains U+0000. The UTF-8 validator was extracted to a shared
+  primitive (`shared_primitives/det_utf8.h`) and reused by WebSocket (no duplicate copy).
+  Tests: `test_mqtt` `test_publish_wildcard_topic_rejected`,
+  `test_publish_topic_nul_or_bad_utf8_rejected`.
+- **base64url decoder was lenient (LOW, RFC 4648 5 / RFC 7515).** `base64url_decode` also
+  accepted the standard `+`/`/` alphabet, contradicting its name and the JWS base64url
+  contract. Now strict (URL alphabet only); no caller fed it standard base64 (OIDC `n`/`e`
+  are Base64urlUInt, not `x5c`). Not a signature-bypass vector (JWS signs the literal
+  transmitted ASCII), hence LOW. Test: `test_jwt` `test_base64url_strict_alphabet`.
+- **Digest nonce never rotated; no replay window bound (SHOULD, RFC 7616 3.3).** The server
+  used a single fixed nonce regenerated only at `begin()`, so a captured Digest response
+  could be replayed indefinitely. Replaced with a stateless, keyed, timestamped nonce
+  (`<issue_ms_hex>.<SHA-256(secret||issue) truncated>`): no per-nonce table (compatible with
+  the shared-nothing worker model), bounded lifetime (`DETWS_DIGEST_NONCE_LIFETIME_MS`,
+  default 5 min), and an expired-but-valid response is answered `401 stale=true` for a
+  transparent retry (not counted against the lockout). Full per-nonce `nc` replay tracking
+  remains intentionally out of scope: it requires shared mutable per-nonce state the
+  deterministic worker model cannot hold safely; the bounded-lifetime nonce is the standard
+  stateless mitigation. Tests: `test_digest_auth` `test_nonce_is_stateless_timestamped`,
+  `test_stale_nonce_triggers_transparent_retry`.
+- **SNMP v2c GET returned noSuchObject for a missing instance (LOW, RFC 3416 4.2.1).** A
+  Get for an unbound name always reported `noSuchObject`. Now distinguishes
+  `noSuchInstance` (the name's object-type prefix matches a registered object, only the
+  instance is absent) from `noSuchObject` (no such object at all). Test: `test_snmp_agent`
+  `test_get_bad_instance_v2c_nosuchinstance`.
+- **HTTP chunked was sent to HTTP/1.0 clients (MED-niche, RFC 7230 3.3.1).** `send_chunked`
+  always emitted `Transfer-Encoding: chunked`, which is invalid for a 1.0 client. It now
+  falls back to a close-delimited body (no Transfer-Encoding, `Connection: close`, raw bytes
+  paged across loops, end signalled by the connection close) when the request is not
+  HTTP/1.1. Tests: `test_chunked` `test_http10_falls_back_to_close_delimited`,
+  `test_http10_large_body_not_truncated`. HW: `--http1.0 /stream` -> `HTTP/1.0 200` +
+  `Connection: close`, body intact; `--http1.1` -> chunked.
+
 ## Standards-conformance audit, batch 2d (WebDAV PROPFIND Depth: infinity)
 
 - **Status:** FIXED (standards-conformance audit; HW-verified)
@@ -50,11 +95,10 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   The first subidentifier (40*arc0 + arc1) is base-128 and may span octets; the decoder
   read only one octet (encoder was already correct). Fixed; common OIDs (1.3.6.1...,
   first subid 43) decode identically. Test: test_oid_large_first_subidentifier_roundtrip.
-- **Still OPEN (tracked for the standards-audit roadmap item):** HTTP chunked sent to
-  non-1.1 clients (RFC 9112 6.1; low impact - HTTP/1.0 clients are extinct - and needs
-  streaming-pump changes); SNMP v2c noSuchInstance vs noSuchObject; Digest nonce rotation
-    - nc replay (SHOULD); stricter base64url; WS handshake Connection:Upgrade token +
-      key-length check; MQTT topic UTF-8/wildcard.
+- **These LOW/SHOULD items are now CLOSED in batch 2e (above):** HTTP chunked to non-1.1
+  clients, SNMP v2c noSuchInstance vs noSuchObject, Digest nonce rotation (stateless
+  timestamped nonce; full nc-replay tracking intentionally out of scope), stricter
+  base64url, WS handshake Connection:Upgrade + key-length check, MQTT topic UTF-8/wildcard.
 
 ## Standards-conformance audit, batch 2a (auth: JWT alg, Digest uri)
 

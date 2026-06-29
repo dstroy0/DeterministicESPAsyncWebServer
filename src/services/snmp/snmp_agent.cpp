@@ -104,6 +104,23 @@ static bool fetch_value(const SnmpMibEntry *en, SnmpValue *out)
     return true;
 }
 
+// RFC 3416 4.2.1: a GetRequest for an unbound name reports noSuchInstance when the
+// name's OBJECT IDENTIFIER prefix matches a known object (only the instance is
+// absent), and noSuchObject when no such object exists at all. Every registered
+// entry is a full instance OID, so its object-type prefix is its OID minus the
+// final (instance) arc; the request names a known object iff that prefix is a
+// prefix of the request.
+static bool mib_object_exists(const uint32_t *oid, size_t n)
+{
+    for (size_t i = 0; i < g_mib_count; i++)
+    {
+        size_t objn = g_mib[i].oid_len - 1; // drop the trailing instance arc
+        if (objn <= n && oid_cmp(g_mib[i].oid, objn, oid, objn) == 0)
+            return true;
+    }
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
@@ -416,8 +433,17 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                     }
                     break;
                 }
-                // v2c: per-varbind exception.
-                val.type = (pdu_tag == SNMP_PDU_GET) ? (uint8_t)SNMP_NO_SUCH_OBJECT : (uint8_t)SNMP_END_OF_MIB_VIEW;
+                // v2c: per-varbind exception. For Get, distinguish a missing
+                // instance of a known object (en found but its getter declined, or
+                // the object's type-prefix is registered) from an unknown object;
+                // GetNext past the end of the MIB is always endOfMibView.
+                if (pdu_tag == SNMP_PDU_GET)
+                {
+                    bool inst = en || mib_object_exists(g_in[i].oid, g_in[i].oid_len);
+                    val.type = inst ? (uint8_t)SNMP_NO_SUCH_INSTANCE : (uint8_t)SNMP_NO_SUCH_OBJECT;
+                }
+                else
+                    val.type = (uint8_t)SNMP_END_OF_MIB_VIEW;
                 g_out[nout].oid = en ? en->oid : g_in[i].oid;
                 g_out[nout].oid_len = en ? en->oid_len : g_in[i].oid_len;
                 g_out[nout].val = val;

@@ -156,9 +156,34 @@ void test_scope_allows()
     TEST_ASSERT_FALSE(jwt_scope_allows(nullptr, "read"));
 }
 
+// RFC 4648 section 5 / RFC 7515: base64url decoding must use the '-'/'_' alphabet
+// only. The standard '+'/'/' characters are rejected (return 0), while the URL
+// forms round-trip exactly. 0xFB,0xFF encodes to "-_8" in base64url ("+/8" in std).
+void test_base64url_strict_alphabet()
+{
+    uint8_t out[8];
+    // URL-safe characters decode.
+    TEST_ASSERT_EQUAL_size_t(2, base64url_decode("-_8", 3, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xFB, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, out[1]);
+    // Standard-alphabet '+' and '/' are not valid base64url -> reject.
+    TEST_ASSERT_EQUAL_size_t(0, base64url_decode("+/8", 3, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, base64url_decode("ab+c", 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, base64url_decode("ab/c", 4, out, sizeof(out)));
+    // Encode produces only the URL alphabet (no '+', '/', or '=').
+    const uint8_t raw[] = {0xFB, 0xFF, 0xBF};
+    char enc[8];
+    size_t n = base64url_encode(raw, sizeof(raw), enc);
+    TEST_ASSERT_NULL(strpbrk(enc, "+/="));
+    uint8_t back[8];
+    TEST_ASSERT_EQUAL_size_t(sizeof(raw), base64url_decode(enc, n, back, sizeof(back)));
+    TEST_ASSERT_EQUAL_MEMORY(raw, back, sizeof(raw));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_base64url_strict_alphabet);
     RUN_TEST(test_valid_token_accepts);
     RUN_TEST(test_wrong_secret_rejects);
     RUN_TEST(test_tampered_payload_rejects);

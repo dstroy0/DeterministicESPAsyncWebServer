@@ -64,12 +64,14 @@ size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap);
 size_t base64url_encode(const uint8_t *src, size_t src_len, char *dst);
 
 /**
- * @brief Decode @p src_len characters of base64url (the standard alphabet is also
- *        accepted; an '=' ends the input).
+ * @brief Decode @p src_len characters of base64url (RFC 4648 section 5, '-'/'_'
+ *        alphabet; an '=' ends the input).
  *
- * Streaming decoder - no padding or buffer length restriction. Writes at most
- * @p dst_cap bytes; returns the number written, or 0 on an invalid character or
- * if the output would exceed @p dst_cap (the write is bounded - no overflow).
+ * Strict: the standard '+'/'/' characters are rejected so a JWS/JWT segment is
+ * decoded as base64url only (RFC 7515), never as a mixed alphabet. Streaming
+ * decoder - no padding or buffer length restriction. Writes at most @p dst_cap
+ * bytes; returns the number written, or 0 on an invalid character or if the
+ * output would exceed @p dst_cap (the write is bounded - no overflow).
  */
 size_t base64url_decode(const char *src, size_t src_len, uint8_t *dst, size_t dst_cap);
 

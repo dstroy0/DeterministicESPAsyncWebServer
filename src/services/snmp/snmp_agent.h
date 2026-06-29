@@ -22,8 +22,9 @@
  * data, exactly like the rest of the library's strings).
  *
  * Get / GetNext / GetBulk / Set are supported. GetBulk and per-varbind
- * exceptions (noSuchObject / endOfMibView) apply to v2c; v1 uses the classic
- * error-status / error-index reporting. SNMPv3 (USM) is a separate, gated layer.
+ * exceptions (noSuchObject / noSuchInstance / endOfMibView) apply to v2c; v1 uses
+ * the classic error-status / error-index reporting. SNMPv3 (USM) is a separate,
+ * gated layer.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_AGENT_H

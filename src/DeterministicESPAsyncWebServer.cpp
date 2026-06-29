@@ -51,6 +51,7 @@
 #endif
 #if DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "services/det_clock.h" // detws_millis() for the stateless Digest nonce timestamp
 #if DETWS_ENABLE_AUTH_LOCKOUT
 #include "services/auth_lockout/auth_lockout.h"
 #endif
@@ -114,6 +115,7 @@ struct ChunkSend
     int total;          ///< body bytes emitted so far (excludes framing).
     bool keep;          ///< keep-alive vs close at completion.
     bool active;        ///< a chunked response is in progress on this slot.
+    bool raw;           ///< HTTP/1.0 client: stream the body unframed, close-delimited (no chunk wrapping).
 };
 static ChunkSend g_chunk_send[MAX_CONNS];
 
@@ -267,7 +269,7 @@ DetWebServer::DetWebServer()
     for (int i = 0; i < MAX_CONNS; i++)
         _extra_hdr[i][0] = '\0';
 #if DETWS_ENABLE_AUTH
-    regen_digest_nonce();
+    regen_digest_secret();
 #endif
 #if DETWS_ENABLE_STATS
     _stat_requests = _stat_2xx = _stat_4xx = _stat_5xx = 0;
@@ -300,9 +302,10 @@ void DetWebServer::note_response(uint8_t slot_id, int code, int body_len)
     }
 }
 
-#if DETWS_ENABLE_KEEPALIVE
+#if DETWS_ENABLE_KEEPALIVE || DETWS_ENABLE_WEBSOCKET
 // Case-insensitive search for @p token as a comma/space-delimited element of a
-// Connection header value (e.g. "keep-alive" in "Keep-Alive, Upgrade").
+// Connection header value (e.g. "keep-alive" in "Keep-Alive, Upgrade"). Shared by
+// keep-alive evaluation and the WebSocket Upgrade-token check.
 static bool conn_has_token(const char *hdr, const char *token)
 {
     if (!hdr)
@@ -326,7 +329,9 @@ static bool conn_has_token(const char *hdr, const char *token)
     }
     return false;
 }
+#endif // DETWS_ENABLE_KEEPALIVE || DETWS_ENABLE_WEBSOCKET
 
+#if DETWS_ENABLE_KEEPALIVE
 bool DetWebServer::keepalive_eval(uint8_t slot_id)
 {
     HttpReq *req = &http_pool[slot_id];
@@ -482,7 +487,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         return DETWS_ERR_NO_LISTENERS;
     DeterministicAsyncTCP::pool_init(cfg);
 #if DETWS_ENABLE_AUTH
-    regen_digest_nonce(); // fresh server nonce per begin()
+    regen_digest_secret(); // fresh server keying secret per begin()
 #endif
 #if DETWS_ENABLE_CSRF
     {
@@ -1260,6 +1265,13 @@ static bool ws_accept_key(const char *client_key, char *out)
         out[0] = '\0';
         return false;
     }
+    // RFC 6455 4.2.1: the Sec-WebSocket-Key must base64-decode to exactly 16 bytes.
+    uint8_t raw[24];
+    if (base64_decode(client_key, raw, sizeof(raw)) != 16)
+    {
+        out[0] = '\0';
+        return false;
+    }
     size_t magic_len = sizeof(WS_MAGIC) - 1;
     char concat[WS_MAX_KEY_LEN + sizeof(WS_MAGIC)];
     memcpy(concat, client_key, key_len);
@@ -1581,7 +1593,10 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 
 #if DETWS_ENABLE_WEBSOCKET
     const char *upgrade_hdr = http_get_header(req, "Upgrade");
-    bool is_ws_upgrade = (method == HTTP_GET) && upgrade_hdr && (strcasecmp(upgrade_hdr, "websocket") == 0);
+    // RFC 6455 4.2.1: a valid handshake needs Upgrade: websocket AND a Connection
+    // header that includes the "Upgrade" token.
+    bool is_ws_upgrade = (method == HTTP_GET) && upgrade_hdr && (strcasecmp(upgrade_hdr, "websocket") == 0) &&
+                         conn_has_token(http_get_header(req, "Connection"), "upgrade");
 #endif
 
     // For RFC 7231 §6.5.5: if a path matches but no method does, answer 405
@@ -1621,8 +1636,10 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
                 ws_send_version_required(slot_id);
                 return;
             }
+            // A failed upgrade here means a malformed/oversized Sec-WebSocket-Key (a
+            // client error, RFC 6455 4.2.1), so answer 400 rather than 503.
             if (!ws_do_upgrade(slot_id, req, r->ws_connect))
-                send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
+                send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Bad WebSocket handshake");
             return;
         }
 #endif // DETWS_ENABLE_WEBSOCKET
@@ -1679,16 +1696,19 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
                 return;
             }
 #endif
-            bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r) : check_basic_auth(slot_id, req, r);
+            bool stale = false;
+            bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r, &stale) : check_basic_auth(slot_id, req, r);
 #if DETWS_ENABLE_AUTH_LOCKOUT
+            // A stale-nonce retry carries valid credentials, so it is not a failed
+            // attempt: don't count it toward the lockout (nor reset the counter).
             if (ok)
                 auth_lockout_succeed(cip);
-            else
+            else if (!stale)
                 auth_lockout_fail(cip, now);
 #endif
             if (!ok)
             {
-                send_unauth(slot_id, r);
+                send_unauth(slot_id, r, stale);
                 return;
             }
         }
@@ -1958,8 +1978,25 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);
 
+    // RFC 7230 3.3.1: chunked is an HTTP/1.1 transfer-coding - it MUST NOT be sent
+    // to an HTTP/1.0 (or unknown-version) client. Fall back to a close-delimited
+    // body: omit Transfer-Encoding, force Connection: close, stream the body
+    // unframed, and signal its end by closing the connection (RFC 7230 3.3.3).
+    bool raw = (http_pool[slot_id].version != HTTP_11);
+
     char header[RESP_HDR_BUF_SIZE];
-    int hlen = snprintf(header, sizeof(header),
+    int hlen;
+    if (raw)
+    {
+        keep = false; // close-delimited: the connection close IS the message boundary
+        cl = "Connection: close\r\n";
+        hlen = snprintf(header, sizeof(header),
+                        "HTTP/1.0 %d %s\r\n"
+                        "Content-Type: %s\r\n",
+                        code, status_text(code), content_type);
+    }
+    else
+        hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Type: %s\r\n"
                         "Transfer-Encoding: chunked\r\n",
@@ -1968,7 +2005,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
 
     det_conn_send(slot_id, header, (u16_t)hlen);
 
-    // HEAD carries the headers (incl. Transfer-Encoding) but no body or terminator.
+    // HEAD carries the headers but no body or terminator.
     if (req_is_head(slot_id) || !source)
     {
         resp_end(slot_id, code, 0, keep);
@@ -1982,6 +2019,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
     s.total = 0;
     s.keep = keep;
     s.active = true;
+    s.raw = raw;
     chunk_send_pump(slot_id);
 }
 
@@ -2002,7 +2040,8 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 
     // Reserve room for the largest framing around one CHUNK_BUF_SIZE chunk:
     // "<hex>\r\n" (size line) + "\r\n" trailer. 12 bytes covers a 4-hex-digit size.
-    const u16_t FRAME = 12;
+    // The raw (HTTP/1.0) path writes the body bytes verbatim, so it needs no reserve.
+    const u16_t FRAME = s.raw ? 0 : 12;
     for (;;)
     {
         u16_t avail = det_conn_sndbuf(slot_id);
@@ -2019,20 +2058,28 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         size_t n = s.source(buf, cap, s.ctx);
         if (n == 0)
         {
-            det_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk
+            if (!s.raw)
+                det_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk (1.1 only)
             det_conn_flush(slot_id);
             s.active = false;
-            resp_end(slot_id, s.status, s.total, s.keep);
+            resp_end(slot_id, s.status, s.total, s.keep); // raw: keep==false -> connection close ends the body
             return;
         }
         if (n > cap)
             n = cap; // defensive: a misbehaving source must not overrun the window
 
-        char szhdr[12];
-        int sn = snprintf(szhdr, sizeof(szhdr), "%x\r\n", (unsigned)n);
-        det_conn_send(slot_id, szhdr, (u16_t)sn);
-        det_conn_send(slot_id, buf, (u16_t)n);
-        det_conn_send(slot_id, "\r\n", 2);
+        if (s.raw)
+        {
+            det_conn_send(slot_id, buf, (u16_t)n); // close-delimited: no chunk framing
+        }
+        else
+        {
+            char szhdr[12];
+            int sn = snprintf(szhdr, sizeof(szhdr), "%x\r\n", (unsigned)n);
+            det_conn_send(slot_id, szhdr, (u16_t)sn);
+            det_conn_send(slot_id, buf, (u16_t)n);
+            det_conn_send(slot_id, "\r\n", 2);
+        }
         s.total += (int)n;
     }
 }
@@ -2410,13 +2457,13 @@ static bool digest_field(const char *hdr, const char *key, char *out, size_t out
     return false;
 }
 
-void DetWebServer::regen_digest_nonce()
+void DetWebServer::regen_digest_secret()
 {
-    // Seed a 128-bit nonce from the hardware CSPRNG (esp_random() on ESP32; a
-    // non-crypto mock on native test builds), folded through SHA-256 with a
-    // counter + millis() so even a weak host RNG yields distinct values across
-    // regenerations. Replaces the old counter+`this` derivation, which was
-    // predictable and leaked an object address.
+    // Seed a 128-bit keying secret from the hardware CSPRNG (esp_random() on
+    // ESP32; a non-crypto mock on native test builds), folded through SHA-256 with
+    // a counter + millis() so even a weak host RNG yields distinct values across
+    // calls. The secret keys every timestamped nonce this server issues; it lives
+    // only in BSS and is never sent on the wire.
     static uint32_t counter = 0;
     counter++;
     uint8_t seed[24];
@@ -2431,10 +2478,60 @@ void DetWebServer::regen_digest_nonce()
     memcpy(seed + 20, &t, 4);
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(seed, sizeof(seed), d);
-    det_hex_encode(d, 16, _digest_nonce); // 16 bytes -> 32 hex chars
+    memcpy(_digest_secret, d, sizeof(_digest_secret)); // first 128 bits
 }
 
-void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
+// Stateless Digest nonce (RFC 7616 3.3): "<issue_ms_hex>.<mac_hex>" where the MAC
+// is SHA-256(secret || issue_ms) truncated to 128 bits. The server holds no
+// per-nonce state - it recomputes the MAC to authenticate a returned nonce and
+// reads the embedded issue time to age it - so the scheme is safe under the
+// shared-nothing worker model (the secret is set once at begin(), read-only after).
+static uint32_t digest_nonce_mac(const uint8_t *secret, uint32_t issue, char *mac_hex)
+{
+    uint8_t material[20];
+    memcpy(material, secret, 16);
+    memcpy(material + 16, &issue, 4); // endian-symmetric: minted and verified the same way
+    uint8_t d[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(material, sizeof(material), d);
+    det_hex_encode(d, 16, mac_hex); // 16 bytes -> 32 hex chars + NUL
+    return issue;
+}
+
+void DetWebServer::make_digest_nonce(char *out, size_t cap)
+{
+    uint32_t issue = detws_millis();
+    char issue_hex[9];
+    det_hex_encode((const uint8_t *)&issue, 4, issue_hex); // 4 bytes -> 8 hex chars
+    char mac_hex[33];
+    digest_nonce_mac(_digest_secret, issue, mac_hex);
+    snprintf(out, cap, "%s.%s", issue_hex, mac_hex);
+}
+
+bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
+{
+    *expired = false;
+    // Expected shape: 8 hex (issue) + '.' + 32 hex (MAC).
+    if (strlen(nonce) != 8 + 1 + 32 || nonce[8] != '.')
+        return false;
+    uint32_t issue;
+    if (det_hex_decode(nonce, 8, (uint8_t *)&issue, 4) != 4)
+        return false;
+    char mac_hex[33];
+    digest_nonce_mac(_digest_secret, issue, mac_hex);
+    // Constant-time compare of the 32 MAC hex chars: a forged nonce never reveals
+    // how many leading characters matched.
+    const char *got = nonce + 9;
+    uint8_t diff = 0;
+    for (int i = 0; i < 32; i++)
+        diff |= (uint8_t)(mac_hex[i] ^ got[i]);
+    if (diff != 0)
+        return false;                      // not a nonce this server minted
+    uint32_t age = detws_millis() - issue; // unsigned: tolerant of the 32-bit millis wrap
+    *expired = (age > DETWS_DIGEST_NONCE_LIFETIME_MS);
+    return true;
+}
+
+void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
 {
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
@@ -2445,9 +2542,13 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r)
 
     char challenge[MAX_AUTH_LEN + 128];
     if (r->auth_digest)
+    {
+        char nonce[48];
+        make_digest_nonce(nonce, sizeof(nonce)); // a fresh, timestamped nonce per challenge
         snprintf(challenge, sizeof(challenge),
-                 "WWW-Authenticate: Digest realm=\"%s\", qop=\"auth\", algorithm=SHA-256, nonce=\"%s\"\r\n",
-                 r->auth_realm, _digest_nonce);
+                 "WWW-Authenticate: Digest realm=\"%s\", qop=\"auth\", algorithm=SHA-256, nonce=\"%s\"%s\r\n",
+                 r->auth_realm, nonce, stale ? ", stale=true" : "");
+    }
     else
         snprintf(challenge, sizeof(challenge), "WWW-Authenticate: Basic realm=\"%s\"\r\n", r->auth_realm);
 
@@ -2500,7 +2601,7 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 // Validate an Authorization: Digest header (RFC 7616, SHA-256, qop=auth).
 // HA1 = SHA256(user:realm:pass), HA2 = SHA256(method:uri),
 // response = SHA256(HA1:nonce:nc:cnonce:qop:HA2).
-bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
+bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r, bool *stale)
 {
     // Use the full-length Authorization capture (the scratch header value is
     // capped at MAX_VAL_LEN, far shorter than a Digest header).
@@ -2510,7 +2611,7 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
     const char *d = hdr + 7;
 
     char username[MAX_AUTH_LEN];
-    char nonce[40];
+    char nonce[48];
     char uri[MAX_PATH_LEN + MAX_QUERY_LEN + 2];
     char qop[16];
     char nc[16];
@@ -2526,7 +2627,11 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
     // Identity + challenge binding must match before any hashing.
     if (strcmp(username, r->auth_user) != 0)
         return false;
-    if (strcmp(nonce, _digest_nonce) != 0)
+    // The nonce must be one this server minted (authentic MAC). A stale (expired)
+    // nonce is still authentic - we finish the credential check below and let the
+    // caller reissue with stale=true rather than rejecting outright (RFC 7616 3.3).
+    bool nonce_expired = false;
+    if (!verify_digest_nonce(nonce, &nonce_expired))
         return false;
     if (strcmp(qop, "auth") != 0)
         return false;
@@ -2554,11 +2659,20 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
     n = snprintf(tmp2, sizeof(tmp2), "%s:%s", req->method, uri);
     sha256_hex((const uint8_t *)tmp2, (size_t)n, ha2);
 
-    char tmp3[65 + 40 + 16 + 64 + 8 + 65 + 8];
+    char tmp3[65 + 48 + 16 + 64 + 8 + 65 + 8];
     n = snprintf(tmp3, sizeof(tmp3), "%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2);
     sha256_hex((const uint8_t *)tmp3, (size_t)n, expected);
 
-    return strcasecmp(expected, response) == 0;
+    if (strcasecmp(expected, response) != 0)
+        return false; // wrong credentials - leave *stale untouched (no transparent retry)
+    if (nonce_expired)
+    {
+        // Correct credentials but an aged nonce: signal a transparent retry so the
+        // client recomputes against a fresh challenge without re-prompting the user.
+        *stale = true;
+        return false;
+    }
+    return true;
 }
 #endif // DETWS_ENABLE_AUTH
 

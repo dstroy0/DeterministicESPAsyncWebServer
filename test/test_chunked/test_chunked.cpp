@@ -303,6 +303,34 @@ void test_log_hook_reports_total_body_length()
     TEST_ASSERT_EQUAL_INT(10, g_log_len); // "hello" + "world", framing excluded
 }
 
+// RFC 7230 3.3.1: chunked must not be sent to an HTTP/1.0 client. The same
+// streaming handler falls back to a close-delimited body: no Transfer-Encoding,
+// Connection: close, and the raw bytes with no chunk framing or terminator.
+void test_http10_falls_back_to_close_delimited()
+{
+    server.on("/c", HTTP_GET, h_multi);
+    feed_and_handle(0, "GET /c HTTP/1.0\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
+    TEST_ASSERT_NULL(strstr(r, "Transfer-Encoding")); // never chunked to a 1.0 client
+    TEST_ASSERT_NOT_NULL(strstr(r, "Connection: close\r\n"));
+    // Body bytes verbatim, no "2\r\n.."/"0\r\n\r\n" framing.
+    const char *body = strstr(r, "\r\n\r\n");
+    TEST_ASSERT_NOT_NULL(body);
+    TEST_ASSERT_EQUAL_STRING("\r\n\r\nabcdef", body);
+}
+
+// The large-body pager must also page a close-delimited HTTP/1.0 stream in full.
+void test_http10_large_body_not_truncated()
+{
+    server.on_request_log(log_cb);
+    server.on("/c", HTTP_GET, h_big);
+    feed_and_handle(0, "GET /c HTTP/1.0\r\n\r\n");
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "Transfer-Encoding"));
+    TEST_ASSERT_EQUAL_INT(200, g_log_status);
+    TEST_ASSERT_EQUAL_INT(BIG_TOTAL, g_log_len); // full body paged out, none dropped
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -316,5 +344,7 @@ int main()
     RUN_TEST(test_head_sends_headers_only);
     RUN_TEST(test_custom_header_injected_into_chunked);
     RUN_TEST(test_log_hook_reports_total_body_length);
+    RUN_TEST(test_http10_falls_back_to_close_delimited);
+    RUN_TEST(test_http10_large_body_not_truncated);
     return UNITY_END();
 }

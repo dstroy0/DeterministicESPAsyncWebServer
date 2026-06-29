@@ -207,6 +207,22 @@
 #define DIGEST_AUTH_HDR_MAX 384
 #endif
 
+/**
+ * @brief Lifetime of a Digest `nonce`, in milliseconds (default 5 minutes).
+ *
+ * The server mints a stateless, keyed, timestamped nonce (RFC 7616 3.3) rather
+ * than a fixed one: each challenge carries the issue time plus a MAC over the
+ * server secret, so no per-nonce table is needed. A client `Authorization` whose
+ * nonce is older than this window is treated as @c stale - the credentials are
+ * re-checked and, if correct, the server reissues a fresh challenge with
+ * `stale=true` so the client retries transparently (no re-prompt). This bounds
+ * how long a captured Digest response can be replayed without any server-side
+ * state, which the shared-nothing worker model could not hold safely.
+ */
+#ifndef DETWS_DIGEST_NONCE_LIFETIME_MS
+#define DETWS_DIGEST_NONCE_LIFETIME_MS (5u * 60u * 1000u)
+#endif
+
 /** @brief Maximum query-parameter key length. */
 #ifndef QUERY_KEY_LEN
 #define QUERY_KEY_LEN 24

@@ -482,13 +482,22 @@ class DetWebServer
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Validate an `Authorization: Digest` (RFC 7616, SHA-256, qop=auth) request against route @p r.
-    bool check_digest_auth(uint8_t slot_id, HttpReq *req, const Route *r);
+    /// @param stale  set true when the credentials verify but the nonce has expired (RFC 7616 3.3): the
+    ///               caller reissues a fresh challenge with `stale=true` so the client retries without a
+    ///               re-prompt. Left untouched on a credential mismatch or forged nonce.
+    bool check_digest_auth(uint8_t slot_id, HttpReq *req, const Route *r, bool *stale);
     /// @brief Send 401 Unauthorized with a Basic or Digest `WWW-Authenticate` challenge per route @p r.
-    void send_unauth(uint8_t slot_id, const Route *r);
-    /// @brief Current server Digest nonce (regenerated at begin()); 32 hex chars + NUL.
-    char _digest_nonce[33];
-    /// @brief Generate a fresh server Digest nonce into _digest_nonce.
-    void regen_digest_nonce();
+    /// @param stale  emit `stale=true` in the Digest challenge (expired-nonce transparent retry).
+    void send_unauth(uint8_t slot_id, const Route *r, bool stale = false);
+    /// @brief Per-server Digest keying secret (random at begin()); keys the stateless timestamped nonce.
+    uint8_t _digest_secret[16];
+    /// @brief (Re)seed the Digest keying secret from the CSPRNG.
+    void regen_digest_secret();
+    /// @brief Mint a fresh stateless nonce (issue time + keyed MAC) into @p out (needs cap >= 48).
+    void make_digest_nonce(char *out, size_t cap);
+    /// @brief Verify a client nonce's MAC and freshness. @return true if the MAC is authentic (issued by
+    ///        this server); sets @p *expired when the nonce is authentic but older than its lifetime.
+    bool verify_digest_nonce(const char *nonce, bool *expired);
 #endif
 
 #if DETWS_ENABLE_FILE_SERVING

@@ -11,6 +11,7 @@
 
 #if DETWS_ENABLE_MQTT
 
+#include "shared_primitives/det_utf8.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -159,6 +160,11 @@ size_t mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uin
 {
     if (!out || !topic || qos > 2)
         return 0;
+    // MQTT-3.3.2-2: a PUBLISH Topic Name MUST NOT contain wildcard characters
+    // (subscribe topic *filters* may, so this check is publish-only).
+    for (const char *t = topic; *t; t++)
+        if (*t == '+' || *t == '#')
+            return 0;
     size_t tlen = strlen(topic);
     size_t blen = 2 + tlen + (qos > 0 ? 2 : 0) + payload_len;
     uint8_t body[DETWS_MQTT_BUF_SIZE];
@@ -272,6 +278,9 @@ bool mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flag
         return false;
     if ((size_t)tlen + 1 > topic_cap)
         return false; // topic + NUL must fit
+    // MQTT 1.5.3: a UTF-8 string must be well-formed and must not contain U+0000.
+    if (!det_utf8_valid(buf + off, tlen) || memchr(buf + off, 0x00, tlen))
+        return false;
     memcpy(topic_out, buf + off, tlen);
     topic_out[tlen] = '\0';
     *topic_len = tlen;

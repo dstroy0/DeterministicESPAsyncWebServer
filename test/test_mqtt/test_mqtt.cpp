@@ -196,6 +196,40 @@ void test_publish_qos3_rejected()
     TEST_ASSERT_FALSE(mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
 }
 
+// MQTT-3.3.2-2: a PUBLISH Topic Name MUST NOT contain wildcard characters.
+void test_publish_wildcard_topic_rejected()
+{
+    uint8_t buf[64];
+    TEST_ASSERT_EQUAL_size_t(
+        0, mqtt_build_publish(buf, sizeof(buf), "a/+/b", (const uint8_t *)"x", 1, 0, 0, false, false));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             mqtt_build_publish(buf, sizeof(buf), "a/#", (const uint8_t *)"x", 1, 0, 0, false, false));
+    // A plain topic with no wildcards still builds.
+    TEST_ASSERT_GREATER_THAN(
+        0, mqtt_build_publish(buf, sizeof(buf), "a/b/c", (const uint8_t *)"x", 1, 0, 0, false, false));
+}
+
+// MQTT 1.5.3: a UTF-8 encoded string MUST be well-formed and MUST NOT contain U+0000.
+void test_publish_topic_nul_or_bad_utf8_rejected()
+{
+    char topic[16];
+    size_t tlen, plen;
+    const uint8_t *payload;
+    uint16_t pid;
+    // topic length 2, bytes {0xC3,0x28} = invalid UTF-8 sequence, qos0 (flags 0).
+    const uint8_t bad_utf8[] = {0x00, 0x02, 0xC3, 0x28};
+    TEST_ASSERT_FALSE(
+        mqtt_parse_publish(bad_utf8, sizeof(bad_utf8), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
+    // topic length 2, bytes {'a',0x00} = embedded NUL.
+    const uint8_t embedded_nul[] = {0x00, 0x02, 'a', 0x00};
+    TEST_ASSERT_FALSE(
+        mqtt_parse_publish(embedded_nul, sizeof(embedded_nul), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
+    // A well-formed topic of the same shape still parses.
+    const uint8_t ok[] = {0x00, 0x03, 'a', '/', 'b'};
+    TEST_ASSERT_TRUE(mqtt_parse_publish(ok, sizeof(ok), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid));
+    TEST_ASSERT_EQUAL_STRING("a/b", topic);
+}
+
 // --- SUBSCRIBE / UNSUBSCRIBE ---
 
 void test_subscribe()
@@ -294,6 +328,8 @@ int main(int, char **)
     RUN_TEST(test_publish_qos1_flags_and_id);
     RUN_TEST(test_publish_topic_overflow_rejected);
     RUN_TEST(test_publish_qos3_rejected);
+    RUN_TEST(test_publish_wildcard_topic_rejected);
+    RUN_TEST(test_publish_topic_nul_or_bad_utf8_rejected);
     RUN_TEST(test_subscribe);
     RUN_TEST(test_unsubscribe);
     RUN_TEST(test_ack_packets);

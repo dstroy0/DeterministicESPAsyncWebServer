@@ -22,6 +22,8 @@ static const uint32_t OID_RO[] = {1, 3, 6, 1, 4, 1, 49374, 2, 0};
 static const uint32_t OID_CTR[] = {1, 3, 6, 1, 4, 1, 49374, 3, 0};
 static const uint32_t OID_PAST_END[] = {1, 3, 6, 1, 4, 1, 49374, 99, 0};
 static const uint32_t OID_UNKNOWN[] = {1, 3, 6, 1, 2, 1, 99, 0};
+// sysDescr exists as object 1.3.6.1.2.1.1.1 but only instance .0; ask for .5.
+static const uint32_t OID_SYSDESCR_BADINST[] = {1, 3, 6, 1, 2, 1, 1, 1, 5};
 
 static const char *SYSDESCR_VAL = "DetWS test agent";
 
@@ -215,6 +217,20 @@ void test_get_unknown_v2c_exception()
     TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_OBJECT, rv.val_tag);
 }
 
+// RFC 3416 4.2.1: a known object (sysDescr) but a nonexistent instance (.5) must
+// report noSuchInstance, distinct from the noSuchObject above for an unknown OID.
+void test_get_bad_instance_v2c_nosuchinstance()
+{
+    uint8_t req[256], resp[256];
+    size_t rl =
+        build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 8, 0, 0, OID_SYSDESCR_BADINST, 9, nullptr);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_INSTANCE, rv.val_tag);
+}
+
 void test_get_unknown_v1_error()
 {
     uint8_t req[256], resp[256];
@@ -356,6 +372,7 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_get_string_v2c);
     RUN_TEST(test_get_unknown_v2c_exception);
+    RUN_TEST(test_get_bad_instance_v2c_nosuchinstance);
     RUN_TEST(test_get_unknown_v1_error);
     RUN_TEST(test_getnext_walks_to_first);
     RUN_TEST(test_getnext_past_end_endofmibview);

@@ -8,9 +8,18 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "services/det_clock.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
+
+// A test-controllable monotonic clock (ms) so the stale-nonce path can be exercised
+// deterministically: tests advance g_fake_ms and the library reads it via detws_millis().
+static uint32_t g_fake_ms = 0;
+static uint32_t fake_clock()
+{
+    return g_fake_ms;
+}
 
 static DetWebServer server;
 static bool g_called;
@@ -101,6 +110,7 @@ void setUp()
 void tearDown()
 {
     tcp_capture_disable();
+    detws_set_clock(nullptr, 0); // revert any injected clock so tests stay independent
 }
 
 static void rearm_slot(uint8_t slot)
@@ -143,7 +153,7 @@ void test_valid_digest_authenticates()
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
 
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     char resp[65];
@@ -168,7 +178,7 @@ void test_wrong_password_rejected()
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
 
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     char resp[65];
@@ -214,7 +224,7 @@ void test_wrong_username_rejected()
 {
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     // A different username than the route is configured for: rejected before hashing.
@@ -236,7 +246,7 @@ void test_wrong_qop_rejected()
 {
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     // Only qop=auth is accepted; qop=auth-int must be rejected (it also changes the
@@ -259,7 +269,7 @@ void test_missing_response_field_rejected()
 {
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     // No response= field at all: a required field is missing -> rejected.
@@ -293,7 +303,7 @@ void test_uri_mismatch_rejected()
 {
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     // Compute a fully valid response for uri "/other", then present it on /secure.
@@ -311,21 +321,73 @@ void test_uri_mismatch_rejected()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "401"));
 }
 
-void test_nonce_is_128bit_hex()
+// The stateless nonce is "<8 hex issue ms>.<32 hex MAC>": exactly 41 lowercase
+// hex/'.' characters with the separating dot at index 8.
+void test_nonce_is_stateless_timestamped()
 {
-    // The hardened nonce is SHA-256(CSPRNG + counter + millis) truncated to 16
-    // bytes -> exactly 32 lowercase hex characters.
     server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
     feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
-    char nonce[40];
+    char nonce[48];
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
-    TEST_ASSERT_EQUAL_UINT(32, (unsigned)strlen(nonce));
-    for (int i = 0; i < 32; i++)
+    TEST_ASSERT_EQUAL_UINT(41, (unsigned)strlen(nonce));
+    TEST_ASSERT_EQUAL_CHAR('.', nonce[8]);
+    for (int i = 0; i < 41; i++)
     {
+        if (i == 8)
+            continue;
         char ch = nonce[i];
         bool is_hex = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
         TEST_ASSERT_TRUE(is_hex);
     }
+}
+
+// RFC 7616 3.3: once the nonce ages past its lifetime, a request with otherwise
+// valid credentials is answered with 401 + stale=true (a transparent retry), and
+// the fresh nonce from that response authenticates at the same (advanced) time.
+void test_stale_nonce_triggers_transparent_retry()
+{
+    detws_set_clock(fake_clock, 1000); // 1000 ticks/sec -> 1 tick == 1 ms
+    g_fake_ms = 0;
+    server = DetWebServer(); // re-seed the keying secret under the injected clock
+    server.on("/secure", HTTP_GET, h_secure, kRealm, kUser, kPass, true);
+
+    // Mint a nonce at t=0.
+    feed_and_handle(0, "GET /secure HTTP/1.1\r\nHost: x\r\n\r\n");
+    char nonce[48];
+    TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
+
+    // Jump past the nonce lifetime, then present a valid response with the old nonce.
+    g_fake_ms = DETWS_DIGEST_NONCE_LIFETIME_MS + 1;
+    char resp[65];
+    compute_response(kUser, kRealm, kPass, "GET", "/secure", nonce, "00000001", "abc", resp);
+    char authreq[640];
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce, resp);
+    rearm_slot(0);
+    conn_pool[0].last_activity_ms = g_fake_ms; // a real RX stamps arrival; do so under the jumped clock
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_FALSE(g_called); // not served - the nonce is stale
+    const char *chal = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(chal, "401"));
+    TEST_ASSERT_NOT_NULL(strstr(chal, "stale=true"));
+
+    // The retry: use the fresh nonce from the stale challenge -> authenticates now.
+    char nonce2[48];
+    TEST_ASSERT_TRUE(extract_nonce(chal, nonce2, sizeof(nonce2)));
+    compute_response(kUser, kRealm, kPass, "GET", "/secure", nonce2, "00000001", "abc", resp);
+    snprintf(authreq, sizeof(authreq),
+             "GET /secure HTTP/1.1\r\nHost: x\r\n"
+             "Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"/secure\", "
+             "qop=auth, nc=00000001, cnonce=\"abc\", response=\"%s\"\r\n\r\n",
+             kUser, kRealm, nonce2, resp);
+    rearm_slot(0);
+    conn_pool[0].last_activity_ms = g_fake_ms;
+    feed_and_handle(0, authreq);
+    TEST_ASSERT_TRUE(g_called);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
 }
 
 int main()
@@ -340,6 +402,7 @@ int main()
     RUN_TEST(test_missing_response_field_rejected);
     RUN_TEST(test_basic_scheme_on_digest_route_rejected);
     RUN_TEST(test_uri_mismatch_rejected);
-    RUN_TEST(test_nonce_is_128bit_hex);
+    RUN_TEST(test_nonce_is_stateless_timestamped);
+    RUN_TEST(test_stale_nonce_triggers_transparent_retry);
     return UNITY_END();
 }

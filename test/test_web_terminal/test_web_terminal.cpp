@@ -125,6 +125,32 @@ void test_ws_upgrade_tracks_client()
     TEST_ASSERT_EQUAL_UINT(1, detws_web_terminal_client_count());
 }
 
+// RFC 6455 4.2.1: a GET with Upgrade: websocket but no "Upgrade" token in the
+// Connection header is not a valid handshake -> 400, no upgrade.
+void test_ws_upgrade_requires_connection_token()
+{
+    push_str(0, "GET /terminal/ws HTTP/1.1\r\nHost: x\r\n"
+                "Upgrade: websocket\r\n" // no Connection: Upgrade
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n");
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_NULL(ws_find(0));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
+}
+
+// RFC 6455 4.2.1: a Sec-WebSocket-Key that does not base64-decode to 16 bytes is a
+// bad handshake -> 400, no upgrade.
+void test_ws_upgrade_rejects_bad_key_length()
+{
+    push_str(0, "GET /terminal/ws HTTP/1.1\r\nHost: x\r\n"
+                "Upgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: c2hvcnQ=\r\nSec-WebSocket-Version: 13\r\n\r\n"); // "short" -> 5 bytes
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_NULL(ws_find(0));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
+}
+
 void test_command_delivered_to_callback()
 {
     uint8_t wid = do_handshake(0);
@@ -177,6 +203,8 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_serves_terminal_page);
     RUN_TEST(test_ws_upgrade_tracks_client);
+    RUN_TEST(test_ws_upgrade_requires_connection_token);
+    RUN_TEST(test_ws_upgrade_rejects_bad_key_length);
     RUN_TEST(test_command_delivered_to_callback);
     RUN_TEST(test_broadcast_reaches_client);
     RUN_TEST(test_printf_broadcast);
