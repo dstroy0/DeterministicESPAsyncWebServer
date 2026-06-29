@@ -2,6 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- guard the interop harness (compile + list peers) ([`ba9dca5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba9dca5e1e140eabdd0ae4b6aa0b280420f5f179))
+- update test report [skip ci] ([`5ddf350`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ddf3508fe26c603c6fb5bed4b059a70afb77150))
+- update CHANGELOG.md [skip ci] ([`ad4e850`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad4e850ddaa3b87a8510dcad2038410fb372442e))
+
 ## [4.13.3] - 2026-06-29
 
 <details>
