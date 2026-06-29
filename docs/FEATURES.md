@@ -400,6 +400,12 @@ Protocol Buffers wire codec. Default off. services/protobuf is a zero-heap strea
 
 First-boot WiFi provisioning: softAP + captive-portal credentials form.
 
+## Proxy Protocol
+
+`DETWS_ENABLE_PROXY_PROTOCOL`
+
+HAProxy PROXY protocol codec - recover the real client IPv4 when the server sits behind a load balancer / reverse proxy that prepends a PROXY header. Default off. services/proxy_protocol provides `proxy_parse` (detects + decodes a v1 text `PROXY TCP4 ...\r\n` header or a v2 binary header - 12-octet signature + ver_cmd / family / address block - and reports the bytes to skip before the real stream) plus `proxy_v1_build` / `proxy_v2_build` for a TCP/IPv4 header. Handles the library's IPv4 family; IPv6 / UNIX / LOCAL headers parse to their length but yield no addresses. Format per the HAProxy PROXY protocol spec; pure and host-tested. See src/services/proxy_protocol/proxy_protocol.h.
+
 ## Radio Power
 
 `DETWS_ENABLE_RADIO_POWER`

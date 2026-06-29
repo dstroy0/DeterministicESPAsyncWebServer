@@ -444,6 +444,12 @@
       "src": ["+<services/nats/nats.cpp>"],
       "tests": ["test_nats"]
     },
+    "native_proxy_protocol": {
+      "desc": "HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary)\nTCP/IPv4 header builders and the unified parser (recover the real client IP behind a load\nbalancer). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PROXY_PROTOCOL=1"],
+      "src": ["+<services/proxy_protocol/proxy_protocol.cpp>"],
+      "tests": ["test_proxy_protocol"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

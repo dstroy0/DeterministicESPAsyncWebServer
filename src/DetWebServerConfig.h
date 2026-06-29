@@ -1038,6 +1038,20 @@
 #endif
 
 /**
+ * @brief HAProxy PROXY protocol codec (`services/proxy_protocol`).
+ *
+ * Default off. A zero-heap parser + builder for the PROXY protocol header a load balancer /
+ * reverse proxy prepends, so the server recovers the real client IPv4 behind one.
+ * `proxy_parse` detects + decodes a v1 (text `PROXY TCP4 ...`) or v2 (binary signature +
+ * ver_cmd / fam / address block) header and reports the bytes to skip; `proxy_v1_build` /
+ * `proxy_v2_build` emit a TCP/IPv4 header. Pure codec, host-tested; the application feeds it
+ * the first bytes of an accepted connection.
+ */
+#ifndef DETWS_ENABLE_PROXY_PROTOCOL
+#define DETWS_ENABLE_PROXY_PROTOCOL 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs
