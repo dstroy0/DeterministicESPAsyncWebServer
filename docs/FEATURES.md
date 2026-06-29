@@ -130,6 +130,12 @@ Conditional GET via ETag for served files. When set, serve_file()/serve_static()
 
 Static file serving via Arduino FS (LittleFS, SPIFFS, SD).
 
+## FINS
+
+`DETWS_ENABLE_FINS`
+
+Omron FINS frame codec. Default off. services/fins is a zero-heap command/response builder + parser for the Factory Interface Network Service (FINS/UDP): `fins_build_command` and `fins_build_memory_area_read` emit the 10-octet routing header (ICF/RSV/GCT, destination + source net/node/unit, SID) plus the MRC/SRC command code and parameters, and `fins_parse_command` / `fins_parse_response` read them back (the response MRES/SRES end code included). Talks to an Omron PLC over the shipped UDP transport (det_udp_sendto). Header layout verified against the FINS spec; pure and host-tested. See src/services/fins/fins.h.
+
 ## Flow Export
 
 `DETWS_ENABLE_FLOW_EXPORT`

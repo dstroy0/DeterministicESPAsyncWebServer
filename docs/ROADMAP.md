@@ -403,11 +403,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       **MELSECNET/H** and **MELSECNET/10** (the cyclic control-network layer, which is
       PHY/timing-gated). Reuses the data-model + frame parse/build pattern; fixed BSS
       device model, no heap.
-- [ ] **FINS** (M-L, Omron) - the Omron Factory Interface Network Service: the FINS
-      command/response frames (memory-area read/write, run/stop, clock) over **FINS/UDP**
-      and **FINS/TCP** (ports 9600) first as the host-reachable paths, with the
-      FINS/Hostlink-gateway addressing model. Fixed BSS device model, no heap, one
-      build flag.
+- [~] **FINS** (M-L, Omron) - _FINS/UDP frame codec shipped._ `DETWS_ENABLE_FINS`
+  (`services\fins`): a zero-heap command/response builder + parser - `fins_build_command`
+  / `fins_build_memory_area_read` emit the 10-octet routing header + MRC/SRC command code + parameters, and `fins_parse_command` / `fins_parse_response` read them back (the
+  response MRES/SRES end code included), over the shipped UDP transport. Header layout
+  verified against the FINS spec; pure, host-tested. Remaining: the full command set
+  (memory-area write / run-stop / clock) and the FINS/TCP framing + the
+  FINS/Hostlink-gateway addressing model. Fixed BSS device model, no heap.
 - [ ] **Host Link** (M, Omron) - Omron's serial C-mode protocol (the `@`-framed ASCII
       commands with FCS over RS-232/RS-485) for CJ/CS/CP PLCs - memory read/write of the
       DM/CIO areas. UART transport, host-testable frame + FCS codec; pairs with the FINS

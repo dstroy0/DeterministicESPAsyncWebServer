@@ -368,6 +368,12 @@
       "src": ["+<services/lwm2m/lwm2m_tlv.cpp>"],
       "tests": ["test_lwm2m_tlv"]
     },
+    "native_fins": {
+      "desc": "Omron FINS frame codec (services/fins): the command builder + Memory Area Read\nconvenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end\ncode). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_FINS=1"],
+      "src": ["+<services/fins/fins.cpp>"],
+      "tests": ["test_fins"]
+    },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
       "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],

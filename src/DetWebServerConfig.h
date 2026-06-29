@@ -870,6 +870,19 @@
 #endif
 
 /**
+ * @brief Omron FINS frame codec (`services/fins`).
+ *
+ * Default off. A zero-heap command/response builder + parser for the Factory Interface
+ * Network Service (FINS/UDP): `fins_build_command` / `fins_build_memory_area_read` emit the
+ * 10-octet routing header + command code + parameters, and `fins_parse_command` /
+ * `fins_parse_response` read them back (the response end code MRES/SRES included). Talks to
+ * an Omron PLC over the shipped UDP transport (det_udp_sendto). Pure codec, host-tested.
+ */
+#ifndef DETWS_ENABLE_FINS
+#define DETWS_ENABLE_FINS 0
+#endif
+
+/**
  * @brief Opt-in Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
  *
  * Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs

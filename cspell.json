@@ -63,6 +63,8 @@
     "sint",
     "sunspec",
     "grpcweb",
+    "MRES",
+    "SRES",
     "framesize",
     "idcode",
     "fracsec",
