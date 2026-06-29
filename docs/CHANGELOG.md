@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.35.0] - 2026-06-29
+
+<details>
+<summary><b>Show Changelog for version 4.35.0 - 2026-06-29</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`b874c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b874c3cb416dcb5660d1c7681773bd93158a61b5))
+- update CHANGELOG.md [skip ci] ([`84ecfc4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84ecfc44a6dba8f41ce9f6094608abc6e2ae7932))
+
+### Changes
+
+- Bump version: 4.34.0 → 4.35.0 ([`51b7dad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51b7dada913723febc37e81905ec71ddf37a9abf))
+
+### Features
+
+- OMA LwM2M TLV codec (DETWS_ENABLE_LWM2M) ([`77abb7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77abb7ea92bea1dc68ace24fb4f86836caa345d5))
+
+</details>
+
 ## [4.34.0] - 2026-06-29
 
 <details>
