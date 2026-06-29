@@ -145,6 +145,26 @@ void test_parse_malformed()
     TEST_ASSERT_FALSE(wamp_get_uri("[2,123]", 1, uri, sizeof(uri))); // not a quoted string
 }
 
+// A URI that does not fit the destination fails closed without touching the buffer;
+// one that exactly fills it (body + NUL) succeeds.
+void test_get_uri_dest_bounds()
+{
+    const char *call = "[48,1,{},\"com.myapp.long.procedure.name\",[]]";
+    char small[8];
+    memset(small, '#', sizeof(small));
+    TEST_ASSERT_FALSE(wamp_get_uri(call, 3, small, sizeof(small))); // 26-char URI > 7
+    TEST_ASSERT_EQUAL_CHAR('#', small[0]);                          // buffer untouched on failure
+
+    // Exact fit: a 3-char URI needs 4 bytes (3 + NUL).
+    char exact[4];
+    TEST_ASSERT_TRUE(wamp_get_uri("[2,\"abc\"]", 1, exact, sizeof(exact)));
+    TEST_ASSERT_EQUAL_STRING("abc", exact);
+
+    // One byte short of exact fails closed.
+    char tight[3];
+    TEST_ASSERT_FALSE(wamp_get_uri("[2,\"abc\"]", 1, tight, sizeof(tight)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -159,5 +179,6 @@ int main()
     RUN_TEST(test_parse_event_positions);
     RUN_TEST(test_parse_get_uri_and_nesting);
     RUN_TEST(test_parse_malformed);
+    RUN_TEST(test_get_uri_dest_bounds);
     return UNITY_END();
 }

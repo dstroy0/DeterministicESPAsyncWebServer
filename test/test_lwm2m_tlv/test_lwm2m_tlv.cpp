@@ -145,6 +145,102 @@ void test_object_instance_nested()
     TEST_ASSERT_EQUAL_UINT16(1, it.id);
 }
 
+// A value past 255 octets uses the 16-bit length field (length-type 2); round-trips.
+void test_write_16bit_length()
+{
+    uint8_t val[300];
+    for (size_t i = 0; i < sizeof(val); i++)
+        val[i] = (uint8_t)i;
+
+    uint8_t buf[320];
+    Lwm2mTlvWriter w;
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 5, val, sizeof(val)));
+    size_t total = lwm2m_tlv_finish(&w);
+
+    TEST_ASSERT_EQUAL_HEX8(0xD0, buf[0]); // Resource, 8-bit id, 16-bit length (2 << 3)
+    TEST_ASSERT_EQUAL_HEX8(0x05, buf[1]); // id 5
+    TEST_ASSERT_EQUAL_HEX8(0x01, buf[2]); // 300 = 0x012C, high octet
+    TEST_ASSERT_EQUAL_HEX8(0x2C, buf[3]); // low octet
+
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_UINT16(5, t.id);
+    TEST_ASSERT_EQUAL_size_t(300, t.value_len);
+    TEST_ASSERT_EQUAL_MEMORY(val, t.value, sizeof(val));
+}
+
+// The reader decodes the 24-bit length field (length-type 3). A real 24-bit length
+// implies a >64KB value, so the form is exercised here with a short hand-built vector.
+void test_read_24bit_length()
+{
+    const uint8_t tlv[] = {0xD8, 0x07, 0x00, 0x00, 0x03, 0xAA, 0xBB, 0xCC}; // lentype 3, len 3
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(tlv, sizeof(tlv), &pos, &t));
+    TEST_ASSERT_EQUAL_UINT8(LWM2M_TLV_RESOURCE, t.id_type);
+    TEST_ASSERT_EQUAL_UINT16(7, t.id);
+    TEST_ASSERT_EQUAL_size_t(3, t.value_len);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, t.value[0]);
+    TEST_ASSERT_EQUAL_size_t(sizeof(tlv), pos);
+
+    // A 24-bit length that overruns the buffer is rejected.
+    const uint8_t trunc[] = {0xD8, 0x07, 0x00, 0x00, 0x10, 0xAA}; // says 16 octets, only 1 follows
+    pos = 0;
+    TEST_ASSERT_FALSE(lwm2m_tlv_read(trunc, sizeof(trunc), &pos, &t));
+}
+
+// Integers wider than two octets decode at the 4- and 8-byte widths, signed.
+void test_value_int_4_and_8_byte()
+{
+    uint8_t buf[64];
+    Lwm2mTlvWriter w;
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    lwm2m_tlv_write_int(&w, 0, 70000);         // > int16 -> 4 octets
+    lwm2m_tlv_write_int(&w, 1, 5000000000LL);  // > int32 -> 8 octets
+    lwm2m_tlv_write_int(&w, 2, -5000000000LL); // 8 octets, negative sign-extends
+    size_t total = lwm2m_tlv_finish(&w);
+
+    size_t pos = 0;
+    Lwm2mTlv t;
+    int64_t v;
+
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_size_t(4, t.value_len);
+    TEST_ASSERT_TRUE(lwm2m_tlv_value_int(t.value, t.value_len, &v));
+    TEST_ASSERT_EQUAL_INT64(70000, v);
+
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_size_t(8, t.value_len);
+    TEST_ASSERT_TRUE(lwm2m_tlv_value_int(t.value, t.value_len, &v));
+    TEST_ASSERT_EQUAL_INT64(5000000000LL, v);
+
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_size_t(8, t.value_len);
+    TEST_ASSERT_TRUE(lwm2m_tlv_value_int(t.value, t.value_len, &v));
+    TEST_ASSERT_EQUAL_INT64(-5000000000LL, v);
+}
+
+// A zero-length value is the inline length-type with length 0 and round-trips empty.
+void test_zero_length_value()
+{
+    uint8_t buf[8];
+    Lwm2mTlvWriter w;
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 9, nullptr, 0));
+    size_t total = lwm2m_tlv_finish(&w);
+    const uint8_t expect[] = {0xC0, 0x09}; // Resource, 8-bit id, inline length 0
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), total);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, total);
+
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_UINT16(9, t.id);
+    TEST_ASSERT_EQUAL_size_t(0, t.value_len);
+}
+
 void test_overflow_and_malformed()
 {
     uint8_t small[2];
@@ -173,6 +269,10 @@ int main()
     RUN_TEST(test_write_16bit_id);
     RUN_TEST(test_round_trip_and_value_int);
     RUN_TEST(test_object_instance_nested);
+    RUN_TEST(test_write_16bit_length);
+    RUN_TEST(test_read_24bit_length);
+    RUN_TEST(test_value_int_4_and_8_byte);
+    RUN_TEST(test_zero_length_value);
     RUN_TEST(test_overflow_and_malformed);
     return UNITY_END();
 }

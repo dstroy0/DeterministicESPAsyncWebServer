@@ -179,6 +179,45 @@ void test_malformed_reads()
     TEST_ASSERT_FALSE(pb_read_field(group, sizeof(group), &pos, &f));
 }
 
+// A 64-bit varint is at most 10 bytes; the full-width value decodes, an 11th
+// continuation byte does not (overlong varints are rejected, not wrapped).
+void test_varint_width_boundary()
+{
+    // The maximum 64-bit varint: nine 0xFF groups then 0x01 -> all bits set.
+    const uint8_t max64[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01};
+    size_t pos = 0;
+    uint64_t v = 0;
+    TEST_ASSERT_TRUE(pb_read_varint(max64, sizeof(max64), &pos, &v));
+    TEST_ASSERT_EQUAL_HEX64(0xFFFFFFFFFFFFFFFFULL, v);
+    TEST_ASSERT_EQUAL_size_t(10, pos);
+
+    // Ten continuation bytes never terminate within the 10-byte budget -> reject.
+    const uint8_t overlong[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01};
+    pos = 0;
+    TEST_ASSERT_FALSE(pb_read_varint(overlong, sizeof(overlong), &pos, &v));
+}
+
+// A zero-length LEN field is valid: it round-trips as an empty (non-null) payload.
+void test_empty_length_field()
+{
+    PbWriter w;
+    uint8_t buf[8];
+    pb_writer_init(&w, buf, sizeof(buf));
+    pb_string(&w, 1, ""); // empty string -> tag + length 0
+    size_t total = pb_writer_finish(&w);
+    const uint8_t expect[] = {0x0A, 0x00};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), total);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, total);
+
+    size_t pos = 0;
+    PbField f;
+    TEST_ASSERT_TRUE(pb_read_field(buf, total, &pos, &f));
+    TEST_ASSERT_EQUAL_UINT32(1, f.field_number);
+    TEST_ASSERT_EQUAL_UINT8(PB_WT_LEN, f.wire_type);
+    TEST_ASSERT_EQUAL_size_t(0, f.len);
+    TEST_ASSERT_NOT_NULL(f.data); // empty, but a valid in-buffer pointer
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -190,5 +229,7 @@ int main()
     RUN_TEST(test_int64_negative);
     RUN_TEST(test_varint_and_overflow);
     RUN_TEST(test_malformed_reads);
+    RUN_TEST(test_varint_width_boundary);
+    RUN_TEST(test_empty_length_field);
     return UNITY_END();
 }
