@@ -105,6 +105,7 @@ struct RespView
     uint32_t oid[SNMP_MAX_OID_LEN]; // first varbind
     size_t oid_len;
     uint8_t val_tag;
+    uint8_t last_val_tag; // value tag of the final varbind (for GetBulk tail checks)
     long ival;
     uint32_t uval;
     char str[64];

@@ -356,10 +356,145 @@ void test_decode_fails_closed()
     TEST_ASSERT_FALSE(msgpack_read_nil(&r));
 }
 
+// Round-trip every wide encoding so both the encoder width branches (u64, i32,
+// i64, str8/str16, bin16, array16, map16, str_n) and the matching decoder paths run.
+void test_wide_roundtrip()
+{
+    static uint8_t b[2048];
+    MsgpackWriter w;
+    MsgpackReader r;
+    uint64_t uv;
+    int64_t iv;
+    size_t n, cnt;
+    const char *sp;
+    const uint8_t *bp;
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_uint(&w, 0x123456789ULL); // uint64 (0xcf)
+    TEST_ASSERT_EQUAL_UINT8(0xcf, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+    TEST_ASSERT_EQUAL_UINT64(0x123456789ULL, uv);
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_int(&w, -70000); // int32 (0xd2)
+    TEST_ASSERT_EQUAL_UINT8(0xd2, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    TEST_ASSERT_EQUAL_INT64(-70000, iv);
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_int(&w, -5000000000LL); // int64 (0xd3)
+    TEST_ASSERT_EQUAL_UINT8(0xd3, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    TEST_ASSERT_EQUAL_INT64(-5000000000LL, iv);
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_int(&w, 5000000000LL); // positive crossing into a wide int
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_int(&r, &iv));
+    TEST_ASSERT_EQUAL_INT64(5000000000LL, iv);
+
+    char s40[41];
+    for (int i = 0; i < 40; i++)
+        s40[i] = 'x';
+    s40[40] = '\0';
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_str(&w, s40); // str8 (0xd9)
+    TEST_ASSERT_EQUAL_UINT8(0xd9, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    TEST_ASSERT_EQUAL_size_t(40, n);
+
+    char s300[301];
+    for (int i = 0; i < 300; i++)
+        s300[i] = 'y';
+    s300[300] = '\0';
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_str(&w, s300); // str16 (0xda)
+    TEST_ASSERT_EQUAL_UINT8(0xda, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    TEST_ASSERT_EQUAL_size_t(300, n);
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_str_n(&w, "hi", 2); // explicit-length fixstr
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_str(&r, &sp, &n));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+
+    static uint8_t big[300];
+    for (int i = 0; i < 300; i++)
+        big[i] = (uint8_t)i;
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_bytes(&w, big, 300); // bin16 (0xc5)
+    TEST_ASSERT_EQUAL_UINT8(0xc5, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_bytes(&r, &bp, &n));
+    TEST_ASSERT_EQUAL_size_t(300, n);
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_array(&w, 20); // array16 (0xdc)
+    for (int i = 0; i < 20; i++)
+        msgpack_uint(&w, (uint64_t)i);
+    TEST_ASSERT_EQUAL_UINT8(0xdc, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_array(&r, &cnt));
+    TEST_ASSERT_EQUAL_size_t(20, cnt);
+    for (int i = 0; i < 20; i++)
+    {
+        TEST_ASSERT_TRUE(msgpack_read_uint(&r, &uv));
+        TEST_ASSERT_EQUAL_UINT64((uint64_t)i, uv);
+    }
+
+    msgpack_init(&w, b, sizeof(b));
+    msgpack_map(&w, 20); // map16 (0xde)
+    for (int i = 0; i < 20; i++)
+    {
+        msgpack_uint(&w, (uint64_t)i);
+        msgpack_uint(&w, (uint64_t)i);
+    }
+    TEST_ASSERT_EQUAL_UINT8(0xde, b[0]);
+    msgpack_reader_init(&r, b, msgpack_len(&w));
+    TEST_ASSERT_TRUE(msgpack_read_map(&r, &cnt));
+    TEST_ASSERT_EQUAL_size_t(20, cnt);
+}
+
+// Wide-type decoder error paths: truncated str16/bin16/array16 headers + bodies.
+void test_decode_wide_fails_closed()
+{
+    MsgpackReader r;
+    const char *s;
+    const uint8_t *bp;
+    size_t n;
+    // str16 header claims 300 bytes, body absent
+    uint8_t t1[] = {0xda, 0x01, 0x2c, 'a'};
+    msgpack_reader_init(&r, t1, sizeof(t1));
+    TEST_ASSERT_FALSE(msgpack_read_str(&r, &s, &n));
+    TEST_ASSERT_FALSE(msgpack_reader_ok(&r));
+    // bin16 truncated header (only one length byte)
+    uint8_t t2[] = {0xc5, 0x01};
+    msgpack_reader_init(&r, t2, sizeof(t2));
+    TEST_ASSERT_FALSE(msgpack_read_bytes(&r, &bp, &n));
+    // array16 header truncated
+    uint8_t t3[] = {0xdc, 0x00};
+    msgpack_reader_init(&r, t3, sizeof(t3));
+    size_t cnt;
+    TEST_ASSERT_FALSE(msgpack_read_array(&r, &cnt));
+    // uint64 truncated
+    uint8_t t4[] = {0xcf, 0x00, 0x00};
+    msgpack_reader_init(&r, t4, sizeof(t4));
+    uint64_t uv;
+    TEST_ASSERT_FALSE(msgpack_read_uint(&r, &uv));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_uint);
+    RUN_TEST(test_wide_roundtrip);
+    RUN_TEST(test_decode_wide_fails_closed);
     RUN_TEST(test_int);
     RUN_TEST(test_str);
     RUN_TEST(test_bytes);
