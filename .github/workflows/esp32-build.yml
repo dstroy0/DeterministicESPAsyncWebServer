@@ -84,7 +84,7 @@ jobs:
           python tools/ci/example_footprints.py fragment build.log frag/footprint.json
       - name: Upload footprint fragment
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fp-${{ strategy.job-index }}
           path: frag/footprint.json
