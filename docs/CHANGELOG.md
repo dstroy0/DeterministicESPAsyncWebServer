@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.3] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.3 - 2026-06-30</b></summary>
+
+### Bug Fixes
+
+- stop run_tests.sh spewing "tail: write error: Broken pipe" ([`76dc6a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76dc6a8aacc8c8d5a77e8227a6bb51d11097789e))
+
+### CI / Build
+
+- update test report [skip ci] ([`26fcedb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26fcedb052c62ff9bab9dddb2794ac7f2827d9d6))
+- update CHANGELOG.md [skip ci] ([`28fe8a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28fe8a10d7bdf446005c00e00c2e6412c9ce3873))
+
+### Changes
+
+- Bump version: 4.59.2 → 4.59.3 ([`89faec1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89faec1eb0d3d32e335f9568d0dd9b0eb519555c))
+
+</details>
+
 ## [4.59.2] - 2026-06-30
 
 <details>
