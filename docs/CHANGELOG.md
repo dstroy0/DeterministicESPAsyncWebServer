@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.13] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.13 - 2026-06-30</b></summary>
+
+### Bug Fixes
+
+- initialize byte before the ring read (cpp:S836) ([`71f5b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71f5b44fb78b34c38e153940c58f432064ccb838))
+
+### CI / Build
+
+- update test report [skip ci] ([`a7da098`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7da0985d1e1fc6cb37a8c978ee950920403e141))
+- update CHANGELOG.md [skip ci] ([`2286cfa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2286cfafed31d5cef498f07f7158316afeee7ad5))
+
+### Changes
+
+- Bump version: 4.59.12 → 4.59.13 ([`1290982`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12909824b67d2f1b392535e9ccec2d832e697602))
+
+</details>
+
 ## [4.59.12] - 2026-06-30
 
 <details>
