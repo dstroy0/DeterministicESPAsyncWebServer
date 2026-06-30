@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.4] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.4 - 2026-06-30</b></summary>
+
+### Bug Fixes
+
+- resolve the open CodeQL warnings ([`401a4e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/401a4e527f966eb85547882b0a9d4ef2eff70c6d))
+
+### CI / Build
+
+- update test report [skip ci] ([`c2aeaa5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2aeaa5e3473e6da8c7a15c378d944d5e7d5b8a3))
+- update CHANGELOG.md [skip ci] ([`c5d3cfc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5d3cfcf52b159a3b6edb6e4bf3343ce05d35b23))
+
+### Changes
+
+- Bump version: 4.59.3 → 4.59.4 ([`ae06e93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae06e93434f826856b29ede47eb9d4e619291305))
+
+### Refactor
+
+- slot-owned connection teardown, no raw pcb in L7 ([`0e7f04e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e7f04ee4f3f2bf8335dde96154fc2914dd5f8a7))
+
+</details>
+
 ## [4.59.3] - 2026-06-30
 
 <details>
