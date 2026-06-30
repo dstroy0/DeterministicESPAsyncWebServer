@@ -278,17 +278,22 @@ get_test_comment() {
     fn_line=$(grep -n "void ${fn_name}(" "$abs_file" 2>/dev/null | head -1 | cut -d: -f1) || true
     [[ -n "$fn_line" ]] || return 0
 
-    # Extract from function onwards; find first // comment after the opening brace
-    tail -n "+${fn_line}" "$abs_file" | head -20 | awk '
-        BEGIN { brace=0 }
-        !brace && /\{/ { brace=1; next }
+    # Extract from the function's line onwards (cap at 20 lines); find the first //
+    # comment after the opening brace. One awk over the file so nothing writes into a
+    # closed pipe: the old `tail | head` made tail spew "write error: Broken pipe" once
+    # per call once head had taken its 20 lines and closed the pipe.
+    awk -v start="$fn_line" '
+        BEGIN { brace = 0 }
+        NR < start { next }
+        NR >= start + 20 { exit }
+        !brace && /\{/ { brace = 1; next }
         brace && /^[[:space:]]*\/\// {
             sub(/^[[:space:]]*\/\/[[:space:]]*/, "")
             print; exit
         }
         brace && /TEST_ASSERT/ { exit }
         brace && /^[[:space:]]*[a-z_][a-zA-Z0-9_]*[[:space:]]*[=(]/ { exit }
-    '
+    ' "$abs_file"
 }
 
 # get_suite_brief <suite_name>

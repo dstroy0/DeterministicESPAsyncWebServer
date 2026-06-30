@@ -8,6 +8,25 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Test-report generator spewed "tail: write error: Broken pipe" into the CI log
+
+- **Status:** FIXED (host-verified against all 1906 test functions; behavior identical).
+- **Found:** 2026-06-30, reading the CI Test Report run log: the report was written fine but
+  the job output was flooded with dozens of `tail: write error: Broken pipe` lines.
+- **`get_test_comment` in `test/run_tests.sh` extracted a test's doc comment with**
+  `tail -n "+${fn_line}" "$abs_file" | head -20 | awk '...'`**.** The `awk` exits at the first
+  match (`print; exit`) and `head -20` closes its input after 20 lines, so once the reader is
+  gone GNU `tail` gets `EPIPE` on its next write and prints `tail: write error: Broken pipe` to
+  stderr. The helper runs once per test function (~1900 calls in a full run), so the CI log
+  filled with the message. Not a correctness bug (the report still generated), but noise that
+  hides real warnings.
+- **Fix:** fold the slice + scan into a single `awk -v start="$fn_line"` pass that reads the
+  file directly (`NR < start` skips, `NR >= start + 20` exits), so the early `exit` no longer
+  closes a pipe and nothing writes into a dead reader. Verified behavior-identical to the old
+  pipeline across every `void test_*()` in `test/test_*/` (1906 functions, 0 diffs, 0 stderr).
+
+---
+
 ## Host Link frame builder did not NUL-terminate, so callers read uninitialized memory
 
 - **Status:** FIXED (found by the header-shim migration verification; host-tested).

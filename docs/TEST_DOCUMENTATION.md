@@ -151,6 +151,68 @@ bash test/run_tests.sh
 
 ---
 
+### Running on Windows (PowerShell) and Linux (WSL)
+
+The native suite is host-only, so on Windows it runs directly for almost every
+environment. A few tests use POSIX-only seams (`gmtime_r`, ThreadSanitizer, the
+`snmpget` interop) that the Windows MinGW toolchain does not provide, so those
+build only on Linux. Continuous integration runs on Linux, so a green run under
+**WSL (Ubuntu)** is the one that matches CI.
+
+**On Windows (PowerShell) - the everyday path:**
+
+```powershell
+# one environment (fast)
+pio test -e native_hostlink
+
+# the formatting / lint gates, identical to CI:
+clang-format -i src\services\hostlink\hostlink.cpp          # format C/C++ in place
+clang-format --dry-run --Werror (git diff --name-only)     # check only (CI gate)
+npx prettier@3.9.1 --write --end-of-line auto docs\*.md     # Markdown; --end-of-line auto avoids CRLF false flags
+npx cspell --no-progress docs\ROADMAP.md                    # spellcheck (CI gate)
+```
+
+> A `git diff`-based `clang-format` check only sees **tracked** files: a brand
+> new file is invisible until you `git add` it, so always run `clang-format` on
+> any new file explicitly. (This is exactly what let an unformatted new header
+> slip past a local check and fail the Code Formatting job in CI.)
+
+**On Linux (WSL Ubuntu) - the CI-parity path:** PlatformIO lives in a venv at
+`~/.pio-venv`, and the repo is visible under `/mnt/c/...`, so no copy is needed.
+
+```bash
+cd /mnt/c/Users/<you>/.../DeterministicESPAsyncWebServer
+export PATH="$HOME/.pio-venv/bin:$PATH"
+
+pio test -e native_tsan        # a Linux-only environment (ThreadSanitizer)
+bash test/run_tests.sh         # full suite + regenerates docs/TEST_REPORT.md
+```
+
+**Driving WSL from a Windows shell (Git Bash):** calling `wsl.exe` from Git Bash
+mangles arguments in two ways worth knowing:
+
+- Git Bash maps `/tmp` to the Windows temp folder and rewrites POSIX paths on the
+  command line. Prefix the call with `MSYS_NO_PATHCONV=1` to stop the rewrite.
+- Inline scripts with embedded quotes get re-quoted passing through `wsl.exe` and
+  can lose variable assignments. The reliable pattern is to pipe the script in on
+  **stdin** (stripping carriage returns first) so no fragile quoting survives:
+
+```bash
+# run a script file on WSL, robustly, from Git Bash:
+tr -d '\r' < scripts/run_native.sh | MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -l
+```
+
+To run the whole native suite in **parallel** on WSL (much faster than one serial
+`pio test` invocation that builds every environment back to back):
+
+```bash
+envs=$(grep -oE '^\[env:native[A-Za-z0-9_]*\]' platformio.ini \
+        | sed -E 's/\[env:(.*)\]/\1/' | grep -vE 'codeql')
+printf '%s\n' $envs | xargs -P 6 -I{} pio test -e {}
+```
+
+---
+
 ### Step-by-Step: Writing a New Test Case
 
 Let's walk through creating a test case to verify that the HTTP parser correctly parses a basic `GET` request.
