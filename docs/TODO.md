@@ -387,17 +387,26 @@ shipped work:
       RSTs on WS-pool exhaustion) reclaim every slot with no leak and the device keeps
       accepting throughout.
 
-- [ ] **`detws_oidc_verify_with_key()` has a multi-KB stack frame.**
-      _(tracked debt - wants the per-worker scratch arena + a HW stack soak)_ The
-      verifier stacks `hdr[512]` + `sig[DETWS_OIDC_RSA_BYTES]` + `pl[DETWS_OIDC_MAX_LEN]`
-      + `iss[256]` and then calls the RSA modexp (itself stack-heavy), so a worker
-      verifying an OIDC token uses several KB of stack. The naive fix (move the buffers
-      to `static`) is **unsafe**: with `DETWS_WORKER_COUNT > 1` two core-partitioned
-      workers can verify concurrently and would race the shared buffers. The correct fix
-      routes the scratch through the per-worker dispatch arena
-      (region-reset-per-dispatch, single-worker-race-safe); deferred until that arena is
-      threaded into the pure verifier and validated with a stack high-water soak on
-      hardware.
+- [x] **`detws_oidc_verify_with_key()` decode buffers moved off the stack.** _(done)_
+      The verifier's `hdr[512]` + `sig[DETWS_OIDC_RSA_BYTES]` + `pl[DETWS_OIDC_MAX_LEN]`
+      + `iss[256]` (~2.6 KB) are now borrowed from the per-dispatch scratch arena under a
+      `ScratchScope` (fail-closed if the arena is exhausted), not stacked. This is
+      single-worker-race-safe (the arena has one accessor) where a `static` buffer would
+      race concurrent workers. HW-soaked on COM3: a real RS256 verify returns OK with
+      `scratch_high_water == 2624` (exactly the four buffers, now in BSS) and the verify
+      compiles + runs under ARDUINO (mbedTLS RSA). `native_oidc` links
+      `session/scratch.cpp` + `worker.cpp`; 13/13 OIDC tests still pass.
+      _Follow-up:_ the HW soak showed the verify still consumes ~7 KB of **stack** during
+      the call - that residual is the **mbedTLS RSA-2048 modexp** itself, not the decode
+      buffers. A worker task that runs OIDC verification must be sized for it (or the
+      verify marshaled onto a larger-stack task); tracked as the stack-budget item below.
+
+- [ ] **RSA-2048 modexp uses ~7 KB of stack (mbedTLS).** Measured on COM3: an OIDC
+      RS256 verify (and any `ssh_rsa_verify` path: OIDC, the SSH server host key, JWKS)
+      drops the task stack high-water by ~7 KB, dominated by the mbedTLS bignum modexp.
+      Any worker / task that runs an RSA verify must be sized with that headroom. Options:
+      a documented minimum worker-stack size when `DETWS_ENABLE_OIDC` / SSH is on, lower
+      `MBEDTLS_MPI_MAX_SIZE`, or marshal RSA verifies onto a dedicated larger-stack task.
 
 </details>
 

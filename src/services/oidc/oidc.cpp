@@ -17,6 +17,7 @@
 
 #include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
+#include "network_drivers/session/scratch.h" // per-dispatch arena (keeps the decode buffers off the worker stack)
 #include "shared_primitives/shim.h"
 
 namespace
@@ -302,9 +303,23 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
     if (!split3(token, token_len, seg, seglen))
         return DETWS_OIDC_ERR_FORMAT;
 
+    // Borrow the large decode buffers from the per-dispatch scratch arena rather
+    // than the worker stack (was ~2.6 KB of stack frame: hdr + sig + pl + iss).
+    // ScratchScope reclaims them on every return path; fail closed if the arena is
+    // exhausted. Sizes: header 512, signature DETWS_OIDC_RSA_BYTES, payload
+    // DETWS_OIDC_MAX_LEN, issuer 256.
+    const size_t hdr_cap = 512;
+    const size_t iss_cap = 256;
+    ScratchScope scratch;
+    uint8_t *hdr = (uint8_t *)scratch_alloc(hdr_cap, 1);
+    uint8_t *sig = (uint8_t *)scratch_alloc(DETWS_OIDC_RSA_BYTES, 1);
+    uint8_t *pl = (uint8_t *)scratch_alloc(DETWS_OIDC_MAX_LEN, 1);
+    char *iss = (char *)scratch_alloc(iss_cap, 1);
+    if (!hdr || !sig || !pl || !iss)
+        return DETWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
+
     // Header: require alg == RS256 (rejects alg:none / HS256 confusion).
-    uint8_t hdr[512];
-    size_t hn = base64url_decode(seg[0], seglen[0], hdr, sizeof(hdr) - 1);
+    size_t hn = base64url_decode(seg[0], seglen[0], hdr, hdr_cap - 1);
     if (hn == 0)
         return DETWS_OIDC_ERR_FORMAT;
     hdr[hn] = '\0';
@@ -313,28 +328,25 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
         return DETWS_OIDC_ERR_ALG;
 
     // Signature: RSA-2048 -> exactly 256 bytes.
-    uint8_t sig[DETWS_OIDC_RSA_BYTES];
-    if (base64url_decode(seg[2], seglen[2], sig, sizeof(sig)) != DETWS_OIDC_RSA_BYTES)
+    if (base64url_decode(seg[2], seglen[2], sig, DETWS_OIDC_RSA_BYTES) != DETWS_OIDC_RSA_BYTES)
         return DETWS_OIDC_ERR_FORMAT;
 
     // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it).
     size_t signing_len = (size_t)(seg[1] + seglen[1] - token);
-    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, sizeof(sig)) != 0)
+    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DETWS_OIDC_RSA_BYTES) != 0)
         return DETWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).
-    uint8_t pl[DETWS_OIDC_MAX_LEN];
-    size_t pn = base64url_decode(seg[1], seglen[1], pl, sizeof(pl) - 1);
+    size_t pn = base64url_decode(seg[1], seglen[1], pl, DETWS_OIDC_MAX_LEN - 1);
     if (pn == 0)
         return DETWS_OIDC_ERR_FORMAT;
     pl[pn] = '\0';
     const char *ps = (const char *)pl;
     const char *pe = ps + pn;
 
-    char iss[256];
     if (expected_iss && *expected_iss)
     {
-        if (!get_str(ps, pe, "iss", iss, sizeof(iss)) || strcmp(iss, expected_iss) != 0)
+        if (!get_str(ps, pe, "iss", iss, iss_cap) || strcmp(iss, expected_iss) != 0)
             return DETWS_OIDC_ERR_ISS;
     }
     if (expected_aud && *expected_aud)
