@@ -2,6 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.1] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.1 - 2026-06-30</b></summary>
+
+### Bug Fixes
+
+- NUL-terminate the built ASCII frame ([`230e32b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/230e32b92924c93d770300932b0ed1d35eaf47a4))
+
+### CI / Build
+
+- update test report [skip ci] ([`6924bb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6924bb320f0de76fabd97d3dde40d79a4be4dae4))
+- update CHANGELOG.md [skip ci] ([`1288a33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1288a3376df2ebf70ce96015552db0c6b814ad1a))
+
+### Changes
+
+- Bump version: 4.59.0 → 4.59.1 ([`f652a57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f652a5765e090c119af10414b74a325b82c4561b))
+
+### Documentation
+
+- add interface forwarding (v5) + post-v5 southbound bridges ([`7ed4bcc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ed4bcc32803cf8d38d113778766b32f7b950e74))
+
+### Refactor
+
+- centralize std headers behind shim.h ([`bd1288a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd1288a6966145fd10b4c78b5447c45cc564c165))
+
+</details>
+
 ## [4.59.0] - 2026-06-29
 
 <details>
