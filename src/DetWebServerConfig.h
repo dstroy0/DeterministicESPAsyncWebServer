@@ -95,7 +95,15 @@
 #define DETWS_WORKER_COUNT 1
 #endif
 
-/** @brief Stack (bytes) for each server worker task (ESP32). */
+/**
+ * @brief Stack (bytes) for each server worker task (ESP32).
+ *
+ * Floor note: RSA-2048 verification (OIDC / SSH host key / JWKS via the mbedTLS
+ * bignum modexp) runs on the worker and uses ~7 KB of stack (measured on a
+ * DevKitV1). The 8 KB default holds it with margin; do NOT lower this below
+ * ~8 KB when DETWS_ENABLE_OIDC / DETWS_ENABLE_SSH is set or the first verify
+ * overflows the task stack.
+ */
 #ifndef DETWS_WORKER_TASK_STACK
 #define DETWS_WORKER_TASK_STACK 8192
 #endif
