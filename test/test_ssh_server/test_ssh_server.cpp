@@ -13,6 +13,7 @@
 #include "network_drivers/presentation/ssh/ssh_server.h"
 #include "network_drivers/presentation/ssh/ssh_transport.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -104,6 +105,10 @@ static void wr_u32(uint8_t *p, uint32_t v)
     p[2] = (uint8_t)(v >> 8);
     p[3] = (uint8_t)v;
 }
+static uint32_t rd_u32(const uint8_t *p)
+{
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
 static size_t put_mpint(uint8_t *p, const uint8_t *be, size_t len)
 {
     size_t off = 0;
@@ -130,7 +135,7 @@ static size_t build_client_kexinit(uint8_t *out)
     out[o++] = SSH_MSG_KEXINIT;
     for (int j = 0; j < 16; j++)
         out[o++] = (uint8_t)j;
-    o += put_namelist(out + o, "diffie-hellman-group14-sha256");
+    o += put_namelist(out + o, "diffie-hellman-group14-sha256,ext-info-c"); // RFC 8308
     o += put_namelist(out + o, "rsa-sha2-256");
     o += put_namelist(out + o, "aes256-ctr");
     o += put_namelist(out + o, "aes256-ctr");
@@ -179,12 +184,15 @@ void test_full_handshake_to_channel_data()
     TEST_ASSERT_EQUAL(SSH_MSG_NEWKEYS, emt_type[1]);
     TEST_ASSERT_TRUE(ssh_keys[0].active);
 
-    // 3. Client NEWKEYS → encryption active, service phase.
+    // 3. Client NEWKEYS → encryption active, service phase. Because the client
+    //    KEXINIT advertised ext-info-c, the server now sends EXT_INFO (RFC 8308).
     uint8_t nk = SSH_MSG_NEWKEYS;
     emt_reset();
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, nk, &nk, 1));
     TEST_ASSERT_TRUE(ssh_pkt[0].encrypted);
     TEST_ASSERT_EQUAL(SSH_PHASE_SERVICE, s->phase);
+    TEST_ASSERT_EQUAL_INT(1, emt_n);
+    TEST_ASSERT_EQUAL(SSH_MSG_EXT_INFO, emt_type[0]);
 
     // 4. SERVICE_REQUEST → SERVICE_ACCEPT, auth phase.
     n = 0;
@@ -357,15 +365,99 @@ void test_unimplemented_reply_for_unknown_message()
     TEST_ASSERT_EQUAL_UINT32(6, seq); // rejected packet = seq_no_recv - 1
 }
 
+// An inbound CHANNEL_CLOSE must be answered with CHANNEL_EOF and CHANNEL_CLOSE as
+// two separate binary packets (RFC 4253 6) - not both bytes in one packet, which a
+// strict peer (openssh packet_check_eom()) rejects.
+void test_inbound_close_emits_eof_then_close_separately()
+{
+    // Open a channel so the close path has something to close (peer id 21).
+    uint8_t op[64];
+    size_t on = 0;
+    op[on++] = SSH_MSG_CHANNEL_OPEN;
+    on += put_string(op + on, "session");
+    wr_u32(op + on, 21);
+    wr_u32(op + on + 4, 4096);
+    wr_u32(op + on + 8, 32768);
+    on += 12;
+    uint8_t obuf[64];
+    size_t ol = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)));
+
+    uint8_t pkt[8];
+    pkt[0] = SSH_MSG_CHANNEL_CLOSE;
+    wr_u32(pkt + 1, 0); // recipient = local channel 0
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5));
+    TEST_ASSERT_EQUAL_INT(2, emt_n); // two distinct binary packets, not one
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_EOF, emt_type[0]);
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_CLOSE, emt_type[1]);
+    TEST_ASSERT_FALSE(ssh_chan[0][0].open);
+}
+
+// RFC 8308: EXT_INFO advertises server-sig-algs = "rsa-sha2-256" so a modern
+// OpenSSH client will sign an RSA key for pubkey auth.
+void test_extinfo_build_advertises_server_sig_algs()
+{
+    uint8_t out[64];
+    size_t n = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_extinfo_build(out, &n, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_EXT_INFO, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(1u, rd_u32(out + 1));  // one extension
+    TEST_ASSERT_EQUAL_UINT32(15u, rd_u32(out + 5)); // strlen("server-sig-algs")
+    TEST_ASSERT_EQUAL_MEMORY("server-sig-algs", out + 9, 15);
+    size_t off = 9 + 15;
+    TEST_ASSERT_EQUAL_UINT32(12u, rd_u32(out + off)); // strlen("rsa-sha2-256")
+    TEST_ASSERT_EQUAL_MEMORY("rsa-sha2-256", out + off + 4, 12);
+}
+
+// A real OpenSSH client KEXINIT is ~1.5 KB; the parser must accept one well past
+// the old 512-byte bound (a smaller bound reset the connection at key exchange).
+void test_large_client_kexinit_accepted()
+{
+    uint8_t pkt[2048];
+    size_t o = 0;
+    pkt[o++] = SSH_MSG_KEXINIT;
+    for (int j = 0; j < 16; j++)
+        pkt[o++] = 0; // cookie
+
+    char kex[1200];
+    size_t k = 0;
+    for (int j = 0; j < 40; j++)
+        k += (size_t)sprintf(kex + k, "filler-alg-%02d@example.com,", j);
+    k += (size_t)sprintf(kex + k, "diffie-hellman-group14-sha256,ext-info-c");
+    o += put_namelist(pkt + o, kex);
+    o += put_namelist(pkt + o, "rsa-sha2-256");
+    o += put_namelist(pkt + o, "aes256-ctr");
+    o += put_namelist(pkt + o, "aes256-ctr");
+    o += put_namelist(pkt + o, "hmac-sha2-256");
+    o += put_namelist(pkt + o, "hmac-sha2-256");
+    o += put_namelist(pkt + o, "none");
+    o += put_namelist(pkt + o, "none");
+    o += put_namelist(pkt + o, "");
+    o += put_namelist(pkt + o, "");
+    pkt[o++] = 0; // first_kex_packet_follows
+    for (int j = 0; j < 4; j++)
+        pkt[o++] = 0; // reserved
+
+    TEST_ASSERT_TRUE(o > 512); // larger than the old SSH_KEXINIT_MAX
+    SshSession *s = &ssh_sess[0];
+    s->phase = SSH_PHASE_KEXINIT;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, pkt, o));
+    TEST_ASSERT_TRUE(s->ext_info_c); // ext-info-c detected in the big list
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake_to_channel_data);
+    RUN_TEST(test_extinfo_build_advertises_server_sig_algs);
+    RUN_TEST(test_large_client_kexinit_accepted);
     RUN_TEST(test_channel_open_before_auth_rejected);
     RUN_TEST(test_disconnect_closes);
     RUN_TEST(test_ignore_is_noop);
     RUN_TEST(test_auth_bruteforce_disconnect);
     RUN_TEST(test_auth_success_after_failures);
     RUN_TEST(test_unimplemented_reply_for_unknown_message);
+    RUN_TEST(test_inbound_close_emits_eof_then_close_separately);
     return UNITY_END();
 }

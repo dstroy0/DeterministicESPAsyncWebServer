@@ -11,6 +11,7 @@
 #include "network_drivers/session/scratch.h"
 #include "shared_primitives/shim.h"
 #include "ssh_channel.h"
+#include "ssh_forward.h"
 #include "ssh_keymat.h"
 #include "ssh_packet.h"
 #include "ssh_server.h"
@@ -96,6 +97,50 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
     det_conn_send(conn->id, wire, (u16_t)wlen);
     det_conn_flush(conn->id);
     return (int)len;
+}
+
+int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
+{
+    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+        return -1;
+    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+        return -1;
+
+    uint8_t close_msgs[10];
+    size_t clen = 0;
+    if (ssh_channel_build_close(ssh_slot, channel, close_msgs, &clen, sizeof(close_msgs)) != 0 || clen != 10)
+        return -1;
+
+    // close_msgs holds CHANNEL_EOF then CHANNEL_CLOSE; each is its own SSH message,
+    // so frame and send the two halves as two binary packets (RFC 4253 6). Borrow
+    // the wire buffer from the shared scratch arena (released on return).
+    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    ScratchScope scope;
+    uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
+    if (!wire)
+        return -1;
+    for (size_t off = 0; off < 10; off += 5)
+    {
+        size_t wlen = 0;
+        if (ssh_pkt_send(ssh_slot, close_msgs + off, 5, wire, &wlen, wire_cap) != 0)
+            return -1;
+        det_conn_send(conn->id, wire, (u16_t)wlen);
+    }
+    det_conn_flush(conn->id);
+    return 0;
+}
+
+void ssh_conn_poll(uint8_t conn_slot)
+{
+#if DETWS_SSH_PORT_FORWARD
+    TcpConn *conn = &conn_pool[conn_slot];
+    uint8_t j = conn->proto_slot;
+    if (j < MAX_SSH_CONNS && conn_for_ssh[j] == conn_slot)
+        ssh_forward_pump(j);
+#else
+    (void)conn_slot;
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +235,9 @@ void ssh_conn_close(uint8_t conn_slot)
     uint8_t j = conn->proto_slot;
     if (j < MAX_SSH_CONNS)
     {
+#if DETWS_SSH_PORT_FORWARD
+        ssh_forward_reset(j); // close any forwarded TCP sockets this connection owned
+#endif
         // Zero all key material and session state for this slot.
         ssh_keymat_wipe(j);
         ssh_dh_wipe(j);

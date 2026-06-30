@@ -31,6 +31,8 @@ socket.
 - **Publickey authentication** (RFC 4252 §7) - client RSA-SHA2-256 signatures are verified for real on both platforms; an application callback authorizes keys per user
 - **Password authentication** (RFC 4252 §8) - credentials checked via an application callback; the password is wiped from the stack after every attempt. Compile out with `DETWS_SSH_ALLOW_PASSWORD=0` for publickey-only hardening
 - **Session channel** (RFC 4254) - `shell`/`exec`/`pty-req` accepted; inbound channel data surfaced to the app as a raw byte stream, with RFC 4254 §5.2 window flow control
+- **TCP port forwarding** (`direct-tcpip`, the `ssh -L` local forward) - opt-in via `DETWS_SSH_PORT_FORWARD`; the `ssh_forward` owner opens the outbound connection through the client transport and bridges bytes both ways, with an optional target-allow policy callback
+- **OpenSSH interoperability** - works with a stock `ssh` client (no algorithm overrides): the RX ring and KEXINIT store hold a full modern client KEXINIT, and **`ext-info` / `server-sig-algs`** (RFC 8308) is advertised so the client signs an RSA key for pubkey auth (`rsa-sha2-256`). The client negotiates down to `diffie-hellman-group14-sha256`; Curve25519/Ed25519 (the client's preferred set) are on the roadmap
 - **In-session re-keying** (RFC 4253 §9) - client- or server-initiated; the session id is fixed at the first exchange hash across re-keys
 - **Static-only allocation** - all SSH state pre-allocated in BSS; no heap after [`begin()`](@ref DetWebServer::begin) (except the one-per-connection mbedTLS RSA operation during KEX, freed immediately)
 - **RSA private key never in static memory** - loaded from NVS → stack → sign → volatile-wipe; zero window for overflow-based key exfiltration

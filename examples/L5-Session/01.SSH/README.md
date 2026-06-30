@@ -47,6 +47,26 @@ and sends them back with `ssh_conn_send(slot, channel, data, len)` - the skeleto
 for a remote console. With `DETWS_SSH_MAX_CHANNELS > 1` the client can open several
 channels over one connection and each is tagged by id.
 
+**TCP port forwarding (`ssh -L`).** Define `DETWS_SSH_PORT_FORWARD` (and give it
+channel + client-pool room) to let the board act as a local-forward tunnel: when a
+client opens a `direct-tcpip` channel, the `ssh_forward` owner opens the outbound
+TCP connection through the client transport and bridges bytes both ways. It is
+opt-in twice over - compiled out by default, and inert until you call
+`ssh_forward_begin()` - because any authenticated client could otherwise make the
+board connect anywhere (an open proxy). Restrict the reachable targets with a
+policy callback:
+
+```cpp
+static bool ssh_forward_policy(const char *host, uint16_t port) {
+    return port == 80 || port == 443;   // allow only outbound web
+}
+ssh_forward_set_policy_cb(ssh_forward_policy);
+ssh_forward_begin();                     // after ssh_conn_setup()
+```
+
+Then `ssh -L 8080:example.com:80 admin@<ip>` and `curl localhost:8080` reaches
+`example.com` through the board.
+
 **Hardening.** Define `DETWS_SSH_ALLOW_PASSWORD 0` to compile password auth out
 entirely (publickey-only), and failed attempts are bounded by
 `SSH_MAX_AUTH_ATTEMPTS`. Use a constant-time compare and real credential storage
@@ -62,10 +82,22 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
   --lib="." examples/L5-Session/01.SSH/01.SSH.ino
 ```
 
+To build with port forwarding, add the forwarding flags:
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_SSH=1 -DDETWS_SSH_PORT_FORWARD=1 -DDETWS_SSH_MAX_CHANNELS=4 -DDETWS_CLIENT_CONNS=3 -DDETWS_SSH_FWD_MAX=3" \
+  --lib="." examples/L5-Session/01.SSH/01.SSH.ino
+```
+
 Provision a host key first (see `docs/SSH.md`), then:
 
 ```sh
 ssh -p 22 admin@<ip>     # password: s3cret  (type; the server echoes it back)
+
+# with forwarding built in:
+ssh -L 8080:example.com:80 admin@<ip>   # then in another shell:
+curl http://localhost:8080/             # reaches example.com:80 through the board
 ```
 
 ## Annotated source
@@ -80,11 +112,20 @@ explanatory comments:
 // Enable the SSH stack for this sketch (overrides the default-off config).
 #define DETWS_ENABLE_SSH 1
 
+// To demonstrate TCP port forwarding (ssh -L), uncomment these: the channel pool
+// must hold the shell + the tunnel(s), and the outbound client pool must cover the
+// concurrent forwards (DETWS_CLIENT_CONNS >= DETWS_SSH_FWD_MAX).
+// #define DETWS_SSH_MAX_CHANNELS 4
+// #define DETWS_SSH_PORT_FORWARD 1
+// #define DETWS_CLIENT_CONNS 3
+// #define DETWS_SSH_FWD_MAX 3
+
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/ssh/ssh_auth.h"    // ssh_auth_set_*_cb
 #include "network_drivers/presentation/ssh/ssh_channel.h" // ssh_channel_set_data_cb
 #include "network_drivers/presentation/ssh/ssh_conn.h"    // ssh_conn_send / ssh_conn_setup
+#include "network_drivers/presentation/ssh/ssh_forward.h" // ssh_forward_begin (ssh -L)
 #include "network_drivers/presentation/ssh/ssh_rsa.h"     // ssh_rsa_load_pubkey
 #include <WiFi.h>
 
@@ -119,6 +160,15 @@ static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, siz
 {
     ssh_conn_send(slot, channel, data, len); // echo
 }
+
+#if DETWS_SSH_PORT_FORWARD
+// Forward policy: which ssh -L targets are allowed (else an open proxy for any
+// authenticated client). Return true to permit a target.
+static bool ssh_forward_policy(const char *host, uint16_t port)
+{
+    return port == 80 || port == 443; // demo: allow only outbound web
+}
+#endif
 
 void setup()
 {
@@ -158,6 +208,13 @@ void setup()
 
     // One-time wiring of the SSH dispatcher's outbound path. Call after begin().
     ssh_conn_setup();
+
+#if DETWS_SSH_PORT_FORWARD
+    // Enable ssh -L forwarding (opt-in; nothing is forwarded until this runs).
+    ssh_forward_set_policy_cb(ssh_forward_policy);
+    ssh_forward_begin();
+    Serial.println("SSH port forwarding enabled (ssh -L to ports 80/443)");
+#endif
 
     Serial.println("SSH server started on port 22");
 }

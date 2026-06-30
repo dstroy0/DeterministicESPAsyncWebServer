@@ -558,7 +558,7 @@ Server-Sent Events push support.
 
 `DETWS_ENABLE_SSH`
 
-SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection (`DETWS_SSH_MAX_CHANNELS`, default 1), each routed by its recipient id with its own flow-control window. Beyond `session` channels, `direct-tcpip` (the `ssh -L` local-forward request) is parsed and routed through a normalized forwarding seam: install `ssh_channel_set_forward_open_cb` to allow a forward to a target host:port (opt-in - absent means forwarding is administratively prohibited, so no open relay by default) and `ssh_channel_set_forward_data_cb` to receive the forwarded bytes; the codec does no TCP I/O itself, leaving the outbound connection to the forwarding owner.
+SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection (`DETWS_SSH_MAX_CHANNELS`, default 1), each routed by its recipient id with its own flow-control window. Beyond `session` channels, `direct-tcpip` (the `ssh -L` local-forward request) is parsed and routed through a normalized forwarding seam: the codec extracts the target host:port and routes channel data but does no TCP I/O itself. With `DETWS_SSH_PORT_FORWARD` set, the `ssh_forward` owner plugs into that seam and does the I/O - it opens the outbound TCP through the client transport (det_client) and bridges bytes both ways, with an optional target policy callback, a per-poll target-to-client pump bounded by the channel window, and EOF/CLOSE propagation. Forwarding is opt-in twice over (compiled out by default, and inert until the app calls `ssh_forward_begin()`) because any authenticated client could otherwise reach arbitrary hosts; with it off every `direct-tcpip` open is refused (no open relay).
 
 ## Stats
 

@@ -2125,6 +2125,16 @@
 #define RX_BUF_SIZE 8192
 #endif
 
+// A modern SSH client's first flight (identification banner + KEXINIT) is ~1.5 KB:
+// post-quantum/curve kex names, cert host-key algs, EtM MACs, ext-info-c. The RX
+// ring must hold it or the handshake resets at key exchange, so when SSH is enabled
+// and RX_BUF_SIZE was left at its default, upsize it to fit a full KEXINIT. An
+// explicit RX_BUF_SIZE (build flag) is respected unchanged - keep it >= 2 KB.
+#if DETWS_ENABLE_SSH && defined(DETWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 2048
+#undef RX_BUF_SIZE
+#define RX_BUF_SIZE 2048
+#endif
+
 /** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */
 #ifndef DETWS_ENABLE_PROVISIONING
 #define DETWS_ENABLE_PROVISIONING 0
@@ -2763,6 +2773,41 @@
 #endif
 #if DETWS_SSH_MAX_CHANNELS < 1
 #error "DeterministicESPAsyncWebServer: DETWS_SSH_MAX_CHANNELS must be >= 1"
+#endif
+
+/**
+ * @brief SSH TCP port forwarding (`direct-tcpip`, i.e. `ssh -L`). Default off.
+ *
+ * When set, the SSH server can open an outbound TCP connection to a client-named
+ * host:port and bridge bytes between that socket and the SSH channel - the
+ * `ssh_forward` owner does the I/O via the outbound client transport (det_client),
+ * so it needs `DETWS_CLIENT_CONNS >= DETWS_SSH_FWD_MAX` and a channel pool
+ * (`DETWS_SSH_MAX_CHANNELS > 1`) to be useful. Forwarding is still opt-in at
+ * runtime: nothing is forwarded until the application calls `ssh_forward_begin()`.
+ * Off = the channel codec refuses every `direct-tcpip` open (no open relay).
+ */
+#ifndef DETWS_SSH_PORT_FORWARD
+#define DETWS_SSH_PORT_FORWARD 0
+#endif
+
+/** @brief Maximum concurrent forwarded TCP connections (must be <= DETWS_CLIENT_CONNS). */
+#ifndef DETWS_SSH_FWD_MAX
+#define DETWS_SSH_FWD_MAX 2
+#endif
+
+/** @brief Maximum forward target hostname length including null terminator. */
+#ifndef DETWS_SSH_FWD_HOST_MAX
+#define DETWS_SSH_FWD_HOST_MAX 64
+#endif
+
+/** @brief Blocking connect timeout (ms) when opening a forward target. */
+#ifndef DETWS_SSH_FWD_CONNECT_MS
+#define DETWS_SSH_FWD_CONNECT_MS 3000
+#endif
+
+/** @brief Max bytes moved per forward channel per poll, target -> client (<= SSH_PKT_BUF_SIZE). */
+#ifndef DETWS_SSH_FWD_CHUNK
+#define DETWS_SSH_FWD_CHUNK 1024
 #endif
 
 /** @brief Packet assembly buffer per SSH connection (bytes). */

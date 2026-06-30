@@ -133,7 +133,7 @@ static const ProtoHandler s_http_handler = {http_evt_accept, http_evt_data, http
 static const ProtoHandler s_telnet_handler = {telnet_accept, telnet_rx, telnet_close, nullptr};
 #endif
 #if DETWS_ENABLE_SSH
-static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, nullptr};
+static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, ssh_conn_poll};
 #endif
 #if DETWS_ENABLE_MODBUS
 // Modbus keeps no per-connection state (a partial frame waits in the rx ring),

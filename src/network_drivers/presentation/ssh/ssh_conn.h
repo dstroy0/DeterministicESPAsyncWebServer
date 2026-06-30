@@ -58,4 +58,21 @@ void ssh_conn_close(uint8_t conn_slot);
  */
 int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len);
 
+/**
+ * @brief Close an SSH channel from the server side: frame CHANNEL_EOF and
+ *        CHANNEL_CLOSE as two binary packets and write them to the socket.
+ *
+ * Used by the port-forwarding owner when the forwarded TCP peer closes.
+ * @return 0 on success, -1 on error (bad slot, channel closed/unknown, no
+ *         active connection, or scratch exhausted).
+ */
+int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel);
+
+/**
+ * @brief Per-loop poll hook for an SSH connection (registered as the SSH protocol
+ *        handler's on_poll). Drives the port-forwarding pump; a no-op when
+ *        forwarding is compiled out.
+ */
+void ssh_conn_poll(uint8_t conn_slot);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H

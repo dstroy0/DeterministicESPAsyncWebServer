@@ -39,8 +39,17 @@
 /** @brief Max stored length of an SSH identification string (RFC 4253 §4.2: 255). */
 #define SSH_VERSION_MAX 256
 
-/** @brief Max stored size of a KEXINIT payload (for exchange-hash reconstruction). */
-#define SSH_KEXINIT_MAX 512
+/**
+ * @brief Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange
+ * hash). A modern OpenSSH client's KEXINIT (post-quantum KEX names + cert host-key
+ * algs + EtM MACs + ext-info-c) runs well past 1 KB, so this must be large enough
+ * to hold it - a smaller bound silently rejects real clients at key exchange. The
+ * packet layer already caps any single packet at SSH_PKT_BUF_SIZE.
+ */
+#define SSH_KEXINIT_MAX 2048
+
+/** @brief Max stored size of our own KEXINIT (I_S); the server's lists are short. */
+#define SSH_KEXINIT_S_MAX 384
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
 #define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
@@ -95,14 +104,15 @@ struct SshSession
     uint8_t banner_buf[SSH_VERSION_MAX]; ///< Accumulator for the inbound banner.
     uint16_t banner_len;                 ///< Bytes buffered in banner_buf.
 
-    uint8_t i_c[SSH_KEXINIT_MAX]; ///< Client KEXINIT payload (for H).
-    uint16_t i_c_len;             ///< Length of i_c.
-    uint8_t i_s[SSH_KEXINIT_MAX]; ///< Server KEXINIT payload (for H).
-    uint16_t i_s_len;             ///< Length of i_s.
+    uint8_t i_c[SSH_KEXINIT_MAX];   ///< Client KEXINIT payload (for H).
+    uint16_t i_c_len;               ///< Length of i_c.
+    uint8_t i_s[SSH_KEXINIT_S_MAX]; ///< Server KEXINIT payload (for H).
+    uint16_t i_s_len;               ///< Length of i_s.
 
     uint8_t session_id[SSH_SHA256_DIGEST_LEN]; ///< H from the first KEX (RFC 4253 §7.2).
     bool have_session_id;                      ///< True once the first KEX completes.
 
+    bool ext_info_c;       ///< Client advertised ext-info-c (RFC 8308): send EXT_INFO.
     bool authed;           ///< True after successful user authentication.
     uint8_t auth_failures; ///< Failed USERAUTH_REQUESTs (brute-force limit, RFC 4252 §4).
 };
@@ -164,6 +174,17 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap);
  *         the payload is malformed.
  */
 int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len);
+
+/**
+ * @brief Build SSH_MSG_EXT_INFO advertising server-sig-algs (RFC 8308).
+ *
+ * Tells the client which public-key signature algorithms the server will accept
+ * for userauth (rsa-sha2-256); without it a modern OpenSSH client refuses to sign
+ * an RSA key ("no mutual signature algorithm"). Sent once, right after NEWKEYS,
+ * when the client advertised ext-info-c.
+ * @return 0 on success, -1 on buffer overflow.
+ */
+int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap);
 
 /**
  * @brief Compute the SSH exchange hash H (RFC 4253 §8).

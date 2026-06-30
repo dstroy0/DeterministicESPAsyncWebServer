@@ -14,22 +14,34 @@
  *     (ssh_auth_set_pubkey_cb)
  *   - A channel data callback that echoes received bytes back to the client
  *     with ssh_conn_send()
+ *   - Optional TCP port forwarding (ssh -L) via the ssh_forward owner, gated by
+ *     DETWS_SSH_PORT_FORWARD (off here; see the block below to enable it)
  *
  * Hardening: define DETWS_SSH_ALLOW_PASSWORD 0 to compile password auth out and
  * accept publickey only. Failed attempts are bounded by SSH_MAX_AUTH_ATTEMPTS.
  *
  * Connect with:  ssh -p 22 admin@<ip>      (password below)
  * Then type; the server echoes each line back over the channel.
+ * With forwarding on:  ssh -L 8080:example.com:80 admin@<ip>   then curl localhost:8080
  */
 
 // Enable the SSH stack for this sketch (overrides the default-off config).
 #define DETWS_ENABLE_SSH 1
+
+// To demonstrate TCP port forwarding (ssh -L), uncomment these: the channel pool
+// must hold the shell + the tunnel(s), and the outbound client pool must cover the
+// concurrent forwards (DETWS_CLIENT_CONNS >= DETWS_SSH_FWD_MAX).
+// #define DETWS_SSH_MAX_CHANNELS 4
+// #define DETWS_SSH_PORT_FORWARD 1
+// #define DETWS_CLIENT_CONNS 3
+// #define DETWS_SSH_FWD_MAX 3
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/ssh/ssh_auth.h"
 #include "network_drivers/presentation/ssh/ssh_channel.h"
 #include "network_drivers/presentation/ssh/ssh_conn.h"
+#include "network_drivers/presentation/ssh/ssh_forward.h"
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
 #include <WiFi.h>
 
@@ -64,6 +76,16 @@ static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, siz
 {
     ssh_conn_send(slot, channel, data, len); // echo back on the same channel
 }
+
+#if DETWS_SSH_PORT_FORWARD
+// --- Forward policy: which ssh -L targets are allowed --------------------------
+// Any authenticated client can otherwise ask the board to connect anywhere (an
+// open proxy). Return true to permit a target; restrict it to what you intend.
+static bool ssh_forward_policy(const char *host, uint16_t port)
+{
+    return port == 80 || port == 443; // demo: allow only outbound web
+}
+#endif
 
 void setup()
 {
@@ -103,6 +125,13 @@ void setup()
 
     // One-time wiring of the SSH dispatcher's outbound path. Call after begin().
     ssh_conn_setup();
+
+#if DETWS_SSH_PORT_FORWARD
+    // Enable ssh -L forwarding (opt-in; nothing is forwarded until this runs).
+    ssh_forward_set_policy_cb(ssh_forward_policy);
+    ssh_forward_begin();
+    Serial.println("SSH port forwarding enabled (ssh -L to ports 80/443)");
+#endif
 
     Serial.println("SSH server started on port 22");
 }

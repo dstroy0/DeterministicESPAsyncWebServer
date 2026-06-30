@@ -71,7 +71,16 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
 
     case SSH_MSG_NEWKEYS:
         ssh_newkeys_complete(i); // activate encryption; → SERVICE or OPEN
+        // RFC 8308: with encryption now active, advertise the signature algorithms
+        // we accept for pubkey userauth (server-sig-algs) so a modern client will
+        // sign an RSA key - it otherwise reports "no mutual signature algorithm".
+        // First encrypted message, before the client's SERVICE_REQUEST.
+        if (s->ext_info_c && ssh_extinfo_build(buf, &n, sizeof(buf)) == 0)
+            emit(i, buf, n);
         return 0;
+
+    case SSH_MSG_EXT_INFO:
+        return 0; // RFC 8308: a client may send its own EXT_INFO; we ignore it
 
     case SSH_MSG_SERVICE_REQUEST:
         if (ssh_auth_handle_service_request(payload, len, buf, &n, sizeof(buf)) != 0)
@@ -152,8 +161,15 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         return 0;
 
     case SSH_MSG_CHANNEL_CLOSE:
-        if (ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0)
-            emit(i, buf, n);
+        // handle_close frames CHANNEL_EOF + CHANNEL_CLOSE back to back, but each SSH
+        // message must travel in its own binary packet (RFC 4253 6): a strict peer
+        // runs packet_check_eom() after every message and rejects two in one. Emit
+        // the two halves as separate packets.
+        if (ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0 && n == 10)
+        {
+            emit(i, buf, 5);     // CHANNEL_EOF
+            emit(i, buf + 5, 5); // CHANNEL_CLOSE
+        }
         return 0;
 
     default: {

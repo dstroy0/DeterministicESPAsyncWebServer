@@ -423,7 +423,7 @@ shipped work:
       `test_unimplemented_reply_for_unknown_message`.
 
 - [~] **SSH channel multiplexing + port-forwarding.** _(channels + direct-tcpip
-      codec done; forward owner + forwarded-tcpip + X11 pending)_
+      `ssh -L` done; forwarded-tcpip + X11 pending)_
       `ssh_channel.cpp` is a per-connection channel table (`DETWS_SSH_MAX_CHANNELS`,
       default 1 = the original single channel): up to N concurrent channels per
       connection, each with its own id / window / peer state, every inbound
@@ -436,10 +436,14 @@ shipped work:
       and forward-channel data routes to `ssh_channel_set_forward_data_cb` instead of
       the session callback. Host-tested (`test_ssh_channel`: independent routing,
       pool-full -> resource shortage, unknown-type, forward open accept/refuse,
-      forward-data routing). _Remaining:_ the **forward owner** (an `ssh_forward`
-      layer that does the actual outbound TCP via the `det_client` transport and
-      bridges bytes both ways - no I/O in the codec), **`forwarded-tcpip`** (`ssh -R`,
-      listener + global request), and **X11 forwarding**.
+      forward-data routing). The **forward owner** (`ssh_forward`, behind
+      `DETWS_SSH_PORT_FORWARD`) does the actual outbound TCP via the `det_client`
+      transport and bridges bytes both ways - no I/O in the codec - with an optional
+      target policy, a per-poll target->client pump bounded by the channel window,
+      and EOF+CLOSE propagation; `ssh_conn_close_channel` sends a server-initiated
+      close as two packets. ESP32 build + link verified. _Remaining:_
+      **`forwarded-tcpip`** (`ssh -R`, listener + global request) and
+      **X11 forwarding**.
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a

@@ -8,6 +8,60 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH server could not interoperate with a stock OpenSSH client
+
+- **Status:** FIXED (host-tested + HW-verified on an ESP32 against OpenSSH 9.5: `ssh`, pubkey
+  auth, and `ssh -L` port forwarding all work with no client-side algorithm overrides).
+- **Found:** 2026-06-30, first live `ssh` against the server once a host key was provisioned.
+  A stock `ssh user@board` reset during key exchange; even forcing the KEX through, RSA pubkey
+  auth was refused. The earlier "handshake HW-verified" had only ever used a hand-built
+  minimal client (the native test) and a tiny forced-algorithm client.
+- **Two independent root causes, both fixed:**
+    - **The RX ring and the KEXINIT store were smaller than a real client's first flight.** A
+      modern OpenSSH KEXINIT (post-quantum + curve KEX names, cert host-key algs, EtM MACs,
+      `ext-info-c`) is ~1.5 KB. `SSH_KEXINIT_MAX` was 512, so `ssh_kexinit_parse()` rejected
+      the payload outright (`len > SSH_KEXINIT_MAX` -> dispatch returns -1 -> RST), and the
+      default 1024-byte `RX_BUF_SIZE` ring could not hold the banner + KEXINIT, resetting the
+      handshake at key exchange. Fixed by raising `SSH_KEXINIT_MAX` to 2048 (client I_C; the
+      server I_S stays small at `SSH_KEXINIT_S_MAX`) and auto-upsizing `RX_BUF_SIZE` to >= 2048
+      when SSH is enabled and the ring was left at its default (same idiom as the streaming-body
+      upsize; an explicit `RX_BUF_SIZE` is honored).
+    - **No RFC 8308 `ext-info` / `server-sig-algs`.** Without it a modern OpenSSH client will
+      not sign an RSA key (`send_pubkey_test: no mutual signature algorithm`) and falls back to
+      password. Fixed by advertising `ext-info-s` in the server KEXINIT, detecting the client's
+      `ext-info-c`, and sending `SSH_MSG_EXT_INFO` with `server-sig-algs = rsa-sha2-256` as the
+      first message after NEWKEYS. An inbound `EXT_INFO` is now accepted (ignored) rather than
+      answered with UNIMPLEMENTED.
+- **Tests:** `test_ssh_server` gains `test_extinfo_build_advertises_server_sig_algs` and
+  `test_large_client_kexinit_accepted`; the full-handshake test now sends `ext-info-c` and
+  asserts the server replies with EXT_INFO. (Curve25519 KEX + Ed25519 keys, which would let the
+  client use its _preferred_ algorithms instead of falling back to group14/rsa, are tracked
+  separately on the roadmap.)
+
+---
+
+## SSH channel close packed CHANNEL_EOF + CHANNEL_CLOSE into one binary packet
+
+- **Status:** FIXED (host-tested; `test_ssh_server`).
+- **Found:** 2026-06-30, while building the SSH port-forwarding (`direct-tcpip`) close path on top
+  of the channel layer.
+- **Root cause:** `build_close_chan()` (`ssh_channel.cpp`) frames the channel-close sequence as
+  ten bytes - `CHANNEL_EOF` (type + recipient, bytes 0..4) immediately followed by
+  `CHANNEL_CLOSE` (type + recipient, bytes 5..9) - in one output buffer, and the only emit site
+  (the `SSH_MSG_CHANNEL_CLOSE` case in `ssh_server.cpp`) sent the whole buffer through a single
+  `ssh_pkt_send()`, i.e. **two SSH messages in one binary packet**. RFC 4253 6 says a binary
+  packet carries exactly one message; a strict client (openssh runs `packet_check_eom()` after
+  each message handler) sees five trailing bytes after `CHANNEL_EOF` and disconnects with a
+  packet-integrity error, so a channel could not be closed cleanly against openssh. It slipped
+  earlier HW checks because those exercised the handshake + channel data, not a strict close.
+- **Fix:** emit the two halves as two packets - `emit(buf, 5)` then `emit(buf + 5, 5)` - so each
+  is framed, encrypted, and sequence-numbered on its own. The builder is unchanged (its 10-byte
+  layout is still the contract); the fix is at the emit boundary, with a comment so it is not
+  re-bundled. Regression test `test_inbound_close_emits_eof_then_close_separately` asserts the
+  dispatcher emits two packets (EOF then CLOSE).
+
+---
+
 ## SonarCloud static-analysis sweep: response-header over-read, crypto zeroization, and friends
 
 - **Status:** FIXED (first SonarCloud C/C++ scan; host-tested).

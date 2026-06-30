@@ -21,10 +21,17 @@ SshSession ssh_sess[MAX_SSH_CONNS];
 // ---------------------------------------------------------------------------
 
 static const char *const ALG_KEX = "diffie-hellman-group14-sha256";
+// Our advertised kex_algorithms: the real KEX plus the RFC 8308 indicator
+// ext-info-s, which tells the client we will send SSH_MSG_EXT_INFO (server-sig-algs).
+static const char *const ALG_KEX_ADVERTISED = "diffie-hellman-group14-sha256,ext-info-s";
 static const char *const ALG_HOSTKEY = "rsa-sha2-256";
 static const char *const ALG_CIPHER = "aes256-ctr";
 static const char *const ALG_MAC = "hmac-sha2-256";
 static const char *const ALG_COMP = "none";
+// Public-key signature algorithms we accept for userauth (RFC 8308 server-sig-algs).
+static const char *const ALG_SIG = "rsa-sha2-256";
+// RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
+static const char *const EXT_INFO_C = "ext-info-c";
 
 // ---------------------------------------------------------------------------
 // Byte-writer helpers
@@ -211,24 +218,24 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     ssh_rng_fill(cookie, sizeof(cookie));
     w_bytes(w, cookie, sizeof(cookie));
 
-    w_namelist(w, ALG_KEX);     // kex_algorithms
-    w_namelist(w, ALG_HOSTKEY); // server_host_key_algorithms
-    w_namelist(w, ALG_CIPHER);  // encryption c2s
-    w_namelist(w, ALG_CIPHER);  // encryption s2c
-    w_namelist(w, ALG_MAC);     // mac c2s
-    w_namelist(w, ALG_MAC);     // mac s2c
-    w_namelist(w, ALG_COMP);    // compression c2s
-    w_namelist(w, ALG_COMP);    // compression s2c
-    w_namelist(w, "");          // languages c2s
-    w_namelist(w, "");          // languages s2c
-    w_u8(w, 0);                 // first_kex_packet_follows = false
-    w_u32(w, 0);                // reserved
+    w_namelist(w, ALG_KEX_ADVERTISED); // kex_algorithms (+ ext-info-s)
+    w_namelist(w, ALG_HOSTKEY);        // server_host_key_algorithms
+    w_namelist(w, ALG_CIPHER);         // encryption c2s
+    w_namelist(w, ALG_CIPHER);         // encryption s2c
+    w_namelist(w, ALG_MAC);            // mac c2s
+    w_namelist(w, ALG_MAC);            // mac s2c
+    w_namelist(w, ALG_COMP);           // compression c2s
+    w_namelist(w, ALG_COMP);           // compression s2c
+    w_namelist(w, "");                 // languages c2s
+    w_namelist(w, "");                 // languages s2c
+    w_u8(w, 0);                        // first_kex_packet_follows = false
+    w_u32(w, 0);                       // reserved
 
     if (!w.ok)
         return -1;
 
     // Retain a copy as I_S for the exchange hash.
-    if (w.len > SSH_KEXINIT_MAX)
+    if (w.len > SSH_KEXINIT_S_MAX)
         return -1;
     memcpy(s->i_s, payload, w.len);
     s->i_s_len = (uint16_t)w.len;
@@ -277,6 +284,8 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     // kex_algorithms
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_KEX))
         return -1;
+    // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.
+    s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
     // server_host_key_algorithms
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_HOSTKEY))
         return -1;
@@ -300,6 +309,20 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         return -1;
 
     s->phase = SSH_PHASE_DH_INIT;
+    return 0;
+}
+
+int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap)
+{
+    // byte SSH_MSG_EXT_INFO || uint32 nr-extensions || (string name, string value)*
+    Writer w = {out, cap, 0, true};
+    w_u8(w, SSH_MSG_EXT_INFO);
+    w_u32(w, 1);                      // one extension
+    w_namelist(w, "server-sig-algs"); // extension name
+    w_namelist(w, ALG_SIG);           // value: accepted client-sig algorithms
+    if (!w.ok)
+        return -1;
+    *len = w.len;
     return 0;
 }
 
