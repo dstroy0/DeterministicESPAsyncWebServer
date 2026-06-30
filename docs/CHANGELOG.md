@@ -2,6 +2,13 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- auto-regenerate feature tables on push to main ([`e80de41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e80de41bf2c0ad777b1cd8ecbed9c7898d6d74c4))
+- update CHANGELOG.md [skip ci] ([`ffc06d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffc06d703f686545e944fdd610bb446e6a5d0e2d))
+
 ## [4.64.1] - 2026-06-30
 
 <details>
