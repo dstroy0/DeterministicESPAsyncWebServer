@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# One scan at a time per ref; a newer push cancels an in-flight scan so two
+# analyses never race the same SonarCloud project.
+concurrency:
+  group: sonarcloud-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sonarcloud:
     name: SonarCloud
@@ -51,6 +57,6 @@ jobs:
 
       - name: SonarQube Scan
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_HOST_URL: https://sonarcloud.io # SonarQube Cloud (SonarCloud) endpoint
