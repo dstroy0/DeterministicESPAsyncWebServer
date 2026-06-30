@@ -305,8 +305,8 @@ void ws_parse(WsConn *ws)
         if (ws->parse_state == WS_FRAME_READY || ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
             return;
 
-        uint8_t byte;
-        if (!det_conn_read_byte(ws->slot_id, &byte)) // ring drained underneath us: stop
+        uint8_t byte = 0;
+        if (!det_conn_read_byte(ws->slot_id, &byte)) // ring drained between available() and here
             break;
         ws_feed_byte(ws, byte);
     }
