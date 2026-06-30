@@ -37,10 +37,18 @@
 #define SSH_CHAN_MAX_PACKET 32768u
 #endif
 
+/** @brief Channel type (RFC 4254). */
+enum SshChanType
+{
+    SSH_CHAN_SESSION = 0,     ///< "session" - shell / exec / data
+    SSH_CHAN_DIRECT_TCPIP = 1 ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
+};
+
 /** @brief Per-connection channel state. */
 struct SshChannel
 {
     bool open;             ///< True once CHANNEL_OPEN_CONFIRMATION is sent.
+    uint8_t type;          ///< SshChanType: session or direct-tcpip forward.
     uint32_t local_id;     ///< Our channel id (== slot index).
     uint32_t peer_id;      ///< Client's channel id.
     uint32_t local_window; ///< Bytes we may still receive before WINDOW_ADJUST.
@@ -57,8 +65,31 @@ extern SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
  *  the channel id it arrived on. */
 typedef void (*SshChannelDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
-/** @brief Install the inbound-data callback. */
+/** @brief Install the inbound-data callback (session channels). */
 void ssh_channel_set_data_cb(SshChannelDataCb cb);
+
+/**
+ * @brief "direct-tcpip" forward request: a client asked the server to open a TCP
+ *        connection to @p host : @p port (ssh -L). The forwarding owner (which
+ *        does the actual TCP I/O - this codec does not) decides whether to allow
+ *        it; @p host is not NUL-terminated (@p host_len bytes).
+ * @return 0 to accept (the channel is opened and confirmed), < 0 to refuse
+ *         (CHANNEL_OPEN_FAILURE, administratively prohibited / connect failed).
+ *
+ * If no callback is installed, all forward requests are refused - so forwarding is
+ * opt-in (no open relay by default).
+ */
+typedef int (*SshForwardOpenCb)(uint8_t slot, uint32_t channel, const char *host, size_t host_len, uint16_t port);
+
+/** @brief Inbound data on a direct-tcpip channel (the owner writes it to the
+ *  forwarded TCP socket). Kept separate from the session data callback. */
+typedef void (*SshForwardDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
+
+/** @brief Install the direct-tcpip forward open-policy callback (opt-in). */
+void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
+
+/** @brief Install the direct-tcpip forward inbound-data callback. */
+void ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
 
 /** @brief Reset channel state for slot @p i. */
 void ssh_channel_init(uint8_t i);

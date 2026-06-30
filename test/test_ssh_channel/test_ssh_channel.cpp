@@ -24,14 +24,60 @@ static void data_cb(uint8_t slot, uint32_t channel, const uint8_t *d, size_t n)
     data_cb_count++;
 }
 
+// direct-tcpip forward callbacks (port forwarding) ---------------------------
+static char fwd_host[128];
+static size_t fwd_host_len;
+static uint16_t fwd_port;
+static uint32_t fwd_open_channel;
+static int fwd_open_count;
+static int fwd_open_ret; // value the open cb returns (0 accept, <0 refuse)
+
+static int fwd_open_cb(uint8_t slot, uint32_t channel, const char *host, size_t host_len, uint16_t port)
+{
+    (void)slot;
+    fwd_open_channel = channel;
+    fwd_host_len = host_len < sizeof(fwd_host) - 1 ? host_len : sizeof(fwd_host) - 1;
+    memcpy(fwd_host, host, fwd_host_len);
+    fwd_host[fwd_host_len] = 0;
+    fwd_port = port;
+    fwd_open_count++;
+    return fwd_open_ret;
+}
+
+static uint8_t fwd_data[256];
+static size_t fwd_data_len;
+static uint32_t fwd_data_channel;
+static int fwd_data_count;
+
+static void fwd_data_cb(uint8_t slot, uint32_t channel, const uint8_t *d, size_t n)
+{
+    (void)slot;
+    fwd_data_channel = channel;
+    fwd_data_len = n < sizeof(fwd_data) ? n : sizeof(fwd_data);
+    memcpy(fwd_data, d, fwd_data_len);
+    fwd_data_count++;
+}
+
 void setUp()
 {
     ssh_channel_init(0);
     ssh_channel_set_data_cb(data_cb);
+    ssh_channel_set_forward_open_cb(nullptr); // forwarding off by default
+    ssh_channel_set_forward_data_cb(nullptr);
     memset(last_data, 0, sizeof(last_data));
     last_data_len = 0;
     last_channel = 0xFFFFFFFFu;
     data_cb_count = 0;
+    memset(fwd_host, 0, sizeof(fwd_host));
+    fwd_host_len = 0;
+    fwd_port = 0;
+    fwd_open_channel = 0xFFFFFFFFu;
+    fwd_open_count = 0;
+    fwd_open_ret = 0;
+    memset(fwd_data, 0, sizeof(fwd_data));
+    fwd_data_len = 0;
+    fwd_data_channel = 0xFFFFFFFFu;
+    fwd_data_count = 0;
 }
 void tearDown()
 {
@@ -86,6 +132,25 @@ static size_t make_data(uint8_t *pkt, uint32_t recipient, const char *s)
     return n;
 }
 
+// Build a "direct-tcpip" CHANNEL_OPEN: connect host:port, origin advisory.
+static size_t make_direct_tcpip(uint8_t *pkt, uint32_t sender, const char *host, uint16_t port)
+{
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(pkt + n, "direct-tcpip");
+    wr_u32(pkt + n, sender);
+    wr_u32(pkt + n + 4, 32768); // init window
+    wr_u32(pkt + n + 8, 32768); // max packet
+    n += 12;
+    n += put_string(pkt + n, host); // host to connect
+    wr_u32(pkt + n, port);          // port to connect
+    n += 4;
+    n += put_string(pkt + n, "127.0.0.1"); // originator host (advisory)
+    wr_u32(pkt + n, 12345);                // originator port (advisory)
+    n += 4;
+    return n;
+}
+
 // ---- open -----------------------------------------------------------------
 
 void test_open_session_confirms()
@@ -96,12 +161,12 @@ void test_open_session_confirms()
     TEST_ASSERT_EQUAL_UINT32(1000, ssh_chan[0][id].peer_window);
 }
 
-void test_open_non_session_fails()
+void test_open_unknown_type_fails()
 {
     uint8_t pkt[64];
     size_t n = 0;
     pkt[n++] = SSH_MSG_CHANNEL_OPEN;
-    n += put_string(pkt + n, "direct-tcpip");
+    n += put_string(pkt + n, "x11"); // not an accepted open type
     wr_u32(pkt + n, 7);
     wr_u32(pkt + n + 4, 1000);
     wr_u32(pkt + n + 8, 16384);
@@ -111,7 +176,78 @@ void test_open_non_session_fails()
     size_t olen = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(3u, rd_u32(out + 5)); // unknown channel type
     TEST_ASSERT_FALSE(ssh_chan[0][0].open);
+}
+
+// ---- direct-tcpip forward (port forwarding, ssh -L) -----------------------
+
+void test_direct_tcpip_no_cb_prohibited()
+{
+    // Forwarding is opt-in: with no open callback installed it is refused.
+    uint8_t pkt[96];
+    size_t n = make_direct_tcpip(pkt, 7, "example.com", 80);
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(1u, rd_u32(out + 5)); // administratively prohibited
+    TEST_ASSERT_FALSE(ssh_chan[0][0].open);
+}
+
+void test_direct_tcpip_accept_confirms()
+{
+    ssh_channel_set_forward_open_cb(fwd_open_cb);
+    fwd_open_ret = 0; // owner accepts (connected)
+    uint8_t pkt[96];
+    size_t n = make_direct_tcpip(pkt, 9, "example.com", 443);
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0]);
+    uint32_t id = rd_u32(out + 5);
+    TEST_ASSERT_TRUE(ssh_chan[0][id].open);
+    TEST_ASSERT_EQUAL_UINT8(SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);
+    TEST_ASSERT_EQUAL_INT(1, fwd_open_count);
+    TEST_ASSERT_EQUAL_UINT32(id, fwd_open_channel);
+    TEST_ASSERT_EQUAL_STRING("example.com", fwd_host);
+    TEST_ASSERT_EQUAL_UINT16(443, fwd_port);
+}
+
+void test_direct_tcpip_refused_connect_failed()
+{
+    ssh_channel_set_forward_open_cb(fwd_open_cb);
+    fwd_open_ret = -1; // owner could not connect
+    uint8_t pkt[96];
+    size_t n = make_direct_tcpip(pkt, 9, "10.0.0.9", 22);
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(2u, rd_u32(out + 5)); // connect failed
+    TEST_ASSERT_FALSE(ssh_chan[0][0].open);        // channel freed on refusal
+}
+
+void test_forward_data_routes_to_forward_cb()
+{
+    ssh_channel_set_forward_open_cb(fwd_open_cb);
+    ssh_channel_set_forward_data_cb(fwd_data_cb);
+    fwd_open_ret = 0;
+    uint8_t pkt[96];
+    size_t n = make_direct_tcpip(pkt, 9, "h", 80);
+    uint8_t out[64];
+    size_t olen = 0;
+    ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out));
+    uint32_t id = rd_u32(out + 5);
+
+    uint8_t dpkt[32];
+    size_t dn = make_data(dpkt, id, "GET /");
+    olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, dpkt, dn, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(1, fwd_data_count); // routed to the forward owner
+    TEST_ASSERT_EQUAL_INT(0, data_cb_count);  // NOT the session callback
+    TEST_ASSERT_EQUAL_UINT32(id, fwd_data_channel);
+    TEST_ASSERT_EQUAL_MEMORY("GET /", fwd_data, 5);
 }
 
 // ---- request --------------------------------------------------------------
@@ -354,7 +490,11 @@ int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_open_session_confirms);
-    RUN_TEST(test_open_non_session_fails);
+    RUN_TEST(test_open_unknown_type_fails);
+    RUN_TEST(test_direct_tcpip_no_cb_prohibited);
+    RUN_TEST(test_direct_tcpip_accept_confirms);
+    RUN_TEST(test_direct_tcpip_refused_connect_failed);
+    RUN_TEST(test_forward_data_routes_to_forward_cb);
     RUN_TEST(test_shell_request_success_with_reply);
     RUN_TEST(test_unknown_request_failure);
     RUN_TEST(test_request_no_reply_produces_nothing);

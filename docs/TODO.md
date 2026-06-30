@@ -422,16 +422,24 @@ shipped work:
       counter) per RFC 4253 §11.4 - no handler-signature change needed. Tested by
       `test_unimplemented_reply_for_unknown_message`.
 
-- [~] **SSH channel multiplexing.** _(channels done; forwarding pending)_
-      `ssh_channel.cpp` is now a per-connection channel table
-      (`DETWS_SSH_MAX_CHANNELS`, default 1 = the original single channel): up to N
-      concurrent channels per connection, each with its own id / window / peer
-      state, every inbound `CHANNEL_*` routed to its channel by the recipient id,
-      and the data callback / `ssh_conn_send` tagged with the channel id. Host-tested
-      (`test_ssh_channel`: independent routing, pool-full -> resource shortage,
-      unknown-channel rejected, inbound-close routing). _Remaining:_ **TCP
-      port-forwarding** (`direct-tcpip` / `forwarded-tcpip`) and **X11 forwarding** -
-      new channel types + a connect/listen path on top of this table.
+- [~] **SSH channel multiplexing + port-forwarding.** _(channels + direct-tcpip
+      codec done; forward owner + forwarded-tcpip + X11 pending)_
+      `ssh_channel.cpp` is a per-connection channel table (`DETWS_SSH_MAX_CHANNELS`,
+      default 1 = the original single channel): up to N concurrent channels per
+      connection, each with its own id / window / peer state, every inbound
+      `CHANNEL_*` routed to its channel by the recipient id, and the data callback /
+      `ssh_conn_send` tagged with the channel id. **direct-tcpip** (`ssh -L`) channels
+      now parse + route through a normalized forwarding seam: a channel carries a
+      `type` (session / direct-tcpip), `CHANNEL_OPEN` "direct-tcpip" extracts the
+      target host:port and consults `ssh_channel_set_forward_open_cb` (opt-in; absent
+      = administratively prohibited, refused = connect-failed, accepted = confirmed),
+      and forward-channel data routes to `ssh_channel_set_forward_data_cb` instead of
+      the session callback. Host-tested (`test_ssh_channel`: independent routing,
+      pool-full -> resource shortage, unknown-type, forward open accept/refuse,
+      forward-data routing). _Remaining:_ the **forward owner** (an `ssh_forward`
+      layer that does the actual outbound TCP via the `det_client` transport and
+      bridges bytes both ways - no I/O in the codec), **`forwarded-tcpip`** (`ssh -R`,
+      listener + global request), and **X11 forwarding**.
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a

@@ -558,7 +558,7 @@ Server-Sent Events push support.
 
 `DETWS_ENABLE_SSH`
 
-SSH server support (RFC 4253/4252/4254).
+SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection (`DETWS_SSH_MAX_CHANNELS`, default 1), each routed by its recipient id with its own flow-control window. Beyond `session` channels, `direct-tcpip` (the `ssh -L` local-forward request) is parsed and routed through a normalized forwarding seam: install `ssh_channel_set_forward_open_cb` to allow a forward to a target host:port (opt-in - absent means forwarding is administratively prohibited, so no open relay by default) and `ssh_channel_set_forward_data_cb` to receive the forwarded bytes; the codec does no TCP I/O itself, leaving the outbound connection to the forwarding owner.
 
 ## Stats
 

@@ -18,10 +18,22 @@
 SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 
 static SshChannelDataCb g_data_cb = nullptr;
+static SshForwardOpenCb g_forward_open_cb = nullptr;
+static SshForwardDataCb g_forward_data_cb = nullptr;
 
 void ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
     g_data_cb = cb;
+}
+
+void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
+{
+    g_forward_open_cb = cb;
+}
+
+void ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
+{
+    g_forward_data_cb = cb;
 }
 
 void ssh_channel_init(uint8_t i)
@@ -88,6 +100,35 @@ static int chan_alloc(uint8_t i)
 // CHANNEL_OPEN → CONFIRMATION / FAILURE
 // ---------------------------------------------------------------------------
 
+// CHANNEL_OPEN_FAILURE: byte || recipient(sender) || reason || desc || lang.
+// reason: 1 admin-prohibited, 2 connect-failed, 3 unknown-type, 4 resource-shortage.
+static int build_open_failure(uint8_t *out, size_t cap, uint32_t sender, uint32_t reason, size_t *out_len)
+{
+    if (cap < 17)
+        return -1;
+    out[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+    wr_u32(out + 1, sender);
+    wr_u32(out + 5, reason);
+    wr_u32(out + 9, 0);  // empty description
+    wr_u32(out + 13, 0); // empty language
+    *out_len = 17;
+    return 0;
+}
+
+// CHANNEL_OPEN_CONFIRMATION: byte || recipient(peer) || sender(local) || window || max.
+static int build_open_confirm(const SshChannel *c, uint8_t *out, size_t cap, size_t *out_len)
+{
+    if (cap < 17)
+        return -1;
+    out[0] = SSH_MSG_CHANNEL_OPEN_CONFIRM;
+    wr_u32(out + 1, c->peer_id);
+    wr_u32(out + 5, c->local_id);
+    wr_u32(out + 9, c->local_window);
+    wr_u32(out + 13, SSH_CHAN_MAX_PACKET);
+    *out_len = 17;
+    return 0;
+}
+
 int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
 {
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_OPEN)
@@ -103,43 +144,50 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
     uint32_t sender = rd_u32(payload + off);
     uint32_t init_window = rd_u32(payload + off + 4);
     uint32_t max_pkt = rd_u32(payload + off + 8);
+    off += 12;
 
     bool is_session = (type_len == 7 && memcmp(type, "session", 7) == 0);
-    int slot = is_session ? chan_alloc(i) : -1;
+    bool is_dtcpip = (type_len == 12 && memcmp(type, "direct-tcpip", 12) == 0);
+    if (!is_session && !is_dtcpip)
+        return build_open_failure(out, cap, sender, 3u, out_len); // unknown channel type
 
-    if (!is_session || slot < 0)
+    // direct-tcpip data: host(string) port(u32) orig_host(string) orig_port(u32).
+    const uint8_t *fhost = nullptr;
+    uint32_t fhost_len = 0;
+    uint16_t fport = 0;
+    if (is_dtcpip)
     {
-        // CHANNEL_OPEN_FAILURE: byte || recipient || reason || desc || lang
-        uint32_t reason = is_session ? 4u /* resource shortage: pool full */ : 3u /* unknown channel type */;
-        if (cap < 1 + 4 + 4 + 4 + 4)
+        if (!g_forward_open_cb)
+            return build_open_failure(out, cap, sender, 1u, out_len); // forwarding off: prohibited
+        if (!rd_string(payload, len, &off, &fhost, &fhost_len) || off + 4 > len)
             return -1;
-        out[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
-        wr_u32(out + 1, sender);
-        wr_u32(out + 5, reason);
-        wr_u32(out + 9, 0);  // empty description
-        wr_u32(out + 13, 0); // empty language
-        *out_len = 17;
-        return 0;
+        fport = (uint16_t)rd_u32(payload + off); // orig host/port follow but are advisory
     }
+
+    int slot = chan_alloc(i);
+    if (slot < 0)
+        return build_open_failure(out, cap, sender, 4u, out_len); // pool full
 
     SshChannel *c = &ssh_chan[i][slot];
     c->open = true;
+    c->type = is_dtcpip ? (uint8_t)SSH_CHAN_DIRECT_TCPIP : (uint8_t)SSH_CHAN_SESSION;
     c->local_id = (uint32_t)slot;
     c->peer_id = sender;
     c->local_window = SSH_CHAN_WINDOW;
     c->peer_window = init_window;
     c->peer_max_pkt = max_pkt;
 
-    // CONFIRMATION: byte || recipient(sender) || sender(local) || window || max
-    if (cap < 1 + 16)
-        return -1;
-    out[0] = SSH_MSG_CHANNEL_OPEN_CONFIRM;
-    wr_u32(out + 1, c->peer_id);
-    wr_u32(out + 5, c->local_id);
-    wr_u32(out + 9, c->local_window);
-    wr_u32(out + 13, SSH_CHAN_MAX_PACKET);
-    *out_len = 17;
-    return 0;
+    if (is_dtcpip)
+    {
+        // The owner does the actual TCP connect (no I/O in this codec); on refusal
+        // free the channel and fail closed.
+        if (g_forward_open_cb(i, c->local_id, (const char *)fhost, fhost_len, fport) < 0)
+        {
+            c->open = false;
+            return build_open_failure(out, cap, sender, 2u, out_len); // connect failed
+        }
+    }
+    return build_open_confirm(c, out, cap, out_len);
 }
 
 // ---------------------------------------------------------------------------
@@ -211,8 +259,18 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
         return -1; // peer overran the advertised window (RFC 4254 §5.2)
     c->local_window -= dlen;
 
-    if (g_data_cb && dlen > 0)
-        g_data_cb(i, c->local_id, data, dlen);
+    if (dlen > 0)
+    {
+        if (c->type == SSH_CHAN_DIRECT_TCPIP) // forwarded TCP bytes -> the forward owner
+        {
+            if (g_forward_data_cb)
+                g_forward_data_cb(i, c->local_id, data, dlen);
+        }
+        else if (g_data_cb) // session bytes -> the application
+        {
+            g_data_cb(i, c->local_id, data, dlen);
+        }
+    }
 
     // Replenish the window once it drops below half.
     if (c->local_window < SSH_CHAN_WINDOW / 2)
