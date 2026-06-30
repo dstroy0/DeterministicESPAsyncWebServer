@@ -1,0 +1,75 @@
+name: ESP32 Build
+
+# The native test matrix runs on the host; nothing else compiles the library for
+# the real ESP32 / Arduino target, so ARDUINO-only breaks (mbedTLS, FreeRTOS,
+# WiFi, lwIP paths) and example breakage slip through. This compiles a curated set
+# of examples - one per heavy subsystem - for esp32dev via `pio ci`, using the
+# exact build_flags each example's README documents. Add a matrix entry when a new
+# subsystem with its own ARDUINO compile path lands.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: esp32-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  esp32-build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Base HTTP", ino: "examples/Foundation/01.Basic/01.Basic.ino", flags: "" }
+          - { name: "HTTPS (TLS)", ino: "examples/L4-Transport/03.HTTPS/03.HTTPS.ino", flags: "-DDETWS_ENABLE_TLS=1" }
+          - { name: "mTLS", ino: "examples/L4-Transport/04.mTLS/04.mTLS.ino", flags: "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1" }
+          - { name: "SSH", ino: "examples/L5-Session/01.SSH/01.SSH.ino", flags: "-DDETWS_ENABLE_SSH=1" }
+          - {
+              name: "SSH forwarding",
+              ino: "examples/L5-Session/01.SSH/01.SSH.ino",
+              flags: "-DDETWS_ENABLE_SSH=1 -DDETWS_SSH_PORT_FORWARD=1 -DDETWS_SSH_MAX_CHANNELS=4 -DDETWS_CLIENT_CONNS=3 -DDETWS_SSH_FWD_MAX=3",
+            }
+          - {
+              name: "WebSocket compression",
+              ino: "examples/L6-Presentation/11.WebSocketCompression/11.WebSocketCompression.ino",
+              flags: "-DDETWS_ENABLE_WS_DEFLATE=1",
+            }
+          - { name: "CoAP", ino: "examples/L7-Application/13.CoAP/13.CoAP.ino", flags: "-DDETWS_ENABLE_COAP=1" }
+          - { name: "SNMP", ino: "examples/L7-Application/14.SNMP/14.SNMP.ino", flags: "-DDETWS_ENABLE_SNMP=1" }
+          - { name: "MQTT client", ino: "examples/L7-Application/24.MqttClient/24.MqttClient.ino", flags: "-DDETWS_ENABLE_MQTT=1" }
+          - { name: "Modbus TCP", ino: "examples/L7-Application/30.ModbusTcp/30.ModbusTcp.ino", flags: "-DDETWS_ENABLE_MODBUS=1" }
+          - { name: "OPC UA", ino: "examples/L7-Application/55.OpcUa/55.OpcUa.ino", flags: "-DDETWS_ENABLE_OPCUA=1" }
+          - { name: "OTA", ino: "examples/L7-Application/16.OTA/16.OTA.ino", flags: "-DDETWS_ENABLE_OTA=1" }
+          - { name: "WebDAV", ino: "examples/L7-Application/29.WebDav/29.WebDav.ino", flags: "-DDETWS_ENABLE_WEBDAV=1" }
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-esp32-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-esp32-
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Compile for esp32dev
+        run: |
+          pio ci --board=esp32dev \
+            --project-option="framework=arduino" \
+            --project-option="platform=espressif32@^6.0.0" \
+            --lib="." \
+            --project-option="build_flags=${{ matrix.flags }}" \
+            "${{ matrix.ino }}"
