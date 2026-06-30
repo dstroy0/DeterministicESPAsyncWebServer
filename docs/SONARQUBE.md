@@ -48,14 +48,22 @@ bash tools/sonar/gen_compiledb.sh   # writes ./compile_commands.json
 SonarCloud does not run the tests; it only displays coverage from a report you
 import, so without one it shows **0%**. [`tools/sonar/gen_coverage.sh`](../tools/sonar/gen_coverage.sh)
 builds + runs the native Unity test envs with gcov instrumentation
-(`-fprofile-arcs -ftest-coverage -lgcov`, into a dedicated `.pio_cov` build dir)
-and `gcovr --sonarqube` merges every env's `.gcda` into `coverage.xml` (the
-SonarQube generic-coverage format, `src/` only). The scan imports it via
-`sonar.coverageReportPaths=coverage.xml`. Both the report and `.pio_cov` are
-git-ignored; the CI job regenerates them. Run locally with `bash
-tools/sonar/gen_coverage.sh` (or pass a subset of env names as args). The
-ThreadSanitizer env is excluded (tsan + gcov do not mix), and it doubles the CI
-job time (it runs every test env on top of the compile-DB build).
+(`-fprofile-arcs -ftest-coverage -lgcov`, into a dedicated `.pio_cov` build dir).
+
+It emits **one gcovr report per env** and then
+[`tools/sonar/merge_coverage.py`](../tools/sonar/merge_coverage.py) unions them
+into `coverage.xml` (SonarQube generic-coverage format, `src/` only). The per-env
+split is required: gcov cannot merge the **same source compiled with different
+`-D` flags** across envs in a single pass - it raises a worker exception - so each
+env is gcovr'd on its own build dir and the reports are merged afterwards (a line
+is covered if covered in any env). The scan imports the result via
+`sonar.coverageReportPaths=coverage.xml`.
+
+`coverage.xml`, `coverage_reports/`, and `.pio_cov` are git-ignored; the CI job
+regenerates them. Run locally with `bash tools/sonar/gen_coverage.sh` (or pass a
+subset of env names as args). The ThreadSanitizer env is excluded (tsan + gcov do
+not mix), and the step roughly doubles the CI job time (it runs every test env on
+top of the compile-DB build). Current line coverage is ~84% of `src/`.
 
 ## Analyzed-file coverage
 

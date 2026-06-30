@@ -3,12 +3,15 @@
 # SonarQube coverage report (src/ only) for the SonarCloud scan. Coverage needs
 # the tests to actually RUN (not just compiledb), so this builds + runs them.
 #
-# A dedicated build dir (.pio_cov) and the coverage build flags keep this separate
-# from the no-coverage compile-DB build (gen_compiledb.sh). Pass an explicit env
-# list as args to cover a subset (handy locally); default is every native env
-# except codeql and the ThreadSanitizer env (tsan + gcov do not mix).
+# One report PER ENV, unioned afterwards: gcov cannot merge the same source
+# compiled with different -D flags across envs in a single pass (it throws a
+# worker exception), so each env is gcovr'd on its own build dir and
+# merge_coverage.py unions them into coverage.xml.
 #
-# Requires: pio + gcovr on PATH.
+# A dedicated build dir (.pio_cov) + the coverage build flags keep this separate
+# from the no-coverage compile-DB build. Pass an explicit env list as args to
+# cover a subset (handy locally); default is every native env except codeql and
+# the ThreadSanitizer env (tsan + gcov do not mix). Requires: pio + gcovr.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -21,12 +24,16 @@ else
     envs=$(grep -oE '^\[env:native[A-Za-z0-9_]*\]' platformio.ini | sed -E 's/\[env:(.*)\]/\1/' | grep -vE 'codeql|native_tsan')
 fi
 
+rm -rf coverage_reports
+mkdir -p coverage_reports
 for e in $envs; do
     echo "::group::coverage $e"
-    pio test -e "$e" || echo "WARN: test env failed (coverage still collected from what ran): $e"
+    pio test -e "$e" || echo "WARN: test env failed: $e"
+    gcovr --root . --filter 'src/' --gcov-ignore-parse-errors --sonarqube "coverage_reports/${e}.xml" \
+        "$PLATFORMIO_BUILD_DIR/$e" || echo "WARN: gcovr failed: $e"
     echo "::endgroup::"
 done
 
-# Merge every env's .gcda into one SonarQube generic-coverage report, src/ only.
-gcovr --root . --filter 'src/' --gcov-ignore-parse-errors --sonarqube coverage.xml --print-summary "$PLATFORMIO_BUILD_DIR"
+python3 tools/sonar/merge_coverage.py coverage.xml "coverage_reports/*.xml"
+rm -rf coverage_reports
 echo "wrote coverage.xml"

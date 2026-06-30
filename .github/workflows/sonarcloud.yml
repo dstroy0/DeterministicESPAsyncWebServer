@@ -56,9 +56,9 @@ jobs:
         if: ${{ env.SONAR_TOKEN != '' }}
         run: bash tools/sonar/gen_compiledb.sh
 
-      # Coverage import temporarily disabled: gcovr's full-scale report tripped the
-      # SonarQube generic-coverage parser. Re-enable once gen_coverage.sh output is
-      # validated at full scale (see docs/SONARQUBE.md / tools/sonar/gen_coverage.sh).
+      - name: Generate coverage (instrumented native tests -> coverage.xml)
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: bash tools/sonar/gen_coverage.sh
 
       - name: SonarQube Scan
         if: ${{ env.SONAR_TOKEN != '' }}
