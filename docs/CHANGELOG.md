@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- extend coverage, probably introduced some SonarQube errors, flying blind on my phone ([`0a162c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a162c530d85ed85d2cdabda49be8d0a011380e7))
+
 ### CI / Build
 
+- update test report [skip ci] ([`03faa4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03faa4b8a389f196d936b307e37e77251a81c83a))
+- update CHANGELOG.md [skip ci] ([`e922f6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e922f6f0d9c7c297b0df45ac64098947b228e704))
 - update test report [skip ci] ([`d3d3a16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d3a162ca42f5d432d5d4a819ddbb44f5f35f77))
 - update CHANGELOG.md [skip ci] ([`529a75a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/529a75a5fc7acaa4c8674284ed9296c32681a524))
 - compile every example + harvest flash/RAM footprints ([`eb0da64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb0da64178866ed4ad2bdc46cd779174e2a333b0))
@@ -19,6 +25,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`dd0594d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd0594d8440f0af70b6fd97a4b4a605cfea5c3e6))
 - auto-regenerate feature tables on push to main ([`e80de41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e80de41bf2c0ad777b1cd8ecbed9c7898d6d74c4))
 - update CHANGELOG.md [skip ci] ([`ffc06d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffc06d703f686545e944fdd610bb446e6a5d0e2d))
+
+### Changes
+
+- Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`118d54f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/118d54f1dc59e8662458b121af839fb4ba6067cc))
 
 ### Testing
 
