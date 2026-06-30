@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.11] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.11 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`165e542`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/165e54263c008af6fdfae604ffd15aa48fd85b0e))
+
+### Changes
+
+- Bump version: 4.59.10 → 4.59.11 ([`08d208b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08d208b9b65049719506745f074d13026639146d))
+
+### Testing
+
+- sync test_matrix.json with the native_oidc scratch/worker srcs ([`d05811b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d05811b0dbf8344ea4ad1d99d1c145bb834fd2f3))
+
+</details>
+
 ## [4.59.10] - 2026-06-30
 
 <details>
