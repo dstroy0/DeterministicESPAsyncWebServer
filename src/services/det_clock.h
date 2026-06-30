@@ -76,4 +76,111 @@ inline uint32_t detws_millis(void)
     return millis();
 }
 
+// ---------------------------------------------------------------------------
+// Microsecond time base (v5 clock-awareness): ISR timestamps + sub-ms latency
+// ---------------------------------------------------------------------------
+//
+// A second, higher-resolution source for real-time work: timestamping a hardware
+// event in an ISR and budgeting how long a piece of work takes. Pluggable like the
+// millisecond clock; the default is the platform micros() on device, or
+// detws_millis() * 1000 on host (override for sub-ms precision in tests).
+
+inline detws_clock_fn &_detws_micros_fn_ref()
+{
+    static detws_clock_fn fn = nullptr;
+    return fn;
+}
+inline uint32_t &_detws_micros_div_ref()
+{
+    static uint32_t div = 1;
+    return div;
+}
+
+/**
+ * @brief Install a custom microsecond clock running at @p ticks_per_second; the
+ *        library divides it down to 1 MHz. Pass (nullptr, 0) for the platform
+ *        default.
+ */
+inline void detws_set_micros_clock(detws_clock_fn fn, uint32_t ticks_per_second)
+{
+    _detws_micros_fn_ref() = fn;
+    _detws_micros_div_ref() = (ticks_per_second >= 1000000u) ? (ticks_per_second / 1000000u) : 1u;
+}
+
+/**
+ * @brief Monotonic microseconds - the high-resolution time base for ISR
+ *        timestamps and sub-millisecond latency. Safe to call from an ISR. Wraps
+ *        roughly every 71 minutes, so use it only for short deltas (unsigned
+ *        subtraction is wrap-safe).
+ */
+inline uint32_t detws_micros(void)
+{
+    detws_clock_fn fn = _detws_micros_fn_ref();
+    if (fn)
+        return fn() / _detws_micros_div_ref();
+#ifdef ARDUINO
+    return micros();
+#else
+    return detws_millis() * 1000u; // host fallback (no platform micros); override for precision
+#endif
+}
+
+// ---------------------------------------------------------------------------
+// Latency budgeting: measure an operation against a microsecond budget
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Rolling latency statistics in microseconds: sample count, min / max /
+ *        mean, and how many samples blew a budget. Fixed size, no heap; a
+ *        subsystem (the preempting queue, a DMA path, a forwarding rule) keeps one
+ *        and reports it for real-time visibility.
+ */
+struct DetwsLatencyStat
+{
+    uint32_t count;
+    uint32_t over_budget; ///< samples whose latency exceeded the budget
+    uint32_t min_us;
+    uint32_t max_us;
+    uint64_t sum_us;
+};
+
+/** @brief Zero a stat (min seeded high so the first sample sets it). */
+inline void detws_lat_reset(DetwsLatencyStat *s)
+{
+    s->count = 0;
+    s->over_budget = 0;
+    s->min_us = 0xFFFFFFFFu;
+    s->max_us = 0;
+    s->sum_us = 0;
+}
+
+/** @brief Start of a measured span: capture the current microsecond time. */
+inline uint32_t detws_lat_begin(void)
+{
+    return detws_micros();
+}
+
+/**
+ * @brief End of a span started at @p start_us: record its latency, counting it as
+ *        over-budget when @p budget_us is non-zero and exceeded. Wrap-safe.
+ */
+inline void detws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budget_us)
+{
+    uint32_t lat = detws_micros() - start_us; // wrap-safe unsigned delta
+    s->count++;
+    s->sum_us += lat;
+    if (lat < s->min_us)
+        s->min_us = lat;
+    if (lat > s->max_us)
+        s->max_us = lat;
+    if (budget_us && lat > budget_us)
+        s->over_budget++;
+}
+
+/** @brief Mean latency (us) over the recorded samples, 0 if none. */
+inline uint32_t detws_lat_avg_us(const DetwsLatencyStat *s)
+{
+    return s->count ? (uint32_t)(s->sum_us / s->count) : 0u;
+}
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_CLOCK_H

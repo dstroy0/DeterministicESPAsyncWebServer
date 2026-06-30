@@ -92,9 +92,13 @@ preempts immediately to process it, with the priorities exposed to the user.
       CPU is free during byte movement; the DMA-complete ISR posts to the
       preempting queue. This is the ingest path for the cheap-breakout field-bus
       codecs (CAN over SPI, RS-485 UART, IO-Link, ...).
-- [ ] \*Deeper clock-awareness (M). Real-time preemption needs more than the
-      1000 Hz `detws_millis()`: tick-rate awareness, ISR timestamps, and per-queue
-      latency budgeting layered onto `det_clock` / the worker model.
+- [x] \*Deeper clock-awareness (M) _(shipped)_ - `services/det_clock` gains a
+      microsecond time base beside the 1000 Hz `detws_millis()`: `detws_micros()`
+      (pluggable like the ms clock, ISR-safe, for hardware-event timestamps) plus a
+      `DetwsLatencyStat` budget helper (`detws_lat_begin` / `_end` / `_avg_us`:
+      count, min/max/mean, over-budget count). Header-only, zero heap. HW-verified
+      measuring the preempting queue's ISR-to-handler latency against a budget
+      (avg 12 us, 0 over a 50 us budget). Host-tested in `native_clock`.
 - [ ] \*Interface forwarding (L), **DMA-driven**. A forwarding plane over the ingest
       pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet over SPI,
       or a peripheral bus / radio) is forwarded to another by a user-set rule, so the
@@ -834,3 +838,24 @@ flag; fixed BSS, no heap.
       (OneShot125 / OneShot42, Multishot) synced to the control loop, driven by the
       **MCPWM** (motor-control PWM) peripheral. A thin pulse-width mapping over MCPWM;
       pairs with the DShot control surface as the legacy fallback.
+
+### Network Time Security (NTS, RFC 8915)
+
+Authenticated time - the secure successor to plain NTP (the current
+`DETWS_ENABLE_NTP` client trusts whatever the network hands it, so a MITM can shift
+the device's clock and break TLS validity windows, JWT/OIDC `exp`, TOTP, and log
+timestamps). NTS adds cryptographic authentication on top of NTPv4 with no shared
+secret. Builds on the existing NTP client + the TLS stack + AEAD primitives; fixed
+BSS, no heap, behind a build flag.
+
+- [ ] **NTS-KE (Key Establishment)** (L) - a TLS 1.3 handshake to the NTS-KE server
+      that yields the AEAD key material (via RFC 5705 exporter), the NTP server
+      address, and the initial cookies. Reuses the static-pool mbedTLS client
+      (`det_tls` / the MQTT/WS-client TLS path); ALPN `ntske/1`.
+- [ ] **NTS-protected NTP** (L) - NTPv4 with the NTS extension fields: Unique
+      Identifier, NTS Cookie, and the NTS Authenticator + Encrypted EFs under
+      `AEAD_AES_SIV_CMAC_256` (RFC 5297 AES-SIV). Verify the response authenticator
+      and the echoed unique-id (anti-replay), then feed the validated offset to
+      `det_clock`; rotate the cookie list per exchange. The packet build / parse +
+      AES-SIV are host-testable against the RFC vectors; HW-verify against a public
+      NTS server (e.g. time.cloudflare.com).

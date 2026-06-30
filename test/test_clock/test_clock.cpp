@@ -13,14 +13,21 @@ static uint32_t fake_clock()
 {
     return g_fake;
 }
+static uint32_t g_fake_us = 0;
+static uint32_t fake_us()
+{
+    return g_fake_us;
+}
 
 void setUp()
 {
     detws_set_clock(nullptr, 0); // start each test on the platform default
+    detws_set_micros_clock(nullptr, 0);
 }
 void tearDown()
 {
     detws_set_clock(nullptr, 0);
+    detws_set_micros_clock(nullptr, 0);
 }
 
 void test_default_is_platform_millis()
@@ -61,6 +68,58 @@ void test_revert_to_default()
     TEST_ASSERT_EQUAL_UINT32(777, detws_millis());
 }
 
+// --- v5 clock-awareness: microsecond base + latency budgeting -----------------
+
+void test_micros_custom_divides_to_1mhz()
+{
+    detws_set_micros_clock(fake_us, 80000000u); // 80 MHz source -> divide by 80
+    g_fake_us = 80000000u;
+    TEST_ASSERT_EQUAL_UINT32(1000000u, detws_micros());
+    g_fake_us = 160u;
+    TEST_ASSERT_EQUAL_UINT32(2u, detws_micros()); // 160 / 80
+}
+
+void test_latency_stat_records_and_budgets()
+{
+    detws_set_micros_clock(fake_us, 1000000u); // 1 MHz -> microseconds == counter
+    DetwsLatencyStat s;
+    detws_lat_reset(&s);
+
+    g_fake_us = 1000;
+    uint32_t t = detws_lat_begin();
+    g_fake_us = 1010; // 10 us span (budget 50: ok)
+    detws_lat_end(&s, t, 50);
+
+    g_fake_us = 2000;
+    t = detws_lat_begin();
+    g_fake_us = 2100; // 100 us span (budget 50: OVER)
+    detws_lat_end(&s, t, 50);
+
+    g_fake_us = 3000;
+    t = detws_lat_begin();
+    g_fake_us = 3020; // 20 us span
+    detws_lat_end(&s, t, 50);
+
+    TEST_ASSERT_EQUAL_UINT32(3, s.count);
+    TEST_ASSERT_EQUAL_UINT32(10, s.min_us);
+    TEST_ASSERT_EQUAL_UINT32(100, s.max_us);
+    TEST_ASSERT_EQUAL_UINT32((10 + 100 + 20) / 3, detws_lat_avg_us(&s));
+    TEST_ASSERT_EQUAL_UINT32(1, s.over_budget); // only the 100 us sample
+}
+
+void test_latency_budget_zero_disables()
+{
+    detws_set_micros_clock(fake_us, 1000000u);
+    DetwsLatencyStat s;
+    detws_lat_reset(&s);
+    g_fake_us = 0;
+    uint32_t t = detws_lat_begin();
+    g_fake_us = 99999; // huge span, but budget 0 = disabled
+    detws_lat_end(&s, t, 0);
+    TEST_ASSERT_EQUAL_UINT32(1, s.count);
+    TEST_ASSERT_EQUAL_UINT32(0, s.over_budget);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -68,5 +127,8 @@ int main()
     RUN_TEST(test_custom_clock_divides_to_1000hz);
     RUN_TEST(test_sub_khz_source_not_divided);
     RUN_TEST(test_revert_to_default);
+    RUN_TEST(test_micros_custom_divides_to_1mhz);
+    RUN_TEST(test_latency_stat_records_and_budgets);
+    RUN_TEST(test_latency_budget_zero_disables);
     return UNITY_END();
 }
