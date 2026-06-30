@@ -105,14 +105,19 @@ bool get_str(const char *s, const char *e, const char *name, char *out, size_t c
     char t;
     if (!find_field(s, e, name, &v, &vl, &t) || t != 's')
         return false;
+    // A while loop so a JSON "\x" escape can consume its second char without
+    // mutating a for-loop counter: take the char after the backslash literally.
     size_t o = 0;
-    for (size_t i = 0; i < vl; i++)
+    size_t i = 0;
+    while (i < vl)
     {
-        if (v[i] == '\\' && i + 1 < vl)
-            i++;
+        char ch = v[i];
+        if (ch == '\\' && i + 1 < vl)
+            ch = v[++i];
         if (o + 1 >= cap)
             return false;
-        out[o++] = v[i];
+        out[o++] = ch;
+        i++;
     }
     out[o] = '\0';
     return true;

@@ -140,9 +140,10 @@ bool webdav_dest_path(const char *destination, char *out, size_t cap)
         return false; // not an absolute path
     }
 
-    // Percent-decode into out.
+    // Percent-decode into out. A while loop so the %XX case can consume its two
+    // extra hex digits without mutating a for-loop counter.
     size_t o = 0;
-    for (; *p; p++)
+    while (*p)
     {
         char c = *p;
         if (c == '%')
@@ -157,6 +158,7 @@ bool webdav_dest_path(const char *destination, char *out, size_t cap)
         if (o + 1 >= cap)
             return false; // no room for char + NUL
         out[o++] = c;
+        p++;
     }
     out[o] = '\0';
     return true;

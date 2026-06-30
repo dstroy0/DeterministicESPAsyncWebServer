@@ -8,13 +8,13 @@
 
 #include "ntp_service.h"
 
-// A successful sync moves the clock well past this sentinel (2021-01-01 UTC);
-// a cold-booted RTC sits near the Unix epoch.
-static const time_t DETWS_NTP_PLAUSIBLE_EPOCH = 1609459200;
-
 #if DETWS_ENABLE_NTP && defined(ARDUINO)
 
 #include <Arduino.h>
+
+// A successful sync moves the clock well past this sentinel (2021-01-01 UTC);
+// a cold-booted RTC sits near the Unix epoch.
+static const time_t DETWS_NTP_PLAUSIBLE_EPOCH = 1609459200;
 
 bool detws_ntp_begin(const char *tz, const char *server1, const char *server2)
 {

@@ -99,12 +99,14 @@ void auth_lockout_fail(uint32_t ip, uint32_t now_ms)
 
     if (b->fails >= DETWS_AUTH_LOCKOUT_THRESHOLD)
     {
-        // Exponential backoff: base << (fails - threshold), capped at max. Double
-        // by stepping so the shift can never overflow.
+        // Exponential backoff: base << (fails - threshold), capped at max. Step the
+        // double so the shift can never overflow: the cap is hit (and the loop
+        // breaks) before dur could exceed MAX_MS, and the config caps MAX_MS at
+        // 0x80000000 so the surviving dur << 1 always fits in a uint32.
         uint32_t dur = DETWS_AUTH_LOCKOUT_BASE_MS;
         for (uint16_t n = (uint16_t)(b->fails - DETWS_AUTH_LOCKOUT_THRESHOLD); n > 0; n--)
         {
-            if (dur >= DETWS_AUTH_LOCKOUT_MAX_MS || dur > (0xFFFFFFFFu >> 1))
+            if (dur >= DETWS_AUTH_LOCKOUT_MAX_MS)
             {
                 dur = DETWS_AUTH_LOCKOUT_MAX_MS;
                 break;

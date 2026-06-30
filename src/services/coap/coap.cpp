@@ -421,15 +421,15 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         size_t pl = 0;
         for (size_t i = 0; i < g_res_count; i++)
         {
-            const char *p = g_res[i].path;
-            size_t plen = strlen(p);
+            const char *rpath = g_res[i].path;
+            size_t plen = strlen(rpath);
             size_t need = (pl ? 1u : 0u) + 2u + plen; // optional ',' + '<' + path + '>'
             if (pl + need > sizeof(g_pl))
                 break; // listing exceeds the payload buffer; truncate at a resource boundary
             if (pl)
                 g_pl[pl++] = ',';
             g_pl[pl++] = '<';
-            memcpy(g_pl + pl, p, plen);
+            memcpy(g_pl + pl, rpath, plen);
             pl += plen;
             g_pl[pl++] = '>';
         }

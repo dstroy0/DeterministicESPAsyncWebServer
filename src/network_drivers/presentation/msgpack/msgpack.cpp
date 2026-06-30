@@ -227,12 +227,14 @@ MsgpackType msgpack_peek(MsgpackReader *r)
         return MSGPACK_TYPE_UINT; // positive fixint
     if (b >= 0xe0)
         return MSGPACK_TYPE_INT; // negative fixint
-    if (b >= 0x80 && b <= 0x8f)
-        return MSGPACK_TYPE_MAP; // fixmap
-    if (b >= 0x90 && b <= 0x9f)
-        return MSGPACK_TYPE_ARRAY; // fixarray
-    if (b >= 0xa0 && b <= 0xbf)
-        return MSGPACK_TYPE_STR; // fixstr
+    // b is now in [0x80, 0xdf]; each fix* range's lower bound is already
+    // established by the preceding checks, so test only the ascending upper bound.
+    if (b <= 0x8f)
+        return MSGPACK_TYPE_MAP; // fixmap   (0x80-0x8f)
+    if (b <= 0x9f)
+        return MSGPACK_TYPE_ARRAY; // fixarray (0x90-0x9f)
+    if (b <= 0xbf)
+        return MSGPACK_TYPE_STR; // fixstr   (0xa0-0xbf)
     switch (b)
     {
     case 0xc0:

@@ -75,7 +75,9 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
     int pos = 0;
     int rem = (int)sizeof(buf);
 
-    if (event && pos < rem)
+    // pos starts at 0 here, so the first field needs no remaining-space guard; the
+    // later fields do, since a truncated snprintf advances pos toward (or past) rem.
+    if (event)
         pos += snprintf(buf + pos, (size_t)(rem - pos), "event: %s\n", event);
     if (id && pos < rem)
         pos += snprintf(buf + pos, (size_t)(rem - pos), "id: %s\n", id);

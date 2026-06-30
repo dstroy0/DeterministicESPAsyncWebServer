@@ -3110,6 +3110,11 @@ enum DetIface : uint8_t
 #if DETWS_AUTH_LOCKOUT_BASE_MS < 1 || DETWS_AUTH_LOCKOUT_MAX_MS < DETWS_AUTH_LOCKOUT_BASE_MS
 #error "DeterministicESPAsyncWebServer: need 1 <= DETWS_AUTH_LOCKOUT_BASE_MS <= DETWS_AUTH_LOCKOUT_MAX_MS"
 #endif
+// The backoff doubles a uint32 capped at MAX_MS, so MAX_MS must leave headroom for
+// one more shift (cap <= 0x80000000 => cap<<1 fits in uint32 without overflow).
+#if DETWS_AUTH_LOCKOUT_MAX_MS > 0x80000000
+#error "DeterministicESPAsyncWebServer: DETWS_AUTH_LOCKOUT_MAX_MS must be <= 0x80000000 (2147483648)"
+#endif
 #endif
 
 #if DETWS_ENABLE_WEBDAV
