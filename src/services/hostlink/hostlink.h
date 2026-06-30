@@ -30,8 +30,7 @@
 
 #if DETWS_ENABLE_HOSTLINK
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief FCS: 8-bit XOR of [data, data+len). */
 uint8_t hostlink_fcs(const char *data, size_t len);
@@ -40,7 +39,10 @@ uint8_t hostlink_fcs(const char *data, size_t len);
  * @brief Build a frame: `@UU` + header_code(2) + text + FCS(2 hex) + `*` + CR.
  * @param node         unit/node number (0-99, rendered as 2 BCD-style digits).
  * @param header_code  the 2-character header code (e.g. "RD"); must be 2 chars.
- * @return total characters written, or 0 on overflow / bad input.
+ * @return total characters written (NOT counting the NUL), or 0 on overflow / bad input.
+ * @note  The frame is NUL-terminated, so @p cap must hold the frame plus one terminator
+ *        byte; the return value is the frame length, so callers may also treat @p buf as a
+ *        C-string.
  */
 size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_code, const char *text, size_t text_len);
 

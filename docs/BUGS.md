@@ -8,6 +8,28 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Host Link frame builder did not NUL-terminate, so callers read uninitialized memory
+
+- **Status:** FIXED (found by the header-shim migration verification; host-tested).
+- **Found:** 2026-06-29, running the full native suite on WSL after migrating the source tree
+  to the new `shared_primitives/shim.h` include. `native_hostlink` was the lone failure out of
+  103 envs.
+- **`hostlink_build` (`services/hostlink/hostlink.cpp`) wrote exactly the wire frame
+  (`@UU XX <text> FF * CR`) and returned its length, but never wrote a NUL terminator, while the
+  sibling ASCII builder `sdi12_build` does (it reserves `n + 1` and writes `buf[n] = '\0'`).**
+  NUL-terminating the ASCII frame is the house convention, so a caller (and the test) that treats
+  the returned buffer as a C-string reads off the end into uninitialized stack. It stayed latent
+  because the stack byte after the frame happened to be zero; the shim migration shifted the
+  binary layout and the byte was now garbage, so `TEST_ASSERT_EQUAL_STRING` saw
+  `@00RD0000001057*\r` followed by junk and the test crashed (SIGHUP/ERRORED).
+- **Fix:** make `hostlink_build` consistent with `sdi12_build` - reserve room for the terminator
+  (`if (total >= cap) return 0`, wrap-safe: no addition) and write `buf[p] = '\0'` after the
+  frame. The return value is still the frame length (not counting the NUL), so callers may treat
+  `buf` as either a sized buffer or a C-string. The existing `native_hostlink` tests now pass
+  7/7; the overflow test (`char small[8]`) still fails closed.
+
+---
+
 ## Two more 32-bit length-wrap bounds bypasses: SNMP BER decoder + HTTP chunked decode
 
 - **Status:** FIXED (follow-up bug-hunt; host-tested, incl. a regression that crashes the

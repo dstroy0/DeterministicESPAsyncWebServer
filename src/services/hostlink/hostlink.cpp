@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_HOSTLINK
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 uint8_t hostlink_fcs(const char *data, size_t len)
 {
@@ -44,7 +44,7 @@ size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_co
     if (header_code[0] == '\0' || header_code[1] == '\0') // need exactly 2 header characters
         return 0;
     size_t total = 1 + 2 + 2 + text_len + 2 + 2; // @ + UU + XX + text + FCS + *CR
-    if (total > cap)
+    if (total >= cap)                            // need room for the frame + a NUL terminator
         return 0;
 
     size_t p = 0;
@@ -63,6 +63,7 @@ size_t hostlink_build(char *buf, size_t cap, uint8_t node, const char *header_co
     buf[p++] = hex_digit((uint8_t)(f & 0x0F));
     buf[p++] = '*';
     buf[p++] = '\r';
+    buf[p] = '\0'; // NUL-terminate so callers may treat the ASCII frame as a string (matches sdi12_build)
     return p;
 }
 
