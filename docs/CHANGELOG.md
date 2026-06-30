@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.6] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.6 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- bump sonarqube-scan-action to v6, add scan concurrency guard ([`9210215`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9210215e44d1638bf75e2ab98cc63b91da5ae9b2))
+- update CHANGELOG.md [skip ci] ([`80c8516`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80c85166ed0b70cee0a26e88fff438f4c92414f6))
+
+### Changes
+
+- Bump version: 4.59.5 → 4.59.6 ([`dde78fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dde78fbd5c7c5b1481649156794ae66df5ff4836))
+
+</details>
+
 ## [4.59.5] - 2026-06-30
 
 <details>
