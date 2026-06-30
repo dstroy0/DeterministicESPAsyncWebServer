@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.8] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.8 - 2026-06-30</b></summary>
+
+### Bug Fixes
+
+- drop the side effect from the && in the match-chain loop ([`d671441`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6714410134278304d95eac55b2848ce982f7512))
+
+### CI / Build
+
+- update test report [skip ci] ([`a876120`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a876120eb8c97dce6a3e1b9cdd45fd2102b29a55))
+- update CHANGELOG.md [skip ci] ([`7a0f5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a0f5b342eac51aebd542fe0b59ea19768e748f2))
+
+### Changes
+
+- Bump version: 4.59.7 → 4.59.8 ([`2c5c2e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c5c2e233ad4c13a51754bd640ac159e50144a35))
+
+</details>
+
 ## [4.59.7] - 2026-06-30
 
 <details>
