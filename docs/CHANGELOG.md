@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.64.0] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.64.0 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d1d79f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1d79f62766b7977f64b1fec0669b870b0b1accf))
+- update CHANGELOG.md [skip ci] ([`5a404ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a404ab10672047757ba2c3cdab0812db293c219))
+
+### Changes
+
+- Bump version: 4.63.0 → 4.64.0 ([`abf635a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abf635a0af50e08b6ac4911dbe91f953e874c371))
+
+### Features
+
+- TCP port forwarding (ssh -L) + OpenSSH interoperability ([`955191a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/955191a7fafc2f921c1a43a382c65027315ca4eb))
+
+</details>
+
 ## [4.63.0] - 2026-06-30
 
 <details>
