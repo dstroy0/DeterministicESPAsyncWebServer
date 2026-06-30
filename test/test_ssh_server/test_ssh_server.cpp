@@ -129,13 +129,15 @@ static size_t put_namelist(uint8_t *p, const char *s)
     return put_string(p, s);
 }
 
-static size_t build_client_kexinit(uint8_t *out)
+static size_t build_client_kexinit(uint8_t *out, bool ext_info_c = true)
 {
     size_t o = 0;
     out[o++] = SSH_MSG_KEXINIT;
     for (int j = 0; j < 16; j++)
         out[o++] = (uint8_t)j;
-    o += put_namelist(out + o, "diffie-hellman-group14-sha256,ext-info-c"); // RFC 8308
+    o += put_namelist(out + o,
+                      ext_info_c ? "diffie-hellman-group14-sha256,ext-info-c" // RFC 8308
+                                 : "diffie-hellman-group14-sha256");
     o += put_namelist(out + o, "rsa-sha2-256");
     o += put_namelist(out + o, "aes256-ctr");
     o += put_namelist(out + o, "aes256-ctr");
@@ -446,11 +448,49 @@ void test_large_client_kexinit_accepted()
     TEST_ASSERT_TRUE(s->ext_info_c); // ext-info-c detected in the big list
 }
 
+// A client that did NOT advertise ext-info-c must not be sent EXT_INFO.
+void test_extinfo_not_sent_without_ext_info_c()
+{
+    SshSession *s = &ssh_sess[0];
+    strcpy(s->v_c, "SSH-2.0-NoExt");
+    s->v_c_len = (uint16_t)strlen(s->v_c);
+    s->phase = SSH_PHASE_KEXINIT;
+
+    uint8_t pkt[2048];
+    size_t n = build_client_kexinit(pkt, /*ext_info_c=*/false);
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
+
+    uint8_t e_be[256];
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02;
+    n = 0;
+    pkt[n++] = SSH_MSG_KEXDH_INIT;
+    n += put_mpint(pkt + n, e_be, 256);
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
+
+    uint8_t nk = SSH_MSG_NEWKEYS;
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, nk, &nk, 1));
+    TEST_ASSERT_FALSE(ssh_sess[0].ext_info_c);
+    TEST_ASSERT_EQUAL_INT(0, emt_n); // no EXT_INFO emitted
+}
+
+// An inbound EXT_INFO from the client is accepted and ignored (no UNIMPLEMENTED).
+void test_inbound_ext_info_ignored()
+{
+    uint8_t pkt[1] = {SSH_MSG_EXT_INFO};
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1));
+    TEST_ASSERT_EQUAL_INT(0, emt_n);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake_to_channel_data);
     RUN_TEST(test_extinfo_build_advertises_server_sig_algs);
+    RUN_TEST(test_extinfo_not_sent_without_ext_info_c);
+    RUN_TEST(test_inbound_ext_info_ignored);
     RUN_TEST(test_large_client_kexinit_accepted);
     RUN_TEST(test_channel_open_before_auth_rejected);
     RUN_TEST(test_disconnect_closes);
