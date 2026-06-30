@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.63.0] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.63.0 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f166889`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f166889f3690147cd9c42279ff3849d1fa84cf61))
+- update CHANGELOG.md [skip ci] ([`4e160bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e160bb6cffde658251856e0ac5f64a90a1323c6))
+
+### Changes
+
+- Bump version: 4.62.0 → 4.63.0 ([`6dd6bf3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dd6bf314a903340f18b53096c97737ccd752ca1))
+
+### Features
+
+- parse and route direct-tcpip forwards through a normalized seam ([`c43fdac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c43fdac978b616a5bc3a92c184577b2bdf82222e))
+
+### Testing
+
+- add a known, public, test-only RSA-2048 host key fixture ([`4dbe2d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4dbe2d81226a4f8fa608a9b67d1f645dfdfcd0a2))
+
+</details>
+
 ## [4.62.0] - 2026-06-30
 
 <details>
