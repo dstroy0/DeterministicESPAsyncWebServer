@@ -1,0 +1,56 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    env:
+      # Gates every heavy step below: with no SONAR_TOKEN secret the job is a quick
+      # green no-op (no wasted compiledb build, no failing scan) until configured.
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so SonarCloud can attribute new code / blame
+
+      - name: Skip notice
+        if: ${{ env.SONAR_TOKEN == '' }}
+        run: |
+          echo "SONAR_TOKEN is not set - skipping the SonarCloud scan."
+          echo "To enable: add the SONAR_TOKEN repo secret AND disable Automatic"
+          echo "Analysis in the SonarCloud project (C/C++ needs this CI scan)."
+
+      - name: Set up Python
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-sonar-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: pip install -U platformio
+
+      - name: Generate merged compile_commands.json
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: bash tools/sonar/gen_compiledb.sh
+
+      - name: SonarQube Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io # SonarQube Cloud (SonarCloud) endpoint

@@ -2,6 +2,10 @@
   "version": "0.2",
   "language": "en",
   "words": [
+    "Qube",
+    "compiledb",
+    "cfamily",
+    "endgroup",
     "EPIPE",
     "gmtime",
     "Werror",
