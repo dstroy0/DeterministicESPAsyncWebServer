@@ -33,7 +33,7 @@ bool http_client_parse_url(const char *url, bool *is_https, char *host, size_t h
         *port = 443;
         p += 8;
     }
-    else if (strncmp(p, "http://", 7) == 0)
+    else if (strncmp(p, "http://", 7) == 0) // NOSONAR: HTTP client must accept http:// URLs
     {
         *is_https = false;
         *port = 80;

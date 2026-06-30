@@ -231,9 +231,9 @@ size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool
              "    </D:propstat>\n  </D:response>\n"))
         return len;
 
-    // Atomic commit: append the finished element only if it fits.
-    if (!app(buf, cap, &len, tmp))
-        return len; // no room - caller stops adding entries
+    // Atomic commit: app() appends the finished element only if it fits and leaves
+    // len unchanged on no-room, so the caller sees an unchanged len and stops adding.
+    app(buf, cap, &len, tmp);
     return len;
 }
 

@@ -244,8 +244,7 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
     if (verb_is(buf, line_len, "-ERR") || verb_is(buf, line_len, "INFO"))
     {
         out->type = (buf[0] == '-') ? NATS_ERR : NATS_INFO;
-        size_t verb = (buf[0] == '-') ? 4 : 4; // both "-ERR" and "INFO" are 4 chars
-        size_t a = verb;
+        size_t a = 4; // skip the verb: both "-ERR" and "INFO" are 4 chars
         while (a < line_len && (buf[a] == ' ' || buf[a] == '\t'))
             a++;
         out->arg = buf + a;

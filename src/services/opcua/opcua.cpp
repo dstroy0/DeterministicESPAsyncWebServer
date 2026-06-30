@@ -518,8 +518,10 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
     return r_request_header(&r, &out->request_handle);
 }
 
-// Transport profile URI for UA-TCP / UA-SecureConversation / UA Binary.
-static const char *const OPCUA_TRANSPORT_URI = "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary";
+// Transport profile URI for UA-TCP / UA-SecureConversation / UA Binary: an OPC UA
+// spec identifier string, never dereferenced as a URL.
+static const char *const OPCUA_TRANSPORT_URI =
+    "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary"; // NOSONAR
 
 // Server identity advertised in endpoint descriptions (settable via opcua_set_endpoint_url).
 static OpcUaServerInfo s_server_info = {"opc.tcp://localhost:4840", "urn:det:opcua:server", "DetOpcUaServer"};

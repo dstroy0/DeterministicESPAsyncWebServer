@@ -8,6 +8,48 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SonarCloud static-analysis sweep: response-header over-read, crypto zeroization, and friends
+
+- **Status:** FIXED (first SonarCloud C/C++ scan; host-tested).
+- **Found:** 2026-06-30, the initial SonarCloud analysis (8 BLOCKER, 7 bug, 7 vulnerability
+  findings; the ~2169 "code smell" results are mostly modern-C++ style rules that clash with
+  this deliberately terse C++11 / zero-heap embedded style and are not defects).
+- **Real issues fixed:**
+    - **Dynamic-response header over-read on truncation (`cpp:S3519`,
+      `DeterministicESPAsyncWebServer.cpp`).** `append_resp_trailer()` returned `snprintf`'s
+      _would-be_ length, which can exceed the header buffer when the trailer (Date + CORS +
+      user `_extra_hdr` cookies/headers + Connection) does not fit. The caller then sent
+      `(u16_t)hlen` bytes from a fixed `header[RESP_HDR_BUF_SIZE]` - reading past the stack
+      buffer. Fixed by clamping `append_resp_trailer()`'s return into `[0, cap-1]` so no send
+      path (send / send_empty / redirect / send_template / send_chunked) can ever read past
+      the buffer; an over-long header is now sent truncated-but-in-bounds.
+    - **Crypto key material not securely zeroed (`cpp:S5798` x5, `services/snmp/snmp_crypto.cpp`).**
+      The `memset()`s that wipe the localized key, AES round keys, key stream, and CFB feedback
+      at function exit can be elided by the optimizer (dead store on a buffer that is never read
+      again), leaving secrets on the stack. Replaced with `snmp_wipe()`, a volatile-loop clear
+      the compiler cannot remove (same idiom as `ssh_wipe`).
+    - **Uninitialized byte fed to the parser if the ring drains mid-read (`cpp:S836` x2,
+      `presentation.cpp`, `websocket.cpp`).** The drain loops ignored `det_conn_read_byte()`'s
+      return and fed `byte` to the parser even though a `false` return means nothing was read.
+      Now they `break` when the read fails.
+    - **`conn_pool[slot_id]` indexed without a bound (`cpp:S3519`).** The public response
+      emitters dereferenced `conn_pool[slot_id]` on a caller-supplied id; added a
+      `slot_id >= MAX_CONNS` guard at each entry (send / send_empty / redirect / send_template /
+      send_chunked).
+    - **Misleading constructs:** a `(cond) ? 4 : 4` ternary (`cpp:S3923`, `nats.cpp`) reduced to
+      `4`; a `while` that always broke on the first iteration (`cpp:S1751`,
+      `http_parser.cpp` Forwarded `proto=`) rewritten as the `if` it actually is; and a
+      redundant `if (!app(...)) return len; return len;` (`cpp:S3923`, `webdav.cpp`) simplified
+      to `app(...); return len;` (the helper is atomic - it leaves `len` unchanged on no-room).
+- **Assessed and intentionally kept (false positives, marked `// NOSONAR` with a reason):**
+  `cpp:S5332` "using HTTP is insecure" on `http_client.cpp` (a URL parser in an HTTP **client**
+  must accept `http://`; TLS is the caller's choice) and `opcua.cpp` (the OPC UA spec
+  transport-profile URI `http://opcfoundation.org/...`, an identifier string that is never
+  dereferenced as a URL). The 3 remaining `cpp:S134`/long-switch style notes are correct
+  protocol-dispatch switches, left as-is.
+
+---
+
 ## WebSocket / SSE upgrade-alloc-fail detached the pcb but never closed it (leak)
 
 - **Status:** FIXED (during the L7 teardown-ownership refactor; host-tested + HW-soaked).

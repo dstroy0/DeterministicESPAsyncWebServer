@@ -79,7 +79,8 @@ void http_parse(uint8_t slot_id)
         }
 
         uint8_t byte;
-        det_conn_read_byte(slot_id, &byte); // available > 0, so this always succeeds
+        if (!det_conn_read_byte(slot_id, &byte)) // ring drained underneath us: stop
+            break;
         http_parser_feed(req, byte);
     }
 }

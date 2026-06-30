@@ -306,7 +306,8 @@ void ws_parse(WsConn *ws)
             return;
 
         uint8_t byte;
-        det_conn_read_byte(ws->slot_id, &byte); // available > 0, always succeeds
+        if (!det_conn_read_byte(ws->slot_id, &byte)) // ring drained underneath us: stop
+            break;
         ws_feed_byte(ws, byte);
     }
 }

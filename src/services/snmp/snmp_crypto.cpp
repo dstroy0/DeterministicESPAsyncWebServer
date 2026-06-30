@@ -13,6 +13,16 @@
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
 #include "shared_primitives/shim.h"
 
+// Zero key material with a volatile loop the compiler cannot optimize away. A
+// plain memset() whose result is never observed (the buffer dies at return) may
+// be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.
+static inline void snmp_wipe(void *p, size_t n)
+{
+    volatile uint8_t *v = (volatile uint8_t *)p;
+    while (n--)
+        *v++ = 0;
+}
+
 // ---------------------------------------------------------------------------
 // RFC 3414 §2.6 key localization (SHA-256)
 // ---------------------------------------------------------------------------
@@ -53,8 +63,8 @@ void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_
     ssh_sha256_update(&ctx, ku, SNMP_USM_KEY_LEN);
     ssh_sha256_final(&ctx, key_out);
 
-    memset(ku, 0, sizeof(ku));
-    memset(block, 0, sizeof(block));
+    snmp_wipe(ku, sizeof(ku));
+    snmp_wipe(block, sizeof(block));
 }
 
 // ---------------------------------------------------------------------------
@@ -186,9 +196,9 @@ void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t 
         off += bl;
     }
 
-    memset(rk, 0, sizeof(rk));
-    memset(ks, 0, sizeof(ks));
-    memset(fb, 0, sizeof(fb));
+    snmp_wipe(rk, sizeof(rk));
+    snmp_wipe(ks, sizeof(ks));
+    snmp_wipe(fb, sizeof(fb));
 }
 
 #endif // DETWS_ENABLE_SNMP_V3

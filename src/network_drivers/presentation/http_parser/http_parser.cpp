@@ -651,16 +651,10 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
         // proto=
         if (is_https)
         {
-            const char *pr = fwd;
-            while (pr && (size_t)(pr - fwd) < elen)
-            {
-                const char *hit = strstr(pr, "proto=");
-                if (!hit || (size_t)(hit - fwd) >= elen)
-                    break;
-                const char *pv = hit + 6;
-                *is_https = (strncasecmp(pv, "https", 5) == 0);
-                break;
-            }
+            // Only the first element's proto= matters, so this is a single check.
+            const char *hit = strstr(fwd, "proto=");
+            if (hit && (size_t)(hit - fwd) < elen)
+                *is_https = (strncasecmp(hit + 6, "https", 5) == 0);
         }
         // for=
         const char *f = strstr(fwd, "for=");

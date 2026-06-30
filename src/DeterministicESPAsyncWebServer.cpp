@@ -394,8 +394,10 @@ const char *DetWebServer::resp_conn_hdr(uint8_t slot_id, bool *keep_out)
 // with. Returns the new total length.
 int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t slot_id, const char *cl)
 {
-    if (hlen < 0 || (size_t)hlen >= cap)
-        return hlen;
+    if (hlen < 0)
+        return 0;
+    if ((size_t)hlen >= cap)
+        return (int)cap - 1; // status line already filled the buffer (truncated); clamp in-bounds
 #if DETWS_HTTP_EMIT_DATE
     // RFC 7231 7.1.1.2: emit Date only when a real wall-clock time exists; a
     // clock-less device (or one whose NTP has not synced yet) omits it.
@@ -408,7 +410,14 @@ int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t s
 #endif
     int n = snprintf(buf + hlen, cap - (size_t)hlen, "%s%s%s%s\r\n", date_hdr, _cors_enabled ? _cors_header_buf : "",
                      _extra_hdr[slot_id], cl);
-    return (n < 0) ? hlen : hlen + n;
+    if (n < 0)
+        return hlen;
+    // snprintf returns the would-be length; if the trailer truncated, clamp to the
+    // bytes actually written so the returned length never exceeds the buffer (else a
+    // caller would send/copy past the end - a stack over-read on large extra headers).
+    if ((size_t)n >= cap - (size_t)hlen)
+        return (int)cap - 1;
+    return hlen + n;
 }
 
 // ---------------------------------------------------------------------------
@@ -1745,6 +1754,8 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
  */
 void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, const char *payload)
 {
+    if (slot_id >= MAX_CONNS)
+        return; // guard the public entry: never index conn_pool out of range
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
@@ -1800,6 +1811,8 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
  */
 void DetWebServer::send_empty(uint8_t slot_id, int code)
 {
+    if (slot_id >= MAX_CONNS)
+        return;
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
@@ -1824,6 +1837,8 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
 
 void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
 {
+    if (slot_id >= MAX_CONNS)
+        return;
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
@@ -1920,6 +1935,8 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
 void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_type, const char *tmpl,
                                  TemplateVar resolver)
 {
+    if (slot_id >= MAX_CONNS)
+        return;
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
@@ -1965,6 +1982,8 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 
 void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkSource source, void *ctx)
 {
+    if (slot_id >= MAX_CONNS)
+        return;
     TcpConn *conn = &conn_pool[slot_id];
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
