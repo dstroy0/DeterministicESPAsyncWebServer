@@ -41,7 +41,8 @@ The numbered tutorial path - start here (core features only, no flags):
 [02.Advanced](../examples/Foundation/02.Advanced) ·
 [03.Expert](../examples/Foundation/03.Expert) ·
 [04.Sysadmin](../examples/Foundation/04.Sysadmin) ·
-[05.Configuration](../examples/Foundation/05.Configuration)
+[05.Configuration](../examples/Foundation/05.Configuration) ·
+[06.PreemptQueue](../examples/Foundation/06.PreemptQueue) `DETWS_ENABLE_PREEMPT_QUEUE`
 
 ## L4 Transport
 

@@ -162,6 +162,40 @@
 #error "DeterministicESPAsyncWebServer: DETWS_WORKER_COUNT must be <= MAX_CONNS"
 #endif
 
+// ---------------------------------------------------------------------------
+// Preempting work queue (DETWS_ENABLE_PREEMPT_QUEUE) - v5 real-time ingest
+// ---------------------------------------------------------------------------
+//
+// A fixed-capacity queue + one high-priority core-pinned task: producers post a
+// fixed-size item (from a task or an ISR) and the scheduler preempts straight to
+// the processing task. Storage is static (zero heap), so depth + item size + task
+// stack are compile-time; the task priority + core are set at detws_pq_start().
+// See services/preempt_queue/preempt_queue.h.
+
+/** @brief Enable the preempting work queue primitive (default off). */
+#ifndef DETWS_ENABLE_PREEMPT_QUEUE
+#define DETWS_ENABLE_PREEMPT_QUEUE 0
+#endif
+
+/** @brief Capacity of the preempting queue in items (static-allocated). */
+#ifndef DETWS_PQ_DEPTH
+#define DETWS_PQ_DEPTH 16
+#endif
+
+/** @brief Bytes per preempting-queue item (the posted item must fit). */
+#ifndef DETWS_PQ_ITEM_SIZE
+#define DETWS_PQ_ITEM_SIZE 32
+#endif
+
+/** @brief Stack (bytes) for the preempting-queue processing task (ESP32). */
+#ifndef DETWS_PQ_STACK
+#define DETWS_PQ_STACK 4096
+#endif
+
+#if DETWS_ENABLE_PREEMPT_QUEUE && (DETWS_PQ_DEPTH < 1 || DETWS_PQ_ITEM_SIZE < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_PQ_DEPTH and DETWS_PQ_ITEM_SIZE must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

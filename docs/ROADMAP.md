@@ -73,14 +73,16 @@ The next big concurrency step (the **v5 milestone**): turn the worker model into
 real-time, hardware-ingest pipeline where data lands in a queue and the scheduler
 preempts immediately to process it, with the priorities exposed to the user.
 
-- [ ] \*Preempting task queue (L). A FreeRTOS queue feeding a high-priority
-      processing task. **From a task**, producers use `xQueueSendToBack()` /
-      `xQueueSendToFront()` with a wait timeout; the scheduler preempts the
-      lower-priority producer the instant the item is queued. **From an ISR**
-      (hardware interrupt), use the interrupt-safe `xQueueSendFromISR()` /
-      `xQueueSendToBackFromISR()` followed immediately by `portYIELD_FROM_ISR()`
-      so the context switch happens right after posting instead of waiting for the
-      next system tick.
+- [x] \*Preempting task queue (L) _(shipped)_ - `DETWS_ENABLE_PREEMPT_QUEUE`:
+      `services/preempt_queue`, one static (zero-heap) queue feeding a dedicated
+      high-priority core-pinned task. **From a task**, `detws_pq_post()` /
+      `detws_pq_post_urgent()` (`xQueueSendToBack` / `xQueueSendToFront`) with a
+      wait timeout; the scheduler preempts the lower-priority producer the instant
+      the item is queued. **From an ISR**, `detws_pq_post_from_isr()`
+      (`xQueueSendFromISR` + `portYIELD_FROM_ISR`) switches right after posting,
+      not on the next tick. Fail-closed on a full queue. HW-verified (~12 us
+      ISR-to-handler latency); host-tested via the fixed-ring core (example
+      Foundation/06.PreemptQueue).
 - [ ] \*User-configurable task priorities / affinity (M). The processing task is
       created high (e.g. priority 5) and the producer low (e.g. priority 1) via
       `xTaskCreatePinnedToCore`, but the **priority, core pinning, and queue depth

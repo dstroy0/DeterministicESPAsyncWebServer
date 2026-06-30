@@ -460,6 +460,12 @@ Opt-in flash partition-map monitor endpoint. Default off. When set, services/par
 
 Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). Default off (zero cost / no behavior change). Complements the global accept throttle: the accept callback rejects a new connection once one source IPv4 address has opened more than DETWS_PER_IP_THROTTLE_MAX connections within a DETWS_PER_IP_THROTTLE_WINDOW_MS fixed window. A fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets tracks the most-recently-seen source addresses; when a new address arrives and the table is full, an expired or least-recently-started bucket is reused, so memory stays bounded (no heap). This bounds reconnect/brute-force churn from a single host (the gap left by the global throttle, which cannot tell one noisy client from many). It is best-effort: an attacker spreading across many source addresses can still churn the bounded connection pool, so combine it with the global throttle and network-layer filtering.
 
+## Preempting Work Queue
+
+`DETWS_ENABLE_PREEMPT_QUEUE`
+
+Opt-in real-time ingest primitive (v5 milestone). Default off. One fixed-capacity queue feeding one dedicated, high-priority, core-pinned task: a producer posts a fixed-size item from a task (back or urgent-front, each with a wait timeout) or from an ISR (interrupt-safe via xQueueSendFromISR + portYIELD_FROM_ISR), and the scheduler preempts straight to the processing task so the work runs immediately instead of on the next tick - the clean ISR-to-"process now" hand-off for DMA-complete / GPIO / bus events. Zero heap (static FreeRTOS queue, compile-time DETWS_PQ_DEPTH / DETWS_PQ_ITEM_SIZE / DETWS_PQ_STACK), fail-closed on a full queue, no hot-path locks so latency stays bounded. The task priority + core are set by the caller at detws_pq_start(); detws_pq_high_water() reports the peak depth for sizing. HW-verified on a DevKitV1 (~12 us ISR-to-handler latency); host-tested via the fixed-ring core (services/preempt_queue). See src/services/preempt_queue/preempt_queue.h.
+
 ## Protobuf
 
 `DETWS_ENABLE_PROTOBUF`

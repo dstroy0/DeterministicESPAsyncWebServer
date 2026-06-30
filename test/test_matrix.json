@@ -422,6 +422,12 @@
       "src": ["+<services/protobuf/protobuf.cpp>"],
       "tests": ["test_protobuf"]
     },
+    "native_preempt_queue": {
+      "desc": "Preempting work queue (services/preempt_queue), v5 real-time ingest: the host\nfixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water,\nand drain/handler dispatch. The ARDUINO FreeRTOS task + ISR post + preempt latency\nare HW-verified separately (the host has no tasks/ISRs).",
+      "flags": ["-DDETWS_ENABLE_PREEMPT_QUEUE=1", "-DDETWS_PQ_DEPTH=4", "-DDETWS_PQ_ITEM_SIZE=4"],
+      "src": ["+<services/preempt_queue/preempt_queue.cpp>"],
+      "tests": ["test_preempt_queue"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],
