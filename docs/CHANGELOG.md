@@ -2,6 +2,23 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.17] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.17 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- coverage via per-env reports merged (fixes the scan-breaking report) ([`6711c66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6711c66a2e03090f1171f809baccf13d29fa3757))
+- update test report [skip ci] ([`393ada0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/393ada043cc940d1a13e269924a8d4ea72449096))
+- update CHANGELOG.md [skip ci] ([`312ef6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/312ef6eadfa42315c19fc6592c3977917d1a7521))
+
+### Changes
+
+- Bump version: 4.59.16 → 4.59.17 ([`0da14e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0da14e6dafb9b3f57846381509a9c1500ef72556))
+
+</details>
+
 ## [4.59.16] - 2026-06-30
 
 <details>
