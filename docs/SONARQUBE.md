@@ -63,7 +63,13 @@ is covered if covered in any env). The scan imports the result via
 regenerates them. Run locally with `bash tools/sonar/gen_coverage.sh` (or pass a
 subset of env names as args). The ThreadSanitizer env is excluded (tsan + gcov do
 not mix), and the step roughly doubles the CI job time (it runs every test env on
-top of the compile-DB build). Current line coverage is ~84% of `src/`.
+top of the compile-DB build).
+
+SonarCloud reports ~68% line coverage. That is lower than gcovr's ~84% over the
+natively-built files because SonarCloud also counts the ESP32/platform-only files
+the native tests cannot build (TLS, mDNS, OTA, the lwIP shims, the route
+registrars) as uncovered; an ESP32 cross-toolchain coverage fragment would lift
+it.
 
 ## Analyzed-file coverage
 
