@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d3d3a16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d3a162ca42f5d432d5d4a819ddbb44f5f35f77))
+- update CHANGELOG.md [skip ci] ([`529a75a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/529a75a5fc7acaa4c8674284ed9296c32681a524))
 - compile every example + harvest flash/RAM footprints ([`eb0da64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb0da64178866ed4ad2bdc46cd779174e2a333b0))
 - update test report [skip ci] ([`14b32c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14b32c5012f8c44bc6d0564ef7edfe6af38c77a0))
 - update CHANGELOG.md [skip ci] ([`5c4421b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c4421b1d42c0f231b503245ced45d97a59706ad))
@@ -17,6 +19,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`dd0594d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd0594d8440f0af70b6fd97a4b4a605cfea5c3e6))
 - auto-regenerate feature tables on push to main ([`e80de41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e80de41bf2c0ad777b1cd8ecbed9c7898d6d74c4))
 - update CHANGELOG.md [skip ci] ([`ffc06d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffc06d703f686545e944fdd610bb446e6a5d0e2d))
+
+### Testing
+
+- cover graphql edge paths + SSH ext-info branches (coverage) ([`64e419b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64e419b1e80f3c8323b24b2863c1ee9c02fbc72c))
 
 ## [4.64.1] - 2026-06-30
 
