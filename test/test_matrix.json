@@ -138,7 +138,8 @@
       "tests": ["test_provisioning"]
     },
     "native_ssh": {
-      "desc": "SSH crypto layer (native software paths only, no mbedtls dependency)",
+      "desc": "SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing",
+      "flags": ["-DDETWS_SSH_MAX_CHANNELS=3"],
       "src": [
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",

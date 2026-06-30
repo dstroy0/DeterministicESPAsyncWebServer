@@ -60,9 +60,9 @@ static bool ssh_pubkey_auth(const char *user, const uint8_t *blob, size_t blob_l
 
 // --- Channel data: echo received bytes back to the client -------------------
 
-static void ssh_on_data(uint8_t slot, const uint8_t *data, size_t len)
+static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    ssh_conn_send(slot, data, len); // echo
+    ssh_conn_send(slot, channel, data, len); // echo back on the same channel
 }
 
 void setup()

@@ -422,11 +422,16 @@ shipped work:
       counter) per RFC 4253 §11.4 - no handler-signature change needed. Tested by
       `test_unimplemented_reply_for_unknown_message`.
 
-- [ ] **Single SSH `session` channel only.** No port-forwarding, X11, or
-      multiple channels (`ssh_channel.cpp` is a single-channel pool). Add a small
-      channel table if multiplexing is needed. _(Deferred - YAGNI: a headless IoT
-      device exposes one shell/exec session; multiplexing adds a channel table +
-      window bookkeeping for no current use case.)_
+- [~] **SSH channel multiplexing.** _(channels done; forwarding pending)_
+      `ssh_channel.cpp` is now a per-connection channel table
+      (`DETWS_SSH_MAX_CHANNELS`, default 1 = the original single channel): up to N
+      concurrent channels per connection, each with its own id / window / peer
+      state, every inbound `CHANNEL_*` routed to its channel by the recipient id,
+      and the data callback / `ssh_conn_send` tagged with the channel id. Host-tested
+      (`test_ssh_channel`: independent routing, pool-full -> resource shortage,
+      unknown-channel rejected, inbound-close routing). _Remaining:_ **TCP
+      port-forwarding** (`direct-tcpip` / `forwarded-tcpip`) and **X11 forwarding** -
+      new channel types + a connect/listen path on top of this table.
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a

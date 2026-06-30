@@ -152,7 +152,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         return 0;
 
     case SSH_MSG_CHANNEL_CLOSE:
-        if (ssh_channel_build_close(i, buf, &n, sizeof(buf)) == 0)
+        if (ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0)
             emit(i, buf, n);
         return 0;
 

@@ -3,14 +3,19 @@
 
 /**
  * @file ssh_channel.cpp
- * @brief SSH connection protocol - single session channel (RFC 4254).
+ * @brief SSH connection protocol - multiplexed session channels (RFC 4254).
+ *
+ * The channel table is owned here; inbound messages are routed to a channel by the
+ * recipient channel id they carry, and the local channel id is the channel's slot
+ * index in its connection's pool (unique per connection, which is all RFC 4254
+ * requires). Other layers go through these functions, never the table.
  */
 
 #include "ssh_channel.h"
 #include "shared_primitives/shim.h"
 #include "ssh_packet.h" // SSH_MSG_CHANNEL_*
 
-SshChannel ssh_chan[MAX_SSH_CONNS];
+SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 
 static SshChannelDataCb g_data_cb = nullptr;
 
@@ -23,7 +28,7 @@ void ssh_channel_init(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    memset(&ssh_chan[i], 0, sizeof(SshChannel));
+    memset(ssh_chan[i], 0, sizeof(ssh_chan[i])); // reset every channel for this connection
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +64,27 @@ static bool rd_string(const uint8_t *p, size_t len, size_t *off, const uint8_t *
 }
 
 // ---------------------------------------------------------------------------
+// Channel table (owned here)
+// ---------------------------------------------------------------------------
+
+// The open channel @p id on connection @p i, or nullptr. local id == slot index.
+static SshChannel *chan_by_id(uint8_t i, uint32_t id)
+{
+    if (i >= MAX_SSH_CONNS || id >= DETWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].open)
+        return nullptr;
+    return &ssh_chan[i][id];
+}
+
+// First free channel slot on connection @p i, or -1 if the pool is full.
+static int chan_alloc(uint8_t i)
+{
+    for (int c = 0; c < DETWS_SSH_MAX_CHANNELS; c++)
+        if (!ssh_chan[i][c].open)
+            return c;
+    return -1;
+}
+
+// ---------------------------------------------------------------------------
 // CHANNEL_OPEN → CONFIRMATION / FAILURE
 // ---------------------------------------------------------------------------
 
@@ -79,11 +105,12 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
     uint32_t max_pkt = rd_u32(payload + off + 8);
 
     bool is_session = (type_len == 7 && memcmp(type, "session", 7) == 0);
+    int slot = is_session ? chan_alloc(i) : -1;
 
-    if (!is_session || ssh_chan[i].open)
+    if (!is_session || slot < 0)
     {
         // CHANNEL_OPEN_FAILURE: byte || recipient || reason || desc || lang
-        uint32_t reason = is_session ? 4u /* resource shortage */ : 3u /* unknown type */;
+        uint32_t reason = is_session ? 4u /* resource shortage: pool full */ : 3u /* unknown channel type */;
         if (cap < 1 + 4 + 4 + 4 + 4)
             return -1;
         out[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
@@ -95,9 +122,9 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
         return 0;
     }
 
-    SshChannel *c = &ssh_chan[i];
+    SshChannel *c = &ssh_chan[i][slot];
     c->open = true;
-    c->local_id = i;
+    c->local_id = (uint32_t)slot;
     c->peer_id = sender;
     c->local_window = SSH_CHAN_WINDOW;
     c->peer_window = init_window;
@@ -121,13 +148,15 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
 
 int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
 {
+    *out_len = 0;
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_REQUEST)
         return -1;
 
     size_t off = 1;
     if (off + 4 > len)
         return -1;
-    off += 4; // recipient channel (ours)
+    uint32_t recipient = rd_u32(payload + off); // our channel id
+    off += 4;
     const uint8_t *rtype;
     uint32_t rtype_len;
     if (!rd_string(payload, len, &off, &rtype, &rtype_len))
@@ -136,18 +165,21 @@ int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, ui
         return -1;
     bool want_reply = payload[off++] != 0;
 
+    SshChannel *c = chan_by_id(i, recipient);
+    if (!c)
+        return -1;
+
     bool accept =
         (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0) || (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0) ||
         (rtype_len == 7 && memcmp(rtype, "pty-req", 7) == 0) || (rtype_len == 3 && memcmp(rtype, "env", 3) == 0);
 
-    *out_len = 0;
     if (!want_reply)
         return 0;
 
     if (cap < 5)
         return -1;
     out[0] = accept ? SSH_MSG_CHANNEL_SUCCESS : SSH_MSG_CHANNEL_FAILURE;
-    wr_u32(out + 1, ssh_chan[i].peer_id);
+    wr_u32(out + 1, c->peer_id);
     *out_len = 5;
     return 0;
 }
@@ -159,25 +191,28 @@ int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, ui
 int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
 {
     *out_len = 0;
-    if (i >= MAX_SSH_CONNS || !ssh_chan[i].open || len < 1 || payload[0] != SSH_MSG_CHANNEL_DATA)
+    if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_DATA)
         return -1;
 
     size_t off = 1;
     if (off + 4 > len)
         return -1;
-    off += 4; // recipient channel
+    uint32_t recipient = rd_u32(payload + off);
+    off += 4;
     const uint8_t *data;
     uint32_t dlen;
     if (!rd_string(payload, len, &off, &data, &dlen))
         return -1;
 
-    SshChannel *c = &ssh_chan[i];
+    SshChannel *c = chan_by_id(i, recipient);
+    if (!c)
+        return -1;
     if (dlen > c->local_window)
         return -1; // peer overran the advertised window (RFC 4254 §5.2)
     c->local_window -= dlen;
 
     if (g_data_cb && dlen > 0)
-        g_data_cb(i, data, dlen);
+        g_data_cb(i, c->local_id, data, dlen);
 
     // Replenish the window once it drops below half.
     if (c->local_window < SSH_CHAN_WINDOW / 2)
@@ -199,11 +234,12 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
 // CHANNEL_DATA (outbound)
 // ---------------------------------------------------------------------------
 
-int ssh_channel_build_data(uint8_t i, const uint8_t *data, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out, size_t *out_len,
+                           size_t cap)
 {
-    if (i >= MAX_SSH_CONNS || !ssh_chan[i].open)
+    SshChannel *c = (i < MAX_SSH_CONNS) ? chan_by_id(i, channel) : nullptr;
+    if (!c)
         return -1;
-    SshChannel *c = &ssh_chan[i];
     if (len > c->peer_window || len > c->peer_max_pkt)
         return -1; // would exceed the client's window / packet size
     if (cap < 1 + 4 + 4 + len)
@@ -224,31 +260,49 @@ int ssh_channel_build_data(uint8_t i, const uint8_t *data, size_t len, uint8_t *
 
 int ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len)
 {
-    if (i >= MAX_SSH_CONNS || !ssh_chan[i].open || len < 9 || payload[0] != SSH_MSG_CHANNEL_WINDOW_ADJUST)
+    if (i >= MAX_SSH_CONNS || len < 9 || payload[0] != SSH_MSG_CHANNEL_WINDOW_ADJUST)
+        return -1;
+    SshChannel *c = chan_by_id(i, rd_u32(payload + 1));
+    if (!c)
         return -1;
     uint32_t add = rd_u32(payload + 5);
     // Saturate rather than overflow the 32-bit window.
-    uint32_t w = ssh_chan[i].peer_window;
-    ssh_chan[i].peer_window = (w + add < w) ? 0xFFFFFFFFu : (w + add);
+    uint32_t w = c->peer_window;
+    c->peer_window = (w + add < w) ? 0xFFFFFFFFu : (w + add);
     return 0;
 }
 
 // ---------------------------------------------------------------------------
-// EOF + CLOSE (outbound)
+// EOF + CLOSE
 // ---------------------------------------------------------------------------
 
-int ssh_channel_build_close(uint8_t i, uint8_t *out, size_t *out_len, size_t cap)
+// Frame EOF + CLOSE for an open channel and mark it closed (shared by the inbound
+// handler and the app/teardown path).
+static int build_close_chan(SshChannel *c, uint8_t *out, size_t *out_len, size_t cap)
 {
-    if (i >= MAX_SSH_CONNS || !ssh_chan[i].open)
+    if (!c || cap < 10)
         return -1;
-    if (cap < 10)
-        return -1;
-    uint32_t peer = ssh_chan[i].peer_id;
+    uint32_t peer = c->peer_id;
     out[0] = SSH_MSG_CHANNEL_EOF;
     wr_u32(out + 1, peer);
     out[5] = SSH_MSG_CHANNEL_CLOSE;
     wr_u32(out + 6, peer);
     *out_len = 10;
-    ssh_chan[i].open = false;
+    c->open = false;
     return 0;
+}
+
+int ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap)
+{
+    if (i >= MAX_SSH_CONNS)
+        return -1;
+    return build_close_chan(chan_by_id(i, channel), out, out_len, cap);
+}
+
+int ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+{
+    *out_len = 0;
+    if (i >= MAX_SSH_CONNS || len < 5 || payload[0] != SSH_MSG_CHANNEL_CLOSE)
+        return -1;
+    return build_close_chan(chan_by_id(i, rd_u32(payload + 1)), out, out_len, cap);
 }

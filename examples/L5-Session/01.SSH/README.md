@@ -42,8 +42,10 @@ ssh_auth_set_pubkey_cb(ssh_pubkey_auth);      // return true to accept (user, ke
 ssh_channel_set_data_cb(ssh_on_data);         // bytes from the client
 ```
 
-**Channel echo.** The data callback just sends the received bytes back with
-`ssh_conn_send(slot, data, len)` - the skeleton for a remote console.
+**Channel echo.** The data callback receives the channel id the bytes arrived on
+and sends them back with `ssh_conn_send(slot, channel, data, len)` - the skeleton
+for a remote console. With `DETWS_SSH_MAX_CHANNELS > 1` the client can open several
+channels over one connection and each is tagged by id.
 
 **Hardening.** Define `DETWS_SSH_ALLOW_PASSWORD 0` to compile password auth out
 entirely (publickey-only), and failed attempts are bounded by
@@ -113,9 +115,9 @@ static bool ssh_pubkey_auth(const char *user, const uint8_t *blob, size_t blob_l
 
 // --- Channel data: echo received bytes back to the client -------------------
 
-static void ssh_on_data(uint8_t slot, const uint8_t *data, size_t len)
+static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    ssh_conn_send(slot, data, len); // echo
+    ssh_conn_send(slot, channel, data, len); // echo
 }
 
 void setup()

@@ -69,7 +69,7 @@ void ssh_conn_setup()
     ssh_server_set_emit_cb(ssh_emit);
 }
 
-int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
+int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len)
 {
     if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
@@ -88,7 +88,7 @@ int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len)
     if (!payload || !wire)
         return -1;
     size_t plen = 0;
-    if (ssh_channel_build_data(ssh_slot, data, len, payload, &plen, SSH_PKT_BUF_SIZE) != 0)
+    if (ssh_channel_build_data(ssh_slot, channel, data, len, payload, &plen, SSH_PKT_BUF_SIZE) != 0)
         return -1;
     size_t wlen = 0;
     if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, wire_cap) != 0)

@@ -44,9 +44,10 @@ static void emt_reset()
 static int chan_data_count;
 static uint8_t chan_data[64];
 static size_t chan_data_len;
-static void on_chan_data(uint8_t slot, const uint8_t *d, size_t n)
+static void on_chan_data(uint8_t slot, uint32_t channel, const uint8_t *d, size_t n)
 {
     (void)slot;
+    (void)channel;
     chan_data_count++;
     chan_data_len = n < sizeof(chan_data) ? n : sizeof(chan_data);
     memcpy(chan_data, d, chan_data_len);
@@ -219,7 +220,7 @@ void test_full_handshake_to_channel_data()
     emt_reset();
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, emt_type[0]);
-    TEST_ASSERT_TRUE(ssh_chan[0].open);
+    TEST_ASSERT_TRUE(ssh_chan[0][0].open);
 
     // 7. CHANNEL_REQUEST (shell, want_reply) → SUCCESS.
     n = 0;

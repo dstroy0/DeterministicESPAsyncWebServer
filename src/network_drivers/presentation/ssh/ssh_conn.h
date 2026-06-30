@@ -46,16 +46,16 @@ void ssh_conn_rx(uint8_t conn_slot);
 void ssh_conn_close(uint8_t conn_slot);
 
 /**
- * @brief Send application data to the client over the SSH session channel.
+ * @brief Send application data to the client over an SSH channel.
  *
- * Frames @p data as SSH_MSG_CHANNEL_DATA, encrypts+MACs it, and writes it to the
- * socket. @p ssh_slot is the SSH session slot index passed to the data callback
- * registered via ssh_channel_set_data_cb(). A single call sends at most one
- * channel-data message (bounded by the peer's flow-control window).
+ * Frames @p data as SSH_MSG_CHANNEL_DATA on channel @p channel, encrypts+MACs it,
+ * and writes it to the socket. @p ssh_slot and @p channel are the values passed to
+ * the data callback registered via ssh_channel_set_data_cb(). A single call sends
+ * at most one channel-data message (bounded by the peer's flow-control window).
  *
- * @return Number of bytes sent, or -1 on error (bad slot, channel closed, peer
- *         window/packet limit, or no active connection).
+ * @return Number of bytes sent, or -1 on error (bad slot, channel closed/unknown,
+ *         peer window/packet limit, or no active connection).
  */
-int ssh_conn_send(uint8_t ssh_slot, const uint8_t *data, size_t len);
+int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H

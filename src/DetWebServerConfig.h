@@ -2749,6 +2749,22 @@
 #define MAX_SSH_CONNS 1
 #endif
 
+/**
+ * @brief Maximum concurrent SSH channels per connection (RFC 4254 multiplexing).
+ *
+ * Default 1 - one "session" channel per connection, byte-for-byte the original
+ * single-channel behavior. Raise it to multiplex several channels (e.g. several
+ * concurrent shells/exec, or - with the forwarding build flags - tunnels) over one
+ * SSH connection; each channel gets its own id, window, and peer state. Fixed BSS
+ * (ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS]), no heap.
+ */
+#ifndef DETWS_SSH_MAX_CHANNELS
+#define DETWS_SSH_MAX_CHANNELS 1
+#endif
+#if DETWS_SSH_MAX_CHANNELS < 1
+#error "DeterministicESPAsyncWebServer: DETWS_SSH_MAX_CHANNELS must be >= 1"
+#endif
+
 /** @brief Packet assembly buffer per SSH connection (bytes). */
 #ifndef SSH_PKT_BUF_SIZE
 #define SSH_PKT_BUF_SIZE 2048
