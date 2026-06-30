@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.60.0] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.60.0 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2753752`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/275375207e89619ce783c1930ce4f0b0a7af1281))
+- update CHANGELOG.md [skip ci] ([`c9dfa20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9dfa20ee5737e217914dd84d39188b82da980ca))
+
+### Changes
+
+- Bump version: 4.59.18 → 4.60.0 ([`68df75c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68df75c330650292ff3494e0d5d9230525648539))
+
+### Features
+
+- v5 preempting work queue (ISR/task -> high-priority task) ([`9411f99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9411f99cc1c0b97ce90f8f09126a323e37a736c3))
+
+</details>
+
 ## [4.59.18] - 2026-06-30
 
 <details>
