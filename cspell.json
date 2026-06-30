@@ -2,6 +2,13 @@
   "version": "0.2",
   "language": "en",
   "words": [
+    "gcov",
+    "gcovr",
+    "gcda",
+    "sonarqube",
+    "fprofile",
+    "ftest",
+    "lgcov",
     "zeroization",
     "hlen",
     "NOSONAR",

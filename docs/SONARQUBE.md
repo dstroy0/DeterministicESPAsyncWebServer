@@ -43,7 +43,21 @@ bash tools/sonar/gen_compiledb.sh   # writes ./compile_commands.json
 > is too slow, a single all-features build is a faster, slightly less complete
 > alternative.
 
-## Coverage
+## Test coverage (%)
+
+SonarCloud does not run the tests; it only displays coverage from a report you
+import, so without one it shows **0%**. [`tools/sonar/gen_coverage.sh`](../tools/sonar/gen_coverage.sh)
+builds + runs the native Unity test envs with gcov instrumentation
+(`-fprofile-arcs -ftest-coverage -lgcov`, into a dedicated `.pio_cov` build dir)
+and `gcovr --sonarqube` merges every env's `.gcda` into `coverage.xml` (the
+SonarQube generic-coverage format, `src/` only). The scan imports it via
+`sonar.coverageReportPaths=coverage.xml`. Both the report and `.pio_cov` are
+git-ignored; the CI job regenerates them. Run locally with `bash
+tools/sonar/gen_coverage.sh` (or pass a subset of env names as args). The
+ThreadSanitizer env is excluded (tsan + gcov do not mix), and it doubles the CI
+job time (it runs every test env on top of the compile-DB build).
+
+## Analyzed-file coverage
 
 The merged database covers every source file the host (native) toolchain compiles
 (115 of the library's `.cpp` files as of this writing). The handful it does not

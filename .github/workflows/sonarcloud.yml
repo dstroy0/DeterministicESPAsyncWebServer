@@ -45,15 +45,20 @@ jobs:
           path: |
             ~/.platformio
             .pio
+            .pio_cov
           key: pio-sonar-${{ hashFiles('platformio.ini') }}
 
-      - name: Install PlatformIO
+      - name: Install PlatformIO + gcovr
         if: ${{ env.SONAR_TOKEN != '' }}
-        run: pip install -U platformio
+        run: pip install --upgrade platformio gcovr
 
       - name: Generate merged compile_commands.json
         if: ${{ env.SONAR_TOKEN != '' }}
         run: bash tools/sonar/gen_compiledb.sh
+
+      - name: Generate coverage (instrumented native tests -> coverage.xml)
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: bash tools/sonar/gen_coverage.sh
 
       - name: SonarQube Scan
         if: ${{ env.SONAR_TOKEN != '' }}

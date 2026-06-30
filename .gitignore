@@ -8,3 +8,7 @@ __pycache__/
 # by tools/sonar/gen_compiledb.sh for the SonarQube analyzer)
 compile_commands.json
 compiledb_frags/
+# SonarQube coverage report + instrumented build dir (regenerated in CI by
+# tools/sonar/gen_coverage.sh)
+coverage.xml
+.pio_cov/
