@@ -225,8 +225,9 @@ int deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap
             size_t max_len = src_len - i;
             if (max_len > (size_t)MAX_MATCH)
                 max_len = MAX_MATCH;
-            while (cand != NONE && chain-- > 0)
+            while (cand != NONE && chain > 0)
             {
+                chain--; // bound the hash-chain walk; decrement here, not in the && (no side effect in the condition)
                 size_t dist = i - cand;
                 if (dist > (size_t)WINDOW)
                     break; // chain is newest-first; everything past here is farther
