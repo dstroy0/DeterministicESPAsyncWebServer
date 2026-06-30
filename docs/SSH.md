@@ -123,6 +123,24 @@ per device:
 The matching public key for clients' `known_hosts` is derived from the same DER
 (`ssh-keygen -y -f ssh_host.pem`).
 
+### Known test key (testing only)
+
+For hardware / interop testing there is a committed, **public, insecure** key at
+[`test/fixtures/ssh_test_host_key/`](../test/fixtures/ssh_test_host_key/): the DER as a
+ready-to-include byte array (`ssh_test_host_key.h` -> `DETWS_SSH_TEST_HOST_KEY_DER`) plus
+its `.pub`. Provision it in one step from a sketch:
+
+```cpp
+#include "ssh_test_host_key.h"
+Preferences p;
+p.begin("ssh_host_key", false);
+p.putBytes("priv_der", DETWS_SSH_TEST_HOST_KEY_DER, DETWS_SSH_TEST_HOST_KEY_DER_LEN);
+p.end();
+```
+
+Its private half is in the repo, so it authenticates nothing. **Never use it in a product** -
+deployments must generate their own key with the steps above and keep it secret.
+
 ## Limitations
 
 - One `session` channel per connection (no port-forwarding / X11).
