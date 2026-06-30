@@ -70,10 +70,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_PACKET_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
-#include "ssh_hmac_sha256.h"
-#include "ssh_keymat.h"
 
 // ---------------------------------------------------------------------------
 // Sequence number overflow threshold

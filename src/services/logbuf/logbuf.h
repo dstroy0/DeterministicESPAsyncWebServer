@@ -19,7 +19,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LOGBUF_H
 #define DETERMINISTICESPASYNCWEBSERVER_LOGBUF_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_LOGBUF

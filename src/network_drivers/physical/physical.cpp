@@ -11,12 +11,9 @@
  * or track here. The IP classifier is pure and host-tested.
  */
 
-#include "physical.h"
+#include "network_drivers/physical/physical.h"
 
 #ifdef ARDUINO
-#include "lwip/ip_addr.h"
-#include "lwip/netif.h"
-#include <WiFi.h>
 
 bool init_wifi_physical(const char *ssid, const char *password)
 {

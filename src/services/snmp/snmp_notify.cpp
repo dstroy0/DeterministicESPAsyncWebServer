@@ -11,9 +11,6 @@
 
 #if DETWS_ENABLE_SNMP_TRAP
 
-#include "services/snmp/snmp_ber.h"
-#include <string.h>
-
 // The two mandatory bindings of any v2c/v3 notification (RFC 3416 4.2.6).
 static const uint32_t OID_SYSUPTIME_0[] = {1, 3, 6, 1, 2, 1, 1, 3, 0};
 static const uint32_t OID_SNMPTRAPOID_0[] = {1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0};

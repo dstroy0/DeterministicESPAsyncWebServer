@@ -11,11 +11,6 @@
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
-#include "shared_primitives/det_mime.h"
-#include "shared_primitives/det_numparse.h"
-#include <stdio.h>
-#include <string.h>
-
 // ---------------------------------------------------------------------------
 // Pure helpers (host-testable)
 // ---------------------------------------------------------------------------

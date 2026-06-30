@@ -13,8 +13,6 @@
 
 #if DETWS_ENABLE_GUARDRAILS
 
-#include <stdio.h>
-
 uint8_t detws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min)
 {
     uint8_t b = DETWS_BREACH_NONE;

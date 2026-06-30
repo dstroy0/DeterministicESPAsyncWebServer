@@ -26,7 +26,6 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_HMAC_SHA256_H
 
 #include "shared_primitives/shim.h"
-#include "ssh_sha256.h"
 
 /** @brief HMAC-SHA2-256 output length in bytes. */
 #define SSH_HMAC_SHA256_LEN 32

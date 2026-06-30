@@ -12,8 +12,6 @@
 
 #if DETWS_ENABLE_OPCUA_CLIENT
 
-#include "shared_primitives/shim.h"
-
 void opcua_client_init(OpcUaClient *c)
 {
     memset(c, 0, sizeof(*c));

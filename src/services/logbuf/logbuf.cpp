@@ -9,9 +9,6 @@
 #include "services/logbuf/logbuf.h"
 
 #if DETWS_ENABLE_LOGBUF
-
-#include "shared_primitives/shim.h"
-
 namespace
 {
 char s_lines[DETWS_LOG_LINES][DETWS_LOG_LINE_LEN]; // ring storage (BSS)

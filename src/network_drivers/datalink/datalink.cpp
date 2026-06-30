@@ -10,7 +10,7 @@
  * is provided as an architectural extension point.
  */
 
-#include "datalink.h"
+#include "network_drivers/datalink/datalink.h"
 
 void init_datalink_layer()
 {

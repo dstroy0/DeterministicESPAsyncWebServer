@@ -32,7 +32,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MODBUS_H
 #define DETERMINISTICESPASYNCWEBSERVER_MODBUS_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_MODBUS

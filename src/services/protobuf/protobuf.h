@@ -27,11 +27,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROTOBUF_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROTOBUF_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_PROTOBUF
-
-#include "shared_primitives/shim.h"
 
 // Wire types.
 #define PB_WT_VARINT 0

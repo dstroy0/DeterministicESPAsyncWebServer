@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_MQTT_SN
 
-#include "shared_primitives/shim.h"
-
 uint8_t mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool clean, uint8_t topic_id_type)
 {
     uint8_t f = 0;

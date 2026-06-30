@@ -27,11 +27,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_FLOW_EXPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_FLOW_EXPORT_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_FLOW_EXPORT
-
-#include "shared_primitives/shim.h"
 
 // ---- NetFlow v5 (fixed legacy format) ----
 

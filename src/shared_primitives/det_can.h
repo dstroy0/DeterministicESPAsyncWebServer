@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_CAN_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_CAN_H
 
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define DET_CAN_MAX_DLC 8               ///< classic CAN carries at most 8 data octets.
 #define DET_CAN_STD_ID_MASK 0x7FFu      ///< 11-bit standard identifier.

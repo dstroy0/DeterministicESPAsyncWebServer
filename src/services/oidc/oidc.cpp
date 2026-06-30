@@ -14,12 +14,6 @@
 #include "services/oidc/oidc.h"
 
 #if DETWS_ENABLE_OIDC
-
-#include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
-#include "network_drivers/presentation/ssh/ssh_rsa.h"
-#include "network_drivers/session/scratch.h" // per-dispatch arena (keeps the decode buffers off the worker stack)
-#include "shared_primitives/shim.h"
-
 namespace
 {
 // base64url decoding is shared with JWT in the base64 module (base64url_decode).

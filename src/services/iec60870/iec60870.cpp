@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_IEC60870
 
-#include "shared_primitives/shim.h"
-
 // --- -104 APCI ---
 
 size_t iec104_build_i(uint8_t *buf, size_t cap, uint16_t ns, uint16_t nr, const uint8_t *asdu, size_t asdu_len)

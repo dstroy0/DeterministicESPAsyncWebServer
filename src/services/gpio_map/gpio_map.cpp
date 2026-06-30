@@ -15,10 +15,6 @@
 
 #if DETWS_ENABLE_GPIO_MAP
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-
 const char *detws_gpio_dir_name(uint8_t dir)
 {
     switch (dir)

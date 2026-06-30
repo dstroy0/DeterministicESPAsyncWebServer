@@ -74,7 +74,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------

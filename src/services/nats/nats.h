@@ -31,11 +31,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NATS_H
 #define DETERMINISTICESPASYNCWEBSERVER_NATS_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_NATS
-
-#include "shared_primitives/shim.h"
 
 // ---- builders (return bytes written, or 0 on overflow / bad input) ----
 

@@ -44,7 +44,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SCRATCH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SCRATCH_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**

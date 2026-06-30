@@ -10,14 +10,8 @@
 
 #if DETWS_ENABLE_SNMP_V3
 
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
-#include "services/snmp/snmp_agent.h"
-#include "services/snmp/snmp_ber.h"
-#include "services/snmp/snmp_crypto.h"
-#include <string.h>
-
 #if defined(ARDUINO)
-#include <Arduino.h>
+
 static uint32_t snmp_v3_uptime_s()
 {
     return (uint32_t)(millis() / 1000ULL);

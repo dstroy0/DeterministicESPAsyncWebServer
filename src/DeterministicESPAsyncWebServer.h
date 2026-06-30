@@ -40,27 +40,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_H
 
-#include "network_drivers/presentation/json/json.h"
-#include "network_drivers/presentation/presentation.h"
-#include "network_drivers/session/session.h"
-#include "network_drivers/session/worker.h"
-#if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/websocket/websocket.h"
-#endif
-#if DETWS_ENABLE_SSE
-#include "network_drivers/presentation/sse/sse.h"
-#endif
-#if DETWS_ENABLE_MULTIPART
-#include "network_drivers/presentation/multipart/multipart.h"
-#endif
-#include <Arduino.h>
-#if DETWS_ENABLE_FILE_SERVING
-#ifdef ARDUINO
-#include <FS.h>
-#else
-#include "FS.h"
-#endif
-#endif
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // HTTP method enumeration

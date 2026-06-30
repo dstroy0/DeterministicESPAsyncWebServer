@@ -6,9 +6,7 @@
  * @brief Server-Sent Events connection pool implementation.
  */
 
-#include "sse.h"
-#include "network_drivers/transport/transport.h"
-#include "shared_primitives/shim.h"
+#include "network_drivers/presentation/sse/sse.h"
 
 SseConn sse_pool[MAX_SSE_CONNS];
 

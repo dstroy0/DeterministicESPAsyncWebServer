@@ -24,11 +24,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SDI12_H
 #define DETERMINISTICESPASYNCWEBSERVER_SDI12_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_SDI12
-
-#include "shared_primitives/shim.h"
 
 #define SDI12_CRC_POLY 0xA001u ///< CRC-16 polynomial (reflected 0x8005), init 0x0000
 #define SDI12_CRC_CHARS 3      ///< the CRC is appended as 3 printable ASCII octets

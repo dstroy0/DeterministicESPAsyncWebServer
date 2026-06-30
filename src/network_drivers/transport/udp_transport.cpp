@@ -8,12 +8,7 @@
 
 #include "network_drivers/transport/udp_transport.h"
 
-#include <string.h> // memcpy (both the lwIP and host builds)
-
 #if defined(ARDUINO)
-
-#include "lwip/pbuf.h"
-#include "lwip/udp.h"
 
 // A small fixed pool of bound UDP ports (e.g. SNMP :161 + captive DNS :53). No
 // heap: the pool and the shared receive scratch live in BSS.

@@ -10,9 +10,6 @@
 
 #if DETWS_ENABLE_TELNET
 
-#include "network_drivers/transport/transport.h"
-#include "shared_primitives/shim.h"
-
 // Telnet protocol bytes (RFC 854 / 858 / 857).
 enum
 {

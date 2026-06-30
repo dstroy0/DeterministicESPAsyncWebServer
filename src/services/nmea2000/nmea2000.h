@@ -24,13 +24,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
 #define DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_NMEA2000
-
-#include "services/j1939/j1939.h" // reuses the J1939 29-bit identifier codec
-#include "shared_primitives/det_can.h"
-#include "shared_primitives/shim.h"
 
 #ifndef DETWS_N2K_FP_MAX
 #define DETWS_N2K_FP_MAX 223 ///< Fast Packet max payload (6 in frame 0 + 31 x 7)

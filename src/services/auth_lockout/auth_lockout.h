@@ -21,11 +21,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H
 #define DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
-
-#include "shared_primitives/shim.h"
 
 /**
  * @brief Remaining lockout time for @p ip at @p now_ms, in milliseconds.

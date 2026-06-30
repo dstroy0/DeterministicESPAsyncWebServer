@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OTA_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_OTA_SERVICE_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 class DetWebServer;
 

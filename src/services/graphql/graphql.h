@@ -34,7 +34,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H
 #define DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_GRAPHQL

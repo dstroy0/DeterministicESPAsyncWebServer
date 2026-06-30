@@ -6,14 +6,9 @@
  * @brief Streaming file upload: POST body -> Arduino FS file (DETWS_ENABLE_UPLOAD).
  */
 
-#include "upload_service.h"
+#include "services/upload_service.h"
 
 #if DETWS_ENABLE_UPLOAD
-
-#include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/presentation/http_parser/http_parser.h"
-#include "shared_primitives/det_mime.h"
-#include "shared_primitives/shim.h"
 
 static DetWebServer *g_server = nullptr;
 static const char *g_path = nullptr;

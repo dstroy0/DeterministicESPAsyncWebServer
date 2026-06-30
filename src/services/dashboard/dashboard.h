@@ -24,7 +24,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
 #define DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_DASHBOARD

@@ -26,7 +26,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ESPNOW_H
 #define DETERMINISTICESPASYNCWEBSERVER_ESPNOW_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_ESPNOW

@@ -23,7 +23,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_JWT_H
 #define DETERMINISTICESPASYNCWEBSERVER_JWT_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_JWT

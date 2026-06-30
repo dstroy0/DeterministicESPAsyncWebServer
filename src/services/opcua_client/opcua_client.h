@@ -29,8 +29,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H
 #define DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H
 
-#include "DetWebServerConfig.h"
-#include "services/opcua/opcua.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_OPCUA_CLIENT

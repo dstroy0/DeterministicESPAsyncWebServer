@@ -17,7 +17,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_RADIO_POWER_H
 #define DETERMINISTICESPASYNCWEBSERVER_RADIO_POWER_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_RADIO_POWER

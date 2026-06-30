@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_AMQP
 
-#include "shared_primitives/shim.h"
-
 // AMQP integers are big-endian (network order).
 static size_t put16(uint8_t *p, uint16_t v)
 {

@@ -10,10 +10,6 @@
 
 #if DETWS_ENABLE_SENML
 
-#include "network_drivers/presentation/cbor/cbor.h"
-#include "network_drivers/presentation/json/json.h"
-#include <stdio.h> // snprintf for the JSON number formatting
-
 // SenML-CBOR integer labels (RFC 8428).
 #define SENML_LBL_BN (-2)
 #define SENML_LBL_BT (-3)

@@ -12,22 +12,13 @@
  * per-client implementations this consolidates.
  */
 
-#include "det_client.h"
+#include "network_drivers/transport/det_client.h"
 
 // Compiles only on Arduino AND only when a client transport is actually enabled
 // (HTTP client / MQTT / WS client). A server-only build leaves DNS_RESOLVER off,
 // so the resolver symbols this unit calls would not be declared - see
 // DETWS_NEED_DET_CLIENT in DetWebServerConfig.h.
 #if defined(ARDUINO) && DETWS_NEED_DET_CLIENT
-
-#include "lwip/priv/tcpip_priv.h"
-#include "lwip/tcp.h"
-#include "services/det_clock.h"                 // detws_millis()
-#include "services/dns_resolver/dns_resolver.h" // shared host->IP resolve (one DNS owner)
-#include "shared_primitives/det_ring.h"         // shared DetAtomic + SPSC ring drain (same primitive as the server)
-#include <Arduino.h>                            // delay()
-#include <string.h>
-
 struct ClientConn
 {
     struct tcp_pcb *pcb;

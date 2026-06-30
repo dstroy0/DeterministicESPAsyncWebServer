@@ -10,9 +10,6 @@
 
 #if DETWS_ENABLE_SPARKPLUG
 
-#include "services/protobuf/protobuf.h"
-#include "shared_primitives/shim.h"
-
 // Tahu Payload field numbers.
 #define SPB_PL_TIMESTAMP 1
 #define SPB_PL_METRICS 2

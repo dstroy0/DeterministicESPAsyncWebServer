@@ -25,11 +25,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROXY_PROTOCOL_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROXY_PROTOCOL_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_PROXY_PROTOCOL
-
-#include "shared_primitives/shim.h"
 
 #define PROXY_V2_SIG_LEN 12         ///< v2 signature length
 #define PROXY_V2_VER_CMD_PROXY 0x21 ///< version 2 | PROXY command

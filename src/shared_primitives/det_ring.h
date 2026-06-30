@@ -19,10 +19,7 @@
  * the tcpip_thread <-> worker/caller boundary on either core. No locks, no RMW.
  */
 
-#include <atomic>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h> // memcpy (producer span copy)
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // Cross-thread field wrapper

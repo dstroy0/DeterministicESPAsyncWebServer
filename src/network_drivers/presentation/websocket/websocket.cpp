@@ -15,14 +15,10 @@
  * - Pong  -> silently discarded (keepalive response, no action needed).
  */
 
-#include "websocket.h"
-#include "network_drivers/transport/transport.h"
-#include "shared_primitives/det_utf8.h"
-#include "shared_primitives/shim.h"
+#include "network_drivers/presentation/websocket/websocket.h"
 
 #if DETWS_ENABLE_WS_DEFLATE
-#include "network_drivers/presentation/deflate/deflate.h"
-#include "network_drivers/presentation/inflate/inflate.h"
+
 #include "network_drivers/session/scratch.h"
 #endif
 

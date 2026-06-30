@@ -6,9 +6,7 @@
  * @brief RSA-SHA2-256 host-key signing (stack-only private key, PKCS#1 v1.5).
  */
 
-#include "ssh_rsa.h"
-#include "ssh_keymat.h"
-#include <string.h>
+#include "network_drivers/presentation/ssh/ssh_rsa.h"
 
 // ---------------------------------------------------------------------------
 // DigestInfo for SHA-256 (PKCS#1 v1.5, RFC 8017 §9.2)

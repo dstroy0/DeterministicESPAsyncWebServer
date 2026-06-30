@@ -6,17 +6,7 @@
  * @brief SSH binary packet framing, encryption, MAC, and receive reassembly.
  */
 
-#include "ssh_packet.h"
-#include "network_drivers/session/scratch.h"
-#include "ssh_hmac_sha256.h"
-#include "ssh_keymat.h"
-#include <string.h>
-
-#ifdef ARDUINO
-#include <Arduino.h> // esp_fill_random()
-#else
-#include <Arduino.h> // mock
-#endif
+#include "network_drivers/presentation/ssh/ssh_packet.h"
 
 // ---------------------------------------------------------------------------
 // BSS allocation

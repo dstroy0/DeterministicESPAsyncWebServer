@@ -29,11 +29,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ENIP_H
 #define DETERMINISTICESPASYNCWEBSERVER_ENIP_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_ENIP
-
-#include "shared_primitives/shim.h"
 
 #define EIP_HEADER_SIZE 24
 

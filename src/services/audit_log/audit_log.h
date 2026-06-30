@@ -32,7 +32,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AUDIT_LOG_H
 #define DETERMINISTICESPASYNCWEBSERVER_AUDIT_LOG_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_AUDIT_LOG

@@ -36,47 +36,6 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/session/proto_handler.h"
-#include "network_drivers/session/worker.h"
-#include "network_drivers/tls/det_tls.h"
-#include "network_drivers/transport/listener.h"
-#include "shared_primitives/det_hex.h"
-#include "shared_primitives/det_mime.h"
-#if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/sha1/sha1.h"
-#elif DETWS_ENABLE_AUTH
-#include "network_drivers/presentation/base64/base64.h"
-#endif
-#if DETWS_ENABLE_AUTH
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
-#include "services/det_clock.h" // detws_millis() for the stateless Digest nonce timestamp
-#if DETWS_ENABLE_AUTH_LOCKOUT
-#include "services/auth_lockout/auth_lockout.h"
-#endif
-#ifdef ARDUINO
-#include <esp_system.h> // esp_random() for the Digest nonce CSPRNG
-#endif
-#endif
-#if DETWS_ENABLE_CSRF
-#include "services/csrf/csrf.h"
-#ifdef ARDUINO
-#include <esp_system.h> // esp_random() for the CSRF HMAC secret
-#endif
-#endif
-#if DETWS_ENABLE_WEBDAV
-#include "services/webdav/webdav.h"
-#include <time.h> // RFC 1123 Last-Modified formatting
-#endif
-#if DETWS_ENABLE_METRICS || DETWS_ENABLE_STATS
-#include "network_drivers/application/web_assets.h" // DETWS_METRICS_PROM / DETWS_STATS_JSON (generated)
-#endif
-#if DETWS_HTTP_EMIT_DATE
-#include "services/ntp_service.h" // detws_ntp_http_date() for the optional Date header
-#endif
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
 
 #if DETWS_ENABLE_WEBSOCKET
 // Magic GUID concatenated to the client key for the WS accept hash (RFC 6455 §4.2.2)

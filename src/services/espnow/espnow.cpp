@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_ESPNOW
 
-#include <string.h>
-
 const uint8_t DETWS_ESPNOW_BROADCAST[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // ---------------------------------------------------------------------------

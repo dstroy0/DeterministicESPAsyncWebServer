@@ -12,11 +12,9 @@
  * the output buffer doubles as the LZ77 window (see inflate.h).
  */
 
-#include "inflate.h"
+#include "network_drivers/presentation/inflate/inflate.h"
 
 #if DETWS_ENABLE_WS_DEFLATE
-
-#include "shared_primitives/shim.h"
 
 namespace
 {

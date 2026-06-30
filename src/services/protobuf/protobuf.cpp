@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_PROTOBUF
 
-#include "shared_primitives/shim.h"
-
 void pb_writer_init(PbWriter *w, uint8_t *buf, size_t cap)
 {
     w->buf = buf;

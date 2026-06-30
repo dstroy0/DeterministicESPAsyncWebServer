@@ -11,7 +11,7 @@
  * work such as static-route injection or custom ICMP handling.
  */
 
-#include "network.h"
+#include "network_drivers/network/network.h"
 
 void init_network_layer()
 {

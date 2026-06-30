@@ -6,8 +6,7 @@
  * @brief In-place multipart/form-data parser implementation.
  */
 
-#include "multipart.h"
-#include "shared_primitives/shim.h"
+#include "network_drivers/presentation/multipart/multipart.h"
 
 // Skip past a CRLF pair; returns p+2 if CRLF found, else p unchanged.
 static char *skip_crlf(char *p)

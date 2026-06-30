@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_COTP
 
-#include "shared_primitives/shim.h"
-
 size_t tpkt_build(uint8_t *buf, size_t cap, const uint8_t *payload, size_t payload_len)
 {
     if (!buf || (payload_len && !payload))

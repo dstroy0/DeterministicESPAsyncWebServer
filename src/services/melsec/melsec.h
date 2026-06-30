@@ -35,11 +35,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MELSEC_H
 #define DETERMINISTICESPASYNCWEBSERVER_MELSEC_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_MELSEC
-
-#include "shared_primitives/shim.h"
 
 #define MELSEC_3E_REQ_SUBHEADER0 0x50 ///< request subheader (sent 0x50 then 0x00)
 #define MELSEC_3E_REQ_SUBHEADER1 0x00

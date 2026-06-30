@@ -11,16 +11,7 @@
  * DETWS_WORKER_COUNT == 1 this is byte-for-byte the original single arena.
  */
 
-#include "scratch.h"
-#include "network_drivers/session/worker.h"
-#include <assert.h>
-#include <stdint.h>
-
-#if defined(ARDUINO) && !defined(NDEBUG)
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#endif
-
+#include "network_drivers/session/scratch.h"
 namespace
 {
 uint8_t s_arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)

@@ -17,10 +17,7 @@
  * stops as soon as the parser reaches any terminal state.
  */
 
-#include "presentation.h"
-#if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/websocket/websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
-#endif
+#include "network_drivers/presentation/presentation.h"
 
 #if DETWS_ENABLE_KEEPALIVE
 uint16_t http_req_count[MAX_CONNS];

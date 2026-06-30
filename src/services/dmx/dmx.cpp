@@ -10,8 +10,6 @@
 
 #if DETWS_ENABLE_DMX
 
-#include "shared_primitives/shim.h"
-
 size_t dmx_build(uint8_t *buf, size_t cap, uint8_t start_code, const uint8_t *channels, uint16_t n)
 {
     if (!buf || n > DMX_MAX_CHANNELS || (n && !channels))

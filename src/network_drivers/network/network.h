@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NETWORK_H
 #define DETERMINISTICESPASYNCWEBSERVER_NETWORK_H
 
-#include <Arduino.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief Initialize the network layer.

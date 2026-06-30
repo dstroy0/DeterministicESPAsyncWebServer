@@ -12,10 +12,6 @@
 
 // Dependency (WEB_TERMINAL requires WEBSOCKET) is enforced centrally in DetWebServerConfig.h.
 
-#include "network_drivers/application/web_assets.h" // DETWS_TERMINAL_PAGE
-#include "shared_primitives/det_mime.h"
-#include "shared_primitives/shim.h"
-
 // ---------------------------------------------------------------------------
 // State (all static / BSS - no heap)
 // ---------------------------------------------------------------------------

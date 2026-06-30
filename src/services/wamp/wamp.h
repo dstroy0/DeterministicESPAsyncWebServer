@@ -25,11 +25,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WAMP_H
 #define DETERMINISTICESPASYNCWEBSERVER_WAMP_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_WAMP
-
-#include "shared_primitives/shim.h"
 
 // WAMP message type codes (basic + advanced profile).
 #define WAMP_HELLO 1

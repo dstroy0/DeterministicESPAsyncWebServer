@@ -24,7 +24,6 @@
  * deadline. Only det_client_open() blocks, on DNS + connect.
  */
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /** @brief Number of simultaneous outbound client connections (BSS pool size). */

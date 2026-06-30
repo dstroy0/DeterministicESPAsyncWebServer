@@ -10,14 +10,7 @@
 
 #if DETWS_ENABLE_SNMP
 
-#include <string.h>
-
-#if DETWS_ENABLE_SNMP_V3
-#include "services/snmp/snmp_v3.h"
-#endif
-
-#if defined(ARDUINO)
-#include <Arduino.h>
+#ifdef ARDUINO
 static uint32_t snmp_uptime_cs()
 {
     return (uint32_t)(millis() / 10ULL); // hundredths of a second since boot

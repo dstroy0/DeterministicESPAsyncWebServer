@@ -10,13 +10,9 @@
  * embedded nonce and constant-time compares - no server-side session state.
  */
 
-#include "csrf.h"
+#include "services/csrf/csrf.h"
 
 #if DETWS_ENABLE_CSRF
-
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
-#include "shared_primitives/det_hex.h"
-#include "shared_primitives/shim.h"
 
 namespace
 {

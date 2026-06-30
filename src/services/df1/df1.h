@@ -27,11 +27,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DF1_H
 #define DETERMINISTICESPASYNCWEBSERVER_DF1_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_DF1
-
-#include "shared_primitives/shim.h"
 
 #define DF1_DLE 0x10
 #define DF1_STX 0x02

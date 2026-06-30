@@ -17,11 +17,9 @@
  * RFC 1951 sec 3.1.1 requires. All state is the caller's scratch plus the stack.
  */
 
-#include "deflate.h"
+#include "network_drivers/presentation/deflate/deflate.h"
 
 #if DETWS_ENABLE_WS_DEFLATE
-
-#include "shared_primitives/shim.h"
 
 namespace
 {

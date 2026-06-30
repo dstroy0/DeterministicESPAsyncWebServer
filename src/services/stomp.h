@@ -32,11 +32,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_STOMP_H
 #define DETERMINISTICESPASYNCWEBSERVER_STOMP_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_STOMP
-
-#include "shared_primitives/shim.h"
 
 /** @brief One parsed header line: key/value slices point INTO the source buffer (raw, still escaped). */
 struct StompHeader

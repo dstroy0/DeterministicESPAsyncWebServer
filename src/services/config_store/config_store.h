@@ -28,7 +28,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CONFIG_STORE_H
 #define DETERMINISTICESPASYNCWEBSERVER_CONFIG_STORE_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_CONFIG_STORE

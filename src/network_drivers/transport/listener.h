@@ -31,11 +31,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LISTENER_H
 #define DETERMINISTICESPASYNCWEBSERVER_LISTENER_H
 
-#include "DetWebServerConfig.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "lwip/tcp.h"
-#include "transport.h"
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // Listener pool entry

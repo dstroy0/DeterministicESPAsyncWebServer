@@ -13,13 +13,11 @@
  * unit tests run without mbedTLS installed.
  */
 
-#include "sha1.h"
+#include "network_drivers/presentation/sha1/sha1.h"
 
 #ifdef ARDUINO
 
 // --- ESP32 / Arduino: use mbedTLS (hardware-accelerated on ESP32) ----------
-#include "mbedtls/sha1.h"
-#include <string.h>
 
 void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
 {
@@ -29,7 +27,6 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
 #else
 
 // --- Native / test: software SHA-1, no external dependencies ---------------
-#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Helpers

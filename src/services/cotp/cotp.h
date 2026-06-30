@@ -25,11 +25,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_COTP_H
 #define DETERMINISTICESPASYNCWEBSERVER_COTP_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_COTP
-
-#include "shared_primitives/shim.h"
 
 #define TPKT_VERSION 0x03  ///< RFC 1006 TPKT version (always 3)
 #define TPKT_HEADER_SIZE 4 ///< version + reserved + 2-octet length

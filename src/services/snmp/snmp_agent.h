@@ -30,8 +30,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_AGENT_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_AGENT_H
 
-#include "DetWebServerConfig.h"
-#include "services/snmp/snmp_ber.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_SNMP

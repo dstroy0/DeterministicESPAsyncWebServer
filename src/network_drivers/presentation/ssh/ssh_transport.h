@@ -27,10 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_TRANSPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_TRANSPORT_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
-#include "ssh_keymat.h"
-#include "ssh_sha256.h"
 
 // ---------------------------------------------------------------------------
 // Sizing

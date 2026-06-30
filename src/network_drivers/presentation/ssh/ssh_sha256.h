@@ -22,8 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_SHA256_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_SHA256_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief SHA-256 digest length in bytes. */
 #define SSH_SHA256_DIGEST_LEN 32
@@ -39,7 +38,6 @@
  * separately-encoded fields (V_C, V_S, I_C, I_S, K_S, e, f, K).
  */
 #ifdef ARDUINO
-#include <mbedtls/sha256.h>
 typedef struct
 {
     mbedtls_sha256_context mbed; ///< HW-accelerated SHA-256 state (ESP32 mbedtls).

@@ -25,12 +25,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CLOUDEVENTS_H
 #define DETERMINISTICESPASYNCWEBSERVER_CLOUDEVENTS_H
 
-#include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_CLOUDEVENTS
-
-#include "network_drivers/presentation/http_parser/http_parser.h"
-#include "shared_primitives/shim.h"
 
 /**
  * @brief A CloudEvents v1.0 event. The three required context attributes are

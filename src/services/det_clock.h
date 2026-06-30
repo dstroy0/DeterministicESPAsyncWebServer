@@ -36,8 +36,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_CLOCK_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_CLOCK_H
 
-#include <Arduino.h> // platform millis()
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief User clock: returns a free-running monotonic tick count. */
 typedef uint32_t (*detws_clock_fn)(void);

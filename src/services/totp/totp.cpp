@@ -12,10 +12,6 @@
 #include "services/totp/totp.h"
 
 #if DETWS_ENABLE_TOTP
-
-#include "network_drivers/presentation/sha1/sha1.h"
-#include "shared_primitives/shim.h"
-
 namespace
 {
 constexpr int BLOCK = 64; // SHA-1 block size

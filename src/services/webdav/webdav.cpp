@@ -8,7 +8,6 @@
  */
 
 #include "services/webdav/webdav.h"
-#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_WEBDAV
 

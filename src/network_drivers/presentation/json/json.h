@@ -38,7 +38,6 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_JSON_H
 #define DETERMINISTICESPASYNCWEBSERVER_JSON_H
 
-#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**
