@@ -1,58 +1,61 @@
 name: ESP32 Build
 
-# The native test matrix runs on the host; nothing else compiles the library for
-# the real ESP32 / Arduino target, so ARDUINO-only breaks (mbedTLS, FreeRTOS,
-# WiFi, lwIP paths) and example breakage slip through. This compiles a curated set
-# of examples - one per heavy subsystem - for esp32dev via `pio ci`, using the
-# exact build_flags each example's README documents. Add a matrix entry when a new
-# subsystem with its own ARDUINO compile path lands.
+# Compiles every example for the real ESP32 / Arduino target (the native suite is
+# host-only, so this is the only thing that catches ARDUINO-only breaks: mbedTLS,
+# FreeRTOS, WiFi, lwIP). Each build's flash + RAM size report is harvested into
+# docs/footprints.json (keyed by feature, overwrite-if-exists) and the per-feature
+# table docs/FOOTPRINTS.md is regenerated from it. The example list + flags are
+# discovered from the example READMEs - no hand-maintained matrix.
 
 on:
   push:
     branches: [main, master]
+    paths:
+      - "src/**"
+      - "examples/**"
+      - "platformio.ini"
+      - "tools/ci/example_footprints.py"
+      - ".github/workflows/esp32-build.yml"
   pull_request:
     branches: [main, master]
+    paths:
+      - "src/**"
+      - "examples/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly Monday 06:00 UTC, to refresh footprints
 
 concurrency:
   group: esp32-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  esp32-build:
-    name: ${{ matrix.name }}
+  discover:
+    name: Discover examples
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - id: set
+        run: echo "matrix=$(python tools/ci/example_footprints.py matrix)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.example.name }}
+    needs: discover
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { name: "Base HTTP", ino: "examples/Foundation/01.Basic/01.Basic.ino", flags: "" }
-          - { name: "HTTPS (TLS)", ino: "examples/L4-Transport/03.HTTPS/03.HTTPS.ino", flags: "-DDETWS_ENABLE_TLS=1" }
-          - { name: "mTLS", ino: "examples/L4-Transport/04.mTLS/04.mTLS.ino", flags: "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1" }
-          - { name: "SSH", ino: "examples/L5-Session/01.SSH/01.SSH.ino", flags: "-DDETWS_ENABLE_SSH=1" }
-          - {
-              name: "SSH forwarding",
-              ino: "examples/L5-Session/01.SSH/01.SSH.ino",
-              flags: "-DDETWS_ENABLE_SSH=1 -DDETWS_SSH_PORT_FORWARD=1 -DDETWS_SSH_MAX_CHANNELS=4 -DDETWS_CLIENT_CONNS=3 -DDETWS_SSH_FWD_MAX=3",
-            }
-          - {
-              name: "WebSocket compression",
-              ino: "examples/L6-Presentation/11.WebSocketCompression/11.WebSocketCompression.ino",
-              flags: "-DDETWS_ENABLE_WS_DEFLATE=1",
-            }
-          - { name: "CoAP", ino: "examples/L7-Application/13.CoAP/13.CoAP.ino", flags: "-DDETWS_ENABLE_COAP=1" }
-          - { name: "SNMP", ino: "examples/L7-Application/14.SNMP/14.SNMP.ino", flags: "-DDETWS_ENABLE_SNMP=1" }
-          - { name: "MQTT client", ino: "examples/L7-Application/24.MqttClient/24.MqttClient.ino", flags: "-DDETWS_ENABLE_MQTT=1" }
-          - { name: "Modbus TCP", ino: "examples/L7-Application/30.ModbusTcp/30.ModbusTcp.ino", flags: "-DDETWS_ENABLE_MODBUS=1" }
-          - { name: "OPC UA", ino: "examples/L7-Application/55.OpcUa/55.OpcUa.ino", flags: "-DDETWS_ENABLE_OPCUA=1" }
-          - { name: "OTA", ino: "examples/L7-Application/16.OTA/16.OTA.ino", flags: "-DDETWS_ENABLE_OTA=1" }
-          - { name: "WebDAV", ino: "examples/L7-Application/29.WebDav/29.WebDav.ino", flags: "-DDETWS_ENABLE_WEBDAV=1" }
+        example: ${{ fromJson(needs.discover.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
-
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-
       - name: Cache PlatformIO
         uses: actions/cache@v4
         with:
@@ -61,15 +64,75 @@ jobs:
             ~/.cache/pip
           key: pio-esp32-${{ hashFiles('platformio.ini') }}
           restore-keys: pio-esp32-
-
       - name: Install PlatformIO
         run: pip install --upgrade platformio
-
-      - name: Compile for esp32dev
+      - name: Compile and capture footprint
+        env:
+          EX_NAME: ${{ matrix.example.name }}
+          EX_INO: ${{ matrix.example.ino }}
+          EX_FLAGS: ${{ matrix.example.flags }}
+          EX_FEATURE: ${{ matrix.example.feature }}
         run: |
+          set -o pipefail
           pio ci --board=esp32dev \
             --project-option="framework=arduino" \
             --project-option="platform=espressif32@^6.0.0" \
             --lib="." \
-            --project-option="build_flags=${{ matrix.flags }}" \
-            "${{ matrix.ino }}"
+            --project-option="build_flags=$EX_FLAGS" \
+            "$EX_INO" 2>&1 | tee build.log
+          mkdir -p frag
+          python tools/ci/example_footprints.py fragment build.log frag/footprint.json
+      - name: Upload footprint fragment
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fp-${{ strategy.job-index }}
+          path: frag/footprint.json
+          if-no-files-found: ignore
+
+  footprints:
+    name: Aggregate footprints
+    needs: build
+    # Aggregate even if some builds failed (capture what compiled); commit only off
+    # a pull request (the bot push needs the deploy key + write contents).
+    if: ${{ always() && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Download footprint fragments
+        uses: actions/download-artifact@v4
+        with:
+          path: frags
+          pattern: fp-*
+      - name: Merge footprints + regenerate the table
+        run: |
+          python tools/ci/example_footprints.py merge frags docs/footprints.json
+          python tools/ci/example_footprints.py table docs/footprints.json docs/FOOTPRINTS.md
+      - name: Format with Prettier
+        run: npx prettier@3.9.1 --write docs/footprints.json docs/FOOTPRINTS.md
+      - name: Configure SSH commit signing
+        env:
+          CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
+        run: |
+          if [ -n "$CI_SIGNING_KEY" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
+            chmod 600 ~/.ssh/ci_signing_key
+            git config gpg.format ssh
+            git config user.signingkey ~/.ssh/ci_signing_key
+            git config commit.gpgsign true
+          fi
+      - name: Commit footprints + table
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "docs: update ESP32 build footprints [skip ci]"
+          file_pattern: "docs/footprints.json docs/FOOTPRINTS.md"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
