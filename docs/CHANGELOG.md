@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- analyze all of src/ recursively; exclude platform I/O from coverage ([`ba23f23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba23f23fb919a5a0120e553061eb0fe207d34323))
+- update test report [skip ci] ([`643477d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/643477ddeeacd6668a80fc4e67b53f39ddc17708))
+- update CHANGELOG.md [skip ci] ([`24197c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24197c3480227913c2e9094caff22b619b2ad490))
 - compile the library for the ESP32 target (examples matrix) ([`f389b52`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f389b52f30b765603d613d48f6e96dabefee0833))
 - update test report [skip ci] ([`be4f8ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be4f8ba4327bec82b44300b1977aa0b502c98198))
 - update CHANGELOG.md [skip ci] ([`dd0594d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd0594d8440f0af70b6fd97a4b4a605cfea5c3e6))
