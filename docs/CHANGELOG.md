@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.14] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.14 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`97e9e28`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97e9e2877a9a08066cfef4547fe1ae96158ec160))
+- update CHANGELOG.md [skip ci] ([`37e4212`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37e4212ad12020da6899ad04623c1432bf3ab7c1))
+
+### Changes
+
+- Bump version: 4.59.13 → 4.59.14 ([`546d99d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546d99d08c364a3619807ef220cd496f2c1f1a5d))
+
+### Documentation
+
+- add SonarCloud quality-gate badge, group badges by category ([`d5d1789`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5d17893a01b1fcb11450c0d7f8c9634fd7d4c7c))
+
+</details>
+
 ## [4.59.13] - 2026-06-30
 
 <details>
