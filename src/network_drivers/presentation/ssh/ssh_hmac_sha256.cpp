@@ -20,7 +20,7 @@
  */
 
 #include "ssh_hmac_sha256.h"
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // Helpers

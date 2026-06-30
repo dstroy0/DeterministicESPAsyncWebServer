@@ -7,10 +7,10 @@
  */
 
 #include "ssh_auth.h"
+#include "shared_primitives/shim.h"
 #include "ssh_packet.h"    // SSH_MSG_* constants
 #include "ssh_rsa.h"       // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "ssh_transport.h" // ssh_sess[], SshPhase
-#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Application password callback

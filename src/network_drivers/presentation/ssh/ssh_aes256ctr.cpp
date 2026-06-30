@@ -13,7 +13,7 @@
  */
 
 #include "ssh_aes256ctr.h"
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ============================================================================
 // ARDUINO - hardware-accelerated path via mbedtls

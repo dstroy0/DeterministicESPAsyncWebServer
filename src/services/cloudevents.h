@@ -30,7 +30,7 @@
 #if DETWS_ENABLE_CLOUDEVENTS
 
 #include "network_drivers/presentation/http_parser/http_parser.h"
-#include <stddef.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief A CloudEvents v1.0 event. The three required context attributes are

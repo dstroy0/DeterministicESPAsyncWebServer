@@ -16,7 +16,7 @@
 
 #if DETWS_ENABLE_WS_DEFLATE
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 namespace
 {

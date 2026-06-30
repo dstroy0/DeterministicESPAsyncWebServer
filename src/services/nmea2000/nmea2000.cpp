@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_NMEA2000
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 uint8_t n2k_fastpacket_num_frames(uint16_t total_len)
 {

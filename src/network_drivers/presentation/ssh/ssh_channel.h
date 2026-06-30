@@ -22,8 +22,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_CHANNEL_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief Initial receive window the server advertises (RFC 4254 §5.1). */
 #ifndef SSH_CHAN_WINDOW

@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_SNMP_V3
 
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // RFC 3414 §2.6 key localization (SHA-256)

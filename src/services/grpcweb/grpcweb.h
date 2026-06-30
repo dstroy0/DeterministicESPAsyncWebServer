@@ -31,8 +31,7 @@
 
 #if DETWS_ENABLE_GRPC_WEB
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define GRPCWEB_FLAG_COMPRESSED 0x01
 #define GRPCWEB_FLAG_TRAILER 0x80

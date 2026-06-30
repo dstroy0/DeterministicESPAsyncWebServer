@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SUNSPEC
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 static uint16_t be16(const uint8_t *p)
 {

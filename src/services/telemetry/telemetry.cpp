@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_TELEMETRY
 
-#include <math.h>
+#include "shared_primitives/shim.h"
 
 void detws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
 {

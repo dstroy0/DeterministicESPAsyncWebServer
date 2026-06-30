@@ -13,8 +13,7 @@
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include "shared_primitives/det_mime.h"
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 static DetWebServer *g_server = nullptr;
 static const char *g_path = nullptr;

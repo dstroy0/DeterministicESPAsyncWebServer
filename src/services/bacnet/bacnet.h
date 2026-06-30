@@ -29,8 +29,7 @@
 
 #if DETWS_ENABLE_BACNET
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define BVLC_TYPE_BIP 0x81 ///< BVLC Type: BACnet/IP
 #define BVLC_HEADER_SIZE 4 ///< type + function + 2-octet length

@@ -16,9 +16,7 @@
 #if DETWS_ENABLE_DASHBOARD
 
 #include "shared_primitives/det_numparse.h"
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 static const DetwsWidget *s_widgets = nullptr;
 static uint8_t s_count = 0;

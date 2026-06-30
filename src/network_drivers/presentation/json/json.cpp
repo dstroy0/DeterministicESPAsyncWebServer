@@ -8,8 +8,7 @@
 
 #include "json.h"
 #include "shared_primitives/det_numparse.h"
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // JsonWriter

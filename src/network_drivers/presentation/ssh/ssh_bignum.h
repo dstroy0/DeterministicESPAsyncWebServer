@@ -75,9 +75,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // Fixed-width 2048-bit integer

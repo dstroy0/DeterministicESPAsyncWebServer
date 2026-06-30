@@ -15,8 +15,7 @@
 
 #if DETWS_ENABLE_GRAPHQL
 
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 struct DetwsGqlArgs
 {

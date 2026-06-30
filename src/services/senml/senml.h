@@ -31,8 +31,7 @@
 
 #if DETWS_ENABLE_SENML
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief Which value field a record carries. */
 enum SenmlValueKind

@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_CANOPEN
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // All CANopen default-profile identifiers are 11-bit standard frames.
 static void std_frame(CanFrame *f, uint32_t id, uint8_t dlc)

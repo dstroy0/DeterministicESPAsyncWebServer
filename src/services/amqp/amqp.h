@@ -30,8 +30,7 @@
 
 #if DETWS_ENABLE_AMQP
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 // Frame types (octet 0).
 #define AMQP_FRAME_METHOD 1

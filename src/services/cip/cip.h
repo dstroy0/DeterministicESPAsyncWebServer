@@ -31,8 +31,7 @@
 
 #if DETWS_ENABLE_CIP
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 // Common service codes.
 #define CIP_SC_GET_ATTR_ALL 0x01

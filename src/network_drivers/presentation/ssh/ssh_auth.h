@@ -22,8 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief Max stored user name (RFC 4252 imposes no limit; we cap for BSS). */
 #define SSH_AUTH_USER_MAX 32

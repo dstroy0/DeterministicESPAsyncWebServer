@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_MBUS
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // The M-Bus checksum is the 8-bit arithmetic sum of the covered octets.
 static uint8_t checksum(const uint8_t *p, size_t n)

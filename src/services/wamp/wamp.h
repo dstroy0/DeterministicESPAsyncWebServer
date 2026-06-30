@@ -29,8 +29,7 @@
 
 #if DETWS_ENABLE_WAMP
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 // WAMP message type codes (basic + advanced profile).
 #define WAMP_HELLO 1

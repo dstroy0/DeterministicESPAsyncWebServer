@@ -23,8 +23,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_V3_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_SNMP_V3
 

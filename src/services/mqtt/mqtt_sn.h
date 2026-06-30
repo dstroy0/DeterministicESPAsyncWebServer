@@ -33,8 +33,7 @@
 
 #if DETWS_ENABLE_MQTT_SN
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define MQTTSN_LEN3_PREFIX 0x01 ///< a first Length octet of 0x01 signals the 3-octet length form
 

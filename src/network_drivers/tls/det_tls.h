@@ -33,8 +33,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_DET_TLS_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_TLS && defined(ARDUINO)
 

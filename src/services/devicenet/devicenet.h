@@ -38,8 +38,7 @@
 #if DETWS_ENABLE_DEVICENET
 
 #include "shared_primitives/det_can.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #ifndef DETWS_DEVICENET_MSG_MAX
 #define DETWS_DEVICENET_MSG_MAX 256 ///< max reassembled fragmented message

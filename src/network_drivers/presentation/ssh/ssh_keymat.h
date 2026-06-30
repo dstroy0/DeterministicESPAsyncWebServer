@@ -96,11 +96,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_KEYMAT_H
 
 #include "DetWebServerConfig.h"
+#include "shared_primitives/shim.h"
 #include "ssh_aes256ctr.h"
 #include "ssh_bignum.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Secure wipe

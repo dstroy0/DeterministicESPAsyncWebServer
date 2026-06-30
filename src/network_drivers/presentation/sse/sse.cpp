@@ -8,8 +8,7 @@
 
 #include "sse.h"
 #include "network_drivers/transport/transport.h"
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 SseConn sse_pool[MAX_SSE_CONNS];
 

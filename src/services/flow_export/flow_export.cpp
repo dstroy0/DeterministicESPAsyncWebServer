@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_FLOW_EXPORT
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---- bounded big-endian writers into a raw buffer (used by the v5 builders) ----
 

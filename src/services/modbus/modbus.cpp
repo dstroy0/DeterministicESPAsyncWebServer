@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_MODBUS
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // Data model (all BSS - no heap)

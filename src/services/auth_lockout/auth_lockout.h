@@ -25,7 +25,7 @@
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
 
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief Remaining lockout time for @p ip at @p now_ms, in milliseconds.

@@ -30,8 +30,7 @@
 #if DETWS_ENABLE_CANOPEN
 
 #include "shared_primitives/det_can.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 // Function-code COB-ID bases. The 11-bit id is (function-code | node-id); the node id is
 // 1..127 (0 = broadcast for NMT / SYNC / TIME). EMCY shares 0x080 with SYNC: SYNC is the

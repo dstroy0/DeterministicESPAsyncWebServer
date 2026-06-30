@@ -7,8 +7,8 @@
  */
 
 #include "ssh_channel.h"
+#include "shared_primitives/shim.h"
 #include "ssh_packet.h" // SSH_MSG_CHANNEL_*
-#include <string.h>
 
 SshChannel ssh_chan[MAX_SSH_CONNS];
 

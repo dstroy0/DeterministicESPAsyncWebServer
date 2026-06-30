@@ -20,8 +20,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_PARTITION_MONITOR_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_PARTITION_MONITOR
 

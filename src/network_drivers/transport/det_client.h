@@ -25,8 +25,7 @@
  */
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief Number of simultaneous outbound client connections (BSS pool size). */
 #ifndef DETWS_CLIENT_CONNS

@@ -14,8 +14,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief One-time setup: install the dispatcher emit callback. Call from begin().

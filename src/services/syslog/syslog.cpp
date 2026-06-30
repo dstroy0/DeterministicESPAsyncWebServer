@@ -11,8 +11,7 @@
 #if DETWS_ENABLE_SYSLOG
 
 #include "network_drivers/transport/udp_transport.h"
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // Configuration + format scratch - all in BSS, no heap.
 static char g_server_ip[16]; // "255.255.255.255" + NUL

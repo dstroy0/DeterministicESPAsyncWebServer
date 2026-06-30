@@ -12,8 +12,7 @@
 
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 // Constant-time equality over @p n bytes (no early-out timing oracle).
 static bool ct_eq(const char *a, const char *b, size_t n)

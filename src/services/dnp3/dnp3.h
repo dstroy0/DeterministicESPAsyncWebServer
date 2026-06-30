@@ -32,8 +32,7 @@
 
 #if DETWS_ENABLE_DNP3
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define DNP3_START0 0x05
 #define DNP3_START1 0x64

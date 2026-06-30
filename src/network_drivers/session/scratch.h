@@ -45,7 +45,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SCRATCH_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief Borrow @p n bytes of scratch, aligned to @p align.

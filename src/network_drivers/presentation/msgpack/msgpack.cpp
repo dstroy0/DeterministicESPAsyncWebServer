@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_MSGPACK
 
 #include "shared_primitives/det_bytes.h"
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
 {

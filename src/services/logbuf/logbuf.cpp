@@ -10,8 +10,7 @@
 
 #if DETWS_ENABLE_LOGBUF
 
-#include <stdio.h>
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 namespace
 {

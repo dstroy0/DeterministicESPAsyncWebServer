@@ -32,8 +32,7 @@
 #if DETWS_ENABLE_J1939
 
 #include "shared_primitives/det_can.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #ifndef DETWS_J1939_TP_MAX
 #define DETWS_J1939_TP_MAX 256 ///< max reassembled TP message (spec allows up to 1785); sized down for RAM

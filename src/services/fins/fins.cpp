@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_FINS
 
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 static size_t write_header(uint8_t *buf, const FinsHeader *h)
 {

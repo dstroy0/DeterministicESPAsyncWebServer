@@ -19,7 +19,7 @@
 
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
 #include "services/det_clock.h"
-#include <string.h>
+#include "shared_primitives/shim.h"
 
 namespace
 {

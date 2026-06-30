@@ -33,8 +33,7 @@
 
 #if DETWS_ENABLE_C37118
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define C37118_SYNC_LEADER 0xAA  ///< SYNC byte 0 (frame leader)
 #define C37118_TYPE_SHIFT 4      ///< SYNC byte 1: frame type occupies bits 6-4

@@ -26,8 +26,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H
 
 #include "DetWebServerConfig.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /**
  * @brief Opaque sender of a received datagram.

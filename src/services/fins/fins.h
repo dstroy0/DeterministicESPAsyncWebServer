@@ -32,8 +32,7 @@
 
 #if DETWS_ENABLE_FINS
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 #define FINS_HEADER_SIZE 10
 

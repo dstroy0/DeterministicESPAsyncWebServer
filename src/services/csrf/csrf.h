@@ -26,8 +26,7 @@
 
 #if DETWS_ENABLE_CSRF
 
-#include <stddef.h>
-#include <stdint.h>
+#include "shared_primitives/shim.h"
 
 /** @brief Nonce length in bytes (hex-encoded in the token). */
 #define CSRF_NONCE_BYTES 6
