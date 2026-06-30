@@ -605,7 +605,9 @@
         "+<network_drivers/presentation/base64/base64.cpp>",
         "+<network_drivers/presentation/ssh/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
-        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>"
+        "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
       ],
       "tests": ["test_oidc"]
     },
