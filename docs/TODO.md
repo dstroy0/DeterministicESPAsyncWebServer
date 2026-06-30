@@ -372,17 +372,20 @@ shipped work:
       banner ([`SSH_VERSION_MAX`](@ref SSH_VERSION_MAX) + explicit lengths), and the WS handshake
       (`strnlen(client_key, WS_MAX_KEY_LEN+1)`) are all correctly bounded.
 
-- [ ] **Connection close/abort is driven from L7 holding the raw `tcp_pcb`.**
-      _(tracked debt - core refactor, wants a HW soak)_ Several sites in
-      `DeterministicESPAsyncWebServer.cpp` reach into `conn_pool[i].pcb` and run the
-      teardown by hand (`det_conn_detach(pcb)` plus a manual slot reset) instead of
-      going through one transport-owned `det_conn_close(slot)` / `det_conn_abort(slot)`.
-      It works, but it leaks the `struct tcp_pcb *` abstraction into L7 and repeats the
-      teardown order at every site. The fix is a `det_conn_close(slot)` /
-      `det_conn_abort(slot)` in `network_drivers/transport/` that owns the detach plus
-      slot reset, with every L7 close routed through it. Deferred because it touches the
-      lwIP teardown path and needs a connection-churn soak (slot-leak / use-after-free
-      watch) on real hardware before shipping.
+- [x] **Connection close/abort is driven from L7 holding the raw `tcp_pcb`.** _(done)_
+      The transport now owns the whole teardown: `det_conn_close(slot)` (graceful, was
+      `det_conn_close(slot, pcb)`) and the new `det_conn_abort_slot(slot)` (hard RST)
+      each detach the pcb, free the per-connection TLS context, reset the slot, and
+      then FIN/RST - on a captured pcb pointer, so a late lwIP callback finds a freed
+      slot. Every hand-rolled teardown now passes only the slot: the WS/SSE close +
+      upgrade-fail sites in `DeterministicESPAsyncWebServer.cpp`, `session.cpp`
+      `tls_abort`, and the SSH (x2) / telnet / modbus / opcua drop paths. This also
+      fixed a latent pcb leak (the WS/SSE upgrade-alloc-fail paths detached but never
+      aborted). Host-tested (`test_observability`: local-close frees the slot,
+      abort-slot counts + frees, abort-slot no-ops on a free slot), full native suite
+      green, and **HW-soaked on COM3**: HTTP close-path + WS churn (12 `abort_slot`
+      RSTs on WS-pool exhaustion) reclaim every slot with no leak and the device keeps
+      accepting throughout.
 
 - [ ] **`detws_oidc_verify_with_key()` has a multi-KB stack frame.**
       _(tracked debt - wants the per-worker scratch arena + a HW stack soak)_ The

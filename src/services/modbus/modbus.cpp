@@ -115,8 +115,11 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return 0;
     uint8_t fc = pdu[0];
 
+    // Dispatch on the function code; each case validates its own request length and
+    // address/quantity range, replying with the data or a Modbus exception PDU.
     switch (fc)
     {
+    // FC1/FC2: read up to 2000 single-bit coils / discrete inputs, packed 8 per byte.
     case MODBUS_FC_READ_COILS:
     case MODBUS_FC_READ_DISCRETE_INPUTS: {
         if (pdu_len < 5)
@@ -140,6 +143,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return (size_t)2 + bytes;
     }
 
+    // FC3/FC4: read up to 125 16-bit holding / input registers, big-endian.
     case MODBUS_FC_READ_HOLDING_REGS:
     case MODBUS_FC_READ_INPUT_REGS: {
         if (pdu_len < 5)
@@ -161,6 +165,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return (size_t)2 + bytes;
     }
 
+    // FC5: write one coil (value 0xFF00 = on, 0x0000 = off); echo the request back.
     case MODBUS_FC_WRITE_SINGLE_COIL: {
         if (pdu_len < 5)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -178,6 +183,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return 5;
     }
 
+    // FC6: write one holding register; echo the request back.
     case MODBUS_FC_WRITE_SINGLE_REG: {
         if (pdu_len < 5)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -193,6 +199,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return 5;
     }
 
+    // FC15: write up to 1968 coils from a packed bitfield; reply start + quantity.
     case MODBUS_FC_WRITE_MULTIPLE_COILS: {
         if (pdu_len < 6)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -217,6 +224,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return 5;
     }
 
+    // FC16: write up to 123 holding registers; reply start + quantity.
     case MODBUS_FC_WRITE_MULTIPLE_REGS: {
         if (pdu_len < 6)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -238,6 +246,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         return 5;
     }
 
+    // Any unsupported function code: reply with the ILLEGAL FUNCTION exception.
     default:
         return pdu_exception(fc, MODBUS_EX_ILLEGAL_FUNCTION, out);
     }
@@ -354,15 +363,7 @@ static void raw_send(uint8_t slot, const void *data, size_t n)
 
 static void close_conn(uint8_t slot)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->pcb)
-    {
-        struct tcp_pcb *p = c->pcb;
-        det_conn_detach(p);
-        c->state = CONN_FREE;
-        c->pcb = nullptr;
-        det_conn_close(slot, p);
-    }
+    det_conn_close(slot); // transport owns detach + slot reset + close
 }
 
 void modbus_rx(uint8_t slot)

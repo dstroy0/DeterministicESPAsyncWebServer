@@ -149,10 +149,39 @@ void test_timeout_sweep_counts_timeout()
 
 void test_local_close_counts_local()
 {
+    // det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a
+    // local close. The transport owns the teardown: the slot ends FREE/null.
     struct tcp_pcb pcb;
-    det_conn_close(0, &pcb);
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    det_conn_close(0);
     TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_local);
     TEST_ASSERT_EQUAL(DET_CONN_R_CLOSE_LOCAL, g_reason);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_NULL(conn_pool[0].pcb);
+}
+
+// det_conn_abort_slot(slot) owns the hard-RST teardown: it frees the slot and
+// counts an abort. A no-op (no count, no hook) when the slot has no live pcb.
+void test_abort_slot_counts_abort_and_frees()
+{
+    struct tcp_pcb pcb;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &pcb;
+    det_conn_abort_slot(0);
+    TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_abort);
+    TEST_ASSERT_EQUAL(DET_CONN_R_ABORT, g_reason);
+    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_NULL(conn_pool[0].pcb);
+}
+
+void test_abort_slot_noop_on_free_slot()
+{
+    conn_pool[0].state = CONN_FREE;
+    conn_pool[0].pcb = nullptr;
+    det_conn_abort_slot(0);
+    TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closes_abort);
+    TEST_ASSERT_EQUAL(0, g_calls);
 }
 
 void test_backpressure_counts_when_ring_full()
@@ -271,6 +300,8 @@ int main()
     RUN_TEST(test_err_cb_counts_error_close);
     RUN_TEST(test_timeout_sweep_counts_timeout);
     RUN_TEST(test_local_close_counts_local);
+    RUN_TEST(test_abort_slot_counts_abort_and_frees);
+    RUN_TEST(test_abort_slot_noop_on_free_slot);
     RUN_TEST(test_backpressure_counts_when_ring_full);
     // CONN_CLOSING real dwell
     RUN_TEST(test_begin_close_dwells_then_drains_on_ack);

@@ -39,20 +39,12 @@
 #include "../presentation/websocket/websocket.h"
 #endif
 
-// Abort a TLS connection (fatal handshake/read error): free the TLS context and
-// tear down the TCP slot (through the transport-layer connection API).
+// Abort a TLS connection (fatal handshake/read error). det_conn_abort_slot owns
+// the whole teardown: free the TLS context (abrupt), detach the pcb, reset the
+// slot, then RST - so this never reaches into the raw tcp_pcb.
 static void tls_abort(uint8_t slot)
 {
-    TcpConn *c = &conn_pool[slot];
-    det_tls_conn_free(slot);
-    if (c->pcb)
-    {
-        struct tcp_pcb *p = c->pcb;
-        det_conn_detach(p);
-        c->state = CONN_FREE;
-        c->pcb = nullptr;
-        det_conn_abort(p);
-    }
+    det_conn_abort_slot(slot);
     http_reset(slot);
 }
 

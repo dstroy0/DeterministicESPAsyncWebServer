@@ -107,16 +107,8 @@ void telnet_accept(uint8_t slot)
         }
     if (!t)
     {
-        // No Telnet capacity: drop the connection.
-        TcpConn *c = &conn_pool[slot];
-        if (c->pcb)
-        {
-            struct tcp_pcb *p = c->pcb;
-            det_conn_detach(p);
-            c->state = CONN_FREE;
-            c->pcb = nullptr;
-            det_conn_close(slot, p);
-        }
+        // No Telnet capacity: drop the connection (transport owns the teardown).
+        det_conn_close(slot);
         return;
     }
     memset(t, 0, sizeof(*t));

@@ -117,14 +117,8 @@ void ssh_conn_accept(uint8_t conn_slot)
         }
     if (j == 0xFF)
     {
-        // No SSH capacity: drop the connection.
-        if (conn->pcb)
-        {
-            det_conn_detach(conn->pcb);
-            det_conn_close(conn->id, conn->pcb);
-        }
-        conn->state = CONN_FREE;
-        conn->pcb = nullptr;
+        // No SSH capacity: drop the connection (transport owns the teardown).
+        det_conn_close(conn->id);
         return;
     }
 
@@ -148,14 +142,7 @@ void ssh_conn_accept(uint8_t conn_slot)
 
 static void close_conn(uint8_t conn_slot)
 {
-    TcpConn *conn = &conn_pool[conn_slot];
-    if (conn->pcb)
-    {
-        det_conn_detach(conn->pcb);
-        det_conn_close(conn->id, conn->pcb);
-    }
-    conn->state = CONN_FREE;
-    conn->pcb = nullptr;
+    det_conn_close(conn_slot); // transport owns detach + slot reset + close
     ssh_conn_close(conn_slot);
 }
 

@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## WebSocket / SSE upgrade-alloc-fail detached the pcb but never closed it (leak)
+
+- **Status:** FIXED (during the L7 teardown-ownership refactor; host-tested + HW-soaked).
+- **Found:** 2026-06-30, auditing the hand-rolled connection teardown sites while routing
+  them through one transport-owned API.
+- **When a WebSocket or SSE upgrade had already been promoted but the per-protocol slot
+  pool was full (`ws_alloc` / `sse_alloc` returned null), the cleanup path called
+  `det_conn_detach(pcb)` and reset the slot but never closed or aborted the pcb.** The
+  `struct tcp_pcb` was left open with no lwIP callbacks attached: a leaked pcb that lingered
+  until lwIP's own timeout, with the application slot already freed. Under upgrade churn
+  against an exhausted pool this slowly bled pcbs.
+- **Fix:** the teardown is now owned by the transport. `det_conn_abort_slot(slot)` frees the
+  TLS context (abrupt), detaches the pcb, resets the slot, and sends a RST; every drop path
+  (WS/SSE close + upgrade-fail, `session.cpp` `tls_abort`, SSH/telnet/modbus/opcua) routes
+  through it (or `det_conn_close(slot)` for graceful), so a pcb can no longer be detached
+  without also being closed. Verified on hardware (COM3): a WS-pool-exhaustion churn drove
+  12 `det_conn_abort_slot` RSTs with every slot reclaimed and no pcb/slot leak (the device
+  kept accepting throughout). Tracked-debt item closed in [TODO.md](TODO.md).
+
+---
+
 ## Test-report generator spewed "tail: write error: Broken pipe" into the CI log
 
 - **Status:** FIXED (host-verified against all 1906 test functions; behavior identical).

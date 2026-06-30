@@ -366,22 +366,53 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
 #endif
 }
 
-void det_conn_close(uint8_t slot, struct tcp_pcb *pcb)
+void det_conn_close(uint8_t slot)
 {
-    (void)slot;
+    if (slot >= MAX_CONNS)
+        return;
+    TcpConn *c = &conn_pool[slot];
+    struct tcp_pcb *pcb = c->pcb;
+    if (!pcb)
+        return;
     // The application-initiated close path (L4 primitive). Remote FIN, error, and
     // timeout closes are observed at their own sites, so this is uniquely "local".
     DETWS_OBS_TRANSITION(slot, CONN_ACTIVE, CONN_FREE, DET_CONN_R_CLOSE_LOCAL);
+    // Detach the pcb and free the slot before the close, so a late callback for
+    // this pcb finds a null arg and does nothing. The close itself targets the
+    // captured pcb (DET_OP_CLOSE carries it), so nulling the slot first is safe.
+    det_conn_detach(pcb);
+    c->state = CONN_FREE;
+    c->pcb = nullptr;
 #if defined(ARDUINO)
     det_tcp_marshal(DET_OP_CLOSE, slot, pcb, nullptr, 0); // TLS teardown + FIN in tcpip_thread
 #else
 #if DETWS_ENABLE_TLS
-    if (conn_pool[slot].tls)
+    if (c->tls)
         det_tls_conn_end(slot);
 #endif
     if (tcp_close(pcb) != ERR_OK)
         tcp_abort(pcb);
 #endif
+}
+
+void det_conn_abort_slot(uint8_t slot)
+{
+    if (slot >= MAX_CONNS)
+        return;
+    TcpConn *c = &conn_pool[slot];
+    struct tcp_pcb *pcb = c->pcb;
+    if (!pcb)
+        return;
+    DETWS_OBS_TRANSITION(slot, CONN_ACTIVE, CONN_FREE, DET_CONN_R_ABORT);
+#if DETWS_ENABLE_TLS
+    if (c->tls)
+        det_tls_conn_free(slot); // abrupt: free the per-conn TLS context, no close_notify
+#endif
+    // Detach + free the slot before the RST, so a late callback finds a null arg.
+    det_conn_detach(pcb);
+    c->state = CONN_FREE;
+    c->pcb = nullptr;
+    det_conn_abort(pcb);
 }
 
 void det_conn_detach(struct tcp_pcb *pcb)

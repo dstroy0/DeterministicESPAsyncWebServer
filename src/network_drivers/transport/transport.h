@@ -307,10 +307,13 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
 
 /**
  * @brief Close connection @p slot gracefully (tcp_close), aborting if the FIN
- *        cannot be queued. For a TLS slot this also emits close_notify and frees
- *        the per-connection TLS context first.
+ *        cannot be queued. The transport owns the whole teardown: it detaches the
+ *        pcb from its lwIP callbacks, frees the slot, and (TLS slot) emits
+ *        close_notify + frees the per-connection TLS context - so callers pass
+ *        only the slot and never touch the raw tcp_pcb. A no-op if the slot has
+ *        no live pcb.
  */
-void det_conn_close(uint8_t slot, struct tcp_pcb *pcb);
+void det_conn_close(uint8_t slot);
 
 /**
  * @brief Begin a graceful close that dwells in CONN_CLOSING until the peer ACKs.
@@ -329,6 +332,15 @@ void det_conn_detach(struct tcp_pcb *pcb);
 
 /** @brief Hard-abort @p pcb (RST) for a fatal condition; no graceful FIN. */
 void det_conn_abort(struct tcp_pcb *pcb);
+
+/**
+ * @brief Hard-abort connection @p slot (RST) for a fatal condition. The transport
+ *        owns the teardown order: free the per-connection TLS context (abrupt, no
+ *        close_notify), detach the pcb from its callbacks, reset the slot, then
+ *        abort - so callers pass only the slot and never touch the raw tcp_pcb. A
+ *        no-op if the slot has no live pcb.
+ */
+void det_conn_abort_slot(uint8_t slot);
 
 /**
  * @brief Raw source IPv4 of the connection in @p slot, or 0 if the slot has no

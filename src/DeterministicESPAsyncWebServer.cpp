@@ -22,18 +22,17 @@
  * priority because the loop checks them in insertion order and returns on
  * the first match.
  *
- * **PCB lifecycle in send() / send_empty()**
- * Before writing to the PCB the slot is set to `CONN_FREE` and the pcb
- * pointer is nulled.  All TCP I/O goes through the transport-layer connection
- * API (det_conn_send / det_conn_flush / det_conn_close / det_conn_detach), so
- * this layer never calls lwIP directly:
- *   1. Save a local copy of the pcb pointer.
- *   2. Detach our slot from it (`det_conn_detach(pcb)`).
- *   3. Null out `conn->pcb` and set `conn->state = CONN_FREE`.
- *   4. Do the send + flush + close on the saved local pointer.
- *
- * This means any lwIP error callback that fires mid-write sees the slot as
- * already free and takes no action - preventing a double-free scenario.
+ * **PCB lifecycle / teardown ownership**
+ * All TCP I/O and teardown go through the transport-layer connection API
+ * (det_conn_send / det_conn_flush / det_conn_begin_close / det_conn_close /
+ * det_conn_abort_slot), so this layer never calls lwIP or touches the raw
+ * `tcp_pcb` directly. The transport owns the teardown order for every close:
+ * it detaches the pcb from its lwIP callbacks and sets the slot `CONN_FREE`
+ * (pcb nulled) BEFORE the FIN/RST, on the captured pcb pointer. This means any
+ * lwIP error callback that fires mid-teardown sees the slot as already free and
+ * takes no action - preventing a double-free. L7 passes only the slot index:
+ * det_conn_close(slot) for a graceful local close, det_conn_abort_slot(slot)
+ * for a hard RST, det_conn_begin_close(slot) for the drain-then-close dwell.
  */
 
 #include "DeterministicESPAsyncWebServer.h"
@@ -1152,15 +1151,7 @@ void DetWebServer::service_once(int worker_id)
                 {
                     ws_dispatch_close(ws);
                     ws_free(i);
-                    det_tls_conn_free(i);
-                    struct tcp_pcb *p = conn_pool[i].pcb;
-                    if (p)
-                    {
-                        det_conn_detach(p);
-                        conn_pool[i].state = CONN_FREE;
-                        conn_pool[i].pcb = nullptr;
-                        det_conn_abort(p);
-                    }
+                    det_conn_abort_slot(i); // transport owns TLS-free + detach + reset + RST
                     http_reset(i);
                 }
                 continue;
@@ -1378,10 +1369,8 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
     WsConn *ws = ws_alloc(slot_id);
     if (!ws)
     {
-        // No WS slot available -- abort the connection
-        det_conn_detach(conn->pcb);
-        conn->state = CONN_FREE;
-        conn->pcb = nullptr;
+        // No WS slot available -- abort the connection (transport owns the teardown)
+        det_conn_abort_slot(slot_id);
         return false;
     }
 
@@ -1428,9 +1417,7 @@ static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_c
     SseConn *sse = sse_alloc(slot_id, path);
     if (!sse)
     {
-        det_conn_detach(conn->pcb);
-        conn->state = CONN_FREE;
-        conn->pcb = nullptr;
+        det_conn_abort_slot(slot_id); // transport owns detach + reset + RST
         return false;
     }
 

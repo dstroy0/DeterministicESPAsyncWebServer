@@ -1080,15 +1080,7 @@ void raw_send(uint8_t slot, const void *data, size_t n)
 }
 void close_conn(uint8_t slot)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->pcb)
-    {
-        struct tcp_pcb *p = c->pcb;
-        det_conn_detach(p);
-        c->state = CONN_FREE;
-        c->pcb = nullptr;
-        det_conn_close(slot, p);
-    }
+    det_conn_close(slot); // transport owns detach + slot reset + close
 }
 
 uint8_t s_msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
