@@ -25,15 +25,15 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SHIM_H
 #define DETERMINISTICESPASYNCWEBSERVER_SHIM_H
 
-#include <stdint.h>  // uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t
-#include <stddef.h>  // size_t, ptrdiff_t, NULL
-#include <string.h>  // memcpy, memmove, memset, memcmp, memchr, strlen, strnlen, strcmp, strncmp,
-                     // strcasecmp, strncasecmp, strchr, strrchr, strstr, strncpy
-#include <stdio.h>   // snprintf, vsnprintf, sscanf (format into / scan from fixed buffers)
-#include <stdarg.h>  // va_list, va_start, va_end (the log / format varargs helpers)
-#include <time.h>    // time_t, struct tm, gmtime_r, strftime (HTTP-date / clock formatting)
-#include <math.h>    // floating-point math for the telemetry helpers (e.g. sqrtf for std-dev)
-#include <assert.h>  // assert (host-side invariant checks; compiled out with NDEBUG)
+#include <stddef.h> // size_t, ptrdiff_t, NULL
+#include <stdint.h> // uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t
+#include <string.h> // memcpy, memmove, memset, memcmp, memchr, strlen, strnlen, strcmp, strncmp,
+                    // strcasecmp, strncasecmp, strchr, strrchr, strstr, strncpy
+#include <assert.h> // assert (host-side invariant checks; compiled out with NDEBUG)
+#include <math.h>   // floating-point math for the telemetry helpers (e.g. sqrtf for std-dev)
+#include <stdarg.h> // va_list, va_start, va_end (the log / format varargs helpers)
+#include <stdio.h>  // snprintf, vsnprintf, sscanf (format into / scan from fixed buffers)
+#include <time.h>   // time_t, struct tm, gmtime_r, strftime (HTTP-date / clock formatting)
 
 #if defined(ARDUINO)
 #include <Arduino.h> // millis, micros, delay, Serial, pinMode/digitalWrite, String (ESP32 only)
