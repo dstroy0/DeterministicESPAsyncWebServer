@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.10] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.10 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2a3fe96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a3fe96e2f3440f21a341213662e95fc447db5a7))
+- update CHANGELOG.md [skip ci] ([`23b39d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23b39d78f7a3c9953ad20c398b190f8c6d29e140))
+
+### Changes
+
+- Bump version: 4.59.9 → 4.59.10 ([`751acd9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/751acd95f1e3046d155472a33675440c6ac601b0))
+
+### Refactor
+
+- borrow the verifier decode buffers from the scratch arena ([`25bf1f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25bf1f35e5e36ec599524c6df89cf058e007030f))
+
+</details>
+
 ## [4.59.9] - 2026-06-30
 
 <details>
