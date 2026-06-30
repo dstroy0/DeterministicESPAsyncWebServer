@@ -52,3 +52,30 @@ cover are ESP32/platform-only and never built natively: the TLS engine
 the TCP client, and the dashboard/gpio/partition route registrars. To analyze
 those too, add an ESP32 `compiledb` (cross-toolchain) fragment to the merge; it
 needs the `espressif32` toolchain in the CI job.
+
+## Code smells and the quality profile
+
+The first scan reported all bugs and vulnerabilities (now fixed - see
+[BUGS.md](BUGS.md)) plus ~2169 "code smells". The large majority of those smells
+come from a handful of rules that contradict this library's **deliberate,
+documented design**, so they are noise here, not defects. Tune them out in a
+custom SonarCloud quality profile (or bulk "Won't Fix") rather than churning the
+code - changing them would break the design guarantees:
+
+| Rule                | Name                               | Why it does not apply here                                                          |
+| ------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `cpp:S5028`         | Macros should not define constants | The whole compile-time feature/config system is `#define` (zero cost, `#if`-gated). |
+| `cpp:S5945`         | C-style array should not be used   | Zero-heap: every buffer is a fixed C array; no `std::array`/STL.                    |
+| `cpp:S5421`         | Non-const global variables         | Static pools (`conn_pool`, ...) are the static-allocation model.                    |
+| `cpp:S5205`         | Function pointers as parameters    | Callbacks are raw function pointers on purpose (`std::function` heaps).             |
+| `cpp:S3642`         | Scoped enumerations should be used | Plain enums for C-ABI / terse embedded style.                                       |
+| `cpp:S5827`/`S5826` | "auto" should be used              | The codebase prefers explicit types (see the coding-style guide).                   |
+| `cpp:S1659`         | One variable declaration per line  | Stylistic; conflicts with the terse style.                                          |
+
+The remaining smells are worth a case-by-case look but are mostly by-design:
+`cpp:S5813` (use `strnlen`) fires on `strlen` over internal NUL-terminated buffers
+(external input is already bounded by the parsers); `cpp:S995` (const pointer
+params) is partly real const-correctness; `cpp:S134`/`cpp:S3776` (deep nesting /
+cognitive complexity) flag the protocol-dispatch parsers, where a flat switch is
+the clearest structure. The lone blocker-level smell (`cpp:S912`, a side effect
+inside an `&&`) was fixed.
