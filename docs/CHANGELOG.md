@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.62.0] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.62.0 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8afbd55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8afbd555b4b365c1fab1a7b8e050be99d4c5ba60))
+- update CHANGELOG.md [skip ci] ([`49e9a23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49e9a236f7bea932cb0484c75e7650b2ff775d49))
+
+### Changes
+
+- Bump version: 4.61.0 → 4.62.0 ([`e6405f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6405f7ef6b3e0335a5a169ad9e8e92dc9f82dfe))
+
+### Features
+
+- multiplex SSH channels (per-connection channel table) ([`513dc68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/513dc68939a73e83b4aab633b319e340265527de))
+
+</details>
+
 ## [4.61.0] - 2026-06-30
 
 <details>
