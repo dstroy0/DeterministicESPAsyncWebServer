@@ -2,6 +2,23 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.5] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.5 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- SonarCloud C/C++ analysis with a merged compile database ([`040f9a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/040f9a70533fd5143e4f190a966689a5b96274da))
+- update test report [skip ci] ([`15f51cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15f51cc3ec448bc4f98370b1bcbf7d508fa9021f))
+- update CHANGELOG.md [skip ci] ([`508c7bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/508c7bd3b7e4aea66564d280741576195822515e))
+
+### Changes
+
+- Bump version: 4.59.4 → 4.59.5 ([`9329711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9329711621c6f17bce09dee00262ad8ebfc91bb7))
+
+</details>
+
 ## [4.59.4] - 2026-06-30
 
 <details>
