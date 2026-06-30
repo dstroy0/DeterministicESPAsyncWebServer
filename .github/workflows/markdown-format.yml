@@ -17,5 +17,9 @@ jobs:
       - name: Run Prettier check
         run: npx prettier@3.9.1 --check "**/*.md"
 
+      # On a pull request, flag stale tables so the author regenerates them. On a
+      # push to main the Feature Tables workflow regenerates and commits them
+      # automatically, so this check would only ever red the build there.
       - name: Feature/codec tables in sync with FEATURES.md
+        if: github.event_name == 'pull_request'
         run: python3 docs/utilities/gen_feature_tables.py --check

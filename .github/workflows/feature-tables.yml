@@ -1,0 +1,58 @@
+name: Feature Tables
+
+on:
+  push:
+    branches: [main]
+
+# Do not cancel in progress - let the commit complete cleanly.
+concurrency:
+  group: feature-tables-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  feature-tables:
+    name: Regenerate feature tables
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Authenticate with the automatic-actions deploy key so the bot commit
+          # pushes over SSH past the protected-main ruleset (same as the changelog).
+          ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      # Regenerate README.md / docs/README.md from docs/FEATURES.md so the tables
+      # never drift - no contributor has to remember to run the generator.
+      - name: Regenerate tables from FEATURES.md
+        run: python docs/utilities/gen_feature_tables.py
+
+      - name: Format with Prettier
+        run: npx prettier@3.9.1 --write README.md docs/README.md
+
+      - name: Configure SSH commit signing
+        env:
+          CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
+        run: |
+          # SSH-sign the bot commit (Verified) when the signing key is available;
+          # skip signing if the secret is unset so CI never breaks.
+          if [ -n "$CI_SIGNING_KEY" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
+            chmod 600 ~/.ssh/ci_signing_key
+            git config gpg.format ssh
+            git config user.signingkey ~/.ssh/ci_signing_key
+            git config commit.gpgsign true
+          fi
+
+      - name: Commit regenerated tables
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "docs: regenerate feature tables [skip ci]"
+          file_pattern: "README.md docs/README.md"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
