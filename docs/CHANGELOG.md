@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.61.0] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.61.0 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`aee0a98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aee0a98a4e74096ed79d355de2dc26b34c146d9c))
+- update CHANGELOG.md [skip ci] ([`1c0cce3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c0cce38dbf59a23bc7bd756f44ccbf3019b1895))
+
+### Changes
+
+- Bump version: 4.60.0 → 4.61.0 ([`3824a80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3824a80c0120da12117186bb6ca4aed7014d29fa))
+
+### Features
+
+- v5 clock-awareness - microsecond base + latency budgeting ([`546c984`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/546c984c3b518cc3e7c47864857e6cf46343a7e2))
+
+</details>
+
 ## [4.60.0] - 2026-06-30
 
 <details>
