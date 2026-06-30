@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- compile every example + harvest flash/RAM footprints ([`eb0da64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb0da64178866ed4ad2bdc46cd779174e2a333b0))
+- update test report [skip ci] ([`14b32c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14b32c5012f8c44bc6d0564ef7edfe6af38c77a0))
+- update CHANGELOG.md [skip ci] ([`5c4421b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c4421b1d42c0f231b503245ced45d97a59706ad))
 - analyze all of src/ recursively; exclude platform I/O from coverage ([`ba23f23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba23f23fb919a5a0120e553061eb0fe207d34323))
 - update test report [skip ci] ([`643477d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/643477ddeeacd6668a80fc4e67b53f39ddc17708))
 - update CHANGELOG.md [skip ci] ([`24197c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24197c3480227913c2e9094caff22b619b2ad490))
