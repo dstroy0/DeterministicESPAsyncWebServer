@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.59.12] - 2026-06-30
+
+<details>
+<summary><b>Show Changelog for version 4.59.12 - 2026-06-30</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8bdad91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bdad9117c7c04fc74e594a03250f84ce3f02f86))
+
+### Changes
+
+- Bump version: 4.59.11 → 4.59.12 ([`43dae17`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43dae170bc3ead75f5160fefcf195a4ead2409e0))
+
+### Documentation
+
+- note the ~7KB RSA modexp stack floor at DETWS_WORKER_TASK_STACK ([`f48b2b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f48b2b4f85ec015a3fd5abbc6e2784493bef4676))
+
+</details>
+
 ## [4.59.11] - 2026-06-30
 
 <details>
