@@ -463,6 +463,40 @@ shipped work:
       `mbedtls_aes_crypt_ecb()` loop. Native software path unchanged. Validated by
       the native AES-CTR KATs and `examples/35.SSHCryptoSelfTest` on-device.
 
+- [ ] **DMA UART / I2C / SPI transfer (v5 milestone).** Move peripheral bytes via
+      DMA so the CPU is free during the transfer; the DMA-complete ISR posts to the
+      preempting task queue (below). This is the high-throughput ingest path for the
+      cheap-breakout field-bus codecs (CAN over SPI, RS-485 UART, IO-Link). See the
+      v5 milestone in [ROADMAP.md](ROADMAP.md#v5-milestone-user-configurable-preempting-task-queue--hardware-ingest).
+
+- [ ] **User-configurable preempting task queue (v5 milestone).** A FreeRTOS queue
+      + high-priority pinned processing task: producers post with
+      `xQueueSendToBack()` (task, wait timeout) or `xQueueSendFromISR()` +
+      `portYIELD_FROM_ISR()` (ISR), and the scheduler preempts to the processing
+      task immediately. Task priority, core pinning, and queue depth are
+      user-settable (not hard-coded). Builds on the worker model; needs deeper
+      clock-awareness (tick rate / ISR timestamps / latency budgeting).
+
+- [ ] **Interface forwarding (v5 milestone), DMA-driven.** A forwarding plane over
+      the ingest pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet
+      over SPI, a peripheral bus / radio) is forwarded to another by a user-set rule
+      (per-interface allow / deny, destination, rate cap), so the device bridges /
+      routes between its interfaces instead of only terminating traffic. The byte
+      movement uses the **DMA** transfer above: the inbound DMA-complete ISR hands the
+      buffer to the outbound DMA descriptor and posts to the preempting queue (CPU free
+      during the copy, true zero-copy where the peripherals allow). Fail-closed on a
+      full destination queue. This is the generic data path the post-v5 wireless
+      gateway bridges sit on top of.
+
+- [ ] **Post-v5 southbound bridges + sensing (backlog).** RF / wireless **gateway
+      bridges** (LoRa / nRF24 / CC1101 / Thread over SPI; Zigbee / Z-Wave / EnOcean /
+      Sigfox / Wi-SUN over UART; NFC over I2C / SPI / UART; BLE), **promiscuous /
+      monitor capture** (Wi-Fi raw 802.11, bus listen-only, radio channel sniff), and
+      **field-perturbation sensing** (EM / mmWave + Doppler radar, capacitive /
+      inductive field, ToF ranging). All reuse the southbound-peripheral +
+      northbound-bridge pattern over the ingest pipeline. See
+      [ROADMAP.md](ROADMAP.md#post-v5-rf--wireless-gateway-bridges).
+
 </details>
 
 ## HTTP / core (medium)

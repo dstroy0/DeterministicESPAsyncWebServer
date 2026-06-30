@@ -67,6 +67,123 @@ flag (default off) so it costs nothing when unused.
       poll-knob tuning guide with the measured latency and idle-wakeup data in
       [TUNING.md](TUNING.md).
 
+### v5 milestone: user-configurable preempting task queue + hardware ingest
+
+The next big concurrency step (the **v5 milestone**): turn the worker model into a
+real-time, hardware-ingest pipeline where data lands in a queue and the scheduler
+preempts immediately to process it, with the priorities exposed to the user.
+
+- [ ] \*Preempting task queue (L). A FreeRTOS queue feeding a high-priority
+      processing task. **From a task**, producers use `xQueueSendToBack()` /
+      `xQueueSendToFront()` with a wait timeout; the scheduler preempts the
+      lower-priority producer the instant the item is queued. **From an ISR**
+      (hardware interrupt), use the interrupt-safe `xQueueSendFromISR()` /
+      `xQueueSendToBackFromISR()` followed immediately by `portYIELD_FROM_ISR()`
+      so the context switch happens right after posting instead of waiting for the
+      next system tick.
+- [ ] \*User-configurable task priorities / affinity (M). The processing task is
+      created high (e.g. priority 5) and the producer low (e.g. priority 1) via
+      `xTaskCreatePinnedToCore`, but the **priority, core pinning, and queue depth
+      are user-settable** (config / API) rather than hard-coded - users own their
+      task priorities.
+- [ ] \*DMA UART / I2C / SPI transfer (L). DMA-driven peripheral transfers so the
+      CPU is free during byte movement; the DMA-complete ISR posts to the
+      preempting queue. This is the ingest path for the cheap-breakout field-bus
+      codecs (CAN over SPI, RS-485 UART, IO-Link, ...).
+- [ ] \*Deeper clock-awareness (M). Real-time preemption needs more than the
+      1000 Hz `detws_millis()`: tick-rate awareness, ISR timestamps, and per-queue
+      latency budgeting layered onto `det_clock` / the worker model.
+- [ ] \*Interface forwarding (L), **DMA-driven**. A forwarding plane over the ingest
+      pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet over SPI,
+      or a peripheral bus / radio) is forwarded to another by a user-set rule, so the
+      device acts as a bridge / router between its interfaces instead of only
+      terminating traffic. The byte movement is **DMA** (the DMA UART / I2C / SPI
+      transfer above): the inbound DMA-complete ISR hands the buffer straight to the
+      outbound DMA descriptor and posts to the preempting queue, so the CPU is free
+      during the copy and forwarding is true zero-copy where the peripherals allow
+      (DMA descriptor reuse, no intermediate buffer). Fail-closed when a destination
+      queue is full; every rule is user-configurable (per-interface allow / deny,
+      destination, rate cap). This is the generic data path the wireless gateway
+      bridges below sit on top of.
+
+### post-v5: RF / wireless gateway bridges
+
+Once the hardware-ingest pipeline lands (the preempting queue + DMA peripheral
+transfers above), the same codec-to-northbound pattern that bridges the wired field
+buses (CAN over SPI, RS-485 / IO-Link over UART) extends to **wireless radios**: each
+radio is a southbound peripheral reached over **SPI / I2C / UART**, and a gateway
+function bridges its frames northbound to the existing WiFi / MQTT / HTTP / WebSocket
+stack. Deterministic, zero-heap, fixed buffers; the DMA-complete / data-ready ISR posts
+into the preempting queue, so wireless ingest rides the same real-time path as the wired
+codecs. (ESP32 Wi-Fi / classic + BLE are already on-chip; everything below is an
+external module we wire to a bus.)
+
+SPI radios:
+
+- [ ] \*LoRa / LoRaWAN gateway (L) - Semtech SX127x / SX126x, RFM95/96 over SPI.
+      Long-range sub-GHz; bridge raw LoRa frames first, then a bounded LoRaWAN
+      Class A uplink/downlink, to MQTT.
+- [ ] \*nRF24L01+ gateway (M) - Nordic 2.4 GHz over SPI; cheap point-to-multipoint
+      sensor links bridged to the web stack.
+- [ ] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
+      ISM-band remotes and sensors.
+- [ ] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
+      over SPI (spinel framing); 802.15.4 mesh bridged to IP.
+
+UART radios:
+
+- [ ] \*Zigbee NCP gateway (L) - Silicon Labs EZSP (EFR32) / Digi XBee / TI ZNP over
+      UART; join as coordinator and bridge Zigbee devices to MQTT.
+- [ ] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
+- [ ] \*EnOcean gateway (M) - energy-harvesting 868 MHz ESP3 protocol over UART.
+- [ ] \*Sigfox uplink (S) - Wisol / Murata module over UART; tiny low-power uplinks.
+- [ ] \*Wi-SUN FAN gateway (L) - sub-GHz IPv6 mesh (Renesas / SiLabs) over UART.
+
+I2C / SPI / UART:
+
+- [ ] \*NFC / RFID gateway (M) - PN532 (I2C / SPI / UART) or MFRC522 (SPI); tag
+      read / write bridged to an HTTP / MQTT event.
+
+Built-in radio:
+
+- [ ] \*BLE GATT bridge (M) - on-chip ESP32 BLE (and external HCI-UART modules):
+      scan / expose GATT characteristics and bridge them to the web stack.
+
+### post-v5: promiscuous / monitor capture
+
+A read-only capture mode across the same interfaces: instead of joining a network and
+terminating traffic, listen to **every** frame on a channel and surface it northbound
+(live over WebSocket, or batched to a PCAP / log) for diagnostics, an on-device IDS, and
+field debugging. Capture is strictly passive (no injection on the capture path) and
+fail-closed: a full capture queue drops frames rather than stalling the live data path.
+
+- [ ] \*Wi-Fi promiscuous / monitor mode (M) - on-chip ESP32 raw 802.11 capture
+      (`esp_wifi_set_promiscuous`), with a channel / type filter, streamed to a
+      WebSocket or written as PCAP.
+- [ ] \*Bus listen-only capture (M) - the wired field-bus codecs in listen-only mode
+      (CAN / TWAI listen-only, RS-485 receive-only) decode every frame on the wire
+      without ACKing, bridged to the same capture sink.
+- [ ] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
+      LoRa / sub-GHz / 802.15.4 channel without joining) feeding the capture pipeline.
+
+### post-v5: field-perturbation sensing
+
+Sensors that read the environment by measuring a perturbation in an emitted or ambient
+field, the same southbound-peripheral pattern pointed at sensing instead of comms: the
+device reads the sensor over SPI / I2C / UART and bridges the readings northbound to the
+dashboard, telemetry math, and MQTT / WebSocket. The data-ready ISR posts into the
+preempting queue, so sensing shares the real-time ingest path.
+
+- [ ] \*EM / radar presence + motion (M) - mmWave radar (24 / 60 GHz: LD2410 / MR60BHA
+      over UART, Infineon BGT60 over SPI) and Doppler motion (HB100 / RCWL-0516) for
+      presence, motion, distance, and vital-sign (breathing / heart-rate) sensing.
+- [ ] \*Capacitive / proximity field sensing (S) - FDC2x14 / MPR121 (I2C): touch,
+      proximity, liquid level, and material sensing from capacitance shifts.
+- [ ] \*Inductive / EM field sensing (S) - LDC1614 (I2C) inductance-to-digital for
+      metal / displacement, plus magnetometer-based EM-field perturbation detection.
+- [ ] \*Time-of-flight ranging (S) - VL53L0X / VL53L1X (I2C) optical ToF distance and
+      gesture, bridged to the same sink.
+
 ## Web / API / UI
 
 - [x] WebSocket permessage-deflate, inbound and outbound _(shipped)_ - bounded fixed-Huffman DEFLATE compresses server-to-client data frames (RSV1), with an uncompressed fallback when the result would not shrink.
