@@ -50,7 +50,9 @@ jobs:
 
       - name: Install PlatformIO + gcovr
         if: ${{ env.SONAR_TOKEN != '' }}
-        run: pip install --upgrade platformio gcovr
+        # gcovr is pinned: an unpinned --upgrade drifted to 8.6, whose --filter
+        # anchoring change silently emptied every coverage report (0% on Sonar).
+        run: pip install --upgrade platformio 'gcovr==8.6'
 
       - name: Generate merged compile_commands.json
         if: ${{ env.SONAR_TOKEN != '' }}

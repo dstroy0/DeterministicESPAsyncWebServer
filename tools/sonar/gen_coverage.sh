@@ -29,7 +29,10 @@ mkdir -p coverage_reports
 for e in $envs; do
     echo "::group::coverage $e"
     pio test -e "$e" || echo "WARN: test env failed: $e"
-    gcovr --root . --filter 'src/' --gcov-ignore-parse-errors --sonarqube "coverage_reports/${e}.xml" \
+    # gcovr 8.x anchors --filter to the FULL relative path, so a bare 'src/'
+    # matches nothing (silently emptied every report -> SonarCloud 0% coverage);
+    # 'src/.*' matches src/... and still excludes test/ and the Unity libdep.
+    gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube "coverage_reports/${e}.xml" \
         "$PLATFORMIO_BUILD_DIR/$e" || echo "WARN: gcovr failed: $e"
     echo "::endgroup::"
 done
