@@ -224,6 +224,160 @@ void test_parse_classifies()
     TEST_ASSERT_FALSE(canopen_parse(&f, &m));
 }
 
+// Every builder rejects a null out and an out-of-range node (0 or > 127); node 0
+// is only valid as the NMT broadcast target.
+void test_build_arg_validation()
+{
+    CanFrame f;
+    const uint8_t d[4] = {1, 2, 3, 4};
+
+    TEST_ASSERT_FALSE(canopen_build_nmt(NULL, CANOPEN_NMT_START, 5));
+    TEST_ASSERT_FALSE(canopen_build_sync(NULL));
+    TEST_ASSERT_FALSE(canopen_build_heartbeat(NULL, 5, 0));
+    TEST_ASSERT_FALSE(canopen_build_heartbeat(&f, 0, 0));   // node 0 is not a heartbeat producer
+    TEST_ASSERT_FALSE(canopen_build_heartbeat(&f, 128, 0)); // > 127
+    TEST_ASSERT_FALSE(canopen_build_emcy(&f, 0, 0, 0, NULL));
+    TEST_ASSERT_FALSE(canopen_build_emcy(&f, 128, 0, 0, NULL));
+    TEST_ASSERT_FALSE(canopen_build_sdo_read(NULL, 5, 0, 0));
+    TEST_ASSERT_FALSE(canopen_build_sdo_read(&f, 0, 0, 0));
+    TEST_ASSERT_FALSE(canopen_build_sdo_read(&f, 128, 0, 0));
+    TEST_ASSERT_FALSE(canopen_build_sdo_abort(&f, 0, 0, 0, 0, true));
+    TEST_ASSERT_FALSE(canopen_build_sdo_abort(&f, 128, 0, 0, 0, true));
+    // PDO builders reject a null out, node 0, and len>0 with a null payload.
+    TEST_ASSERT_FALSE(canopen_build_tpdo(NULL, 1, 5, d, 4));
+    TEST_ASSERT_FALSE(canopen_build_tpdo(&f, 1, 0, d, 4));
+    TEST_ASSERT_FALSE(canopen_build_tpdo(&f, 1, 5, NULL, 4)); // len && !data
+    TEST_ASSERT_FALSE(canopen_build_rpdo(&f, 0, 5, d, 4));    // pdo_num 0
+}
+
+// EMCY with no manufacturer-specific octets leaves data[3..7] zero.
+void test_emcy_build_null_msef()
+{
+    CanFrame f;
+    TEST_ASSERT_TRUE(canopen_build_emcy(&f, 3, 0x1000, 0x01, NULL));
+    for (int i = 3; i < 8; i++)
+        TEST_ASSERT_EQUAL_HEX8(0x00, f.data[i]);
+}
+
+// canopen_parse classifies every function-code base + node combination.
+void test_parse_all_function_codes()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    CanopenMsg m;
+
+    struct Case
+    {
+        uint32_t id;
+        CanopenType type;
+        uint8_t node;
+        uint8_t pdo;
+    };
+    const Case cases[] = {
+        {0x000, CANOPEN_T_NMT, 0, 0},    {0x100, CANOPEN_T_TIME, 0, 0},       {0x087, CANOPEN_T_EMCY, 7, 0},
+        {0x181, CANOPEN_T_TPDO, 1, 1},   {0x201, CANOPEN_T_RPDO, 1, 1},       {0x282, CANOPEN_T_TPDO, 2, 2},
+        {0x303, CANOPEN_T_RPDO, 3, 2},   {0x384, CANOPEN_T_TPDO, 4, 3},       {0x405, CANOPEN_T_RPDO, 5, 3},
+        {0x486, CANOPEN_T_TPDO, 6, 4},   {0x507, CANOPEN_T_RPDO, 7, 4},       {0x588, CANOPEN_T_SDO_TX, 8, 0},
+        {0x609, CANOPEN_T_SDO_RX, 9, 0}, {0x70A, CANOPEN_T_HEARTBEAT, 10, 0},
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+    {
+        f.id = cases[i].id;
+        TEST_ASSERT_TRUE(canopen_parse(&f, &m));
+        TEST_ASSERT_EQUAL_INT(cases[i].type, m.type);
+        TEST_ASSERT_EQUAL_UINT8(cases[i].node, m.node_id);
+        TEST_ASSERT_EQUAL_UINT8(cases[i].pdo, m.pdo_num);
+    }
+    // An unallocated function code parses true but stays UNKNOWN.
+    f.id = 0x681; // between SDO_RX (0x600) and HEARTBEAT (0x700), not allocated
+    TEST_ASSERT_TRUE(canopen_parse(&f, &m));
+    TEST_ASSERT_EQUAL_INT(CANOPEN_T_UNKNOWN, m.type);
+    // A function base carried with node 0 is not classified further.
+    f.id = 0x180; // TPDO1 base, node 0
+    TEST_ASSERT_TRUE(canopen_parse(&f, &m));
+    TEST_ASSERT_EQUAL_INT(CANOPEN_T_UNKNOWN, m.type);
+    // Null frame / output rejected.
+    TEST_ASSERT_FALSE(canopen_parse(NULL, &m));
+    TEST_ASSERT_FALSE(canopen_parse(&f, NULL));
+}
+
+// parse_emcy rejects short frames and non-EMCY function codes.
+void test_parse_emcy_rejections()
+{
+    CanFrame f;
+    uint8_t node = 0, reg = 0, msef[5] = {0};
+    uint16_t code = 0;
+    canopen_build_emcy(&f, 5, 0x1000, 0, NULL);
+    f.dlc = 7; // EMCY needs 8 octets
+    TEST_ASSERT_FALSE(canopen_parse_emcy(&f, &node, &code, &reg, msef));
+    canopen_build_heartbeat(&f, 5, 0); // a heartbeat is not an EMCY
+    f.dlc = 8;
+    TEST_ASSERT_FALSE(canopen_parse_emcy(&f, &node, &code, &reg, msef));
+    TEST_ASSERT_FALSE(canopen_parse_emcy(NULL, &node, &code, &reg, msef));
+}
+
+// parse_heartbeat rejects short/foreign frames and strips the boot toggle (bit 7).
+void test_parse_heartbeat_rejections()
+{
+    CanFrame f;
+    uint8_t node = 0, state = 0;
+    canopen_build_heartbeat(&f, 9, CANOPEN_STATE_OPERATIONAL);
+    f.dlc = 0; // needs >= 1
+    TEST_ASSERT_FALSE(canopen_parse_heartbeat(&f, &node, &state));
+    canopen_build_sync(&f); // a SYNC is not a heartbeat
+    f.dlc = 1;
+    TEST_ASSERT_FALSE(canopen_parse_heartbeat(&f, &node, &state));
+    canopen_build_heartbeat(&f, 9, CANOPEN_STATE_OPERATIONAL);
+    f.data[0] = 0x80u | CANOPEN_STATE_OPERATIONAL; // boot toggle set
+    TEST_ASSERT_TRUE(canopen_parse_heartbeat(&f, &node, &state));
+    TEST_ASSERT_EQUAL_HEX8(CANOPEN_STATE_OPERATIONAL, state);
+}
+
+// parse_sdo_response rejects short/foreign frames and unknown command specifiers, and
+// decodes the expedited-without-size and segmented upload variants.
+void test_parse_sdo_response_variants()
+{
+    CanFrame f;
+    CanopenSdoResponse r;
+    memset(&f, 0, sizeof(f));
+
+    f.id = 0x580 + 5;
+    f.dlc = 7; // < 8
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(&f, &r));
+    f.dlc = 8;
+    f.id = 0x600 + 5; // SDO_RX (request), not a TX response
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(&f, &r));
+    f.id = 0x580 + 0; // node 0
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(&f, &r));
+
+    f.id = 0x580 + 5;
+    f.data[0] = 0x00; // unknown command specifier (scs 0)
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(&f, &r));
+
+    // Expedited upload without size indicated (e=1, s=0) reports the full 4 octets.
+    f.data[0] = 0x42;
+    f.data[4] = 0x11;
+    f.data[5] = 0x22;
+    f.data[6] = 0x33;
+    f.data[7] = 0x44;
+    TEST_ASSERT_TRUE(canopen_parse_sdo_response(&f, &r));
+    TEST_ASSERT_TRUE(r.is_upload);
+    TEST_ASSERT_TRUE(r.expedited);
+    TEST_ASSERT_EQUAL_UINT8(4, r.len);
+    TEST_ASSERT_EQUAL_HEX8(0x11, r.data[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x44, r.data[3]);
+
+    // Segmented upload (e=0) is reported as upload with no inline payload.
+    f.data[0] = 0x40;
+    TEST_ASSERT_TRUE(canopen_parse_sdo_response(&f, &r));
+    TEST_ASSERT_TRUE(r.is_upload);
+    TEST_ASSERT_FALSE(r.expedited);
+    TEST_ASSERT_EQUAL_UINT8(0, r.len);
+
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(NULL, &r));
+    TEST_ASSERT_FALSE(canopen_parse_sdo_response(&f, NULL));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -238,5 +392,11 @@ int main()
     RUN_TEST(test_sdo_abort_roundtrip);
     RUN_TEST(test_sdo_download_ack);
     RUN_TEST(test_parse_classifies);
+    RUN_TEST(test_build_arg_validation);
+    RUN_TEST(test_emcy_build_null_msef);
+    RUN_TEST(test_parse_all_function_codes);
+    RUN_TEST(test_parse_emcy_rejections);
+    RUN_TEST(test_parse_heartbeat_rejections);
+    RUN_TEST(test_parse_sdo_response_variants);
     return UNITY_END();
 }
