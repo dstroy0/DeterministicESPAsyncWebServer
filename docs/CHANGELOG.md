@@ -10,6 +10,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- bump actions/upload-artifact from 4 to 7 ([`73f2c3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f2c3f2e1771bffdb4445458e9e6b3bf9ec6176))
+- bump SonarSource/sonarqube-scan-action from 6 to 8 ([`4fc3a82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fc3a8264845c4245227d89a04966beec8e57d32))
+- bump actions/checkout from 4 to 7 ([`20b1ca3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20b1ca399dc9306f7cdb11a33e0b7bf41a7c6cdd))
+- bump actions/download-artifact from 4 to 8 ([`f6f50cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6f50cdfd56b657afd94cef6021a6689a9d32d07))
+- bump actions/cache from 4 to 6 ([`06b4fef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06b4fefcd6dd452c65d11fbe38a9f97104a19f91))
+- update CHANGELOG.md [skip ci] ([`c5198fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5198fce57568ffe73fc7837a00d487556f54e5c))
 - fix coverage filter (0% regression) and pin gcovr ([`e80f2a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e80f2a265206afe90801b7d01ce459a5ea482270))
 - add include_footprint.py dependency-footprint auditor ([`3ee8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ee8e81e96b7ffc17b265358656b70f8770a3c2b))
 - update test report [skip ci] ([`3fcea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fcea8256f7f2daa3fd6d805f9431b0973708377))
@@ -34,6 +40,11 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Merge pull request #7 from dstroy0/dependabot/github_actions/actions/upload-artifact-7 ([`f5c2b54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5c2b542b8769416b64a65e20a8b91bfcf4261a2))
+- Merge pull request #8 from dstroy0/dependabot/github_actions/SonarSource/sonarqube-scan-action-8 ([`b581115`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5811151ed8412406ebb244c2f8498336db6e9fc))
+- Merge pull request #9 from dstroy0/dependabot/github_actions/actions/checkout-7 ([`f148710`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f148710a9e595d867ffbeb09a9f4fc7281ccb1ec))
+- Merge pull request #10 from dstroy0/dependabot/github_actions/actions/download-artifact-8 ([`fd70ee8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd70ee8da48f358b5776a380044fd68af4662d6c))
+- Merge pull request #11 from dstroy0/dependabot/github_actions/actions/cache-6 ([`16ab10a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16ab10a55c57a00221100ea563a1b429f3f9f008))
 - Revert "refactor(shim.h): move incl from src/ to src/shared_primitives/shim.h" ([`1a804b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a804b199c29f61070b9c1edd9a325bd5804df5d))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0b15b56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b15b568bbed839a1b1cf6ea51ac94355a3070ad))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`118d54f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/118d54f1dc59e8662458b121af839fb4ba6067cc))
