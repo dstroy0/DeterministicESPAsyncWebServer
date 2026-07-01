@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f6f84f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6f84f5bce28ca516669e011978a19744b1d1cc4))
+- update CHANGELOG.md [skip ci] ([`8a3ed56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3ed5627a4c520e17b233ae99b423eaa49af2e0))
 - update test report [skip ci] ([`ae8a052`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae8a052c98741d64091df967abdfb7696668b5aa))
 - update CHANGELOG.md [skip ci] ([`6a93c81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a93c81ee9818b6687b199dc32cf0f4949d19517))
 - rebase-and-retry the footprint push (concurrency) ([`5f95e09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f95e095aa6d70816c7484cd775fa8e6aa074ea4))
@@ -66,6 +68,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover accessors, per-FC exceptions, small buffers, RTU edges ([`6eb3761`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6eb3761ee783da9c3224466bdfe29028c8844197))
 - cover escapes, null guards, hex-case, false, malformed objects ([`8d40531`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d40531ed2fdc20ffba629f59f789bc70c53b47f))
 - cover all builders, null/overflow guards, typed-parse rejects ([`8e437f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e437f6375c0b969f31d17ed8aa75d24fceb87d2))
 - cover error paths, full COB-ID classification, SDO variants ([`14f919c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14f919cab8fdc6e1497e7881da3bf0828066c3df))
