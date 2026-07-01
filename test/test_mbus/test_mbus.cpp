@@ -158,6 +158,86 @@ void test_record_truncated_fails()
     TEST_ASSERT_FALSE(mbus_record_next(body, sizeof(body), &pos, &r));
 }
 
+void test_build_and_parse_guards()
+{
+    uint8_t buf[32];
+    const uint8_t d[4] = {1, 2, 3, 4};
+    // Builder guards.
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_ack(nullptr, 4));
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_ack(buf, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_short(nullptr, 8, 0x40, 1));
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_short(buf, 4, 0x40, 1)); // cap < 5
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_long(nullptr, 32, 0, 0, 0, d, 4));
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_long(buf, 32, 0, 0, 0, nullptr, 4)); // data_len && !data
+    TEST_ASSERT_EQUAL_size_t(0, mbus_build_long(buf, 5, 0, 0, 0, d, 4));        // cap < total
+
+    // Parser guards.
+    MbusFrame f;
+    size_t c;
+    TEST_ASSERT_FALSE(mbus_parse(nullptr, 5, &f, &c));
+    TEST_ASSERT_FALSE(mbus_parse(buf, 0, &f, &c));
+    const uint8_t unknown[] = {0x99, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(mbus_parse(unknown, sizeof(unknown), &f, &c)); // unrecognized start octet
+
+    uint8_t s[5];
+    mbus_build_short(s, sizeof(s), 0x40, 0x05);
+    TEST_ASSERT_FALSE(mbus_parse(s, 4, &f, &c)); // len < 5
+    uint8_t s2[5];
+    memcpy(s2, s, 5);
+    s2[4] = 0x00; // bad stop
+    TEST_ASSERT_FALSE(mbus_parse(s2, 5, &f, &c));
+    memcpy(s2, s, 5);
+    s2[3] ^= 0xFF; // bad checksum
+    TEST_ASSERT_FALSE(mbus_parse(s2, 5, &f, &c));
+
+    const uint8_t l[] = {0x68, 0x07, 0x07}; // long start, header truncated (< 4)
+    TEST_ASSERT_FALSE(mbus_parse(l, sizeof(l), &f, &c));
+}
+
+void test_dif_data_len_remaining()
+{
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_NONE));
+    TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len(MBUS_DIF_INT24));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_READOUT));
+    TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len(MBUS_DIF_BCD2));
+    TEST_ASSERT_EQUAL_UINT8(2, mbus_dif_data_len(MBUS_DIF_BCD4));
+    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_BCD8));
+    TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len(MBUS_DIF_BCD12));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_SPECIAL));
+}
+
+void test_record_edges()
+{
+    size_t pos;
+    MbusRecord r;
+
+    const uint8_t dife_trunc[] = {0x84}; // continuation bit set, DIFE missing
+    pos = 0;
+    TEST_ASSERT_FALSE(mbus_record_next(dife_trunc, sizeof(dife_trunc), &pos, &r));
+
+    const uint8_t special[] = {0x0F, 0xAB, 0xCD}; // SPECIAL coding: no VIF, no data
+    pos = 0;
+    TEST_ASSERT_TRUE(mbus_record_next(special, sizeof(special), &pos, &r));
+    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_SPECIAL, r.coding);
+    TEST_ASSERT_EQUAL_size_t(1, pos); // consumed only the DIF
+
+    const uint8_t no_vif[] = {0x04}; // INT32 DIF with no VIF
+    pos = 0;
+    TEST_ASSERT_FALSE(mbus_record_next(no_vif, sizeof(no_vif), &pos, &r));
+
+    const uint8_t vife_trunc[] = {0x04, 0x93}; // VIF continuation bit but VIFE missing
+    pos = 0;
+    TEST_ASSERT_FALSE(mbus_record_next(vife_trunc, sizeof(vife_trunc), &pos, &r));
+
+    const uint8_t lvar_missing[] = {0x0D, 0x7C}; // VARIABLE coding, LVAR octet missing
+    pos = 0;
+    TEST_ASSERT_FALSE(mbus_record_next(lvar_missing, sizeof(lvar_missing), &pos, &r));
+
+    const uint8_t lvar_big[] = {0x0D, 0x7C, 0xC0}; // LVAR > 0xBF unsupported
+    pos = 0;
+    TEST_ASSERT_FALSE(mbus_record_next(lvar_big, sizeof(lvar_big), &pos, &r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -169,5 +249,8 @@ int main()
     RUN_TEST(test_dif_data_len);
     RUN_TEST(test_record_walk);
     RUN_TEST(test_record_truncated_fails);
+    RUN_TEST(test_build_and_parse_guards);
+    RUN_TEST(test_dif_data_len_remaining);
+    RUN_TEST(test_record_edges);
     return UNITY_END();
 }
