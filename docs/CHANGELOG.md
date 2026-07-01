@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ae8a052`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae8a052c98741d64091df967abdfb7696668b5aa))
+- update CHANGELOG.md [skip ci] ([`6a93c81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a93c81ee9818b6687b199dc32cf0f4949d19517))
 - rebase-and-retry the footprint push (concurrency) ([`5f95e09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f95e095aa6d70816c7484cd775fa8e6aa074ea4))
 - fix ESP32 Build example flag discovery + coverage exclusion path ([`e7c026e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7c026e6e872b46f4cc5dac17d61641e6e1a735a))
 - update test report [skip ci] ([`dcb7a11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcb7a11b585cd51e3b84380e4b6027b901008890))
@@ -53,6 +55,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0b15b56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b15b568bbed839a1b1cf6ea51ac94355a3070ad))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`118d54f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/118d54f1dc59e8662458b121af839fb4ba6067cc))
 
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`61f2bf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61f2bf701b8f4f9173c071d719186be009f9b390))
+
 ### Refactor
 
 - drop the shared_primitives/shim.h umbrella header ([`120b3e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/120b3e9e2c958b8791efd9e1fb762b25c022548b))
@@ -60,6 +66,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover escapes, null guards, hex-case, false, malformed objects ([`8d40531`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d40531ed2fdc20ffba629f59f789bc70c53b47f))
+- cover all builders, null/overflow guards, typed-parse rejects ([`8e437f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e437f6375c0b969f31d17ed8aa75d24fceb87d2))
+- cover error paths, full COB-ID classification, SDO variants ([`14f919c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14f919cab8fdc6e1497e7881da3bf0828066c3df))
 - cover graphql edge paths + SSH ext-info branches (coverage) ([`64e419b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64e419b1e80f3c8323b24b2863c1ee9c02fbc72c))
 
 ## [4.64.1] - 2026-06-30
