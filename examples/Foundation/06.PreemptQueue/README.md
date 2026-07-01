@@ -47,6 +47,12 @@ past one item (each post is processed before the next arrives).
 `DETWS_PQ_STACK` (task stack) are compile-time because the storage is static;
 `detws_pq_high_water()` reports the peak depth so you can size `DETWS_PQ_DEPTH`.
 
-**Build-flag note.** `DETWS_ENABLE_PREEMPT_QUEUE` must be set for the whole build;
-an in-sketch `#define` does not reach the separately compiled library, so pass it
-in `platformio.ini` (`build_flags = -DDETWS_ENABLE_PREEMPT_QUEUE=1`).
+**Build-flag note.** `DETWS_ENABLE_PREEMPT_QUEUE` must reach the library build (an
+in-sketch `#define` does not reach the separately compiled library), so pass it as
+a build flag:
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_PREEMPT_QUEUE=1" \
+  --lib="." examples/Foundation/06.PreemptQueue/06.PreemptQueue.ino
+```

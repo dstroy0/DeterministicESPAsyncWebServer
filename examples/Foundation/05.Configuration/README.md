@@ -63,6 +63,7 @@ needs its parent; illegal combinations fail with a compile-time `#error`).
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_DIAG=1" \
   --lib="." examples/Foundation/05.Configuration/05.Configuration.ino
 ```
 
