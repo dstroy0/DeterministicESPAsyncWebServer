@@ -10,6 +10,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- rebase-and-retry the footprint push (concurrency) ([`5f95e09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f95e095aa6d70816c7484cd775fa8e6aa074ea4))
+- fix ESP32 Build example flag discovery + coverage exclusion path ([`e7c026e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7c026e6e872b46f4cc5dac17d61641e6e1a735a))
+- update test report [skip ci] ([`dcb7a11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcb7a11b585cd51e3b84380e4b6027b901008890))
+- update CHANGELOG.md [skip ci] ([`9a60ab6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a60ab689a6282b08c16ba4d78ff88007254e1fb))
 - bump actions/upload-artifact from 4 to 7 ([`73f2c3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73f2c3f2e1771bffdb4445458e9e6b3bf9ec6176))
 - bump SonarSource/sonarqube-scan-action from 6 to 8 ([`4fc3a82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fc3a8264845c4245227d89a04966beec8e57d32))
 - bump actions/checkout from 4 to 7 ([`20b1ca3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20b1ca399dc9306f7cdb11a33e0b7bf41a7c6cdd))
