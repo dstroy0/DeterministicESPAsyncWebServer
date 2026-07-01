@@ -176,6 +176,112 @@ void test_overflow_and_malformed()
     TEST_ASSERT_FALSE(mqttsn_parse_regack(h.payload, h.payload_len, nullptr, nullptr, nullptr));
 }
 
+// REGACK and PUBACK share the TopicId+MsgId+ReturnCode layout; build + parse both.
+void test_build_regack_puback()
+{
+    uint8_t buf[16];
+    uint16_t tid = 0, mid = 0;
+    uint8_t rc = 0;
+
+    size_t n = mqttsn_build_regack(buf, sizeof(buf), 0x0009, 0x0042, MQTTSN_RC_ACCEPTED);
+    TEST_ASSERT_EQUAL_size_t(7, n); // 1(len)+1(type)+2+2+1
+    const uint8_t reg_expect[] = {7, MQTTSN_REGACK, 0x00, 0x09, 0x00, 0x42, MQTTSN_RC_ACCEPTED};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(reg_expect, buf, n);
+    TEST_ASSERT_TRUE(mqttsn_parse_regack(buf + 2, n - 2, &tid, &mid, &rc));
+    TEST_ASSERT_EQUAL_HEX16(0x0009, tid);
+    TEST_ASSERT_EQUAL_HEX16(0x0042, mid);
+    TEST_ASSERT_EQUAL_HEX8(MQTTSN_RC_ACCEPTED, rc);
+
+    n = mqttsn_build_puback(buf, sizeof(buf), 0x0007, 0x0003, 0x01);
+    TEST_ASSERT_EQUAL_size_t(7, n);
+    const uint8_t pub_expect[] = {7, MQTTSN_PUBACK, 0x00, 0x07, 0x00, 0x03, 0x01};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(pub_expect, buf, n);
+    TEST_ASSERT_TRUE(mqttsn_parse_puback(buf + 2, n - 2, &tid, &mid, &rc));
+    TEST_ASSERT_EQUAL_HEX16(0x0007, tid);
+    TEST_ASSERT_EQUAL_HEX8(0x01, rc);
+}
+
+// SUBSCRIBE by topic name and by predefined topic id.
+void test_build_subscribe_variants()
+{
+    uint8_t buf[16];
+    uint8_t flags = mqttsn_make_flags(false, 1, false, false, false, MQTTSN_TOPIC_NORMAL);
+
+    size_t n = mqttsn_build_subscribe_name(buf, sizeof(buf), flags, 0x0005, "a/b");
+    TEST_ASSERT_EQUAL_size_t(8, n); // 1+1+1(flags)+2(msgid)+3(name)
+    const uint8_t nm_expect[] = {8, MQTTSN_SUBSCRIBE, (1 << MQTTSN_FLAG_QOS_SHIFT), 0x00, 0x05, 'a', '/', 'b'};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(nm_expect, buf, n);
+
+    n = mqttsn_build_subscribe_id(buf, sizeof(buf), flags, 0x0006, 0x0102);
+    TEST_ASSERT_EQUAL_size_t(7, n); // 1+1+1(flags)+2(msgid)+2(topicid)
+    const uint8_t id_expect[] = {7, MQTTSN_SUBSCRIBE, (1 << MQTTSN_FLAG_QOS_SHIFT), 0x00, 0x06, 0x01, 0x02};
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(id_expect, buf, n);
+}
+
+// PINGREQ may carry a client id (the memcpy path).
+void test_pingreq_with_client_id()
+{
+    uint8_t buf[16];
+    size_t n = mqttsn_build_pingreq(buf, sizeof(buf), "node7");
+    TEST_ASSERT_EQUAL_size_t(7, n); // 1+1+5
+    TEST_ASSERT_EQUAL_HEX8(MQTTSN_PINGREQ, buf[1]);
+    TEST_ASSERT_EQUAL_MEMORY("node7", buf + 2, 5);
+}
+
+// Every builder rejects a null out (and a null string/data where applicable) and a
+// buffer too small for the framed message.
+void test_build_guards()
+{
+    uint8_t buf[32];
+    const uint8_t d[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_connect(nullptr, 32, 0, 0, "x"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_register(nullptr, 32, 0, 0, "x"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_regack(nullptr, 32, 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_publish(nullptr, 32, 0, 0, 0, d, 2));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_puback(nullptr, 32, 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_subscribe_name(nullptr, 32, 0, 0, "x"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_subscribe_id(nullptr, 32, 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_pingreq(nullptr, 32, "x"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_disconnect(nullptr, 32, false, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_searchgw(nullptr, 32, 0));
+    // null string / data
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_connect(buf, 32, 0, 0, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_register(buf, 32, 0, 0, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_subscribe_name(buf, 32, 0, 0, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_publish(buf, 32, 0, 0, 0, nullptr, 2)); // data_len && !data
+    // buffer too small -> frame_header overflow -> 0
+    uint8_t tiny[4];
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_register(tiny, sizeof(tiny), 0, 0, "sensors"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_regack(tiny, sizeof(tiny), 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_puback(tiny, sizeof(tiny), 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_publish(tiny, sizeof(tiny), 0, 0, 0, d, 2));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_subscribe_name(tiny, sizeof(tiny), 0, 0, "topic"));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_subscribe_id(tiny, sizeof(tiny), 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_disconnect(tiny, 2, true, 0)); // needs 4
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_searchgw(tiny, 2, 0));         // needs 3
+    TEST_ASSERT_EQUAL_size_t(0, mqttsn_build_pingreq(tiny, 2, "toolong"));  // needs 9
+}
+
+// Typed payload parsers reject payloads shorter than their fixed layout.
+void test_parse_typed_rejections()
+{
+    uint16_t tid = 0, mid = 0;
+    uint8_t rc = 0, fl = 0;
+    const uint8_t *data = nullptr;
+    size_t dlen = 0, nlen = 0;
+    const char *name = nullptr;
+    const uint8_t one[6] = {0};
+
+    TEST_ASSERT_FALSE(mqttsn_parse_connack(nullptr, 1, &rc));
+    TEST_ASSERT_FALSE(mqttsn_parse_connack(one, 0, &rc));                           // len < 1
+    TEST_ASSERT_FALSE(mqttsn_parse_regack(one, 4, &tid, &mid, &rc));                // len < 5
+    TEST_ASSERT_FALSE(mqttsn_parse_puback(one, 4, &tid, &mid, &rc));                // len < 5
+    TEST_ASSERT_FALSE(mqttsn_parse_suback(one, 5, &fl, &tid, &mid, &rc));           // len < 6
+    TEST_ASSERT_FALSE(mqttsn_parse_publish(one, 4, &fl, &tid, &mid, &data, &dlen)); // len < 5
+    TEST_ASSERT_FALSE(mqttsn_parse_register(one, 3, &tid, &mid, &name, &nlen));     // len < 4
+    TEST_ASSERT_TRUE(mqttsn_parse_connack(one, 1, &rc));                            // exactly 1 is valid
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -187,5 +293,10 @@ int main()
     RUN_TEST(test_three_octet_length);
     RUN_TEST(test_optional_fields);
     RUN_TEST(test_overflow_and_malformed);
+    RUN_TEST(test_build_regack_puback);
+    RUN_TEST(test_build_subscribe_variants);
+    RUN_TEST(test_pingreq_with_client_id);
+    RUN_TEST(test_build_guards);
+    RUN_TEST(test_parse_typed_rejections);
     return UNITY_END();
 }
