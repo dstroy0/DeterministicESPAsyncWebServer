@@ -201,6 +201,84 @@ void test_reader_negative_int()
     TEST_ASSERT_EQUAL_INT(-12345, v);
 }
 
+// Writer: null strings are no-ops, the CR/BS/FF escapes, and an unbalanced close
+// clears ok().
+void test_writer_null_and_remaining_escapes()
+{
+    char buf[32];
+    JsonWriter w(buf, sizeof(buf));
+    w.begin_array();
+    w.str(nullptr); // put_escaped(nullptr) is a no-op
+    w.raw(nullptr); // put_raw(nullptr) is a no-op
+    w.end_array();
+    TEST_ASSERT_TRUE(w.ok()); // no overrun / crash
+
+    char b2[16];
+    JsonWriter e(b2, sizeof(b2));
+    e.str("\r\b\f");
+    TEST_ASSERT_TRUE(e.ok());
+    TEST_ASSERT_EQUAL_STRING("\"\\r\\b\\f\"", e.c_str());
+
+    char b3[16];
+    JsonWriter u(b3, sizeof(b3));
+    u.end_object(); // nothing open -> unbalanced
+    TEST_ASSERT_FALSE(u.ok());
+}
+
+// Reader guards: null out / null json / zero capacity are rejected.
+void test_reader_null_guards()
+{
+    char out[8];
+    long v = 0;
+    bool b = false;
+    TEST_ASSERT_FALSE(json_get_str(kBody, "name", nullptr, 8));
+    TEST_ASSERT_FALSE(json_get_str(kBody, "name", out, 0));
+    TEST_ASSERT_FALSE(json_get_int(kBody, "port", nullptr));
+    TEST_ASSERT_FALSE(json_get_bool(kBody, "on", nullptr));
+    TEST_ASSERT_FALSE(json_get_str(nullptr, "name", out, 8));
+    TEST_ASSERT_FALSE(json_get_int(nullptr, "port", &v));
+    TEST_ASSERT_FALSE(json_get_bool(nullptr, "on", &b));
+}
+
+// Reader decodes every backslash escape, treating an unknown escape literally.
+void test_reader_all_escapes()
+{
+    const char *body = "{\"s\":\"\\t\\r\\b\\f\\\\\\/\\q\"}"; // \t \r \b \f \\ \/ \q
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str(body, "s", out, sizeof(out)));
+    const char expect[] = {'\t', '\r', '\b', '\f', '\\', '/', 'q', '\0'};
+    TEST_ASSERT_EQUAL_STRING(expect, out);
+}
+
+// \uXXXX with lower- and upper-case hex letters each decode to a byte.
+void test_reader_unicode_hex_case()
+{
+    const char *body = "{\"a\":\"\\u00ab\\u00CD\"}"; // 0xAB, 0xCD
+    char out[8];
+    TEST_ASSERT_TRUE(json_get_str(body, "a", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xAB, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xCD, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);
+}
+
+// json_get_bool decodes false as well as true.
+void test_reader_false_bool()
+{
+    bool b = true;
+    TEST_ASSERT_TRUE(json_get_bool("{\"f\":false}", "f", &b));
+    TEST_ASSERT_FALSE(b);
+}
+
+// Malformed top-level objects are rejected without over-reading.
+void test_reader_malformed()
+{
+    char out[8];
+    long v = 0;
+    TEST_ASSERT_FALSE(json_get_str("{\"name", "x", out, sizeof(out)));   // unterminated key
+    TEST_ASSERT_FALSE(json_get_int("{\"a\":{\"b\":1", "z", &v));         // unterminated value object
+    TEST_ASSERT_FALSE(json_get_str("{\"a\" 5}", "a", out, sizeof(out))); // key with no ':'
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -221,5 +299,11 @@ int main()
     RUN_TEST(test_reader_unicode_escape_to_byte);
     RUN_TEST(test_reader_truncates_to_capacity);
     RUN_TEST(test_reader_negative_int);
+    RUN_TEST(test_writer_null_and_remaining_escapes);
+    RUN_TEST(test_reader_null_guards);
+    RUN_TEST(test_reader_all_escapes);
+    RUN_TEST(test_reader_unicode_hex_case);
+    RUN_TEST(test_reader_false_bool);
+    RUN_TEST(test_reader_malformed);
     return UNITY_END();
 }
