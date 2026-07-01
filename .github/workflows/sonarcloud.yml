@@ -40,7 +40,7 @@ jobs:
 
       - name: Cache PlatformIO
         if: ${{ env.SONAR_TOKEN != '' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.platformio
