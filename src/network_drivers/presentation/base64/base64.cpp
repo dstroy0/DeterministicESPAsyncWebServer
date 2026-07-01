@@ -12,11 +12,13 @@
  * unit tests run without mbedTLS installed.
  */
 
-#include "network_drivers/presentation/base64/base64.h"
+#include "base64.h"
 
 #ifdef ARDUINO
 
 // --- ESP32 / Arduino: use mbedTLS -------------------------------------------
+#include "mbedtls/base64.h"
+#include <string.h>
 
 void base64_encode(const uint8_t *src, size_t src_len, char *dst)
 {

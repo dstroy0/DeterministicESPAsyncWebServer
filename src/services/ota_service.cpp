@@ -6,9 +6,17 @@
  * @brief Authenticated streaming OTA firmware update (DETWS_ENABLE_OTA).
  */
 
-#include "services/ota_service.h"
+#include "ota_service.h"
 
 #if DETWS_ENABLE_OTA && defined(ARDUINO)
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/presentation/base64/base64.h"
+#include "network_drivers/presentation/http_parser/http_parser.h"
+#include "shared_primitives/det_mime.h"
+#include <Arduino.h>
+#include <Update.h>
+#include <string.h>
 
 static DetWebServer *g_server = nullptr;
 static const char *g_path = nullptr;

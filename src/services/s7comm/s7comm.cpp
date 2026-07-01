@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_S7COMM
 
+#include "shared_primitives/shim.h"
+
 static size_t put16(uint8_t *p, uint16_t v)
 {
     p[0] = (uint8_t)(v >> 8);

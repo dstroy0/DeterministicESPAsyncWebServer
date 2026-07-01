@@ -15,9 +15,29 @@
  * and the event is dropped.
  */
 
-#include "network_drivers/session/session.h"
+#include "session.h"
+#include "../transport/listener.h"
+#include "proto_handler.h"
+#include "scratch.h"
+#if DETWS_ENABLE_SSH
+#include "../presentation/ssh/ssh_conn.h"
+#endif
+#if DETWS_ENABLE_TELNET
+#include "../presentation/telnet/telnet.h"
+#endif
+#if DETWS_ENABLE_MODBUS
+#include "services/modbus/modbus.h"
+#endif
+#if DETWS_ENABLE_OPCUA
+#include "services/opcua/opcua.h"
+#endif
 
 #if DETWS_ENABLE_TLS
+#include "../presentation/http_parser/http_parser.h"
+#include "../tls/det_tls.h"
+#if DETWS_ENABLE_WEBSOCKET
+#include "../presentation/websocket/websocket.h"
+#endif
 
 // Abort a TLS connection (fatal handshake/read error). det_conn_abort_slot owns
 // the whole teardown: free the TLS context (abrupt), detach the pcb, reset the

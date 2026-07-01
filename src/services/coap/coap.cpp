@@ -10,6 +10,12 @@
 
 #if DETWS_ENABLE_COAP
 
+#include "network_drivers/transport/udp_transport.h"
+#include "shared_primitives/shim.h"
+#if DETWS_ENABLE_COAP_OBSERVE
+#include "services/det_clock.h" // detws_millis() for Observe notification message IDs / sequencing
+#endif
+
 // CoAP option numbers we understand (RFC 7252 §5.10, RFC 7959). Others are skipped.
 enum
 {

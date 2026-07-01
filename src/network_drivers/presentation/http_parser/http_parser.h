@@ -36,7 +36,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 #define DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
+#include <Arduino.h>
 
 // ---------------------------------------------------------------------------
 // Parser state enumeration

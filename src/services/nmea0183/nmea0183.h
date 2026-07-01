@@ -22,9 +22,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H
 #define DETERMINISTICESPASYNCWEBSERVER_NMEA0183_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_NMEA0183
+
+#include "shared_primitives/shim.h"
 
 #ifndef DETWS_NMEA0183_MAX_FIELDS
 #define DETWS_NMEA0183_MAX_FIELDS 26 ///< max comma-separated fields (incl. the address field)

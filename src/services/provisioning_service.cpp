@@ -9,7 +9,10 @@
  * credentials persist to NVS via Preferences.
  */
 
-#include "services/provisioning_service.h"
+#include "provisioning_service.h"
+#include "shared_primitives/det_hex.h"
+#include "shared_primitives/det_mime.h"
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Form-field parser (always compiled; the only non-trivial logic, unit-tested).

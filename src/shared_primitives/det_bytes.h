@@ -23,7 +23,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_BYTES_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_BYTES_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // --- write cursor: requires fields { uint8_t *buf; size_t cap; size_t pos; bool overflow; } ---
 

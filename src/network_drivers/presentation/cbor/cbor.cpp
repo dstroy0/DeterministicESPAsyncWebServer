@@ -6,9 +6,12 @@
  * @brief Zero-heap CBOR (RFC 8949) encoder implementation.
  */
 
-#include "network_drivers/presentation/cbor/cbor.h"
+#include "cbor.h"
 
 #if DETWS_ENABLE_CBOR
+
+#include "shared_primitives/det_bytes.h"
+#include "shared_primitives/shim.h"
 
 void cbor_init(CborWriter *w, uint8_t *buf, size_t cap)
 {

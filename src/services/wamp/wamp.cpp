@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_WAMP
 
+#include "network_drivers/presentation/json/json.h"
+
 // Emit a uint64 as a JSON number (JsonWriter's integer() is only platform-long wide).
 static void emit_uint(JsonWriter &w, uint64_t v)
 {

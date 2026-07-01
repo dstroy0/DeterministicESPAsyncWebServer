@@ -10,6 +10,9 @@
 
 #if DETWS_ENABLE_SNMP_V3
 
+#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "shared_primitives/shim.h"
+
 // Zero key material with a volatile loop the compiler cannot optimize away. A
 // plain memset() whose result is never observed (the buffer dies at return) may
 // be elided as a dead store, leaving secrets on the stack. Same idiom as ssh_wipe.

@@ -9,6 +9,9 @@
 #include "services/preempt_queue/preempt_queue.h"
 
 #if DETWS_ENABLE_PREEMPT_QUEUE
+
+#include "shared_primitives/shim.h"
+
 namespace
 {
 DetwsPqHandler s_handler = nullptr;
@@ -17,6 +20,11 @@ size_t s_high_water = 0; // peak items queued at once (sizing aid)
 } // namespace
 
 #ifdef ARDUINO
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+
 namespace
 {
 StaticQueue_t s_q_struct;

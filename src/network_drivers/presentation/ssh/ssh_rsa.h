@@ -89,6 +89,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_RSA_H
 
 #include "shared_primitives/shim.h"
+#include "ssh_bignum.h"
+#include "ssh_sha256.h"
 
 // ---------------------------------------------------------------------------
 // Key-blob sizes

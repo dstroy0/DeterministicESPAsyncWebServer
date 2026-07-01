@@ -29,9 +29,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_S7COMM_H
 #define DETERMINISTICESPASYNCWEBSERVER_S7COMM_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_S7COMM
+
+#include "shared_primitives/shim.h"
 
 #define S7_PROTOCOL_ID 0x32 ///< constant first octet of every S7comm PDU
 

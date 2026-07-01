@@ -13,7 +13,8 @@
  * mbedtls on Arduino builds, and the software path on native builds.
  */
 
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "ssh_sha256.h"
+#include <string.h>
 
 #ifdef ARDUINO
 
@@ -21,6 +22,8 @@
 // Arduino (ESP32): streaming + one-shot via mbedtls (hardware SHA accelerator).
 // The software FIPS-180-4 path below is compiled only on native.
 // ---------------------------------------------------------------------------
+
+#include <mbedtls/sha256.h>
 
 void ssh_sha256_init(SshSha256Ctx *ctx)
 {

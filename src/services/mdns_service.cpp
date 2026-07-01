@@ -9,9 +9,11 @@
  * so the only external dependency stays the base SDK + mbedTLS.
  */
 
-#include "services/mdns_service.h"
+#include "mdns_service.h"
 
 #if DETWS_ENABLE_MDNS && defined(ARDUINO)
+
+#include "mdns.h"
 
 bool detws_mdns_begin(const char *hostname, uint16_t http_port)
 {

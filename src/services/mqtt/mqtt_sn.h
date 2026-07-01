@@ -29,9 +29,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MQTT_SN_H
 #define DETERMINISTICESPASYNCWEBSERVER_MQTT_SN_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_MQTT_SN
+
+#include "shared_primitives/shim.h"
 
 #define MQTTSN_LEN3_PREFIX 0x01 ///< a first Length octet of 0x01 signals the 3-octet length form
 

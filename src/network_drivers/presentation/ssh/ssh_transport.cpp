@@ -6,7 +6,13 @@
  * @brief SSH transport handshake - banner exchange and KEXINIT negotiation.
  */
 
-#include "network_drivers/presentation/ssh/ssh_transport.h"
+#include "ssh_transport.h"
+#include "shared_primitives/shim.h"
+#include "ssh_bignum.h" // bn_*, SshBigNum
+#include "ssh_dh.h"     // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
+#include "ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
+#include "ssh_rsa.h"    // ssh_rsa_encode_pubkey/sign, SSH_RSA_*
+#include "ssh_sha256.h"
 
 SshSession ssh_sess[MAX_SSH_CONNS];
 

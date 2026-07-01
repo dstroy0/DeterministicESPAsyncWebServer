@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DATALINK_H
 #define DETERMINISTICESPASYNCWEBSERVER_DATALINK_H
 
-#include "shared_primitives/shim.h"
+#include <Arduino.h>
 
 /**
  * @brief Initialize the data-link layer.

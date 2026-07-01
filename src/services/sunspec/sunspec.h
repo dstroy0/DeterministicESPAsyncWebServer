@@ -30,9 +30,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SUNSPEC_H
 #define DETERMINISTICESPASYNCWEBSERVER_SUNSPEC_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_SUNSPEC
+
+#include "shared_primitives/shim.h"
 
 #define SUNSPEC_MARKER 0x53756E53u ///< "SunS"
 #define SUNSPEC_END_MODEL 0xFFFFu  ///< end-model id

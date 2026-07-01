@@ -26,9 +26,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AMQP_H
 #define DETERMINISTICESPASYNCWEBSERVER_AMQP_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_AMQP
+
+#include "shared_primitives/shim.h"
 
 // Frame types (octet 0).
 #define AMQP_FRAME_METHOD 1

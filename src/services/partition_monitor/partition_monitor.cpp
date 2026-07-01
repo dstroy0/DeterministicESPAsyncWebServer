@@ -14,6 +14,10 @@
 
 #if DETWS_ENABLE_PARTITION_MONITOR
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
 // esp_partition type/subtype constants (mirrors esp_partition_type_t/subtype_t so
 // the classifier stays pure and host-testable without the IDF headers).
 const char *detws_partition_kind(uint8_t type, uint8_t subtype)

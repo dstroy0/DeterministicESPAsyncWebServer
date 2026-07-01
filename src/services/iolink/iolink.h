@@ -29,9 +29,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_IOLINK_H
 #define DETERMINISTICESPASYNCWEBSERVER_IOLINK_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_IOLINK
+
+#include "shared_primitives/shim.h"
 
 #define IOL_CHECKSUM_SEED 0x52u ///< checksum seed XORed with the first octet (spec A.1.6)
 

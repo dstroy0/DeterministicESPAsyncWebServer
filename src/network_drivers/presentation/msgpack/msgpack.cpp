@@ -6,9 +6,12 @@
  * @brief Zero-heap MessagePack encoder and decoder implementation.
  */
 
-#include "network_drivers/presentation/msgpack/msgpack.h"
+#include "msgpack.h"
 
 #if DETWS_ENABLE_MSGPACK
+
+#include "shared_primitives/det_bytes.h"
+#include "shared_primitives/shim.h"
 
 void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
 {

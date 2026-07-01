@@ -33,6 +33,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_VFS_H
 #define DETERMINISTICESPASYNCWEBSERVER_VFS_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_VFS

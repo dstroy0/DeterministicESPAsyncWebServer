@@ -37,7 +37,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AES256CTR_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_AES256CTR_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // ---------------------------------------------------------------------------
 // Platform-specific AES context storage

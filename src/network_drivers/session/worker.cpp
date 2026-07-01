@@ -11,6 +11,7 @@
  */
 
 #include "network_drivers/session/worker.h"
+#include <atomic>
 
 namespace
 {
@@ -39,6 +40,11 @@ void detws_worker_set_self(int id)
 // ---------------------------------------------------------------------------
 
 #ifdef ARDUINO
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+
 namespace
 {
 detws_worker_pump_fn s_pump = nullptr;

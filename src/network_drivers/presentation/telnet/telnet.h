@@ -25,6 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TELNET_H
 #define DETERMINISTICESPASYNCWEBSERVER_TELNET_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_TELNET

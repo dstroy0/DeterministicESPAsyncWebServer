@@ -26,9 +26,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HOSTLINK_H
 #define DETERMINISTICESPASYNCWEBSERVER_HOSTLINK_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_HOSTLINK
+
+#include "shared_primitives/shim.h"
 
 /** @brief FCS: 8-bit XOR of [data, data+len). */
 uint8_t hostlink_fcs(const char *data, size_t len);

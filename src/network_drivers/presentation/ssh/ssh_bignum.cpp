@@ -25,7 +25,9 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-#include "network_drivers/presentation/ssh/ssh_bignum.h"
+#include "ssh_bignum.h"
+#include "ssh_keymat.h" // for ssh_wipe()
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Scratch buffer (SSH_CRYPTO_WORK_SIZE bytes, zeroed after each crypto op)

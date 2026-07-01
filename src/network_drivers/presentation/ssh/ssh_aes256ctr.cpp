@@ -12,7 +12,8 @@
  * S-box and GF(2^8) multiply-by-2/3 for MixColumns.  No large lookup tables.
  */
 
-#include "network_drivers/presentation/ssh/ssh_aes256ctr.h"
+#include "ssh_aes256ctr.h"
+#include "shared_primitives/shim.h"
 
 // ============================================================================
 // ARDUINO - hardware-accelerated path via mbedtls

@@ -24,9 +24,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SPARKPLUG_H
 #define DETERMINISTICESPASYNCWEBSERVER_SPARKPLUG_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_SPARKPLUG
+
+#include "shared_primitives/shim.h"
 
 // Sparkplug B data type codes (a subset; Tahu DataType enum).
 #define SPB_DT_INT8 1

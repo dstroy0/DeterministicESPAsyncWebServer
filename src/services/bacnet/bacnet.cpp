@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_BACNET
 
+#include "shared_primitives/shim.h"
+
 size_t bvlc_build(uint8_t *buf, size_t cap, uint8_t function, const uint8_t *npdu, size_t npdu_len)
 {
     if (!buf || (npdu_len && !npdu))

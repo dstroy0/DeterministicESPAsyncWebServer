@@ -17,7 +17,18 @@
  * (listener.h includes transport.h; transport.cpp includes listener.h).
  */
 
-#include "network_drivers/transport/listener.h"
+#include "listener.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "lwip/tcp.h"
+#include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
+#ifdef ARDUINO
+#include "lwip/def.h"                       // lwip_ntohl - allowlist host-order conversion
+#include "lwip/ip_addr.h"                   // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
+#include "network_drivers/session/worker.h" // detws_worker_wake() - nudge the owning worker task
+#endif
+#include "services/det_clock.h" // detws_millis() pluggable monotonic clock (host-safe)
+#include <Arduino.h>
 
 // Listener pool - all storage in BSS.
 Listener listener_pool[MAX_LISTENERS];

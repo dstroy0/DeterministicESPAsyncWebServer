@@ -17,7 +17,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_HEX_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_HEX_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief Nibble 0..15 -> hex char (lowercase, or uppercase when @p upper). */
 inline char det_hex_digit(int nibble, bool upper = false)

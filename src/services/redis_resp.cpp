@@ -10,6 +10,9 @@
 
 #if DETWS_ENABLE_REDIS
 
+#include "shared_primitives/shim.h"
+#include <stdio.h> // snprintf for the decimal length prefixes
+
 size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc)
 {
     if (!buf || cap == 0 || !args || argc == 0)

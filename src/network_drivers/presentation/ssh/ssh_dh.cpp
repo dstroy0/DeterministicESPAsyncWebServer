@@ -6,7 +6,10 @@
  * @brief DH-group14-SHA256 key exchange implementation.
  */
 
-#include "network_drivers/presentation/ssh/ssh_dh.h"
+#include "ssh_dh.h"
+#include "ssh_hmac_sha256.h"
+#include <Arduino.h> // for esp_random() / esp_fill_random() (real or mock)
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // RNG

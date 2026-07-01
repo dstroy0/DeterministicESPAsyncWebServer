@@ -33,9 +33,12 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DEVICENET_H
 #define DETERMINISTICESPASYNCWEBSERVER_DEVICENET_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_DEVICENET
+
+#include "shared_primitives/det_can.h"
+#include "shared_primitives/shim.h"
 
 #ifndef DETWS_DEVICENET_MSG_MAX
 #define DETWS_DEVICENET_MSG_MAX 256 ///< max reassembled fragmented message

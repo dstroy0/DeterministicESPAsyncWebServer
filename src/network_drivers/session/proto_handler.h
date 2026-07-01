@@ -20,6 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROTO_HANDLER_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROTO_HANDLER_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**

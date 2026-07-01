@@ -9,6 +9,11 @@
 #include "services/webhook/webhook.h"
 
 #if DETWS_ENABLE_WEBHOOK
+
+#include "shared_primitives/det_mime.h"
+
+#include "shared_primitives/shim.h"
+
 namespace
 {
 bool put(char *out, size_t cap, size_t *pos, const char *s)

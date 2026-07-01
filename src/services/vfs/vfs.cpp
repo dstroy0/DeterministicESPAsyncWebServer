@@ -14,6 +14,9 @@
 #include "services/vfs/vfs.h"
 
 #if DETWS_ENABLE_VFS
+
+#include <string.h>
+
 namespace
 {
 const DetwsVfsBackend *s_backend = nullptr;

@@ -25,6 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**

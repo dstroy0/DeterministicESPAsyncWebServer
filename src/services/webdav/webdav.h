@@ -23,6 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_WEBDAV

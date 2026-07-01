@@ -21,6 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_CRYPTO_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_CRYPTO_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_SNMP_V3

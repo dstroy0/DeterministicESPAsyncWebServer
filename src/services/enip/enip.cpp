@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_ENIP
 
+#include "shared_primitives/shim.h"
+
 // EtherNet/IP fields are little-endian.
 static size_t put16(uint8_t *p, uint16_t v)
 {

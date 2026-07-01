@@ -17,6 +17,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**

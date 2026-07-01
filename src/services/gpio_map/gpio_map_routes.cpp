@@ -13,6 +13,9 @@
 
 #if DETWS_ENABLE_GPIO_MAP
 
+#include "DeterministicESPAsyncWebServer.h"
+#include "shared_primitives/det_mime.h"
+
 static DetWebServer *s_srv = nullptr;
 static DetwsGpioPin *s_pins = nullptr;
 static uint8_t s_count = 0;

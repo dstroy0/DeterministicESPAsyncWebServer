@@ -33,6 +33,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OIDC_H
 #define DETERMINISTICESPASYNCWEBSERVER_OIDC_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_OIDC

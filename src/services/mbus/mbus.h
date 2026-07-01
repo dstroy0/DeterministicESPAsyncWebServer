@@ -28,9 +28,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MBUS_H
 #define DETERMINISTICESPASYNCWEBSERVER_MBUS_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_MBUS
+
+#include "shared_primitives/shim.h"
 
 #define MBUS_START_SHORT 0x10u ///< short-frame start octet
 #define MBUS_START_LONG 0x68u  ///< long / control-frame start octet

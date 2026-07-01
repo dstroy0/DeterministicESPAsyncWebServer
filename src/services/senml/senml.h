@@ -27,9 +27,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SENML_H
 #define DETERMINISTICESPASYNCWEBSERVER_SENML_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_SENML
+
+#include "shared_primitives/shim.h"
 
 /** @brief Which value field a record carries. */
 enum SenmlValueKind

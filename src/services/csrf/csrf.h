@@ -22,9 +22,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CSRF_H
 #define DETERMINISTICESPASYNCWEBSERVER_CSRF_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_CSRF
+
+#include "shared_primitives/shim.h"
 
 /** @brief Nonce length in bytes (hex-encoded in the token). */
 #define CSRF_NONCE_BYTES 6

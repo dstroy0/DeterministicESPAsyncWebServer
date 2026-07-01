@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_J1939
 
+#include "shared_primitives/shim.h"
+
 bool j1939_encode_id(uint32_t *id, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da)
 {
     if (!id || priority > 7 || pgn > 0x3FFFFu)

@@ -25,7 +25,20 @@
  * declared in transport.h to avoid a circular include.
  */
 
-#include "network_drivers/transport/transport.h"
+#include "transport.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "lwip/tcp.h"
+#include "services/det_clock.h" // detws_millis() pluggable monotonic clock
+
+#ifdef ARDUINO
+#include "network_drivers/session/worker.h" // detws_worker_wake() - resume a paced send when the window drains
+#endif
+
+#if DETWS_ENABLE_TLS
+#include "network_drivers/tls/det_tls.h"
+#endif
+
 // ---------------------------------------------------------------------------
 // Observability (DETWS_ENABLE_OBSERVABILITY) - event hook + lock-free counters.
 // Zero cost when off: OBS_TRANSITION / OBS_NOTICE expand to nothing and their

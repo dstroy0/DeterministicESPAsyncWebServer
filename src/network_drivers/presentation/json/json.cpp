@@ -6,7 +6,9 @@
  * @brief Implementation of the zero-heap JSON writer and top-level reader.
  */
 
-#include "network_drivers/presentation/json/json.h"
+#include "json.h"
+#include "shared_primitives/det_numparse.h"
+#include "shared_primitives/shim.h"
 
 // ---------------------------------------------------------------------------
 // JsonWriter

@@ -28,9 +28,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DNP3_H
 #define DETERMINISTICESPASYNCWEBSERVER_DNP3_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_DNP3
+
+#include "shared_primitives/shim.h"
 
 #define DNP3_START0 0x05
 #define DNP3_START1 0x64

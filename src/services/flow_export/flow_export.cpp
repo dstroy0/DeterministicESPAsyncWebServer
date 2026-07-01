@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_FLOW_EXPORT
 
+#include "shared_primitives/shim.h"
+
 // ---- bounded big-endian writers into a raw buffer (used by the v5 builders) ----
 
 static size_t put16(uint8_t *p, uint16_t v)

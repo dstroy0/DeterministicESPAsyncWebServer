@@ -17,7 +17,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_UTF8_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_UTF8_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief True if [s, s+n) is well-formed UTF-8.

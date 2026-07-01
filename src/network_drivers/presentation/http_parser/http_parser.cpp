@@ -10,7 +10,7 @@
  * pulling bytes out of whatever transport buffer it uses.
  */
 
-#include "network_drivers/presentation/http_parser/http_parser.h"
+#include "http_parser.h"
 
 HttpReq http_pool[MAX_CONNS];
 

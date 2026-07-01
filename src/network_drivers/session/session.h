@@ -18,7 +18,10 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 #define DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 
-#include "shared_primitives/shim.h"
+#include "../transport/transport.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include <Arduino.h>
 
 /**
  * @brief Drive the session layer for one Arduino loop iteration.

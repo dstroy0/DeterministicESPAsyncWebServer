@@ -27,9 +27,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LWM2M_TLV_H
 #define DETERMINISTICESPASYNCWEBSERVER_LWM2M_TLV_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_LWM2M
+
+#include "shared_primitives/shim.h"
 
 // Identifier kinds (Type byte bits 7-6).
 #define LWM2M_TLV_OBJECT_INSTANCE 0x00

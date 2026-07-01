@@ -16,7 +16,21 @@
 
 #if DETWS_ENABLE_TLS && defined(ARDUINO)
 
+#include "lwip/tcp.h"
+#include "network_drivers/transport/transport.h"
+#include <Arduino.h>    // millis(), delay() for the blocking client loop
+#include <esp_system.h> // esp_fill_random (HW CSPRNG)
+#include <string.h>
+
+#include <mbedtls/error.h>
+#include <mbedtls/pk.h>
+#include <mbedtls/platform.h> // mbedtls_platform_set_calloc_free
+#include <mbedtls/sha256.h>   // peer-cert pin hashing (client verification)
+#include <mbedtls/ssl.h>
+#include <mbedtls/version.h>
+#include <mbedtls/x509_crt.h>
 #if DETWS_ENABLE_TLS_RESUMPTION
+#include <mbedtls/ssl_ticket.h> // RFC 5077 session tickets (server-side resumption)
 #if !defined(MBEDTLS_SSL_TICKET_C) || !defined(MBEDTLS_SSL_SESSION_TICKETS)
 #error "DETWS_ENABLE_TLS_RESUMPTION needs an mbedTLS build with MBEDTLS_SSL_TICKET_C + MBEDTLS_SSL_SESSION_TICKETS"
 #endif

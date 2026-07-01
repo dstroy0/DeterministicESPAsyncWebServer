@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_STOMP
 
+#include "shared_primitives/shim.h"
+
 // Append one octet's escaped form to buf[pos..cap); advance pos. Returns false on overflow.
 static bool emit_escaped(char *buf, size_t cap, size_t *pos, char c)
 {

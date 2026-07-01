@@ -6,9 +6,17 @@
  * @brief Stable MAC-derived device UUID - implementation. See device_id.h.
  */
 
-#include "services/device_id/device_id.h"
+#include "device_id.h"
+#include "shared_primitives/det_hex.h"
 
 #if DETWS_ENABLE_DEVICE_ID
+
+#include "network_drivers/presentation/sha1/sha1.h"
+
+#ifdef ARDUINO
+#include <esp_mac.h> // esp_read_mac()
+#endif
+
 namespace
 {
 // RFC 4122 DNS namespace UUID (6ba7b810-9dad-11d1-80b4-00c04fd430c8).

@@ -34,7 +34,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEB_TERMINAL_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEB_TERMINAL_H
 
-#include "shared_primitives/shim.h"
+#include "DeterministicESPAsyncWebServer.h"
 
 #if DETWS_ENABLE_WEB_TERMINAL
 

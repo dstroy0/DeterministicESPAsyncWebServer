@@ -13,6 +13,9 @@
 
 #if DETWS_ENABLE_PARTITION_MONITOR
 
+#include "DeterministicESPAsyncWebServer.h"
+#include "shared_primitives/det_mime.h"
+
 static DetWebServer *s_srv = nullptr;
 
 static void partition_handler(uint8_t slot_id, HttpReq *req)

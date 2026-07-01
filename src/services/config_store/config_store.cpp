@@ -13,7 +13,11 @@
 
 #if DETWS_ENABLE_CONFIG_STORE
 
+#include <string.h>
+
 #ifdef ARDUINO
+
+#include <Preferences.h>
 
 namespace
 {

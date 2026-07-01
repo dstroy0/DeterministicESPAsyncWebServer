@@ -6,9 +6,11 @@
  * @brief Telemetry math helpers implementation (DETWS_ENABLE_TELEMETRY).
  */
 
-#include "services/telemetry/telemetry.h"
+#include "telemetry.h"
 
 #if DETWS_ENABLE_TELEMETRY
+
+#include "shared_primitives/shim.h"
 
 void detws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
 {

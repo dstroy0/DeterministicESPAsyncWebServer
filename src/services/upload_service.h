@@ -18,9 +18,12 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_UPLOAD_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_UPLOAD_SERVICE_H
 
-#include "services/upload_service.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_UPLOAD
+
+#include <FS.h>
+#include <stddef.h>
 
 class DetWebServer;
 

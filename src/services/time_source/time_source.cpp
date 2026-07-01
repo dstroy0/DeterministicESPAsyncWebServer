@@ -8,7 +8,7 @@
  * A fixed BSS table of sources queried in ascending priority. See time_source.h.
  */
 
-#include "services/time_source/time_source.h"
+#include "time_source.h"
 
 #if DETWS_ENABLE_TIME_SOURCE
 

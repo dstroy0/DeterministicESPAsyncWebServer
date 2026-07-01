@@ -26,9 +26,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_IEC60870_H
 #define DETERMINISTICESPASYNCWEBSERVER_IEC60870_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_IEC60870
+
+#include "shared_primitives/shim.h"
 
 #define IEC_START_104 0x68u   ///< -104 APCI start octet (also the -101 variable-frame start)
 #define IEC_START_FIXED 0x10u ///< -101 fixed-length frame start octet

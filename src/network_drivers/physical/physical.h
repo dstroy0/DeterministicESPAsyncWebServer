@@ -20,6 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
+#include "DetWebServerConfig.h" // DetIface
 #include "shared_primitives/shim.h"
 
 /**

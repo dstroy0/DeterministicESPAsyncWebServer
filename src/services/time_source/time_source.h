@@ -25,6 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H
 #define DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 /**

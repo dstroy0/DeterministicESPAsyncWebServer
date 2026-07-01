@@ -6,7 +6,13 @@
  * @brief SSH message dispatcher implementation.
  */
 
-#include "network_drivers/presentation/ssh/ssh_server.h"
+#include "ssh_server.h"
+#include "shared_primitives/shim.h"
+#include "ssh_auth.h"
+#include "ssh_channel.h"
+#include "ssh_dh.h"
+#include "ssh_packet.h"
+#include "ssh_transport.h"
 
 static SshEmitCb g_emit = nullptr;
 

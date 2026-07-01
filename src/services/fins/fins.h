@@ -28,9 +28,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_FINS_H
 #define DETERMINISTICESPASYNCWEBSERVER_FINS_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_FINS
+
+#include "shared_primitives/shim.h"
 
 #define FINS_HEADER_SIZE 10
 

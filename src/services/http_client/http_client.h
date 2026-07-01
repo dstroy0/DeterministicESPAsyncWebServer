@@ -25,6 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HTTP_CLIENT_H
 #define DETERMINISTICESPASYNCWEBSERVER_HTTP_CLIENT_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_HTTP_CLIENT

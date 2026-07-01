@@ -23,9 +23,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DMX_H
 #define DETERMINISTICESPASYNCWEBSERVER_DMX_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_DMX
+
+#include "shared_primitives/shim.h"
 
 #define DMX_MAX_CHANNELS 512u ///< slots per DMX512 universe
 #define DMX_SC_DIMMER 0x00u   ///< start code for standard dimmer data

@@ -11,7 +11,7 @@
  * when DETWS_ENABLE_AUTH_LOCKOUT is set; the host unit tests enable it.
  */
 
-#include "services/auth_lockout/auth_lockout.h"
+#include "auth_lockout.h"
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
 

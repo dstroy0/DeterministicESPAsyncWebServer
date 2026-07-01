@@ -32,6 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_COAP_H
 #define DETERMINISTICESPASYNCWEBSERVER_COAP_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_COAP

@@ -24,9 +24,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_REDIS_RESP_H
 #define DETERMINISTICESPASYNCWEBSERVER_REDIS_RESP_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_REDIS
+
+#include "shared_primitives/shim.h"
 
 /** @brief RESP2 reply value types. */
 enum RespType

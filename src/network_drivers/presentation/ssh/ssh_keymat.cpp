@@ -11,7 +11,7 @@
  * security rationale.
  */
 
-#include "network_drivers/presentation/ssh/ssh_keymat.h"
+#include "ssh_keymat.h"
 
 SshKeyMat ssh_keys[MAX_SSH_CONNS];
 SshDhState ssh_dh[MAX_SSH_CONNS];

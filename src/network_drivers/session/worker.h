@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WORKER_H
 #define DETERMINISTICESPASYNCWEBSERVER_WORKER_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 /** @brief Number of server worker tasks (DETWS_WORKER_COUNT). */
 int detws_worker_count(void);

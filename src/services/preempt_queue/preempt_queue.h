@@ -34,9 +34,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PREEMPT_QUEUE_H
 #define DETERMINISTICESPASYNCWEBSERVER_PREEMPT_QUEUE_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_PREEMPT_QUEUE
+
+#include "shared_primitives/shim.h"
 
 /**
  * @brief Handler the processing task invokes for each dequeued item.

@@ -11,7 +11,9 @@
  * requires). Other layers go through these functions, never the table.
  */
 
-#include "network_drivers/presentation/ssh/ssh_channel.h"
+#include "ssh_channel.h"
+#include "shared_primitives/shim.h"
+#include "ssh_packet.h" // SSH_MSG_CHANNEL_*
 
 SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 

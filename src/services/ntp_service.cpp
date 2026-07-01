@@ -6,9 +6,11 @@
  * @brief SNTP wall-clock time sync implementation (DETWS_ENABLE_NTP).
  */
 
-#include "services/ntp_service.h"
+#include "ntp_service.h"
 
 #if DETWS_ENABLE_NTP && defined(ARDUINO)
+
+#include <Arduino.h>
 
 // A successful sync moves the clock well past this sentinel (2021-01-01 UTC);
 // a cold-booted RTC sits near the Unix epoch.

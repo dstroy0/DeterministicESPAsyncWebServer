@@ -27,9 +27,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CIP_H
 #define DETERMINISTICESPASYNCWEBSERVER_CIP_H
 
-#include "shared_primitives/shim.h"
+#include "DetWebServerConfig.h"
 
 #if DETWS_ENABLE_CIP
+
+#include "shared_primitives/shim.h"
 
 // Common service codes.
 #define CIP_SC_GET_ATTR_ALL 0x01

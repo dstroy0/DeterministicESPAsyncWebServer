@@ -10,6 +10,9 @@
 
 #if DETWS_ENABLE_CLOUDEVENTS
 
+#include "network_drivers/presentation/json/json.h"
+#include "shared_primitives/shim.h"
+
 static bool ce_present(const char *s)
 {
     return s != nullptr && s[0] != '\0';

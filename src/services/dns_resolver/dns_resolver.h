@@ -19,6 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H
 
+#include "DetWebServerConfig.h"
 #include "shared_primitives/shim.h"
 
 #if DETWS_ENABLE_DNS_RESOLVER

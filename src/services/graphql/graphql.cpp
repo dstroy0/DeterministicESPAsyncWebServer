@@ -15,6 +15,8 @@
 
 #if DETWS_ENABLE_GRAPHQL
 
+#include "shared_primitives/shim.h"
+
 struct DetwsGqlArgs
 {
     const int *idx; // indices into g_args that are in scope

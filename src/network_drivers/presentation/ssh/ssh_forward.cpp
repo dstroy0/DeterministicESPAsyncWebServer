@@ -6,9 +6,14 @@
  * @brief SSH direct-tcpip port-forwarding owner - outbound TCP + byte bridge.
  */
 
-#include "network_drivers/presentation/ssh/ssh_forward.h"
+#include "ssh_forward.h"
 
 #if DETWS_SSH_PORT_FORWARD
+
+#include "../../transport/det_client.h"
+#include "shared_primitives/shim.h"
+#include "ssh_channel.h"
+#include "ssh_conn.h"
 
 // One forwarded TCP connection: an SSH channel bridged to a client-transport slot.
 struct SshFwd
