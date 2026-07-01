@@ -10,6 +10,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- fix coverage filter (0% regression) and pin gcovr ([`e80f2a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e80f2a265206afe90801b7d01ce459a5ea482270))
+- add include_footprint.py dependency-footprint auditor ([`3ee8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ee8e81e96b7ffc17b265358656b70f8770a3c2b))
+- update test report [skip ci] ([`3fcea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fcea8256f7f2daa3fd6d805f9431b0973708377))
+- update CHANGELOG.md [skip ci] ([`eb02417`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb02417ebdf0c9f51881c335e236ad09d10532f8))
 - update test report [skip ci] ([`a295a7d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a295a7d63db33c5f904fd84dbf9898653ec6bd84))
 - update CHANGELOG.md [skip ci] ([`8845367`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8845367dd25b5f36dd08fa6d53756c81b6f37522))
 - update test report [skip ci] ([`03faa4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03faa4b8a389f196d936b307e37e77251a81c83a))
@@ -30,11 +34,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Revert "refactor(shim.h): move incl from src/ to src/shared_primitives/shim.h" ([`1a804b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a804b199c29f61070b9c1edd9a325bd5804df5d))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`0b15b56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b15b568bbed839a1b1cf6ea51ac94355a3070ad))
 - Merge branch 'main' of https://github.com/dstroy0/DeterministicESPAsyncWebServer ([`118d54f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/118d54f1dc59e8662458b121af839fb4ba6067cc))
 
 ### Refactor
 
+- drop the shared_primitives/shim.h umbrella header ([`120b3e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/120b3e9e2c958b8791efd9e1fb762b25c022548b))
 - move incl from src/ to src/shared_primitives/shim.h ([`a020147`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a020147080e93fc7ceb9e06b8fa0fd4c64fb7300))
 
 ### Testing
