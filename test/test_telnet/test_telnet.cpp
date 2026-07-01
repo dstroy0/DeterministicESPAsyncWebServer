@@ -159,6 +159,94 @@ void test_print_broadcast()
     TEST_ASSERT_NOT_NULL(strstr(out, "\r\n"));
 }
 
+// telnet_rx / telnet_close on a slot with no Telnet connection are safe no-ops.
+void test_unknown_slot_is_noop()
+{
+    telnet_accept(0);
+    tcp_capture_reset();
+    telnet_rx(1); // no TelnetConn for slot 1
+    telnet_close(1);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL_UINT8(1, telnet_client_count());
+}
+
+// A bare CR waits for its LF, and control characters are ignored in a line.
+void test_cr_and_control_ignored()
+{
+    telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t seq[] = {'a', '\r', 0x01, 'b', '\n'}; // CR held, 0x01 dropped
+    push_bytes(0, seq, sizeof(seq));
+    telnet_rx(0);
+    TEST_ASSERT_EQUAL_STRING("ab", g_last_cmd);
+}
+
+// IAC IAC in the data stream is an escaped literal 0xFF added to the line.
+void test_iac_escaped_literal()
+{
+    telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t seq[] = {'x', IAC, IAC, '\n'};
+    push_bytes(0, seq, sizeof(seq));
+    telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT8('x', (uint8_t)g_last_cmd[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, (uint8_t)g_last_cmd[1]);
+    TEST_ASSERT_EQUAL_UINT8(0, (uint8_t)g_last_cmd[2]);
+}
+
+// A subnegotiation (IAC SB ... SE) is consumed; following data resumes normally.
+void test_subnegotiation_consumed()
+{
+    telnet_accept(0);
+    tcp_capture_reset();
+    const uint8_t seq[] = {IAC, 250 /*SB*/, 24, 'a', 'b', 240 /*SE*/, 'h', 'i', '\n'};
+    push_bytes(0, seq, sizeof(seq));
+    telnet_rx(0);
+    TEST_ASSERT_EQUAL_STRING("hi", g_last_cmd);
+}
+
+// Past MAX_TELNET_CONNS the extra connection is dropped, not admitted.
+void test_accept_no_capacity()
+{
+    for (uint8_t s = 0; s < MAX_TELNET_CONNS; s++)
+        telnet_accept(s);
+    TEST_ASSERT_EQUAL_UINT8(MAX_TELNET_CONNS, telnet_client_count());
+    telnet_accept(MAX_TELNET_CONNS); // one past capacity -> dropped
+    TEST_ASSERT_EQUAL_UINT8(MAX_TELNET_CONNS, telnet_client_count());
+    for (uint8_t s = 0; s < MAX_TELNET_CONNS; s++)
+        telnet_close(s);
+}
+
+// Application output doubles a literal IAC (RFC 854); printf formats and broadcasts.
+void test_output_escaping_and_printf()
+{
+    telnet_accept(0);
+    tcp_capture_reset();
+    telnet_print("a\xff"
+                 "b");
+    const uint8_t *out = (const uint8_t *)tcp_captured();
+    const uint8_t expect[] = {'a', 0xFF, 0xFF, 'b'};
+    TEST_ASSERT_EQUAL_UINT(4, tcp_captured_len());
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 4);
+
+    tcp_capture_reset();
+    telnet_printf("n=%d", 7);
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "n=7"));
+}
+
+// An inactive connection (no pcb) swallows both raw and escaped sends.
+void test_inactive_conn_sends_nothing()
+{
+    telnet_accept(0);
+    conn_pool[0].pcb = nullptr; // connection went away under us
+    tcp_capture_reset();
+    telnet_print("\xff"); // send_escaped bails on the inactive conn
+    push_str(0, "x\n");   // handle_data -> raw_send bails too
+    telnet_rx(0);
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len());
+    TEST_ASSERT_EQUAL_STRING("x", g_last_cmd); // line still dispatched
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -170,5 +258,12 @@ int main()
     RUN_TEST(test_iac_do_echo_is_silent);
     RUN_TEST(test_iac_stripped_from_data);
     RUN_TEST(test_print_broadcast);
+    RUN_TEST(test_unknown_slot_is_noop);
+    RUN_TEST(test_cr_and_control_ignored);
+    RUN_TEST(test_iac_escaped_literal);
+    RUN_TEST(test_subnegotiation_consumed);
+    RUN_TEST(test_accept_no_capacity);
+    RUN_TEST(test_output_escaping_and_printf);
+    RUN_TEST(test_inactive_conn_sends_nothing);
     return UNITY_END();
 }
