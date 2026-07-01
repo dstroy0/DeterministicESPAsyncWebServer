@@ -18,7 +18,7 @@
 #include "websocket.h"
 #include "network_drivers/transport/transport.h"
 #include "shared_primitives/det_utf8.h"
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 #if DETWS_ENABLE_WS_DEFLATE
 #include "network_drivers/presentation/deflate/deflate.h"

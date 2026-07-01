@@ -29,7 +29,8 @@
 
 #if DETWS_ENABLE_PROXY_PROTOCOL
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define PROXY_V2_SIG_LEN 12         ///< v2 signature length
 #define PROXY_V2_VER_CMD_PROXY 0x21 ///< version 2 | PROXY command

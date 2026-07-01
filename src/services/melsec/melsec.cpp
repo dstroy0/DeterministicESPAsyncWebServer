@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_MELSEC
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // MC binary multi-octet fields are little-endian.
 static size_t put16le(uint8_t *p, uint16_t v)

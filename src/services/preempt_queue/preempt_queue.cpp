@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_PREEMPT_QUEUE
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 namespace
 {

@@ -31,7 +31,8 @@
 
 #if DETWS_ENABLE_DF1
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define DF1_DLE 0x10
 #define DF1_STX 0x02

@@ -21,7 +21,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_BASE64_H
 #define DETERMINISTICESPASYNCWEBSERVER_BASE64_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief Encode @p src_len bytes of @p src as Base64.

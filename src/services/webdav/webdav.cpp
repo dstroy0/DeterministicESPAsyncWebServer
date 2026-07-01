@@ -12,7 +12,7 @@
 
 #if DETWS_ENABLE_WEBDAV
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 WebDavMethod webdav_method(const char *m)
 {

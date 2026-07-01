@@ -31,7 +31,8 @@
 
 #if DETWS_ENABLE_PROTOBUF
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // Wire types.
 #define PB_WT_VARINT 0

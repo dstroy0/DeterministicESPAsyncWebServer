@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_IEC60870
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // --- -104 APCI ---
 

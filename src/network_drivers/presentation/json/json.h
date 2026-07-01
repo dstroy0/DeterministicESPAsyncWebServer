@@ -39,7 +39,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_JSON_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @class JsonWriter

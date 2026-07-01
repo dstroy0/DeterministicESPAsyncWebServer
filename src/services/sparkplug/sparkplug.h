@@ -28,7 +28,8 @@
 
 #if DETWS_ENABLE_SPARKPLUG
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // Sparkplug B data type codes (a subset; Tahu DataType enum).
 #define SPB_DT_INT8 1

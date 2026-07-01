@@ -36,7 +36,8 @@
 
 #if DETWS_ENABLE_STOMP
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief One parsed header line: key/value slices point INTO the source buffer (raw, still escaped). */
 struct StompHeader

@@ -35,7 +35,8 @@
 
 #if DETWS_ENABLE_NATS
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // ---- builders (return bytes written, or 0 on overflow / bad input) ----
 

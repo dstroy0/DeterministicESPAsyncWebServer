@@ -13,7 +13,8 @@
 
 #if DETWS_ENABLE_UDP_TELEMETRY
 
-#include "shared_primitives/shim.h"
+#include <stdio.h>
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Line builder (pure)

@@ -12,7 +12,7 @@
 #if DETWS_ENABLE_OAUTH2
 
 #include "network_drivers/presentation/json/json.h"
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 namespace
 {

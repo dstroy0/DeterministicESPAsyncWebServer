@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_GRPC_WEB
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 size_t grpcweb_frame(uint8_t *buf, size_t cap, uint8_t flags, const uint8_t *body, size_t body_len)
 {

@@ -38,7 +38,8 @@
 
 #if DETWS_ENABLE_PREEMPT_QUEUE
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief Handler the processing task invokes for each dequeued item.

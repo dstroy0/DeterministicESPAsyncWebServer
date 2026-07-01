@@ -21,7 +21,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_NOTIFY_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #if DETWS_ENABLE_SNMP_TRAP
 

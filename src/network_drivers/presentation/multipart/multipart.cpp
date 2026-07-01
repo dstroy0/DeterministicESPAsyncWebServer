@@ -7,7 +7,7 @@
  */
 
 #include "multipart.h"
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // Skip past a CRLF pair; returns p+2 if CRLF found, else p unchanged.
 static char *skip_crlf(char *p)

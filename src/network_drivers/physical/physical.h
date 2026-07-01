@@ -21,7 +21,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
 #include "DetWebServerConfig.h" // DetIface
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 /**
  * @brief Connect to a WiFi access point.

@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_LWM2M
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 void lwm2m_tlv_init(Lwm2mTlvWriter *w, uint8_t *buf, size_t cap)
 {

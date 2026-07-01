@@ -26,7 +26,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 /**
  * @brief A time source: returns the current Unix epoch seconds for this source,

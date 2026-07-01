@@ -28,7 +28,8 @@
 
 #if DETWS_ENABLE_REDIS
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief RESP2 reply value types. */
 enum RespType

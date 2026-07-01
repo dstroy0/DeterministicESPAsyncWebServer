@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_DEVICENET
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 bool devicenet_encode_id(uint32_t *id, DeviceNetGroup group, uint8_t msg_id, uint8_t mac_id)
 {

@@ -17,7 +17,7 @@
 
 #if DETWS_ENABLE_OPCUA
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Built-in type codec
@@ -1055,6 +1055,7 @@ void opcua_set_browse_handler(OpcUaBrowseHandler fn)
 #ifdef ARDUINO
 
 #include "network_drivers/transport/transport.h"
+#include <time.h>
 
 namespace
 {

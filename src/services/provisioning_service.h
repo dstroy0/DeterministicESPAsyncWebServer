@@ -23,7 +23,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_PROVISIONING_SERVICE_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
 
 class DetWebServer;
 

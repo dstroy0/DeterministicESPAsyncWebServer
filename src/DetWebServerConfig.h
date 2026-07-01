@@ -35,7 +35,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CONFIG_H
 #define DETERMINISTICESPASYNCWEBSERVER_CONFIG_H
 
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 // ---------------------------------------------------------------------------
 // Compile-time capacity constants (affect static array sizes)

@@ -23,7 +23,8 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_FORWARD_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+
+#include <stdint.h>
 
 #if DETWS_SSH_PORT_FORWARD
 

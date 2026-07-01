@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_HOSTLINK
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 uint8_t hostlink_fcs(const char *data, size_t len)
 {

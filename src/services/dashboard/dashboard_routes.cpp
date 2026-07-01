@@ -18,7 +18,7 @@
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/application/web_assets.h" // DETWS_DASHBOARD_PAGE
 #include "shared_primitives/det_mime.h"
-#include "shared_primitives/shim.h"
+#include <stdio.h>
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool for inbound control messages
 #endif

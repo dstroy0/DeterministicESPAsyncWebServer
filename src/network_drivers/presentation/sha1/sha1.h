@@ -15,7 +15,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SHA1_H
 #define DETERMINISTICESPASYNCWEBSERVER_SHA1_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief SHA-1 digest length in bytes. */
 #define SHA1_DIGEST_LEN 20

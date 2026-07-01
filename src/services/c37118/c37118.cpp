@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_C37118
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 uint16_t c37118_crc(const uint8_t *data, size_t len)
 {

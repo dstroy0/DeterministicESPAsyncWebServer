@@ -33,7 +33,8 @@
 
 #if DETWS_ENABLE_ENIP
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define EIP_HEADER_SIZE 24
 

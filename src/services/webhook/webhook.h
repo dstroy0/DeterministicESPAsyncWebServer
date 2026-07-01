@@ -19,7 +19,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_WEBHOOK_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
 
 #if DETWS_ENABLE_WEBHOOK
 

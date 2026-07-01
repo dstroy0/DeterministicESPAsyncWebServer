@@ -33,7 +33,8 @@
 
 #if DETWS_ENABLE_S7COMM
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define S7_PROTOCOL_ID 0x32 ///< constant first octet of every S7comm PDU
 

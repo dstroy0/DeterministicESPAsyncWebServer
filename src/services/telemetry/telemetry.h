@@ -26,7 +26,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_TELEMETRY_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 #if DETWS_ENABLE_TELEMETRY
 

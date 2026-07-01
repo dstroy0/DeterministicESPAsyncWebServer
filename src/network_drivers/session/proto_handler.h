@@ -21,7 +21,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_PROTO_HANDLER_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 /**
  * @brief Per-protocol connection event/poll callbacks (Layer 5 dispatch vtable).

@@ -12,7 +12,8 @@
 
 #include "shared_primitives/det_mime.h"
 
-#include "shared_primitives/shim.h"
+#include <stdio.h>
+#include <string.h>
 
 namespace
 {

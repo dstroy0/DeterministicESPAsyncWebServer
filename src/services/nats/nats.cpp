@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_NATS
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // A tiny bounded append cursor; sets ok=false on overflow and stops.
 struct Buf

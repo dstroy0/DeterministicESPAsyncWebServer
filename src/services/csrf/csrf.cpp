@@ -16,7 +16,8 @@
 
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
 #include "shared_primitives/det_hex.h"
-#include "shared_primitives/shim.h"
+#include <stdio.h>
+#include <string.h>
 
 namespace
 {

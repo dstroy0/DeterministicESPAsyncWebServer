@@ -15,7 +15,8 @@
 
 #include "services/config_store/config_store.h"
 #include "shared_primitives/det_numparse.h"
-#include "shared_primitives/shim.h"
+#include <stdio.h>
+#include <string.h>
 
 namespace
 {

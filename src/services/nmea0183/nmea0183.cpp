@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_NMEA0183
 
 #include "shared_primitives/det_numparse.h"
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 uint8_t nmea0183_checksum(const char *s, size_t len)
 {

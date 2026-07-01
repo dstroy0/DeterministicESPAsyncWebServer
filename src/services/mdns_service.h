@@ -19,7 +19,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_MDNS_SERVICE_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 /**
  * @brief Start mDNS responder and advertise an HTTP service.

@@ -20,7 +20,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_OTA_ROLLBACK_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stdint.h>
 
 #if DETWS_ENABLE_OTA_ROLLBACK
 

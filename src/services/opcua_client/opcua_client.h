@@ -31,7 +31,8 @@
 
 #include "DetWebServerConfig.h"
 #include "services/opcua/opcua.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #if DETWS_ENABLE_OPCUA_CLIENT
 

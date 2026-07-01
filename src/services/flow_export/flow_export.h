@@ -31,7 +31,8 @@
 
 #if DETWS_ENABLE_FLOW_EXPORT
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // ---- NetFlow v5 (fixed legacy format) ----
 

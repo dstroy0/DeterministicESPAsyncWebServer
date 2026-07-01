@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_CLOUDEVENTS
 
 #include "network_drivers/presentation/json/json.h"
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 static bool ce_present(const char *s)
 {

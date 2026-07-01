@@ -30,7 +30,8 @@
 
 #if DETWS_ENABLE_HOSTLINK
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief FCS: 8-bit XOR of [data, data+len). */
 uint8_t hostlink_fcs(const char *data, size_t len);

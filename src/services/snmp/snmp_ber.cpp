@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SNMP
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // Encoder

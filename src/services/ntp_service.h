@@ -18,7 +18,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H
 
 #include "DetWebServerConfig.h"
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <time.h>
 
 /**
  * @brief Start the SNTP client.

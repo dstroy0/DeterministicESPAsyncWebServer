@@ -18,7 +18,9 @@
 #include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
 #include "network_drivers/session/scratch.h" // per-dispatch arena (keeps the decode buffers off the worker stack)
-#include "shared_primitives/shim.h"
+
+#include <stdio.h>
+#include <string.h>
 
 namespace
 {

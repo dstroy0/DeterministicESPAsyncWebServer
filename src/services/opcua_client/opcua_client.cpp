@@ -12,7 +12,7 @@
 
 #if DETWS_ENABLE_OPCUA_CLIENT
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 void opcua_client_init(OpcUaClient *c)
 {

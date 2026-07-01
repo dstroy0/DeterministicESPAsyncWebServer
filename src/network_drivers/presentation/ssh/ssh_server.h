@@ -22,7 +22,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_SERVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_SERVER_H
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief Emit one outbound SSH message payload for slot @p slot.

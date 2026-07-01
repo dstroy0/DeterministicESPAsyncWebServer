@@ -31,7 +31,8 @@
 
 #if DETWS_ENABLE_LWM2M
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // Identifier kinds (Type byte bits 7-6).
 #define LWM2M_TLV_OBJECT_INSTANCE 0x00

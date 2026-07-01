@@ -34,7 +34,8 @@
 
 #if DETWS_ENABLE_SUNSPEC
 
-#include "shared_primitives/shim.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #define SUNSPEC_MARKER 0x53756E53u ///< "SunS"
 #define SUNSPEC_END_MODEL 0xFFFFu  ///< end-model id

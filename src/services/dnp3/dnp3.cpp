@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_DNP3
 
-#include "shared_primitives/shim.h"
+#include <string.h>
 
 uint16_t dnp3_crc(const uint8_t *data, size_t len)
 {

@@ -7,6 +7,7 @@
 // latency are HW-verified separately (the host has no tasks/ISRs).
 
 #include "services/preempt_queue/preempt_queue.h"
+#include <string.h> // memcpy
 #include <unity.h>
 #include <vector>
 

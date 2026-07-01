@@ -11,9 +11,10 @@
 #if DETWS_SSH_PORT_FORWARD
 
 #include "../../transport/det_client.h"
-#include "shared_primitives/shim.h"
 #include "ssh_channel.h"
 #include "ssh_conn.h"
+
+#include <string.h>
 
 // One forwarded TCP connection: an SSH channel bridged to a client-transport slot.
 struct SshFwd
