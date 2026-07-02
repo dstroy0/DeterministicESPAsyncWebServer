@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.68.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.68.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0f42d18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f42d18aade027dd4b53dfbe133de97213bc4c05))
+- update CHANGELOG.md [skip ci] ([`7d023f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d023f0a7d89e9bc627932a1f2bd74320987a6b4))
+
+### Changes
+
+- Bump version: 4.67.0 → 4.68.0 ([`dcae78b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcae78b2ceac52d3cf4243789c623c85e9e914ed))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a0f8b6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0f8b6c4a07842365918b17fef1532db5b71b53c))
+
+### Features
+
+- ingress ACL - byte-pattern permit/deny before forwarding ([`8c6796d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c6796db4d5895b667f6c324e4bc13e5f8f47296))
+
+</details>
+
 ## [4.67.0] - 2026-07-02
 
 <details>
