@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`85c47a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85c47a3fca0a5cfa0599b9cd390eabecca6f8b1a))
 - update test report [skip ci] ([`394156f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/394156f137ea7c61e5cf904a92dabfbc5a5d2a5a))
 - update CHANGELOG.md [skip ci] ([`3e1b17e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e1b17eb8c7574fc0403ff8d2f860607afb32dcf))
 - update test report [skip ci] ([`ffe7077`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe707766cc62bcc2161315e8929bc579cbfebed))
@@ -97,6 +98,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover writer overflow/null guards, reader truncation paths, float-bits helper ([`3bdbcca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bdbccada1693d4fdf593c5a1309d6f8be4cb743))
 - cover init/boots accessors, encrypted discovery, tiny-cap report, priv-not-configured, notify paths ([`2273468`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2273468cddf57100c69d4be19d16156258223dbf))
 - cover message truncation fail-closed sweep and priv-without-auth rejection ([`9a44424`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a444247e45c905ca08a10ac66206d637ae6e404))
 - cover slot guards, banner/build caps, KEXINIT field/trunc failures, KEXDH errors + reply overflow ([`519b2e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/519b2e0cf84d3926f1458e58c5d6c3eef1ff4d37))
