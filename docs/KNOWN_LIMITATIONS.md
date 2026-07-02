@@ -143,6 +143,14 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   codecs + drivers on the roadmap, deferred until their hardware is on hand to verify
   against. The gateway carries whole frames with a 16-bit node address; it does not itself
   do mesh routing, retransmission, or LoRaWAN / Zigbee session state.
+- **A shipped radio driver's register protocol is host-verified; its RF link is not.** The
+  LoRa SX127x driver (`services/lora`, `DETWS_ENABLE_LORA`) is tested against a mock chip
+  (register file + FIFO), which proves the init / send / receive register sequence matches
+  the datasheet, and it compiles for the ESP32 - but whether it actually keys the radio and
+  demodulates a frame over the air is only confirmable with the module. Treat a radio driver
+  as "protocol-correct, RF-unverified" until it has been run against real hardware. It also
+  implements a single modem config (explicit header, CRC on) and the base modulation, not
+  the chip's every feature (FHSS, CAD, the SX126x command interface).
 
 ## Streaming sinks
 

@@ -337,6 +337,31 @@
 #error "DeterministicESPAsyncWebServer: DETWS_GW_MAX_PORTS must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// LoRa radio (DETWS_ENABLE_LORA) - Semtech SX127x / RFM95-96 codec + driver
+// ---------------------------------------------------------------------------
+//
+// A per-radio codec + driver that plugs into the gateway (DETWS_ENABLE_GATEWAY): the
+// RadioHead-compatible 4-byte frame header (to / from / id / flags) codec, and an SX127x
+// register driver over a caller-supplied register-access bus (so the SPI + chip-select
+// wiring is the integration's, and the register protocol is host-testable with a mock
+// bus). Bridge received frames northbound with det_gw_uplink(); the actual RF link needs
+// the module to verify. See services/lora/lora.h.
+
+/** @brief Enable the LoRa (SX127x) radio codec + driver (default off). */
+#ifndef DETWS_ENABLE_LORA
+#define DETWS_ENABLE_LORA 0
+#endif
+
+/** @brief Max LoRa payload bytes (SX127x FIFO is 256; RadioHead uses 251 + 4 header). */
+#ifndef DETWS_LORA_MAX_PAYLOAD
+#define DETWS_LORA_MAX_PAYLOAD 251
+#endif
+
+#if DETWS_ENABLE_LORA && (DETWS_LORA_MAX_PAYLOAD < 1 || DETWS_LORA_MAX_PAYLOAD > 251)
+#error "DeterministicESPAsyncWebServer: DETWS_LORA_MAX_PAYLOAD must be 1..251"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

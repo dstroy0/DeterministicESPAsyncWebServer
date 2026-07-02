@@ -143,9 +143,13 @@ callbacks; the items stay open until verified against the real hardware.
 
 SPI radios:
 
-- [ ] \*LoRa / LoRaWAN gateway (L) - Semtech SX127x / SX126x, RFM95/96 over SPI.
-      Long-range sub-GHz; bridge raw LoRa frames first, then a bounded LoRaWAN
-      Class A uplink/downlink, to MQTT.
+- [~] \*LoRa / LoRaWAN gateway (L) - Semtech SX127x / SX126x, RFM95/96 over SPI.
+  **Codec + SX127x driver shipped** (`DETWS_ENABLE_LORA`, `services/lora`): the
+  RadioHead 4-byte header codec + the SX1276 register protocol (init / send / recv /
+  RSSI) over a portable register-access bus, host-tested against a mock chip; example
+  11.LoRaGateway drives a real RFM95 and bridges frames northbound via the gateway.
+  Remaining: verify the RF link on the module, an SX126x variant, and a bounded
+  LoRaWAN Class A uplink/downlink codec.
 - [ ] \*nRF24L01+ gateway (M) - Nordic 2.4 GHz over SPI; cheap point-to-multipoint
       sensor links bridged to the web stack.
 - [ ] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
