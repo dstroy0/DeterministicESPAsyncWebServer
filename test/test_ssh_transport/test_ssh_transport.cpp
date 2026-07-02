@@ -509,9 +509,156 @@ void test_begin_rekey_preserves_session_and_auth()
     TEST_ASSERT_EQUAL(SSH_PHASE_OPEN, ssh_sess[0].phase);
 }
 
+// Build a KEXINIT with eight independently-chosen algorithm name-lists.
+static size_t build_kexinit8(uint8_t *out, const char *const n[8])
+{
+    size_t o = 0;
+    out[o++] = SSH_MSG_KEXINIT;
+    for (int j = 0; j < 16; j++)
+        out[o++] = (uint8_t)j; // cookie
+    for (int j = 0; j < 8; j++)
+        o += put_namelist(out + o, n[j]);
+    o += put_namelist(out + o, ""); // lang c2s
+    o += put_namelist(out + o, ""); // lang s2c
+    out[o++] = 0;                   // first_kex_packet_follows
+    for (int j = 0; j < 4; j++)
+        out[o++] = 0; // reserved
+    return o;
+}
+
+// Every transport entry point rejects an out-of-range slot.
+void test_transport_index_guards()
+{
+    uint8_t out[512];
+    size_t olen = 0, consumed = 0;
+    ssh_transport_init(MAX_SSH_CONNS); // no-op, no crash
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_recv_banner(MAX_SSH_CONNS, (const uint8_t *)"x", 1, &consumed));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_build(MAX_SSH_CONNS, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(MAX_SSH_CONNS, out, 20));
+    uint8_t h[SSH_SHA256_DIGEST_LEN];
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kex_exchange_hash(MAX_SSH_CONNS, nullptr, nullptr, nullptr, nullptr, 0, h));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(MAX_SSH_CONNS, out, 10, out, &olen, sizeof(out)));
+    ssh_newkeys_complete(MAX_SSH_CONNS); // no-op
+    TEST_ASSERT_FALSE(ssh_rekey_needed(MAX_SSH_CONNS));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_begin_rekey(MAX_SSH_CONNS, out, &olen, sizeof(out)));
+}
+
+// Banner and builder cap checks, and a banner line that exceeds the maximum.
+void test_banner_and_build_caps()
+{
+    uint8_t small[4];
+    size_t l = 0, consumed = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_server_banner(small, &l, 4)); // banner does not fit
+
+    // An "SSH-" line of exactly SSH_VERSION_MAX chars, then LF: too long.
+    static uint8_t long_ssh[SSH_VERSION_MAX + 2];
+    memcpy(long_ssh, "SSH-", 4);
+    memset(long_ssh + 4, 'x', SSH_VERSION_MAX - 4);
+    long_ssh[SSH_VERSION_MAX] = '\n';
+    ssh_transport_init(0);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_recv_banner(0, long_ssh, SSH_VERSION_MAX + 1, &consumed));
+
+    // A line with no terminator that exceeds the maximum length.
+    static uint8_t long_line[SSH_VERSION_MAX + 4];
+    memset(long_line, 'y', sizeof(long_line));
+    ssh_transport_init(0);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_recv_banner(0, long_line, sizeof(long_line), &consumed));
+
+    ssh_transport_init(0);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_build(0, small, &l, 4)); // writer overflow
+    TEST_ASSERT_EQUAL_INT(-1, ssh_extinfo_build(small, &l, 4));    // writer overflow
+    uint8_t ks[8] = {0}, f[256] = {0}, sig[8] = {0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_build_reply(ks, sizeof(ks), f, sig, sizeof(sig), small, &l, 4));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_transport_begin_rekey(0, small, &l, 4)); // inner kexinit_build overflow
+}
+
+// KEXINIT parsing rejects an unusable name-list at every negotiated field, an
+// over-long payload, and truncated / over-claimed name-list fields.
+void test_kexinit_parse_field_and_trunc()
+{
+    ssh_transport_init(0);
+    uint8_t buf[3000];
+    const char *K = "diffie-hellman-group14-sha256", *H = "rsa-sha2-256", *C = "aes256-ctr", *M = "hmac-sha2-256",
+               *P = "none";
+
+    const char *rows[6][8] = {
+        {K, "", C, C, M, M, P, P}, // host-key
+        {K, H, C, "", M, M, P, P}, // encryption s2c
+        {K, H, C, C, "", M, P, P}, // mac c2s
+        {K, H, C, C, M, "", P, P}, // mac s2c
+        {K, H, C, C, M, M, "", P}, // compression c2s
+        {K, H, C, C, M, M, P, ""}, // compression s2c
+    };
+    for (int r = 0; r < 6; r++)
+    {
+        size_t n = build_kexinit8(buf, rows[r]);
+        TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+    }
+
+    // Over-long payload (> SSH_KEXINIT_MAX).
+    memset(buf, 0, sizeof(buf));
+    buf[0] = SSH_MSG_KEXINIT;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, SSH_KEXINIT_MAX + 8));
+
+    // Truncated mid-field: the host-key name-list length header runs past the buffer.
+    const char *good[8] = {K, H, C, C, M, M, P, P};
+    size_t full = build_kexinit8(buf, good);
+    size_t f2 = 1 + 16 + (4 + strlen(K)); // start of the host-key field
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, f2 + 2));
+
+    // Over-claimed field length: host-key name-list claims ~4 GiB.
+    build_kexinit8(buf, good);
+    buf[f2] = buf[f2 + 1] = buf[f2 + 2] = buf[f2 + 3] = 0xFF;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, full));
+}
+
+// KEXDH parsing rejects a wrong type, an mpint that runs past the payload, and a
+// payload that fails to parse in the full handler.
+void test_kexdh_parse_and_handle_errors()
+{
+    uint8_t e_be[256];
+    uint8_t bad[8] = {99, 0, 0, 0, 1, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_parse_init(bad, 8, e_be)); // wrong type
+    uint8_t over[8] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 100, 1, 2, 3}; // e claims 100 bytes, 3 present
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_parse_init(over, 8, e_be));
+
+    uint8_t out[512];
+    size_t olen = 0;
+    ssh_transport_init(0);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, bad, 8, out, &olen, sizeof(out))); // parse failure
+
+    // A full, valid handshake whose reply does not fit the output buffer fails closed
+    // after the DH/exchange-hash/sign steps succeed.
+    ssh_transport_init(0);
+    setup_rsa_fixture();
+    SshSession *s = &ssh_sess[0];
+    strcpy(s->v_c, "SSH-2.0-TestClient");
+    s->v_c_len = (uint16_t)strlen(s->v_c);
+    for (int j = 0; j < 30; j++)
+    {
+        s->i_c[j] = (uint8_t)(j + 1);
+        s->i_s[j] = (uint8_t)(j + 100);
+    }
+    s->i_c_len = 30;
+    s->i_s_len = 30;
+    TEST_ASSERT_EQUAL_INT(0, ssh_dh_generate(0));
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02; // valid e
+    uint8_t pkt[300];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    size_t n = 1 + put_mpint(pkt + 1, e_be, 256);
+    uint8_t reply[8];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_transport_index_guards);
+    RUN_TEST(test_banner_and_build_caps);
+    RUN_TEST(test_kexinit_parse_field_and_trunc);
+    RUN_TEST(test_kexdh_parse_and_handle_errors);
     RUN_TEST(test_server_banner_format);
     RUN_TEST(test_recv_banner_complete);
     RUN_TEST(test_recv_banner_bare_lf);
