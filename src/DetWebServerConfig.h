@@ -388,6 +388,31 @@
 #error "DeterministicESPAsyncWebServer: DETWS_NRF24_PAYLOAD must be 1..32"
 #endif
 
+// ---------------------------------------------------------------------------
+// EnOcean ESP3 (DETWS_ENABLE_ENOCEAN) - energy-harvesting 868 MHz serial codec
+// ---------------------------------------------------------------------------
+//
+// A UART telegram codec for EnOcean's ESP3 (EnOcean Serial Protocol 3), the framing used
+// by USB/serial EnOcean gateways (TCM 310 / USB 300): sync 0x55, a 4-byte header (data
+// length, optional length, packet type) protected by CRC8, then data + optional data
+// protected by a second CRC8. esp3_parse() frames one telegram out of a byte stream and
+// verifies both CRCs; esp3_build() assembles one. Pure (no UART code - you feed it the
+// serial bytes), so it is fully host-testable. See services/enocean/enocean.h.
+
+/** @brief Enable the EnOcean ESP3 serial codec (default off). */
+#ifndef DETWS_ENABLE_ENOCEAN
+#define DETWS_ENABLE_ENOCEAN 0
+#endif
+
+/** @brief Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). */
+#ifndef DETWS_ENOCEAN_MAX_DATA
+#define DETWS_ENOCEAN_MAX_DATA 512
+#endif
+
+#if DETWS_ENABLE_ENOCEAN && (DETWS_ENOCEAN_MAX_DATA < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_ENOCEAN_MAX_DATA must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

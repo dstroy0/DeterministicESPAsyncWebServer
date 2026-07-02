@@ -166,7 +166,11 @@ UART radios:
 - [ ] \*Zigbee NCP gateway (L) - Silicon Labs EZSP (EFR32) / Digi XBee / TI ZNP over
       UART; join as coordinator and bridge Zigbee devices to MQTT.
 - [ ] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
-- [ ] \*EnOcean gateway (M) - energy-harvesting 868 MHz ESP3 protocol over UART.
+- [~] \*EnOcean gateway (M) - energy-harvesting 868 MHz ESP3 protocol over UART.
+  **ESP3 codec shipped** (`DETWS_ENABLE_ENOCEAN`, `services/enocean`): telegram
+  parse/build + the CRC-8 (poly 0x07), host-tested with known-answer CRCs and
+  malformed/resync framing; example 13.EnOceanGateway bridges a real TCM 310 over
+  UART. Remaining: verify against a module + EEP profile decoding.
 - [ ] \*Sigfox uplink (S) - Wisol / Murata module over UART; tiny low-power uplinks.
 - [ ] \*Wi-SUN FAN gateway (L) - sub-GHz IPv6 mesh (Renesas / SiLabs) over UART.
 

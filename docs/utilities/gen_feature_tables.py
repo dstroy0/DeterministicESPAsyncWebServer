@@ -46,6 +46,7 @@ CODEC_HEADINGS = {
     "DF1",
     "DMX512",
     "DNP3",
+    "EnOcean",
     "EtherNet/IP",
     "FINS",
     "Flow Export",

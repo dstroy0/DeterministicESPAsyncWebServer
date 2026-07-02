@@ -172,6 +172,12 @@ DNP3 (IEEE 1815) data-link frame codec. Default off. services/dnp3 is a zero-hea
 
 Opt-in DNS resolver with answer verification. Default off. services/dns_resolver resolves a hostname to an IPv4 address (lwIP dns_gethostbyname, marshalled to tcpip_thread like the http_client) and can reject suspicious answers - 0.0.0.0, broadcast, loopback, multicast - which are spoofing / DNS-rebinding indicators for a remote host. The address classifier / verifier is pure and host-tested; the resolve is ESP32-only (blocking, so call it off the request hot path).
 
+## EnOcean
+
+`DETWS_ENABLE_ENOCEAN`
+
+EnOcean ESP3 serial codec (v5 gateway plugin). Default off. services/enocean is the UART telegram codec for EnOcean Serial Protocol 3, the framing every USB / serial EnOcean gateway module (TCM 310 / USB 300) speaks for energy-harvesting 868 MHz switches and sensors. A telegram is `0x55 | data-len(2) | opt-len(1) | packet-type(1) | CRC8H | data | opt | CRC8D`. `esp3_parse` frames one telegram out of a byte stream (returning the length consumed, 0 for "need more", or -1 to drop a byte and resynchronise), verifying both CRC-8s (polynomial 0x07); `esp3_build` assembles one; `esp3_crc8` is the shared checksum. This is the radio half of an EnOcean-to-web bridge: pull the sender id + payload out of a RADIO_ERP1 telegram and bridge it northbound with `det_gw_uplink()`. Pure - you feed it the UART bytes, the module does the RF - and fully host-tested (CRC-8 known-answer values incl. the 0xF4 check, a build/parse round trip, malformed framing, and resynchronisation). Example 13.EnOceanGateway reads a real module over UART. See src/services/enocean/enocean.h.
+
 ## ESP-NOW
 
 `DETWS_ENABLE_ESPNOW`

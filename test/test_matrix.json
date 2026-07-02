@@ -465,6 +465,12 @@
       "src": ["+<services/nrf24/nrf24.cpp>"],
       "tests": ["test_nrf24"]
     },
+    "native_enocean": {
+      "desc": "EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07)\nagainst known answers, a build -> parse round trip, malformed framing (bad sync / header\nCRC / data CRC), incomplete telegrams, over-length rejection, and resynchronisation.\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_ENOCEAN=1", "-DDETWS_ENOCEAN_MAX_DATA=16"],
+      "src": ["+<services/enocean/enocean.cpp>"],
+      "tests": ["test_enocean"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],
