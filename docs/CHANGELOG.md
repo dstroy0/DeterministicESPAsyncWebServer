@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.65.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.65.0 - 2026-07-02</b></summary>
 
 ### Bug Fixes
 
@@ -10,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`6872917`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6872917a07cb4b40e0383aafafaa44c71a79abda))
+- update CHANGELOG.md [skip ci] ([`23c4a7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23c4a7ef505a4ef2d06a3259d80864ec3588f160))
 - update test report [skip ci] ([`3ce252c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ce252cfaee5abfb91a3479735251e0bc6d17176))
 - update CHANGELOG.md [skip ci] ([`7178b27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7178b27daef8fe6dc2792134dd49bd8ee9c9b7cb))
 - update test report [skip ci] ([`829828e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/829828e37b7e6e10ab52c7745b8876f3b7122daa))
@@ -89,6 +94,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 4.64.1 → 4.65.0 ([`9f8e26c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f8e26cec76a74dfa336aa34d7c2efde006c7fb7))
 - Merge pull request #7 from dstroy0/dependabot/github_actions/actions/upload-artifact-7 ([`f5c2b54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5c2b542b8769416b64a65e20a8b91bfcf4261a2))
 - Merge pull request #8 from dstroy0/dependabot/github_actions/SonarSource/sonarqube-scan-action-8 ([`b581115`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5811151ed8412406ebb244c2f8498336db6e9fc))
 - Merge pull request #9 from dstroy0/dependabot/github_actions/actions/checkout-7 ([`f148710`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f148710a9e595d867ffbeb09a9f4fc7281ccb1ec))
@@ -105,6 +111,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- DMA peripheral ingest/egress with an ingress/egress simulator ([`b5ba77b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5ba77b3b8d25057aa156e65feb795617fa79543))
 - concurrent-TLS enablement - PSRAM offload, MFL record cap, build guard ([`9e259a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e259a76deda38884d8cdba4be00b5474986f7b6))
 - enforce worker-stack RSA floor (DETWS_WORKER_STACK_RSA_MIN) when OIDC/SSH enabled ([`e3326ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3326eef023e137d139090afde435ec654767d70))
 
@@ -151,6 +158,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - cover all builders, null/overflow guards, typed-parse rejects ([`8e437f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e437f6375c0b969f31d17ed8aa75d24fceb87d2))
 - cover error paths, full COB-ID classification, SDO variants ([`14f919c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14f919cab8fdc6e1497e7881da3bf0828066c3df))
 - cover graphql edge paths + SSH ext-info branches (coverage) ([`64e419b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64e419b1e80f3c8323b24b2863c1ee9c02fbc72c))
+
+</details>
 
 ## [4.64.1] - 2026-06-30
 
