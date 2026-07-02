@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- allow Rohm / devboard (Wi-SUN roadmap note) ([`0576b54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0576b54f4fe632ff8c9cd9faa8e3fb02b5621f2e))
+- update CHANGELOG.md [skip ci] ([`9dd0242`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd02424da542579abf566ec4201a4b3a1cacd9f))
 - update test report [skip ci] ([`fb482cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb482cd78f1ec764019aec89e0c21b29fb8d0f1a))
 - update CHANGELOG.md [skip ci] ([`a517562`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5175626111f7eccd4316fc3ee43004a38550f0e))
 
