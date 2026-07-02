@@ -412,6 +412,13 @@
     "flash_bytes": 752437,
     "ram_bytes": 66728
   },
+  "THREAD+GATEWAY": {
+    "example": "Foundation/18.ThreadGateway",
+    "flags": "-DDETWS_ENABLE_THREAD=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 269081,
+    "ram_bytes": 22608
+  },
   "TLS": {
     "example": "L6-Presentation/07.SecureWebSocket",
     "flags": "-DDETWS_ENABLE_TLS=1",
