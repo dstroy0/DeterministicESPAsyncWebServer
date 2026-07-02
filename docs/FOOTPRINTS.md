@@ -35,6 +35,7 @@ from each example's `pio ci` size report and aggregated into
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 734.6 KB (57.4%) | 65.2 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 733.3 KB (57.3%) | 64.6 KB (20.2%)  |
 | `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.0 KB (57.3%) | 67.7 KB (21.1%)  |
+| `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.8 KB (21.1%) | 21.2 KB (6.6%)   |
 | `MDNS`                                   | L7-Application/15.mDNS                  | 757.4 KB (59.2%) | 66.5 KB (20.8%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 734.3 KB (57.4%) | 64.9 KB (20.3%)  |
 | `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 734.6 KB (57.4%) | 64.9 KB (20.3%)  |

@@ -188,6 +188,13 @@
     "flash_bytes": 751629,
     "ram_bytes": 69280
   },
+  "LORA+GATEWAY": {
+    "example": "Foundation/11.LoRaGateway",
+    "flags": "-DDETWS_ENABLE_LORA=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 276273,
+    "ram_bytes": 21680
+  },
   "MDNS": {
     "example": "L7-Application/15.mDNS",
     "flags": "-DDETWS_ENABLE_MDNS=1",
