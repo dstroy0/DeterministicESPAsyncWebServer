@@ -218,9 +218,73 @@ void test_empty_length_field()
     TEST_ASSERT_NOT_NULL(f.data); // empty, but a valid in-buffer pointer
 }
 
+// Writer overflow / null-argument paths all fail closed.
+void test_writer_error_paths()
+{
+    uint8_t buf[4];
+    PbWriter w;
+
+    // A 5-byte varint does not fit a 4-byte buffer.
+    pb_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(pb_write_varint(&w, 0xFFFFFFFFull));
+    TEST_ASSERT_TRUE(w.error);
+
+    // fixed32: the tag fits the 2-byte buffer but the 4-byte value does not.
+    uint8_t b2[2];
+    pb_writer_init(&w, b2, sizeof(b2));
+    TEST_ASSERT_FALSE(pb_fixed32(&w, 1, 0x12345678u));
+    TEST_ASSERT_TRUE(w.error);
+
+    // bytes: not even the tag fits a zero-length buffer.
+    pb_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(pb_bytes(&w, 1, (const uint8_t *)"x", 1));
+
+    // string: a null pointer is rejected.
+    pb_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(pb_string(&w, 1, nullptr));
+    TEST_ASSERT_TRUE(w.error);
+}
+
+// Reader truncation / null-argument paths all fail closed.
+void test_reader_error_paths()
+{
+    size_t pos = 0;
+    uint64_t v;
+    TEST_ASSERT_FALSE(pb_read_varint(nullptr, 4, &pos, &v));
+
+    PbField f;
+    uint8_t lone_cont[1] = {0x80}; // tag varint is a lone continuation byte
+    pos = 0;
+    TEST_ASSERT_FALSE(pb_read_field(lone_cont, 1, &pos, &f));
+
+    uint8_t i64[3] = {0x09, 0x01, 0x02}; // wire type 1 (I64) with < 8 payload bytes
+    pos = 0;
+    TEST_ASSERT_FALSE(pb_read_field(i64, sizeof(i64), &pos, &f));
+
+    uint8_t i32[2] = {0x0D, 0x01}; // wire type 5 (I32) with < 4 payload bytes
+    pos = 0;
+    TEST_ASSERT_FALSE(pb_read_field(i32, sizeof(i32), &pos, &f));
+
+    uint8_t len_trunc[2] = {0x0A, 0x80}; // wire type 2 (LEN) with a truncated length varint
+    pos = 0;
+    TEST_ASSERT_FALSE(pb_read_field(len_trunc, sizeof(len_trunc), &pos, &f));
+}
+
+// The float-from-bits helper round-trips an IEEE-754 value.
+void test_float_bits_helper()
+{
+    uint32_t bits;
+    float in = 3.5f;
+    memcpy(&bits, &in, 4);
+    TEST_ASSERT_EQUAL_FLOAT(3.5f, pb_float_bits(bits));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_writer_error_paths);
+    RUN_TEST(test_reader_error_paths);
+    RUN_TEST(test_float_bits_helper);
     RUN_TEST(test_vector_field1_150);
     RUN_TEST(test_vector_string_testing);
     RUN_TEST(test_zigzag_mapping);
