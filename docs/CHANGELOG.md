@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.80.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.80.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`995cd69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/995cd69bbb3567ff997b0587eb9d2b601d77f47b))
+- update CHANGELOG.md [skip ci] ([`c8ecc99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8ecc99e9e761a986a0c083b22a54a3f78002c22))
+
+### Changes
+
+- Bump version: 4.79.0 → 4.80.0 ([`6f5067a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f5067a04e7ffba1d7254e41dc198776ad503d24))
+
+### Refactor
+
+- centralize all tuning knobs in DetWebServerConfig.h ([`3852708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38527081ab839aeeb2a72c4c6dc26cffa343fa43))
+
+</details>
+
 ## [4.79.0] - 2026-07-02
 
 <details>
