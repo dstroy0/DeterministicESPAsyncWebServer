@@ -40,25 +40,6 @@
 
 #if DETWS_ENABLE_GRAPHQL
 
-#ifndef DETWS_GQL_MAX_NODES
-#define DETWS_GQL_MAX_NODES 48 ///< Max fields across the whole query.
-#endif
-#ifndef DETWS_GQL_MAX_ARGS
-#define DETWS_GQL_MAX_ARGS 24 ///< Max arguments across the whole query.
-#endif
-#ifndef DETWS_GQL_MAX_DEPTH
-#define DETWS_GQL_MAX_DEPTH 6 ///< Max selection-set nesting depth.
-#endif
-#ifndef DETWS_GQL_NAME_MAX
-#define DETWS_GQL_NAME_MAX 32 ///< Max field / argument name length.
-#endif
-#ifndef DETWS_GQL_PATH_MAX
-#define DETWS_GQL_PATH_MAX 96 ///< Max dotted path length passed to the resolver.
-#endif
-#ifndef DETWS_GQL_STRBUF
-#define DETWS_GQL_STRBUF 256 ///< Pool for decoded string-argument bytes.
-#endif
-
 /** @brief Scalar value kinds a resolver can return. */
 enum DetwsGqlType
 {

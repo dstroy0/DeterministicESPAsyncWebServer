@@ -28,16 +28,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief Initial receive window the server advertises (RFC 4254 §5.1). */
-#ifndef SSH_CHAN_WINDOW
-#define SSH_CHAN_WINDOW 32768u
-#endif
-
-/** @brief Maximum SSH channel data payload the server accepts per message. */
-#ifndef SSH_CHAN_MAX_PACKET
-#define SSH_CHAN_MAX_PACKET 32768u
-#endif
-
 /** @brief Channel type (RFC 4254). */
 enum SshChanType
 {

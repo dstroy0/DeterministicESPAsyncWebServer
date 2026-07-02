@@ -32,10 +32,6 @@
 
 #if DETWS_ENABLE_ESPNOW
 
-#ifndef DETWS_ESPNOW_MAX_PEERS
-#define DETWS_ESPNOW_MAX_PEERS 8 ///< Bounded peer registry size.
-#endif
-
 /** @brief Envelope header size (magic + type + length). */
 #define DETWS_ESPNOW_HDR 3
 /** @brief Magic byte marking a library envelope. */

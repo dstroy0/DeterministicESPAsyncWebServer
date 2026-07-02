@@ -146,13 +146,6 @@ bool detws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out)
 
 #include "services/http_client/http_client.h"
 
-#ifndef DETWS_OAUTH2_BODY_BUF
-#define DETWS_OAUTH2_BODY_BUF 1024
-#endif
-#ifndef DETWS_OAUTH2_RESP_BUF
-#define DETWS_OAUTH2_RESP_BUF 2048
-#endif
-
 namespace
 {
 // Static scratch (single-accessor like the other services) - keeps these large

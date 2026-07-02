@@ -40,31 +40,11 @@
 /** @brief Max stored length of an SSH identification string (RFC 4253 §4.2: 255). */
 #define SSH_VERSION_MAX 256
 
-/**
- * @brief Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange
- * hash). A modern OpenSSH client's KEXINIT (post-quantum KEX names + cert host-key
- * algs + EtM MACs + ext-info-c) runs well past 1 KB, so this must be large enough
- * to hold it - a smaller bound silently rejects real clients at key exchange. The
- * packet layer already caps any single packet at SSH_PKT_BUF_SIZE.
- */
-#define SSH_KEXINIT_MAX 2048
-
 /** @brief Max stored size of our own KEXINIT (I_S); the server's lists are short. */
 #define SSH_KEXINIT_S_MAX 384
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
 #define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
-
-/**
- * @brief Re-key when either packet sequence number reaches this value.
- *
- * RFC 4253 §9 recommends re-keying after ~1 GB or one hour. A packet-count
- * proxy is used here; the default is well below SSH_SEQ_CLOSE_THRESHOLD so a
- * re-key always happens before the sequence number can wrap.
- */
-#ifndef SSH_REKEY_PACKET_THRESHOLD
-#define SSH_REKEY_PACKET_THRESHOLD 0x40000000u
-#endif
 
 // ---------------------------------------------------------------------------
 // Handshake phase

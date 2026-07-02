@@ -38,13 +38,6 @@
 
 #if DETWS_ENABLE_AUDIT_LOG
 
-#ifndef DETWS_AUDIT_LOG_ENTRIES
-#define DETWS_AUDIT_LOG_ENTRIES 32 ///< RAM ring depth (records retained for query/verify).
-#endif
-#ifndef DETWS_AUDIT_MSG_LEN
-#define DETWS_AUDIT_MSG_LEN 48 ///< Max message bytes per record (truncated to fit).
-#endif
-
 /** @brief SHA-256 chain-hash length per record. */
 #define DETWS_AUDIT_HASH_LEN 32
 

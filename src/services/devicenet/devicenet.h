@@ -41,10 +41,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_DEVICENET_MSG_MAX
-#define DETWS_DEVICENET_MSG_MAX 256 ///< max reassembled fragmented message
-#endif
-
 // Message-group identifier bases / field widths.
 #define DEVICENET_G1_BASE 0x000u ///< Message Group 1 (0x000-0x3FF)
 #define DEVICENET_G2_BASE 0x400u ///< Message Group 2 (0x400-0x5FF)

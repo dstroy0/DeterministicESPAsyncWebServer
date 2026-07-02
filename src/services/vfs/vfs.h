@@ -39,19 +39,6 @@
 
 #if DETWS_ENABLE_VFS
 
-#ifndef DETWS_VFS_RAM_FILES
-#define DETWS_VFS_RAM_FILES 4 ///< RAM backend: number of files.
-#endif
-#ifndef DETWS_VFS_RAM_FILE_SIZE
-#define DETWS_VFS_RAM_FILE_SIZE 1024 ///< RAM backend: max bytes per file.
-#endif
-#ifndef DETWS_VFS_MAX_OPEN
-#define DETWS_VFS_MAX_OPEN 4 ///< Concurrent open handles (per backend).
-#endif
-#ifndef DETWS_VFS_NAME_MAX
-#define DETWS_VFS_NAME_MAX 48 ///< Max path length (RAM backend).
-#endif
-
 /** @brief Open modes. */
 enum DetwsVfsMode
 {

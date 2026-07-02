@@ -33,10 +33,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_N2K_FP_MAX
-#define DETWS_N2K_FP_MAX 223 ///< Fast Packet max payload (6 in frame 0 + 31 x 7)
-#endif
-
 #define N2K_FP_SEQ_SHIFT 5      ///< control octet: sequence counter in bits 7..5
 #define N2K_FP_FRAME_MASK 0x1Fu ///< control octet: frame counter in bits 4..0
 #define N2K_FP_F0_DATA 6u       ///< data octets in the first frame (after control + length octets)

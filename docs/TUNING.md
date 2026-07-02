@@ -32,6 +32,23 @@ into the slot's ring with a single SPSC publish, then one event is posted.
 | `EVT_QUEUE_DEPTH`            | 16      | Per-queue event slots. Raise to absorb larger connection bursts.                                                                                            |
 | `MAX_CONNS`                  | (build) | Connection pool size. The hard ceiling on concurrent connections.                                                                                           |
 
+## Feature buffer & limit knobs
+
+Every per-feature tuning knob (buffer sizes, table depths, message limits,
+thresholds) lives in one place: [`src/DetWebServerConfig.h`](../src/DetWebServerConfig.h),
+in the section **"Feature tuning knobs (grouped and gated by feature)"** at the end of
+the file. You never have to open a feature header to turn one. Each is an override-able
+default, so you set a new value in your `build_flags` (for example
+`-D DETWS_OPCUA_READ_MAX=16` or `-D DETWS_GQL_MAX_DEPTH=8`) and the owning module picks
+it up. A group is wrapped in its feature's `DETWS_ENABLE_*` flag, so a knob only exists
+when that feature is compiled in.
+
+What is deliberately _not_ a knob and stays next to its code: protocol- and
+algorithm-fixed constants (wire opcodes, magic bytes, crypto digest/block sizes,
+spec-mandated PDU/field widths, and the deflate/inflate scratch sizes a `static_assert`
+pins to the table layout). Changing those breaks on-the-wire conformance, so they are
+not exposed as knobs.
+
 ## Measured behavior (ESP32, esp32dev, COM3)
 
 **Event latency is decoupled from the idle-sweep cadence.** With WiFi power-save

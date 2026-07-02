@@ -22,13 +22,9 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 
+#include "DetWebServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
-
-/** @brief Max stored user name (RFC 4252 imposes no limit; we cap for BSS). */
-#define SSH_AUTH_USER_MAX 32
-/** @brief Max stored password length. */
-#define SSH_AUTH_PASS_MAX 64
 
 /** @brief Parsed SSH_MSG_USERAUTH_REQUEST. */
 struct SshAuthReq

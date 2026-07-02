@@ -34,9 +34,6 @@ struct ProtoHandler
     void (*on_poll)(uint8_t slot);   ///< Called for an active slot each handle() loop (nullable).
 };
 
-/** @brief Largest ConnProto id the table holds (leaves room for optional protocols). */
-#define DETWS_PROTO_MAX 8
-
 /** @brief Register @p h for protocol @p proto (replaces any previous handler). */
 void proto_register(ConnProto proto, const ProtoHandler *h);
 

@@ -35,13 +35,6 @@
 
 #if DETWS_ENABLE_OAUTH2
 
-#ifndef DETWS_OAUTH2_TOKEN_LEN
-#define DETWS_OAUTH2_TOKEN_LEN 768 ///< access_token / id_token buffer (JWTs are large).
-#endif
-#ifndef DETWS_OAUTH2_RT_LEN
-#define DETWS_OAUTH2_RT_LEN 256 ///< refresh_token buffer.
-#endif
-
 /** @brief Tokens parsed from a token-endpoint response. Absent fields are empty / 0. */
 struct DetwsOAuth2Tokens
 {

@@ -559,6 +559,10 @@
 #define DETWS_ENABLE_ETHERNET 0
 #endif
 
+// Feature / service / codec tuning knobs are consolidated at the END of this file,
+// under "Feature tuning knobs (grouped and gated by feature)" - placed there so every
+// DETWS_ENABLE_* flag is already resolved and each group can gate on its own feature.
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8
@@ -2401,7 +2405,7 @@
  * backend (fixed BSS pool - deterministic, host-identical) ships for scratch /
  * tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD /
  * SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise.
- * Pool dimensions are tunable in vfs.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE,
+ * Pool dimensions are tunable in this config (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE,
  * _MAX_OPEN, _NAME_MAX).
  */
 #ifndef DETWS_ENABLE_VFS
@@ -2418,7 +2422,7 @@
  * along the path are handed to it. Supports nested selections, field arguments,
  * and the anonymous / `query` forms; mutations, subscriptions, fragments, and
  * variables are out of scope. Pure and host-tested; bounds are compile-time
- * (DETWS_GQL_* in graphql.h). Serve it from a POST /graphql route.
+ * (DETWS_GQL_* in this config). Serve it from a POST /graphql route.
  */
 #ifndef DETWS_ENABLE_GRAPHQL
 #define DETWS_ENABLE_GRAPHQL 0
@@ -3788,5 +3792,217 @@ enum DetIface : uint8_t
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: RESP_HDR_BUF_SIZE must be >= CORS_HDR_BUF_SIZE + EXTRA_HDR_BUF_SIZE + 96 (status line + CORS block + custom-header block are injected into response headers)"
 #endif
+
+// ===========================================================================
+// Feature tuning knobs (grouped and gated by feature)
+// ===========================================================================
+//
+// One place to turn every tunable knob - buffer sizes, table depths, limits, thresholds -
+// so you never have to open a feature header. Each is an override-able default (set it in
+// your build flags to change it); the owning module includes this header and uses the
+// value. An optional feature's group is wrapped in that feature's DETWS_ENABLE_* flag
+// (resolved above), so a knob only exists when its feature is built.
+//
+// What is NOT here: protocol- and algorithm-fixed constants (wire opcodes, magic bytes,
+// crypto digest / block sizes, spec-mandated PDU / field widths, the deflate/inflate
+// scratch sizes a static_assert pins to the table layout). Those are not knobs - changing
+// them breaks conformance - so they stay in their feature file next to the code they bind.
+
+// -- Core: protocol dispatch + shared outbound transport (always built) --
+/** @brief Largest ConnProto id the protocol-handler dispatch table holds. */
+#ifndef DETWS_PROTO_MAX
+#define DETWS_PROTO_MAX 8
+#endif
+/** @brief Number of simultaneous outbound client connections (BSS pool size). */
+#ifndef DETWS_CLIENT_CONNS
+#define DETWS_CLIENT_CONNS 2
+#endif
+/**
+ * @brief Per-connection wire receive ring size (bytes).
+ *
+ * Holds plaintext (plain) or ciphertext (TLS). The transport ACKs on consume
+ * (det_client_read reopens the window), so for a large inbound transfer to never
+ * stall the ring must hold a full TCP receive window: keep DETWS_CLIENT_RX_BUF >=
+ * TCP_WND (~5.7 KB). The 8192 default clears that and a multi-KB TLS handshake
+ * flight; a ring below TCP_WND can deadlock a sustained download (the peer would be
+ * allowed to send more than the ring holds). Must exceed one TCP segment (TCP_MSS).
+ */
+#ifndef DETWS_CLIENT_RX_BUF
+#define DETWS_CLIENT_RX_BUF 8192
+#endif
+
+// -- SSH (network_drivers/presentation/ssh; the codec compiles when the SSH sources are
+//    built, so its knobs are always defined) --
+/** @brief Initial receive window the SSH server advertises (RFC 4254 §5.1). */
+#ifndef SSH_CHAN_WINDOW
+#define SSH_CHAN_WINDOW 32768u
+#endif
+/** @brief Maximum SSH channel data payload the server accepts per message. */
+#ifndef SSH_CHAN_MAX_PACKET
+#define SSH_CHAN_MAX_PACKET 32768u
+#endif
+/**
+ * @brief Re-key when either packet sequence number reaches this value.
+ *
+ * RFC 4253 §9 recommends re-keying after ~1 GB or one hour. A packet-count proxy is used
+ * here; the default is well below SSH_SEQ_CLOSE_THRESHOLD so a re-key always happens before
+ * the sequence number can wrap.
+ */
+#ifndef SSH_REKEY_PACKET_THRESHOLD
+#define SSH_REKEY_PACKET_THRESHOLD 0x40000000u
+#endif
+/** @brief Max stored user name (RFC 4252 imposes no limit; we cap for BSS). */
+#ifndef SSH_AUTH_USER_MAX
+#define SSH_AUTH_USER_MAX 32
+#endif
+/** @brief Max stored password length. */
+#ifndef SSH_AUTH_PASS_MAX
+#define SSH_AUTH_PASS_MAX 64
+#endif
+/**
+ * @brief Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange hash).
+ *
+ * A modern OpenSSH client's KEXINIT (post-quantum KEX names + cert host-key algs + EtM
+ * MACs + ext-info-c) runs well past 1 KB, so this must be large enough to hold it - a
+ * smaller bound silently rejects real clients at key exchange. The packet layer already
+ * caps any single packet at SSH_PKT_BUF_SIZE.
+ */
+#ifndef SSH_KEXINIT_MAX
+#define SSH_KEXINIT_MAX 2048
+#endif
+
+#if DETWS_ENABLE_AUDIT_LOG
+// -- Audit log (services/audit_log) --
+#ifndef DETWS_AUDIT_LOG_ENTRIES
+#define DETWS_AUDIT_LOG_ENTRIES 32 ///< RAM ring depth (records retained for query/verify).
+#endif
+#ifndef DETWS_AUDIT_MSG_LEN
+#define DETWS_AUDIT_MSG_LEN 48 ///< Max message bytes per record (truncated to fit).
+#endif
+#endif // DETWS_ENABLE_AUDIT_LOG
+
+#if DETWS_ENABLE_DEVICENET
+// -- DeviceNet (services/devicenet) --
+#ifndef DETWS_DEVICENET_MSG_MAX
+#define DETWS_DEVICENET_MSG_MAX 256 ///< max reassembled fragmented message
+#endif
+#endif // DETWS_ENABLE_DEVICENET
+
+#if DETWS_ENABLE_ESPNOW
+// -- ESP-NOW (services/espnow) --
+#ifndef DETWS_ESPNOW_MAX_PEERS
+#define DETWS_ESPNOW_MAX_PEERS 8 ///< Bounded peer registry size.
+#endif
+#endif // DETWS_ENABLE_ESPNOW
+
+#if DETWS_ENABLE_GRAPHQL
+// -- GraphQL (services/graphql) --
+#ifndef DETWS_GQL_MAX_NODES
+#define DETWS_GQL_MAX_NODES 48 ///< Max fields across the whole query.
+#endif
+#ifndef DETWS_GQL_MAX_ARGS
+#define DETWS_GQL_MAX_ARGS 24 ///< Max arguments across the whole query.
+#endif
+#ifndef DETWS_GQL_MAX_DEPTH
+#define DETWS_GQL_MAX_DEPTH 6 ///< Max selection-set nesting depth.
+#endif
+#ifndef DETWS_GQL_NAME_MAX
+#define DETWS_GQL_NAME_MAX 32 ///< Max field / argument name length.
+#endif
+#ifndef DETWS_GQL_PATH_MAX
+#define DETWS_GQL_PATH_MAX 96 ///< Max dotted path length passed to the resolver.
+#endif
+#ifndef DETWS_GQL_STRBUF
+#define DETWS_GQL_STRBUF 256 ///< Pool for decoded string-argument bytes.
+#endif
+#endif // DETWS_ENABLE_GRAPHQL
+
+#if DETWS_ENABLE_J1939
+// -- J1939 (services/j1939; also built when NMEA 2000 is enabled) --
+#ifndef DETWS_J1939_TP_MAX
+#define DETWS_J1939_TP_MAX 256 ///< max reassembled TP message (spec allows up to 1785); sized down for RAM
+#endif
+#endif // DETWS_ENABLE_J1939
+
+#if DETWS_ENABLE_NMEA0183
+// -- NMEA 0183 (services/nmea0183) --
+#ifndef DETWS_NMEA0183_MAX_FIELDS
+#define DETWS_NMEA0183_MAX_FIELDS 26 ///< max comma-separated fields (incl. the address field)
+#endif
+#endif // DETWS_ENABLE_NMEA0183
+
+#if DETWS_ENABLE_NMEA2000
+// -- NMEA 2000 (services/nmea2000) --
+#ifndef DETWS_N2K_FP_MAX
+#define DETWS_N2K_FP_MAX 223 ///< Fast Packet max payload (6 in frame 0 + 31 x 7)
+#endif
+#endif // DETWS_ENABLE_NMEA2000
+
+#if DETWS_ENABLE_OAUTH2
+// -- OAuth2 (services/oauth2) --
+#ifndef DETWS_OAUTH2_TOKEN_LEN
+#define DETWS_OAUTH2_TOKEN_LEN 768 ///< access_token / id_token buffer (JWTs are large).
+#endif
+#ifndef DETWS_OAUTH2_RT_LEN
+#define DETWS_OAUTH2_RT_LEN 256 ///< refresh_token buffer.
+#endif
+#ifndef DETWS_OAUTH2_BODY_BUF
+#define DETWS_OAUTH2_BODY_BUF 1024 ///< token-request body buffer.
+#endif
+#ifndef DETWS_OAUTH2_RESP_BUF
+#define DETWS_OAUTH2_RESP_BUF 2048 ///< token-endpoint response buffer.
+#endif
+#endif // DETWS_ENABLE_OAUTH2
+
+#if DETWS_ENABLE_OIDC
+// -- OIDC (services/oidc) --
+#ifndef DETWS_OIDC_MAX_LEN
+#define DETWS_OIDC_MAX_LEN 1600 ///< Max accepted ID-token length.
+#endif
+#ifndef DETWS_OIDC_SUB_LEN
+#define DETWS_OIDC_SUB_LEN 64 ///< Captured `sub` claim buffer.
+#endif
+#ifndef DETWS_OIDC_EMAIL_LEN
+#define DETWS_OIDC_EMAIL_LEN 96 ///< Captured `email` claim buffer.
+#endif
+#ifndef DETWS_OIDC_KID_LEN
+#define DETWS_OIDC_KID_LEN 80 ///< Max `kid` length.
+#endif
+#endif // DETWS_ENABLE_OIDC
+
+#if DETWS_ENABLE_OPCUA
+// -- OPC UA (services/opcua) --
+#ifndef DETWS_OPCUA_BUF
+#define DETWS_OPCUA_BUF 8192 ///< Server's advertised buffer / max-message size for the handshake.
+#endif
+#ifndef DETWS_OPCUA_READ_MAX
+#define DETWS_OPCUA_READ_MAX 8 ///< max NodesToRead handled per ReadRequest.
+#endif
+#ifndef DETWS_OPCUA_BROWSE_MAX
+#define DETWS_OPCUA_BROWSE_MAX 4 ///< max NodesToBrowse handled per BrowseRequest.
+#endif
+#ifndef DETWS_OPCUA_REF_MAX
+#define DETWS_OPCUA_REF_MAX 8 ///< max references returned per browsed node.
+#endif
+#ifndef DETWS_OPCUA_WRITE_MAX
+#define DETWS_OPCUA_WRITE_MAX 8 ///< max NodesToWrite handled per WriteRequest.
+#endif
+#endif // DETWS_ENABLE_OPCUA
+
+#if DETWS_ENABLE_VFS
+// -- Virtual filesystem (services/vfs) --
+#ifndef DETWS_VFS_RAM_FILES
+#define DETWS_VFS_RAM_FILES 4 ///< RAM backend: number of files.
+#endif
+#ifndef DETWS_VFS_RAM_FILE_SIZE
+#define DETWS_VFS_RAM_FILE_SIZE 1024 ///< RAM backend: max bytes per file.
+#endif
+#ifndef DETWS_VFS_MAX_OPEN
+#define DETWS_VFS_MAX_OPEN 4 ///< Concurrent open handles (per backend).
+#endif
+#ifndef DETWS_VFS_NAME_MAX
+#define DETWS_VFS_NAME_MAX 48 ///< Max path length (RAM backend).
+#endif
+#endif // DETWS_ENABLE_VFS
 
 #endif

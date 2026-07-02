@@ -42,19 +42,6 @@
 /** @brief RSA-2048 modulus size in bytes (the supported key size). */
 #define DETWS_OIDC_RSA_BYTES 256
 
-#ifndef DETWS_OIDC_MAX_LEN
-#define DETWS_OIDC_MAX_LEN 1600 ///< Max accepted ID-token length.
-#endif
-#ifndef DETWS_OIDC_SUB_LEN
-#define DETWS_OIDC_SUB_LEN 64 ///< Captured `sub` claim buffer.
-#endif
-#ifndef DETWS_OIDC_EMAIL_LEN
-#define DETWS_OIDC_EMAIL_LEN 96 ///< Captured `email` claim buffer.
-#endif
-#ifndef DETWS_OIDC_KID_LEN
-#define DETWS_OIDC_KID_LEN 80 ///< Max `kid` length.
-#endif
-
 /** @brief Verification result codes (0 = success, negatives = failure reasons). */
 enum DetwsOidcResult
 {

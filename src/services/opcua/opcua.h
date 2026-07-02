@@ -57,11 +57,6 @@
 
 #if DETWS_ENABLE_OPCUA
 
-/** @brief Server's advertised buffer / max-message size for the handshake. */
-#ifndef DETWS_OPCUA_BUF
-#define DETWS_OPCUA_BUF 8192
-#endif
-
 // ---------------------------------------------------------------------------
 // OPC UA Binary built-in type codec (little-endian; OPC UA Part 6 §5.2)
 // ---------------------------------------------------------------------------
@@ -339,10 +334,6 @@ struct OpcUaReadItem
     uint32_t attribute;
 };
 
-#ifndef DETWS_OPCUA_READ_MAX
-#define DETWS_OPCUA_READ_MAX 8 ///< max NodesToRead handled per ReadRequest.
-#endif
-
 /** @brief Parsed ReadRequest: the MSG envelope plus the (bounded) NodesToRead list. */
 struct OpcUaReadRequest
 {
@@ -421,13 +412,6 @@ struct OpcUaBrowseItem
     uint32_t id;
     bool numeric;
 };
-
-#ifndef DETWS_OPCUA_BROWSE_MAX
-#define DETWS_OPCUA_BROWSE_MAX 4 ///< max NodesToBrowse handled per BrowseRequest.
-#endif
-#ifndef DETWS_OPCUA_REF_MAX
-#define DETWS_OPCUA_REF_MAX 8 ///< max references returned per browsed node.
-#endif
 
 /** @brief Parsed BrowseRequest: the MSG envelope plus the (bounded) NodesToBrowse list. */
 struct OpcUaBrowseRequest
@@ -511,10 +495,6 @@ struct OpcUaWriteItem
     uint32_t attribute;
     OpcUaVariant value; ///< the DataValue's Variant (string values point into the source buffer).
 };
-
-#ifndef DETWS_OPCUA_WRITE_MAX
-#define DETWS_OPCUA_WRITE_MAX 8 ///< max NodesToWrite handled per WriteRequest.
-#endif
 
 /** @brief Parsed WriteRequest: the MSG envelope plus the (bounded) NodesToWrite list. */
 struct OpcUaWriteRequest

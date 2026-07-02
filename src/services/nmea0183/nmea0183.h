@@ -29,10 +29,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_NMEA0183_MAX_FIELDS
-#define DETWS_NMEA0183_MAX_FIELDS 26 ///< max comma-separated fields (incl. the address field)
-#endif
-
 /** @brief A parsed NMEA 0183 sentence. Field pointers reference the caller's buffer. */
 struct Nmea0183
 {

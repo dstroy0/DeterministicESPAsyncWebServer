@@ -35,10 +35,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_J1939_TP_MAX
-#define DETWS_J1939_TP_MAX 256 ///< max reassembled TP message (spec allows up to 1785); sized down for RAM
-#endif
-
 // Well-known PGNs and addresses.
 #define J1939_PGN_TP_CM 0x00EC00u         ///< Transport Protocol - Connection Management (60416)
 #define J1939_PGN_TP_DT 0x00EB00u         ///< Transport Protocol - Data Transfer (60160)
