@@ -117,6 +117,16 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   task (e.g. off the preempting queue) must **copy the bytes** into the posted item, not
   keep the pointer - see the note in `det_dma.h` and example `07.DmaIngest`.
 
+## Interface forwarding
+
+- **The forwarding plane is transport-agnostic.** `services/forward` (`DETWS_ENABLE_FORWARD`)
+  owns the rules, rate caps, default-deny, and dispatch, but it moves bytes only through the
+  send callbacks **you** register for each interface and the `det_forward_ingress()` calls
+  **you** drive from each interface's RX. The library does not itself bind those to Wi-Fi /
+  Ethernet / a bus / a radio - that wiring (and the "true zero-copy DMA descriptor reuse" the
+  roadmap describes) is the integration's, and depends on the real silicon DMA backend
+  (above). It forwards whole frames handed to it; it does not parse or route by L2/L3 headers.
+
 ## Streaming sinks
 
 - **OTA and streaming upload share the single parser streaming hook** - enable at

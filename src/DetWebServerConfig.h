@@ -267,6 +267,38 @@
 #error "DeterministicESPAsyncWebServer: DETWS_DMA_CHANNELS and DETWS_DMA_BUF_SIZE must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// Interface forwarding plane (DETWS_ENABLE_FORWARD) - v5 hardware ingest
+// ---------------------------------------------------------------------------
+//
+// A forwarding plane over the ingest pipeline: register interfaces (Wi-Fi STA / AP,
+// Ethernet, a peripheral bus, a radio), each with an egress send callback, then add
+// per-pair allow / deny rules with an optional rate cap. A frame arriving on one
+// interface (det_forward_ingress(), typically from a DMA-complete event posted onto the
+// FORWARD lane) is forwarded to every allowed destination, so the device bridges / routes
+// between its interfaces instead of only terminating traffic. Default-deny and fail-closed
+// (a full destination or an exceeded rate cap drops, never blocks). Static tables (zero
+// heap). See services/forward/det_forward.h.
+
+/** @brief Enable the interface forwarding plane (default off). */
+#ifndef DETWS_ENABLE_FORWARD
+#define DETWS_ENABLE_FORWARD 0
+#endif
+
+/** @brief Max interfaces the forwarding plane tracks (static-allocated). */
+#ifndef DETWS_FWD_MAX_IFACES
+#define DETWS_FWD_MAX_IFACES 4
+#endif
+
+/** @brief Max forwarding rules (src -> dst allow/deny + rate cap; static-allocated). */
+#ifndef DETWS_FWD_MAX_RULES
+#define DETWS_FWD_MAX_RULES 8
+#endif
+
+#if DETWS_ENABLE_FORWARD && (DETWS_FWD_MAX_IFACES < 1 || DETWS_FWD_MAX_RULES < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES and DETWS_FWD_MAX_RULES must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

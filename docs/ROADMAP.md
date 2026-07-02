@@ -108,18 +108,19 @@ preempts immediately to process it, with the priorities exposed to the user.
       count, min/max/mean, over-budget count). Header-only, zero heap. HW-verified
       measuring the preempting queue's ISR-to-handler latency against a budget
       (avg 12 us, 0 over a 50 us budget). Host-tested in `native_clock`.
-- [ ] \*Interface forwarding (L), **DMA-driven**. A forwarding plane over the ingest
-      pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet over SPI,
-      or a peripheral bus / radio) is forwarded to another by a user-set rule, so the
-      device acts as a bridge / router between its interfaces instead of only
-      terminating traffic. The byte movement is **DMA** (the DMA UART / I2C / SPI
-      transfer above): the inbound DMA-complete ISR hands the buffer straight to the
-      outbound DMA descriptor and posts to the preempting queue, so the CPU is free
-      during the copy and forwarding is true zero-copy where the peripherals allow
-      (DMA descriptor reuse, no intermediate buffer). Fail-closed when a destination
-      queue is full; every rule is user-configurable (per-interface allow / deny,
-      destination, rate cap). This is the generic data path the wireless gateway
-      bridges below sit on top of.
+- [x] \*Interface forwarding (L), **DMA-driven** _(shipped)_ - `DETWS_ENABLE_FORWARD`:
+      `services/forward`, a forwarding plane over the ingest pipeline. Register
+      interfaces (Wi-Fi STA / AP, Ethernet, a peripheral bus / radio), each with an
+      egress send callback, then add per-pair rules (`src -> dst`, allow / deny, rate
+      cap). A frame arriving on one interface (`det_forward_ingress()`, wired from a
+      DMA-complete event on the FORWARD lane) is forwarded to every allowed
+      destination, so the device bridges / routes instead of only terminating traffic.
+      Default-deny, never reflects to the source, fail-closed (exceeded cap / refused
+      send drops and is counted, never blocks); multi-destination fan-out for hub
+      behavior. Zero-heap static tables. Host-tested (`native_forward`) + HW-verified
+      (600k+ frames ingested over DMA and forwarded with zero loss / zero integrity
+      errors under an HTTP flood; example Foundation/09.InterfaceForward). This is the
+      generic data path the wireless gateway bridges below sit on top of.
 
 ### post-v5: RF / wireless gateway bridges
 

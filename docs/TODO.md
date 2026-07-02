@@ -540,17 +540,17 @@ shipped work:
       (`native_preempt_queue`, 11 cases) + HW-verified (DMA + USER lanes ran continuously
       with zero errors under an HTTP flood; examples 06.PreemptQueue + 08.PreemptLanes).
 
-- [ ] **Interface forwarding (v5 milestone), DMA-driven.** A forwarding plane over
-      the ingest pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet
-      over SPI, a peripheral bus / radio) is forwarded to another by a user-set rule
-      (per-interface allow / deny, destination, rate cap), so the device bridges /
-      routes between its interfaces instead of only terminating traffic. The byte
-      movement uses the **DMA** transfer above: the inbound DMA-complete ISR hands the
-      buffer to the outbound DMA descriptor and posts to the preempting queue (CPU free
-      during the copy, true zero-copy where the peripherals allow). Fail-closed on a
-      full destination queue. This is the generic data path the post-v5 wireless
-      gateway bridges sit on top of. (The DMA + preempting-queue dependencies above are
-      now shipped, so this is unblocked.)
+- [x] **Interface forwarding (v5 milestone), DMA-driven.** DONE - `services/forward`
+      (`DETWS_ENABLE_FORWARD`). A forwarding plane: register interfaces (each with an
+      egress send callback), add per-pair rules (allow / deny + rate cap); a frame on one
+      interface (`det_forward_ingress()`, wired from a DMA-complete event on the FORWARD
+      lane) is forwarded to every allowed destination, so the device bridges / routes
+      instead of only terminating traffic. Default-deny, never reflects to the source,
+      fail-closed (exceeded cap / refused send drops and is counted), multi-destination
+      fan-out. Zero-heap static tables. Host-tested (`native_forward`, 10 cases) +
+      HW-verified (600k+ frames ingested over DMA and forwarded to a second interface with
+      zero loss / zero integrity errors under an HTTP flood; example 09.InterfaceForward).
+      This is the generic data path the post-v5 wireless gateway bridges sit on top of.
 
 - [ ] **Post-v5 southbound bridges + sensing (backlog).** RF / wireless **gateway
       bridges** (LoRa / nRF24 / CC1101 / Thread over SPI; Zigbee / Z-Wave / EnOcean /
