@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`3ce252c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ce252cfaee5abfb91a3479735251e0bc6d17176))
+- update CHANGELOG.md [skip ci] ([`7178b27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7178b27daef8fe6dc2792134dd49bd8ee9c9b7cb))
 - update test report [skip ci] ([`829828e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/829828e37b7e6e10ab52c7745b8876f3b7122daa))
 - update CHANGELOG.md [skip ci] ([`b43f568`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b43f568932c528c9533ab72a5a2d3516577c1f7b))
 - gitignore .pio_cov_wsl (WSL coverage build dir) ([`ac1e36c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac1e36c6b626e9e8953a278b5ef15a7c2eaf37b3))
@@ -103,6 +105,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- concurrent-TLS enablement - PSRAM offload, MFL record cap, build guard ([`9e259a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e259a76deda38884d8cdba4be00b5474986f7b6))
 - enforce worker-stack RSA floor (DETWS_WORKER_STACK_RSA_MIN) when OIDC/SSH enabled ([`e3326ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3326eef023e137d139090afde435ec654767d70))
 
 ### Refactor
