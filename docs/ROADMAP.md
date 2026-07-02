@@ -163,8 +163,12 @@ SPI radios:
 
 UART radios:
 
-- [ ] \*Zigbee NCP gateway (L) - Silicon Labs EZSP (EFR32) / Digi XBee / TI ZNP over
-      UART; join as coordinator and bridge Zigbee devices to MQTT.
+- [~] \*Zigbee NCP gateway (L) - Silicon Labs EZSP (EFR32) / Digi XBee / TI ZNP over
+  UART; join as coordinator and bridge Zigbee devices to MQTT. **ASH framing codec
+  shipped** (`DETWS_ENABLE_ZIGBEE`, `services/zigbee`): the byte-stuffed, CRC-16/CCITT
+  ASH data-link (encode/decode) that carries EZSP, host-tested against the documented
+  RST frame; example 17.ZigbeeGateway bridges a real NCP. Remaining: the EZSP command
+  layer (version negotiation, incomingMessageHandler) + verify against an NCP.
 - [~] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
   **Serial API frame codec shipped** (`DETWS_ENABLE_ZWAVE`, `services/zwave`):
   SOF/LEN/Type/Cmd/Data frames + the XOR checksum + ACK/NAK/CAN, host-tested against

@@ -489,6 +489,33 @@
 #error "DeterministicESPAsyncWebServer: DETWS_ZWAVE_MAX_DATA must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// Zigbee (DETWS_ENABLE_ZIGBEE) - Silicon Labs EZSP / ASH serial framing codec
+// ---------------------------------------------------------------------------
+//
+// The ASH (Asynchronous Serial Host) data-link layer that carries EZSP frames to a Silicon
+// Labs EmberZNet NCP over UART - a Zigbee network bridged to the web. ASH delimits frames
+// with a Flag byte (0x7E), byte-stuffs the reserved control bytes, and protects each frame
+// with a CRC-16/CCITT. ash_frame_encode() wraps a control byte + payload into a stuffed,
+// CRC'd frame; ash_frame_decode() unstuffs + verifies one. The EZSP command payload the
+// frame carries (version, stack status, an incoming APS message, ...) is the application's.
+// ash_frame_decode() removes the stuffing and verifies the CRC. Pure - you carry the bytes
+// over your UART - so it is fully host-testable. See services/zigbee/zigbee.h.
+
+/** @brief Enable the Zigbee EZSP / ASH framing codec (default off). */
+#ifndef DETWS_ENABLE_ZIGBEE
+#define DETWS_ENABLE_ZIGBEE 0
+#endif
+
+/** @brief Max ASH payload bytes (an EZSP frame; the ASH data field caps near 128). */
+#ifndef DETWS_ZIGBEE_MAX_DATA
+#define DETWS_ZIGBEE_MAX_DATA 128
+#endif
+
+#if DETWS_ENABLE_ZIGBEE && (DETWS_ZIGBEE_MAX_DATA < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_ZIGBEE_MAX_DATA must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

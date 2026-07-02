@@ -87,6 +87,7 @@ DRIVER_HEADINGS = {
     "PN532",
     "Sigfox",
     "Z-Wave",
+    "Zigbee",
 }
 
 # Where each target file's links to FEATURES.md point.

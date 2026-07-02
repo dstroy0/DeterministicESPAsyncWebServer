@@ -489,6 +489,12 @@
       "src": ["+<services/zwave/zwave.cpp>"],
       "tests": ["test_zwave"]
     },
+    "native_zigbee": {
+      "desc": "Zigbee EZSP / ASH framing codec (services/zigbee), v5 radio plugin: the CRC-16/CCITT\nand the encoded RST frame against their documented values (C0 38 BC 7E), an encode -> decode\nround trip, the byte-stuffing of reserved bytes, and malformed framing (bad CRC, dangling\nescape, buffer-too-small, no flag). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_ZIGBEE=1", "-DDETWS_ZIGBEE_MAX_DATA=32"],
+      "src": ["+<services/zigbee/zigbee.cpp>"],
+      "tests": ["test_zigbee"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],
