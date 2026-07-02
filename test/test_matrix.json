@@ -7,6 +7,12 @@
       "src": ["+<services/canopen/canopen.cpp>"],
       "tests": ["test_canopen"]
     },
+    "native_det_primitives": {
+      "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (det_numparse.h) and the strict RFC 3629 UTF-8 validator (det_utf8.h).\nHeader-only; pure host tests.",
+      "flags": [],
+      "src": ["-<*>"],
+      "tests": ["test_det_primitives"]
+    },
     "native_j1939": {
       "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_J1939=1"],
