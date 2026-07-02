@@ -1607,6 +1607,52 @@
 #define DETWS_TLS_ARENA_SIZE 49152
 #endif
 
+/**
+ * @brief Place the TLS arena in external PSRAM instead of internal DRAM (ESP32).
+ *
+ * The internal static-DRAM ceiling (`dram0_0_seg`) is only ~122 KB, so a single
+ * ~48 KB arena already uses a large slice and a second concurrent connection
+ * (MAX_TLS_CONNS > 1) overflows it. On a board with PSRAM, set this to 1 to move
+ * the arena to external RAM via `EXT_RAM_BSS_ATTR` / `EXT_RAM_ATTR`, freeing the
+ * whole `DETWS_TLS_ARENA_SIZE` back to internal DRAM so many connections fit.
+ * Requires `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` (and PSRAM enabled) in the
+ * ESP-IDF/PlatformIO config; without it the attribute is a no-op and the arena
+ * stays in DRAM (safe fallback). No effect on the native host build.
+ */
+#ifndef DETWS_TLS_ARENA_IN_PSRAM
+#define DETWS_TLS_ARENA_IN_PSRAM 0
+#endif
+
+/**
+ * @brief Cap TLS records via the Maximum Fragment Length extension (RFC 6066).
+ *
+ * 0 (default) leaves the 16 KB TLS record ceiling. Set to 512, 1024, 2048, or 4096
+ * to negotiate a smaller maximum record. On a mbedTLS build with variable-length
+ * record buffers this shrinks the per-connection arena footprint (so more concurrent
+ * connections fit); on a fixed-buffer build it still bounds the on-wire record size
+ * (bandwidth / latency on a constrained link) and honors a client's MFL request.
+ * Applied to both the server and the outbound client config. Needs an mbedTLS build
+ * with `MBEDTLS_SSL_MAX_FRAGMENT_LENGTH` (else it is a no-op).
+ */
+#ifndef DETWS_TLS_MAX_FRAG_LEN
+#define DETWS_TLS_MAX_FRAG_LEN 0
+#endif
+
+/**
+ * @brief Acknowledge that a MAX_TLS_CONNS > 1 build has been sized to fit.
+ *
+ * The whole TLS arena is static `.bss` and the internal `dram0_0_seg` ceiling is only
+ * ~122 KB, so a second concurrent connection's arena overflows it on a stock build.
+ * A validation guard (bottom of this file) therefore rejects MAX_TLS_CONNS > 1 unless
+ * you have taken one of the paths in docs/KNOWN_LIMITATIONS.md - move the arena to
+ * PSRAM (`DETWS_TLS_ARENA_IN_PSRAM`, which satisfies the guard on its own), shrink the
+ * mbedTLS records in a custom ESP-IDF build, or reclaim internal DRAM - and then set
+ * this to 1 to confirm the build was sized deliberately.
+ */
+#ifndef DETWS_TLS_ACK_MULTI_CONN_DRAM
+#define DETWS_TLS_ACK_MULTI_CONN_DRAM 0
+#endif
+
 // ---------------------------------------------------------------------------
 // Optional network services (ESP32-only thin wrappers; each default-off so it
 // costs no code/RAM/flash unless explicitly enabled).
@@ -3170,6 +3216,15 @@ enum DetIface : uint8_t
 #endif
 #if DETWS_TLS_ARENA_SIZE < 8192
 #error "DeterministicESPAsyncWebServer: DETWS_TLS_ARENA_SIZE is far too small for a TLS handshake"
+#endif
+// Concurrent TLS guard: the whole arena is static .bss and the ESP32 internal
+// dram0_0_seg ceiling is only ~122 KB (ROM-reserved at both ends), so a 2nd
+// connection's arena overflows the link. Reject MAX_TLS_CONNS > 1 with a clear
+// message unless the arena is offloaded to PSRAM or the build was consciously sized -
+// far friendlier than the raw "region `dram0_0_seg' overflowed" linker error.
+#if defined(ARDUINO) && (MAX_TLS_CONNS > 1) && !DETWS_TLS_ARENA_IN_PSRAM && !DETWS_TLS_ACK_MULTI_CONN_DRAM
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: MAX_TLS_CONNS > 1 - the static TLS arena will not fit the ~122 KB internal dram0_0_seg. Pick a path (docs/KNOWN_LIMITATIONS.md): set DETWS_TLS_ARENA_IN_PSRAM=1 on a PSRAM board, OR shrink records via a custom ESP-IDF build (CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN + DETWS_TLS_MAX_FRAG_LEN), OR reclaim internal DRAM; then set DETWS_TLS_ACK_MULTI_CONN_DRAM=1 to confirm."
 #endif
 #endif
 

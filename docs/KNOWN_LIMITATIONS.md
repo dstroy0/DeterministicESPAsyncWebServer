@@ -45,12 +45,33 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 ## TLS
 
-- **Concurrent TLS is configurable but defaults to 1.** `MAX_TLS_CONNS` can be
-  raised (up to `MAX_CONNS`); each connection just needs its own large mbedTLS
-  record arena, so going past 1 needs enough DRAM. On a stock Arduino build the
-  extra record buffers (~32 KB each) overflow the static budget - shrink the IDF
-  record sizes (`CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`, an ESP-IDF build) or use
-  a board with more RAM to fit more.
+- **Concurrent TLS (`MAX_TLS_CONNS` > 1) needs the arena to fit ~122 KB of static
+  DRAM, not the 320 KB PlatformIO prints.** The whole mbedTLS working set (the
+  16 KB-in + 16 KB-out record buffers dominate, ~41.5 KB/connection) is served from a
+  single static `.bss` arena (`DETWS_TLS_ARENA_SIZE`, 48 KB default). The real ceiling
+  is the ESP32 `dram0_0_seg` linker region - only **~122 KB** (`0x2c200 − 0xdb5c`),
+  ROM-reserved at both ends; the `RAM: … from 327680 bytes` PlatformIO reports is a
+  misleading aggregate that counts heap-only DRAM. So a 48 KB arena already uses most
+  of the region and a second connection overflows the link (`region 'dram0_0_seg'
+overflowed by 34048 bytes`). A build guard now turns that cryptic linker error into a
+  clear message; pick one of three paths and set `DETWS_TLS_ACK_MULTI_CONN_DRAM=1` (the
+  PSRAM path sets the guard on its own):
+    1. **PSRAM board (recommended).** Set `DETWS_TLS_ARENA_IN_PSRAM=1` to place the arena
+       in external RAM (`EXT_RAM_BSS_ATTR`), freeing the whole arena back to internal DRAM
+       so many connections fit. Needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` in the
+       framework build (the stock precompiled arduino-esp32 2.0.x has it off, so this needs
+       a PSRAM-enabled / IDF build - which is exactly what a WROVER / 8-16 MB PSRAM board
+       ships with). The attribute is a safe no-op (arena stays in DRAM) when the flag is off.
+    2. **Shrink the records (custom ESP-IDF build).** Lower
+       `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN` so each connection's arena cost drops, and
+       set `DETWS_TLS_MAX_FRAG_LEN` (512/1024/2048/4096) to negotiate the smaller record on
+       the wire (RFC 6066). The precompiled Arduino mbedTLS fixes the record size, so the
+       memory win needs an ESP-IDF / pioarduino build; MFL still caps on-wire records on any
+       build.
+    3. **Reclaim internal DRAM (advanced).** Growing `dram0_0_seg` past ~122 KB via a
+       `memory.ld` override is possible but risky: on the stock arduino-esp32 the base
+       `0xdb5c` and the top cap are **ROM-reserved** (this is already the "BT not built"
+       memory.ld variant), so a naive reclaim can corrupt boot. Prefer paths 1-2.
 - **Server-side session resumption only** (RFC 5077 tickets); the outbound client
   does not yet present a ticket on reconnect.
 

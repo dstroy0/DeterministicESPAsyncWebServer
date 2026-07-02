@@ -241,9 +241,22 @@ Open follow-ups discovered during the above:
       Still out of scope (add only if needed): separate (deferred) responses, and CON
       retransmission + message de-duplication - the model stays piggybacked-only
       (CON -> piggybacked ACK, NON -> NON).
-- [ ] **Concurrent TLS** (`MAX_TLS_CONNS` > 1) - needs a smaller-record ESP-IDF
-      build (~41.5 KB arena per connection overflows DRAM at 2 on a stock Arduino
-      build).
+- [ ] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; runtime proof
+      pending a PSRAM board.)_ The whole mbedTLS working set is served from one static
+      `.bss` arena, and the real internal ceiling is the ESP32 `dram0_0_seg` region
+      (~122 KB, ROM-reserved both ends - NOT the 320 KB PlatformIO prints), so a 2nd
+      connection overflows the link (measured: `overflowed by 34048 bytes` at an 88 KB
+      arena). Three library-side paths now exist + a build guard that turns the cryptic
+      linker error into a clear message ([`DETWS_TLS_ACK_MULTI_CONN_DRAM`](@ref DETWS_TLS_ACK_MULTI_CONN_DRAM)):
+      (1) [`DETWS_TLS_ARENA_IN_PSRAM`](@ref DETWS_TLS_ARENA_IN_PSRAM) places the arena in
+      external RAM via `EXT_RAM_BSS_ATTR` (needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`;
+      the stock precompiled arduino-esp32 2.0.x has it off, so a PSRAM/IDF build is
+      required - verified the attribute compiles + is a safe DRAM no-op otherwise);
+      (2) [`DETWS_TLS_MAX_FRAG_LEN`](@ref DETWS_TLS_MAX_FRAG_LEN) (RFC 6066 MFL, applied to
+      server + client) caps records, pairing with a custom-IDF `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`
+      shrink; (3) a `memory.ld` DRAM reclaim (advanced - the `0xdb5c` is ROM-reserved,
+      so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **Remaining:**
+      flash a PSRAM board and confirm N concurrent handshakes + free-heap headroom.
 - [ ] **IPv6 dual-stack** and an **Ethernet PHY abstraction** - the two
       architectural tracks deferred for a separate decision.
 - [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_

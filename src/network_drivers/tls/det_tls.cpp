@@ -45,8 +45,27 @@
 // temporaries, cert/key) is then served from s_arena - no system heap, so the
 // determinism guarantee holds. Bounded by the arena: exhaustion fails the
 // handshake cleanly (calloc returns NULL) rather than corrupting anything.
+//
+// Placement: by default the arena is internal DRAM (.bss). On a board with PSRAM,
+// set DETWS_TLS_ARENA_IN_PSRAM=1 to move it to external RAM (frees ~DETWS_TLS_ARENA_SIZE
+// of the ~122 KB internal dram0_0_seg budget, so several concurrent connections fit).
+// That needs CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY in the ESP-IDF/PlatformIO
+// config; when it is absent the ext-RAM attribute expands to nothing and the arena
+// falls back to internal DRAM (safe, just no offload).
 // ---------------------------------------------------------------------------
-static uint8_t s_arena[DETWS_TLS_ARENA_SIZE];
+#if DETWS_TLS_ARENA_IN_PSRAM && defined(ARDUINO)
+#include <esp_attr.h>
+#if defined(EXT_RAM_BSS_ATTR)
+#define DETWS_TLS_ARENA_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
+#elif defined(EXT_RAM_ATTR)
+#define DETWS_TLS_ARENA_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
+#else
+#define DETWS_TLS_ARENA_ATTR
+#endif
+#else
+#define DETWS_TLS_ARENA_ATTR
+#endif
+DETWS_TLS_ARENA_ATTR static uint8_t s_arena[DETWS_TLS_ARENA_SIZE];
 static bool s_ready = false;
 static bool s_pool_init = false;
 static size_t s_pool_used = 0;
@@ -219,6 +238,28 @@ static int server_bio_send(void *ctx, const unsigned char *buf, size_t len)
     return MBEDTLS_ERR_SSL_WANT_WRITE; // send buffer full -> mbedTLS retries
 }
 
+// Apply the configured TLS Maximum Fragment Length (RFC 6066) to @p conf: records are
+// capped at DETWS_TLS_MAX_FRAG_LEN. With a variable-buffer-length mbedTLS build this
+// also shrinks per-connection arena use; otherwise it bounds the on-wire record size
+// (bandwidth / latency on a constrained link) and honors a client's MFL request. A
+// no-op when the knob is 0 or the mbedTLS build lacks MBEDTLS_SSL_MAX_FRAGMENT_LENGTH.
+static void tls_apply_max_frag_len(mbedtls_ssl_config *conf)
+{
+#if DETWS_TLS_MAX_FRAG_LEN && defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
+#if DETWS_TLS_MAX_FRAG_LEN <= 512
+    mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_512);
+#elif DETWS_TLS_MAX_FRAG_LEN <= 1024
+    mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_1024);
+#elif DETWS_TLS_MAX_FRAG_LEN <= 2048
+    mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_2048);
+#else
+    mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_4096);
+#endif
+#else
+    (void)conf;
+#endif
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -254,6 +295,7 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
         return false;
 
     mbedtls_ssl_conf_rng(&s_conf, tls_rng, nullptr);
+    tls_apply_max_frag_len(&s_conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_ssl_conf_min_tls_version(&s_conf, MBEDTLS_SSL_VERSION_TLS1_2);
 #else
@@ -513,6 +555,7 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
                                     MBEDTLS_SSL_PRESET_DEFAULT) != 0)
         return -1;
     mbedtls_ssl_conf_rng(conf, tls_rng, nullptr);
+    tls_apply_max_frag_len(conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
     if (s_client_ca_set)
     {
         mbedtls_ssl_conf_ca_chain(conf, &s_client_ca, nullptr);
