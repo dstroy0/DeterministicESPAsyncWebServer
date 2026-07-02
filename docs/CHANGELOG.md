@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`fb482cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb482cd78f1ec764019aec89e0c21b29fb8d0f1a))
+- update CHANGELOG.md [skip ci] ([`a517562`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5175626111f7eccd4316fc3ee43004a38550f0e))
+
+### Documentation
+
+- reclassify Wi-SUN as a connector, not a radio-module driver ([`a50db36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a50db3675b15b4a493ec10a7d78c0211f9e3c44e))
+- update ESP32 build footprints [skip ci] ([`999f87b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/999f87b942c1656ea79479bd99a37d326e3aacd0))
+
 ## [4.77.0] - 2026-07-02
 
 <details>
