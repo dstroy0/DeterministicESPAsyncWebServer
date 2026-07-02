@@ -401,12 +401,20 @@ shipped work:
       buffers. A worker task that runs OIDC verification must be sized for it (or the
       verify marshaled onto a larger-stack task); tracked as the stack-budget item below.
 
-- [ ] **RSA-2048 modexp uses ~7 KB of stack (mbedTLS).** Measured on COM3: an OIDC
-      RS256 verify (and any `ssh_rsa_verify` path: OIDC, the SSH server host key, JWKS)
-      drops the task stack high-water by ~7 KB, dominated by the mbedTLS bignum modexp.
-      Any worker / task that runs an RSA verify must be sized with that headroom. Options:
-      a documented minimum worker-stack size when `DETWS_ENABLE_OIDC` / SSH is on, lower
-      `MBEDTLS_MPI_MAX_SIZE`, or marshal RSA verifies onto a dedicated larger-stack task.
+- [x] **RSA-2048 modexp uses ~7 KB of stack (mbedTLS).** _(done - enforced minimum)_
+      Measured on COM3: an OIDC RS256 verify (and any `ssh_rsa_verify` path: OIDC, the
+      SSH server host key, JWKS) drops the task stack high-water by ~7 KB, dominated by
+      the mbedTLS bignum modexp. The "documented minimum worker-stack" option is now
+      **enforced at build time**: [`DETWS_WORKER_STACK_RSA_MIN`](@ref DETWS_WORKER_STACK_RSA_MIN)
+      (default 8192, `DetWebServerConfig.h`) is the floor, and a validation `#error`
+      fires when `DETWS_ENABLE_OIDC` or `DETWS_ENABLE_SSH` is set while
+      [`DETWS_WORKER_TASK_STACK`](@ref DETWS_WORKER_TASK_STACK) is below it - so a lowered
+      worker stack is caught at compile time instead of overflowing on the first verify.
+      An advanced build that marshals every RSA verify onto a dedicated larger-stack task
+      (the worker itself never runs one) can override `DETWS_WORKER_STACK_RSA_MIN`. The
+      other two options (lower `MBEDTLS_MPI_MAX_SIZE`, or the dedicated task) remain
+      available but are not required for the default architecture. Verified: the default
+      config and OIDC-on-with-8192 compile; OIDC-on-with-4096 fails with the guard message.
 
 </details>
 

@@ -21,15 +21,16 @@ into the slot's ring with a single SPSC publish, then one event is posted.
 
 ## Knobs
 
-| Macro                        | Default | What it does                                                                                                                                             |
-| ---------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DETWS_WORKER_COUNT`         | 1       | Number of worker tasks. `> 1` partitions slots across cores. Must be `<= MAX_CONNS`.                                                                     |
-| `DETWS_WORKER_CORE`          | 1       | Core that worker 0 pins to; worker `k` pins to `(DETWS_WORKER_CORE + k) % cores`.                                                                        |
-| `DETWS_WORKER_TASK_PRIORITY` | 5       | FreeRTOS priority of the worker task(s).                                                                                                                 |
-| `DETWS_WORKER_TASK_STACK`    | 8192    | Per-worker task stack (bytes).                                                                                                                           |
-| `DETWS_WORKER_POLL_TICKS`    | 1       | Idle-sweep block timeout (ticks). Events wake the worker immediately regardless; this only sets how often an idle worker wakes to run the timeout sweep. |
-| `EVT_QUEUE_DEPTH`            | 16      | Per-queue event slots. Raise to absorb larger connection bursts.                                                                                         |
-| `MAX_CONNS`                  | (build) | Connection pool size. The hard ceiling on concurrent connections.                                                                                        |
+| Macro                        | Default | What it does                                                                                                                                                |
+| ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DETWS_WORKER_COUNT`         | 1       | Number of worker tasks. `> 1` partitions slots across cores. Must be `<= MAX_CONNS`.                                                                        |
+| `DETWS_WORKER_CORE`          | 1       | Core that worker 0 pins to; worker `k` pins to `(DETWS_WORKER_CORE + k) % cores`.                                                                           |
+| `DETWS_WORKER_TASK_PRIORITY` | 5       | FreeRTOS priority of the worker task(s).                                                                                                                    |
+| `DETWS_WORKER_TASK_STACK`    | 8192    | Per-worker task stack (bytes). A build guard requires `>= DETWS_WORKER_STACK_RSA_MIN` when OIDC or SSH is enabled (RSA-2048 verify needs ~7 KB).            |
+| `DETWS_WORKER_STACK_RSA_MIN` | 8192    | Enforced floor for `DETWS_WORKER_TASK_STACK` once an RSA-2048 verifier (OIDC/SSH) is compiled in. Lower it only if you marshal RSA verifies off the worker. |
+| `DETWS_WORKER_POLL_TICKS`    | 1       | Idle-sweep block timeout (ticks). Events wake the worker immediately regardless; this only sets how often an idle worker wakes to run the timeout sweep.    |
+| `EVT_QUEUE_DEPTH`            | 16      | Per-queue event slots. Raise to absorb larger connection bursts.                                                                                            |
+| `MAX_CONNS`                  | (build) | Connection pool size. The hard ceiling on concurrent connections.                                                                                           |
 
 ## Measured behavior (ESP32, esp32dev, COM3)
 

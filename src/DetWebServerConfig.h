@@ -101,11 +101,25 @@
  * Floor note: RSA-2048 verification (OIDC / SSH host key / JWKS via the mbedTLS
  * bignum modexp) runs on the worker and uses ~7 KB of stack (measured on a
  * DevKitV1). The 8 KB default holds it with margin; do NOT lower this below
- * ~8 KB when DETWS_ENABLE_OIDC / DETWS_ENABLE_SSH is set or the first verify
- * overflows the task stack.
+ * ::DETWS_WORKER_STACK_RSA_MIN when DETWS_ENABLE_OIDC / DETWS_ENABLE_SSH is set
+ * or the first verify overflows the task stack - a build-time guard (bottom of
+ * this file) enforces that floor so a lowered stack is caught at compile time.
  */
 #ifndef DETWS_WORKER_TASK_STACK
 #define DETWS_WORKER_TASK_STACK 8192
+#endif
+
+/**
+ * @brief Minimum worker-task stack (bytes) required once an RSA-2048 verifier is
+ *        compiled in (OIDC / SSH).
+ *
+ * The mbedTLS bignum modexp alone consumes ~7 KB; 8 KB leaves room for the rest
+ * of the request call chain. Overridable only for an advanced build that marshals
+ * every RSA verify onto a dedicated larger-stack task (then the worker itself never
+ * runs one) - otherwise leave it at the default.
+ */
+#ifndef DETWS_WORKER_STACK_RSA_MIN
+#define DETWS_WORKER_STACK_RSA_MIN 8192
 #endif
 
 /** @brief FreeRTOS priority for each server worker task (ESP32). */
@@ -3140,6 +3154,14 @@ enum DetIface : uint8_t
 
 #if RE_MAX_STEPS < 64
 #error "DeterministicESPAsyncWebServer: RE_MAX_STEPS must be >= 64"
+#endif
+
+// RSA-2048 verification (OIDC / SSH host key / JWKS) runs on a worker task and consumes
+// ~7 KB of stack via the mbedTLS bignum modexp. Enforce the documented floor so a lowered
+// worker stack is caught at build time instead of overflowing on the first verify.
+#if (DETWS_ENABLE_OIDC || DETWS_ENABLE_SSH) && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_RSA_MIN)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_RSA_MIN; RSA-2048 verification (OIDC/SSH) needs ~7 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 8192) or marshal RSA verifies onto a dedicated larger-stack task"
 #endif
 
 #if DETWS_ENABLE_TLS
