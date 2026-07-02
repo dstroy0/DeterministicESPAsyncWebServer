@@ -529,13 +529,16 @@ shipped work:
       Remaining: the real UHCI-UART / `spi_master`-DMA silicon backend (needs peripheral
       hardware to verify; the seam is in place).
 
-- [ ] **User-configurable preempting task queue (v5 milestone).** A FreeRTOS queue
-      + high-priority pinned processing task: producers post with
-      `xQueueSendToBack()` (task, wait timeout) or `xQueueSendFromISR()` +
-      `portYIELD_FROM_ISR()` (ISR), and the scheduler preempts to the processing
-      task immediately. Task priority, core pinning, and queue depth are
-      user-settable (not hard-coded). Builds on the worker model; needs deeper
-      clock-awareness (tick rate / ISR timestamps / latency budgeting).
+- [x] **User-configurable preempting task queue (v5 milestone).** DONE -
+      `services/preempt_queue` (`DETWS_ENABLE_PREEMPT_QUEUE`). Producers post from a task
+      (`xQueueSendToBack` / `-Front`, wait timeout) or an ISR (`xQueueSendFromISR` +
+      `portYIELD_FROM_ISR`); the scheduler preempts to the processing task immediately.
+      Task priority + core are user-settable at `detws_pq_start[_lane]()`, depth is
+      compile-time. **Named lanes**: one USER lane exposed to the app (no-arg `detws_pq_*`)
+      plus internal DMA / FORWARD / DEVICE lanes that run above it (DMA highest, below
+      tcpip / WiFi), so internal ingest preempts user work. Host-tested
+      (`native_preempt_queue`, 11 cases) + HW-verified (DMA + USER lanes ran continuously
+      with zero errors under an HTTP flood; examples 06.PreemptQueue + 08.PreemptLanes).
 
 - [ ] **Interface forwarding (v5 milestone), DMA-driven.** A forwarding plane over
       the ingest pipeline: a frame arriving on one interface (Wi-Fi STA / AP, Ethernet

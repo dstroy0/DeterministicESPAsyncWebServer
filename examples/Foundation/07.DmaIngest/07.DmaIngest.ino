@@ -50,8 +50,9 @@ static void on_dma_frame(const void *item, void *)
 }
 
 // The DMA-complete callback: ISR context on silicon, so keep it tiny - copy the frame
-// bytes into a queue item and post it. detws_pq_post_from_isr() asks the scheduler to
-// switch straight to the processing task the moment we return.
+// bytes into a queue item and post it onto the internal DMA lane (which runs above the
+// user lane, so ingest preempts user work). The post asks the scheduler to switch
+// straight to the processing task the moment we return.
 static void on_dma_complete(const det_dma_event *ev, void *)
 {
     if (ev->dir != DET_DMA_RX)
@@ -62,7 +63,7 @@ static void on_dma_complete(const det_dma_event *ev, void *)
     item.msg.channel = ev->channel;
     uint16_t n = (ev->len < sizeof(item.msg.bytes)) ? ev->len : sizeof(item.msg.bytes);
     memcpy(item.msg.bytes, ev->data, n);
-    detws_pq_post_from_isr(&item);
+    detws_pq_post_lane_from_isr(DETWS_PQ_LANE_DMA, &item);
 }
 
 static uint8_t g_seq = 0;
@@ -72,13 +73,14 @@ void setup()
     Serial.begin(115200);
     delay(300);
 
-    // High-priority task that processes completed DMA frames.
+    // Start the internal DMA lane: a high-priority task (priority 0 -> the lane default,
+    // which ranks above the user lane) that processes completed DMA frames.
     DetwsPqConfig pq = {};
     pq.handler = on_dma_frame;
-    pq.priority = 6; // above loop(): a post preempts straight into on_dma_frame
+    pq.priority = 0; // 0 -> DETWS_PQ_LANE_DMA's default priority (internal > user)
     pq.core = 1;
     pq.name = "dma_rx";
-    if (!detws_pq_start(&pq))
+    if (!detws_pq_start_lane(DETWS_PQ_LANE_DMA, &pq))
     {
         Serial.println("preempt queue failed to start");
         return;

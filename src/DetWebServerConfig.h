@@ -180,11 +180,13 @@
 // Preempting work queue (DETWS_ENABLE_PREEMPT_QUEUE) - v5 real-time ingest
 // ---------------------------------------------------------------------------
 //
-// A fixed-capacity queue + one high-priority core-pinned task: producers post a
-// fixed-size item (from a task or an ISR) and the scheduler preempts straight to
-// the processing task. Storage is static (zero heap), so depth + item size + task
-// stack are compile-time; the task priority + core are set at detws_pq_start().
-// See services/preempt_queue/preempt_queue.h.
+// Fixed-capacity queues, each feeding one core-pinned processing task: a producer
+// posts a fixed-size item (from a task or an ISR) and the scheduler preempts straight
+// to the task. There are named lanes - one USER lane exposed to the app, and internal
+// DMA / forwarding / device-access lanes that run at a higher priority so internal
+// ingest always preempts user work. Queue storage is static (zero heap), so depth +
+// item size are compile-time; a task's stack is created only when its lane starts.
+// The no-lane detws_pq_* API drives the USER lane. See preempt_queue.h.
 
 /** @brief Enable the preempting work queue primitive (default off). */
 #ifndef DETWS_ENABLE_PREEMPT_QUEUE
@@ -201,9 +203,19 @@
 #define DETWS_PQ_ITEM_SIZE 32
 #endif
 
-/** @brief Stack (bytes) for the preempting-queue processing task (ESP32). */
+/** @brief Stack (bytes) for each preempting-queue processing task (ESP32). */
 #ifndef DETWS_PQ_STACK
 #define DETWS_PQ_STACK 4096
+#endif
+
+/**
+ * @brief Base FreeRTOS priority for the internal preempting lanes (DMA / forwarding /
+ *        device access). They run at this and just above, so internal ingest preempts
+ *        the user lane; keep it above the user lane's priority and below the lwIP tcpip
+ *        (18) / WiFi tasks so networking is never starved. See preempt_queue.h.
+ */
+#ifndef DETWS_PQ_INTERNAL_PRIORITY
+#define DETWS_PQ_INTERNAL_PRIORITY 8
 #endif
 
 #if DETWS_ENABLE_PREEMPT_QUEUE && (DETWS_PQ_DEPTH < 1 || DETWS_PQ_ITEM_SIZE < 1)

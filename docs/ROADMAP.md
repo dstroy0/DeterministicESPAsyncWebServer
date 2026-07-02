@@ -74,20 +74,23 @@ real-time, hardware-ingest pipeline where data lands in a queue and the schedule
 preempts immediately to process it, with the priorities exposed to the user.
 
 - [x] \*Preempting task queue (L) _(shipped)_ - `DETWS_ENABLE_PREEMPT_QUEUE`:
-      `services/preempt_queue`, one static (zero-heap) queue feeding a dedicated
-      high-priority core-pinned task. **From a task**, `detws_pq_post()` /
+      `services/preempt_queue`, static (zero-heap) queues feeding dedicated
+      core-pinned tasks. **From a task**, `detws_pq_post()` /
       `detws_pq_post_urgent()` (`xQueueSendToBack` / `xQueueSendToFront`) with a
       wait timeout; the scheduler preempts the lower-priority producer the instant
       the item is queued. **From an ISR**, `detws_pq_post_from_isr()`
       (`xQueueSendFromISR` + `portYIELD_FROM_ISR`) switches right after posting,
-      not on the next tick. Fail-closed on a full queue. HW-verified (~12 us
-      ISR-to-handler latency); host-tested via the fixed-ring core (example
-      Foundation/06.PreemptQueue).
-- [ ] \*User-configurable task priorities / affinity (M). The processing task is
-      created high (e.g. priority 5) and the producer low (e.g. priority 1) via
-      `xTaskCreatePinnedToCore`, but the **priority, core pinning, and queue depth
-      are user-settable** (config / API) rather than hard-coded - users own their
-      task priorities.
+      not on the next tick. Fail-closed on a full queue. **Named lanes**: one USER
+      lane exposed to the app plus internal DMA / FORWARD / DEVICE lanes that run
+      above it (DMA highest, below tcpip / WiFi), so internal ingest preempts user
+      work without starving networking. HW-verified (~12 us ISR-to-handler latency;
+      DMA + USER lanes ran continuously with zero errors under an HTTP flood);
+      host-tested via the per-lane ring core (examples Foundation/06.PreemptQueue +
+      08.PreemptLanes).
+- [x] \*User-configurable task priorities / affinity (M) _(shipped)_. Each lane's
+      task priority + core pinning are set at `detws_pq_start[_lane]()` and the queue
+      depth is compile-time (`DETWS_PQ_DEPTH`); the no-arg API drives the USER lane so
+      users own their task priorities, while internal lanes default above the user lane.
 - [x] \*DMA UART / I2C / SPI transfer (L) _(shipped)_ - `DETWS_ENABLE_DMA`:
       `services/dma`, channels moving peripheral bytes to a static ping-pong (RX) /
       staging (TX) buffer while the CPU is free; a DMA-complete event carries the

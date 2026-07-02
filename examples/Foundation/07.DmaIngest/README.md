@@ -8,16 +8,18 @@
 The high-throughput ingest path for field-bus peripherals (RS-485 UART, CAN over
 SPI, IO-Link). A **DMA channel** moves peripheral bytes into a static buffer while
 the CPU is free; when the transfer completes, a callback - **ISR context on real
-silicon** - does the smallest possible thing: it posts the completion into the
-**preempting work queue** ([06.PreemptQueue](../06.PreemptQueue/README.md)), and a
-dedicated high-priority task is preempted to process the bytes off the interrupt.
+silicon** - does the smallest possible thing: it posts the completion onto the
+internal **DMA lane** of the **preempting work queue**
+([06.PreemptQueue](../06.PreemptQueue/README.md)). That lane runs above the user lane,
+so a dedicated high-priority task is preempted to process the bytes off the interrupt,
+ahead of user work.
 
 ```
 peripheral --DMA--> ping-pong buffer --complete--> callback (ISR)
                                                        |
-                                       detws_pq_post_from_isr(&event)
+                        detws_pq_post_lane_from_isr(DETWS_PQ_LANE_DMA, &msg)
                                                        |
-                                          high-priority task -> your handler
+                                    DMA-lane task (high prio) -> your handler
 ```
 
 RX is **double-buffered (ping-pong)**: the completed buffer is handed up while the

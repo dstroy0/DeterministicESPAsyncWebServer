@@ -12,6 +12,7 @@
 #include <vector>
 
 static std::vector<uint32_t> g_seen;
+static std::vector<uint32_t> g_seen_dma; // items drained on the internal DMA lane
 
 static void on_item(const void *item, void *ctx)
 {
@@ -21,26 +22,41 @@ static void on_item(const void *item, void *ctx)
     g_seen.push_back(v);
 }
 
+static void on_item_dma(const void *item, void *ctx)
+{
+    (void)ctx;
+    uint32_t v;
+    memcpy(&v, item, sizeof(v));
+    g_seen_dma.push_back(v);
+}
+
 static bool post_u32(uint32_t v)
 {
     return detws_pq_post(&v, 0);
 }
 
+static void stop_all_lanes()
+{
+    for (int l = 0; l < DETWS_PQ_LANE_COUNT; l++)
+        detws_pq_stop_lane((detws_pq_lane)l);
+}
+
 void setUp()
 {
     g_seen.clear();
-    detws_pq_stop();
+    g_seen_dma.clear();
+    stop_all_lanes();
     DetwsPqConfig cfg = {};
     cfg.handler = on_item;
     cfg.ctx = nullptr;
     cfg.priority = 5;
     cfg.core = 1;
     cfg.name = "test_pq";
-    detws_pq_start(&cfg);
+    detws_pq_start(&cfg); // starts the USER lane (no-arg API)
 }
 void tearDown()
 {
-    detws_pq_stop();
+    stop_all_lanes();
 }
 
 void test_start_validates_and_runs()
@@ -127,6 +143,70 @@ void test_drain_empties_and_reuses()
     TEST_ASSERT_EQUAL_UINT32(100, g_seen[0]);
 }
 
+// --- Named-lane tests -----------------------------------------------------------------
+
+void test_internal_lanes_outrank_user()
+{
+    // DMA highest, then forward, then device, all above the user lane.
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD),
+                                   detws_pq_lane_priority(DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE),
+                                   detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD));
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_USER),
+                                   detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE));
+}
+
+void test_lanes_are_isolated()
+{
+    // The USER lane is already started by setUp; start the internal DMA lane too.
+    DetwsPqConfig dma = {};
+    dma.handler = on_item_dma;
+    dma.core = 1;
+    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
+
+    uint32_t u = 11, d = 22;
+    TEST_ASSERT_TRUE(detws_pq_post(&u, 0));                         // -> USER
+    TEST_ASSERT_TRUE(detws_pq_post_lane(DETWS_PQ_LANE_DMA, &d, 0)); // -> DMA
+
+    // Draining one lane must not touch the other's queue or handler.
+    detws_pq_drain_lane(DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_EQUAL_size_t(0, g_seen.size());
+    TEST_ASSERT_EQUAL_size_t(1, g_seen_dma.size());
+    TEST_ASSERT_EQUAL_UINT32(22, g_seen_dma[0]);
+
+    detws_pq_drain(); // USER
+    TEST_ASSERT_EQUAL_size_t(1, g_seen.size());
+    TEST_ASSERT_EQUAL_UINT32(11, g_seen[0]);
+}
+
+void test_lane_start_stop_running_independent()
+{
+    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_USER)); // setUp started it
+    TEST_ASSERT_FALSE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
+
+    DetwsPqConfig dma = {};
+    dma.handler = on_item_dma;
+    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
+    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_FALSE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma)); // double start is a no-op
+
+    detws_pq_stop_lane(DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_FALSE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_USER)); // USER unaffected
+}
+
+void test_lane_high_water_is_per_lane()
+{
+    DetwsPqConfig dma = {};
+    dma.handler = on_item_dma;
+    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
+    uint32_t v = 5;
+    detws_pq_post_lane(DETWS_PQ_LANE_DMA, &v, 0);
+    detws_pq_post_lane(DETWS_PQ_LANE_DMA, &v, 0);
+    TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(DETWS_PQ_LANE_DEVICE)); // untouched lane
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -137,5 +217,9 @@ int main()
     RUN_TEST(test_high_water_tracks_peak);
     RUN_TEST(test_from_isr_enqueues);
     RUN_TEST(test_drain_empties_and_reuses);
+    RUN_TEST(test_internal_lanes_outrank_user);
+    RUN_TEST(test_lanes_are_isolated);
+    RUN_TEST(test_lane_start_stop_running_independent);
+    RUN_TEST(test_lane_high_water_is_per_lane);
     return UNITY_END();
 }

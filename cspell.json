@@ -5,6 +5,8 @@
     "WROVER",
     "pioarduino",
     "UHCI",
+    "prio",
+    "periph",
     "algs",
     "wolfssl",
     "donna",
