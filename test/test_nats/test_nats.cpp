@@ -124,10 +124,70 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(small, sizeof(small), "foo", nullptr, (const uint8_t *)"hello", 5));
 }
 
+void test_build_ping_pong()
+{
+    char buf[16];
+    TEST_ASSERT_EQUAL_size_t(6, nats_build_ping(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("PING\r\n", buf);
+    TEST_ASSERT_EQUAL_size_t(6, nats_build_pong(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("PONG\r\n", buf);
+}
+
+void test_build_null_args()
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_connect(nullptr, 64, "{}"));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_connect(buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(nullptr, 64, "s", nullptr, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(buf, sizeof(buf), nullptr, nullptr, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(buf, sizeof(buf), "s", nullptr, nullptr, 3)); // len && !payload
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_sub(nullptr, 64, "s", nullptr, "1"));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_sub(buf, sizeof(buf), nullptr, nullptr, "1"));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_sub(buf, sizeof(buf), "s", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_unsub(nullptr, 64, "1", 0, false));
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_unsub(buf, sizeof(buf), nullptr, 0, false));
+}
+
+void test_build_overflow_put_ch()
+{
+    char buf[16];
+    // cap 6: "PUB " fits, "foo" overflows in put_str -> ok=false, then put_ch bails.
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(buf, 6, "foo", nullptr, (const uint8_t *)"hi", 2));
+    // cap 7: "PUB foo" fits exactly, the following put_ch(' ') is the overflow.
+    TEST_ASSERT_EQUAL_size_t(0, nats_build_pub(buf, 7, "foo", nullptr, (const uint8_t *)"hi", 2));
+}
+
+void test_parse_edges()
+{
+    NatsMsg m;
+    size_t c;
+    TEST_ASSERT_FALSE(nats_parse(nullptr, 5, &m, &c));
+    TEST_ASSERT_FALSE(nats_parse("PING\r\n", 6, nullptr, &c));
+    TEST_ASSERT_FALSE(nats_parse("PING\r\n", 6, &m, nullptr));
+
+    // MSG with too few tokens, and with a non-numeric byte count.
+    TEST_ASSERT_FALSE(nats_parse("MSG foo\r\n", 9, &m, &c));
+    TEST_ASSERT_FALSE(nats_parse("MSG a b xyz\r\n", 13, &m, &c));
+
+    // MSG line with trailing whitespace before the CRLF still parses.
+    const char *raw = "MSG a b 3 \r\nXXX\r\n";
+    TEST_ASSERT_TRUE(nats_parse(raw, strlen(raw), &m, &c));
+    TEST_ASSERT_EQUAL(NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL_size_t(3, m.payload_len);
+
+    // An unrecognized verb parses as UNKNOWN (consumes the line).
+    TEST_ASSERT_TRUE(nats_parse("ZZZ whatever\r\n", 14, &m, &c));
+    TEST_ASSERT_EQUAL(NATS_UNKNOWN, m.type);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_connect);
+    RUN_TEST(test_build_ping_pong);
+    RUN_TEST(test_build_null_args);
+    RUN_TEST(test_build_overflow_put_ch);
+    RUN_TEST(test_parse_edges);
     RUN_TEST(test_build_pub);
     RUN_TEST(test_build_pub_with_reply);
     RUN_TEST(test_build_pub_empty_payload);
