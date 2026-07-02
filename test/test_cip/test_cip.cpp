@@ -104,9 +104,28 @@ void test_rejects_bad()
     TEST_ASSERT_EQUAL_size_t(0, cip_build_get_attr_single(small, sizeof(small), 1, 1, 7)); // needs 8
 }
 
+// EPATH and request builders fail closed on a null buffer, an 8-bit/16-bit segment
+// that does not fit, and bad request arguments.
+void test_cip_build_guards()
+{
+    uint8_t buf[16];
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(nullptr, sizeof(buf), 1, 1, 1, true)); // null buffer
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 1, 1, 1, 1, false));              // 8-bit segment, cap < 2
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 3, 0x1234, 1, 1, false));         // 16-bit segment, cap < 4
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 2, 1, 1, 1, false));              // instance segment does not fit
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_epath(buf, 4, 1, 1, 1, true));               // attribute segment does not fit
+
+    uint8_t ep[4] = {0x20, 1, 0x24, 1};
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(nullptr, sizeof(buf), 0x0E, ep, 4, nullptr, 0));  // null buffer
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, nullptr, 4, nullptr, 0)); // null epath
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, ep, 3, nullptr, 0));      // odd epath length
+    TEST_ASSERT_EQUAL_UINT(0, cip_build_request(buf, sizeof(buf), 0x0E, ep, 4, nullptr, 5)); // data length w/o data
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_cip_build_guards);
     RUN_TEST(test_epath_8bit);
     RUN_TEST(test_epath_16bit);
     RUN_TEST(test_get_attr_single);

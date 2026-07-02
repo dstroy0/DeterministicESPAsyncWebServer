@@ -138,9 +138,23 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, dnp3_build_frame(out, sizeof(out), 0x44, 1, 2, big, sizeof(big)));
 }
 
+// Frame parsing rejects null / too-short input and a LENGTH field below the overhead.
+void test_dnp3_parse_guards()
+{
+    Dnp3Frame f;
+    uint8_t user[256];
+    size_t ul = 0;
+    TEST_ASSERT_FALSE(dnp3_parse_frame(nullptr, 20, &f, user, sizeof(user), &ul));
+    uint8_t tiny[4] = {0};
+    TEST_ASSERT_FALSE(dnp3_parse_frame(tiny, sizeof(tiny), &f, user, sizeof(user), &ul)); // < header block
+    uint8_t bad_len[10] = {DNP3_START0, DNP3_START1, 3, 0, 0, 0, 0, 0, 0, 0};             // LENGTH 3 < overhead 5
+    TEST_ASSERT_FALSE(dnp3_parse_frame(bad_len, sizeof(bad_len), &f, user, sizeof(user), &ul));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_dnp3_parse_guards);
     RUN_TEST(test_crc_check_value);
     RUN_TEST(test_build_header_bytes);
     RUN_TEST(test_round_trip_single_block);

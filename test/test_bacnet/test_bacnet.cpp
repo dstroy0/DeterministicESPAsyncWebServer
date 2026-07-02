@@ -152,9 +152,32 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, npdu_build(nsmall, sizeof(nsmall), false, 0, false, 0, nullptr, 0, 0, apdu, 4));
 }
 
+// BVLC / NPDU builders fail closed on null args, and NPDU parsing rejects a header
+// that claims a destination/source but is truncated.
+void test_bacnet_guards_and_truncations()
+{
+    uint8_t buf[64], npdu[4] = {NPDU_VERSION, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT(0, bvlc_build(nullptr, sizeof(buf), 0x0A, npdu, 4)); // null buffer
+    TEST_ASSERT_EQUAL_UINT(0, bvlc_build(buf, sizeof(buf), 0x0A, nullptr, 5));  // npdu_len w/o npdu
+    TEST_ASSERT_EQUAL_UINT(0, npdu_build(nullptr, sizeof(buf), false, 0, false, 0, nullptr, 0, 0, npdu, 4)); // null buf
+    TEST_ASSERT_EQUAL_UINT(0,
+                           npdu_build(buf, sizeof(buf), false, 0, false, 0, nullptr, 0, 0, nullptr, 5)); // apdu w/o ptr
+
+    NpduInfo info;
+    uint8_t dest_trunc[2] = {NPDU_VERSION, NPCI_DEST_PRESENT};
+    TEST_ASSERT_FALSE(npdu_parse(dest_trunc, 2, &info)); // destination announced, none present
+    uint8_t src_trunc[2] = {NPDU_VERSION, NPCI_SRC_PRESENT};
+    TEST_ASSERT_FALSE(npdu_parse(src_trunc, 2, &info));                                // source announced, none present
+    uint8_t src_overrun[6] = {NPDU_VERSION, NPCI_SRC_PRESENT, 0x00, 0x01, 0xFF, 0x00}; // SLEN overruns the buffer
+    TEST_ASSERT_FALSE(npdu_parse(src_overrun, 6, &info));
+    uint8_t no_hop[5] = {NPDU_VERSION, NPCI_DEST_PRESENT, 0x00, 0x01, 0x00}; // valid dest, then no hop-count byte
+    TEST_ASSERT_FALSE(npdu_parse(no_hop, 5, &info));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_bacnet_guards_and_truncations);
     RUN_TEST(test_bvlc_bytes);
     RUN_TEST(test_npdu_local);
     RUN_TEST(test_npdu_dest);
