@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`2687695`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/268769598f8c0a565c87c1fc7abdaab82e307f80))
+- update CHANGELOG.md [skip ci] ([`0db468c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0db468c2cd7a416bf2192583a32c7d6b8aa44ea5))
 - update test report [skip ci] ([`d2d2f16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2d2f16d31edbe574becce7f9b51fbde08fe787b))
 - update CHANGELOG.md [skip ci] ([`3d07257`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d07257cc4041e4ba705240e85cfc3ff38f64637))
 - update test report [skip ci] ([`9fa5dd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fa5dd4c1ea2df9decfd8eee0e327ba1bc433cb8))
@@ -74,6 +76,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover base-time/none in JSON, CBOR string/bool/time, null args ([`76c33c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76c33c1013d7c5f3720c170b00ba8f774435104c))
+- cover CR escape, build guards/overflow, parse edges, null lookups ([`33709d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33709d3b5d00a8a66f055ee248dad50bf828f155))
+- cover ping/pong builders, null args, put_ch overflow, parse edges ([`0a63126`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a6312611e3c4337b79d00291e15dc8e13134e32))
 - cover all varbind value types, invalid type, null args, stubs ([`e44b4a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44b4a9c4e7ebc7ba4fd8d67b59baeb6c49c2d68))
 - cover init/log via UDP capture, PRI clamps, field truncation ([`22ee59f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22ee59f58747ffba4fbe7d812786169e6434ae55))
 - add det_numparse + det_utf8 suite (new native env) ([`066bc2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/066bc2f0b95145d3f478895e5d1d036d0b86e6de))
