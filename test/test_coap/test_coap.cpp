@@ -811,9 +811,241 @@ void test_well_known_core_rejects_post()
     TEST_ASSERT_EQUAL_UINT(COAP_RSP_METHOD_NOT_ALLOWED, d.code);
 }
 
+// ---------------------------------------------------------------------------
+// Malformed-input / boundary coverage
+// ---------------------------------------------------------------------------
+
+// A handler that reports an over-capacity body, to exercise the defensive clamp.
+static void h_overflow(const CoapRequest *req, CoapResponse *resp)
+{
+    (void)req;
+    resp->code = COAP_RSP_CONTENT;
+    resp->content_format = COAP_CF_TEXT;
+    resp->payload_len = resp->payload_cap + 1000; // absurd; the server must clamp
+}
+
+// coap_server_add_resource rejects null args and a full table.
+void test_add_resource_limits()
+{
+    TEST_ASSERT_FALSE(coap_server_add_resource(nullptr, COAP_ALLOW_GET, h_resource));
+    TEST_ASSERT_FALSE(coap_server_add_resource("/x", COAP_ALLOW_GET, nullptr));
+    int added = 0;
+    while (coap_server_add_resource("/fill", COAP_ALLOW_GET, h_resource))
+        if (++added > 64)
+            break; // safety: the table is bounded, so this loop must terminate
+    TEST_ASSERT_LESS_THAN(64, added);
+    TEST_ASSERT_FALSE(coap_server_add_resource("/nope", COAP_ALLOW_GET, h_resource));
+}
+
+// A datagram too short for a header, and a token length that runs past the buffer.
+void test_short_and_truncated_token()
+{
+    uint8_t resp[64];
+    uint8_t too_short[3] = {0x40, COAP_GET, 0x00};
+    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(too_short, 3, resp, sizeof(resp)));
+
+    // CON with TKL=3 but no token bytes present (len == 4): RST with an empty token.
+    uint8_t bad_tkl[4] = {(uint8_t)((1 << 6) | (COAP_TYPE_CON << 4) | 3), COAP_GET, 0x12, 0x34};
+    size_t n = coap_server_process(bad_tkl, 4, resp, sizeof(resp));
+    TEST_ASSERT_EQUAL_UINT(4, n);
+    TEST_ASSERT_EQUAL_UINT8(COAP_TYPE_RST, (resp[0] >> 4) & 0x03);
+    TEST_ASSERT_EQUAL_UINT8(0, resp[1]);
+}
+
+// Every malformed option encoding yields 4.00 Bad Request (piggybacked ACK). Each
+// datagram is a CON GET header followed by one deliberately broken option.
+void test_malformed_options_bad_request()
+{
+    uint8_t resp[64];
+    const uint8_t hdr[4] = {0x40, COAP_GET, 0xAB, 0xCD}; // ver1, CON, tkl0, GET
+
+    struct Case
+    {
+        const char *name;
+        uint8_t opt[4];
+        size_t olen;
+    };
+    const Case cases[] = {
+        {"delta15_reserved", {0xF5}, 1},            // delta nibble 15 is reserved
+        {"olen15_reserved", {0x0F}, 1},             // length nibble 15 is reserved
+        {"delta13_truncated", {0xD0}, 1},           // delta=13 needs 1 ext byte; none present
+        {"delta14_truncated", {0xE0, 0x01}, 2},     // delta=14 needs 2 ext bytes; only 1
+        {"olen13_truncated", {0x0D}, 1},            // length=13 needs 1 ext byte; none present
+        {"olen14_truncated", {0x0E, 0x01}, 2},      // length=14 needs 2 ext bytes; only 1
+        {"value_truncated", {0x03, 0x61, 0x62}, 3}, // length=3 but only 2 value bytes present
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+    {
+        uint8_t req[16];
+        memcpy(req, hdr, 4);
+        memcpy(req + 4, cases[i].opt, cases[i].olen);
+        size_t n = coap_server_process(req, 4 + cases[i].olen, resp, sizeof(resp));
+        TEST_ASSERT_TRUE(n > 0);
+        TEST_ASSERT_EQUAL_UINT_MESSAGE(COAP_RSP_BAD_REQUEST, resp[1], cases[i].name);
+    }
+}
+
+// A valid 2-byte extended option delta (>=269) and length (>=269) decode cleanly; an
+// unknown even option is elective and ignored, so processing falls through to GET "/".
+void test_extended_delta_and_length_ignored()
+{
+    uint8_t req[400], resp[512], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 1);
+    enc_option(&e, 300, nullptr, 0); // option 300: delta uses the 2-byte extension
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, resp[1]);
+
+    uint8_t big[269];
+    memset(big, 'x', sizeof(big));
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 2);
+    enc_option(&e, 60, big, sizeof(big)); // 269-byte value: length uses the 2-byte extension
+    n = coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, resp[1]);
+}
+
+// A single Uri-Path / Uri-Query segment larger than its reconstruction buffer fails
+// closed as a bad request (seg_append overflow).
+void test_oversized_path_and_query()
+{
+    uint8_t req[256], resp[128], tok[1] = {0};
+    uint8_t seg[80]; // > DETWS_COAP_MAX_PATH / _QUERY (64)
+    CoapEnc e;
+
+    memset(seg, 'p', sizeof(seg));
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 1);
+    enc_option(&e, 11, seg, sizeof(seg)); // Uri-Path
+    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_REQUEST, resp[1]);
+
+    memset(seg, 'q', sizeof(seg));
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 2);
+    enc_option(&e, 15, seg, sizeof(seg)); // Uri-Query
+    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_REQUEST, resp[1]);
+}
+
+// A Block1/Block2 option value wider than 3 bytes is malformed (RFC 7959 caps it at 3).
+void test_block_option_too_wide()
+{
+    uint8_t req[64], resp[64], tok[1] = {0}, v4[4] = {0, 0, 0, 0};
+    CoapEnc e;
+
+    enc_init(&e, req, COAP_TYPE_CON, COAP_PUT, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_option(&e, 27, v4, 4); // Block1, 4-byte value
+    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_REQUEST, resp[1]);
+
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 2);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_option(&e, 23, v4, 4); // Block2, 4-byte value
+    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_REQUEST, resp[1]);
+}
+
+// Block1 upload with the reserved block-size exponent (SZX=7) is a bad option.
+void test_block1_reserved_szx()
+{
+    uint8_t req[64], resp[64], tok[1] = {0}, v[1] = {0x07}; // num=0, more=0, szx=7
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_POST, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    enc_option(&e, 27, v, 1);
+    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_BAD_OPTION, resp[1]);
+}
+
+// A non-final Block1 upload whose 2.31 Continue reply cannot fit the buffer returns 0.
+void test_block1_continue_no_space()
+{
+    uint8_t req[64], resp[3], tok[1] = {0}, v[1] = {0x0A}; // num=0, more=1, szx=2
+    uint8_t pl[16];
+    memset(pl, 'z', sizeof(pl));
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_PUT, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)"big", 3);
+    enc_option(&e, 27, v, 1);
+    enc_payload(&e, pl, sizeof(pl));
+    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(req, e.len, resp, sizeof(resp)));
+}
+
+// A handler reporting an over-capacity body is clamped, not overflowed.
+void test_response_payload_clamped()
+{
+    TEST_ASSERT_TRUE(coap_server_add_resource("/of", COAP_ALLOW_GET, h_overflow));
+    uint8_t req[32], resp[256], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)"of", 2);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, resp[1]);
+}
+
+// A valid response whose header does not fit the output buffer returns 0.
+void test_response_buffer_too_small()
+{
+    uint8_t req[32], resp[3], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(req, e.len, resp, sizeof(resp)));
+}
+
+static char g_longpaths[8][40];
+
+// A .well-known/core listing larger than the payload buffer truncates at a resource
+// boundary rather than overflowing.
+void test_well_known_core_truncates()
+{
+    coap_server_init();
+    for (int i = 0; i < 8; i++)
+    {
+        memset(g_longpaths[i], 'a' + i, 34);
+        g_longpaths[i][0] = '/';
+        g_longpaths[i][34] = '\0'; // 8 * ("<path>" + ',') = 8*36-1 = 287 > MAX_PAYLOAD (256)
+        TEST_ASSERT_TRUE(coap_server_add_resource(g_longpaths[i], COAP_ALLOW_GET, h_resource));
+    }
+    uint8_t req[64], resp[512], tok[1] = {0};
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 0, 1);
+    enc_option(&e, 11, (const uint8_t *)".well-known", 11);
+    enc_option(&e, 11, (const uint8_t *)"core", 4);
+    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_UINT(COAP_RSP_CONTENT, resp[1]);
+}
+
+// A large Observe sequence exercises the 2-byte and 3-byte minimal-uint option encodings.
+void test_observe_large_seq_encoding()
+{
+    uint8_t req[32], resp[64], tok[2] = {0xAA, 0xBB};
+    CoapEnc e;
+    enc_init(&e, req, COAP_TYPE_CON, COAP_GET, tok, 2, 1);
+    enc_option(&e, 6, nullptr, 0); // Observe (register)
+    enc_option(&e, 11, (const uint8_t *)"temp", 4);
+    TEST_ASSERT_TRUE(coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) > 0);   // 2-byte seq
+    TEST_ASSERT_TRUE(coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) > 0); // 3-byte seq
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_add_resource_limits);
+    RUN_TEST(test_short_and_truncated_token);
+    RUN_TEST(test_malformed_options_bad_request);
+    RUN_TEST(test_extended_delta_and_length_ignored);
+    RUN_TEST(test_oversized_path_and_query);
+    RUN_TEST(test_block_option_too_wide);
+    RUN_TEST(test_block1_reserved_szx);
+    RUN_TEST(test_block1_continue_no_space);
+    RUN_TEST(test_response_payload_clamped);
+    RUN_TEST(test_response_buffer_too_small);
+    RUN_TEST(test_well_known_core_truncates);
+    RUN_TEST(test_observe_large_seq_encoding);
     RUN_TEST(test_block2_explicit_paging);
     RUN_TEST(test_block2_auto_when_large);
     RUN_TEST(test_block2_szx_clamped);
