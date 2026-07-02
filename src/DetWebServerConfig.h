@@ -439,6 +439,30 @@
 #error "DeterministicESPAsyncWebServer: DETWS_PN532_MAX_DATA must be 1..254"
 #endif
 
+// ---------------------------------------------------------------------------
+// Sigfox (DETWS_ENABLE_SIGFOX) - Wisol / Murata Sigfox modem AT-command codec
+// ---------------------------------------------------------------------------
+//
+// Tiny low-power uplinks over the Sigfox 0G network. A Wisol / Murata Sigfox modem is
+// driven by AT commands over UART: sigfox_build_uplink() formats an `AT$SF=<hex>` frame
+// for a <= 12-byte payload, and sigfox_parse_response() classifies the modem's reply
+// (OK / ERROR / still pending). Pure text-command codec - you carry it over your UART - so
+// it is fully host-testable. See services/sigfox/sigfox.h.
+
+/** @brief Enable the Sigfox AT-command codec (default off). */
+#ifndef DETWS_ENABLE_SIGFOX
+#define DETWS_ENABLE_SIGFOX 0
+#endif
+
+/** @brief Maximum Sigfox uplink payload (the network caps a message at 12 bytes). */
+#ifndef DETWS_SIGFOX_MAX_PAYLOAD
+#define DETWS_SIGFOX_MAX_PAYLOAD 12
+#endif
+
+#if DETWS_ENABLE_SIGFOX && (DETWS_SIGFOX_MAX_PAYLOAD < 1 || DETWS_SIGFOX_MAX_PAYLOAD > 12)
+#error "DeterministicESPAsyncWebServer: DETWS_SIGFOX_MAX_PAYLOAD must be 1..12"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

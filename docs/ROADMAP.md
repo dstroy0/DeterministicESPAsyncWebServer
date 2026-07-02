@@ -171,7 +171,11 @@ UART radios:
   parse/build + the CRC-8 (poly 0x07), host-tested with known-answer CRCs and
   malformed/resync framing; example 13.EnOceanGateway bridges a real TCM 310 over
   UART. Remaining: verify against a module + EEP profile decoding.
-- [ ] \*Sigfox uplink (S) - Wisol / Murata module over UART; tiny low-power uplinks.
+- [~] \*Sigfox uplink (S) - Wisol / Murata module over UART; tiny low-power uplinks.
+  **AT-command codec shipped** (`DETWS_ENABLE_SIGFOX`, `services/sigfox`): the
+  `AT$SF=<hex>` uplink formatter + OK/ERROR/pending response classifier, host-tested;
+  example 15.SigfoxUplink sends a reading from a real modem. Remaining: verify against
+  a module + subscription.
 - [ ] \*Wi-SUN FAN gateway (L) - sub-GHz IPv6 mesh (Renesas / SiLabs) over UART.
 
 I2C / SPI / UART:

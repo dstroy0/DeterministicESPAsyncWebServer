@@ -477,6 +477,12 @@
       "src": ["+<services/pn532/pn532.cpp>"],
       "tests": ["test_pn532"]
     },
+    "native_sigfox": {
+      "desc": "Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink\ncommand (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and\nthe OK / ERROR / PENDING response classification. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SIGFOX=1"],
+      "src": ["+<services/sigfox/sigfox.cpp>"],
+      "tests": ["test_sigfox"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],
