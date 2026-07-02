@@ -16,7 +16,7 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_OBSERVE=1
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_COAP 1

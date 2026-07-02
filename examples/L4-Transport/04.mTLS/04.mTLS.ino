@@ -25,7 +25,7 @@
  * also see. The defines below document intent, but for PlatformIO enable them
  * for the whole build, e.g. in platformio.ini:
  *     build_flags = -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_TLS 1

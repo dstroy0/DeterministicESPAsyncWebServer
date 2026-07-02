@@ -20,7 +20,7 @@
  *
  * NOTE: enable it for the whole build. In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_GRAPHQL=1
- * (Arduino IDE: set it in DetWebServerConfig.h.)
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_GRAPHQL 1

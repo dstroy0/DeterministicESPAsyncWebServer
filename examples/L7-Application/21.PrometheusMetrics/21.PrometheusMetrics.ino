@@ -18,7 +18,7 @@
  * NOTE: optional features are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable them for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_STATS 1

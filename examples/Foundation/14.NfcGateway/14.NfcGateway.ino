@@ -14,6 +14,7 @@
 //
 // Build flags (whole build): DETWS_ENABLE_PN532=1 DETWS_ENABLE_GATEWAY=1
 
+#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/det_gateway.h"
 #include "services/pn532/pn532.h"
 #include <Arduino.h>

@@ -13,7 +13,7 @@
  * is set for the whole build (a .ino #define does not reach the separately
  * compiled library). In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_NTP=1
- * (Arduino IDE: set it in DetWebServerConfig.h.)
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Flash, open Serial @ 115200 for the IP, then GET http://<ip>/time.
  */

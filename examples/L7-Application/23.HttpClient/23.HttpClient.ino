@@ -18,7 +18,7 @@
  *     build_flags = -DDETWS_ENABLE_HTTP_CLIENT=1
  *     ; for https:// add: -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_HTTP_CLIENT_TLS=1
  *     ; to trace where a request stalls, add: -DDETWS_HTTP_CLIENT_DEBUG
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * https:// note: encrypt-only by default (the device has no trust store), so the
  * peer is unauthenticated. To authenticate the server, install a CA trust anchor

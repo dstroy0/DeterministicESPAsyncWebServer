@@ -18,7 +18,7 @@
  * enable them for the whole build:
  *     build_flags = -DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1
  * For a plain ws:// endpoint, just -DDETWS_ENABLE_WS_CLIENT=1 and set USE_TLS=false
- * / PORT=80. (Arduino IDE: set them in DetWebServerConfig.h.)
+ * / PORT=80. (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_WS_CLIENT 1

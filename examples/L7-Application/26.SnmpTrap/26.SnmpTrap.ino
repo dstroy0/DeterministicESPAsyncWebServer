@@ -14,7 +14,7 @@
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SNMP_TRAP=1
  *     ; for SNMPv3 traps also: -DDETWS_ENABLE_SNMP_V3=1 (then call snmp_trap_v3)
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_SNMP 1

@@ -13,7 +13,7 @@
  * NOTE: enable the feature for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_IP_ALLOWLIST=1
- * (Arduino IDE: set it in DetWebServerConfig.h.)
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Here only the 192.168.1.0/24 LAN and the single host 10.0.0.5 may connect; a
  * spoofed source can still pass, so pair it with the accept throttles.

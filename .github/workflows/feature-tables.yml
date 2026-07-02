@@ -36,6 +36,11 @@ jobs:
       - name: Regenerate configurator from DetWebServerConfig.h
         run: python docs/utilities/gen_configurator.py
 
+      # Regenerate each example's Arduino build_opt.h from its README build_flags so the
+      # examples keep building unmodified in the Arduino IDE.
+      - name: Regenerate example build_opt.h files
+        run: python tools/ci/gen_build_opt.py
+
       - name: Format with Prettier
         run: npx prettier@3.9.1 --write README.md docs/README.md
 
@@ -57,7 +62,7 @@ jobs:
       - name: Commit regenerated tables
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "docs: regenerate feature tables + configurator [skip ci]"
-          file_pattern: "README.md docs/README.md docs/configurator.html"
+          commit_message: "docs: regenerate feature tables + configurator + build_opt.h [skip ci]"
+          file_pattern: "README.md docs/README.md docs/configurator.html examples/*/*/build_opt.h"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"

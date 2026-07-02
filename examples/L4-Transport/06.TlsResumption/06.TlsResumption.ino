@@ -18,7 +18,7 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * WARNING: the certificate and PRIVATE KEY below are a throwaway self-signed pair
  * committed for the demo - the key is public. NEVER use them in production.

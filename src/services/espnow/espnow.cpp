@@ -116,6 +116,7 @@ int detws_espnow_peer_count(void)
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
 
+#include <esp_idf_version.h> // ESP_IDF_VERSION / ESP_IDF_VERSION_VAL for the recv-cb ABI guard
 #include <esp_now.h>
 #include <esp_wifi.h>
 
@@ -123,9 +124,17 @@ namespace
 {
 detws_espnow_recv_fn s_recv = nullptr;
 
+// The ESP-NOW receive callback signature changed in ESP-IDF 5.0 (Arduino-ESP32 3.x): the
+// source MAC moved into an esp_now_recv_info_t. Match whichever the compiled core expects.
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len)
+{
+    const uint8_t *mac = info ? info->src_addr : nullptr;
+#else
 void on_recv(const uint8_t *mac, const uint8_t *data, int len)
 {
-    if (!s_recv || len < 0)
+#endif
+    if (!s_recv || len < 0 || !mac)
         return;
     uint8_t type;
     const uint8_t *payload;

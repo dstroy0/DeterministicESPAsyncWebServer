@@ -14,6 +14,7 @@
 //
 // Build flag (whole build): DETWS_ENABLE_SIGFOX=1
 
+#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
 #include "services/sigfox/sigfox.h"
 #include <Arduino.h>
 

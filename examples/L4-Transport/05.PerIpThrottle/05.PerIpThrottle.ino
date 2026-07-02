@@ -21,7 +21,7 @@
  *                   -DDETWS_PER_IP_THROTTLE_MAX=10
  *                   -DDETWS_PER_IP_THROTTLE_WINDOW_MS=10000
  *                   -DDETWS_PER_IP_THROTTLE_SLOTS=16
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_PER_IP_THROTTLE 1

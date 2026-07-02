@@ -14,7 +14,7 @@
  *
  * NOTE: enable both flags for the whole build. In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_MODBUS 1

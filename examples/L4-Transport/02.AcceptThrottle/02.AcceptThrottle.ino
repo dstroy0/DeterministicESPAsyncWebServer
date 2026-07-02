@@ -18,7 +18,7 @@
  *     build_flags = -DDETWS_ENABLE_ACCEPT_THROTTLE=1
  *                   -DDETWS_ACCEPT_THROTTLE_MAX=20
  *                   -DDETWS_ACCEPT_THROTTLE_WINDOW_MS=1000
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_ACCEPT_THROTTLE 1

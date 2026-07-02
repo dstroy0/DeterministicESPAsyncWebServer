@@ -26,7 +26,7 @@
  * also see. The `#define` below documents intent, but for PlatformIO enable it
  * for the whole build, e.g. in platformio.ini:
  *     build_flags = -DDETWS_ENABLE_KEEPALIVE=1
- * (Arduino IDE: set it in DetWebServerConfig.h.) A define in the sketch alone
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) A define in the sketch alone
  * does not reach the separately-compiled library .cpp.
  */
 

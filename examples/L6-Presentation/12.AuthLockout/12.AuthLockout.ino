@@ -14,7 +14,7 @@
  * NOTE: enable the lockout for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_AUTH_LOCKOUT=1
- * (DETWS_ENABLE_AUTH is on by default. Arduino IDE: set it in DetWebServerConfig.h.)
+ * (DETWS_ENABLE_AUTH is on by default. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Try: repeat `curl -u admin:wrong http://<ip>/secret` until you get 429, then
  * `curl -u admin:s3cret http://<ip>/secret` once the Retry-After elapses.

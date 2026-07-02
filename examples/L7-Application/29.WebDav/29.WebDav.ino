@@ -25,7 +25,7 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_WEBDAV=1
- * (Arduino IDE: set it in DetWebServerConfig.h.)
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_WEBDAV 1

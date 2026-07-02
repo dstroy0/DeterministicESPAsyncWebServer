@@ -35,6 +35,18 @@ Every workflow that runs on `main`, grouped by what it checks:
 
 The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md). See the [feature reference](docs/FEATURES.md) for every option and the [secure-boot & flash-encryption hardening guide](docs/SECURE_BOOT.md) for production deployment. Wiring a codec to a PLC, inverter, power-grid sensor, or another board? The [hardware hookup & settings guide](docs/HARDWARE_HOOKUP.md) covers the transceivers, ports, and settings.
 
+## Using in the Arduino IDE
+
+Install the **esp32 by Espressif** boards package (3.x), then install this library (Library Manager, or drop it in your `libraries/` folder). The bundled examples build unmodified — each ships a `build_opt.h` that turns on the features it needs.
+
+Optional features are compile-time flags. In the Arduino IDE there is no `build_flags` field, and a `#define` in your `.ino` does **not** reach the library's separately-compiled `.cpp` files — so to enable a feature you place a file named **`build_opt.h`** in the same folder as your sketch (the one file the IDE feeds to every translation unit). The easy way:
+
+1. Open the [interactive configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html) and tick the features you want (dependencies resolve for you).
+2. Switch to the **Arduino build_opt.h** tab and click **Download**.
+3. Drop the downloaded `build_opt.h` next to your `.ino` and compile.
+
+PlatformIO users ignore all of this and just use `build_flags` in `platformio.ini` (the configurator's default tab emits that block).
+
 ## Overview
 
 A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.

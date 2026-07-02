@@ -12,7 +12,7 @@
  * NOTE: set the mode via build flags so it reaches the separately-compiled library:
  *     build_flags = -DDETWS_ENABLE_RADIO_POWER=1 -DDETWS_RADIO_WIFI_PS=1
  *   (0 = none, 1 = min modem, 2 = max modem; + optional -DDETWS_RADIO_MAX_TX_DBM=11)
- * (Arduino IDE: set them in DetWebServerConfig.h.)
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
 #define DETWS_ENABLE_RADIO_POWER 1

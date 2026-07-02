@@ -8,6 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## ESP-NOW would not compile on the Arduino-ESP32 3.x core (ESP-IDF 5 recv-callback ABI)
+
+- **Status:** FIXED (compiles clean on esp32:esp32 3.3.10 via arduino-cli; `native_espnow`
+  host suite still 7/7).
+- **Found:** 2026-07-02, first compile of `53.EspNow` in the Arduino IDE toolchain
+  (esp32 core 3.x). The PlatformIO CI pins `espressif32 @ ^6.0.0` (Arduino-ESP32 **2.x**,
+  ESP-IDF 4.4), so it never exercised the 3.x API and reported green - the break only
+  showed up under the core an Arduino IDE user actually installs.
+- **Root cause:** ESP-IDF 5.0 changed the `esp_now_recv_cb_t` signature. The receive
+  callback used the 4.x shape `(const uint8_t *mac, const uint8_t *data, int len)`; under
+  IDF 5 the source MAC moved into a struct and the type is now
+  `(const esp_now_recv_info_t *info, const uint8_t *data, int len)`, so registering the old
+  callback was an invalid conversion (`-fpermissive` error).
+- **Fix:** `services/espnow/espnow.cpp` selects the callback signature with an
+  `#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)` guard (mirrors how `ssh_rsa` handles
+  mbedTLS v2/v3) and reads the MAC from `info->src_addr` on 5.x, the `mac` argument on 4.x.
+  Both cores now build. The whole binding is under `#ifdef ARDUINO`, so host tests are
+  unaffected.
+- **Prevention:** all examples now build unmodified in the Arduino IDE (each ships a
+  `build_opt.h`) and were compile-swept against the 3.x core; a broad multi-feature 3.x
+  compile found no other IDF-5 API breaks.
+
+---
+
 ## DMA frames corrupted (~8%) when the completion was posted to the work queue as a pointer
 
 - **Status:** FIXED (HW-verified on an ESP32 DevKitV1: 2.2M+ frames ingested with zero
