@@ -150,8 +150,12 @@ SPI radios:
   11.LoRaGateway drives a real RFM95 and bridges frames northbound via the gateway.
   Remaining: verify the RF link on the module, an SX126x variant, and a bounded
   LoRaWAN Class A uplink/downlink codec.
-- [ ] \*nRF24L01+ gateway (M) - Nordic 2.4 GHz over SPI; cheap point-to-multipoint
-      sensor links bridged to the web stack.
+- [~] \*nRF24L01+ gateway (M) - Nordic 2.4 GHz over SPI; cheap point-to-multipoint
+  sensor links bridged to the web stack. **Driver shipped** (`DETWS_ENABLE_NRF24`,
+  `services/nrf24`): the SPI command protocol (init / send / recv, pipe-addressed,
+  static payload) over an SPI + CE bus, host-tested against a mock chip; example
+  12.Nrf24Gateway bridges frames northbound via the gateway. Remaining: verify the
+  RF link on the module (and optional dynamic-payload / auto-ack).
 - [ ] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
       ISM-band remotes and sensors.
 - [ ] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)

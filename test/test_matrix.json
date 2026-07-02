@@ -459,6 +459,12 @@
       "src": ["+<services/lora/lora.cpp>"],
       "tests": ["test_lora"]
     },
+    "native_nrf24": {
+      "desc": "nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol\n(STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised\nagainst a mock chip - init / send (padded to the static width) / tx-done / set-rx / recv\n(pipe-addressed). Pure host tests; the RF link needs the module.",
+      "flags": ["-DDETWS_ENABLE_NRF24=1", "-DDETWS_NRF24_PAYLOAD=8"],
+      "src": ["+<services/nrf24/nrf24.cpp>"],
+      "tests": ["test_nrf24"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],

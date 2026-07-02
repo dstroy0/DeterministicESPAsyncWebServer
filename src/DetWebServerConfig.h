@@ -362,6 +362,32 @@
 #error "DeterministicESPAsyncWebServer: DETWS_LORA_MAX_PAYLOAD must be 1..251"
 #endif
 
+// ---------------------------------------------------------------------------
+// nRF24 radio (DETWS_ENABLE_NRF24) - Nordic nRF24L01+ 2.4 GHz driver
+// ---------------------------------------------------------------------------
+//
+// A radio driver that plugs into the gateway (DETWS_ENABLE_GATEWAY). The nRF24L01+ speaks
+// an SPI command protocol (not plain register r/w) and needs a separate CE pin, so the
+// driver runs over a caller-supplied SPI transfer + CE bus (nrf_bus). Its hardware pipe
+// addressing means the "source address" of a received frame is the pipe number - no
+// in-payload header, so there is no separate codec. Bridge received payloads northbound
+// with det_gw_uplink(port, pipe, ...); the RF link needs the module to verify.
+// See services/nrf24/nrf24.h.
+
+/** @brief Enable the nRF24L01+ radio driver (default off). */
+#ifndef DETWS_ENABLE_NRF24
+#define DETWS_ENABLE_NRF24 0
+#endif
+
+/** @brief nRF24 fixed payload width in bytes (1..32; the chip's static payload size). */
+#ifndef DETWS_NRF24_PAYLOAD
+#define DETWS_NRF24_PAYLOAD 32
+#endif
+
+#if DETWS_ENABLE_NRF24 && (DETWS_NRF24_PAYLOAD < 1 || DETWS_NRF24_PAYLOAD > 32)
+#error "DeterministicESPAsyncWebServer: DETWS_NRF24_PAYLOAD must be 1..32"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

@@ -82,6 +82,7 @@ CODEC_HEADINGS = {
 # codec builds/parses bytes; a driver drives a chip). Membership is by FEATURES.md heading.
 DRIVER_HEADINGS = {
     "LoRa",
+    "nRF24",
 }
 
 # Where each target file's links to FEATURES.md point.
