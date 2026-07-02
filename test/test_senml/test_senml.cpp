@@ -148,10 +148,98 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, senml_cbor_build(csmall, sizeof(csmall), &r, 1));
 }
 
+// JSON with a base time and a value-less (NONE) record.
+void test_json_base_time_and_none()
+{
+    SenmlRecord r = {};
+    r.base_name = "dev";
+    r.has_base_time = true;
+    r.base_time = 100; // integral -> "100"
+    r.value_kind = SENML_V_NONE;
+    char buf[64];
+    TEST_ASSERT_GREATER_THAN(0, (int)senml_json_build(buf, sizeof(buf), &r, 1));
+    TEST_ASSERT_EQUAL_STRING("[{\"bn\":\"dev\",\"bt\":100}]", buf);
+}
+
+// CBOR with base time + string value + time, and a separate boolean value.
+void test_cbor_all_kinds()
+{
+    SenmlRecord r = {};
+    r.has_base_time = true;
+    r.base_time = 5;
+    r.name = "s";
+    r.value_kind = SENML_V_STRING;
+    r.value_str = "hi";
+    r.has_time = true;
+    r.time = 9;
+    uint8_t buf[64];
+    size_t n = senml_cbor_build(buf, sizeof(buf), &r, 1);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+
+    CborReader rd;
+    cbor_reader_init(&rd, buf, n);
+    size_t arr, fields;
+    TEST_ASSERT_TRUE(cbor_read_array(&rd, &arr));
+    TEST_ASSERT_TRUE(cbor_read_map(&rd, &fields));
+    TEST_ASSERT_EQUAL_size_t(4, fields); // bt, n, vs, t
+    int64_t key, iv;
+    const char *s;
+    size_t sl;
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &key));
+    TEST_ASSERT_EQUAL_INT64(-3, key); // bt
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &iv));
+    TEST_ASSERT_EQUAL_INT64(5, iv);
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &key));
+    TEST_ASSERT_EQUAL_INT64(0, key); // n
+    TEST_ASSERT_TRUE(cbor_read_text(&rd, &s, &sl));
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &key));
+    TEST_ASSERT_EQUAL_INT64(3, key); // vs
+    TEST_ASSERT_TRUE(cbor_read_text(&rd, &s, &sl));
+    TEST_ASSERT_EQUAL_MEMORY("hi", s, sl);
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &key));
+    TEST_ASSERT_EQUAL_INT64(6, key); // t
+    TEST_ASSERT_TRUE(cbor_read_int(&rd, &iv));
+    TEST_ASSERT_EQUAL_INT64(9, iv);
+
+    SenmlRecord rb = {};
+    rb.name = "b";
+    rb.value_kind = SENML_V_BOOL;
+    rb.value_bool = true;
+    uint8_t bb[32];
+    size_t bn = senml_cbor_build(bb, sizeof(bb), &rb, 1);
+    TEST_ASSERT_GREATER_THAN(0, (int)bn);
+    CborReader rd2;
+    cbor_reader_init(&rd2, bb, bn);
+    TEST_ASSERT_TRUE(cbor_read_array(&rd2, &arr));
+    TEST_ASSERT_TRUE(cbor_read_map(&rd2, &fields));
+    TEST_ASSERT_EQUAL_size_t(2, fields); // n, vb
+    TEST_ASSERT_TRUE(cbor_read_int(&rd2, &key));
+    TEST_ASSERT_TRUE(cbor_read_text(&rd2, &s, &sl));
+    TEST_ASSERT_TRUE(cbor_read_int(&rd2, &key));
+    TEST_ASSERT_EQUAL_INT64(4, key); // vb
+    bool bv = false;
+    TEST_ASSERT_TRUE(cbor_read_bool(&rd2, &bv));
+    TEST_ASSERT_TRUE(bv);
+}
+
+void test_senml_null_args()
+{
+    SenmlRecord r = {};
+    char jb[32];
+    uint8_t cb[32];
+    TEST_ASSERT_EQUAL_size_t(0, senml_json_build(nullptr, sizeof(jb), &r, 1));
+    TEST_ASSERT_EQUAL_size_t(0, senml_json_build(jb, sizeof(jb), nullptr, 1)); // count && !records
+    TEST_ASSERT_EQUAL_size_t(0, senml_cbor_build(nullptr, sizeof(cb), &r, 1));
+    TEST_ASSERT_EQUAL_size_t(0, senml_cbor_build(cb, sizeof(cb), nullptr, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_json_canonical);
+    RUN_TEST(test_json_base_time_and_none);
+    RUN_TEST(test_cbor_all_kinds);
+    RUN_TEST(test_senml_null_args);
     RUN_TEST(test_json_multi_record);
     RUN_TEST(test_json_string_bool_time);
     RUN_TEST(test_cbor_round_trip);
