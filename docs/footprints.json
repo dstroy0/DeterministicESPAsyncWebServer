@@ -230,6 +230,13 @@
     "flash_bytes": 753713,
     "ram_bytes": 66272
   },
+  "NRF24+GATEWAY": {
+    "example": "Foundation/12.Nrf24Gateway",
+    "flags": "-DDETWS_ENABLE_NRF24=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 276049,
+    "ram_bytes": 21680
+  },
   "NTP": {
     "example": "L7-Application/18.SNTP",
     "flags": "-DDETWS_ENABLE_NTP=1",
