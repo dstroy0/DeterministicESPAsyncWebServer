@@ -20,6 +20,7 @@ from each example's `pio ci` size report and aggregated into
 | `DASHBOARD`                        | L7-Application/35.Dashboard             | 756.9 KB (59.1%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                        | L7-Application/32.DeviceUuid            | 733.0 KB (57.3%) | 64.7 KB (20.2%)  |
 | `DIAG`                             | L7-Application/20.Diagnostics           | 732.8 KB (57.2%) | 64.6 KB (20.2%)  |
+| `DMA+PREEMPT_QUEUE+DMA_SIMULATE`   | Foundation/07.DmaIngest                 | 262.8 KB (20.5%) | 26.1 KB (8.2%)   |
 | `DNS_RESOLVER`                     | L7-Application/48.DnsResolver           | 738.4 KB (57.7%) | 65.9 KB (20.6%)  |
 | `ESPNOW`                           | L7-Application/53.EspNow                | 714.1 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                             | L7-Application/09.ETag                  | 806.9 KB (63.0%) | 65.9 KB (20.6%)  |
