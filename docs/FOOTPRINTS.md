@@ -58,6 +58,7 @@ from each example's `pio ci` size report and aggregated into
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 739.6 KB (57.8%) | 66.2 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 732.6 KB (57.2%) | 64.6 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 774.2 KB (60.5%) | 64.7 KB (20.2%)  |
+| `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 740.7 KB (57.9%) | 76.8 KB (24.0%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 710.8 KB (55.5%) | 42.4 KB (13.2%)  |
 | `SSH`                                    | L5-Session/01.SSH                       | 787.8 KB (61.5%) | 86.0 KB (26.9%)  |

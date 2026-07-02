@@ -349,6 +349,13 @@
     "flash_bytes": 792741,
     "ram_bytes": 66232
   },
+  "SIGFOX": {
+    "example": "Foundation/15.SigfoxUplink",
+    "flags": "-DDETWS_ENABLE_SIGFOX=1",
+    "board": "esp32dev",
+    "flash_bytes": 267945,
+    "ram_bytes": 21464
+  },
   "SNMP": {
     "example": "L7-Application/14.SNMP",
     "flags": "-DDETWS_ENABLE_SNMP=1",
