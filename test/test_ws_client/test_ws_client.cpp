@@ -126,9 +126,129 @@ void test_parse_frame_extended_len()
     TEST_ASSERT_EQUAL_size_t(304, consumed);
 }
 
+// accept_for_key fails closed on null/zero-cap output, a null key, an over-long key,
+// and an output buffer too small for the 28-char accept value.
+void test_accept_for_key_guards()
+{
+    char out[64];
+    ws_client_accept_for_key("key", out, 0);      // out_cap == 0
+    ws_client_accept_for_key("key", nullptr, 10); // out == nullptr
+
+    out[0] = 'x';
+    ws_client_accept_for_key(nullptr, out, sizeof(out)); // key == nullptr
+    TEST_ASSERT_EQUAL_STRING("", out);
+
+    char long_key[80];
+    memset(long_key, 'a', sizeof(long_key) - 1);
+    long_key[sizeof(long_key) - 1] = '\0';
+    out[0] = 'x';
+    ws_client_accept_for_key(long_key, out, sizeof(out)); // key + magic overflows concat
+    TEST_ASSERT_EQUAL_STRING("", out);
+
+    char small[10];
+    small[0] = 'x';
+    ws_client_accept_for_key("dGhlIHNhbXBsZSBub25jZQ==", small, sizeof(small)); // out_cap < 29
+    TEST_ASSERT_EQUAL_STRING("", small);
+}
+
+// build_handshake rejects null args and a buffer too small for the request.
+void test_build_handshake_guards()
+{
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(nullptr, sizeof(out), "h", "/", "k"));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), nullptr, "/", "k"));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", nullptr, "k"));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", "/", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, 10, "host", "/path", "key")); // overflow
+}
+
+// check_response rejects null/short args, a buffer with no line ending, a non-101
+// status, and a 101 response without the Accept header.
+void test_check_response_guards()
+{
+    TEST_ASSERT_FALSE(ws_client_check_response(nullptr, 100, "acc"));
+    uint8_t s[4] = {'a', 'b', 'c', 'd'};
+    TEST_ASSERT_FALSE(ws_client_check_response(s, 4, "acc")); // len < 12
+    const char *ok = "HTTP/1.1 101 x";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)ok, strlen(ok), nullptr)); // null accept
+
+    const char *no_eol = "HTTP/1.1 101 Switching Pr"; // >= 12, no '\n'
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)no_eol, strlen(no_eol), "acc"));
+
+    const char *r200 = "HTTP/1.1 200 OK\r\n\r\n";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)r200, strlen(r200), "acc")); // not 101
+
+    const char *no_acc = "HTTP/1.1 101 OK\r\nUpgrade: websocket\r\n\r\n";
+    TEST_ASSERT_FALSE(ws_client_check_response((const uint8_t *)no_acc, strlen(no_acc), "acc")); // no Accept header
+}
+
+// build_frame rejects null out/mask and a too-small buffer, and encodes a 64-bit
+// length for a >= 64 KiB payload.
+static uint8_t s_big_pl[65536];
+static uint8_t s_big_out[65600];
+void test_build_frame_guards_and_64bit()
+{
+    uint8_t mask[4] = {1, 2, 3, 4};
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(nullptr, sizeof(out), 0x1, (const uint8_t *)"x", 1, mask));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(out, sizeof(out), 0x1, (const uint8_t *)"x", 1, nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(out, 4, 0x1, (const uint8_t *)"hello", 5, mask)); // too small
+
+    memset(s_big_pl, 'z', sizeof(s_big_pl));
+    size_t n = ws_client_build_frame(s_big_out, sizeof(s_big_out), 0x02, s_big_pl, sizeof(s_big_pl), mask);
+    TEST_ASSERT_TRUE(n > sizeof(s_big_pl));
+    TEST_ASSERT_EQUAL_HEX8(0x80 | 127, s_big_out[1]); // 64-bit length marker
+}
+
+// parse_frame rejects truncated headers, an absurd 64-bit length, and stays aligned
+// past a (nonstandard) server-side mask.
+void test_parse_frame_edges()
+{
+    uint8_t op;
+    bool fin;
+    size_t po, pl, cons;
+    TEST_ASSERT_FALSE(ws_client_parse_frame(nullptr, 2, &op, &fin, &po, &pl, &cons));
+    uint8_t one[1] = {0x81};
+    TEST_ASSERT_FALSE(ws_client_parse_frame(one, 1, &op, &fin, &po, &pl, &cons)); // avail < 2
+
+    uint8_t f126[2] = {0x82, 126}; // 16-bit length announced, none present
+    TEST_ASSERT_FALSE(ws_client_parse_frame(f126, 2, &op, &fin, &po, &pl, &cons));
+    uint8_t f127[2] = {0x82, 127}; // 64-bit length announced, none present
+    TEST_ASSERT_FALSE(ws_client_parse_frame(f127, 2, &op, &fin, &po, &pl, &cons));
+
+    uint8_t huge[10] = {0x82, 127, 0x00, 0x00, 0x00, 0x01, 0, 0, 0, 0}; // 0x1_0000_0000 > 4 GiB
+    TEST_ASSERT_FALSE(ws_client_parse_frame(huge, 10, &op, &fin, &po, &pl, &cons));
+
+    uint8_t ok64[10] = {0x82, 127, 0, 0, 0, 0, 0, 0, 0, 100}; // valid 64-bit length (100), payload absent
+    TEST_ASSERT_FALSE(ws_client_parse_frame(ok64, 10, &op, &fin, &po, &pl, &cons)); // length read, then payload short
+
+    uint8_t masked[8] = {0x81, 0x82, 0, 0, 0, 0, 'a', 'b'}; // masked len-2 frame
+    TEST_ASSERT_TRUE(ws_client_parse_frame(masked, 8, &op, &fin, &po, &pl, &cons));
+    TEST_ASSERT_EQUAL_size_t(6, po); // 2-byte header + 4-byte mask
+    TEST_ASSERT_EQUAL_size_t(2, pl);
+}
+
+// On a host build the transport entry points are inert stubs.
+void test_host_transport_stubs()
+{
+    ws_client_on_message(nullptr);
+    TEST_ASSERT_FALSE(ws_client_connect("h", 80, false, "/"));
+    TEST_ASSERT_FALSE(ws_client_send_text("hi"));
+    TEST_ASSERT_FALSE(ws_client_send_binary((const uint8_t *)"x", 1));
+    TEST_ASSERT_FALSE(ws_client_loop());
+    TEST_ASSERT_FALSE(ws_client_connected());
+    ws_client_close();
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_accept_for_key_guards);
+    RUN_TEST(test_build_handshake_guards);
+    RUN_TEST(test_check_response_guards);
+    RUN_TEST(test_build_frame_guards_and_64bit);
+    RUN_TEST(test_parse_frame_edges);
+    RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_accept_rfc_example);
     RUN_TEST(test_build_handshake);
     RUN_TEST(test_check_response_ok);
