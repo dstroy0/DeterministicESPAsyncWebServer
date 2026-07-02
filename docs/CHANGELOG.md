@@ -2,20 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.71.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.71.0 - 2026-07-02</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`d1cacee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1cacee942329c1ae51ba76ba60cf0e6b91d6bb1))
+- update CHANGELOG.md [skip ci] ([`5ec1584`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ec15849e7497a43101221d29e1476c57e88b6b7))
 - update test report [skip ci] ([`d7c2cbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7c2cbe06214831349a1d082aaaa37eb45c6f347))
 - update CHANGELOG.md [skip ci] ([`88747f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88747f5a74549257c514c2ae52cc36302139aecf))
 - update test report [skip ci] ([`22d7807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22d78078357c004e979e02b792ef818bffeea63f))
 - update CHANGELOG.md [skip ci] ([`dff1a3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dff1a3f2ed36214b45d3fb3468d79e0909e4db36))
+
+### Changes
+
+- Bump version: 4.70.0 → 4.71.0 ([`b526fb2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b526fb2f1afbaf6b05fd4b23abd7d0a1917ca820))
 
 ### Documentation
 
 - add a DRIVERS table + a categorized CI badge table ([`17bf39c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17bf39c008b361826030da9063bcef37c9d0cf0e))
 - move LoRa to the codecs table ([`70afed4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70afed456d874f2a3e47e51ac7fac6db9ec65746))
 - update ESP32 build footprints [skip ci] ([`4989a81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4989a81f35e2396ab4b9617af7f32e0cf04bc461))
+
+### Features
+
+- nRF24L01+ radio driver - a second gateway radio plugin ([`927aa1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/927aa1cdbf73bca276a8c09b38fc63e83245c49f))
+
+</details>
 
 ## [4.70.0] - 2026-07-02
 
