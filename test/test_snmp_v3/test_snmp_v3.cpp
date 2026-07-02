@@ -527,10 +527,85 @@ void test_v3_message_structure_rejections()
     TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, pl, resp, sizeof(resp)));
 }
 
+// snmp_v3_init with a valid engine ID copies it; the boots accessor round-trips.
+void test_v3_init_and_boots_accessors()
+{
+    V3View v;
+    discover(&v); // capture the default engine ID
+    uint8_t custom[8] = {0x80, 0, 0, 0, 1, 2, 3, 4};
+    snmp_v3_init(custom, sizeof(custom));       // valid engine ID -> memcpy path
+    snmp_v3_init(v.engine_id, v.engine_id_len); // restore the default engine ID
+    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+
+    uint32_t saved = snmp_v3_get_boots();
+    snmp_v3_set_boots(0xABCD);
+    TEST_ASSERT_EQUAL_UINT32(0xABCD, snmp_v3_get_boots());
+    snmp_v3_set_boots(saved);
+}
+
+// An authPriv message to a wrong engine ID takes the discovery path (with the private
+// request-id read short-circuited); a discovery whose Report will not fit fails closed.
+void test_v3_discovery_variants()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t wrong_eid[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33};
+    uint8_t privkey[SNMP_USM_KEY_LEN] = {0};
+
+    uint8_t req[300], resp[512];
+    size_t rl = build_get(req, sizeof(req), true, true, wrong_eid, sizeof(wrong_eid), v.boots, v.time, "myuser",
+                          authkey, privkey, 300, 9, OID_SYSDESCR, 9);
+    TEST_ASSERT_TRUE(snmp_v3_process(req, rl, resp, sizeof(resp)) > 0); // discovery Report
+
+    rl = build_get(req, sizeof(req), false, false, wrong_eid, sizeof(wrong_eid), 0, 0, "", nullptr, nullptr, 300, 10,
+                   OID_SYSDESCR, 9);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, 20)); // Report does not fit -> fail closed
+}
+
+// An authPriv request when privacy is not configured on the agent is a decryptionError.
+void test_v3_priv_not_configured()
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    snmp_v3_set_user("myuser", "authpass12", ""); // auth only
+    uint8_t privkey[SNMP_USM_KEY_LEN] = {0};
+
+    uint8_t req[300], resp[512];
+    size_t rl = build_get(req, sizeof(req), true, true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                          authkey, privkey, 300, 11, OID_SYSDESCR, 9);
+    size_t n = snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);
+    snmp_v3_set_user("myuser", "authpass12", "privpass12"); // restore
+}
+
+// A v3 notification is refused without authentication, and builds + sends with it.
+void test_v3_notify_paths()
+{
+    uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
+    snmp_v3_set_user("myuser", "", ""); // no auth
+    TEST_ASSERT_FALSE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
+
+    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    det_udp_capture_enable();
+    TEST_ASSERT_TRUE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
+    TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_v3_message_structure_rejections);
+    RUN_TEST(test_v3_init_and_boots_accessors);
+    RUN_TEST(test_v3_discovery_variants);
+    RUN_TEST(test_v3_priv_not_configured);
+    RUN_TEST(test_v3_notify_paths);
     RUN_TEST(test_localize_key_sha256_vector);
     RUN_TEST(test_aes128_fips197_vector);
     RUN_TEST(test_aes_cfb_roundtrip_partial_block);
