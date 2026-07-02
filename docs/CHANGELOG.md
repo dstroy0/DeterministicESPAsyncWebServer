@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`62e0573`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62e05734164168e948fe3dd7e35270744a3ce7f1))
+- update CHANGELOG.md [skip ci] ([`d2e0829`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e0829c746ae6dac642a10bfed6a7f3761a78c1))
 - update test report [skip ci] ([`1192b8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1192b8bba0d537975e582ebc7e0da7d32d1ac366))
 - update CHANGELOG.md [skip ci] ([`a1feefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1feefd90027019a378004c732acab249046cfd8))
 - update test report [skip ci] ([`1d6281c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d6281c9945afd8d5b15e5b4dede0a8ad25ed28e))
@@ -82,6 +84,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover widget types, null-table guards, JSON overflow, control-parse edges ([`51af117`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51af117443ada41ce06b9ec3f17a3cd63d8cfb06))
+- cover parse limits, malformed tokens, path overflow, arg-accessor edges (100% line) ([`fa5c415`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa5c4153cd24420d09744b6b7503b44608819662))
+- cover all read variant types, fault rejection, malformed responses ([`6102027`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61020272a574373a88df47da2d911d33091e02f9))
 - cover parse rejections, build null/overflow guards, setters, optional read fields ([`e8ed71a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8ed71ad7bfa29cb6a22bb14a4e9fadfe24048ad))
 - cover Variant/DataValue/NodeId codec branches and reader underruns ([`09e6c50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09e6c50200f591c300ce8fd193de523d2221b73b))
 - cover malformed options, extended delta/length, block edges, buffer limits ([`fb70d64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb70d6472b303d57992cca9e3c95041a950cf55a))
