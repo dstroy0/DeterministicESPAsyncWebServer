@@ -17,6 +17,9 @@
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include <WiFi.h>
+#if DETWS_ENABLE_ETHERNET
+#include <ETH.h>
+#endif
 
 bool init_wifi_physical(const char *ssid, const char *password)
 {
@@ -28,6 +31,27 @@ bool wifi_ready()
 {
     return WiFi.isConnected();
 }
+
+#if DETWS_ENABLE_ETHERNET
+bool init_eth_physical(void)
+{
+    // PHY pins / type / clock come from the ETH_PHY_* build flags (ETH.begin() defaults).
+    return ETH.begin();
+}
+bool eth_ready(void)
+{
+    return ETH.linkUp() && (uint32_t)ETH.localIP() != 0;
+}
+#else
+bool init_eth_physical(void)
+{
+    return false; // Ethernet not enabled (DETWS_ENABLE_ETHERNET)
+}
+bool eth_ready(void)
+{
+    return false;
+}
+#endif
 
 uint32_t det_net_egress_ip(void)
 {
@@ -54,6 +78,14 @@ bool init_wifi_physical(const char *, const char *)
 bool wifi_ready()
 {
     return true;
+}
+bool init_eth_physical(void)
+{
+    return false; // no Ethernet PHY on a host build
+}
+bool eth_ready(void)
+{
+    return false;
 }
 uint32_t det_net_egress_ip(void)
 {

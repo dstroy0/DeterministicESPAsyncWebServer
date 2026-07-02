@@ -542,6 +542,23 @@
 #error "DeterministicESPAsyncWebServer: DETWS_THREAD_MAX_DATA must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// Wired Ethernet PHY (DETWS_ENABLE_ETHERNET) - run the server over an RMII PHY
+// ---------------------------------------------------------------------------
+//
+// Bring up a wired Ethernet link (an RMII PHY: LAN8720 / TLK110 / RTL8201 / DP83848) so the
+// server runs over Ethernet instead of (or alongside) Wi-Fi. init_eth_physical() is a thin
+// wrapper over the Arduino ETH library; the PHY pins / type / clock come from the standard
+// ETH_PHY_* build flags for your board (see example 19.Ethernet). The egress reporting
+// (det_net_egress -> DETIFACE_ETH) and the per-route interface classifier already handle a
+// wired route, so once the link has an IP the server accepts on it with no other change.
+// Default off (zero cost / the ETH library is not linked). ESP32-only.
+
+/** @brief Enable wired Ethernet bring-up (init_eth_physical / eth_ready). Default off. */
+#ifndef DETWS_ENABLE_ETHERNET
+#define DETWS_ENABLE_ETHERNET 0
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

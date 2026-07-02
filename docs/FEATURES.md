@@ -190,6 +190,12 @@ ESP-NOW peer messaging. Default off. services/espnow wraps ESP-NOW connectionles
 
 Conditional GET via ETag for served files. When set, serve_file()/serve_static() emit a strong `ETag` (derived from the file size + last-modified time) and answer a matching `If-None-Match` with `304 Not Modified`, saving bandwidth on repeat fetches of static assets.
 
+## Ethernet
+
+`DETWS_ENABLE_ETHERNET`
+
+Wired Ethernet bring-up. Default off (the ETH library is not linked). When set, the physical layer gains `init_eth_physical()` / `eth_ready()` alongside `init_wifi_physical()` - a thin wrapper over the Arduino ETH library for an RMII PHY (LAN8720 / TLK110 / RTL8201 / DP83848), so the server runs over a wired uplink (PoE, panel-mount, RF-noisy sites) instead of or alongside Wi-Fi. The PHY pins / address / type / clock come from the standard ETH_PHY_* build flags for your board. Nothing else changes: the egress reporting already classifies a wired default route as DETIFACE_ETH (`det_net_egress`, host-tested classifier), so per-route STA/AP/ETH interface filters and every protocol work over the link the moment it has an IP; Wi-Fi and Ethernet can run dual-homed with the stack picking the default route. ESP32-only bring-up (the classifier is host-tested; the PHY needs the hardware). Example 19.Ethernet. See src/network_drivers/physical/physical.h.
+
 ## EtherNet/IP
 
 `DETWS_ENABLE_ENIP`

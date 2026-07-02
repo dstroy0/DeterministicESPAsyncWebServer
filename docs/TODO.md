@@ -257,8 +257,15 @@ Open follow-ups discovered during the above:
       shrink; (3) a `memory.ld` DRAM reclaim (advanced - the `0xdb5c` is ROM-reserved,
       so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **Remaining:**
       flash a PSRAM board and confirm N concurrent handshakes + free-heap headroom.
-- [ ] **IPv6 dual-stack** and an **Ethernet PHY abstraction** - the two
-      architectural tracks deferred for a separate decision.
+- [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DETWS_ENABLE_ETHERNET`:
+      `init_eth_physical()` / `eth_ready()` in `network_drivers/physical` wrap the Arduino
+      ETH library for an RMII PHY (LAN8720 / ...), configured by the standard `ETH_PHY_*`
+      build flags. The egress reporting + per-route interface classifier already handle a
+      wired route (DETIFACE_ETH, host-tested), so the server serves over Ethernet - or
+      dual-homed with Wi-Fi - once the link has an IP. Example 19.Ethernet; ESP32-compiled.
+      Remaining: verify against a PHY board.
+- [ ] **IPv6 dual-stack** - the remaining architectural track, deferred for a separate
+      decision (the transport-layer address handling is IPv4 throughout).
 - [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_
       Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
       and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming

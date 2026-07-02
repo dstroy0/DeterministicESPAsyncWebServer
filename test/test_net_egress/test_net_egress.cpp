@@ -47,6 +47,13 @@ void test_egress_host_stub()
     TEST_ASSERT_EQUAL_UINT32(0, det_net_egress_ip());
 }
 
+// Ethernet bring-up is ESP32-only; on host (and when disabled) it reports not-ready.
+void test_eth_host_stub()
+{
+    TEST_ASSERT_FALSE(init_eth_physical());
+    TEST_ASSERT_FALSE(eth_ready());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -55,5 +62,6 @@ int main()
     RUN_TEST(test_classify_eth);
     RUN_TEST(test_classify_none);
     RUN_TEST(test_egress_host_stub);
+    RUN_TEST(test_eth_host_stub);
     return UNITY_END();
 }

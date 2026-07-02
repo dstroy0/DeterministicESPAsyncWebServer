@@ -9,7 +9,8 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 - **ESP32 only.** No ESP8266 / RP2040 / RP2350 port - the HW crypto, NVS, and
   lwIP raw-API integration are ESP32-specific. Host builds exist only for tests.
-- **IPv4 only.** No IPv6 dual-stack yet, and Wi-Fi STA/AP only (no Ethernet PHY).
+- **IPv4 only.** No IPv6 dual-stack yet. Wi-Fi STA/AP and, with `DETWS_ENABLE_ETHERNET`,
+  a wired RMII Ethernet PHY (`init_eth_physical()`; the PHY bring-up needs the hardware).
 
 ## HTTP core
 

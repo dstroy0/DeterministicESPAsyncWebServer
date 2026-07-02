@@ -39,6 +39,22 @@ bool init_wifi_physical(const char *ssid, const char *password);
 bool wifi_ready();
 
 /**
+ * @brief Bring up a wired Ethernet link (DETWS_ENABLE_ETHERNET).
+ *
+ * A thin wrapper over the Arduino ETH library (`ETH.begin()`); the RMII PHY pins / type /
+ * clock come from the standard `ETH_PHY_*` build flags for your board. Returns immediately
+ * (bring-up is asynchronous); poll eth_ready(). The egress reporting already classifies a
+ * wired route as DETIFACE_ETH, so the server accepts on the link once it has an IP.
+ *
+ * @return true if ETH.begin() started the driver; false if Ethernet is disabled at build
+ *         time or the driver failed to start (and always false on host builds).
+ */
+bool init_eth_physical(void);
+
+/** @brief True if the Ethernet link is up and an IP is assigned. */
+bool eth_ready(void);
+
+/**
  * @brief Which interface currently carries outbound traffic.
  *
  * Reads the live lwIP default route, so it reflects the current state after any
