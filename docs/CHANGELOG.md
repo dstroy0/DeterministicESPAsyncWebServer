@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.73.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.73.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d8d5364`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d8d53642f5885f9f3b2d0ed324e2c0be4342abc6))
+- update CHANGELOG.md [skip ci] ([`194e0ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/194e0ed421b38c8254d7532743e996f49ee8cc57))
+
+### Changes
+
+- Bump version: 4.72.0 → 4.73.0 ([`918f6f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/918f6f000dccb1d62e71f19fe4f490bb52247bd9))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`82b5580`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82b5580de18647341ad41be2310185c58a067ad5))
+
+### Features
+
+- PN532 NFC frame codec - a gateway plugin (tag read -> web event) ([`2ffa45c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ffa45cbeddf567d155447560df9e77888390c45))
+
+</details>
+
 ## [4.72.0] - 2026-07-02
 
 <details>
