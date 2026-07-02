@@ -107,6 +107,92 @@ void test_encode_bounds()
     TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(data, 8, small, sizeof(small))); // will not fit
 }
 
+// --- Spinel command layer ---------------------------------------------------------------
+
+void test_spinel_pack_uint_kats()
+{
+    uint8_t out[8];
+    TEST_ASSERT_EQUAL_UINT8(1, spinel_pack_uint(0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(1, spinel_pack_uint(127, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0x7F, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(2, spinel_pack_uint(128, out, sizeof(out))); // 0x80 0x01
+    TEST_ASSERT_EQUAL_HEX8(0x80, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, out[1]);
+    TEST_ASSERT_EQUAL_UINT8(2, spinel_pack_uint(1337, out, sizeof(out))); // 0xB9 0x0A
+    TEST_ASSERT_EQUAL_HEX8(0xB9, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x0A, out[1]);
+}
+
+void test_spinel_pack_unpack_round_trip()
+{
+    const uint32_t values[5] = {0, 42, 127, 128, 200000};
+    for (int i = 0; i < 5; i++)
+    {
+        uint8_t out[8];
+        uint8_t n = spinel_pack_uint(values[i], out, sizeof(out));
+        TEST_ASSERT_GREATER_THAN_UINT8(0, n);
+        uint32_t v = 0;
+        int c = spinel_unpack_uint(out, n, &v);
+        TEST_ASSERT_EQUAL_INT((int)n, c);
+        TEST_ASSERT_EQUAL_UINT32(values[i], v);
+    }
+}
+
+void test_spinel_unpack_needs_more_and_overflow()
+{
+    const uint8_t truncated[2] = {0x80, 0x80}; // continuation with no terminator
+    uint32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(0, spinel_unpack_uint(truncated, 2, &v)); // need more
+    const uint8_t overflow[6] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+    TEST_ASSERT_EQUAL_INT(-1, spinel_unpack_uint(overflow, 6, &v)); // > uint32
+}
+
+void test_spinel_command_build_parse_round_trip()
+{
+    const uint8_t val[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+    uint8_t buf[32];
+    // header 0x81, CMD_PROP_VALUE_SET, a large property id (multi-byte packed), a value.
+    uint16_t n = spinel_command_build(0x81, SPINEL_CMD_PROP_VALUE_SET, 1337, val, 4, buf, sizeof(buf));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, n);
+
+    uint8_t header = 0;
+    uint32_t cmd = 0, prop = 0;
+    const uint8_t *v = nullptr;
+    uint16_t vlen = 0;
+    int off = spinel_command_parse(buf, n, &header, &cmd, &prop, &v, &vlen);
+    TEST_ASSERT_GREATER_THAN_INT(0, off);
+    TEST_ASSERT_EQUAL_HEX8(0x81, header);
+    TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_SET, cmd);
+    TEST_ASSERT_EQUAL_UINT32(1337, prop);
+    TEST_ASSERT_EQUAL_UINT16(4, vlen);
+    TEST_ASSERT_EQUAL_MEMORY(val, v, 4);
+}
+
+void test_spinel_command_through_hdlc()
+{
+    // The command payload rides inside an HDLC frame: build the command, frame it, decode
+    // the frame, then parse the command back out - the full Thread codec stack.
+    uint8_t payload[16];
+    uint16_t plen =
+        spinel_command_build(0x82, SPINEL_CMD_PROP_VALUE_GET, 2 /*NCP_VERSION*/, nullptr, 0, payload, sizeof(payload));
+    uint8_t frame[32];
+    uint16_t fn = spinel_frame_encode(payload, plen, frame, sizeof(frame));
+    TEST_ASSERT_GREATER_THAN_UINT16(0, fn);
+
+    uint8_t got[16];
+    uint16_t glen = 0;
+    TEST_ASSERT_EQUAL_INT((int)fn, spinel_frame_decode(frame, fn, got, sizeof(got), &glen));
+    uint8_t header = 0;
+    uint32_t cmd = 0, prop = 0;
+    const uint8_t *v = nullptr;
+    uint16_t vlen = 0;
+    TEST_ASSERT_GREATER_THAN_INT(0, spinel_command_parse(got, glen, &header, &cmd, &prop, &v, &vlen));
+    TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_GET, cmd);
+    TEST_ASSERT_EQUAL_UINT32(2, prop);
+    TEST_ASSERT_EQUAL_UINT16(0, vlen);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -118,5 +204,10 @@ int main()
     RUN_TEST(test_decode_rejects_dangling_escape);
     RUN_TEST(test_decode_rejects_small_payload_buffer);
     RUN_TEST(test_encode_bounds);
+    RUN_TEST(test_spinel_pack_uint_kats);
+    RUN_TEST(test_spinel_pack_unpack_round_trip);
+    RUN_TEST(test_spinel_unpack_needs_more_and_overflow);
+    RUN_TEST(test_spinel_command_build_parse_round_trip);
+    RUN_TEST(test_spinel_command_through_hdlc);
     return UNITY_END();
 }

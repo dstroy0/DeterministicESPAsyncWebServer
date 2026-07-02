@@ -41,6 +41,98 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
 }
 } // namespace
 
+uint8_t spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap)
+{
+    if (!out)
+        return 0;
+    uint8_t n = 0;
+    do
+    {
+        if (n >= cap)
+            return 0;
+        uint8_t byte = (uint8_t)(value & 0x7F);
+        value >>= 7;
+        if (value)
+            byte |= 0x80; // more bytes follow
+        out[n++] = byte;
+    } while (value);
+    return n;
+}
+
+int spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value)
+{
+    if (!raw)
+        return 0;
+    uint32_t v = 0;
+    uint8_t shift = 0;
+    for (uint8_t n = 0; n < len; n++)
+    {
+        uint8_t b = raw[n];
+        v |= (uint32_t)(b & 0x7F) << shift;
+        if (!(b & 0x80))
+        {
+            if (value)
+                *value = v;
+            return n + 1;
+        }
+        shift += 7;
+        if (shift >= 32)
+            return -1; // does not fit a uint32
+    }
+    return 0; // truncated - need more bytes
+}
+
+uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
+                              uint8_t *out, uint16_t cap)
+{
+    if (!out || cap < 1 || (value == nullptr && value_len > 0))
+        return 0;
+    uint16_t p = 0;
+    out[p++] = header;
+    uint8_t n = spinel_pack_uint(cmd, out + p, (uint8_t)(cap - p));
+    if (n == 0)
+        return 0;
+    p += n;
+    n = spinel_pack_uint(prop, out + p, (uint8_t)(cap > p ? cap - p : 0));
+    if (n == 0)
+        return 0;
+    p += n;
+    if ((uint32_t)p + value_len > cap)
+        return 0;
+    for (uint16_t i = 0; i < value_len; i++)
+        out[p + i] = value[i];
+    return (uint16_t)(p + value_len);
+}
+
+int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
+                         const uint8_t **value, uint16_t *value_len)
+{
+    if (!payload || len < 1)
+        return -1;
+    uint16_t p = 0;
+    uint8_t h = payload[p++];
+    uint32_t c = 0, pr = 0;
+    int n = spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &c);
+    if (n <= 0)
+        return -1;
+    p += (uint16_t)n;
+    n = spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &pr);
+    if (n <= 0)
+        return -1;
+    p += (uint16_t)n;
+    if (header)
+        *header = h;
+    if (cmd)
+        *cmd = c;
+    if (prop)
+        *prop = pr;
+    if (value)
+        *value = payload + p;
+    if (value_len)
+        *value_len = (uint16_t)(len - p);
+    return (int)p;
+}
+
 uint16_t spinel_fcs(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;

@@ -43,8 +43,56 @@ enum
     HDLC_ESCAPE = 0x7D, ///< byte-stuffing escape
 };
 
+/** @brief Common spinel commands (the property accessors a gateway uses). */
+enum
+{
+    SPINEL_CMD_NOOP = 0,
+    SPINEL_CMD_RESET = 1,
+    SPINEL_CMD_PROP_VALUE_GET = 2,
+    SPINEL_CMD_PROP_VALUE_SET = 3,
+    SPINEL_CMD_PROP_VALUE_INSERT = 4,
+    SPINEL_CMD_PROP_VALUE_REMOVE = 5,
+    SPINEL_CMD_PROP_VALUE_IS = 6, ///< an async property update from the NCP
+};
+
 /** @brief HDLC frame check sequence: CRC-16/X-25 over @p buf. */
 uint16_t spinel_fcs(const uint8_t *buf, uint16_t len);
+
+// --- Spinel command layer (rides inside a decoded HDLC frame's payload) ---------------
+
+/**
+ * @brief Encode a spinel packed unsigned integer (7 bits/byte, little-endian, high bit =
+ *        continuation) into @p out.
+ * @return the number of bytes written (1..5), or 0 if it would not fit @p cap.
+ */
+uint8_t spinel_pack_uint(uint32_t value, uint8_t *out, uint8_t cap);
+
+/**
+ * @brief Decode a spinel packed unsigned integer from the front of @p raw.
+ * @return the bytes consumed (> 0, value in @p value), 0 if more bytes are needed, or -1 if
+ *         the encoding overflows a uint32.
+ */
+int spinel_unpack_uint(const uint8_t *raw, uint8_t len, uint32_t *value);
+
+/**
+ * @brief Build a spinel property-command payload (`header | CMD | PROP | value`) - the
+ *        content of an HDLC frame - into @p out. CMD and PROP are packed integers.
+ * @return the payload length, or 0 if it would not fit @p cap.
+ */
+uint16_t spinel_command_build(uint8_t header, uint32_t cmd, uint32_t prop, const uint8_t *value, uint16_t value_len,
+                              uint8_t *out, uint16_t cap);
+
+/**
+ * @brief Parse a spinel property-command payload (from a decoded HDLC frame).
+ * @param[out] header    the flag/iid/tid header byte.
+ * @param[out] cmd       the command (unpacked).
+ * @param[out] prop      the property id (unpacked).
+ * @param[out] value     the first value byte (points into @p payload).
+ * @param[out] value_len the value length.
+ * @return the value offset (> 0), or -1 if the header / command / property is malformed.
+ */
+int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, uint32_t *cmd, uint32_t *prop,
+                         const uint8_t **value, uint16_t *value_len);
 
 /**
  * @brief Encode an HDLC-lite frame: @p payload + FCS, byte-stuffed, flag-terminated.

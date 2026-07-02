@@ -160,9 +160,12 @@ SPI radios:
       ISM-band remotes and sensors.
 - [~] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
   over SPI (spinel framing); 802.15.4 mesh bridged to IP. **spinel / HDLC-lite framing
-  codec shipped** (`DETWS_ENABLE_THREAD`, `services/thread`): the byte-stuffed framing + CRC-16/X-25 FCS (encode/decode) that carries spinel, host-tested against the X-25
-  check value; example 18.ThreadGateway bridges a real RCP. Remaining: the spinel
-  property/command layer + verify against an RCP.
+    - command codec shipped** (`DETWS_ENABLE_THREAD`, `services/thread`): the byte-stuffed
+      framing + CRC-16/X-25 FCS (encode/decode) that carries spinel, plus the spinel command
+      layer - the packed-uint encoding and `spinel_command_build` / `_parse` for a
+      `header | CMD | PROP | value` property command - host-tested against the X-25 check value
+    - the packed-int values; example 18.ThreadGateway bridges a real RCP. Remaining: the
+      spinel property registry / value semantics + verify against an RCP.
 
 UART radios:
 
