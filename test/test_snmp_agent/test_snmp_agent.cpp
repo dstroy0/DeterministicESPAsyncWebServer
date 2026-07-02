@@ -165,7 +165,7 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
                 d.pos = save;
                 ber_read_integer(&d, &rv->ival);
             }
-            else if (valtag == BER_OCTET_STRING)
+            else if (valtag == BER_OCTET_STRING || valtag == SNMP_IPADDRESS || valtag == SNMP_OPAQUE)
             {
                 size_t cpy = vallen < sizeof(rv->str) - 1 ? vallen : sizeof(rv->str) - 1;
                 memcpy(rv->str, d.buf + d.pos, cpy);
@@ -368,9 +368,158 @@ void test_v3_message_dropped()
     TEST_ASSERT_EQUAL_UINT(0, n);
 }
 
+static const uint32_t OID_IP[] = {1, 3, 6, 1, 4, 1, 49374, 4, 0};
+static bool ip_getter(SnmpValue *out)
+{
+    out->type = SNMP_IPADDRESS;
+    out->uval = 0xC0A80101u; // 192.168.1.1
+    return true;
+}
+
+// Registration rejects an OID shorter than 2 arcs; a cleared rw community denies Set.
+void test_registration_and_rw_edges()
+{
+    const uint32_t shortoid[] = {1};
+    TEST_ASSERT_FALSE(snmp_agent_add_string(shortoid, 1, "x", nullptr));
+    TEST_ASSERT_FALSE(snmp_agent_add_integer(shortoid, 1, 5, nullptr));
+    TEST_ASSERT_FALSE(snmp_agent_add_dynamic(shortoid, 1, BER_INTEGER, nullptr));
+
+    // With the rw community cleared, a Set arriving on the ro community is answered
+    // (community is still known) but denied write access.
+    snmp_agent_set_rw_community(nullptr);
+    uint8_t req[256], resp[256];
+    SnmpValue sv;
+    memset(&sv, 0, sizeof(sv));
+    sv.type = BER_INTEGER;
+    sv.ival = 1;
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &sv);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ACCESS, rv.err_status);
+}
+
+// An IpAddress-typed dynamic value encodes with the SNMP_IPADDRESS tag.
+void test_ipaddress_value_encodes()
+{
+    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(OID_IP, 9, SNMP_IPADDRESS, ip_getter));
+    uint8_t req[256], resp[256];
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 1, 0, 0, OID_IP, 9, nullptr);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    // Encoded as a 4-byte IpAddress-tagged string (RFC 2578 IpAddress = network-order octets).
+    TEST_ASSERT_EQUAL_HEX8(SNMP_IPADDRESS, rv.val_tag);
+    TEST_ASSERT_EQUAL_size_t(4, rv.str_len);
+    const uint8_t want[4] = {0xC0, 0xA8, 0x01, 0x01};
+    TEST_ASSERT_EQUAL_MEMORY(want, rv.str, 4);
+}
+
+// Set with a wrong-typed value (string into an integer object) is wrongType; Set of an
+// unknown OID is noSuchName.
+void test_set_wrong_type_and_unknown()
+{
+    uint8_t req[256], resp[256];
+    RespView rv;
+    SnmpValue s;
+    memset(&s, 0, sizeof(s));
+    s.type = BER_OCTET_STRING;
+    s.str = "hi";
+    s.str_len = 2;
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &s);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT(SNMP_ERR_WRONG_TYPE, rv.err_status);
+
+    SnmpValue iv;
+    memset(&iv, 0, sizeof(iv));
+    iv.type = BER_INTEGER;
+    iv.ival = 1;
+    rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_UNKNOWN, 8, &iv);
+    n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_SUCH_NAME, rv.err_status);
+}
+
+// GetBulk with a non-repeater; a v1 GetBulk is not allowed; a repeater past the end
+// of the MIB yields endOfMibView for every remaining repetition.
+void test_getbulk_variants()
+{
+    uint8_t req[512], resp[512];
+    RespView rv;
+    // non-repeaters = 1, max-repetitions = 2, one varbind at the system prefix.
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 1, 1, 2, OID_SYSPREFIX, 7, nullptr);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_GREATER_THAN(0, (int)rv.nvb);
+
+    // GetBulk is v2c+: a v1 GetBulk is dropped.
+    rl = build_req(req, sizeof(req), SNMP_V1, "public", SNMP_PDU_GETBULK, 1, 0, 2, OID_SYSPREFIX, 7, nullptr);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
+
+    // A repeater starting past the last object: every repetition is endOfMibView.
+    rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 1, 0, 3, OID_PAST_END, 9, nullptr);
+    n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_EQUAL_HEX8(SNMP_END_OF_MIB_VIEW, rv.val_tag);
+}
+
+// Build a GET-shaped PDU whose one varbind carries a value TLV of @p value_kind, to
+// exercise the value decoder's non-NULL branches. Returns the encoded PDU length.
+static size_t build_pdu_with_value(uint8_t *buf, size_t cap, uint8_t pdu_tag, int value_kind)
+{
+    BerEnc e;
+    ber_enc_init(&e, buf, cap);
+    size_t p = ber_seq_begin(&e, pdu_tag);
+    ber_put_integer(&e, 1);
+    ber_put_integer(&e, 0);
+    ber_put_integer(&e, 0);
+    size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+    ber_put_oid(&e, OID_SYSDESCR, 9);
+    if (value_kind == 1)
+        ber_put_uint(&e, SNMP_GAUGE32, 500); // application uint value
+    else if (value_kind == 2)
+        ber_put_oid(&e, OID_SYSUPTIME, 9); // OID value
+    else
+        ber_put_null(&e);
+    ber_seq_end(&e, vb);
+    ber_seq_end(&e, vbl);
+    ber_seq_end(&e, p);
+    return e.ok ? e.len : 0;
+}
+
+// The value decoder handles uint/OID-typed varbind values, unsupported PDU tags are
+// dropped, and any truncated prefix of a valid PDU fails closed.
+void test_dispatch_value_types_and_malformed()
+{
+    uint8_t pdu[128], out[256];
+    // uint-typed and OID-typed varbind values decode without error.
+    size_t g = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 1);
+    TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, g, false, true, out, sizeof(out)) > 0);
+    size_t o = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 2);
+    TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, o, false, true, out, sizeof(out)) > 0);
+
+    // An unsupported PDU tag (a trap) is dropped.
+    size_t t = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_TRAPV2, 0);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_dispatch_pdu(pdu, t, false, true, out, sizeof(out)));
+
+    // Every truncated prefix of a valid GET PDU fails closed.
+    size_t full = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 0);
+    TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, full, false, true, out, sizeof(out)) > 0);
+    for (size_t l = 0; l < full; l++)
+        TEST_ASSERT_EQUAL_UINT(0, snmp_dispatch_pdu(pdu, l, false, true, out, sizeof(out)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_registration_and_rw_edges);
+    RUN_TEST(test_ipaddress_value_encodes);
+    RUN_TEST(test_set_wrong_type_and_unknown);
+    RUN_TEST(test_getbulk_variants);
+    RUN_TEST(test_dispatch_value_types_and_malformed);
     RUN_TEST(test_get_string_v2c);
     RUN_TEST(test_get_unknown_v2c_exception);
     RUN_TEST(test_get_bad_instance_v2c_nosuchinstance);
