@@ -2,19 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.78.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.78.0 - 2026-07-02</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`26b24d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26b24d20520c1923e5339421bddf08079f50fea2))
+- update CHANGELOG.md [skip ci] ([`c14817c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c14817c19b033dfb7611a0e615a04e53e91a7eb5))
 - allow Rohm / devboard (Wi-SUN roadmap note) ([`0576b54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0576b54f4fe632ff8c9cd9faa8e3fb02b5621f2e))
 - update CHANGELOG.md [skip ci] ([`9dd0242`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd02424da542579abf566ec4201a4b3a1cacd9f))
 - update test report [skip ci] ([`fb482cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb482cd78f1ec764019aec89e0c21b29fb8d0f1a))
 - update CHANGELOG.md [skip ci] ([`a517562`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5175626111f7eccd4316fc3ee43004a38550f0e))
 
+### Changes
+
+- Bump version: 4.77.0 → 4.78.0 ([`874979e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/874979e4f913fd59776764faff018bf8b9fa94f1))
+
 ### Documentation
 
 - reclassify Wi-SUN as a connector, not a radio-module driver ([`a50db36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a50db3675b15b4a493ec10a7d78c0211f9e3c44e))
 - update ESP32 build footprints [skip ci] ([`999f87b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/999f87b942c1656ea79479bd99a37d326e3aacd0))
+
+### Features
+
+- wired Ethernet PHY bring-up (DETWS_ENABLE_ETHERNET) ([`7e14835`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e148353d0d80a0e3caf12eb49da2cee28afa8a1))
+
+</details>
 
 ## [4.77.0] - 2026-07-02
 
