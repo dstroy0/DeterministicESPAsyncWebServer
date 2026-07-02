@@ -8,6 +8,7 @@
 // missing key, malformed).
 
 #include "services/oidc/oidc.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -158,9 +159,100 @@ void test_reject_malformed()
     TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, rc);
 }
 
+// token_kid rejects null args, a zero-cap output and a header segment that does not
+// base64url-decode.
+void test_token_kid_guards()
+{
+    char kid[64];
+    TEST_ASSERT_FALSE(detws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)));
+    TEST_ASSERT_FALSE(detws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)));
+    TEST_ASSERT_FALSE(detws_oidc_token_kid("a.b.c", 5, kid, 0));
+    TEST_ASSERT_FALSE(detws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid))); // 1-char header
+}
+
+// jwks_find rejects null args, a document with no keys array, an unterminated key
+// object, and a key whose kid matches but is unusable (no modulus).
+void test_jwks_find_guards()
+{
+    DetwsOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find(nullptr, "k", &key));
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[]}", "k", nullptr));
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"foo\":1}", "k", &key));                    // no keys array
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"kid\":\"x\"", "x", &key));      // unterminated object
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"kid\":\"k1\"}]}", "k1", &key)); // kid matches, no n/e
+}
+
+// verify_with_key rejects a null / unloaded key, a zero length, and a header that does
+// not decode; verify() rejects tokens with the wrong number of segments and a
+// wrong-length signature.
+void test_verify_guards_and_malformed()
+{
+    DetwsOidcKey unloaded;
+    unloaded.loaded = false;
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify_with_key("a.b.c", 5, &unloaded, ISS, AUD, NOW, nullptr));
+
+    DetwsOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_TRUE(detws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify_with_key("A.b.c", 5, &key, ISS, AUD, NOW, nullptr)); // header decode fail
+
+    // Wrong segment counts (one '.' / three '.').
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr));
+
+    // A valid header/payload but a truncated (wrong-length) signature.
+    char buf[2048];
+    snprintf(buf, sizeof(buf), "%s", K_TOK_VALID);
+    char *last_dot = strrchr(buf, '.');
+    last_dot[6] = '\0'; // keep only 5 signature chars -> decodes to != 256 bytes
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr));
+}
+
+// Crafted JWKS documents exercise the JSON field scanner and the RSA-JWK loader:
+// an empty document, an escaped/over-long/unterminated/non-string kid, a key missing
+// its exponent, and exponents that do or do not fit the 4-byte field.
+void test_jwks_malformed_keys()
+{
+    DetwsOidcKey key;
+    key.loaded = false;
+
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("", "k", &key)); // needle longer than the document
+
+    // escaped char inside a string value + a mismatching kid (get_str runs, then rejects).
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"kid\":\"a\\\\b\"}]}", "zzz", &key));
+    // kid string with no closing quote.
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"kid\":\"abc}]}", "abc", &key));
+    // kid value is not a string.
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"kid\":true}]}", "x", &key));
+
+    // a kid longer than the kid buffer (get_str overflow); the key itself is usable.
+    char jwks[400];
+    int p = snprintf(jwks, sizeof(jwks), "{\"keys\":[{\"kid\":\"");
+    for (int i = 0; i < 200; i++)
+        jwks[p++] = 'a';
+    snprintf(jwks + p, sizeof(jwks) - p, "\",\"n\":\"AAAA\",\"e\":\"AQAB\"}]}");
+    TEST_ASSERT_TRUE(detws_oidc_jwks_find(jwks, nullptr, &key));
+
+    // a key with a modulus but no exponent.
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"n\":\"AAAA\"}]}", nullptr, &key));
+    // an exponent too wide for the 4-byte field.
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find("{\"keys\":[{\"n\":\"AAAA\",\"e\":\"AAAAAAAA\"}]}", nullptr, &key));
+    // an exponent of 5 bytes with a leading zero, which is stripped and accepted.
+    TEST_ASSERT_TRUE(detws_oidc_jwks_find("{\"keys\":[{\"n\":\"AAAA\",\"e\":\"AAAAAAA\"}]}", nullptr, &key));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_jwks_malformed_keys);
+    RUN_TEST(test_token_kid_guards);
+    RUN_TEST(test_jwks_find_guards);
+    RUN_TEST(test_verify_guards_and_malformed);
     RUN_TEST(test_token_kid);
     RUN_TEST(test_jwks_find);
     RUN_TEST(test_jwks_find_missing_kid_fails);
