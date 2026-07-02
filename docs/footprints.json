@@ -97,6 +97,13 @@
     "flash_bytes": 270317,
     "ram_bytes": 28888
   },
+  "DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE": {
+    "example": "Foundation/10.RadioGateway",
+    "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_GATEWAY=1 -DDETWS_DMA_SIMULATE=1",
+    "board": "esp32dev",
+    "flash_bytes": 270389,
+    "ram_bytes": 28720
+  },
   "DNS_RESOLVER": {
     "example": "L7-Application/48.DnsResolver",
     "flags": "-DDETWS_ENABLE_DNS_RESOLVER=1",
