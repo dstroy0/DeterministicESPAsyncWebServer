@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.70.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.70.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c669657`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c669657ff0d72b5a7413ca690989c0a9ac42e269))
+- update CHANGELOG.md [skip ci] ([`4591246`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/459124627d097e8ba8322e54570bfdab5c3c6886))
+
+### Changes
+
+- Bump version: 4.69.0 → 4.70.0 ([`d39a7db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d39a7db3fed42b59b97ce7403d1ada7462010e36))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6dc3571`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dc357187837535662ce26b1928d2216ed6ef3a7))
+
+### Features
+
+- LoRa codec + SX127x driver - a radio plugin for the gateway ([`8a1520b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a1520bb9fd2e84853132680bb497c0317ca8b3d))
+
+</details>
+
 ## [4.69.0] - 2026-07-02
 
 <details>
