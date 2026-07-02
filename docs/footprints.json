@@ -132,6 +132,13 @@
     "flash_bytes": 826285,
     "ram_bytes": 67504
   },
+  "ETHERNET": {
+    "example": "Foundation/19.Ethernet",
+    "flags": "-DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
+    "board": "esp32dev",
+    "flash_bytes": 788761,
+    "ram_bytes": 66244
+  },
   "GPIO_MAP": {
     "example": "L7-Application/38.GpioMap",
     "flags": "-DDETWS_ENABLE_GPIO_MAP=1",
