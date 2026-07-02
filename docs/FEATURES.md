@@ -148,6 +148,12 @@ Allen-Bradley DF1 full-duplex frame codec. Default off. services/df1 is a zero-h
 
 Expose a diagnostic JSON endpoint via server.diag(). Disabled by default - enabling it exposes compile-time configuration (buffer sizes, feature flags) which could aid an attacker. Only enable in development or behind an authenticated route. When enabled, DETWS_DIAG_JSON is a compile-time string constant you can serve from any route handler:
 
+## DMA Peripheral Ingest
+
+`DETWS_ENABLE_DMA`
+
+Opt-in DMA ingest / egress path (v5 milestone). Default off. services/dma moves peripheral bytes (UART / I2C / SPI) between the wire and a static buffer while the CPU is free, then a DMA-complete event carries the result up - the high-throughput field-bus ingest path (RS-485 UART, CAN over SPI, IO-Link). RX is double-buffered (ping-pong): the completed buffer is handed to a callback while the engine fills the other; the canonical callback posts the bytes into the preempting work queue so a high-priority task processes them off the interrupt (see Preempting Work Queue). Zero heap (static DETWS_DMA_CHANNELS channels x DETWS_DMA_BUF_SIZE buffers), fail-closed (one TX in flight per channel, feeds past the staging capacity are rejected). DETWS_DMA_SIMULATE (default on) routes transfers through an in-memory ingress/egress simulator - feed bytes in, capture bytes out, optional TX->RX loopback - so the whole pipeline runs with no physical loopback wire, on the host bench and on-device; a real silicon driver plugs into the det_dma_hw_* hooks when the flag is off. Host-tested (services/dma) and HW-verified on a DevKitV1: 2.2M+ frames ingested with zero integrity errors while an HTTP server was stress-loaded on the same core, no heap growth. See src/services/dma/det_dma.h.
+
 ## DMX512
 
 `DETWS_ENABLE_DMX`

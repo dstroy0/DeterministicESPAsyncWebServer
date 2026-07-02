@@ -88,10 +88,16 @@ preempts immediately to process it, with the priorities exposed to the user.
       `xTaskCreatePinnedToCore`, but the **priority, core pinning, and queue depth
       are user-settable** (config / API) rather than hard-coded - users own their
       task priorities.
-- [ ] \*DMA UART / I2C / SPI transfer (L). DMA-driven peripheral transfers so the
-      CPU is free during byte movement; the DMA-complete ISR posts to the
-      preempting queue. This is the ingest path for the cheap-breakout field-bus
-      codecs (CAN over SPI, RS-485 UART, IO-Link, ...).
+- [x] \*DMA UART / I2C / SPI transfer (L) _(shipped)_ - `DETWS_ENABLE_DMA`:
+      `services/dma`, channels moving peripheral bytes to a static ping-pong (RX) /
+      staging (TX) buffer while the CPU is free; a DMA-complete event carries the
+      bytes to a callback that posts them into the preempting queue. The ingest path
+      for the cheap-breakout field-bus codecs (CAN over SPI, RS-485 UART, IO-Link).
+      Zero-heap, fail-closed. The ingress/egress **simulator** (`DETWS_DMA_SIMULATE`,
+      default on) runs the whole pipeline with no physical loopback - host bench and
+      on-device; a real silicon driver plugs into `det_dma_hw_*`. Host-tested
+      (`native_dma`) + HW-verified (2.2M+ frames, zero integrity errors, under HTTP
+      stress). Remaining: the UHCI-UART / `spi_master`-DMA silicon backend.
 - [x] \*Deeper clock-awareness (M) _(shipped)_ - `services/det_clock` gains a
       microsecond time base beside the 1000 Hz `detws_millis()`: `detws_micros()`
       (pluggable like the ms clock, ISR-safe, for hardware-event timestamps) plus a

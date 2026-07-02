@@ -210,6 +210,51 @@
 #error "DeterministicESPAsyncWebServer: DETWS_PQ_DEPTH and DETWS_PQ_ITEM_SIZE must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// DMA peripheral ingest / egress (DETWS_ENABLE_DMA) - v5 hardware ingest
+// ---------------------------------------------------------------------------
+//
+// Move peripheral bytes (UART / I2C / SPI) between the wire and a static buffer
+// with the CPU free during the transfer; a DMA-complete event carries the bytes
+// to a user callback, which typically posts a descriptor into the preempting work
+// queue (DETWS_ENABLE_PREEMPT_QUEUE) so the heavy processing runs off the ISR. RX
+// is double-buffered (ping-pong): the completed buffer is handed up while the DMA
+// engine fills the other. Storage is static (zero heap) - channel count and buffer
+// size are compile-time. See services/dma/det_dma.h.
+//
+// DETWS_DMA_SIMULATE routes the transfers through an in-memory ingress/egress
+// simulator (feed bytes in, capture bytes out, optional TX->RX loopback) so the
+// whole pipeline is exercised with no physical loopback wire - on the host test
+// bench and, with the flag set, on the device itself. It is the shipped, tested
+// engine; a real silicon backend plugs into det_dma_hw_* when DETWS_DMA_SIMULATE=0.
+
+/** @brief Enable the DMA peripheral ingest / egress primitive (default off). */
+#ifndef DETWS_ENABLE_DMA
+#define DETWS_ENABLE_DMA 0
+#endif
+
+/** @brief Number of DMA channels (static-allocated; each is one peripheral link). */
+#ifndef DETWS_DMA_CHANNELS
+#define DETWS_DMA_CHANNELS 2
+#endif
+
+/** @brief Bytes per DMA transfer buffer (RX is double-buffered at this size). */
+#ifndef DETWS_DMA_BUF_SIZE
+#define DETWS_DMA_BUF_SIZE 256
+#endif
+
+/**
+ * @brief Route DMA transfers through the ingress/egress simulator (default on).
+ *        Set to 0 to drive real silicon via the det_dma_hw_* backend hooks.
+ */
+#ifndef DETWS_DMA_SIMULATE
+#define DETWS_DMA_SIMULATE 1
+#endif
+
+#if DETWS_ENABLE_DMA && (DETWS_DMA_CHANNELS < 1 || DETWS_DMA_BUF_SIZE < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_DMA_CHANNELS and DETWS_DMA_BUF_SIZE must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

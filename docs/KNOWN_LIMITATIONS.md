@@ -100,6 +100,23 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
 - **Multipart:** at most `MAX_MULTIPART_PARTS` parts; a binary part containing the
   boundary bytes is truncated; only `name` / `filename` are extracted.
 
+## DMA ingest
+
+- **The shipped backend is the ingress/egress simulator, not a silicon DMA driver.**
+  `services/dma` (`DETWS_ENABLE_DMA`) is the full deterministic ingest pipeline -
+  channels, ping-pong RX, TX egress, completion events, fail-closed - and with
+  `DETWS_DMA_SIMULATE=1` (the default) it runs end to end through an in-memory model of
+  the peripheral (feed bytes in, capture bytes out, optional TX->RX loopback), on the host
+  bench and on-device. A real UART UHCI / `spi_master` DMA driver is **not implemented
+  yet**; it plugs into the `det_dma_hw_*` hooks when `DETWS_DMA_SIMULATE=0` (the default
+  hooks fail closed - `det_dma_open()` returns false - until a driver overrides them). The
+  silicon backend is deferred because it needs peripheral hardware (and a real loopback) to
+  verify, and shipping an unverified driver is against the project's test-on-hardware rule.
+- **RX buffers are 2-deep ping-pong.** The event's `data` pointer is valid only until the
+  buffer is reused a transfer or two later. A consumer that drains the completion in another
+  task (e.g. off the preempting queue) must **copy the bytes** into the posted item, not
+  keep the pointer - see the note in `det_dma.h` and example `07.DmaIngest`.
+
 ## Streaming sinks
 
 - **OTA and streaming upload share the single parser streaming hook** - enable at

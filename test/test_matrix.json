@@ -435,6 +435,12 @@
       "src": ["+<services/preempt_queue/preempt_queue.cpp>"],
       "tests": ["test_preempt_queue"]
     },
+    "native_dma": {
+      "desc": "DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an\ningress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms,\negress DMA is captured, TX is one-in-flight fail-closed, and a loopback channel\nround-trips its own TX into RX. The ARDUINO ISR-post + preempt-queue hand-off is\nHW-verified separately (the host has no ISRs).",
+      "flags": ["-DDETWS_ENABLE_DMA=1", "-DDETWS_DMA_BUF_SIZE=8", "-DDETWS_DMA_CHANNELS=2"],
+      "src": ["+<services/dma/det_dma.cpp>"],
+      "tests": ["test_dma"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],

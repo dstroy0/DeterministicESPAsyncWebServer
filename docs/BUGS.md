@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## DMA frames corrupted (~8%) when the completion was posted to the work queue as a pointer
+
+- **Status:** FIXED (HW-verified on an ESP32 DevKitV1: 2.2M+ frames ingested with zero
+  integrity errors under concurrent HTTP stress, no heap growth).
+- **Found:** 2026-07-02, first HW stress of the new DMA ingest path (`services/dma`). A
+  combined webserver + continuous-DMA rig reported `dma_errors: 8824` out of ~95946 frames
+  (~8%) via an HTTP counter - while all 11 host tests passed. Textbook "a small happy-path
+  smoke hides the bug; stress on hardware surfaces it."
+- **Root cause:** the DMA-complete callback posted the `det_dma_event` whose `data` is a
+  **pointer into the 2-deep ping-pong RX buffer** into the 16-deep preempting work queue.
+  `detws_pq_post_from_isr()` calls `portYIELD_FROM_ISR()`, but the simulator drives the
+  callback from a **task** context (not a real ISR), where the yield is not an immediate
+  context switch - so under load `loop()` ran several more completions before the
+  high-priority task drained the queue, the two ping-pong buffers wrapped, and the older
+  queued pointers read half-overwritten data. A descriptor consumed by another task must
+  own its bytes, not point into a buffer that is reused a transfer or two later.
+- **Fix:** the callback now **copies the frame bytes into the queue item** (a self-contained
+  message) instead of posting the pointer. Eliminates the dangling reference entirely
+  (error rate 8% -> 0%). The example `07.DmaIngest` uses the same copy pattern, and
+  `det_dma.h` now documents that a deferred (queued) consumer must copy the `len` bytes
+  rather than keep the RX pointer. The pointer API itself is unchanged and correct for an
+  in-callback consumer (the standard DMA-HAL shape).
+- **Tests:** the host suite (`native_dma`) covers the ping-pong flip, byte-exact loopback
+  round trip, and fail-closed paths; the deferred-consumer lifetime is a HW-load property,
+  now covered by the on-device stress rig.
+
+---
+
 ## SSH server could not interoperate with a stock OpenSSH client
 
 - **Status:** FIXED (host-tested + HW-verified on an ESP32 against OpenSSH 9.5: `ssh`, pubkey
