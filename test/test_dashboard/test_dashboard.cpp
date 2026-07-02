@@ -149,9 +149,78 @@ void test_layout_control_types()
     TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"slider\""));
 }
 
+// The bar and sparkline widget types serialize with their type names.
+void test_layout_bar_sparkline_types()
+{
+    static const DetwsWidget AW[] = {
+        {DETWS_WIDGET_BAR, "B", "b", 0, 1, ""},
+        {DETWS_WIDGET_SPARKLINE, "S", "s", 0, 1, ""},
+    };
+    detws_dashboard_configure(AW, 2);
+    char buf[256];
+    TEST_ASSERT_TRUE(detws_dashboard_layout_json(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"bar\""));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"type\":\"sparkline\""));
+}
+
+// With no widget table configured, set() and the serializers fail closed.
+void test_null_widget_table_guards()
+{
+    detws_dashboard_configure(nullptr, 0); // clear the table
+    char buf[64];
+    TEST_ASSERT_FALSE(detws_dashboard_set("temp", 1.0f));                    // !s_widgets
+    TEST_ASSERT_FALSE(detws_dashboard_set(nullptr, 1.0f));                   // !key
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, sizeof(buf))); // !s_widgets
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_values_json(buf, sizeof(buf))); // !s_widgets
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, 0));           // cap == 0
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_values_json(buf, 0));           // cap == 0
+}
+
+// Each JSON serializer fails closed when the opening bracket, a widget fragment, or
+// the closing bracket does not fit the output buffer.
+void test_json_overflow_paths()
+{
+    char buf[8];
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, 1)); // '[' does not fit
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_values_json(buf, 1)); // '{' does not fit
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, 2)); // widget fragment spills
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_values_json(buf, 2)); // widget fragment spills
+
+    detws_dashboard_configure(W, 0);                               // zero widgets: only the brackets are written
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_layout_json(buf, 2)); // ']' does not fit
+    TEST_ASSERT_EQUAL_INT(0, detws_dashboard_values_json(buf, 2)); // '}' does not fit
+}
+
+// Control-message parsing: null args, a missing colon, whitespace tolerance, an
+// unterminated key and a key too long for the buffer.
+void test_parse_control_edges()
+{
+    char key[32];
+    float v = 0.0f;
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control(nullptr, key, sizeof(key), &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{}", nullptr, sizeof(key), &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{}", key, 0, &v));
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{}", key, sizeof(key), nullptr));
+
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"k\" 5}", key, sizeof(key), &v)); // no ':' after key
+
+    TEST_ASSERT_TRUE(detws_dashboard_parse_control("{\"k\" : \"temp\" , \"v\" : 3}", key, sizeof(key), &v));
+    TEST_ASSERT_EQUAL_STRING("temp", key); // whitespace around ':' tolerated
+    TEST_ASSERT_EQUAL_FLOAT(3.0f, v);
+
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"k\":\"unterminated", key, sizeof(key), &v));
+
+    char small[4];
+    TEST_ASSERT_FALSE(detws_dashboard_parse_control("{\"k\":\"toolong\",\"v\":1}", small, sizeof(small), &v));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_layout_bar_sparkline_types);
+    RUN_TEST(test_null_widget_table_guards);
+    RUN_TEST(test_json_overflow_paths);
+    RUN_TEST(test_parse_control_edges);
     RUN_TEST(test_layout_json);
     RUN_TEST(test_values_json_initial_zero);
     RUN_TEST(test_set_and_values);
