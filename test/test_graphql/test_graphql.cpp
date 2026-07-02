@@ -83,6 +83,11 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
         out->s = c;
         return true;
     }
+    if (!strcmp(path, "nullval")) // resolves true with a null-typed value (w_scalar default)
+    {
+        out->type = DETWS_GQL_NULL;
+        return true;
+    }
     return false; // -> null
 }
 
@@ -260,9 +265,141 @@ void test_unknown_operation_keyword_fails()
     TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"));
 }
 
+// A numeric arg with no digits (a bare '-'), an arg with no name, and a field name
+// that does not start with a name character are all parse errors.
+void test_malformed_tokens_fail()
+{
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"));
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"));
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"));
+}
+
+// `query Op` with no selection set, and `query` followed by a non-name, are parse errors.
+void test_query_keyword_forms_fail()
+{
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("query Op"));  // no selection set follows
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("query 123")); // bad operation name
+}
+
+// Exceeding the argument, node and string-buffer pools each fails closed with a limit error.
+void test_pool_limits()
+{
+    char q[600];
+    int n = 0;
+    n += snprintf(q + n, sizeof(q) - n, "{ f(");
+    for (int i = 0; i < 25; i++) // > DETWS_GQL_MAX_ARGS (24)
+        n += snprintf(q + n, sizeof(q) - n, "a%d:1 ", i);
+    n += snprintf(q + n, sizeof(q) - n, ") }");
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+
+    n = 0;
+    n += snprintf(q + n, sizeof(q) - n, "{ ");
+    for (int i = 0; i < 49; i++) // > DETWS_GQL_MAX_NODES (48)
+        n += snprintf(q + n, sizeof(q) - n, "f%d ", i);
+    n += snprintf(q + n, sizeof(q) - n, "}");
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+
+    // One string argument longer than the decode buffer (256).
+    n = 0;
+    n += snprintf(q + n, sizeof(q) - n, "{ f(a:\"");
+    for (int i = 0; i < 300; i++)
+        q[n++] = 'x';
+    q[n++] = '"';
+    q[n++] = ')';
+    q[n++] = '}';
+    q[n] = '\0';
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+}
+
+// Many string arguments together exhaust the intern pool (a value fails to intern).
+void test_string_pool_exhaustion()
+{
+    char q[600];
+    int n = 0;
+    n += snprintf(q + n, sizeof(q) - n, "{ f(");
+    for (int i = 0; i < 8; i++) // 8 x 40 bytes = 320 > DETWS_GQL_STRBUF (256)
+    {
+        n += snprintf(q + n, sizeof(q) - n, "a%d:\"", i);
+        for (int k = 0; k < 40; k++)
+            q[n++] = 'y';
+        q[n++] = '"';
+        q[n++] = ' ';
+    }
+    n += snprintf(q + n, sizeof(q) - n, ") }");
+    q[n] = '\0';
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+}
+
+// A resolver returning a null-typed value serializes as JSON null (w_scalar default).
+void test_resolver_null_typed_value()
+{
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"nullval\":null}}", run("{ nullval }"));
+}
+
+// Build a nested query { a...a { a...a { ... } } } from per-level name lengths.
+static void build_nested_query(const int *lens, int levels, char *q)
+{
+    int p = 0;
+    for (int i = 0; i < levels; i++)
+    {
+        q[p++] = '{';
+        q[p++] = ' ';
+        for (int k = 0; k < lens[i]; k++)
+            q[p++] = 'a';
+        q[p++] = ' ';
+    }
+    for (int i = 0; i < levels; i++)
+    {
+        q[p++] = '}';
+        q[p++] = ' ';
+    }
+    q[p] = '\0';
+}
+
+// A resolver path longer than DETWS_GQL_PATH_MAX (96) fails closed as an overflow, both
+// when the separator and when the segment would spill (names stay within NAME_MAX = 32).
+void test_resolver_path_overflow()
+{
+    char q[256];
+    // 31,31,31,31: the 4th separator check trips (plen reaches 95, then '.' -> 96).
+    const int dot_case[4] = {31, 31, 31, 31};
+    build_nested_query(dot_case, 4, q);
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_OVERFLOW, run_rc(q));
+
+    // 31,31,6,31: the 4th segment copy trips (plen 71 + a 31-char name >= 96).
+    const int seg_case[4] = {31, 31, 6, 31};
+    build_nested_query(seg_case, 4, q);
+    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_OVERFLOW, run_rc(q));
+}
+
+// The argument accessors reject null args and a wrong-typed / missing argument.
+void test_arg_accessors_edges()
+{
+    long long i = 0;
+    const char *s = nullptr;
+    bool b = false;
+    TEST_ASSERT_FALSE(detws_gql_arg_int(nullptr, "x", &i));
+    TEST_ASSERT_FALSE(detws_gql_arg_str(nullptr, "x", &s));
+    TEST_ASSERT_FALSE(detws_gql_arg_bool(nullptr, "x", &b));
+
+    // id is a string, so arg_int does not match it -> resolver returns -1.
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"sensor\":{\"value\":-1}}}", run("{ sensor(id: \"x\") { value } }"));
+    // on is an int, so arg_bool does not match it -> false.
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"flag\":false}}", run("{ flag(on: 1) }"));
+    // no on argument at all -> arg_bool exhausts and returns false.
+    TEST_ASSERT_EQUAL_STRING("{\"data\":{\"flag\":false}}", run("{ flag }"));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_malformed_tokens_fail);
+    RUN_TEST(test_query_keyword_forms_fail);
+    RUN_TEST(test_pool_limits);
+    RUN_TEST(test_string_pool_exhaustion);
+    RUN_TEST(test_resolver_null_typed_value);
+    RUN_TEST(test_resolver_path_overflow);
+    RUN_TEST(test_arg_accessors_edges);
     RUN_TEST(test_flat_selection);
     RUN_TEST(test_string_escapes_decoded);
     RUN_TEST(test_number_arg_variants_parse);
