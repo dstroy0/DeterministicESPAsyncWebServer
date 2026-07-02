@@ -10,6 +10,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- gitignore .pio_cov_wsl (WSL coverage build dir) ([`ac1e36c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac1e36c6b626e9e8953a278b5ef15a7c2eaf37b3))
+- update test report [skip ci] ([`17a947d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17a947db9df9f68630e6d04120c1e061a41db992))
+- update CHANGELOG.md [skip ci] ([`68e5bf4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68e5bf4f28c02cb1c30c486f3b2b975f41ac1f01))
 - update test report [skip ci] ([`1726943`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17269433266f2d657e1f2daadc60ca2e376f2fad))
 - update CHANGELOG.md [skip ci] ([`9ab5341`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ab53419f306c0c89d00ae5458a0e3e8bbe97548))
 - update test report [skip ci] ([`95371de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95371de3051d27d43041b2f6a1963234c8910c7f))
