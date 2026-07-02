@@ -331,9 +331,239 @@ void test_pubkey_unauthorized_key_fails()
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
 }
 
+// SERVICE_REQUEST parsing rejects a wrong/empty message, a truncated service string,
+// and an output buffer too small for SERVICE_ACCEPT.
+void test_service_request_errors()
+{
+    uint8_t out[64], p[64];
+    size_t olen = 0;
+    p[0] = 99;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out))); // wrong type
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_service_request(p, 0, out, &olen, sizeof(out))); // len 0
+    p[0] = SSH_MSG_SERVICE_REQUEST;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out))); // truncated service
+    size_t n = 0;
+    p[n++] = SSH_MSG_SERVICE_REQUEST;
+    n += put_string(p + n, "ssh-userauth");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_service_request(p, n, out, &olen, 3)); // cap too small
+}
+
+// The response builders reject an output buffer too small for their fixed messages.
+void test_build_response_guards()
+{
+    uint8_t out[8];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_build_failure(out, &olen, 2, false)); // < 1+4+methods+1
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_build_success(out, &olen, 0));        // cap < 1
+
+    // build_pk_ok via a pubkey probe with a tiny output buffer.
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t blob[512];
+    size_t blob_len = hexdec(PK_BLOB_HEX, blob);
+    uint8_t pkt[1024];
+    size_t pn = build_pubkey_req(pkt, blob, blob_len, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_request(0, pkt, pn, out, &olen, 4));
+}
+
+// USERAUTH_REQUEST parsing rejects a truncation at every field, for both the password
+// and publickey methods (including the signature blob).
+void test_parse_request_truncations()
+{
+    SshAuthReq req;
+    uint8_t p[512];
+    size_t n;
+
+    p[0] = 99;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, 1, &req)); // wrong type
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, 0, &req)); // len 0
+
+    p[0] = SSH_MSG_USERAUTH_REQUEST;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, 1, &req)); // user length header truncated
+
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    wr_u32(p + n, 20);
+    n += 4; // user claims 20 bytes, none present
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req));
+
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    char big[300];
+    memset(big, 'u', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    n += put_string(p + n, big); // user longer than the fixed buffer
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req));
+
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, "alice");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // service missing
+
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, "alice");
+    n += put_string(p + n, "ssh-connection");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // method missing
+
+    // password: boolean missing, then password string missing.
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, "alice");
+    n += put_string(p + n, "ssh-connection");
+    n += put_string(p + n, "password");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // no boolean
+    p[n++] = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // password missing
+
+    // publickey: has-signature byte missing, then algo, then blob (header and body).
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, "alice");
+    n += put_string(p + n, "ssh-connection");
+    n += put_string(p + n, "publickey");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // no has-sig byte
+    p[n++] = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // algo missing
+    n += put_string(p + n, "rsa-sha2-256");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // blob header missing
+    wr_u32(p + n, 100);
+    n += 4; // blob claims 100 bytes, none present
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req));
+
+    // publickey with signature: outer sig blob missing, then inner algo, then raw sig.
+    n = 0;
+    p[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(p + n, "alice");
+    n += put_string(p + n, "ssh-connection");
+    n += put_string(p + n, "publickey");
+    p[n++] = 1; // has signature
+    n += put_string(p + n, "rsa-sha2-256");
+    n += put_string(p + n, "blob");
+    size_t base = n;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req)); // outer sig blob missing
+
+    n = base;
+    wr_u32(p + n, 2);
+    n += 4;
+    p[n++] = 0;
+    p[n++] = 0; // sig blob len 2: cannot hold the inner sig-algo string
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req));
+
+    n = base;
+    uint8_t sb[32];
+    size_t sblen = put_string(sb, "rsa-sha2-256"); // sig blob = algo only, no raw signature
+    wr_u32(p + n, (uint32_t)sblen);
+    n += 4;
+    memcpy(p + n, sb, sblen);
+    n += sblen;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_parse_request(p, n, &req));
+}
+
+// A malformed ssh-rsa public-key blob fails to load at each field, yielding a
+// USERAUTH_FAILURE rather than a crash.
+void test_pubkey_blob_parse_failures()
+{
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t out[512], pkt[1024], b[400];
+    size_t olen = 0, bl, pn;
+
+    // empty blob: type string cannot be read.
+    pn = build_pubkey_req(pkt, b, 0, nullptr, 0, false);
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // wrong key type.
+    bl = put_string(b, "ssh-dss");
+    pn = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // ssh-rsa with no exponent.
+    bl = put_string(b, "ssh-rsa");
+    pn = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // exponent wider than 4 bytes.
+    bl = put_string(b, "ssh-rsa");
+    wr_u32(b + bl, 5);
+    bl += 4;
+    memcpy(b + bl, "\x01\x02\x03\x04\x05", 5);
+    bl += 5;
+    pn = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // valid exponent but no modulus.
+    bl = put_string(b, "ssh-rsa");
+    wr_u32(b + bl, 1);
+    bl += 4;
+    b[bl++] = 3;
+    pn = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+
+    // modulus wider than the key buffer.
+    bl = put_string(b, "ssh-rsa");
+    wr_u32(b + bl, 1);
+    bl += 4;
+    b[bl++] = 3;
+    uint32_t nlen = 300; // > SSH_RSA_KEY_BYTES (256)
+    wr_u32(b + bl, nlen);
+    bl += 4;
+    memset(b + bl, 0x11, nlen);
+    bl += nlen;
+    pn = build_pubkey_req(pkt, b, bl, nullptr, 0, false);
+    ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+}
+
+static bool pk_cb_any(const char *u, const uint8_t *blob, size_t n)
+{
+    (void)u;
+    (void)blob;
+    (void)n;
+    return true;
+}
+
+// A publickey request whose signed prefix exceeds SSH_PKT_BUF_SIZE is rejected before
+// the signature buffer is assembled (a DoS guard), yielding USERAUTH_FAILURE.
+void test_pubkey_oversized_signed_prefix()
+{
+    ssh_auth_set_pubkey_cb(pk_cb_any); // accept any key so the length guard is reached
+    set_session_id_0_to_31();
+    static uint8_t blob[2200];
+    size_t base = hexdec(PK_BLOB_HEX, blob);     // a valid ssh-rsa blob prefix
+    memset(blob + base, 0, sizeof(blob) - base); // trailing padding (parse ignores it)
+    static uint8_t pkt[4096], out[4096];
+    uint8_t sig[8] = {0};
+    size_t n = build_pubkey_req(pkt, blob, sizeof(blob), sig, sizeof(sig), true);
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+}
+
+// handle_request rejects an out-of-range slot and a payload that does not parse.
+void test_handle_request_index_and_parse_guards()
+{
+    uint8_t out[64], p[8];
+    size_t olen = 0;
+    p[0] = 99;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out))); // parse fails
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_service_request_errors);
+    RUN_TEST(test_build_response_guards);
+    RUN_TEST(test_parse_request_truncations);
+    RUN_TEST(test_pubkey_blob_parse_failures);
+    RUN_TEST(test_pubkey_oversized_signed_prefix);
+    RUN_TEST(test_handle_request_index_and_parse_guards);
     RUN_TEST(test_service_request_accept);
     RUN_TEST(test_service_request_rejects_unknown);
     RUN_TEST(test_parse_password_request);
