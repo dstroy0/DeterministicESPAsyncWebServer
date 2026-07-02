@@ -309,9 +309,110 @@ void test_seq_and_request_id_increment()
     TEST_ASSERT_TRUE(c.request_handle >= 2);
 }
 
+// on_read decodes every scalar Variant type and a per-value StatusCode.
+void test_on_read_all_variant_types()
+{
+    OpcUaReadRequest rr;
+    memset(&rr, 0, sizeof(rr));
+    rr.count = 5;
+
+    OpcUaVariant sv[5];
+    uint32_t ss[5];
+    memset(sv, 0, sizeof(sv));
+    sv[0].type = OPCUA_VAR_BOOL;
+    sv[0].b = true;
+    sv[1].type = OPCUA_VAR_INT32;
+    sv[1].i32 = -5;
+    sv[2].type = OPCUA_VAR_FLOAT;
+    sv[2].f32 = 1.5f;
+    sv[3].type = OPCUA_VAR_STRING;
+    sv[3].str = "hi";
+    sv[3].str_len = 2;
+    sv[4].type = OPCUA_VAR_INT32;
+    sv[4].i32 = 7;
+    ss[0] = ss[1] = ss[2] = ss[3] = OPCUA_STATUS_GOOD;
+    ss[4] = OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED; // forces the StatusCode mask bit
+
+    uint8_t resp[512];
+    size_t sn = opcua_build_read_response(&rr, sv, ss, 5, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaVariant cv[5];
+    uint32_t cs[5];
+    int32_t n = opcua_client_on_read(resp, sn, cv, cs, 5);
+    TEST_ASSERT_EQUAL_INT32(5, n);
+    TEST_ASSERT_TRUE(cv[0].b);
+    TEST_ASSERT_EQUAL_INT32(-5, cv[1].i32);
+    TEST_ASSERT_EQUAL_FLOAT(1.5f, cv[2].f32);
+    TEST_ASSERT_EQUAL_INT32(2, cv[3].str_len);
+    TEST_ASSERT_EQUAL_MEMORY("hi", cv[3].str, 2);
+    TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, cs[4]);
+}
+
+// A ServiceFault (non-Good ServiceResult) is rejected by every service parser.
+void test_client_parsers_reject_fault()
+{
+    OpcUaMsg m;
+    memset(&m, 0, sizeof(m));
+    uint8_t resp[128];
+    size_t sn = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+
+    OpcUaClient c;
+    opcua_client_init(&c);
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_get_endpoints(resp, sn));
+    TEST_ASSERT_FALSE(opcua_client_on_create_session(&c, resp, sn));
+    uint32_t results[1];
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_write(resp, sn, results, 1));
+    OpcUaClientRef refs[1];
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_browse(resp, sn, refs, 1));
+}
+
+// Malformed responses are rejected: wrong UACP type, too-short ACK, corrupt body
+// TypeId, and a truncated body.
+void test_client_parsers_reject_malformed()
+{
+    OpcUaAckInfo ai;
+    uint8_t ack[28] = {'A', 'C', 'K', 'F', 28, 0, 0, 0};
+    ack[0] = 'X'; // wrong type
+    TEST_ASSERT_FALSE(opcua_client_on_ack(ack, sizeof(ack), &ai));
+    uint8_t shortack[12] = {'A', 'C', 'K', 'F', 12, 0, 0, 0};
+    TEST_ASSERT_FALSE(opcua_client_on_ack(shortack, sizeof(shortack), &ai)); // < 8+20
+
+    OpcUaClient c;
+    opcua_client_init(&c);
+    uint8_t opn[64];
+    memset(opn, 0, sizeof(opn));
+    opn[0] = 'M'; // OPN expected, MSG given
+    opn[1] = 'S';
+    opn[2] = 'G';
+    opn[3] = 'F';
+    opn[4] = 64;
+    TEST_ASSERT_FALSE(opcua_client_on_open(&c, opn, sizeof(opn)));
+
+    // Build a valid Read response, then corrupt the body TypeId NodeId kind.
+    OpcUaReadRequest rr;
+    memset(&rr, 0, sizeof(rr));
+    rr.count = 0;
+    uint8_t resp[128];
+    size_t sn = opcua_build_read_response(&rr, nullptr, nullptr, 0, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+    uint8_t save = resp[24];
+    resp[24] = 0x06; // invalid NodeId encoding kind
+    OpcUaVariant v[1];
+    uint32_t s[1];
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn, v, s, 1));
+    resp[24] = save;
+    // A body truncated mid-header underruns the reader.
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn - 4, v, s, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_on_read_all_variant_types);
+    RUN_TEST(test_client_parsers_reject_fault);
+    RUN_TEST(test_client_parsers_reject_malformed);
     RUN_TEST(test_hello_ack_roundtrip);
     RUN_TEST(test_open_roundtrip);
     RUN_TEST(test_session_roundtrip);
