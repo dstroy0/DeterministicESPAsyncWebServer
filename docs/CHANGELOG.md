@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.71.1] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.71.1 - 2026-07-02</b></summary>
+
+### Bug Fixes
+
+- split det_gw_topic separator writes (SonarCloud S1764) ([`ffc1c54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffc1c54cc536d202442e3ab2024d2ae40233c932))
+
+### CI / Build
+
+- update test report [skip ci] ([`50e83c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50e83c04917e1e67f0212889c3396590f0fd97d6))
+- update CHANGELOG.md [skip ci] ([`b18c558`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b18c558937c0cd54fa7ca9f218e128104b0cbef4))
+
+### Changes
+
+- Bump version: 4.71.0 → 4.71.1 ([`ede11e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede11e61bac9a5f2cde17964f04d5c3ad5efa048))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`849a30a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/849a30aa28fedd6dca1d5c96076485b0373a1cb2))
+
+</details>
+
 ## [4.71.0] - 2026-07-02
 
 <details>
