@@ -187,7 +187,12 @@ UART radios:
   `AT$SF=<hex>` uplink formatter + OK/ERROR/pending response classifier, host-tested;
   example 15.SigfoxUplink sends a reading from a real modem. Remaining: verify against
   a module + subscription.
-- [ ] \*Wi-SUN FAN gateway (L) - sub-GHz IPv6 mesh (Renesas / SiLabs) over UART.
+- [ ] \*Wi-SUN FAN **connector** (L) - NOT a radio-module driver: the direct FAN
+      UART modules (Rohm BP35A1 class) are obsoleted, so Wi-SUN is reached as a
+      **connector to a border router / devboard** that already terminates the FAN mesh.
+      Wi-SUN FAN is an IPv6 / UDP / CoAP network, so this rides the existing IP stack
+      (CoAP / UDP client to the border router) rather than a byte-level radio codec.
+      Deferred until a target devboard + its API is chosen.
 
 I2C / SPI / UART:
 
