@@ -154,9 +154,51 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, spb_build_topic(tsmall, sizeof(tsmall), "group1", "NDATA", "edge1", nullptr));
 }
 
+// Null-argument guards, the Long/Float metric kinds + timestamp, and the payload
+// fail-closed paths (null metrics, and a metric that overflows the per-metric buffer).
+void test_spb_error_and_kind_paths()
+{
+    char tbuf[64];
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_topic(nullptr, sizeof(tbuf), "g", "NDATA", "e", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_topic(tbuf, sizeof(tbuf), nullptr, "NDATA", "e", nullptr));
+
+    uint8_t buf[256];
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_metric(nullptr, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_metric(buf, sizeof(buf), nullptr));
+
+    SpbMetric ml = {};
+    ml.name = "lng";
+    ml.has_timestamp = true;
+    ml.timestamp = 123;
+    ml.datatype = SPB_DT_INT32;
+    ml.kind = SPB_M_LONG;
+    ml.long_value = 0x1122334455ull;
+    TEST_ASSERT_TRUE(spb_build_metric(buf, sizeof(buf), &ml) > 0); // timestamp + Long
+
+    SpbMetric mf = {};
+    mf.name = "flt";
+    mf.datatype = SPB_DT_DOUBLE;
+    mf.kind = SPB_M_FLOAT;
+    mf.float_value = 2.5f;
+    TEST_ASSERT_TRUE(spb_build_metric(buf, sizeof(buf), &mf) > 0); // Float
+
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_payload(buf, sizeof(buf), 1, 0, nullptr, 2)); // n>0, null metrics
+
+    static char big[DETWS_SPB_METRIC_MAX + 64];
+    memset(big, 'x', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    SpbMetric ms = {};
+    ms.name = "s";
+    ms.datatype = SPB_DT_STRING;
+    ms.kind = SPB_M_STRING;
+    ms.string_value = big;
+    TEST_ASSERT_EQUAL_UINT(0, spb_build_payload(buf, sizeof(buf), 1, 0, &ms, 1)); // per-metric overflow
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_spb_error_and_kind_paths);
     RUN_TEST(test_topic);
     RUN_TEST(test_metric_bytes);
     RUN_TEST(test_payload_round_trip);
