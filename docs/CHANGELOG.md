@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.72.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.72.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d47d98d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d47d98d4ccac6ff8f125fb78c7aa70d8b6d33067))
+- update CHANGELOG.md [skip ci] ([`db33976`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db33976d3b94ef35ee19e11fa9fec233e84bb625))
+
+### Changes
+
+- Bump version: 4.71.1 → 4.72.0 ([`7825077`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/782507704f7107a7bb427c00581825a7654700ce))
+
+### Features
+
+- EnOcean ESP3 serial codec - a UART radio plugin for the gateway ([`48a5d48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48a5d480c7c491c12d43bbe5824e19b8d75e7c89))
+
+</details>
+
 ## [4.71.1] - 2026-07-02
 
 <details>
