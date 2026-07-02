@@ -158,8 +158,11 @@ SPI radios:
   RF link on the module (and optional dynamic-payload / auto-ack).
 - [ ] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
       ISM-band remotes and sensors.
-- [ ] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
-      over SPI (spinel framing); 802.15.4 mesh bridged to IP.
+- [~] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
+  over SPI (spinel framing); 802.15.4 mesh bridged to IP. **spinel / HDLC-lite framing
+  codec shipped** (`DETWS_ENABLE_THREAD`, `services/thread`): the byte-stuffed framing + CRC-16/X-25 FCS (encode/decode) that carries spinel, host-tested against the X-25
+  check value; example 18.ThreadGateway bridges a real RCP. Remaining: the spinel
+  property/command layer + verify against an RCP.
 
 UART radios:
 

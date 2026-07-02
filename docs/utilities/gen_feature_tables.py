@@ -86,6 +86,7 @@ DRIVER_HEADINGS = {
     "nRF24",
     "PN532",
     "Sigfox",
+    "Thread",
     "Z-Wave",
     "Zigbee",
 }

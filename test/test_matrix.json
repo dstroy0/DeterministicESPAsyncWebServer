@@ -495,6 +495,12 @@
       "src": ["+<services/zigbee/zigbee.cpp>"],
       "tests": ["test_zigbee"]
     },
+    "native_thread": {
+      "desc": "Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS\n(CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the\nbyte-stuffing of reserved bytes, and malformed framing (bad FCS, dangling escape,\nbuffer-too-small, no flag). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_THREAD=1", "-DDETWS_THREAD_MAX_DATA=64"],
+      "src": ["+<services/thread/thread.cpp>"],
+      "tests": ["test_thread"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],

@@ -516,6 +516,32 @@
 #error "DeterministicESPAsyncWebServer: DETWS_ZIGBEE_MAX_DATA must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// Thread (DETWS_ENABLE_THREAD) - OpenThread spinel over HDLC-lite framing codec
+// ---------------------------------------------------------------------------
+//
+// The HDLC-lite framing that carries spinel frames to an OpenThread radio co-processor
+// (RCP: an nRF52840 / EFR32) over UART - an 802.15.4 / Thread mesh bridged to IP / the web.
+// Each spinel frame is wrapped by HDLC-lite: an FCS (CRC-16/X-25) is appended, the reserved
+// bytes are byte-stuffed, and a Flag byte (0x7E) terminates it. spinel_frame_encode() /
+// spinel_frame_decode() do the framing + FCS; the spinel command inside (a property
+// get/set/insert, a stream frame) is the application's. Pure - you carry the bytes over your
+// UART - so it is fully host-testable. See services/thread/thread.h.
+
+/** @brief Enable the Thread spinel / HDLC-lite framing codec (default off). */
+#ifndef DETWS_ENABLE_THREAD
+#define DETWS_ENABLE_THREAD 0
+#endif
+
+/** @brief Max spinel payload bytes carried in one HDLC-lite frame. */
+#ifndef DETWS_THREAD_MAX_DATA
+#define DETWS_THREAD_MAX_DATA 256
+#endif
+
+#if DETWS_ENABLE_THREAD && (DETWS_THREAD_MAX_DATA < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_THREAD_MAX_DATA must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

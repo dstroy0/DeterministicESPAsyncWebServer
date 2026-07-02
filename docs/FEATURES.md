@@ -648,6 +648,12 @@ Telnet server support (RFC 854 / IAC option negotiation).
 
 {{var}} response templating via send_template(). Always on.
 
+## Thread
+
+`DETWS_ENABLE_THREAD`
+
+Thread spinel / HDLC-lite framing codec (v5 gateway plugin). Default off. services/thread is the HDLC-lite data-link layer that carries spinel frames to an OpenThread radio co-processor (an nRF52840 / EFR32 RCP) over UART, so an 802.15.4 / Thread mesh is bridged to IP and the web (the basis of a Thread / Matter border router). HDLC-lite appends an FCS, byte-stuffs the reserved bytes (Flag 0x7E, Escape 0x7D, XON, XOFF), and terminates with the Flag. The FCS is the HDLC frame check sequence - CRC-16/X-25 (poly 0x1021 reflected, init 0xFFFF, reflected in/out, final XOR 0xFFFF), transmitted low byte first, distinct from Zigbee's ASH CRC. `spinel_frame_encode` wraps a payload; `spinel_frame_decode` finds the flag, removes the stuffing, and verifies the FCS (returning the bytes consumed, need-more, or a resync signal); `spinel_fcs` is the shared checksum. Bridge the spinel payload of a frame northbound with `det_gw_uplink()`; interpreting the spinel command itself is the application's. Pure - you carry the bytes over your UART - and host-tested against the CRC-16/X-25 catalog check value (`0x906E`) and the byte-stuffing round trip. Example 18.ThreadGateway bridges a real RCP. See src/services/thread/thread.h.
+
 ## Time Source
 
 `DETWS_ENABLE_TIME_SOURCE`
