@@ -13,3 +13,4 @@ compiledb_frags/
 coverage.xml
 coverage_reports/
 .pio_cov/
+.pio_cov_wsl/
