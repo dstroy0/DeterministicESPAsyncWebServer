@@ -53,6 +53,7 @@ from each example's `pio ci` size report and aggregated into
 | `OTA_ROLLBACK`                           | L7-Application/44.OtaRollback           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
 | `PARTITION_MONITOR`                      | L7-Application/37.PartitionMonitor      | 733.3 KB (57.3%) | 64.6 KB (20.2%)  |
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 732.5 KB (57.2%) | 64.8 KB (20.3%)  |
+| `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.3 KB (22.0%) | 21.4 KB (6.7%)   |
 | `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.0 KB (20.5%) | 23.4 KB (7.3%)   |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 739.6 KB (57.8%) | 66.2 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 732.6 KB (57.2%) | 64.6 KB (20.2%)  |

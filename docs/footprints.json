@@ -314,6 +314,13 @@
     "flash_bytes": 750105,
     "ram_bytes": 66384
   },
+  "PN532+GATEWAY": {
+    "example": "Foundation/14.NfcGateway",
+    "flags": "-DDETWS_ENABLE_PN532=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 288089,
+    "ram_bytes": 21928
+  },
   "PREEMPT_QUEUE": {
     "example": "Foundation/08.PreemptLanes",
     "flags": "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
