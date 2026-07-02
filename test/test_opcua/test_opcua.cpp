@@ -996,9 +996,212 @@ void test_parse_and_build_write()
     TEST_ASSERT_FALSE(r.err);
 }
 
+// ---------------------------------------------------------------------------
+// Codec coverage: every Variant / DataValue / NodeId branch + reader underruns
+// ---------------------------------------------------------------------------
+
+static void variant_rt(const OpcUaVariant *in, OpcUaVariant *out)
+{
+    uint8_t buf[64];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    ua_w_variant(&w, in);
+    TEST_ASSERT_TRUE(w.ok);
+    UaReader r = {buf, w.n, 0, false};
+    TEST_ASSERT_TRUE(ua_r_variant(&r, out));
+    TEST_ASSERT_FALSE(r.err);
+}
+
+// Every supported scalar Variant type round-trips (and a null pointer encodes Null).
+void test_variant_scalar_types()
+{
+    OpcUaVariant in, out;
+    memset(&in, 0, sizeof(in));
+
+    in.type = OPCUA_VAR_NULL;
+    variant_rt(&in, &out);
+    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, out.type);
+
+    uint8_t nb[8];
+    UaWriter wn = {nb, sizeof(nb), 0, true};
+    ua_w_variant(&wn, nullptr); // null pointer -> Null Variant (encoding byte 0)
+    TEST_ASSERT_EQUAL_UINT(1, wn.n);
+    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, nb[0]);
+
+    in.type = OPCUA_VAR_BOOL;
+    in.b = true;
+    variant_rt(&in, &out);
+    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_BOOL, out.type);
+    TEST_ASSERT_TRUE(out.b);
+
+    in.type = OPCUA_VAR_INT32;
+    in.i32 = -77;
+    variant_rt(&in, &out);
+    TEST_ASSERT_EQUAL_INT32(-77, out.i32);
+
+    in.type = OPCUA_VAR_UINT32;
+    in.u32 = 0xCAFEBABEu;
+    variant_rt(&in, &out);
+    TEST_ASSERT_EQUAL_HEX32(0xCAFEBABEu, out.u32);
+
+    in.type = OPCUA_VAR_FLOAT;
+    in.f32 = 1.25f;
+    variant_rt(&in, &out);
+    TEST_ASSERT_EQUAL_FLOAT(1.25f, out.f32);
+
+    in.type = OPCUA_VAR_DOUBLE;
+    in.f64 = 6.5;
+    variant_rt(&in, &out);
+    TEST_ASSERT_TRUE(out.f64 == 6.5);
+
+    // STRING decodes as a pointer into the source buffer, so keep the buffer in scope
+    // for the assertion (the variant_rt helper's buffer would already be out of scope).
+    uint8_t sbuf[32];
+    UaWriter ws = {sbuf, sizeof(sbuf), 0, true};
+    OpcUaVariant sv;
+    memset(&sv, 0, sizeof(sv));
+    sv.type = OPCUA_VAR_STRING;
+    sv.str = "ab";
+    sv.str_len = 2;
+    ua_w_variant(&ws, &sv);
+    TEST_ASSERT_TRUE(ws.ok);
+    UaReader rs = {sbuf, ws.n, 0, false};
+    TEST_ASSERT_TRUE(ua_r_variant(&rs, &out));
+    TEST_ASSERT_EQUAL_INT32(2, out.str_len);
+    TEST_ASSERT_EQUAL_MEMORY("ab", out.str, 2);
+}
+
+// A Variant with an unsupported type fails to encode; malformed Variants fail to decode.
+void test_variant_errors()
+{
+    uint8_t buf[16];
+    OpcUaVariant bad;
+    memset(&bad, 0, sizeof(bad));
+    bad.type = 200; // not a supported built-in type
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    ua_w_variant(&w, &bad);
+    TEST_ASSERT_FALSE(w.ok); // fail closed
+
+    OpcUaVariant o;
+    uint8_t arr[4] = {0x80, 0, 0, 0}; // array bit set: unsupported by the scalar decoder
+    UaReader r1 = {arr, sizeof(arr), 0, false};
+    TEST_ASSERT_FALSE(ua_r_variant(&r1, &o));
+    TEST_ASSERT_TRUE(r1.err);
+
+    uint8_t ut[1] = {50}; // unsupported built-in type id
+    UaReader r2 = {ut, sizeof(ut), 0, false};
+    TEST_ASSERT_FALSE(ua_r_variant(&r2, &o));
+
+    uint8_t st[5] = {OPCUA_VAR_STRING, 0x10, 0, 0, 0}; // len=16 but no bytes follow
+    UaReader r3 = {st, sizeof(st), 0, false};
+    TEST_ASSERT_FALSE(ua_r_variant(&r3, &o));
+    TEST_ASSERT_TRUE(r3.err);
+}
+
+// A DataValue carrying every optional field round-trips; a malformed inner Variant fails.
+void test_datavalue_all_masks()
+{
+    uint8_t buf[64];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    ua_w_u8(&w, 0x3F); // value|status|sourceTS|serverTS|sourcePS|serverPS
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OPCUA_VAR_INT32;
+    v.i32 = 9;
+    ua_w_variant(&w, &v);
+    ua_w_u32(&w, 0x80000000u); // StatusCode (Bad)
+    ua_w_u64(&w, 111);         // SourceTimestamp
+    ua_w_u16(&w, 5);           // SourcePicoseconds
+    ua_w_u64(&w, 222);         // ServerTimestamp
+    ua_w_u16(&w, 6);           // ServerPicoseconds
+    TEST_ASSERT_TRUE(w.ok);
+
+    UaReader r = {buf, w.n, 0, false};
+    OpcUaVariant out;
+    uint32_t status = 0;
+    TEST_ASSERT_TRUE(ua_r_datavalue(&r, &out, &status));
+    TEST_ASSERT_EQUAL_INT32(9, out.i32);
+    TEST_ASSERT_EQUAL_HEX32(0x80000000u, status);
+    TEST_ASSERT_FALSE(r.err);
+
+    uint8_t badv[2] = {0x01, 0x80}; // Value present, but Variant has the array bit set
+    UaReader rb = {badv, sizeof(badv), 0, false};
+    OpcUaVariant ov;
+    uint32_t os = 0;
+    TEST_ASSERT_FALSE(ua_r_datavalue(&rb, &ov, &os));
+}
+
+// Every NodeId encoding kind: String, ByteString, Guid, the NamespaceUri/ServerIndex
+// flags, and a rejected unknown kind.
+void test_nodeid_encodings()
+{
+    UaNodeId id;
+
+    uint8_t sid[10] = {0x03, 0x02, 0x00, 0x03, 0, 0, 0, 'a', 'b', 'c'}; // String, ns=2, len=3
+    UaReader rs = {sid, sizeof(sid), 0, false};
+    TEST_ASSERT_TRUE(ua_r_nodeid(&rs, &id));
+    TEST_ASSERT_FALSE(id.numeric);
+    TEST_ASSERT_EQUAL_UINT16(2, id.ns);
+
+    uint8_t bid[7] = {0x05, 0x00, 0x00, 0x00, 0, 0, 0}; // ByteString, len=0
+    UaReader rby = {bid, sizeof(bid), 0, false};
+    TEST_ASSERT_TRUE(ua_r_nodeid(&rby, &id));
+    TEST_ASSERT_FALSE(id.numeric);
+
+    uint8_t gid[19];
+    memset(gid, 0, sizeof(gid));
+    gid[0] = 0x04; // Guid, ns + 16 bytes
+    gid[1] = 0x01;
+    UaReader rg = {gid, sizeof(gid), 0, false};
+    TEST_ASSERT_TRUE(ua_r_nodeid(&rg, &id));
+    TEST_ASSERT_FALSE(id.numeric);
+
+    uint8_t inv[4] = {0x06, 0, 0, 0}; // unknown kind
+    UaReader ri = {inv, sizeof(inv), 0, false};
+    TEST_ASSERT_FALSE(ua_r_nodeid(&ri, &id));
+    TEST_ASSERT_TRUE(ri.err);
+
+    // TwoByte id with NamespaceUri (0x80) + ServerIndex (0x40): id, nsUri string, index.
+    uint8_t fl[12] = {0xC0, 0x05, 0x02, 0, 0, 0, 'n', 's', 0x09, 0, 0, 0};
+    UaReader rf = {fl, sizeof(fl), 0, false};
+    TEST_ASSERT_TRUE(ua_r_nodeid(&rf, &id));
+    TEST_ASSERT_EQUAL_UINT32(5, id.id);
+    TEST_ASSERT_FALSE(rf.err);
+}
+
+// The bounds-checked primitive readers latch err on underrun / overrun.
+void test_reader_underruns()
+{
+    uint8_t b3[3] = {1, 2, 3};
+    UaReader r = {b3, 3, 0, false};
+    TEST_ASSERT_EQUAL_UINT64(0, ua_r_u64(&r)); // 8-byte read on 3 bytes
+    TEST_ASSERT_TRUE(r.err);
+
+    char s[8];
+    int32_t sl = 0;
+    UaReader re = {b3, 0, 0, false};
+    TEST_ASSERT_FALSE(ua_r_string(&re, s, sizeof(s), &sl)); // length read underruns
+
+    uint8_t big[8] = {0x05, 0, 0, 0, 'a', 'b', 'c', 'd'}; // len=5 into a 4-byte buffer
+    char sc[4];
+    int32_t scl = 0;
+    UaReader rc = {big, sizeof(big), 0, false};
+    TEST_ASSERT_FALSE(ua_r_string(&rc, sc, sizeof(sc), &scl)); // exceeds cap
+
+    uint8_t nid[7] = {0x03, 0, 0, 0x10, 0, 0, 0}; // String NodeId, len=16 but no bytes
+    UaReader rk = {nid, sizeof(nid), 0, false};
+    UaNodeId id;
+    TEST_ASSERT_FALSE(ua_r_nodeid(&rk, &id)); // r_skip overruns
+    TEST_ASSERT_TRUE(rk.err);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_variant_scalar_types);
+    RUN_TEST(test_variant_errors);
+    RUN_TEST(test_datavalue_all_masks);
+    RUN_TEST(test_nodeid_encodings);
+    RUN_TEST(test_reader_underruns);
     RUN_TEST(test_codec_roundtrip);
     RUN_TEST(test_string_null_roundtrip);
     RUN_TEST(test_reader_underrun_latches);
