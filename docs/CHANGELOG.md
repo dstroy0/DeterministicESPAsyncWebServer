@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f3efe73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3efe73ae4438b47e966b9a1badb178fe733ea83))
+- update CHANGELOG.md [skip ci] ([`2dc3955`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dc3955b7170d3fedee1bcc6c663d5fb71112c47))
 - update test report [skip ci] ([`62e0573`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62e05734164168e948fe3dd7e35270744a3ce7f1))
 - update CHANGELOG.md [skip ci] ([`d2e0829`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e0829c746ae6dac642a10bfed6a7f3761a78c1))
 - update test report [skip ci] ([`1192b8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1192b8bba0d537975e582ebc7e0da7d32d1ac366))
@@ -84,6 +86,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover token_kid/jwks_find/verify guards, malformed JWKS, RSA-JWK loader edges ([`ffcdf7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffcdf7e88169a485522c21a405763d53aef0fb16))
+- cover builder guards/overflow, parser rejections, host transport stubs ([`eb019ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb019ed5aeb3071456356852586ad9a351fcf5e4))
 - cover widget types, null-table guards, JSON overflow, control-parse edges ([`51af117`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51af117443ada41ce06b9ec3f17a3cd63d8cfb06))
 - cover parse limits, malformed tokens, path overflow, arg-accessor edges (100% line) ([`fa5c415`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa5c4153cd24420d09744b6b7503b44608819662))
 - cover all read variant types, fault rejection, malformed responses ([`6102027`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61020272a574373a88df47da2d911d33091e02f9))
