@@ -20,7 +20,7 @@ from each example's `pio ci` size report and aggregated into
 | `DASHBOARD`                        | L7-Application/35.Dashboard             | 756.9 KB (59.1%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                        | L7-Application/32.DeviceUuid            | 733.0 KB (57.3%) | 64.7 KB (20.2%)  |
 | `DIAG`                             | L7-Application/20.Diagnostics           | 732.8 KB (57.2%) | 64.6 KB (20.2%)  |
-| `DMA+PREEMPT_QUEUE+DMA_SIMULATE`   | Foundation/07.DmaIngest                 | 262.8 KB (20.5%) | 26.1 KB (8.2%)   |
+| `DMA+PREEMPT_QUEUE+DMA_SIMULATE`   | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DNS_RESOLVER`                     | L7-Application/48.DnsResolver           | 738.4 KB (57.7%) | 65.9 KB (20.6%)  |
 | `ESPNOW`                           | L7-Application/53.EspNow                | 714.1 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                             | L7-Application/09.ETag                  | 806.9 KB (63.0%) | 65.9 KB (20.6%)  |
@@ -48,7 +48,7 @@ from each example's `pio ci` size report and aggregated into
 | `OTA_ROLLBACK`                     | L7-Application/44.OtaRollback           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
 | `PARTITION_MONITOR`                | L7-Application/37.PartitionMonitor      | 733.3 KB (57.3%) | 64.6 KB (20.2%)  |
 | `PER_IP_THROTTLE`                  | L4-Transport/05.PerIpThrottle           | 732.5 KB (57.2%) | 64.8 KB (20.3%)  |
-| `PREEMPT_QUEUE`                    | Foundation/06.PreemptQueue              | 267.4 KB (20.9%) | 21.6 KB (6.8%)   |
+| `PREEMPT_QUEUE`                    | Foundation/08.PreemptLanes              | 262.0 KB (20.5%) | 23.4 KB (7.3%)   |
 | `PROVISIONING`                     | L7-Application/17.Provisioning          | 739.6 KB (57.8%) | 66.2 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`        | L7-Application/47.RadioPower            | 732.6 KB (57.2%) | 64.6 KB (20.2%)  |
 | `RANGE`                            | L7-Application/12.Range                 | 774.2 KB (60.5%) | 64.7 KB (20.2%)  |
@@ -60,7 +60,7 @@ from each example's `pio ci` size report and aggregated into
 | `SYSLOG`                           | L7-Application/19.Syslog                | 735.4 KB (57.5%) | 65.0 KB (20.3%)  |
 | `TELEMETRY`                        | L7-Application/34.Telemetry             | 741.2 KB (57.9%) | 65.0 KB (20.3%)  |
 | `TELNET`                           | L5-Session/03.Telnet                    | 734.8 KB (57.4%) | 65.2 KB (20.4%)  |
-| `TLS`                              | L4-Transport/03.HTTPS                   | 834.3 KB (65.2%) | 114.4 KB (35.7%) |
+| `TLS`                              | L6-Presentation/07.SecureWebSocket      | 834.2 KB (65.2%) | 114.4 KB (35.7%) |
 | `TLS+MTLS`                         | L4-Transport/04.mTLS                    | 835.1 KB (65.2%) | 114.7 KB (35.8%) |
 | `TLS+TLS_RESUMPTION`               | L4-Transport/06.TlsResumption           | 835.1 KB (65.2%) | 114.5 KB (35.8%) |
 | `TOTP`                             | L7-Application/45.Totp                  | 733.7 KB (57.3%) | 64.7 KB (20.2%)  |
