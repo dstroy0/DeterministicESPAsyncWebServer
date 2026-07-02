@@ -505,9 +505,32 @@ void test_inform_v3_builds_informrequest()
     TEST_ASSERT_TRUE(find_inform_with_reqid(d, n, reqid));                        // InformRequest PDU + our request-id
 }
 
+// A noAuthNoPriv message with the matching engine ID is a no-op (returns 0), and every
+// truncated prefix of it fails closed at its parse boundary - sweeping the message-layer
+// and security-parameter BER rejections.
+void test_v3_message_structure_rejections()
+{
+    V3View v;
+    discover(&v);
+    uint8_t req[300], resp[512];
+    size_t full = build_get(req, sizeof(req), false, false, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                            nullptr, nullptr, 300, 7, OID_SYSDESCR, 9);
+    TEST_ASSERT_TRUE(full > 0);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, full, resp, sizeof(resp))); // noAuthNoPriv non-discovery
+    for (size_t L = 0; L < full; L++)
+        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, L, resp, sizeof(resp)));
+
+    // A message asserting privacy without authentication is invalid (RFC 3414).
+    uint8_t pk[SNMP_USM_KEY_LEN] = {0};
+    size_t pl = build_get(req, sizeof(req), false, true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                          nullptr, pk, 300, 8, OID_SYSDESCR, 9);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, pl, resp, sizeof(resp)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_v3_message_structure_rejections);
     RUN_TEST(test_localize_key_sha256_vector);
     RUN_TEST(test_aes128_fips197_vector);
     RUN_TEST(test_aes_cfb_roundtrip_partial_block);
