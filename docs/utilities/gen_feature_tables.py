@@ -84,6 +84,7 @@ CODEC_HEADINGS = {
 DRIVER_HEADINGS = {
     "LoRa",
     "nRF24",
+    "PN532",
 }
 
 # Where each target file's links to FEATURES.md point.

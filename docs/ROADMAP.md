@@ -176,8 +176,12 @@ UART radios:
 
 I2C / SPI / UART:
 
-- [ ] \*NFC / RFID gateway (M) - PN532 (I2C / SPI / UART) or MFRC522 (SPI); tag
-      read / write bridged to an HTTP / MQTT event.
+- [~] \*NFC / RFID gateway (M) - PN532 (I2C / SPI / UART) or MFRC522 (SPI); tag
+  read / write bridged to an HTTP / MQTT event. **PN532 frame codec shipped**
+  (`DETWS_ENABLE_PN532`, `services/pn532`): normal-information-frame build/parse +
+  ACK with the LCS / DCS checksums, host-tested against the documented
+  GetFirmwareVersion frames; example 14.NfcGateway reads a real PN532 over I2C.
+  Remaining: verify against a reader + the MFRC522 variant.
 
 Built-in radio:
 

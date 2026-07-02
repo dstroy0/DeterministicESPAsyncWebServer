@@ -471,6 +471,12 @@
       "src": ["+<services/enocean/enocean.cpp>"],
       "tests": ["test_enocean"]
     },
+    "native_pn532": {
+      "desc": "PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame\nbuild/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS +\nDCS checksums), a round trip, malformed framing (bad preamble / start / LCS / DCS), the ACK\nframe, and over-length rejection. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PN532=1", "-DDETWS_PN532_MAX_DATA=8"],
+      "src": ["+<services/pn532/pn532.cpp>"],
+      "tests": ["test_pn532"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],

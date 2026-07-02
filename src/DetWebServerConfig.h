@@ -413,6 +413,32 @@
 #error "DeterministicESPAsyncWebServer: DETWS_ENOCEAN_MAX_DATA must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// PN532 NFC (DETWS_ENABLE_PN532) - NXP PN532 NFC/RFID controller frame codec
+// ---------------------------------------------------------------------------
+//
+// The NXP PN532 (I2C / SPI / HSU) command-frame protocol - a tag read/write bridged to an
+// HTTP / MQTT event. The chip is driven by "normal information frames" (00 00 FF | LEN |
+// LCS | TFI | PData | DCS | 00) with a length checksum and a data checksum, plus a 6-byte
+// ACK frame. pn532_build_frame() / pn532_parse_frame() assemble and verify those frames
+// (the per-command PData is the application's), and pn532_is_ack() detects the ACK. Pure -
+// you carry the frame bytes over your I2C / SPI / UART - so it is fully host-testable.
+// See services/pn532/pn532.h.
+
+/** @brief Enable the PN532 NFC frame codec (default off). */
+#ifndef DETWS_ENABLE_PN532
+#define DETWS_ENABLE_PN532 0
+#endif
+
+/** @brief Reject a PN532 normal frame whose declared length exceeds this (framing sanity). */
+#ifndef DETWS_PN532_MAX_DATA
+#define DETWS_PN532_MAX_DATA 254
+#endif
+
+#if DETWS_ENABLE_PN532 && (DETWS_PN532_MAX_DATA < 1 || DETWS_PN532_MAX_DATA > 254)
+#error "DeterministicESPAsyncWebServer: DETWS_PN532_MAX_DATA must be 1..254"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8
