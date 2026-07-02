@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.74.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.74.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a3d8368`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3d8368311da179f1ca96800a5d3ae95d6e6faaa))
+- update CHANGELOG.md [skip ci] ([`c09125b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c09125b0c76bdc12f06a4c549c4776f571a2d422))
+
+### Changes
+
+- Bump version: 4.73.0 → 4.74.0 ([`2810160`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28101606f4de37f75c154f3b200454c64f1fe1b2))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`2f4e930`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2f4e9303e7330019b42fb6fa74bec4e619bfaa8f))
+
+### Features
+
+- Sigfox modem AT-command codec - tiny low-power uplinks ([`d512d38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d512d3836ad00c9851740ff82684f4502d85d83c))
+
+</details>
+
 ## [4.73.0] - 2026-07-02
 
 <details>
