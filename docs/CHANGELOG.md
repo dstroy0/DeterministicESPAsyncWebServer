@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`9fa5dd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fa5dd4c1ea2df9decfd8eee0e327ba1bc433cb8))
+- update CHANGELOG.md [skip ci] ([`3b3f820`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b3f820c74974bc99f1b3473f92cda45989cea3b))
 - update test report [skip ci] ([`3975554`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3975554645916bf1e4eafbc78b483f2488a7e341))
 - update CHANGELOG.md [skip ci] ([`7795c85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7795c85d66f3669e8ca8494cc9f97496809b8ce4))
 - update test report [skip ci] ([`f6f84f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6f84f5bce28ca516669e011978a19744b1d1cc4))
@@ -70,6 +72,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- add det_numparse + det_utf8 suite (new native env) ([`066bc2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/066bc2f0b95145d3f478895e5d1d036d0b86e6de))
+- cover JSON escapes, category names, and fail-closed buffers ([`bd58bbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd58bbc7540e03ddc17d003f71ce73f2ce79e870))
 - cover unknown slot, CR/control, IAC-escape, subneg, capacity, output ([`fcea5bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcea5bcf1fd5998afe3f3d615ae4cfda22f60925))
 - cover builder/parser guards, all DIF codings, record-walk edges ([`34c350d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34c350d4421c2654fc52f41035393b49dbac29a0))
 - cover accessors, per-FC exceptions, small buffers, RTU edges ([`6eb3761`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6eb3761ee783da9c3224466bdfe29028c8844197))
