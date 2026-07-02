@@ -50,12 +50,15 @@ enum det_if_kind
     DET_IF_RADIO,
 };
 
-/** @brief Rule action for a `(src, dst)` interface pair. */
+/** @brief Rule action for a `(src, dst)` interface pair or an ACL entry. */
 enum det_fwd_action
 {
     DET_FWD_DENY = 0,
     DET_FWD_ALLOW = 1,
 };
+
+/** @brief Wildcard source interface for an ACL entry (matches a frame from any source). */
+#define DET_FWD_IF_ANY 0xFF
 
 /**
  * @brief Egress: emit @p len bytes on interface @p if_id.
@@ -71,6 +74,7 @@ struct det_forward_stats
     uint32_t blocked;      ///< destinations refused by a DENY / default-deny
     uint32_t rate_dropped; ///< destinations dropped by a rate cap
     uint32_t send_fail;    ///< destination send callbacks that returned false
+    uint32_t acl_denied;   ///< frames dropped at ingress by the access-control list
 };
 
 /** @brief Clear all interfaces, rules, and stats (start from empty). */
@@ -89,6 +93,27 @@ bool det_forward_add_if(uint8_t if_id, uint8_t kind, det_if_send_fn send, void *
  * @return true; false if the table is full (DETWS_FWD_MAX_RULES).
  */
 bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, uint8_t action, uint16_t rate_cap_per_sec);
+
+/**
+ * @brief Set the ACL default action - what happens to a frame that matches no ACL entry.
+ *        Default DET_FWD_ALLOW (an empty ACL passes everything, so the ACL is opt-in);
+ *        set DET_FWD_DENY for allowlist semantics (only explicitly permitted frames pass).
+ */
+void det_forward_acl_set_default(uint8_t action);
+
+/**
+ * @brief Add an ingress access-control entry (evaluated in add order, first match wins).
+ *
+ * A frame is matched when it arrived on @p src_if (or DET_FWD_IF_ANY) and its bytes at
+ * `[offset, offset + patlen)` equal @p pattern under @p mask (each `byte & mask == pattern`).
+ * @p patlen 0 matches any content (interface-only entry); a frame shorter than
+ * `offset + patlen` does not match the entry (evaluation continues). The first matching
+ * entry's @p action (permit/deny) decides; if none match, the ACL default applies.
+ * Denied frames are dropped at ingress before any forwarding rule runs.
+ * @return false if the ACL table is full or @p patlen exceeds DETWS_FWD_ACL_PATLEN.
+ */
+bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+                         uint8_t action);
 
 /**
  * @brief Forward a frame that arrived on @p src_if to every allowed destination.

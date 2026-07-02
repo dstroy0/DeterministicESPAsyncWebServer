@@ -8,6 +8,7 @@
     "prio",
     "periph",
     "IFACES",
+    "PATLEN",
     "algs",
     "wolfssl",
     "donna",

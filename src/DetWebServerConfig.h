@@ -295,8 +295,18 @@
 #define DETWS_FWD_MAX_RULES 8
 #endif
 
-#if DETWS_ENABLE_FORWARD && (DETWS_FWD_MAX_IFACES < 1 || DETWS_FWD_MAX_RULES < 1)
-#error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES and DETWS_FWD_MAX_RULES must be >= 1"
+/** @brief Max ingress access-control entries (byte-pattern permit/deny; static). */
+#ifndef DETWS_FWD_MAX_ACL
+#define DETWS_FWD_MAX_ACL 8
+#endif
+
+/** @brief Bytes an ACL entry can match (its pattern / mask length). */
+#ifndef DETWS_FWD_ACL_PATLEN
+#define DETWS_FWD_ACL_PATLEN 4
+#endif
+
+#if DETWS_ENABLE_FORWARD && (DETWS_FWD_MAX_IFACES < 1 || DETWS_FWD_MAX_RULES < 1 || DETWS_FWD_ACL_PATLEN < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES / DETWS_FWD_MAX_RULES / DETWS_FWD_ACL_PATLEN must be >= 1"
 #endif
 
 /** @brief Maximum HTTP headers stored per request. */

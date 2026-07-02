@@ -47,8 +47,28 @@ det_forward_ingress(IF_A, bytes, len); // -> forwards to every allowed destinati
 - **Fail-closed**: a full destination (send returns false) or an exceeded cap drops
   and is counted (`det_forward_get_stats()`), never blocks.
 
+### Ingress ACL
+
+Before any forwarding rule runs, an optional **access-control list** filters frames by
+content. Each entry matches on the source interface (or `DET_FWD_IF_ANY`) and a byte
+pattern under a mask; entries are evaluated in add order, **first match wins**, and a
+frame matching none takes the ACL default (permit by default, so the ACL is opt-in):
+
+```cpp
+// drop frames whose first byte is 0xFF, on interface A, before forwarding:
+uint8_t pat[1] = {0xFF}, mask[1] = {0xFF};
+det_forward_acl_add(IF_A, /*offset*/ 0, pat, mask, /*patlen*/ 1, DET_FWD_DENY);
+
+// allowlist instead (only explicitly permitted frames pass):
+det_forward_acl_set_default(DET_FWD_DENY);
+det_forward_acl_add(IF_A, 0, allowed_hdr, hdr_mask, 2, DET_FWD_ALLOW);
+```
+
+This sketch drops every 5th frame (a `0xFF` marker) at the ACL; watch `acl_denied`
+climb in the serial stats while `forwarded` counts the rest.
+
 Storage is static (zero heap): `DETWS_FWD_MAX_IFACES` interfaces,
-`DETWS_FWD_MAX_RULES` rules.
+`DETWS_FWD_MAX_RULES` rules, `DETWS_FWD_MAX_ACL` ACL entries.
 
 Here interface A is a DMA channel fed by the simulator (no wire needed) and interface
 B's egress just counts the bytes; a real build sends B out Wi-Fi / Ethernet / a bus or

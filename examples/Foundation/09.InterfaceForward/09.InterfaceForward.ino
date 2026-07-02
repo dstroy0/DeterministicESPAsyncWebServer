@@ -97,7 +97,11 @@ void setup()
     det_forward_add_if(IF_B, DET_IF_WIFI_STA, if_b_send, nullptr);
     det_forward_add_rule(IF_A, IF_B, DET_FWD_ALLOW, 0);
 
-    Serial.println("forwarding: IF_A (DMA) -> FORWARD lane -> plane -> IF_B egress");
+    // Ingress ACL: drop frames whose first byte is 0xFF (a "bad" marker) before forwarding.
+    uint8_t bad_pat[1] = {0xFF}, bad_mask[1] = {0xFF};
+    det_forward_acl_add(IF_A, 0, bad_pat, bad_mask, 1, DET_FWD_DENY);
+
+    Serial.println("forwarding: IF_A (DMA) -> FORWARD lane -> ACL + plane -> IF_B egress");
 }
 
 static uint8_t g_seq = 0;
@@ -105,8 +109,11 @@ static uint8_t g_seq = 0;
 void loop()
 {
     // A frame arrives on interface A. det_dma_poll() completes the RX, which fires the
-    // callback -> FORWARD lane -> forwarding plane -> IF_B egress.
+    // callback -> FORWARD lane -> forwarding plane -> IF_B egress. Every 5th frame is a
+    // "bad" one (first byte 0xFF) that the ingress ACL should drop.
     uint8_t frame[8] = {0xBB, g_seq, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+    if ((g_seq % 5) == 4)
+        frame[0] = 0xFF;
     det_dma_sim_feed(IF_A, frame, sizeof(frame));
     det_dma_poll();
     g_seq++;
@@ -115,8 +122,8 @@ void loop()
     {
         det_forward_stats st;
         det_forward_get_stats(&st);
-        Serial.printf("stats: in=%lu forwarded=%lu (IF_B frames=%lu)\n", (unsigned long)st.frames_in,
-                      (unsigned long)st.forwarded, (unsigned long)g_out_frames);
+        Serial.printf("stats: in=%lu forwarded=%lu acl_denied=%lu (IF_B frames=%lu)\n", (unsigned long)st.frames_in,
+                      (unsigned long)st.forwarded, (unsigned long)st.acl_denied, (unsigned long)g_out_frames);
     }
     delay(1000);
 }

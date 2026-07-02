@@ -126,6 +126,11 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   Ethernet / a bus / a radio - that wiring (and the "true zero-copy DMA descriptor reuse" the
   roadmap describes) is the integration's, and depends on the real silicon DMA backend
   (above). It forwards whole frames handed to it; it does not parse or route by L2/L3 headers.
+- **The ingress ACL is a stateless byte-pattern pre-filter.** It matches raw bytes at a
+  fixed offset under a mask (up to `DETWS_FWD_ACL_PATLEN` bytes), first-match-wins - enough
+  to allow/deny by a protocol type, a flag, or an address prefix at a known offset. It does
+  not parse protocol fields, track flows, or do longest-prefix / CIDR matching; it is a fast
+  gate in front of the forwarding rules, not a stateful firewall.
 
 ## Streaming sinks
 

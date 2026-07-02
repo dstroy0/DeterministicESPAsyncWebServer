@@ -164,6 +164,92 @@ void test_unregistered_destination_is_inert()
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));  // nothing to forward to
 }
 
+// --- Ingress ACL tests ----------------------------------------------------------------
+
+// Forward one byte array on interface 1 (bytes let us hit specific ACL patterns).
+static uint8_t in1(const uint8_t *b, uint16_t n)
+{
+    return det_forward_ingress(1, b, n);
+}
+
+void test_acl_deny_by_byte_pattern()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    uint8_t pat[1] = {0xFF}, msk[1] = {0xFF};
+    TEST_ASSERT_TRUE(det_forward_acl_add(1, 0, pat, msk, 1, DET_FWD_DENY)); // deny byte0 == 0xFF
+
+    uint8_t ok[3] = {'a', 'b', 'c'};
+    uint8_t bad[3] = {0xFF, 0x00, 0x00};
+    TEST_ASSERT_EQUAL_UINT8(1, in1(ok, 3));  // no ACE match -> default allow -> forwarded
+    TEST_ASSERT_EQUAL_UINT8(0, in1(bad, 3)); // ACE denies at ingress
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
+}
+
+void test_acl_allowlist_default_deny()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_acl_set_default(DET_FWD_DENY); // allowlist: only permitted frames pass
+    uint8_t pat[1] = {0xAA}, msk[1] = {0xFF};
+    det_forward_acl_add(1, 0, pat, msk, 1, DET_FWD_ALLOW); // permit byte0 == 0xAA
+
+    uint8_t good[2] = {0xAA, 0x01};
+    uint8_t other[2] = {0xBB, 0x01};
+    TEST_ASSERT_EQUAL_UINT8(1, in1(good, 2));
+    TEST_ASSERT_EQUAL_UINT8(0, in1(other, 2)); // no ACE match -> default deny
+    TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
+}
+
+void test_acl_first_match_wins()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    uint8_t p1[1] = {0x01}, m1[1] = {0xFF};
+    det_forward_acl_add(1, 0, p1, m1, 1, DET_FWD_ALLOW);                       // 1st: permit byte0 == 0x01
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_DENY); // 2nd: deny everything
+
+    uint8_t a[1] = {0x01};
+    uint8_t b[1] = {0x02};
+    TEST_ASSERT_EQUAL_UINT8(1, in1(a, 1)); // first entry permits
+    TEST_ASSERT_EQUAL_UINT8(0, in1(b, 1)); // falls through to the deny-all entry
+}
+
+void test_acl_src_any_content_wildcard()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_DENY); // any src, any content
+    uint8_t x[2] = {0x12, 0x34};
+    TEST_ASSERT_EQUAL_UINT8(0, in1(x, 2));
+    TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
+}
+
+void test_acl_short_frame_skips_entry()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    uint8_t pat[2] = {0x11, 0x22}, msk[2] = {0xFF, 0xFF};
+    det_forward_acl_add(1, 4, pat, msk, 2, DET_FWD_DENY); // needs len >= 6
+    uint8_t shortf[3] = {0x11, 0x22, 0x33};               // too short at offset 4 -> ACE inapplicable
+    TEST_ASSERT_EQUAL_UINT8(1, in1(shortf, 3));           // default allow -> forwarded
+}
+
+void test_acl_add_validation_and_table_full()
+{
+    uint8_t big[DETWS_FWD_ACL_PATLEN + 1] = {0}, bm[DETWS_FWD_ACL_PATLEN + 1] = {0};
+    TEST_ASSERT_FALSE(det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, DET_FWD_DENY)); // patlen too big
+    for (int i = 0; i < DETWS_FWD_MAX_ACL; i++)
+        TEST_ASSERT_TRUE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW));
+    TEST_ASSERT_FALSE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW)); // full
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -177,5 +263,11 @@ int main()
     RUN_TEST(test_add_if_validation_and_table_full);
     RUN_TEST(test_add_rule_table_full);
     RUN_TEST(test_unregistered_destination_is_inert);
+    RUN_TEST(test_acl_deny_by_byte_pattern);
+    RUN_TEST(test_acl_allowlist_default_deny);
+    RUN_TEST(test_acl_first_match_wins);
+    RUN_TEST(test_acl_src_any_content_wildcard);
+    RUN_TEST(test_acl_short_frame_skips_entry);
+    RUN_TEST(test_acl_add_validation_and_table_full);
     return UNITY_END();
 }
