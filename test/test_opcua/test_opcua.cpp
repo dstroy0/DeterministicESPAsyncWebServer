@@ -1194,9 +1194,178 @@ void test_reader_underruns()
     TEST_ASSERT_TRUE(rk.err);
 }
 
+// A ReadRequest exercising the optional request-header and per-node fields: a
+// non-empty AuditEntryId, an AdditionalHeader ExtensionObject *with* a body, and a
+// node carrying an IndexRange and a DataEncoding QualifiedName.
+static size_t build_read_full(uint8_t *out, size_t cap)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+    ua_w_u32(&w, 0); // SecureChannelId
+    ua_w_u32(&w, 7); // TokenId
+    ua_w_u32(&w, 1); // SequenceNumber
+    ua_w_u32(&w, 2); // RequestId
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_READ_REQ);
+    // RequestHeader with a non-empty AuditEntryId and an AdditionalHeader body.
+    ua_w_nodeid_numeric(&w, 0, 0); // AuthenticationToken
+    ua_w_u64(&w, 0);               // Timestamp
+    ua_w_u32(&w, 42);              // RequestHandle
+    ua_w_u32(&w, 0);               // ReturnDiagnostics
+    ua_w_string(&w, "audit", 5);   // AuditEntryId (non-empty -> skip path)
+    ua_w_u32(&w, 0);               // TimeoutHint
+    ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader NodeId (null)
+    ua_w_u8(&w, 0x01);             // ExtensionObject body encoding = ByteString
+    ua_w_string(&w, "xx", 2);      // ... body bytes (skipped)
+    // ReadRequest body.
+    ua_w_f64(&w, 0.0);              // MaxAge
+    ua_w_u32(&w, 0);                // TimestampsToReturn
+    ua_w_i32(&w, 1);                // NodesToRead count
+    ua_w_nodeid_numeric(&w, 1, 5);  // NodeId
+    ua_w_u32(&w, OPCUA_ATTR_VALUE); // AttributeId
+    ua_w_string(&w, "0:1", 3);      // IndexRange (non-empty -> skip path)
+    ua_w_u16(&w, 0);                // DataEncoding QualifiedName.ns
+    ua_w_string(&w, "Default", 7);  // QualifiedName.name (non-empty -> skip path)
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.ok ? w.n : 0;
+}
+
+// The optional RequestHeader (AuditEntryId, AdditionalHeader body) and per-node
+// (IndexRange, DataEncoding) fields are consumed correctly.
+void test_parse_read_optional_fields()
+{
+    uint8_t buf[160];
+    size_t n = build_read_full(buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    OpcUaReadRequest req;
+    TEST_ASSERT_TRUE(opcua_parse_read(buf, n, &req));
+    TEST_ASSERT_EQUAL_UINT32(1, req.count);
+    TEST_ASSERT_EQUAL_UINT32(5, req.items[0].id);
+    TEST_ASSERT_EQUAL_UINT32(42, req.msg.request_handle);
+}
+
+// Every parse entry point rejects a header underrun, the wrong message type, a
+// size-field mismatch and a corrupt body TypeId NodeId.
+void test_parse_rejections()
+{
+    UaMsgHeader h;
+    uint8_t tiny[8] = {0};
+    TEST_ASSERT_FALSE(opcua_parse_header(nullptr, 8, &h));
+    TEST_ASSERT_FALSE(opcua_parse_header(tiny, 4, &h)); // len < 8
+    TEST_ASSERT_FALSE(opcua_parse_header(tiny, 8, nullptr));
+
+    uint8_t buf[128];
+    OpcUaHello hello;
+    size_t hn = build_hello(buf, sizeof(buf), 1, 2, 3);
+    buf[0] = 'X';
+    TEST_ASSERT_FALSE(opcua_parse_hello(buf, hn, &hello)); // wrong type
+
+    OpcUaOpenChannel oc;
+    size_t on = build_open(buf, sizeof(buf), 1, 1, 1, 1, 1, 3600000);
+    TEST_ASSERT_FALSE(opcua_parse_open(buf, on - 1, &oc)); // size mismatch
+
+    OpcUaMsg m;
+    size_t mn = build_msg(buf, sizeof(buf), OPCUA_ID_CREATE_SESSION_REQ, 7, 3, 100, 42);
+    TEST_ASSERT_FALSE(opcua_parse_msg(buf, mn - 1, &m)); // size mismatch
+    buf[24] = 0x06;                                      // corrupt body TypeId NodeId kind
+    TEST_ASSERT_FALSE(opcua_parse_msg(buf, mn, &m));
+
+    OpcUaReadRequest rr;
+    size_t rn = build_msg(buf, sizeof(buf), OPCUA_ID_READ_REQ, 7, 3, 100, 42);
+    buf[0] = 'X';
+    TEST_ASSERT_FALSE(opcua_parse_read(buf, rn, &rr)); // wrong type
+    buf[0] = 'M';
+    TEST_ASSERT_FALSE(opcua_parse_read(buf, rn - 1, &rr)); // size mismatch
+    buf[24] = 0x06;
+    TEST_ASSERT_FALSE(opcua_parse_read(buf, rn, &rr)); // bad TypeId
+
+    OpcUaWriteRequest wr;
+    size_t wn = build_msg(buf, sizeof(buf), OPCUA_ID_WRITE_REQ, 7, 3, 100, 42);
+    buf[0] = 'X';
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, wn, &wr));
+    buf[0] = 'M';
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, wn - 1, &wr));
+    buf[24] = 0x06;
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, wn, &wr));
+
+    OpcUaBrowseRequest br;
+    size_t bn = build_msg(buf, sizeof(buf), OPCUA_ID_BROWSE_REQ, 7, 3, 100, 42);
+    buf[0] = 'X';
+    TEST_ASSERT_FALSE(opcua_parse_browse(buf, bn, &br));
+    buf[0] = 'M';
+    TEST_ASSERT_FALSE(opcua_parse_browse(buf, bn - 1, &br));
+    buf[24] = 0x06;
+    TEST_ASSERT_FALSE(opcua_parse_browse(buf, bn, &br));
+}
+
+// Every response builder rejects null args and fails closed when the output buffer
+// overflows.
+void test_build_guards_and_overflow()
+{
+    uint8_t tiny[4], big[256];
+    OpcUaHello hello;
+    OpcUaOpenChannel oc;
+    OpcUaMsg msg;
+    OpcUaReadRequest rr;
+    OpcUaWriteRequest wr;
+    OpcUaBrowseRequest br;
+    OpcUaServerInfo info;
+    memset(&hello, 0, sizeof(hello));
+    memset(&oc, 0, sizeof(oc));
+    memset(&msg, 0, sizeof(msg));
+    memset(&rr, 0, sizeof(rr));
+    memset(&wr, 0, sizeof(wr));
+    memset(&br, 0, sizeof(br));
+    memset(&info, 0, sizeof(info));
+
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_ack(nullptr, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_ack(&hello, nullptr, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_open_response(nullptr, 1, 1, 1, 0, 1, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_create_session_response(nullptr, 1, 1, 0.0, &info, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_get_endpoints_response(nullptr, &info, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_service_fault(nullptr, 0, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_activate_session_response(nullptr, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_read_response(nullptr, nullptr, nullptr, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_write_response(nullptr, nullptr, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_browse_response(nullptr, nullptr, 1, 0, big, sizeof(big)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_close_session_response(nullptr, 1, 0, big, sizeof(big)));
+
+    // Tiny output buffer -> writer overflow -> 0 (open-response w.ok guard + patch_size).
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_ack(&hello, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_open_response(&oc, 1, 1, 1, 0, 1, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_create_session_response(&msg, 1, 1, 0.0, &info, 1, 0, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT(0, opcua_build_read_response(&rr, nullptr, nullptr, 1, 0, tiny, sizeof(tiny)));
+}
+
+// The application-handler setters and the endpoint-URL setter run; the endpoint
+// description serializes with a custom ServerInfo.
+void test_setters_and_endpoint_url()
+{
+    opcua_set_read_handler(nullptr);
+    opcua_set_write_handler(nullptr);
+    opcua_set_browse_handler(nullptr);
+    opcua_set_endpoint_url("opc.tcp://custom:4840");
+
+    OpcUaServerInfo info = {"opc.tcp://custom:4840", "urn:test", "TestServer"};
+    OpcUaMsg m;
+    memset(&m, 0, sizeof(m));
+    uint8_t buf[512]; // the endpoint description (transport/policy URIs) is ~250 bytes
+    TEST_ASSERT_TRUE(opcua_build_get_endpoints_response(&m, &info, 1, 0, buf, sizeof(buf)) > 0);
+    opcua_set_endpoint_url(nullptr); // restore the default
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_parse_read_optional_fields);
+    RUN_TEST(test_parse_rejections);
+    RUN_TEST(test_build_guards_and_overflow);
+    RUN_TEST(test_setters_and_endpoint_url);
     RUN_TEST(test_variant_scalar_types);
     RUN_TEST(test_variant_errors);
     RUN_TEST(test_datavalue_all_masks);
