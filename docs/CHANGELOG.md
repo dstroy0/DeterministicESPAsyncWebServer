@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d7c2cbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7c2cbe06214831349a1d082aaaa37eb45c6f347))
+- update CHANGELOG.md [skip ci] ([`88747f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88747f5a74549257c514c2ae52cc36302139aecf))
 - update test report [skip ci] ([`22d7807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22d78078357c004e979e02b792ef818bffeea63f))
 - update CHANGELOG.md [skip ci] ([`dff1a3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dff1a3f2ed36214b45d3fb3468d79e0909e4db36))
 
 ### Documentation
 
+- add a DRIVERS table + a categorized CI badge table ([`17bf39c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17bf39c008b361826030da9063bcef37c9d0cf0e))
 - move LoRa to the codecs table ([`70afed4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70afed456d874f2a3e47e51ac7fac6db9ec65746))
 - update ESP32 build footprints [skip ci] ([`4989a81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4989a81f35e2396ab4b9617af7f32e0cf04bc461))
 
