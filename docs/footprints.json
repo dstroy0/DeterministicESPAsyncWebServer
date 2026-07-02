@@ -489,6 +489,13 @@
     "flash_bytes": 754797,
     "ram_bytes": 74384
   },
+  "ZIGBEE+GATEWAY": {
+    "example": "Foundation/17.ZigbeeGateway",
+    "flags": "-DDETWS_ENABLE_ZIGBEE=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 269197,
+    "ram_bytes": 22096
+  },
   "ZWAVE+GATEWAY": {
     "example": "Foundation/16.ZWaveGateway",
     "flags": "-DDETWS_ENABLE_ZWAVE=1 -DDETWS_ENABLE_GATEWAY=1",
