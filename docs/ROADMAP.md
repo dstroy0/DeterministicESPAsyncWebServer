@@ -134,6 +134,13 @@ into the preempting queue, so wireless ingest rides the same real-time path as t
 codecs. (ESP32 Wi-Fi / classic + BLE are already on-chip; everything below is an
 external module we wire to a bus.)
 
+The **generic gateway framework is shipped** (`DETWS_ENABLE_GATEWAY`, `services/gateway`):
+ports, address-aware northbound enveloping + topic (`det_gw_uplink` / `det_gw_topic`),
+bidirectional up/down-link, a per-port rate cap, and stats - all fail-closed and zero-heap,
+HW-verified end to end over DMA + the FORWARD lane. Each radio below is now a per-module
+**codec + driver** (frame parse, SPI/UART register access) plugged into that framework's
+callbacks; the items stay open until verified against the real hardware.
+
 SPI radios:
 
 - [ ] \*LoRa / LoRaWAN gateway (L) - Semtech SX127x / SX126x, RFM95/96 over SPI.

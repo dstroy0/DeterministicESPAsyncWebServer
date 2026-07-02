@@ -132,6 +132,18 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   not parse protocol fields, track flows, or do longest-prefix / CIDR matching; it is a fast
   gate in front of the forwarding rules, not a stateful firewall.
 
+## Radio gateway
+
+- **The gateway is the generic framework, not a radio driver.** `services/gateway`
+  (`DETWS_ENABLE_GATEWAY`) owns ports, the northbound envelope + topic, the up/down-link
+  routing, the rate cap, and stats, but the radio's frame format (its codec) and its wire
+  access - the SPI / I2C / UART register reads that produce a frame and the transmit that
+  sends one - are **your** callbacks, as is the northbound publish (wire it to the MQTT /
+  HTTP / WebSocket client). The specific radios (LoRa, Zigbee, nRF24, ...) are per-module
+  codecs + drivers on the roadmap, deferred until their hardware is on hand to verify
+  against. The gateway carries whole frames with a 16-bit node address; it does not itself
+  do mesh routing, retransmission, or LoRaWAN / Zigbee session state.
+
 ## Streaming sinks
 
 - **OTA and streaming upload share the single parser streaming hook** - enable at

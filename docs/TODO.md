@@ -552,13 +552,17 @@ shipped work:
       zero loss / zero integrity errors under an HTTP flood; example 09.InterfaceForward).
       This is the generic data path the post-v5 wireless gateway bridges sit on top of.
 
-- [ ] **Post-v5 southbound bridges + sensing (backlog).** RF / wireless **gateway
-      bridges** (LoRa / nRF24 / CC1101 / Thread over SPI; Zigbee / Z-Wave / EnOcean /
-      Sigfox / Wi-SUN over UART; NFC over I2C / SPI / UART; BLE), **promiscuous /
-      monitor capture** (Wi-Fi raw 802.11, bus listen-only, radio channel sniff), and
-      **field-perturbation sensing** (EM / mmWave + Doppler radar, capacitive /
-      inductive field, ToF ranging). All reuse the southbound-peripheral +
-      northbound-bridge pattern over the ingest pipeline. See
+- [ ] **Post-v5 southbound bridges + sensing (backlog).** The **generic gateway
+      framework is DONE** - `services/gateway` (`DETWS_ENABLE_GATEWAY`): ports,
+      address-aware northbound enveloping + topic, bidirectional up/down-link, per-port
+      rate cap, stats; fail-closed, zero-heap, HW-verified end to end over DMA + the
+      FORWARD lane (example 10.RadioGateway). Remaining are the per-module **codec +
+      driver** plugins on top of it: RF / wireless **gateway bridges** (LoRa / nRF24 /
+      CC1101 / Thread over SPI; Zigbee / Z-Wave / EnOcean / Sigfox / Wi-SUN over UART;
+      NFC over I2C / SPI / UART; BLE), **promiscuous / monitor capture** (Wi-Fi raw
+      802.11, bus listen-only, radio channel sniff), and **field-perturbation sensing**
+      (EM / mmWave + Doppler radar, capacitive / inductive field, ToF ranging) - each
+      needs its real module to verify. See
       [ROADMAP.md](ROADMAP.md#post-v5-rf--wireless-gateway-bridges).
 
 </details>

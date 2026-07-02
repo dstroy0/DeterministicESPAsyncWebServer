@@ -309,6 +309,34 @@
 #error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES / DETWS_FWD_MAX_RULES / DETWS_FWD_ACL_PATLEN must be >= 1"
 #endif
 
+// ---------------------------------------------------------------------------
+// Radio / wireless gateway (DETWS_ENABLE_GATEWAY) - v5 southbound-to-northbound bridge
+// ---------------------------------------------------------------------------
+//
+// The generic gateway pattern: a southbound radio (LoRa / nRF24 / Zigbee / ... reached
+// over SPI / I2C / UART) is a "port"; a frame it receives (data-ready ISR -> DMA -> the
+// FORWARD lane -> a per-radio codec) is handed to det_gw_uplink(), which envelopes it with
+// its source node address / port / RSSI and publishes it northbound through the uplink
+// callback (wire it to MQTT / HTTP / WebSocket / UDP). A northbound command goes the other
+// way through det_gw_downlink() to the port's transmit callback. The radio TX + the
+// northbound publish are callbacks (the seam a real radio driver / protocol binding plugs
+// into), so the bridge is host- and device-testable with no radio. Static tables (zero
+// heap). See services/gateway/det_gateway.h.
+
+/** @brief Enable the radio / wireless gateway bridge (default off). */
+#ifndef DETWS_ENABLE_GATEWAY
+#define DETWS_ENABLE_GATEWAY 0
+#endif
+
+/** @brief Max southbound gateway ports (radios / buses; static-allocated). */
+#ifndef DETWS_GW_MAX_PORTS
+#define DETWS_GW_MAX_PORTS 4
+#endif
+
+#if DETWS_ENABLE_GATEWAY && (DETWS_GW_MAX_PORTS < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_GW_MAX_PORTS must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8
