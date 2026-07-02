@@ -275,10 +275,105 @@ void test_decode_type_mismatch()
     TEST_ASSERT_FALSE(cbor_reader_ok(&r));
 }
 
+// cbor_peek classifies every major type, and reports INVALID for tags / unassigned.
+void test_peek_each_type()
+{
+    uint8_t b[16];
+    CborWriter w;
+    CborReader r;
+    uint8_t d[2] = {1, 2};
+
+    cbor_init(&w, b, sizeof(b));
+    cbor_int(&w, -5);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INT, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_bytes(&w, d, 2);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_BYTES, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_text(&w, "x");
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_TEXT, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_array(&w, 1);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_ARRAY, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_map(&w, 1);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_MAP, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_bool(&w, true);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_BOOL, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_null(&w);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_NULL, cbor_peek(&r));
+    cbor_init(&w, b, sizeof(b));
+    cbor_float(&w, 1.5f);
+    cbor_reader_init(&r, b, cbor_len(&w));
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_FLOAT, cbor_peek(&r));
+
+    const uint8_t tag[] = {0xc0}; // major 6 (tag) is unsupported
+    cbor_reader_init(&r, tag, 1);
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r));
+    const uint8_t simple[] = {0xe0}; // major 7, unassigned simple value
+    cbor_reader_init(&r, simple, 1);
+    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r));
+}
+
+// A uint above 0xFFFFFFFF uses the 8-byte (0x1b) head and round-trips.
+void test_uint_8byte()
+{
+    uint8_t b[16];
+    CborWriter w;
+    cbor_init(&w, b, sizeof(b));
+    cbor_uint(&w, 0x123456789ULL);
+    TEST_ASSERT_TRUE(cbor_ok(&w));
+    TEST_ASSERT_EQUAL_size_t(9, cbor_len(&w));
+    TEST_ASSERT_EQUAL_HEX8(0x1b, b[0]);
+    CborReader r;
+    cbor_reader_init(&r, b, cbor_len(&w));
+    uint64_t v;
+    TEST_ASSERT_TRUE(cbor_read_uint(&r, &v));
+    TEST_ASSERT_EQUAL_UINT64(0x123456789ULL, v);
+}
+
+// A double-encoded (0xfb) float is read back narrowed to float.
+void test_read_double_encoded_float()
+{
+    const uint8_t dbl[] = {0xfb, 0x40, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 2.5
+    CborReader r;
+    cbor_reader_init(&r, dbl, sizeof(dbl));
+    float f;
+    TEST_ASSERT_TRUE(cbor_read_float(&r, &f));
+    TEST_ASSERT_EQUAL_FLOAT(2.5f, f);
+}
+
+// cbor_read_map on a non-map sets the error flag.
+void test_read_map_type_mismatch()
+{
+    uint8_t b[8];
+    CborWriter w;
+    cbor_init(&w, b, sizeof(b));
+    cbor_uint(&w, 5);
+    CborReader r;
+    cbor_reader_init(&r, b, cbor_len(&w));
+    size_t n;
+    TEST_ASSERT_FALSE(cbor_read_map(&r, &n));
+    TEST_ASSERT_FALSE(cbor_reader_ok(&r));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_uint);
+    RUN_TEST(test_peek_each_type);
+    RUN_TEST(test_uint_8byte);
+    RUN_TEST(test_read_double_encoded_float);
+    RUN_TEST(test_read_map_type_mismatch);
     RUN_TEST(test_int);
     RUN_TEST(test_text);
     RUN_TEST(test_bytes);
