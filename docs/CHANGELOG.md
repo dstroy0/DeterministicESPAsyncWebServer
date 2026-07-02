@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`b46c6ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b46c6ee158be370d783277a1206c09f809267225))
+- update CHANGELOG.md [skip ci] ([`4c6c511`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c6c5119df2da9e09a2f6c84d02829ff0434cda8))
 - update test report [skip ci] ([`2687695`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/268769598f8c0a565c87c1fc7abdaab82e307f80))
 - update CHANGELOG.md [skip ci] ([`0db468c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0db468c2cd7a416bf2192583a32c7d6b8aa44ea5))
 - update test report [skip ci] ([`d2d2f16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2d2f16d31edbe574becce7f9b51fbde08fe787b))
@@ -76,6 +78,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover cbor_peek for all types, 8-byte uint, double float, map mismatch ([`beba90b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beba90b576529cd1db4a2e34493ba4967d516fd2))
+- cover malformed-token rejection, bearer spaces, claim edge paths ([`9b70a70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b70a7071a64f310ec839b8f29658ee59bb4ff1b))
 - cover base-time/none in JSON, CBOR string/bool/time, null args ([`76c33c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76c33c1013d7c5f3720c170b00ba8f774435104c))
 - cover CR escape, build guards/overflow, parse edges, null lookups ([`33709d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33709d3b5d00a8a66f055ee248dad50bf828f155))
 - cover ping/pong builders, null args, put_ch overflow, parse edges ([`0a63126`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a6312611e3c4337b79d00291e15dc8e13134e32))
