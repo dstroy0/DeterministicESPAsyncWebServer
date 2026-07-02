@@ -55,6 +55,7 @@ CODEC_HEADINGS = {
     "IO-Link",
     "J1939",
     "JSON",
+    "LoRa",
     "LwM2M",
     "M-Bus",
     "MELSEC",
