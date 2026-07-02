@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`829828e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/829828e37b7e6e10ab52c7745b8876f3b7122daa))
+- update CHANGELOG.md [skip ci] ([`b43f568`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b43f568932c528c9533ab72a5a2d3516577c1f7b))
 - gitignore .pio_cov_wsl (WSL coverage build dir) ([`ac1e36c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac1e36c6b626e9e8953a278b5ef15a7c2eaf37b3))
 - update test report [skip ci] ([`17a947d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17a947db9df9f68630e6d04120c1e061a41db992))
 - update CHANGELOG.md [skip ci] ([`68e5bf4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68e5bf4f28c02cb1c30c486f3b2b975f41ac1f01))
@@ -96,7 +98,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- close #249 (shared scratch-buffer pool) - deflate window + oidc/ssh tenants migrated ([`5058a97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5058a9772179b9d403782ef3dbb3f1d4a49f0091))
 - update ESP32 build footprints [skip ci] ([`61f2bf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61f2bf701b8f4f9173c071d719186be009f9b390))
+
+### Features
+
+- enforce worker-stack RSA floor (DETWS_WORKER_STACK_RSA_MIN) when OIDC/SSH enabled ([`e3326ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3326eef023e137d139090afde435ec654767d70))
 
 ### Refactor
 
