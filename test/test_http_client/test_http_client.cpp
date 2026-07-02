@@ -144,9 +144,91 @@ void test_parse_malformed()
     TEST_ASSERT_LESS_THAN_INT(0, st);
 }
 
+void test_url_edge_rejections()
+{
+    bool https = false;
+    char host[64], path[128];
+    uint16_t port = 0;
+    TEST_ASSERT_FALSE(http_client_parse_url(nullptr, &https, host, 64, &port, path, 128));      // null url
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h/", nullptr, host, 64, &port, path, 128)); // null out
+    TEST_ASSERT_FALSE(http_client_parse_url("http:///p", &https, host, 64, &port, path, 128));  // empty host
+    TEST_ASSERT_FALSE(
+        http_client_parse_url("http://longhost.example/", &https, host, 6, &port, path, 128));   // host too long
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h:/x", &https, host, 64, &port, path, 128)); // ':' then no digit
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h:99999/", &https, host, 64, &port, path, 128)); // port > 65535
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h/longpath", &https, host, 64, &port, path, 4)); // path too long
+    TEST_ASSERT_FALSE(http_client_parse_url("http://h", &https, host, 64, &port, path, 1));          // no room for "/"
+
+    TEST_ASSERT_TRUE(http_client_parse_url("http://h:8080/api", &https, host, 64, &port, path, 128));
+    TEST_ASSERT_EQUAL_UINT16(8080, port);
+    TEST_ASSERT_EQUAL_STRING("/api", path);
+}
+
+void test_build_edge_rejections()
+{
+    char out[256];
+    const uint8_t body[] = "data";
+    TEST_ASSERT_EQUAL_size_t(0,
+                             http_client_build_request(nullptr, "h", 80, "/", nullptr, nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, http_client_build_request("GET", "h", 80, "/", nullptr, nullptr, 0, out, 0));
+    TEST_ASSERT_EQUAL_size_t(
+        0, http_client_build_request("POST", "h", 80, "/", "text/plain", body, 4, out, 20)); // body overflow
+    TEST_ASSERT_EQUAL_size_t(
+        0, http_client_build_request("GET", "h", 80, "/", nullptr, nullptr, 0, out, 10)); // hdr overflow
+
+    size_t n = http_client_build_request("GET", "h", 8080, "/", nullptr, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(out, "Host: h:8080\r\n")); // non-default port in the Host header
+}
+
+void test_response_edge_rejections()
+{
+    size_t boff = 0, blen = 0;
+    char r2[] = "HTTP/1.1XXXXXXXX"; // no space after the version
+    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)r2, sizeof(r2) - 1, &boff, &blen));
+    char r3[] = "HTTP/1.1 999 Z\r\n\r\n"; // status outside 100..599
+    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)r3, sizeof(r3) - 1, &boff, &blen));
+    char r4[] = "HTTP/1.1 200 OK\r\nHost: x\r\n"; // no blank-line terminator
+    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+                          http_client_parse_response((uint8_t *)r4, sizeof(r4) - 1, &boff, &blen));
+
+    char r5[] =
+        "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\na\r\n0123456789\r\n0\r\n\r\n"; // lower-case hex size
+    TEST_ASSERT_EQUAL_INT(200, http_client_parse_response((uint8_t *)r5, sizeof(r5) - 1, &boff, &blen));
+    TEST_ASSERT_EQUAL_size_t(10, blen);
+    TEST_ASSERT_EQUAL_MEMORY("0123456789", r5 + boff, 10);
+
+    char r6[] = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n;ext\r\nx"; // junk size line -> empty body
+    TEST_ASSERT_EQUAL_INT(200, http_client_parse_response((uint8_t *)r6, sizeof(r6) - 1, &boff, &blen));
+    TEST_ASSERT_EQUAL_size_t(0, blen);
+
+    char r7[] = "HTTP/1.1 200 OK\r\nContent-Length: -5\r\n\r\nbody"; // negative length clamps to 0
+    TEST_ASSERT_EQUAL_INT(200, http_client_parse_response((uint8_t *)r7, sizeof(r7) - 1, &boff, &blen));
+    TEST_ASSERT_EQUAL_size_t(0, blen);
+}
+
+// On a host build the transport entry points are stubs that report a connect error.
+void test_host_transport_stubs()
+{
+    HttpClientResult res;
+    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_CONNECT, http_get("http://x/", &res));
+    const uint8_t b[] = "x";
+    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_CONNECT, http_post("http://x/", "text/plain", b, 1, &res));
+    http_client_set_ca(nullptr, 0);
+    http_client_set_pin(nullptr);
+    http_client_clear_verify();
+    TEST_PASS();
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_url_edge_rejections);
+    RUN_TEST(test_build_edge_rejections);
+    RUN_TEST(test_response_edge_rejections);
+    RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_url_http_default);
     RUN_TEST(test_url_https_port_nopath);
     RUN_TEST(test_url_bad_scheme);
