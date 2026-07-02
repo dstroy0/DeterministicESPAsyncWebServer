@@ -936,9 +936,72 @@ void stress_max_query_params()
     TEST_ASSERT_EQUAL(MAX_QUERY_PARAMS, (int)http_pool[0].query_count);
 }
 
+// The request accessors reject null / zero-size arguments.
+void test_accessor_null_guards()
+{
+    feed_request(0, "GET /?a=1 HTTP/1.1\r\nCookie: a=1\r\n\r\n");
+    char v[16];
+    bool https = false;
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], "a", nullptr, sizeof(v)));
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], "a", v, 0));
+    TEST_ASSERT_FALSE(http_get_cookie(nullptr, "a", v, sizeof(v)));
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], nullptr, v, sizeof(v)));
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], "", v, sizeof(v))); // empty name
+
+    TEST_ASSERT_FALSE(http_forwarded_client(nullptr, v, sizeof(v), &https));
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], nullptr, sizeof(v), &https));
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], v, 0, &https));
+
+    TEST_ASSERT_FALSE(http_get_form(&http_pool[0], "a", nullptr, sizeof(v)));
+    TEST_ASSERT_FALSE(http_get_form(&http_pool[0], "a", v, 0));
+    TEST_ASSERT_FALSE(http_get_form(nullptr, "a", v, sizeof(v)));
+    TEST_ASSERT_FALSE(http_get_form(&http_pool[0], nullptr, v, sizeof(v)));
+
+    TEST_ASSERT_NULL(http_get_param(nullptr, "a"));
+    TEST_ASSERT_NULL(http_get_param(&http_pool[0], nullptr));
+}
+
+// Cookie parsing edge cases: a trailing separator with no more pairs, a value with
+// trailing whitespace, and a value longer than the output buffer.
+void test_cookie_parse_edges()
+{
+    char v[16];
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: a=1; \r\n\r\n");             // trailing "; "
+    TEST_ASSERT_FALSE(http_get_cookie(&http_pool[0], "zzz", v, sizeof(v))); // scans to end past separators
+
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: a=1  ;b=2\r\n\r\n"); // value "1  " before ';'
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "a", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("1", v); // trailing OWS trimmed
+
+    feed_request(0, "GET / HTTP/1.1\r\nCookie: a=0123456789ABCDEF\r\n\r\n");
+    char small[4];
+    TEST_ASSERT_TRUE(http_get_cookie(&http_pool[0], "a", small, sizeof(small)));
+    TEST_ASSERT_EQUAL_UINT(3, (unsigned)strlen(small)); // truncated to out_size-1
+}
+
+// Forwarded-for IPv4 extraction trims surrounding whitespace and rejects a token that
+// is not dotted IPv4.
+void test_forwarded_ip_whitespace_and_invalid()
+{
+    char ip[24];
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for= 1.2.3.4 \r\n\r\n"); // OWS around the token
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("1.2.3.4", ip);
+
+    feed_request(0, "GET / HTTP/1.1\r\nX-Forwarded-For: 1.2.3.4  , 5.6.7.8\r\n\r\n"); // trailing OWS on token
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("1.2.3.4", ip);
+
+    feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=1.2.3\r\n\r\n"); // only two dots -> not IPv4
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_accessor_null_guards);
+    RUN_TEST(test_cookie_parse_edges);
+    RUN_TEST(test_forwarded_ip_whitespace_and_invalid);
 
     // Reset invariants
     RUN_TEST(test_reset_sets_parse_method_state);
