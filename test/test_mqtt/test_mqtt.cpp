@@ -315,9 +315,101 @@ void test_fixed_header_multibyte_remlen()
     TEST_ASSERT_EQUAL_size_t(3, hl);
 }
 
+// Every builder rejects null args / bad QoS, an over-large body, and an output buffer
+// too small to hold the composed packet.
+void test_build_guards_and_overflow()
+{
+    uint8_t out[64];
+    static char big_topic[1030];
+    memset(big_topic, 'a', sizeof(big_topic) - 1);
+    big_topic[sizeof(big_topic) - 1] = '\0'; // > DETWS_MQTT_BUF_SIZE (1024)
+
+    MqttConnectOpts o;
+    memset(&o, 0, sizeof(o));
+    o.client_id = "c";
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_connect(nullptr, sizeof(out), &o));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_connect(out, sizeof(out), nullptr));
+    MqttConnectOpts no_id = o;
+    no_id.client_id = nullptr;
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_connect(out, sizeof(out), &no_id));
+    // Oversized will payload overflows the body scratch.
+    MqttConnectOpts wo = o;
+    wo.will_topic = "w";
+    wo.will_len = 2000;
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_connect(out, sizeof(out), &wo));
+    // A valid CONNECT that does not fit the output buffer (compose cap check).
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_connect(out, 2, &o));
+
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_publish(nullptr, sizeof(out), "t", nullptr, 0, 0, 0, false, false));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_publish(out, sizeof(out), "t", nullptr, 0, 3, 0, false, false));    // qos>2
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_publish(out, sizeof(out), "t", nullptr, 2000, 0, 0, false, false)); // body
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_publish(out, 2, "topic", (const uint8_t *)"hi", 2, 0, 0, false, false)); // cap
+
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_subscribe(nullptr, sizeof(out), 1, "t", 0));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_subscribe(out, sizeof(out), 1, "t", 3));       // qos>2
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0)); // body overflow
+
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic)); // body overflow
+
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(nullptr, 4, 4, 1));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(out, 3, 4, 1)); // cap < 4
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_pingreq(nullptr, 2));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_pingreq(out, 1)); // cap < 2
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_disconnect(nullptr, 2));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_disconnect(out, 1)); // cap < 2
+}
+
+// The parsers reject truncated / malformed inputs.
+void test_parse_guards()
+{
+    uint8_t type, flags;
+    uint32_t rl;
+    size_t hl;
+    uint8_t one[1] = {0x30};
+    TEST_ASSERT_FALSE(mqtt_parse_fixed_header(one, 1, &type, &flags, &rl, &hl)); // avail < 2
+    uint8_t bad_rl[5] = {0x30, 0x80, 0x80, 0x80, 0x80};
+    TEST_ASSERT_FALSE(mqtt_parse_fixed_header(bad_rl, 5, &type, &flags, &rl, &hl)); // malformed remlen
+
+    char topic[32];
+    size_t tl, pl;
+    const uint8_t *pay;
+    uint16_t pid;
+    TEST_ASSERT_FALSE(mqtt_parse_publish(nullptr, 0, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid));
+    uint8_t claim[2] = {0x00, 0x10}; // tlen=16 but remaining_len=2
+    TEST_ASSERT_FALSE(mqtt_parse_publish(claim, 2, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid));
+    uint8_t q1[4] = {0x00, 0x02, 'a', 'b'}; // qos1, topic fills the buffer, no room for packet id
+    TEST_ASSERT_FALSE(mqtt_parse_publish(q1, 4, 0x02, topic, sizeof(topic), &tl, &pay, &pl, &pid));
+
+    TEST_ASSERT_EQUAL_UINT16(0, mqtt_parse_ack(nullptr, 0));
+    uint16_t spid;
+    uint8_t rc;
+    uint8_t two[2] = {0, 0};
+    TEST_ASSERT_FALSE(mqtt_parse_suback(two, 2, &spid, &rc)); // remaining_len < 3
+}
+
+// On a host build the transport entry points are inert stubs that fail closed.
+void test_host_transport_stubs()
+{
+    mqtt_on_message(nullptr);
+    MqttConnectOpts o;
+    memset(&o, 0, sizeof(o));
+    o.client_id = "c";
+    TEST_ASSERT_FALSE(mqtt_connect("h", 1883, false, &o));
+    TEST_ASSERT_FALSE(mqtt_publish("t", nullptr, 0, 0, false));
+    TEST_ASSERT_FALSE(mqtt_subscribe("t", 0));
+    TEST_ASSERT_FALSE(mqtt_unsubscribe("t"));
+    TEST_ASSERT_FALSE(mqtt_loop());
+    TEST_ASSERT_FALSE(mqtt_connected());
+    mqtt_disconnect();
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_build_guards_and_overflow);
+    RUN_TEST(test_parse_guards);
+    RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_remlen_boundaries);
     RUN_TEST(test_remlen_too_big);
     RUN_TEST(test_remlen_decode_incomplete);
