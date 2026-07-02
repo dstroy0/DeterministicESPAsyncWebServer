@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`1d6281c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d6281c9945afd8d5b15e5b4dede0a8ad25ed28e))
+- update CHANGELOG.md [skip ci] ([`c0838ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0838cac988924f486d70359723acd990e1ecc56))
 - update test report [skip ci] ([`b46c6ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b46c6ee158be370d783277a1206c09f809267225))
 - update CHANGELOG.md [skip ci] ([`4c6c511`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c6c5119df2da9e09a2f6c84d02829ff0434cda8))
 - update test report [skip ci] ([`2687695`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/268769598f8c0a565c87c1fc7abdaab82e307f80))
@@ -78,6 +80,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover URL/build/response edge rejections + host stubs ([`330d531`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/330d5317a3854f9d07db795b01d71a5a423ad41b))
 - cover cbor_peek for all types, 8-byte uint, double float, map mismatch ([`beba90b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beba90b576529cd1db4a2e34493ba4967d516fd2))
 - cover malformed-token rejection, bearer spaces, claim edge paths ([`9b70a70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b70a7071a64f310ec839b8f29658ee59bb4ff1b))
 - cover base-time/none in JSON, CBOR string/bool/time, null args ([`76c33c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76c33c1013d7c5f3720c170b00ba8f774435104c))
