@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.75.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.75.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`41d5c2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41d5c2ff10b327659ce1c554d93eac68e5b5db6c))
+- update CHANGELOG.md [skip ci] ([`76768a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76768a08f2509aa1d56b5c5ddc572d33f2db31cf))
+
+### Changes
+
+- Bump version: 4.74.0 → 4.75.0 ([`84145ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84145ce51d5fcdc797b3ddd18a23ccb831775a8f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`edd581a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edd581a6937037cc9601343f865b69a67482cad9))
+
+### Features
+
+- Z-Wave Serial API frame codec - a gateway plugin ([`954a874`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/954a87467a314da004377b99516ff0e78ae969c9))
+
+</details>
+
 ## [4.74.0] - 2026-07-02
 
 <details>
