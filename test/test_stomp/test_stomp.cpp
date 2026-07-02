@@ -155,10 +155,66 @@ void test_unescape_rejects_bad()
     TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, 2, "abc", 3));            // overflow
 }
 
+// The CR escape, null-argument guards, and every builder overflow boundary.
+void test_build_cr_escape_and_guards()
+{
+    const char *keys[] = {"k"};
+    const char *vals[] = {"a\rb"}; // CR forces the \r escape path
+    char full[128];
+    size_t flen = stomp_build_frame(full, sizeof(full), "SEND", keys, vals, 1, "body", 4);
+    TEST_ASSERT_GREATER_THAN(0, (int)flen);
+    TEST_ASSERT_NOT_NULL(strstr(full, "k:a\\rb\n")); // \r escaped to backslash-r
+
+    // Null / zero-cap / null-command guards.
+    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(nullptr, 64, "SEND", nullptr, nullptr, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, 0, "SEND", nullptr, nullptr, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, sizeof(full), nullptr, nullptr, nullptr, 0, nullptr, 0));
+    // A null header key inside the loop fails closed.
+    const char *nk[] = {nullptr};
+    const char *nv[] = {"v"};
+    TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(full, sizeof(full), "SEND", nk, nv, 1, nullptr, 0));
+
+    // Every capacity below the full length fails closed (walks each overflow return).
+    for (size_t cap = 1; cap < flen; cap++)
+    {
+        char small[128];
+        TEST_ASSERT_EQUAL_size_t(0, stomp_build_frame(small, cap, "SEND", keys, vals, 1, "body", 4));
+    }
+}
+
+void test_parse_more_edges()
+{
+    StompFrame f;
+    size_t c;
+    TEST_ASSERT_FALSE(stomp_parse_frame(nullptr, 5, &f, &c));          // null args
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND", 4, &f, &c));           // command line incomplete
+    TEST_ASSERT_FALSE(stomp_parse_frame("SEND\nfoo:bar", 12, &f, &c)); // header line incomplete
+
+    TEST_ASSERT_FALSE(stomp_parse_frame("MSG\ncontent-length:\n\nx", 22, &f, &c));   // empty content-length
+    TEST_ASSERT_FALSE(stomp_parse_frame("MSG\ncontent-length:xy\n\nx", 24, &f, &c)); // non-digit content-length
+    const char not_on_nul[] = "MSG\ncontent-length:2\n\nabcd";                       // 2 bytes then 'c', not the NUL
+    TEST_ASSERT_FALSE(stomp_parse_frame(not_on_nul, sizeof(not_on_nul) - 1, &f, &c));
+}
+
+void test_header_and_unescape_null()
+{
+    StompFrame f;
+    const char *v;
+    size_t vl;
+    TEST_ASSERT_FALSE(stomp_header(nullptr, "x", &v, &vl));
+    TEST_ASSERT_FALSE(stomp_header(&f, nullptr, &v, &vl));
+    char dst[8];
+    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(nullptr, sizeof(dst), "a", 1));
+    TEST_ASSERT_EQUAL_size_t(0, stomp_unescape(dst, sizeof(dst), nullptr, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_send);
+    RUN_TEST(test_build_cr_escape_and_guards);
+    RUN_TEST(test_parse_more_edges);
+    RUN_TEST(test_header_and_unescape_null);
     RUN_TEST(test_build_no_headers_no_body);
     RUN_TEST(test_build_escapes_header);
     RUN_TEST(test_build_overflow_fails_closed);
