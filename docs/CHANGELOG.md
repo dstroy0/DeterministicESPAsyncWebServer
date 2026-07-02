@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`c8c5e59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c5e59426acb14b1efeba86e4a52eaf5836786b))
+- update CHANGELOG.md [skip ci] ([`a78277f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a78277f0b9373a2e27a9f9db6a137fd92fe0f22e))
 - update test report [skip ci] ([`e0fb2ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0fb2bacf92777913eab93b87dad99cd9ba5e151))
 - update CHANGELOG.md [skip ci] ([`b262dad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b262dad184a34740734e993f9eea5ef299ab3901))
 - update CHANGELOG.md [skip ci] ([`f364341`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f36434188b16d5c4e9909402f74586643f8569a6))
@@ -89,6 +91,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover service/request parse truncations, RSA blob errors, build guards, DoS prefix guard (100% line) ([`cd8bbc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd8bbc3698cc5d2e57e1038d309974bd57ac33d5))
 - cover slot/cap guards, unencrypted recv errors, seq overflow, encrypted round-trip + MAC fail ([`58ba2a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58ba2a3c7caf863d0ad7f87c2cfd99e4f164cde7))
 - cover handshake/frame codec guards, 64-bit length, host transport stubs (100% line) ([`8b48f39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b48f397d81a03fe4ad5f839f5c19a8f5e09da48))
 - cover token_kid/jwks_find/verify guards, malformed JWKS, RSA-JWK loader edges ([`ffcdf7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffcdf7e88169a485522c21a405763d53aef0fb16))
