@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.76.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.76.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`829a0a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/829a0a374db186fa0b8f604107c86468f8d8614f))
+- update CHANGELOG.md [skip ci] ([`fb41cba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb41cbaa18b91ce037ceeded6737a6752da9c28d))
+
+### Changes
+
+- Bump version: 4.75.0 → 4.76.0 ([`16306ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16306ad1bbcc14e81029d7a4056296465279562a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`441ace1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/441ace1f76c8225953249274e87f476027e316e3))
+
+### Features
+
+- Zigbee EZSP/ASH framing codec - a gateway plugin ([`904d6bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/904d6bf3e6d1f48d4e3bf6c9bccb5070871ca108))
+
+</details>
+
 ## [4.75.0] - 2026-07-02
 
 <details>
