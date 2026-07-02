@@ -119,10 +119,115 @@ void test_buffer_too_small()
     TEST_ASSERT_EQUAL_size_t(0, len);
 }
 
+// Every varbind value type encodes with its correct BER/application tag.
+void test_all_varbind_types()
+{
+    static const uint32_t voi[] = {1, 3, 6, 1, 4, 1, 1, 1};
+    static const uint32_t oidval[] = {1, 3, 6, 1, 2, 1};
+    const uint8_t ip[4] = {10, 0, 0, 1};
+    SnmpVarbind vbs[6];
+    memset(vbs, 0, sizeof(vbs));
+    for (int i = 0; i < 6; i++)
+    {
+        vbs[i].oid = voi;
+        vbs[i].oid_len = sizeof(voi) / sizeof(uint32_t);
+    }
+    vbs[0].type = SNMP_VB_INT;
+    vbs[0].ival = -5;
+    vbs[1].type = SNMP_VB_STRING;
+    vbs[1].bytes = (const uint8_t *)"hi";
+    vbs[1].blen = 2;
+    vbs[2].type = SNMP_VB_OID;
+    vbs[2].oid_val = oidval;
+    vbs[2].oid_val_len = sizeof(oidval) / sizeof(uint32_t);
+    vbs[3].type = SNMP_VB_COUNTER32;
+    vbs[3].ival = 100;
+    vbs[4].type = SNMP_VB_TIMETICKS;
+    vbs[4].ival = 200;
+    vbs[5].type = SNMP_VB_IPADDR;
+    vbs[5].bytes = ip;
+    vbs[5].blen = 4;
+
+    uint8_t buf[512];
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,
+                                       sizeof(TRAP_OID) / sizeof(uint32_t), 1, vbs, 6);
+    TEST_ASSERT_GREATER_THAN(0, len);
+
+    BerDec d;
+    ber_dec_init(&d, buf, len);
+    uint8_t tag;
+    size_t l;
+    long v;
+    ber_read_header(&d, &tag, &l); // message SEQUENCE
+    ber_read_integer(&d, &v);      // version
+    ber_read_header(&d, &tag, &l);
+    ber_skip(&d, l);               // community
+    ber_read_header(&d, &tag, &l); // PDU
+    ber_read_integer(&d, &v);      // request-id
+    ber_read_integer(&d, &v);      // error-status
+    ber_read_integer(&d, &v);      // error-index
+    ber_read_header(&d, &tag, &l); // varbinds SEQUENCE
+    for (int i = 0; i < 2; i++)    // skip the 2 mandatory varbinds
+    {
+        ber_read_header(&d, &tag, &l);
+        ber_skip(&d, l);
+    }
+    const uint8_t expect[6] = {0x02, 0x04, 0x06, SNMP_COUNTER32, SNMP_TIMETICKS, SNMP_IPADDRESS};
+    for (int i = 0; i < 6; i++)
+    {
+        TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l)); // varbind SEQUENCE
+        TEST_ASSERT_EQUAL_HEX8(0x30, tag);
+        uint32_t o[SNMP_MAX_OID_LEN];
+        size_t on = 0;
+        ber_read_oid(&d, o, SNMP_MAX_OID_LEN, &on);      // the binding OID
+        TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l)); // the typed value
+        TEST_ASSERT_EQUAL_HEX8(expect[i], tag);
+        ber_skip(&d, l);
+    }
+}
+
+// An unknown varbind type marks the encoder not-ok so the build fails closed.
+void test_invalid_varbind_type()
+{
+    static const uint32_t voi[] = {1, 3, 6, 1};
+    SnmpVarbind vb;
+    memset(&vb, 0, sizeof(vb));
+    vb.oid = voi;
+    vb.oid_len = 4;
+    vb.type = 99; // not a defined type
+    uint8_t buf[128];
+    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,
+                                                      sizeof(TRAP_OID) / sizeof(uint32_t), 1, &vb, 1));
+}
+
+void test_build_v2c_null_args()
+{
+    uint8_t buf[128];
+    const size_t tn = sizeof(TRAP_OID) / sizeof(uint32_t);
+    TEST_ASSERT_EQUAL_size_t(
+        0, snmp_notify_build_v2c(nullptr, 128, "public", SNMP_PDU_TRAPV2, 1, TRAP_OID, tn, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(
+        0, snmp_notify_build_v2c(buf, sizeof(buf), nullptr, SNMP_PDU_TRAPV2, 1, TRAP_OID, tn, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(
+        0, snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, nullptr, 0, 1, nullptr, 0));
+}
+
+// On the host build the UDP transport is a stub that reports failure.
+void test_host_transport_stubs()
+{
+    const size_t tn = sizeof(TRAP_OID) / sizeof(uint32_t);
+    TEST_ASSERT_FALSE(snmp_trap_v2c("127.0.0.1", 162, "public", TRAP_OID, tn, nullptr, 0));
+    TEST_ASSERT_FALSE(snmp_inform_v2c("127.0.0.1", 162, "public", 1, TRAP_OID, tn, nullptr, 0));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_trap_v2c_structure);
+    RUN_TEST(test_all_varbind_types);
+    RUN_TEST(test_invalid_varbind_type);
+    RUN_TEST(test_build_v2c_null_args);
+    RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_inform_tag);
     RUN_TEST(test_buffer_too_small);
     return UNITY_END();
