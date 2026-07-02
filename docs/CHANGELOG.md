@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ffe7077`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe707766cc62bcc2161315e8929bc579cbfebed))
+- update CHANGELOG.md [skip ci] ([`d56c7b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d56c7b6447e5cd84f0cfd55d0539bfdfdd314c18))
 - update test report [skip ci] ([`f849efa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f849efa739fd50cf606d977cbc7ac4ef1d111026))
 - update CHANGELOG.md [skip ci] ([`e9365ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9365eaa6fe1607985339998910d785996e28987))
 - update test report [skip ci] ([`c8c5e59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c5e59426acb14b1efeba86e4a52eaf5836786b))
@@ -93,6 +95,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover message truncation fail-closed sweep and priv-without-auth rejection ([`9a44424`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a444247e45c905ca08a10ac66206d637ae6e404))
 - cover slot guards, banner/build caps, KEXINIT field/trunc failures, KEXDH errors + reply overflow ([`519b2e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/519b2e0cf84d3926f1458e58c5d6c3eef1ff4d37))
 - cover service/request parse truncations, RSA blob errors, build guards, DoS prefix guard (100% line) ([`cd8bbc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd8bbc3698cc5d2e57e1038d309974bd57ac33d5))
 - cover slot/cap guards, unencrypted recv errors, seq overflow, encrypted round-trip + MAC fail ([`58ba2a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58ba2a3c7caf863d0ad7f87c2cfd99e4f164cde7))
