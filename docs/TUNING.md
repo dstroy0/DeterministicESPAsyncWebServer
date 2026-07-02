@@ -5,6 +5,10 @@ determinism guarantees (no heap after `begin()`, fixed buffers, bounded latency)
 Every knob here is compile-time; the default build is the tested-deterministic
 path, so you only change these when you have a specific reason.
 
+> Prefer a UI? The [interactive build configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)
+> lets you tick features, tune every knob, and copy out the `build_flags` / `#define`s.
+> It is generated from `src/DetWebServerConfig.h`, so it always matches the library.
+
 ## The execution model in one paragraph
 
 The server runs in one or more dedicated FreeRTOS worker tasks, not the user's

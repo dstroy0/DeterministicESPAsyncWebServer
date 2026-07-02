@@ -31,6 +31,8 @@ Every workflow that runs on `main`, grouped by what it checks:
 
 **[Read the Full Documentation Here 📖](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
+**[Interactive build configurator ⚙️](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)** — tick the features you need, tune their knobs, and copy out a ready-made `platformio.ini` `build_flags` block (or the `#define`s). Dependencies resolve automatically and only non-default values are emitted. It is generated from `src/DetWebServerConfig.h`, so it always matches the library.
+
 The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md). See the [feature reference](docs/FEATURES.md) for every option and the [secure-boot & flash-encryption hardening guide](docs/SECURE_BOOT.md) for production deployment. Wiring a codec to a PLC, inverter, power-grid sensor, or another board? The [hardware hookup & settings guide](docs/HARDWARE_HOOKUP.md) covers the transceivers, ports, and settings.
 
 ## Overview

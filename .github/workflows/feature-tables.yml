@@ -31,6 +31,11 @@ jobs:
       - name: Regenerate tables from FEATURES.md
         run: python docs/utilities/gen_feature_tables.py
 
+      # Regenerate the interactive build configurator from DetWebServerConfig.h so it
+      # always reflects the current feature flags, tuning knobs, and dependencies.
+      - name: Regenerate configurator from DetWebServerConfig.h
+        run: python docs/utilities/gen_configurator.py
+
       - name: Format with Prettier
         run: npx prettier@3.9.1 --write README.md docs/README.md
 
@@ -52,7 +57,7 @@ jobs:
       - name: Commit regenerated tables
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "docs: regenerate feature tables [skip ci]"
-          file_pattern: "README.md docs/README.md"
+          commit_message: "docs: regenerate feature tables + configurator [skip ci]"
+          file_pattern: "README.md docs/README.md docs/configurator.html"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
