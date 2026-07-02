@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.66.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.66.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5403779`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5403779ee6b6ca8c21266cd05cf2f135fdeeefc8))
+- update CHANGELOG.md [skip ci] ([`a03384b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a03384b3812634ef1e69ef7bb2492559e236aef8))
+
+### Changes
+
+- Bump version: 4.65.0 → 4.66.0 ([`0bb0f80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bb0f80f0262794e1a020a130151cbe3cab5477e))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7a006c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a006c5238ac76933c23f807ae747c6bbaa3f77d))
+
+### Features
+
+- named lanes - internal DMA/FORWARD/DEVICE above the user lane ([`e62e6f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e62e6f0dee7ef183e9cae7c53623373a565cfbf8))
+
+</details>
+
 ## [4.65.0] - 2026-07-02
 
 <details>
