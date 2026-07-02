@@ -180,10 +180,94 @@ void test_base64url_strict_alphabet()
     TEST_ASSERT_EQUAL_MEMORY(raw, back, sizeof(raw));
 }
 
+// Build "b64url(hdr).b64url(payload).sig" (signature validity irrelevant to the
+// claim parsers; the verifier tests below use it for alg/shape checks).
+static void mk_token(char *out, size_t cap, const char *hdr_json, const char *pl_json, const char *sig)
+{
+    char h[128], p[256];
+    base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), h);
+    base64url_encode((const uint8_t *)pl_json, strlen(pl_json), p);
+    snprintf(out, cap, "%s.%s.%s", h, p, sig);
+}
+
+void test_verify_malformed_headers()
+{
+    const char *sig43 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; // 43 chars
+    // A third dot is not a valid JWT shape.
+    TEST_ASSERT_FALSE(jwt_verify_hs256("aaaa.b.c.d", 10, sec(), seclen()));
+    // Header segment is not valid base64url.
+    char t[256];
+    snprintf(t, sizeof(t), "@@@.x.%s", sig43);
+    TEST_ASSERT_FALSE(jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+    // Header decodes but has no "alg".
+    mk_token(t, sizeof(t), "{\"typ\":\"JWT\"}", "{}", sig43);
+    TEST_ASSERT_FALSE(jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+    // "alg" value is not a quoted string.
+    mk_token(t, sizeof(t), "{\"alg\":123}", "{}", sig43);
+    TEST_ASSERT_FALSE(jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+    // Valid HS256 header but the signature is not 43 base64url chars.
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{}", "abc");
+    TEST_ASSERT_FALSE(jwt_verify_hs256(t, strlen(t), sec(), seclen()));
+}
+
+void test_bearer_extra_spaces()
+{
+    char hdr[400];
+    snprintf(hdr, sizeof(hdr), "Bearer    %s", TOKEN); // extra spaces after the scheme
+    TEST_ASSERT_TRUE(jwt_bearer_valid(hdr, sec(), seclen()));
+}
+
+void test_claim_int_edges()
+{
+    long v = 0;
+    TEST_ASSERT_FALSE(jwt_claim_int(nullptr, 5, "x", &v));
+    TEST_ASSERT_FALSE(jwt_claim_int(TOKEN, strlen(TOKEN), nullptr, &v));
+    TEST_ASSERT_FALSE(jwt_claim_int(TOKEN, strlen(TOKEN), "exp", nullptr));
+    TEST_ASSERT_FALSE(jwt_claim_int("nodots", 6, "x", &v));  // no first dot
+    TEST_ASSERT_FALSE(jwt_claim_int("a.b", 3, "x", &v));     // no second dot
+    TEST_ASSERT_FALSE(jwt_claim_int("x.@@@.y", 7, "x", &v)); // payload not base64url
+    char longname[60];
+    memset(longname, 'a', sizeof(longname) - 1);
+    longname[sizeof(longname) - 1] = '\0';
+    TEST_ASSERT_FALSE(jwt_claim_int(TOKEN, strlen(TOKEN), longname, &v)); // name too long for key buffer
+
+    char t[256];
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"neg\":-42}", "sig");
+    TEST_ASSERT_TRUE(jwt_claim_int(t, strlen(t), "neg", &v));
+    TEST_ASSERT_EQUAL_INT(-42, v);
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"x\":\"str\"}", "sig");
+    TEST_ASSERT_FALSE(jwt_claim_int(t, strlen(t), "x", &v)); // value is not a number
+}
+
+void test_claim_str_edges()
+{
+    char buf[32];
+    TEST_ASSERT_FALSE(jwt_claim_str(nullptr, 5, "x", buf, sizeof(buf)));
+    TEST_ASSERT_FALSE(jwt_claim_str(TOKEN, strlen(TOKEN), "sub", buf, 0)); // zero cap
+    TEST_ASSERT_FALSE(jwt_claim_str("nodots", 6, "x", buf, sizeof(buf)));
+    TEST_ASSERT_FALSE(jwt_claim_str("a.b", 3, "x", buf, sizeof(buf)));
+    TEST_ASSERT_FALSE(jwt_claim_str("x.@@@.y", 7, "x", buf, sizeof(buf)));
+    char longname[60];
+    memset(longname, 'a', sizeof(longname) - 1);
+    longname[sizeof(longname) - 1] = '\0';
+    TEST_ASSERT_FALSE(jwt_claim_str(TOKEN, strlen(TOKEN), longname, buf, sizeof(buf)));
+
+    char t[256];
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\":\"a\\/b\"}", "sig");
+    TEST_ASSERT_TRUE(jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING("a/b", buf); // backslash unescape
+    mk_token(t, sizeof(t), "{\"alg\":\"HS256\"}", "{\"s\":\"abc", "sig");
+    TEST_ASSERT_FALSE(jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf))); // unterminated string
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_base64url_strict_alphabet);
+    RUN_TEST(test_verify_malformed_headers);
+    RUN_TEST(test_bearer_extra_spaces);
+    RUN_TEST(test_claim_int_edges);
+    RUN_TEST(test_claim_str_edges);
     RUN_TEST(test_valid_token_accepts);
     RUN_TEST(test_wrong_secret_rejects);
     RUN_TEST(test_tampered_payload_rejects);
