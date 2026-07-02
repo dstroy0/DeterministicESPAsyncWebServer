@@ -484,9 +484,130 @@ void test_inbound_ext_info_ignored()
     TEST_ASSERT_EQUAL_INT(0, emt_n);
 }
 
+// ---------------------------------------------------------------------------
+// Packet-layer (ssh_packet.cpp) framing edge cases
+// ---------------------------------------------------------------------------
+
+#include "network_drivers/presentation/ssh/ssh_aes256ctr.h"
+#include "network_drivers/presentation/ssh/ssh_keymat.h"
+
+static int g_pkt_calls = 0;
+static void pkt_rec_handler(uint8_t slot, uint8_t msg_type, const uint8_t *payload, size_t len)
+{
+    (void)slot;
+    (void)msg_type;
+    (void)payload;
+    (void)len;
+    g_pkt_calls++;
+}
+
+// Every packet entry point rejects an out-of-range slot, and a send whose wire form
+// does not fit the output buffer.
+void test_ssh_pkt_index_and_cap_guards()
+{
+    uint8_t out[64];
+    size_t out_len = 0;
+    ssh_pkt_init(MAX_SSH_CONNS); // out-of-range slot: no-op, no crash
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_send(MAX_SSH_CONNS, (const uint8_t *)"x", 1, out, &out_len, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(MAX_SSH_CONNS, (const uint8_t *)"x", 1, pkt_rec_handler));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_disconnect(MAX_SSH_CONNS, 11, out, &out_len, sizeof(out)));
+
+    ssh_pkt_init(0);
+    uint8_t big_payload[64];
+    memset(big_payload, 'a', sizeof(big_payload));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_send(0, big_payload, sizeof(big_payload), out, &out_len, 8)); // cap too small
+}
+
+// Unencrypted receive rejects a buffer overflow, an invalid packet length and an
+// over-large padding length, and stalls (returns 0, consumes nothing) on a partial packet.
+void test_ssh_pkt_recv_unencrypted_errors()
+{
+    static uint8_t overflow[SSH_PKT_BUF_SIZE + 1];
+    memset(overflow, 0, sizeof(overflow));
+    ssh_pkt_init(0);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, overflow, sizeof(overflow), pkt_rec_handler)); // buffer overflow
+
+    ssh_pkt_init(0);
+    uint8_t zero_len[4] = {0, 0, 0, 0}; // packet_length == 0
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, zero_len, 4, pkt_rec_handler));
+
+    ssh_pkt_init(0);
+    uint8_t bad_pad[10] = {0, 0, 0, 6, 6, 1, 0, 0, 0, 0}; // padding_length 6 >= packet_length 6
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, bad_pad, sizeof(bad_pad), pkt_rec_handler));
+
+    ssh_pkt_init(0);
+    uint8_t partial[5] = {0, 0, 0, 6, 4}; // announces 6, only 5 present -> buffered, not consumed
+    g_pkt_calls = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, partial, sizeof(partial), pkt_rec_handler));
+    TEST_ASSERT_EQUAL_INT(0, g_pkt_calls);
+}
+
+// The send and receive sequence-number overflow guards fire at the rekey threshold.
+void test_ssh_pkt_seq_overflow_guards()
+{
+    uint8_t out[64];
+    size_t out_len = 0;
+    ssh_pkt_init(0);
+    ssh_pkt[0].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_send(0, (const uint8_t *)"x", 1, out, &out_len, sizeof(out)));
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].seq_no_recv = SSH_SEQ_CLOSE_THRESHOLD;
+    uint8_t pkt[10] = {0, 0, 0, 6, 4, 42, 0, 0, 0, 0}; // a well-formed unencrypted packet
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, pkt, sizeof(pkt), pkt_rec_handler));
+}
+
+// An encrypted send round-trips through an encrypted receive (loopback keys), and a
+// corrupted MAC is rejected.
+void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
+{
+    uint8_t key[32], iv[16];
+    memset(key, 0x11, sizeof(key));
+    memset(iv, 0x22, sizeof(iv));
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].encrypted = true;
+    ssh_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
+    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // identical -> loopback
+    memset(ssh_keys[0].mac_key_s2c, 0x33, 32);
+    memset(ssh_keys[0].mac_key_c2s, 0x33, 32);
+
+    uint8_t payload[8];
+    memset(payload, 0xAB, sizeof(payload));
+    payload[0] = 50; // msg_type
+    uint8_t out[256];
+    size_t out_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), out, &out_len, sizeof(out)));
+    TEST_ASSERT_TRUE(out_len > 0);
+
+    // Good packet: decrypt + MAC verify + deliver.
+    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // reset decrypt cipher to the send's start
+    ssh_pkt[0].seq_no_recv = 0;
+    ssh_pkt[0].rx_len = 0;
+    uint8_t rx[256];
+    memcpy(rx, out, out_len);
+    g_pkt_calls = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, rx, out_len, pkt_rec_handler));
+    TEST_ASSERT_EQUAL_INT(1, g_pkt_calls);
+
+    // Corrupted MAC (last byte) is rejected.
+    ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv);
+    ssh_pkt[0].seq_no_recv = 0;
+    ssh_pkt[0].rx_len = 0;
+    memcpy(rx, out, out_len);
+    rx[out_len - 1] ^= 0xFF;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, rx, out_len, pkt_rec_handler));
+
+    ssh_pkt_init(0); // leave the slot clean for later tests
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_ssh_pkt_index_and_cap_guards);
+    RUN_TEST(test_ssh_pkt_recv_unencrypted_errors);
+    RUN_TEST(test_ssh_pkt_seq_overflow_guards);
+    RUN_TEST(test_ssh_pkt_encrypted_roundtrip_and_mac_fail);
     RUN_TEST(test_full_handshake_to_channel_data);
     RUN_TEST(test_extinfo_build_advertises_server_sig_algs);
     RUN_TEST(test_extinfo_not_sent_without_ext_info_c);
