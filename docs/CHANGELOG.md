@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.77.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.77.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`c7e41d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7e41d36c42c52ad282e30bf3c967ad3d80f803d))
+- update CHANGELOG.md [skip ci] ([`977d70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/977d70c38cf2efd1f9b464ca5b26fb35f5b69dd8))
+
+### Changes
+
+- Bump version: 4.76.0 → 4.77.0 ([`ccbab68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ccbab680e5488724670b8d5a4622a51d266a7c9c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6b4533a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b4533a4a6b13be87ebe8a5703aaeebcc0622ae3))
+
+### Features
+
+- Thread spinel / HDLC-lite framing codec - a gateway plugin ([`77bee5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77bee5bc8ad69c935ea761808ee68afcdb2b4ffb))
+
+</details>
+
 ## [4.76.0] - 2026-07-02
 
 <details>
