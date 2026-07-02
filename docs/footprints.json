@@ -111,6 +111,13 @@
     "flash_bytes": 756101,
     "ram_bytes": 67472
   },
+  "ENOCEAN+GATEWAY": {
+    "example": "Foundation/13.EnOceanGateway",
+    "flags": "-DDETWS_ENABLE_ENOCEAN=1 -DDETWS_ENABLE_GATEWAY=1",
+    "board": "esp32dev",
+    "flash_bytes": 268637,
+    "ram_bytes": 21840
+  },
   "ESPNOW": {
     "example": "L7-Application/53.EspNow",
     "flags": "-DDETWS_ENABLE_ESPNOW=1",
