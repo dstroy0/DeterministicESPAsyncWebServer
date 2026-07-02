@@ -483,6 +483,12 @@
       "src": ["+<services/sigfox/sigfox.cpp>"],
       "tests": ["test_sigfox"]
     },
+    "native_zwave": {
+      "desc": "Z-Wave Serial API frame codec (services/zwave), v5 radio plugin: the data-frame\nbuild/parse against the documented GetVersion request (01 03 00 15 E9), the XOR checksum, a\nround trip, malformed framing (bad SOF / checksum / length), incomplete frames, and the ACK\n/ NAK / CAN control bytes. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_ZWAVE=1", "-DDETWS_ZWAVE_MAX_DATA=16"],
+      "src": ["+<services/zwave/zwave.cpp>"],
+      "tests": ["test_zwave"]
+    },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],

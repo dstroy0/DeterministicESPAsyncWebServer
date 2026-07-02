@@ -86,6 +86,7 @@ DRIVER_HEADINGS = {
     "nRF24",
     "PN532",
     "Sigfox",
+    "Z-Wave",
 }
 
 # Where each target file's links to FEATURES.md point.

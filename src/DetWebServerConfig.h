@@ -463,6 +463,32 @@
 #error "DeterministicESPAsyncWebServer: DETWS_SIGFOX_MAX_PAYLOAD must be 1..12"
 #endif
 
+// ---------------------------------------------------------------------------
+// Z-Wave (DETWS_ENABLE_ZWAVE) - Silicon Labs Z-Wave Serial API frame codec
+// ---------------------------------------------------------------------------
+//
+// The host-side Serial API of a Silicon Labs 500 / 700-series Z-Wave controller over UART:
+// a Z-Wave mesh bridged to the web. Data frames are SOF (0x01) | LEN | Type | Command |
+// Data | Checksum, where the checksum is 0xFF XOR-folded over LEN..last-data; single-byte
+// ACK (0x06) / NAK (0x15) / CAN (0x18) frames flow-control them. zwave_build_frame() /
+// zwave_parse_frame() assemble and verify a data frame; the per-command payload is the
+// application's. Pure - you carry the bytes over your UART - so it is fully host-testable.
+// See services/zwave/zwave.h.
+
+/** @brief Enable the Z-Wave Serial API frame codec (default off). */
+#ifndef DETWS_ENABLE_ZWAVE
+#define DETWS_ENABLE_ZWAVE 0
+#endif
+
+/** @brief Reject a Z-Wave frame whose declared length exceeds this data cap (sanity). */
+#ifndef DETWS_ZWAVE_MAX_DATA
+#define DETWS_ZWAVE_MAX_DATA 64
+#endif
+
+#if DETWS_ENABLE_ZWAVE && (DETWS_ZWAVE_MAX_DATA < 1)
+#error "DeterministicESPAsyncWebServer: DETWS_ZWAVE_MAX_DATA must be >= 1"
+#endif
+
 /** @brief Maximum HTTP headers stored per request. */
 #ifndef MAX_HEADERS
 #define MAX_HEADERS 8

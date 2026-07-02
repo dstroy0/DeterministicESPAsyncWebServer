@@ -165,7 +165,11 @@ UART radios:
 
 - [ ] \*Zigbee NCP gateway (L) - Silicon Labs EZSP (EFR32) / Digi XBee / TI ZNP over
       UART; join as coordinator and bridge Zigbee devices to MQTT.
-- [ ] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
+- [~] \*Z-Wave Serial API gateway (M) - Silicon Labs 500 / 700-series over UART.
+  **Serial API frame codec shipped** (`DETWS_ENABLE_ZWAVE`, `services/zwave`):
+  SOF/LEN/Type/Cmd/Data frames + the XOR checksum + ACK/NAK/CAN, host-tested against
+  the documented GetVersion frame; example 16.ZWaveGateway bridges a real controller.
+  Remaining: verify against a controller + inclusion / SendData sequences.
 - [~] \*EnOcean gateway (M) - energy-harvesting 868 MHz ESP3 protocol over UART.
   **ESP3 codec shipped** (`DETWS_ENABLE_ENOCEAN`, `services/enocean`): telegram
   parse/build + the CRC-8 (poly 0x07), host-tested with known-answer CRCs and

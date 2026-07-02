@@ -16,6 +16,7 @@
     "ESP3",
     "RORG",
     "pdlen",
+    "zwave",
     "algs",
     "wolfssl",
     "donna",
