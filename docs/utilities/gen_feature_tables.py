@@ -55,7 +55,6 @@ CODEC_HEADINGS = {
     "IO-Link",
     "J1939",
     "JSON",
-    "LoRa",
     "LwM2M",
     "M-Bus",
     "MELSEC",
@@ -76,6 +75,13 @@ CODEC_HEADINGS = {
     "Stomp",
     "SunSpec",
     "WAMP",
+}
+
+# The DRIVERS table holds chip-specific hardware drivers - a radio / peripheral register or
+# command protocol talking to a real IC - as opposed to the byte-format codecs above (a
+# codec builds/parses bytes; a driver drives a chip). Membership is by FEATURES.md heading.
+DRIVER_HEADINGS = {
+    "LoRa",
 }
 
 # Where each target file's links to FEATURES.md point.
@@ -153,17 +159,20 @@ def render_table(title, rows, link_prefix):
 
 def build_block(link_prefix):
     entries = parse_features(FEATURES_MD)
-    features = [e for e in entries if e[0] not in CODEC_HEADINGS]
+    features = [e for e in entries if e[0] not in CODEC_HEADINGS and e[0] not in DRIVER_HEADINGS]
     codecs = [e for e in entries if e[0] in CODEC_HEADINGS]
-    missing = CODEC_HEADINGS - {e[0] for e in entries}
+    drivers = [e for e in entries if e[0] in DRIVER_HEADINGS]
+    missing = (CODEC_HEADINGS | DRIVER_HEADINGS) - {e[0] for e in entries}
     if missing:
-        raise SystemExit(f"CODEC_HEADINGS not found in FEATURES.md: {sorted(missing)}")
+        raise SystemExit(f"CODEC_HEADINGS / DRIVER_HEADINGS not found in FEATURES.md: {sorted(missing)}")
     parts = [
         BEGIN,
         "",
         render_table("FEATURES", features, link_prefix),
         "",
         render_table("CODECS", codecs, link_prefix),
+        "",
+        render_table("DRIVERS", drivers, link_prefix),
         "",
         END,
     ]
