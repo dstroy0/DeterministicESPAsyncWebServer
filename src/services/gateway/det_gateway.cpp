@@ -195,8 +195,16 @@ uint16_t det_gw_topic(const det_gw_msg *msg, char *buf, uint16_t buflen)
     for (const char *s = s_prefix; *s; s++)
         if (!put_ch(buf, &pos, buflen, *s))
             return 0;
-    if (!put_ch(buf, &pos, buflen, '/') || !put_u32(buf, &pos, buflen, msg->port_id) ||
-        !put_ch(buf, &pos, buflen, '/') || !put_u32(buf, &pos, buflen, msg->src_addr))
+    // Sequential, not one `||` chain: the two '/' separators are written at different
+    // positions (put_ch advances pos), so writing them as separate steps keeps each
+    // append distinct rather than repeating an identical-looking subexpression.
+    if (!put_ch(buf, &pos, buflen, '/'))
+        return 0;
+    if (!put_u32(buf, &pos, buflen, msg->port_id))
+        return 0;
+    if (!put_ch(buf, &pos, buflen, '/'))
+        return 0;
+    if (!put_u32(buf, &pos, buflen, msg->src_addr))
         return 0;
     buf[pos] = '\0';
     return pos;
