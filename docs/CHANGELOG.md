@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.67.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.67.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`14f1adb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14f1adbe4117270484b01bda2fc2047036962828))
+- update CHANGELOG.md [skip ci] ([`a17bea8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a17bea857802e9f27e61709ba7e7f23a365b1f1e))
+
+### Changes
+
+- Bump version: 4.66.0 → 4.67.0 ([`d7b8f4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7b8f4db0e53b15b42af47a59f795eb3d5a7c223))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4e4ce62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e4ce624f99374eb7d4c8458eb38fc1100aecbb1))
+
+### Features
+
+- interface forwarding plane - DMA-driven bridge / router ([`b821463`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b821463f28b6955bc98e7dd3aa650ea57741f0e8))
+
+</details>
+
 ## [4.66.0] - 2026-07-02
 
 <details>
