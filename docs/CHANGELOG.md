@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`1192b8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1192b8bba0d537975e582ebc7e0da7d32d1ac366))
+- update CHANGELOG.md [skip ci] ([`a1feefd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1feefd90027019a378004c732acab249046cfd8))
 - update test report [skip ci] ([`1d6281c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d6281c9945afd8d5b15e5b4dede0a8ad25ed28e))
 - update CHANGELOG.md [skip ci] ([`c0838ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0838cac988924f486d70359723acd990e1ecc56))
 - update test report [skip ci] ([`b46c6ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b46c6ee158be370d783277a1206c09f809267225))
@@ -80,6 +82,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover parse rejections, build null/overflow guards, setters, optional read fields ([`e8ed71a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8ed71ad7bfa29cb6a22bb14a4e9fadfe24048ad))
+- cover Variant/DataValue/NodeId codec branches and reader underruns ([`09e6c50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09e6c50200f591c300ce8fd193de523d2221b73b))
+- cover malformed options, extended delta/length, block edges, buffer limits ([`fb70d64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb70d6472b303d57992cca9e3c95041a950cf55a))
+- cover registration guards, IpAddress/value decoding, GetBulk edges, malformed PDUs ([`95b18db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95b18db08b2b067d3b6d82ece58504d38c111ea0))
 - cover URL/build/response edge rejections + host stubs ([`330d531`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/330d5317a3854f9d07db795b01d71a5a423ad41b))
 - cover cbor_peek for all types, 8-byte uint, double float, map mismatch ([`beba90b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beba90b576529cd1db4a2e34493ba4967d516fd2))
 - cover malformed-token rejection, bearer spaces, claim edge paths ([`9b70a70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b70a7071a64f310ec839b8f29658ee59bb4ff1b))
