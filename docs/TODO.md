@@ -246,7 +246,7 @@ Open follow-ups discovered during the above:
       build).
 - [ ] **IPv6 dual-stack** and an **Ethernet PHY abstraction** - the two
       architectural tracks deferred for a separate decision.
-- [ ] **Shared scratch-buffer pool (decided: build before permessage-deflate).**
+- [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_
       Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
       and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming
       deflate window). These are mutually exclusive in time, so one shared arena
@@ -266,11 +266,15 @@ Open follow-ups discovered during the above:
       optimization) - never UB, never block. Sizing = worst-case concurrent borrows
       in any single dispatch. This generalizes the existing single-loop-confined
       `crypto_work` pattern (only one SSH KEX runs at a time).
-      _Status:_ arena core + LIFO mark/release + RAII `ScratchScope` landed
-      (`test_scratch`, 14 cases; exhaustion + no-accumulate verified);
-      `scratch_reset()` wired into `server_tick()`; `ssh_pkt_recv` migrated as the
-      first tenant (its ~2 KB stack buffer removed). 602 host tests green and
-      esp32dev links. Next tenant: the permessage-deflate window.
+      _Status (done):_ arena core + LIFO mark/release + RAII `ScratchScope` landed
+      (`test_scratch`; exhaustion + no-accumulate verified); the single-owner debug
+      assert (`assert_single_owner` / `xTaskGetCurrentTaskHandle`, per worker) guards
+      against a foreign-task borrow; `scratch_reset()` wired into `server_tick()`.
+      Tenants migrated: `ssh_pkt_recv` (its ~2 KB stack buffer removed), `ssh_conn`,
+      the OIDC verifier's ~2.6 KB decode buffers, and - the planned final tenant - the
+      **permessage-deflate window** (both the outbound `deflate_raw` and inbound
+      `inflate_raw` scratch in `websocket.cpp` are `scratch_alloc`'d, fail-closed on
+      exhaustion). Host tests green and esp32dev links.
 
 </details>
 
