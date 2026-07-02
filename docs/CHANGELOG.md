@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`95371de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95371de3051d27d43041b2f6a1963234c8910c7f))
+- update CHANGELOG.md [skip ci] ([`419ee0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/419ee0e0d8c78a5156ab28b15473c7e22e21782d))
 - update CHANGELOG.md [skip ci] ([`85c47a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85c47a3fca0a5cfa0599b9cd390eabecca6f8b1a))
 - update test report [skip ci] ([`394156f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/394156f137ea7c61e5cf904a92dabfbc5a5d2a5a))
 - update CHANGELOG.md [skip ci] ([`3e1b17e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e1b17eb8c7574fc0403ff8d2f860607afb32dcf))
@@ -98,6 +100,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover build/parse guards and NPDU truncation rejections ([`1ba9714`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ba9714d22234004c7e3fd51dc6fabb2e22ea6f9))
+- cover null guards, Long/Float metric kinds, payload fail-closed paths (100% line) ([`1f0229e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f0229ec5c0414eab29ac2a56026ccb77d49fd58))
 - cover writer overflow/null guards, reader truncation paths, float-bits helper ([`3bdbcca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bdbccada1693d4fdf593c5a1309d6f8be4cb743))
 - cover init/boots accessors, encrypted discovery, tiny-cap report, priv-not-configured, notify paths ([`2273468`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2273468cddf57100c69d4be19d16156258223dbf))
 - cover message truncation fail-closed sweep and priv-without-auth rejection ([`9a44424`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a444247e45c905ca08a10ac66206d637ae6e404))
