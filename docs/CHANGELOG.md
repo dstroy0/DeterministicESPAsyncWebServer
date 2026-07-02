@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.69.0] - 2026-07-02
+
+<details>
+<summary><b>Show Changelog for version 4.69.0 - 2026-07-02</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`81179e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81179e1b6902e7a25ba86ba85d4fd5278b7ac964))
+- update CHANGELOG.md [skip ci] ([`e0aab89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0aab89881660f87efd32f16d5942de72d27c952))
+
+### Changes
+
+- Bump version: 4.68.0 → 4.69.0 ([`600ef93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/600ef933a98d7ac3914dba8f8fa9ed6dfae8cd78))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`3b9766e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b9766e2660a60cfff57e8641bba9d85a175e9d0))
+
+### Features
+
+- radio gateway bridge - southbound radio to northbound stack ([`759ac6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/759ac6e31edc9c3bef06771f7a1b307487b6a9e6))
+
+</details>
+
 ## [4.68.0] - 2026-07-02
 
 <details>
