@@ -843,7 +843,16 @@
     "rforward",
     "rfwd",
     "unstuffs",
-    "AMQP"
+    "AMQP",
+    "scalarmult",
+    "seedh",
+    "pubh",
+    "gotpub",
+    "gotsig",
+    "apub",
+    "bpub",
+    "badpub",
+    "deadbeefcafe"
   ],
   "ignorePaths": [
     "node_modules/**",
