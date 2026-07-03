@@ -156,7 +156,7 @@
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
-      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>"],
+      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>", "+<network_drivers/network/det_ip.cpp>"],
       "tests": ["test_http_ota"]
     },
     "native_prov": {
@@ -418,6 +418,7 @@
       "desc": "CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder\n(over the JSON writer) + the binary-mode ce-* header reader. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_CLOUDEVENTS=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<services/cloudevents.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>"
@@ -772,6 +773,7 @@
         "-DDETWS_ENABLE_SNMP=1"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
@@ -892,7 +894,7 @@
     },
     "native_compliance": {
       "desc": "RFC-compliance suite: builds with all enforcement at production defaults\n(DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors.",
-      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>"],
+      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>", "+<network_drivers/network/det_ip.cpp>"],
       "tests": ["test_compliance"]
     },
     "native_mqtt": {

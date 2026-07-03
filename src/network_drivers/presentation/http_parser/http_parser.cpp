@@ -11,6 +11,7 @@
  */
 
 #include "http_parser.h"
+#include "network_drivers/network/det_ip.h" // validate a recovered proxy client IP (v4/v6)
 
 HttpReq http_pool[MAX_CONNS];
 
@@ -591,11 +592,15 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
     return false;
 }
 
-// Copy an IPv4 token (strip surrounding quotes, IPv6 brackets are rejected, drop a
-// trailing :port) from [s, s+n) into out. Returns true if it looks like dotted IPv4.
-static bool fwd_copy_ipv4(const char *s, size_t n, char *out, size_t cap)
+// Extract and validate a Forwarded / X-Forwarded-For client-address token from
+// [s, s+n) into out (canonical text). Accepts IPv4 with an optional ":port", a
+// bracketed IPv6 "[2001:db8::1]:port" (RFC 7239 §6), and a bare IPv6 (the de-facto
+// X-Forwarded-For form). The candidate is confirmed with det_ip_parse, so "unknown",
+// an obfuscated "_id" identifier (RFC 7239 §6.3), or any malformed token returns
+// false. Returns true and writes the RFC 5952 canonical address on success.
+static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
 {
-    // Trim leading/trailing OWS and a wrapping DQUOTE.
+    // Trim leading/trailing OWS and a wrapping DQUOTE (RFC 7239 quotes the v6+port form).
     while (n > 0 && (*s == ' ' || *s == '\t'))
     {
         s++;
@@ -608,28 +613,51 @@ static bool fwd_copy_ipv4(const char *s, size_t n, char *out, size_t cap)
         s++;
         n -= 2;
     }
-    if (n == 0 || s[0] == '[')
-        return false; // empty, or IPv6 ("[...]") which this IPv4 stack does not key on
-    // Drop a trailing ":port" (only one colon, IPv4 has none).
-    size_t ip_len = 0;
-    int dots = 0, digits = 0;
-    for (; ip_len < n; ip_len++)
-    {
-        char c = s[ip_len];
-        if (c == ':')
-            break;
-        if (c == '.')
-            dots++;
-        else if (c >= '0' && c <= '9')
-            digits++;
-        else
-            return false; // not a bare IPv4 (could be "unknown" / "_obf")
-    }
-    if (dots != 3 || digits == 0 || ip_len + 1 > cap)
+    if (n == 0)
         return false;
-    memcpy(out, s, ip_len);
-    out[ip_len] = '\0';
-    return true;
+
+    char tok[DET_IP_STR_MAX];
+    size_t tlen = 0;
+    if (s[0] == '[')
+    {
+        // Bracketed IPv6: take the text between '[' and ']'; a trailing ":port" is ignored.
+        size_t i = 1;
+        for (; i < n && s[i] != ']'; i++)
+        {
+            if (tlen + 1 >= sizeof(tok))
+                return false;
+            tok[tlen++] = s[i];
+        }
+        if (i >= n) // unterminated bracket
+            return false;
+    }
+    else
+    {
+        // A single colon means "IPv4:port" (address up to the colon); two or more colons
+        // mean a bare IPv6 literal (kept whole - no port stripping).
+        int colons = 0;
+        for (size_t i = 0; i < n; i++)
+            if (s[i] == ':')
+                colons++;
+        size_t take = n;
+        if (colons <= 1)
+            for (size_t i = 0; i < n; i++)
+                if (s[i] == ':')
+                {
+                    take = i;
+                    break;
+                }
+        if (take == 0 || take + 1 > sizeof(tok))
+            return false;
+        memcpy(tok, s, take);
+        tlen = take;
+    }
+    tok[tlen] = '\0';
+
+    DetIp ip;
+    if (!det_ip_parse(tok, &ip)) // rejects "unknown" / "_obf" / malformed
+        return false;
+    return det_ip_format(&ip, out, cap) > 0; // false if out is too small for the canonical text
 }
 
 bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool *is_https)
@@ -666,7 +694,7 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
             size_t k = 0;
             while (k < lim && fend[k] != ';' && fend[k] != ',')
                 k++;
-            if (fwd_copy_ipv4(fv, k, ip_out, ip_cap))
+            if (fwd_extract_client(fv, k, ip_out, ip_cap))
                 return true;
         }
     }
@@ -683,7 +711,7 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
     {
         const char *end = strchr(xff, ',');
         size_t len = end ? (size_t)(end - xff) : strlen(xff);
-        if (fwd_copy_ipv4(xff, len, ip_out, ip_cap))
+        if (fwd_extract_client(xff, len, ip_out, ip_cap))
             return true;
     }
     return false;

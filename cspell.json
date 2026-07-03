@@ -836,7 +836,8 @@
     "pthread",
     "collidable",
     "sockaddr",
-    "detip"
+    "detip",
+    "reparsed"
   ],
   "ignorePaths": [
     "node_modules/**",

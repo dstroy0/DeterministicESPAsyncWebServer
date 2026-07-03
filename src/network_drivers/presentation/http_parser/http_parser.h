@@ -236,13 +236,16 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
  * @brief Recover the original client from a reverse-proxy `Forwarded` (RFC 7239)
  *        or de-facto `X-Forwarded-For` / `X-Forwarded-Proto` header.
  *
- * Copies the leftmost (original-client) IPv4 into @p ip_out (dotted, bounded by
- * @p ip_cap; a `:port` and DQUOTE/IPv6-bracket forms are handled) and sets
- * @p is_https from `proto=https` / `X-Forwarded-Proto: https`. IPv6 `for=` values
- * are not keyed (this is an IPv4 stack). The CALLER must only trust this when the
- * TCP peer is a configured trusted upstream - the header is client-spoofable.
+ * Writes the leftmost (original-client) address into @p ip_out as its RFC 5952
+ * canonical text (bounded by @p ip_cap; use ::DET_IP_STR_MAX for the widest IPv6),
+ * and sets @p is_https from `proto=https` / `X-Forwarded-Proto: https`. Both IPv4
+ * (with an optional `:port`) and IPv6 (bracketed `for="[2001:db8::1]:port"` or a
+ * bare `X-Forwarded-For` literal) are recovered; the candidate is validated with
+ * det_ip_parse, so `unknown` / obfuscated `_id` identifiers and malformed tokens
+ * are rejected. The CALLER must only trust this when the TCP peer is a configured
+ * trusted upstream - the header is client-spoofable.
  *
- * @return true if an IPv4 client address was extracted (in @p ip_out).
+ * @return true if a valid client address (IPv4 or IPv6) was written to @p ip_out.
  */
 bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool *is_https);
 

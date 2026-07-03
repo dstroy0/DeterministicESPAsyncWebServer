@@ -383,14 +383,15 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       not older than the file; plus `Cache-Control` via `set_cache_control()`. Remaining
       (optional): response-side freshness heuristics / `Age`, request `Cache-Control`.
 - [~] **Forwarded header** (S, RFC 7239) - _parser shipped._
-  `http_forwarded_client()` recovers the original client IPv4 + scheme from `Forwarded`
+  `http_forwarded_client()` recovers the original client address + scheme from `Forwarded`
   (RFC 7239) or the de-facto `X-Forwarded-For` / `X-Forwarded-Proto` (leftmost = the
-  client; strips DQUOTE / `:port`; IPv6 / `unknown` not keyed). Host-tested
-  (`test_http_parser`, 4 cases). It is a helper (like `http_get_cookie`) the app
-  reads in a handler; auto-wiring the recovered IP into the per-IP auth lockout /
-  audit, gated on a configured trusted upstream (the header is client-spoofable),
-  is the optional remaining step. The IP allowlist stays accept-time (the proxy's
-  real TCP source).
+  client). Both IPv4 (optional `:port`) and IPv6 (bracketed `for="[2001:db8::1]:port"` or a
+  bare `X-Forwarded-For` literal) are recovered and canonicalized (RFC 5952); the candidate
+  is validated with `det_ip_parse`, so `unknown` / obfuscated `_id` tokens are rejected.
+  Host-tested (`test_http_parser`, 5 cases). It is a helper (like `http_get_cookie`) the app
+  reads in a handler; auto-wiring the recovered IP into the per-IP auth lockout / audit,
+  gated on a configured trusted upstream (the header is client-spoofable), is the optional
+  remaining step. The IP allowlist stays accept-time (the proxy's real TCP source).
 
 ## Maintenance
 

@@ -19,6 +19,7 @@
 //   HELPERS    - http_get_header, http_get_query edge cases
 //   STRESS     - large query, many headers, incremental feeds
 
+#include "network_drivers/network/det_ip.h" // DET_IP_STR_MAX for the recovered-client buffer
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include <unity.h>
 
@@ -366,15 +367,25 @@ void test_forwarded_strips_quotes_and_port()
     TEST_ASSERT_EQUAL_STRING("192.0.2.43", ip); // DQUOTE + :port removed
 }
 
-void test_forwarded_ipv6_and_unknown_not_keyed()
+void test_forwarded_ipv6_recovered_unknown_rejected()
 {
-    char ip[24];
+    char ip[DET_IP_STR_MAX];
+    // RFC 7239 §6: an IPv6 for= value is DQUOTE-wrapped + bracketed, optional :port.
     feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=\"[2001:db8::1]:8080\"\r\n\r\n");
-    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr)); // IPv6 not keyed
-    feed_request(1, "GET / HTTP/1.1\r\nX-Forwarded-For: unknown\r\n\r\n");
-    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[1], ip, sizeof(ip), nullptr)); // not an IPv4
-    feed_request(2, "GET / HTTP/1.1\r\n\r\n");
-    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[2], ip, sizeof(ip), nullptr)); // no header
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("2001:db8::1", ip); // brackets + :port stripped
+    // Bare IPv6 in the de-facto X-Forwarded-For (leftmost client), canonicalized (RFC 5952).
+    feed_request(1, "GET / HTTP/1.1\r\nX-Forwarded-For: 2001:DB8:0:0:0:0:0:2, 198.51.100.1\r\n\r\n");
+    TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[1], ip, sizeof(ip), nullptr));
+    TEST_ASSERT_EQUAL_STRING("2001:db8::2", ip);
+    // "unknown" and obfuscated identifiers (RFC 7239 §6.3) are not addresses -> rejected.
+    feed_request(2, "GET / HTTP/1.1\r\nX-Forwarded-For: unknown\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[2], ip, sizeof(ip), nullptr));
+    feed_request(3, "GET / HTTP/1.1\r\nForwarded: for=_hidden\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[3], ip, sizeof(ip), nullptr));
+    // No header at all.
+    feed_request(0, "GET / HTTP/1.1\r\n\r\n");
+    TEST_ASSERT_FALSE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));
 }
 
 void test_header_leading_space_stripped()
@@ -1049,7 +1060,7 @@ int main()
     RUN_TEST(test_forwarded_rfc7239);
     RUN_TEST(test_forwarded_leftmost_client);
     RUN_TEST(test_forwarded_strips_quotes_and_port);
-    RUN_TEST(test_forwarded_ipv6_and_unknown_not_keyed);
+    RUN_TEST(test_forwarded_ipv6_recovered_unknown_rejected);
     RUN_TEST(test_header_leading_space_stripped);
     RUN_TEST(test_content_length_header_parsed);
     RUN_TEST(test_content_length_in_headers_array);
