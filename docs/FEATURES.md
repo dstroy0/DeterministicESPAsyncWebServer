@@ -762,6 +762,12 @@ WebSocket permessage-deflate (RFC 7692) - bidirectional compression. When set (a
 
 Z-Wave Serial API frame codec (v5 gateway plugin). Default off. services/zwave is the host-side Serial API of a Silicon Labs 500 / 700-series Z-Wave controller over UART, so a Z-Wave mesh is bridged to the web. Data frames are `SOF (0x01) | LEN | Type | Command | Data | Checksum`, where LEN counts Type..Checksum, Type is 0x00 (REQ) / 0x01 (RES), and the checksum is 0xFF XOR-folded over LEN..last-data; single-byte ACK (0x06) / NAK (0x15) / CAN (0x18) frames flow-control them. `zwave_build_frame` assembles a function command (GetVersion, SendData, AddNodeToNetwork, ...), `zwave_parse_frame` frames + verifies a response (length / need-more / resync), and `zwave_is_ack` / `_nak` / `_can` / `zwave_build_ack` handle the control bytes; the per-command payload is the application's. Pull the source node id + payload out of an ApplicationCommandHandler report and bridge it northbound with `det_gw_uplink()`. Pure - you carry the bytes over your UART - and host-tested against the documented GetVersion frame (`01 03 00 15 E9`) and its XOR checksum. Example 16.ZWaveGateway bridges a real controller. See src/services/zwave/zwave.h.
 
+## Wi-Fi Capture
+
+`DETWS_ENABLE_PROMISC`
+
+Passive 802.11 promiscuous (monitor) capture. Default off. `promisc_begin(channel, sink)` puts the radio in promiscuous mode (`esp_wifi_set_promiscuous`) and delivers every frame - with RSSI and channel - to a sink; capture is strictly passive (no injection). Wire the sink into the forwarding plane (`DETWS_ENABLE_FORWARD`) to bridge captured Wi-Fi frames to another interface - e.g. stream them to a wired collector over Ethernet ("capture on Wi-Fi, forward to Ethernet"). Ships a pure 802.11 MAC-header parser (`wifi_frame_parse`: type/subtype, the to/from-DS src/dst/bssid layout, QoS, WDS 4-address, sequence number) and libpcap framing (`DLT_IEEE802_11`) so a forwarded frame is a valid PCAP a wired Wireshark / tcpdump reads. The parser and PCAP framing are pure and host-tested (`native_promisc`); the radio bring-up is ESP32-only. Example 21.WifiCapture.
+
 ## Zigbee
 
 `DETWS_ENABLE_ZIGBEE`

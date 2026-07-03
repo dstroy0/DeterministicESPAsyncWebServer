@@ -219,9 +219,13 @@ terminating traffic, listen to **every** frame on a channel and surface it north
 field debugging. Capture is strictly passive (no injection on the capture path) and
 fail-closed: a full capture queue drops frames rather than stalling the live data path.
 
-- [ ] \*Wi-Fi promiscuous / monitor mode (M) - on-chip ESP32 raw 802.11 capture
-      (`esp_wifi_set_promiscuous`), with a channel / type filter, streamed to a
-      WebSocket or written as PCAP.
+- [x] \*Wi-Fi promiscuous / monitor mode (M) _(shipped, v4.84.0)_ - on-chip ESP32 raw 802.11
+      capture (`DETWS_ENABLE_PROMISC`, `services/promisc`): `promisc_begin(channel, sink)` over
+      `esp_wifi_set_promiscuous`, a pure `wifi_frame_parse()` 802.11 header decoder (to/from-DS
+      src/dst/bssid, QoS, WDS), and libpcap `DLT_IEEE802_11` framing. The sink feeds the
+      forwarding plane, so captured frames bridge to another interface - **capture on Wi-Fi,
+      forward to Ethernet** to a wired PCAP collector (example 21.WifiCapture). Host-tested
+      (`native_promisc`); both cores compiled. Northbound-over-WebSocket is a follow-on wiring.
 - [ ] \*Bus listen-only capture (M) - the wired field-bus codecs in listen-only mode
       (CAN / TWAI listen-only, RS-485 receive-only) decode every frame on the wire
       without ACKing, bridged to the same capture sink.

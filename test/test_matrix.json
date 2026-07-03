@@ -19,6 +19,12 @@
       "src": ["+<network_drivers/network/det_ip.cpp>"],
       "tests": ["test_det_ip"]
     },
+    "native_promisc": {
+      "desc": "Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC header parser\n(to/from-DS src/dst/bssid resolution, QoS, WDS 4-address, control frames, malformed\nrejection) and libpcap (DLT_IEEE802_11) framing. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PROMISC=1"],
+      "src": ["+<services/promisc/promisc.cpp>"],
+      "tests": ["test_promisc"]
+    },
     "native_j1939": {
       "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_J1939=1"],

@@ -572,6 +572,19 @@
 #define DETWS_ENABLE_IPV6 0
 #endif
 
+/**
+ * @brief Wi-Fi promiscuous (monitor) capture (DETWS_ENABLE_PROMISC). Default off.
+ *
+ * Passive 802.11 sniffing: promisc_begin() puts the radio in promiscuous mode on a channel and
+ * delivers every frame to a sink (services/promisc). Wire that sink into the forwarding plane
+ * (DETWS_ENABLE_FORWARD) to bridge captured Wi-Fi frames to another interface - e.g. stream them
+ * to a wired collector over Ethernet. Ships a pure 802.11 header parser and libpcap framing
+ * (DLT_IEEE802_11) so a forwarded frame is a valid PCAP a wired Wireshark / tcpdump can read.
+ */
+#ifndef DETWS_ENABLE_PROMISC
+#define DETWS_ENABLE_PROMISC 0
+#endif
+
 // Feature / service / codec tuning knobs are consolidated at the END of this file,
 // under "Feature tuning knobs (grouped and gated by feature)" - placed there so every
 // DETWS_ENABLE_* flag is already resolved and each group can gate on its own feature.
