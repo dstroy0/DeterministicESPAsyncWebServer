@@ -18,7 +18,7 @@
     "spell": "cspell --config cspell.json \"**/*.md\""
   },
   "devDependencies": {
-    "cspell": "^8.6.0",
+    "cspell": "^10.0.1",
     "prettier": "3.9.4"
   },
   "engines": {
