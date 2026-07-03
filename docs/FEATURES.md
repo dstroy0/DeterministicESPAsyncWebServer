@@ -38,6 +38,12 @@ Opt-in per-IP brute-force lockout for HTTP auth (requires AUTH). Default off (ze
 
 BACnet/IP BVLC + NPDU codec - the ASHRAE 135 building-automation network framing over UDP (47808). Default off. services/bacnet provides `bvlc_build` / `bvlc_parse` for the BACnet/IP virtual-link envelope (type 0x81, function such as Original-Unicast-NPDU 0x0A / Original-Broadcast-NPDU 0x0B, 2-octet length) and `npdu_build` / `npdu_parse` for the network layer (version 0x01 + the NPCI control octet + optional DNET/DLEN/DADR destination addressing + hop count), slicing out the APDU. Layout verified against ASHRAE 135 Annex J / Clause 6; pure and host-tested. The APDU application layer (objects / properties / services) layers on top. See src/services/bacnet/bacnet.h.
 
+## Bus Capture
+
+`DETWS_ENABLE_BUS_CAPTURE`
+
+Wired field-bus listen-only capture - the wired counterpart to Wi-Fi promiscuous capture. Default off. `bus_capture_begin(tx, rx, bitrate, sink)` installs the ESP32 CAN (TWAI) controller in listen-only mode - it receives and decodes every frame on the bus but never ACKs or transmits, so it stays invisible to the other nodes - and hands each decoded `CanFrame` to a sink; `bus_capture_poll()` drains the RX queue from `loop()`. Wire the sink into the forwarding plane (`DETWS_ENABLE_FORWARD`) to bridge captured CAN frames to another interface - e.g. stream them to a wired collector over Ethernet. `can_to_socketcan()` (pure) formats a frame as a 16-byte Linux SocketCAN frame (big-endian `can_id` with the EFF / RTR flags), which with the libpcap `DLT_CAN_SOCKETCAN` link type is a capture Wireshark reads. The SocketCAN framing is pure and host-tested (`native_bus_capture`); the TWAI bring-up is ESP32-only and needs a CAN transceiver. Example 22.CanCapture.
+
 ## C37.118
 
 `DETWS_ENABLE_C37118`

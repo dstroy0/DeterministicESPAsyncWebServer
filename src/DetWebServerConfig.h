@@ -585,6 +585,20 @@
 #define DETWS_ENABLE_PROMISC 0
 #endif
 
+/**
+ * @brief Wired field-bus listen-only capture (DETWS_ENABLE_BUS_CAPTURE). Default off.
+ *
+ * The wired counterpart to promiscuous Wi-Fi capture: bus_capture_begin() installs the CAN (TWAI)
+ * controller in listen-only mode - it decodes every frame on the bus but never ACKs or transmits,
+ * so it stays invisible - and delivers each CanFrame to a sink (services/bus_capture). Wire the
+ * sink into the forwarding plane (DETWS_ENABLE_FORWARD) to bridge captured CAN frames to another
+ * interface. can_to_socketcan() formats a frame as a Linux SocketCAN frame so, with the libpcap
+ * DLT_CAN_SOCKETCAN link type, the stream is a capture Wireshark reads.
+ */
+#ifndef DETWS_ENABLE_BUS_CAPTURE
+#define DETWS_ENABLE_BUS_CAPTURE 0
+#endif
+
 // Feature / service / codec tuning knobs are consolidated at the END of this file,
 // under "Feature tuning knobs (grouped and gated by feature)" - placed there so every
 // DETWS_ENABLE_* flag is already resolved and each group can gate on its own feature.

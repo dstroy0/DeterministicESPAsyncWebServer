@@ -19,12 +19,13 @@ Wi-Fi radio ─promisc_begin()→ sink ─det_forward_ingress()→ ETH send cb �
 - **`services/forward`** (the forwarding plane) bridges interfaces: register a Wi-Fi source and
   an Ethernet destination, add a `WIFI → ETH` ALLOW rule (with a rate cap so a busy channel can't
   swamp the uplink), and every ingress frame is handed to the Ethernet interface's send callback.
-- The **Ethernet egress** here wraps each frame in a **libpcap record** (`pcap_record_header()`,
-  link type `DLT_IEEE802_11`) and UDPs it to the collector with `det_udp_sendto()`, which routes
-  over the wired default route.
+- The **Ethernet egress** here wraps each frame in a **libpcap record** (`det_pcap_record_header()`
+  from `shared_primitives/det_pcap.h`, link type `DET_DLT_IEEE802_11`) and UDPs it to the collector
+  with `det_udp_sendto()`, which routes over the wired default route.
 
-On the collector, receive the UDP datagrams, prepend one `pcap_global_header()` (or the 24-byte
-libpcap global header), and you have a `.pcap` **Wireshark** opens directly as 802.11.
+On the collector, receive the UDP datagrams, prepend one
+`det_pcap_global_header(..., DET_DLT_IEEE802_11)`, and you have a `.pcap` **Wireshark** opens
+directly as 802.11.
 
 ## Filtering
 

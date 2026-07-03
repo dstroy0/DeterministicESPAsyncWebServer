@@ -226,9 +226,13 @@ fail-closed: a full capture queue drops frames rather than stalling the live dat
       forwarding plane, so captured frames bridge to another interface - **capture on Wi-Fi,
       forward to Ethernet** to a wired PCAP collector (example 21.WifiCapture). Host-tested
       (`native_promisc`); both cores compiled. Northbound-over-WebSocket is a follow-on wiring.
-- [ ] \*Bus listen-only capture (M) - the wired field-bus codecs in listen-only mode
-      (CAN / TWAI listen-only, RS-485 receive-only) decode every frame on the wire
-      without ACKing, bridged to the same capture sink.
+- [x] \*Bus listen-only capture (M) _(CAN shipped, v4.85.0)_ - `DETWS_ENABLE_BUS_CAPTURE`
+      (`services/bus_capture`): the TWAI controller in listen-only mode decodes every CAN frame
+      without ACKing and feeds the forwarding plane, so captured frames bridge to another
+      interface. `can_to_socketcan()` + libpcap `DLT_CAN_SOCKETCAN` make the stream
+      Wireshark-readable (example 22.CanCapture, host-tested `native_bus_capture`; the SocketCAN
+      framing shares `shared_primitives/det_pcap.h` with the Wi-Fi capture). Remaining: RS-485
+      receive-only decode into the same sink.
 - [ ] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
       LoRa / sub-GHz / 802.15.4 channel without joining) feeding the capture pipeline.
 

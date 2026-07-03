@@ -38,13 +38,13 @@ enum
 // collector. det_udp_sendto() routes over the default interface, which is the wired uplink.
 static bool eth_send(uint8_t, const uint8_t *frame, uint16_t len, void *)
 {
-    static uint8_t buf[PCAP_REC_HDR_LEN + 2048];
+    static uint8_t buf[DET_PCAP_REC_HDR_LEN + 2048];
     if (len > 2048)
         len = 2048;
     uint32_t us = (uint32_t)micros();
-    pcap_record_header(buf, sizeof(buf), us / 1000000u, us % 1000000u, len, len);
-    memcpy(buf + PCAP_REC_HDR_LEN, frame, len);
-    return det_udp_sendto(COLLECTOR_IP, COLLECTOR_PORT, buf, PCAP_REC_HDR_LEN + len);
+    det_pcap_record_header(buf, sizeof(buf), us / 1000000u, us % 1000000u, len, len);
+    memcpy(buf + DET_PCAP_REC_HDR_LEN, frame, len);
+    return det_udp_sendto(COLLECTOR_IP, COLLECTOR_PORT, buf, DET_PCAP_REC_HDR_LEN + len);
 }
 
 // Wi-Fi is a source only - no rule forwards *to* it, so this is never called.

@@ -25,6 +25,12 @@
       "src": ["+<services/promisc/promisc.cpp>"],
       "tests": ["test_promisc"]
     },
+    "native_bus_capture": {
+      "desc": "CAN listen-only capture framing (services/bus_capture): can_to_socketcan() building the\n16-byte Linux SocketCAN frame (big-endian can_id, EFF/RTR flags, length, data) and the\nDLT_CAN_SOCKETCAN libpcap link type. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_BUS_CAPTURE=1"],
+      "src": ["+<services/bus_capture/bus_capture.cpp>"],
+      "tests": ["test_bus_capture"]
+    },
     "native_j1939": {
       "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_J1939=1"],

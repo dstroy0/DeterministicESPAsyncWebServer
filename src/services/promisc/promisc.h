@@ -32,6 +32,7 @@
 
 #if DETWS_ENABLE_PROMISC
 
+#include "shared_primitives/det_pcap.h" // det_pcap_* framing + DET_DLT_IEEE802_11
 #include <stddef.h>
 #include <stdint.h>
 
@@ -66,22 +67,8 @@ struct WifiFrameInfo
  */
 bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out);
 
-/** @brief libpcap header sizes. */
-#define PCAP_GLOBAL_HDR_LEN 24
-#define PCAP_REC_HDR_LEN 16
-
-/**
- * @brief Write the 24-byte libpcap global header (little-endian, link type DLT_IEEE802_11 = 105).
- * @return PCAP_GLOBAL_HDR_LEN, or 0 if @p cap is too small.
- */
-size_t pcap_global_header(uint8_t *out, size_t cap);
-
-/**
- * @brief Write a 16-byte libpcap record header for one captured frame.
- * @return PCAP_REC_HDR_LEN, or 0 if @p cap is too small.
- */
-size_t pcap_record_header(uint8_t *out, size_t cap, uint32_t ts_sec, uint32_t ts_usec, uint32_t caplen,
-                          uint32_t origlen);
+// libpcap framing lives in shared_primitives/det_pcap.h: det_pcap_global_header() with
+// DET_DLT_IEEE802_11 + det_pcap_record_header() wrap a captured 802.11 frame as a valid PCAP.
 
 /**
  * @brief Sink for one captured frame: the raw 802.11 bytes plus radio metadata.

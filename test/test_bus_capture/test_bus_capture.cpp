@@ -1,0 +1,118 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the CAN listen-only capture framing (services/bus_capture): can_to_socketcan()
+// building the 16-byte Linux SocketCAN frame (big-endian can_id, EFF / RTR flags, length, data)
+// and the DLT_CAN_SOCKETCAN libpcap link type. Pure host tests.
+
+#include "services/bus_capture/bus_capture.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp()
+{
+}
+void tearDown()
+{
+}
+
+void test_standard_data_frame()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    f.id = 0x123;
+    f.extended = false;
+    f.rtr = false;
+    f.dlc = 8;
+    for (int i = 0; i < 8; i++)
+        f.data[i] = (uint8_t)(0x10 + i);
+
+    uint8_t out[DET_SOCKETCAN_FRAME_LEN];
+    TEST_ASSERT_EQUAL_UINT(DET_SOCKETCAN_FRAME_LEN, can_to_socketcan(&f, out, sizeof(out)));
+    // can_id 0x00000123, big-endian, no flags.
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x23, out[3]);
+    TEST_ASSERT_EQUAL_HEX8(8, out[4]); // length
+    TEST_ASSERT_EQUAL_HEX8(0, out[5]);
+    TEST_ASSERT_EQUAL_MEMORY(f.data, out + 8, 8);
+}
+
+void test_extended_id_sets_eff()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    f.id = 0x18FEF100; // a J1939-style 29-bit id
+    f.extended = true;
+    f.dlc = 2;
+    f.data[0] = 0xAA;
+    f.data[1] = 0xBB;
+
+    uint8_t out[DET_SOCKETCAN_FRAME_LEN];
+    can_to_socketcan(&f, out, sizeof(out));
+    // can_id = id | EFF (0x80000000) = 0x98FEF100, big-endian.
+    TEST_ASSERT_EQUAL_HEX8(0x98, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xFE, out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xF1, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[3]);
+    TEST_ASSERT_EQUAL_HEX8(2, out[4]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, out[8]);
+    TEST_ASSERT_EQUAL_HEX8(0xBB, out[9]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[10]); // beyond dlc is zeroed
+}
+
+void test_rtr_flag_and_no_data()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    f.id = 0x7FF;
+    f.rtr = true;
+    f.dlc = 4;
+    f.data[0] = 0xFF; // must not appear (RTR frames carry no data)
+
+    uint8_t out[DET_SOCKETCAN_FRAME_LEN];
+    can_to_socketcan(&f, out, sizeof(out));
+    TEST_ASSERT_EQUAL_HEX8(0x40, out[0]); // RTR flag (0x40000000) in the top byte
+    TEST_ASSERT_EQUAL_HEX8(0x07, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, out[3]);
+    for (int i = 0; i < 8; i++)
+        TEST_ASSERT_EQUAL_HEX8(0, out[8 + i]);
+}
+
+void test_masks_and_bounds()
+{
+    CanFrame f;
+    memset(&f, 0, sizeof(f));
+    f.id = 0xFFFFFFFF; // over-wide; a standard frame must mask to 11 bits
+    f.extended = false;
+    f.dlc = 20; // over-long; must clamp to 8
+    uint8_t out[DET_SOCKETCAN_FRAME_LEN];
+    can_to_socketcan(&f, out, sizeof(out));
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[0]); // no EFF, id masked to 0x7FF
+    TEST_ASSERT_EQUAL_HEX8(0x07, out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, out[3]);
+    TEST_ASSERT_EQUAL_HEX8(8, out[4]); // clamped
+
+    uint8_t tiny[8];
+    TEST_ASSERT_EQUAL_UINT(0, can_to_socketcan(&f, tiny, sizeof(tiny))); // too small
+    TEST_ASSERT_EQUAL_UINT(0, can_to_socketcan(nullptr, out, sizeof(out)));
+}
+
+void test_pcap_can_linktype()
+{
+    uint8_t g[DET_PCAP_GLOBAL_HDR_LEN];
+    TEST_ASSERT_EQUAL_UINT(DET_PCAP_GLOBAL_HDR_LEN, det_pcap_global_header(g, sizeof(g), DET_DLT_CAN_SOCKETCAN));
+    TEST_ASSERT_EQUAL_HEX8(227, g[20]); // DLT_CAN_SOCKETCAN
+}
+
+int main()
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_standard_data_frame);
+    RUN_TEST(test_extended_id_sets_eff);
+    RUN_TEST(test_rtr_flag_and_no_data);
+    RUN_TEST(test_masks_and_bounds);
+    RUN_TEST(test_pcap_can_linktype);
+    return UNITY_END();
+}

@@ -80,47 +80,8 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
     return true;
 }
 
-namespace
-{
-void wr32le(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-    p[2] = (uint8_t)(v >> 16);
-    p[3] = (uint8_t)(v >> 24);
-}
-void wr16le(uint8_t *p, uint16_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-}
-} // namespace
-
-size_t pcap_global_header(uint8_t *out, size_t cap)
-{
-    if (!out || cap < PCAP_GLOBAL_HDR_LEN)
-        return 0;
-    wr32le(out + 0, 0xa1b2c3d4); // magic: microsecond timestamps, little-endian
-    wr16le(out + 4, 2);          // version major
-    wr16le(out + 6, 4);          // version minor
-    wr32le(out + 8, 0);          // thiszone (GMT)
-    wr32le(out + 12, 0);         // sigfigs
-    wr32le(out + 16, 65535);     // snaplen
-    wr32le(out + 20, 105);       // network: DLT_IEEE802_11
-    return PCAP_GLOBAL_HDR_LEN;
-}
-
-size_t pcap_record_header(uint8_t *out, size_t cap, uint32_t ts_sec, uint32_t ts_usec, uint32_t caplen,
-                          uint32_t origlen)
-{
-    if (!out || cap < PCAP_REC_HDR_LEN)
-        return 0;
-    wr32le(out + 0, ts_sec);
-    wr32le(out + 4, ts_usec);
-    wr32le(out + 8, caplen);
-    wr32le(out + 12, origlen);
-    return PCAP_REC_HDR_LEN;
-}
+// libpcap framing (det_pcap_global_header / det_pcap_record_header) is in
+// shared_primitives/det_pcap.h - shared with the other capture features.
 
 // --- ESP32 radio binding -----------------------------------------------------------------
 #ifdef ARDUINO
