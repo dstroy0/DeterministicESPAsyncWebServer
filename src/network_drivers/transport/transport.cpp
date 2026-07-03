@@ -559,9 +559,10 @@ uint32_t det_conn_remote_ip(uint8_t slot)
 }
 
 #ifdef ARDUINO
-// Convert an lwIP address into a family-tagged DetIp (network-order bytes). The one owner of the
-// pcb->ip_addr_t -> DetIp mapping, shared by the per-slot and accept-time (pcb) callers.
-static void lwip_to_detip(const ip_addr_t *ra, DetIp *out)
+// Convert an lwIP address (itself a family-tagged union) into the portable DetIp, network-order
+// bytes preserved. The one owner of the pcb ip_addr_t -> DetIp mapping, for the per-slot accessor
+// below and the accept callback (which has the pcb but no slot yet).
+void det_lwip_to_detip(const ip_addr_t *ra, DetIp *out)
 {
 #if LWIP_IPV6
     if (IP_IS_V6(ra))
@@ -581,45 +582,21 @@ static void lwip_to_detip(const ip_addr_t *ra, DetIp *out)
 
 bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 {
-    if (!out)
-        return false;
+    if (out)
+        out->family = DET_IP_NONE;
 #ifdef ARDUINO
-    if (slot >= MAX_CONNS)
+    if (!out || slot >= MAX_CONNS)
         return false;
     TcpConn *conn = &conn_pool[slot];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return false;
-    lwip_to_detip(&conn->pcb->remote_ip, out);
+    det_lwip_to_detip(&conn->pcb->remote_ip, out);
     return true;
 #else
     (void)slot;
     return false;
 #endif
 }
-
-uint32_t det_conn_remote_key(uint8_t slot)
-{
-#ifdef ARDUINO
-    DetIp addr;
-    if (!det_conn_remote_addr(slot, &addr))
-        return 0;
-    return det_ip_key(&addr);
-#else
-    (void)slot;
-    return 0; // no real connection on a host build
-#endif
-}
-
-#ifdef ARDUINO
-uint32_t det_lwip_ip_key(const ip_addr_t *ra)
-{
-    if (!ra)
-        return 0;
-    DetIp addr;
-    lwip_to_detip(ra, &addr);
-    return det_ip_key(&addr);
-}
-#endif
 
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {

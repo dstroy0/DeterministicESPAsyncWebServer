@@ -95,13 +95,17 @@ DetIp det_ip_from_v6_bytes(const uint8_t bytes[16]);
  */
 uint32_t det_ip_to_v4_be(const DetIp *ip);
 
+/** @brief True if @p ip is empty (DET_IP_NONE) or the all-zero unspecified address (0.0.0.0 / ::). */
+bool det_ip_is_unspecified(const DetIp *ip);
+
 /**
- * @brief A stable 32-bit identity key for @p ip - for per-peer buckets (rate limit, auth lockout).
+ * @brief CIDR containment: is @p addr inside the @p net / @p prefix_len block?
  *
- * A v4 (or v4-mapped) address maps to its 32-bit value; a v6 address to an FNV-1a hash of its 16
- * bytes, so two distinct v6 peers collide only with negligible probability. This is a key, not an
- * address - do not display or reverse it.
+ * The two must be the same family. @p prefix_len is 0..32 for v4, 0..128 for v6; the top
+ * @p prefix_len bits of the address bytes must match @p net (a prefix of 0 matches everything).
+ * This is the standard v4/v6 allowlist match.
+ * @return true if @p addr is covered; false on a family mismatch or an out-of-range prefix.
  */
-uint32_t det_ip_key(const DetIp *ip);
+bool det_ip_prefix_match(const DetIp *addr, const DetIp *net, uint8_t prefix_len);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_IP_H

@@ -10,13 +10,19 @@ TLS, etc.), evaluated at accept time before any bytes are read. Rules live in a
 fixed BSS table, so there is no heap cost.
 
 **Adding rules.** Unlike the throttles (which are flag-only), the allowlist has a
-small API: add CIDR rules with `listener_ip_allow_add(network, prefix_len)`,
-using the `DETWS_IPV4(a,b,c,d)` helper to build the address:
+small API: add CIDR rules as text with `listener_ip_allow_add_cidr("network/prefix")`.
+IPv4 and IPv6 are both accepted; a bare address (no `/prefix`) is a single-host
+rule (`/32` for v4, `/128` for v6):
 
 ```cpp
-listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 24); // the local /24
-listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 5), 32);    // one trusted host
+listener_ip_allow_add_cidr("192.168.1.0/24"); // the local /24
+listener_ip_allow_add_cidr("10.0.0.5");       // one trusted host (-> /32)
+listener_ip_allow_add_cidr("2001:db8::/32");  // an IPv6 prefix
 ```
+
+Matching is a full-address prefix compare per family, so a v4 peer is only ever
+tested against v4 rules and a v6 peer only against v6 rules - there is no lossy
+hashing or address flattening that a peer could exploit.
 
 **Fail-open until you add a rule.** An _empty_ allowlist allows everything (so
 enabling the feature before adding rules never locks you out). Add at least one
@@ -27,8 +33,7 @@ spoof, so treat it as a coarse first layer and pair it with the
 [accept throttles](../02.AcceptThrottle) and real authentication. It is excellent
 for "only my LAN may even open a socket."
 
-The `listener.h` include is what brings in `listener_ip_allow_add` and the
-`DETWS_IPV4` macro.
+The `listener.h` include is what brings in `listener_ip_allow_add_cidr`.
 
 ## Build and run
 
@@ -54,7 +59,7 @@ verbatim with added explanatory comments:
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/transport/listener.h" // listener_ip_allow_add / DETWS_IPV4
+#include "network_drivers/transport/listener.h" // listener_ip_allow_add_cidr
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
@@ -78,8 +83,9 @@ void setup()
 
     // Only these sources may connect; everything else is dropped at accept time.
     // (An empty allowlist would allow everything - add at least one rule.)
-    listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 24); // local /24
-    listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 5), 32);    // one trusted host
+    listener_ip_allow_add_cidr("192.168.1.0/24"); // local /24
+    listener_ip_allow_add_cidr("10.0.0.5");       // one trusted host (bare address -> /32)
+    listener_ip_allow_add_cidr("2001:db8::/32");  // an IPv6 prefix
 
     server.on("/", HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello from an allowed address"); });

@@ -158,25 +158,60 @@ void test_from_v6_bytes()
     TEST_ASSERT_TRUE(det_ip_equal(&ip, &parsed));
 }
 
-void test_ip_key()
+void test_is_unspecified()
 {
-    DetIp v4;
-    det_ip_parse("192.168.1.1", &v4);
-    TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, det_ip_key(&v4)); // v4 key == its 32-bit value
+    DetIp none;
+    none.family = DET_IP_NONE;
+    TEST_ASSERT_TRUE(det_ip_is_unspecified(&none));
+    TEST_ASSERT_TRUE(det_ip_is_unspecified(nullptr));
 
-    // A v4-mapped v6 keys the same as the native v4 (one bucket per host).
-    DetIp mapped;
-    det_ip_parse("::ffff:192.168.1.1", &mapped);
-    TEST_ASSERT_EQUAL_HEX32(det_ip_key(&v4), det_ip_key(&mapped));
+    DetIp z4, z6, host;
+    TEST_ASSERT_TRUE(det_ip_parse("0.0.0.0", &z4));
+    TEST_ASSERT_TRUE(det_ip_parse("::", &z6));
+    TEST_ASSERT_TRUE(det_ip_parse("192.168.1.1", &host));
+    TEST_ASSERT_TRUE(det_ip_is_unspecified(&z4)); // 0.0.0.0 is untrackable
+    TEST_ASSERT_TRUE(det_ip_is_unspecified(&z6)); // :: is untrackable
+    TEST_ASSERT_FALSE(det_ip_is_unspecified(&host));
+}
 
-    // Distinct v6 addresses get distinct, deterministic keys.
-    DetIp a, b, a2;
-    det_ip_parse("2001:db8::1", &a);
-    det_ip_parse("2001:db8::2", &b);
-    det_ip_parse("2001:db8::1", &a2);
-    TEST_ASSERT_EQUAL_HEX32(det_ip_key(&a), det_ip_key(&a2)); // deterministic
-    TEST_ASSERT_NOT_EQUAL(det_ip_key(&a), det_ip_key(&b));    // distinct peers -> distinct buckets
-    TEST_ASSERT_NOT_EQUAL(0, det_ip_key(&a));                 // a real v6 peer is not the 0 bucket
+void test_prefix_match()
+{
+    // IPv4 CIDR containment (the allowlist primitive - full address, no hashing).
+    DetIp net24, in24, out24;
+    TEST_ASSERT_TRUE(det_ip_parse("192.168.1.0", &net24));
+    TEST_ASSERT_TRUE(det_ip_parse("192.168.1.200", &in24));
+    TEST_ASSERT_TRUE(det_ip_parse("192.168.2.1", &out24));
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&in24, &net24, 24));
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&out24, &net24, 24));
+
+    // Host bits outside the prefix are masked at compare time (10.1.2.3/8 == 10.0.0.0/8).
+    DetIp net8, in8, out8;
+    TEST_ASSERT_TRUE(det_ip_parse("10.1.2.3", &net8));
+    TEST_ASSERT_TRUE(det_ip_parse("10.255.255.255", &in8));
+    TEST_ASSERT_TRUE(det_ip_parse("11.0.0.1", &out8));
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&in8, &net8, 8));
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&out8, &net8, 8));
+
+    // /32 is a single host; /0 matches everything of the family.
+    DetIp any;
+    TEST_ASSERT_TRUE(det_ip_parse("203.0.113.7", &any));
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&any, &any, 32));
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&out24, &any, 32));
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&any, &net8, 0));
+
+    // IPv6 CIDR containment on the full 128-bit address.
+    DetIp v6net, v6in, v6out;
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8::", &v6net));
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8:0:0:1234::abcd", &v6in));
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db9::1", &v6out));
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&v6in, &v6net, 32));
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&v6out, &v6net, 32));
+
+    // Cross-family never matches, and an over-long prefix is rejected.
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&v6in, &net24, 24));  // v6 addr vs v4 net
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&in24, &v6net, 24));  // v4 addr vs v6 net
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&in24, &net24, 33));  // prefix > 32 for v4
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&v6in, &v6net, 129)); // prefix > 128 for v6
 }
 
 int main()
@@ -184,7 +219,8 @@ int main()
     UNITY_BEGIN();
     RUN_TEST(test_v4_round_trip);
     RUN_TEST(test_from_v6_bytes);
-    RUN_TEST(test_ip_key);
+    RUN_TEST(test_is_unspecified);
+    RUN_TEST(test_prefix_match);
     RUN_TEST(test_v6_canonical_5952);
     RUN_TEST(test_v4_mapped);
     RUN_TEST(test_classify_v4);

@@ -144,19 +144,22 @@ bool listener_accept_allowed(uint32_t now_ms);
 void listener_accept_throttle_reset(void);
 
 /**
- * @brief Fixed-window per-IP accept-rate gate (connection-flood defense, keyed by source IPv4).
+ * @brief Fixed-window per-IP accept-rate gate (connection-flood defense, keyed by source address).
  *
  * Returns true if a connection from source address @p ip accepted at @p now_ms is
  * within that address's DETWS_PER_IP_THROTTLE_MAX-per-DETWS_PER_IP_THROTTLE_WINDOW_MS
  * budget (and counts it), false once that address has exhausted its budget for the
- * current window. State is a fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets;
- * a new address reuses an empty, expired, or least-recently-started bucket so memory
- * stays bounded. @p ip is the raw lwIP IPv4 word (host/native tests pass any
- * non-zero value). The accept callback consults this only when
- * DETWS_ENABLE_PER_IP_THROTTLE is set; the function is always compiled so it can be
- * unit-tested. Call listener_per_ip_throttle_reset() to clear the table.
+ * current window. The key is the full family-tagged address (DetIp): an IPv4 and an
+ * IPv6 peer are always distinct buckets, and an IPv6 attacker cannot fold many
+ * addresses onto one bucket (or evict a victim's) through a lossy hash. State is a
+ * fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets; a new address reuses an
+ * empty, expired, or least-recently-started bucket so memory stays bounded. An
+ * unspecified @p ip (family DET_IP_NONE) is passed through (allowed) since it cannot
+ * be tracked. The accept callback consults this only when DETWS_ENABLE_PER_IP_THROTTLE
+ * is set; the function is always compiled so it can be unit-tested. Call
+ * listener_per_ip_throttle_reset() to clear the table.
  */
-bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms);
+bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms);
 
 /** @brief Reset the per-IP throttle bucket table. */
 void listener_per_ip_throttle_reset(void);
@@ -165,32 +168,45 @@ void listener_per_ip_throttle_reset(void);
 // Source-IP allowlist (accept-time firewall)
 // ---------------------------------------------------------------------------
 
-/** @brief Build a host-order IPv4 word from four octets, e.g. DETWS_IPV4(192, 168, 1, 10). */
-#define DETWS_IPV4(a, b, c, d) (((uint32_t)(a) << 24) | ((uint32_t)(b) << 16) | ((uint32_t)(c) << 8) | (uint32_t)(d))
-
 /**
  * @brief Add a CIDR rule to the source-IP allowlist.
  *
- * @param network     Host-order IPv4 network address (use DETWS_IPV4()); host
- *                    bits outside the prefix are masked off automatically.
- * @param prefix_len  CIDR prefix length 0..32 (24 for a /24, 32 for a single host,
- *                    0 to match everything).
- * @return true if the rule was stored; false if @p prefix_len > 32 or the table
+ * @param network     Family-tagged network address (DetIp, IPv4 or IPv6). Host bits
+ *                    outside the prefix do not need to be pre-masked; matching masks
+ *                    them at compare time.
+ * @param prefix_len  CIDR prefix length: 0..32 for IPv4, 0..128 for IPv6 (32 / 128
+ *                    for a single host, 0 to match every address of that family).
+ * @return true if the rule was stored; false if @p network is unspecified, the
+ *         prefix length exceeds the family width, or the table
  *         (DETWS_IP_ALLOWLIST_SLOTS entries) is full.
  */
-bool listener_ip_allow_add(uint32_t network, uint8_t prefix_len);
+bool listener_ip_allow_add(const DetIp *network, uint8_t prefix_len);
+
+/**
+ * @brief Add an allowlist rule from CIDR text (the ergonomic public entry point).
+ *
+ * Accepts IPv4 or IPv6 in `address/prefix` form (e.g. "192.168.1.0/24",
+ * "2001:db8::/32") or a bare address (e.g. "10.0.0.5", "::1") which is treated as
+ * a host route (/32 for v4, /128 for v6). The address is parsed with det_ip_parse
+ * so every RFC 4291 v6 text form is accepted.
+ *
+ * @return true if the rule was stored; false if @p cidr is malformed, the prefix
+ *         is out of range for the family, or the table is full.
+ */
+bool listener_ip_allow_add_cidr(const char *cidr);
 
 /**
  * @brief Test a source address against the allowlist (accept-time firewall).
  *
- * @param ip  Host-order source IPv4 word.
+ * @param ip  Family-tagged source address (DetIp).
  * @return true if the address is allowed: always true while the allowlist is
  *         empty (so enabling the feature without rules never locks the device
- *         out), otherwise true only if @p ip matches at least one CIDR rule.
+ *         out), otherwise true only if @p ip is contained in at least one CIDR
+ *         rule of the same family (prefix match on the full address, never a hash).
  *         The accept callback consults this only when DETWS_ENABLE_IP_ALLOWLIST
  *         is set; the function is always compiled so it can be unit-tested.
  */
-bool listener_ip_allowed(uint32_t ip);
+bool listener_ip_allowed(const DetIp *ip);
 
 /** @brief Clear all allowlist rules (the allowlist becomes empty = allow all). */
 void listener_ip_allowlist_reset(void);

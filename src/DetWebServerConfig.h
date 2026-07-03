@@ -3110,13 +3110,15 @@
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Opt-in source-IP allowlist (accept-time firewall, keyed by source IPv4).
+ * @brief Opt-in source-IP allowlist (accept-time firewall, IPv4 and IPv6).
  *
  * Default off (zero cost / no behavior change). When set, the accept callback
- * drops any connection whose source address does not match a configured CIDR
- * rule (see listener_ip_allow_add()). An empty allowlist allows everything, so
- * enabling the feature before adding rules never locks the device out. Rules
- * live in a fixed BSS table of DETWS_IP_ALLOWLIST_SLOTS entries (no heap).
+ * drops any connection whose source address is not contained in a configured
+ * CIDR rule (add rules with listener_ip_allow_add_cidr("192.168.1.0/24") /
+ * "2001:db8::/32"). Matching is a full-address prefix compare per family, so a v4
+ * peer never matches a v6 rule and vice versa. An empty allowlist allows
+ * everything, so enabling the feature before adding rules never locks the device
+ * out. Rules live in a fixed BSS table of DETWS_IP_ALLOWLIST_SLOTS entries (no heap).
  *
  * This is a coarse first-line filter - a spoofed source address can still pass
  * it - so combine it with the accept throttles and network-layer filtering.
@@ -3138,7 +3140,8 @@
  * @brief Opt-in per-IP brute-force lockout for HTTP auth (requires DETWS_ENABLE_AUTH).
  *
  * Default off (zero cost / no behavior change). When set, the auth gate counts
- * consecutive failed authentications per source IPv4 in a fixed BSS table; after
+ * consecutive failed authentications per source address (IPv4 or IPv6, keyed on
+ * the full address) in a fixed BSS table; after
  * DETWS_AUTH_LOCKOUT_THRESHOLD failures the address is locked out for
  * DETWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to
  * DETWS_AUTH_LOCKOUT_MAX_MS. A locked address gets 429 (Retry-After) with no

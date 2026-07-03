@@ -41,7 +41,7 @@ enum DetwsIpClass
 // Host-testable core
 // ---------------------------------------------------------------------------
 
-/** @brief Classify a host-order IPv4 word (use DETWS_IPV4()). */
+/** @brief Classify a host-order IPv4 word (e.g. (10u << 24) | (0u << 16) | (0u << 8) | 1u). */
 DetwsIpClass detws_dns_classify(uint32_t ip);
 
 /**

@@ -8,6 +8,39 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Abuse-prevention state keyed on a 32-bit hash of the IPv6 source address (security)
+
+- **Status:** FIXED (transport now carries the full family-tagged address; all IP-keyed
+  features match the whole IPv4/IPv6 address; `native_det_ip` / `native_accept_gate` /
+  `native_auth_lockout` / `native` green with added v6 coverage).
+- **Found:** 2026-07-03, reviewing the IPv6 phase-2 work. Shipped in v4.87.0 (auth lockout)
+  and v4.88.0 (per-IP throttle) - both superseded by this fix.
+- **Root cause:** when IPv6 arrived, the per-IP throttle, the auth-lockout table, and the
+  accept-time source key all reduced the peer address to a 32-bit value: a raw v4 word, and
+  for v6 a **32-bit FNV-1a hash** (`det_ip_key` / `det_conn_remote_key` / `det_lwip_ip_key`).
+  In a security-forward library that is a real vulnerability, not a shortcut:
+    - **Targeted lockout / throttle poisoning.** A 32-bit hash is trivially collidable, so an
+      attacker can pick a v6 source that hashes to the same bucket as a victim and drive the
+      victim into lockout or throttle denial (a remote DoS of a specific peer).
+    - **Per-IP cap evasion.** A v6 attacker owns a whole `/64` (2^64 addresses); collisions let
+      many real addresses share one bucket (reset/share another's budget) or dodge their own cap.
+    - **Cross-family confusion.** Flattening a v6 peer toward a v4-shaped key risks it colliding
+      with a real v4 host's bucket.
+- **Fix:** the transport pipe was made protocol-agnostic. `DetIp` (a family tag + 16 address
+  bytes, the library's `sockaddr_storage`/lwIP `ip_addr_t` equivalent) is now carried end to
+  end: `det_conn_remote_addr()` / `det_lwip_to_detip()` produce it, and **every** IP-keyed
+  feature stores and matches the **full** address - bucket lookups by `det_ip_equal` (throttle,
+  lockout), allowlist by `det_ip_prefix_match` (real v4 `/0-32` and v6 `/0-128` CIDR
+  containment). The hash/word keys (`det_ip_key`, `det_conn_remote_key`, `det_lwip_ip_key`) and
+  the host-order `DETWS_IPV4` allowlist macro are deleted; the public allowlist entry point is
+  now CIDR text (`listener_ip_allow_add_cidr("2001:db8::/32")`). No hashing, no flattening.
+- **Prevention:** the native suites now assert the security property directly - distinct v6
+  peers get distinct throttle/lockout buckets, a v6 peer never shares a v4 peer's state, and a
+  v4 allowlist rule never admits a v6 peer (and vice versa). One owner (the transport) resolves
+  the peer address; features consume `DetIp` and never re-key it.
+
+---
+
 ## 06.PreemptQueue example used the pre-3.0 Arduino-ESP32 timer API
 
 - **Status:** FIXED (compiles on esp32:esp32 3.3.10; still builds on the 2.x core the

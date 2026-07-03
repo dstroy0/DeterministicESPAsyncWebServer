@@ -1501,12 +1501,15 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
 }
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
-// A stable per-peer identity key for the connection in slot_id (0 on native / no pcb). Used only
-// as the auth-lockout bucket key, so this is the v4 address or a hash of a v6 address - never the
-// all-zero v4 flattening a v6 peer would otherwise share (det_conn_remote_key handles both).
-static uint32_t lockout_client_ip(uint8_t slot_id)
+// The peer's family-tagged source address for the connection in slot_id (unspecified on native /
+// no pcb). Used as the auth-lockout bucket key - the full IPv4 or IPv6 address, so a v6 peer is
+// never flattened onto a shared v4 bucket nor folded into a collideable hash.
+static DetIp lockout_client_ip(uint8_t slot_id)
 {
-    return det_conn_remote_key(slot_id);
+    DetIp ip;
+    ip.family = DET_IP_NONE;
+    det_conn_remote_addr(slot_id, &ip);
+    return ip;
 }
 
 // 429 Too Many Requests with Retry-After (auth lockout active). Closes the
@@ -1693,9 +1696,9 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         if (r->auth_required)
         {
 #if DETWS_ENABLE_AUTH_LOCKOUT
-            uint32_t cip = lockout_client_ip(slot_id);
+            DetIp cip = lockout_client_ip(slot_id);
             uint32_t now = (uint32_t)millis();
-            uint32_t remain = auth_lockout_remaining_ms(cip, now);
+            uint32_t remain = auth_lockout_remaining_ms(&cip, now);
             if (remain > 0)
             {
                 // Address is locked out: 429 + Retry-After, no credential check.
@@ -1709,9 +1712,9 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
             // A stale-nonce retry carries valid credentials, so it is not a failed
             // attempt: don't count it toward the lockout (nor reset the counter).
             if (ok)
-                auth_lockout_succeed(cip);
+                auth_lockout_succeed(&cip);
             else if (!stale)
-                auth_lockout_fail(cip, now);
+                auth_lockout_fail(&cip, now);
 #endif
             if (!ok)
             {

@@ -5,11 +5,20 @@
 // ring-buffer arithmetic, timeout logic, event-queue behavior, and
 // sustained-load correctness.
 
+#include "network_drivers/network/det_ip.h"
 #include "network_drivers/transport/listener.h"
 #include "network_drivers/transport/transport.h"
 #include <unity.h>
 
 // transport.cpp + listener.cpp are compiled into the native env - no stubs needed.
+
+// Build a v4 DetIp from a host-order word (0xC0A80005 -> 192.168.0.5). The accept-time
+// gates key on the full family-tagged address, so the tests carry a DetIp, not a uint32.
+static DetIp v4w(uint32_t host_order)
+{
+    return det_ip_from_v4_octets((uint8_t)(host_order >> 24), (uint8_t)(host_order >> 16), (uint8_t)(host_order >> 8),
+                                 (uint8_t)host_order);
+}
 
 void setUp()
 {
@@ -394,32 +403,32 @@ void test_accept_throttle_handles_rollover()
 void test_per_ip_throttle_blocks_over_budget()
 {
     listener_per_ip_throttle_reset();
-    const uint32_t ip = 0xC0A80005u; // 192.168.0.5
+    DetIp ip = v4w(0xC0A80005u); // 192.168.0.5
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
-        TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 0));
-    TEST_ASSERT_FALSE(listener_accept_allowed_ip(ip, 0)); // this address's budget exhausted
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, 0));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(&ip, 0)); // this address's budget exhausted
 }
 
 // One noisy address being throttled does not affect a different address.
 void test_per_ip_throttle_isolates_addresses()
 {
     listener_per_ip_throttle_reset();
-    const uint32_t noisy = 0x0A000001u, quiet = 0x0A000002u;
+    DetIp noisy = v4w(0x0A000001u), quiet = v4w(0x0A000002u);
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
-        TEST_ASSERT_TRUE(listener_accept_allowed_ip(noisy, 0));
-    TEST_ASSERT_FALSE(listener_accept_allowed_ip(noisy, 0)); // noisy is blocked
-    TEST_ASSERT_TRUE(listener_accept_allowed_ip(quiet, 0));  // a different IP is unaffected
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&noisy, 0));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(&noisy, 0)); // noisy is blocked
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&quiet, 0));  // a different IP is unaffected
 }
 
 // Crossing into the next window refills that address's budget.
 void test_per_ip_throttle_window_refills()
 {
     listener_per_ip_throttle_reset();
-    const uint32_t ip = 0x0A000003u;
+    DetIp ip = v4w(0x0A000003u);
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
-        TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 50));
-    TEST_ASSERT_FALSE(listener_accept_allowed_ip(ip, 50));
-    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, 50 + DETWS_PER_IP_THROTTLE_WINDOW_MS));
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, 50));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(&ip, 50));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, 50 + DETWS_PER_IP_THROTTLE_WINDOW_MS));
 }
 
 // When the bucket table is full of distinct addresses, a brand-new address still
@@ -428,27 +437,50 @@ void test_per_ip_throttle_evicts_when_full()
 {
     listener_per_ip_throttle_reset();
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
-        TEST_ASSERT_TRUE(listener_accept_allowed_ip(0xAC100001u + (uint32_t)i, 100));
-    TEST_ASSERT_TRUE(listener_accept_allowed_ip(0xDEADBEEFu, 100)); // evicts an old bucket
+    {
+        DetIp ip = v4w(0xAC100001u + (uint32_t)i);
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, 100));
+    }
+    DetIp fresh = v4w(0xDEADBEEFu);
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&fresh, 100)); // evicts an old bucket
 }
 
-// A zero source address is untrackable (it is the empty-bucket sentinel) and is
-// always allowed - it defers to the global throttle rather than being mis-tracked.
+// An unspecified source address is untrackable and is always allowed - it defers to
+// the global throttle rather than being mis-tracked.
 void test_per_ip_throttle_zero_ip_always_allowed()
 {
     listener_per_ip_throttle_reset();
+    DetIp none;
+    none.family = DET_IP_NONE;
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX + 5; i++)
-        TEST_ASSERT_TRUE(listener_accept_allowed_ip(0, 0));
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&none, 0));
+}
+
+// Distinct IPv6 peers keep independent budgets (the key is the full 128-bit address,
+// so a v6 attacker cannot collapse many addresses onto one bucket).
+void test_per_ip_throttle_v6_distinct()
+{
+    listener_per_ip_throttle_reset();
+    DetIp a;
+    a.family = DET_IP_NONE;
+    DetIp b;
+    b.family = DET_IP_NONE;
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8::1", &a));
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8::2", &b));
+    for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
+        TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 0));
+    TEST_ASSERT_FALSE(listener_accept_allowed_ip(&a, 0)); // a exhausted
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&b, 0));  // b has its own budget
 }
 
 // The per-IP window math survives a millis() rollover near 2^32.
 void test_per_ip_throttle_handles_rollover()
 {
     listener_per_ip_throttle_reset();
-    const uint32_t ip = 0x0A000009u;
+    DetIp ip = v4w(0x0A000009u);
     uint32_t near_max = 0xFFFFFFFFu - 5;
-    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, near_max));
-    TEST_ASSERT_TRUE(listener_accept_allowed_ip(ip, near_max + DETWS_PER_IP_THROTTLE_WINDOW_MS));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, near_max));
+    TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, near_max + DETWS_PER_IP_THROTTLE_WINDOW_MS));
 }
 
 // ====================================================================
@@ -460,66 +492,97 @@ void test_per_ip_throttle_handles_rollover()
 void test_ip_allowlist_empty_allows_all()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 10)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(8, 8, 8, 8)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(0));
+    DetIp a = v4w(0xC0A8010Au), b = v4w(0x08080808u); // 192.168.1.10, 8.8.8.8
+    DetIp none;
+    none.family = DET_IP_NONE;
+    TEST_ASSERT_TRUE(listener_ip_allowed(&a));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&b));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&none));
 }
 
 // A /32 rule admits exactly one host and rejects all others.
 void test_ip_allowlist_host_match()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 10), 32));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 10)));
-    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 11)));
-    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(10, 0, 0, 1)));
+    DetIp net = v4w(0xC0A8010Au); // 192.168.1.10
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&net, 32));
+    DetIp host = v4w(0xC0A8010Au), near = v4w(0xC0A8010Bu), far = v4w(0x0A000001u);
+    TEST_ASSERT_TRUE(listener_ip_allowed(&host));
+    TEST_ASSERT_FALSE(listener_ip_allowed(&near));
+    TEST_ASSERT_FALSE(listener_ip_allowed(&far));
 }
 
 // A /24 rule admits the whole subnet and rejects addresses outside it.
 void test_ip_allowlist_cidr_match()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 24));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 1)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 254)));
-    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(192, 168, 2, 1)));
+    DetIp net = v4w(0xC0A80100u); // 192.168.1.0
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&net, 24));
+    DetIp lo = v4w(0xC0A80101u), hi = v4w(0xC0A801FEu), out = v4w(0xC0A80201u);
+    TEST_ASSERT_TRUE(listener_ip_allowed(&lo));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&hi));
+    TEST_ASSERT_FALSE(listener_ip_allowed(&out));
 }
 
-// Host bits below the prefix are masked off when a rule is stored, so a network
-// argument with stray host bits still matches the whole subnet.
+// Host bits below the prefix are masked at compare time, so a network argument with
+// stray host bits still matches the whole subnet.
 void test_ip_allowlist_masks_host_bits()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 55), 24));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 1)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 1, 200)));
+    DetIp net = v4w(0xC0A80137u); // 192.168.1.55 as a /24
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&net, 24));
+    DetIp lo = v4w(0xC0A80101u), hi = v4w(0xC0A801C8u);
+    TEST_ASSERT_TRUE(listener_ip_allowed(&lo));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&hi));
 }
 
 // Multiple rules are OR-ed: an address matching any rule is allowed.
 void test_ip_allowlist_multiple_rules()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 0), 8));
-    TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(192, 168, 0, 0), 16));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(10, 1, 2, 3)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(192, 168, 5, 5)));
-    TEST_ASSERT_FALSE(listener_ip_allowed(DETWS_IPV4(172, 16, 0, 1)));
+    DetIp r1 = v4w(0x0A000000u), r2 = v4w(0xC0A80000u); // 10.0.0.0/8, 192.168.0.0/16
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&r1, 8));
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&r2, 16));
+    DetIp a = v4w(0x0A010203u), b = v4w(0xC0A80505u), out = v4w(0xAC100001u);
+    TEST_ASSERT_TRUE(listener_ip_allowed(&a));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&b));
+    TEST_ASSERT_FALSE(listener_ip_allowed(&out));
 }
 
-// A /0 rule matches every address.
+// A /0 rule matches every address of its family.
 void test_ip_allowlist_zero_prefix_matches_all()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_TRUE(listener_ip_allow_add(0, 0));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(1, 2, 3, 4)));
-    TEST_ASSERT_TRUE(listener_ip_allowed(DETWS_IPV4(255, 255, 255, 255)));
+    DetIp z = v4w(0u);
+    TEST_ASSERT_TRUE(listener_ip_allow_add(&z, 0));
+    DetIp a = v4w(0x01020304u), b = v4w(0xFFFFFFFFu);
+    TEST_ASSERT_TRUE(listener_ip_allowed(&a));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&b));
 }
 
-// A prefix length above 32 is rejected.
+// An IPv6 CIDR rule admits its v6 subnet and never a v4 peer (families are isolated).
+void test_ip_allowlist_v6_cidr()
+{
+    listener_ip_allowlist_reset();
+    TEST_ASSERT_TRUE(listener_ip_allow_add_cidr("2001:db8::/32"));
+    DetIp in;
+    in.family = DET_IP_NONE;
+    DetIp out;
+    out.family = DET_IP_NONE;
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8:0:0:1234::abcd", &in));
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db9::1", &out));
+    TEST_ASSERT_TRUE(listener_ip_allowed(&in));
+    TEST_ASSERT_FALSE(listener_ip_allowed(&out));
+    DetIp v4peer = v4w(0xC0A80101u);
+    TEST_ASSERT_FALSE(listener_ip_allowed(&v4peer)); // a v4 peer never matches a v6 rule
+}
+
+// A prefix length above the family width is rejected.
 void test_ip_allowlist_rejects_bad_prefix()
 {
     listener_ip_allowlist_reset();
-    TEST_ASSERT_FALSE(listener_ip_allow_add(DETWS_IPV4(192, 168, 1, 0), 33));
+    DetIp net = v4w(0xC0A80100u);
+    TEST_ASSERT_FALSE(listener_ip_allow_add(&net, 33));
 }
 
 // The rule table is bounded: it fills to capacity then refuses more rules.
@@ -527,8 +590,12 @@ void test_ip_allowlist_table_full()
 {
     listener_ip_allowlist_reset();
     for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
-        TEST_ASSERT_TRUE(listener_ip_allow_add(DETWS_IPV4(10, 0, 0, 0) + (uint32_t)i, 32));
-    TEST_ASSERT_FALSE(listener_ip_allow_add(DETWS_IPV4(10, 1, 0, 0), 32));
+    {
+        DetIp r = v4w(0x0A000000u + (uint32_t)i);
+        TEST_ASSERT_TRUE(listener_ip_allow_add(&r, 32));
+    }
+    DetIp overflow = v4w(0x0A010000u);
+    TEST_ASSERT_FALSE(listener_ip_allow_add(&overflow, 32));
 }
 
 int main()
@@ -575,6 +642,7 @@ int main()
     RUN_TEST(test_per_ip_throttle_window_refills);
     RUN_TEST(test_per_ip_throttle_evicts_when_full);
     RUN_TEST(test_per_ip_throttle_zero_ip_always_allowed);
+    RUN_TEST(test_per_ip_throttle_v6_distinct);
     RUN_TEST(test_per_ip_throttle_handles_rollover);
 
     // Source-IP allowlist
@@ -584,6 +652,7 @@ int main()
     RUN_TEST(test_ip_allowlist_masks_host_bits);
     RUN_TEST(test_ip_allowlist_multiple_rules);
     RUN_TEST(test_ip_allowlist_zero_prefix_matches_all);
+    RUN_TEST(test_ip_allowlist_v6_cidr);
     RUN_TEST(test_ip_allowlist_rejects_bad_prefix);
     RUN_TEST(test_ip_allowlist_table_full);
 

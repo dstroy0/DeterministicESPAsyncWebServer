@@ -23,7 +23,6 @@
 #include "lwip/tcp.h"
 #include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
 #ifdef ARDUINO
-#include "lwip/def.h"                       // lwip_ntohl - allowlist host-order conversion
 #include "lwip/ip_addr.h"                   // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
 #include "network_drivers/session/worker.h" // detws_worker_wake() - nudge the owning worker task
 #endif
@@ -74,22 +73,22 @@ void listener_accept_throttle_reset(void)
 
 struct IpThrottleBucket
 {
-    uint32_t ip;           ///< source IPv4 word; 0 marks an empty bucket.
+    DetIp addr;            ///< source address (family DET_IP_NONE marks an empty bucket).
     uint32_t window_start; ///< millis() at the start of this bucket's current window.
     uint16_t count;        ///< connections counted from this address in the window.
 };
 static IpThrottleBucket g_ip_buckets[DETWS_PER_IP_THROTTLE_SLOTS];
 
-bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms)
+bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
 {
-    if (ip == 0)
-        return true; // untrackable source (0 is the empty-bucket sentinel) - defer to the global throttle
+    if (det_ip_is_unspecified(ip))
+        return true; // untrackable source - defer to the global accept throttle
 
     int empty = -1, expired = -1, lru = 0;
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
         IpThrottleBucket *b = &g_ip_buckets[i];
-        if (b->ip == ip)
+        if (b->addr.family != DET_IP_NONE && det_ip_equal(&b->addr, ip))
         {
             // Unsigned subtraction wraps correctly across the millis() rollover.
             if ((uint32_t)(now_ms - b->window_start) >= DETWS_PER_IP_THROTTLE_WINDOW_MS)
@@ -102,7 +101,7 @@ bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms)
             b->count++;
             return true;
         }
-        if (b->ip == 0)
+        if (b->addr.family == DET_IP_NONE)
         {
             if (empty < 0)
                 empty = i;
@@ -121,7 +120,7 @@ bool listener_accept_allowed_ip(uint32_t ip, uint32_t now_ms)
     // the least-recently-started active bucket.
     int slot = (empty >= 0) ? empty : (expired >= 0) ? expired : lru;
     IpThrottleBucket *b = &g_ip_buckets[slot];
-    b->ip = ip;
+    b->addr = *ip;
     b->window_start = now_ms;
     b->count = 1;
     return true; // first connection of a fresh window is always allowed
@@ -131,7 +130,7 @@ void listener_per_ip_throttle_reset(void)
 {
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
-        g_ip_buckets[i].ip = 0;
+        g_ip_buckets[i].addr.family = DET_IP_NONE;
         g_ip_buckets[i].window_start = 0;
         g_ip_buckets[i].count = 0;
     }
@@ -146,34 +145,86 @@ void listener_per_ip_throttle_reset(void)
 
 struct IpAllowRule
 {
-    uint32_t network; ///< host-order network address, already masked to the prefix.
-    uint32_t mask;    ///< host-order netmask derived from the prefix length.
+    DetIp network;      ///< network address (family DET_IP_V4 / V6; DET_IP_NONE marks unused).
+    uint8_t prefix_len; ///< CIDR prefix length: 0..32 for v4, 0..128 for v6.
 };
 static IpAllowRule g_ip_allow[DETWS_IP_ALLOWLIST_SLOTS];
 static uint8_t g_ip_allow_count = 0;
 
-bool listener_ip_allow_add(uint32_t network, uint8_t prefix_len)
+bool listener_ip_allow_add(const DetIp *network, uint8_t prefix_len)
 {
-    if (prefix_len > 32)
+    if (!network)
         return false;
+    int bits = (network->family == DET_IP_V4) ? 32 : (network->family == DET_IP_V6 ? 128 : -1);
+    if (bits < 0 || prefix_len > (uint8_t)bits)
+        return false; // reject a malformed family or an over-long prefix
     if (g_ip_allow_count >= DETWS_IP_ALLOWLIST_SLOTS)
         return false;
-    // prefix_len 0 -> mask 0 (matches all); 1..32 -> top prefix_len bits set.
-    // (a full 32-bit shift is undefined, so the zero-prefix case is handled apart.)
-    uint32_t mask = (prefix_len == 0) ? 0u : (0xFFFFFFFFu << (32 - prefix_len));
-    g_ip_allow[g_ip_allow_count].network = network & mask;
-    g_ip_allow[g_ip_allow_count].mask = mask;
+    g_ip_allow[g_ip_allow_count].network = *network;
+    g_ip_allow[g_ip_allow_count].prefix_len = prefix_len;
     g_ip_allow_count++;
     return true;
 }
 
-bool listener_ip_allowed(uint32_t ip)
+bool listener_ip_allow_add_cidr(const char *cidr)
+{
+    if (!cidr)
+        return false;
+
+    // Split "address/prefix" at the slash. The address half is copied into a bounded
+    // buffer (a CIDR string is never longer than an address plus "/128") for the parser.
+    char addr[DET_IP_STR_MAX];
+    const char *slash = nullptr;
+    size_t n = 0;
+    for (const char *p = cidr; *p; p++)
+    {
+        if (*p == '/')
+        {
+            slash = p;
+            break;
+        }
+        if (n + 1 >= sizeof(addr))
+            return false; // address text too long to be valid
+        addr[n++] = *p;
+    }
+    addr[n] = '\0';
+
+    DetIp net;
+    net.family = DET_IP_NONE;
+    if (!det_ip_parse(addr, &net))
+        return false;
+
+    uint8_t width = (net.family == DET_IP_V4) ? 32 : 128;
+    uint8_t prefix = width; // bare address -> host route
+    if (slash)
+    {
+        // Parse the decimal prefix by hand (no stdlib in src/); reject empty or non-digit.
+        uint32_t v = 0;
+        const char *p = slash + 1;
+        if (!*p)
+            return false;
+        for (; *p; p++)
+        {
+            if (*p < '0' || *p > '9')
+                return false;
+            v = v * 10 + (uint32_t)(*p - '0');
+            if (v > width)
+                return false; // out of range for the family
+        }
+        prefix = (uint8_t)v;
+    }
+
+    return listener_ip_allow_add(&net, prefix);
+}
+
+bool listener_ip_allowed(const DetIp *ip)
 {
     if (g_ip_allow_count == 0)
         return true; // no rules configured -> allow all (fail-open by design)
     for (uint8_t i = 0; i < g_ip_allow_count; i++)
     {
-        if ((ip & g_ip_allow[i].mask) == g_ip_allow[i].network)
+        // det_ip_prefix_match requires the same family, so a v4 peer never matches a v6 rule.
+        if (det_ip_prefix_match(ip, &g_ip_allow[i].network, g_ip_allow[i].prefix_len))
             return true;
     }
     return false;
@@ -182,10 +233,7 @@ bool listener_ip_allowed(uint32_t ip)
 void listener_ip_allowlist_reset(void)
 {
     for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
-    {
-        g_ip_allow[i].network = 0;
-        g_ip_allow[i].mask = 0;
-    }
+        g_ip_allow[i].network.family = DET_IP_NONE;
     g_ip_allow_count = 0;
 }
 
@@ -269,36 +317,37 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     }
 #endif
 
+#if DETWS_ENABLE_PER_IP_THROTTLE || DETWS_ENABLE_IP_ALLOWLIST
+    // Resolve the peer's family-tagged source address once for the accept-time abuse
+    // gates below - the full IPv4 or IPv6 address, never a lossy hash. On native
+    // there is no real lwIP pcb, so it stays unspecified and the gates pass it
+    // through; the host unit tests drive those gates directly with synthetic DetIp.
+    DetIp remote;
+    remote.family = DET_IP_NONE;
+#ifdef ARDUINO
+    det_lwip_to_detip(&newpcb->remote_ip, &remote);
+#endif
+#endif
+
 #if DETWS_ENABLE_PER_IP_THROTTLE
     // Per-source-IP flood defense: drop accepts beyond one address's per-window
-    // budget (the global throttle cannot tell one noisy client from many).
+    // budget (the global throttle cannot tell one noisy client from many). Keyed on
+    // the full address, so an IPv6 peer cannot spray a /64 past a per-address cap.
+    if (!listener_accept_allowed_ip(&remote, detws_millis()))
     {
-        uint32_t rip = 0;
-#ifdef ARDUINO
-        rip = det_lwip_ip_key(&newpcb->remote_ip); // family-stable bucket key: v4 address / v6 hash
-#endif
-        if (!listener_accept_allowed_ip(rip, detws_millis()))
-        {
-            tcp_abort(newpcb);
-            return ERR_ABRT;
-        }
+        tcp_abort(newpcb);
+        return ERR_ABRT;
     }
 #endif
 
 #if DETWS_ENABLE_IP_ALLOWLIST
     // Source-IP firewall: drop connections from addresses outside the configured
     // allowlist (an empty allowlist allows all, so this is a no-op until rules are
-    // added). Uses host byte order; lwIP stores remote_ip in network order.
+    // added). CIDR prefix match on the full v4/v6 address.
+    if (!listener_ip_allowed(&remote))
     {
-        uint32_t rip_host = 0;
-#ifdef ARDUINO
-        rip_host = lwip_ntohl(ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip)));
-#endif
-        if (!listener_ip_allowed(rip_host))
-        {
-            tcp_abort(newpcb);
-            return ERR_ABRT;
-        }
+        tcp_abort(newpcb);
+        return ERR_ABRT;
     }
 #endif
 

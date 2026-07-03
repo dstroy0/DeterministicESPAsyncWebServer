@@ -366,14 +366,12 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out);
  *        v6 address). For rate-limit / auth-lockout buckets, where a v6 peer must not silently
  *        share the all-zero v4 bucket. Returns 0 if the slot has no active connection.
  */
-uint32_t det_conn_remote_key(uint8_t slot);
-
 #ifdef ARDUINO
 /**
- * @brief The same family-stable identity key as det_conn_remote_key(), but from a raw lwIP address
- *        - for the accept callback, which has the pcb but no slot yet. ESP32 only (lwIP type).
+ * @brief Convert a raw lwIP address to the portable family-tagged DetIp - for the accept callback,
+ *        which has the pcb but no connection slot yet. ESP32 only (the parameter is an lwIP type).
  */
-uint32_t det_lwip_ip_key(const ip_addr_t *ra);
+void det_lwip_to_detip(const ip_addr_t *ra, DetIp *out);
 #endif
 
 // ---------------------------------------------------------------------------

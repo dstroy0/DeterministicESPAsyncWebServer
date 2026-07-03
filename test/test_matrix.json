@@ -89,6 +89,7 @@
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -115,6 +116,7 @@
       "desc": "Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event\nhook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP\ncallbacks (recv FIN / error / timeout / local close / backpressure) drive the\nright counter. Pure L4 core - host-tested.",
       "flags": ["-DDETWS_ENABLE_OBSERVABILITY=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>"
       ],
@@ -135,6 +137,7 @@
         "-DDETWS_IP_ALLOWLIST_SLOTS=4"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -213,6 +216,7 @@
       "desc": "SSH wired through the real transport/session layers (PROTO_SSH byte-pump)",
       "flags": ["-DDETWS_ENABLE_SSH=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -253,6 +257,7 @@
         "-DDETWS_HTTP_EMIT_DATE=1"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -303,6 +308,7 @@
         "-DDETWS_ENABLE_WEB_TERMINAL=1"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -360,6 +366,7 @@
       "desc": "Telnet server (RFC 854 IAC negotiation + line editing) wired through the real\ntransport ring buffer; output checked via the tcp_write capture mock.",
       "flags": ["-DDETWS_ENABLE_TELNET=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/presentation/telnet/telnet.cpp>"
@@ -790,6 +797,7 @@
         "-DDETWS_KEEPALIVE_MAX_REQUESTS=3"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -811,6 +819,7 @@
       "desc": "HTTP Range requests / 206 Partial Content (RFC 7233): full server built with\nDETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with\nseek()) via the tcp_write capture mock.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_RANGE=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -856,6 +865,7 @@
         "-DBODY_BUF_SIZE=64"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -934,6 +944,7 @@
       "desc": "WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS\nstack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with\nthe table scratch borrowed from the shared arena). Runs test_websocket with the\nfeature on (the deflate cases are #if-gated).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_WS_DEFLATE=1"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/transport/transport.cpp>",
@@ -975,7 +986,7 @@
     "native_auth_lockout": {
       "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. DETWS_ENABLE_AUTH_LOCKOUT (and its required parent\nDETWS_ENABLE_AUTH) are set so the flag-guarded code compiles.",
       "flags": ["-DDETWS_ENABLE_AUTH=1", "-DDETWS_ENABLE_AUTH_LOCKOUT=1"],
-      "src": ["+<services/auth_lockout/auth_lockout.cpp>"],
+      "src": ["+<services/auth_lockout/auth_lockout.cpp>", "+<network_drivers/network/det_ip.cpp>"],
       "tests": ["test_auth_lockout"]
     },
     "native_csrf": {
@@ -1060,6 +1071,7 @@
       "desc": "Core-partitioning invariant at N=2 (DETWS_WORKER_COUNT=2): each worker reaps\nonly its owned slots (check_timeouts ownership). Per-worker queue routing is\nhardware-verified (the host queue mock ignores the handle).",
       "flags": ["-DDETWS_WORKER_COUNT=2"],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/session/worker.cpp>"
@@ -1100,6 +1112,7 @@
         "-DDETWS_ENABLE_OPCUA_CLIENT=1"
       ],
       "src": [
+        "+<network_drivers/network/det_ip.cpp>",
         "${env:native_app.build_src_filter}",
         "+<services/audit_log/audit_log.cpp>",
         "+<services/oidc/oidc.cpp>",

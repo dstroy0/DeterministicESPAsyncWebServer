@@ -3,12 +3,13 @@
 
 /**
  * @file auth_lockout.cpp
- * @brief Per-IP brute-force lockout state machine (DETWS_ENABLE_AUTH_LOCKOUT).
+ * @brief Per-peer brute-force lockout state machine (DETWS_ENABLE_AUTH_LOCKOUT).
  *
- * A bounded BSS table of buckets keyed by source IPv4. Each bucket holds the
- * consecutive-failure count and, once the threshold is crossed, the start and
- * duration of the current lockout (exponential backoff, capped). Compiled only
- * when DETWS_ENABLE_AUTH_LOCKOUT is set; the host unit tests enable it.
+ * A bounded BSS table of buckets keyed by the source address (a DetIp, so IPv4 and IPv6 peers are
+ * each their own bucket - never a lossy hash that a colliding address could poison). Each bucket
+ * holds the consecutive-failure count and, once the threshold is crossed, the start and duration
+ * of the current lockout (exponential backoff, capped). Compiled only when DETWS_ENABLE_AUTH_LOCKOUT
+ * is set; the host unit tests enable it.
  */
 
 #include "auth_lockout.h"
@@ -20,7 +21,7 @@ namespace
 
 struct LockoutBucket
 {
-    uint32_t ip;            ///< source IPv4 key; 0 marks an empty bucket.
+    DetIp addr;             ///< source address (family DET_IP_NONE marks an empty bucket).
     uint32_t lock_start_ms; ///< millis() when the current lockout began.
     uint32_t lock_ms;       ///< current lockout duration (0 = not locked).
     uint32_t last_ms;       ///< millis() of the last recorded failure (LRU eviction).
@@ -29,10 +30,10 @@ struct LockoutBucket
 
 LockoutBucket g_buckets[DETWS_AUTH_LOCKOUT_SLOTS];
 
-LockoutBucket *find_bucket(uint32_t ip)
+LockoutBucket *find_bucket(const DetIp *ip)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
-        if (g_buckets[i].ip == ip)
+        if (g_buckets[i].addr.family != DET_IP_NONE && det_ip_equal(&g_buckets[i].addr, ip))
             return &g_buckets[i];
     return nullptr;
 }
@@ -45,9 +46,9 @@ bool bucket_locked(const LockoutBucket *b, uint32_t now_ms)
 
 } // namespace
 
-uint32_t auth_lockout_remaining_ms(uint32_t ip, uint32_t now_ms)
+uint32_t auth_lockout_remaining_ms(const DetIp *ip, uint32_t now_ms)
 {
-    if (ip == 0)
+    if (det_ip_is_unspecified(ip))
         return 0; // untrackable source -> never reported as locked
     LockoutBucket *b = find_bucket(ip);
     if (!b || b->lock_ms == 0)
@@ -58,9 +59,9 @@ uint32_t auth_lockout_remaining_ms(uint32_t ip, uint32_t now_ms)
     return b->lock_ms - elapsed;
 }
 
-void auth_lockout_fail(uint32_t ip, uint32_t now_ms)
+void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
 {
-    if (ip == 0)
+    if (det_ip_is_unspecified(ip))
         return; // untrackable source
 
     LockoutBucket *b = find_bucket(ip);
@@ -73,7 +74,7 @@ void auth_lockout_fail(uint32_t ip, uint32_t now_ms)
         int slot = -1, lru = 0;
         for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
         {
-            if (g_buckets[i].ip == 0)
+            if (g_buckets[i].addr.family == DET_IP_NONE)
             {
                 slot = i;
                 break;
@@ -87,7 +88,7 @@ void auth_lockout_fail(uint32_t ip, uint32_t now_ms)
         if (slot < 0)
             slot = lru; // table full of active lockouts
         b = &g_buckets[slot];
-        b->ip = ip;
+        b->addr = *ip;
         b->fails = 0;
         b->lock_ms = 0;
         b->lock_start_ms = now_ms;
@@ -120,14 +121,14 @@ void auth_lockout_fail(uint32_t ip, uint32_t now_ms)
     }
 }
 
-void auth_lockout_succeed(uint32_t ip)
+void auth_lockout_succeed(const DetIp *ip)
 {
-    if (ip == 0)
+    if (det_ip_is_unspecified(ip))
         return;
     LockoutBucket *b = find_bucket(ip);
     if (b)
     {
-        b->ip = 0;
+        b->addr.family = DET_IP_NONE;
         b->fails = 0;
         b->lock_ms = 0;
         b->lock_start_ms = 0;
@@ -139,7 +140,7 @@ void auth_lockout_reset(void)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
     {
-        g_buckets[i].ip = 0;
+        g_buckets[i].addr.family = DET_IP_NONE;
         g_buckets[i].lock_start_ms = 0;
         g_buckets[i].lock_ms = 0;
         g_buckets[i].last_ms = 0;

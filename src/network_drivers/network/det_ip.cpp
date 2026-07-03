@@ -493,22 +493,34 @@ uint32_t det_ip_to_v4_be(const DetIp *ip)
     return 0;
 }
 
-uint32_t det_ip_key(const DetIp *ip)
+bool det_ip_is_unspecified(const DetIp *ip)
 {
-    if (!ip)
-        return 0;
-    // v4 and v4-mapped share the v4 key so the same host is one bucket either way.
-    if (ip->family == DET_IP_V4 || det_ip_is_v4_mapped(ip))
-        return det_ip_to_v4_be(ip);
-    if (ip->family == DET_IP_V6)
+    if (!ip || ip->family == DET_IP_NONE)
+        return true;
+    int n = (ip->family == DET_IP_V4) ? 4 : 16;
+    for (int i = 0; i < n; i++)
+        if (ip->bytes[i])
+            return false;
+    return true;
+}
+
+bool det_ip_prefix_match(const DetIp *addr, const DetIp *net, uint8_t prefix_len)
+{
+    if (!addr || !net || addr->family != net->family)
+        return false;
+    int bits = (addr->family == DET_IP_V4) ? 32 : (addr->family == DET_IP_V6 ? 128 : 0);
+    if (bits == 0 || prefix_len > bits)
+        return false;
+    int whole = prefix_len / 8; // bytes that must match exactly
+    for (int i = 0; i < whole; i++)
+        if (addr->bytes[i] != net->bytes[i])
+            return false;
+    int rem = prefix_len % 8; // leftover high bits in the next byte
+    if (rem)
     {
-        uint32_t h = 2166136261u; // FNV-1a over the 16 address bytes
-        for (int k = 0; k < 16; k++)
-        {
-            h ^= ip->bytes[k];
-            h *= 16777619u;
-        }
-        return h;
+        uint8_t mask = (uint8_t)(0xFF << (8 - rem));
+        if ((addr->bytes[whole] & mask) != (net->bytes[whole] & mask))
+            return false;
     }
-    return 0;
+    return true;
 }
