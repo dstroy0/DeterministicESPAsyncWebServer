@@ -82,6 +82,44 @@ void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
 /** @brief Install the direct-tcpip forward inbound-data callback. */
 void ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
 
+/**
+ * @brief "tcpip-forward" remote-forward request (ssh -R): the client asks the server
+ *        to listen on @p bind_addr : @p bind_port and open a channel back for each
+ *        accepted connection (RFC 4254 §7.1). @p bind_addr is @p addr_len bytes (not
+ *        NUL-terminated). The forwarding owner (which allocates the real listener -
+ *        this codec does no I/O) decides.
+ * @return the bound port on success (echo @p bind_port, or the port the owner picked
+ *         when @p bind_port == 0), or < 0 to refuse. If no callback is installed every
+ *         request is refused, so remote forwarding is opt-in (no listener is opened).
+ */
+typedef int (*SshRemoteForwardOpenCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
+
+/** @brief "cancel-tcpip-forward" request (RFC 4254 §7.1): drop a remote forward.
+ *  @return 0 if a matching forward was cancelled, < 0 if none / unsupported. */
+typedef int (*SshRemoteForwardCancelCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
+
+/** @brief Install the remote-forward (ssh -R) open-policy callback (opt-in). */
+void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
+
+/** @brief Install the remote-forward (ssh -R) cancel callback (opt-in). */
+void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
+
+/**
+ * @brief Handle SSH_MSG_GLOBAL_REQUEST (RFC 4254 §4).
+ *
+ * Parses the request name and want_reply flag. "tcpip-forward" /
+ * "cancel-tcpip-forward" are routed to the remote-forward seam above (accepted only
+ * when a callback is installed); a "tcpip-forward" that bound port 0 gets its
+ * allocated port echoed in the reply (RFC 4254 §7.1). Any other request name is
+ * unrecognized: per §4 it is answered with SSH_MSG_REQUEST_FAILURE when want_reply is
+ * set, and silently ignored otherwise (never SSH_MSG_UNIMPLEMENTED - GLOBAL_REQUEST is
+ * a known message type; only the request name is unknown).
+ *
+ * @return 0 on success (a reply is in @p out with *@p out_len bytes, or *@p out_len is
+ *         0 when no reply is due), -1 if the message is malformed.
+ */
+int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
+
 /** @brief Reset channel state for slot @p i. */
 void ssh_channel_init(uint8_t i);
 

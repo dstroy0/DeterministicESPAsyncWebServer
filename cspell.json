@@ -838,7 +838,10 @@
     "sockaddr",
     "detip",
     "reparsed",
-    "XVCJ"
+    "XVCJ",
+    "keepalives",
+    "rforward",
+    "rfwd"
   ],
   "ignorePaths": [
     "node_modules/**",

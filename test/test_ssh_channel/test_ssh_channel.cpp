@@ -58,12 +58,50 @@ static void fwd_data_cb(uint8_t slot, uint32_t channel, const uint8_t *d, size_t
     fwd_data_count++;
 }
 
+// tcpip-forward (ssh -R) remote-forward callbacks ---------------------------
+static char rfwd_addr[64];
+static size_t rfwd_addr_len;
+static uint16_t rfwd_port;
+static int rfwd_open_count;
+static int rfwd_cancel_count;
+static int rfwd_open_ret;   // value the open cb returns (>= 0 bound port, < 0 refuse)
+static int rfwd_cancel_ret; // value the cancel cb returns (0 ok, < 0 unknown)
+
+static int rfwd_open_cb(uint8_t slot, const char *addr, size_t addr_len, uint16_t port)
+{
+    (void)slot;
+    rfwd_addr_len = addr_len < sizeof(rfwd_addr) - 1 ? addr_len : sizeof(rfwd_addr) - 1;
+    memcpy(rfwd_addr, addr, rfwd_addr_len);
+    rfwd_addr[rfwd_addr_len] = 0;
+    rfwd_port = port;
+    rfwd_open_count++;
+    return rfwd_open_ret;
+}
+static int rfwd_cancel_cb(uint8_t slot, const char *addr, size_t addr_len, uint16_t port)
+{
+    (void)slot;
+    (void)addr;
+    (void)addr_len;
+    rfwd_port = port;
+    rfwd_cancel_count++;
+    return rfwd_cancel_ret;
+}
+
 void setUp()
 {
     ssh_channel_init(0);
     ssh_channel_set_data_cb(data_cb);
     ssh_channel_set_forward_open_cb(nullptr); // forwarding off by default
     ssh_channel_set_forward_data_cb(nullptr);
+    ssh_channel_set_rforward_open_cb(nullptr); // remote forwarding off by default
+    ssh_channel_set_rforward_cancel_cb(nullptr);
+    memset(rfwd_addr, 0, sizeof(rfwd_addr));
+    rfwd_addr_len = 0;
+    rfwd_port = 0;
+    rfwd_open_count = 0;
+    rfwd_cancel_count = 0;
+    rfwd_open_ret = 0;
+    rfwd_cancel_ret = 0;
     memset(last_data, 0, sizeof(last_data));
     last_data_len = 0;
     last_channel = 0xFFFFFFFFu;
@@ -486,6 +524,127 @@ void test_data_to_unknown_channel_rejected()
     TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)));
 }
 
+// ---- global request (RFC 4254 §4; §7.1 tcpip-forward, ssh -R) --------------
+
+// GLOBAL_REQUEST tcpip-forward / cancel-tcpip-forward: name, want_reply, bind addr, port.
+static size_t make_global_fwd(uint8_t *pkt, const char *name, bool want_reply, const char *bind_addr, uint16_t port)
+{
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(pkt + n, name);
+    pkt[n++] = want_reply ? 1 : 0;
+    n += put_string(pkt + n, bind_addr);
+    wr_u32(pkt + n, port);
+    n += 4;
+    return n;
+}
+
+// GLOBAL_REQUEST with an arbitrary (non-forward) name and no request-specific data.
+static size_t make_global_other(uint8_t *pkt, const char *name, bool want_reply)
+{
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(pkt + n, name);
+    pkt[n++] = want_reply ? 1 : 0;
+    return n;
+}
+
+// With no remote-forward owner installed, tcpip-forward is refused (REQUEST_FAILURE).
+void test_rforward_no_cb_refused()
+{
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_fwd(pkt, "tcpip-forward", true, "", 8080);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(1u, olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_FAILURE, out[0]);
+    TEST_ASSERT_EQUAL_INT(0, rfwd_open_count);
+}
+
+// An accepted specific-port forward replies with a bare REQUEST_SUCCESS.
+void test_rforward_accept_specific_port()
+{
+    ssh_channel_set_rforward_open_cb(rfwd_open_cb);
+    rfwd_open_ret = 8080;
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_fwd(pkt, "tcpip-forward", true, "0.0.0.0", 8080);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(1u, olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(1, rfwd_open_count);
+    TEST_ASSERT_EQUAL_STRING("0.0.0.0", rfwd_addr);
+    TEST_ASSERT_EQUAL_UINT16(8080, rfwd_port);
+}
+
+// A port-0 request that is accepted echoes the allocated port (RFC 4254 §7.1).
+void test_rforward_port0_echoes_allocated()
+{
+    ssh_channel_set_rforward_open_cb(rfwd_open_cb);
+    rfwd_open_ret = 54321;
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_fwd(pkt, "tcpip-forward", true, "", 0);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(5u, olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_UINT32(54321u, rd_u32(out + 1));
+}
+
+// Accepted but want_reply = false -> the callback still runs, but no reply is emitted.
+void test_rforward_no_reply_silent()
+{
+    ssh_channel_set_rforward_open_cb(rfwd_open_cb);
+    rfwd_open_ret = 8080;
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_fwd(pkt, "tcpip-forward", false, "", 8080);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(0u, olen);
+    TEST_ASSERT_EQUAL_INT(1, rfwd_open_count);
+}
+
+// cancel-tcpip-forward routes to the cancel callback and replies REQUEST_SUCCESS.
+void test_rforward_cancel()
+{
+    ssh_channel_set_rforward_cancel_cb(rfwd_cancel_cb);
+    rfwd_cancel_ret = 0;
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_fwd(pkt, "cancel-tcpip-forward", true, "", 8080);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(1u, olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_SUCCESS, out[0]);
+    TEST_ASSERT_EQUAL_INT(1, rfwd_cancel_count);
+    TEST_ASSERT_EQUAL_UINT16(8080, rfwd_port);
+}
+
+// An unrecognized global request answers REQUEST_FAILURE when want_reply is set
+// (RFC 4254 §4, never UNIMPLEMENTED), and is silent otherwise.
+void test_global_unknown_request()
+{
+    uint8_t pkt[64], out[16];
+    size_t olen = 99;
+    size_t n = make_global_other(pkt, "keepalive@openssh.com", true);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(1u, olen);
+    TEST_ASSERT_EQUAL(SSH_MSG_REQUEST_FAILURE, out[0]);
+
+    olen = 99;
+    n = make_global_other(pkt, "hostkeys-00@openssh.com", false);
+    TEST_ASSERT_EQUAL_INT(0, ssh_global_request_handle(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(0u, olen); // no reply when want_reply is unset
+}
+
+// A truncated GLOBAL_REQUEST (missing the request-name string) is rejected.
+void test_global_malformed()
+{
+    uint8_t pkt[4], out[16];
+    pkt[0] = SSH_MSG_GLOBAL_REQUEST;
+    size_t olen = 99;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, pkt, 1, out, &olen, sizeof(out)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -509,5 +668,12 @@ int main()
     RUN_TEST(test_multiplex_two_channels_route_independently);
     RUN_TEST(test_pool_full_open_fails);
     RUN_TEST(test_data_to_unknown_channel_rejected);
+    RUN_TEST(test_rforward_no_cb_refused);
+    RUN_TEST(test_rforward_accept_specific_port);
+    RUN_TEST(test_rforward_port0_echoes_allocated);
+    RUN_TEST(test_rforward_no_reply_silent);
+    RUN_TEST(test_rforward_cancel);
+    RUN_TEST(test_global_unknown_request);
+    RUN_TEST(test_global_malformed);
     return UNITY_END();
 }

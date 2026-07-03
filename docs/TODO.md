@@ -485,9 +485,17 @@ shipped work:
       transport and bridges bytes both ways - no I/O in the codec - with an optional
       target policy, a per-poll target->client pump bounded by the channel window,
       and EOF+CLOSE propagation; `ssh_conn_close_channel` sends a server-initiated
-      close as two packets. ESP32 build + link verified. _Remaining:_
-      **`forwarded-tcpip`** (`ssh -R`, listener + global request) and
-      **X11 forwarding**.
+      close as two packets. ESP32 build + link verified.
+      **Global requests** (RFC 4254 §4) now have a real handler
+      ([`ssh_global_request_handle`](@ref ssh_global_request_handle)): an unrecognized
+      request answers `REQUEST_FAILURE` when `want_reply` is set (never `UNIMPLEMENTED` -
+      that was a client-keepalive interop bug, see docs/BUGS.md), and **`tcpip-forward` /
+      `cancel-tcpip-forward`** (`ssh -R`) route to an opt-in remote-forward seam
+      (`ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
+      (echoing the allocated port for a port-0 bind, §7.1) when an owner accepts. Host-tested
+      (`test_ssh_channel`, +7). _Remaining:_ the **`forwarded-tcpip` listener + byte-bridge
+      owner** (allocate the real listener via `listener_add`, open a server-initiated
+      `forwarded-tcpip` channel per accepted connection, bridge bytes) and **X11 forwarding**.
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a

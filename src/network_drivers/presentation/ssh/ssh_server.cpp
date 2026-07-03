@@ -131,6 +131,17 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         }
         return 0;
 
+    case SSH_MSG_GLOBAL_REQUEST:
+        // RFC 4254 §4: connection-wide request (e.g. tcpip-forward for ssh -R). Only
+        // meaningful post-auth; reply REQUEST_SUCCESS/FAILURE when want_reply is set.
+        if (!s->authed)
+            return -1;
+        if (ssh_global_request_handle(i, payload, len, buf, &n, sizeof(buf)) != 0)
+            return -1;
+        if (n > 0)
+            emit(i, buf, n);
+        return 0;
+
     case SSH_MSG_CHANNEL_OPEN:
         if (!s->authed)
             return -1;

@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH answered SSH_MSG_GLOBAL_REQUEST with UNIMPLEMENTED instead of REQUEST_FAILURE
+
+- **Status:** FIXED (`native_ssh` 127/127; the dispatcher now routes GLOBAL_REQUEST to a
+  dedicated handler).
+- **Found:** 2026-07-03, implementing `ssh -R` remote forwarding (which arrives as a
+  `tcpip-forward` global request).
+- **Root cause:** the SSH message dispatcher had no case for `SSH_MSG_GLOBAL_REQUEST` (80),
+  so every connection-wide request fell through to the default arm and got
+  `SSH_MSG_UNIMPLEMENTED` (RFC 4253 §11.4). That is wrong: GLOBAL_REQUEST is a **known**
+  message type - only the request _name_ may be unknown - and RFC 4254 §4 says an
+  unrecognized request is answered with `SSH_MSG_REQUEST_FAILURE` when `want_reply` is set,
+  or ignored otherwise. In practice this broke OpenSSH client keepalives
+  (`keepalive@openssh.com`, `want_reply=true`): the client saw an UNIMPLEMENTED rather than a
+  SUCCESS/FAILURE reply and could treat the keepalive as unanswered, and benign
+  `want_reply=false` requests (`hostkeys-00@openssh.com`, `no-more-sessions@openssh.com`) drew
+  a spurious UNIMPLEMENTED.
+- **Fix:** `ssh_global_request_handle()` (ssh_channel) now parses the request name +
+  `want_reply`, replies `REQUEST_FAILURE` (or stays silent) per §4, and routes
+  `tcpip-forward` / `cancel-tcpip-forward` to an opt-in remote-forward seam (accepted only
+  when an owner is installed; a port-0 bind echoes its allocated port per §7.1). Host-tested
+  (`test_ssh_channel`: accept / refuse / port-0 echo / no-reply / cancel / unknown-request /
+  malformed).
+- **Prevention:** the seam is the plug-in point for the `ssh -R` listener + byte-bridge owner
+  (the next phase); until it is installed the server correctly declines forwards rather than
+  making a promise it cannot keep.
+
+---
+
 ## Abuse-prevention state keyed on a 32-bit hash of the IPv6 source address (security)
 
 - **Status:** FIXED (transport now carries the full family-tagged address; all IP-keyed

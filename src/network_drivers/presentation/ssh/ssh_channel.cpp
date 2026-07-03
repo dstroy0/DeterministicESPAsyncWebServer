@@ -20,6 +20,8 @@ SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 static SshChannelDataCb g_data_cb = nullptr;
 static SshForwardOpenCb g_forward_open_cb = nullptr;
 static SshForwardDataCb g_forward_data_cb = nullptr;
+static SshRemoteForwardOpenCb g_rfwd_open_cb = nullptr;
+static SshRemoteForwardCancelCb g_rfwd_cancel_cb = nullptr;
 
 void ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
@@ -34,6 +36,16 @@ void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
 void ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
 {
     g_forward_data_cb = cb;
+}
+
+void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
+{
+    g_rfwd_open_cb = cb;
+}
+
+void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
+{
+    g_rfwd_cancel_cb = cb;
 }
 
 void ssh_channel_init(uint8_t i)
@@ -126,6 +138,92 @@ static int build_open_confirm(const SshChannel *c, uint8_t *out, size_t cap, siz
     wr_u32(out + 9, c->local_window);
     wr_u32(out + 13, SSH_CHAN_MAX_PACKET);
     *out_len = 17;
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// GLOBAL_REQUEST (RFC 4254 §4; §7.1 tcpip-forward / cancel-tcpip-forward)
+// ---------------------------------------------------------------------------
+
+int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+{
+    *out_len = 0;
+    if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_GLOBAL_REQUEST)
+        return -1;
+
+    size_t off = 1;
+    const uint8_t *name;
+    uint32_t name_len;
+    if (!rd_string(payload, len, &off, &name, &name_len))
+        return -1;
+    if (off >= len)
+        return -1;
+    bool want_reply = payload[off++] != 0;
+
+    bool is_fwd = (name_len == 13 && memcmp(name, "tcpip-forward", 13) == 0);
+    bool is_cancel = (name_len == 20 && memcmp(name, "cancel-tcpip-forward", 20) == 0);
+
+    if (is_fwd || is_cancel)
+    {
+        // Request-specific data: bind address (string) followed by bind port (uint32).
+        const uint8_t *addr;
+        uint32_t addr_len;
+        if (!rd_string(payload, len, &off, &addr, &addr_len) || off + 4 > len)
+            return -1;
+        uint16_t bind_port = (uint16_t)rd_u32(payload + off);
+
+        // The owner allocates (or cancels) the real listener; -1 means "refused".
+        int bound = -1;
+        if (is_fwd && g_rfwd_open_cb)
+            bound = g_rfwd_open_cb(i, (const char *)addr, addr_len, bind_port);
+        else if (is_cancel && g_rfwd_cancel_cb)
+            bound = g_rfwd_cancel_cb(i, (const char *)addr, addr_len, bind_port);
+
+        if (bound < 0)
+        {
+            if (want_reply) // refused: no owner, policy denied, or the table is full
+            {
+                if (cap < 1)
+                    return -1;
+                out[0] = SSH_MSG_REQUEST_FAILURE;
+                *out_len = 1;
+            }
+            return 0;
+        }
+
+        if (want_reply)
+        {
+            // A tcpip-forward that requested port 0 echoes the allocated port
+            // (RFC 4254 §7.1); a specific port and cancel reply bare success.
+            if (is_fwd && bind_port == 0)
+            {
+                if (cap < 5)
+                    return -1;
+                out[0] = SSH_MSG_REQUEST_SUCCESS;
+                wr_u32(out + 1, (uint32_t)(uint16_t)bound);
+                *out_len = 5;
+            }
+            else
+            {
+                if (cap < 1)
+                    return -1;
+                out[0] = SSH_MSG_REQUEST_SUCCESS;
+                *out_len = 1;
+            }
+        }
+        return 0;
+    }
+
+    // Any other global request is unrecognized: RFC 4254 §4 -> REQUEST_FAILURE when the
+    // client wants a reply, otherwise silently ignored. (Never UNIMPLEMENTED: the
+    // GLOBAL_REQUEST message type is known; only this request name is not.)
+    if (want_reply)
+    {
+        if (cap < 1)
+            return -1;
+        out[0] = SSH_MSG_REQUEST_FAILURE;
+        *out_len = 1;
+    }
     return 0;
 }
 

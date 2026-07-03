@@ -107,6 +107,9 @@
 #define SSH_MSG_USERAUTH_FAILURE 51
 #define SSH_MSG_USERAUTH_SUCCESS 52
 #define SSH_MSG_USERAUTH_PK_OK 60
+#define SSH_MSG_GLOBAL_REQUEST 80  // RFC 4254 §4 (e.g. tcpip-forward for ssh -R)
+#define SSH_MSG_REQUEST_SUCCESS 81 // RFC 4254 §4 reply to a want_reply global request
+#define SSH_MSG_REQUEST_FAILURE 82 // RFC 4254 §4 reply: request refused / unrecognized
 #define SSH_MSG_CHANNEL_OPEN 90
 #define SSH_MSG_CHANNEL_OPEN_CONFIRM 91
 #define SSH_MSG_CHANNEL_OPEN_FAILURE 92
