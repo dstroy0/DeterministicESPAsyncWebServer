@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.86.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.86.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0f3b70e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f3b70e1a15ffa7b25bd13ed3f4f8607b42f63a4))
+- update CHANGELOG.md [skip ci] ([`4c49a07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c49a0735863fc95888037e018ca4ffab2f3db5b))
+
+### Changes
+
+- Bump version: 4.85.0 → 4.86.0 ([`9d65fd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d65fd34cc97dfe24476e3f851ca19ec03727d9d))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e8c4c6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8c4c6bac3b339101c9444d7f9c065973d3f774f))
+
+### Refactor
+
+- cut cognitive complexity + nested ternaries (SonarCloud, no-idiom-clash subset) ([`f77af21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f77af21c21c45829435c6d7f5ce7d32300e12388))
+- split into single-purpose helpers; + DetIp peer-address API (IPv6 phase 2) ([`a6d4ef7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6d4ef7d3ca57242dacbe111d5f9ebcb06975cf2))
+
+</details>
+
 ## [4.85.0] - 2026-07-03
 
 <details>
