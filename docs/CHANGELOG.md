@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`c426301`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c426301280c81bd0374dc441f175a13b4011ab97))
+- update CHANGELOG.md [skip ci] ([`6ccc1bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ccc1bb46f8f8281c0dbf2270e29682729c3e460))
 - bump prettier from 3.9.1 to 3.9.4 ([`9dd2486`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd2486ae39d4f52abf2efdf48dec7780493fc87))
 - update test report [skip ci] ([`652c507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/652c507be3911fbbeee05c93b7b3ee4861ea9898))
 
@@ -15,7 +17,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`4988aaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4988aaf0c99813123b877c76502f9ebd9897ea0e))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`b66e6c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b66e6c5214bae6cb9736ec528ea3601c471657c6))
+
+### Features
+
+- add SHA-512 + X25519 + Ed25519 crypto primitives (RFC KAT-verified) ([`f6b63a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6b63a7e16b015f3226da7d0477ce9b8fefd7ade))
 
 ## [4.93.0] - 2026-07-03
 
