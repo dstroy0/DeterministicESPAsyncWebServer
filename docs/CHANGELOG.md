@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.83.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.83.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`12088bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12088bdeb06980e302c0302346d7f1d3f3283ddf))
+- update CHANGELOG.md [skip ci] ([`cde5f07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cde5f0737837fdd517114f5337e1cdbf3bf7b8fd))
+
+### Changes
+
+- Bump version: 4.82.1 → 4.83.0 ([`e9f0b22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9f0b22de2e3f0429f0ee5ae1cf495eb2f28ff26))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`cf99aba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf99aba425a9177c9e7ff80a6e90e185e43eca42))
+
+### Features
+
+- IPv6 dual-stack phase 1 - DetIp address core + netif bring-up ([`7a8406f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a8406f8e0b1de1729bfac5a6c6d3d812e5d2877))
+
+</details>
+
 ## [4.82.1] - 2026-07-03
 
 <details>
