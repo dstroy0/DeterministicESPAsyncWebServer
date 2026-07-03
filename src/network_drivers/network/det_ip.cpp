@@ -5,6 +5,10 @@
  * @file det_ip.cpp
  * @brief DetIp implementation: RFC 4291 text parsing, RFC 5952 canonical formatting, scope
  *        classification. Pure, hand-rolled (no stdlib parsing), host-identical.
+ *
+ * The public entry points (det_ip_parse / det_ip_format / det_ip_classify) are thin: the work is
+ * split into small single-purpose helpers in the anonymous namespace below - one per concern
+ * (parse a hextet, assemble the 16 bytes, find the zero run to compress, classify one family).
  */
 
 #include "network_drivers/network/det_ip.h"
@@ -12,6 +16,11 @@
 
 namespace
 {
+// -------------------------------------------------------------------------------------------
+// Parsing helpers (text -> bytes)
+// -------------------------------------------------------------------------------------------
+
+/** Value of one hex digit, or -1 if @p c is not a hex digit. */
 int hexval(char c)
 {
     if (c >= '0' && c <= '9')
@@ -23,14 +32,14 @@ int hexval(char c)
     return -1;
 }
 
-// Parse a dotted-quad from s[0, len) into out[4].
+/** Parse the dotted-quad in s[0, len) into out[4]. Rejects empty octets, > 3 digits, or > 255. */
 bool parse_v4(const char *s, size_t len, uint8_t out[4])
 {
     int oct = 0, val = -1, digits = 0;
     for (size_t i = 0; i < len; i++)
     {
         char c = s[i];
-        if (c == '.')
+        if (c == '.') // octet separator: commit the octet in progress
         {
             if (digits == 0 || oct >= 3)
                 return false;
@@ -50,102 +59,36 @@ bool parse_v4(const char *s, size_t len, uint8_t out[4])
         else
             return false;
     }
-    if (oct != 3 || digits == 0)
+    if (oct != 3 || digits == 0) // exactly four octets, the last one non-empty
         return false;
     out[3] = (uint8_t)val;
     return true;
 }
 
-// Parse an IPv6 text form (with :: compression and an optional embedded v4 tail) into out[16].
-bool parse_v6(const char *s, size_t len, uint8_t out[16])
+/** Parse one 1-4 digit IPv6 hextet in s[0, len) into *out. False if empty / too long / non-hex. */
+bool parse_hextet(const char *s, size_t len, uint16_t *out)
 {
-    uint16_t head[8], tail[8];
-    int nhead = 0, ntail = 0;
-    bool seen_dc = false;
-    uint16_t *cur = head;
-    int *ncur = &nhead;
-
-    size_t i = 0;
-    if (len >= 1 && s[0] == ':')
-    {
-        if (len < 2 || s[1] != ':')
-            return false; // a single leading ':' is illegal
-        seen_dc = true;
-        cur = tail;
-        ncur = &ntail;
-        i = 2;
-        if (i == len)
-        {
-            memset(out, 0, 16); // "::"
-            return true;
-        }
-    }
-
-    while (i < len)
-    {
-        size_t j = i;
-        bool has_dot = false;
-        while (j < len && s[j] != ':')
-        {
-            if (s[j] == '.')
-                has_dot = true;
-            j++;
-        }
-        size_t tlen = j - i;
-        if (has_dot)
-        {
-            uint8_t q[4];
-            if (!parse_v4(s + i, tlen, q))
-                return false;
-            if (*ncur > 6)
-                return false; // no room for the two embedded hextets
-            cur[(*ncur)++] = (uint16_t)((q[0] << 8) | q[1]);
-            cur[(*ncur)++] = (uint16_t)((q[2] << 8) | q[3]);
-            i = j;
-            if (i != len)
-                return false; // an embedded v4 must be the final token
-            break;
-        }
-        if (tlen == 0 || tlen > 4)
-            return false;
-        int v = 0;
-        for (size_t k = i; k < j; k++)
-        {
-            int h = hexval(s[k]);
-            if (h < 0)
-                return false;
-            v = v * 16 + h;
-        }
-        if (*ncur >= 8)
-            return false;
-        cur[(*ncur)++] = (uint16_t)v;
-        i = j;
-        if (i < len)
-        {
-            if (i + 1 < len && s[i + 1] == ':')
-            {
-                if (seen_dc)
-                    return false; // only one "::" allowed
-                seen_dc = true;
-                cur = tail;
-                ncur = &ntail;
-                i += 2;
-                if (i == len)
-                    break; // trailing "::"
-            }
-            else
-            {
-                i += 1;
-                if (i == len)
-                    return false; // trailing single ':'
-            }
-        }
-    }
-
-    int total = nhead + ntail;
-    if (seen_dc ? (total > 7) : (total != 8))
+    if (len == 0 || len > 4)
         return false;
+    int v = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        int h = hexval(s[i]);
+        if (h < 0)
+            return false;
+        v = (v << 4) | h;
+    }
+    *out = (uint16_t)v;
+    return true;
+}
 
+/**
+ * Place the @p nhead hextets that preceded "::" and the @p ntail that followed it into the 16
+ * output bytes (big-endian), zero-filling the gap the "::" stands for: head fills from the left,
+ * tail from the right.
+ */
+void assemble_v6(const uint16_t *head, int nhead, const uint16_t *tail, int ntail, uint8_t out[16])
+{
     uint16_t g[8];
     memset(g, 0, sizeof(g));
     for (int k = 0; k < nhead; k++)
@@ -157,10 +100,106 @@ bool parse_v6(const char *s, size_t len, uint8_t out[16])
         out[2 * k] = (uint8_t)(g[k] >> 8);
         out[2 * k + 1] = (uint8_t)(g[k] & 0xFF);
     }
+}
+
+/**
+ * Parse an IPv6 text address (RFC 4291 §2.2) into out[16].
+ *
+ * The address is up to eight 16-bit hextets separated by ':'. A single "::" may stand in for one
+ * or more all-zero hextets: the groups before it fill a head list from the left, those after fill
+ * a tail list from the right, and assemble_v6() zero-fills the middle. The last token may be a
+ * dotted-quad (an embedded IPv4 tail such as ::ffff:1.2.3.4), which expands to two hextets.
+ */
+bool parse_v6(const char *s, size_t len, uint8_t out[16])
+{
+    uint16_t head[8], tail[8];
+    int nhead = 0, ntail = 0;
+    bool seen_dc = false; // have we passed the "::" yet?
+    uint16_t *cur = head; // the list currently being filled (head, then tail after "::")
+    int *ncur = &nhead;
+
+    size_t i = 0;
+    if (len >= 1 && s[0] == ':') // a leading "::" (the address opens in the zero gap)
+    {
+        if (len < 2 || s[1] != ':')
+            return false; // a lone leading ':' is illegal
+        seen_dc = true;
+        cur = tail;
+        ncur = &ntail;
+        i = 2;
+        if (i == len) // the whole address is "::"
+        {
+            memset(out, 0, 16);
+            return true;
+        }
+    }
+
+    while (i < len)
+    {
+        // Span this token up to the next ':' (noting a '.' -> it is an embedded-v4 tail).
+        size_t j = i;
+        bool has_dot = false;
+        while (j < len && s[j] != ':')
+        {
+            if (s[j] == '.')
+                has_dot = true;
+            j++;
+        }
+        size_t tlen = j - i;
+
+        if (has_dot) // embedded IPv4 -> two hextets; it must be the final token
+        {
+            uint8_t q[4];
+            if (!parse_v4(s + i, tlen, q) || *ncur > 6 || j != len)
+                return false;
+            cur[(*ncur)++] = (uint16_t)((q[0] << 8) | q[1]);
+            cur[(*ncur)++] = (uint16_t)((q[2] << 8) | q[3]);
+            break;
+        }
+
+        uint16_t hx;
+        if (!parse_hextet(s + i, tlen, &hx) || *ncur >= 8)
+            return false;
+        cur[(*ncur)++] = hx;
+        i = j;
+
+        // Consume the separator: "::" switches us to the tail list, a single ":" just continues.
+        if (i < len)
+        {
+            if (i + 1 < len && s[i + 1] == ':') // "::"
+            {
+                if (seen_dc)
+                    return false; // only one "::" is allowed
+                seen_dc = true;
+                cur = tail;
+                ncur = &ntail;
+                i += 2;
+                if (i == len)
+                    break; // trailing "::"
+            }
+            else // single ':'
+            {
+                i += 1;
+                if (i == len)
+                    return false; // a trailing lone ':' is illegal
+            }
+        }
+    }
+
+    // Without "::" all eight hextets must be present; with it, the gap stands for >= 1 group.
+    int total = nhead + ntail;
+    if (seen_dc ? (total > 7) : (total != 8))
+        return false;
+
+    assemble_v6(head, nhead, tail, ntail, out);
     return true;
 }
 
-// Append a decimal byte (0-255). Returns chars written.
+// -------------------------------------------------------------------------------------------
+// Formatting helpers (bytes -> text)
+// -------------------------------------------------------------------------------------------
+
+/** Append the decimal form of @p v (0-255) at @p o. Returns the digit count (1-3). */
 size_t put_u8(uint8_t v, char *o)
 {
     size_t n = 0;
@@ -172,6 +211,7 @@ size_t put_u8(uint8_t v, char *o)
     return n;
 }
 
+/** Format the four bytes at @p b as "a.b.c.d" into @p out (NUL-terminated). 0 if it won't fit. */
 size_t format_v4(const uint8_t *b, char *out, size_t cap)
 {
     char tmp[16];
@@ -189,9 +229,10 @@ size_t format_v4(const uint8_t *b, char *out, size_t cap)
     return n;
 }
 
+/** Append @p v as lower-case hex with no leading zeros at @p o. Returns the digit count (1-4). */
 size_t put_hex16(uint16_t v, char *o)
 {
-    const char *H = "0123456789abcdef";
+    static const char H[] = "0123456789abcdef";
     char t[4];
     int n = 0;
     do
@@ -199,16 +240,111 @@ size_t put_hex16(uint16_t v, char *o)
         t[n++] = H[v & 0xF];
         v >>= 4;
     } while (v);
-    for (int k = 0; k < n; k++)
+    for (int k = 0; k < n; k++) // reverse into place (we built it least-significant first)
         o[k] = t[n - 1 - k];
     return (size_t)n;
 }
+
+/**
+ * Find the longest run of >= 2 zero hextets to compress to "::" (leftmost wins a tie,
+ * RFC 5952 §4.2.3). Writes the run start to *start (-1 if none qualifies) and its length to *len.
+ */
+void longest_zero_run(const uint16_t g[8], int *start, int *len)
+{
+    int best_start = -1, best_len = 0, cur_start = -1, cur_len = 0;
+    for (int k = 0; k < 8; k++)
+    {
+        if (g[k] == 0)
+        {
+            if (cur_start < 0)
+                cur_start = k;
+            cur_len++;
+            if (cur_len > best_len)
+            {
+                best_len = cur_len;
+                best_start = cur_start;
+            }
+        }
+        else
+        {
+            cur_start = -1;
+            cur_len = 0;
+        }
+    }
+    *start = (best_len >= 2) ? best_start : -1;
+    *len = best_len;
+}
+
+// -------------------------------------------------------------------------------------------
+// Classification helpers
+// -------------------------------------------------------------------------------------------
+
+/** True if the 16 v6 bytes carry the ::ffff:0:0/96 IPv4-mapped prefix (RFC 4291 §2.5.5.2). */
+bool is_v4_mapped_bytes(const uint8_t *b)
+{
+    for (int k = 0; k < 10; k++)
+        if (b[k])
+            return false;
+    return b[10] == 0xff && b[11] == 0xff;
+}
+
+/** Classify the four v4 bytes at @p b. */
+DetIpScope classify_v4(const uint8_t *b)
+{
+    if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
+        return DET_IP_SCOPE_UNSPECIFIED; // 0.0.0.0
+    if (b[0] == 127)
+        return DET_IP_SCOPE_LOOPBACK; // 127/8
+    if (b[0] == 169 && b[1] == 254)
+        return DET_IP_SCOPE_LINK_LOCAL; // 169.254/16
+    if (b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) || (b[0] == 192 && b[1] == 168))
+        return DET_IP_SCOPE_PRIVATE; // RFC 1918
+    if (b[0] >= 224 && b[0] <= 239)
+        return DET_IP_SCOPE_MULTICAST; // 224/4
+    return DET_IP_SCOPE_GLOBAL;
+}
+
+/** Classify the sixteen v6 bytes at @p b (v4-mapped addresses defer to their embedded v4). */
+DetIpScope classify_v6(const uint8_t *b)
+{
+    bool allzero = true;
+    for (int k = 0; k < 16; k++)
+        if (b[k])
+        {
+            allzero = false;
+            break;
+        }
+    if (allzero)
+        return DET_IP_SCOPE_UNSPECIFIED; // ::
+
+    bool loopback = (b[15] == 1);
+    for (int k = 0; k < 15 && loopback; k++)
+        if (b[k])
+            loopback = false;
+    if (loopback)
+        return DET_IP_SCOPE_LOOPBACK; // ::1
+
+    if (is_v4_mapped_bytes(b))
+        return classify_v4(b + 12); // ::ffff:a.b.c.d takes the v4 scope
+    if (b[0] == 0xff)
+        return DET_IP_SCOPE_MULTICAST; // ff00::/8
+    if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
+        return DET_IP_SCOPE_LINK_LOCAL; // fe80::/10
+    if ((b[0] & 0xfe) == 0xfc)
+        return DET_IP_SCOPE_PRIVATE; // fc00::/7 (unique-local)
+    return DET_IP_SCOPE_GLOBAL;
+}
 } // namespace
+
+// -------------------------------------------------------------------------------------------
+// Public API
+// -------------------------------------------------------------------------------------------
 
 bool det_ip_parse(const char *s, DetIp *out)
 {
     if (!s || !out)
         return false;
+    // A ':' means it is v6; a '.' (and no ':') means v4. Bound the scan to a legal length.
     size_t len = 0;
     bool colon = false, dot = false;
     while (s[len])
@@ -217,12 +353,12 @@ bool det_ip_parse(const char *s, DetIp *out)
             colon = true;
         else if (s[len] == '.')
             dot = true;
-        len++;
-        if (len > 45)
-            return false; // longer than any legal address
+        if (++len > 45)
+            return false; // longer than any legal textual address
     }
     if (len == 0)
         return false;
+
     memset(out->bytes, 0, 16);
     if (colon)
     {
@@ -250,7 +386,7 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
     if (ip->family != DET_IP_V6)
         return 0;
 
-    // IPv4-mapped: ::ffff:a.b.c.d (RFC 5952 §5).
+    // IPv4-mapped addresses print with a dotted tail: ::ffff:a.b.c.d (RFC 5952 §5).
     if (det_ip_is_v4_mapped(ip))
     {
         char tail[16];
@@ -267,46 +403,27 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
     for (int k = 0; k < 8; k++)
         g[k] = (uint16_t)((ip->bytes[2 * k] << 8) | ip->bytes[2 * k + 1]);
 
-    // Longest run of >= 2 zero groups -> "::" (leftmost on a tie, RFC 5952 §4.2.3).
-    int best_start = -1, best_len = 0, cs = -1, cl = 0;
-    for (int k = 0; k < 8; k++)
-    {
-        if (g[k] == 0)
-        {
-            if (cs < 0)
-                cs = k;
-            cl++;
-            if (cl > best_len)
-            {
-                best_len = cl;
-                best_start = cs;
-            }
-        }
-        else
-        {
-            cs = -1;
-            cl = 0;
-        }
-    }
-    if (best_len < 2)
-        best_start = -1;
+    int zs, zl;
+    longest_zero_run(g, &zs, &zl);
 
+    // Emit the hextets, replacing the [zs, zs+zl) run with "::" (inet_ntop6-style colon placement).
     char tmp[DET_IP_STR_MAX];
     size_t n = 0;
     for (int k = 0; k < 8; k++)
     {
-        if (best_start != -1 && k >= best_start && k < best_start + best_len)
+        if (zs != -1 && k >= zs && k < zs + zl)
         {
-            if (k == best_start)
-                tmp[n++] = ':'; // one colon here; the pair forms "::"
+            if (k == zs)
+                tmp[n++] = ':'; // one colon here; the pair around the run forms "::"
             continue;
         }
         if (k != 0)
             tmp[n++] = ':';
         n += put_hex16(g[k], tmp + n);
     }
-    if (best_start != -1 && best_start + best_len == 8)
-        tmp[n++] = ':'; // trailing run: close the "::"
+    if (zs != -1 && zs + zl == 8)
+        tmp[n++] = ':'; // the run reached the end: close the trailing "::"
+
     if (n + 1 > cap)
         return 0;
     memcpy(out, tmp, n);
@@ -316,12 +433,7 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
 
 bool det_ip_is_v4_mapped(const DetIp *ip)
 {
-    if (!ip || ip->family != DET_IP_V6)
-        return false;
-    for (int k = 0; k < 10; k++)
-        if (ip->bytes[k] != 0)
-            return false;
-    return ip->bytes[10] == 0xff && ip->bytes[11] == 0xff;
+    return ip && ip->family == DET_IP_V6 && is_v4_mapped_bytes(ip->bytes);
 }
 
 DetIpScope det_ip_classify(const DetIp *ip)
@@ -329,55 +441,9 @@ DetIpScope det_ip_classify(const DetIp *ip)
     if (!ip)
         return DET_IP_SCOPE_UNSPECIFIED;
     if (ip->family == DET_IP_V4)
-    {
-        const uint8_t *b = ip->bytes;
-        if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
-            return DET_IP_SCOPE_UNSPECIFIED;
-        if (b[0] == 127)
-            return DET_IP_SCOPE_LOOPBACK;
-        if (b[0] == 169 && b[1] == 254)
-            return DET_IP_SCOPE_LINK_LOCAL;
-        if (b[0] == 10)
-            return DET_IP_SCOPE_PRIVATE;
-        if (b[0] == 172 && b[1] >= 16 && b[1] <= 31)
-            return DET_IP_SCOPE_PRIVATE;
-        if (b[0] == 192 && b[1] == 168)
-            return DET_IP_SCOPE_PRIVATE;
-        if (b[0] >= 224 && b[0] <= 239)
-            return DET_IP_SCOPE_MULTICAST;
-        return DET_IP_SCOPE_GLOBAL;
-    }
+        return classify_v4(ip->bytes);
     if (ip->family == DET_IP_V6)
-    {
-        const uint8_t *b = ip->bytes;
-        bool allzero = true;
-        for (int k = 0; k < 16; k++)
-            if (b[k])
-            {
-                allzero = false;
-                break;
-            }
-        if (allzero)
-            return DET_IP_SCOPE_UNSPECIFIED;
-        bool loop = (b[15] == 1);
-        for (int k = 0; k < 15 && loop; k++)
-            if (b[k])
-                loop = false;
-        if (loop)
-            return DET_IP_SCOPE_LOOPBACK;
-        if (det_ip_is_v4_mapped(ip))
-        {
-            DetIp v4 = det_ip_from_v4_octets(b[12], b[13], b[14], b[15]);
-            return det_ip_classify(&v4);
-        }
-        if (b[0] == 0xff)
-            return DET_IP_SCOPE_MULTICAST; // ff00::/8
-        if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
-            return DET_IP_SCOPE_LINK_LOCAL; // fe80::/10
-        if ((b[0] & 0xfe) == 0xfc)
-            return DET_IP_SCOPE_PRIVATE; // fc00::/7 (ULA)
-        return DET_IP_SCOPE_GLOBAL;
-    }
+        return classify_v6(ip->bytes);
     return DET_IP_SCOPE_UNSPECIFIED;
 }
 
@@ -387,7 +453,7 @@ bool det_ip_equal(const DetIp *a, const DetIp *b)
         return false;
     int n = (a->family == DET_IP_V4) ? 4 : (a->family == DET_IP_V6 ? 16 : 0);
     if (n == 0)
-        return a->family == b->family; // both NONE
+        return a->family == b->family; // both DET_IP_NONE
     return memcmp(a->bytes, b->bytes, (size_t)n) == 0;
 }
 
@@ -400,6 +466,14 @@ DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
     ip.bytes[1] = b;
     ip.bytes[2] = c;
     ip.bytes[3] = d;
+    return ip;
+}
+
+DetIp det_ip_from_v6_bytes(const uint8_t bytes[16])
+{
+    DetIp ip;
+    ip.family = DET_IP_V6;
+    memcpy(ip.bytes, bytes, 16);
     return ip;
 }
 

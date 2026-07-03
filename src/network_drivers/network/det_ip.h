@@ -85,6 +85,11 @@ bool det_ip_is_v4_mapped(const DetIp *ip);
 DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 
 /**
+ * @brief Build a v6 ::DetIp from 16 address bytes in network (big-endian) order.
+ */
+DetIp det_ip_from_v6_bytes(const uint8_t bytes[16]);
+
+/**
  * @brief The v4 address as a big-endian (network-order) uint32 (a<<24 | b<<16 | c<<8 | d).
  * @return 0 if @p ip is not a v4 (or v4-mapped) address.
  */

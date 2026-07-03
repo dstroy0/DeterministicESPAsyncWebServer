@@ -37,7 +37,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "shared_primitives/det_ring.h" // DetAtomic + the shared SPSC ring drain primitive
+#include "network_drivers/network/det_ip.h" // DetIp (family-tagged peer address)
+#include "shared_primitives/det_ring.h"     // DetAtomic + the shared SPSC ring drain primitive
 #include <Arduino.h>
 #include <atomic>
 
@@ -349,6 +350,16 @@ void det_conn_abort_slot(uint8_t slot);
  *        lwIP pcb access inside L4 so callers never reach into the pcb directly.
  */
 uint32_t det_conn_remote_ip(uint8_t slot);
+
+/**
+ * @brief The connected peer's address as a family-tagged ::DetIp (IPv4 or IPv6).
+ *
+ * Unlike det_conn_remote_ip() (which flattens to a v4 uint32 and cannot represent a v6 peer),
+ * this reports the real address for a dual-stack build (DETWS_ENABLE_IPV6). Format it with
+ * det_ip_format() or classify it with det_ip_classify().
+ * @return true if @p slot has an active connection whose address was written to @p out.
+ */
+bool det_conn_remote_addr(uint8_t slot, DetIp *out);
 
 // ---------------------------------------------------------------------------
 // Observability (DETWS_ENABLE_OBSERVABILITY) - connection event hook + counters

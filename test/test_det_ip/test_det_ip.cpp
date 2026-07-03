@@ -143,10 +143,26 @@ void test_equal_and_from_v4()
     TEST_ASSERT_FALSE(det_ip_equal(&a, &v6));
 }
 
+void test_from_v6_bytes()
+{
+    // 2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.
+    const uint8_t raw[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    DetIp ip = det_ip_from_v6_bytes(raw);
+    TEST_ASSERT_EQUAL_UINT8(DET_IP_V6, ip.family);
+    char s[DET_IP_STR_MAX];
+    det_ip_format(&ip, s, sizeof(s));
+    TEST_ASSERT_EQUAL_STRING("2001:db8::1", s);
+
+    DetIp parsed;
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8::1", &parsed));
+    TEST_ASSERT_TRUE(det_ip_equal(&ip, &parsed));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_v4_round_trip);
+    RUN_TEST(test_from_v6_bytes);
     RUN_TEST(test_v6_canonical_5952);
     RUN_TEST(test_v4_mapped);
     RUN_TEST(test_classify_v4);
