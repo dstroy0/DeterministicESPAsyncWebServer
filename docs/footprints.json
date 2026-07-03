@@ -122,7 +122,7 @@
     "example": "L7-Application/53.EspNow",
     "flags": "-DDETWS_ENABLE_ESPNOW=1",
     "board": "esp32dev",
-    "flash_bytes": 731249,
+    "flash_bytes": 731253,
     "ram_bytes": 43576
   },
   "ETAG": {
