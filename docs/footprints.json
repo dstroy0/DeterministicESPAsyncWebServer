@@ -402,8 +402,8 @@
     "example": "L5-Session/01.SSH",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 806849,
-    "ram_bytes": 88036
+    "flash_bytes": 807277,
+    "ram_bytes": 88044
   },
   "STATS": {
     "example": "L7-Application/22.Stats",
