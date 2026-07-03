@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.92.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.92.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`4f886fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f886fb7fd0be19589cd0619d70017e7fb86b80c))
+- update CHANGELOG.md [skip ci] ([`985c082`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/985c0828f20ff09a7ea9e63d3998eea4e2683b5b))
+
+### Changes
+
+- Bump version: 4.91.0 → 4.92.0 ([`739bd81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/739bd8122abfe3916ab66cf477c8dcc23719051c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4b48dee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b48deea60d3cab24b96081cd554e34e786b63bb))
+
+### Features
+
+- RFC 4254 global-request handling + tcpip-forward (ssh -R) seam ([`60292e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60292e0ed6a80e563fa59423ffb1ddb7c6cea2ba))
+
+</details>
+
 ## [4.91.0] - 2026-07-03
 
 <details>
