@@ -15,9 +15,12 @@
  * choice for a constrained device sharing a secret with its issuer. RS256/ES256
  * (asymmetric) are out of scope. Signature verification is constant-time.
  *
- * The verifier does NOT itself enforce time-based claims (the device may have no
- * clock); use jwt_claim_int() to read `exp`/`nbf`/`iat` and compare against your
- * own time source when you have one.
+ * The base verifier (jwt_verify_hs256 / jwt_bearer_valid) checks only the
+ * signature. The `*_at` variants additionally enforce the RFC 7519 time claims
+ * (`exp` §4.1.4 and `nbf` §4.1.5) against a caller-supplied wall-clock epoch, with a
+ * skew leeway - pass now=0 on a clockless device to skip the time checks (the
+ * signature still gates). `iat` (§4.1.6) is informational; read it with
+ * jwt_claim_int() if you want it.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_JWT_H
@@ -56,6 +59,41 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
  * @return true if a well-formed Bearer token validates.
  */
 bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t secret_len);
+
+/**
+ * @brief Check a JWT's time-based validity (RFC 7519 `exp` / `nbf`) against a clock.
+ *
+ * Enforces `exp` (§4.1.4: rejected once @p now_epoch has passed it) and `nbf`
+ * (§4.1.5: rejected before it), each within @p leeway_s seconds of skew tolerance.
+ * An absent claim is not enforced. Does NOT check the signature - pair with
+ * jwt_verify_hs256(). The comparisons are written to avoid integer overflow near the
+ * `long` epoch range.
+ *
+ * @param now_epoch  current Unix time in seconds; <= 0 means "no wall clock", so the
+ *                   time claims cannot be evaluated and the function returns true (the
+ *                   signature check remains the gate).
+ * @param leeway_s   allowed clock skew in seconds (0 for none).
+ * @return true if the token is currently within its validity window (or no clock is set).
+ */
+bool jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s);
+
+/**
+ * @brief Verify a JWT's HS256 signature AND its `exp` / `nbf` time claims.
+ *
+ * jwt_verify_hs256() && jwt_time_valid(). On a clockless device (@p now_epoch <= 0)
+ * this reduces to the signature-only check.
+ */
+bool jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len, long now_epoch,
+                         long leeway_s);
+
+/**
+ * @brief Validate a Bearer `Authorization` header, enforcing `exp` / `nbf` when clocked.
+ *
+ * jwt_bearer_valid() plus the RFC 7519 time-claim check. Pass @p now_epoch from your
+ * time source (e.g. `(long)detws_time_now()`); 0 skips the time checks.
+ */
+bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
+                         long leeway_s);
 
 /**
  * @brief Read an integer claim (e.g. "exp", "iat", "nbf") from a JWT payload.

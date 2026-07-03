@@ -260,6 +260,75 @@ void test_claim_str_edges()
     TEST_ASSERT_FALSE(jwt_claim_str(t, strlen(t), "s", buf, sizeof(buf))); // unterminated string
 }
 
+// Build a genuinely HS256-signed token over the given payload JSON (secret = SECRET),
+// so the *_at verifiers see a valid signature and only the time claims decide.
+static void mk_signed(char *out, size_t cap, const char *pl_json)
+{
+    const char *hdr_json = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
+    char signing[400], sig[48];
+    uint8_t mac[SSH_HMAC_SHA256_LEN];
+    char h[128], p[256];
+    base64url_encode((const uint8_t *)hdr_json, strlen(hdr_json), h);
+    base64url_encode((const uint8_t *)pl_json, strlen(pl_json), p);
+    int sl = snprintf(signing, sizeof(signing), "%s.%s", h, p);
+    ssh_hmac_sha256(sec(), seclen(), (const uint8_t *)signing, (size_t)sl, mac);
+    base64url_encode(mac, sizeof(mac), sig);
+    snprintf(out, cap, "%s.%s", signing, sig);
+}
+
+// now <= 0 (no wall clock) means the time claims are not evaluated: even a long-
+// expired token passes jwt_time_valid, and the signed verify reduces to the sig check.
+void test_time_no_clock_skips_claims()
+{
+    char t[400];
+    mk_signed(t, sizeof(t), "{\"sub\":\"a\",\"exp\":1000}"); // exp far in the past
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 0, 0));
+    TEST_ASSERT_TRUE(jwt_verify_hs256_at(t, strlen(t), sec(), seclen(), 0, 0));
+}
+
+// exp (RFC 7519 4.1.4): valid before, expired after (with a leeway grace).
+void test_time_exp_enforced()
+{
+    char t[400];
+    mk_signed(t, sizeof(t), "{\"exp\":1700000000}");
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 1699999000, 0));  // before exp
+    TEST_ASSERT_FALSE(jwt_time_valid(t, strlen(t), 1700000100, 0)); // past exp
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 1700000030, 60)); // within leeway of exp
+    // The signed verifier enforces it too (valid signature, time decides).
+    TEST_ASSERT_TRUE(jwt_verify_hs256_at(t, strlen(t), sec(), seclen(), 1699999000, 0));
+    TEST_ASSERT_FALSE(jwt_verify_hs256_at(t, strlen(t), sec(), seclen(), 1700000100, 0));
+}
+
+// nbf (RFC 7519 4.1.5): not-yet-valid before, valid after (with a leeway grace).
+void test_time_nbf_enforced()
+{
+    char t[400];
+    mk_signed(t, sizeof(t), "{\"nbf\":1700000000}");
+    TEST_ASSERT_FALSE(jwt_time_valid(t, strlen(t), 1699999000, 0)); // before nbf
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 1700000100, 0));  // after nbf
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 1699999970, 60)); // within leeway before nbf
+}
+
+// A token with no exp/nbf has nothing to enforce -> valid whenever the clock is set.
+void test_time_no_claims_valid()
+{
+    char t[400];
+    mk_signed(t, sizeof(t), "{\"sub\":\"a\"}");
+    TEST_ASSERT_TRUE(jwt_time_valid(t, strlen(t), 1700000000, 0));
+}
+
+// jwt_bearer_valid_at gates on both the signature and the time window.
+void test_bearer_valid_at()
+{
+    char t[400], hdr[470];
+    mk_signed(t, sizeof(t), "{\"exp\":1700000000}");
+    snprintf(hdr, sizeof(hdr), "Bearer %s", t);
+    TEST_ASSERT_TRUE(jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0));  // valid sig, in window
+    TEST_ASSERT_FALSE(jwt_bearer_valid_at(hdr, sec(), seclen(), 1700000100, 0)); // valid sig, expired
+    // A bad signature fails even inside the time window (signature is the primary gate).
+    TEST_ASSERT_FALSE(jwt_bearer_valid_at(hdr, (const uint8_t *)"wrong", 5, 1699999000, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -279,5 +348,10 @@ int main()
     RUN_TEST(test_claim_missing);
     RUN_TEST(test_claim_str);
     RUN_TEST(test_scope_allows);
+    RUN_TEST(test_time_no_clock_skips_claims);
+    RUN_TEST(test_time_exp_enforced);
+    RUN_TEST(test_time_nbf_enforced);
+    RUN_TEST(test_time_no_claims_valid);
+    RUN_TEST(test_bearer_valid_at);
     return UNITY_END();
 }

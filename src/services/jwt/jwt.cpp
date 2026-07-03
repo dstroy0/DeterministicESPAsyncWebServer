@@ -107,6 +107,41 @@ bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t sec
     return jwt_verify_hs256(tok, strlen(tok), secret, secret_len);
 }
 
+bool jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s)
+{
+    if (!token || now_epoch <= 0)
+        return true; // no wall clock -> time claims cannot be evaluated (the signature is the gate)
+
+    // Subtraction form (not exp + leeway) so a far-future claim cannot overflow `long`.
+    long exp = 0;
+    if (jwt_claim_int(token, token_len, "exp", &exp) && now_epoch - exp > leeway_s)
+        return false; // expired (RFC 7519 §4.1.4)
+
+    long nbf = 0;
+    if (jwt_claim_int(token, token_len, "nbf", &nbf) && nbf - now_epoch > leeway_s)
+        return false; // not yet valid (RFC 7519 §4.1.5)
+
+    return true;
+}
+
+bool jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len, long now_epoch,
+                         long leeway_s)
+{
+    return jwt_verify_hs256(token, token_len, secret, secret_len) &&
+           jwt_time_valid(token, token_len, now_epoch, leeway_s);
+}
+
+bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
+                         long leeway_s)
+{
+    if (!auth_header || strncasecmp(auth_header, "Bearer ", 7) != 0)
+        return false;
+    const char *tok = auth_header + 7;
+    while (*tok == ' ')
+        tok++;
+    return jwt_verify_hs256_at(tok, strlen(tok), secret, secret_len, now_epoch, leeway_s);
+}
+
 bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *out)
 {
     if (!token || !name || !out)

@@ -837,7 +837,8 @@
     "collidable",
     "sockaddr",
     "detip",
-    "reparsed"
+    "reparsed",
+    "XVCJ"
   ],
   "ignorePaths": [
     "node_modules/**",

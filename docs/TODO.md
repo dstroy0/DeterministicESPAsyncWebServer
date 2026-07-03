@@ -773,10 +773,15 @@ by how often a deployed device needs it.
       (HMAC-SHA-256, reusing the SSH crypto layer), constant-time signature
       compare, all in fixed stack/BSS - no sessions, no heap
       (`src/services/jwt/*`). Host-tested (`native_jwt`); example `21.JWTAuth`.
-      _Follow-up:_ the verifier reads but does not enforce `exp`/`nbf`/`iat` (the
-      device may have no clock); now that [`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP)
-      exists, optionally check time claims when a clock is synced. RS256/ES256 are
-      out of scope (asymmetric, allocation-heavy).
+      **Time claims now enforced (opt-in via the caller's clock):** the `*_at`
+      variants ([`jwt_time_valid`](@ref jwt_time_valid),
+      [`jwt_verify_hs256_at`](@ref jwt_verify_hs256_at),
+      [`jwt_bearer_valid_at`](@ref jwt_bearer_valid_at)) reject on `exp` (RFC 7519
+      §4.1.4) and `nbf` (§4.1.5) with a skew leeway, given `now = (long)detws_time_now()`
+      (`DETWS_ENABLE_NTP` / any time source); passing `now = 0` on a clockless device
+      skips the time check so the signature still gates. `iat` is informational
+      (read via `jwt_claim_int`). The base signature-only functions are unchanged.
+      _Out of scope:_ RS256/ES256 (asymmetric, allocation-heavy).
 
 - [x] **Remote syslog ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG)).**
       _(done)_ RFC 5424 log lines shipped as UDP datagrams via the transport UDP
