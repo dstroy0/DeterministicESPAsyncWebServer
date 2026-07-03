@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.87.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.87.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`fc4cd60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc4cd6064c1a6ce9ad98beb3e6c0fa1ef584707a))
+- update CHANGELOG.md [skip ci] ([`f531ae9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f531ae993d780b50516d6efde4d513360c29b899))
+
+### Changes
+
+- Bump version: 4.86.1 → 4.87.0 ([`49a94f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49a94f431227a4ed7d4b8c35f55b2815bebe2060))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`eccb541`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eccb5415f18d245374560c717d619289b5464860))
+
+### Features
+
+- auth lockout is now IPv6-safe (family-stable per-peer key) - IPv6 phase 2 ([`e281ec6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e281ec65f973c77eb16566d6a6990602e5dc61d4))
+
+</details>
+
 ## [4.86.1] - 2026-07-03
 
 <details>
