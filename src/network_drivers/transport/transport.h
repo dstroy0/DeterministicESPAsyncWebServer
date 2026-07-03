@@ -368,6 +368,14 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out);
  */
 uint32_t det_conn_remote_key(uint8_t slot);
 
+#ifdef ARDUINO
+/**
+ * @brief The same family-stable identity key as det_conn_remote_key(), but from a raw lwIP address
+ *        - for the accept callback, which has the pcb but no slot yet. ESP32 only (lwIP type).
+ */
+uint32_t det_lwip_ip_key(const ip_addr_t *ra);
+#endif
+
 // ---------------------------------------------------------------------------
 // Observability (DETWS_ENABLE_OBSERVABILITY) - connection event hook + counters
 // ---------------------------------------------------------------------------

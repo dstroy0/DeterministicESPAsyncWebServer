@@ -558,6 +558,27 @@ uint32_t det_conn_remote_ip(uint8_t slot)
     return 0;
 }
 
+#ifdef ARDUINO
+// Convert an lwIP address into a family-tagged DetIp (network-order bytes). The one owner of the
+// pcb->ip_addr_t -> DetIp mapping, shared by the per-slot and accept-time (pcb) callers.
+static void lwip_to_detip(const ip_addr_t *ra, DetIp *out)
+{
+#if LWIP_IPV6
+    if (IP_IS_V6(ra))
+    {
+        uint8_t b[16];
+        memcpy(b, ip_2_ip6(ra)->addr, 16); // lwIP holds the 16 bytes in network order
+        *out = det_ip_from_v6_bytes(b);
+        return;
+    }
+#endif
+    // ip4_addr_get_u32 is network-order; on the (little-endian) ESP32 the first octet is the low
+    // byte. Peel the octets so DetIp holds them left-to-right.
+    uint32_t be = ip4_addr_get_u32(ip_2_ip4(ra));
+    *out = det_ip_from_v4_octets((uint8_t)be, (uint8_t)(be >> 8), (uint8_t)(be >> 16), (uint8_t)(be >> 24));
+}
+#endif
+
 bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 {
     if (!out)
@@ -568,20 +589,7 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out)
     TcpConn *conn = &conn_pool[slot];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return false;
-    const ip_addr_t *ra = &conn->pcb->remote_ip;
-#if LWIP_IPV6
-    if (IP_IS_V6(ra))
-    {
-        uint8_t b[16];
-        memcpy(b, ip_2_ip6(ra)->addr, 16); // lwIP holds the 16 bytes in network order
-        *out = det_ip_from_v6_bytes(b);
-        return true;
-    }
-#endif
-    // ip4_addr_get_u32 is network-order; on the (little-endian) ESP32 the first octet is the low
-    // byte. Peel the octets so DetIp holds them left-to-right.
-    uint32_t be = ip4_addr_get_u32(ip_2_ip4(ra));
-    *out = det_ip_from_v4_octets((uint8_t)be, (uint8_t)(be >> 8), (uint8_t)(be >> 16), (uint8_t)(be >> 24));
+    lwip_to_detip(&conn->pcb->remote_ip, out);
     return true;
 #else
     (void)slot;
@@ -591,11 +599,27 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 
 uint32_t det_conn_remote_key(uint8_t slot)
 {
+#ifdef ARDUINO
     DetIp addr;
     if (!det_conn_remote_addr(slot, &addr))
         return 0;
     return det_ip_key(&addr);
+#else
+    (void)slot;
+    return 0; // no real connection on a host build
+#endif
 }
+
+#ifdef ARDUINO
+uint32_t det_lwip_ip_key(const ip_addr_t *ra)
+{
+    if (!ra)
+        return 0;
+    DetIp addr;
+    lwip_to_detip(ra, &addr);
+    return det_ip_key(&addr);
+}
+#endif
 
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {

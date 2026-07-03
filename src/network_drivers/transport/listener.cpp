@@ -275,7 +275,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     {
         uint32_t rip = 0;
 #ifdef ARDUINO
-        rip = ip4_addr_get_u32(ip_2_ip4(&newpcb->remote_ip));
+        rip = det_lwip_ip_key(&newpcb->remote_ip); // family-stable bucket key: v4 address / v6 hash
 #endif
         if (!listener_accept_allowed_ip(rip, detws_millis()))
         {
