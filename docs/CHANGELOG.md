@@ -2,6 +2,45 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- bump prettier from 3.9.1 to 3.9.4 ([`9dd2486`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd2486ae39d4f52abf2efdf48dec7780493fc87))
+- update test report [skip ci] ([`652c507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/652c507be3911fbbeee05c93b7b3ee4861ea9898))
+
+### Changes
+
+- Merge pull request #13 from dstroy0/dependabot/npm_and_yarn/prettier-3.9.4 ([`aac9fa4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aac9fa4be01829f612dd1346ae972751f58273be))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h [skip ci] ([`b66e6c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b66e6c5214bae6cb9736ec528ea3601c471657c6))
+
+## [4.93.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.93.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`4f9a600`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f9a600cf83f21b30cf74383430396f179967ecd))
+- update CHANGELOG.md [skip ci] ([`71e0a31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71e0a31635d1667964886ea8374a2882b24697af))
+
+### Changes
+
+- Bump version: 4.92.0 → 4.93.0 ([`a8ea06a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8ea06a83b26da817ed950be1a6a3288cf58cd4f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c1c75e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c1c75e862b6a7b6dca176fd8400a2e424850932e))
+
+### Features
+
+- remote port forwarding (ssh -R, forwarded-tcpip) - HW verified ([`3c89dd8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c89dd85ffb96d99921557b098867da52a535ad7))
+
+</details>
+
 ## [4.92.0] - 2026-07-03
 
 <details>
