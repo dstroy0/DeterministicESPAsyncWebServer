@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.85.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.85.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9e15d45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e15d451db7780f40843efd914778ecd84b1601b))
+- update CHANGELOG.md [skip ci] ([`b189631`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b189631c30f52f5006595a3d2356ed52b932f1b2))
+
+### Changes
+
+- Bump version: 4.84.0 → 4.85.0 ([`0b76e31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b76e31954740ef5196891da1b7d21a76feda699))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`05095e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05095e8315d8e2e3b96312f4dff4cd3cedb7c24f))
+
+### Features
+
+- CAN listen-only capture -> forward (services/bus_capture) + shared PCAP owner ([`d2641c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2641c0e416d7a5c02fe5cf39e092c1df8ab5b31))
+
+</details>
+
 ## [4.84.0] - 2026-07-03
 
 <details>
