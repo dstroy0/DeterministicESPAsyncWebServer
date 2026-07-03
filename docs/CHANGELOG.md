@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.82.1] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.82.1 - 2026-07-03</b></summary>
+
+### Bug Fixes
+
+- keep clang-format green for the Arduino build_opt.h work ([`3fc3a35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fc3a35c2e5e173058b139519c833159a02f945a))
+
+### CI / Build
+
+- update test report [skip ci] ([`606a9a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/606a9a13e9b022381d320496118cc472ae1b3789))
+- update CHANGELOG.md [skip ci] ([`935fb31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/935fb3160e9c89d4f3a9e4eea7634005aaa83a7e))
+
+### Changes
+
+- Bump version: 4.82.0 → 4.82.1 ([`b29df05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b29df05b95666190f9d1ab7c7caa64ee4ce6dd0b))
+
+</details>
+
 ## [4.82.0] - 2026-07-03
 
 <details>
