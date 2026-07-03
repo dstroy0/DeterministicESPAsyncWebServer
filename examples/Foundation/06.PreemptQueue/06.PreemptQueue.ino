@@ -56,11 +56,18 @@ void setup()
         return;
     }
 
-    // 10 Hz hardware-timer ISR feeding the queue.
+    // 10 Hz hardware-timer ISR feeding the queue. The Arduino-ESP32 timer API changed in
+    // core 3.0 (frequency-based; timerAlarm() replaces timerAlarmWrite()/Enable()).
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    tmr = timerBegin(1000000);              // 1 MHz tick
+    timerAttachInterrupt(tmr, &sample_isr); // no edge argument in 3.x
+    timerAlarm(tmr, 100000, true, 0);       // 100000 us = 10 Hz, auto-reload, unlimited
+#else
     tmr = timerBegin(0, 80, true); // timer 0, /80 -> 1 MHz tick
     timerAttachInterrupt(tmr, &sample_isr, true);
     timerAlarmWrite(tmr, 100000, true); // 100000 us = 10 Hz
     timerAlarmEnable(tmr);
+#endif
     Serial.println("sampling: ISR -> preempting queue -> high-priority task");
 }
 

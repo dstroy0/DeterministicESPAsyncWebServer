@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## 06.PreemptQueue example used the pre-3.0 Arduino-ESP32 timer API
+
+- **Status:** FIXED (compiles on esp32:esp32 3.3.10; still builds on the 2.x core the
+  PlatformIO CI pins).
+- **Found:** 2026-07-02, the all-example compile sweep against the 3.x core (the second
+  break it caught, after ESP-NOW).
+- **Root cause:** Arduino-ESP32 **3.0** reworked the timer API - `timerBegin(freq)` is now
+  frequency-based (was `timerBegin(num, divider, countUp)`), `timerAttachInterrupt()` dropped
+  its edge argument, and `timerAlarm()` replaced `timerAlarmWrite()` + `timerAlarmEnable()`.
+  The example's ISR setup used the 2.x forms, so it failed to compile under the core an
+  Arduino IDE user installs.
+- **Fix:** the timer block in `06.PreemptQueue.ino` is guarded with
+  `#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)` and uses the 3.x calls on the
+  new core, the 2.x calls otherwise. It is the only example using that API (grep-verified).
+- **Prevention:** a new **Arduino Build** CI (`.github/workflows/arduino-build.yml`) now
+  compiles every example against the Arduino-ESP32 3.x core with arduino-cli - using each
+  example's shipped `build_opt.h`, exactly as the IDE builds it - so 3.x / IDF-5 API drift is
+  caught on every push, not just in a manual local sweep.
+
+---
+
 ## ESP-NOW would not compile on the Arduino-ESP32 3.x core (ESP-IDF 5 recv-callback ABI)
 
 - **Status:** FIXED (compiles clean on esp32:esp32 3.3.10 via arduino-cli; `native_espnow`
