@@ -199,7 +199,7 @@
     "example": "L6-Presentation/06.JWTAuth",
     "flags": "-DDETWS_ENABLE_JWT=1",
     "board": "esp32dev",
-    "flash_bytes": 752377,
+    "flash_bytes": 752477,
     "ram_bytes": 66768
   },
   "KEEPALIVE": {

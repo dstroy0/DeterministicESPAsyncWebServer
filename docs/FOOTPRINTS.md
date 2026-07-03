@@ -36,7 +36,7 @@ from each example's `pio ci` size report and aggregated into
 | `HTTP_CLIENT+WEBHOOK`                    | L7-Application/46.Webhook               | 743.0 KB (58.0%) | 83.9 KB (26.2%)  |
 | `IPV6`                                   | Foundation/20.IPv6                      | 735.1 KB (57.4%) | 64.6 KB (20.2%)  |
 | `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 734.0 KB (57.3%) | 64.8 KB (20.2%)  |
-| `JWT`                                    | L6-Presentation/06.JWTAuth              | 734.7 KB (57.4%) | 65.2 KB (20.4%)  |
+| `JWT`                                    | L6-Presentation/06.JWTAuth              | 734.8 KB (57.4%) | 65.2 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 733.4 KB (57.3%) | 64.6 KB (20.2%)  |
 | `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.2 KB (57.4%) | 67.7 KB (21.1%)  |
 | `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.8 KB (21.1%) | 21.2 KB (6.6%)   |
