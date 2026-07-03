@@ -24,6 +24,7 @@
 #include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
 #ifdef ARDUINO
 #include "lwip/ip_addr.h"                   // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
+#include "lwip/priv/tcpip_priv.h"           // tcpip_api_call - marshal dynamic listener ops to tcpip_thread
 #include "network_drivers/session/worker.h" // detws_worker_wake() - nudge the owning worker task
 #endif
 #include "services/det_clock.h" // detws_millis() pluggable monotonic clock (host-safe)
@@ -492,4 +493,127 @@ void listener_stop_all()
 {
     for (uint8_t i = 0; i < MAX_LISTENERS; i++)
         listener_stop(i);
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic (thread-safe) listener create / stop - used by the SSH remote-forward
+// owner, which opens a listener from a worker task in response to `ssh -R`. The raw
+// lwIP tcp_bind/tcp_listen/tcp_close must run in tcpip_thread (this build has TCPIP
+// core-locking off), so they are marshaled via tcpip_api_call().
+// ---------------------------------------------------------------------------
+
+#ifdef ARDUINO
+struct DetListenerCall
+{
+    struct tcpip_api_call_data base;
+    uint8_t idx;
+    uint16_t port;
+    bool create; // true = new+bind+listen+accept, false = close the listen pcb
+    err_t result;
+};
+
+// Runs in tcpip_thread. Creates or closes the listening PCB for listener_pool[idx].
+static err_t listener_lwip_do(struct tcpip_api_call_data *c)
+{
+    DetListenerCall *k = (DetListenerCall *)c;
+    Listener *lst = &listener_pool[k->idx];
+    k->result = ERR_OK;
+    if (k->create)
+    {
+        struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
+        if (!pcb)
+        {
+            k->result = ERR_MEM;
+            return ERR_OK;
+        }
+        if (tcp_bind(pcb, IP_ANY_TYPE, k->port) != ERR_OK)
+        {
+            tcp_abort(pcb);
+            k->result = ERR_USE; // port already bound
+            return ERR_OK;
+        }
+        struct tcp_pcb *lp = tcp_listen_with_backlog(pcb, MAX_CONNS);
+        if (!lp)
+        {
+            tcp_abort(pcb); // tcp_listen did not consume pcb on failure
+            k->result = ERR_MEM;
+            return ERR_OK;
+        }
+        tcp_arg(lp, (void *)(uintptr_t)k->idx);
+        tcp_accept(lp, listener_accept_cb);
+        lst->listen_pcb = lp;
+    }
+    else if (lst->listen_pcb)
+    {
+        tcp_close(lst->listen_pcb);
+        lst->listen_pcb = nullptr;
+    }
+    return ERR_OK;
+}
+
+static err_t listener_lwip_marshal(uint8_t idx, uint16_t port, bool create)
+{
+    DetListenerCall k = {};
+    k.idx = idx;
+    k.port = port;
+    k.create = create;
+    tcpip_api_call(listener_lwip_do, &k.base);
+    return k.result;
+}
+#endif // ARDUINO
+
+int32_t listener_add_dynamic(uint8_t idx, uint16_t port, ConnProto proto)
+{
+    if (idx >= MAX_LISTENERS)
+        return -1;
+    listener_stop_dynamic(idx); // clean up if this slot was already active
+
+#if DETWS_WORKER_COUNT > 1
+    listener_worker_queues_init(); // idempotent (xQueueCreateStatic is task-safe)
+#endif
+
+    Listener *lst = &listener_pool[idx];
+    lst->port = port;
+    lst->proto = proto;
+    lst->tls = false; // forwarded ports are plaintext bridges
+
+    lst->queue = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), lst->_queue_storage, &lst->_queue_struct);
+    if (!lst->queue)
+        return -1;
+
+#ifdef ARDUINO
+    // Create the listening PCB in tcpip_thread. Fields the accept callback reads
+    // (proto, queue) are set above, before the pcb can accept anything.
+    if (listener_lwip_marshal(idx, port, true) != ERR_OK)
+    {
+        vQueueDelete(lst->queue);
+        lst->queue = nullptr;
+        return -1;
+    }
+#else
+    lst->listen_pcb = nullptr; // native host: no lwIP, exercised via the accept-gate unit paths
+#endif
+
+    lst->active = true;
+    return 1;
+}
+
+void listener_stop_dynamic(uint8_t idx)
+{
+    if (idx >= MAX_LISTENERS)
+        return;
+    Listener *lst = &listener_pool[idx];
+    if (!lst->active)
+        return;
+    lst->active = false;
+#ifdef ARDUINO
+    listener_lwip_marshal(idx, 0, false); // close the listen pcb in tcpip_thread
+#else
+    lst->listen_pcb = nullptr;
+#endif
+    if (lst->queue)
+    {
+        vQueueDelete(lst->queue);
+        lst->queue = nullptr;
+    }
 }

@@ -14,15 +14,19 @@
  *     (ssh_auth_set_pubkey_cb)
  *   - A channel data callback that echoes received bytes back to the client
  *     with ssh_conn_send()
- *   - Optional TCP port forwarding (ssh -L) via the ssh_forward owner, gated by
- *     DETWS_SSH_PORT_FORWARD (off here; see the block below to enable it)
+ *   - Optional TCP port forwarding via the ssh_forward owner, gated by
+ *     DETWS_SSH_PORT_FORWARD (off here; see the block below to enable it):
+ *     local (ssh -L, outbound) AND remote (ssh -R, a listener on the device that
+ *     tunnels back to the client) - ssh_forward_begin() enables both.
  *
  * Hardening: define DETWS_SSH_ALLOW_PASSWORD 0 to compile password auth out and
  * accept publickey only. Failed attempts are bounded by SSH_MAX_AUTH_ATTEMPTS.
  *
  * Connect with:  ssh -p 22 admin@<ip>      (password below)
  * Then type; the server echoes each line back over the channel.
- * With forwarding on:  ssh -L 8080:example.com:80 admin@<ip>   then curl localhost:8080
+ * ssh -L (local):   ssh -L 8080:example.com:80 admin@<ip>   then curl localhost:8080
+ * ssh -R (remote):  ssh -R 8080:localhost:9000 admin@<ip>   then a connection to
+ *                   <ip>:8080 tunnels back to your local :9000.
  */
 
 // Enable the SSH stack for this sketch (overrides the default-off config).
@@ -127,10 +131,13 @@ void setup()
     ssh_conn_setup();
 
 #if DETWS_SSH_PORT_FORWARD
-    // Enable ssh -L forwarding (opt-in; nothing is forwarded until this runs).
+    // Enable forwarding (opt-in; nothing is forwarded until this runs). This turns on
+    // BOTH local (ssh -L, gated by the policy below) and remote (ssh -R, a listener the
+    // client asks the device to open). For ssh -R also raise DETWS_SSH_MAX_CHANNELS and,
+    // if you expect concurrent tunnels, DETWS_SSH_RFWD_MAX / DETWS_SSH_RFWD_BRIDGE_MAX.
     ssh_forward_set_policy_cb(ssh_forward_policy);
     ssh_forward_begin();
-    Serial.println("SSH port forwarding enabled (ssh -L to ports 80/443)");
+    Serial.println("SSH port forwarding enabled (ssh -L to 80/443; ssh -R listeners)");
 #endif
 
     Serial.println("SSH server started on port 22");

@@ -841,7 +841,9 @@
     "XVCJ",
     "keepalives",
     "rforward",
-    "rfwd"
+    "rfwd",
+    "unstuffs",
+    "AMQP"
   ],
   "ignorePaths": [
     "node_modules/**",

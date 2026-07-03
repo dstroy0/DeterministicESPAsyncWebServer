@@ -106,6 +106,23 @@ void listener_stop(uint8_t idx);
 void listener_stop_all();
 
 /**
+ * @brief Add / stop a listener from a running task (thread-safe variant).
+ *
+ * listener_add() runs the raw lwIP tcp_bind/tcp_listen inline, which is only safe at
+ * setup (before tcpip_thread is servicing our sockets). These variants marshal the
+ * lwIP operations onto tcpip_thread via tcpip_api_call(), so a listener may be created
+ * or torn down dynamically from a worker/session task - used by the SSH remote-forward
+ * owner (`ssh -R`), which opens a listener when a client requests one. TLS listeners
+ * are not supported here (forwarded ports are plaintext bridges). On the native host
+ * (no lwIP) these behave like the inline path for unit tests.
+ *
+ * @return listener_add_dynamic: 1 on success, -1 on failure (bad idx, bind in use,
+ *         or lwIP error). listener_stop_dynamic: void, idempotent.
+ */
+int32_t listener_add_dynamic(uint8_t idx, uint16_t port, ConnProto proto);
+void listener_stop_dynamic(uint8_t idx);
+
+/**
  * @brief Post @p evt to the queue owned by listener @p listener_id.
  *
  * Called from transport.cpp callbacks (running in tcpip_thread context) to

@@ -131,6 +131,36 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
     return 0;
 }
 
+int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                            uint16_t orig_port)
+{
+    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+        return -1;
+    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    if (conn->state != CONN_ACTIVE || !conn->pcb)
+        return -1;
+
+    // Borrow the payload + wire buffers from the shared scratch arena (released on
+    // return); an exhausted arena fails closed.
+    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    ScratchScope scope;
+    uint8_t *payload = (uint8_t *)scratch_alloc(SSH_PKT_BUF_SIZE, 16);
+    uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
+    if (!payload || !wire)
+        return -1;
+    size_t plen = 0;
+    int ch = ssh_channel_open_forwarded(ssh_slot, conn_addr, conn_port, orig_addr, orig_port, payload, &plen,
+                                        SSH_PKT_BUF_SIZE);
+    if (ch < 0)
+        return -1; // channel pool full / build failed
+    size_t wlen = 0;
+    if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, wire_cap) != 0)
+        return -1;
+    det_conn_send(conn->id, wire, (u16_t)wlen);
+    det_conn_flush(conn->id);
+    return ch;
+}
+
 void ssh_conn_poll(uint8_t conn_slot)
 {
 #if DETWS_SSH_PORT_FORWARD

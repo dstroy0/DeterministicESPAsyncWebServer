@@ -70,6 +70,20 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
 int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel);
 
 /**
+ * @brief Open a server-initiated "forwarded-tcpip" channel to the client (ssh -R):
+ *        build the CHANNEL_OPEN (RFC 4254 §7.2) via the channel codec, frame + send it
+ *        on @p ssh_slot's socket, and return the new local channel id. The client's
+ *        CHANNEL_OPEN_CONFIRMATION (or FAILURE) later drives the forward-confirm callback.
+ *
+ * @param conn_addr / conn_port  the forward's bound address/port (address connected).
+ * @param orig_addr / orig_port  the peer that connected to the forwarded port (advisory).
+ * @return the local channel id (>= 0), or -1 (no active connection, channel pool full,
+ *         or scratch exhausted). Used by the remote-forward owner.
+ */
+int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                            uint16_t orig_port);
+
+/**
  * @brief Per-loop poll hook for an SSH connection (registered as the SSH protocol
  *        handler's on_poll). Drives the port-forwarding pump; a no-op when
  *        forwarding is compiled out.

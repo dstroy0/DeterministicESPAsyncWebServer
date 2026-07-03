@@ -150,6 +150,21 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         emit(i, buf, n);
         return 0;
 
+    case SSH_MSG_CHANNEL_OPEN_CONFIRM:
+        // The client's reply to a server-initiated forwarded-tcpip open (ssh -R): record
+        // the peer window and start the bridge. A stray confirm is ignored (not fatal).
+        if (!s->authed)
+            return -1;
+        ssh_channel_handle_open_confirm(i, payload, len);
+        return 0;
+
+    case SSH_MSG_CHANNEL_OPEN_FAILURE:
+        // The client refused a server-initiated forwarded-tcpip open: tear the bridge down.
+        if (!s->authed)
+            return -1;
+        ssh_channel_handle_open_failure(i, payload, len);
+        return 0;
+
     case SSH_MSG_CHANNEL_REQUEST:
         if (!s->authed)
             return -1;

@@ -87,6 +87,19 @@ static int rfwd_cancel_cb(uint8_t slot, const char *addr, size_t addr_len, uint1
     return rfwd_cancel_ret;
 }
 
+// forwarded-tcpip (ssh -R) open-confirmation callback -----------------------
+static uint32_t confirm_channel;
+static bool confirm_ok;
+static int confirm_count;
+
+static void confirm_cb(uint8_t slot, uint32_t channel, bool ok)
+{
+    (void)slot;
+    confirm_channel = channel;
+    confirm_ok = ok;
+    confirm_count++;
+}
+
 void setUp()
 {
     ssh_channel_init(0);
@@ -95,6 +108,7 @@ void setUp()
     ssh_channel_set_forward_data_cb(nullptr);
     ssh_channel_set_rforward_open_cb(nullptr); // remote forwarding off by default
     ssh_channel_set_rforward_cancel_cb(nullptr);
+    ssh_channel_set_forward_confirm_cb(nullptr);
     memset(rfwd_addr, 0, sizeof(rfwd_addr));
     rfwd_addr_len = 0;
     rfwd_port = 0;
@@ -102,6 +116,9 @@ void setUp()
     rfwd_cancel_count = 0;
     rfwd_open_ret = 0;
     rfwd_cancel_ret = 0;
+    confirm_channel = 0xFFFFFFFFu;
+    confirm_ok = false;
+    confirm_count = 0;
     memset(last_data, 0, sizeof(last_data));
     last_data_len = 0;
     last_channel = 0xFFFFFFFFu;
@@ -645,6 +662,120 @@ void test_global_malformed()
     TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, pkt, 1, out, &olen, sizeof(out)));
 }
 
+// ---- forwarded-tcpip: server-initiated channel (ssh -R) -------------------
+
+// Build a CHANNEL_OPEN_CONFIRMATION for our local channel @p recipient.
+static size_t make_open_confirm(uint8_t *pkt, uint32_t recipient, uint32_t sender, uint32_t window, uint32_t maxpkt)
+{
+    pkt[0] = SSH_MSG_CHANNEL_OPEN_CONFIRM;
+    wr_u32(pkt + 1, recipient);
+    wr_u32(pkt + 5, sender);
+    wr_u32(pkt + 9, window);
+    wr_u32(pkt + 13, maxpkt);
+    return 17;
+}
+
+// ssh_channel_open_forwarded builds a valid forwarded-tcpip CHANNEL_OPEN and marks
+// the channel pending (a session open cannot reuse the pending slot).
+void test_forwarded_open_builds_channel()
+{
+    uint8_t out[128];
+    size_t olen = 0;
+    int ch = ssh_channel_open_forwarded(0, "10.0.0.1", 8080, "192.168.1.9", 51000, out, &olen, sizeof(out));
+    TEST_ASSERT_TRUE(ch >= 0);
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN, out[0]);
+    // string "forwarded-tcpip" then our sender channel id.
+    TEST_ASSERT_EQUAL_UINT32(15u, rd_u32(out + 1));
+    TEST_ASSERT_EQUAL_MEMORY("forwarded-tcpip", out + 5, 15);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, rd_u32(out + 20)); // sender == local channel id
+    // The channel is pending, so a subsequent session open must claim a different slot.
+    uint32_t sess = open_session(7, 4096);
+    TEST_ASSERT_NOT_EQUAL((uint32_t)ch, sess);
+}
+
+// A CONFIRMATION marks the channel open, records the peer window, and fires the cb.
+void test_forwarded_confirm_opens_channel()
+{
+    ssh_channel_set_forward_confirm_cb(confirm_cb);
+    uint8_t out[128];
+    size_t olen = 0;
+    int ch = ssh_channel_open_forwarded(0, "10.0.0.1", 22, "1.2.3.4", 40000, out, &olen, sizeof(out));
+    TEST_ASSERT_TRUE(ch >= 0);
+
+    uint8_t pkt[17];
+    size_t n = make_open_confirm(pkt, (uint32_t)ch, 99, 5000, 16384);
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open_confirm(0, pkt, n));
+    TEST_ASSERT_EQUAL_INT(1, confirm_count);
+    TEST_ASSERT_TRUE(confirm_ok);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, confirm_channel);
+
+    // Now that it is open, the server can frame outbound data toward the peer window.
+    uint8_t dout[64];
+    size_t dlen = 0;
+    TEST_ASSERT_EQUAL_INT(0,
+                          ssh_channel_build_data(0, (uint32_t)ch, (const uint8_t *)"hi", 2, dout, &dlen, sizeof(dout)));
+    TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_DATA, dout[0]);
+    TEST_ASSERT_EQUAL_UINT32(99u, rd_u32(dout + 1)); // addressed to the peer's channel id
+}
+
+// A FAILURE frees the pending channel (its slot is reusable) and fires cb(ok=false).
+void test_forwarded_failure_frees_channel()
+{
+    ssh_channel_set_forward_confirm_cb(confirm_cb);
+    uint8_t out[128];
+    size_t olen = 0;
+    int ch = ssh_channel_open_forwarded(0, "10.0.0.1", 22, "1.2.3.4", 40000, out, &olen, sizeof(out));
+    TEST_ASSERT_TRUE(ch >= 0);
+
+    uint8_t pkt[17];
+    pkt[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+    wr_u32(pkt + 1, (uint32_t)ch);
+    wr_u32(pkt + 5, 2u); // reason: connect failed
+    wr_u32(pkt + 9, 0);  // empty description
+    wr_u32(pkt + 13, 0); // empty language
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open_failure(0, pkt, 17));
+    TEST_ASSERT_EQUAL_INT(1, confirm_count);
+    TEST_ASSERT_FALSE(confirm_ok);
+
+    // The freed slot is reusable: a session open may now claim the same channel id.
+    uint32_t sess = open_session(3, 4096);
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, sess);
+}
+
+// A CONFIRMATION / FAILURE for a channel we did not open (no pending) is rejected.
+void test_forwarded_confirm_unknown_rejected()
+{
+    uint8_t pkt[17];
+    size_t n = make_open_confirm(pkt, 0, 5, 1000, 8192);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open_confirm(0, pkt, n)); // nothing pending
+    pkt[0] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open_failure(0, pkt, 17));
+}
+
+// Inbound data on a confirmed forwarded-tcpip channel routes to the forward owner,
+// not the session data callback (ssh -R return path).
+void test_forwarded_inbound_data_routes_to_forward_cb()
+{
+    ssh_channel_set_forward_data_cb(fwd_data_cb);
+    uint8_t out[128];
+    size_t olen = 0;
+    int ch = ssh_channel_open_forwarded(0, "10.0.0.1", 22, "1.2.3.4", 40000, out, &olen, sizeof(out));
+    TEST_ASSERT_TRUE(ch >= 0);
+    uint8_t cpkt[17];
+    make_open_confirm(cpkt, (uint32_t)ch, 42, 5000, 16384);
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_open_confirm(0, cpkt, 17));
+
+    uint8_t pkt[64];
+    size_t n = make_data(pkt, (uint32_t)ch, "payload");
+    uint8_t dout[16];
+    size_t dolen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_channel_handle_data(0, pkt, n, dout, &dolen, sizeof(dout)));
+    TEST_ASSERT_EQUAL_INT(1, fwd_data_count);
+    TEST_ASSERT_EQUAL_INT(0, data_cb_count); // NOT delivered as session data
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, fwd_data_channel);
+    TEST_ASSERT_EQUAL_MEMORY("payload", fwd_data, 7);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -675,5 +806,10 @@ int main()
     RUN_TEST(test_rforward_cancel);
     RUN_TEST(test_global_unknown_request);
     RUN_TEST(test_global_malformed);
+    RUN_TEST(test_forwarded_open_builds_channel);
+    RUN_TEST(test_forwarded_confirm_opens_channel);
+    RUN_TEST(test_forwarded_failure_frees_channel);
+    RUN_TEST(test_forwarded_confirm_unknown_rejected);
+    RUN_TEST(test_forwarded_inbound_data_routes_to_forward_cb);
     return UNITY_END();
 }

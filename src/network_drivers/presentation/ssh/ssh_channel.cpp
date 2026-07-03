@@ -22,6 +22,7 @@ static SshForwardOpenCb g_forward_open_cb = nullptr;
 static SshForwardDataCb g_forward_data_cb = nullptr;
 static SshRemoteForwardOpenCb g_rfwd_open_cb = nullptr;
 static SshRemoteForwardCancelCb g_rfwd_cancel_cb = nullptr;
+static SshForwardConfirmCb g_forward_confirm_cb = nullptr;
 
 void ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
@@ -46,6 +47,11 @@ void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
 void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
 {
     g_rfwd_cancel_cb = cb;
+}
+
+void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
+{
+    g_forward_confirm_cb = cb;
 }
 
 void ssh_channel_init(uint8_t i)
@@ -99,11 +105,21 @@ static SshChannel *chan_by_id(uint8_t i, uint32_t id)
     return &ssh_chan[i][id];
 }
 
-// First free channel slot on connection @p i, or -1 if the pool is full.
+// A pending server-initiated channel @p id on connection @p i (awaiting the client's
+// CONFIRMATION / FAILURE), or nullptr.
+static SshChannel *chan_pending_by_id(uint8_t i, uint32_t id)
+{
+    if (i >= MAX_SSH_CONNS || id >= DETWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].pending)
+        return nullptr;
+    return &ssh_chan[i][id];
+}
+
+// First free channel slot on connection @p i, or -1 if the pool is full. A pending
+// (opened-but-unconfirmed) channel is in use just like an open one.
 static int chan_alloc(uint8_t i)
 {
     for (int c = 0; c < DETWS_SSH_MAX_CHANNELS; c++)
-        if (!ssh_chan[i][c].open)
+        if (!ssh_chan[i][c].open && !ssh_chan[i][c].pending)
             return c;
     return -1;
 }
@@ -224,6 +240,96 @@ int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uin
         out[0] = SSH_MSG_REQUEST_FAILURE;
         *out_len = 1;
     }
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Server-initiated CHANNEL_OPEN (forwarded-tcpip, ssh -R) + its CONFIRM / FAILURE
+// ---------------------------------------------------------------------------
+
+int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                               uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap)
+{
+    *out_len = 0;
+    if (i >= MAX_SSH_CONNS || !conn_addr || !orig_addr)
+        return -1;
+    int slot = chan_alloc(i);
+    if (slot < 0)
+        return -1; // channel pool full
+
+    const char *type = "forwarded-tcpip";
+    size_t tl = 15, ca = strlen(conn_addr), oa = strlen(orig_addr);
+    // byte || string(type) || u32 sender || u32 window || u32 maxpkt || string(conn_addr)
+    //   || u32 conn_port || string(orig_addr) || u32 orig_port  (RFC 4254 §7.2)
+    size_t need = 1 + (4 + tl) + 12 + (4 + ca) + 4 + (4 + oa) + 4;
+    if (cap < need)
+        return -1;
+
+    size_t off = 0;
+    out[off++] = SSH_MSG_CHANNEL_OPEN;
+    wr_u32(out + off, (uint32_t)tl);
+    memcpy(out + off + 4, type, tl);
+    off += 4 + tl;
+    wr_u32(out + off, (uint32_t)slot); // our sender channel id
+    wr_u32(out + off + 4, SSH_CHAN_WINDOW);
+    wr_u32(out + off + 8, SSH_CHAN_MAX_PACKET);
+    off += 12;
+    wr_u32(out + off, (uint32_t)ca);
+    memcpy(out + off + 4, conn_addr, ca);
+    off += 4 + ca;
+    wr_u32(out + off, conn_port);
+    off += 4;
+    wr_u32(out + off, (uint32_t)oa);
+    memcpy(out + off + 4, orig_addr, oa);
+    off += 4 + oa;
+    wr_u32(out + off, orig_port);
+    off += 4;
+
+    SshChannel *c = &ssh_chan[i][slot];
+    c->open = false;
+    c->pending = true; // awaiting the client's CHANNEL_OPEN_CONFIRMATION
+    c->type = SSH_CHAN_FORWARDED_TCPIP;
+    c->local_id = (uint32_t)slot;
+    c->peer_id = 0;
+    c->local_window = SSH_CHAN_WINDOW;
+    c->peer_window = 0;
+    c->peer_max_pkt = 0;
+
+    *out_len = off;
+    return slot;
+}
+
+int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len)
+{
+    // byte || recipient(our local id) || sender(peer id) || window || max packet.
+    if (i >= MAX_SSH_CONNS || len < 17 || payload[0] != SSH_MSG_CHANNEL_OPEN_CONFIRM)
+        return -1;
+    SshChannel *c = chan_pending_by_id(i, rd_u32(payload + 1));
+    if (!c)
+        return -1;
+    c->peer_id = rd_u32(payload + 5);
+    c->peer_window = rd_u32(payload + 9);
+    c->peer_max_pkt = rd_u32(payload + 13);
+    c->pending = false;
+    c->open = true;
+    if (g_forward_confirm_cb)
+        g_forward_confirm_cb(i, c->local_id, true);
+    return 0;
+}
+
+int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len)
+{
+    // byte || recipient(our local id) || reason || desc || lang.
+    if (i >= MAX_SSH_CONNS || len < 5 || payload[0] != SSH_MSG_CHANNEL_OPEN_FAILURE)
+        return -1;
+    SshChannel *c = chan_pending_by_id(i, rd_u32(payload + 1));
+    if (!c)
+        return -1;
+    uint32_t ch = c->local_id;
+    c->pending = false;
+    c->open = false; // free the slot; the client refused the forward
+    if (g_forward_confirm_cb)
+        g_forward_confirm_cb(i, ch, false);
     return 0;
 }
 
@@ -359,7 +465,7 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
 
     if (dlen > 0)
     {
-        if (c->type == SSH_CHAN_DIRECT_TCPIP) // forwarded TCP bytes -> the forward owner
+        if (c->type != SSH_CHAN_SESSION) // forwarded TCP bytes (ssh -L / -R) -> the forward owner
         {
             if (g_forward_data_cb)
                 g_forward_data_cb(i, c->local_id, data, dlen);

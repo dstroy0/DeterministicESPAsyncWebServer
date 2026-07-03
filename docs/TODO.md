@@ -493,9 +493,18 @@ shipped work:
       `cancel-tcpip-forward`** (`ssh -R`) route to an opt-in remote-forward seam
       (`ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
       (echoing the allocated port for a port-0 bind, §7.1) when an owner accepts. Host-tested
-      (`test_ssh_channel`, +7). _Remaining:_ the **`forwarded-tcpip` listener + byte-bridge
-      owner** (allocate the real listener via `listener_add`, open a server-initiated
-      `forwarded-tcpip` channel per accepted connection, bridge bytes) and **X11 forwarding**.
+      (`test_ssh_channel`, +7). **`forwarded-tcpip` (`ssh -R`) now fully works**: the owner
+      (`ssh_forward`, behind `DETWS_SSH_PORT_FORWARD`) allocates a real listener via the new
+      **tcpip_thread-marshaled** `listener_add_dynamic` / `listener_stop_dynamic` (a dynamic
+      listener created from the SSH worker task must marshal its raw lwIP `tcp_bind`/`tcp_listen`
+      onto tcpip_thread), routes each accepted connection through a `PROTO_SSH_RFWD` handler that
+      opens a server-initiated `forwarded-tcpip` channel (`ssh_channel_open_forwarded` +
+      CONFIRMATION/FAILURE handling) and bridges bytes both ways with per-poll window-bounded
+      pumps; listeners + bridges are torn down on cancel and on SSH disconnect. Host-tested
+      (`test_ssh_channel`: open/confirm/failure/inbound-routing) and **HW-verified end-to-end on
+      an ESP32-S3** (`ssh -R 8080:localhost:9000` -> a connection to the device's :8080 tunnels
+      to the client's :9000 and back, both directions + close propagation). _Remaining:_
+      **X11 forwarding** (and a bind-port policy hook for remote forwards, currently any free port).
 
 - [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
       the client's NEWKEYS. Correct for the current send/receive ordering, but a

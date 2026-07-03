@@ -3266,6 +3266,30 @@
 #define DETWS_SSH_FWD_CHUNK 1024
 #endif
 
+/**
+ * @brief Maximum concurrent remote-forward listeners (`ssh -R` / `tcpip-forward`).
+ *
+ * Each accepted client that requests remote forwarding can bind up to this many
+ * ports on the device; each binding consumes one `listener_pool[]` slot, so
+ * `MAX_LISTENERS` must have that much headroom above the app's own listeners.
+ * Remote forwarding shares `DETWS_SSH_PORT_FORWARD` (compiled in) and is inert
+ * until `ssh_forward_begin()`.
+ */
+#ifndef DETWS_SSH_RFWD_MAX
+#define DETWS_SSH_RFWD_MAX 1
+#endif
+
+/**
+ * @brief Maximum concurrent bridged connections across all remote forwards.
+ *
+ * Each connection accepted on a forwarded port occupies one transport `conn_pool`
+ * slot plus one SSH channel (so it needs `DETWS_SSH_MAX_CHANNELS` headroom) and one
+ * entry here while it is bridged back to the client.
+ */
+#ifndef DETWS_SSH_RFWD_BRIDGE_MAX
+#define DETWS_SSH_RFWD_BRIDGE_MAX 2
+#endif
+
 /** @brief Packet assembly buffer per SSH connection (bytes). */
 #ifndef SSH_PKT_BUF_SIZE
 #define SSH_PKT_BUF_SIZE 2048
@@ -3415,12 +3439,13 @@ struct WebServerConfig
  */
 enum ConnProto
 {
-    PROTO_NONE = 0,   ///< Unassigned slot.
-    PROTO_HTTP = 1,   ///< HTTP/1.1 with optional WS and SSE upgrades.
-    PROTO_TELNET = 2, ///< Telnet (RFC 854).
-    PROTO_SSH = 3,    ///< SSH (RFC 4253/4252/4254).
-    PROTO_MODBUS = 4, ///< Modbus TCP slave (Modbus Application Protocol).
-    PROTO_OPCUA = 5,  ///< OPC UA Binary (UA-TCP) server.
+    PROTO_NONE = 0,     ///< Unassigned slot.
+    PROTO_HTTP = 1,     ///< HTTP/1.1 with optional WS and SSE upgrades.
+    PROTO_TELNET = 2,   ///< Telnet (RFC 854).
+    PROTO_SSH = 3,      ///< SSH (RFC 4253/4252/4254).
+    PROTO_MODBUS = 4,   ///< Modbus TCP slave (Modbus Application Protocol).
+    PROTO_OPCUA = 5,    ///< OPC UA Binary (UA-TCP) server.
+    PROTO_SSH_RFWD = 6, ///< SSH remote-forward listener (ssh -R): accepts bridge to a forwarded-tcpip channel.
 };
 
 /**

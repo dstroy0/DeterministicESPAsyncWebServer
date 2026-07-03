@@ -31,15 +31,17 @@
 /** @brief Channel type (RFC 4254). */
 enum SshChanType
 {
-    SSH_CHAN_SESSION = 0,     ///< "session" - shell / exec / data
-    SSH_CHAN_DIRECT_TCPIP = 1 ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
+    SSH_CHAN_SESSION = 0,        ///< "session" - shell / exec / data
+    SSH_CHAN_DIRECT_TCPIP = 1,   ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
+    SSH_CHAN_FORWARDED_TCPIP = 2 ///< "forwarded-tcpip" - server-initiated TCP forward (ssh -R)
 };
 
 /** @brief Per-connection channel state. */
 struct SshChannel
 {
-    bool open;             ///< True once CHANNEL_OPEN_CONFIRMATION is sent.
-    uint8_t type;          ///< SshChanType: session or direct-tcpip forward.
+    bool open;             ///< True once the channel is confirmed open both ways.
+    bool pending;          ///< True for a server-initiated channel we opened, awaiting the client's confirmation.
+    uint8_t type;          ///< SshChanType: session, direct-tcpip, or forwarded-tcpip.
     uint32_t local_id;     ///< Our channel id (== slot index).
     uint32_t peer_id;      ///< Client's channel id.
     uint32_t local_window; ///< Bytes we may still receive before WINDOW_ADJUST.
@@ -103,6 +105,49 @@ void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
 
 /** @brief Install the remote-forward (ssh -R) cancel callback (opt-in). */
 void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
+
+/**
+ * @brief Result of the client's reply to a server-initiated forwarded-tcpip channel:
+ *        @p ok = true on CHANNEL_OPEN_CONFIRMATION (the bridge may start), false on
+ *        CHANNEL_OPEN_FAILURE (the owner tears the bridge down). @p channel is the
+ *        local id returned by ssh_channel_open_forwarded().
+ */
+typedef void (*SshForwardConfirmCb)(uint8_t slot, uint32_t channel, bool ok);
+
+/** @brief Install the forwarded-tcpip open-confirmation callback (opt-in, ssh -R). */
+void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
+
+/**
+ * @brief Open a server-initiated "forwarded-tcpip" channel (RFC 4254 §7.2, ssh -R).
+ *
+ * Allocates a local channel on connection @p i (state = pending, awaiting the
+ * client's confirmation) and builds the SSH_MSG_CHANNEL_OPEN in @p out.
+ * @p conn_addr / @p conn_port are the forward's bound address/port (the "address
+ * that was connected"); @p orig_addr / @p orig_port are the peer that connected.
+ *
+ * @return the local channel id (>= 0) on success, or -1 (pool full, or @p out too
+ *         small). On success the caller emits @p out and, on the eventual confirm,
+ *         bridges bytes on the returned channel.
+ */
+int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                               uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap);
+
+/**
+ * @brief Handle SSH_MSG_CHANNEL_OPEN_CONFIRMATION for a channel we opened (ssh -R).
+ *
+ * Matches the pending channel by our recipient id, records the peer's channel id /
+ * window / max-packet, and marks it open. Fires the confirm callback (@p ok = true).
+ * @return 0 on success, -1 if malformed or no matching pending channel.
+ */
+int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len);
+
+/**
+ * @brief Handle SSH_MSG_CHANNEL_OPEN_FAILURE for a channel we opened (ssh -R).
+ *
+ * Frees the pending channel and fires the confirm callback (@p ok = false).
+ * @return 0 on success, -1 if malformed or no matching pending channel.
+ */
+int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Handle SSH_MSG_GLOBAL_REQUEST (RFC 4254 §4).
