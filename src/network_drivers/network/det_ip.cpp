@@ -451,9 +451,13 @@ bool det_ip_equal(const DetIp *a, const DetIp *b)
 {
     if (!a || !b || a->family != b->family)
         return false;
-    int n = (a->family == DET_IP_V4) ? 4 : (a->family == DET_IP_V6 ? 16 : 0);
+    int n = 0;
+    if (a->family == DET_IP_V4)
+        n = 4;
+    else if (a->family == DET_IP_V6)
+        n = 16;
     if (n == 0)
-        return a->family == b->family; // both DET_IP_NONE
+        return true; // both the same non-address family (DET_IP_NONE)
     return memcmp(a->bytes, b->bytes, (size_t)n) == 0;
 }
 

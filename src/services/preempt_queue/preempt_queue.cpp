@@ -201,7 +201,9 @@ bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
         return false;
     s_handler[lane] = cfg->handler;
     s_ctx[lane] = cfg->ctx;
-    s_head[lane] = s_tail[lane] = s_count[lane] = 0;
+    s_head[lane] = 0;
+    s_tail[lane] = 0;
+    s_count[lane] = 0;
     s_high_water[lane] = 0;
     s_started[lane] = true;
     return true;

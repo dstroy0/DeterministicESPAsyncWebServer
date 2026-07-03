@@ -118,7 +118,11 @@ bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
     reg_write(bus, REG_EN_RXADDR, 0x01);  // enable pipe 0
     reg_write(bus, REG_EN_AA, 0x00);      // raw mode (no auto-ack)
     reg_write(bus, REG_SETUP_RETR, 0x00); // no auto-retransmit
-    uint8_t dr = (cfg->data_rate == 1) ? 0x08 : (cfg->data_rate == 2) ? 0x20 : 0x00;
+    uint8_t dr = 0x00;                    // 1 Mbps
+    if (cfg->data_rate == 1)
+        dr = 0x08; // 2 Mbps
+    else if (cfg->data_rate == 2)
+        dr = 0x20; // 250 kbps
     reg_write(bus, REG_RF_SETUP, (uint8_t)(dr | ((cfg->tx_power & 0x03) << 1)));
     reg_write(bus, REG_RX_PW_P0, DETWS_NRF24_PAYLOAD);
     reg_write_buf(bus, REG_RX_ADDR_P0, cfg->address, 5);

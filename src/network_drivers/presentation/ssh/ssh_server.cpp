@@ -27,6 +27,32 @@ static inline void emit(uint8_t i, const uint8_t *p, size_t n)
         g_emit(i, p, n);
 }
 
+// Build and emit SSH_MSG_DISCONNECT("too many authentication failures") - the reason code, the
+// description string, and an empty language tag (RFC 4253 §11.1) - then the caller closes.
+static void emit_auth_failure_disconnect(uint8_t i, uint8_t *buf)
+{
+    static const char desc[] = "too many authentication failures";
+    const uint32_t reason = SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE;
+    const uint32_t dl = (uint32_t)(sizeof(desc) - 1);
+    size_t o = 0;
+    buf[o++] = SSH_MSG_DISCONNECT;
+    buf[o++] = (uint8_t)(reason >> 24); // reason code (uint32, big-endian)
+    buf[o++] = (uint8_t)(reason >> 16);
+    buf[o++] = (uint8_t)(reason >> 8);
+    buf[o++] = (uint8_t)(reason);
+    buf[o++] = (uint8_t)(dl >> 24); // description (uint32 length + bytes)
+    buf[o++] = (uint8_t)(dl >> 16);
+    buf[o++] = (uint8_t)(dl >> 8);
+    buf[o++] = (uint8_t)(dl);
+    memcpy(buf + o, desc, dl);
+    o += dl;
+    buf[o++] = 0; // language tag: empty string (4-byte length 0)
+    buf[o++] = 0;
+    buf[o++] = 0;
+    buf[o++] = 0;
+    emit(i, buf, o);
+}
+
 int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS)
@@ -95,37 +121,13 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         if (ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n); // SUCCESS (→ phase OPEN), PK_OK probe, or FAILURE
-        // Brute-force defense (RFC 4252 §4): bound failed attempts per
-        // connection. Only an actual USERAUTH_FAILURE counts - a SUCCESS or the
-        // publickey "would-be-accepted" probe (PK_OK) does not.
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
+        // Brute-force defense (RFC 4252 §4): bound failed attempts per connection. Only an actual
+        // USERAUTH_FAILURE counts - a SUCCESS or the publickey PK_OK probe does not. Too many ->
+        // DISCONNECT then close.
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE && ++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
         {
-            if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
-            {
-                // SSH_MSG_DISCONNECT payload: byte || uint32(reason) ||
-                // string(desc) || string(lang="").  Emitted through the normal
-                // packet path, then -1 tells the caller to close the socket.
-                static const char desc[] = "too many authentication failures";
-                const uint32_t dl = (uint32_t)(sizeof(desc) - 1);
-                size_t o = 0;
-                buf[o++] = SSH_MSG_DISCONNECT;
-                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 24);
-                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 16);
-                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE >> 8);
-                buf[o++] = (uint8_t)(SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE);
-                buf[o++] = (uint8_t)(dl >> 24);
-                buf[o++] = (uint8_t)(dl >> 16);
-                buf[o++] = (uint8_t)(dl >> 8);
-                buf[o++] = (uint8_t)(dl);
-                memcpy(buf + o, desc, dl);
-                o += dl;
-                buf[o++] = 0; // language tag: empty string (4-byte length 0)
-                buf[o++] = 0;
-                buf[o++] = 0;
-                buf[o++] = 0;
-                emit(i, buf, o);
-                return -1; // close the connection
-            }
+            emit_auth_failure_disconnect(i, buf);
+            return -1; // close the connection
         }
         return 0;
 
