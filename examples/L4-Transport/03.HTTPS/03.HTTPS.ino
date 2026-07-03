@@ -12,8 +12,8 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see, so for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_TLS=1
- * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) The `#define` below alone does
- * not reach the separately-compiled library .cpp.
+ * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) The `#define`
+ * below alone does not reach the separately-compiled library .cpp.
  *
  * Flash, open Serial @ 115200 for the IP, then (the cert is self-signed, so -k):
  *   curl -k https://<ip>/

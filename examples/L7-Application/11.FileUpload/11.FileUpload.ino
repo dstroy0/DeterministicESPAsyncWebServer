@@ -16,8 +16,8 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
  *     build_flags = -DDETWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048
- * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.) The upload sink shares the
- * parser streaming hook with OTA - enable one or the other, not both.
+ * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.) The upload
+ * sink shares the parser streaming hook with OTA - enable one or the other, not both.
  *
  * RX_BUF_SIZE must exceed the largest inbound TCP segment (TCP_MSS, ~1460) so a
  * full segment fits the receive ring; the transport refuses+redelivers a segment

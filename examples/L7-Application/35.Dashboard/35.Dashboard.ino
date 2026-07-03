@@ -16,7 +16,8 @@
  * the separately compiled library). In platformio.ini:
  *     build_flags = -DDETWS_ENABLE_DASHBOARD=1
  * (DETWS_ENABLE_SSE and DETWS_ENABLE_WEBSOCKET are on by default; SSE is required,
- * WebSocket enables the controls. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
+ * WebSocket enables the controls. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it
+ * builds as-is.)
  *
  * Flash, then open http://<ip>/dashboard.
  */
