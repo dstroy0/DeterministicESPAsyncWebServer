@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.84.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.84.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2986ba5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2986ba559288500e7050c75b76c14dda604452f6))
+- update CHANGELOG.md [skip ci] ([`c6c2be6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6c2be6f5830c58fd65b98b19069143936cca272))
+
+### Changes
+
+- Bump version: 4.83.0 → 4.84.0 ([`273edb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/273edb6f2d7f4fa69a3569acfcb34366e54be522))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4a68241`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a6824170664cc3938d96e1163dd8e5c5f461fad))
+
+### Features
+
+- Wi-Fi promiscuous capture + forward to Ethernet (services/promisc) ([`8548dd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8548dd63eb3fa6956dddba97ba0ea6e04e8c5811))
+
+</details>
+
 ## [4.83.0] - 2026-07-03
 
 <details>
