@@ -148,7 +148,8 @@ void test_pcap_headers()
     TEST_ASSERT_EQUAL_UINT(0, det_pcap_global_header(g, 10, DET_DLT_IEEE802_11)); // too small
 
     uint8_t r[DET_PCAP_REC_HDR_LEN];
-    TEST_ASSERT_EQUAL_UINT(DET_PCAP_REC_HDR_LEN, det_pcap_record_header(r, sizeof(r), 0x11223344, 0x55667788, 100, 120));
+    TEST_ASSERT_EQUAL_UINT(DET_PCAP_REC_HDR_LEN,
+                           det_pcap_record_header(r, sizeof(r), 0x11223344, 0x55667788, 100, 120));
     TEST_ASSERT_EQUAL_HEX8(0x44, r[0]); // ts_sec little-endian
     TEST_ASSERT_EQUAL_HEX8(0x11, r[3]);
     TEST_ASSERT_EQUAL_HEX8(100, r[8]);  // caplen
