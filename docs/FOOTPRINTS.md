@@ -11,6 +11,7 @@ from each example's `pio ci` size report and aggregated into
 | `ACCEPT_THROTTLE`                        | L4-Transport/02.AcceptThrottle          | 732.4 KB (57.2%) | 64.6 KB (20.2%)  |
 | `AUDIT_LOG`                              | L7-Application/49.AuditLog              | 734.8 KB (57.4%) | 67.6 KB (21.1%)  |
 | `AUTH_LOCKOUT`                           | L6-Presentation/12.AuthLockout          | 733.2 KB (57.3%) | 65.0 KB (20.3%)  |
+| `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 752.2 KB (58.8%) | 42.8 KB (13.4%)  |
 | `CBOR`                                   | L6-Presentation/13.Cbor                 | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `COAP`                                   | L7-Application/13.CoAP                  | 737.7 KB (57.6%) | 67.1 KB (21.0%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.0 KB (55.5%) | 47.2 KB (14.8%)  |
@@ -57,7 +58,7 @@ from each example's `pio ci` size report and aggregated into
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 732.5 KB (57.2%) | 64.8 KB (20.3%)  |
 | `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.3 KB (22.0%) | 21.4 KB (6.7%)   |
 | `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.0 KB (20.5%) | 23.4 KB (7.3%)   |
-| `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 745.9 KB (58.3%) | 44.7 KB (14.0%)  |
+| `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 745.8 KB (58.3%) | 44.7 KB (14.0%)  |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 739.6 KB (57.8%) | 66.2 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 732.6 KB (57.2%) | 64.6 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 774.2 KB (60.5%) | 64.7 KB (20.2%)  |

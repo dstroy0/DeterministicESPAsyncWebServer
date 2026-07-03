@@ -20,6 +20,13 @@
     "flash_bytes": 750781,
     "ram_bytes": 66512
   },
+  "BUS_CAPTURE+FORWARD+ETHERNET": {
+    "example": "Foundation/22.CanCapture",
+    "flags": "-DDETWS_ENABLE_BUS_CAPTURE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
+    "board": "esp32dev",
+    "flash_bytes": 770289,
+    "ram_bytes": 43820
+  },
   "CBOR": {
     "example": "L6-Presentation/13.Cbor",
     "flags": "-DDETWS_ENABLE_CBOR=1",
@@ -346,7 +353,7 @@
     "example": "Foundation/21.WifiCapture",
     "flags": "-DDETWS_ENABLE_PROMISC=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 763805,
+    "flash_bytes": 763741,
     "ram_bytes": 45808
   },
   "PROVISIONING": {
