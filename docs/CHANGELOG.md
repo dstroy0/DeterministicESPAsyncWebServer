@@ -2,6 +2,41 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- add collidable/sockaddr/detip to cspell dictionary ([`bcc0fbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcc0fbec33c0fdd6842a42baa7a6e7d087695862))
+- update test report [skip ci] ([`822d5ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/822d5cec1db0ee99a7fc5c1a5780d5eacb6f14d6))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h [skip ci] ([`d3fc5b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3fc5b26691b635da9106fb44da9ed4cd727568f))
+
+## [4.89.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.89.0 - 2026-07-03</b></summary>
+
+### Bug Fixes
+
+- key IP abuse-prevention on the full address, not a 32-bit hash ([`ba4b606`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba4b60698002e4cfe1aafaa6000c177fe1a1b10a))
+
+### CI / Build
+
+- update test report [skip ci] ([`4871751`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4871751fa337c87367a53fbe9f333722cf6896c7))
+- update CHANGELOG.md [skip ci] ([`1671a90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1671a90dea70ef7b1860d0c3278c5882647041fd))
+
+### Changes
+
+- Bump version: 4.88.0 → 4.89.0 ([`b81de26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b81de261fbaff096b129d9bd7a424eed84537612))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`9d09c7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d09c7a18a4ecc5952df1b93ac3b971acee67d7c))
+
+</details>
+
 ## [4.88.0] - 2026-07-03
 
 <details>
