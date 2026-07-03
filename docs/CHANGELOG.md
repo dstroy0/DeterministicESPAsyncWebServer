@@ -6,11 +6,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`bb240e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb240e1ff4fe4819486da0066dcb88bb8ef2ed39))
+- update CHANGELOG.md [skip ci] ([`140a022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/140a022d6409884d92d0a45a4b0211cc3c7fdd4d))
 - add collidable/sockaddr/detip to cspell dictionary ([`bcc0fbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcc0fbec33c0fdd6842a42baa7a6e7d087695862))
 - update test report [skip ci] ([`822d5ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/822d5cec1db0ee99a7fc5c1a5780d5eacb6f14d6))
 
 ### Documentation
 
+- mark IPv6 phase 2 done (full-address DetIp keying, v4.89.0) ([`84d94af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84d94af8569e4138bb4e80b499914a1e74da56d0))
+- update ESP32 build footprints [skip ci] ([`5fb35ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5fb35aeb77df354236e48dc068577e05674f9544))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`d3fc5b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3fc5b26691b635da9106fb44da9ed4cd727568f))
 
 ## [4.89.0] - 2026-07-03
