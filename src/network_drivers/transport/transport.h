@@ -361,6 +361,13 @@ uint32_t det_conn_remote_ip(uint8_t slot);
  */
 bool det_conn_remote_addr(uint8_t slot, DetIp *out);
 
+/**
+ * @brief A stable per-peer 32-bit identity key for @p slot (the v4 address, or an FNV-1a hash of a
+ *        v6 address). For rate-limit / auth-lockout buckets, where a v6 peer must not silently
+ *        share the all-zero v4 bucket. Returns 0 if the slot has no active connection.
+ */
+uint32_t det_conn_remote_key(uint8_t slot);
+
 // ---------------------------------------------------------------------------
 // Observability (DETWS_ENABLE_OBSERVABILITY) - connection event hook + counters
 // ---------------------------------------------------------------------------

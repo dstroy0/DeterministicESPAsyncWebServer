@@ -1501,11 +1501,12 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
 }
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
-// Raw source IPv4 of the connection in slot_id (0 on native / no pcb). Used only
-// as an identity key for the auth lockout, so byte order is irrelevant.
+// A stable per-peer identity key for the connection in slot_id (0 on native / no pcb). Used only
+// as the auth-lockout bucket key, so this is the v4 address or a hash of a v6 address - never the
+// all-zero v4 flattening a v6 peer would otherwise share (det_conn_remote_key handles both).
 static uint32_t lockout_client_ip(uint8_t slot_id)
 {
-    return det_conn_remote_ip(slot_id);
+    return det_conn_remote_key(slot_id);
 }
 
 // 429 Too Many Requests with Retry-After (auth lockout active). Closes the

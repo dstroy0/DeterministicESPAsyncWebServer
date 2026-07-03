@@ -589,6 +589,14 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 #endif
 }
 
+uint32_t det_conn_remote_key(uint8_t slot)
+{
+    DetIp addr;
+    if (!det_conn_remote_addr(slot, &addr))
+        return 0;
+    return det_ip_key(&addr);
+}
+
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {
     uint32_t now = detws_millis();

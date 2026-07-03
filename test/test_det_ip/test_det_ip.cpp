@@ -158,11 +158,33 @@ void test_from_v6_bytes()
     TEST_ASSERT_TRUE(det_ip_equal(&ip, &parsed));
 }
 
+void test_ip_key()
+{
+    DetIp v4;
+    det_ip_parse("192.168.1.1", &v4);
+    TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, det_ip_key(&v4)); // v4 key == its 32-bit value
+
+    // A v4-mapped v6 keys the same as the native v4 (one bucket per host).
+    DetIp mapped;
+    det_ip_parse("::ffff:192.168.1.1", &mapped);
+    TEST_ASSERT_EQUAL_HEX32(det_ip_key(&v4), det_ip_key(&mapped));
+
+    // Distinct v6 addresses get distinct, deterministic keys.
+    DetIp a, b, a2;
+    det_ip_parse("2001:db8::1", &a);
+    det_ip_parse("2001:db8::2", &b);
+    det_ip_parse("2001:db8::1", &a2);
+    TEST_ASSERT_EQUAL_HEX32(det_ip_key(&a), det_ip_key(&a2)); // deterministic
+    TEST_ASSERT_NOT_EQUAL(det_ip_key(&a), det_ip_key(&b));    // distinct peers -> distinct buckets
+    TEST_ASSERT_NOT_EQUAL(0, det_ip_key(&a));                 // a real v6 peer is not the 0 bucket
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_v4_round_trip);
     RUN_TEST(test_from_v6_bytes);
+    RUN_TEST(test_ip_key);
     RUN_TEST(test_v6_canonical_5952);
     RUN_TEST(test_v4_mapped);
     RUN_TEST(test_classify_v4);

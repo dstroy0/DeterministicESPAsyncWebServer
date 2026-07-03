@@ -492,3 +492,23 @@ uint32_t det_ip_to_v4_be(const DetIp *ip)
         return ((uint32_t)b[12] << 24) | ((uint32_t)b[13] << 16) | ((uint32_t)b[14] << 8) | b[15];
     return 0;
 }
+
+uint32_t det_ip_key(const DetIp *ip)
+{
+    if (!ip)
+        return 0;
+    // v4 and v4-mapped share the v4 key so the same host is one bucket either way.
+    if (ip->family == DET_IP_V4 || det_ip_is_v4_mapped(ip))
+        return det_ip_to_v4_be(ip);
+    if (ip->family == DET_IP_V6)
+    {
+        uint32_t h = 2166136261u; // FNV-1a over the 16 address bytes
+        for (int k = 0; k < 16; k++)
+        {
+            h ^= ip->bytes[k];
+            h *= 16777619u;
+        }
+        return h;
+    }
+    return 0;
+}

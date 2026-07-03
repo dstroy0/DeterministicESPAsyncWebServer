@@ -268,9 +268,12 @@ Open follow-ups discovered during the above:
       netif (`init_ipv6_physical` / `net_global_ipv6` / `ipv6_ready`); the listeners already bind
       `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The `DetIp` address core
       (`network_drivers/network/det_ip.h`) parses / formats / classifies both families
-      (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2
-      (remaining):** widen the transport peer address and the IPv4-keyed features (per-IP
-      throttle, IP allowlist, auth lockout, audit-log client IP) from `uint32` to `DetIp`, and
+      (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2 (in
+      progress):** the transport reports the real peer via `det_conn_remote_addr()` (v4/v6) and a
+      family-safe bucket key via `det_conn_remote_key()` (v4 address, or an FNV-1a hash of a v6
+      address). **Auth lockout is now v6-safe** (keys on `det_conn_remote_key`, so v6 peers no
+      longer share the all-zero v4 bucket). **Remaining:** the accept-time per-IP throttle + IP
+      allowlist (listener) and the audit-log client IP still key on `uint32`; widen them, and
       HW-verify SLAAC on a real v6 network.
 - [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_
       Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
