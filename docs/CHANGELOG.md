@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.88.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.88.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`16aad67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16aad673c827d9ac4b7d58071464a67e4ae8796c))
+- update CHANGELOG.md [skip ci] ([`e67a5b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e67a5b58ac22ccddffb12b5126db91d6bd7e40dc))
+
+### Changes
+
+- Bump version: 4.87.0 → 4.88.0 ([`bde177e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bde177e326cd43b8515a41b16f481aef5c6eac93))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c7da665`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7da665f45bc1284ddaf660eeeab18107abd58ac))
+
+### Features
+
+- per-IP accept throttle is now IPv6-safe (family-stable key) - IPv6 phase 2 ([`719a827`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/719a827f264011c3e070c0d41e4691f81fd79523))
+
+</details>
+
 ## [4.87.0] - 2026-07-03
 
 <details>
