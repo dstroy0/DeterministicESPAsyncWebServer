@@ -2,6 +2,27 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.82.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.82.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- add Arduino Build workflow (esp32 3.x) + fix 06.PreemptQueue timer API ([`4e26b81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e26b81301415af0e3fce0af8bfb62a32bac9e59))
+- update test report [skip ci] ([`f112264`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1122641095591753000b83e476f14872b1e0c57))
+- update CHANGELOG.md [skip ci] ([`1b9563f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b9563f72457e7207803dd49c1fca252430718df))
+
+### Changes
+
+- Bump version: 4.81.0 → 4.82.0 ([`058db0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/058db0e9725364267a9ab83cae64f41761704320))
+
+### Features
+
+- make the library build unmodified in the Arduino IDE (esp32 3.x) ([`bc53dab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc53dab0bedc100b236001de67b47e0691c4c2bc))
+
+</details>
+
 ## [4.81.0] - 2026-07-02
 
 <details>
