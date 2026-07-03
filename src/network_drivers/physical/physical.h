@@ -21,6 +21,7 @@
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
 #include "DetWebServerConfig.h" // DetIface
+#include "network_drivers/network/det_ip.h"
 #include <stdint.h>
 
 /**
@@ -53,6 +54,28 @@ bool init_eth_physical(void);
 
 /** @brief True if the Ethernet link is up and an IP is assigned. */
 bool eth_ready(void);
+
+/**
+ * @brief Enable IPv6 (dual-stack) on the Wi-Fi interface (DETWS_ENABLE_IPV6).
+ *
+ * Turns on IPv6 for the netif so it acquires a SLAAC link-local address and, if the network
+ * advertises a prefix, a global address. Returns immediately (address configuration is
+ * asynchronous); poll ipv6_ready(). The listeners already bind IPADDR_TYPE_ANY, so the server
+ * answers over IPv6 as soon as an address is up.
+ *
+ * @return true if IPv6 was enabled; false if disabled at build time or on host builds.
+ */
+bool init_ipv6_physical(void);
+
+/**
+ * @brief The interface's global (routable) IPv6 address, if it has one.
+ * @param[out] out receives the address (family DET_IP_V6) when true is returned.
+ * @return true if a valid global IPv6 address is assigned; false otherwise (incl. host builds).
+ */
+bool net_global_ipv6(DetIp *out);
+
+/** @brief True once the interface has a global IPv6 address (see net_global_ipv6()). */
+bool ipv6_ready(void);
 
 /**
  * @brief Which interface currently carries outbound traffic.

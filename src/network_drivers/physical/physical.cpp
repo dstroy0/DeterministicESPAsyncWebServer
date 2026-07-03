@@ -53,6 +53,59 @@ bool eth_ready(void)
 }
 #endif
 
+#if DETWS_ENABLE_IPV6
+#include "lwip/ip6_addr.h"
+#include <string.h>
+
+bool init_ipv6_physical(void)
+{
+    // The WiFi wrapper's enable call was renamed in Arduino-ESP32 3.0; the address readout
+    // below goes straight to lwIP, which is stable across both cores.
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    return WiFi.enableIPv6(true);
+#else
+    return WiFi.enableIpV6();
+#endif
+}
+
+bool net_global_ipv6(DetIp *out)
+{
+    if (!out || !netif_default)
+        return false;
+    for (int8_t i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
+    {
+        if (!ip6_addr_isvalid(netif_ip6_addr_state(netif_default, i)))
+            continue;
+        const ip6_addr_t *a6 = netif_ip6_addr(netif_default, i);
+        if (!ip6_addr_isglobal(a6))
+            continue;
+        out->family = DET_IP_V6;
+        memcpy(out->bytes, a6->addr, 16); // lwIP holds the 16 bytes in network order
+        return true;
+    }
+    return false;
+}
+
+bool ipv6_ready(void)
+{
+    DetIp tmp;
+    return net_global_ipv6(&tmp);
+}
+#else
+bool init_ipv6_physical(void)
+{
+    return false; // IPv6 not enabled (DETWS_ENABLE_IPV6)
+}
+bool net_global_ipv6(DetIp *)
+{
+    return false;
+}
+bool ipv6_ready(void)
+{
+    return false;
+}
+#endif
+
 uint32_t det_net_egress_ip(void)
 {
     // netif_default is the current default-route interface (the egress).
@@ -84,6 +137,18 @@ bool init_eth_physical(void)
     return false; // no Ethernet PHY on a host build
 }
 bool eth_ready(void)
+{
+    return false;
+}
+bool init_ipv6_physical(void)
+{
+    return false; // no netif on a host build
+}
+bool net_global_ipv6(DetIp *)
+{
+    return false;
+}
+bool ipv6_ready(void)
 {
     return false;
 }

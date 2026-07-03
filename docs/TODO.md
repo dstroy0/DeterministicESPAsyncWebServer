@@ -264,8 +264,14 @@ Open follow-ups discovered during the above:
       wired route (DETIFACE_ETH, host-tested), so the server serves over Ethernet - or
       dual-homed with Wi-Fi - once the link has an IP. Example 19.Ethernet; ESP32-compiled.
       Remaining: verify against a PHY board.
-- [ ] **IPv6 dual-stack** - the remaining architectural track, deferred for a separate
-      decision (the transport-layer address handling is IPv4 throughout).
+- [ ] **IPv6 dual-stack** - _phase 1 landed (v4.83.0)._ `DETWS_ENABLE_IPV6` enables IPv6 on the
+      netif (`init_ipv6_physical` / `net_global_ipv6` / `ipv6_ready`); the listeners already bind
+      `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The `DetIp` address core
+      (`network_drivers/network/det_ip.h`) parses / formats / classifies both families
+      (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2
+      (remaining):** widen the transport peer address and the IPv4-keyed features (per-IP
+      throttle, IP allowlist, auth lockout, audit-log client IP) from `uint32` to `DetIp`, and
+      HW-verify SLAAC on a real v6 network.
 - [x] **Shared scratch-buffer pool (decided: build before permessage-deflate).** _(done)_
       Several features carry their own fixed _transient_ scratch (SSH `crypto_work`
       and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming

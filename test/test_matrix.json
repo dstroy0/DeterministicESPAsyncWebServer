@@ -13,6 +13,12 @@
       "src": ["-<*>"],
       "tests": ["test_det_primitives"]
     },
+    "native_det_ip": {
+      "desc": "IP address core (network_drivers/network/det_ip): RFC 4291 IPv4/IPv6 text parsing,\nRFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification\n(loopback / link-local / private-ULA / multicast / global). Pure host tests.",
+      "flags": [],
+      "src": ["+<network_drivers/network/det_ip.cpp>"],
+      "tests": ["test_det_ip"]
+    },
     "native_j1939": {
       "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_J1939=1"],

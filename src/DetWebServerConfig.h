@@ -559,6 +559,19 @@
 #define DETWS_ENABLE_ETHERNET 0
 #endif
 
+/**
+ * @brief Enable IPv6 on the network interface (dual-stack). Default off.
+ *
+ * When set, init_ipv6_physical() turns on IPv6 for the Wi-Fi netif (SLAAC link-local plus any
+ * router-advertised global address). The TCP and UDP listeners already bind IPADDR_TYPE_ANY, so
+ * the server accepts IPv6 connections the moment the interface has a v6 address; the DetIp core
+ * (network_drivers/network/det_ip.h) parses / formats / classifies both families. Requires an
+ * lwIP built with LWIP_IPV6=1 (the stock Arduino-ESP32 core ships it).
+ */
+#ifndef DETWS_ENABLE_IPV6
+#define DETWS_ENABLE_IPV6 0
+#endif
+
 // Feature / service / codec tuning knobs are consolidated at the END of this file,
 // under "Feature tuning knobs (grouped and gated by feature)" - placed there so every
 // DETWS_ENABLE_* flag is already resolved and each group can gate on its own feature.
