@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.91.0] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.91.0 - 2026-07-03</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`fa30779`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa307790a8ad0cd5b1d91a9eab2b62964b92c47a))
+- update CHANGELOG.md [skip ci] ([`b8e349a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8e349a23ddc89f5ff9fb52d2b6d3d08eb3591be))
+
+### Changes
+
+- Bump version: 4.90.0 → 4.91.0 ([`622a022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/622a022788bc1de5d12f916d04a299c364bdb94a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`5f142d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f142d3f76eeec5c2dd3751901e0239de9c80fe2))
+
+### Features
+
+- enforce exp / nbf time claims when a clock is available ([`7161cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7161caed1c6644975de4d05be6cc0f9a0796f5d5))
+
+</details>
+
 ## [4.90.0] - 2026-07-03
 
 <details>
