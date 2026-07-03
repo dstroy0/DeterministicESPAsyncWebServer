@@ -833,7 +833,10 @@
     "sendall",
     "fetc",
     "fpasswd",
-    "pthread"
+    "pthread",
+    "collidable",
+    "sockaddr",
+    "detip"
   ],
   "ignorePaths": [
     "node_modules/**",
