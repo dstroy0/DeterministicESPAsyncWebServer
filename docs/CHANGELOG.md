@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.86.1] - 2026-07-03
+
+<details>
+<summary><b>Show Changelog for version 4.86.1 - 2026-07-03</b></summary>
+
+### Bug Fixes
+
+- clang-format test_promisc.cpp (missed after the det_pcap rename) ([`d9d60ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9d60ca7d03ad01aa226f0a1e2dbcfbc03832a2b))
+
+### CI / Build
+
+- update test report [skip ci] ([`ebf94b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebf94b6e085100358df61ebfdb51160a0f4894cc))
+- update CHANGELOG.md [skip ci] ([`ee8a0dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee8a0dcbaf6c2c8f9ce9c36c3106ea4b2f78e650))
+
+### Changes
+
+- Bump version: 4.86.0 → 4.86.1 ([`19b5368`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19b536836cd52b2d7384054b669bbf8cefa258b8))
+
+</details>
+
 ## [4.86.0] - 2026-07-03
 
 <details>
