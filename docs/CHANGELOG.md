@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.95.3] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.95.3 - 2026-07-04</b></summary>
+
+### Bug Fixes
+
+- remediate real CodeQL/SonarCloud findings + docs audit ([`33804c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33804c7ec27ff3c24735610493b40a639641ce5b))
+
+### CI / Build
+
+- update test report [skip ci] ([`24446ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24446ec42afe884c4e79e720779e505d54776547))
+- update CHANGELOG.md [skip ci] ([`9caba8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9caba8a31f76e798891b47a92d83a48cfa2fe196))
+
+### Changes
+
+- Bump version: 4.95.2 → 4.95.3 ([`da97daf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da97daf3309dd240aff4ad38df8ec78d26bc231e))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7c9b309`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c9b3094ed3898f96bdb711a3c30c511726f0c6b))
+
+</details>
+
 ## [4.95.2] - 2026-07-04
 
 <details>
