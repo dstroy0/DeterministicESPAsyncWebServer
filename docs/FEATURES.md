@@ -578,6 +578,12 @@ Redis RESP2 wire codec. Default off. services/redis_resp lets a device drive a R
 
 Exact, wildcard (/*), :param path parameters, bounded allocation-free regex routes, and per-interface STA/softAP route filters. Always on.
 
+## RTC
+
+`DETWS_ENABLE_RTC`
+
+I2C real-time-clock driver (DS1307 / DS3231). Default off. services/rtc reads and sets a battery-backed RTC over I2C (Wire, address 0x68), so the device knows the correct wall-clock time the instant it boots - offline, across power loss - with no network. It is the ideal middle of a time-source chain (GPS -> RTC -> upstream NTP), feeding `detws_time_now()` and the NTP server; `rtc_time_source()` plugs straight into detws_time_source_add(). The BCD <-> Unix-epoch conversion of the seven time registers (12/24-hour, leap years, the clock-halt / century bit masks, range validation) is pure and host-tested across the chip's 2000-2099 range (that round-trip test caught a real 32-bit overflow past 2038); only the register read/write touches I2C. Zero heap. Example 61.Rtc. See src/services/rtc/rtc.h.
+
 ## S7comm
 
 `DETWS_ENABLE_S7COMM`

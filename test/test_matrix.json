@@ -890,6 +890,12 @@
       "src": ["+<services/dns_server/dns_server.cpp>"],
       "tests": ["test_dns_server"]
     },
+    "native_rtc": {
+      "desc": "DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in\n24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation,\nand a round-trip over the 2000-2099 range. Pure - the I2C read/write is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_RTC=1"],
+      "src": ["+<services/rtc/rtc.cpp>"],
+      "tests": ["test_rtc"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],

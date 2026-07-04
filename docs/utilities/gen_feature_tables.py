@@ -53,6 +53,7 @@ LAYER_MEMBERS = {
         "GPIO Map",
         "Guardrails",
         "Preempting Work Queue",
+        "RTC",
         "Time Source",
         "VFS",
     },

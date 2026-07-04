@@ -2171,6 +2171,24 @@
 #endif
 
 /**
+ * @brief I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source.
+ *
+ * Default off. services/rtc reads and sets a DS1307/DS3231 RTC over I2C (Wire), so the device
+ * keeps accurate wall-clock time across reboots and power loss with no network - the ideal
+ * fallback below GPS and above upstream NTP in a time-source chain (feeds `detws_time_now()`
+ * and the NTP server). The BCD<->epoch conversion (7 time registers, 12/24-hour, leap years,
+ * range validation) is pure and host-tested; only the register read/write touches I2C.
+ */
+#ifndef DETWS_ENABLE_RTC
+#define DETWS_ENABLE_RTC 0
+#endif
+
+/** @brief I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). */
+#ifndef DETWS_RTC_I2C_ADDR
+#define DETWS_RTC_I2C_ADDR 0x68
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value
