@@ -6,6 +6,21 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- add ECDH, hostkey to cspell dictionary ([`1992202`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19922024c7e83f6e7863d1107d333a1506576799))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h [skip ci] ([`f2a627c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2a627c8f489f3cbf8cdd431572d980ae9d7f0d4))
+
+## [4.94.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.94.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`db4c0f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db4c0f465ba725ac33cd7320289c346537b1247a))
+- update CHANGELOG.md [skip ci] ([`d4dc403`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4dc40363fff82db2da5215466faf33606474f4a))
 - update test report [skip ci] ([`c426301`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c426301280c81bd0374dc441f175a13b4011ab97))
 - update CHANGELOG.md [skip ci] ([`6ccc1bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ccc1bb46f8f8281c0dbf2270e29682729c3e460))
 - bump prettier from 3.9.1 to 3.9.4 ([`9dd2486`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd2486ae39d4f52abf2efdf48dec7780493fc87))
@@ -13,6 +28,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 4.93.0 → 4.94.0 ([`26c34bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26c34bdd73dcdc52fb00a499d5a31bfdc3b5f2ed))
 - Merge pull request #13 from dstroy0/dependabot/npm_and_yarn/prettier-3.9.4 ([`aac9fa4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aac9fa4be01829f612dd1346ae972751f58273be))
 
 ### Documentation
@@ -22,7 +38,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- crypto-agnostic KEX - curve25519-sha256 + ssh-ed25519, HW-accelerated ([`9e46dc9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e46dc914e7514d7abfdfcd0c2221b4c328b4025))
 - add SHA-512 + X25519 + Ed25519 crypto primitives (RFC KAT-verified) ([`f6b63a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6b63a7e16b015f3226da7d0477ce9b8fefd7ade))
+
+</details>
 
 ## [4.93.0] - 2026-07-03
 
