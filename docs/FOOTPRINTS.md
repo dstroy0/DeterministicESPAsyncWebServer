@@ -45,6 +45,7 @@ from each example's `pio ci` size report and aggregated into
 | `MDNS`                                   | L7-Application/15.mDNS                  | 757.9 KB (59.2%) | 66.5 KB (20.8%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 734.7 KB (57.4%) | 64.9 KB (20.3%)  |
 | `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.0 KB (57.4%) | 64.9 KB (20.3%)  |
+| `MPR121`                                 | L7-Application/63.Mpr121                | 280.8 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                   | L7-Application/24.MqttClient            | 718.8 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                | L6-Presentation/14.MsgPack              | 736.5 KB (57.5%) | 64.7 KB (20.2%)  |
 | `NRF24+GATEWAY`                          | Foundation/12.Nrf24Gateway              | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |

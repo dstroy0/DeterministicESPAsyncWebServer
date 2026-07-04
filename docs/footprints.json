@@ -258,6 +258,13 @@
     "flash_bytes": 752661,
     "ram_bytes": 66472
   },
+  "MPR121": {
+    "example": "L7-Application/63.Mpr121",
+    "flags": "-DDETWS_ENABLE_MPR121=1",
+    "board": "esp32dev",
+    "flash_bytes": 287561,
+    "ram_bytes": 21800
+  },
   "MQTT": {
     "example": "L7-Application/24.MqttClient",
     "flags": "-DDETWS_ENABLE_MQTT=1",
