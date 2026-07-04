@@ -1084,6 +1084,15 @@
       "src": ["+<services/udp_telemetry/udp_telemetry.cpp>"],
       "tests": ["test_udp_telemetry"]
     },
+    "native_statsd": {
+      "desc": "StatsD metrics client (services/statsd): the pure line formatter (name:value|type,\nsample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent\nbytes are captured through the transport UDP service's host seam.",
+      "flags": ["-DDETWS_ENABLE_STATSD=1"],
+      "src": [
+        "+<services/statsd/statsd.cpp>",
+        "+<network_drivers/transport/udp_transport.cpp>"
+      ],
+      "tests": ["test_statsd"]
+    },
     "native_guardrails": {
       "desc": "Heap/stack guardrails (services/guardrails): threshold evaluator + JSON,\nhost-tested. Live sampling is ESP32-only (#ifdef ARDUINO).",
       "flags": ["-DDETWS_ENABLE_GUARDRAILS=1"],

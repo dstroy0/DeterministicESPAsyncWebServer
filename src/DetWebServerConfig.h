@@ -2284,6 +2284,30 @@
 #endif
 
 /**
+ * @brief Opt-in StatsD metrics client (DETWS_ENABLE_STATSD).
+ *
+ * Default off. When set, services/statsd pushes metrics in the StatsD wire format
+ * (`name:value|type`, e.g. `api.hits:1|c`) over UDP to a StatsD-speaking collector -
+ * Graphite/StatsD, Telegraf, Datadog, InfluxDB, etc. Counters, gauges (absolute + delta),
+ * timings, and sets, with optional sample-rate (`|@0.1`) and DogStatsD tags (`|#env:prod`).
+ * This is the push counterpart to the pull-based Prometheus `/metrics`. The line formatter
+ * is pure and host-tested; only the send (det_udp_sendto) touches the network. Zero heap.
+ */
+#ifndef DETWS_ENABLE_STATSD
+#define DETWS_ENABLE_STATSD 0
+#endif
+
+/** @brief Default StatsD collector UDP port (StatsD/Graphite standard). */
+#ifndef DETWS_STATSD_PORT
+#define DETWS_STATSD_PORT 8125
+#endif
+
+/** @brief Stack buffer for one StatsD line (bytes; caps metric name + value + tags). */
+#ifndef DETWS_STATSD_LINE_MAX
+#define DETWS_STATSD_LINE_MAX 256
+#endif
+
+/**
  * @brief Opt-in runtime heap/stack guardrails (DETWS_ENABLE_GUARDRAILS).
  *
  * Default off. When set, services/guardrails samples free heap, the heap low-water

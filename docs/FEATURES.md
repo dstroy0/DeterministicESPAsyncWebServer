@@ -644,6 +644,12 @@ SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection
 
 Runtime stats endpoint (uptime, request/error counts, pool usage, heap).
 
+## StatsD
+
+`DETWS_ENABLE_STATSD`
+
+StatsD metrics client - push counters/gauges/timings/sets to a StatsD collector. Default off. services/statsd emits metrics in the StatsD wire format (`name:value|type`, e.g. `api.hits:1|c`) over UDP via det_udp_sendto to any StatsD-speaking backend (Graphite/StatsD, Telegraf, Datadog, InfluxDB), with counters (`c`), gauges (`g`, absolute or a signed `+`/`-` delta), timings (`ms`), and sets (`s`), plus an optional sample rate (`|@0.1`) and DogStatsD tags (`|#env:prod`). This is the push counterpart to the pull-based Prometheus `/metrics` endpoint - useful behind NAT/firewalls where nothing can reach in to scrape. The value/rate are rendered without printf float/64-bit formatting; the line builder (`statsd_format`) is pure and host-tested, and the emit helpers are host-tested through the transport UDP capture seam. Zero heap. Example 59.StatsdMetrics. See src/services/statsd/statsd.h.
+
 ## Stomp
 
 `DETWS_ENABLE_STOMP`
