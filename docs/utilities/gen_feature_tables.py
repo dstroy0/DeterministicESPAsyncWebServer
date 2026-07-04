@@ -67,6 +67,7 @@ LAYER_MEMBERS = {
         "LoRa",
         "MPR121",
         "nRF24",
+        "PCA9685",
         "PN532",
         "Radio Gateway",
         "Radio Power",

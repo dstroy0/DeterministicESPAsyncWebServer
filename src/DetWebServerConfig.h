@@ -2246,6 +2246,29 @@
 #endif
 
 /**
+ * @brief NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C).
+ *
+ * Default off. services/pca9685 computes the PRESCALE value for a PWM frequency from the 25 MHz
+ * oscillator, the per-channel register address, the 12-bit ON/OFF pulse counts, and a servo
+ * pulse-width (microseconds) -> count conversion; it also emits the 5-byte channel PWM write.
+ * The prescale / count math + the register encoder are pure and host-tested; only the register
+ * writes touch I2C. A cheap solder-and-test breakout for driving up to 16 servos or LEDs.
+ */
+#ifndef DETWS_ENABLE_PCA9685
+#define DETWS_ENABLE_PCA9685 0
+#endif
+
+/** @brief I2C address of the PCA9685 (0x40 default; the six address pins select 0x40..0x7F). */
+#ifndef DETWS_PCA9685_I2C_ADDR
+#define DETWS_PCA9685_I2C_ADDR 0x40
+#endif
+
+/** @brief Default PWM output frequency in Hz (50 Hz suits hobby servos). */
+#ifndef DETWS_PCA9685_FREQ
+#define DETWS_PCA9685_FREQ 50
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value

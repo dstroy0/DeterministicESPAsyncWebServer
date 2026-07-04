@@ -1,0 +1,136 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file pca9685.cpp
+ * @brief NXP PCA9685 PWM / servo driver codec - implementation. See pca9685.h.
+ *
+ * Prescale changes require the oscillator to be asleep, so begin() sleeps, writes PRESCALE,
+ * wakes with auto-increment, then restarts and selects totem-pole outputs.
+ */
+
+#include "services/pca9685/pca9685.h"
+#include "DetWebServerConfig.h"
+
+#if DETWS_ENABLE_PCA9685
+
+namespace
+{
+const uint32_t PCA9685_OSC_HZ = 25000000u;
+const uint8_t PCA9685_PRESCALE_MIN = 3;
+const uint8_t PCA9685_PRESCALE_MAX = 255;
+} // namespace
+
+uint8_t pca9685_prescale(uint32_t freq_hz)
+{
+    if (freq_hz == 0)
+        return PCA9685_PRESCALE_MAX;
+    uint32_t denom = 4096u * freq_hz;
+    uint32_t pre = (PCA9685_OSC_HZ + denom / 2) / denom; // round(25e6 / (4096*freq))
+    pre = pre ? pre - 1 : 0;
+    if (pre < PCA9685_PRESCALE_MIN)
+        pre = PCA9685_PRESCALE_MIN;
+    if (pre > PCA9685_PRESCALE_MAX)
+        pre = PCA9685_PRESCALE_MAX;
+    return (uint8_t)pre;
+}
+
+uint8_t pca9685_channel_reg(uint8_t channel)
+{
+    if (channel >= PCA9685_CHANNELS)
+        return 0;
+    return (uint8_t)(PCA9685_REG_LED0_ON_L + 4 * channel);
+}
+
+uint16_t pca9685_us_to_count(uint32_t microseconds, uint32_t freq_hz)
+{
+    // count = round(us * 4096 * freq / 1e6); 64-bit to avoid overflow at high pulse widths.
+    uint64_t num = (uint64_t)microseconds * 4096u * freq_hz;
+    uint32_t count = (uint32_t)((num + 500000u) / 1000000u);
+    return count > PCA9685_COUNT_MAX ? (uint16_t)PCA9685_COUNT_MAX : (uint16_t)count;
+}
+
+size_t pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t on, uint16_t off)
+{
+    if (!buf || cap < 5 || channel >= PCA9685_CHANNELS)
+        return 0;
+    buf[0] = pca9685_channel_reg(channel);
+    // Bit 4 of each _H register is the full-ON / full-OFF flag (count bit 12), so keep bits 4:0.
+    buf[1] = (uint8_t)(on & 0xFF);
+    buf[2] = (uint8_t)((on >> 8) & 0x1F);
+    buf[3] = (uint8_t)(off & 0xFF);
+    buf[4] = (uint8_t)((off >> 8) & 0x1F);
+    return 5;
+}
+
+// ---------------------------------------------------------------------------
+// I2C binding
+// ---------------------------------------------------------------------------
+
+#if defined(ARDUINO)
+
+#include <Arduino.h>
+#include <Wire.h>
+
+namespace
+{
+uint8_t s_addr = DETWS_PCA9685_I2C_ADDR;
+uint32_t s_freq = DETWS_PCA9685_FREQ;
+
+bool wr(uint8_t reg, uint8_t val)
+{
+    Wire.beginTransmission(s_addr);
+    Wire.write(reg);
+    Wire.write(val);
+    return Wire.endTransmission() == 0;
+}
+} // namespace
+
+bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
+{
+    s_addr = addr ? addr : (uint8_t)DETWS_PCA9685_I2C_ADDR;
+    s_freq = freq_hz ? freq_hz : (uint32_t)DETWS_PCA9685_FREQ;
+    Wire.begin();
+    bool ok = true;
+    ok &= wr(PCA9685_REG_MODE1, 0x10); // SLEEP (required before changing PRESCALE)
+    ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_freq));
+    ok &= wr(PCA9685_REG_MODE1, 0x20); // wake, auto-increment (AI)
+    delayMicroseconds(500);            // oscillator settle
+    ok &= wr(PCA9685_REG_MODE1, 0xA0); // AI + RESTART
+    ok &= wr(PCA9685_REG_MODE2, 0x04); // OUTDRV: totem-pole outputs
+    return ok;
+}
+
+bool pca9685_set_pwm(uint8_t channel, uint16_t on, uint16_t off)
+{
+    uint8_t b[5];
+    if (pca9685_set_pwm_bytes(b, sizeof(b), channel, on, off) != 5)
+        return false;
+    Wire.beginTransmission(s_addr);
+    Wire.write(b, 5);
+    return Wire.endTransmission() == 0;
+}
+
+bool pca9685_set_servo_us(uint8_t channel, uint32_t microseconds)
+{
+    return pca9685_set_pwm(channel, 0, pca9685_us_to_count(microseconds, s_freq));
+}
+
+#else // host build: no I2C. The prescale / count math + encoder above are host-tested.
+
+bool pca9685_begin(uint8_t, uint32_t)
+{
+    return false;
+}
+bool pca9685_set_pwm(uint8_t, uint16_t, uint16_t)
+{
+    return false;
+}
+bool pca9685_set_servo_us(uint8_t, uint32_t)
+{
+    return false;
+}
+
+#endif // ARDUINO
+
+#endif // DETWS_ENABLE_PCA9685

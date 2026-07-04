@@ -526,6 +526,12 @@ Opt-in OTA rollback protection / soft-brick safeguard. Default off. After an OTA
 
 Opt-in flash partition-map monitor endpoint. Default off. When set, services/partition_monitor reports the device's flash partition table (label, kind, type / subtype, offset, size, and which app slot is running) as JSON, for diagnostics and OTA dashboards. The partition walk uses esp_partition / esp_ota_ops; the JSON serializer and the kind classifier are pure and host-testable.
 
+## PCA9685
+
+`DETWS_ENABLE_PCA9685`
+
+NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C). Default off. services/pca9685 turns the ESP32's two I2C wires into sixteen hardware PWM outputs. `pca9685_prescale` computes the PRESCALE register for a PWM frequency from the 25 MHz oscillator (`round(25e6 / (4096*freq)) - 1`, clamped 3..255; 50 Hz -> 121); `pca9685_channel_reg` gives a channel's register base (`0x06 + 4*channel`); `pca9685_us_to_count` converts a servo pulse width (microseconds) to a 12-bit OFF count at the configured frequency; and `pca9685_set_pwm_bytes` packs the 5-byte channel write (12-bit ON/OFF little-endian, preserving the full-on/off flag). The prescale / count math + the register encoder are pure and host-tested (`native_pca9685`); only the register writes touch I2C. A cheap solder-and-test breakout for up to 16 servos or LEDs. Example 65.Pca9685 sweeps a servo. See src/services/pca9685/pca9685.h.
+
 ## Per IP Throttle
 
 `DETWS_ENABLE_PER_IP_THROTTLE`
