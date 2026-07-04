@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 85 runnable examples under [examples/](../examples), grouped by
+The library ships 86 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -142,4 +142,5 @@ Routing, protocols, services, and clients:
 [53.EspNow](../examples/L7-Application/53.EspNow) ·
 [54.OAuth2](../examples/L7-Application/54.OAuth2) ·
 [55.OpcUa](../examples/L7-Application/55.OpcUa) ·
-[56.OpcUaClient](../examples/L7-Application/56.OpcUaClient)
+[56.OpcUaClient](../examples/L7-Application/56.OpcUaClient) ·
+[57.SmtpAlert](../examples/L7-Application/57.SmtpAlert)

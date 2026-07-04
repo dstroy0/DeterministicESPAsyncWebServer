@@ -590,6 +590,12 @@ SenML (RFC 8428) measurement-pack builder. Default off; implies CBOR. services/s
 
 Sigfox modem AT-command codec (v5 gateway plugin). Default off. services/sigfox is the tiny-uplink half of a Sigfox-to-web bridge: a Wisol (SFM10R) / Murata Sigfox modem is driven by AT commands over UART for ultra-low-power telemetry over the Sigfox 0G network (a message is capped at 12 bytes and ~140/day, so uplinks are rare and small). `sigfox_build_uplink` formats an `AT$SF=<hex>` command (uppercase hex of the payload) and `sigfox_parse_response` classifies the modem's reply as OK, ERROR, or still pending. Uplink-only (the common Sigfox use - a device sends readings up, it is not addressed downlink). Pure text codec - you carry the bytes over your UART - and host-tested (the AT$SF encoding, its 12-byte / output-buffer bounds, and the response classification). Example 15.SigfoxUplink sends a reading from a real modem. See src/services/sigfox/sigfox.h.
 
+## SMTP
+
+`DETWS_ENABLE_SMTP`
+
+Outbound SMTP client (RFC 5321) for device email alerts. Default off. services/smtp runs a blocking one-shot send over the shared outbound client transport (det_client): read the greeting, EHLO, optional AUTH LOGIN (username/password base64-encoded), then MAIL FROM / RCPT TO / DATA the message and QUIT. The body is dot-stuffed (RFC 5321 sec 4.5.2) and CRLF-normalized so it can never end early, and the whole exchange is zero-heap (fixed DETWS_SMTP_* buffers). Implicit TLS (SMTPS, typically port 465) is used when the message config sets tls and DETWS_ENABLE_TLS is on. The dialogue engine (smtp_run) is written against a send/recv seam, so the full protocol - reply codes, AUTH, dot-stuffing, the terminating dot - is host-tested with a scripted mock server (env:native_smtp). SMS fallback needs no extra code (an email-to-SMS carrier gateway address). Example 57.SmtpAlert ships a from-scratch beginner walkthrough (including standing up a Postfix server). See src/services/smtp/smtp.h.
+
 ## SNMP
 
 `DETWS_ENABLE_SNMP`

@@ -2703,6 +2703,44 @@
 #endif
 
 /**
+ * @brief Outbound SMTP client (RFC 5321) for device email alerts (services/smtp).
+ *
+ * A blocking one-shot `smtp_send()`: EHLO, optional AUTH LOGIN, MAIL FROM / RCPT TO /
+ * DATA over the shared client transport (`det_client`), with implicit TLS (SMTPS, e.g.
+ * :465) when the message config sets `tls` and DETWS_ENABLE_TLS is on. Zero heap; the
+ * dialogue engine (`smtp_run`) takes a send/recv seam so it is host-tested without lwIP.
+ * "SMS fallback" rides on top - most carriers accept an email-to-SMS gateway address.
+ */
+#ifndef DETWS_ENABLE_SMTP
+#define DETWS_ENABLE_SMTP 0
+#endif
+
+/** @brief Max length of one SMTP command / address line (bytes, incl. CRLF). */
+#ifndef DETWS_SMTP_LINE_MAX
+#define DETWS_SMTP_LINE_MAX 256
+#endif
+
+/** @brief Max size of the assembled DATA payload (headers + dot-stuffed body), bytes. */
+#ifndef DETWS_SMTP_MSG_MAX
+#define DETWS_SMTP_MSG_MAX 2048
+#endif
+
+/** @brief Max size of one (possibly multi-line) server reply held while parsing, bytes. */
+#ifndef DETWS_SMTP_REPLY_MAX
+#define DETWS_SMTP_REPLY_MAX 512
+#endif
+
+/** @brief SMTP connect / per-reply timeout in milliseconds. */
+#ifndef DETWS_SMTP_TIMEOUT_MS
+#define DETWS_SMTP_TIMEOUT_MS 10000
+#endif
+
+/** @brief Ciphertext receive-ring size for SMTPS, bytes (only used when the message is TLS). */
+#ifndef DETWS_SMTP_CT_BUF_SIZE
+#define DETWS_SMTP_CT_BUF_SIZE 4096
+#endif
+
+/**
  * @brief MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS).
  *
  * Default off. When set, src/services/mqtt/mqtt.h provides a persistent outbound
