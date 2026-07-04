@@ -2189,6 +2189,25 @@
 #endif
 
 /**
+ * @brief HLK-LD2410 24 GHz mmWave presence / motion radar (UART).
+ *
+ * Default off. services/ld2410 syncs to the LD2410's framed serial output (256000 baud) and
+ * decodes the target report - presence state (none / moving / stationary / both), the moving
+ * and stationary target distance (cm) and energy (0-100), and, in engineering mode, the
+ * per-gate energies - plus encodes the config commands (enter / exit config, enable / disable
+ * engineering mode, restart). The frame sync + decode is pure and host-tested; only the UART
+ * read/write touches hardware. A cheap solder-and-test breakout: wave a hand, watch presence.
+ */
+#ifndef DETWS_ENABLE_LD2410
+#define DETWS_ENABLE_LD2410 0
+#endif
+
+/** @brief LD2410 UART baud rate (the module's fixed factory default is 256000). */
+#ifndef DETWS_LD2410_BAUD
+#define DETWS_LD2410_BAUD 256000
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value

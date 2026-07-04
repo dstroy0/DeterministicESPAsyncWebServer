@@ -896,6 +896,12 @@
       "src": ["+<services/rtc/rtc.cpp>"],
       "tests": ["test_rtc"]
     },
+    "native_ld2410": {
+      "desc": "LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode\nreport frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past\nnoise, split feeds, absurd-length drop), the presence/distance helpers, and the exact bytes\nof the config-command encoders. Pure - the UART pump is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_LD2410=1"],
+      "src": ["+<services/ld2410/ld2410.cpp>"],
+      "tests": ["test_ld2410"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],

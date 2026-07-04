@@ -63,6 +63,7 @@ LAYER_MEMBERS = {
         "ESP-NOW",
         "Ethernet",
         "Interface Forwarding",
+        "LD2410",
         "LoRa",
         "nRF24",
         "PN532",
