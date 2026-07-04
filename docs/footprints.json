@@ -24,8 +24,8 @@
     "example": "Foundation/22.CanCapture",
     "flags": "-DDETWS_ENABLE_BUS_CAPTURE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 770289,
-    "ram_bytes": 43820
+    "flash_bytes": 770729,
+    "ram_bytes": 45332
   },
   "CBOR": {
     "example": "L6-Presentation/13.Cbor",
@@ -38,22 +38,22 @@
     "example": "L7-Application/13.CoAP",
     "flags": "-DDETWS_ENABLE_COAP=1",
     "board": "esp32dev",
-    "flash_bytes": 755837,
-    "ram_bytes": 68696
+    "flash_bytes": 756205,
+    "ram_bytes": 68704
   },
   "COAP+COAP_BLOCK+COAP_MAX_PAYLOAD": {
     "example": "L7-Application/28.CoapBlock",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_MAX_PAYLOAD=1024",
     "board": "esp32dev",
-    "flash_bytes": 727081,
-    "ram_bytes": 48344
+    "flash_bytes": 727441,
+    "ram_bytes": 48352
   },
   "COAP+COAP_OBSERVE": {
     "example": "L7-Application/27.CoapObserve",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_OBSERVE=1",
     "board": "esp32dev",
-    "flash_bytes": 728873,
-    "ram_bytes": 46104
+    "flash_bytes": 729253,
+    "ram_bytes": 46112
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/42.ConfigExport",
@@ -353,15 +353,15 @@
     "example": "Foundation/21.WifiCapture",
     "flags": "-DDETWS_ENABLE_PROMISC=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 763741,
-    "ram_bytes": 45808
+    "flash_bytes": 764185,
+    "ram_bytes": 47320
   },
   "PROVISIONING": {
     "example": "L7-Application/17.Provisioning",
     "flags": "-DDETWS_ENABLE_PROVISIONING=1",
     "board": "esp32dev",
-    "flash_bytes": 757793,
-    "ram_bytes": 67756
+    "flash_bytes": 758149,
+    "ram_bytes": 67764
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
     "example": "L7-Application/47.RadioPower",
@@ -388,15 +388,15 @@
     "example": "L7-Application/14.SNMP",
     "flags": "-DDETWS_ENABLE_SNMP=1",
     "board": "esp32dev",
-    "flash_bytes": 758913,
-    "ram_bytes": 78592
+    "flash_bytes": 759273,
+    "ram_bytes": 78600
   },
   "SNMP+SNMP_TRAP": {
     "example": "L7-Application/26.SnmpTrap",
     "flags": "-DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SNMP_TRAP=1",
     "board": "esp32dev",
-    "flash_bytes": 727909,
-    "ram_bytes": 43416
+    "flash_bytes": 728345,
+    "ram_bytes": 44928
   },
   "SSH": {
     "example": "L5-Session/01.SSH",
@@ -423,8 +423,8 @@
     "example": "L7-Application/19.Syslog",
     "flags": "-DDETWS_ENABLE_SYSLOG=1",
     "board": "esp32dev",
-    "flash_bytes": 753473,
-    "ram_bytes": 66536
+    "flash_bytes": 753909,
+    "ram_bytes": 68048
   },
   "TELEMETRY": {
     "example": "L7-Application/34.Telemetry",
@@ -479,8 +479,8 @@
     "example": "L7-Application/39.UdpTelemetry",
     "flags": "-DDETWS_ENABLE_UDP_TELEMETRY=1",
     "board": "esp32dev",
-    "flash_bytes": 727413,
-    "ram_bytes": 43440
+    "flash_bytes": 727861,
+    "ram_bytes": 44944
   },
   "UPLOAD": {
     "example": "L7-Application/11.FileUpload",
