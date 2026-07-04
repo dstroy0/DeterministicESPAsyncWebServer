@@ -166,19 +166,28 @@ def parse_features(path):
 
 
 def render_table(title, rows, link_prefix):
-    """Render one HTML table with a merged header spanning all columns."""
-    out = ["<table>", f'<thead><tr><th colspan="{COLUMNS}">{title}</th></tr></thead>', "<tbody>"]
+    """Render one HTML table with a merged, centered header spanning all columns.
+
+    All tables are full width (`width="100%"`) and their cells centered
+    (`align="center"`) so they render consistently on GitHub, which honors only those
+    presentational attributes. The short last row carries no empty padding cells (the
+    absent columns simply collapse). The `feature-table` class lets the docs site
+    (docs/custom.css) apply the themed borders / equal columns / hover on top.
+    """
+    out = [
+        '<table class="feature-table" width="100%">',
+        f'<thead><tr><th colspan="{COLUMNS}" align="center">{html_escape(title)}</th></tr></thead>',
+        "<tbody>",
+    ]
     for r in range(0, len(rows), COLUMNS):
         chunk = rows[r : r + COLUMNS]
         out.append("<tr>")
         for name, desc in chunk:
             href = f"{link_prefix}#{github_anchor(name)}"
             out.append(
-                f'  <td><a href="{html_escape(href)}" title="{html_escape(desc)}">{html_escape(name)}</a></td>'
+                f'  <td align="center"><a href="{html_escape(href)}" title="{html_escape(desc)}">{html_escape(name)}</a></td>'
             )
-        for _ in range(COLUMNS - len(chunk)):  # pad the last row
-            out.append("  <td></td>")
-        out.append("</tr>")
+        out.append("</tr>")  # no padding: absent trailing cells collapse
     out += ["</tbody>", "</table>"]
     return "\n".join(out)
 
