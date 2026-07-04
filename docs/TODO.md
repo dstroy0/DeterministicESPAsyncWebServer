@@ -241,8 +241,10 @@ Open follow-ups discovered during the above:
       Still out of scope (add only if needed): separate (deferred) responses, and CON
       retransmission + message de-duplication - the model stays piggybacked-only
       (CON -> piggybacked ACK, NON -> NON).
-- [ ] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; runtime proof
-      pending a PSRAM board.)_ The whole mbedTLS working set is served from one static
+- [~] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; PSRAM-arena
+      placement HW-verified v4.95.0 - the N-connection concurrent-handshake soak is the
+      one remaining step, now runnable on the PSRAM boards on hand.)_ The whole mbedTLS
+      working set is served from one static
       `.bss` arena, and the real internal ceiling is the ESP32 `dram0_0_seg` region
       (~122 KB, ROM-reserved both ends - NOT the 320 KB PlatformIO prints), so a 2nd
       connection overflows the link (measured: `overflowed by 34048 bytes` at an 88 KB
@@ -251,12 +253,15 @@ Open follow-ups discovered during the above:
       (1) [`DETWS_TLS_ARENA_IN_PSRAM`](@ref DETWS_TLS_ARENA_IN_PSRAM) places the arena in
       external RAM via `EXT_RAM_BSS_ATTR` (needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`;
       the stock precompiled arduino-esp32 2.0.x has it off, so a PSRAM/IDF build is
-      required - verified the attribute compiles + is a safe DRAM no-op otherwise);
+      required - now HW-verified end to end on an ESP32-S3 N16R8 with a rebuilt flag-enabled
+      core: the arena lands at `0x3C0xxxxx` external RAM, the board boots octal with no
+      watchdog loop, internal DRAM use drops sharply, and it stays zero-heap; the rebuild
+      recipe is `tools/psram/README.md`);
       (2) [`DETWS_TLS_MAX_FRAG_LEN`](@ref DETWS_TLS_MAX_FRAG_LEN) (RFC 6066 MFL, applied to
       server + client) caps records, pairing with a custom-IDF `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`
       shrink; (3) a `memory.ld` DRAM reclaim (advanced - the `0xdb5c` is ROM-reserved,
       so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **Remaining:**
-      flash a PSRAM board and confirm N concurrent handshakes + free-heap headroom.
+      drive N simultaneous TLS handshakes against the PSRAM build and confirm free-heap headroom.
 - [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DETWS_ENABLE_ETHERNET`:
       `init_eth_physical()` / `eth_ready()` in `network_drivers/physical` wrap the Arduino
       ETH library for an RMII PHY (LAN8720 / ...), configured by the standard `ETH_PHY_*`
