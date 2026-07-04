@@ -2269,6 +2269,25 @@
 #endif
 
 /**
+ * @brief TI ADS1115 16-bit ADC (I2C) - a precise external analog input.
+ *
+ * Default off. services/ads1115 builds the 16-bit config register (OS start, single-ended
+ * channel MUX, programmable gain, single-shot mode, data rate, comparator disabled) for a
+ * single-shot reading, and converts the signed 16-bit result to microvolts for the selected
+ * gain's full-scale range. The config encoder + conversion are pure and host-tested; only the
+ * register write / conversion read touches I2C. A cheap solder-and-test breakout for reading
+ * batteries, potentiometers, and analog sensors with far more resolution than the ESP32 ADC.
+ */
+#ifndef DETWS_ENABLE_ADS1115
+#define DETWS_ENABLE_ADS1115 0
+#endif
+
+/** @brief I2C address of the ADS1115 (0x48 with ADDR to GND; 0x49/0x4A/0x4B for VDD/SDA/SCL). */
+#ifndef DETWS_ADS1115_I2C_ADDR
+#define DETWS_ADS1115_I2C_ADDR 0x48
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value

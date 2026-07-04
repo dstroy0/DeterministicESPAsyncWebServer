@@ -1,0 +1,79 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file ads1115.h
+ * @brief TI ADS1115 16-bit ADC codec (DETWS_ENABLE_ADS1115).
+ *
+ * The ADS1115 is a 4-channel 16-bit analog-to-digital converter on the I2C bus with a
+ * programmable-gain amplifier - far more resolution and range control than the ESP32's own ADC.
+ * A reading is a 16-bit config-register write (start, channel, gain, mode, data rate) followed
+ * by a 16-bit read of the conversion register; the signed result scales to a voltage by the
+ * selected gain's full-scale range.
+ *
+ * This codec is pure and host-tested: ::ads1115_config_single builds the config word for a
+ * single-shot single-ended reading, and ::ads1115_raw_to_uv converts the signed sample to
+ * microvolts. On an ESP32 the binding writes the config, waits for the conversion, and reads it
+ * back over I2C (Wire); only that touches hardware.
+ *
+ * A cheap solder-and-bench-test breakout: measure a battery, a potentiometer, or an analog
+ * sensor and bridge the reading onto the network.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_ADS1115_H
+#define DETERMINISTICESPASYNCWEBSERVER_ADS1115_H
+
+#include <stdint.h>
+
+#define ADS1115_REG_CONVERSION 0x00 ///< conversion result register
+#define ADS1115_REG_CONFIG 0x01     ///< configuration register
+
+/** @brief Programmable-gain settings (full-scale +/- range). */
+enum
+{
+    ADS1115_GAIN_TWOTHIRDS = 0, ///< +/- 6.144 V
+    ADS1115_GAIN_1,             ///< +/- 4.096 V
+    ADS1115_GAIN_2,             ///< +/- 2.048 V (default)
+    ADS1115_GAIN_4,             ///< +/- 1.024 V
+    ADS1115_GAIN_8,             ///< +/- 0.512 V
+    ADS1115_GAIN_16,            ///< +/- 0.256 V
+};
+
+/** @brief Data-rate settings (samples per second). */
+enum
+{
+    ADS1115_DR_8 = 0, ///< 8 SPS
+    ADS1115_DR_16,    ///< 16 SPS
+    ADS1115_DR_32,    ///< 32 SPS
+    ADS1115_DR_64,    ///< 64 SPS
+    ADS1115_DR_128,   ///< 128 SPS (default)
+    ADS1115_DR_250,   ///< 250 SPS
+    ADS1115_DR_475,   ///< 475 SPS
+    ADS1115_DR_860,   ///< 860 SPS
+};
+
+/**
+ * @brief Build the 16-bit config word for a single-shot, single-ended reading of @p channel
+ * (0..3) at gain @p gain and data rate @p dr (comparator disabled). Out-of-range fields fall
+ * back to channel 0 / gain +/-2.048 V / 128 SPS.
+ */
+uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr);
+
+/** @brief Convert a signed 16-bit sample to microvolts for @p gain's full-scale range. */
+int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain);
+
+// --- ESP32 binding (I2C via Wire; no-ops on a host build) ------------------------------------
+
+/** @brief Initialize the I2C bus for the ADS1115 at @p addr. @return true on ESP32. */
+bool ads1115_begin(uint8_t addr);
+
+/** @brief Single-shot read of @p channel (0..3) at @p gain into @p raw. @return false on error. */
+bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw);
+
+/** @brief Single-shot read of @p channel at @p gain, converted to microvolts in @p microvolts. */
+bool ads1115_read_uv(uint8_t channel, uint8_t gain, int32_t *microvolts);
+
+#endif // DETERMINISTICESPASYNCWEBSERVER_ADS1115_H

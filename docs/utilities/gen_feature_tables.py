@@ -58,6 +58,7 @@ LAYER_MEMBERS = {
         "VFS",
     },
     "Physical & Data Link (L1-L2)": {
+        "ADS1115",
         "Bus Capture",
         "EnOcean",
         "ESP-NOW",

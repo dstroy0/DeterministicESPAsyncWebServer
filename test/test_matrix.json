@@ -920,6 +920,12 @@
       "src": ["+<services/pca9685/pca9685.cpp>"],
       "tests": ["test_pca9685"]
     },
+    "native_ads1115": {
+      "desc": "ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a\nsingle-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits,\nwith out-of-range fallbacks), and converting a signed 16-bit sample to microvolts across the\ngain's full-scale range. Pure - the I2C transfer is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_ADS1115=1"],
+      "src": ["+<services/ads1115/ads1115.cpp>"],
+      "tests": ["test_ads1115"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],

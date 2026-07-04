@@ -8,6 +8,12 @@ Every optional feature is a compile-time flag (default off unless noted); enable
 
 Opt-in global accept-rate throttle (connection-flood defense). Default off (zero cost / no behavior change). When set to 1 the accept callback rejects new connections once more than DETWS_ACCEPT_THROTTLE_MAX have been accepted within a DETWS_ACCEPT_THROTTLE_WINDOW_MS fixed window (global across all listeners, two static counters - no per-IP table). This bounds connection churn (e.g. reconnect brute-force) on top of the bounded connection pool and the per-connection auth limits. mitigate finer-grained / per-IP attacks at the network layer.
 
+## ADS1115
+
+`DETWS_ENABLE_ADS1115`
+
+TI ADS1115 4-channel 16-bit ADC with programmable gain (I2C). Default off. services/ads1115 builds the 16-bit config-register word for a single-shot single-ended reading (`ads1115_config_single`: the OS start bit, the channel multiplexer, the programmable gain, single-shot mode, the data rate, and the disabled comparator - so `ch0, ±4.096 V, 128 SPS` is `0xC383`; out-of-range fields fall back sanely) and converts the signed 16-bit sample to microvolts for the selected gain's full-scale range (`ads1115_raw_to_uv`: 125 µV/count at ±4.096 V). The config encoder + conversion are pure and host-tested (`native_ads1115`); only the config write / conversion read touches I2C. A cheap solder-and-test breakout for measuring batteries, potentiometers, and analog sensors with far more resolution than the ESP32 ADC. Example 66.Ads1115 reads a potentiometer. See src/services/ads1115/ads1115.h.
+
 ## AMQP
 
 `DETWS_ENABLE_AMQP`
