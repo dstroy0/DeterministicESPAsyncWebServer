@@ -6,11 +6,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- keep shell scripts LF via .gitattributes (shebang safety) ([`66f1792`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66f17921d7e4d6f801d42e5ae99d25140cd7555f))
+- update test report [skip ci] ([`fff11df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fff11df8bbcf59ef61d9dd0e36973b6a3cb68eea))
+- update CHANGELOG.md [skip ci] ([`66c2956`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66c29562d1e04312e507ba2923f8e3068058e559))
 - add ECDH, hostkey to cspell dictionary ([`1992202`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19922024c7e83f6e7863d1107d333a1506576799))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`af4906c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af4906ca96c805a6d1e94ebaeebb03200195a2f8))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`f2a627c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2a627c8f489f3cbf8cdd431572d980ae9d7f0d4))
+
+### Features
+
+- fail-closed when DETWS_TLS_ARENA_IN_PSRAM lacks the framework flag + core-rebuild tooling ([`54c4d8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54c4d8eabd9914e42dfc523338940c7048c5ef89))
 
 ## [4.94.0] - 2026-07-04
 
