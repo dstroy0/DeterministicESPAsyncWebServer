@@ -2088,6 +2088,25 @@
 #endif
 
 /**
+ * @brief NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/ntp_server).
+ *
+ * Turns the device into a local time source: it answers client NTP requests from its own
+ * clock (`detws_time_now()` + the `detws_millis()` sub-second fraction), so an offline or
+ * air-gapped LAN can keep its devices in sync without reaching the public NTP pool. The
+ * 48-byte response codec is pure and host-tested; the wire binding is the transport UDP
+ * service. Get the device's own time first (e.g. DETWS_ENABLE_NTP upstream, an RTC, or GPS
+ * via a time source) - when it has none, the server stays silent rather than serve bad time.
+ */
+#ifndef DETWS_ENABLE_NTP_SERVER
+#define DETWS_ENABLE_NTP_SERVER 0
+#endif
+
+/** @brief Stratum the NTP server advertises (distance from a reference clock; 1-15). */
+#ifndef DETWS_NTP_SERVER_STRATUM
+#define DETWS_NTP_SERVER_STRATUM 3
+#endif
+
+/**
  * @brief Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock
  *        time is available.
  *

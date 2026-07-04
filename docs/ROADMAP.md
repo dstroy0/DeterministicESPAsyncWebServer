@@ -915,6 +915,11 @@ timestamps). NTS adds cryptographic authentication on top of NTPv4 with no share
 secret. Builds on the existing NTP client + the TLS stack + AEAD primitives; fixed
 BSS, no heap, behind a build flag.
 
+> The plain (unauthenticated) NTP **server** already ships (`DETWS_ENABLE_NTP_SERVER`,
+> RFC 5905 server mode on UDP/123 - see the feature reference; example 58.NtpServer pairs
+> it with a GPS stratum-1 source + upstream-NTP fallback). NTS below hardens the time the
+> device _consumes_; a future NTS server mode could extend the server the same way.
+
 - [ ] **NTS-KE (Key Establishment)** (L) - a TLS 1.3 handshake to the NTS-KE server
       that yields the AEAD key material (via RFC 5705 exporter), the NTP server
       address, and the initial cookies. Reuses the static-pool mbedTLS client

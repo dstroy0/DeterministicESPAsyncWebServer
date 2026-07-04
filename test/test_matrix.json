@@ -878,6 +878,12 @@
       ],
       "tests": ["test_smtp"]
     },
+    "native_ntp_server": {
+      "desc": "NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response):\nversion echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit\nstamps, big-endian encoding, and the length guards. Pure - host-tested, no lwIP.",
+      "flags": ["-DDETWS_ENABLE_NTP_SERVER=1"],
+      "src": ["+<services/ntp_server/ntp_server.cpp>"],
+      "tests": ["test_ntp_server"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],

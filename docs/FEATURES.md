@@ -454,6 +454,12 @@ Opt-in nRF24L01+ radio driver (v5 gateway plugin). Default off. services/nrf24 i
 
 SNTP wall-clock time sync via the ESP-IDF SNTP client.
 
+## NTP Server
+
+`DETWS_ENABLE_NTP_SERVER`
+
+NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123. Default off. services/ntp_server turns the device into a local time source: it answers client NTP requests from its own clock, so an offline or air-gapped LAN can keep its devices in sync without reaching the public pool. The 48-octet response builder (`ntp_server_build_response`) is pure - it echoes the request's protocol version, copies the client's transmit timestamp into the origin field (so the client can compute round-trip delay), and stamps reference/receive/transmit times - and is host-tested against the wire format. `ntp_server_begin(stratum, refid)` binds the port via the transport UDP service and drives it from `detws_time_now()` (seconds) plus a `detws_millis()`-derived sub-second fraction; while the device has no time it stays silent rather than serve a wrong clock. Pair it with a GPS receiver (parsed via the NMEA 0183 codec into a stratum-1 time source) and an upstream-NTP fallback for a self-hosted, offline-capable time server. Example 58.NtpServer. See src/services/ntp_server/ntp_server.h.
+
 ## OAuth2
 
 `DETWS_ENABLE_OAUTH2`
