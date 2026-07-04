@@ -19,6 +19,12 @@
       "src": ["+<network_drivers/network/det_ip.cpp>"],
       "tests": ["test_det_ip"]
     },
+    "native_det_arena": {
+      "desc": "Unified double-ended server arena (network_drivers/session/det_arena): first-fit\npersistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end\n(top, mark/release/reset) sharing a floating middle; fail-closed at the boundary. Host tests.",
+      "flags": [],
+      "src": ["+<network_drivers/session/det_arena.cpp>"],
+      "tests": ["test_det_arena"]
+    },
     "native_ssh_ed25519": {
       "desc": "Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth):\nSHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). Vectors are the published RFC\ntest vectors + tool-generated digests, grounding the impl against the standards. Pure host tests.",
       "flags": [],
