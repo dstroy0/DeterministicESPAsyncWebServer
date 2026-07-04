@@ -356,6 +356,13 @@
     "flash_bytes": 751325,
     "ram_bytes": 66200
   },
+  "PCA9685": {
+    "example": "L7-Application/65.Pca9685",
+    "flags": "-DDETWS_ENABLE_PCA9685=1",
+    "board": "esp32dev",
+    "flash_bytes": 284585,
+    "ram_bytes": 21800
+  },
   "PER_IP_THROTTLE": {
     "example": "L4-Transport/05.PerIpThrottle",
     "flags": "-DDETWS_ENABLE_PER_IP_THROTTLE=1",
