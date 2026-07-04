@@ -172,6 +172,19 @@ void test_alignment_various_sizes()
     }
 }
 
+void test_scratch_alignment_16()
+{
+    // The real scratch callers (SSH, WS deflate) ask for 16-byte alignment.
+    for (int i = 0; i < 20; i++)
+    {
+        void *p = det_arena_scratch_alloc_aligned(&a, 17 + i, 16);
+        TEST_ASSERT_NOT_NULL(p);
+        TEST_ASSERT_TRUE(((uintptr_t)p & 15u) == 0); // 16-aligned
+    }
+    void *q = det_arena_scratch_alloc_aligned(&a, 1, 1); // align clamps up to 8, never 0
+    TEST_ASSERT_TRUE(aligned8(q));
+}
+
 void test_zero_size_and_null_free()
 {
     void *p = det_arena_persist_alloc(&a, 0); // rounds up to alignment, non-null
@@ -267,6 +280,7 @@ int main()
     RUN_TEST(test_boundary_collision_fail_closed);
     RUN_TEST(test_scratch_reset_frees_middle_for_persist);
     RUN_TEST(test_alignment_various_sizes);
+    RUN_TEST(test_scratch_alignment_16);
     RUN_TEST(test_zero_size_and_null_free);
     RUN_TEST(test_set_add_limits);
     RUN_TEST(test_set_persist_overflow_and_prefer);

@@ -33,8 +33,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief Alignment (bytes) applied to every arena allocation and to headers. */
+/** @brief Baseline alignment (bytes) applied to every allocation and to headers. */
 #define DET_ARENA_ALIGN 8u
+
+/** @brief Strongest alignment a scratch borrow may request; the region base is aligned to it. */
+#define DET_ARENA_MAX_ALIGN 16u
 
 /**
  * @brief Double-ended arena over one region `[base, base+size)`.
@@ -85,9 +88,15 @@ void det_arena_persist_free(DetArena *a, void *p);
 // --- scratch end (bump, bulk reset, grows down) -----------------------------
 
 /**
- * @brief Bump-allocate @p n bytes of transient storage (valid until the next reset/release).
+ * @brief Bump-allocate @p n bytes of transient storage, aligned to @p align.
+ *
+ * @param align power-of-two alignment for the returned pointer; clamped to
+ *              `[DET_ARENA_ALIGN, DET_ARENA_MAX_ALIGN]`.
  * @return aligned pointer (NOT zeroed), or NULL if it would cross the persistent end.
  */
+void *det_arena_scratch_alloc_aligned(DetArena *a, size_t n, size_t align);
+
+/** @brief Bump-allocate @p n transient bytes at the baseline alignment (DET_ARENA_ALIGN). */
 void *det_arena_scratch_alloc(DetArena *a, size_t n);
 
 /** @brief Capture the current scratch position (a savepoint for det_arena_scratch_release()). */
@@ -154,6 +163,9 @@ void *det_arena_set_persist_alloc(DetArenaSet *s, size_t n);
 
 /** @brief Free a persistent pointer, routed to its owning region by address. */
 void det_arena_set_persist_free(DetArenaSet *s, void *p);
+
+/** @brief Aligned scratch alloc from the first region that fits (see det_arena_scratch_alloc_aligned()). */
+void *det_arena_set_scratch_alloc_aligned(DetArenaSet *s, size_t n, size_t align);
 
 /** @brief Scratch alloc from the first region that fits (see det_arena_scratch_alloc()). */
 void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n);

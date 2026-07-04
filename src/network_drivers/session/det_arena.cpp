@@ -28,9 +28,10 @@ inline size_t align_up(size_t n)
 
 void det_arena_init(DetArena *a, void *base, size_t size)
 {
-    // Align the base up and the size down so every offset stays aligned.
+    // Align the base up to the strongest supported alignment and the size down, so a
+    // scratch borrow up to DET_ARENA_MAX_ALIGN is met by aligning its offset alone.
     uintptr_t b = (uintptr_t)base;
-    uintptr_t ab = (b + (DET_ARENA_ALIGN - 1)) & ~(uintptr_t)(DET_ARENA_ALIGN - 1);
+    uintptr_t ab = (b + (DET_ARENA_MAX_ALIGN - 1)) & ~(uintptr_t)(DET_ARENA_MAX_ALIGN - 1);
     size_t adj = (size_t)(ab - b);
     a->base = (uint8_t *)ab;
     a->size = (size > adj) ? ((size - adj) & ~(size_t)(DET_ARENA_ALIGN - 1)) : 0;
@@ -139,19 +140,29 @@ void det_arena_persist_free(DetArena *a, void *p)
 // Scratch end (bump, grows down from the top)
 // ---------------------------------------------------------------------------
 
-void *det_arena_scratch_alloc(DetArena *a, size_t n)
+void *det_arena_scratch_alloc_aligned(DetArena *a, size_t n, size_t align)
 {
+    if (align < DET_ARENA_ALIGN)
+        align = DET_ARENA_ALIGN;
+    if (align > DET_ARENA_MAX_ALIGN)
+        align = DET_ARENA_MAX_ALIGN; // the base only guarantees this much
     n = align_up(n ? n : DET_ARENA_ALIGN);
     if (a->scratch_top < n)
         return nullptr;
-    size_t nt = a->scratch_top - n;
-    if (nt < a->persist_end)
-        return nullptr; // would cross the persistent end
+    // The base is DET_ARENA_MAX_ALIGN-aligned, so aligning the offset down aligns the pointer.
+    size_t nt = (a->scratch_top - n) & ~(size_t)(align - 1);
+    if (nt < a->persist_end || nt > a->scratch_top)
+        return nullptr; // would cross the persistent end (or underflow)
     a->scratch_top = nt;
     size_t used = a->size - a->scratch_top;
     if (used > a->scratch_hw)
         a->scratch_hw = used;
     return a->base + a->scratch_top;
+}
+
+void *det_arena_scratch_alloc(DetArena *a, size_t n)
+{
+    return det_arena_scratch_alloc_aligned(a, n, DET_ARENA_ALIGN);
 }
 
 size_t det_arena_scratch_mark(const DetArena *a)
@@ -239,15 +250,20 @@ void det_arena_set_persist_free(DetArenaSet *s, void *p)
     }
 }
 
-void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n)
+void *det_arena_set_scratch_alloc_aligned(DetArenaSet *s, size_t n, size_t align)
 {
     for (size_t i = 0; i < s->count; i++)
     {
-        void *p = det_arena_scratch_alloc(&s->region[i], n);
+        void *p = det_arena_scratch_alloc_aligned(&s->region[i], n, align);
         if (p)
             return p;
     }
     return nullptr; // fail closed
+}
+
+void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n)
+{
+    return det_arena_set_scratch_alloc_aligned(s, n, DET_ARENA_ALIGN);
 }
 
 DetArenaMark det_arena_set_scratch_mark(const DetArenaSet *s)

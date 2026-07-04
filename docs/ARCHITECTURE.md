@@ -166,3 +166,24 @@ All phases complete: every cross-layer concern (server TX/RX, RX window, RX read
 streaming sink state, events, scratch, outbound client I/O) has exactly one owner
 behind a clean API, and the server and client ring drain math is a single shared
 primitive (`det_ring.h`) - two pools, one ring/read core.
+
+## Unified arena primitive (`session/det_arena`)
+
+A double-ended allocator over one region: a **persistent** end grows up from the
+bottom (first-fit free-list, individual free in any order, adjacent-block coalesce,
+top-block shrink) and a **scratch** end grows down from the top (bump, O(1) reset,
+mark/release savepoints, up to 16-byte alignment). The free space floats in the
+middle, so whichever side needs room takes it, and both ends fail closed rather than
+cross. `DetArenaSet` chains a DRAM base + a PSRAM extension: allocs prefer internal
+RAM and spill into external RAM, frees route to the owning region by address. No heap,
+no stdlib; all state in `DetArena` (no globals), so it is unit-tested on the host
+(`native_det_arena`).
+
+This is the go-forward "unified server arena" for a subsystem that needs long-lived,
+individually-freed allocations (its persistent end) alongside per-dispatch transients
+(its scratch end) - the case the fixed per-slot arrays and the per-worker `scratch`
+bump pool do not cover. The existing per-worker `scratch` pool is **not** re-backed
+onto it: that pool uses only a bump end, so routing it through `det_arena` would leave
+the persistent end (and the whole floating-boundary win) unused - pure indirection over
+a hot path. The migration waits until a real persistent-end consumer exists; folding it
+in earlier would trade a tested, single-accessor hot path for churn with no benefit.
