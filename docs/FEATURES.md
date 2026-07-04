@@ -290,6 +290,12 @@ RFC 7230 request parser - validates method, path, header names and values byte-b
 
 IEC 60870-5-101 / -104 telecontrol (SCADA) codec. Default off. services/iec60870 covers the utility-SCADA protocol in both transports: the -104 APCI over TCP (`iec104_build_i` / `_s` / `_u` and `iec104_parse` for the I / S / U formats - numbered information transfer with 15-bit send/receive sequence numbers, the supervisory acknowledge, and the STARTDT / STOPDT / TESTFR unnumbered commands), the shared ASDU header (`iec_asdu_build_header` / `iec_asdu_parse_header` - type id, variable structure qualifier, cause of transmission, common address) with the 3-octet Information Object Address (`iec_put_ioa` / `iec_get_ioa`), and the -101 FT1.2 serial link frames (`iec101_build_fixed` / `_variable` and `iec101_parse`, 8-bit sum checksum). Named type-id and cause-of-transmission constants are provided; the per-type information elements are the application's. Frame + APCI + ASDU layout verified against IEC 60870-5-101/-104; pure and host-tested. Run -104 over the shipped TCP stack or -101 over a UART / RS-485 transceiver to bridge an RTU or outstation onto Wi-Fi. See src/services/iec60870/iec60870.h.
 
+## INA219
+
+`DETWS_ENABLE_INA219`
+
+TI INA219 high-side current / power monitor (I2C). Default off. services/ina219 decodes the bus-voltage register (`ina219_bus_mv`: value in bits [15:3], LSB 4 mV) and the shunt-voltage register (`ina219_shunt_uv`: signed, LSB 10 µV), computes the calibration register from the current LSB and shunt resistance (`ina219_calibration`: `40960000 / (current_lsb_ua * shunt_mohm)`, so 100 µA + 0.1 Ω -> 4096), and scales the raw current / power registers to microamps / microwatts (`ina219_current_ua`, `ina219_power_uw`; the power LSB is 20x the current LSB). All the decode / calibration / scaling math is pure and host-tested (`native_ina219`); only the register read/write touches I2C. A cheap solder-and-test breakout for measuring how much current and power a circuit draws. Example 67.Ina219 is a live power meter. See src/services/ina219/ina219.h.
+
 ## Interface Forwarding
 
 `DETWS_ENABLE_FORWARD`

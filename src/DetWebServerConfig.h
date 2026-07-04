@@ -2288,6 +2288,25 @@
 #endif
 
 /**
+ * @brief TI INA219 high-side current / power monitor (I2C).
+ *
+ * Default off. services/ina219 decodes the bus-voltage register (LSB 4 mV) and the shunt-voltage
+ * register (LSB 10 uV), computes the calibration register from the shunt resistance and the
+ * chosen current LSB, and scales the raw current / power registers to microamps / microwatts.
+ * The decode + calibration + scaling math are pure and host-tested; only the register read /
+ * write touches I2C. A cheap solder-and-test breakout for measuring how much current and power a
+ * circuit actually draws.
+ */
+#ifndef DETWS_ENABLE_INA219
+#define DETWS_ENABLE_INA219 0
+#endif
+
+/** @brief I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). */
+#ifndef DETWS_INA219_I2C_ADDR
+#define DETWS_INA219_I2C_ADDR 0x40
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value

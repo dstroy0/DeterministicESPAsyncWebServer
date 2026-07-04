@@ -63,6 +63,7 @@ LAYER_MEMBERS = {
         "EnOcean",
         "ESP-NOW",
         "Ethernet",
+        "INA219",
         "Interface Forwarding",
         "LD2410",
         "LoRa",
