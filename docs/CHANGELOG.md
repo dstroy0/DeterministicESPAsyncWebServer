@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.95.2] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.95.2 - 2026-07-04</b></summary>
+
+### Bug Fixes
+
+- marshal UDP (det_udp_*) onto tcpip_thread ([`6718a5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6718a5bc7646d64e6cf69385612eadf4a684a5df))
+
+### CI / Build
+
+- update test report [skip ci] ([`a6ccd1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6ccd1cc28d522a64f6f78ce81f490d47bb4a0bd))
+- update CHANGELOG.md [skip ci] ([`9eabc24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9eabc245de9fe02f16e951460e55fcfc1b78b765))
+
+### Changes
+
+- Bump version: 4.95.1 → 4.95.2 ([`4f45756`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4575671be925b0ac421be322f1f0ec5a18efc3))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`eae75fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eae75fb47a3336c20d7a959038ef9ba906f06d41))
+
+</details>
+
 ## [4.95.1] - 2026-07-04
 
 <details>
