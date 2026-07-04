@@ -49,18 +49,32 @@
 // Placement: by default the arena is internal DRAM (.bss). On a board with PSRAM,
 // set DETWS_TLS_ARENA_IN_PSRAM=1 to move it to external RAM (frees ~DETWS_TLS_ARENA_SIZE
 // of the ~122 KB internal dram0_0_seg budget, so several concurrent connections fit).
-// That needs CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY in the ESP-IDF/PlatformIO
-// config; when it is absent the ext-RAM attribute expands to nothing and the arena
-// falls back to internal DRAM (safe, just no offload).
+//
+// This needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, which the
+// STOCK arduino-esp32 core (2.x and 3.x, both PlatformIO and arduino-cli) ships OFF. With it
+// off, EXT_RAM_BSS_ATTR silently expands to nothing and the arena falls back to internal DRAM
+// - i.e. the PSRAM offload silently does not happen. Rather than fail silently we FAIL THE
+// COMPILE and point at the rebuild recipe (tools/psram/README.md). Rebuild the core (pioarduino
+// custom_sdkconfig, or esp32-arduino-lib-builder) or unset DETWS_TLS_ARENA_IN_PSRAM.
+//
+// FLASH-CACHE CAVEAT: PSRAM is on the flash cache bus, so while flash is being written (an NVS
+// commit, an OTA) the arena is briefly unreadable - touching it then faults. So a deployment
+// that also does OTA / file-serving should keep at least one TLS slot's working set in on-chip
+// RAM and steer the storage-touching services onto that slot; pure TLS forwarding never touches
+// flash and is happy in PSRAM. See docs/KNOWN_LIMITATIONS.md ("hybrid arena").
 // ---------------------------------------------------------------------------
 #if DETWS_TLS_ARENA_IN_PSRAM && defined(ARDUINO)
-#include <esp_attr.h>
+#include <esp_attr.h> // pulls in sdkconfig.h -> CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY
+#if !defined(CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY)
+#error                                                                                                                 \
+    "DETWS_TLS_ARENA_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the arena would stay in internal RAM. Rebuild the core (see tools/psram/README.md) or unset DETWS_TLS_ARENA_IN_PSRAM."
+#endif
 #if defined(EXT_RAM_BSS_ATTR)
 #define DETWS_TLS_ARENA_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
 #elif defined(EXT_RAM_ATTR)
 #define DETWS_TLS_ARENA_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
 #else
-#define DETWS_TLS_ARENA_ATTR
+#error "DETWS_TLS_ARENA_IN_PSRAM: no EXT_RAM_BSS_ATTR/EXT_RAM_ATTR from the framework (unexpected)."
 #endif
 #else
 #define DETWS_TLS_ARENA_ATTR

@@ -58,11 +58,24 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   clear message; pick one of three paths and set `DETWS_TLS_ACK_MULTI_CONN_DRAM=1` (the
   PSRAM path sets the guard on its own):
     1. **PSRAM board (recommended).** Set `DETWS_TLS_ARENA_IN_PSRAM=1` to place the arena
-       in external RAM (`EXT_RAM_BSS_ATTR`), freeing the whole arena back to internal DRAM
-       so many connections fit. Needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` in the
-       framework build (the stock precompiled arduino-esp32 2.0.x has it off, so this needs
-       a PSRAM-enabled / IDF build - which is exactly what a WROVER / 8-16 MB PSRAM board
-       ships with). The attribute is a safe no-op (arena stays in DRAM) when the flag is off.
+       in external RAM (`EXT_RAM_BSS_ATTR`, zero heap), freeing the whole arena back off
+       internal DRAM so many connections fit. This needs a framework built with
+       `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y`, which the **stock** precompiled
+       arduino-esp32 (verified 2.0.x and 3.3.x, PlatformIO and arduino-cli) ships **OFF** - so
+       `EXT_RAM_BSS_ATTR` there silently no-ops and the array stays in internal RAM. The library
+       now **fails the compile** in that case rather than losing the offload silently; you must
+       **rebuild the core** with the flag on. Full hand-held recipe (PlatformIO pioarduino
+       `custom_sdkconfig`, or the `esp32-arduino-lib-builder` script for Arduino IDE / arduino-cli,
+       plus the octal-vs-quad PSRAM-mode gotcha and how to verify): **`tools/psram/README.md`**.
+        - **Flash-cache / OTA caveat (hybrid arena).** PSRAM sits on the flash cache bus, so
+          while flash is being written (an NVS commit, an OTA) the arena is momentarily
+          unreadable and touching it faults. A deployment that also does OTA or file-serving
+          should therefore keep **at least one TLS slot's working set in on-chip RAM** and steer
+          the storage-touching services (OTA, config, file serving) onto that slot - it can
+          afford to stall briefly while slow storage is accessed. Pure TLS forwarding never
+          touches flash and is happy in a PSRAM arena. (Per-slot arena placement + slot
+          prioritization is the planned split-arena enhancement; today the arena is one pool, so
+          choose PSRAM-vs-DRAM for the whole build to match the dominant workload.)
     2. **Shrink the records (custom ESP-IDF build).** Lower
        `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN` so each connection's arena cost drops, and
        set `DETWS_TLS_MAX_FRAG_LEN` (512/1024/2048/4096) to negotiate the smaller record on
