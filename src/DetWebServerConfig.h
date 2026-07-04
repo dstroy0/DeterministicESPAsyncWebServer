@@ -2227,6 +2227,25 @@
 #endif
 
 /**
+ * @brief Sensirion SHT3x temperature / humidity sensor (I2C).
+ *
+ * Default off. services/sht3x issues the single-shot measurement command, checks the CRC-8 on
+ * each returned word (polynomial 0x31, init 0xFF - the Sensirion check value 0xBEEF -> 0x92),
+ * and converts the raw 16-bit ticks to temperature and relative humidity in integer milli-units
+ * (no float printf needed). The CRC + conversion are pure and host-tested; only the command
+ * write / data read touches I2C. A cheap solder-and-test breakout (GY-SHT31 etc.) for
+ * environmental telemetry: read it, bridge it onto the network.
+ */
+#ifndef DETWS_ENABLE_SHT3X
+#define DETWS_ENABLE_SHT3X 0
+#endif
+
+/** @brief I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). */
+#ifndef DETWS_SHT3X_I2C_ADDR
+#define DETWS_SHT3X_I2C_ADDR 0x44
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value

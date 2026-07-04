@@ -614,6 +614,12 @@ SDI-12 sensor-bus codec. Default off. services/sdi12 is a zero-heap command / re
 
 SenML (RFC 8428) measurement-pack builder. Default off; implies CBOR. services/senml is a zero-heap SenML-JSON + SenML-CBOR encoder over the shipped JSON / CBOR writers: the caller fills a `SenmlRecord` array (optional base name / base time, name, unit, one value - number / string / boolean, optional time) and `senml_json_build` / `senml_cbor_build` emit the whole pack. SenML-JSON uses the text labels (bn/n/u/v/vs/vb/t); SenML-CBOR uses the integer labels (n=0, u=1, v=2, ..., bn=-2, bt=-3). Numbers that are integral are emitted as integers so timestamps keep full precision. The standard measurement format for CoAP / LwM2M / HTTP telemetry; verified against the RFC example, host-tested. See src/services/senml/senml.h.
 
+## SHT3x
+
+`DETWS_ENABLE_SHT3X`
+
+Sensirion SHT3x (SHT30/31/35) temperature / humidity sensor (I2C). Default off. services/sht3x issues the single-shot measurement command (`0x2400`), then verifies the CRC-8 on each returned 16-bit word before trusting it (`sht3x_crc8`: polynomial 0x31, init 0xFF - the Sensirion datasheet check value `0xBEEF` -> `0x92` is a unit test) and converts the raw ticks with the linear map (`T = -45 + 175*raw/65535`, `RH = 100*raw/65535`) into signed integer milli-units (milli-degrees C, milli-percent RH), so there is no heap and no float printf. `sht3x_parse` rejects the whole six-byte reading on any CRC mismatch. The CRC + conversion + parse are pure and host-tested (`native_sht3x`); only the command write / data read touches I2C. A cheap solder-and-test breakout (GY-SHT31) for environmental telemetry. Example 64.Sht3x prints temperature and humidity. See src/services/sht3x/sht3x.h.
+
 ## Sigfox
 
 `DETWS_ENABLE_SIGFOX`

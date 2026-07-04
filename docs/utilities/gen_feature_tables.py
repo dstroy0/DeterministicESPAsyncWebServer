@@ -70,6 +70,7 @@ LAYER_MEMBERS = {
         "PN532",
         "Radio Gateway",
         "Radio Power",
+        "SHT3x",
         "Sigfox",
         "Thread",
         "Wi-Fi Capture",
