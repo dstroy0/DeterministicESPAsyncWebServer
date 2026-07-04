@@ -43,7 +43,10 @@ BRANCH="idf-release_v5.5" # tag for IDF 5.5 (arduino-esp32 3.3.x); no release/v5
 CORE_DIR=""
 INSTALL=1
 JOBS=""
-WORK="${TMPDIR:-/tmp}/detws-arduino-psram"
+# Work dir needs ~6 GB free and must NOT be a small RAM-backed tmpfs (e.g. /tmp on a
+# Raspberry Pi is tmpfs and overflows mid-clone with "No space left on device"). Default to a
+# home-dir path on real storage; override with DETWS_PSRAM_WORK.
+WORK="${DETWS_PSRAM_WORK:-$HOME/.cache/detws-arduino-psram}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,16 +59,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Default to half the cores (min 2) so the build does not saturate the machine. Cap the
-# parallelism for every downstream build tool (cmake/ninja via idf.py, and make).
-if [ -z "$JOBS" ]; then
-  NPROC="$(nproc 2>/dev/null || echo 4)"
-  JOBS=$(( NPROC / 2 )); [ "$JOBS" -lt 2 ] && JOBS=2
-fi
+# LOW default parallelism ON PURPOSE. The heavy C++ template libraries (esp-tflite-micro /
+# TensorFlow, Matter) crash GCC with an INTERNAL COMPILER ERROR ("internal_error ...
+# finalize_compilation_unit", the crash point moving between files run-to-run) when several
+# big TUs compile at once - it looks like a random compile failure but it is memory/parallelism
+# pressure (seen at 6 jobs even with 31 GB free; 2 jobs builds clean to 2965/2965). So cap at 2
+# by default. Override with --jobs N if your box tolerates more; if you hit "internal compiler
+# error", lower it. Do NOT export a global MAKEFLAGS=-j (it breaks recursive-make sub-builds).
+if [ -z "$JOBS" ]; then JOBS=2; fi
 export CMAKE_BUILD_PARALLEL_LEVEL="$JOBS"
-export MAKEFLAGS="-j${JOBS}"
-export IDF_BUILD_JOBS="$JOBS"
-echo "==> build parallelism capped at $JOBS core(s)"
+echo "==> build parallelism capped at $JOBS core(s) (low on purpose: avoids GCC ICE on tflite/Matter)"
 
 echo "==> esp32-arduino-lib-builder ref: $BRANCH"
 mkdir -p "$WORK"; cd "$WORK"
@@ -76,6 +79,10 @@ cd esp32-arduino-lib-builder
 # build.sh runs `git symbolic-ref HEAD`; a tag checkout leaves a detached HEAD ("fatal: ref
 # HEAD is not a symbolic ref") which breaks it. Pin to a local branch so HEAD is symbolic.
 git switch -c detws-psram-build 2>/dev/null || git checkout -B detws-psram-build 2>/dev/null || true
+
+# (We do not try to EXCLUDE_COMPONENTS the ML libs - idf.py's EXCLUDE_COMPONENTS is ignored for
+# managed components, so they build regardless. Low parallelism above is what makes them
+# compile without the GCC ICE. The libs build fine at 2 jobs.)
 
 # Enable the BSS-in-external-RAM Kconfig for every ESP32-S3 build variant. The octal-PSRAM
 # mode (needed by N16R8 boards) already comes from the per-variant (qio_opi) config that

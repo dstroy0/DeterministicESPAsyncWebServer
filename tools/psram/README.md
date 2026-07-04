@@ -210,20 +210,29 @@ grep CONFIG_IDF_INIT_VERSION \
 
 `esp32-arduino-lib-builder` runs on **Linux, macOS, or WSL** (not native Windows). Two ways:
 
-**Option 1, Docker (recommended, most reproducible).** Install Docker, then everything runs
-inside Espressif's image, which already has every prerequisite and the components/submodules
-set up. Native builds are prerequisite-sensitive (a missing `jq`, an un-populated TinyUSB
-submodule, or a detached-HEAD checkout each break the build with a confusing error); Docker
-sidesteps all of that. Use it unless you have a reason not to:
+**Option 1, Docker (recommended, most reproducible - this is the recipe that actually worked).**
+Espressif's image already has every prerequisite and, crucially, its `/opt/esp/lib-builder`
+has the components/submodules pre-populated - so it skips the un-populated-TinyUSB and stalled
+WiFi-blob-clone failures that fresh native clones hit. Use the image's built-in lib-builder
+(do not bind-mount your own clone) and **cap parallelism low** (see the GCC-ICE note below):
 
 ```bash
-git clone --depth 1 -b idf-release_v5.5 \
-  https://github.com/espressif/esp32-arduino-lib-builder.git
-cd esp32-arduino-lib-builder
-echo "CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y" >> configs/defconfig.esp32s3
-docker run --rm -v "$PWD":/arduino-esp32 -e "TARGET=esp32s3" \
-  espressif/esp32-arduino-lib-builder /arduino-esp32/build.sh -t esp32s3
+mkdir -p out
+docker run --rm -e CMAKE_BUILD_PARALLEL_LEVEL=2 -v "$PWD/out":/out \
+  espressif/esp32-arduino-lib-builder:release-v5.5 bash -c '
+    cd /opt/esp/lib-builder &&
+    echo CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y >> configs/defconfig.esp32s3 &&
+    ./build.sh -t esp32s3 &&
+    cp -a out/tools/esp32-arduino-libs/esp32s3 /out/'
+# result: ./out/esp32s3/  (copy its contents over your core's esp32s3-libs/<ver>/)
 ```
+
+> **GCC internal compiler error = lower `CMAKE_BUILD_PARALLEL_LEVEL`.** The heavy C++ template
+> libraries (esp-tflite-micro/TensorFlow, Matter) crash GCC with an `internal compiler error`
+> under parallel load - the crash point moves between files run-to-run, so it looks random, but
+> it is memory/parallelism pressure (seen at 6 jobs even with 31 GB free; **2 jobs builds clean
+> to 2965/2965**). It is not a code bug and `EXCLUDE_COMPONENTS` does not skip these managed
+> components. If you see it, drop to `=2`.
 
 **Option 2, native Linux / WSL.** More setup and more failure modes (see above), but no Docker
 needed. On Windows, install **WSL** first (`wsl --install -d Ubuntu` in an admin PowerShell,
