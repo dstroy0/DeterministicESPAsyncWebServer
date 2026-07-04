@@ -279,6 +279,13 @@
     "flash_bytes": 771765,
     "ram_bytes": 67812
   },
+  "NTP_SERVER+TIME_SOURCE+NMEA0183+NTP": {
+    "example": "L7-Application/58.NtpServer",
+    "flags": "-DDETWS_ENABLE_NTP_SERVER=1 -DDETWS_ENABLE_TIME_SOURCE=1 -DDETWS_ENABLE_NMEA0183=1 -DDETWS_ENABLE_NTP=1",
+    "board": "esp32dev",
+    "flash_bytes": 747981,
+    "ram_bytes": 46668
+  },
   "OAUTH2+HTTP_CLIENT": {
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",

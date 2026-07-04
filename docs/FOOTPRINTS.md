@@ -48,6 +48,7 @@ from each example's `pio ci` size report and aggregated into
 | `NRF24+GATEWAY`                          | Foundation/12.Nrf24Gateway              | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |
 | `NTP`                                    | L7-Application/18.SNTP                  | 758.1 KB (59.2%) | 67.1 KB (21.0%)  |
 | `NTP+TIME_SOURCE`                        | L7-Application/31.TimeSourceFallback    | 753.7 KB (58.9%) | 66.2 KB (20.7%)  |
+| `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`    | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
 | `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 745.1 KB (58.2%) | 86.9 KB (27.2%)  |
 | `OIDC`                                   | L7-Application/50.OidcAuth              | 746.1 KB (58.3%) | 77.5 KB (24.2%)  |
 | `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.0 KB (57.9%) | 74.7 KB (23.3%)  |
