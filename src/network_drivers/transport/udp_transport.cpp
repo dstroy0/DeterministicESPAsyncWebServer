@@ -13,6 +13,7 @@
 #if defined(ARDUINO)
 
 #include "lwip/pbuf.h"
+#include "lwip/priv/tcpip_priv.h" // tcpip_api_call - marshal raw udp_* onto tcpip_thread
 #include "lwip/udp.h"
 
 // A small fixed pool of bound UDP ports (e.g. SNMP :161 + captive DNS :53). No
@@ -27,6 +28,13 @@ struct UdpListener
 
 static UdpListener s_listeners[DETWS_MAX_UDP_LISTENERS];
 static uint8_t s_rx[DETWS_UDP_RX_BUF_SIZE]; // shared: lwIP delivers one datagram at a time
+static struct udp_pcb *s_out = nullptr;     // one shared outbound PCB for det_udp_sendto()
+
+// True while a udp_recv trampoline (or a marshaled op) is running, i.e. while we are
+// already inside tcpip_thread. A handler replying from the trampoline then sends directly
+// instead of re-marshaling (which would deadlock on the tcpip mailbox) - the UDP mirror of
+// transport.cpp's s_in_tcpip_thread.
+static volatile bool s_in_tcpip_thread = false;
 
 // Concrete peer: lwIP source address/port plus the receiving PCB to reply on.
 struct DetUdpPeer
@@ -36,8 +44,21 @@ struct DetUdpPeer
     struct udp_pcb *pcb;
 };
 
+// Raw send (alloc + copy + sendto + free). Only ever called in tcpip_thread.
+static bool udp_pbuf_send(struct udp_pcb *pcb, const ip_addr_t *addr, u16_t port, const uint8_t *data, size_t len)
+{
+    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
+    if (!p)
+        return false;
+    memcpy(p->payload, data, len);
+    err_t e = udp_sendto(pcb, p, addr, port);
+    pbuf_free(p);
+    return e == ERR_OK;
+}
+
 // lwIP udp_recv trampoline: copy the (possibly chained) pbuf into a contiguous
-// scratch buffer and hand it to the registered handler.
+// scratch buffer and hand it to the registered handler. Runs in tcpip_thread, so a
+// reply the handler sends is already in-thread (flagged for the send helpers).
 static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
     UdpListener *l = (UdpListener *)arg;
@@ -49,8 +70,75 @@ static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const
     if (l && l->handler)
     {
         DetUdpPeer peer = {addr, port, pcb};
+        bool prev = s_in_tcpip_thread;
+        s_in_tcpip_thread = true;
         l->handler(s_rx, n, &peer, l->ctx);
+        s_in_tcpip_thread = prev;
     }
+}
+
+// Raw lwIP UDP must run in tcpip_thread: with lwIP core-locking (arduino-esp32 3.x /
+// IDF 5.x) a udp_new/bind/recv/sendto from any other task asserts ("Required to lock
+// TCPIP core functionality"), and without it, it races the stack. det_udp_* therefore
+// marshal these ops via tcpip_api_call(), the same as the TCP transport.
+enum DetUdpOp
+{
+    UDP_OP_LISTEN,  // udp_new + bind + arm recv on s_listeners[slot]
+    UDP_OP_SEND,    // send to addr:port on an existing pcb
+    UDP_OP_SEND_OUT // send to addr:port on the shared lazy outbound pcb
+};
+
+struct DetUdpCall
+{
+    struct tcpip_api_call_data base;
+    DetUdpOp op;
+    int slot;            // LISTEN: index into s_listeners
+    struct udp_pcb *pcb; // SEND: target pcb
+    ip_addr_t addr;      // SEND / SEND_OUT: destination (by value - caller's may be transient)
+    u16_t port;          // LISTEN: bind port; SEND / SEND_OUT: destination port
+    const uint8_t *data; // SEND / SEND_OUT
+    size_t len;          // SEND / SEND_OUT
+    bool result;
+};
+
+// Runs in tcpip_thread via tcpip_api_call.
+static err_t udp_do(struct tcpip_api_call_data *c)
+{
+    DetUdpCall *k = (DetUdpCall *)c;
+    bool prev = s_in_tcpip_thread;
+    s_in_tcpip_thread = true;
+    k->result = false;
+    switch (k->op)
+    {
+    case UDP_OP_LISTEN: {
+        struct udp_pcb *pcb = udp_new();
+        if (pcb)
+        {
+            if (udp_bind(pcb, IP_ANY_TYPE, k->port) == ERR_OK)
+            {
+                s_listeners[k->slot].pcb = pcb;
+                udp_recv(pcb, udp_trampoline, &s_listeners[k->slot]);
+                k->result = true;
+            }
+            else
+            {
+                udp_remove(pcb);
+            }
+        }
+        break;
+    }
+    case UDP_OP_SEND:
+        k->result = udp_pbuf_send(k->pcb, &k->addr, k->port, k->data, k->len);
+        break;
+    case UDP_OP_SEND_OUT:
+        if (!s_out)
+            s_out = udp_new();
+        if (s_out)
+            k->result = udp_pbuf_send(s_out, &k->addr, k->port, k->data, k->len);
+        break;
+    }
+    s_in_tcpip_thread = prev;
+    return ERR_OK;
 }
 
 bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
@@ -59,19 +147,22 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
     {
         if (s_listeners[i].used)
             continue;
-        struct udp_pcb *pcb = udp_new();
-        if (!pcb)
-            return false;
-        if (udp_bind(pcb, IP_ANY_TYPE, port) != ERR_OK)
-        {
-            udp_remove(pcb);
-            return false;
-        }
-        s_listeners[i].pcb = pcb;
+        // The trampoline reads handler/ctx once recv is armed, so set them first.
         s_listeners[i].handler = handler;
         s_listeners[i].ctx = ctx;
+        s_listeners[i].pcb = nullptr;
+        DetUdpCall k;
+        memset(&k, 0, sizeof(k));
+        k.op = UDP_OP_LISTEN;
+        k.slot = i;
+        k.port = port;
+        tcpip_api_call(udp_do, &k.base); // always called off tcpip_thread (service begin())
+        if (!k.result)
+        {
+            s_listeners[i].handler = nullptr;
+            return false;
+        }
         s_listeners[i].used = true;
-        udp_recv(pcb, udp_trampoline, &s_listeners[i]);
         return true;
     }
     return false; // pool exhausted
@@ -79,15 +170,20 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
 
 bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
 {
-    if (!peer || !peer->pcb || len == 0)
+    if (!peer || !peer->pcb || !peer->addr || !data || len == 0)
         return false;
-    struct pbuf *out = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
-    if (!out)
-        return false;
-    memcpy(out->payload, data, len);
-    err_t e = udp_sendto(peer->pcb, out, peer->addr, peer->port);
-    pbuf_free(out);
-    return e == ERR_OK;
+    if (s_in_tcpip_thread) // replying from a handler (already in tcpip_thread)
+        return udp_pbuf_send(peer->pcb, peer->addr, peer->port, data, len);
+    DetUdpCall k;
+    memset(&k, 0, sizeof(k));
+    k.op = UDP_OP_SEND;
+    k.pcb = peer->pcb;
+    k.addr = *peer->addr;
+    k.port = peer->port;
+    k.data = data;
+    k.len = len;
+    tcpip_api_call(udp_do, &k.base);
+    return k.result;
 }
 
 bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
@@ -97,22 +193,25 @@ bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
     ip_addr_t dst;
     if (!ipaddr_aton(dst_ip, &dst))
         return false;
-
-    // One shared outbound PCB for all det_udp_sendto() users (lazy-created).
-    static struct udp_pcb *s_out = nullptr;
-    if (!s_out)
+    if (s_in_tcpip_thread)
     {
-        s_out = udp_new();
         if (!s_out)
-            return false;
+        {
+            s_out = udp_new();
+            if (!s_out)
+                return false;
+        }
+        return udp_pbuf_send(s_out, &dst, dst_port, data, len);
     }
-    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
-    if (!p)
-        return false;
-    memcpy(p->payload, data, len);
-    err_t e = udp_sendto(s_out, p, &dst, dst_port);
-    pbuf_free(p);
-    return e == ERR_OK;
+    DetUdpCall k;
+    memset(&k, 0, sizeof(k));
+    k.op = UDP_OP_SEND_OUT;
+    k.addr = dst;
+    k.port = dst_port;
+    k.data = data;
+    k.len = len;
+    tcpip_api_call(udp_do, &k.base);
+    return k.result;
 }
 
 bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
@@ -133,20 +232,29 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
     ip_addr_t dst;
     if (!ipaddr_aton(dst_ip, &dst))
         return false;
+    struct udp_pcb *pcb = nullptr;
     for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
     {
         if (s_listeners[i].used && s_listeners[i].pcb && s_listeners[i].pcb->local_port == listen_port)
         {
-            struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, (u16_t)len, PBUF_RAM);
-            if (!p)
-                return false;
-            memcpy(p->payload, data, len);
-            err_t e = udp_sendto(s_listeners[i].pcb, p, &dst, dst_port);
-            pbuf_free(p);
-            return e == ERR_OK;
+            pcb = s_listeners[i].pcb;
+            break;
         }
     }
-    return false;
+    if (!pcb)
+        return false;
+    if (s_in_tcpip_thread)
+        return udp_pbuf_send(pcb, &dst, dst_port, data, len);
+    DetUdpCall k;
+    memset(&k, 0, sizeof(k));
+    k.op = UDP_OP_SEND;
+    k.pcb = pcb;
+    k.addr = dst;
+    k.port = dst_port;
+    k.data = data;
+    k.len = len;
+    tcpip_api_call(udp_do, &k.base);
+    return k.result;
 }
 
 #else // host build: no lwIP. Stubs keep UDP-using services host-compilable.

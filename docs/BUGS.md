@@ -8,6 +8,32 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## UDP transport called raw lwIP off tcpip_thread (sibling of the listener bug)
+
+- **Status:** FIXED (HW-validated on an ESP32-S3: the SNMP agent binds UDP/161 and runs;
+  before, the same `udp_bind` from the app task would have asserted like the listener did).
+- **Found:** 2026-07-04, immediately after the listener fix below - auditing for the same
+  root cause in the UDP path, since UDP services bind at `begin()` from the app task too.
+- **Root cause:** `udp_transport.cpp` (`det_udp_*`, the single place lwIP UDP is touched)
+  called raw `udp_new` / `udp_bind` / `udp_recv` / `udp_remove` / `udp_sendto` **directly from
+  the app task**, never marshaled. On arduino-esp32 3.x (lwIP core-locking) that trips
+  `LWIP_ASSERT_CORE_LOCKED`, so every UDP service - SNMP agent (`:161`), CoAP, the captive-portal
+  DNS responder (`:53`), syslog, UDP telemetry, flow-export - would crash at `begin()` / on send.
+  Same latency story as the listener: harmless on the IDF-4.x board all runtime HW used, and CI
+  only compiles the 3.x core. (The TCP transport `det_tcp_do` and the outbound client `cc_do_*`
+  were already marshaled; UDP was the remaining raw path.)
+- **Fix:** marshal the UDP ops onto tcpip_thread via `tcpip_api_call()` (a `udp_do` dispatcher for
+  listen / send / send-out), mirroring the TCP transport - including the `s_in_tcpip_thread` guard
+  so a handler replying from the `udp_recv` trampoline (already in-thread) sends directly instead of
+  re-marshaling (which would deadlock). All `det_udp_*` callers are unchanged; the native host stubs
+  are untouched. Native UDP-service suites green (`native_coap` / `native_snmp` / `native_dns_resolver`
+  / `native_syslog`); HW: SNMP agent binds `:161` and the device runs on the modern core.
+- **Prevention:** every raw lwIP `tcp_*` / `udp_*` from outside a lwIP callback now goes through
+  `tcpip_api_call()`; the transport layer is the one owner of that rule (listener, TCP conn, UDP,
+  client all marshal). See the listener entry below for the runtime-test-the-3.x-core lesson.
+
+---
+
 ## Listener bring-up called raw lwIP off tcpip_thread, asserting on arduino-esp32 3.x
 
 - **Status:** FIXED (HW-validated on an ESP32-S3: `begin_tls()` now starts the HTTPS
