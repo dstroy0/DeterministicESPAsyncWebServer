@@ -61,7 +61,7 @@ void loop()
     {
         last = millis();
 
-        statsd_count("esp32.loops", 1);                        // a counter (rate over time)
+        statsd_count("esp32.loops", 1);                              // a counter (rate over time)
         statsd_gauge("esp32.heap.free", (int64_t)ESP.getFreeHeap()); // a gauge (absolute level)
         statsd_gauge("esp32.uptime.s", (int64_t)(millis() / 1000));
 
