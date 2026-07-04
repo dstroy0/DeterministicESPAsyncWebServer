@@ -58,10 +58,11 @@
 // custom_sdkconfig, or esp32-arduino-lib-builder) or unset DETWS_TLS_ARENA_IN_PSRAM.
 //
 // FLASH-CACHE CAVEAT: PSRAM is on the flash cache bus, so while flash is being written (an NVS
-// commit, an OTA) the arena is briefly unreadable - touching it then faults. So a deployment
-// that also does OTA / file-serving should keep at least one TLS slot's working set in on-chip
-// RAM and steer the storage-touching services onto that slot; pure TLS forwarding never touches
-// flash and is happy in PSRAM. See docs/KNOWN_LIMITATIONS.md ("hybrid arena").
+// commit, an OTA) PSRAM is briefly unreadable - TLS code that touches the arena during that
+// window faults. It is a single pool, so this is a whole-build choice: use PSRAM for a TLS
+// workload that does not write flash while serving; keep the arena in internal DRAM (the
+// default) if you do OTA / NVS / file-serving concurrently with live TLS. See
+// docs/KNOWN_LIMITATIONS.md (TLS -> "Flash-cache / OTA caveat").
 // ---------------------------------------------------------------------------
 #if DETWS_TLS_ARENA_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h> // pulls in sdkconfig.h -> CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY

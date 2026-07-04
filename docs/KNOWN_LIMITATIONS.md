@@ -70,15 +70,20 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
        Verified end to end on an ESP32-S3 N16R8: with a rebuilt (flag-enabled) core, an
        `EXT_RAM_BSS_ATTR` array lands at `0x3C0xxxxx` (PSRAM, `esp_ptr_external_ram()=1`), the
        board boots octal with no watchdog loop, and internal DRAM use drops sharply - zero heap.
-        - **Flash-cache / OTA caveat (hybrid arena).** PSRAM sits on the flash cache bus, so
-          while flash is being written (an NVS commit, an OTA) the arena is momentarily
-          unreadable and touching it faults. A deployment that also does OTA or file-serving
-          should therefore keep **at least one TLS slot's working set in on-chip RAM** and steer
-          the storage-touching services (OTA, config, file serving) onto that slot - it can
-          afford to stall briefly while slow storage is accessed. Pure TLS forwarding never
-          touches flash and is happy in a PSRAM arena. (Per-slot arena placement + slot
-          prioritization is the planned split-arena enhancement; today the arena is one pool, so
-          choose PSRAM-vs-DRAM for the whole build to match the dominant workload.)
+        - **Flash-cache / OTA caveat (know this before choosing PSRAM).** PSRAM is on the flash
+          cache bus, so while flash is being written (an NVS commit, an OTA update) PSRAM is
+          momentarily unreadable, and TLS code that touches the arena during that window faults
+          with an illegal-cache-access. The arena is a single pool, so this is a whole-build
+          choice: put the arena in PSRAM (`DETWS_TLS_ARENA_IN_PSRAM=1`) for a TLS workload that
+          does **not** write flash while serving (pure proxy/forwarding, or a device that only
+          persists config at boot / while idle), and keep it in internal DRAM (the default, with
+          `DETWS_TLS_ACK_MULTI_CONN_DRAM=1` if you accept the ~1-2 connection ceiling) for a
+          workload that does OTA / NVS / file-serving **concurrently** with live TLS. In
+          practice TLS request traffic and flash writes rarely overlap, but if yours does, keep
+          the arena in DRAM. (Per-slot arena placement was considered and deliberately not built:
+          it would route each connection's allocations through mbedTLS's context-free global
+          allocator, a lot of moving parts for a narrow case - the whole-build choice above is
+          the intended design.)
     2. **Shrink the records (custom ESP-IDF build).** Lower
        `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN` so each connection's arena cost drops, and
        set `DETWS_TLS_MAX_FRAG_LEN` (512/1024/2048/4096) to negotiate the smaller record on
