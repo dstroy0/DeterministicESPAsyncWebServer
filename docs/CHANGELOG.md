@@ -2,6 +2,38 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- add STARTTLS to the spellcheck dictionary ([`d898c05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d898c05bc8424ab0e64d3f918b3910ccb22bde76))
+- update test report [skip ci] ([`49467bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49467bbaa253bed8ba49a49a5deee28ab27d753a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`1c664a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c664a360c617ebfa88171dc38102063da1b1f50))
+- regenerate feature tables + configurator + build_opt.h [skip ci] ([`0c9ea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c9ea82221a5f07daece2fcd41af5611e4c9d5e3))
+
+## [4.96.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.96.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`6770ace`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6770ace6684a010a8a9bd3d5fa8d34942f2530b5))
+- update CHANGELOG.md [skip ci] ([`028d552`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/028d55286843359931343be7b12afc7d8382d44e))
+
+### Changes
+
+- Bump version: 4.95.3 → 4.96.0 ([`92a405b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92a405b6d6e660776d317fdae4110e619679b352))
+
+### Features
+
+- outbound SMTP client (RFC 5321) for device email alerts ([`a863b13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a863b1378102d45d7ac8b1e5c29fe231f4638e27))
+
+</details>
+
 ## [4.95.3] - 2026-07-04
 
 <details>
