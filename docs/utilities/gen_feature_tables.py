@@ -29,66 +29,85 @@ END = "<!-- END GENERATED FEATURE TABLES -->"
 
 COLUMNS = 5
 
-# The CODECS table holds the standalone wire-format / protocol message codecs
-# (encode/decode building blocks). Everything else - servers, clients, auth,
-# transport, and core HTTP machinery - stays in the FEATURES table. Membership
-# is by FEATURES.md heading; edit this set to move an entry between the tables.
-CODEC_HEADINGS = {
-    "AMQP",
-    "BACnet",
-    "C37.118",
-    "CANopen",
-    "CBOR",
-    "CIP",
-    "CloudEvents",
-    "COTP",
-    "DeviceNet",
-    "DF1",
-    "DMX512",
-    "DNP3",
-    "EnOcean",
-    "EtherNet/IP",
-    "FINS",
-    "Flow Export",
-    "gRPC-Web",
-    "Host Link",
-    "IEC 60870",
-    "IO-Link",
-    "J1939",
-    "JSON",
-    "LwM2M",
-    "M-Bus",
-    "MELSEC",
-    "MessagePack",
-    "Modbus RTU",
-    "MQTT SN",
-    "Multipart",
-    "NATS",
-    "NMEA 0183",
-    "NMEA 2000",
-    "Protobuf",
-    "Proxy Protocol",
-    "Redis",
-    "S7comm",
-    "SDI-12",
-    "SenML",
-    "Sparkplug",
-    "Stomp",
-    "SunSpec",
-    "WAMP",
-}
-
-# The DRIVERS table holds chip-specific hardware drivers - a radio / peripheral register or
-# command protocol talking to a real IC - as opposed to the byte-format codecs above (a
-# codec builds/parses bytes; a driver drives a chip). Membership is by FEATURES.md heading.
-DRIVER_HEADINGS = {
-    "LoRa",
-    "nRF24",
-    "PN532",
-    "Sigfox",
-    "Thread",
-    "Z-Wave",
-    "Zigbee",
+# Features are grouped into tables by the OSI layer they live at (the same view the
+# README's Overview describes), and alphabetized within each layer. LAYER_ORDER is the
+# render order; LAYER_MEMBERS lists the FEATURES.md headings that belong to each
+# non-application layer - everything not listed falls through to "Application (L7)"
+# (most features are application-layer services). Edit a set to move an entry.
+LAYER_ORDER = [
+    "Foundation",
+    "Physical & Data Link (L1-L2)",
+    "Network (L3)",
+    "Transport (L4)",
+    "Session (L5)",
+    "Presentation (L6)",
+    "Application (L7)",
+]
+APPLICATION_LAYER = "Application (L7)"
+LAYER_MEMBERS = {
+    "Foundation": {
+        "Config IO",
+        "Config Store",
+        "Device ID",
+        "DMA Peripheral Ingest",
+        "GPIO Map",
+        "Guardrails",
+        "Preempting Work Queue",
+        "Time Source",
+        "VFS",
+    },
+    "Physical & Data Link (L1-L2)": {
+        "Bus Capture",
+        "EnOcean",
+        "ESP-NOW",
+        "Ethernet",
+        "Interface Forwarding",
+        "LoRa",
+        "nRF24",
+        "PN532",
+        "Radio Gateway",
+        "Radio Power",
+        "Sigfox",
+        "Thread",
+        "Wi-Fi Capture",
+        "Z-Wave",
+        "Zigbee",
+    },
+    "Network (L3)": {
+        "Dns Resolver",
+        "IPv6",
+        "Proxy Protocol",
+    },
+    "Transport (L4)": {
+        "Accept Throttle",
+        "IP Allowlist",
+        "Keep-Alive",
+        "MTLS",
+        "Per IP Throttle",
+        "TLS",
+        "TLS Resumption",
+    },
+    "Session (L5)": {
+        "SSH",
+        "Telnet",
+    },
+    "Presentation (L6)": {
+        "Auth",
+        "Auth Lockout",
+        "CBOR",
+        "CloudEvents",
+        "HTTP/1.1 Parser",
+        "JSON",
+        "JWT",
+        "MessagePack",
+        "Multipart",
+        "Protobuf",
+        "SenML",
+        "SSE",
+        "Web Terminal",
+        "WebSocket",
+        "WS Deflate",
+    },
 }
 
 # Where each target file's links to FEATURES.md point.
@@ -164,25 +183,33 @@ def render_table(title, rows, link_prefix):
     return "\n".join(out)
 
 
+def layer_of(name):
+    for layer, members in LAYER_MEMBERS.items():
+        if name in members:
+            return layer
+    return APPLICATION_LAYER
+
+
 def build_block(link_prefix):
     entries = parse_features(FEATURES_MD)
-    features = [e for e in entries if e[0] not in CODEC_HEADINGS and e[0] not in DRIVER_HEADINGS]
-    codecs = [e for e in entries if e[0] in CODEC_HEADINGS]
-    drivers = [e for e in entries if e[0] in DRIVER_HEADINGS]
-    missing = (CODEC_HEADINGS | DRIVER_HEADINGS) - {e[0] for e in entries}
+    # Validate the layer map so a renamed/removed heading is caught, not silently dropped.
+    known = {e[0] for e in entries}
+    mapped = set().union(*LAYER_MEMBERS.values())
+    missing = mapped - known
     if missing:
-        raise SystemExit(f"CODEC_HEADINGS / DRIVER_HEADINGS not found in FEATURES.md: {sorted(missing)}")
-    parts = [
-        BEGIN,
-        "",
-        render_table("FEATURES", features, link_prefix),
-        "",
-        render_table("CODECS", codecs, link_prefix),
-        "",
-        render_table("DRIVERS", drivers, link_prefix),
-        "",
-        END,
-    ]
+        raise SystemExit(f"LAYER_MEMBERS headings not found in FEATURES.md: {sorted(missing)}")
+
+    by_layer = {layer: [] for layer in LAYER_ORDER}
+    for name, desc in entries:
+        by_layer[layer_of(name)].append((name, desc))
+
+    parts = [BEGIN, ""]
+    for layer in LAYER_ORDER:
+        rows = sorted(by_layer[layer], key=lambda e: e[0].lower())
+        if not rows:
+            continue
+        parts += [render_table(layer, rows, link_prefix), ""]
+    parts.append(END)
     return "\n".join(parts)
 
 

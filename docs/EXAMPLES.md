@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 86 runnable examples under [examples/](../examples), grouped by
+The library ships 103 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -33,16 +33,34 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 - **`begin()` returns negative** - a capacity constant is too small for the configured pools (the compile-time checks in `DetWebServerConfig.h` catch most first).
 - **Built but not flashed** - `pio ci` only compiles; use `pio run -t upload` from a project containing the sketch.
 
+<!-- BEGIN GENERATED EXAMPLE INDEX (docs/utilities/gen_examples.py) -->
+
 ## Foundation
 
-The numbered tutorial path - start here (core features only, no flags):
+Start here: the core tutorial path (01-05), then the v5 hardware-integration examples - DMA, the preempting queue, forwarding, radio gateways, and capture:
 
 [01.Basic](../examples/Foundation/01.Basic) ·
 [02.Advanced](../examples/Foundation/02.Advanced) ·
 [03.Expert](../examples/Foundation/03.Expert) ·
 [04.Sysadmin](../examples/Foundation/04.Sysadmin) ·
 [05.Configuration](../examples/Foundation/05.Configuration) ·
-[06.PreemptQueue](../examples/Foundation/06.PreemptQueue) `DETWS_ENABLE_PREEMPT_QUEUE`
+[06.PreemptQueue](../examples/Foundation/06.PreemptQueue) ·
+[07.DmaIngest](../examples/Foundation/07.DmaIngest) ·
+[08.PreemptLanes](../examples/Foundation/08.PreemptLanes) ·
+[09.InterfaceForward](../examples/Foundation/09.InterfaceForward) ·
+[10.RadioGateway](../examples/Foundation/10.RadioGateway) ·
+[11.LoRaGateway](../examples/Foundation/11.LoRaGateway) ·
+[12.Nrf24Gateway](../examples/Foundation/12.Nrf24Gateway) ·
+[13.EnOceanGateway](../examples/Foundation/13.EnOceanGateway) ·
+[14.NfcGateway](../examples/Foundation/14.NfcGateway) ·
+[15.SigfoxUplink](../examples/Foundation/15.SigfoxUplink) ·
+[16.ZWaveGateway](../examples/Foundation/16.ZWaveGateway) ·
+[17.ZigbeeGateway](../examples/Foundation/17.ZigbeeGateway) ·
+[18.ThreadGateway](../examples/Foundation/18.ThreadGateway) ·
+[19.Ethernet](../examples/Foundation/19.Ethernet) ·
+[20.IPv6](../examples/Foundation/20.IPv6) ·
+[21.WifiCapture](../examples/Foundation/21.WifiCapture) ·
+[22.CanCapture](../examples/Foundation/22.CanCapture)
 
 ## L4 Transport
 
@@ -144,3 +162,5 @@ Routing, protocols, services, and clients:
 [55.OpcUa](../examples/L7-Application/55.OpcUa) ·
 [56.OpcUaClient](../examples/L7-Application/56.OpcUaClient) ·
 [57.SmtpAlert](../examples/L7-Application/57.SmtpAlert)
+
+<!-- END GENERATED EXAMPLE INDEX -->

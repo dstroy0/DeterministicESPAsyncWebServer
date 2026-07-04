@@ -41,8 +41,14 @@ jobs:
       - name: Regenerate example build_opt.h files
         run: python tools/ci/gen_build_opt.py
 
+      # Regenerate the example index in docs/EXAMPLES.md from the examples/ tree so the
+      # per-group lists + total count never drift (the Foundation group had silently lost
+      # 16 entries before this was generated).
+      - name: Regenerate example index from examples/
+        run: python docs/utilities/gen_examples.py
+
       - name: Format with Prettier
-        run: npx prettier@3.9.1 --write README.md docs/README.md
+        run: npx prettier@3.9.1 --write README.md docs/README.md docs/EXAMPLES.md
 
       - name: Configure SSH commit signing
         env:
@@ -62,7 +68,7 @@ jobs:
       - name: Commit regenerated tables
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "docs: regenerate feature tables + configurator + build_opt.h [skip ci]"
-          file_pattern: "README.md docs/README.md docs/configurator.html examples/*/*/build_opt.h"
+          commit_message: "docs: regenerate feature tables + configurator + build_opt.h + example index [skip ci]"
+          file_pattern: "README.md docs/README.md docs/configurator.html docs/EXAMPLES.md examples/*/*/build_opt.h"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
