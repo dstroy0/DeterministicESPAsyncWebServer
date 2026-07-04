@@ -190,3 +190,108 @@ size_t det_arena_scratch_used(const DetArena *a)
 {
     return a->size - a->scratch_top;
 }
+
+// ===========================================================================
+// Multi-region set (DRAM base + PSRAM extension)
+// ===========================================================================
+
+void det_arena_set_init(DetArenaSet *s)
+{
+    s->count = 0;
+}
+
+bool det_arena_set_add(DetArenaSet *s, void *base, size_t size)
+{
+    if (s->count >= DET_ARENA_MAX_REGIONS)
+        return false;
+    DetArena *r = &s->region[s->count];
+    det_arena_init(r, base, size);
+    if (r->size < AHDR + DET_ARENA_ALIGN)
+        return false; // too small to hold even one block
+    s->count++;
+    return true;
+}
+
+void *det_arena_set_persist_alloc(DetArenaSet *s, size_t n)
+{
+    for (size_t i = 0; i < s->count; i++)
+    {
+        void *p = det_arena_persist_alloc(&s->region[i], n);
+        if (p)
+            return p;
+    }
+    return nullptr; // fail closed
+}
+
+void det_arena_set_persist_free(DetArenaSet *s, void *p)
+{
+    if (!p)
+        return;
+    uint8_t *b = (uint8_t *)p;
+    for (size_t i = 0; i < s->count; i++)
+    {
+        DetArena *r = &s->region[i];
+        if (b >= r->base && b < r->base + r->size)
+        {
+            det_arena_persist_free(r, p);
+            return;
+        }
+    }
+}
+
+void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n)
+{
+    for (size_t i = 0; i < s->count; i++)
+    {
+        void *p = det_arena_scratch_alloc(&s->region[i], n);
+        if (p)
+            return p;
+    }
+    return nullptr; // fail closed
+}
+
+DetArenaMark det_arena_set_scratch_mark(const DetArenaSet *s)
+{
+    DetArenaMark m;
+    m.count = s->count;
+    for (size_t i = 0; i < s->count; i++)
+        m.top[i] = s->region[i].scratch_top;
+    return m;
+}
+
+void det_arena_set_scratch_release(DetArenaSet *s, const DetArenaMark *m)
+{
+    size_t n = m->count < s->count ? m->count : s->count;
+    for (size_t i = 0; i < n; i++)
+        det_arena_scratch_release(&s->region[i], m->top[i]);
+}
+
+void det_arena_set_scratch_reset(DetArenaSet *s)
+{
+    for (size_t i = 0; i < s->count; i++)
+        det_arena_scratch_reset(&s->region[i]);
+}
+
+size_t det_arena_set_free_bytes(const DetArenaSet *s)
+{
+    size_t t = 0;
+    for (size_t i = 0; i < s->count; i++)
+        t += det_arena_free_bytes(&s->region[i]);
+    return t;
+}
+
+size_t det_arena_set_persist_used(const DetArenaSet *s)
+{
+    size_t t = 0;
+    for (size_t i = 0; i < s->count; i++)
+        t += det_arena_persist_used(&s->region[i]);
+    return t;
+}
+
+size_t det_arena_set_scratch_used(const DetArenaSet *s)
+{
+    size_t t = 0;
+    for (size_t i = 0; i < s->count; i++)
+        t += det_arena_scratch_used(&s->region[i]);
+    return t;
+}

@@ -181,6 +181,78 @@ void test_zero_size_and_null_free()
     TEST_ASSERT_NOT_NULL(s);
 }
 
+// ---- multi-region set (DRAM base + PSRAM extension) -----------------------
+
+static uint8_t g_r0[512];  // stand-in for internal DRAM (preferred)
+static uint8_t g_r1[2048]; // stand-in for the PSRAM extension
+
+static bool in_buf(const void *p, const uint8_t *buf, size_t n)
+{
+    const uint8_t *b = (const uint8_t *)p;
+    return b >= buf && b < buf + n;
+}
+
+void test_set_add_limits()
+{
+    DetArenaSet s;
+    det_arena_set_init(&s);
+    TEST_ASSERT_TRUE(det_arena_set_add(&s, g_r0, sizeof(g_r0)));
+    TEST_ASSERT_TRUE(det_arena_set_add(&s, g_r1, sizeof(g_r1)));
+    static uint8_t extra[256];
+    TEST_ASSERT_FALSE(det_arena_set_add(&s, extra, sizeof(extra))); // full (max 2)
+    DetArenaSet t;
+    det_arena_set_init(&t);
+    static uint8_t tiny[4];
+    TEST_ASSERT_FALSE(det_arena_set_add(&t, tiny, sizeof(tiny))); // too small
+}
+
+void test_set_persist_overflow_and_prefer()
+{
+    DetArenaSet s;
+    det_arena_set_init(&s);
+    det_arena_set_add(&s, g_r0, sizeof(g_r0));
+    det_arena_set_add(&s, g_r1, sizeof(g_r1));
+    void *big = det_arena_set_persist_alloc(&s, 700); // too big for r0 -> spills to r1
+    TEST_ASSERT_NOT_NULL(big);
+    TEST_ASSERT_TRUE(in_buf(big, g_r1, sizeof(g_r1)));
+    void *small = det_arena_set_persist_alloc(&s, 32); // prefers r0
+    TEST_ASSERT_NOT_NULL(small);
+    TEST_ASSERT_TRUE(in_buf(small, g_r0, sizeof(g_r0)));
+    TEST_ASSERT_TRUE(det_arena_set_persist_used(&s) >= 732); // >= requested (alignment rounds up)
+}
+
+void test_set_persist_free_routes_by_address()
+{
+    DetArenaSet s;
+    det_arena_set_init(&s);
+    det_arena_set_add(&s, g_r0, sizeof(g_r0));
+    det_arena_set_add(&s, g_r1, sizeof(g_r1));
+    void *inR1 = det_arena_set_persist_alloc(&s, 700);
+    TEST_ASSERT_TRUE(in_buf(inR1, g_r1, sizeof(g_r1)));
+    det_arena_set_persist_free(&s, inR1); // must route to r1, not r0
+    TEST_ASSERT_EQUAL_size_t(0, det_arena_set_persist_used(&s));
+    det_arena_set_persist_free(&s, nullptr); // no-op
+}
+
+void test_set_scratch_overflow_and_unwind()
+{
+    DetArenaSet s;
+    det_arena_set_init(&s);
+    det_arena_set_add(&s, g_r0, sizeof(g_r0));
+    det_arena_set_add(&s, g_r1, sizeof(g_r1));
+    void *a0 = det_arena_set_scratch_alloc(&s, 400); // fits r0
+    TEST_ASSERT_TRUE(in_buf(a0, g_r0, sizeof(g_r0)));
+    DetArenaMark mk = det_arena_set_scratch_mark(&s);
+    void *a1 = det_arena_set_scratch_alloc(&s, 900); // r0 too full -> spills to r1
+    TEST_ASSERT_TRUE(in_buf(a1, g_r1, sizeof(g_r1)));
+    TEST_ASSERT_TRUE(det_arena_set_scratch_used(&s) >= 1300);
+    det_arena_set_scratch_release(&s, &mk); // unwinds the r1 spill too
+    TEST_ASSERT_TRUE(det_arena_set_scratch_used(&s) >= 400);
+    TEST_ASSERT_TRUE(det_arena_set_scratch_used(&s) < 900);
+    det_arena_set_scratch_reset(&s);
+    TEST_ASSERT_EQUAL_size_t(0, det_arena_set_scratch_used(&s));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -196,5 +268,9 @@ int main()
     RUN_TEST(test_scratch_reset_frees_middle_for_persist);
     RUN_TEST(test_alignment_various_sizes);
     RUN_TEST(test_zero_size_and_null_free);
+    RUN_TEST(test_set_add_limits);
+    RUN_TEST(test_set_persist_overflow_and_prefer);
+    RUN_TEST(test_set_persist_free_routes_by_address);
+    RUN_TEST(test_set_scratch_overflow_and_unwind);
     return UNITY_END();
 }

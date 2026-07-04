@@ -110,4 +110,70 @@ size_t det_arena_persist_used(const DetArena *a);
 /** @brief Scratch bytes currently allocated. */
 size_t det_arena_scratch_used(const DetArena *a);
 
+// ===========================================================================
+// Multi-region extension: a DRAM base + an optional PSRAM extension.
+// ===========================================================================
+//
+// A ::DetArenaSet chains a few ::DetArena regions in preference order (add DRAM
+// first, PSRAM second). Allocations try each region in turn and take the first
+// that fits, so hot state stays in fast internal RAM and only the overflow
+// spills into external RAM. Frees are routed to the owning region by address.
+// This is how "arena extension" works: enable PSRAM by adding a second region;
+// leave it out and the set is just the single DRAM arena.
+
+/** @brief Max regions in a ::DetArenaSet (DRAM base + PSRAM extension). */
+#ifndef DET_ARENA_MAX_REGIONS
+#define DET_ARENA_MAX_REGIONS 2u
+#endif
+
+/** @brief A set of ::DetArena regions searched in insertion (preference) order. */
+typedef struct
+{
+    DetArena region[DET_ARENA_MAX_REGIONS];
+    size_t count; ///< Regions in use.
+} DetArenaSet;
+
+/** @brief A scratch savepoint across every region of a ::DetArenaSet. */
+typedef struct
+{
+    size_t top[DET_ARENA_MAX_REGIONS];
+    size_t count;
+} DetArenaMark;
+
+/** @brief Initialize an empty set (no regions yet). */
+void det_arena_set_init(DetArenaSet *s);
+
+/**
+ * @brief Add a region `[base, base+size)`; regions are searched in the order added.
+ * @return true if added, false if the set is full or the region is too small.
+ */
+bool det_arena_set_add(DetArenaSet *s, void *base, size_t size);
+
+/** @brief Persistent alloc from the first region that fits (see det_arena_persist_alloc()). */
+void *det_arena_set_persist_alloc(DetArenaSet *s, size_t n);
+
+/** @brief Free a persistent pointer, routed to its owning region by address. */
+void det_arena_set_persist_free(DetArenaSet *s, void *p);
+
+/** @brief Scratch alloc from the first region that fits (see det_arena_scratch_alloc()). */
+void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n);
+
+/** @brief Capture the scratch position of every region. */
+DetArenaMark det_arena_set_scratch_mark(const DetArenaSet *s);
+
+/** @brief Restore every region's scratch position to @p m (frees scratch made since). */
+void det_arena_set_scratch_release(DetArenaSet *s, const DetArenaMark *m);
+
+/** @brief Reset scratch in every region. */
+void det_arena_set_scratch_reset(DetArenaSet *s);
+
+/** @brief Total free middle bytes summed over all regions. */
+size_t det_arena_set_free_bytes(const DetArenaSet *s);
+
+/** @brief Persistent payload bytes allocated, summed over all regions. */
+size_t det_arena_set_persist_used(const DetArenaSet *s);
+
+/** @brief Scratch bytes allocated, summed over all regions. */
+size_t det_arena_set_scratch_used(const DetArenaSet *s);
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_ARENA_H
