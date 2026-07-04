@@ -65,7 +65,7 @@ from each example's `pio ci` size report and aggregated into
 | `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 740.9 KB (57.9%) | 76.8 KB (24.0%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 710.8 KB (55.5%) | 42.4 KB (13.2%)  |
-| `SSH`                                    | L5-Session/01.SSH                       | 788.8 KB (61.6%) | 86.0 KB (26.9%)  |
+| `SSH`                                    | L5-Session/01.SSH                       | 796.4 KB (62.2%) | 86.1 KB (26.9%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 734.6 KB (57.4%) | 64.7 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 736.7 KB (57.6%) | 64.8 KB (20.2%)  |
 | `SYSLOG`                                 | L7-Application/19.Syslog                | 735.6 KB (57.5%) | 65.0 KB (20.3%)  |
