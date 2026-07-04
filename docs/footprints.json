@@ -391,6 +391,13 @@
     "flash_bytes": 793189,
     "ram_bytes": 66232
   },
+  "RTC+TIME_SOURCE+NTP": {
+    "example": "L7-Application/61.Rtc",
+    "flags": "-DDETWS_ENABLE_RTC=1 -DDETWS_ENABLE_TIME_SOURCE=1 -DDETWS_ENABLE_NTP=1",
+    "board": "esp32dev",
+    "flash_bytes": 766577,
+    "ram_bytes": 45372
+  },
   "SIGFOX": {
     "example": "Foundation/15.SigfoxUplink",
     "flags": "-DDETWS_ENABLE_SIGFOX=1",
