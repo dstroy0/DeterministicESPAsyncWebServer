@@ -25,6 +25,7 @@ from each example's `pio ci` size report and aggregated into
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
 | `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 738.8 KB (57.7%) | 65.9 KB (20.6%)  |
+| `DNS_SERVER`                             | L7-Application/60.DnsServer             | 708.6 KB (55.4%) | 44.9 KB (14.0%)  |
 | `ENOCEAN+GATEWAY`                        | Foundation/13.EnOceanGateway            | 262.3 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                 | L7-Application/53.EspNow                | 714.1 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                   | L7-Application/09.ETag                  | 807.3 KB (63.1%) | 65.9 KB (20.6%)  |

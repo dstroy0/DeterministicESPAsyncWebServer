@@ -118,6 +118,13 @@
     "flash_bytes": 756541,
     "ram_bytes": 67472
   },
+  "DNS_SERVER": {
+    "example": "L7-Application/60.DnsServer",
+    "flags": "-DDETWS_ENABLE_DNS_SERVER=1",
+    "board": "esp32dev",
+    "flash_bytes": 725573,
+    "ram_bytes": 45976
+  },
   "ENOCEAN+GATEWAY": {
     "example": "Foundation/13.EnOceanGateway",
     "flags": "-DDETWS_ENABLE_ENOCEAN=1 -DDETWS_ENABLE_GATEWAY=1",
