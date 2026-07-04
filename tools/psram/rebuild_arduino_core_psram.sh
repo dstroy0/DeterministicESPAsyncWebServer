@@ -20,12 +20,12 @@
 #   This uses Espressif's official esp32-arduino-lib-builder to produce a self-consistent
 #   core (proper octal-PSRAM config for N16R8 boards + the BSS-external flag) and installs
 #   it over the arduino-cli / Arduino IDE core. Runs on Linux / WSL / macOS (needs the
-#   ESP-IDF build prerequisites: git, python3, cmake, ninja, wget). ~30-60 min the first
+#   ESP-IDF build prerequisites: git, python3, cmake, ninja, wget, jq). ~30-60 min the first
 #   time; it clones ESP-IDF and builds the libraries from source.
 #
 # USAGE
-#   ./rebuild_arduino_core_psram.sh [--branch release/v5.5] [--core-dir <path>]
-#     --branch     esp32-arduino-lib-builder branch (default release/v5.5 = IDF 5.5,
+#   ./rebuild_arduino_core_psram.sh [--branch idf-release_v5.5] [--core-dir <path>]
+#     --branch     esp32-arduino-lib-builder branch (default idf-release_v5.5 = IDF 5.5,
 #                  matching arduino-esp32 3.3.x). Use release/v5.3 for arduino 3.1.x.
 #     --core-dir   arduino-cli/IDE core dir to install into (auto-detected if omitted),
 #                  e.g. ~/.arduino15/packages/esp32/tools/esp32s3-libs/<ver>
@@ -39,7 +39,7 @@
 # (address 0x3Cxxxxxx = PSRAM) and check the ".ext_ram.bss" section exists.
 set -euo pipefail
 
-BRANCH="release/v5.5"
+BRANCH="idf-release_v5.5" # tag for IDF 5.5 (arduino-esp32 3.3.x); no release/v5.5 branch exists
 CORE_DIR=""
 INSTALL=1
 JOBS=""
@@ -67,12 +67,15 @@ export MAKEFLAGS="-j${JOBS}"
 export IDF_BUILD_JOBS="$JOBS"
 echo "==> build parallelism capped at $JOBS core(s)"
 
-echo "==> esp32-arduino-lib-builder branch: $BRANCH"
+echo "==> esp32-arduino-lib-builder ref: $BRANCH"
 mkdir -p "$WORK"; cd "$WORK"
 if [ ! -d esp32-arduino-lib-builder ]; then
   git clone --depth 1 -b "$BRANCH" https://github.com/espressif/esp32-arduino-lib-builder.git
 fi
 cd esp32-arduino-lib-builder
+# build.sh runs `git symbolic-ref HEAD`; a tag checkout leaves a detached HEAD ("fatal: ref
+# HEAD is not a symbolic ref") which breaks it. Pin to a local branch so HEAD is symbolic.
+git switch -c detws-psram-build 2>/dev/null || git checkout -B detws-psram-build 2>/dev/null || true
 
 # Enable the BSS-in-external-RAM Kconfig for every ESP32-S3 build variant. The octal-PSRAM
 # mode (needed by N16R8 boards) already comes from the per-variant (qio_opi) config that

@@ -89,7 +89,16 @@ The official PlatformIO `espressif32` platform stopped at arduino-esp32 2.0.x, s
 community **pioarduino** platform (arduino-esp32 3.x). Its `custom_sdkconfig` option rebuilds
 the framework with your extra settings baked in, exactly what we need.
 
-Full `platformio.ini` for an **N16R8** board (octal PSRAM):
+> **IMPORTANT: Path A does not work for _octal_-PSRAM boards (the N16R8 / anything OPI).**
+> When you use `custom_sdkconfig`, pioarduino builds Arduino as an ESP-IDF component using the
+> **default `esp32` variant** ("doesn't handle the `variant` field" warning). Plain ESP32 has
+> no octal PSRAM, so `confgen` **silently overrides** `CONFIG_SPIRAM_MODE_OCT=y` back to `QUAD`
+> and drops `CONFIG_SPIRAM_BOOT_INIT`, no matter what you put in `custom_sdkconfig`. The result
+> boots-loops on an OPI board (PSRAM never initializes; only `ALLOW_BSS` survives). Path A is
+> fine for **quad**-PSRAM modules (most WROVERs); for **octal** boards use **Path B**, whose
+> `qio_opi` variant sets octal + boot-init correctly.
+
+Full `platformio.ini` for a **quad**-PSRAM board:
 
 ```ini
 [env:s3psram]
@@ -149,6 +158,29 @@ Skip to [Verify](#verify-it-actually-worked).
 
 ## Path B: Arduino IDE / arduino-cli (rebuild the core)
 
+> ### Newbies: install a prebuilt core, do NOT build anything
+>
+> Rebuilding the core is a **one-time maintainer job**. If someone has already built a
+> flag-enabled core for your board (or you did it once on another machine), everyone else just
+> **installs the prebuilt files** - no WSL, no Docker, no lib-builder, no command line:
+>
+> 1. **Close** the Arduino IDE completely.
+> 2. Find your ESP32-S3 libraries folder:
+>     - Windows: `C:\Users\<you>\AppData\Local\Arduino15\packages\esp32\tools\esp32s3-libs\<version>\`
+>     - macOS: `~/Library/Arduino15/packages/esp32/tools/esp32s3-libs/<version>/`
+>     - Linux: `~/.arduino15/packages/esp32/tools/esp32s3-libs/<version>/`
+> 3. **Back it up:** rename that `<version>` folder to `<version>.bak` (so you can undo).
+> 4. **Unzip** the provided prebuilt archive so its contents replace the `<version>` folder.
+> 5. **Reopen** the Arduino IDE, pick **Tools -> Board -> ESP32S3 Dev Module**, set **Tools ->
+>    PSRAM -> OPI PSRAM**, then **Sketch -> Verify** once (a full clean).
+> 6. Confirm it worked (a `0x3C...` address) as in [Verify](#verify-it-actually-worked). To
+>    undo, delete the folder and rename `<version>.bak` back.
+>
+> That is the whole newbie experience: back up, unzip, done. Everything below (installing WSL,
+> running lib-builder) is only for the **maintainer** who produces that archive once and shares
+> it. An even smoother option a maintainer can offer is a Boards Manager "Additional Boards
+> Manager URL" pointing at a prebuilt package, so installing is a checkbox in the IDE.
+
 The Arduino core ships precompiled libraries, so you cannot flip an `sdkconfig` option from a
 sketch. You rebuild the libraries with Espressif's official tool,
 [esp32-arduino-lib-builder](https://github.com/espressif/esp32-arduino-lib-builder), then drop
@@ -165,35 +197,50 @@ core's IDF version:
 # Arduino IDE / arduino-cli, adjust the version folder to yours:
 grep CONFIG_IDF_INIT_VERSION \
   ~/.arduino15/packages/esp32/tools/esp32s3-libs/*/sdkconfig
-# e.g. CONFIG_IDF_INIT_VERSION="5.5.4"  -> lib-builder branch release/v5.5
+# e.g. CONFIG_IDF_INIT_VERSION="5.5.4"  -> lib-builder ref idf-release_v5.5 (a tag)
 ```
 
-| Your core's IDF | arduino-esp32 | lib-builder branch |
-| --------------- | ------------- | ------------------ |
-| 5.5.x           | 3.3.x         | `release/v5.5`     |
-| 5.3.x           | 3.1.x         | `release/v5.3`     |
-| 5.1.x           | 3.0.x         | `release/v5.1`     |
+| Your core's IDF | arduino-esp32 | lib-builder branch       |
+| --------------- | ------------- | ------------------------ |
+| 5.5.x           | 3.3.x         | `idf-release_v5.5` (tag) |
+| 5.3.x           | 3.1.x         | `release/v5.3`           |
+| 5.1.x           | 3.0.x         | `release/v5.1`           |
 
 ### B.1 Prerequisites (pick ONE environment)
 
 `esp32-arduino-lib-builder` runs on **Linux, macOS, or WSL** (not native Windows). Two ways:
 
-**Option 1, Docker (most reproducible, least setup).** Install Docker, then everything runs
-inside Espressif's image. Good if you do not want to install build tools on your machine.
+**Option 1, Docker (recommended, most reproducible).** Install Docker, then everything runs
+inside Espressif's image, which already has every prerequisite and the components/submodules
+set up. Native builds are prerequisite-sensitive (a missing `jq`, an un-populated TinyUSB
+submodule, or a detached-HEAD checkout each break the build with a confusing error); Docker
+sidesteps all of that. Use it unless you have a reason not to:
 
-**Option 2, native Linux / WSL.** On Windows, install **WSL** first (`wsl --install -d Ubuntu`
-in an admin PowerShell, then reboot). Inside Ubuntu/Linux install the build prerequisites:
+```bash
+git clone --depth 1 -b idf-release_v5.5 \
+  https://github.com/espressif/esp32-arduino-lib-builder.git
+cd esp32-arduino-lib-builder
+echo "CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y" >> configs/defconfig.esp32s3
+docker run --rm -v "$PWD":/arduino-esp32 -e "TARGET=esp32s3" \
+  espressif/esp32-arduino-lib-builder /arduino-esp32/build.sh -t esp32s3
+```
+
+**Option 2, native Linux / WSL.** More setup and more failure modes (see above), but no Docker
+needed. On Windows, install **WSL** first (`wsl --install -d Ubuntu` in an admin PowerShell,
+then reboot). Inside Ubuntu/Linux install the build prerequisites (note `jq`, easy to miss),
+and clone with a **branch you can build from** (a bare tag checkout leaves a detached HEAD that
+`build.sh` chokes on - the helper script pins a local branch for you):
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y git wget curl python3 python3-pip python3-venv \
-                        cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+                        cmake ninja-build ccache jq libffi-dev libssl-dev dfu-util
 ```
 
 ### B.2 Clone the builder and turn the flag on
 
 ```bash
-git clone --depth 1 -b release/v5.5 \
+git clone --depth 1 -b idf-release_v5.5 \
   https://github.com/espressif/esp32-arduino-lib-builder.git
 cd esp32-arduino-lib-builder
 
@@ -252,7 +299,7 @@ reopening so no stale objects remain. `EXT_RAM_BSS_ATTR` arrays now land in PSRA
 for you (clone, add the flag, build with capped cores, back up, install):
 
 ```bash
-tools/psram/rebuild_arduino_core_psram.sh                 # auto-detect core, branch release/v5.5
+tools/psram/rebuild_arduino_core_psram.sh                 # auto-detect core, ref idf-release_v5.5
 tools/psram/rebuild_arduino_core_psram.sh --branch release/v5.3
 tools/psram/rebuild_arduino_core_psram.sh --jobs 4        # cap to 4 cores
 tools/psram/rebuild_arduino_core_psram.sh --no-install    # just build; install yourself
