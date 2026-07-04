@@ -384,6 +384,13 @@
     "flash_bytes": 267945,
     "ram_bytes": 21464
   },
+  "SMTP": {
+    "example": "L7-Application/57.SmtpAlert",
+    "flags": "-DDETWS_ENABLE_SMTP=1",
+    "board": "esp32dev",
+    "flash_bytes": 726861,
+    "ram_bytes": 43408
+  },
   "SNMP": {
     "example": "L7-Application/14.SNMP",
     "flags": "-DDETWS_ENABLE_SNMP=1",
