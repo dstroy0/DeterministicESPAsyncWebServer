@@ -433,6 +433,13 @@
     "flash_bytes": 754609,
     "ram_bytes": 66336
   },
+  "STATSD": {
+    "example": "L7-Application/59.StatsdMetrics",
+    "flags": "-DDETWS_ENABLE_STATSD=1",
+    "board": "esp32dev",
+    "flash_bytes": 728189,
+    "ram_bytes": 45088
+  },
   "SYSLOG": {
     "example": "L7-Application/19.Syslog",
     "flags": "-DDETWS_ENABLE_SYSLOG=1",

@@ -70,6 +70,7 @@ from each example's `pio ci` size report and aggregated into
 | `SSH`                                    | L5-Session/01.SSH                       | 796.6 KB (62.2%) | 86.1 KB (26.9%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 736.9 KB (57.6%) | 64.8 KB (20.2%)  |
+| `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.1 KB (55.6%) | 44.0 KB (13.8%)  |
 | `SYSLOG`                                 | L7-Application/19.Syslog                | 736.2 KB (57.5%) | 66.5 KB (20.8%)  |
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 741.6 KB (57.9%) | 65.0 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.2 KB (57.4%) | 65.2 KB (20.4%)  |
