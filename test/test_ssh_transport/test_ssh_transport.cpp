@@ -4,7 +4,9 @@
 // SSH transport handshake tests (RFC 4253): identification-string exchange and
 // KEXINIT algorithm negotiation.
 
+#include "network_drivers/presentation/ssh/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/ssh_dh.h"
+#include "network_drivers/presentation/ssh/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/ssh_packet.h"
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/ssh_sha256.h"
@@ -18,9 +20,13 @@ extern uint8_t _test_rsa_n[256];
 extern uint8_t _test_rsa_d[256];
 extern uint8_t _test_rsa_e[4];
 
+static void setup_rsa_fixture();
+
 void setUp()
 {
     ssh_transport_init(0);
+    ssh_kex_set_prefer_rsa(true); // deterministic default for negotiation tests
+    setup_rsa_fixture();          // a host key must be available for host-key negotiation
 }
 void tearDown()
 {
@@ -148,9 +154,38 @@ void test_kexinit_parse_accepts_when_ours_listed_among_others()
 
 void test_kexinit_parse_rejects_missing_kex()
 {
+    // Only a KEX method we do not implement (nistp256) -> no mutual KEX -> reject.
     uint8_t buf[SSH_KEXINIT_MAX];
-    size_t n = build_client_kexinit(buf, "curve25519-sha256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256", "none");
+    size_t n = build_client_kexinit(buf, "ecdh-sha2-nistp256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+}
+
+// Client offers only ssh-ed25519 host keys but we hold only an RSA key -> no mutual
+// host-key algorithm -> reject (host-key negotiation is gated on keys we actually hold).
+void test_kexinit_parse_rejects_hostkey_we_lack()
+{
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "ssh-ed25519", "aes256-ctr", "hmac-sha2-256",
+                                    "none");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+}
+
+// With prefer-RSA off and an ed25519 host key installed, the server steers negotiation to
+// curve25519-sha256 + ssh-ed25519 when the client offers both suites.
+void test_kexinit_parse_steers_to_curve_ed25519()
+{
+    static const uint8_t seed[32] = {0x9d, 0x61, 0xb1, 0x9d, 0xef, 0xfd, 0x5a, 0x60, 0xba, 0x84, 0x4a,
+                                     0xf4, 0x92, 0xec, 0x2c, 0xc4, 0x44, 0x49, 0xc5, 0x69, 0x7b, 0x32,
+                                     0x69, 0x19, 0x70, 0x3b, 0xac, 0x03, 0x1c, 0xae, 0x7f, 0x60};
+    ssh_hostkey_ed25519_set(seed);
+    ssh_kex_set_prefer_rsa(false);
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "curve25519-sha256,diffie-hellman-group14-sha256", "ssh-ed25519,rsa-sha2-256",
+                                    "aes256-ctr", "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_KEX_CURVE25519, ssh_sess[0].kex_alg);
+    TEST_ASSERT_EQUAL(SSH_HOSTKEY_ED25519, ssh_sess[0].hostkey_alg);
+    ssh_kex_set_prefer_rsa(true); // restore default for later tests
 }
 
 void test_kexinit_parse_rejects_missing_cipher()
@@ -450,6 +485,138 @@ void test_kexdh_handle_rejects_invalid_e()
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
 }
 
+// ---- curve25519-sha256 + ssh-ed25519 KEX (RFC 8731 / RFC 8709) ------------
+
+// Read an SSH string field at *off; point *d/*dl into buf and advance *off.
+static bool rd_string(const uint8_t *b, size_t len, size_t *off, const uint8_t **d, uint32_t *dl)
+{
+    if (*off + 4 > len)
+        return false;
+    uint32_t n = ((uint32_t)b[*off] << 24) | ((uint32_t)b[*off + 1] << 16) | ((uint32_t)b[*off + 2] << 8) | b[*off + 3];
+    *off += 4;
+    if (*off + n > len)
+        return false;
+    *d = b + *off;
+    *dl = n;
+    *off += n;
+    return true;
+}
+
+// A full server-side curve25519 + ed25519 key exchange, verified end-to-end the way a
+// conforming client would: recompute the shared secret, rebuild the exchange hash, and
+// verify the server's ed25519 signature over it. Nothing here is a shortcut - a wrong
+// byte anywhere (K_S encoding, Q ordering, string-vs-mpint, K alignment) fails the check.
+void test_kexdh_handle_curve25519_ed25519_end_to_end()
+{
+    static const uint8_t seed[32] = {0x9d, 0x61, 0xb1, 0x9d, 0xef, 0xfd, 0x5a, 0x60, 0xba, 0x84, 0x4a,
+                                     0xf4, 0x92, 0xec, 0x2c, 0xc4, 0x44, 0x49, 0xc5, 0x69, 0x7b, 0x32,
+                                     0x69, 0x19, 0x70, 0x3b, 0xac, 0x03, 0x1c, 0xae, 0x7f, 0x60};
+    ssh_transport_init(0);
+    ssh_hostkey_ed25519_set(seed);
+    SshSession *s = &ssh_sess[0];
+    s->kex_alg = SSH_KEX_CURVE25519;
+    s->hostkey_alg = SSH_HOSTKEY_ED25519;
+
+    const char *vc = "SSH-2.0-CurveClient";
+    strcpy(s->v_c, vc);
+    s->v_c_len = (uint16_t)strlen(vc);
+    for (int j = 0; j < 30; j++)
+    {
+        s->i_c[j] = (uint8_t)(j + 1);
+        s->i_s[j] = (uint8_t)(j + 100);
+    }
+    s->i_c_len = s->i_s_len = 30;
+
+    // Server ephemeral, then a client ephemeral + ECDH_INIT: byte(30) || string(Q_C).
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+    uint8_t client_sk[32], qc[32];
+    for (int j = 0; j < 32; j++)
+        client_sk[j] = (uint8_t)(0x40 + j);
+    ssh_x25519_base(qc, client_sk);
+    uint8_t pkt[64];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    put_string(pkt + 1, qc, 32);
+    size_t plen = 1 + 4 + 32;
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)));
+    TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
+    TEST_ASSERT_TRUE(s->have_session_id);
+    TEST_ASSERT_EQUAL(SSH_PHASE_NEWKEYS, s->phase);
+    TEST_ASSERT_TRUE(ssh_keys[0].active);
+
+    // Parse reply: string(K_S) || string(Q_S) || string(sigblob).
+    size_t off = 1;
+    const uint8_t *ks, *qs, *sigblob;
+    uint32_t ks_len, qs_len, sig_len;
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &ks, &ks_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &qs, &qs_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &sigblob, &sig_len));
+    TEST_ASSERT_EQUAL_UINT32(32, qs_len); // Q_S is a raw 32-byte string, not an mpint
+
+    // K_S = string("ssh-ed25519") || string(pub32); recover host pub and check it.
+    size_t ko = 0;
+    const uint8_t *kt, *hostpub;
+    uint32_t kt_len, hp_len;
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &kt, &kt_len));
+    TEST_ASSERT_EQUAL_MEMORY("ssh-ed25519", kt, 11);
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &hostpub, &hp_len));
+    TEST_ASSERT_EQUAL_UINT32(32, hp_len);
+    uint8_t expect_pub[32];
+    ssh_ed25519_pubkey(expect_pub, seed);
+    TEST_ASSERT_EQUAL_MEMORY(expect_pub, hostpub, 32);
+
+    // sigblob = string("ssh-ed25519") || string(sig64).
+    size_t so = 0;
+    const uint8_t *st, *sig;
+    uint32_t st_len, sl;
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &st, &st_len));
+    TEST_ASSERT_EQUAL_MEMORY("ssh-ed25519", st, 11);
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &sig, &sl));
+    TEST_ASSERT_EQUAL_UINT32(64, sl);
+
+    // Client recomputes K = X25519(client_sk, Q_S) and rebuilds the exchange hash.
+    uint8_t K[32];
+    ssh_x25519(K, client_sk, qs);
+    static uint8_t pre[1024];
+    size_t o = 0;
+    o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
+    o += put_string(pre + o, (const uint8_t *)SSH_SERVER_VERSION, strlen(SSH_SERVER_VERSION));
+    o += put_string(pre + o, s->i_c, s->i_c_len);
+    o += put_string(pre + o, s->i_s, s->i_s_len);
+    o += put_string(pre + o, ks, ks_len);
+    o += put_string(pre + o, qc, 32); // Q_C (string)
+    o += put_string(pre + o, qs, 32); // Q_S (string)
+    o += put_mpint(pre + o, K, 32);   // K (mpint)
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN); // server captured this H
+
+    // The signature verifies against the host key over the reconstructed H.
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig));
+}
+
+// A low-order client point (all-zero X25519 output) is rejected (RFC 7748 §6.1).
+void test_kexdh_handle_curve25519_rejects_low_order()
+{
+    static const uint8_t zero_seed[32] = {0};
+    ssh_transport_init(0);
+    ssh_hostkey_ed25519_set(zero_seed);
+    ssh_sess[0].kex_alg = SSH_KEX_CURVE25519;
+    ssh_sess[0].hostkey_alg = SSH_HOSTKEY_ED25519;
+    ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+
+    uint8_t qc[32] = {0}; // all-zero public → zero shared secret
+    uint8_t pkt[64];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    put_string(pkt + 1, qc, 32);
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)));
+}
+
 // ---- rekey (RFC 4253 §9) --------------------------------------------------
 
 void test_derive_keys_session_id_affects_output()
@@ -668,6 +835,8 @@ int main()
     RUN_TEST(test_kexinit_parse_accepts_supported);
     RUN_TEST(test_kexinit_parse_accepts_when_ours_listed_among_others);
     RUN_TEST(test_kexinit_parse_rejects_missing_kex);
+    RUN_TEST(test_kexinit_parse_rejects_hostkey_we_lack);
+    RUN_TEST(test_kexinit_parse_steers_to_curve_ed25519);
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
@@ -679,6 +848,8 @@ int main()
     RUN_TEST(test_kexdh_build_reply_structure);
     RUN_TEST(test_kexdh_handle_produces_reply_and_installs_keys);
     RUN_TEST(test_kexdh_handle_rejects_invalid_e);
+    RUN_TEST(test_kexdh_handle_curve25519_ed25519_end_to_end);
+    RUN_TEST(test_kexdh_handle_curve25519_rejects_low_order);
     RUN_TEST(test_derive_keys_session_id_affects_output);
     RUN_TEST(test_rekey_needed_threshold);
     RUN_TEST(test_begin_rekey_preserves_session_and_auth);

@@ -98,15 +98,26 @@
 /**
  * @brief Stack (bytes) for each server worker task (ESP32).
  *
- * Floor note: RSA-2048 verification (OIDC / SSH host key / JWKS via the mbedTLS
- * bignum modexp) runs on the worker and uses ~7 KB of stack (measured on a
- * DevKitV1). The 8 KB default holds it with margin; do NOT lower this below
- * ::DETWS_WORKER_STACK_RSA_MIN when DETWS_ENABLE_OIDC / DETWS_ENABLE_SSH is set
- * or the first verify overflows the task stack - a build-time guard (bottom of
- * this file) enforces that floor so a lowered stack is caught at compile time.
+ * Floor note: two heavy computations run on the worker.
+ *   - RSA-2048 verification (OIDC / SSH host key / JWKS via the mbedTLS bignum
+ *     modexp) uses ~7 KB (measured on a DevKitV1).
+ *   - SSH modern crypto (curve25519-sha256 KEX + ssh-ed25519, software field
+ *     arithmetic in radix-2^16) peaks at ~10.5 KB (measured on an ESP32-S3): the
+ *     deep ssh_gf call chain plus the on-accelerator field inversion nests deeper
+ *     than the RSA path.
+ * So the default adapts: 12 KB when SSH is enabled (curve/ed25519 can be
+ * negotiated), 8 KB otherwise. Do NOT lower it below the matching floor
+ * (::DETWS_WORKER_STACK_CURVE_MIN for SSH, ::DETWS_WORKER_STACK_RSA_MIN for
+ * OIDC) or the first handshake overflows the task stack - a build-time guard
+ * (bottom of this file) enforces the floor so a lowered stack is caught at
+ * compile time.
  */
 #ifndef DETWS_WORKER_TASK_STACK
+#if defined(DETWS_ENABLE_SSH) && DETWS_ENABLE_SSH
+#define DETWS_WORKER_TASK_STACK 12288
+#else
 #define DETWS_WORKER_TASK_STACK 8192
+#endif
 #endif
 
 /**
@@ -120,6 +131,21 @@
  */
 #ifndef DETWS_WORKER_STACK_RSA_MIN
 #define DETWS_WORKER_STACK_RSA_MIN 8192
+#endif
+
+/**
+ * @brief Minimum worker-task stack (bytes) required once SSH is compiled in.
+ *
+ * SSH can negotiate curve25519-sha256 + ssh-ed25519, whose software field
+ * arithmetic peaks at ~10.5 KB of worker stack; 12 KB leaves ~1.8 KB of margin
+ * for the rest of the handshake call chain (comparable to the RSA floor's
+ * margin). Raise both this and ::DETWS_WORKER_TASK_STACK together if you extend
+ * the handshake, or force RSA/DH only (ssh_kex_set_prefer_rsa) on a very tight
+ * build - but the server still advertises the modern suite, so a modern-only
+ * client would still exercise it.
+ */
+#ifndef DETWS_WORKER_STACK_CURVE_MIN
+#define DETWS_WORKER_STACK_CURVE_MIN 12288
 #endif
 
 /** @brief FreeRTOS priority for each server worker task (ESP32). */
@@ -3626,9 +3652,18 @@ enum DetIface : uint8_t
 // RSA-2048 verification (OIDC / SSH host key / JWKS) runs on a worker task and consumes
 // ~7 KB of stack via the mbedTLS bignum modexp. Enforce the documented floor so a lowered
 // worker stack is caught at build time instead of overflowing on the first verify.
-#if (DETWS_ENABLE_OIDC || DETWS_ENABLE_SSH) && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_RSA_MIN)
+#if DETWS_ENABLE_OIDC && !DETWS_ENABLE_SSH && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_RSA_MIN)
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_RSA_MIN; RSA-2048 verification (OIDC/SSH) needs ~7 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 8192) or marshal RSA verifies onto a dedicated larger-stack task"
+    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_RSA_MIN; RSA-2048 verification (OIDC) needs ~7 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 8192) or marshal RSA verifies onto a dedicated larger-stack task"
+#endif
+
+// SSH additionally can negotiate curve25519-sha256 + ssh-ed25519, whose software field
+// arithmetic peaks at ~10.5 KB of worker stack (deeper than the RSA path). Enforce the
+// higher floor so a lowered stack is caught at build time instead of tripping the task
+// stack canary on the first modern-crypto handshake.
+#if DETWS_ENABLE_SSH && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_CURVE_MIN)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_CURVE_MIN; SSH curve25519/ed25519 needs ~10.5 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
 #endif
 
 #if DETWS_ENABLE_TLS

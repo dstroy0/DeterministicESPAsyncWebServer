@@ -82,6 +82,9 @@ newer entry here.
 - [RFC 8268](https://www.rfc-editor.org/rfc/rfc8268) - More MODP DH groups for SSH - **impl**.
 - [RFC 8332](https://www.rfc-editor.org/rfc/rfc8332) - RSA SHA-2 (rsa-sha2-256/512) for SSH - **impl**.
 - [RFC 3526](https://www.rfc-editor.org/rfc/rfc3526) - MODP Diffie-Hellman groups - **impl** (SSH KEX).
+- [RFC 8731](https://www.rfc-editor.org/rfc/rfc8731) - curve25519-sha256 key exchange for SSH - **impl**.
+- [RFC 8709](https://www.rfc-editor.org/rfc/rfc8709) - Ed25519/Ed448 public keys for SSH (ssh-ed25519) - **impl**.
+- [RFC 8308](https://www.rfc-editor.org/rfc/rfc8308) - SSH extension negotiation (ext-info-c, server-sig-algs) - **impl**.
 - [RFC 854](https://www.rfc-editor.org/rfc/rfc854) - Telnet Protocol - **impl**.
 
 ## Cryptographic primitives
@@ -91,6 +94,8 @@ newer entry here.
 - [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) - AES - **impl** (SNMP priv) / **via mbedTLS** (TLS).
 - [FIPS 198-1](https://csrc.nist.gov/pubs/fips/198-1/final) / [RFC 2104](https://www.rfc-editor.org/rfc/rfc2104) - HMAC - **impl**.
 - [RFC 8017](https://www.rfc-editor.org/rfc/rfc8017) - PKCS#1 (RSA) - **impl** (RS256 verify) / **via mbedTLS**.
+- [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748) - Elliptic curves for security (X25519) - **impl** (SSH KEX; field inversion on the ESP32 MPI accelerator).
+- [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032) - EdDSA (Ed25519) - **impl** (SSH host key + client auth).
 - [RFC 5754](https://www.rfc-editor.org/rfc/rfc5754) - SHA-2 algorithm identifiers - **ref** (RS256 DigestInfo).
 - [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238) - TOTP - **impl**.
 - [RFC 4226](https://www.rfc-editor.org/rfc/rfc4226) - HOTP - **impl** (TOTP base).

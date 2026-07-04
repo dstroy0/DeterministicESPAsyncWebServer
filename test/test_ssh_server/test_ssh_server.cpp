@@ -396,10 +396,12 @@ void test_inbound_close_emits_eof_then_close_separately()
     TEST_ASSERT_FALSE(ssh_chan[0][0].open);
 }
 
-// RFC 8308: EXT_INFO advertises server-sig-algs = "rsa-sha2-256" so a modern
-// OpenSSH client will sign an RSA key for pubkey auth.
+// RFC 8308: EXT_INFO advertises server-sig-algs listing every client public-key
+// signature algorithm the server can verify (both rsa-sha2-256 and ssh-ed25519, ordered
+// by the negotiation preference) so a modern OpenSSH client picks a key type it can offer.
 void test_extinfo_build_advertises_server_sig_algs()
 {
+    ssh_kex_set_prefer_rsa(true); // deterministic ordering: rsa first
     uint8_t out[64];
     size_t n = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_extinfo_build(out, &n, sizeof(out)));
@@ -408,8 +410,9 @@ void test_extinfo_build_advertises_server_sig_algs()
     TEST_ASSERT_EQUAL_UINT32(15u, rd_u32(out + 5)); // strlen("server-sig-algs")
     TEST_ASSERT_EQUAL_MEMORY("server-sig-algs", out + 9, 15);
     size_t off = 9 + 15;
-    TEST_ASSERT_EQUAL_UINT32(12u, rd_u32(out + off)); // strlen("rsa-sha2-256")
-    TEST_ASSERT_EQUAL_MEMORY("rsa-sha2-256", out + off + 4, 12);
+    const char *want = "rsa-sha2-256,ssh-ed25519";
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(want), rd_u32(out + off));
+    TEST_ASSERT_EQUAL_MEMORY(want, out + off + 4, strlen(want));
 }
 
 // A real OpenSSH client KEXINIT is ~1.5 KB; the parser must accept one well past

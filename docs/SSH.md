@@ -24,15 +24,18 @@ socket.
 <details>
 <summary><b>Expand Feature Summary List</b></summary>
 
-- **DH-group14-SHA256 key exchange** (RFC 3526 + RFC 8268) - 2048-bit MODP, g=2, full exchange-hash + host-key signature
+- **Crypto-agnostic key exchange** - the KEX method and host-key type are negotiated, not fixed: the server advertises both suites in a runtime-selectable preference order (`ssh_kex_set_prefer_rsa()`, default RSA/DH) and picks the first mutually supported one it holds a key for. A stock `ssh` client gets modern crypto; a device that wants the ESP32-accelerated path forces RSA/DH
+- **curve25519-sha256 key exchange** (RFC 8731 + RFC 7748) - X25519 ECDH; software radix-2^16 field arithmetic, with the field inversion offloaded to the ESP32 MPI/RSA hardware accelerator (the same modexp engine RSA and DH use)
+- **DH-group14-SHA256 key exchange** (RFC 3526 + RFC 8268) - 2048-bit MODP, g=2, full exchange-hash + host-key signature; the HW-accelerated path on ESP32
 - **AES-256-CTR** encryption (RFC 4344) - hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
 - **HMAC-SHA2-256** integrity (RFC 6668) - MAC-verify-before-use invariant
+- **ssh-ed25519 host key** (RFC 8709 + RFC 8032) - Ed25519 signing over the exchange hash; installed from a 32-byte seed via `ssh_hostkey_ed25519_set()` alongside or instead of the RSA host key
 - **RSA-SHA2-256** host key (RFC 8332) - PKCS#1 v1.5 signing; real on both platforms (ESP32 mbedTLS, native full-width modexp), HW-accelerated on ESP32
-- **Publickey authentication** (RFC 4252 §7) - client RSA-SHA2-256 signatures are verified for real on both platforms; an application callback authorizes keys per user
+- **Publickey authentication** (RFC 4252 §7) - client `rsa-sha2-256` **and** `ssh-ed25519` signatures are verified for real on both platforms; an application callback authorizes keys per user
 - **Password authentication** (RFC 4252 §8) - credentials checked via an application callback; the password is wiped from the stack after every attempt. Compile out with `DETWS_SSH_ALLOW_PASSWORD=0` for publickey-only hardening
 - **Session channel** (RFC 4254) - `shell`/`exec`/`pty-req` accepted; inbound channel data surfaced to the app as a raw byte stream, with RFC 4254 §5.2 window flow control
 - **TCP port forwarding** (`direct-tcpip`, the `ssh -L` local forward) - opt-in via `DETWS_SSH_PORT_FORWARD`; the `ssh_forward` owner opens the outbound connection through the client transport and bridges bytes both ways, with an optional target-allow policy callback
-- **OpenSSH interoperability** - works with a stock `ssh` client (no algorithm overrides): the RX ring and KEXINIT store hold a full modern client KEXINIT, and **`ext-info` / `server-sig-algs`** (RFC 8308) is advertised so the client signs an RSA key for pubkey auth (`rsa-sha2-256`). The client negotiates down to `diffie-hellman-group14-sha256`; Curve25519/Ed25519 (the client's preferred set) are on the roadmap
+- **OpenSSH interoperability** - works with a stock `ssh` client (no algorithm overrides): the RX ring and KEXINIT store hold a full modern client KEXINIT, and **`ext-info` / `server-sig-algs`** (RFC 8308) is advertised (both `rsa-sha2-256` and `ssh-ed25519`, in preference order) so the client picks a key type it can offer. Depending on the server preference the client negotiates `curve25519-sha256` + `ssh-ed25519` (default modern client choice) or `diffie-hellman-group14-sha256` + `rsa-sha2-256`. HW-validated on an ESP32-S3 with a stock OpenSSH client on both suites (curve25519/ed25519 and DH/RSA), including an ed25519-only client key
 - **In-session re-keying** (RFC 4253 §9) - client- or server-initiated; the session id is fixed at the first exchange hash across re-keys
 - **Static-only allocation** - all SSH state pre-allocated in BSS; no heap after [`begin()`](@ref DetWebServer::begin) (except the one-per-connection mbedTLS RSA operation during KEX, freed immediately)
 - **RSA private key never in static memory** - loaded from NVS → stack → sign → volatile-wipe; zero window for overflow-based key exfiltration
@@ -51,15 +54,20 @@ socket.
 | HMAC-SHA2-256                 | RFC 2104, RFC 6668         | Implemented; verify-before-use, constant-time MAC compare                                                                                           |
 | AES-256-CTR                   | FIPS 197, RFC 4344         | Implemented (HW via mbedTLS on ESP32; software AES on native)                                                                                       |
 | DH group14 (modexp)           | RFC 3526, RFC 8268         | Implemented (HW `mbedtls_mpi` on ESP32; software Montgomery on native)                                                                              |
+| curve25519-sha256 KEX (X25519)| RFC 8731, RFC 7748         | Implemented - software radix-2^16 field math; field inversion on the ESP32 MPI accelerator (`mbedtls_mpi_exp_mod`), software Fermat on native       |
+| X25519 low-order point reject | RFC 7748 §6.1              | Implemented (rejects an all-zero shared secret)                                                                                                     |
 | DH public-value validation    | RFC 4253 §8                | Implemented (rejects `e`/`f` outside `1 < v < p-1`)                                                                                                 |
+| ssh-ed25519 host key + sign   | RFC 8709, RFC 8032         | Implemented - deterministic Ed25519 over the exchange hash; SHA-512 HW on ESP32 / software on native                                                |
+| Ed25519 client-auth verify    | RFC 8709, RFC 8032 §5.1.7  | Implemented - `ssh-ed25519` client signatures verified for real on both platforms (KAT + tamper-reject tested)                                      |
 | Session key derivation        | RFC 4253 §7.2              | Implemented (six A–F keys from `K`, `H`, session_id)                                                                                                |
 | Binary packet protocol        | RFC 4253 §6                | Implemented - framing, ≥4-byte padding to 16-byte multiple, encrypt-then-MAC over `seq‖plaintext`, CTR length-peek with snapshot/restore            |
 | RSA public-key blob           | RFC 4253 §6.6, RFC 8332 §3 | Implemented - blob type string is `ssh-rsa`                                                                                                         |
 | RSA-SHA2-256 signing          | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** - ESP32 `mbedtls_pk_sign`; native full-width `m^d mod n` (sign->verify round-trip tested). Software path not in firmware |
 | RSA-SHA2-256 verification     | RFC 8332, RFC 8017 §8.2    | **Real on both platforms** (small public exponent); validated against an openssl-generated KAT                                                      |
-| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + algorithm negotiation (one choice per category)                                                                     |
-| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8          | Implemented - H over `V_C,V_S,I_C,I_S,K_S,e,f,K`; keys activate on NEWKEYS                                                                          |
-| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` and `password` methods                                                                                                    |
+| Version / KEXINIT negotiation | RFC 4253 §4.2, §7.1        | Implemented - banner exchange + crypto-agnostic negotiation (KEX method + host-key type steered to a runtime preference; cipher/MAC/comp fixed)      |
+| ext-info / server-sig-algs    | RFC 8308                   | Implemented - advertises accepted client-sig algorithms (`rsa-sha2-256`, `ssh-ed25519`) in preference order after NEWKEYS                            |
+| Exchange hash + NEWKEYS       | RFC 4253 §7.2, §8; RFC 8731 | Implemented - H over `V_C,V_S,I_C,I_S,K_S,` then `e,f` (DH mpints) or `Q_C,Q_S` (curve strings) then `K`; keys activate on NEWKEYS                    |
+| User authentication           | RFC 4252 §5, §7, §8        | Implemented - `publickey` (`rsa-sha2-256`, `ssh-ed25519`) and `password` methods                                                                    |
 | Connection / channel          | RFC 4254 §5, §6            | Implemented - single `session` channel, data stream, window flow control                                                                            |
 | Re-keying                     | RFC 4253 §9                | Implemented - packet-count threshold; session id preserved across re-keys                                                                           |
 

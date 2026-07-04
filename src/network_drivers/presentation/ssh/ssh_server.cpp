@@ -78,7 +78,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         if (ssh_kexinit_build(i, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n);
-        if (ssh_dh_generate(i) != 0)
+        if (ssh_kex_generate(i) != 0) // ephemeral for the just-negotiated KEX method
             return -1;
         s->phase = SSH_PHASE_DH_INIT;
         return 0;

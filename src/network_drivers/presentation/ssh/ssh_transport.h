@@ -11,14 +11,19 @@
  * (KEXINIT) → Diffie-Hellman key exchange (KEXDH) → NEWKEYS → key install,
  * then hands off to the user-auth layer (ssh_auth.*).
  *
- * ── Supported algorithms (single choice per category) ──────────────────────
+ * ── Supported algorithms (crypto-agnostic KEX; steered to a runtime preference) ─
  *   kex            : diffie-hellman-group14-sha256   (RFC 8268)
+ *                    curve25519-sha256               (RFC 8731)
  *   host key / sig : rsa-sha2-256                     (RFC 8332)
+ *                    ssh-ed25519                      (RFC 8709)
  *   cipher (both)  : aes256-ctr                       (RFC 4344)
  *   MAC (both)     : hmac-sha2-256                    (RFC 6668)
  *   compression    : none
  *
- * Negotiation accepts the connection only if the client offers each of these.
+ * KEX method and host-key type are negotiated: the server advertises both suites in
+ * ssh_kex_set_prefer_rsa() order (default: RSA/DH, hardware-accelerated on ESP32) and
+ * picks the first mutually supported one it holds a key for. Cipher / MAC / compression
+ * are fixed; the connection is accepted only if the client offers each of those.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -75,9 +80,28 @@ enum SshPhase
  * The exchange hash from the first KEX is retained as the session id, which
  * is required for key derivation and for every later re-key.
  */
+/** @brief Negotiated key-exchange method (crypto-agnostic KEX dispatch). */
+enum SshKexAlg
+{
+    SSH_KEX_DH_GROUP14 = 0, ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
+    SSH_KEX_CURVE25519 = 1  ///< curve25519-sha256 (RFC 8731, X25519)
+};
+
+/** @brief Negotiated host-key / signature algorithm. */
+enum SshHostkeyAlg
+{
+    SSH_HOSTKEY_RSA = 0,    ///< rsa-sha2-256 (HW-accelerated on ESP32)
+    SSH_HOSTKEY_ED25519 = 1 ///< ssh-ed25519 (RFC 8032)
+};
+
 struct SshSession
 {
     SshPhase phase; ///< Current handshake phase.
+
+    uint8_t kex_alg;     ///< SshKexAlg negotiated in KEXINIT.
+    uint8_t hostkey_alg; ///< SshHostkeyAlg negotiated in KEXINIT.
+    uint8_t ecdh_sk[32]; ///< Server X25519 ephemeral private (curve25519 KEX only; wiped after).
+    uint8_t ecdh_pk[32]; ///< Server X25519 ephemeral public (curve25519 KEX only).
 
     char v_c[SSH_VERSION_MAX]; ///< Client identification string (no CR LF).
     uint16_t v_c_len;          ///< Length of v_c.
@@ -157,6 +181,47 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap);
 int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
+ * @brief Steer KEX / host-key negotiation toward RSA + DH-group14 (default) or toward
+ *        the modern curve25519 + ed25519 suite.
+ *
+ * On ESP32 the RSA/DH path runs on the hardware MPI accelerator, while curve25519 /
+ * ed25519 are software; a device that wants the accelerated handshake keeps the default
+ * (prefer RSA), while one that wants modern crypto out of the box calls this with false.
+ * The server still advertises both suites (for whatever keys it holds), so a client that
+ * only supports one still connects - this only sets the server's preference order.
+ *
+ * Runtime-selectable so one firmware can flip per deployment. Default: prefer RSA.
+ */
+void ssh_kex_set_prefer_rsa(bool prefer);
+
+/** @brief Current negotiation preference (true = prefer RSA/DH, the ESP32-accelerated path). */
+bool ssh_kex_prefer_rsa(void);
+
+/**
+ * @brief Install an ssh-ed25519 host key from its 32-byte seed (RFC 8032 private key).
+ *
+ * Enables the ssh-ed25519 host-key algorithm for negotiation and derives the public key.
+ * The RSA host key (loaded via ssh_rsa) and this may both be present; negotiation picks
+ * one per ssh_kex_set_prefer_rsa(). If neither is installed the handshake cannot complete.
+ */
+void ssh_hostkey_ed25519_set(const uint8_t seed[32]);
+
+/** @brief True if an ssh-ed25519 host key has been installed. */
+bool ssh_hostkey_ed25519_available(void);
+
+/**
+ * @brief Generate the server ephemeral for the negotiated KEX method (call after parse).
+ *
+ * Branches on ssh_sess[i].kex_alg: for diffie-hellman-group14 it delegates to
+ * ssh_dh_generate(); for curve25519-sha256 it draws a random X25519 scalar and computes
+ * the matching public value into ssh_sess[i].ecdh_sk / ecdh_pk. Must run after
+ * ssh_kexinit_parse() has set kex_alg.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int ssh_kex_generate(uint8_t i);
+
+/**
  * @brief Build SSH_MSG_EXT_INFO advertising server-sig-algs (RFC 8308).
  *
  * Tells the client which public-key signature algorithms the server will accept
@@ -222,16 +287,19 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
                           uint8_t *out, size_t *out_len, size_t cap);
 
 /**
- * @brief Handle SSH_MSG_KEXDH_INIT end-to-end and produce the reply payload.
+ * @brief Handle KEXDH/ECDH_INIT (msg 30) end-to-end and produce the reply payload.
  *
- * Validates e, computes the shared secret K = e^y mod p, builds the exchange
- * hash H, signs H with the RSA host key, assembles SSH_MSG_KEXDH_REPLY, and
- * derives the six session keys (installed into ssh_keys[i]; encryption is not
- * activated until NEWKEYS - see ssh_newkeys_complete()). On the first KEX the
- * exchange hash is saved as the session id. K is wiped from the stack before
+ * Branches on the negotiated KEX method (ssh_sess[i].kex_alg): computes the shared
+ * secret K = e^y mod p (DH-group14) or K = X25519(sk, Q_C) (curve25519), builds the
+ * method-correct exchange hash H (e/f as mpints for DH, Q_C/Q_S as strings for curve),
+ * signs H with the negotiated host key (rsa-sha2-256 or ssh-ed25519), assembles
+ * SSH_MSG_KEXDH_REPLY, and derives the six session keys (installed into ssh_keys[i];
+ * encryption is not activated until NEWKEYS - see ssh_newkeys_complete()). On the first
+ * KEX the exchange hash is saved as the session id. K is wiped from the stack before
  * returning.
  *
- * Requires ssh_dh_generate(i) and ssh_rsa_load_pubkey() to have been called.
+ * Requires ssh_kex_generate(i) and a host key (ssh_rsa_load_pubkey() and/or
+ * ssh_hostkey_ed25519_set()) to have been called.
  *
  * @param[in]  i          SSH slot.
  * @param[in]  payload    KEXDH_INIT payload.

@@ -5,6 +5,7 @@
 // parsing, and the password method.
 
 #include "network_drivers/presentation/ssh/ssh_auth.h"
+#include "network_drivers/presentation/ssh/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/ssh_packet.h"
 #include "network_drivers/presentation/ssh/ssh_transport.h"
 #include <stdint.h>
@@ -331,6 +332,90 @@ void test_pubkey_unauthorized_key_fails()
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
 }
 
+// ---- ssh-ed25519 client key (RFC 8709) ------------------------------------
+
+// Assemble a publickey USERAUTH_REQUEST for an ssh-ed25519 key. Without with_sig this is
+// exactly the signed prefix; the signature blob is string("ssh-ed25519") || string(sig).
+static size_t build_pubkey_req_ed(uint8_t *pkt, const uint8_t *pub, const uint8_t *sig, bool with_sig,
+                                  size_t *prefix_len)
+{
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_USERAUTH_REQUEST;
+    n += put_string(pkt + n, "alice");
+    n += put_string(pkt + n, "ssh-connection");
+    n += put_string(pkt + n, "publickey");
+    pkt[n++] = 1;                            // has_signature TRUE (part of the signed data)
+    n += put_string(pkt + n, "ssh-ed25519"); // signature algorithm
+    // pubkey blob = string("ssh-ed25519") || string(pub32)
+    uint32_t blen = 4 + 11 + 4 + 32;
+    wr_u32(pkt + n, blen);
+    n += 4;
+    n += put_string(pkt + n, "ssh-ed25519");
+    wr_u32(pkt + n, 32);
+    n += 4;
+    memcpy(pkt + n, pub, 32);
+    n += 32;
+    if (prefix_len)
+        *prefix_len = n; // signed prefix ends after the blob
+    if (with_sig)
+    {
+        uint32_t inner = 4 + 11 + 4 + 64;
+        wr_u32(pkt + n, inner);
+        n += 4;
+        n += put_string(pkt + n, "ssh-ed25519");
+        wr_u32(pkt + n, 64);
+        n += 4;
+        memcpy(pkt + n, sig, 64);
+        n += 64;
+    }
+    return n;
+}
+
+// A genuine ed25519 client signature (computed here over the RFC 4252 signed data)
+// authenticates; flipping any signature byte is rejected.
+void test_pubkey_ed25519_valid_signature_succeeds()
+{
+    static const uint8_t seed[32] = {0x4c, 0xcd, 0x08, 0x9b, 0x28, 0xff, 0x96, 0xda, 0x9d, 0xb6, 0xc3,
+                                     0x46, 0xec, 0x11, 0x4e, 0x0f, 0x5b, 0x8a, 0x31, 0x9f, 0x35, 0xab,
+                                     0xa6, 0x24, 0xda, 0x8c, 0xf6, 0xed, 0x4f, 0xb8, 0xa6, 0xfb};
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    uint8_t pub[32];
+    ssh_ed25519_pubkey(pub, seed);
+
+    // Build the signed prefix, prepend string(session_id), sign the whole thing.
+    uint8_t pkt[512];
+    size_t prefix_len = 0;
+    build_pubkey_req_ed(pkt, pub, nullptr, false, &prefix_len);
+    uint8_t signed_data[4 + 32 + 512];
+    size_t sd = 0;
+    wr_u32(signed_data + sd, 32);
+    sd += 4;
+    memcpy(signed_data + sd, ssh_sess[0].session_id, 32);
+    sd += 32;
+    memcpy(signed_data + sd, pkt, prefix_len);
+    sd += prefix_len;
+    uint8_t sig[64];
+    ssh_ed25519_sign(sig, signed_data, sd, seed);
+
+    size_t n = build_pubkey_req_ed(pkt, pub, sig, true, nullptr);
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
+    TEST_ASSERT_TRUE(ssh_sess[0].authed);
+
+    // Tamper: flip a signature byte -> rejected.
+    ssh_transport_init(0);
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+    sig[10] ^= 0x01;
+    n = build_pubkey_req_ed(pkt, pub, sig, true, nullptr);
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
+    TEST_ASSERT_FALSE(ssh_sess[0].authed);
+}
+
 // SERVICE_REQUEST parsing rejects a wrong/empty message, a truncated service string,
 // and an output buffer too small for SERVICE_ACCEPT.
 void test_service_request_errors()
@@ -574,6 +659,7 @@ int main()
     RUN_TEST(test_handle_request_no_callback_fails);
     RUN_TEST(test_pubkey_probe_returns_pk_ok);
     RUN_TEST(test_pubkey_valid_signature_succeeds);
+    RUN_TEST(test_pubkey_ed25519_valid_signature_succeeds);
     RUN_TEST(test_pubkey_tampered_signature_fails);
     RUN_TEST(test_pubkey_unauthorized_key_fails);
     return UNITY_END();

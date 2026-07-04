@@ -8,6 +8,32 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH curve25519/ed25519 handshake overflowed the 8 KB worker task stack
+
+- **Status:** FIXED (HW-validated on an ESP32-S3; the modern-crypto handshake completes with
+  the raised default and ~1.8 KB of stack margin).
+- **Found:** 2026-07-03, first on-hardware connect to the new curve25519-sha256 +
+  ssh-ed25519 suite: the client reached `expecting SSH2_MSG_KEX_ECDH_REPLY` then
+  `Connection reset by peer`, and the serial log showed
+  `Guru Meditation Error: ... Stack canary watchpoint triggered (detws_worker)`.
+- **Root cause:** the software field arithmetic for curve25519 (`ssh_x25519`) and ed25519
+  (`ssh_ed25519_sign`), in radix-2^16 with many `ssh_gf` temporaries per frame, nests deeper
+  than the finite-field DH/RSA path - plus the field inversion calls the mbedTLS bignum
+  modexp at the bottom of that chain. Measured peak worker-task stack use is ~10.5 KB
+  (`uxTaskGetStackHighWaterMark`: a 16 KB stack left 5928 B free at the deepest point), which
+  overflows the historical 8 KB worker default sized for the ~7 KB RSA path.
+- **Fix:** `DETWS_WORKER_TASK_STACK` now defaults to 12288 when `DETWS_ENABLE_SSH` is set
+  (8192 otherwise), a new `DETWS_WORKER_STACK_CURVE_MIN` (12288) documents the floor, and the
+  compile-time guard enforces it for SSH builds (the RSA-only floor still applies to
+  OIDC-only builds). Re-flashed at the shipped 12288 default: the curve25519 + ssh-ed25519 +
+  ed25519-client-auth session runs to a data round-trip with 1832 B of stack free at peak, no
+  canary trip; the DH-group14 + rsa-sha2-256 path is unchanged (both echo on hardware).
+- **Prevention:** the worker stack is now sized from a measured high-water mark, not a guess,
+  and a build-time `#error` catches any future lowering below the curve floor before it can
+  reach the canary at runtime.
+
+---
+
 ## SSH answered SSH_MSG_GLOBAL_REQUEST with UNIMPLEMENTED instead of REQUEST_FAILURE
 
 - **Status:** FIXED (`native_ssh` 127/127; the dispatcher now routes GLOBAL_REQUEST to a

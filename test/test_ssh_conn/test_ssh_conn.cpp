@@ -8,11 +8,17 @@
 #include "lwip/tcp.h"
 #include "network_drivers/presentation/ssh/ssh_conn.h"
 #include "network_drivers/presentation/ssh/ssh_packet.h"
+#include "network_drivers/presentation/ssh/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/ssh_transport.h"
 #include "network_drivers/transport/transport.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
+
+// Native RSA test fixture (defined in ssh_rsa.cpp native path).
+extern uint8_t _test_rsa_n[256];
+extern uint8_t _test_rsa_d[256];
+extern uint8_t _test_rsa_e[4];
 
 void setUp()
 {
@@ -26,6 +32,17 @@ void setUp()
         conn_pool[i].proto_slot = DETWS_PROTO_SLOT_NONE;
     }
     ssh_conn_setup();
+    // A host key must be available for host-key negotiation to succeed (RSA here).
+    memset(_test_rsa_n, 0, 256);
+    _test_rsa_n[0] = 0xFF;
+    _test_rsa_n[255] = 0x01;
+    memset(_test_rsa_d, 0, 256);
+    _test_rsa_d[255] = 0x01;
+    _test_rsa_e[0] = 0x00;
+    _test_rsa_e[1] = 0x01;
+    _test_rsa_e[2] = 0x00;
+    _test_rsa_e[3] = 0x01;
+    ssh_rsa_load_pubkey();
     tcp_capture_reset();
 }
 void tearDown()

@@ -13,6 +13,9 @@
  */
 
 #include "ssh_curve25519.h"
+#ifdef ARDUINO
+#include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
+#endif
 
 // Small field constants.
 static const ssh_gf GF_1 = {1};
@@ -70,9 +73,10 @@ void ssh_gf_sq(ssh_gf out, const ssh_gf a)
     ssh_gf_mul(out, a, a);
 }
 
-// out = a^-1 = a^(p-2). Fixed addition chain: square 255 times, multiplying in a at
-// every bit except positions 2 and 4 (which are 0 in p-2 = 2^255 - 21).
-void ssh_gf_inv(ssh_gf out, const ssh_gf a)
+// Software field inversion out = a^-1 = a^(p-2). Fixed addition chain: square 255 times,
+// multiplying in a at every bit except positions 2 and 4 (which are 0 in p-2 = 2^255 - 21).
+// The reference path (native builds) and the fallback if the hardware modexp ever fails.
+static void gf_inv_sw(ssh_gf out, const ssh_gf a)
 {
     ssh_gf c;
     ssh_gf_copy(c, a);
@@ -84,6 +88,56 @@ void ssh_gf_inv(ssh_gf out, const ssh_gf a)
     }
     ssh_gf_copy(out, c);
 }
+
+#ifdef ARDUINO
+// p = 2^255 - 19 and the inversion exponent p-2 = 2^255 - 21, big-endian for mbedtls.
+static const uint8_t P25519_BE[32] = {0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xed};
+static const uint8_t P25519_MINUS2_BE[32] = {0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xeb};
+
+// out = a^(p-2) mod p on the ESP32 MPI/RSA hardware accelerator - the same modexp engine
+// that runs RSA sign and DH-group14. mbedtls_mpi_exp_mod takes an arbitrary modulus, so
+// 2^255-19 runs on the accelerator. Only the inversion is offloaded (one big modexp);
+// the 255-round Montgomery ladder multiply stays in the software radix-2^16 core, where
+// per-multiply marshalling to the peripheral would cost more than it saves. The exponent
+// is a public constant; the base is packed to its canonical residue first.
+void ssh_gf_inv(ssh_gf out, const ssh_gf a)
+{
+    uint8_t le[32], be[32];
+    ssh_gf_pack(le, a); // canonical little-endian residue in [0, p)
+    for (int i = 0; i < 32; i++)
+        be[i] = le[31 - i]; // to big-endian for mbedtls
+
+    mbedtls_mpi A, E, N, X;
+    mbedtls_mpi_init(&A);
+    mbedtls_mpi_init(&E);
+    mbedtls_mpi_init(&N);
+    mbedtls_mpi_init(&X);
+    bool ok = mbedtls_mpi_read_binary(&A, be, 32) == 0 && mbedtls_mpi_read_binary(&E, P25519_MINUS2_BE, 32) == 0 &&
+              mbedtls_mpi_read_binary(&N, P25519_BE, 32) == 0 && mbedtls_mpi_exp_mod(&X, &A, &E, &N, nullptr) == 0 &&
+              mbedtls_mpi_write_binary(&X, be, 32) == 0;
+    mbedtls_mpi_free(&A);
+    mbedtls_mpi_free(&E);
+    mbedtls_mpi_free(&N);
+    mbedtls_mpi_free(&X);
+    if (!ok)
+    {
+        gf_inv_sw(out, a); // never expected; keep correctness if the peripheral path fails
+        return;
+    }
+    for (int i = 0; i < 32; i++)
+        le[i] = be[31 - i];
+    ssh_gf_unpack(out, le);
+}
+#else
+void ssh_gf_inv(ssh_gf out, const ssh_gf a)
+{
+    gf_inv_sw(out, a);
+}
+#endif
 
 // Constant-time conditional swap of p and q when b == 1 (b must be 0 or 1).
 void ssh_gf_cswap(ssh_gf p, ssh_gf q, int b)

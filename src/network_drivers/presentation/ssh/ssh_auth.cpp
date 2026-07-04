@@ -7,6 +7,7 @@
  */
 
 #include "ssh_auth.h"
+#include "ssh_ed25519.h"   // ssh_ed25519_verify() (ssh-ed25519 client keys)
 #include "ssh_packet.h"    // SSH_MSG_* constants
 #include "ssh_rsa.h"       // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "ssh_transport.h" // ssh_sess[], SshPhase
@@ -115,6 +116,26 @@ static bool parse_ssh_rsa_blob(const uint8_t *blob, uint32_t blen, uint8_t n_be[
     if (!mpint_to_fixed(n_mp, n_len, n_be, SSH_RSA_KEY_BYTES))
         return false;
 
+    return true;
+}
+
+// Parse an "ssh-ed25519" public-key blob: string("ssh-ed25519") string(pub32). (RFC 8709 §4)
+static bool parse_ssh_ed25519_blob(const uint8_t *blob, uint32_t blen, uint8_t pub[32])
+{
+    size_t off = 0;
+    const uint8_t *type;
+    uint32_t type_len;
+    if (!read_string_ref(blob, blen, &off, &type, &type_len))
+        return false;
+    if (type_len != 11 || memcmp(type, "ssh-ed25519", 11) != 0)
+        return false;
+    const uint8_t *pk;
+    uint32_t pk_len;
+    if (!read_string_ref(blob, blen, &off, &pk, &pk_len))
+        return false;
+    if (pk_len != 32)
+        return false;
+    memcpy(pub, pk, 32);
     return true;
 }
 
@@ -278,9 +299,15 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
     // ---- publickey method (RFC 4252 §7) ----
     if (req.is_pubkey)
     {
-        uint8_t n_be[SSH_RSA_KEY_BYTES], e_be[4];
-        bool key_ok = parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be) && g_pk_cb &&
-                      g_pk_cb(req.user, req.pk_blob, req.pk_blob_len);
+        // Key type is taken from the blob (the algo name only steers the signature).
+        bool is_ed = req.pk_blob_len >= 4 + 11 && memcmp(req.pk_blob,
+                                                         "\x00\x00\x00\x0b"
+                                                         "ssh-ed25519",
+                                                         4 + 11) == 0;
+        uint8_t n_be[SSH_RSA_KEY_BYTES], e_be[4], ed_pub[32];
+        bool key_ok = (is_ed ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
+                             : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be)) &&
+                      g_pk_cb && g_pk_cb(req.user, req.pk_blob, req.pk_blob_len);
         if (!key_ok)
             return ssh_auth_build_failure(out, out_len, cap, false);
 
@@ -299,7 +326,9 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
         memcpy(signed_data + sd, req.signed_prefix, req.signed_prefix_len);
         sd += req.signed_prefix_len;
 
-        if (ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len) == 0)
+        bool sig_ok = is_ed ? (req.signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req.signature))
+                            : (ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len) == 0);
+        if (sig_ok)
         {
             ssh_sess[i].authed = true;
             ssh_sess[i].phase = SSH_PHASE_OPEN;
