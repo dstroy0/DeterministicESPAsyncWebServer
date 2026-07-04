@@ -6,6 +6,13 @@
     "flash_bytes": 750417,
     "ram_bytes": 66200
   },
+  "ADS1115": {
+    "example": "L7-Application/66.Ads1115",
+    "flags": "-DDETWS_ENABLE_ADS1115=1",
+    "board": "esp32dev",
+    "flash_bytes": 286793,
+    "ram_bytes": 21800
+  },
   "AUDIT_LOG": {
     "example": "L7-Application/49.AuditLog",
     "flags": "-DDETWS_ENABLE_AUDIT_LOG=1",

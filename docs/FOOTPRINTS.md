@@ -9,6 +9,7 @@ from each example's `pio ci` size report and aggregated into
 | Feature                                  | Example                                 | Flash            | RAM              |
 | ---------------------------------------- | --------------------------------------- | ---------------- | ---------------- |
 | `ACCEPT_THROTTLE`                        | L4-Transport/02.AcceptThrottle          | 732.8 KB (57.3%) | 64.6 KB (20.2%)  |
+| `ADS1115`                                | L7-Application/66.Ads1115               | 280.1 KB (21.9%) | 21.3 KB (6.7%)   |
 | `AUDIT_LOG`                              | L7-Application/49.AuditLog              | 735.2 KB (57.4%) | 67.6 KB (21.1%)  |
 | `AUTH_LOCKOUT`                           | L6-Presentation/12.AuthLockout          | 734.1 KB (57.3%) | 65.2 KB (20.4%)  |
 | `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 752.7 KB (58.8%) | 44.3 KB (13.8%)  |
