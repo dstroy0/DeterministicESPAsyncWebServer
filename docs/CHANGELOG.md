@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`a5e42be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5e42be3b163b7565354a99fcb42945aaf2e3fc2))
+- update CHANGELOG.md [skip ci] ([`8983609`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8983609d4968d4f3df8f23cc227976d5968be52f))
 - add STARTTLS to the spellcheck dictionary ([`d898c05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d898c05bc8424ab0e64d3f918b3910ccb22bde76))
 - update test report [skip ci] ([`49467bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49467bbaa253bed8ba49a49a5deee28ab27d753a))
 
 ### Documentation
 
+- generate EXAMPLES.md from examples/; group README feature tables by OSI layer ([`d677096`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d67709614928196e14d445a8adbd7153ea794d08))
 - update ESP32 build footprints [skip ci] ([`1c664a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c664a360c617ebfa88171dc38102063da1b1f50))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`0c9ea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c9ea82221a5f07daece2fcd41af5611e4c9d5e3))
 
