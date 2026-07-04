@@ -241,9 +241,9 @@ Open follow-ups discovered during the above:
       Still out of scope (add only if needed): separate (deferred) responses, and CON
       retransmission + message de-duplication - the model stays piggybacked-only
       (CON -> piggybacked ACK, NON -> NON).
-- [~] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; PSRAM-arena
-      placement HW-verified v4.95.0 - the N-connection concurrent-handshake soak is the
-      one remaining step, now runnable on the PSRAM boards on hand.)_ The whole mbedTLS
+- [~] **Concurrent TLS** (`MAX_TLS_CONNS` > 1). _(library side landed; a `MAX_TLS_CONNS=2`
+      PSRAM build was HW-verified to link, boot, and run on an ESP32-S3 - the only unproven
+      piece is a live 2-clients-at-once soak, blocked by the lab network, not the code.)_ The whole mbedTLS
       working set is served from one static
       `.bss` arena, and the real internal ceiling is the ESP32 `dram0_0_seg` region
       (~122 KB, ROM-reserved both ends - NOT the 320 KB PlatformIO prints), so a 2nd
@@ -260,8 +260,18 @@ Open follow-ups discovered during the above:
       (2) [`DETWS_TLS_MAX_FRAG_LEN`](@ref DETWS_TLS_MAX_FRAG_LEN) (RFC 6066 MFL, applied to
       server + client) caps records, pairing with a custom-IDF `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`
       shrink; (3) a `memory.ld` DRAM reclaim (advanced - the `0xdb5c` is ROM-reserved,
-      so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **Remaining:**
-      drive N simultaneous TLS handshakes against the PSRAM build and confirm free-heap headroom.
+      so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **HW-verified on an
+      ESP32-S3 N16R8** (arduino-esp32 3.x, PSRAM arena): `MAX_TLS_CONNS=2` with a 128 KB arena
+      links using only **56 KB internal DRAM** (17%; the same build with the arena in DRAM uses
+      187 KB), boots octal PSRAM, and `begin_tls()` starts the HTTPS listener with a flat heap and
+      8.2 MB PSRAM free - the arena is static `.ext_ram.bss`, zero heap. Note the S3's data segment
+      is far larger than the classic ESP32's ~122 KB, so on the S3 both connections fit in DRAM too;
+      PSRAM's win there is headroom, and it is _required_ only on the tight classic-ESP32 segment.
+      This run also uncovered + fixed a core-locking crash in the listener bring-up on arduino-esp32
+      3.x (see docs/BUGS.md). **Remaining:** a live 2-clients-at-once handshake soak; not run here
+      because the test host cannot reach the device (AP client isolation on the lab WiFi + no admin
+      to add a route - the same topology the interop harness works around with a device-out broker),
+      not a code limitation.
 - [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DETWS_ENABLE_ETHERNET`:
       `init_eth_physical()` / `eth_ready()` in `network_drivers/physical` wrap the Arduino
       ETH library for an RMII PHY (LAN8720 / ...), configured by the standard `ETH_PHY_*`

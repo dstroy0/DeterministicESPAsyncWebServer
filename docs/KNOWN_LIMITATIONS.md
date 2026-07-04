@@ -70,6 +70,12 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
        Verified end to end on an ESP32-S3 N16R8: with a rebuilt (flag-enabled) core, an
        `EXT_RAM_BSS_ATTR` array lands at `0x3C0xxxxx` (PSRAM, `esp_ptr_external_ram()=1`), the
        board boots octal with no watchdog loop, and internal DRAM use drops sharply - zero heap.
+       A full `MAX_TLS_CONNS=2` build (128 KB arena) then links using **56 KB** internal DRAM
+       with the arena in PSRAM versus **187 KB** with it in DRAM, boots, and `begin_tls()` runs
+       with a flat heap. Note the ~122 KB `dram0_0_seg` ceiling above is the **classic ESP32**;
+       the S3's data segment is much larger, so on the S3 two connections fit in DRAM as well and
+       PSRAM buys headroom rather than being strictly required - it is required only where the
+       segment is tight (the classic ESP32).
         - **Flash-cache / OTA caveat (know this before choosing PSRAM).** PSRAM is on the flash
           cache bus, so while flash is being written (an NVS commit, an OTA update) PSRAM is
           momentarily unreadable, and TLS code that touches the arena during that window faults

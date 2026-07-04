@@ -424,6 +424,10 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     return ERR_OK;
 }
 
+#ifdef ARDUINO
+static err_t listener_lwip_marshal(uint8_t idx, uint16_t port, bool create);
+#endif
+
 int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
 {
     if (idx >= MAX_LISTENERS)
@@ -444,6 +448,19 @@ int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
     if (!lst->queue)
         return -1;
 
+#ifdef ARDUINO
+    // Create the listening PCB in tcpip_thread. With lwIP core-locking (arduino-esp32
+    // 3.x / IDF 5.x) a raw tcp_new/bind/listen from the app or worker task that calls
+    // begin() asserts ("Required to lock TCPIP core functionality"), so marshal it -
+    // the same path the dynamic listener uses. Fields the accept callback reads (proto,
+    // queue) are set above, before the pcb can accept.
+    if (listener_lwip_marshal(idx, port, true) != ERR_OK)
+    {
+        vQueueDelete(lst->queue);
+        lst->queue = nullptr;
+        return -1;
+    }
+#else
     struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
     if (!pcb)
         return -1;
@@ -464,6 +481,7 @@ int32_t listener_add(uint8_t idx, uint16_t port, ConnProto proto, bool tls)
 
     tcp_arg(lst->listen_pcb, (void *)(uintptr_t)idx);
     tcp_accept(lst->listen_pcb, listener_accept_cb);
+#endif
     lst->active = true;
 
     return 1;
@@ -477,11 +495,15 @@ void listener_stop(uint8_t idx)
     if (!lst->active)
         return;
     lst->active = false;
+#ifdef ARDUINO
+    listener_lwip_marshal(idx, 0, false); // close the listen pcb in tcpip_thread
+#else
     if (lst->listen_pcb)
     {
         tcp_close(lst->listen_pcb);
         lst->listen_pcb = nullptr;
     }
+#endif
     if (lst->queue)
     {
         vQueueDelete(lst->queue);
@@ -496,10 +518,11 @@ void listener_stop_all()
 }
 
 // ---------------------------------------------------------------------------
-// Dynamic (thread-safe) listener create / stop - used by the SSH remote-forward
-// owner, which opens a listener from a worker task in response to `ssh -R`. The raw
-// lwIP tcp_bind/tcp_listen/tcp_close must run in tcpip_thread (this build has TCPIP
-// core-locking off), so they are marshaled via tcpip_api_call().
+// tcpip_thread-marshaled listener create / close. Raw lwIP tcp_new/bind/listen/close
+// must run in tcpip_thread: with lwIP core-locking (arduino-esp32 3.x / IDF 5.x) a
+// call from any other task asserts, and without it a call off tcpip_thread races the
+// stack. Both listener_add/stop (from begin()) and the dynamic listeners (SSH `ssh -R`
+// remote-forward, opened from a worker task) route through here via tcpip_api_call().
 // ---------------------------------------------------------------------------
 
 #ifdef ARDUINO

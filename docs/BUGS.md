@@ -8,6 +8,37 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Listener bring-up called raw lwIP off tcpip_thread, asserting on arduino-esp32 3.x
+
+- **Status:** FIXED (HW-validated on an ESP32-S3: `begin_tls()` now starts the HTTPS
+  listener and the server runs, where before it crash-looped at boot).
+- **Found:** 2026-07-04, first on-hardware run of any listener on the arduino-esp32 **3.x**
+  core (IDF 5.x) - surfaced while HW-proving the PSRAM TLS arena. The board booted, joined
+  WiFi, then panicked in `begin_tls()`:
+  `assert failed: tcp_alloc ...lwip/src/core/tcp.c:1854 (Required to lock TCPIP core functionality!)`,
+  rebooting in a loop.
+- **Root cause:** `listener_add()` / `listener_stop()` (the path `begin()` and `begin_tls()`
+  use) called raw lwIP `tcp_new_ip_type` / `tcp_bind` / `tcp_listen_with_backlog` / `tcp_close`
+  **directly from the app (setup/loop) task**, which is not `tcpip_thread` and does not hold the
+  TCPIP core lock. arduino-esp32 3.x ships `CONFIG_LWIP_TCPIP_CORE_LOCKING=1` +
+  `CONFIG_LWIP_CHECK_THREAD_SAFETY=1`, so `LWIP_ASSERT_CORE_LOCKED` fires. It was latent because
+  (1) all prior runtime HW testing used the classic ESP32 via PlatformIO (arduino 2.x / IDF 4.x),
+  where the assert is compiled out and the unlocked call merely raced, and (2) the "Arduino Build"
+  CI only **compiles** the 3.x core, never runs it. The _dynamic_ listener (SSH `ssh -R`) already
+  marshaled correctly via `tcpip_api_call()`; the primary listener was the one unmarshaled path,
+  written under a stale "this build has core-locking off" assumption.
+- **Fix:** `listener_add()` / `listener_stop()` now route their create/close through the same
+  `listener_lwip_marshal()` (`tcpip_api_call`) the dynamic listener uses, on ARDUINO. The raw path
+  stays only for the native host build (no lwIP thread). This is correct on **both** cores: with
+  core-locking it satisfies the lock; without it, it still removes the off-thread race. The stale
+  comment was corrected.
+- **Prevention:** HW test the modern (arduino-esp32 3.x) core at runtime, not only compile it -
+  the core-locking assert only fires when the code actually runs. Any new raw lwIP `tcp_*` from a
+  non-callback context must go through `tcpip_api_call()` (transport `det_tcp_do` and the client
+  `cc_do_*` were already correct; the listener now matches).
+
+---
+
 ## SSH curve25519/ed25519 handshake overflowed the 8 KB worker task stack
 
 - **Status:** FIXED (HW-validated on an ESP32-S3; the modern-crypto handshake completes with
