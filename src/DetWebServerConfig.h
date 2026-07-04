@@ -2107,6 +2107,36 @@
 #endif
 
 /**
+ * @brief Authoritative DNS server (services/dns_server) on UDP/53.
+ *
+ * Default off. Resolves a small fixed table of `name -> IPv4` A records you register with
+ * dns_server_add(), so devices on an offline / air-gapped LAN can use names instead of raw
+ * IPs (a companion to the NTP server for offline infrastructure). Answers A/IN queries from
+ * the table, returns NXDOMAIN for unknown names, and ignores other query types. The response
+ * builder is pure and host-tested; the wire binding is the transport UDP service. This is a
+ * general resolver, distinct from the provisioning captive-portal DNS (which answers every
+ * query with the softAP IP) - do not enable both (they both bind :53).
+ */
+#ifndef DETWS_ENABLE_DNS_SERVER
+#define DETWS_ENABLE_DNS_SERVER 0
+#endif
+
+/** @brief Max A records in the DNS server's fixed table. */
+#ifndef DETWS_DNS_SERVER_MAX_RECORDS
+#define DETWS_DNS_SERVER_MAX_RECORDS 8
+#endif
+
+/** @brief TTL (seconds) the DNS server puts on its answers. */
+#ifndef DETWS_DNS_SERVER_TTL
+#define DETWS_DNS_SERVER_TTL 60
+#endif
+
+/** @brief Max length of a queried/stored DNS name (bytes, incl NUL). */
+#ifndef DETWS_DNS_NAME_MAX
+#define DETWS_DNS_NAME_MAX 128
+#endif
+
+/**
  * @brief Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock
  *        time is available.
  *

@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 105 runnable examples under [examples/](../examples), grouped by
+The library ships 106 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -163,6 +163,7 @@ Routing, protocols, services, and clients:
 [56.OpcUaClient](../examples/L7-Application/56.OpcUaClient) ·
 [57.SmtpAlert](../examples/L7-Application/57.SmtpAlert) ·
 [58.NtpServer](../examples/L7-Application/58.NtpServer) ·
-[59.StatsdMetrics](../examples/L7-Application/59.StatsdMetrics)
+[59.StatsdMetrics](../examples/L7-Application/59.StatsdMetrics) ·
+[60.DnsServer](../examples/L7-Application/60.DnsServer)
 
 <!-- END GENERATED EXAMPLE INDEX -->

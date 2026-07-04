@@ -1,0 +1,58 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file 60.DnsServer.ino
+ * @brief Run a tiny DNS server so LAN devices can use names, not IPs (DETWS_ENABLE_DNS_SERVER).
+ *
+ * On a network with no real DNS (offline, air-gapped, a lab bench), nothing turns
+ * "printer.lan" into an address. This makes the ESP32 answer those lookups from a small table
+ * you fill in - a companion to the NTP server (example 58) for self-hosted infrastructure.
+ * It also registers its own name, so `esp32.lan` resolves to this board.
+ *
+ * Point another device's DNS at this board's IP, then `nslookup printer.lan <board-ip>`.
+ *
+ * Build flags (PlatformIO): `-DDETWS_ENABLE_DNS_SERVER=1`
+ */
+
+#define DETWS_ENABLE_DNS_SERVER 1
+
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical/physical.h"
+#include "services/dns_server/dns_server.h"
+#include <WiFi.h>
+
+static const char *SSID = "YOUR_SSID";
+static const char *PASSWORD = "YOUR_PASSWORD";
+
+void setup()
+{
+    Serial.begin(115200);
+
+    init_wifi_physical(SSID, PASSWORD);
+    Serial.print("Connecting to WiFi");
+    while (!wifi_ready())
+    {
+        delay(250);
+        Serial.print('.');
+    }
+    IPAddress ip = WiFi.localIP();
+    Serial.print("\nIP: ");
+    Serial.println(ip);
+    WiFi.setSleep(false);
+
+    // The name -> IPv4 records this server will answer. Edit these for your network.
+    dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
+    dns_server_add("printer.lan", 192, 168, 1, 50);
+    dns_server_add("nas.lan", 192, 168, 1, 60);
+
+    if (dns_server_begin())
+        Serial.println("DNS server on UDP/53 (point a device's DNS here, then: nslookup printer.lan <this-ip>)");
+    else
+        Serial.println("DNS server failed to bind :53");
+}
+
+void loop()
+{
+    delay(1000);
+}
