@@ -195,6 +195,13 @@
     "flash_bytes": 761089,
     "ram_bytes": 85944
   },
+  "INA219": {
+    "example": "L7-Application/67.Ina219",
+    "flags": "-DDETWS_ENABLE_INA219=1",
+    "board": "esp32dev",
+    "flash_bytes": 286961,
+    "ram_bytes": 21800
+  },
   "IPV6": {
     "example": "Foundation/20.IPv6",
     "flags": "-DDETWS_ENABLE_IPV6=1",
