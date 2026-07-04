@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`28c3fd0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28c3fd0ab1507bd11d92343889bc9379e3544077))
+- update CHANGELOG.md [skip ci] ([`72aa50e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72aa50e0bc10b10b1abedca6f83c5f45b4560466))
 - update test report [skip ci] ([`a5e42be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5e42be3b163b7565354a99fcb42945aaf2e3fc2))
 - update CHANGELOG.md [skip ci] ([`8983609`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8983609d4968d4f3df8f23cc227976d5968be52f))
 - add STARTTLS to the spellcheck dictionary ([`d898c05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d898c05bc8424ab0e64d3f918b3910ccb22bde76))
@@ -13,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- style the OSI feature tables - full width, centered, collapsed, themed ([`1dd6580`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1dd658018c543ec4a04965d1ed25fe31bead23ac))
 - generate EXAMPLES.md from examples/; group README feature tables by OSI layer ([`d677096`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d67709614928196e14d445a8adbd7153ea794d08))
 - update ESP32 build footprints [skip ci] ([`1c664a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c664a360c617ebfa88171dc38102063da1b1f50))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`0c9ea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c9ea82221a5f07daece2fcd41af5611e4c9d5e3))
