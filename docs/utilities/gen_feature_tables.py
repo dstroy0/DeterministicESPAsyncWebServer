@@ -65,6 +65,7 @@ LAYER_MEMBERS = {
         "Interface Forwarding",
         "LD2410",
         "LoRa",
+        "MPR121",
         "nRF24",
         "PN532",
         "Radio Gateway",

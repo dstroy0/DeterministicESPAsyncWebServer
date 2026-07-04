@@ -902,6 +902,12 @@
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
     },
+    "native_mpr121": {
+      "desc": "MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into\nan electrode bitmask (masking proximity / over-current), the per-electrode touched test, the\nproximity / over-current flags, the 10-bit filtered/baseline word, and the exact bytes of the\nregister bring-up sequence. Pure - the I2C read/write is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_MPR121=1"],
+      "src": ["+<services/mpr121/mpr121.cpp>"],
+      "tests": ["test_mpr121"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],

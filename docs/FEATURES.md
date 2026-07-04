@@ -406,6 +406,12 @@ Opt-in Modbus master codec + register scanner. Default off. services/modbus/modb
 
 Modbus RTU framing (serial / RS-485). Default off; implies MODBUS. Adds the RTU ADU codec `modbus_rtu_process_adu()` - a `[slave addr][PDU][CRC16]` frame (CRC16-Modbus, little-endian) wrapped around the existing host-tested PDU dispatch: a CRC mismatch or a non-matching unit address is dropped silently (no reply, per the spec), and a broadcast (address 0) is processed with no reply. Pure and host-tested; feed it from a UART/RS-485 driver (the serial transport, framed by the 3.5-character inter-frame idle, is the application's). See src/services/modbus/modbus.h.
 
+## MPR121
+
+`DETWS_ENABLE_MPR121`
+
+NXP MPR121 12-channel capacitive-touch controller (I2C). Default off. services/mpr121 decodes the touch-status word (`mpr121_touched` masks the 12 electrode bits out of the 16-bit status, which also carries the proximity electrode at bit 12 and the over-current flag at bit 15) and the chip's 10-bit filtered / baseline per-electrode data (`mpr121_word10`), and builds the whole register bring-up as `(register, value)` byte pairs (`mpr121_build_init`: soft reset, the NXP AN3944 rising/falling/touched filter defaults, per-electrode touch/release thresholds, CONFIG1/2, and the electrode-configuration register that starts it running with baseline tracking). The decode + init-sequence builder are pure and host-tested (`native_mpr121`); only the register read/write touches I2C. A cheap solder-and-test breakout for touch buttons / sliders. Example 63.Mpr121 prints which pad you touch. See src/services/mpr121/mpr121.h.
+
 ## MQTT
 
 `DETWS_ENABLE_MQTT`

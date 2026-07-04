@@ -2208,6 +2208,25 @@
 #endif
 
 /**
+ * @brief NXP MPR121 12-channel capacitive-touch controller (I2C).
+ *
+ * Default off. services/mpr121 decodes the touch-status word (12 electrode bits + proximity +
+ * over-current) and the 10-bit filtered / baseline per-electrode data, and builds the register
+ * init sequence (soft reset, the NXP filter/AFE defaults, per-electrode touch/release
+ * thresholds, and the electrode-configuration start). The decode + init-sequence builder are
+ * pure and host-tested; only the register read/write touches I2C. A cheap solder-and-test
+ * breakout for touch buttons / sliders: wire it up, touch a pad, watch the bit set.
+ */
+#ifndef DETWS_ENABLE_MPR121
+#define DETWS_ENABLE_MPR121 0
+#endif
+
+/** @brief I2C address of the MPR121 (0x5A default; 0x5B/0x5C/0x5D via the ADDR pin). */
+#ifndef DETWS_MPR121_I2C_ADDR
+#define DETWS_MPR121_I2C_ADDR 0x5A
+#endif
+
+/**
  * @brief Typed NVS configuration store (WiFi creds, IP config, ... as blobs).
  *
  * When set, src/services/config_store/config_store.h provides a typed key/value
