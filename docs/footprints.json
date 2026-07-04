@@ -216,6 +216,13 @@
     "flash_bytes": 751333,
     "ram_bytes": 66200
   },
+  "LD2410": {
+    "example": "L7-Application/62.Ld2410",
+    "flags": "-DDETWS_ENABLE_LD2410=1",
+    "board": "esp32dev",
+    "flash_bytes": 270629,
+    "ram_bytes": 21576
+  },
   "LOGBUF": {
     "example": "L7-Application/41.LogBuffer",
     "flags": "-DDETWS_ENABLE_LOGBUF=1",

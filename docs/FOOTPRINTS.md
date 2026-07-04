@@ -39,6 +39,7 @@ from each example's `pio ci` size report and aggregated into
 | `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 734.3 KB (57.4%) | 64.8 KB (20.2%)  |
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 735.1 KB (57.4%) | 65.2 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 733.7 KB (57.3%) | 64.6 KB (20.2%)  |
+| `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.6%) | 21.1 KB (6.6%)   |
 | `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.4 KB (57.4%) | 67.7 KB (21.1%)  |
 | `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.8 KB (21.1%) | 21.2 KB (6.6%)   |
 | `MDNS`                                   | L7-Application/15.mDNS                  | 757.9 KB (59.2%) | 66.5 KB (20.8%)  |
