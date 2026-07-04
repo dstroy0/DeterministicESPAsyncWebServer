@@ -749,7 +749,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     // 4. Sign H with the negotiated host key (rsa-sha2-256 or ssh-ed25519).
     uint8_t sig[SSH_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
     size_t sig_len = 0;
-    const char *sig_name = 0;
+    const char *sig_name = nullptr;
     if (sign_hash(i, H, sig, &sig_len, sizeof(sig), &sig_name) != 0)
     {
         ssh_wipe(k_be, sizeof(k_be));

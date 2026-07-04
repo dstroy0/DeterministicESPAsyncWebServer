@@ -134,9 +134,11 @@ bool promisc_begin(uint8_t, promisc_sink_fn)
 }
 void promisc_set_channel(uint8_t)
 {
+    // host build: no radio, no channel to set
 }
 void promisc_end(void)
 {
+    // host build: no radio, nothing to stop
 }
 
 #endif // ARDUINO

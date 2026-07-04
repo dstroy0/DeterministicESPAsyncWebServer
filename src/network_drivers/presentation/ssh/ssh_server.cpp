@@ -124,10 +124,13 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         // Brute-force defense (RFC 4252 §4): bound failed attempts per connection. Only an actual
         // USERAUTH_FAILURE counts - a SUCCESS or the publickey PK_OK probe does not. Too many ->
         // DISCONNECT then close.
-        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE && ++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_FAILURE)
         {
-            emit_auth_failure_disconnect(i, buf);
-            return -1; // close the connection
+            if (++s->auth_failures >= SSH_MAX_AUTH_ATTEMPTS)
+            {
+                emit_auth_failure_disconnect(i, buf);
+                return -1; // close the connection
+            }
         }
         return 0;
 

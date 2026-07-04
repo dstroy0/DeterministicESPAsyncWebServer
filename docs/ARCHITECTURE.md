@@ -67,7 +67,13 @@ app / presentation  -->  det_conn_send / det_conn_flush / det_conn_sndbuf
                          det_tcp_marshal (DET_OP_*)  -->  tcpip_thread: tcp_write / tcp_output
 ```
 
-This is the model the RX side is being moved toward. See [[transport-io-api]].
+The **same marshal rule covers every raw lwIP call, not just app data**: the TCP
+listener bring-up (`listener_add` / `listener_stop`), the UDP transport (`det_udp_*`,
+used by SNMP / CoAP / captive-DNS / syslog / telemetry), the outbound client
+(`det_client`), and the DNS resolver all route their `tcp_*` / `udp_*` through
+`tcpip_api_call`. This is mandatory on arduino-esp32 3.x, where lwIP core-locking
+asserts on a raw call from any task but `tcpip_thread` (see docs/BUGS.md); keeping raw
+lwIP out of the app and worker tasks is the one thing this layer exists to enforce.
 
 ## RX path - the concern being straightened
 

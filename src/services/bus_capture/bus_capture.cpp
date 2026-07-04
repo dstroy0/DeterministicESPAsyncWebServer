@@ -134,9 +134,11 @@ bool bus_capture_begin(int, int, uint32_t, bus_capture_sink_fn)
 }
 void bus_capture_poll(void)
 {
+    // host build: no TWAI controller, nothing to drain
 }
 void bus_capture_end(void)
 {
+    // host build: no TWAI controller, nothing to stop
 }
 
 #endif // ARDUINO

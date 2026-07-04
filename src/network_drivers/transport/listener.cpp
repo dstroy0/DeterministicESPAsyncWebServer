@@ -498,11 +498,7 @@ void listener_stop(uint8_t idx)
 #ifdef ARDUINO
     listener_lwip_marshal(idx, 0, false); // close the listen pcb in tcpip_thread
 #else
-    if (lst->listen_pcb)
-    {
-        tcp_close(lst->listen_pcb);
-        lst->listen_pcb = nullptr;
-    }
+    lst->listen_pcb = nullptr; // host build: no real pcb to close (matches listener_stop_dynamic)
 #endif
     if (lst->queue)
     {
