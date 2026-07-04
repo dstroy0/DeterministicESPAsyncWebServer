@@ -67,6 +67,9 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
        **rebuild the core** with the flag on. Full hand-held recipe (PlatformIO pioarduino
        `custom_sdkconfig`, or the `esp32-arduino-lib-builder` script for Arduino IDE / arduino-cli,
        plus the octal-vs-quad PSRAM-mode gotcha and how to verify): **`tools/psram/README.md`**.
+       Verified end to end on an ESP32-S3 N16R8: with a rebuilt (flag-enabled) core, an
+       `EXT_RAM_BSS_ATTR` array lands at `0x3C0xxxxx` (PSRAM, `esp_ptr_external_ram()=1`), the
+       board boots octal with no watchdog loop, and internal DRAM use drops sharply - zero heap.
         - **Flash-cache / OTA caveat (hybrid arena).** PSRAM sits on the flash cache bus, so
           while flash is being written (an NVS commit, an OTA) the arena is momentarily
           unreadable and touching it faults. A deployment that also does OTA or file-serving
