@@ -1,2 +1,4 @@
 docs/configurator.html text eol=lf
 docs/utilities/gen_configurator.py text eol=lf
+# Shell scripts must keep LF or the shebang breaks on Linux/WSL/macOS.
+*.sh text eol=lf
