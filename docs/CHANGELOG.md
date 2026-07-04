@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`6be3932`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6be39325522ea151afc410820fe6db8a6cb5eaf3))
+- update CHANGELOG.md [skip ci] ([`aceb09c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aceb09c44b904769e4f3a19e9a84394e834c9011))
 - update test report [skip ci] ([`1ee35af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ee35af1bec95a5f9ea03b153fff0de5551059de))
 - update CHANGELOG.md [skip ci] ([`ef4751d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef4751d34ff03db8b40df6378584a4739ddb886e))
 - update test report [skip ci] ([`6264984`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6264984fc8eedcafdda3e2f04455c6f62913aa18))
@@ -17,6 +19,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- frame the PSRAM flash-cache caveat as a whole-build choice (no per-slot split) ([`ba93267`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba932676fbf02575ee215af02d8561cc783078df))
 - note PSRAM-arena rebuild is HW-verified on an S3 N16R8 ([`06ded53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06ded53324e0dc9256c9cd576e2ee047f25930bf))
 - the recipe that actually works - Docker image + low parallelism (HW-verified) ([`98c0af9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/98c0af923d3217e22436a0e204c0fbf48c055ae3))
 - fix lib-builder ref + prereqs from real runs; add newbie prebuilt-core path ([`aab5dc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aab5dc64896089526834682493a5457cf18b1580))
