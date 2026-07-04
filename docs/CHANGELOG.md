@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.95.1] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.95.1 - 2026-07-04</b></summary>
+
+### Bug Fixes
+
+- marshal primary listener bring-up onto tcpip_thread ([`554d338`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/554d338e15a72a9fd9932632208f6d26c5fb04c3))
+
+### CI / Build
+
+- update test report [skip ci] ([`7d437a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d437a290ae779740ed000b6bc102b8b27299b1c))
+- update CHANGELOG.md [skip ci] ([`b70a5f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b70a5f7c200512a7346f697c964bdb51a24ddc77))
+
+### Changes
+
+- Bump version: 4.95.0 → 4.95.1 ([`a3abf3d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3abf3daa3f1f852941cdfc829d5ed97ee82c1b4))
+
+### Documentation
+
+- sync shipped status - SSH ECC (v4.94.0) + PSRAM TLS arena (v4.95.0) ([`ddc6913`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ddc6913d7a28d3a4742de37cd9b71a5137836ecd))
+
+</details>
+
 ## [4.95.0] - 2026-07-04
 
 <details>
