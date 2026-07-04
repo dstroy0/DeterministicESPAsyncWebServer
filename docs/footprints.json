@@ -412,6 +412,13 @@
     "flash_bytes": 766577,
     "ram_bytes": 45372
   },
+  "SHT3X": {
+    "example": "L7-Application/64.Sht3x",
+    "flags": "-DDETWS_ENABLE_SHT3X=1",
+    "board": "esp32dev",
+    "flash_bytes": 286861,
+    "ram_bytes": 21800
+  },
   "SIGFOX": {
     "example": "Foundation/15.SigfoxUplink",
     "flags": "-DDETWS_ENABLE_SIGFOX=1",

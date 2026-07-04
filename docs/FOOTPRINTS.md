@@ -67,6 +67,7 @@ from each example's `pio ci` size report and aggregated into
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.0 KB (57.3%) | 64.6 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 774.6 KB (60.5%) | 64.7 KB (20.2%)  |
 | `RTC+TIME_SOURCE+NTP`                    | L7-Application/61.Rtc                   | 748.6 KB (58.5%) | 44.3 KB (13.8%)  |
+| `SHT3X`                                  | L7-Application/64.Sht3x                 | 280.1 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SMTP`                                   | L7-Application/57.SmtpAlert             | 709.8 KB (55.5%) | 42.4 KB (13.2%)  |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 741.5 KB (57.9%) | 76.8 KB (24.0%)  |
