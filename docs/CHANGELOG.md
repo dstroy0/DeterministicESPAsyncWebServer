@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.95.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.95.0 - 2026-07-04</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`84ae7ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84ae7baea541dd4d510ddc05982117a4d38874ab))
+- update CHANGELOG.md [skip ci] ([`5672a2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5672a2b5033ded62d452417a3e8a5e04c05b4233))
 - update test report [skip ci] ([`6be3932`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6be39325522ea151afc410820fe6db8a6cb5eaf3))
 - update CHANGELOG.md [skip ci] ([`aceb09c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aceb09c44b904769e4f3a19e9a84394e834c9011))
 - update test report [skip ci] ([`1ee35af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ee35af1bec95a5f9ea03b153fff0de5551059de))
@@ -16,6 +21,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report [skip ci] ([`fff11df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fff11df8bbcf59ef61d9dd0e36973b6a3cb68eea))
 - update CHANGELOG.md [skip ci] ([`66c2956`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/66c29562d1e04312e507ba2923f8e3068058e559))
 - add ECDH, hostkey to cspell dictionary ([`1992202`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19922024c7e83f6e7863d1107d333a1506576799))
+
+### Changes
+
+- Bump version: 4.94.0 → 4.95.0 ([`4ef8e4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ef8e4fc54e0e403e41c1d743c91249fcaded59f))
 
 ### Documentation
 
@@ -28,7 +37,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- det_arena scratch alignment (up to 16B) + document the primitive ([`610d94d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/610d94d75ed23e0fd7bfe9ad649de135bd7f9afd))
+- det_arena multi-region set (DRAM base + PSRAM extension) ([`3b18f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b18f01982c70b7d4f1b12caedd306879b27c20a))
+- unified double-ended server arena (det_arena) core ([`1486420`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1486420ce1452b20197855988960238bb7608793))
 - fail-closed when DETWS_TLS_ARENA_IN_PSRAM lacks the framework flag + core-rebuild tooling ([`54c4d8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54c4d8eabd9914e42dfc523338940c7048c5ef89))
+
+</details>
 
 ## [4.94.0] - 2026-07-04
 
