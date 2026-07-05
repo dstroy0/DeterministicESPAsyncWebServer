@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.120.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.120.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`37d6923`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37d6923f230ea7cc9d09ed43461942df12b9892e))
+- update CHANGELOG.md [skip ci] ([`eaa0cd8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eaa0cd80316d7841dc500fcf507dba71dbaf72ea))
+
+### Changes
+
+- Bump version: 4.119.0 → 4.120.0 ([`dc50326`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc503260fa064be35ff2093a8d77b8da898c4213))
+
+### Documentation
+
+- remove the vestigial MIGRATION.md (we don't support migration) ([`a4d2b98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d2b98e6d5b48cc3e4c5fda5d148525b6b50c18))
+- update ESP32 build footprints [skip ci] ([`c2cfd77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2cfd77c91ba8de28ded457296452f8dc1cc74a2))
+
+### Refactor
+
+- organize the ssh/ tree into RFC-layer subfolders ([`45b2444`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45b244409cf5463889b5e97348d75658a64d1f58))
+
+</details>
+
 ## [4.119.0] - 2026-07-05
 
 <details>
