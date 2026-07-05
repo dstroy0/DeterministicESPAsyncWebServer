@@ -47,7 +47,7 @@ bool h3_frame_type_reserved(uint64_t type)
 void h3_settings_defaults(H3Settings *s)
 {
     s->qpack_max_table_capacity = 0;
-    s->max_field_section_size = 0xFFFFFFFFFFFFFFFFull; // unlimited
+    s->max_field_section_size = 0xFFFFFFFFFFFFFFFFULL; // unlimited
     s->qpack_blocked_streams = 0;
 }
 

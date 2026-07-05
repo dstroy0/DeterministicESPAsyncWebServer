@@ -76,20 +76,20 @@ $Width = 80
 $FormattedLines = $RawLines | ForEach-Object {
     $line = $_.ToString().TrimEnd()
     $cleanLine = $line -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
-    
+
     # Test line: "test\test_X\test_X.cpp:829: test_name  [PASSED]"
     if ($cleanLine -match '(\S+\.cpp:\d+:\s+\S+)\s+\[(PASSED|FAILED)\]$') {
         $left = $Matches[1]
         $status = "[$($Matches[2])]"
-        
+
         $cleanLeft = $left -replace '\x1b\[[0-9;?]*[a-zA-Z]', ''
         $pad = $Width - $cleanLeft.Length - $status.Length
         if ($pad -lt 1) { $pad = 1 }
         $spaces = ' ' * $pad
-        
+
         $origLeft = $line -replace '\s+\[(PASSED|FAILED)\](\x1b\[[0-9;?]*[a-zA-Z])*$', ''
         $origRight = $line.Substring($origLeft.Length).Trim()
-        
+
         $origLeft + $spaces + $origRight
     }
     # Banner line: "------------ native_ssh:test_ssh_crypto [PASSED] Took 6.70 seconds ------------"
