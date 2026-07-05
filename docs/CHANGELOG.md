@@ -2,10 +2,303 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.109.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.109.0 - 2026-07-05</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`2dd8c77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dd8c77d4772173f7fb3f4533268fafb707cb179))
+
+### Changes
+
+- Bump version: 4.108.0 → 4.109.0 ([`129a675`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/129a675eb8318385ba5e292914d0ba1f98e9c616))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d60df34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d60df34ec2c3181a4e43957da5dec5c7694eb834))
+
+### Features
+
+- binary frame layer (RFC 9113) ([`528b7b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/528b7b73388b27c7f106d955a3594c8997d89b65))
+
+</details>
+
+## [4.108.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.108.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d9db569`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9db5697e6fcceeb4835b1a91a2b384050bb83e6))
+
+### Changes
+
+- Bump version: 4.107.0 → 4.108.0 ([`93ba826`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93ba826bac8684fd1a7d0366770f995028fa1a99))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`02bb18e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02bb18e6e4f06d39f260b45309a63e272c2f7c11))
+
+### Features
+
+- HPACK header compression codec (RFC 7541) ([`febf6cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/febf6ccc8600300f9a6936812a3f2a482dea7e24))
+
+</details>
+
+## [4.107.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.107.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`4a61551`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a615512ec770d2818aa65c5df7cf67bd3609ed0))
+
+### Changes
+
+- Bump version: 4.106.0 → 4.107.0 ([`67106db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67106db707544ae5336c373808512e9f86c9367e))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`083bd93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/083bd93793939d9a20b572a2bbec7e9d4bd4506e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e42d70c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e42d70c935f9d99b967aca98c0ce2bf9c0f0e014))
+
+### Features
+
+- configurable shared I2C bus pins for Ethernet coexistence ([`604334c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/604334c7e2bfe1f0e21ab500cbdd4c4f1ce395ce))
+
+</details>
+
+## [4.106.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.106.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d1f2798`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1f27981e8938e1da7bb75015c651cc4d33a513b))
+
+### Changes
+
+- Bump version: 4.105.0 → 4.106.0 ([`2203d7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2203d7bbdbc898d98bc274ebf6dc429f2c70c756))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ed90e1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed90e1f476b8cd6ad1bc2fc209ab667708ab5328))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8848ada`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8848adad80433e1b40eae4173bb7b6e72eb3a24b))
+
+### Features
+
+- TI INA219 current / power monitor codec ([`1d0b44d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d0b44df87e9b7742f4e3f565bc18c53baa91cf7))
+
+</details>
+
+## [4.105.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.105.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5ccdb96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ccdb96aa129a993bc9eb94d86eae2d665811221))
+
+### Changes
+
+- Bump version: 4.104.0 → 4.105.0 ([`6d260a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d260a6127a13a252e4b81e8b1067c9026ff8c6d))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8aff306`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8aff306d3901be7f7618d1fe0760c4c3d2e83632))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0b313f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b313f34fd13aee6b7cf4ffb8c4c46e73794deaf))
+
+### Features
+
+- TI ADS1115 16-bit ADC codec ([`87f6b4c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87f6b4c30894aa9530f444d544cea1b7fe07ddb7))
+
+</details>
+
+## [4.104.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.104.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`e96f355`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e96f355efeaa9c41448446f0857e3e29f162defa))
+
+### Changes
+
+- Bump version: 4.103.0 → 4.104.0 ([`0d4d3a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d4d3a777b6345724b935bd17fc0d72a27515223))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c2fccc5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2fccc5983ae137e78baedd7cdcfa581b1f239d2))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`31f7a45`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31f7a4594394c1dcb21516663cee37862af5b5da))
+
+### Features
+
+- NXP PCA9685 16-channel PWM / servo driver codec ([`7efbf02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7efbf02c000c5ae1e3c20a0fd08aded08e9bfa86))
+
+</details>
+
+## [4.103.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.103.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`15f0fb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15f0fb96f18d31c66b01fff457786a4de530ecda))
+
+### Changes
+
+- Bump version: 4.102.0 → 4.103.0 ([`88b20de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88b20de17fe690baffa1bd35468cd4964622f2a1))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`ae6ffc4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae6ffc4b174dafeeca62cb346a55287a7542b25b))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6791cf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6791cf7fa04f9cefbe8751be8feba0bfd77f63c4))
+
+### Features
+
+- Sensirion SHT3x temperature/humidity sensor codec ([`3eede60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eede608b09394335bfb3c055e01bf2f407a73fa))
+
+</details>
+
+## [4.102.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.102.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`09482b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09482b855d97d801b622f1be0590110b10a3146f))
+
+### Changes
+
+- Bump version: 4.101.0 → 4.102.0 ([`8f97ac3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f97ac38b811587c63971cec56196c70ba1b0809))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`20b6410`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20b64109a618f24e29858ef5ba28c2b75668e5a1))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5da336d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5da336d6a4b8de514de67cbe8b94e4657e6ffeb6))
+
+### Features
+
+- NXP MPR121 capacitive-touch controller codec ([`0fdf99e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fdf99e001a8eaa0c0d5b57f744b723a0cf1ea63))
+
+</details>
+
+## [4.101.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.101.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d9f1379`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9f1379b6b661d953ee2c8c3b0369967f78a66bc))
+
+### Changes
+
+- Bump version: 4.100.0 → 4.101.0 ([`4cdf74c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cdf74cd773b67108c3f9a98eb53299fdfdba771))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`0fa2e80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fa2e80b6cac7985112831f5bcbc53e4ec8fc7f9))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7bb4619`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bb46198fbe2cbcddd3400cc5b93ffd5d3f6c228))
+
+### Features
+
+- HLK-LD2410 mmWave presence/motion radar codec ([`6c1a578`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c1a578572f596daf0a6d57a71a307a59cf641ea))
+
+</details>
+
+## [4.100.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.100.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d8304ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d8304adea52d87ed056c3d792643b257bc5f04d1))
+
+### Changes
+
+- Bump version: 4.99.0 → 4.100.0 ([`ad1b17c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad1b17cbdd37a11c6304f2a81d5454e2ad2d1774))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`cdf30d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdf30d0ba2a4b65e64c8bcfd62de66a9785bf277))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2fb1944`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fb1944045b78e64ff5c36859df309a60e03f0f0))
+
+### Features
+
+- DS1307/DS3231 battery-backed RTC time source ([`bf7a74f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf7a74fee439f0ee827fc651240ca957d2ec4298))
+
+</details>
+
+## [4.99.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.99.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a3e1b32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3e1b3231e86eb8b05ec084ec215ad202927a7f5))
+- update test report [skip ci] ([`dda09b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dda09b3ce19d3a8cc87eb0fab81ebabe0b0b3f77))
+
+### Changes
+
+- Bump version: 4.98.0 → 4.99.0 ([`1ec42f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ec42f82013218e6cfb2abee6051c11a1580d378))
+- clang-format the 59.StatsdMetrics sketch (trailing-comment alignment) ([`9e62f01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e62f011204a5d74a1f6c6397dee20cb7df76f85))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`d7d4174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7d41745ec11a3f06000092ce2c719a2081854ae))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`74a325b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74a325b1b8c9def03261d5b886594a4c04a4c636))
+
+### Features
+
+- authoritative DNS server (name->IP A records) on UDP/53 ([`12a176f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12a176fbc2ce88cede62eebbaa672507e4e0511f))
+
+</details>
+
+## [4.98.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.98.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f169458`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f169458053c35c988ef199f1f83a31fd01e31b25))
+
+### Changes
+
+- Bump version: 4.97.0 → 4.98.0 ([`7d7b2d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d7b2d8a3def46261dfb62f84fd3815c4ebd277c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`cc867db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc867db7f205fcd80c6ff5a8367cc26824cc12d6))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`260c71d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/260c71d5a07a95b2d5f1f14f700fe31087edbd8d))
+
+### Features
+
+- StatsD metrics client (push counters/gauges/timings/sets) ([`754e2bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/754e2bdef95672c706c3f028526859e221226a7f))
+
+</details>
+
+## [4.97.0] - 2026-07-04
+
+<details>
+<summary><b>Show Changelog for version 4.97.0 - 2026-07-04</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`8c7e939`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c7e939d211b88017a26d70b4af3bcbbc59acf92))
+- update CHANGELOG.md [skip ci] ([`43807f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43807f229ef5526d03849b8c319ae9be3c5feeac))
 - update test report [skip ci] ([`28c3fd0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28c3fd0ab1507bd11d92343889bc9379e3544077))
 - update CHANGELOG.md [skip ci] ([`72aa50e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72aa50e0bc10b10b1abedca6f83c5f45b4560466))
 - update test report [skip ci] ([`a5e42be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5e42be3b163b7565354a99fcb42945aaf2e3fc2))
@@ -13,12 +306,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - add STARTTLS to the spellcheck dictionary ([`d898c05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d898c05bc8424ab0e64d3f918b3910ccb22bde76))
 - update test report [skip ci] ([`49467bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49467bbaa253bed8ba49a49a5deee28ab27d753a))
 
+### Changes
+
+- Bump version: 4.96.0 → 4.97.0 ([`dcfdc48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcfdc48ae4a643a28e58f2421651946309bc8a51))
+
 ### Documentation
 
 - style the OSI feature tables - full width, centered, collapsed, themed ([`1dd6580`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1dd658018c543ec4a04965d1ed25fe31bead23ac))
 - generate EXAMPLES.md from examples/; group README feature tables by OSI layer ([`d677096`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d67709614928196e14d445a8adbd7153ea794d08))
 - update ESP32 build footprints [skip ci] ([`1c664a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c664a360c617ebfa88171dc38102063da1b1f50))
 - regenerate feature tables + configurator + build_opt.h [skip ci] ([`0c9ea82`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c9ea82221a5f07daece2fcd41af5611e4c9d5e3))
+
+### Features
+
+- NTP/SNTP time server (RFC 5905 server mode) on UDP/123 ([`be03964`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be0396404be9e9a513e7cc48872744c170853ef0))
+
+</details>
 
 ## [4.96.0] - 2026-07-04
 
