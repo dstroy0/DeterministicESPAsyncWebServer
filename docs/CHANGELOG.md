@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8a13db7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a13db757eeddee700021ca1dbe2d65690d3ec15))
+
+### Documentation
+
+- HTTP/3 stack built + host-tested (QUIC + TLS 1.3 + HTTP/3) ([`6c6497c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c6497c62ee1da5a535c0cf8d005ba38f9ee0a81))
+- update ESP32 build footprints [skip ci] ([`0a1c7c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a1c7c1ec0c15294c5cf8c095efd2028b3d0fdee))
+
+### Testing
+
+- end-to-end capstone - full QUIC handshake + HTTP/3 GET ([`04e2ec7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04e2ec79a9ca9eab77a8309a4f3b158ae47eca0a))
+
 ## [4.127.1] - 2026-07-05
 
 <details>
