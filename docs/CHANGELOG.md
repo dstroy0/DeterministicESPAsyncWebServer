@@ -2,6 +2,27 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.115.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.115.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`6c65167`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c65167bbba1e54455bc672e33e04d40140ea5b6))
+- update CHANGELOG.md [skip ci] ([`5ccadff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ccadff7e2fa28bcfa27547494989f497e723871))
+
+### Changes
+
+- Bump version: 4.114.0 → 4.115.0 ([`85a3560`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85a3560a87d715caa8090559f339b41f156ef2ee))
+
+### Features
+
+- QUIC frame codec (RFC 9000 sec 19) ([`b83d798`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b83d79816b5530306ca335be58b3d3f55b10d31b))
+- QUIC packet header + packet-number codec (RFC 9000 sec 17) ([`5fecc8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5fecc8dd357d666d9c85a7d7ecc01a6f357ebf2e))
+
+</details>
+
 ## [4.114.0] - 2026-07-05
 
 <details>
