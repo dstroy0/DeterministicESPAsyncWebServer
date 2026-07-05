@@ -1360,6 +1360,15 @@
       "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": ["+<network_drivers/presentation/http3/quic_packet.cpp>"],
       "tests": ["test_quic_packet"]
+    },
+    "native_quic_frame": {
+      "desc": "QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19):\nbuilder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built\nmulti-range-with-ECN cursor advance), CRYPTO, STREAM (with/without Offset, LEN-absent to packet\nend), MAX_DATA, CONNECTION_CLOSE (transport + app), a multi-frame sequential parse, truncation.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_frame.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>"
+      ],
+      "tests": ["test_quic_frame"]
     }
   }
 }
