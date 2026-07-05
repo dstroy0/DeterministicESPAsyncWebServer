@@ -938,6 +938,12 @@
       "src": ["+<network_drivers/presentation/http2/hpack.cpp>"],
       "tests": ["test_hpack"]
     },
+    "native_h2frame": {
+      "desc": "HTTP/2 binary framing (network_drivers/presentation/http2/h2_frame, RFC 9113): the\n9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse\nwith validation, and the exact bytes of the SETTINGS-ACK / WINDOW_UPDATE / RST_STREAM / GOAWAY\n/ PING-ACK / HEADERS / DATA builders. Pure host codec.",
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
+      "src": ["+<network_drivers/presentation/http2/h2_frame.cpp>"],
+      "tests": ["test_h2_frame"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],
