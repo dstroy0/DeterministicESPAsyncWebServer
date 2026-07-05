@@ -5,6 +5,8 @@ HTTP/1.1 (request parsing, response generation, keep-alive, Range), authenticati
 (Basic / Digest / JWT), WebSocket (server and client), TLS / mTLS, CoAP, SNMP, Modbus
 TCP, OPC UA, syslog, the outbound HTTP and MQTT clients, and error-handling behavior.
 (SSH conformance lives in [SSH.md](SSH.md); the TLS posture is in [SECURITY.md](SECURITY.md).)
+HTTP/2 (RFC 9113 / HPACK) and the HTTP/3 stack in progress (QUIC RFC 9000, QUIC-TLS
+RFC 9001, HTTP/3 RFC 9114, QPACK RFC 9204) are tracked in [STANDARDS.md](STANDARDS.md).
 
 ## HTTP/1.1 request parsing (RFC 7230)
 

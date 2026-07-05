@@ -4,7 +4,7 @@
 
 # DeterministicESPAsyncWebServer (@dstroy0)
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1, WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC in progress), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 > [!WARNING]
 > **EXTREMELY ACTIVE DEVELOPMENT - expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks. **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility** - include paths, method signatures, defaults, and wire behavior can change between releases. **We do not write backwards-compatibility shims** (the only compatibility we maintain is platform/toolchain support); removing cruft is the price of a clean, auditable, deterministic core. Pin an exact version if you need stability, and read [CHANGELOG.md](docs/CHANGELOG.md) before every upgrade.
@@ -49,7 +49,7 @@ PlatformIO users ignore all of this and just use `build_flags` in `platformio.in
 
 ## Overview
 
-A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 (with WebSocket and Server-Sent Events) and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
+A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 and HTTP/2 (with WebSocket and Server-Sent Events), with HTTP/3 over QUIC in progress, and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 ## Features
 
