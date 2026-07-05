@@ -334,6 +334,7 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 
 #if defined(ARDUINO)
 
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/transport.h"
 
 // Bytes available in the slot's rx ring.
@@ -399,6 +400,23 @@ void modbus_rx(uint8_t slot)
         if (rl)
             raw_send(slot, resp, rl);
     }
+}
+
+// The Modbus ProtoHandler (Layer 5 dispatch seam) - only a data handler; a partial ADU waits in the
+// rx ring, so there is no per-connection accept/close/poll state. Returned by accessor (no session
+// dependency); proto_register_builtins() installs it.
+static const ProtoHandler s_modbus_handler = {nullptr, modbus_rx, nullptr, nullptr};
+const ProtoHandler *modbus_proto_handler(void)
+{
+    return &s_modbus_handler;
+}
+
+#else // !ARDUINO
+
+// Host builds test the pure ADU codec; there is no TCP transport handler.
+const ProtoHandler *modbus_proto_handler(void)
+{
+    return nullptr;
 }
 
 #endif // ARDUINO

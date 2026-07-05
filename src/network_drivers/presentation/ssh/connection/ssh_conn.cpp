@@ -16,6 +16,7 @@
 #if DETWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #endif
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/session/scratch.h"
 #include "network_drivers/transport/transport.h"
 #include <string.h>
@@ -71,6 +72,14 @@ void ssh_conn_setup()
 {
     ensure_init();
     ssh_server_set_emit_cb(ssh_emit);
+}
+
+// The SSH connection ProtoHandler (Layer 5 dispatch seam) - installed by proto_register_builtins()
+// via this accessor, so this module carries no dependency on the session layer.
+static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, ssh_conn_poll};
+const ProtoHandler *ssh_proto_handler(void)
+{
+    return &s_ssh_handler;
 }
 
 int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len)

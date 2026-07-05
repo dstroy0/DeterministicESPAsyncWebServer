@@ -130,6 +130,10 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 /** @brief Frame and process received Modbus ADUs for the connection on @p slot. */
 void modbus_rx(uint8_t slot);
 
+/** @brief The Modbus ProtoHandler (accessor; nullptr on host builds; installed by the builtins list). */
+struct ProtoHandler;
+const struct ProtoHandler *modbus_proto_handler(void);
+
 #endif // DETWS_ENABLE_MODBUS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MODBUS_H

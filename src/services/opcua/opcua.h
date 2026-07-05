@@ -542,5 +542,9 @@ void opcua_set_write_handler(OpcUaWriteHandler fn);
  */
 void opcua_rx(uint8_t slot);
 
+/** @brief The OPC UA ProtoHandler (accessor; nullptr on host builds; installed by the builtins list). */
+struct ProtoHandler;
+const struct ProtoHandler *opcua_proto_handler(void);
+
 #endif // DETWS_ENABLE_OPCUA
 #endif // DETERMINISTICESPASYNCWEBSERVER_OPCUA_H

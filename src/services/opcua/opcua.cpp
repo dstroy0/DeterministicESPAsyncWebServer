@@ -1054,6 +1054,7 @@ void opcua_set_browse_handler(OpcUaBrowseHandler fn)
 // ---------------------------------------------------------------------------
 #ifdef ARDUINO
 
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/transport.h"
 #include <time.h>
 
@@ -1238,11 +1239,24 @@ void opcua_rx(uint8_t slot)
     }
 }
 
+// The OPC UA ProtoHandler (Layer 5 dispatch seam) - only a data handler; the handshake reads from
+// the rx ring, so there is no per-connection accept/close/poll state. Returned by accessor (no
+// session dependency); proto_register_builtins() installs it.
+static const ProtoHandler s_opcua_handler = {nullptr, opcua_rx, nullptr, nullptr};
+const ProtoHandler *opcua_proto_handler(void)
+{
+    return &s_opcua_handler;
+}
+
 #else // host build: the codec/handshake are tested directly; rx is a no-op stub
 
 void opcua_rx(uint8_t slot)
 {
     (void)slot;
+}
+const ProtoHandler *opcua_proto_handler(void)
+{
+    return nullptr;
 }
 
 #endif // ARDUINO

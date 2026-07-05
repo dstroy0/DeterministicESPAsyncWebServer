@@ -18,8 +18,16 @@
  */
 
 #include "presentation.h"
+#include "network_drivers/session/proto_handler.h" // ProtoHandler (the L5 dispatch seam this registers into)
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
+#endif
+#if DETWS_ENABLE_TLS
+#include "network_drivers/tls/det_tls.h"
+#if DETWS_ENABLE_HTTP2
+#include "network_drivers/presentation/http2/h2_server.h"
+#endif
+#include <string.h> // strcmp (ALPN check)
 #endif
 
 #if DETWS_ENABLE_KEEPALIVE
@@ -83,4 +91,124 @@ void http_parse(uint8_t slot_id)
             break;
         http_parser_feed(req, byte);
     }
+}
+
+// ---------------------------------------------------------------------------
+// HTTP ProtoHandler - the L5 dispatch seam for an HTTP connection.
+//
+// This is where an HTTP connection is fed: the plaintext path drains the ring
+// through http_parse() (above); the TLS path drives the handshake, then routes
+// decrypted bytes to the HTTP/2 engine (ALPN "h2"), the WebSocket pump (an
+// upgraded slot), or the HTTP/1.1 parser. Keeping it here (Layer 6, with the rest
+// of the HTTP-connection glue) leaves the session layer's dispatcher free of any
+// HTTP / TLS / h2 / ws specifics - it only routes events to registered handlers.
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_TLS
+// Abort a TLS connection (fatal handshake/read error). det_conn_abort_slot owns
+// the whole teardown: free the TLS context (abrupt), detach the pcb, reset the
+// slot, then RST - so this never reaches into the raw tcp_pcb.
+static void tls_abort(uint8_t slot)
+{
+    det_conn_abort_slot(slot);
+    http_reset(slot);
+}
+
+// Pump a TLS connection: drive the handshake to completion, then decrypt any
+// application data straight into the HTTP parser (same byte-by-byte feed the
+// plaintext path uses; the rx ring now holds ciphertext, consumed by the BIO).
+static void tls_data(uint8_t slot)
+{
+    if (!det_tls_established(slot))
+    {
+        int h = det_tls_handshake(slot);
+        if (h < 0)
+        {
+            tls_abort(slot);
+            return;
+        }
+        if (h == 0)
+            return; // still handshaking; wait for more ciphertext
+    }
+
+#if DETWS_ENABLE_HTTP2
+    // Just past the handshake: if the client negotiated ALPN "h2", this connection speaks HTTP/2
+    // for its lifetime - hand its decrypted bytes to the h2 engine, not the HTTP/1.1 parser.
+    if (!conn_pool[slot].h2_checked)
+    {
+        conn_pool[slot].h2_checked = 1;
+        const char *alpn = det_tls_alpn(slot);
+        if (alpn && strcmp(alpn, "h2") == 0)
+        {
+            conn_pool[slot].h2 = 1;
+            h2_server_open(slot);
+        }
+    }
+    if (conn_pool[slot].h2)
+    {
+        h2_server_data(slot);
+        return;
+    }
+#endif
+
+#if DETWS_ENABLE_WEBSOCKET
+    // A TLS slot upgraded to WebSocket is pumped from handle() (it decrypts
+    // records and feeds the WS frame parser, dispatching each frame); leave the
+    // ciphertext in the rx ring for it rather than feeding the HTTP parser here.
+    if (ws_find(slot))
+        return;
+#endif
+
+    uint8_t buf[256];
+    int n;
+    while ((n = det_tls_read(slot, buf, sizeof(buf))) > 0)
+    {
+        HttpReq *req = &http_pool[slot];
+        for (int i = 0; i < n; i++)
+        {
+            if (req->parse_state == PARSE_COMPLETE || req->parse_state == PARSE_ERROR ||
+                req->parse_state == PARSE_ENTITY_TOO_LARGE || req->parse_state == PARSE_URI_TOO_LONG)
+                break; // terminal state - let handle() dispatch before reading more
+            http_parser_feed(req, buf[i]);
+        }
+    }
+    if (n < 0)
+        tls_abort(slot);
+}
+#endif // DETWS_ENABLE_TLS
+
+// The data/close paths branch on TLS (a TLS slot's rx ring holds ciphertext,
+// decrypted into the parser); accept maps directly.
+static void http_evt_accept(uint8_t slot)
+{
+    http_conn_open(slot); // resets the parser + (keep-alive) the per-conn request tally
+#if DETWS_ENABLE_HTTP2
+    conn_pool[slot].h2 = 0; // a reused slot must re-run the post-handshake ALPN check
+    conn_pool[slot].h2_checked = 0;
+#endif
+}
+static void http_evt_data(uint8_t slot)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+    {
+        tls_data(slot);
+        return;
+    }
+#endif
+    http_parse(slot); // a no-op once the slot has upgraded to WebSocket (see http_parse)
+}
+static void http_evt_close(uint8_t slot)
+{
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+        det_tls_conn_free(slot); // also covers timeouts (EVT_ERROR)
+#endif
+    http_reset(slot);
+}
+static const ProtoHandler s_http_handler = {http_evt_accept, http_evt_data, http_evt_close, nullptr};
+
+const ProtoHandler *http_proto_handler(void)
+{
+    return &s_http_handler;
 }

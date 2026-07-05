@@ -38,6 +38,18 @@ struct ProtoHandler
 void proto_register(ConnProto proto, const ProtoHandler *h);
 
 /**
+ * @brief Register every built-in protocol's handler (the policy list).
+ *
+ * Defined in proto_builtins.cpp - the one place that knows which protocols exist.
+ * Each built-in's handler lives in its own module (http in presentation, ssh in
+ * ssh_conn, ...) behind a `*_proto_handler()` accessor; this installs each. The
+ * session dispatcher (session.cpp) calls this once (lazily, on first lookup) so it
+ * never names a protocol itself. Optional runtime-gated handlers (e.g. the SSH
+ * remote-forward listener) self-register at their own opt-in entry point instead.
+ */
+void proto_register_builtins(void);
+
+/**
  * @brief Look up the handler for @p proto.
  * @return the registered handler, or nullptr if @p proto is PROTO_NONE or has
  *         no registered handler (no implicit fallback; the event is dropped).

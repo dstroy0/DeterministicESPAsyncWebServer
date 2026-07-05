@@ -10,6 +10,7 @@
 
 #if DETWS_ENABLE_TELNET
 
+#include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/transport.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -268,6 +269,14 @@ uint8_t telnet_client_count()
         if (g_tn[i].used)
             c++;
     return c;
+}
+
+// The Telnet ProtoHandler (Layer 5 dispatch seam) - installed by proto_register_builtins() via this
+// accessor, so this module carries no dependency on the session layer.
+static const ProtoHandler s_telnet_handler = {telnet_accept, telnet_rx, telnet_close, nullptr};
+const ProtoHandler *telnet_proto_handler(void)
+{
+    return &s_telnet_handler;
 }
 
 #endif // DETWS_ENABLE_TELNET

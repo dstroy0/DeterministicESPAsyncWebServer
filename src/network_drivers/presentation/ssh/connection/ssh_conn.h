@@ -22,6 +22,10 @@
  */
 void ssh_conn_setup();
 
+/** @brief The SSH connection ProtoHandler (accessor; installed by the builtins list, no session dep). */
+struct ProtoHandler;
+const struct ProtoHandler *ssh_proto_handler(void);
+
 /**
  * @brief Handle a new PROTO_SSH connection on @p conn_slot.
  *

@@ -76,4 +76,15 @@ void http_conn_open(uint8_t slot_id);
  */
 void http_parse(uint8_t slot_id);
 
+/**
+ * @brief The HTTP connection ProtoHandler (the L5 dispatch seam).
+ *
+ * The accept/data/close handlers - the data path multiplexes the TLS handshake,
+ * HTTP/2 ALPN, and the WebSocket upgrade before the HTTP/1.1 parser. Returned by
+ * accessor (not self-registered) so this module carries no dependency on the
+ * session layer; proto_register_builtins() installs it.
+ */
+struct ProtoHandler;
+const struct ProtoHandler *http_proto_handler(void);
+
 #endif
