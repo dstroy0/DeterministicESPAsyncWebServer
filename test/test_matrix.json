@@ -1354,6 +1354,12 @@
         "+<network_drivers/presentation/http3/qpack.cpp>"
       ],
       "tests": ["test_qpack"]
+    },
+    "native_quic_packet": {
+      "desc": "QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet,\nRFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0\n+ supported-version list), the short (1-RTT) header parse, and packet-number truncation coding\nagainst the Appendix A.2 (encode) and A.3 (decode) worked examples. Pure host codec.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": ["+<network_drivers/presentation/http3/quic_packet.cpp>"],
+      "tests": ["test_quic_packet"]
     }
   }
 }
