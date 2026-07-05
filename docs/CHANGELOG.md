@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.124.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.124.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0d51655`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d51655f6ed9eed71a1be1521bbcd8a28e63e176))
+- update CHANGELOG.md [skip ci] ([`55fa3b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55fa3b1353023d815ed308dde7d864ba5712a850))
+
+### Changes
+
+- Bump version: 4.123.0 → 4.124.0 ([`fc42e53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc42e53e5876f2a26451b6f13c4097a168e09f47))
+
+### Features
+
+- TLS 1.3 handshake messages for the QUIC handshake ([`be979df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be979df4d45df132f52fb4ad505b18481bba8e74))
+
+</details>
+
 ## [4.123.0] - 2026-07-05
 
 <details>
