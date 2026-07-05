@@ -466,13 +466,16 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     }
 
     size_t pn_offset = p;
+    // Bound the whole packet up front (p <= cap here): the header builders checked their own writes
+    // but not the packet number + payload + tag that follow, so verify the remainder fits before
+    // writing it (avoids a size_t addition wrap in the bounds check, cpp:S3519).
+    if (cap - p < (size_t)pn_len + frame_len + QUIC_AEAD_TAG_LEN)
+        return 0;
     // Write the (unprotected) truncated packet number.
     for (uint8_t i = 0; i < pn_len; i++)
         out[pn_offset + i] = (uint8_t)(pn >> (8 * (pn_len - 1 - i)));
     p += pn_len;
 
-    if (p + frame_len + QUIC_AEAD_TAG_LEN > cap)
-        return 0;
     memcpy(out + p, frames, frame_len);
 
     size_t total = quic_packet_protect(out, cap, pn_offset, pn_len, pn, frame_len, keys, is_long);

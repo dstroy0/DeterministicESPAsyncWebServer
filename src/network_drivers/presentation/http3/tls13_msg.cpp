@@ -39,7 +39,9 @@ struct Writer
 
 void w_u8(Writer *w, uint8_t v)
 {
-    if (w->pos + 1 > w->cap)
+    // pos <= cap is an invariant (every write advances pos by exactly the checked amount), so the
+    // comparison is written to avoid a size_t addition that could wrap (cpp:S3519).
+    if (w->pos >= w->cap)
     {
         w->ok = false;
         return;
@@ -61,7 +63,9 @@ void w_bytes(Writer *w, const uint8_t *b, size_t n)
 {
     if (n == 0)
         return;
-    if (w->pos + n > w->cap)
+    // Overflow-safe capacity check: pos <= cap invariant means cap - pos never underflows, and this
+    // avoids the pos + n size_t wraparound a compiler/analyzer flags as a possible overflow (S3519).
+    if (n > w->cap - w->pos)
     {
         w->ok = false;
         return;

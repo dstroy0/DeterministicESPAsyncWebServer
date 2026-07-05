@@ -37,7 +37,9 @@ bool put_param(uint8_t *out, size_t cap, size_t *p, uint64_t id, const uint8_t *
     *p += n;
     if (val_len)
     {
-        if (*p + val_len > cap)
+        // Overflow-safe check (*p <= cap holds after the varint encodes): avoids the *p + val_len
+        // size_t wraparound an analyzer flags as a possible destination overflow (cpp:S3519).
+        if (val_len > cap - *p)
             return false;
         memcpy(out + *p, val, val_len);
         *p += val_len;
