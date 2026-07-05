@@ -960,6 +960,15 @@
       "src": ["+<network_drivers/presentation/http3/quic_varint.cpp>"],
       "tests": ["test_quic_varint"]
     },
+    "native_h3frame": {
+      "desc": "HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the\ntype+length varint header parse/write (incl. a multi-byte length), the DATA / HEADERS /\nSETTINGS / GOAWAY builders, the SETTINGS payload round-trip + reserved-id rejection, and the\nreserved HTTP/2 frame-type check. Pure host codec.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/h3_frame.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>"
+      ],
+      "tests": ["test_h3_frame"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],
