@@ -3315,6 +3315,18 @@
 #endif
 
 /**
+ * @brief HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first.
+ *
+ * Default off. HTTP/3 runs over QUIC (a reliable transport over UDP) with QPACK (RFC 9204)
+ * header compression and its own binary framing. The pure, host-testable pieces land first - the
+ * QUIC variable-length integer (RFC 9000 sec 16), the HTTP/3 + QPACK codecs - ahead of the QUIC
+ * transport engine. Like HTTP/2 this is a PSRAM-class feature.
+ */
+#ifndef DETWS_ENABLE_HTTP3
+#define DETWS_ENABLE_HTTP3 0
+#endif
+
+/**
  * @brief HTTP Range requests / 206 Partial Content for served files.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /
