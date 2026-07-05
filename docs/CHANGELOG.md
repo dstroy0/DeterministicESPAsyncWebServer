@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.121.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.121.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`5bba86c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5bba86c0b828508d5dce9bfebe0c473824a21b63))
+- update CHANGELOG.md [skip ci] ([`83d282a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83d282a6664bd6896a064da5fc0db17cac883f74))
+
+### Changes
+
+- Bump version: 4.120.2 → 4.121.0 ([`d326d91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d326d91408dc9099ffbbc82a229f1ec6fd3ddd39))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`50f96fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50f96fa8f5ca3f24961ecea61280fed52021a73e))
+
+### Features
+
+- server-to-client zlib compression (zlib@openssh.com / zlib) ([`35281bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35281bfb23110372badefe20d88f82672f02287a))
+
+</details>
+
 ## [4.120.2] - 2026-07-05
 
 <details>
