@@ -12,7 +12,7 @@ A multi-protocol network server for ESP32 with a fully deterministic memory foot
 > [!WARNING]
 > **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY. YOU ARE THE 3RD PARTY. PLEASE REPORT YOUR FINDINGS, IF THE BUG IS UNTRACKED AND GENUINE YOU WILL BE CREDITED PROMINENTLY (name, handle, email) ABOVE YOUR FIX IN SRC** You have been warned.
 
-![Version](https://img.shields.io/badge/version-v4.121.0-blue)
+![Version](https://img.shields.io/badge/version-v4.121.1-blue)
 
 ## Continuous integration
 
