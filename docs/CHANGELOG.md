@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.127.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.127.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`712a816`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/712a816dd203543a8f68f6155bbd43627ba43b10))
+
+### Changes
+
+- Bump version: 4.126.0 → 4.127.0 ([`af07320`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af07320927255aea2949900a5dbe411d37cbd707))
+
+### Features
+
+- HTTP/3 application engine over QUIC streams ([`c2c3a04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2c3a04a8c9151193acf5e382e93d817d4d5688c))
+
+</details>
+
 ## [4.126.0] - 2026-07-05
 
 <details>
