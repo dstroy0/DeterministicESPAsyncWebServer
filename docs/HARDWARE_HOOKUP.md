@@ -55,6 +55,11 @@ numbers to type into your sketch.
     - [OPC UA (server and client)](#opc-ua-server-and-client)
     - [SNMP (agent and traps)](#snmp-agent-and-traps)
 - [Radio: ESP-NOW](#radio-esp-now)
+- [Sensor and peripheral breakouts (I2C / UART, no transceiver)](#sensor-and-peripheral-breakouts-i2c--uart-no-transceiver)
+    - [The shared I2C bus](#the-shared-i2c-bus)
+    - [Time: RTC and GPS](#time-rtc-and-gps)
+    - [Sensing: radar, touch, temperature/humidity, voltage, current](#sensing-radar-touch-temperaturehumidity-voltage-current)
+    - [Actuation: servos and LEDs](#actuation-servos-and-leds)
 - [Payload codecs that ride an existing link](#payload-codecs-that-ride-an-existing-link)
 - [Electrical safety and reliability](#electrical-safety-and-reliability)
 
@@ -650,6 +655,102 @@ both share the ASDU layer. See `src/services/iec60870/iec60870.h`.
   Messages are short (up to ~250 bytes), so larger data must be chunked.
 - **Codec:** a typed envelope plus a peer registry; the send side binds to the
   ESP-IDF `esp_now` API. See `src/services/espnow/`.
+
+## Sensor and peripheral breakouts (I2C / UART, no transceiver)
+
+Not everything the ESP32 talks to is an industrial machine. This library also drives
+the cheap **sensor and actuator breakout boards** you solder onto a breadboard: a
+clock, a presence radar, touch pads, a thermometer, a servo driver, and two kinds of
+meter. Unlike the field buses above, these run at **3.3 V and wire directly** - no
+transceiver, no level shifter. Most are **I2C** (two shared wires); the LD2410 and a
+GPS are plain **UART**.
+
+Each is a `DETWS_ENABLE_*` flag (default off) with a pure, host-tested codec and a
+hand-held beginner example under `examples/L7-Application/`.
+
+| Breakout         | Flag                    | Bus  | Address | Wiring                              | Measures / does                    |
+| ---------------- | ----------------------- | ---- | ------- | ----------------------------------- | ---------------------------------- |
+| DS3231 / DS1307  | `DETWS_ENABLE_RTC`      | I2C  | 0x68    | SDA 21, SCL 22 (+ coin cell)        | Battery-backed wall-clock time     |
+| SHT3x (GY-SHT31) | `DETWS_ENABLE_SHT3X`    | I2C  | 0x44    | SDA 21, SCL 22                      | Temperature + humidity             |
+| MPR121           | `DETWS_ENABLE_MPR121`   | I2C  | 0x5A    | SDA 21, SCL 22, ADDR->GND           | 12 capacitive touch buttons        |
+| ADS1115          | `DETWS_ENABLE_ADS1115`  | I2C  | 0x48    | SDA 21, SCL 22, ADDR->GND           | 16-bit analog voltage (4 channels) |
+| INA219           | `DETWS_ENABLE_INA219`   | I2C  | 0x40    | SDA 21, SCL 22, Vin+/Vin- in series | Current + power of a load          |
+| PCA9685          | `DETWS_ENABLE_PCA9685`  | I2C  | 0x40    | SDA 21, SCL 22, V+ = servo supply   | 16 PWM / servo outputs             |
+| LD2410           | `DETWS_ENABLE_LD2410`   | UART | -       | module TX -> GPIO 16, RX -> GPIO 17 | mmWave human presence / motion     |
+| GT-U7 GPS (NMEA) | `DETWS_ENABLE_NMEA0183` | UART | -       | module TX -> GPIO 16 (9600 baud)    | Position / time (NMEA 0183)        |
+
+### The shared I2C bus
+
+I2C lets many chips share just **two** wires: **SDA** (data) and **SCL** (clock). On
+the classic ESP32 these default to **GPIO 21 (SDA)** and **GPIO 22 (SCL)**. Wire every
+I2C breakout's SDA to 21 and SCL to 22 (they all share the pair), give each `3V3` and
+`GND`, and the ESP32 tells them apart by their distinct **address**. Most breakouts
+already include the small pull-up resistors I2C needs. If two boards share an address
+(the PCA9685 and INA219 both default to 0x40), change one with its address solder pads.
+
+All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin()` in
+`services/det_i2c.h`), so there is a single place to move the pins:
+**`DETWS_I2C_SDA_PIN` / `DETWS_I2C_SCL_PIN`** (default `-1` = the platform default 21 /
+22). Set both to free GPIOs to relocate the whole bus.
+
+> **Running alongside wired Ethernet.** Only the **classic ESP32 (WROOM/WROVER)** and
+> the **ESP32-P4** have the built-in RMII Ethernet MAC that a **LAN8720** PHY needs;
+> the **ESP32-S3 / C3 have no RMII MAC** and do wired Ethernet over **SPI** with a
+> **W5500** instead. On an RMII board the LAN8720 uses **GPIO 21 (TX_EN)** and
+> **GPIO 22 (TXD1)** - the very pins I2C defaults to - plus, on boards that route the
+> 50 MHz RMII clock there, GPIO 16/17. So with an RMII PHY enabled you **must** move
+> the peripheral buses off those pins: set `-DDETWS_I2C_SDA_PIN=32
+-DDETWS_I2C_SCL_PIN=33` (or any free pair) to relocate the I2C sensors, and pass
+> **alternate RX/TX** to `ld2410_begin(rx, tx)` / your GPS
+> `Serial.begin(baud, SERIAL_8N1, rx, tx)` (e.g. GPIO 4 / 2). Avoid the other RMII
+> pins (19, 23, 25, 26, 27, 18) and the strapping pins (0, 2, 5, 12, 15). On an S3 with
+> a W5500 there is no RMII clash, but still keep the I2C/UART pins clear of the SPI pins
+> the W5500 uses.
+
+### Time: RTC and GPS
+
+- **RTC (DS3231 / DS1307), `DETWS_ENABLE_RTC`** - a battery-backed clock chip at I2C
+  0x68 so the board knows the time the instant it boots, offline. Wire SDA/SCL, fit its
+  coin cell, and register `rtc_time_source` with the time-source chain;
+  `rtc_read_epoch()` / `rtc_set_epoch()` read and set it. Example 61.Rtc.
+- **GPS (u-blox GT-U7), `DETWS_ENABLE_NMEA0183`** - the GT-U7 is a u-blox-7 GPS that
+  streams **NMEA 0183** sentences over a plain 3.3 V UART at **9600 baud** (it also has
+  a **PPS** pin that pulses once a second for precise timing). Wire its **TX to an
+  ESP32 RX** (its RX is optional - only needed to send it config). Accumulate a line
+  and `nmea0183_parse()` it, then read the fix with the field helpers - see
+  [NMEA 0183](#nmea-0183-gps--marine) above and example 58.Nmea0183. In a time-source
+  chain it is the best source: **GPS -> RTC -> upstream NTP** (feed all three to the
+  NTP server to serve time to your whole LAN).
+
+### Sensing: radar, touch, temperature/humidity, voltage, current
+
+- **LD2410 mmWave radar, `DETWS_ENABLE_LD2410`** - a 24 GHz presence sensor that sees a
+  still person (breathing), in the dark, through thin walls - over a UART at **256000
+  baud**. Cross the data wires (module TX -> ESP32 RX). `ld2410_poll()` decodes each
+  frame; `ld2410_present()` / `ld2410_distance_cm()` act on it. Example 62.Ld2410.
+- **MPR121 capacitive touch, `DETWS_ENABLE_MPR121`** - turns 12 wires or pads into
+  touch buttons (I2C 0x5A). `mpr121_read_touched()` returns a 12-bit mask. Example
+  63.Mpr121.
+- **SHT3x temperature / humidity, `DETWS_ENABLE_SHT3X`** - a CRC-checked Sensirion
+  sensor (I2C 0x44). `sht3x_read()` returns temperature and humidity in integer
+  milli-units. Example 64.Sht3x.
+- **ADS1115 16-bit ADC, `DETWS_ENABLE_ADS1115`** - four precise analog inputs with a
+  programmable gain (I2C 0x48). `ads1115_read_uv()` gives a channel's voltage in
+  microvolts. Example 66.Ads1115.
+- **INA219 current / power, `DETWS_ENABLE_INA219`** - sits **in series** with a load
+  (Vin+ -> shunt -> Vin-) and reports voltage, current, and power (I2C 0x40).
+  `ina219_read_current_ua()` / `ina219_read_power_uw()`. Example 67.Ina219.
+
+### Actuation: servos and LEDs
+
+- **PCA9685 16-channel PWM, `DETWS_ENABLE_PCA9685`** - drives up to 16 servos or LEDs
+  from the I2C bus (0x40), with its own precise PWM timer. Power the **servos** from the
+  board's `V+` screw terminal (a separate 5-6 V supply), never the ESP32.
+  `pca9685_set_servo_us()` positions a servo; `pca9685_set_pwm()` dims an LED. Example
+  65.Pca9685.
+
+These all follow the same shape as the field-bus codecs: a pure codec you can unit-test
+on a PC, and a thin binding that does the actual I2C / UART transfer on the ESP32.
 
 ## Payload codecs that ride an existing link
 

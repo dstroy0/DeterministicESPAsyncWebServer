@@ -86,6 +86,7 @@ size_t mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_thr,
 
 #if defined(ARDUINO)
 
+#include "services/det_i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -118,7 +119,7 @@ bool rd(uint8_t reg, uint8_t *out, uint8_t n)
 bool mpr121_begin(uint8_t addr)
 {
     s_addr = addr ? addr : (uint8_t)DETWS_MPR121_I2C_ADDR;
-    Wire.begin();
+    detws_i2c_begin();
     uint8_t seq[MPR121_INIT_MAX];
     size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, 12, 6);
     if (n == 0)

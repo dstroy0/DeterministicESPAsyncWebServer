@@ -2171,6 +2171,24 @@
 #endif
 
 /**
+ * @brief Shared I2C bus pins for the sensor / peripheral drivers (RTC, SHT3x, MPR121, ADS1115,
+ * INA219, PCA9685). All of them share one bus via detws_i2c_begin() (services/det_i2c.h), so
+ * this is the single place to move it. The default -1 uses the platform's default pins (GPIO 21
+ * SDA / 22 SCL on the classic ESP32). Set both to free GPIOs when those pins are taken - most
+ * importantly a **wired-Ethernet PHY**: the LAN8720 RMII uses GPIO 21 (TX_EN) and GPIO 22
+ * (TXD1) on the classic ESP32 (WROOM/WROVER) and the ESP32-P4 (which have the RMII EMAC), so
+ * with that Ethernet on, move the I2C bus off them (e.g. 32 / 33). The ESP32-S3/C3 have no RMII
+ * MAC and use an SPI Ethernet (W5500) instead - relocate the bus off whatever SPI pins that
+ * uses. UART peripherals (LD2410) take their RX/TX pins at ld2410_begin(), so remap those too.
+ */
+#ifndef DETWS_I2C_SDA_PIN
+#define DETWS_I2C_SDA_PIN -1
+#endif
+#ifndef DETWS_I2C_SCL_PIN
+#define DETWS_I2C_SCL_PIN -1
+#endif
+
+/**
  * @brief I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source.
  *
  * Default off. services/rtc reads and sets a DS1307/DS3231 RTC over I2C (Wire), so the device

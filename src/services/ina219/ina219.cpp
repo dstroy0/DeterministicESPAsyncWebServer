@@ -47,6 +47,7 @@ int32_t ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
 
 #if defined(ARDUINO)
 
+#include "services/det_i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -83,7 +84,7 @@ bool ina219_begin(uint8_t addr, uint32_t current_lsb_ua, uint32_t shunt_mohm)
 {
     s_addr = addr ? addr : (uint8_t)DETWS_INA219_I2C_ADDR;
     s_lsb_ua = current_lsb_ua ? current_lsb_ua : 100u;
-    Wire.begin();
+    detws_i2c_begin();
     bool ok = true;
     ok &= wr16(INA219_REG_CALIBRATION, ina219_calibration(s_lsb_ua, shunt_mohm ? shunt_mohm : 100u));
     ok &= wr16(INA219_REG_CONFIG, 0x399F); // 32 V range, /8 gain (320 mV), 12-bit, continuous

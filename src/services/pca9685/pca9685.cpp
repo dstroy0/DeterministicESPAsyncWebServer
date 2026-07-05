@@ -69,6 +69,7 @@ size_t pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t
 
 #if defined(ARDUINO)
 
+#include "services/det_i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -90,7 +91,7 @@ bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
 {
     s_addr = addr ? addr : (uint8_t)DETWS_PCA9685_I2C_ADDR;
     s_freq = freq_hz ? freq_hz : (uint32_t)DETWS_PCA9685_FREQ;
-    Wire.begin();
+    detws_i2c_begin();
     bool ok = true;
     ok &= wr(PCA9685_REG_MODE1, 0x10); // SLEEP (required before changing PRESCALE)
     ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_freq));

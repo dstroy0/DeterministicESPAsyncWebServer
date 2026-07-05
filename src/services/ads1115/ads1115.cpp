@@ -54,6 +54,7 @@ int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 
 #if defined(ARDUINO)
 
+#include "services/det_i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -88,7 +89,7 @@ bool rd16(uint8_t reg, uint16_t *v)
 bool ads1115_begin(uint8_t addr)
 {
     s_addr = addr ? addr : (uint8_t)DETWS_ADS1115_I2C_ADDR;
-    Wire.begin();
+    detws_i2c_begin();
     return true;
 }
 

@@ -54,6 +54,7 @@ bool sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
 
 #if defined(ARDUINO)
 
+#include "services/det_i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -73,7 +74,7 @@ bool send_cmd(uint16_t cmd)
 bool sht3x_begin(uint8_t addr)
 {
     s_addr = addr ? addr : (uint8_t)DETWS_SHT3X_I2C_ADDR;
-    Wire.begin();
+    detws_i2c_begin();
     bool ok = send_cmd(SHT3X_CMD_SOFT_RESET);
     delay(2); // soft reset completes in < 1.5 ms
     return ok;
