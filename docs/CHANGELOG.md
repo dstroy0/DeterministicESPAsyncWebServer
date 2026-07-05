@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.118.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.118.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`6a1c3dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1c3dcbf429342de1a9b3687b3d992bfe6d1df2))
+- update CHANGELOG.md [skip ci] ([`d55948d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d55948d6e6b5040cdc115c7e8c34422d24793614))
+
+### Changes
+
+- Bump version: 4.117.0 → 4.118.0 ([`8f23997`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f2399747675e7c8337c834022d7cf650321613e))
+
+### Features
+
+- negotiate chacha20-poly1305@openssh.com (OpenSSH's default cipher) ([`7317415`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/731741551cbf76e3702e5ecb8db89702d8dd389f))
+
+</details>
+
 ## [4.117.0] - 2026-07-05
 
 <details>
