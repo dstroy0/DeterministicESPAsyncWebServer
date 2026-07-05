@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.114.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.114.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`bae4c9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bae4c9fd0f9873f77a5d6c6b4a5dea5537006bf3))
+- update CHANGELOG.md [skip ci] ([`ece2c3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ece2c3af001ee30a46aae8c35f5ac99b78b359aa))
+
+### Changes
+
+- Bump version: 4.113.0 → 4.114.0 ([`51a449c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51a449c19a1adadc6ac229964de31d7cd1edc4c4))
+
+### Features
+
+- QPACK header compression (RFC 9204) ([`8f40d00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f40d008cca1098e280fdfa40c17db9d9aa7355f))
+
+</details>
+
 ## [4.113.0] - 2026-07-05
 
 <details>
