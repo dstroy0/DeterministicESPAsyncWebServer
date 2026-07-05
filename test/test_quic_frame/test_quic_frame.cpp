@@ -140,6 +140,61 @@ void test_sequence_and_truncation()
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(bad, sizeof bad, &f));
 }
 
+// Every builder returns 0 when the output buffer is too small (each guard exercised).
+void test_builder_overflow()
+{
+    uint8_t b[1];
+    const uint8_t d[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_ping(b, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_handshake_done(b, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_padding(b, 1, 3)); // n > cap
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_ack(b, 1, 1000, 42, 3));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_crypto(b, 1, 7, d, 4)); // header fits, data does not
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_crypto(b, 0, 0, d, 4)); // type varint does not fit
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 1, 4, 100, d, 4, true));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 0, 0, 0, d, 4, false));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_max_data(b, 1, 1u << 30));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_connection_close(b, 1, 0x0a, 0, "x", 1));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_connection_close(b, 4, 0x0a, 0, "hello", 5)); // reason overflows
+}
+
+// Every parse guard: empty input, per-frame truncation, and an unhandled frame type.
+void test_parse_errors()
+{
+    QuicFrame f;
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse((const uint8_t *)"", 0, &f)); // no type byte
+
+    const uint8_t ack_trunc[1] = {QUIC_FT_ACK}; // no Largest/Delay/...
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_trunc, 1, &f));
+    const uint8_t ack_ranges_trunc[5] = {0x02, 60, 5, 1, 3}; // range_count 1 but no Gap/Length
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_ranges_trunc, 5, &f));
+    const uint8_t ack_ecn_trunc[7] = {0x03, 60, 5, 0, 3, 1, 2}; // ECN needs 3 counts, only 2
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_ecn_trunc, 7, &f));
+
+    const uint8_t crypto_trunc[2] = {QUIC_FT_CRYPTO, 0x00}; // offset ok, no length
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(crypto_trunc, 2, &f));
+
+    const uint8_t stream_noid[1] = {0x08}; // STREAM, no Stream ID
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(stream_noid, 1, &f));
+    const uint8_t stream_off_trunc[2] = {0x0c, 0x00}; // OFF set, id ok, no Offset
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(stream_off_trunc, 2, &f));
+    const uint8_t stream_len_over[3] = {0x0a, 0x00, 0x08}; // LEN set, length 8 > remaining
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(stream_len_over, 3, &f));
+
+    const uint8_t max_trunc[1] = {QUIC_FT_MAX_DATA};
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(max_trunc, 1, &f));
+
+    const uint8_t close_trunc[1] = {QUIC_FT_CONNECTION_CLOSE};
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(close_trunc, 1, &f));
+    const uint8_t close_reason_over[4] = {0x1c, 0x00, 0x00, 0x08}; // reason len 8 > remaining
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(close_reason_over, 4, &f));
+    const uint8_t appclose_trunc[2] = {0x1d, 0x00}; // error code ok, no reason length
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(appclose_trunc, 2, &f));
+
+    const uint8_t unhandled[1] = {0x18}; // NEW_CONNECTION_ID - not handled by this minimal server
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(unhandled, 1, &f));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -149,5 +204,7 @@ int main()
     RUN_TEST(test_stream);
     RUN_TEST(test_max_data_and_close);
     RUN_TEST(test_sequence_and_truncation);
+    RUN_TEST(test_builder_overflow);
+    RUN_TEST(test_parse_errors);
     return UNITY_END();
 }

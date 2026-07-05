@@ -122,6 +122,40 @@ void test_reject()
     TEST_ASSERT_FALSE(quic_parse_short_header(sbuf, sizeof sbuf, 4, &s));
 }
 
+// Builder guards: bad packet-number length, oversize connection IDs, and buffer overflow.
+void test_build_guards()
+{
+    const uint8_t cid[2] = {0x01, 0x02};
+    uint8_t out[32];
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 5));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 21, cid, 2, 1));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_long_header(out, 6, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 1)); // too small
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_version_negotiation(out, 4, cid, 2, cid, 2, 0, 0));          // too small
+    TEST_ASSERT_EQUAL_INT(0,
+                          (int)quic_build_version_negotiation(out, sizeof out, cid, 21, cid, 2, 0, 0)); // oversize CID
+
+    // Packet-number encode into a buffer too small, and the 4-byte length ceiling.
+    uint8_t pn[1];
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_pn_encode(pn, 1, 0x123456, -1)); // needs 3 bytes
+    TEST_ASSERT_EQUAL_INT(4, (int)quic_pn_length(0xFFFFFFFFull, -1));   // huge unacked range -> 4 bytes
+}
+
+// Short-header parse guards: oversize DCID length and a long-header first byte.
+void test_short_header_guards()
+{
+    QuicShortHeader h;
+    const uint8_t buf[8] = {0x40, 1, 2, 3, 4, 5, 6, 7};
+    TEST_ASSERT_FALSE(quic_parse_short_header(buf, sizeof buf, 21, &h)); // DCID length > 20
+    const uint8_t longform[8] = {0xC0, 1, 2, 3, 4, 5, 6, 7};
+    TEST_ASSERT_FALSE(quic_parse_short_header(longform, sizeof longform, 4, &h)); // 0x80 set = long header
+
+    // Long-header parse with the Source Connection ID truncated.
+    QuicLongHeader lh;
+    const uint8_t scid_trunc[8] = {0xC0, 0, 0, 0, 1, 0x00, 0x05, 0xAA}; // dcid_len 0, scid_len 5 but 1 byte
+    TEST_ASSERT_FALSE(quic_parse_long_header(scid_trunc, sizeof scid_trunc, &lh));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -131,5 +165,7 @@ int main()
     RUN_TEST(test_pn_encode);
     RUN_TEST(test_pn_decode);
     RUN_TEST(test_reject);
+    RUN_TEST(test_build_guards);
+    RUN_TEST(test_short_header_guards);
     return UNITY_END();
 }

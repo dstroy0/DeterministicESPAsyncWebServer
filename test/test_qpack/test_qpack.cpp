@@ -137,6 +137,71 @@ void test_reject_dynamic()
     TEST_ASSERT_FALSE(decode_all(postbase, 3, &s));
 }
 
+// Encoder overflow on each representation, and the Huffman literal-name path.
+void test_encode_edges()
+{
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_prefix(out, 1));                         // prefix needs 2
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_header(out, 0, ":status", 7, "200", 3)); // indexed, no room
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_header(out, 1, ":path", 5, "/x", 2));    // name-ref value overflow
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_header(out, 1, "zzzz", 4, "v", 1));      // literal-name overflow
+
+    // A name that Huffman-compresses (8x 'a' = 40 bits = 5 bytes < 8) takes the H-bit path.
+    size_t n = qpack_encode_header(out, sizeof out, "aaaaaaaa", 8, "v", 1);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE((out[0] & 0xE0) == 0x20 && (out[0] & 0x08)); // literal literal name, H set
+    uint8_t blk[66] = {0x00, 0x00};
+    memcpy(blk + 2, out, n);
+    Sink s;
+    TEST_ASSERT_TRUE(decode_all(blk, n + 2, &s));
+    TEST_ASSERT_EQUAL_STRING("aaaaaaaa", s.hdrs[0].first.c_str());
+    TEST_ASSERT_EQUAL_STRING("v", s.hdrs[0].second.c_str());
+}
+
+// Decoder error paths: truncated value, out-of-range static index, scratch overflow.
+void test_decode_errors()
+{
+    Sink s;
+    const uint8_t novalue[3] = {0x00, 0x00, 0x51}; // name ref, no value string
+    TEST_ASSERT_FALSE(decode_all(novalue, 3, &s));
+    const uint8_t badidx[4] = {0x00, 0x00, 0xFF, 0x25}; // indexed static index 100 (>= 99)
+    TEST_ASSERT_FALSE(decode_all(badidx, 4, &s));
+
+    // A decoded name that does not fit the caller's scratch is rejected.
+    char tiny[4];
+    const uint8_t nameref[5] = {0x00, 0x00, 0x51, 0x01, 'x'}; // :path (5 bytes) into a 4-byte scratch
+    TEST_ASSERT_FALSE(qpack_decode(nameref, 5, tiny, sizeof tiny, sink_emit, &s));
+    char tiny2[2];
+    const uint8_t litname[8] = {0x00, 0x00, 0x23, 'a', 'b', 'c', 0x01, 'v'}; // name "abc" into a 2-byte scratch
+    TEST_ASSERT_FALSE(qpack_decode(litname, 8, tiny2, sizeof tiny2, sink_emit, &s));
+    // A truncated field-section prefix (no Delta Base byte).
+    const uint8_t prefix_only[1] = {0x00};
+    TEST_ASSERT_FALSE(decode_all(prefix_only, 1, &s));
+}
+
+// The value-string (str7) decode paths off a name-reference: bad Huffman, truncation, overflow.
+void test_value_string_paths()
+{
+    Sink s;
+    // Value marked Huffman (0x81 = H, len 1) but 0xFF is not a valid single-byte code.
+    const uint8_t bad_huff[5] = {0x00, 0x00, 0x51, 0x81, 0xFF};
+    TEST_ASSERT_FALSE(decode_all(bad_huff, 5, &s));
+    // Value length says 10 but only 1 value byte present.
+    const uint8_t val_trunc[5] = {0x00, 0x00, 0x51, 0x0a, 'x'};
+    TEST_ASSERT_FALSE(decode_all(val_trunc, 5, &s));
+    // A raw value that does not fit the remaining scratch after the name is copied in.
+    char scratch[6]; // :path (5) fits, leaving 1 byte for the value
+    const uint8_t val_over[9] = {0x00, 0x00, 0x51, 0x05, 'a', 'b', 'c', 'd', 'e'};
+    TEST_ASSERT_FALSE(qpack_decode(val_over, 9, scratch, sizeof scratch, sink_emit, &s));
+    // A well-formed Huffman value round-trips (decode_str7 Huffman path): "aaaa" -> H, 3 bytes.
+    uint8_t enc[16];
+    size_t n = qpack_encode_header(enc, sizeof enc, ":path", 5, "aaaaaaaa", 8);
+    uint8_t blk[18] = {0x00, 0x00};
+    memcpy(blk + 2, enc, n);
+    TEST_ASSERT_TRUE(decode_all(blk, n + 2, &s));
+    TEST_ASSERT_EQUAL_STRING("aaaaaaaa", s.hdrs[s.hdrs.size() - 1].second.c_str());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -146,5 +211,8 @@ int main()
     RUN_TEST(test_literal_name);
     RUN_TEST(test_full_section);
     RUN_TEST(test_reject_dynamic);
+    RUN_TEST(test_encode_edges);
+    RUN_TEST(test_decode_errors);
+    RUN_TEST(test_value_string_paths);
     return UNITY_END();
 }

@@ -87,6 +87,53 @@ void test_reserved()
     TEST_ASSERT_FALSE(h3_parse_settings(bad, 2, &s));
 }
 
+// HEADERS frame wraps a QPACK field section verbatim.
+void test_build_headers()
+{
+    const uint8_t block[2] = {0xAA, 0xBB};
+    uint8_t b[8];
+    size_t n = h3_build_headers(b, sizeof b, block, 2);
+    const uint8_t exp[4] = {0x01, 0x02, 0xAA, 0xBB};
+    TEST_ASSERT_EQUAL_INT(4, (int)n);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 4);
+    H3Frame f;
+    TEST_ASSERT_TRUE(h3_frame_parse(b, n, &f));
+    TEST_ASSERT_TRUE(f.type == H3_HEADERS && f.length == 2);
+}
+
+// Every builder returns 0 when the buffer is too small, and the header writer honors cap.
+void test_builder_overflow()
+{
+    uint8_t b[2];
+    const uint8_t data[5] = {1, 2, 3, 4, 5};
+    const uint64_t ids[1] = {H3_SETTINGS_QPACK_BLOCKED_STREAMS};
+    const uint64_t vals[1] = {16};
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_frame_write_header(b, 0, H3_DATA, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_build_data(b, 2, data, 5)); // header fits, payload does not
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_build_headers(b, 2, data, 5));
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_build_settings(b, 1, ids, vals, 1));
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_build_goaway(b, 1, 0x4000)); // stream id needs a 2-byte varint
+}
+
+// Truncated frame headers and SETTINGS payloads are rejected.
+void test_parse_errors()
+{
+    H3Frame f;
+    TEST_ASSERT_FALSE(h3_frame_parse((const uint8_t *)"", 0, &f)); // no type
+    const uint8_t no_len[1] = {0x04};                              // type ok, no length varint
+    TEST_ASSERT_FALSE(h3_frame_parse(no_len, 1, &f));
+    const uint8_t trunc_len[1] = {0x40}; // a 2-byte type varint with only 1 byte present
+    TEST_ASSERT_FALSE(h3_frame_parse(trunc_len, 1, &f));
+
+    H3Settings s;
+    h3_settings_defaults(&s);
+    const uint8_t id_no_val[1] = {0x01}; // QPACK_MAX_TABLE_CAPACITY id, no value
+    TEST_ASSERT_FALSE(h3_parse_settings(id_no_val, 1, &s));
+    // An unknown / GREASE settings id is ignored (not an error).
+    const uint8_t grease[2] = {0x21, 0x00};
+    TEST_ASSERT_TRUE(h3_parse_settings(grease, 2, &s));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -94,5 +141,8 @@ int main()
     RUN_TEST(test_build_data_and_goaway);
     RUN_TEST(test_settings_roundtrip);
     RUN_TEST(test_reserved);
+    RUN_TEST(test_build_headers);
+    RUN_TEST(test_builder_overflow);
+    RUN_TEST(test_parse_errors);
     return UNITY_END();
 }
