@@ -2,19 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.116.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.116.0 - 2026-07-05</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`bd390b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd390b2431dda2fe926457d571065a06fdbf3279))
+- update CHANGELOG.md [skip ci] ([`a2e0336`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2e0336edb8c0b8c317ee7c19ffbe2067f45d2ed))
 - fix the 5 genuine SonarCloud nits (uppercase literal suffix, ps1 whitespace) ([`e05ba8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e05ba8a505f43a0fe07fd311df35b2f426fd0814))
 - update test report [skip ci] ([`363200f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/363200f00f96dbc9a794b785423f40e670784753))
 - update CHANGELOG.md [skip ci] ([`374cabe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/374cabe00b3026a2e4cc82d3fea50acd5da70bcd))
 - update test report [skip ci] ([`bb2c02e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb2c02e7f9dbbe104c74482a42d78efb54929fe6))
 - update CHANGELOG.md [skip ci] ([`bb413f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb413f84c02fde7c9db7f1ed20474771740996d8))
 
+### Changes
+
+- Bump version: 4.115.0 → 4.116.0 ([`68d4f1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68d4f1e0c72a0dff2fbe49c95532edbaf0611439))
+
+### Features
+
+- chacha20-poly1305@openssh.com cipher (codec, host-tested) ([`e7fd623`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7fd623d20f3796ebbad79680ccc26b64bec9349))
+
 ### Testing
 
 - raise QUIC / QPACK / HTTP3-framing codec coverage ([`9dcc033`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dcc033e53a6508db31779b47b523ec67f4c5359))
+
+</details>
 
 ## [4.115.0] - 2026-07-05
 
