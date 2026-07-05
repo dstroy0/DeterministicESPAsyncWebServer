@@ -3278,6 +3278,29 @@
 #endif
 
 /**
+ * @brief Largest HTTP/2 frame we accept, in bytes (advertised as SETTINGS_MAX_FRAME_SIZE). RFC
+ * 9113 requires accepting at least 16384; a whole frame is buffered for reassembly, so this
+ * (plus the HPACK table) sets the per-HTTP/2-connection RAM. Range: [16384, 16777215].
+ */
+#ifndef DETWS_H2_MAX_FRAME
+#define DETWS_H2_MAX_FRAME 16384
+#endif
+
+/** @brief Max concurrent HTTP/2 streams per connection (advertised as MAX_CONCURRENT_STREAMS). */
+#ifndef DETWS_H2_MAX_STREAMS
+#define DETWS_H2_MAX_STREAMS 8
+#endif
+
+/**
+ * @brief Header-block reassembly buffer for HTTP/2 requests that span HEADERS + CONTINUATION
+ * frames (a single END_HEADERS frame decodes in place and needs no copy). Caps the compressed
+ * request-header size; a larger block is rejected (RFC 9113 sec 6.10).
+ */
+#ifndef DETWS_H2_HDR_BLOCK
+#define DETWS_H2_HDR_BLOCK 4096
+#endif
+
+/**
  * @brief HTTP Range requests / 206 Partial Content for served files.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /

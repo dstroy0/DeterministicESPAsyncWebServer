@@ -944,6 +944,16 @@
       "src": ["+<network_drivers/presentation/http2/h2_frame.cpp>"],
       "tests": ["test_h2_frame"]
     },
+    "native_h2conn": {
+      "desc": "HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn, RFC 9113):\ninitial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real\nHPACK-encoded request into the header callbacks, PING -> PING ACK, split-across-reads frame\nreassembly, and h2_conn_respond serializing a HEADERS + DATA response decoded back.",
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
+      "src": [
+        "+<network_drivers/presentation/http2/h2_conn.cpp>",
+        "+<network_drivers/presentation/http2/h2_frame.cpp>",
+        "+<network_drivers/presentation/http2/hpack.cpp>"
+      ],
+      "tests": ["test_h2_conn"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],
