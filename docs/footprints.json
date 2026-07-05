@@ -91,11 +91,11 @@
     "ram_bytes": 66232
   },
   "DIAG": {
-    "example": "L7-Application/20.Diagnostics",
+    "example": "Foundation/05.Configuration",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 750921,
-    "ram_bytes": 66192
+    "flash_bytes": 752389,
+    "ram_bytes": 62944
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -525,10 +525,10 @@
     "ram_bytes": 22608
   },
   "TLS": {
-    "example": "L6-Presentation/07.SecureWebSocket",
+    "example": "L4-Transport/03.HTTPS",
     "flags": "-DDETWS_ENABLE_TLS=1",
     "board": "esp32dev",
-    "flash_bytes": 854829,
+    "flash_bytes": 854957,
     "ram_bytes": 117108
   },
   "TLS+MTLS": {
