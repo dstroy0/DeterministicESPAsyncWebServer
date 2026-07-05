@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.119.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.119.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`a9e1426`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e1426d033a13c79da3b77a33145705e1d6a0f7))
+- update CHANGELOG.md [skip ci] ([`b7e7623`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7e7623bbebd41823878c5691c2e1dbe5abd624f))
+
+### Changes
+
+- Bump version: 4.118.0 → 4.119.0 ([`995e474`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/995e47423373bdc479c9a619f3b555c14d39f20d))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`bed4dd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bed4dd6c3e6c5921e2407dcd693d0215d3e84dff))
+
+### Features
+
+- hmac-sha2-*-etm@openssh.com MACs for the aes cipher ([`fa6681a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa6681afc9075de9a05cf1cb4580685be0273b3b))
+
+</details>
+
 ## [4.118.0] - 2026-07-05
 
 <details>
