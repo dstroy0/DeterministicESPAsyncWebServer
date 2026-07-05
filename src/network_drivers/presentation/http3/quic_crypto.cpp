@@ -26,14 +26,6 @@ const uint8_t RETRY_KEY[16] = {0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a,
                                0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e};
 const uint8_t RETRY_NONCE[12] = {0x46, 0x15, 0x99, 0xd3, 0x5d, 0x63, 0x2b, 0xf2, 0x23, 0x98, 0x25, 0xbb};
 
-// Expand one traffic secret into a {key, iv, hp} triple (RFC 9001 sec 5.1 labels).
-void expand_keys(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out)
-{
-    quic_hkdf_expand_label(secret, "quic key", out->key, sizeof(out->key));
-    quic_hkdf_expand_label(secret, "quic iv", out->iv, sizeof(out->iv));
-    quic_hkdf_expand_label(secret, "quic hp", out->hp, sizeof(out->hp));
-}
-
 // Build the AEAD nonce: the packet number, left-padded to the 12-byte IV width, XOR the IV.
 void build_nonce(const uint8_t iv[12], uint64_t full_pn, uint8_t nonce[12])
 {
@@ -42,6 +34,15 @@ void build_nonce(const uint8_t iv[12], uint64_t full_pn, uint8_t nonce[12])
         nonce[11 - i] ^= (uint8_t)(full_pn >> (8 * i));
 }
 } // namespace
+
+void quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out)
+{
+    // RFC 9001 sec 5.1: every encryption level's packet keys are these three Expand-Labels of the
+    // level's traffic secret (the Initial secrets below, or the TLS handshake / application secrets).
+    quic_hkdf_expand_label(secret, "quic key", out->key, sizeof(out->key));
+    quic_hkdf_expand_label(secret, "quic iv", out->iv, sizeof(out->iv));
+    quic_hkdf_expand_label(secret, "quic hp", out->hp, sizeof(out->hp));
+}
 
 void quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicInitialSecrets *out)
 {
@@ -53,8 +54,8 @@ void quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicIniti
     quic_hkdf_expand_label(initial_secret, "client in", client_secret, sizeof(client_secret));
     quic_hkdf_expand_label(initial_secret, "server in", server_secret, sizeof(server_secret));
 
-    expand_keys(client_secret, &out->client);
-    expand_keys(server_secret, &out->server);
+    quic_keys_from_secret(client_secret, &out->client);
+    quic_keys_from_secret(server_secret, &out->server);
 }
 
 size_t quic_packet_protect(uint8_t *pkt, size_t cap, size_t pn_offset, uint8_t pn_len, uint64_t full_pn,

@@ -1452,6 +1452,26 @@
       ],
       "tests": ["test_quic_crypto"]
     },
+    "native_tls13_kdf": {
+      "desc": "TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf,\nRFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake +\napplication traffic secrets, the server handshake write key/iv label path, and the server Finished\nverify_data over a full ClientHello..CertificateVerify transcript. Pinned to RFC 8448 sec 3.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+      ],
+      "tests": ["test_tls13_kdf"]
+    },
+    "native_quic_tp": {
+      "desc": "QUIC transport parameters codec (network_drivers/presentation/http3/quic_tp, RFC 9000\nsec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint\nparameter + the migration flag, parsing a hand-built byte string, skipping unknown/GREASE ids, and\nrejecting a duplicate parameter, an oversized connection ID, and out-of-range values.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_tp.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>"
+      ],
+      "tests": ["test_quic_tp"]
+    },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
       "flags": [],

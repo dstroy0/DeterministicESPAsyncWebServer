@@ -33,6 +33,7 @@
 
 #if DETWS_ENABLE_HTTP3
 
+#include "network_drivers/presentation/http3/quic_hkdf.h" // QUIC_HKDF_HASH_LEN
 #include <stddef.h>
 #include <stdint.h>
 
@@ -59,6 +60,15 @@ struct QuicInitialSecrets
  * traffic secret. @p dcid is the Destination Connection ID from the client's first Initial packet.
  */
 void quic_derive_initial_secrets(const uint8_t *dcid, size_t dcid_len, QuicInitialSecrets *out);
+
+/**
+ * @brief Expand one traffic secret into a {key, iv, hp} triple (RFC 9001 sec 5.1 labels).
+ *
+ * key = HKDF-Expand-Label(secret, "quic key", 16), iv = "quic iv" (12), hp = "quic hp" (16). The
+ * Initial derivation uses this internally; the Handshake and 1-RTT levels call it directly on the
+ * TLS-derived handshake / application traffic secrets so every level shares one code path.
+ */
+void quic_keys_from_secret(const uint8_t secret[QUIC_HKDF_HASH_LEN], QuicPacketKeys *out);
 
 /**
  * @brief Protect one QUIC packet in place: AEAD-seal the payload, then apply header protection.

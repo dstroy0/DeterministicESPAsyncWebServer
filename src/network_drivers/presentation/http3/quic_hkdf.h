@@ -48,9 +48,9 @@ void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm,
  *
  * Builds the HkdfLabel structure
  *   struct { uint16 length; opaque label<7..255> = "tls13 " + label; opaque context<0..255>; }
- * and runs HKDF-Expand (RFC 5869 sec 2.3) with an empty context (all QUIC uses of this function
- * pass an empty context). @p out_len must not exceed 255*32 bytes; QUIC only ever asks for
- * <= 32, which is a single HMAC block.
+ * and runs HKDF-Expand (RFC 5869 sec 2.3) with an empty context (all QUIC packet-protection uses of
+ * this function pass an empty context). @p out_len must not exceed 255*32 bytes; QUIC only ever asks
+ * for <= 32, which is a single HMAC block.
  *
  * @param secret    Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.
  * @param label     Short ASCII label, e.g. "quic key" (without the "tls13 " prefix), <= 249 bytes.
@@ -58,6 +58,23 @@ void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm,
  * @param out_len   Number of output bytes requested.
  */
 void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len);
+
+/**
+ * @brief HKDF-Expand-Label with an explicit context (RFC 8446 sec 7.1, the general form).
+ *
+ * Identical to quic_hkdf_expand_label() but the HkdfLabel context is @p context (0..255 bytes)
+ * instead of empty. The TLS 1.3 key schedule's Derive-Secret (sec 7.1) is exactly this with the
+ * context set to a Transcript-Hash, so the whole handshake key schedule layers on this one routine.
+ *
+ * @param secret       PRK, QUIC_HKDF_HASH_LEN bytes.
+ * @param label        Short ASCII label without the "tls13 " prefix, <= 249 bytes.
+ * @param context      Context bytes (may be NULL only when @p context_len is 0), <= 255 bytes.
+ * @param context_len  Context length.
+ * @param out          Output keying material.
+ * @param out_len      Number of output bytes requested.
+ */
+void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
+                                size_t context_len, uint8_t *out, size_t out_len);
 
 #endif // DETWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H
