@@ -3252,6 +3252,32 @@
 #endif
 
 /**
+ * @brief HTTP/2 (RFC 9113) over the version-agnostic request/response core.
+ *
+ * Default off. When set, the server negotiates HTTP/2 via TLS ALPN ("h2") and speaks the binary
+ * framing + HPACK header compression (RFC 7541) on top of the same routes/handlers as HTTP/1.1
+ * (the response serializer is version-neutral). The HPACK codec and the frame layer are pure and
+ * host-tested; the connection/stream state machine plugs in as a ProtoHandler.
+ */
+#ifndef DETWS_ENABLE_HTTP2
+#define DETWS_ENABLE_HTTP2 0
+#endif
+
+/**
+ * @brief Per-connection HPACK dynamic-table size in bytes (our decoder; advertised to the peer
+ * as SETTINGS_HEADER_TABLE_SIZE). RFC 7541's default is 4096; lower it to save per-connection
+ * RAM (each active HTTP/2 connection holds one table).
+ */
+#ifndef DETWS_HPACK_TABLE_BYTES
+#define DETWS_HPACK_TABLE_BYTES 4096
+#endif
+
+/** @brief Max HPACK dynamic-table entries (>= DETWS_HPACK_TABLE_BYTES / 32, the min entry size). */
+#ifndef DETWS_HPACK_MAX_ENTRIES
+#define DETWS_HPACK_MAX_ENTRIES 128
+#endif
+
+/**
  * @brief HTTP Range requests / 206 Partial Content for served files.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /

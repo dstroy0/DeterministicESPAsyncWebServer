@@ -932,6 +932,12 @@
       "src": ["+<services/ina219/ina219.cpp>"],
       "tests": ["test_ina219"]
     },
+    "native_hpack": {
+      "desc": "HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the\nHuffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion\n(C.3.1), dynamic-table indexing + FIFO eviction + size updates, and the server encoder\n(static indexing + literal round-trip). Pure host codec.",
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
+      "src": ["+<network_drivers/presentation/http2/hpack.cpp>"],
+      "tests": ["test_hpack"]
+    },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
       "flags": ["-DDETWS_ENABLE_JWT=1"],
