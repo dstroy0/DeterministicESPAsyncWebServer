@@ -173,6 +173,67 @@ streaming sink state, events, scratch, outbound client I/O) has exactly one owne
 behind a clean API, and the server and client ring drain math is a single shared
 primitive (`det_ring.h`) - two pools, one ring/read core.
 
+## Protocol dispatch (Layer 5) - how every protocol plugs into the core
+
+The data-piping axis above (who owns RX/TX/window/events) is settled. This is the
+_other_ axis: how each application protocol attaches to that plumbing. The rule is
+the same - one uniform seam - and it is mostly, but not fully, met.
+
+**The seam - `ProtoHandler` (`session/proto_handler.h`).** A connection-oriented (TCP)
+protocol is a vtable of four nullable callbacks keyed by `ConnProto`:
+
+```c
+struct ProtoHandler { on_accept; on_data; on_close; on_poll; }; // all take a slot index
+```
+
+`dispatch_event()` routes each drained `TcpEvt` to `on_{accept,data,close}` by
+`conn_pool[slot].proto`; `handle()` calls `on_poll` for each active slot. Every
+handler reads its bytes through the transport RX API (`det_conn_read` copy-out, or
+`det_conn_peek`+`det_conn_consume` zero-copy - never the ring internals) and writes
+through `det_conn_send`/`det_conn_flush`. So Telnet, SSH (+ `PROTO_SSH_RFWD`), Modbus,
+and OPC UA are fully homogeneous: each is a module that exposes a `ProtoHandler` and
+touches the core only through those two APIs.
+
+**Connectionless (UDP) services** (SNMP, CoAP, DNS, syslog, flow-export) attach through
+a _different_ but deliberately separate seam - `det_udp_listen(port, handler, arg)`, one
+datagram-in/datagram-out callback. This heterogeneity is correct, not a defect: UDP has
+no accept/close/slot lifecycle, so folding it into the slot-based `ProtoHandler` table
+would be a forced fit. Two transport models, two matched seams.
+
+**The request/response core is protocol(version)-agnostic already:** `HttpReq` +
+`DetWebServer::send()` are HTTP-version-neutral, so HTTP/1.1 and HTTP/2 dispatch through
+one `match_and_execute` (and HTTP/3 will) over the same routes/handlers.
+
+### Homogeneity work (status)
+
+1. **`session.cpp` (L5) is now protocol-agnostic - DONE.** The dispatcher owns only the
+   mechanism (register / look up / route / drain) and names no protocol. Each protocol's
+   handler lives in its own module and is exposed by a pure accessor
+   (`http_proto_handler()` in presentation, `ssh_proto_handler()` in ssh_conn, ...) that
+   carries no dependency on the session layer. The single policy file `proto_builtins.cpp`
+   maps each built-in to its accessor behind its feature flag; `proto_get()` calls
+   `proto_register_builtins()` once, lazily, so the native harness still works before
+   `begin()`. Adding a protocol = write its module + one guarded line in `proto_builtins.cpp`
+    - never editing the dispatcher. (The SSH remote-forward listener still self-registers from
+      its own opt-in `ssh_forward_begin()`.)
+
+2. **The HTTP TLS/h2/ws data-pump moved out of L5 - DONE.** `presentation.cpp` (Layer 6,
+   already the HTTP-connection glue) now owns the HTTP `ProtoHandler`: `http_evt_{accept,
+data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + WebSocket
+   upgrade check before the HTTP/1.1 parser). L5 no longer includes TLS / http2 / websocket /
+   http_parser. The one remaining HTTP special case is inherent: HTTP's **poll** is a large
+   inline block in `handle()` (file/chunk/WS/SSE pumps), not an `on_poll`, because HTTP is
+   **instance-bound** (routing needs the `DetWebServer` object) while every other protocol is
+   a global singleton - so that block correctly lives in the `DetWebServer` translation unit.
+
+3. **TLS is an inline transform inside the HTTP handler**, not a composable wrapper, so only
+   HTTP can be TLS-wrapped. Acceptable and inherent (SSH carries its own crypto; Telnet /
+   Modbus / OPC UA are plaintext by definition), noted for completeness.
+
+Net: L5 is pure dispatch, every protocol (including HTTP) lives behind the same uniform seam
+via its own module, and the one HTTP asymmetry that remains (the instance-bound poll) is
+inherent to HTTP being the routing core. None of this was ever a correctness bug.
+
 ## Unified arena primitive (`session/det_arena`)
 
 A double-ended allocator over one region: a **persistent** end grows up from the

@@ -62,6 +62,10 @@ void telnet_rx(uint8_t slot);
 /** @brief The Telnet connection on @p slot closed; release its state. */
 void telnet_close(uint8_t slot);
 
+/** @brief The Telnet ProtoHandler (accessor; installed by the builtins list, no session dep). */
+struct ProtoHandler;
+const struct ProtoHandler *telnet_proto_handler(void);
+
 #endif // DETWS_ENABLE_TELNET
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_TELNET_H
