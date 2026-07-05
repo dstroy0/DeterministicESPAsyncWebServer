@@ -104,6 +104,7 @@ LAYER_MEMBERS = {
         "CBOR",
         "CloudEvents",
         "HTTP/1.1 Parser",
+        "HTTP/2",
         "JSON",
         "JWT",
         "MessagePack",

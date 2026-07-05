@@ -42,6 +42,9 @@
 #include "network_drivers/transport/listener.h"
 #include "shared_primitives/det_hex.h"
 #include "shared_primitives/det_mime.h"
+#if DETWS_ENABLE_HTTP2
+#include "network_drivers/presentation/http2/h2_server.h"
+#endif
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/sha1/sha1.h"
@@ -1767,6 +1770,15 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
         return;
     }
 
+#if DETWS_ENABLE_HTTP2
+    // HTTP/2 slot: serialize as HEADERS + DATA on the request's stream and keep the connection.
+    if (conn->h2)
+    {
+        h2_server_respond(slot_id, code, content_type, payload, strlen(payload));
+        return;
+    }
+#endif
+
     int payload_len = (int)strlen(payload);
 
     bool keep;
@@ -1823,6 +1835,14 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         http_reset(slot_id);
         return;
     }
+
+#if DETWS_ENABLE_HTTP2
+    if (conn->h2)
+    {
+        h2_server_respond(slot_id, code, "text/plain", "", 0);
+        return;
+    }
+#endif
 
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);

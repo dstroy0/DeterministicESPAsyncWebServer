@@ -56,6 +56,12 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
 /** @brief True once det_tls_global_init() has succeeded. */
 bool det_tls_ready();
 
+/**
+ * @brief The ALPN protocol negotiated for @p slot ("h2" or "http/1.1"), or nullptr if the client
+ * offered no ALPN. Valid after the handshake completes. Used to select HTTP/2 vs HTTP/1.1.
+ */
+const char *det_tls_alpn(uint8_t slot);
+
 /** @brief Begin a TLS session on connection @p slot (sets up ssl_context + BIO). */
 bool det_tls_conn_begin(uint8_t slot);
 

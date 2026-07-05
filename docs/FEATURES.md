@@ -284,6 +284,12 @@ HTTPS client support inside the HTTP client (needs TLS).
 
 RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.
 
+## HTTP/2
+
+`DETWS_ENABLE_HTTP2`
+
+HTTP/2 (RFC 9113) over the version-agnostic request/response core. Default off. Negotiated by TLS ALPN ("h2", falling back to "http/1.1"); an h2 connection speaks the binary framing + HPACK header compression on top of the same routes and handlers as HTTP/1.1 (the response serializer branches on the connection's protocol). The three layers are pure and host-tested against the RFCs: **HPACK** (RFC 7541 - static + dynamic table, prefix-integer / string / canonical-Huffman coding; `native_hpack` vs the Appendix C vectors), the **frame layer** (RFC 9113 sec 4/6 - the 9-byte header + SETTINGS / WINDOW_UPDATE / RST_STREAM / GOAWAY / PING / HEADERS / DATA; `native_h2frame`), and the **connection/stream engine** (preface, SETTINGS exchange, per-stream HEADERS->request + DATA/flow-control, PING/RST/GOAWAY, reassembly; `native_h2conn` drives a full request/response cycle). A connection's engine is ~28 KB, so it does not fit internal DRAM alongside TLS: **HTTP/2 requires PSRAM** (set DETWS_H2_POOL_IN_PSRAM=1 on an S3 / P4 / WROVER; a compile-time guard enforces it). See src/network_drivers/presentation/http2/.
+
 ## IEC 60870
 
 `DETWS_ENABLE_IEC60870`

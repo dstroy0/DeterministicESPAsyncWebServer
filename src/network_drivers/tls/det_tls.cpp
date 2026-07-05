@@ -320,6 +320,14 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     if (mbedtls_ssl_conf_own_cert(&s_conf, &s_cert, &s_key) != 0)
         return false;
 
+#if DETWS_ENABLE_HTTP2
+    // Offer HTTP/2 over TLS via ALPN (RFC 7301), falling back to HTTP/1.1. The list must outlive
+    // the config, so it is static; det_tls_alpn() reports the negotiated choice post-handshake.
+    static const char *s_alpn[] = {"h2", "http/1.1", nullptr}; // mbedTLS keeps this pointer
+    if (mbedtls_ssl_conf_alpn_protocols(&s_conf, s_alpn) != 0)
+        return false;
+#endif
+
 #if DETWS_ENABLE_TLS_RESUMPTION
     // RFC 5077 session tickets: a returning client resumes with an abbreviated
     // handshake. Stateless (the session lives in the client's sealed ticket), so
@@ -342,6 +350,12 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
 bool det_tls_ready()
 {
     return s_ready;
+}
+
+const char *det_tls_alpn(uint8_t slot)
+{
+    TlsConn *c = find(slot);
+    return c ? mbedtls_ssl_get_alpn_protocol(&c->ssl) : nullptr;
 }
 
 bool det_tls_conn_begin(uint8_t slot)

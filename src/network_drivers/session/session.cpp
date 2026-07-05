@@ -35,6 +35,9 @@
 #if DETWS_ENABLE_TLS
 #include "../presentation/http_parser/http_parser.h"
 #include "../tls/det_tls.h"
+#if DETWS_ENABLE_HTTP2
+#include "../presentation/http2/h2_server.h"
+#endif
 #if DETWS_ENABLE_WEBSOCKET
 #include "../presentation/websocket/websocket.h"
 #endif
@@ -64,6 +67,26 @@ static void tls_data(uint8_t slot)
         if (h == 0)
             return; // still handshaking; wait for more ciphertext
     }
+
+#if DETWS_ENABLE_HTTP2
+    // Just past the handshake: if the client negotiated ALPN "h2", this connection speaks HTTP/2
+    // for its lifetime - hand its decrypted bytes to the h2 engine, not the HTTP/1.1 parser.
+    if (!conn_pool[slot].h2_checked)
+    {
+        conn_pool[slot].h2_checked = 1;
+        const char *alpn = det_tls_alpn(slot);
+        if (alpn && strcmp(alpn, "h2") == 0)
+        {
+            conn_pool[slot].h2 = 1;
+            h2_server_open(slot);
+        }
+    }
+    if (conn_pool[slot].h2)
+    {
+        h2_server_data(slot);
+        return;
+    }
+#endif
 
 #if DETWS_ENABLE_WEBSOCKET
     // A TLS slot upgraded to WebSocket is pumped from handle() (it decrypts
@@ -107,6 +130,10 @@ void proto_register(ConnProto proto, const ProtoHandler *h)
 static void http_evt_accept(uint8_t slot)
 {
     http_conn_open(slot); // resets the parser + (keep-alive) the per-conn request tally
+#if DETWS_ENABLE_HTTP2
+    conn_pool[slot].h2 = 0; // a reused slot must re-run the post-handshake ALPN check
+    conn_pool[slot].h2_checked = 0;
+#endif
 }
 static void http_evt_data(uint8_t slot)
 {

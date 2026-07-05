@@ -89,6 +89,11 @@ struct TcpConn
         proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
     uint8_t iface;  ///< DetIface this connection arrived on; set at accept time.
     uint8_t tls;    ///< Non-zero when this connection is TLS (set at accept time).
+#if DETWS_ENABLE_HTTP2
+    uint8_t h2;         ///< Non-zero once this connection negotiated HTTP/2 (ALPN "h2").
+    uint8_t h2_checked; ///< The post-handshake ALPN check ran (once per connection).
+    uint32_t h2_stream; ///< Stream id of the request currently being dispatched (for the response).
+#endif
 };
 
 /** @brief Sentinel for TcpConn::proto_slot meaning "no per-protocol session bound". */

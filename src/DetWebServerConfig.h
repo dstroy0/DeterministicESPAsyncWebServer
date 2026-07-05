@@ -3301,6 +3301,20 @@
 #endif
 
 /**
+ * @brief Place the HTTP/2 connection-engine pool in external PSRAM (ESP32).
+ *
+ * Each HTTP/2 connection needs a ~28 KB engine, so the pool (MAX_CONNS of them) does not fit the
+ * ~122 KB internal DRAM alongside a TLS server - HTTP/2 therefore requires PSRAM. Set this to 1
+ * on a PSRAM board (S3 / P4 / WROVER) to move the pool to external RAM via `EXT_RAM_BSS_ATTR`.
+ * Like DETWS_TLS_ARENA_IN_PSRAM it needs a framework built with
+ * `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y` (the stock arduino-esp32 core ships it off; see
+ * tools/psram/README.md). A compile-time guard rejects DETWS_ENABLE_HTTP2 without this on ARDUINO.
+ */
+#ifndef DETWS_H2_POOL_IN_PSRAM
+#define DETWS_H2_POOL_IN_PSRAM 0
+#endif
+
+/**
  * @brief HTTP Range requests / 206 Partial Content for served files.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /
@@ -3996,6 +4010,13 @@ enum DetIface : uint8_t
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: MAX_TLS_CONNS > 1 - the static TLS arena will not fit the ~122 KB internal dram0_0_seg. Pick a path (docs/KNOWN_LIMITATIONS.md): set DETWS_TLS_ARENA_IN_PSRAM=1 on a PSRAM board, OR shrink records via a custom ESP-IDF build (CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN + DETWS_TLS_MAX_FRAG_LEN), OR reclaim internal DRAM; then set DETWS_TLS_ACK_MULTI_CONN_DRAM=1 to confirm."
 #endif
+#endif
+
+// HTTP/2's per-connection engine pool (~MAX_CONNS x 28 KB) cannot fit internal DRAM alongside
+// TLS, so it must live in PSRAM. Fail fast with guidance instead of the raw linker overflow.
+#if DETWS_ENABLE_HTTP2 && defined(ARDUINO) && !DETWS_H2_POOL_IN_PSRAM
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP2 needs PSRAM - the HTTP/2 engine pool (~MAX_CONNS x 28 KB) overflows the ~122 KB internal dram0_0_seg alongside TLS. Set DETWS_H2_POOL_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER) built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y (tools/psram/README.md)."
 #endif
 
 #if DETWS_ENABLE_SNMP
