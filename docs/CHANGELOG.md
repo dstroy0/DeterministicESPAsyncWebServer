@@ -2,13 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.120.1] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.120.1 - 2026-07-05</b></summary>
 
 ### CI / Build
 
+- black is the default Python formatter ([`1e77800`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e778004f89b86731356e4d454e6ca9b5d730d30))
+- update CHANGELOG.md [skip ci] ([`980d696`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/980d69671fe4318894e3f11cf3f3f340e2ad224b))
 - pre-commit auto-fix hook + reformat ssh includes ([`2205921`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22059216fb765aed0b2088ae490a4eb295fcf598))
 - update test report [skip ci] ([`7fe4ff3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fe4ff3453d337caa9fd5fc3bf01aab9a88ec22d))
 - update CHANGELOG.md [skip ci] ([`77cd733`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77cd733b5cbe8aa532d7a26cdfc8e5b4e9b934b5))
+
+### Changes
+
+- Bump version: 4.120.0 → 4.120.1 ([`5d99fc9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d99fc93ee1e1239e15679e76d2db6082ef0db18))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`0fc91a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fc91a5f95f91ef8382868988d16f934aba71747))
+
+</details>
 
 ## [4.120.0] - 2026-07-05
 
