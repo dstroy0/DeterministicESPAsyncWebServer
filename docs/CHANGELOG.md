@@ -2,24 +2,37 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.122.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.122.0 - 2026-07-05</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`00758a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00758a56198722a0cfab0eebcdf8ff8db980a4b5))
+- update CHANGELOG.md [skip ci] ([`c8b56d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8b56d2019b2dd0b7eaf6d6884dd5bdf8c3fd23d))
 - update test report [skip ci] ([`474ab25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/474ab2547fd31ff4340e45ac2741073403cfe190))
 - update CHANGELOG.md [skip ci] ([`1526b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1526b807198302751ad802cb4750070fad3b6743))
 
 ### Changes
 
+- Bump version: 4.121.1 → 4.122.0 ([`4f75e61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f75e614712037b64851dee0b2d09b361ca8528c))
 - Bump version: 4.121.0 → 4.121.1 ([`44d3184`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44d31842045586dce063848ac449ea6fe73e20a2))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`1c522ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c522ecbec2109841889c5017484dc7541117ee1))
 - update ESP32 build footprints [skip ci] ([`78edf39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78edf39d97f1761424913e883db8b04630e989ca))
+
+### Features
+
+- QUIC Initial packet crypto (RFC 9001) ([`64c51f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64c51f7e257fbce496a188f3441965a4616addb7))
 
 ### Refactor
 
 - make the Layer 5 dispatcher protocol-agnostic ([`223e678`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/223e67845ad7105acbcef78de1f42a815f161944))
+
+</details>
 
 ## [4.121.0] - 2026-07-05
 
