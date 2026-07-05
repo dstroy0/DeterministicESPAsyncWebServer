@@ -92,7 +92,7 @@ from each example's `pio ci` size report and aggregated into
 | `VFS`                                    | L7-Application/51.Vfs                   | 775.5 KB (60.6%) | 64.8 KB (20.2%)  |
 | `WEBDAV`                                 | L7-Application/29.WebDav                | 800.5 KB (62.5%) | 103.1 KB (32.2%) |
 | `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 737.5 KB (57.6%) | 64.7 KB (20.2%)  |
-| `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 812.1 KB (63.4%) | 117.6 KB (36.8%) |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 812.2 KB (63.5%) | 117.6 KB (36.8%) |
 | `WS_DEFLATE`                             | L6-Presentation/11.WebSocketCompression | 737.5 KB (57.6%) | 72.6 KB (22.7%)  |
 | `ZIGBEE+GATEWAY`                         | Foundation/17.ZigbeeGateway             | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                          | Foundation/16.ZWaveGateway              | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |
