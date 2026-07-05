@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.127.1] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.127.1 - 2026-07-05</b></summary>
+
+### Bug Fixes
+
+- overflow-safe capacity checks in the TLS/QUIC serializers ([`d71461a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d71461aa33a15028421481543477e4b73813d3ca))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7dff034`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dff034781b309ac83fa0ed5312d51127c7a42a1))
+
+### Changes
+
+- Bump version: 4.127.0 → 4.127.1 ([`d9b1200`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9b1200c8a83d8cb6cd70df46d2e202308975e97))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`5e7cf04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e7cf046bb3c034b954d938dca5ef0df77c681e0))
+
+</details>
+
 ## [4.127.0] - 2026-07-05
 
 <details>
