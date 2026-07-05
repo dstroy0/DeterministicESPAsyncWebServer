@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Auto-fix staged files so the CI Code-Formatting / Markdown-Formatting / Spellcheck jobs never
+# fail on something a tool can fix:
+#   1. clang-format -i on staged C/C++/.ino  (CI: clang-format-22 --style=file --dry-run --Werror)
+#   2. prettier --write on staged .md/.json/.yml/.yaml  (CI: prettier --check "**/*.md")
+#   3. auto-add any unknown cspell words from the scanned set (README.md + docs/**/*.md) to
+#      cspell.json  (CI: cspell config cspell.json over README.md + docs/**/*.md)
+# then re-stages whatever it changed.
+#
+# Install once per clone:   git config core.hooksPath tools/git-hooks
+# Uses the locally installed tools (clang-format, and prettier/cspell via npx); if a tool is
+# missing that step is skipped rather than blocking the commit.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" 2>/dev/null || exit 0
+
+# Staged (added/copied/modified) paths matching the given pathspecs, excluding build_opt.h.
+staged() { git diff --cached --name-only --diff-filter=ACM -- "$@" 2>/dev/null | grep -v '/build_opt\.h$'; }
+
+# 1) clang-format C/C++/.ino
+mapfile -t CF < <(staged '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino')
+if [ "${#CF[@]}" -gt 0 ] && command -v clang-format >/dev/null 2>&1; then
+    clang-format -i --style=file "${CF[@]}" && git add -- "${CF[@]}"
+fi
+
+# 2) prettier markdown / json / yaml (the CRLF-safe end-of-line so Windows checkouts do not false-flag)
+mapfile -t PF < <(staged '*.md' '*.json' '*.yml' '*.yaml')
+if [ "${#PF[@]}" -gt 0 ]; then
+    npx --no-install prettier --write --end-of-line auto "${PF[@]}" >/dev/null 2>&1 && git add -- "${PF[@]}"
+fi
+
+# 3) cspell: add unknown words from the scanned files (README.md + docs/**/*.md) to cspell.json
+mapfile -t MD < <(staged 'README.md' 'docs' | grep -E '^(README\.md|docs/.*\.md)$')
+if [ "${#MD[@]}" -gt 0 ] && [ -f cspell.json ]; then
+    WORDS=$(npx --no-install cspell --no-progress --no-summary --words-only --unique --config cspell.json \
+        "${MD[@]}" 2>/dev/null | tr -d '\r' | sort -u)
+    if [ -n "$WORDS" ]; then
+        # shellcheck disable=SC2086
+        if python tools/git-hooks/add_cspell_words.py $WORDS; then
+            npx --no-install prettier --write --end-of-line auto cspell.json >/dev/null 2>&1
+            git add -- cspell.json
+        fi
+    fi
+fi
+
+exit 0

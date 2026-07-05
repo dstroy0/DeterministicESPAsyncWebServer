@@ -53,8 +53,8 @@
 
 #include "DetWebServerConfig.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -10,9 +10,9 @@
 
 #if DETWS_SSH_PORT_FORWARD
 
-#include "network_drivers/transport/det_client.h"
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
+#include "network_drivers/transport/det_client.h"
 
 // Remote forwarding (ssh -R) uses the inbound transport + listener layer directly:
 // it allocates a real listener and bridges each accepted socket to a server-initiated

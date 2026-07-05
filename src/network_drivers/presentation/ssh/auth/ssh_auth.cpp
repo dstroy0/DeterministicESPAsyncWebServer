@@ -7,9 +7,9 @@
  */
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"   // ssh_ed25519_verify() (ssh-ed25519 client keys)
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"      // ssh_ed25519_verify() (ssh-ed25519 client keys)
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"    // SSH_MSG_* constants
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"       // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h" // ssh_sess[], SshPhase
 #include <string.h>
 

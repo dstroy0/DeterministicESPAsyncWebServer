@@ -9,12 +9,12 @@
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"     // bn_*, SshBigNum
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_x25519 (curve25519-sha256 KEX)
-#include "network_drivers/presentation/ssh/transport/ssh_dh.h"         // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"    // ssh_ed25519 host-key sign
-#include "network_drivers/presentation/ssh/transport/ssh_packet.h"     // SSH_MSG_KEXINIT, ssh_pkt[]
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"        // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h" // ssh_rsa_encode_pubkey/sign, ssh_host_pubkey, SSH_RSA_*
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include <stdio.h> // snprintf (name-list assembly)
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
+#include <stdio.h>                                                 // snprintf (name-list assembly)
 #include <string.h>
 
 SshSession ssh_sess[MAX_SSH_CONNS];
