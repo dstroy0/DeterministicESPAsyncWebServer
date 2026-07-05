@@ -27,9 +27,11 @@ newer entry here.
 - [RFC 9113](https://www.rfc-editor.org/rfc/rfc9113) - HTTP/2 - **impl** (framing, stream multiplexing, `h2` ALPN; PSRAM-gated).
 - [RFC 7541](https://www.rfc-editor.org/rfc/rfc7541) - HPACK (HTTP/2 header compression) - **impl** (static + dynamic table, canonical Huffman).
 - [RFC 9204](https://www.rfc-editor.org/rfc/rfc9204) - QPACK (HTTP/3 header compression) - **impl** (static-table field-section codec).
-- [RFC 9000](https://www.rfc-editor.org/rfc/rfc9000) - QUIC transport - **roadmap** (varint / packet-header / frame codecs **impl**; loss recovery + congestion control + the stateful engine are planned).
-- [RFC 9001](https://www.rfc-editor.org/rfc/rfc9001) - Using TLS to Secure QUIC - **impl** (Initial secret derivation, AEAD_AES_128_GCM packet protection, header protection, Retry integrity tag; the full TLS 1.3-in-QUIC handshake is **roadmap**).
-- [RFC 9114](https://www.rfc-editor.org/rfc/rfc9114) - HTTP/3 - **roadmap** (framing codec **impl**; runs once the QUIC transport lands).
+- [RFC 9000](https://www.rfc-editor.org/rfc/rfc9000) - QUIC transport - **impl** (varint / packet / frame codecs, the transport-parameters codec sec 18, and the stateful v1 server connection engine: per-level AEAD, CRYPTO / STREAM reassembly, ACKs, coalescing; loss recovery + congestion control are **roadmap**).
+- [RFC 9001](https://www.rfc-editor.org/rfc/rfc9001) - Using TLS to Secure QUIC - **impl** (Initial / Handshake / 1-RTT packet protection, header protection, Retry integrity tag, and the hand-rolled TLS 1.3 handshake carried in CRYPTO frames).
+- [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446) - TLS 1.3 - **impl for QUIC** (a from-scratch server handshake for HTTP/3: TLS_AES_128_GCM_SHA256 + X25519 + Ed25519, the sec 7.1 key schedule + sec 4 messages, pinned to the RFC 8448 traces; mbedTLS has no QUIC-TLS API). TLS over TCP remains **via mbedTLS**.
+- [RFC 8448](https://www.rfc-editor.org/rfc/rfc8448) - Example TLS 1.3 Handshake Traces - **test vectors** (the QUIC TLS 1.3 key schedule + ServerHello / Certificate / Finished bytes are pinned to sec 3).
+- [RFC 9114](https://www.rfc-editor.org/rfc/rfc9114) - HTTP/3 - **impl** (application engine over QUIC streams: control + QPACK streams, SETTINGS, request stream -> response; end-to-end host-tested). The UDP + server wiring and on-hardware interop are the remaining step.
 
 ## HTTP authentication & authorization
 
