@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`bb2c02e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb2c02e7f9dbbe104c74482a42d78efb54929fe6))
+- update CHANGELOG.md [skip ci] ([`bb413f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb413f84c02fde7c9db7f1ed20474771740996d8))
+
+### Testing
+
+- raise QUIC / QPACK / HTTP3-framing codec coverage ([`9dcc033`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dcc033e53a6508db31779b47b523ec67f4c5359))
+
 ## [4.115.0] - 2026-07-05
 
 <details>
