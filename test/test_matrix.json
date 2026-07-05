@@ -1483,6 +1483,27 @@
       ],
       "tests": ["test_tls13_msg"]
     },
+    "native_quic_tls": {
+      "desc": "TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/\nquic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built\nClientHello, run the client half of the key schedule independently, and confirm both sides derive\nidentical handshake + application secrets and the server accepts the client Finished. Plus\ncapability-negotiation rejections (no h3 ALPN, bad Finished) and partial-CRYPTO handling.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_tls.cpp>",
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
+        "+<network_drivers/presentation/http3/tls13_msg.cpp>",
+        "+<network_drivers/presentation/http3/quic_tp.cpp>",
+        "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_packet.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
+      ],
+      "tests": ["test_quic_tls"]
+    },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
       "flags": [],

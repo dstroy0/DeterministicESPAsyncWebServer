@@ -1,0 +1,307 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Unit tests for the TLS 1.3 server handshake state machine (network_drivers/presentation/http3/
+// quic_tls; RFC 9001 / RFC 8446). The main test drives the server with a hand-built ClientHello and
+// then runs the *client* half of the key schedule independently in the test, proving both sides
+// derive identical handshake + application secrets and that the server accepts the client Finished
+// (a full interop round-trip of the state machine). Plus: capability-negotiation rejections.
+
+#include "network_drivers/presentation/http3/quic_tls.h"
+#include "network_drivers/presentation/http3/tls13_kdf.h"
+#include "network_drivers/presentation/http3/tls13_msg.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp()
+{
+}
+void tearDown()
+{
+}
+
+// A dummy leaf certificate blob (the state machine embeds it verbatim; the test does not verify the
+// X.509 signature - that path is covered by test_tls13_msg's Ed25519 sign/verify).
+static const uint8_t CERT[48] = {0x30, 0x2e, 0x02, 0x01, 0x02};
+static uint8_t SERVER_PRIV[32];
+static uint8_t SERVER_SEED[32];
+static uint8_t SERVER_RANDOM[32];
+static uint8_t CLIENT_PRIV[32];
+
+static void fill_test_material()
+{
+    for (int i = 0; i < 32; i++)
+    {
+        SERVER_PRIV[i] = (uint8_t)(0x40 + i);
+        SERVER_SEED[i] = (uint8_t)(0x80 + i);
+        SERVER_RANDOM[i] = (uint8_t)(0xA0 + i);
+        CLIENT_PRIV[i] = (uint8_t)(0x01 + i);
+    }
+}
+
+// Build a minimal TLS 1.3 ClientHello (QUIC): x25519 key_share, tls13, x25519, ed25519, ALPN h3, and
+// the quic_transport_parameters extension. Returns the length of the whole handshake message.
+static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
+{
+    size_t p = 0;
+    out[p++] = TLS_HS_CLIENT_HELLO;
+    size_t hs_len_at = p;
+    p += 3; // handshake length, patched below
+    out[p++] = 0x03;
+    out[p++] = 0x03; // legacy_version
+    for (int i = 0; i < 32; i++)
+        out[p++] = (uint8_t)i; // random
+    out[p++] = 0x00;           // session id length 0
+    // cipher_suites
+    out[p++] = 0x00;
+    out[p++] = 0x02;
+    out[p++] = 0x13;
+    out[p++] = 0x01;
+    // compression
+    out[p++] = 0x01;
+    out[p++] = 0x00;
+    // extensions
+    size_t ext_len_at = p;
+    p += 2;
+    // supported_versions
+    static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04};
+    memcpy(out + p, sv, sizeof(sv));
+    p += sizeof(sv);
+    // supported_groups (x25519)
+    static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d};
+    memcpy(out + p, sg, sizeof(sg));
+    p += sizeof(sg);
+    // signature_algorithms (ed25519)
+    static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07};
+    memcpy(out + p, sa, sizeof(sa));
+    p += sizeof(sa);
+    // key_share (x25519 + 32-byte pub)
+    static const uint8_t ks[] = {0x00, 0x33, 0x00, 0x26, 0x00, 0x24, 0x00, 0x1d, 0x00, 0x20};
+    memcpy(out + p, ks, sizeof(ks));
+    p += sizeof(ks);
+    memcpy(out + p, client_pub, 32);
+    p += 32;
+    // ALPN h3
+    static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
+    memcpy(out + p, alpn, sizeof(alpn));
+    p += sizeof(alpn);
+    // quic_transport_parameters
+    out[p++] = 0x00;
+    out[p++] = 0x39;
+    out[p++] = (uint8_t)(tp_len >> 8);
+    out[p++] = (uint8_t)tp_len;
+    memcpy(out + p, tp, tp_len);
+    p += tp_len;
+    // patch ext_len and hs_len
+    uint16_t ext_len = (uint16_t)(p - ext_len_at - 2);
+    out[ext_len_at] = (uint8_t)(ext_len >> 8);
+    out[ext_len_at + 1] = (uint8_t)ext_len;
+    uint32_t hs_len = (uint32_t)(p - hs_len_at - 3);
+    out[hs_len_at] = (uint8_t)(hs_len >> 16);
+    out[hs_len_at + 1] = (uint8_t)(hs_len >> 8);
+    out[hs_len_at + 2] = (uint8_t)hs_len;
+    return p;
+}
+
+static void make_server_config(QuicTlsConfig *cfg)
+{
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->cert_der = CERT;
+    cfg->cert_len = sizeof(CERT);
+    memcpy(cfg->ed25519_seed, SERVER_SEED, 32);
+    memcpy(cfg->ephemeral_priv, SERVER_PRIV, 32);
+    memcpy(cfg->random, SERVER_RANDOM, 32);
+    quic_tp_defaults(&cfg->params);
+    cfg->params.has_initial_scid = true;
+    cfg->params.initial_scid_len = 4;
+    memcpy(cfg->params.initial_scid, "\x11\x22\x33\x44", 4);
+    cfg->params.initial_max_data = 1048576;
+    cfg->params.initial_max_streams_bidi = 8;
+}
+
+void test_full_handshake_roundtrip()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    // Client transport params.
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    ctp.has_initial_scid = true;
+    ctp.initial_scid_len = 4;
+    memcpy(ctp.initial_scid, "\xaa\xbb\xcc\xdd", 4);
+    ctp.initial_max_data = 524288;
+    uint8_t ctp_enc[128];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+
+    // 1) Feed the ClientHello. The server should build its flights and derive keys.
+    size_t used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT(ch_len, used);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+    TEST_ASSERT_TRUE(qt.hs_keys_ready);
+    TEST_ASSERT_TRUE(qt.ap_keys_ready);
+
+    size_t si_len = 0, sh_flight_len = 0;
+    const uint8_t *si = quic_tls_flight(&qt, QUIC_ENC_INITIAL, &si_len);
+    const uint8_t *sh_flight = quic_tls_flight(&qt, QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello
+    TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished
+
+    // Server parsed our transport params.
+    const QuicTransportParams *peer = quic_tls_peer_params(&qt);
+    TEST_ASSERT_NOT_NULL(peer);
+    TEST_ASSERT_EQUAL_UINT64(524288, peer->initial_max_data);
+
+    // 2) Independently run the CLIENT key schedule and confirm the secrets match the server's.
+    uint8_t server_pub[32], ecdhe[32];
+    ssh_x25519_base(server_pub, SERVER_PRIV);
+    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+
+    SshSha256Ctx t;
+    uint8_t ch_sh[32], ch_sf[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, si, si_len);
+    { // snapshot H(CH..SH)
+        SshSha256Ctx tmp = t;
+        ssh_sha256_final(&tmp, ch_sh);
+    }
+    ssh_sha256_update(&t, sh_flight, sh_flight_len);
+    ssh_sha256_final(&t, ch_sf); // H(CH..server Finished)
+
+    Tls13KeySchedule cks;
+    tls13_ks_early(&cks);
+    tls13_ks_handshake(&cks, ecdhe, ch_sh);
+    tls13_ks_master(&cks, ch_sf);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_ap_traffic, cks.client_ap_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_ap_traffic, cks.server_ap_traffic, 32);
+
+    // The server Finished (tail of the handshake flight) must verify under the server hs secret.
+    uint8_t ch_cv[32]; // H(CH..CertificateVerify) = everything but the trailing 36-byte Finished
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, si, si_len);
+    ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
+    ssh_sha256_final(&t, ch_cv);
+    uint8_t sfin_expected[32];
+    tls13_finished_mac(cks.server_hs_traffic, ch_cv, sfin_expected);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
+
+    // 3) Client builds its Finished and the server accepts it.
+    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    used = quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_DONE, qt.state);
+    TEST_ASSERT_TRUE(qt.complete);
+
+    // Keys are exposed for both directions at both levels.
+    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QUIC_ENC_APP, false));
+}
+
+void test_reject_bad_client_finished()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+
+    // A Finished with the wrong verify_data must be rejected (decrypt_error).
+    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    memset(cfin + 4, 0x99, 32);
+    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(51, qt.alert); // decrypt_error
+}
+
+// A ClientHello whose ALPN lacks "h3" is rejected with no_application_protocol.
+void test_reject_no_h3_alpn()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    // Corrupt the ALPN protocol name "h3" -> "h9" so it no longer offers h3.
+    for (size_t i = 0; i + 1 < ch_len; i++)
+        if (ch[i] == 'h' && ch[i + 1] == '3')
+        {
+            ch[i + 1] = '9';
+            break;
+        }
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(120, qt.alert); // no_application_protocol
+}
+
+// Incomplete CRYPTO (a partial ClientHello) consumes nothing and stays in START.
+void test_partial_client_hello()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+
+    size_t used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len - 10);
+    TEST_ASSERT_EQUAL_UINT(0, used);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_START, qt.state);
+    // Delivering the whole message now completes it.
+    used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT(ch_len, used);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+}
+
+int main(int, char **)
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_full_handshake_roundtrip);
+    RUN_TEST(test_reject_bad_client_finished);
+    RUN_TEST(test_reject_no_h3_alpn);
+    RUN_TEST(test_partial_client_hello);
+    return UNITY_END();
+}

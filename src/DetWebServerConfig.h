@@ -3327,6 +3327,29 @@
 #endif
 
 /**
+ * @brief Maximum bytes of one QUIC/TLS handshake CRYPTO flight (RFC 9001).
+ *
+ * The server's second flight - EncryptedExtensions + Certificate + CertificateVerify + Finished -
+ * is assembled whole before it is fragmented into CRYPTO frames across Handshake packets. The
+ * Certificate (a DER X.509 chain) dominates the size, so this bounds the certificate the server can
+ * present. The default fits a single Ed25519 leaf certificate comfortably; raise it for a chain.
+ */
+#ifndef DETWS_H3_CRYPTO_BUF
+#define DETWS_H3_CRYPTO_BUF 2048
+#endif
+
+/**
+ * @brief Maximum concurrent request streams per HTTP/3 connection.
+ *
+ * Bounds the per-connection QUIC stream table (client-initiated bidirectional request streams plus
+ * the handful of unidirectional control / QPACK streams). Each slot is small; 8 matches the HTTP/2
+ * default (DETWS_H2_MAX_STREAMS).
+ */
+#ifndef DETWS_H3_MAX_STREAMS
+#define DETWS_H3_MAX_STREAMS 8
+#endif
+
+/**
  * @brief HTTP Range requests / 206 Partial Content for served files.
  *
  * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /
