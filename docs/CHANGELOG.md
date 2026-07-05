@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- fix the 5 genuine SonarCloud nits (uppercase literal suffix, ps1 whitespace) ([`e05ba8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e05ba8a505f43a0fe07fd311df35b2f426fd0814))
+- update test report [skip ci] ([`363200f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/363200f00f96dbc9a794b785423f40e670784753))
+- update CHANGELOG.md [skip ci] ([`374cabe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/374cabe00b3026a2e4cc82d3fea50acd5da70bcd))
 - update test report [skip ci] ([`bb2c02e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb2c02e7f9dbbe104c74482a42d78efb54929fe6))
 - update CHANGELOG.md [skip ci] ([`bb413f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb413f84c02fde7c9db7f1ed20474771740996d8))
 
