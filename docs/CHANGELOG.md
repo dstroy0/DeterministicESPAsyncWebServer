@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`474ab25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/474ab2547fd31ff4340e45ac2741073403cfe190))
+- update CHANGELOG.md [skip ci] ([`1526b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1526b807198302751ad802cb4750070fad3b6743))
+
+### Changes
+
+- Bump version: 4.121.0 → 4.121.1 ([`44d3184`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44d31842045586dce063848ac449ea6fe73e20a2))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`78edf39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78edf39d97f1761424913e883db8b04630e989ca))
+
+### Refactor
+
+- make the Layer 5 dispatcher protocol-agnostic ([`223e678`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/223e67845ad7105acbcef78de1f42a815f161944))
+
 ## [4.121.0] - 2026-07-05
 
 <details>
