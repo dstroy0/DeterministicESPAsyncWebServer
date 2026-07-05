@@ -10,6 +10,7 @@
 #include "network_drivers/session/scratch.h"
 #include "ssh_chachapoly.h"
 #include "ssh_hmac_sha256.h"
+#include "ssh_hmac_sha512.h"
 #include "ssh_keymat.h"
 #include <string.h>
 
@@ -54,18 +55,29 @@ static size_t compute_padding(size_t payload_len)
     return padding;
 }
 
-// Compute MAC over seq_no || plaintext_packet (packet_len || pad_len || payload || pad).
-// HMAC input = 4-byte seq_no || pkt_buf
-static void compute_mac(const uint8_t mac_key[32], uint32_t seq_no, const uint8_t *pkt_buf, size_t pkt_buf_len,
-                        uint8_t mac_out[SSH_HMAC_SHA256_LEN])
+// Compute the MAC over 4-byte seq_no || buf using the HMAC named by mac_mode. For E&M the buf is
+// the plaintext packet; for ETM it is the length field || ciphertext. Writes ssh_mac_len() bytes.
+static void compute_mac_mode(uint8_t mac_mode, const uint8_t *mac_key, uint32_t seq_no, const uint8_t *buf,
+                             size_t buf_len, uint8_t *mac_out)
 {
     uint8_t seq_be[4];
     write_u32_be(seq_be, seq_no);
-    SshHmacCtx ctx;
-    ssh_hmac_sha256_init(&ctx, mac_key, 32);
-    ssh_hmac_sha256_update(&ctx, seq_be, 4);
-    ssh_hmac_sha256_update(&ctx, pkt_buf, pkt_buf_len);
-    ssh_hmac_sha256_final(&ctx, mac_out);
+    if (mac_mode == SSH_MAC_HMAC_SHA512 || mac_mode == SSH_MAC_HMAC_SHA512_ETM)
+    {
+        SshHmacSha512Ctx ctx;
+        ssh_hmac_sha512_init(&ctx, mac_key, 64);
+        ssh_hmac_sha512_update(&ctx, seq_be, 4);
+        ssh_hmac_sha512_update(&ctx, buf, buf_len);
+        ssh_hmac_sha512_final(&ctx, mac_out);
+    }
+    else
+    {
+        SshHmacCtx ctx;
+        ssh_hmac_sha256_init(&ctx, mac_key, 32);
+        ssh_hmac_sha256_update(&ctx, seq_be, 4);
+        ssh_hmac_sha256_update(&ctx, buf, buf_len);
+        ssh_hmac_sha256_final(&ctx, mac_out);
+    }
 }
 
 // Constant-time 32-byte comparison to prevent timing oracles on MAC verify.
@@ -106,10 +118,13 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     if (s->seq_no_send >= SSH_SEQ_CLOSE_THRESHOLD)
         return -1;
 
-    // chacha20-poly1305@openssh.com pads (padding_length + payload) to a multiple of 8 with the
-    // 4-byte length excluded (it is AAD, encrypted separately); aes256-ctr pads the whole plaintext
-    // (incl. the length) to a multiple of 16.
+    // Padding block size and base differ by mode. chacha (AEAD) and aes-ETM exclude the 4-byte
+    // length from the block-alignment (it is AAD / sent in clear); plain aes-E&M includes it.
+    //   chacha    : block 8,  base = padding_length + payload
+    //   aes ETM   : block 16, base = padding_length + payload
+    //   aes E&M / plaintext : block 16, base = length + padding_length + payload  (compute_padding)
     bool chacha = s->encrypted && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
+    bool etm = s->encrypted && km->cipher_mode == SSH_CIPHER_AES256CTR && ssh_mac_is_etm(km->mac_mode);
     size_t pad_len, tag_len;
     if (chacha)
     {
@@ -119,10 +134,18 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
             pad_len += 8;
         tag_len = SSH_CHACHAPOLY_TAG_LEN;
     }
+    else if (etm)
+    {
+        size_t base = 1 + payload_len;
+        pad_len = 16 - (base % 16);
+        if (pad_len < 4)
+            pad_len += 16;
+        tag_len = ssh_mac_len(km->mac_mode);
+    }
     else
     {
         pad_len = compute_padding(payload_len);
-        tag_len = s->encrypted ? SSH_HMAC_SHA256_LEN : 0;
+        tag_len = s->encrypted ? ssh_mac_len(km->mac_mode) : 0;
     }
     size_t pkt_len = 1 + payload_len + pad_len; // padding_length + payload + padding
     size_t wire_len = 4 + pkt_len + tag_len;
@@ -141,13 +164,19 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         // Encrypt length (header key) + payload (main key) and append the Poly1305 tag.
         ssh_chachapoly_encrypt(km->chacha_key_s2c, s->seq_no_send, out, out, (uint32_t)pkt_len);
     }
+    else if (etm)
+    {
+        // Encrypt-then-MAC: length stays in clear; encrypt the payload, then MAC over (length||ct).
+        ssh_aes256ctr_crypt(&km->s2c_ctx, out + 4, out + 4, pkt_len);
+        compute_mac_mode(km->mac_mode, km->mac_key_s2c, s->seq_no_send, out, 4 + pkt_len, out + 4 + pkt_len);
+    }
     else if (s->encrypted)
     {
-        // MAC over plaintext (RFC 4253: MAC over seq || unencrypted packet), then AES-256-CTR.
-        uint8_t mac[SSH_HMAC_SHA256_LEN];
-        compute_mac(km->mac_key_s2c, s->seq_no_send, out, 4 + pkt_len, mac);
+        // Encrypt-and-MAC: MAC over plaintext (seq || unencrypted packet), then AES-256-CTR.
+        uint8_t mac[64];
+        compute_mac_mode(km->mac_mode, km->mac_key_s2c, s->seq_no_send, out, 4 + pkt_len, mac);
         ssh_aes256ctr_crypt(&km->s2c_ctx, out, out, 4 + pkt_len);
-        memcpy(out + 4 + pkt_len, mac, SSH_HMAC_SHA256_LEN);
+        memcpy(out + 4 + pkt_len, mac, tag_len);
         ssh_wipe(mac, sizeof(mac));
     }
 
@@ -241,9 +270,72 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             s->rx_len -= consumed;
             ssh_wipe(scratch, scratch_sz);
         }
+        else if (s->encrypted && ssh_mac_is_etm(km->mac_mode))
+        {
+            // aes256-ctr + encrypt-then-MAC: the 4-byte packet_length is sent in the clear, and the
+            // MAC is verified over (length || ciphertext) BEFORE anything is decrypted.
+            if (s->rx_len < 4)
+                break;
+            uint32_t pkt_len = read_u32_be(s->rx_buf);
+            size_t mac_tag = ssh_mac_len(km->mac_mode);
+            // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
+            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 || (pkt_len % 16) != 0)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+            size_t wire_need = 4 + pkt_len + mac_tag;
+            if (s->rx_len < wire_need)
+                break; // incomplete packet
+
+            uint8_t expected_mac[64];
+            compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, s->rx_buf, 4 + pkt_len, expected_mac);
+            if (ct_memcmp(expected_mac, s->rx_buf + 4 + pkt_len, mac_tag) != 0)
+            {
+                ssh_wipe(expected_mac, sizeof(expected_mac));
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1; // caller must close connection
+            }
+            ssh_wipe(expected_mac, sizeof(expected_mac));
+
+            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+                return -1;
+            s->seq_no_recv++;
+
+            // MAC verified -> decrypt the payload (advances c2s_ctx by exactly pkt_len/16 blocks).
+            const size_t scratch_sz = SSH_PKT_BUF_SIZE;
+            ScratchScope scratch_scope;
+            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+            if (!scratch)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+            memcpy(scratch, s->rx_buf + 4, pkt_len);
+            ssh_aes256ctr_crypt(&km->c2s_ctx, scratch, scratch, pkt_len);
+
+            // scratch = padding_length || payload || padding.
+            uint8_t pad_len_byte = scratch[0];
+            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+            {
+                ssh_wipe(scratch, scratch_sz);
+                return -1;
+            }
+            size_t payload_len = pkt_len - 1 - pad_len_byte;
+            uint8_t msg_type = scratch[1];
+            handler(i, msg_type, scratch + 1, payload_len);
+
+            size_t consumed = wire_need;
+            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+            s->rx_len -= consumed;
+            ssh_wipe(scratch, scratch_sz);
+        }
         else if (s->encrypted)
         {
-            // We need the first cipher block (16 bytes) to read packet_length.
+            // aes256-ctr + encrypt-and-MAC. We need the first cipher block (16 bytes) for the length.
             if (s->rx_len < 16)
                 break; // wait for more data
 
@@ -282,7 +374,8 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
                 return -1;
             }
 
-            size_t wire_need = enc_len + SSH_HMAC_SHA256_LEN;
+            size_t mac_tag = ssh_mac_len(km->mac_mode);
+            size_t wire_need = enc_len + mac_tag;
             if (s->rx_len < wire_need)
                 break; // incomplete packet; cipher state already restored
 
@@ -290,7 +383,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             // scope guard reclaims it on every exit path, so multiple packets in
             // one call reuse the same space instead of accumulating; an exhausted
             // arena fails closed (discard + disconnect).
-            const size_t scratch_sz = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+            const size_t scratch_sz = SSH_PKT_BUF_SIZE + 64;
             ScratchScope scratch_scope;
             uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
             if (!scratch)
@@ -308,10 +401,10 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
 
             // Verify MAC over seq_no || plaintext(scratch[0..enc_len)).
             const uint8_t *rx_mac = s->rx_buf + enc_len; // MAC is sent in clear
-            uint8_t expected_mac[SSH_HMAC_SHA256_LEN];
-            compute_mac(km->mac_key_c2s, s->seq_no_recv, scratch, enc_len, expected_mac);
+            uint8_t expected_mac[64];
+            compute_mac_mode(km->mac_mode, km->mac_key_c2s, s->seq_no_recv, scratch, enc_len, expected_mac);
 
-            if (ct_memcmp(expected_mac, rx_mac, SSH_HMAC_SHA256_LEN) != 0)
+            if (ct_memcmp(expected_mac, rx_mac, mac_tag) != 0)
             {
                 // MAC failure: zero everything and disconnect.
                 ssh_wipe(scratch, scratch_sz);

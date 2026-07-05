@@ -45,8 +45,9 @@
 /** @brief Max stored length of an SSH identification string (RFC 4253 §4.2: 255). */
 #define SSH_VERSION_MAX 256
 
-/** @brief Max stored size of our own KEXINIT (I_S); the server's lists are short. */
-#define SSH_KEXINIT_S_MAX 384
+/** @brief Max stored size of our own KEXINIT (I_S). Fits the cipher (chacha+aes) and MAC
+ *  (2x etm + 2x plain) preference lists we advertise. */
+#define SSH_KEXINIT_S_MAX 512
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
 #define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
@@ -101,6 +102,7 @@ struct SshSession
     uint8_t kex_alg;     ///< SshKexAlg negotiated in KEXINIT.
     uint8_t hostkey_alg; ///< SshHostkeyAlg negotiated in KEXINIT.
     uint8_t cipher_alg;  ///< SSH_CIPHER_* negotiated in KEXINIT (0 = aes256-ctr).
+    uint8_t mac_alg;     ///< SSH_MAC_* negotiated in KEXINIT (aes cipher only; 0 = hmac-sha2-256).
     uint8_t ecdh_sk[32]; ///< Server X25519 ephemeral private (curve25519 KEX only; wiped after).
     uint8_t ecdh_pk[32]; ///< Server X25519 ephemeral public (curve25519 KEX only).
 

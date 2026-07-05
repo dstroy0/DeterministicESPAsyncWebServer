@@ -110,6 +110,26 @@ enum
     SSH_CIPHER_CHACHA20POLY1305 = 1, ///< chacha20-poly1305@openssh.com (AEAD; no separate MAC)
 };
 
+/** @brief Negotiated MAC for the aes256-ctr cipher (unused with the chacha AEAD). */
+enum
+{
+    SSH_MAC_HMAC_SHA256 = 0,     ///< hmac-sha2-256 (encrypt-and-MAC, RFC 4253)
+    SSH_MAC_HMAC_SHA512 = 1,     ///< hmac-sha2-512 (encrypt-and-MAC)
+    SSH_MAC_HMAC_SHA256_ETM = 2, ///< hmac-sha2-256-etm@openssh.com (encrypt-then-MAC)
+    SSH_MAC_HMAC_SHA512_ETM = 3, ///< hmac-sha2-512-etm@openssh.com (encrypt-then-MAC)
+};
+
+/** @brief True if @p mac_mode is an encrypt-then-MAC variant (length in the clear, MAC over ciphertext). */
+static inline bool ssh_mac_is_etm(uint8_t mac_mode)
+{
+    return mac_mode == SSH_MAC_HMAC_SHA256_ETM || mac_mode == SSH_MAC_HMAC_SHA512_ETM;
+}
+/** @brief MAC tag / key length in bytes for @p mac_mode (32 for SHA-256, 64 for SHA-512). */
+static inline uint8_t ssh_mac_len(uint8_t mac_mode)
+{
+    return (mac_mode == SSH_MAC_HMAC_SHA512 || mac_mode == SSH_MAC_HMAC_SHA512_ETM) ? 64 : 32;
+}
+
 // ---------------------------------------------------------------------------
 // Secure wipe
 // ---------------------------------------------------------------------------
@@ -163,8 +183,9 @@ struct SshKeyMat
     SshAesCtrCtx c2s_ctx; ///< Client→server cipher (AES-256-CTR); server decrypts inbound with it.
     SshAesCtrCtx s2c_ctx; ///< Server→client cipher (AES-256-CTR); server encrypts outbound with it.
 
-    uint8_t mac_key_c2s[32]; ///< HMAC-SHA2-256 key, client-to-server direction (aes256-ctr mode).
-    uint8_t mac_key_s2c[32]; ///< HMAC-SHA2-256 key, server-to-client direction (aes256-ctr mode).
+    uint8_t mac_key_c2s[64]; ///< HMAC key, client-to-server (aes mode); 32 bytes for SHA-256, 64 for SHA-512.
+    uint8_t mac_key_s2c[64]; ///< HMAC key, server-to-client (aes mode).
+    uint8_t mac_mode;        ///< SSH_MAC_* selected for the aes256-ctr cipher (0 = hmac-sha2-256 E&M).
 
     uint8_t cipher_mode; ///< SSH_CIPHER_* selected for this session (0 = aes256-ctr).
     // chacha20-poly1305@openssh.com: 512-bit key per direction (K_main || K_header); no IV, no MAC key.

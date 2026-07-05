@@ -849,6 +849,60 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
     ssh_keymat_wipe(0); // leave no chacha state for later (aes) tests
 }
 
+// aes256-ctr + encrypt-then-MAC round-trip for a given MAC mode. c2s == s2c so ssh_pkt_send
+// (encrypts with s2c) round-trips through ssh_pkt_recv (decrypts with c2s).
+static void etm_roundtrip_helper(uint8_t mac_mode)
+{
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_AES256CTR;
+    km->mac_mode = mac_mode;
+    uint8_t key[32], iv[16];
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i + 1);
+    for (int i = 0; i < 16; i++)
+        iv[i] = (uint8_t)(0x80 + i);
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    ssh_aes256ctr_init(&km->s2c_ctx, key, iv); // same key/IV both directions
+    for (int i = 0; i < 64; i++)
+        km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
+    km->active = true;
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].encrypted = true;
+    uint8_t payload[] = {SSH_MSG_IGNORE, 'e', 't', 'm', '!', '1', '2', '3'};
+    uint8_t wire[256];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    // The 4-byte packet_length is in the clear for ETM (not encrypted).
+    TEST_ASSERT_EQUAL_UINT32(wlen - 4 - ssh_mac_len(mac_mode),
+                             (uint32_t)((wire[0] << 24) | (wire[1] << 16) | (wire[2] << 8) | wire[3]));
+
+    last_msg_type = 0xFF;
+    last_payload_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    TEST_ASSERT_EQUAL_INT(SSH_MSG_IGNORE, last_msg_type);
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), (int)last_payload_len);
+    TEST_ASSERT_EQUAL_MEMORY(payload, last_payload, sizeof(payload));
+
+    // Tamper a ciphertext byte -> MAC rejects before any decryption.
+    ssh_pkt_init(0);
+    ssh_pkt[0].encrypted = true;
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    wire[6] ^= 0x01;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    ssh_keymat_wipe(0);
+}
+
+static void test_pkt_aes_etm_sha256_roundtrip(void)
+{
+    etm_roundtrip_helper(SSH_MAC_HMAC_SHA256_ETM);
+}
+static void test_pkt_aes_etm_sha512_roundtrip(void)
+{
+    etm_roundtrip_helper(SSH_MAC_HMAC_SHA512_ETM);
+}
+
 static void test_pkt_encrypted_fragmented(void)
 {
     setup_encrypted_keys();
@@ -1087,6 +1141,8 @@ int main(void)
     RUN_TEST(test_pkt_disconnect_zeroes_state);
     RUN_TEST(test_pkt_encrypted_roundtrip);
     RUN_TEST(test_pkt_chacha20poly1305_roundtrip);
+    RUN_TEST(test_pkt_aes_etm_sha256_roundtrip);
+    RUN_TEST(test_pkt_aes_etm_sha512_roundtrip);
     RUN_TEST(test_pkt_encrypted_fragmented);
     RUN_TEST(test_pkt_encrypted_two_packets);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);

@@ -208,6 +208,18 @@ void test_kexinit_parse_selects_chacha20poly1305()
     TEST_ASSERT_EQUAL(SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg);
 }
 
+// With aes256-ctr, the encrypt-then-MAC variants are preferred: a client offering an -etm MAC gets
+// it selected and its exact mode recorded.
+void test_kexinit_parse_selects_etm_mac()
+{
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "ssh-ed25519,rsa-sha2-256", "aes256-ctr",
+                                    "hmac-sha2-512-etm@openssh.com,hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_AES256CTR, ssh_sess[0].cipher_alg);
+    TEST_ASSERT_EQUAL(SSH_MAC_HMAC_SHA512_ETM, ssh_sess[0].mac_alg);
+}
+
 void test_kexinit_parse_rejects_truncated()
 {
     uint8_t buf[8] = {SSH_MSG_KEXINIT, 0, 0, 0};
@@ -643,15 +655,15 @@ void test_derive_keys_session_id_affects_output()
         sid[j] = (uint8_t)(0xF0 - j); // distinct from H
     }
 
-    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR);
+    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256);
     uint8_t a[32];
     memcpy(a, ssh_keys[0].mac_key_c2s, 32);
 
-    ssh_dh_derive_keys_sid(0, K, H, sid, SSH_CIPHER_AES256CTR);
+    ssh_dh_derive_keys_sid(0, K, H, sid, SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256);
     TEST_ASSERT_NOT_EQUAL(0, memcmp(a, ssh_keys[0].mac_key_c2s, 32));
 
     // Deterministic: same inputs reproduce the same key.
-    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR);
+    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256);
     TEST_ASSERT_EQUAL_MEMORY(a, ssh_keys[0].mac_key_c2s, 32);
 }
 
@@ -851,6 +863,7 @@ int main()
     RUN_TEST(test_kexinit_parse_steers_to_curve_ed25519);
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
     RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
+    RUN_TEST(test_kexinit_parse_selects_etm_mac);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
     RUN_TEST(test_exchange_hash_changes_with_input);

@@ -37,6 +37,10 @@ static const char *const ALG_CIPHER = "aes256-ctr";
 // aes256-ctr (the HW-accelerated fallback) second.
 static const char *const ALG_CIPHER_LIST = "chacha20-poly1305@openssh.com,aes256-ctr";
 static const char *const ALG_MAC = "hmac-sha2-256";
+// Advertised MAC preference (aes256-ctr only; the chacha AEAD needs none): encrypt-then-MAC first
+// (OpenSSH's default), then plain encrypt-and-MAC.
+static const char *const ALG_MAC_LIST = "hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,"
+                                        "hmac-sha2-256,hmac-sha2-512";
 static const char *const ALG_COMP = "none";
 // RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
 static const char *const EXT_INFO_C = "ext-info-c";
@@ -311,8 +315,8 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     w_namelist(w, hklist);          // server_host_key_algorithms (only keys we hold)
     w_namelist(w, ALG_CIPHER_LIST); // encryption c2s (chacha20-poly1305 preferred, aes256-ctr fallback)
     w_namelist(w, ALG_CIPHER_LIST); // encryption s2c
-    w_namelist(w, ALG_MAC);         // mac c2s (used only with aes256-ctr; ignored for the AEAD cipher)
-    w_namelist(w, ALG_MAC);         // mac s2c
+    w_namelist(w, ALG_MAC_LIST);    // mac c2s (used only with aes256-ctr; ignored for the AEAD cipher)
+    w_namelist(w, ALG_MAC_LIST);    // mac s2c
     w_namelist(w, ALG_COMP);        // compression c2s
     w_namelist(w, ALG_COMP);        // compression s2c
     w_namelist(w, "");              // languages c2s
@@ -428,12 +432,24 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     if (s2c < 0 || s2c != c2s) // require the same cipher both directions
         return -1;
     s->cipher_alg = (uint8_t)c2s;
-    // mac c2s / s2c: the AEAD cipher provides its own MAC, so a MAC is only required for aes256-ctr.
+    // mac c2s / s2c: negotiated only for aes256-ctr (the chacha AEAD carries its own MAC). Prefer
+    // the encrypt-then-MAC variants (OpenSSH's default), require the same MAC both directions.
+    const AlgCand mc[4] = {{"hmac-sha2-256-etm@openssh.com", SSH_MAC_HMAC_SHA256_ETM, true},
+                           {"hmac-sha2-512-etm@openssh.com", SSH_MAC_HMAC_SHA512_ETM, true},
+                           {ALG_MAC, SSH_MAC_HMAC_SHA256, true},
+                           {"hmac-sha2-512", SSH_MAC_HMAC_SHA512, true}};
     bool need_mac = (s->cipher_alg == SSH_CIPHER_AES256CTR);
-    if (!read_namelist(payload, len, &off, &list, &nlen) || (need_mac && !namelist_contains(list, nlen, ALG_MAC)))
+    if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    if (!read_namelist(payload, len, &off, &list, &nlen) || (need_mac && !namelist_contains(list, nlen, ALG_MAC)))
+    int m_c2s = need_mac ? negotiate_alg(list, nlen, mc, 4) : SSH_MAC_HMAC_SHA256;
+    if (need_mac && m_c2s < 0)
         return -1;
+    if (!read_namelist(payload, len, &off, &list, &nlen))
+        return -1;
+    int m_s2c = need_mac ? negotiate_alg(list, nlen, mc, 4) : SSH_MAC_HMAC_SHA256;
+    if (need_mac && (m_s2c < 0 || m_s2c != m_c2s))
+        return -1;
+    s->mac_alg = (uint8_t)m_c2s;
     // compression c2s
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
         return -1;
@@ -773,7 +789,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         ssh_wipe(k_be, sizeof(k_be));
         return -1;
     }
-    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg);
+    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg);
     ssh_wipe(k_be, sizeof(k_be));
 
     s->phase = SSH_PHASE_NEWKEYS;

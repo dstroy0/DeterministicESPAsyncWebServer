@@ -171,12 +171,13 @@ static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGES
 }
 
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg)
+                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg, uint8_t mac_alg)
 {
     if (i >= MAX_SSH_CONNS)
         return;
     SshKeyMat *km = &ssh_keys[i];
     km->cipher_mode = cipher_alg;
+    km->mac_mode = mac_alg;
 
     if (cipher_alg == SSH_CIPHER_CHACHA20POLY1305)
     {
@@ -194,12 +195,13 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
     uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN], iv_s2c[SSH_SHA256_DIGEST_LEN];
     uint8_t key_c2s[32], key_s2c[32];
 
-    derive_key(K_be, H, session_id, 'A', iv_c2s);          // IV  C→S (first 16 bytes used)
-    derive_key(K_be, H, session_id, 'B', iv_s2c);          // IV  S→C
-    derive_key(K_be, H, session_id, 'C', key_c2s);         // cipher key C→S
-    derive_key(K_be, H, session_id, 'D', key_s2c);         // cipher key S→C
-    derive_key(K_be, H, session_id, 'E', km->mac_key_c2s); // MAC key C→S
-    derive_key(K_be, H, session_id, 'F', km->mac_key_s2c); // MAC key S→C
+    derive_key(K_be, H, session_id, 'A', iv_c2s);                    // IV  C→S (first 16 bytes used)
+    derive_key(K_be, H, session_id, 'B', iv_s2c);                    // IV  S→C
+    derive_key(K_be, H, session_id, 'C', key_c2s);                   // cipher key C→S
+    derive_key(K_be, H, session_id, 'D', key_s2c);                   // cipher key S→C
+    uint8_t mlen = ssh_mac_len(mac_alg);                             // 32 (SHA-256) or 64 (SHA-512)
+    ssh_kdf_derive(K_be, H, session_id, 'E', km->mac_key_c2s, mlen); // MAC key C→S
+    ssh_kdf_derive(K_be, H, session_id, 'F', km->mac_key_s2c, mlen); // MAC key S→C
 
     ssh_aes256ctr_init(&km->c2s_ctx, key_c2s, iv_c2s);
     ssh_aes256ctr_init(&km->s2c_ctx, key_s2c, iv_s2c);
@@ -215,6 +217,6 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
 
 void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN])
 {
-    // First-KEX convenience: the session id equals H; aes256-ctr (the pre-negotiation default).
-    ssh_dh_derive_keys_sid(i, K_be, H, H, SSH_CIPHER_AES256CTR);
+    // First-KEX convenience: session id equals H; aes256-ctr + hmac-sha2-256 (pre-negotiation defaults).
+    ssh_dh_derive_keys_sid(i, K_be, H, H, SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256);
 }
