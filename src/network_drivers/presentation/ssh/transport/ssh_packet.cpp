@@ -11,6 +11,10 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
+#if DETWS_ENABLE_SSH_ZLIB
+#include "network_drivers/presentation/ssh/transport/ssh_comp.h"
+#include "network_drivers/presentation/ssh/transport/ssh_zlib.h" // ssh_deflate_bound
+#endif
 #include "network_drivers/session/scratch.h"
 #include <string.h>
 
@@ -117,6 +121,24 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     // Sequence overflow guard.
     if (s->seq_no_send >= SSH_SEQ_CLOSE_THRESHOLD)
         return -1;
+
+#if DETWS_ENABLE_SSH_ZLIB
+    // Compression (RFC 4253 §6.2) transforms the payload BEFORE padding/encryption, once the s2c
+    // stream is active. The compressor is stateful (context takeover), so this call must be followed
+    // by a full send - the same atomicity the stateful cipher below already requires. The wire buffer
+    // is sized (SSH_WIRE_CAP) so the compressed payload can never overflow out_cap and desync.
+    ScratchScope comp_scope;
+    if (ssh_comp_s2c_active(i))
+    {
+        size_t bound = ssh_deflate_bound(payload_len);
+        uint8_t *cbuf = (uint8_t *)scratch_alloc(bound, 16);
+        size_t clen = 0;
+        if (!cbuf || ssh_comp_s2c(i, payload, payload_len, cbuf, bound, &clen) != 0)
+            return -1;
+        payload = cbuf;
+        payload_len = clen;
+    }
+#endif
 
     // Padding block size and base differ by mode. chacha (AEAD) and aes-ETM exclude the 4-byte
     // length from the block-alignment (it is AAD / sent in clear); plain aes-E&M includes it.

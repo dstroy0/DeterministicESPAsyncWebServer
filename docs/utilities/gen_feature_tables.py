@@ -97,6 +97,7 @@ LAYER_MEMBERS = {
     },
     "Session (L5)": {
         "SSH",
+        "SSH Compression",
         "Telnet",
     },
     "Presentation (L6)": {

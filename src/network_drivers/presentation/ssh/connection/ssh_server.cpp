@@ -12,6 +12,9 @@
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
+#if DETWS_ENABLE_SSH_ZLIB
+#include "network_drivers/presentation/ssh/transport/ssh_comp.h"
+#endif
 #include <string.h>
 
 static SshEmitCb g_emit = nullptr;
@@ -121,6 +124,12 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         if (ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n); // SUCCESS (→ phase OPEN), PK_OK probe, or FAILURE
+#if DETWS_ENABLE_SSH_ZLIB
+        // zlib@openssh.com: the compression stream starts on the FIRST packet AFTER USERAUTH_SUCCESS
+        // (which itself just went out uncompressed). Idempotent - a later re-auth cannot restart it.
+        if (n > 0 && buf[0] == SSH_MSG_USERAUTH_SUCCESS)
+            ssh_comp_on_auth_success(i);
+#endif
         // Brute-force defense (RFC 4252 §4): bound failed attempts per connection. Only an actual
         // USERAUTH_FAILURE counts - a SUCCESS or the publickey PK_OK probe does not. Too many ->
         // DISCONNECT then close.

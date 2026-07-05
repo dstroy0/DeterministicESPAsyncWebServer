@@ -14,7 +14,10 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
-#include <stdio.h>                                                 // snprintf (name-list assembly)
+#if DETWS_ENABLE_SSH_ZLIB
+#include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
+#endif
+#include <stdio.h> // snprintf (name-list assembly)
 #include <string.h>
 
 SshSession ssh_sess[MAX_SSH_CONNS];
@@ -42,6 +45,13 @@ static const char *const ALG_MAC = "hmac-sha2-256";
 static const char *const ALG_MAC_LIST = "hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,"
                                         "hmac-sha2-256,hmac-sha2-512";
 static const char *const ALG_COMP = "none";
+#if DETWS_ENABLE_SSH_ZLIB
+// Server->client compression preference: zlib@openssh.com (delayed, OpenSSH's default) first, then
+// zlib (immediate), then none. Client->server stays "none" (ALG_COMP): see ssh_zlib.h.
+static const char *const ALG_COMP_S2C = "zlib@openssh.com,zlib,none";
+#else
+static const char *const ALG_COMP_S2C = "none";
+#endif
 // RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
 static const char *const EXT_INFO_C = "ext-info-c";
 
@@ -317,8 +327,8 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     w_namelist(w, ALG_CIPHER_LIST); // encryption s2c
     w_namelist(w, ALG_MAC_LIST);    // mac c2s (used only with aes256-ctr; ignored for the AEAD cipher)
     w_namelist(w, ALG_MAC_LIST);    // mac s2c
-    w_namelist(w, ALG_COMP);        // compression c2s
-    w_namelist(w, ALG_COMP);        // compression s2c
+    w_namelist(w, ALG_COMP);        // compression c2s (always none)
+    w_namelist(w, ALG_COMP_S2C);    // compression s2c (zlib@openssh.com / zlib when built in)
     w_namelist(w, "");              // languages c2s
     w_namelist(w, "");              // languages s2c
     w_u8(w, 0);                     // first_kex_packet_follows = false
@@ -450,12 +460,26 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     if (need_mac && (m_s2c < 0 || m_s2c != m_c2s))
         return -1;
     s->mac_alg = (uint8_t)m_c2s;
-    // compression c2s
+    // compression c2s: we only decompress "none" (client->server compression is not implemented).
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
         return -1;
-    // compression s2c
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
+    // compression s2c: negotiate zlib@openssh.com > zlib > none (server preference).
+    if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
+#if DETWS_ENABLE_SSH_ZLIB
+    {
+        const AlgCand compc[3] = {{"zlib@openssh.com", SSH_COMP_ZLIB_DELAYED, true},
+                                  {"zlib", SSH_COMP_ZLIB, true},
+                                  {"none", SSH_COMP_NONE, true}};
+        int comp = negotiate_alg(list, nlen, compc, 3);
+        if (comp < 0)
+            return -1;
+        ssh_comp_set_s2c(i, (uint8_t)comp);
+    }
+#else
+    if (!namelist_contains(list, nlen, ALG_COMP))
+        return -1;
+#endif
 
     s->phase = SSH_PHASE_DH_INIT;
     return 0;
@@ -805,6 +829,10 @@ void ssh_newkeys_complete(uint8_t i)
     // On the first KEX advance to the service phase; on a re-key the connection
     // is already authenticated, so resume the open (channel) phase.
     ssh_sess[i].phase = ssh_sess[i].authed ? SSH_PHASE_OPEN : SSH_PHASE_SERVICE;
+#if DETWS_ENABLE_SSH_ZLIB
+    // "zlib" (non-delayed) starts its stream here; idempotent, so a re-key does not restart it.
+    ssh_comp_on_newkeys(i);
+#endif
 }
 
 bool ssh_rekey_needed(uint8_t i)

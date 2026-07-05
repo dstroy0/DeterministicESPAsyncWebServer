@@ -13,6 +13,9 @@
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
+#if DETWS_ENABLE_SSH_ZLIB
+#include "network_drivers/presentation/ssh/transport/ssh_comp.h"
+#endif
 #include "network_drivers/session/scratch.h"
 #include "network_drivers/transport/transport.h"
 #include <string.h>
@@ -45,7 +48,7 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
         return;
 
     // Borrow the wire buffer from the shared scratch arena (released on return).
-    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    const size_t wire_cap = SSH_WIRE_CAP;
     ScratchScope scope;
     uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
     if (!wire)
@@ -82,7 +85,7 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
     // window / max packet), then encrypt+MAC and write to the socket.
     // Borrow the payload + wire buffers from the shared scratch arena (released on
     // return); an exhausted arena fails closed.
-    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    const size_t wire_cap = SSH_WIRE_CAP;
     ScratchScope scope;
     uint8_t *payload = (uint8_t *)scratch_alloc(SSH_PKT_BUF_SIZE, 16);
     uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
@@ -115,7 +118,7 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
     // close_msgs holds CHANNEL_EOF then CHANNEL_CLOSE; each is its own SSH message,
     // so frame and send the two halves as two binary packets (RFC 4253 6). Borrow
     // the wire buffer from the shared scratch arena (released on return).
-    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    const size_t wire_cap = SSH_WIRE_CAP;
     ScratchScope scope;
     uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
     if (!wire)
@@ -142,7 +145,7 @@ int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t co
 
     // Borrow the payload + wire buffers from the shared scratch arena (released on
     // return); an exhausted arena fails closed.
-    const size_t wire_cap = SSH_PKT_BUF_SIZE + SSH_HMAC_SHA256_LEN;
+    const size_t wire_cap = SSH_WIRE_CAP;
     ScratchScope scope;
     uint8_t *payload = (uint8_t *)scratch_alloc(SSH_PKT_BUF_SIZE, 16);
     uint8_t *wire = (uint8_t *)scratch_alloc(wire_cap, 16);
@@ -204,6 +207,9 @@ void ssh_conn_accept(uint8_t conn_slot)
     ssh_transport_init(j);
     ssh_pkt_init(j);
     ssh_channel_init(j);
+#if DETWS_ENABLE_SSH_ZLIB
+    ssh_comp_reset(j); // clear compression state for the new connection (not run on a re-key)
+#endif
 
     // Send the server identification banner (raw, before any binary packet).
     uint8_t banner[64];

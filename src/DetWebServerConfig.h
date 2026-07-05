@@ -3661,6 +3661,65 @@
 #define SSH_PKT_BUF_SIZE 2048
 #endif
 
+/**
+ * @brief SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). Default off.
+ *
+ * When set, the server advertises `zlib@openssh.com` (delayed, OpenSSH's default) and `zlib` for the
+ * SERVER->CLIENT direction and, once active, compresses every outbound packet payload with a
+ * context-takeover DEFLATE stream (a persistent sliding window carried across packets, sync-flushed
+ * per packet - RFC 1951 / RFC 1950). Client->server stays `none`: SSH negotiates each direction
+ * independently, and the inbound direction (keystrokes / uploads to the device) is tiny and, because
+ * OpenSSH compresses outbound with Z_PARTIAL_FLUSH, would need a far larger resumable inflate engine
+ * for little gain. `ssh -o Compression=yes` still gets real compression on the high-volume direction.
+ *
+ * PSRAM-class: each connection holds a compressor (~window + hash tables, tens of KB). A compile-time
+ * guard rejects this on ARDUINO without DETWS_SSH_ZLIB_IN_PSRAM. Requires DETWS_ENABLE_SSH.
+ */
+#ifndef DETWS_ENABLE_SSH_ZLIB
+#define DETWS_ENABLE_SSH_ZLIB 0
+#endif
+
+/**
+ * @brief Place the per-connection SSH compression state in external PSRAM (ESP32).
+ *
+ * Like DETWS_H2_POOL_IN_PSRAM / DETWS_TLS_ARENA_IN_PSRAM: moves the compressor pool
+ * (MAX_SSH_CONNS of them) to external RAM via `EXT_RAM_BSS_ATTR`. Needs a framework built with
+ * `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y` (tools/psram/README.md).
+ */
+#ifndef DETWS_SSH_ZLIB_IN_PSRAM
+#define DETWS_SSH_ZLIB_IN_PSRAM 0
+#endif
+
+/**
+ * @brief Acknowledge placing the SSH compressor in internal DRAM (no PSRAM).
+ *
+ * The per-connection compressor is ~48 KB. With MAX_SSH_CONNS=1 and no TLS server it fits internal
+ * DRAM on a roomy chip (S3 / P4). Rather than force PSRAM, this mirrors DETWS_TLS_ACK_MULTI_CONN_DRAM:
+ * set it to 1 to consciously accept the internal-DRAM cost when DETWS_SSH_ZLIB_IN_PSRAM is off. The
+ * build otherwise fails fast on ARDUINO with guidance (below) instead of a raw linker overflow.
+ */
+#ifndef DETWS_SSH_ZLIB_ACK_DRAM
+#define DETWS_SSH_ZLIB_ACK_DRAM 0
+#endif
+
+/**
+ * @brief SSH s2c DEFLATE sliding-window size in bytes (max back-reference distance). Power of two,
+ * 256..32768. Larger = better ratio + more per-connection RAM (the compressor holds a window-sized
+ * work buffer + a window-sized hash chain). The client always allocates a 32 KB inflate window, so
+ * any value here interoperates; 8 KB is a good ratio/RAM balance for terminal + command output.
+ */
+#ifndef DETWS_SSH_ZLIB_WINDOW
+#define DETWS_SSH_ZLIB_WINDOW 8192
+#endif
+
+/**
+ * @brief Largest uncompressed payload the s2c compressor accepts in one call (bytes). Outbound SSH
+ * payloads are bounded by SSH_PKT_BUF_SIZE; this sizes the compressor's history+input work buffer.
+ */
+#ifndef DETWS_SSH_ZLIB_MAX_IN
+#define DETWS_SSH_ZLIB_MAX_IN 2048
+#endif
+
 /** @brief Maximum SSH username length including null terminator. */
 #ifndef SSH_MAX_USERNAME_LEN
 #define SSH_MAX_USERNAME_LEN 32
@@ -4180,6 +4239,35 @@ enum DetIface : uint8_t
 
 #if DETWS_ENABLE_WS_DEFLATE && !DETWS_ENABLE_WEBSOCKET
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_DEFLATE requires DETWS_ENABLE_WEBSOCKET"
+#endif
+
+#if DETWS_ENABLE_SSH_ZLIB && !DETWS_ENABLE_SSH
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_ZLIB requires DETWS_ENABLE_SSH"
+#endif
+
+#if DETWS_ENABLE_SSH_ZLIB
+// Window must be a power of two in [256, 32768] (32 KB is zlib's max; the client's inflate window).
+#if (DETWS_SSH_ZLIB_WINDOW & (DETWS_SSH_ZLIB_WINDOW - 1)) != 0 || DETWS_SSH_ZLIB_WINDOW < 256 ||                       \
+    DETWS_SSH_ZLIB_WINDOW > 32768
+#error "DeterministicESPAsyncWebServer: DETWS_SSH_ZLIB_WINDOW must be a power of two in [256, 32768]"
+#endif
+// Positions index a uint16 hash chain, so window + max-input must stay under 65535.
+#if (DETWS_SSH_ZLIB_WINDOW + DETWS_SSH_ZLIB_MAX_IN) > 65534
+#error "DeterministicESPAsyncWebServer: DETWS_SSH_ZLIB_WINDOW + DETWS_SSH_ZLIB_MAX_IN must be <= 65534"
+#endif
+// The compressor must accept a full packet payload, else a max-size outbound packet would fail to
+// compress and drop, desyncing the stateful stream.
+#if DETWS_SSH_ZLIB_MAX_IN < SSH_PKT_BUF_SIZE
+#error "DeterministicESPAsyncWebServer: DETWS_SSH_ZLIB_MAX_IN must be >= SSH_PKT_BUF_SIZE"
+#endif
+// The per-connection compressor (window work buffer + hash chain) is ~48 KB. On ARDUINO pick a path:
+// offload it to PSRAM (DETWS_SSH_ZLIB_IN_PSRAM, a PSRAM board built with the BSS-in-PSRAM core), or
+// acknowledge the internal-DRAM cost (DETWS_SSH_ZLIB_ACK_DRAM, fine for MAX_SSH_CONNS=1 without TLS on
+// a roomy S3 / P4). Fail fast with guidance instead of a raw linker overflow.
+#if defined(ARDUINO) && !DETWS_SSH_ZLIB_IN_PSRAM && !DETWS_SSH_ZLIB_ACK_DRAM
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_ENABLE_SSH_ZLIB - the per-connection compressor is ~48 KB. Set DETWS_SSH_ZLIB_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER, core built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DETWS_SSH_ZLIB_ACK_DRAM=1 to accept the internal-DRAM cost (fits MAX_SSH_CONNS=1 without TLS on a roomy chip)."
+#endif
 #endif
 
 #if DETWS_ENABLE_WEB_TERMINAL && !DETWS_ENABLE_WEBSOCKET

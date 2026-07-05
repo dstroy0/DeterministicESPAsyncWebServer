@@ -3,45 +3,27 @@
   "envs": {
     "native_canopen": {
       "desc": "CANopen (CiA 301) message codec (services/canopen): NMT, SYNC, heartbeat, EMCY,\nPDO, and expedited SDO read/write/abort + the COB-ID classifier, over the shared CAN\nframe (shared_primitives/det_can.h). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_CANOPEN=1"
-      ],
-      "src": [
-        "+<services/canopen/canopen.cpp>"
-      ],
-      "tests": [
-        "test_canopen"
-      ]
+      "flags": ["-DDETWS_ENABLE_CANOPEN=1"],
+      "src": ["+<services/canopen/canopen.cpp>"],
+      "tests": ["test_canopen"]
     },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (det_numparse.h) and the strict RFC 3629 UTF-8 validator (det_utf8.h).\nHeader-only; pure host tests.",
       "flags": [],
-      "src": [
-        "-<*>"
-      ],
-      "tests": [
-        "test_det_primitives"
-      ]
+      "src": ["-<*>"],
+      "tests": ["test_det_primitives"]
     },
     "native_det_ip": {
       "desc": "IP address core (network_drivers/network/det_ip): RFC 4291 IPv4/IPv6 text parsing,\nRFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification\n(loopback / link-local / private-ULA / multicast / global). Pure host tests.",
       "flags": [],
-      "src": [
-        "+<network_drivers/network/det_ip.cpp>"
-      ],
-      "tests": [
-        "test_det_ip"
-      ]
+      "src": ["+<network_drivers/network/det_ip.cpp>"],
+      "tests": ["test_det_ip"]
     },
     "native_det_arena": {
       "desc": "Unified double-ended server arena (network_drivers/session/det_arena): first-fit\npersistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end\n(top, mark/release/reset) sharing a floating middle; fail-closed at the boundary. Host tests.",
       "flags": [],
-      "src": [
-        "+<network_drivers/session/det_arena.cpp>"
-      ],
-      "tests": [
-        "test_det_arena"
-      ]
+      "src": ["+<network_drivers/session/det_arena.cpp>"],
+      "tests": ["test_det_arena"]
     },
     "native_ssh_ed25519": {
       "desc": "Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth):\nSHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). Vectors are the published RFC\ntest vectors + tool-generated digests, grounding the impl against the standards. Pure host tests.",
@@ -51,148 +33,80 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
       ],
-      "tests": [
-        "test_ssh_ed25519"
-      ]
+      "tests": ["test_ssh_ed25519"]
     },
     "native_promisc": {
       "desc": "Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC header parser\n(to/from-DS src/dst/bssid resolution, QoS, WDS 4-address, control frames, malformed\nrejection) and libpcap (DLT_IEEE802_11) framing. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_PROMISC=1"
-      ],
-      "src": [
-        "+<services/promisc/promisc.cpp>"
-      ],
-      "tests": [
-        "test_promisc"
-      ]
+      "flags": ["-DDETWS_ENABLE_PROMISC=1"],
+      "src": ["+<services/promisc/promisc.cpp>"],
+      "tests": ["test_promisc"]
     },
     "native_bus_capture": {
       "desc": "CAN listen-only capture framing (services/bus_capture): can_to_socketcan() building the\n16-byte Linux SocketCAN frame (big-endian can_id, EFF/RTR flags, length, data) and the\nDLT_CAN_SOCKETCAN libpcap link type. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_BUS_CAPTURE=1"
-      ],
-      "src": [
-        "+<services/bus_capture/bus_capture.cpp>"
-      ],
-      "tests": [
-        "test_bus_capture"
-      ]
+      "flags": ["-DDETWS_ENABLE_BUS_CAPTURE=1"],
+      "src": ["+<services/bus_capture/bus_capture.cpp>"],
+      "tests": ["test_bus_capture"]
     },
     "native_j1939": {
       "desc": "SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame\nmessages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT)\nreassembler, over the shared CAN frame. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_J1939=1"
-      ],
-      "src": [
-        "+<services/j1939/j1939.cpp>"
-      ],
-      "tests": [
-        "test_j1939"
-      ]
+      "flags": ["-DDETWS_ENABLE_J1939=1"],
+      "src": ["+<services/j1939/j1939.cpp>"],
+      "tests": ["test_j1939"]
     },
     "native_devicenet": {
       "desc": "DeviceNet link-adaptation codec (services/devicenet): the 4-group 11-bit CAN id,\nexplicit-message header octet, single-frame explicit messages, and the fragmentation\nreassembler (CIP over CAN; the CIP body is built with the cip codec). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_DEVICENET=1"
-      ],
-      "src": [
-        "+<services/devicenet/devicenet.cpp>"
-      ],
-      "tests": [
-        "test_devicenet"
-      ]
+      "flags": ["-DDETWS_ENABLE_DEVICENET=1"],
+      "src": ["+<services/devicenet/devicenet.cpp>"],
+      "tests": ["test_devicenet"]
     },
     "native_nmea2000": {
       "desc": "NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet\ntransport (frame count, build, reassembly), built on the J1939 id codec (implied). Pure\nhost tests.",
-      "flags": [
-        "-DDETWS_ENABLE_NMEA2000=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_NMEA2000=1"],
       "src": [
         "+<services/nmea2000/nmea2000.cpp>",
         "+<services/j1939/j1939.cpp>"
       ],
-      "tests": [
-        "test_nmea2000"
-      ]
+      "tests": ["test_nmea2000"]
     },
     "native_mbus": {
       "desc": "Wired M-Bus codec (services/mbus): the ACK / short / long frame builders + parser\n(start/stop, doubled length, 8-bit sum checksum) and the EN 13757-3 variable-data record\nwalker (DIF/VIF, DIFE/VIFE chains, LVAR). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_MBUS=1"
-      ],
-      "src": [
-        "+<services/mbus/mbus.cpp>"
-      ],
-      "tests": [
-        "test_mbus"
-      ]
+      "flags": ["-DDETWS_ENABLE_MBUS=1"],
+      "src": ["+<services/mbus/mbus.cpp>"],
+      "tests": ["test_mbus"]
     },
     "native_iec60870": {
       "desc": "IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU\nheader + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). Pure\nhost tests.",
-      "flags": [
-        "-DDETWS_ENABLE_IEC60870=1"
-      ],
-      "src": [
-        "+<services/iec60870/iec60870.cpp>"
-      ],
-      "tests": [
-        "test_iec60870"
-      ]
+      "flags": ["-DDETWS_ENABLE_IEC60870=1"],
+      "src": ["+<services/iec60870/iec60870.cpp>"],
+      "tests": ["test_iec60870"]
     },
     "native_sdi12": {
       "desc": "SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement\nresponse parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify).\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_SDI12=1"
-      ],
-      "src": [
-        "+<services/sdi12/sdi12.cpp>"
-      ],
-      "tests": [
-        "test_sdi12"
-      ]
+      "flags": ["-DDETWS_ENABLE_SDI12=1"],
+      "src": ["+<services/sdi12/sdi12.cpp>"],
+      "tests": ["test_sdi12"]
     },
     "native_dmx": {
       "desc": "DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the\nRDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. Pure\nhost tests.",
-      "flags": [
-        "-DDETWS_ENABLE_DMX=1"
-      ],
-      "src": [
-        "+<services/dmx/dmx.cpp>"
-      ],
-      "tests": [
-        "test_dmx"
-      ]
+      "flags": ["-DDETWS_ENABLE_DMX=1"],
+      "src": ["+<services/dmx/dmx.cpp>"],
+      "tests": ["test_dmx"]
     },
     "native_nmea0183": {
       "desc": "NMEA 0183 sentence codec (services/nmea0183): the XOR checksum, sentence build, parse\n(field splitting, talker/type, checksum validation) against the canonical GGA vector, and the\nfield-value helpers. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_NMEA0183=1"
-      ],
-      "src": [
-        "+<services/nmea0183/nmea0183.cpp>"
-      ],
-      "tests": [
-        "test_nmea0183"
-      ]
+      "flags": ["-DDETWS_ENABLE_NMEA0183=1"],
+      "src": ["+<services/nmea0183/nmea0183.cpp>"],
+      "tests": ["test_nmea0183"]
     },
     "native_iolink": {
       "desc": "IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control\noctets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a\nhand-computed known-answer vector. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_IOLINK=1"
-      ],
-      "src": [
-        "+<services/iolink/iolink.cpp>"
-      ],
-      "tests": [
-        "test_iolink"
-      ]
+      "flags": ["-DDETWS_ENABLE_IOLINK=1"],
+      "src": ["+<services/iolink/iolink.cpp>"],
+      "tests": ["test_iolink"]
     },
     "native": {
       "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 §5.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
-      "flags": [
-        "-DDETWS_ENFORCE_HOST_HEADER=0"
-      ],
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
@@ -219,17 +133,13 @@
     },
     "native_observability": {
       "desc": "Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event\nhook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP\ncallbacks (recv FIN / error / timeout / local close / backpressure) drive the\nright counter. Pure L4 core - host-tested.",
-      "flags": [
-        "-DDETWS_ENABLE_OBSERVABILITY=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_OBSERVABILITY=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>"
       ],
-      "tests": [
-        "test_observability"
-      ]
+      "tests": ["test_observability"]
     },
     "native_accept_gate": {
       "desc": "Accept-time connection gates with their flags ON (DETWS_ENABLE_ACCEPT_THROTTLE\n/ PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP\nbucket table (independent budgets, window rollover, the millis() wrap, bounded LRU\neviction), and the CIDR source-IP allowlist. Compiles the flag-guarded accept-callback\npaths that no other env builds. Budgets overridden small so the boundaries are explicit.",
@@ -260,38 +170,25 @@
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>"
       ],
-      "tests": [
-        "test_accept_gate"
-      ]
+      "tests": ["test_accept_gate"]
     },
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
-      "flags": [
-        "-DDETWS_ENFORCE_HOST_HEADER=0",
-        "-DDETWS_ENABLE_OTA=1"
-      ],
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
       "src": [
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/network/det_ip.cpp>"
       ],
-      "tests": [
-        "test_http_ota"
-      ]
+      "tests": ["test_http_ota"]
     },
     "native_prov": {
       "desc": "Provisioning form-field parser - the only host-testable part of the captive\nportal (softAP / lwIP UDP / NVS are ESP32-only and compiled out here).",
-      "src": [
-        "+<services/provisioning_service.cpp>"
-      ],
-      "tests": [
-        "test_provisioning"
-      ]
+      "src": ["+<services/provisioning_service.cpp>"],
+      "tests": ["test_provisioning"]
     },
     "native_ssh": {
       "desc": "SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing",
-      "flags": [
-        "-DDETWS_SSH_MAX_CHANNELS=3"
-      ],
+      "flags": ["-DDETWS_SSH_MAX_CHANNELS=3"],
       "src": [
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
@@ -325,9 +222,7 @@
     },
     "native_ssh_hardened": {
       "desc": "SSH built with password auth disabled (publickey-only hardening)",
-      "flags": [
-        "-DDETWS_SSH_ALLOW_PASSWORD=0"
-      ],
+      "flags": ["-DDETWS_SSH_ALLOW_PASSWORD=0"],
       "src": [
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
@@ -351,15 +246,11 @@
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],
-      "tests": [
-        "test_ssh_hardening"
-      ]
+      "tests": ["test_ssh_hardening"]
     },
     "native_ssh_conn": {
       "desc": "SSH wired through the real transport/session layers (PROTO_SSH byte-pump)",
-      "flags": [
-        "-DDETWS_ENABLE_SSH=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SSH=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
@@ -395,9 +286,7 @@
         "+<network_drivers/presentation/ssh/connection/ssh_server.cpp>",
         "+<network_drivers/presentation/ssh/connection/ssh_conn.cpp>"
       ],
-      "tests": [
-        "test_ssh_conn"
-      ]
+      "tests": ["test_ssh_conn"]
     },
     "native_app": {
       "desc": "Full stack including Layer 7 application",
@@ -482,37 +371,24 @@
         "+<services/web_terminal.cpp>",
         "+<services/webdav/webdav.cpp>"
       ],
-      "tests": [
-        "test_webdav_handler"
-      ]
+      "tests": ["test_webdav_handler"]
     },
     "native_diag": {
       "desc": "Runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG). The gated\ndiag() method + the compile-time DETWS_DIAG_JSON build-info string are enabled by\nno other env, so this one keeps them compiled + exercised in CI. Reuses the full\napp src via the native_app base.",
       "base": "env:native_app",
-      "flags": [
-        "-DDETWS_ENABLE_DIAG=1"
-      ],
-      "src": [
-        "${env:native_app.build_src_filter}"
-      ],
-      "tests": [
-        "test_diag"
-      ]
+      "flags": ["-DDETWS_ENABLE_DIAG=1"],
+      "src": ["${env:native_app.build_src_filter}"],
+      "tests": ["test_diag"]
     },
     "native_snmp": {
       "desc": "SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). Pure\ncodec - no lwIP/UDP - so it unit-tests on the host.",
-      "flags": [
-        "-DDETWS_ENABLE_SNMP=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SNMP=1"],
       "src": [
         "+<services/snmp/snmp_ber.cpp>",
         "+<services/snmp/snmp_agent.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>"
       ],
-      "tests": [
-        "test_snmp_ber",
-        "test_snmp_agent"
-      ]
+      "tests": ["test_snmp_ber", "test_snmp_agent"]
     },
     "native_snmp_v3": {
       "desc": "SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery,\ntimeliness. Pulls in the SHA-256/HMAC primitives from the SSH crypto layer.",
@@ -531,24 +407,18 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
       ],
-      "tests": [
-        "test_snmp_v3"
-      ]
+      "tests": ["test_snmp_v3"]
     },
     "native_telnet": {
       "desc": "Telnet server (RFC 854 IAC negotiation + line editing) wired through the real\ntransport ring buffer; output checked via the tcp_write capture mock.",
-      "flags": [
-        "-DDETWS_ENABLE_TELNET=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_TELNET=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/presentation/telnet/telnet.cpp>"
       ],
-      "tests": [
-        "test_telnet"
-      ]
+      "tests": ["test_telnet"]
     },
     "native_coap": {
       "desc": "CoAP server (RFC 7252) message codec + resource dispatch. Pure core - no\nlwIP/UDP - so it unit-tests on the host (udp_transport provides host stubs).",
@@ -562,9 +432,7 @@
         "+<services/coap/coap.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>"
       ],
-      "tests": [
-        "test_coap"
-      ]
+      "tests": ["test_coap"]
     },
     "native_coap_observe": {
       "desc": "CoAP with resource observation (RFC 7641) enabled. Compiles + runs test_coap\nwith DETWS_ENABLE_COAP_OBSERVE on, so the Observe-gated code (request Observe\nrecording, the observer registry, coap_notify) is actually built in CI instead\nof bit-rotting (it is enabled by no other env).",
@@ -579,109 +447,60 @@
         "+<services/coap/coap.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>"
       ],
-      "tests": [
-        "test_coap"
-      ]
+      "tests": ["test_coap"]
     },
     "native_webdav": {
       "desc": "WebDAV server core (RFC 4918): method classification, header parsing, XML\nescaping, and the 207 Multi-Status builder. Pure core - no FS/sockets - so it\nunit-tests on the host. The FS-backed handling is HW-tested on a real LittleFS.",
-      "flags": [
-        "-DDETWS_ENABLE_WEBDAV=1"
-      ],
-      "src": [
-        "+<services/webdav/webdav.cpp>"
-      ],
-      "tests": [
-        "test_webdav"
-      ]
+      "flags": ["-DDETWS_ENABLE_WEBDAV=1"],
+      "src": ["+<services/webdav/webdav.cpp>"],
+      "tests": ["test_webdav"]
     },
     "native_modbus": {
       "desc": "Modbus TCP slave core + RTU framing (Modbus Application Protocol): the data\nmodel + MBAP/PDU codec + the RTU ADU codec (CRC16 + [addr][PDU][CRC]). Pure core\n- the transports are ARDUINO-gated - so it unit-tests on the host from modbus.cpp alone.",
-      "flags": [
-        "-DDETWS_ENABLE_MODBUS=1",
-        "-DDETWS_ENABLE_MODBUS_RTU=1"
-      ],
-      "src": [
-        "+<services/modbus/modbus.cpp>"
-      ],
-      "tests": [
-        "test_modbus"
-      ]
+      "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_RTU=1"],
+      "src": ["+<services/modbus/modbus.cpp>"],
+      "tests": ["test_modbus"]
     },
     "native_cloudevents": {
       "desc": "CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder\n(over the JSON writer) + the binary-mode ce-* header reader. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_CLOUDEVENTS=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_CLOUDEVENTS=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<services/cloudevents.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>"
       ],
-      "tests": [
-        "test_cloudevents"
-      ]
+      "tests": ["test_cloudevents"]
     },
     "native_redis": {
       "desc": "Redis RESP2 codec (services/redis_resp): the zero-heap command encoder + the\ncursor reply parser (simple/error/integer/bulk/array/nil). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_REDIS=1"
-      ],
-      "src": [
-        "+<services/redis_resp.cpp>"
-      ],
-      "tests": [
-        "test_redis_resp"
-      ]
+      "flags": ["-DDETWS_ENABLE_REDIS=1"],
+      "src": ["+<services/redis_resp.cpp>"],
+      "tests": ["test_redis_resp"]
     },
     "native_stomp": {
       "desc": "STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command +\nescaped headers + NUL body) + the non-mutating parser (command/header slices/body,\nhonoring content-length) + escape/unescape. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_STOMP=1"
-      ],
-      "src": [
-        "+<services/stomp.cpp>"
-      ],
-      "tests": [
-        "test_stomp"
-      ]
+      "flags": ["-DDETWS_ENABLE_STOMP=1"],
+      "src": ["+<services/stomp.cpp>"],
+      "tests": ["test_stomp"]
     },
     "native_mqtt_sn": {
       "desc": "MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders\n(CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType\nheader parser (1- and 3-octet forms) + typed payload parsers. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_MQTT_SN=1"
-      ],
-      "src": [
-        "+<services/mqtt/mqtt_sn.cpp>"
-      ],
-      "tests": [
-        "test_mqtt_sn"
-      ]
+      "flags": ["-DDETWS_ENABLE_MQTT_SN=1"],
+      "src": ["+<services/mqtt/mqtt_sn.cpp>"],
+      "tests": ["test_mqtt_sn"]
     },
     "native_flow_export": {
       "desc": "Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record\nbuilders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching,\nv9 4-octet padding). Pure host tests with wire-byte assertions.",
-      "flags": [
-        "-DDETWS_ENABLE_FLOW_EXPORT=1"
-      ],
-      "src": [
-        "+<services/flow_export/flow_export.cpp>"
-      ],
-      "tests": [
-        "test_flow_export"
-      ]
+      "flags": ["-DDETWS_ENABLE_FLOW_EXPORT=1"],
+      "src": ["+<services/flow_export/flow_export.cpp>"],
+      "tests": ["test_flow_export"]
     },
     "native_protobuf": {
       "desc": "Protocol Buffers wire codec (services/protobuf): the zero-heap streaming writer\n(varint / ZigZag / fixed32 / fixed64 / length-delimited) + the cursor reader, host-tested\nagainst the spec vectors. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_PROTOBUF=1"
-      ],
-      "src": [
-        "+<services/protobuf/protobuf.cpp>"
-      ],
-      "tests": [
-        "test_protobuf"
-      ]
+      "flags": ["-DDETWS_ENABLE_PROTOBUF=1"],
+      "src": ["+<services/protobuf/protobuf.cpp>"],
+      "tests": ["test_protobuf"]
     },
     "native_preempt_queue": {
       "desc": "Preempting work queue (services/preempt_queue), v5 real-time ingest: the host\nfixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water,\nand drain/handler dispatch. The ARDUINO FreeRTOS task + ISR post + preempt latency\nare HW-verified separately (the host has no tasks/ISRs).",
@@ -690,12 +509,8 @@
         "-DDETWS_PQ_DEPTH=4",
         "-DDETWS_PQ_ITEM_SIZE=4"
       ],
-      "src": [
-        "+<services/preempt_queue/preempt_queue.cpp>"
-      ],
-      "tests": [
-        "test_preempt_queue"
-      ]
+      "src": ["+<services/preempt_queue/preempt_queue.cpp>"],
+      "tests": ["test_preempt_queue"]
     },
     "native_dma": {
       "desc": "DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an\ningress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms,\negress DMA is captured, TX is one-in-flight fail-closed, and a loopback channel\nround-trips its own TX into RX. The ARDUINO ISR-post + preempt-queue hand-off is\nHW-verified separately (the host has no ISRs).",
@@ -704,12 +519,8 @@
         "-DDETWS_DMA_BUF_SIZE=8",
         "-DDETWS_DMA_CHANNELS=2"
       ],
-      "src": [
-        "+<services/dma/det_dma.cpp>"
-      ],
-      "tests": [
-        "test_dma"
-      ]
+      "src": ["+<services/dma/det_dma.cpp>"],
+      "tests": ["test_dma"]
     },
     "native_forward": {
       "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, and the ingress ACL (byte-pattern permit/deny, first-match, default\naction). Pure host tests; the DMA-driven wiring is HW-verified.",
@@ -719,465 +530,247 @@
         "-DDETWS_FWD_MAX_RULES=4",
         "-DDETWS_FWD_MAX_ACL=4"
       ],
-      "src": [
-        "+<services/forward/det_forward.cpp>"
-      ],
-      "tests": [
-        "test_forward"
-      ]
+      "src": ["+<services/forward/det_forward.cpp>"],
+      "tests": ["test_forward"]
     },
     "native_gateway": {
       "desc": "Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an\nuplink envelopes a received frame (src address / port / rssi / seq) and publishes it,\nfail-closed on no sink / unknown port / rate cap / sink refusal; a downlink routes to the\nport transmit callback; the topic helper formats <prefix>/<port>/<addr>; port table limits.\nPure host tests; the DMA + FORWARD-lane ingest is HW-verified separately.",
-      "flags": [
-        "-DDETWS_ENABLE_GATEWAY=1",
-        "-DDETWS_GW_MAX_PORTS=4"
-      ],
-      "src": [
-        "+<services/gateway/det_gateway.cpp>"
-      ],
-      "tests": [
-        "test_gateway"
-      ]
+      "flags": ["-DDETWS_ENABLE_GATEWAY=1", "-DDETWS_GW_MAX_PORTS=4"],
+      "src": ["+<services/gateway/det_gateway.cpp>"],
+      "tests": ["test_gateway"]
     },
     "native_lora": {
       "desc": "LoRa codec + SX127x driver (services/lora), v5 radio plugin: the RadioHead 4-byte\nheader parse/build, and the SX127x register protocol (init / send / tx-done / set-rx /\nrecv) exercised against a mock chip - a register file plus a FIFO with the auto-\nincrementing address pointer. Pure host tests; the RF link needs the module.",
-      "flags": [
-        "-DDETWS_ENABLE_LORA=1"
-      ],
-      "src": [
-        "+<services/lora/lora.cpp>"
-      ],
-      "tests": [
-        "test_lora"
-      ]
+      "flags": ["-DDETWS_ENABLE_LORA=1"],
+      "src": ["+<services/lora/lora.cpp>"],
+      "tests": ["test_lora"]
     },
     "native_nrf24": {
       "desc": "nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol\n(STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised\nagainst a mock chip - init / send (padded to the static width) / tx-done / set-rx / recv\n(pipe-addressed). Pure host tests; the RF link needs the module.",
-      "flags": [
-        "-DDETWS_ENABLE_NRF24=1",
-        "-DDETWS_NRF24_PAYLOAD=8"
-      ],
-      "src": [
-        "+<services/nrf24/nrf24.cpp>"
-      ],
-      "tests": [
-        "test_nrf24"
-      ]
+      "flags": ["-DDETWS_ENABLE_NRF24=1", "-DDETWS_NRF24_PAYLOAD=8"],
+      "src": ["+<services/nrf24/nrf24.cpp>"],
+      "tests": ["test_nrf24"]
     },
     "native_enocean": {
       "desc": "EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07)\nagainst known answers, a build -> parse round trip, malformed framing (bad sync / header\nCRC / data CRC), incomplete telegrams, over-length rejection, and resynchronisation.\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_ENOCEAN=1",
-        "-DDETWS_ENOCEAN_MAX_DATA=16"
-      ],
-      "src": [
-        "+<services/enocean/enocean.cpp>"
-      ],
-      "tests": [
-        "test_enocean"
-      ]
+      "flags": ["-DDETWS_ENABLE_ENOCEAN=1", "-DDETWS_ENOCEAN_MAX_DATA=16"],
+      "src": ["+<services/enocean/enocean.cpp>"],
+      "tests": ["test_enocean"]
     },
     "native_pn532": {
       "desc": "PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame\nbuild/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS +\nDCS checksums), a round trip, malformed framing (bad preamble / start / LCS / DCS), the ACK\nframe, and over-length rejection. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_PN532=1",
-        "-DDETWS_PN532_MAX_DATA=8"
-      ],
-      "src": [
-        "+<services/pn532/pn532.cpp>"
-      ],
-      "tests": [
-        "test_pn532"
-      ]
+      "flags": ["-DDETWS_ENABLE_PN532=1", "-DDETWS_PN532_MAX_DATA=8"],
+      "src": ["+<services/pn532/pn532.cpp>"],
+      "tests": ["test_pn532"]
     },
     "native_sigfox": {
       "desc": "Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink\ncommand (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and\nthe OK / ERROR / PENDING response classification. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_SIGFOX=1"
-      ],
-      "src": [
-        "+<services/sigfox/sigfox.cpp>"
-      ],
-      "tests": [
-        "test_sigfox"
-      ]
+      "flags": ["-DDETWS_ENABLE_SIGFOX=1"],
+      "src": ["+<services/sigfox/sigfox.cpp>"],
+      "tests": ["test_sigfox"]
     },
     "native_zwave": {
       "desc": "Z-Wave Serial API frame codec (services/zwave), v5 radio plugin: the data-frame\nbuild/parse against the documented GetVersion request (01 03 00 15 E9), the XOR checksum, a\nround trip, malformed framing (bad SOF / checksum / length), incomplete frames, and the ACK\n/ NAK / CAN control bytes. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_ZWAVE=1",
-        "-DDETWS_ZWAVE_MAX_DATA=16"
-      ],
-      "src": [
-        "+<services/zwave/zwave.cpp>"
-      ],
-      "tests": [
-        "test_zwave"
-      ]
+      "flags": ["-DDETWS_ENABLE_ZWAVE=1", "-DDETWS_ZWAVE_MAX_DATA=16"],
+      "src": ["+<services/zwave/zwave.cpp>"],
+      "tests": ["test_zwave"]
     },
     "native_zigbee": {
       "desc": "Zigbee EZSP / ASH framing codec (services/zigbee), v5 radio plugin: the CRC-16/CCITT\nand the encoded RST frame against their documented values (C0 38 BC 7E), an encode -> decode\nround trip, the byte-stuffing of reserved bytes, and malformed framing (bad CRC, dangling\nescape, buffer-too-small, no flag). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_ZIGBEE=1",
-        "-DDETWS_ZIGBEE_MAX_DATA=32"
-      ],
-      "src": [
-        "+<services/zigbee/zigbee.cpp>"
-      ],
-      "tests": [
-        "test_zigbee"
-      ]
+      "flags": ["-DDETWS_ENABLE_ZIGBEE=1", "-DDETWS_ZIGBEE_MAX_DATA=32"],
+      "src": ["+<services/zigbee/zigbee.cpp>"],
+      "tests": ["test_zigbee"]
     },
     "native_thread": {
       "desc": "Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS\n(CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the\nbyte-stuffing of reserved bytes, and malformed framing (bad FCS, dangling escape,\nbuffer-too-small, no flag). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_THREAD=1",
-        "-DDETWS_THREAD_MAX_DATA=64"
-      ],
-      "src": [
-        "+<services/thread/thread.cpp>"
-      ],
-      "tests": [
-        "test_thread"
-      ]
+      "flags": ["-DDETWS_ENABLE_THREAD=1", "-DDETWS_THREAD_MAX_DATA=64"],
+      "src": ["+<services/thread/thread.cpp>"],
+      "tests": ["test_thread"]
     },
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_WAMP=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_WAMP=1"],
       "src": [
         "+<services/wamp/wamp.cpp>",
         "+<network_drivers/presentation/json/json.cpp>"
       ],
-      "tests": [
-        "test_wamp"
-      ]
+      "tests": ["test_wamp"]
     },
     "native_sunspec": {
       "desc": "SunSpec Modbus model codec (services/sunspec): the map writer (marker / model\nheaders / points / end model) + the model-chain walker + typed point readers\n(u16 / i16 / u32 / i32 / string). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_SUNSPEC=1"
-      ],
-      "src": [
-        "+<services/sunspec/sunspec.cpp>"
-      ],
-      "tests": [
-        "test_sunspec"
-      ]
+      "flags": ["-DDETWS_ENABLE_SUNSPEC=1"],
+      "src": ["+<services/sunspec/sunspec.cpp>"],
+      "tests": ["test_sunspec"]
     },
     "native_c37118": {
       "desc": "IEEE C37.118.2 synchrophasor frame codec (services/c37118): CRC-CCITT, the frame\nbuilder + Command frame, and the CRC-validating parser (type / ids / timestamp / payload).\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_C37118=1"
-      ],
-      "src": [
-        "+<services/c37118/c37118.cpp>"
-      ],
-      "tests": [
-        "test_c37118"
-      ]
+      "flags": ["-DDETWS_ENABLE_C37118=1"],
+      "src": ["+<services/c37118/c37118.cpp>"],
+      "tests": ["test_c37118"]
     },
     "native_dnp3": {
       "desc": "DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame\nbuilder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking\nparser. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_DNP3=1"
-      ],
-      "src": [
-        "+<services/dnp3/dnp3.cpp>"
-      ],
-      "tests": [
-        "test_dnp3"
-      ]
+      "flags": ["-DDETWS_ENABLE_DNP3=1"],
+      "src": ["+<services/dnp3/dnp3.cpp>"],
+      "tests": ["test_dnp3"]
     },
     "native_grpcweb": {
       "desc": "gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed\nmessage frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame\nparser. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_GRPC_WEB=1"
-      ],
-      "src": [
-        "+<services/grpcweb/grpcweb.cpp>"
-      ],
-      "tests": [
-        "test_grpcweb"
-      ]
+      "flags": ["-DDETWS_ENABLE_GRPC_WEB=1"],
+      "src": ["+<services/grpcweb/grpcweb.cpp>"],
+      "tests": ["test_grpcweb"]
     },
     "native_lwm2m_tlv": {
       "desc": "OMA LwM2M TLV codec (services/lwm2m): the writer (raw + int / bool / string /\nfloat value helpers, 8-/16-bit ids, inline / 8-/16-/24-bit lengths) + the cursor reader\n+ integer value decoding. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_LWM2M=1"
-      ],
-      "src": [
-        "+<services/lwm2m/lwm2m_tlv.cpp>"
-      ],
-      "tests": [
-        "test_lwm2m_tlv"
-      ]
+      "flags": ["-DDETWS_ENABLE_LWM2M=1"],
+      "src": ["+<services/lwm2m/lwm2m_tlv.cpp>"],
+      "tests": ["test_lwm2m_tlv"]
     },
     "native_fins": {
       "desc": "Omron FINS frame codec (services/fins): the command builder + Memory Area Read\nconvenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end\ncode). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_FINS=1"
-      ],
-      "src": [
-        "+<services/fins/fins.cpp>"
-      ],
-      "tests": [
-        "test_fins"
-      ]
+      "flags": ["-DDETWS_ENABLE_FINS=1"],
+      "src": ["+<services/fins/fins.cpp>"],
+      "tests": ["test_fins"]
     },
     "native_hostlink": {
       "desc": "Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII\ncommand builder (@UU + header + text + FCS + *CR), and the FCS-validating parser +\nend-code reader. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_HOSTLINK=1"
-      ],
-      "src": [
-        "+<services/hostlink/hostlink.cpp>"
-      ],
-      "tests": [
-        "test_hostlink"
-      ]
+      "flags": ["-DDETWS_ENABLE_HOSTLINK=1"],
+      "src": ["+<services/hostlink/hostlink.cpp>"],
+      "tests": ["test_hostlink"]
     },
     "native_senml": {
       "desc": "SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the\nJSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral\nnumbers emitted as integers. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_SENML=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SENML=1"],
       "src": [
         "+<services/senml/senml.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/presentation/cbor/cbor.cpp>"
       ],
-      "tests": [
-        "test_senml"
-      ]
+      "tests": ["test_senml"]
     },
     "native_df1": {
       "desc": "Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the\nframe builder with DLE byte-stuffing, and the validating, un-stuffing parser. Vectors from\nAB pub. 1770-6.5.16. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_DF1=1"
-      ],
-      "src": [
-        "+<services/df1/df1.cpp>"
-      ],
-      "tests": [
-        "test_df1"
-      ]
+      "flags": ["-DDETWS_ENABLE_DF1=1"],
+      "src": ["+<services/df1/df1.cpp>"],
+      "tests": ["test_df1"]
     },
     "native_cotp": {
       "desc": "TPKT (RFC 1006) + COTP X.224 class-0 frame codec (services/cotp): the TPKT\nenvelope, the COTP Data TPDU + Connection Request builders, and the COTP parser. The\nISO-on-TCP foundation under S7comm / IEC 61850 MMS. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_COTP=1"
-      ],
-      "src": [
-        "+<services/cotp/cotp.cpp>"
-      ],
-      "tests": [
-        "test_cotp"
-      ]
+      "flags": ["-DDETWS_ENABLE_COTP=1"],
+      "src": ["+<services/cotp/cotp.cpp>"],
+      "tests": ["test_cotp"]
     },
     "native_s7comm": {
       "desc": "Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var\nrequest builders, the header parser, and the response data-item reader (length-in-bits +\neven padding). Constants per the Wireshark dissector. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_S7COMM=1"
-      ],
-      "src": [
-        "+<services/s7comm/s7comm.cpp>"
-      ],
-      "tests": [
-        "test_s7comm"
-      ]
+      "flags": ["-DDETWS_ENABLE_S7COMM=1"],
+      "src": ["+<services/s7comm/s7comm.cpp>"],
+      "tests": ["test_s7comm"]
     },
     "native_melsec": {
       "desc": "Mitsubishi MELSEC MC binary 3E codec (services/melsec): the batch-read request\nbuilder (little-endian, subheader 0x5000, command 0x0401, device code + 24-bit head device)\n+ the 0xD000 response parser. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_MELSEC=1"
-      ],
-      "src": [
-        "+<services/melsec/melsec.cpp>"
-      ],
-      "tests": [
-        "test_melsec"
-      ]
+      "flags": ["-DDETWS_ENABLE_MELSEC=1"],
+      "src": ["+<services/melsec/melsec.cpp>"],
+      "tests": ["test_melsec"]
     },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_BACNET=1"
-      ],
-      "src": [
-        "+<services/bacnet/bacnet.cpp>"
-      ],
-      "tests": [
-        "test_bacnet"
-      ]
+      "flags": ["-DDETWS_ENABLE_BACNET=1"],
+      "src": ["+<services/bacnet/bacnet.cpp>"],
+      "tests": ["test_bacnet"]
     },
     "native_enip": {
       "desc": "EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession\n+ SendRRData builders (Common Packet Format), and the SendRRData reply extractor. Constants\nper the Wireshark ENIP dissector. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_ENIP=1"
-      ],
-      "src": [
-        "+<services/enip/enip.cpp>"
-      ],
-      "tests": [
-        "test_enip"
-      ]
+      "flags": ["-DDETWS_ENABLE_ENIP=1"],
+      "src": ["+<services/enip/enip.cpp>"],
+      "tests": ["test_enip"]
     },
     "native_amqp": {
       "desc": "AMQP 0-9-1 frame codec (services/amqp): the protocol header, the frame + method\nbuilders, the heartbeat, and the frame/method parsers (type/channel/size/payload/0xCE).\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_AMQP=1"
-      ],
-      "src": [
-        "+<services/amqp/amqp.cpp>"
-      ],
-      "tests": [
-        "test_amqp"
-      ]
+      "flags": ["-DDETWS_ENABLE_AMQP=1"],
+      "src": ["+<services/amqp/amqp.cpp>"],
+      "tests": ["test_amqp"]
     },
     "native_cip": {
       "desc": "CIP message codec (services/cip): the EPATH logical-segment builder, the request\nbuilders (Get_Attribute_Single), and the response parser (service / status / data). Rides\nan EtherNet/IP Unconnected Data item. Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_CIP=1"
-      ],
-      "src": [
-        "+<services/cip/cip.cpp>"
-      ],
-      "tests": [
-        "test_cip"
-      ]
+      "flags": ["-DDETWS_ENABLE_CIP=1"],
+      "src": ["+<services/cip/cip.cpp>"],
+      "tests": ["test_cip"]
     },
     "native_nats": {
       "desc": "NATS client protocol codec (services/nats): the CONNECT / PUB / SUB / UNSUB / PING /\nPONG builders + the inbound MSG / INFO / PING / +OK / -ERR parser (subject/sid/reply/payload).\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_NATS=1"
-      ],
-      "src": [
-        "+<services/nats/nats.cpp>"
-      ],
-      "tests": [
-        "test_nats"
-      ]
+      "flags": ["-DDETWS_ENABLE_NATS=1"],
+      "src": ["+<services/nats/nats.cpp>"],
+      "tests": ["test_nats"]
     },
     "native_proxy_protocol": {
       "desc": "HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary)\nTCP/IPv4 header builders and the unified parser (recover the real client IP behind a load\nbalancer). Pure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_PROXY_PROTOCOL=1"
-      ],
-      "src": [
-        "+<services/proxy_protocol/proxy_protocol.cpp>"
-      ],
-      "tests": [
-        "test_proxy_protocol"
-      ]
+      "flags": ["-DDETWS_ENABLE_PROXY_PROTOCOL=1"],
+      "src": ["+<services/proxy_protocol/proxy_protocol.cpp>"],
+      "tests": ["test_proxy_protocol"]
     },
     "native_sparkplug": {
       "desc": "Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload\nprotobuf serializers (over the protobuf codec). Field numbers per the Eclipse Tahu proto.\nPure host tests.",
-      "flags": [
-        "-DDETWS_ENABLE_SPARKPLUG=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SPARKPLUG=1"],
       "src": [
         "+<services/sparkplug/sparkplug.cpp>",
         "+<services/protobuf/protobuf.cpp>"
       ],
-      "tests": [
-        "test_sparkplug"
-      ]
+      "tests": ["test_sparkplug"]
     },
     "native_modbus_master": {
       "desc": "Modbus master codec + scanner (services/modbus/modbus_master): build read\nrequests, parse responses; host-tested as a round-trip against the slave codec.",
-      "flags": [
-        "-DDETWS_ENABLE_MODBUS=1",
-        "-DDETWS_ENABLE_MODBUS_MASTER=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_MODBUS=1", "-DDETWS_ENABLE_MODBUS_MASTER=1"],
       "src": [
         "+<services/modbus/modbus.cpp>",
         "+<services/modbus/modbus_master.cpp>"
       ],
-      "tests": [
-        "test_modbus_master"
-      ]
+      "tests": ["test_modbus_master"]
     },
     "native_ota_rollback": {
       "desc": "OTA rollback decision (services/ota_rollback): pure decision matrix host-tested;\nthe esp_ota commit/rollback are ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_OTA_ROLLBACK=1"
-      ],
-      "src": [
-        "+<services/ota_rollback/ota_rollback.cpp>"
-      ],
-      "tests": [
-        "test_ota_rollback"
-      ]
+      "flags": ["-DDETWS_ENABLE_OTA_ROLLBACK=1"],
+      "src": ["+<services/ota_rollback/ota_rollback.cpp>"],
+      "tests": ["test_ota_rollback"]
     },
     "native_totp": {
       "desc": "TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested\nagainst the RFC 6238 vectors (builds on the software SHA-1).",
-      "flags": [
-        "-DDETWS_ENABLE_TOTP=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_TOTP=1"],
       "src": [
         "+<services/totp/totp.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
-      "tests": [
-        "test_totp"
-      ]
+      "tests": ["test_totp"]
     },
     "native_webhook": {
       "desc": "Webhook / IFTTT builders (services/webhook): IFTTT URL + value1/2/3 JSON payload,\nhost-tested. Firing is via the http_client (ESP32).",
-      "flags": [
-        "-DDETWS_ENABLE_WEBHOOK=1"
-      ],
-      "src": [
-        "+<services/webhook/webhook.cpp>"
-      ],
-      "tests": [
-        "test_webhook"
-      ]
+      "flags": ["-DDETWS_ENABLE_WEBHOOK=1"],
+      "src": ["+<services/webhook/webhook.cpp>"],
+      "tests": ["test_webhook"]
     },
     "native_radio_power": {
       "desc": "WiFi radio power controls (services/radio_power): modem-sleep mode names\nhost-tested; the apply/readback are ESP32-only (esp_wifi).",
-      "flags": [
-        "-DDETWS_ENABLE_RADIO_POWER=1"
-      ],
-      "src": [
-        "+<services/radio_power/radio_power.cpp>"
-      ],
-      "tests": [
-        "test_radio_power"
-      ]
+      "flags": ["-DDETWS_ENABLE_RADIO_POWER=1"],
+      "src": ["+<services/radio_power/radio_power.cpp>"],
+      "tests": ["test_radio_power"]
     },
     "native_dns_resolver": {
       "desc": "DNS resolver answer classifier/verifier (services/dns_resolver): host-tested;\nthe lwIP resolve is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_DNS_RESOLVER=1"
-      ],
-      "src": [
-        "+<services/dns_resolver/dns_resolver.cpp>"
-      ],
-      "tests": [
-        "test_dns_resolver"
-      ]
+      "flags": ["-DDETWS_ENABLE_DNS_RESOLVER=1"],
+      "src": ["+<services/dns_resolver/dns_resolver.cpp>"],
+      "tests": ["test_dns_resolver"]
     },
     "native_audit_log": {
       "desc": "Tamper-evident hash-chained audit log (services/audit_log). Pure - the chain is\nidentical on host and ESP32 - so it unit-tests on the host; SHA-256 comes from\nssh_sha256 (software path on native), the timestamp from the pluggable clock.",
-      "flags": [
-        "-DDETWS_ENABLE_AUDIT_LOG=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_AUDIT_LOG=1"],
       "src": [
         "+<services/audit_log/audit_log.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
       ],
-      "tests": [
-        "test_audit_log"
-      ]
+      "tests": ["test_audit_log"]
     },
     "native_oidc": {
       "desc": "OIDC RS256 ID-token verifier (services/oidc). Pure relying-party verification -\nthe signature check is real RSA modexp (ssh_rsa + ssh_bignum), so it host-tests\nagainst openssl-signed RS256 vectors with the matching JWKS public key.",
-      "flags": [
-        "-DDETWS_ENABLE_OIDC=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_OIDC=1"],
       "src": [
         "+<services/oidc/oidc.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>",
@@ -1187,83 +780,48 @@
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],
-      "tests": [
-        "test_oidc"
-      ]
+      "tests": ["test_oidc"]
     },
     "native_vfs": {
       "desc": "Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM\nbackend (the Arduino FS backend is ESP32-only and HW-verified). Pure, no heap.",
-      "flags": [
-        "-DDETWS_ENABLE_VFS=1"
-      ],
-      "src": [
-        "+<services/vfs/vfs.cpp>"
-      ],
-      "tests": [
-        "test_vfs"
-      ]
+      "flags": ["-DDETWS_ENABLE_VFS=1"],
+      "src": ["+<services/vfs/vfs.cpp>"],
+      "tests": ["test_vfs"]
     },
     "native_graphql": {
       "desc": "GraphQL query subset (services/graphql) - pure parser + executor, host-tested\nwith a demo resolver. No heap; bounds are compile-time.",
-      "flags": [
-        "-DDETWS_ENABLE_GRAPHQL=1"
-      ],
-      "src": [
-        "+<services/graphql/graphql.cpp>"
-      ],
-      "tests": [
-        "test_graphql"
-      ]
+      "flags": ["-DDETWS_ENABLE_GRAPHQL=1"],
+      "src": ["+<services/graphql/graphql.cpp>"],
+      "tests": ["test_graphql"]
     },
     "native_espnow": {
       "desc": "ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry\nare host-tested here; the esp_now radio binding is ESP32-only. No heap.",
-      "flags": [
-        "-DDETWS_ENABLE_ESPNOW=1"
-      ],
-      "src": [
-        "+<services/espnow/espnow.cpp>"
-      ],
-      "tests": [
-        "test_espnow"
-      ]
+      "flags": ["-DDETWS_ENABLE_ESPNOW=1"],
+      "src": ["+<services/espnow/espnow.cpp>"],
+      "tests": ["test_espnow"]
     },
     "native_oauth2": {
       "desc": "OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON\ntoken-response parser are host-tested (the parser reuses the JSON reader); the\nHTTP exchange is ESP32-only. No heap, no stdlib.",
-      "flags": [
-        "-DDETWS_ENABLE_OAUTH2=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_OAUTH2=1"],
       "src": [
         "+<services/oauth2/oauth2.cpp>",
         "+<network_drivers/presentation/json/json.cpp>"
       ],
-      "tests": [
-        "test_oauth2"
-      ]
+      "tests": ["test_oauth2"]
     },
     "native_opcua": {
       "desc": "OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and\nHello/Acknowledge handshake are host-tested here; the TCP server (opcua_rx) is\nESP32-only. No heap, no stdlib.",
-      "flags": [
-        "-DDETWS_ENABLE_OPCUA=1"
-      ],
-      "src": [
-        "+<services/opcua/opcua.cpp>"
-      ],
-      "tests": [
-        "test_opcua"
-      ]
+      "flags": ["-DDETWS_ENABLE_OPCUA=1"],
+      "src": ["+<services/opcua/opcua.cpp>"],
+      "tests": ["test_opcua"]
     },
     "native_opcua_client": {
-      "flags": [
-        "-DDETWS_ENABLE_OPCUA=1",
-        "-DDETWS_ENABLE_OPCUA_CLIENT=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_OPCUA=1", "-DDETWS_ENABLE_OPCUA_CLIENT=1"],
       "src": [
         "+<services/opcua/opcua.cpp>",
         "+<services/opcua_client/opcua_client.cpp>"
       ],
-      "tests": [
-        "test_opcua_client"
-      ]
+      "tests": ["test_opcua_client"]
     },
     "native_pentest": {
       "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32) with malformed/\noversized/partial/random input and asserts bounded buffers + fail-closed + no\ncrash. Pairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
@@ -1297,9 +855,7 @@
         "+<network_drivers/transport/udp_transport.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
-      "tests": [
-        "test_pentest"
-      ]
+      "tests": ["test_pentest"]
     },
     "native_keepalive": {
       "desc": "HTTP/1.1 keep-alive (persistent connections): full server built with\nDETWS_ENABLE_KEEPALIVE=1; a small per-connection request cap makes the\nfairness-bound test fast. Drives requests through the real transport ring +\ntcp_write capture mock.",
@@ -1325,16 +881,11 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>"
       ],
-      "tests": [
-        "test_keepalive"
-      ]
+      "tests": ["test_keepalive"]
     },
     "native_range": {
       "desc": "HTTP Range requests / 206 Partial Content (RFC 7233): full server built with\nDETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with\nseek()) via the tcp_write capture mock.",
-      "flags": [
-        "-DDETWS_ENFORCE_HOST_HEADER=0",
-        "-DDETWS_ENABLE_RANGE=1"
-      ],
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_RANGE=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
@@ -1352,223 +903,131 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<DeterministicESPAsyncWebServer.cpp>"
       ],
-      "tests": [
-        "test_range"
-      ]
+      "tests": ["test_range"]
     },
     "native_syslog": {
       "desc": "Syslog client (RFC 5424) line formatter. Pure formatter - no lwIP/UDP - so it\nunit-tests on the host (udp_transport provides host stubs for det_udp_sendto).",
-      "flags": [
-        "-DDETWS_ENABLE_SYSLOG=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SYSLOG=1"],
       "src": [
         "+<services/syslog/syslog.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>"
       ],
-      "tests": [
-        "test_syslog"
-      ]
+      "tests": ["test_syslog"]
     },
     "native_smtp": {
       "desc": "SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH\nLOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply\nparsing. Driven by a scripted mock server on the host - no lwIP or TLS.",
-      "flags": [
-        "-DDETWS_ENABLE_SMTP=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SMTP=1"],
       "src": [
         "+<services/smtp/smtp.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>"
       ],
-      "tests": [
-        "test_smtp"
-      ]
+      "tests": ["test_smtp"]
     },
     "native_ntp_server": {
       "desc": "NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response):\nversion echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit\nstamps, big-endian encoding, and the length guards. Pure - host-tested, no lwIP.",
-      "flags": [
-        "-DDETWS_ENABLE_NTP_SERVER=1"
-      ],
-      "src": [
-        "+<services/ntp_server/ntp_server.cpp>"
-      ],
-      "tests": [
-        "test_ntp_server"
-      ]
+      "flags": ["-DDETWS_ENABLE_NTP_SERVER=1"],
+      "src": ["+<services/ntp_server/ntp_server.cpp>"],
+      "tests": ["test_ntp_server"]
     },
     "native_dns_server": {
       "desc": "Authoritative DNS server (services/dns_server): the pure A-record response builder\n(QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed\nguards) and the built-in name->IP table (add / case-insensitive lookup / clear). No lwIP.",
-      "flags": [
-        "-DDETWS_ENABLE_DNS_SERVER=1"
-      ],
-      "src": [
-        "+<services/dns_server/dns_server.cpp>"
-      ],
-      "tests": [
-        "test_dns_server"
-      ]
+      "flags": ["-DDETWS_ENABLE_DNS_SERVER=1"],
+      "src": ["+<services/dns_server/dns_server.cpp>"],
+      "tests": ["test_dns_server"]
     },
     "native_rtc": {
       "desc": "DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in\n24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation,\nand a round-trip over the 2000-2099 range. Pure - the I2C read/write is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_RTC=1"
-      ],
-      "src": [
-        "+<services/rtc/rtc.cpp>"
-      ],
-      "tests": [
-        "test_rtc"
-      ]
+      "flags": ["-DDETWS_ENABLE_RTC=1"],
+      "src": ["+<services/rtc/rtc.cpp>"],
+      "tests": ["test_rtc"]
     },
     "native_ld2410": {
       "desc": "LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode\nreport frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past\nnoise, split feeds, absurd-length drop), the presence/distance helpers, and the exact bytes\nof the config-command encoders. Pure - the UART pump is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_LD2410=1"
-      ],
-      "src": [
-        "+<services/ld2410/ld2410.cpp>"
-      ],
-      "tests": [
-        "test_ld2410"
-      ]
+      "flags": ["-DDETWS_ENABLE_LD2410=1"],
+      "src": ["+<services/ld2410/ld2410.cpp>"],
+      "tests": ["test_ld2410"]
     },
     "native_mpr121": {
       "desc": "MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into\nan electrode bitmask (masking proximity / over-current), the per-electrode touched test, the\nproximity / over-current flags, the 10-bit filtered/baseline word, and the exact bytes of the\nregister bring-up sequence. Pure - the I2C read/write is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_MPR121=1"
-      ],
-      "src": [
-        "+<services/mpr121/mpr121.cpp>"
-      ],
-      "tests": [
-        "test_mpr121"
-      ]
+      "flags": ["-DDETWS_ENABLE_MPR121=1"],
+      "src": ["+<services/mpr121/mpr121.cpp>"],
+      "tests": ["test_mpr121"]
     },
     "native_sht3x": {
       "desc": "Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the\ndatasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity\nconversions at the range endpoints and a mid value, and the six-byte single-shot response\nparse (both CRCs checked, corrupt CRC rejected). Pure - the I2C transfer is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_SHT3X=1"
-      ],
-      "src": [
-        "+<services/sht3x/sht3x.cpp>"
-      ],
-      "tests": [
-        "test_sht3x"
-      ]
+      "flags": ["-DDETWS_ENABLE_SHT3X=1"],
+      "src": ["+<services/sht3x/sht3x.cpp>"],
+      "tests": ["test_sht3x"]
     },
     "native_pca9685": {
       "desc": "PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM\nfrequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit\ncount conversion (with clamping), and the 5-byte channel PWM write encoder (including the\nfull-on/off flag). Pure - the I2C writes are ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_PCA9685=1"
-      ],
-      "src": [
-        "+<services/pca9685/pca9685.cpp>"
-      ],
-      "tests": [
-        "test_pca9685"
-      ]
+      "flags": ["-DDETWS_ENABLE_PCA9685=1"],
+      "src": ["+<services/pca9685/pca9685.cpp>"],
+      "tests": ["test_pca9685"]
     },
     "native_ads1115": {
       "desc": "ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a\nsingle-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits,\nwith out-of-range fallbacks), and converting a signed 16-bit sample to microvolts across the\ngain's full-scale range. Pure - the I2C transfer is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_ADS1115=1"
-      ],
-      "src": [
-        "+<services/ads1115/ads1115.cpp>"
-      ],
-      "tests": [
-        "test_ads1115"
-      ]
+      "flags": ["-DDETWS_ENABLE_ADS1115=1"],
+      "src": ["+<services/ads1115/ads1115.cpp>"],
+      "tests": ["test_ads1115"]
     },
     "native_ina219": {
       "desc": "INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits\n[15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV),\ncomputing the calibration register from the current LSB and shunt resistance, and scaling the\nraw current / power registers. Pure - the I2C transfer is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_INA219=1"
-      ],
-      "src": [
-        "+<services/ina219/ina219.cpp>"
-      ],
-      "tests": [
-        "test_ina219"
-      ]
+      "flags": ["-DDETWS_ENABLE_INA219=1"],
+      "src": ["+<services/ina219/ina219.cpp>"],
+      "tests": ["test_ina219"]
     },
     "native_hpack": {
       "desc": "HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the\nHuffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion\n(C.3.1), dynamic-table indexing + FIFO eviction + size updates, and the server encoder\n(static indexing + literal round-trip). Pure host codec.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP2=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
       "src": [
         "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
         "+<network_drivers/presentation/http2/hpack.cpp>"
       ],
-      "tests": [
-        "test_hpack"
-      ]
+      "tests": ["test_hpack"]
     },
     "native_h2frame": {
       "desc": "HTTP/2 binary framing (network_drivers/presentation/http2/h2_frame, RFC 9113): the\n9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse\nwith validation, and the exact bytes of the SETTINGS-ACK / WINDOW_UPDATE / RST_STREAM / GOAWAY\n/ PING-ACK / HEADERS / DATA builders. Pure host codec.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP2=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/http2/h2_frame.cpp>"
-      ],
-      "tests": [
-        "test_h2_frame"
-      ]
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
+      "src": ["+<network_drivers/presentation/http2/h2_frame.cpp>"],
+      "tests": ["test_h2_frame"]
     },
     "native_h2conn": {
       "desc": "HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn, RFC 9113):\ninitial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real\nHPACK-encoded request into the header callbacks, PING -> PING ACK, split-across-reads frame\nreassembly, and h2_conn_respond serializing a HEADERS + DATA response decoded back.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP2=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_HTTP2=1"],
       "src": [
         "+<network_drivers/presentation/http2/h2_conn.cpp>",
         "+<network_drivers/presentation/http2/h2_frame.cpp>",
         "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
         "+<network_drivers/presentation/http2/hpack.cpp>"
       ],
-      "tests": [
-        "test_h2_conn"
-      ]
+      "tests": ["test_h2_conn"]
     },
     "native_quic_varint": {
       "desc": "QUIC variable-length integer codec (network_drivers/presentation/http3/quic_varint,\nRFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8\nbyte encodings), the non-minimal decode, length computation, and overflow / truncation guards.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP3=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/http3/quic_varint.cpp>"
-      ],
-      "tests": [
-        "test_quic_varint"
-      ]
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": ["+<network_drivers/presentation/http3/quic_varint.cpp>"],
+      "tests": ["test_quic_varint"]
     },
     "native_h3frame": {
       "desc": "HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the\ntype+length varint header parse/write (incl. a multi-byte length), the DATA / HEADERS /\nSETTINGS / GOAWAY builders, the SETTINGS payload round-trip + reserved-id rejection, and the\nreserved HTTP/2 frame-type check. Pure host codec.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP3=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": [
         "+<network_drivers/presentation/http3/h3_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>"
       ],
-      "tests": [
-        "test_h3_frame"
-      ]
+      "tests": ["test_h3_frame"]
     },
     "native_jwt": {
       "desc": "JWT (HS256) bearer-auth verification. Pure crypto/codec - reuses the SSH\nHMAC-SHA-256 + base64 primitives - so it unit-tests on the host.",
-      "flags": [
-        "-DDETWS_ENABLE_JWT=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_JWT=1"],
       "src": [
         "+<services/jwt/jwt.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
       ],
-      "tests": [
-        "test_jwt"
-      ]
+      "tests": ["test_jwt"]
     },
     "native_upload": {
       "desc": "Streaming file upload: POST body -> FS file via the parser streaming hook.\nSmall BODY_BUF_SIZE exercises multi-chunk streaming; the mock FS captures the\nwritten bytes (test/mocks/FS.h write-capture).",
@@ -1595,21 +1054,13 @@
         "+<DeterministicESPAsyncWebServer.cpp>",
         "+<services/upload_service.cpp>"
       ],
-      "tests": [
-        "test_upload"
-      ]
+      "tests": ["test_upload"]
     },
     "native_http_client": {
       "desc": "Outbound HTTP client: URL parser + request builder + response parser. Pure\nstring logic (the lwIP/mbedTLS transport is ESP32-only) so it unit-tests host.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP_CLIENT=1"
-      ],
-      "src": [
-        "+<services/http_client/http_client.cpp>"
-      ],
-      "tests": [
-        "test_http_client"
-      ]
+      "flags": ["-DDETWS_ENABLE_HTTP_CLIENT=1"],
+      "src": ["+<services/http_client/http_client.cpp>"],
+      "tests": ["test_http_client"]
     },
     "native_compliance": {
       "desc": "RFC-compliance suite: builds with all enforcement at production defaults\n(DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors.",
@@ -1617,33 +1068,21 @@
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
         "+<network_drivers/network/det_ip.cpp>"
       ],
-      "tests": [
-        "test_compliance"
-      ]
+      "tests": ["test_compliance"]
     },
     "native_mqtt": {
-      "flags": [
-        "-DDETWS_ENABLE_MQTT=1"
-      ],
-      "src": [
-        "+<services/mqtt/mqtt.cpp>"
-      ],
-      "tests": [
-        "test_mqtt"
-      ]
+      "flags": ["-DDETWS_ENABLE_MQTT=1"],
+      "src": ["+<services/mqtt/mqtt.cpp>"],
+      "tests": ["test_mqtt"]
     },
     "native_ws_client": {
-      "flags": [
-        "-DDETWS_ENABLE_WS_CLIENT=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_WS_CLIENT=1"],
       "src": [
         "+<services/ws_client/ws_client.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>",
         "+<network_drivers/presentation/base64/base64.cpp>"
       ],
-      "tests": [
-        "test_ws_client"
-      ]
+      "tests": ["test_ws_client"]
     },
     "native_scratch": {
       "desc": "Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset\nsemantics, alignment, and fail-closed exhaustion. Pure host tests - no\nlwIP/sockets - so it builds from scratch.cpp alone.",
@@ -1651,54 +1090,82 @@
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],
-      "tests": [
-        "test_scratch"
-      ]
+      "tests": ["test_scratch"]
     },
     "native_snmp_trap": {
-      "flags": [
-        "-DDETWS_ENABLE_SNMP=1",
-        "-DDETWS_ENABLE_SNMP_TRAP=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_TRAP=1"],
       "src": [
         "+<services/snmp/snmp_notify.cpp>",
         "+<services/snmp/snmp_ber.cpp>"
       ],
-      "tests": [
-        "test_snmp_trap"
-      ]
+      "tests": ["test_snmp_trap"]
     },
     "native_inflate": {
       "desc": "RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). Pure\ncodec - no sockets - so it unit-tests on the host against zlib-generated\nvectors (scratchpad/gen_vectors.py).",
-      "flags": [
-        "-DDETWS_ENABLE_WS_DEFLATE=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/inflate/inflate.cpp>"
-      ],
-      "tests": [
-        "test_inflate"
-      ]
+      "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
+      "src": ["+<network_drivers/presentation/inflate/inflate.cpp>"],
+      "tests": ["test_inflate"]
     },
     "native_deflate": {
       "desc": "RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). Pure codec\n- no sockets - so it unit-tests on the host by round-tripping through INFLATE\n(which test_inflate validates against zlib), proving the emitted streams are\nvalid RFC 1951.",
-      "flags": [
-        "-DDETWS_ENABLE_WS_DEFLATE=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_WS_DEFLATE=1"],
       "src": [
         "+<network_drivers/presentation/deflate/deflate.cpp>",
         "+<network_drivers/presentation/inflate/inflate.cpp>"
       ],
-      "tests": [
-        "test_deflate"
-      ]
+      "tests": ["test_deflate"]
+    },
+    "native_ssh_zlib": {
+      "desc": "SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover\nDEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib\nwrapper). The whole session is one zlib stream, so concatenating packets and decoding via\ninflate_raw (validated vs Python zlib in test_inflate) proves cross-packet back-references\nresolve; packet-by-packet decodability under a reference zlib.decompressobj (OpenSSH's model)\nis cross-checked out-of-tree.",
+      "flags": [
+        "-DDETWS_ENABLE_SSH=1",
+        "-DDETWS_ENABLE_SSH_ZLIB=1",
+        "-DDETWS_ENABLE_WS_DEFLATE=1"
+      ],
+      "src": [
+        "+<network_drivers/presentation/ssh/transport/ssh_zlib.cpp>",
+        "+<network_drivers/presentation/inflate/inflate.cpp>"
+      ],
+      "tests": ["test_ssh_zlib"]
+    },
+    "native_ssh_comp": {
+      "desc": "SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1:\nthe compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer\ncompress path in ssh_pkt_send. Drives the packet layer directly and reconstructs the continuous\nzlib stream from the framed packets, decoding via inflate_raw. Compile-verifies every #if\nDETWS_ENABLE_SSH_ZLIB block across transport / server / packet.",
+      "flags": [
+        "-DDETWS_ENABLE_SSH=1",
+        "-DDETWS_ENABLE_SSH_ZLIB=1",
+        "-DDETWS_ENABLE_WS_DEFLATE=1"
+      ],
+      "src": [
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_comp.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_zlib.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/auth/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_server.cpp>",
+        "+<network_drivers/presentation/inflate/inflate.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_ssh_comp"]
     },
     "native_ws_deflate": {
       "desc": "WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS\nstack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with\nthe table scratch borrowed from the shared arena). Runs test_websocket with the\nfeature on (the deflate cases are #if-gated).",
-      "flags": [
-        "-DDETWS_ENFORCE_HOST_HEADER=0",
-        "-DDETWS_ENABLE_WS_DEFLATE=1"
-      ],
+      "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_WS_DEFLATE=1"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>",
@@ -1716,233 +1183,135 @@
         "+<network_drivers/presentation/inflate/inflate.cpp>",
         "+<network_drivers/presentation/deflate/deflate.cpp>"
       ],
-      "tests": [
-        "test_websocket"
-      ]
+      "tests": ["test_websocket"]
     },
     "native_time_source": {
       "desc": "Multi-source time fallback matrix (services/time_source): priority-ordered\nquery of user time sources with first-valid-wins fallback. Pure core - no\nsockets/RTC - so it unit-tests on the host with mock sources.",
-      "flags": [
-        "-DDETWS_ENABLE_TIME_SOURCE=1"
-      ],
-      "src": [
-        "+<services/time_source/time_source.cpp>"
-      ],
-      "tests": [
-        "test_time_source"
-      ]
+      "flags": ["-DDETWS_ENABLE_TIME_SOURCE=1"],
+      "src": ["+<services/time_source/time_source.cpp>"],
+      "tests": ["test_time_source"]
     },
     "native_config_store": {
       "desc": "Typed NVS config store (services/config_store): string/u32/blob round-trips,\ndefaults, capacity, erase/clear - run against the host in-memory backend (the\nESP32 Preferences/NVS backend is compiled in only on-target).",
-      "flags": [
-        "-DDETWS_ENABLE_CONFIG_STORE=1"
-      ],
-      "src": [
-        "+<services/config_store/config_store.cpp>"
-      ],
-      "tests": [
-        "test_config_store"
-      ]
+      "flags": ["-DDETWS_ENABLE_CONFIG_STORE=1"],
+      "src": ["+<services/config_store/config_store.cpp>"],
+      "tests": ["test_config_store"]
     },
     "native_device_id": {
       "desc": "MAC-derived device UUID (services/device_id): RFC 4122 v5 from a MAC via SHA-1.\nPure core - the ESP32 MAC read is ARDUINO-gated - so it unit-tests on the host\nagainst Python uuid.uuid5 reference values.",
-      "flags": [
-        "-DDETWS_ENABLE_DEVICE_ID=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_DEVICE_ID=1"],
       "src": [
         "+<services/device_id/device_id.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>"
       ],
-      "tests": [
-        "test_device_id"
-      ]
+      "tests": ["test_device_id"]
     },
     "native_auth_lockout": {
       "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. DETWS_ENABLE_AUTH_LOCKOUT (and its required parent\nDETWS_ENABLE_AUTH) are set so the flag-guarded code compiles.",
-      "flags": [
-        "-DDETWS_ENABLE_AUTH=1",
-        "-DDETWS_ENABLE_AUTH_LOCKOUT=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_AUTH=1", "-DDETWS_ENABLE_AUTH_LOCKOUT=1"],
       "src": [
         "+<services/auth_lockout/auth_lockout.cpp>",
         "+<network_drivers/network/det_ip.cpp>"
       ],
-      "tests": [
-        "test_auth_lockout"
-      ]
+      "tests": ["test_auth_lockout"]
     },
     "native_csrf": {
       "desc": "Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed\nsecret unit-tests on the host (DETWS_ENABLE_CSRF set). Pulls in the SSH\nHMAC-SHA256 + SHA-256 core.",
-      "flags": [
-        "-DDETWS_ENABLE_CSRF=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_CSRF=1"],
       "src": [
         "+<services/csrf/csrf.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
       ],
-      "tests": [
-        "test_csrf"
-      ]
+      "tests": ["test_csrf"]
     },
     "native_telemetry": {
       "desc": "Telemetry math (services/telemetry): moving-window stats, rate-of-change, and\ntotalizer. Pure computation (synthetic clock passed in), so it unit-tests on\nthe host.",
-      "flags": [
-        "-DDETWS_ENABLE_TELEMETRY=1"
-      ],
-      "src": [
-        "+<services/telemetry/telemetry.cpp>"
-      ],
-      "tests": [
-        "test_telemetry"
-      ]
+      "flags": ["-DDETWS_ENABLE_TELEMETRY=1"],
+      "src": ["+<services/telemetry/telemetry.cpp>"],
+      "tests": ["test_telemetry"]
     },
     "native_dashboard": {
       "desc": "Dashboard widget-table JSON serializers (services/dashboard core). Pure logic;\nthe route/SSE wiring (dashboard_routes.cpp) is excluded so this tests on the\nhost without the server.",
-      "flags": [
-        "-DDETWS_ENABLE_DASHBOARD=1"
-      ],
-      "src": [
-        "+<services/dashboard/dashboard.cpp>"
-      ],
-      "tests": [
-        "test_dashboard"
-      ]
+      "flags": ["-DDETWS_ENABLE_DASHBOARD=1"],
+      "src": ["+<services/dashboard/dashboard.cpp>"],
+      "tests": ["test_dashboard"]
     },
     "native_net_egress": {
       "desc": "Egress-interface reporting (network_drivers/physical). The esp_netif default-\nroute lookups are ESP32-only; the pure interface-key classifier host-tests here.",
-      "src": [
-        "+<network_drivers/physical/physical.cpp>"
-      ],
-      "tests": [
-        "test_net_egress"
-      ]
+      "src": ["+<network_drivers/physical/physical.cpp>"],
+      "tests": ["test_net_egress"]
     },
     "native_partition": {
       "desc": "Flash partition-map monitor (services/partition_monitor core): the kind\nclassifier + JSON serializer host-test here; the esp_partition walk is ESP32-only.",
-      "flags": [
-        "-DDETWS_ENABLE_PARTITION_MONITOR=1"
-      ],
-      "src": [
-        "+<services/partition_monitor/partition_monitor.cpp>"
-      ],
-      "tests": [
-        "test_partition_monitor"
-      ]
+      "flags": ["-DDETWS_ENABLE_PARTITION_MONITOR=1"],
+      "src": ["+<services/partition_monitor/partition_monitor.cpp>"],
+      "tests": ["test_partition_monitor"]
     },
     "native_cbor": {
       "desc": "CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output\ncodec, host-tested against the RFC 8949 Appendix A vectors.",
-      "flags": [
-        "-DDETWS_ENABLE_CBOR=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/cbor/cbor.cpp>"
-      ],
-      "tests": [
-        "test_cbor"
-      ]
+      "flags": ["-DDETWS_ENABLE_CBOR=1"],
+      "src": ["+<network_drivers/presentation/cbor/cbor.cpp>"],
+      "tests": ["test_cbor"]
     },
     "native_msgpack": {
       "desc": "MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output\ncodec, host-tested against the spec encodings.",
-      "flags": [
-        "-DDETWS_ENABLE_MSGPACK=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/msgpack/msgpack.cpp>"
-      ],
-      "tests": [
-        "test_msgpack"
-      ]
+      "flags": ["-DDETWS_ENABLE_MSGPACK=1"],
+      "src": ["+<network_drivers/presentation/msgpack/msgpack.cpp>"],
+      "tests": ["test_msgpack"]
     },
     "native_gpio_map": {
       "desc": "GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON\nserializer, control-POST parser, output guard - all pure and host-tested.",
-      "flags": [
-        "-DDETWS_ENABLE_GPIO_MAP=1"
-      ],
-      "src": [
-        "+<services/gpio_map/gpio_map.cpp>"
-      ],
-      "tests": [
-        "test_gpio_map"
-      ]
+      "flags": ["-DDETWS_ENABLE_GPIO_MAP=1"],
+      "src": ["+<services/gpio_map/gpio_map.cpp>"],
+      "tests": ["test_gpio_map"]
     },
     "native_udp_telemetry": {
       "desc": "UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol\nformatting, host-tested. The UDP cast is ESP32-only (#ifdef ARDUINO).",
-      "flags": [
-        "-DDETWS_ENABLE_UDP_TELEMETRY=1"
-      ],
-      "src": [
-        "+<services/udp_telemetry/udp_telemetry.cpp>"
-      ],
-      "tests": [
-        "test_udp_telemetry"
-      ]
+      "flags": ["-DDETWS_ENABLE_UDP_TELEMETRY=1"],
+      "src": ["+<services/udp_telemetry/udp_telemetry.cpp>"],
+      "tests": ["test_udp_telemetry"]
     },
     "native_statsd": {
       "desc": "StatsD metrics client (services/statsd): the pure line formatter (name:value|type,\nsample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent\nbytes are captured through the transport UDP service's host seam.",
-      "flags": [
-        "-DDETWS_ENABLE_STATSD=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_STATSD=1"],
       "src": [
         "+<services/statsd/statsd.cpp>",
         "+<network_drivers/transport/udp_transport.cpp>"
       ],
-      "tests": [
-        "test_statsd"
-      ]
+      "tests": ["test_statsd"]
     },
     "native_guardrails": {
       "desc": "Heap/stack guardrails (services/guardrails): threshold evaluator + JSON,\nhost-tested. Live sampling is ESP32-only (#ifdef ARDUINO).",
-      "flags": [
-        "-DDETWS_ENABLE_GUARDRAILS=1"
-      ],
-      "src": [
-        "+<services/guardrails/guardrails.cpp>"
-      ],
-      "tests": [
-        "test_guardrails"
-      ]
+      "flags": ["-DDETWS_ENABLE_GUARDRAILS=1"],
+      "src": ["+<services/guardrails/guardrails.cpp>"],
+      "tests": ["test_guardrails"]
     },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
-      "flags": [
-        "-DDETWS_ENABLE_LOGBUF=1"
-      ],
-      "src": [
-        "+<services/logbuf/logbuf.cpp>"
-      ],
-      "tests": [
-        "test_logbuf"
-      ]
+      "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
+      "src": ["+<services/logbuf/logbuf.cpp>"],
+      "tests": ["test_logbuf"]
     },
     "native_config_io": {
       "desc": "Schema-driven config export/restore (services/config_io) over the config store;\nround-trip host-tested against the in-memory backend.",
-      "flags": [
-        "-DDETWS_ENABLE_CONFIG_STORE=1",
-        "-DDETWS_ENABLE_CONFIG_IO=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_CONFIG_STORE=1", "-DDETWS_ENABLE_CONFIG_IO=1"],
       "src": [
         "+<services/config_store/config_store.cpp>",
         "+<services/config_io/config_io.cpp>"
       ],
-      "tests": [
-        "test_config_io"
-      ]
+      "tests": ["test_config_io"]
     },
     "native_workers": {
       "desc": "Core-partitioning invariant at N=2 (DETWS_WORKER_COUNT=2): each worker reaps\nonly its owned slots (check_timeouts ownership). Per-worker queue routing is\nhardware-verified (the host queue mock ignores the handle).",
-      "flags": [
-        "-DDETWS_WORKER_COUNT=2"
-      ],
+      "flags": ["-DDETWS_WORKER_COUNT=2"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
         "+<network_drivers/transport/transport.cpp>",
         "+<network_drivers/transport/listener.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],
-      "tests": [
-        "test_workers"
-      ]
+      "tests": ["test_workers"]
     },
     "native_codeql": {
       "desc": "CodeQL coverage env: the full app compiled with every new feature flag ON so\nCodeQL traces the integration paths (CSRF / lockout / allowlist gates,\npermessage-deflate) AND the new service modules, which the per-feature envs scan\nonly in isolation. Built (--without-testing) by the CodeQL workflow; one test\nin the filter is enough to pull in the whole src set.",
@@ -2015,87 +1384,51 @@
         "+<services/webhook/webhook.cpp>",
         "+<services/radio_power/radio_power.cpp>"
       ],
-      "tests": [
-        "test_dispatch"
-      ]
+      "tests": ["test_dispatch"]
     },
     "native_clock": {
       "desc": "Pluggable monotonic clock (services/det_clock): default millis(), custom clock\ndivided down to the internal 1000 Hz. Header-only, so no src to build.",
-      "src": [
-        "-<*>"
-      ],
-      "tests": [
-        "test_clock"
-      ],
+      "src": ["-<*>"],
+      "tests": ["test_clock"],
       "test_build_src": "no"
     },
     "native_concurrency": {
       "desc": "Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /\nrx_tail). Two threads drive one slot's SPSC ring with the production access\npattern; asserts byte-exact in-order delivery. Portable (-pthread), runs on any\nhost including Windows - this verifies the data integrity / logic.",
-      "flags": [
-        "-O1",
-        "-pthread"
-      ],
-      "src": [
-        "-<*>"
-      ],
-      "tests": [
-        "test_concurrency"
-      ],
+      "flags": ["-O1", "-pthread"],
+      "src": ["-<*>"],
+      "tests": ["test_concurrency"],
       "test_build_src": "no"
     },
     "native_tsan": {
       "desc": "Same harness under ThreadSanitizer: proves ZERO data races on the slot fields\n(the DetAtomic acquire/release happens-before lets the plain rx_buffer[] writes\nbe read on the other core safely). TSan ships with clang/gcc on Linux, so this\nenv is run by the test CI (ubuntu); it is not buildable on the Windows host.",
-      "flags": [
-        "-g",
-        "-O1",
-        "-fsanitize=thread",
-        "-pthread"
-      ],
-      "src": [
-        "-<*>"
-      ],
-      "tests": [
-        "test_concurrency"
-      ],
+      "flags": ["-g", "-O1", "-fsanitize=thread", "-pthread"],
+      "src": ["-<*>"],
+      "tests": ["test_concurrency"],
       "test_build_src": "no"
     },
     "native_qpack": {
       "desc": "QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack,\nRFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the\nencoder's exact bytes for an indexed / name-reference / literal-name field line, a round-trip\nthrough all three representations, and rejection of any dynamic-table reference. Pure host codec.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP3=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": [
         "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
         "+<network_drivers/presentation/http3/qpack.cpp>"
       ],
-      "tests": [
-        "test_qpack"
-      ]
+      "tests": ["test_qpack"]
     },
     "native_quic_packet": {
       "desc": "QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet,\nRFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0\n+ supported-version list), the short (1-RTT) header parse, and packet-number truncation coding\nagainst the Appendix A.2 (encode) and A.3 (decode) worked examples. Pure host codec.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP3=1"
-      ],
-      "src": [
-        "+<network_drivers/presentation/http3/quic_packet.cpp>"
-      ],
-      "tests": [
-        "test_quic_packet"
-      ]
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": ["+<network_drivers/presentation/http3/quic_packet.cpp>"],
+      "tests": ["test_quic_packet"]
     },
     "native_quic_frame": {
       "desc": "QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19):\nbuilder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built\nmulti-range-with-ECN cursor advance), CRYPTO, STREAM (with/without Offset, LEN-absent to packet\nend), MAX_DATA, CONNECTION_CLOSE (transport + app), a multi-frame sequential parse, truncation.",
-      "flags": [
-        "-DDETWS_ENABLE_HTTP3=1"
-      ],
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": [
         "+<network_drivers/presentation/http3/quic_frame.cpp>",
         "+<network_drivers/presentation/http3/quic_varint.cpp>"
       ],
-      "tests": [
-        "test_quic_frame"
-      ]
+      "tests": ["test_quic_frame"]
     },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
@@ -2105,9 +1438,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>"
       ],
-      "tests": [
-        "test_ssh_chachapoly"
-      ]
+      "tests": ["test_ssh_chachapoly"]
     }
   }
 }

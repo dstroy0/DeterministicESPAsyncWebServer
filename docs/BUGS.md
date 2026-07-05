@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH outbound wire buffer under-sized for a near-max payload + long MAC
+
+- **Status:** FIXED (native SSH suites green; found while adding s2c compression, which made the
+  overflow reachable in the general case).
+- **Found:** 2026-07-05, sizing the wire buffer for compression - the existing sizing did not cover
+  the worst case even without compression.
+- **Root cause:** `ssh_conn.cpp` sized every outbound wire buffer as `SSH_PKT_BUF_SIZE +
+SSH_HMAC_SHA256_LEN` (= 2080). A payload approaching `SSH_PKT_BUF_SIZE` with the hmac-sha2-512 MAC
+  (64-byte tag) needs `4 + (1 + payload + pad) + 64` ≈ 2128 bytes, so `ssh_pkt_send()` would hit its
+  `wire_len > out_cap` guard and return -1, dropping the packet. Latent because real payloads
+  (channel-data chunks bounded by the peer window) never approached the max. With s2c compression the
+  effective payload can also expand slightly (fixed-Huffman on incompressible data), and a dropped
+  packet mid-stream desyncs the stateful cipher / compression stream (session corruption), so the
+  under-size had to be fixed properly rather than relied upon to never trigger.
+- **Fix:** a single `SSH_WIRE_CAP` in `ssh_packet.h` sized for the true worst case - `4 + 1 +
+SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effective payload grows to
+  `ssh_deflate_bound(SSH_PKT_BUF_SIZE)` when `DETWS_ENABLE_SSH_ZLIB` is set. All four wire buffers in
+  `ssh_conn.cpp` use it. Correct for every cipher/MAC mode, compressed or not.
+
+---
+
 ## UDP transport called raw lwIP off tcpip_thread (sibling of the listener bug)
 
 - **Status:** FIXED (HW-validated on an ESP32-S3: the SNMP agent binds UDP/161 and runs;

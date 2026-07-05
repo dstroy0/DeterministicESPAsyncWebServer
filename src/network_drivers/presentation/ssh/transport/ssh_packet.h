@@ -157,6 +157,25 @@ struct SshPacketState
 extern SshPacketState ssh_pkt[MAX_SSH_CONNS];
 
 // ---------------------------------------------------------------------------
+// Wire buffer sizing
+// ---------------------------------------------------------------------------
+
+// Worst-case on-wire bytes for a payload of up to SSH_PKT_BUF_SIZE: the 4-byte packet_length, the
+// 1-byte padding_length, the effective payload, worst-case padding, and the largest MAC tag. When
+// s2c compression is built in, the "effective payload" is the compressor's worst-case output
+// (ssh_deflate_bound of a full payload) since fixed-Huffman can slightly expand incompressible data.
+// Callers MUST size the wire buffer with this so a compressed packet never overflows and desyncs the
+// stateful cipher / compression stream (a dropped packet mid-stream would corrupt the session).
+#if DETWS_ENABLE_SSH_ZLIB
+#define SSH_MAX_EFFECTIVE_PAYLOAD (2 + SSH_PKT_BUF_SIZE + (SSH_PKT_BUF_SIZE >> 3) + 32) // = ssh_deflate_bound()
+#else
+#define SSH_MAX_EFFECTIVE_PAYLOAD (SSH_PKT_BUF_SIZE)
+#endif
+#define SSH_MAX_PAD 32 // worst-case padding across block-8 / block-16 modes (min-4 rule)
+#define SSH_MAX_MAC 64 // largest MAC tag (hmac-sha2-512); chacha's Poly1305 tag is 16
+#define SSH_WIRE_CAP ((size_t)(4 + 1 + SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD + SSH_MAX_MAC))
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 

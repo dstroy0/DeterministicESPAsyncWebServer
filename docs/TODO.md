@@ -544,6 +544,17 @@ shipped work:
       KEXINIT-driven rekey if such sessions become a use case. _(Deferred - YAGNI:
       a headless IoT shell never approaches the 2^32-packet wrap.)_
 
+- [~] **Compression (RFC 4253 §6.2).** _(server->client done; client->server deferred)_
+      `DETWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for the **s2c** direction: a
+      context-takeover DEFLATE stream (`ssh_zlib`, persistent sliding window + per-packet
+      sync-flush + zlib wrapper) owned by `ssh_comp`, negotiated per direction, started after
+      USERAUTH_SUCCESS (delayed) or NEWKEYS (plain). HW-verified against OpenSSH 10.3 (42 KB
+      byte-perfect). **c2s stays `none`:** OpenSSH compresses outbound with `Z_PARTIAL_FLUSH`,
+      whose deflate blocks straddle packet byte-boundaries, so decompressing it needs a
+      resumable inflate state machine (bit-state + mid-block decode carried across packets) -
+      a much larger engine for a direction (keystrokes / uploads to the device) that barely
+      benefits. Add the resumable inflate if a bulk c2s (SFTP-to-device) use case appears.
+
 </details>
 
 ## Performance / hardware acceleration (medium)

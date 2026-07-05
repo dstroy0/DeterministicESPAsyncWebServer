@@ -692,6 +692,12 @@ Server-Sent Events push support.
 
 SSH server support (RFC 4253/4252/4254). Channels are multiplexed per connection (`DETWS_SSH_MAX_CHANNELS`, default 1), each routed by its recipient id with its own flow-control window. Beyond `session` channels, `direct-tcpip` (the `ssh -L` local-forward request) is parsed and routed through a normalized forwarding seam: the codec extracts the target host:port and routes channel data but does no TCP I/O itself. With `DETWS_SSH_PORT_FORWARD` set, the `ssh_forward` owner plugs into that seam and does the I/O - it opens the outbound TCP through the client transport (det_client) and bridges bytes both ways, with an optional target policy callback, a per-poll target-to-client pump bounded by the channel window, and EOF/CLOSE propagation. Forwarding is opt-in twice over (compiled out by default, and inert until the app calls `ssh_forward_begin()`) because any authenticated client could otherwise reach arbitrary hosts; with it off every `direct-tcpip` open is refused (no open relay).
 
+## SSH Compression
+
+`DETWS_ENABLE_SSH_ZLIB`
+
+SSH `zlib@openssh.com` / `zlib` compression (RFC 4253 sec 6.2) for the SERVER->CLIENT direction. When set (and SSH is on) the server advertises `zlib@openssh.com` (delayed, OpenSSH's default) and `zlib` for the s2c direction; once active it compresses every outbound packet payload through a single context-takeover DEFLATE stream (network_drivers/presentation/ssh/transport/ssh_zlib) - a persistent sliding window carried across packets, sync-flushed per packet, wrapped as a zlib stream - which a standard `inflate()` (OpenSSH) decodes. `zlib@openssh.com` starts after `SSH_MSG_USERAUTH_SUCCESS`; plain `zlib` starts at NEWKEYS. Client->server stays `none`: SSH negotiates each direction independently, and the inbound direction (keystrokes / uploads to the device) is tiny and, because OpenSSH compresses outbound with `Z_PARTIAL_FLUSH`, would need a much larger resumable inflate engine for little gain. The compressor is a single owner (network_drivers/presentation/ssh/transport/ssh_comp) that the packet layer asks per packet. PSRAM-class (~48 KB/connection): on ESP32 set `DETWS_SSH_ZLIB_IN_PSRAM=1` on a PSRAM board or `DETWS_SSH_ZLIB_ACK_DRAM=1` to accept the internal-DRAM cost. Default off. HW-verified against OpenSSH 10.3 (`ssh -o Compression=yes`).
+
 ## Stats
 
 `DETWS_ENABLE_STATS`
