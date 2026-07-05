@@ -31,7 +31,9 @@ def add_args(p) -> None:
     p.add_argument("--port", type=int, default=1883, help="MQTT port (default 1883)")
     p.add_argument("--topic", default="#", help="topic filter to monitor (default # = all)")
     p.add_argument("--publish", nargs=2, metavar=("TOPIC", "PAYLOAD"), help="publish once after start")
-    p.add_argument("--seconds", type=int, default=0, help="run N seconds and require >=1 device publish (0 = until Ctrl-C)")
+    p.add_argument(
+        "--seconds", type=int, default=0, help="run N seconds and require >=1 device publish (0 = until Ctrl-C)"
+    )
 
 
 def run(args) -> bool:
@@ -122,7 +124,9 @@ def _run_amqtt(args, pr: Probe) -> bool:
         await sub.connect(f"mqtt://127.0.0.1:{args.port}/")
         await sub.subscribe([(args.topic, QOS_0)])
         pr.check("monitor connected to broker", True)
-        print(f"mqtt-broker: monitoring '{args.topic}' (amqtt){' for %ds' % args.seconds if args.seconds else ', Ctrl-C to stop'}")
+        print(
+            f"mqtt-broker: monitoring '{args.topic}' (amqtt){' for %ds' % args.seconds if args.seconds else ', Ctrl-C to stop'}"
+        )
         if args.publish:
             await sub.publish(args.publish[0], args.publish[1].encode(), QOS_0)
         deadline = time.time() + args.seconds if args.seconds else None

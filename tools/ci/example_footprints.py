@@ -23,6 +23,7 @@ Three subcommands, used by .github/workflows/esp32-build.yml:
   example_footprints.py table <in.json> <out.md>
       Render the per-feature flash/RAM table (docs/FOOTPRINTS.md) from <in.json>.
 """
+
 import glob
 import json
 import os
@@ -152,7 +153,9 @@ def main():
     elif len(sys.argv) >= 4 and sys.argv[1] == "table":
         cmd_table(sys.argv[2], sys.argv[3])
     else:
-        sys.exit("usage: example_footprints.py matrix | fragment <log> <out> | merge <frag_dir> <out> | table <in> <out>")
+        sys.exit(
+            "usage: example_footprints.py matrix | fragment <log> <out> | merge <frag_dir> <out> | table <in> <out>"
+        )
 
 
 if __name__ == "__main__":

@@ -167,7 +167,7 @@ def escape_segments(text, width=110):
         if ch in _SIMPLE:
             tok = _SIMPLE[ch]
         elif ord(ch) < 0x20:
-            tok = "\\x%02x\"\"" % ord(ch)  # close+reopen so a following hex digit cannot extend the escape
+            tok = '\\x%02x""' % ord(ch)  # close+reopen so a following hex digit cannot extend the escape
         else:
             tok = ch  # printable ASCII and raw UTF-8 pass through
         if len(cur) + len(tok) > width and cur:
@@ -179,8 +179,18 @@ def escape_segments(text, width=110):
     return segs
 
 
-_C_ESCAPES = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "\\": "\\", "0": "\0", "a": "\a", "b": "\b", "f": "\f",
-              "v": "\v"}
+_C_ESCAPES = {
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    '"': '"',
+    "\\": "\\",
+    "0": "\0",
+    "a": "\a",
+    "b": "\b",
+    "f": "\f",
+    "v": "\v",
+}
 
 
 def iter_char_arrays(src):
@@ -314,13 +324,22 @@ ASSET_BASENAME = "web_assets"
 
 def render_header(assets):
     guard = "DETERMINISTICESPASYNCWEBSERVER_WEB_ASSETS_H"
-    lines = [BANNER, "", "/**", " * @file web_assets.h",
-             " * @brief Layer 7 (Application) - embedded web assets generated from src/web/input/.",
-             " *",
-             " * One declaration per source document under src/web/input/ (its base name is the",
-             " * C symbol). On ESP32 these const arrays live in flash (DROM), read directly - no",
-             " * filesystem or heap. Edit src/web/input/ and re-run src/web/wizard/build_assets.py.",
-             " */", "", "#ifndef " + guard, "#define " + guard, ""]
+    lines = [
+        BANNER,
+        "",
+        "/**",
+        " * @file web_assets.h",
+        " * @brief Layer 7 (Application) - embedded web assets generated from src/web/input/.",
+        " *",
+        " * One declaration per source document under src/web/input/ (its base name is the",
+        " * C symbol). On ESP32 these const arrays live in flash (DROM), read directly - no",
+        " * filesystem or heap. Edit src/web/input/ and re-run src/web/wizard/build_assets.py.",
+        " */",
+        "",
+        "#ifndef " + guard,
+        "#define " + guard,
+        "",
+    ]
     last_type = None
     for a in assets:
         if a.type != last_type:

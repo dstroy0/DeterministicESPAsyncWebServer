@@ -17,6 +17,7 @@ Run from the repo root:
 Keeping the tables generated means they can never drift from FEATURES.md (a
 hand-maintained grid silently lost 28 of 106 features before this existed).
 """
+
 import os
 import re
 import sys
@@ -134,12 +135,7 @@ def github_anchor(heading):
 
 
 def html_escape(text):
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def parse_features(path):

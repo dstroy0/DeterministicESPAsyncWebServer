@@ -14,6 +14,7 @@ import os
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 changelog_path = os.path.join(PROJECT_ROOT, "docs", "CHANGELOG.md")
 
+
 ##
 # @brief Find all sections matching a heading and wrap their body text in a collapsible details element.
 # @param content The raw text content of the markdown file.
@@ -34,33 +35,34 @@ def wrap_all_between(content, heading_regex, next_heading_regex, summary_text_bu
             end_idx = start_idx + next_match.start()
         else:
             end_idx = len(content)
-        
+
         heading_text = match.group(1) if match.groups() else match.group(0)
         summary_text = summary_text_builder(heading_text)
-        
+
         body = content[start_idx:end_idx].strip()
-        
+
         # Avoid double-wrapping the section
         if "<details>" in body:
             continue
-            
+
         wrapped = f"\n\n<details>\n<summary><b>{summary_text}</b></summary>\n\n{body}\n\n</details>\n\n"
         content = content[:start_idx] + wrapped + content[end_idx:]
     return content
+
 
 if __name__ == "__main__":
     if os.path.exists(changelog_path):
         with open(changelog_path, "r", encoding="utf-8") as f:
             content = f.read()
-        
+
         # Wrap older releases, e.g. ## [1.2.0]... but not ## [Unreleased]
         updated = wrap_all_between(
             content,
-            r'(?m)^## (\[\d+\.\d+\.\d+\][^#\n]*)$',
-            r'(?m)^## ',
-            lambda heading: f"Show Changelog for version {heading.replace('[', '').replace(']', '').strip()}"
+            r"(?m)^## (\[\d+\.\d+\.\d+\][^#\n]*)$",
+            r"(?m)^## ",
+            lambda heading: f"Show Changelog for version {heading.replace('[', '').replace(']', '').strip()}",
         )
-        
+
         with open(changelog_path, "w", encoding="utf-8") as f:
             f.write(updated)
         print(f"Successfully decorated {changelog_path}")

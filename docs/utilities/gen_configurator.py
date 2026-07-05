@@ -601,8 +601,10 @@ def main():
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
     nk = sum(len(f["knobs"]) for f in model["features"]) + len(model["core"])
-    print("wrote %s: %d features, %d knobs (%d core), %d groups"
-          % (os.path.relpath(OUT, ROOT), len(model["features"]), nk, len(model["core"]), len(model["groups"])))
+    print(
+        "wrote %s: %d features, %d knobs (%d core), %d groups"
+        % (os.path.relpath(OUT, ROOT), len(model["features"]), nk, len(model["core"]), len(model["groups"]))
+    )
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ The table schema (test/test_matrix.json), per env:
         "test_build_src": "no"                    # optional override
     }
 """
+
 import argparse
 import json
 import os
@@ -74,8 +75,7 @@ def render_env(name, e):
 
 def render_block(table):
     envs = table["envs"]
-    parts = [BEGIN,
-             "; Single source of truth: test/test_matrix.json  (" + str(len(envs)) + " native envs)"]
+    parts = [BEGIN, "; Single source of truth: test/test_matrix.json  (" + str(len(envs)) + " native envs)"]
     for name, e in envs.items():
         parts.append("")
         parts.append(render_env(name, e))
@@ -103,8 +103,7 @@ def build(text, table):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true",
-                    help="exit 1 if platformio.ini is out of date (no write)")
+    ap.add_argument("--check", action="store_true", help="exit 1 if platformio.ini is out of date (no write)")
     args = ap.parse_args()
 
     with open(TABLE, encoding="utf-8") as f:

@@ -2,6 +2,7 @@
 """Add words (argv) to cspell.json's "words" list: case-insensitive dedup, keep the list sorted if
 it already was, preserve the file's 2-space indentation. Used by the pre-commit hook so unknown
 technical terms in the committed docs never fail the CI spellcheck."""
+
 import json
 import sys
 

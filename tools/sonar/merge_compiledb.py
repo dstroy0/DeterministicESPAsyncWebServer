@@ -10,6 +10,7 @@ merges them: the first env that compiled a given file wins (one command per file
 
 Usage: merge_compiledb.py <out_path> <fragments_glob>
 """
+
 import glob
 import json
 import sys

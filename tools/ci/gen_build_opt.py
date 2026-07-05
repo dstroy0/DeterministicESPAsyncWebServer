@@ -16,6 +16,7 @@ example's flags change; the CI check fails if a committed build_opt.h drifts.
     python tools/ci/gen_build_opt.py          # write / prune build_opt.h files
     python tools/ci/gen_build_opt.py check     # CI gate: fail if any is stale/missing
 """
+
 import glob
 import os
 import re

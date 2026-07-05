@@ -43,34 +43,46 @@ SYMBOL_PROVIDERS = [
     # Types match as bare words; functions require a following call "(" and a
     # non-member, non-identifier prefix, so a struct field named `exp`, an AES
     # "round" counter, or `Serial.printf` do not get counted as libc calls.
-    (r"\b(?:u?int(?:8|16|32|64)_t|u?int_(?:least|fast)(?:8|16|32|64)_t|u?intptr_t|u?intmax_t)\b",
-     ["stdint.h"]),
+    (r"\b(?:u?int(?:8|16|32|64)_t|u?int_(?:least|fast)(?:8|16|32|64)_t|u?intptr_t|u?intmax_t)\b", ["stdint.h"]),
     (r"\bsize_t\b", ["stddef.h", "string.h", "stdio.h", "time.h"]),
     (r"\bptrdiff_t\b", ["stddef.h"]),
     (r"\bNULL\b", ["stddef.h", "string.h", "stdio.h", "time.h"]),
-    (r"(?<![.\w])(?:memcpy|memmove|memset|memcmp|memchr|strlen|strnlen|strcmp|strncmp"
-     r"|strcasecmp|strncasecmp|strchr|strrchr|strstr|strncpy|strcpy|strncat"
-     r"|strcat|strtok|strdup)\s*\(", ["string.h"]),
-    (r"(?<![.\w])(?:snprintf|vsnprintf|sscanf|vsscanf|sprintf|printf|vprintf|fprintf|puts)\s*\(",
-     ["stdio.h"]),
+    (
+        r"(?<![.\w])(?:memcpy|memmove|memset|memcmp|memchr|strlen|strnlen|strcmp|strncmp"
+        r"|strcasecmp|strncasecmp|strchr|strrchr|strstr|strncpy|strcpy|strncat"
+        r"|strcat|strtok|strdup)\s*\(",
+        ["string.h"],
+    ),
+    (r"(?<![.\w])(?:snprintf|vsnprintf|sscanf|vsscanf|sprintf|printf|vprintf|fprintf|puts)\s*\(", ["stdio.h"]),
     (r"\bva_list\b|(?<![.\w])(?:va_start|va_end|va_arg|va_copy)\s*\(", ["stdarg.h"]),
-    (r"(?<![.\w])(?:sqrtf|sqrt|powf|pow|fabsf|fabs|roundf|round|floorf|floor|ceilf|ceil"
-     r"|expf|exp|logf|log|log10f|sinf|cosf|tanf|atan2f|fmodf|fmaxf|fminf)\s*\(",
-     ["math.h"]),
+    (
+        r"(?<![.\w])(?:sqrtf|sqrt|powf|pow|fabsf|fabs|roundf|round|floorf|floor|ceilf|ceil"
+        r"|expf|exp|logf|log|log10f|sinf|cosf|tanf|atan2f|fmodf|fmaxf|fminf)\s*\(",
+        ["math.h"],
+    ),
     (r"(?<![.\w])assert\s*\(", ["assert.h"]),
-    (r"\btime_t\b|\bstruct\s+tm\b"
-     r"|(?<![.\w])(?:gmtime_r|localtime_r|strftime|mktime)\s*\(", ["time.h"]),
+    (r"\btime_t\b|\bstruct\s+tm\b" r"|(?<![.\w])(?:gmtime_r|localtime_r|strftime|mktime)\s*\(", ["time.h"]),
     # Arduino.h - guarded by ARDUINO in the sources; still part of the footprint.
-    (r"\bSerial\b|\bString\b|(?<![.\w])(?:millis|micros|delayMicroseconds|delay"
-     r"|pinMode|digitalWrite|digitalRead|analogRead|analogWrite)\s*\(", ["Arduino.h"]),
+    (
+        r"\bSerial\b|\bString\b|(?<![.\w])(?:millis|micros|delayMicroseconds|delay"
+        r"|pinMode|digitalWrite|digitalRead|analogRead|analogWrite)\s*\(",
+        ["Arduino.h"],
+    ),
 ]
 SYMBOL_PROVIDERS = [(re.compile(pat), heads) for pat, heads in SYMBOL_PROVIDERS]
 
 # Every header this tool reasons about (used to classify "unused system include"
 # vs. a header we simply do not model, e.g. a layer header like lwip/tcp.h).
 KNOWN_STD_HEADERS = {
-    "stddef.h", "stdint.h", "string.h", "stdio.h", "stdarg.h",
-    "math.h", "assert.h", "time.h", "Arduino.h",
+    "stddef.h",
+    "stdint.h",
+    "string.h",
+    "stdio.h",
+    "stdarg.h",
+    "math.h",
+    "assert.h",
+    "time.h",
+    "Arduino.h",
 }
 
 # Platform umbrella headers that transitively pull in the C std headers below.
@@ -132,17 +144,14 @@ def parse_file(path):
 def resolve_project_include(inc, including_file, src_root):
     """Map a "..." include to a real file: try relative to the includer, then src/."""
     for base in (including_file.parent, src_root):
-        cand = (base / inc)
+        cand = base / inc
         if cand.is_file():
             return cand.resolve()
     return None
 
 
 def build_index(src_root):
-    files = sorted(
-        p for p in src_root.rglob("*")
-        if p.suffix in SRC_EXTS and p.is_file()
-    )
+    files = sorted(p for p in src_root.rglob("*") if p.suffix in SRC_EXTS and p.is_file())
     index = {}
     for p in files:
         sysi, proji, uses = parse_file(p)
@@ -187,20 +196,19 @@ def analyze(index, src_root):
         missing = []  # symbol-driven header not reachable at all
         for primary, (providers, tokens) in sorted(info["uses"].items()):
             if not any(h in avail for h in providers):
-                missing.append({
-                    "header": primary,
-                    "alt": [h for h in providers if h != primary],
-                    "tokens": sorted(tokens),
-                })
+                missing.append(
+                    {
+                        "header": primary,
+                        "alt": [h for h in providers if h != primary],
+                        "tokens": sorted(tokens),
+                    }
+                )
         # A directly-included std header whose symbols this file never uses.
         used_primaries = set(info["uses"].keys())
         used_any = set()
         for primary, (providers, _t) in info["uses"].items():
             used_any.update(providers)
-        unused = sorted(
-            h for h in own_system
-            if h in KNOWN_STD_HEADERS and h not in used_any
-        )
+        unused = sorted(h for h in own_system if h in KNOWN_STD_HEADERS and h not in used_any)
         report[key] = {
             "path": str(info["path"]).replace("\\", "/"),
             "footprint": sorted(used_primaries),
@@ -220,14 +228,11 @@ def rel(path_str, src_root):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", default=None, help="src/ root (default: <repo>/src)")
     ap.add_argument("--per-file", action="store_true", help="full per-file breakdown")
-    ap.add_argument("--issues", action="store_true",
-                    help="list only files with IWYU gaps; exit 1 if any missing")
-    ap.add_argument("--check", action="store_true",
-                    help="exit 1 if any file has a missing include (CI gate)")
+    ap.add_argument("--issues", action="store_true", help="list only files with IWYU gaps; exit 1 if any missing")
+    ap.add_argument("--check", action="store_true", help="exit 1 if any file has a missing include (CI gate)")
     ap.add_argument("--json", action="store_true", help="machine-readable dump")
     args = ap.parse_args(argv)
 
@@ -270,8 +275,7 @@ def main(argv=None):
             if args.issues:
                 for h in r["unused_system"]:
                     print(f"    unused   {h}")
-        print(f"\n{n_missing} file(s) with a missing include, "
-              f"{n_unused} with an unused std include.")
+        print(f"\n{n_missing} file(s) with a missing include, " f"{n_unused} with an unused std include.")
         return 1 if n_missing else 0
 
     if args.per_file:
@@ -289,8 +293,7 @@ def main(argv=None):
     print(f"{'header':<12} {'used-by':>8} {'included':>9}")
     for h in sorted(KNOWN_STD_HEADERS):
         print(f"{h:<12} {use_count.get(h, 0):>8} {inc_count.get(h, 0):>9}")
-    print(f"\nfiles scanned: {len(rows)}   "
-          f"missing-include: {n_missing}   unused-std-include: {n_unused}")
+    print(f"\nfiles scanned: {len(rows)}   " f"missing-include: {n_missing}   unused-std-include: {n_unused}")
     if n_missing:
         print("run with --issues to see the missing includes.")
     return 0

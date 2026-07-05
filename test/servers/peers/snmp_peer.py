@@ -95,9 +95,7 @@ def _run_pysnmp(args, pr: Probe) -> bool:
         ctx = ContextData()
         target = await UdpTransportTarget.create((args.host, args.port), timeout=args.timeout, retries=1)
 
-        err_ind, err_stat, _idx, vbs = await get_cmd(
-            engine, comm, target, ctx, ObjectType(ObjectIdentity(SYSDESCR))
-        )
+        err_ind, err_stat, _idx, vbs = await get_cmd(engine, comm, target, ctx, ObjectType(ObjectIdentity(SYSDESCR)))
         ok = err_ind is None and not err_stat and len(vbs) == 1
         pr.check("GET sysDescr.0", ok, str(vbs[0][1]) if vbs else str(err_ind or err_stat))
 

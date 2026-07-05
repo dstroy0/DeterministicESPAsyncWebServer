@@ -13,6 +13,7 @@ Run from the repo root:
     python docs/utilities/gen_examples.py            # rewrite the index
     python docs/utilities/gen_examples.py --check    # CI: fail if stale
 """
+
 import os
 import re
 import sys
@@ -42,11 +43,7 @@ GROUPS = [
 def examples_in(group_dir):
     """Return the `NN.Name` example dirs under a group, sorted by the numeric prefix."""
     path = os.path.join(EXAMPLES_DIR, group_dir)
-    names = [
-        n
-        for n in os.listdir(path)
-        if os.path.isdir(os.path.join(path, n)) and re.match(r"^\d+\.", n)
-    ]
+    names = [n for n in os.listdir(path) if os.path.isdir(os.path.join(path, n)) and re.match(r"^\d+\.", n)]
     return sorted(names, key=lambda n: int(n.split(".", 1)[0]))
 
 

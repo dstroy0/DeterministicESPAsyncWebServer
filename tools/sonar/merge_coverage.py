@@ -9,6 +9,7 @@ Output is a single SonarQube generic-coverage report (one <file> per path).
 
 Usage: merge_coverage.py <out.xml> <report-glob>
 """
+
 import glob
 import sys
 import xml.etree.ElementTree as ET

@@ -22,13 +22,19 @@ if [ "${#CF[@]}" -gt 0 ] && command -v clang-format >/dev/null 2>&1; then
     clang-format -i --style=file "${CF[@]}" && git add -- "${CF[@]}"
 fi
 
-# 2) prettier markdown / json / yaml (the CRLF-safe end-of-line so Windows checkouts do not false-flag)
+# 2) black (the default Python formatter; line-length from pyproject.toml)
+mapfile -t PY < <(staged '*.py')
+if [ "${#PY[@]}" -gt 0 ] && python -m black --version >/dev/null 2>&1; then
+    python -m black -q "${PY[@]}" 2>/dev/null && git add -- "${PY[@]}"
+fi
+
+# 3) prettier markdown / json / yaml (the CRLF-safe end-of-line so Windows checkouts do not false-flag)
 mapfile -t PF < <(staged '*.md' '*.json' '*.yml' '*.yaml')
 if [ "${#PF[@]}" -gt 0 ]; then
     npx --no-install prettier --write --end-of-line auto "${PF[@]}" >/dev/null 2>&1 && git add -- "${PF[@]}"
 fi
 
-# 3) cspell: add unknown words from the scanned files (README.md + docs/**/*.md) to cspell.json
+# 4) cspell: add unknown words from the scanned files (README.md + docs/**/*.md) to cspell.json
 mapfile -t MD < <(staged 'README.md' 'docs' | grep -E '^(README\.md|docs/.*\.md)$')
 if [ "${#MD[@]}" -gt 0 ] && [ -f cspell.json ]; then
     WORDS=$(npx --no-install cspell --no-progress --no-summary --words-only --unique --config cspell.json \
