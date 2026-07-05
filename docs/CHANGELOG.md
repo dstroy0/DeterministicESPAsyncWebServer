@@ -2,6 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- pre-commit auto-fix hook + reformat ssh includes ([`2205921`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22059216fb765aed0b2088ae490a4eb295fcf598))
+- update test report [skip ci] ([`7fe4ff3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fe4ff3453d337caa9fd5fc3bf01aab9a88ec22d))
+- update CHANGELOG.md [skip ci] ([`77cd733`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77cd733b5cbe8aa532d7a26cdfc8e5b4e9b934b5))
+
 ## [4.120.0] - 2026-07-05
 
 <details>
