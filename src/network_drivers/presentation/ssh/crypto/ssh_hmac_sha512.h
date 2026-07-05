@@ -16,7 +16,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_HMAC_SHA512_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_HMAC_SHA512_H
 
-#include "ssh_sha512.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <stddef.h>
 #include <stdint.h>
 

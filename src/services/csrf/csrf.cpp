@@ -14,7 +14,7 @@
 
 #if DETWS_ENABLE_CSRF
 
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "shared_primitives/det_hex.h"
 #include <stdio.h>
 #include <string.h>

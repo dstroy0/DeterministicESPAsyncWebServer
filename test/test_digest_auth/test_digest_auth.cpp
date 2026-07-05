@@ -7,7 +7,7 @@
 // the server uses, then re-requests with an Authorization: Digest header.
 
 #include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/det_clock.h"
 #include <stdio.h>
 #include <string.h>

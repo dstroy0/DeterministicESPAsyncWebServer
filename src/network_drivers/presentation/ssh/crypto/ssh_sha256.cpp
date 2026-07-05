@@ -13,7 +13,7 @@
  * mbedtls on Arduino builds, and the software path on native builds.
  */
 
-#include "ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 
 #ifdef ARDUINO

@@ -5,13 +5,13 @@
 // (KEXINIT → KEXDH → NEWKEYS → userauth → channel) through ssh_server_dispatch
 // and checks the emitted messages and resulting state at each step.
 
-#include "network_drivers/presentation/ssh/ssh_auth.h"
-#include "network_drivers/presentation/ssh/ssh_channel.h"
-#include "network_drivers/presentation/ssh/ssh_dh.h"
-#include "network_drivers/presentation/ssh/ssh_packet.h"
-#include "network_drivers/presentation/ssh/ssh_rsa.h"
-#include "network_drivers/presentation/ssh/ssh_server.h"
-#include "network_drivers/presentation/ssh/ssh_transport.h"
+#include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h"
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
+#include "network_drivers/presentation/ssh/connection/ssh_server.h"
+#include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -491,8 +491,8 @@ void test_inbound_ext_info_ignored()
 // Packet-layer (ssh_packet.cpp) framing edge cases
 // ---------------------------------------------------------------------------
 
-#include "network_drivers/presentation/ssh/ssh_aes256ctr.h"
-#include "network_drivers/presentation/ssh/ssh_keymat.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 
 static int g_pkt_calls = 0;
 static void pkt_rec_handler(uint8_t slot, uint8_t msg_type, const uint8_t *payload, size_t len)

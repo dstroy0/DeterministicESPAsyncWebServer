@@ -11,7 +11,7 @@
  * time, and s is added modulo 2^128.
  */
 
-#include "ssh_poly1305.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 
 namespace
 {

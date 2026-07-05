@@ -12,7 +12,7 @@
  * conditional swaps. Validated against the RFC 7748 §5.2 vectors (test_ssh_ed25519).
  */
 
-#include "ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #ifdef ARDUINO
 #include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
 #endif

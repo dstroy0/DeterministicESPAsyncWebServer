@@ -9,7 +9,7 @@
  * ipad = 0x36 repeated, opad = 0x5c repeated.
  */
 
-#include "ssh_hmac_sha512.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 
 namespace
 {

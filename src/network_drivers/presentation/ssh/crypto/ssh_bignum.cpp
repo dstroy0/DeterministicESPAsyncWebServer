@@ -25,8 +25,8 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-#include "ssh_bignum.h"
-#include "ssh_keymat.h" // for ssh_wipe()
+#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h" // for ssh_wipe()
 #include <string.h>
 
 // ---------------------------------------------------------------------------

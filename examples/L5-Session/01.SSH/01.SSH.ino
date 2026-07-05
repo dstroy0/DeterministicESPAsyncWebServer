@@ -42,11 +42,11 @@
 
 #include "DeterministicESPAsyncWebServer.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/ssh/ssh_auth.h"
-#include "network_drivers/presentation/ssh/ssh_channel.h"
-#include "network_drivers/presentation/ssh/ssh_conn.h"
-#include "network_drivers/presentation/ssh/ssh_forward.h"
-#include "network_drivers/presentation/ssh/ssh_rsa.h"
+#include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h"
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"
+#include "network_drivers/presentation/ssh/connection/ssh_forward.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

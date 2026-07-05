@@ -4,8 +4,8 @@
 // SSH connection-protocol (channel) tests - RFC 4254, including multiplexing
 // several channels over one connection (DETWS_SSH_MAX_CHANNELS > 1).
 
-#include "network_drivers/presentation/ssh/ssh_channel.h"
-#include "network_drivers/presentation/ssh/ssh_packet.h"
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

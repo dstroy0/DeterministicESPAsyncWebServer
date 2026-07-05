@@ -17,7 +17,7 @@
 
 #if DETWS_ENABLE_AUDIT_LOG
 
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/det_clock.h"
 #include <string.h>
 

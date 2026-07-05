@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SNMP_V3
 
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 
 // Zero key material with a volatile loop the compiler cannot optimize away. A

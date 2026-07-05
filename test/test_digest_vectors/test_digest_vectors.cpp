@@ -12,7 +12,7 @@
 // If ssh_sha256 or the RFC 7616 string construction ever drifts, these fail even
 // if the self-referential handshake test still passes.
 
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>

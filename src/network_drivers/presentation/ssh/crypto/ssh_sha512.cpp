@@ -9,7 +9,7 @@
  * software path below is used. Backs Ed25519 (RFC 8032), which hashes with SHA-512.
  */
 
-#include "ssh_sha512.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <string.h>
 
 #ifdef ARDUINO

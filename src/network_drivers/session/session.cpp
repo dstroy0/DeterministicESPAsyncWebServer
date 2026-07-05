@@ -20,7 +20,7 @@
 #include "proto_handler.h"
 #include "scratch.h"
 #if DETWS_ENABLE_SSH
-#include "../presentation/ssh/ssh_conn.h"
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #endif
 #if DETWS_ENABLE_TELNET
 #include "../presentation/telnet/telnet.h"

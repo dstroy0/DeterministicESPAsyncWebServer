@@ -6,13 +6,13 @@
  * @brief SSH direct-tcpip port-forwarding owner - outbound TCP + byte bridge.
  */
 
-#include "ssh_forward.h"
+#include "network_drivers/presentation/ssh/connection/ssh_forward.h"
 
 #if DETWS_SSH_PORT_FORWARD
 
-#include "../../transport/det_client.h"
-#include "ssh_channel.h"
-#include "ssh_conn.h"
+#include "network_drivers/transport/det_client.h"
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h"
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 
 // Remote forwarding (ssh -R) uses the inbound transport + listener layer directly:
 // it allocates a real listener and bridges each accepted socket to a server-initiated

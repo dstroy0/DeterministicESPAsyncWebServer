@@ -9,7 +9,7 @@
 // expected value is computed with Python hashlib (RFC 3414 §2.6 / RFC 7860), and
 // the AES-128 block cipher is checked against the FIPS-197 Appendix C.1 KAT.
 
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/transport/udp_transport.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"

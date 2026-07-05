@@ -6,10 +6,10 @@
 // the bytes written back to the socket via the tcp_write capture mock.
 
 #include "lwip/tcp.h"
-#include "network_drivers/presentation/ssh/ssh_conn.h"
-#include "network_drivers/presentation/ssh/ssh_packet.h"
-#include "network_drivers/presentation/ssh/ssh_rsa.h"
-#include "network_drivers/presentation/ssh/ssh_transport.h"
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
+#include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include "network_drivers/transport/transport.h"
 #include <stdint.h>
 #include <string.h>

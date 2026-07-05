@@ -6,9 +6,9 @@
 //   - Poly1305 vs RFC 8439 Section 2.5.2 test vector
 //   - the OpenSSH AEAD: length decode, encrypt/decrypt round-trip, and tag-tamper rejection.
 
-#include "network_drivers/presentation/ssh/ssh_chacha20.h"
-#include "network_drivers/presentation/ssh/ssh_chachapoly.h"
-#include "network_drivers/presentation/ssh/ssh_poly1305.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 #include <string.h>
 #include <unity.h>
 

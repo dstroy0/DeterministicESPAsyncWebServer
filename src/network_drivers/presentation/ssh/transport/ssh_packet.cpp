@@ -6,12 +6,12 @@
  * @brief SSH binary packet framing, encryption, MAC, and receive reassembly.
  */
 
-#include "ssh_packet.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/session/scratch.h"
-#include "ssh_chachapoly.h"
-#include "ssh_hmac_sha256.h"
-#include "ssh_hmac_sha512.h"
-#include "ssh_keymat.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <string.h>
 
 #ifdef ARDUINO

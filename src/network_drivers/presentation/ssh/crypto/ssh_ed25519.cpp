@@ -12,9 +12,9 @@
  * RFC 8032 §7.1 vectors and a reference implementation (test_ssh_ed25519).
  */
 
-#include "ssh_ed25519.h"
-#include "ssh_curve25519.h" // ssh_gf + field ops (add/sub/mul/sq/inv/pack/unpack/cswap/copy)
-#include "ssh_sha512.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h" // ssh_gf + field ops (add/sub/mul/sq/inv/pack/unpack/cswap/copy)
+#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 
 // --- Curve constants (radix-2^16 field elements, little-endian limbs) --------
 

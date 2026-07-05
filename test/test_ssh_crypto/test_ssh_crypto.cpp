@@ -12,15 +12,15 @@
 //   RSA PKCS#1    - pkcs1v15 pad/unpad + sign/verify with a test key
 //   PACKET        - ssh_pkt_send/recv round-trip (unencrypted + encrypted)
 
-#include "network_drivers/presentation/ssh/ssh_aes256ctr.h"
-#include "network_drivers/presentation/ssh/ssh_bignum.h"
-#include "network_drivers/presentation/ssh/ssh_dh.h"
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
-#include "network_drivers/presentation/ssh/ssh_hmac_sha512.h"
-#include "network_drivers/presentation/ssh/ssh_keymat.h"
-#include "network_drivers/presentation/ssh/ssh_packet.h"
-#include "network_drivers/presentation/ssh/ssh_rsa.h"
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

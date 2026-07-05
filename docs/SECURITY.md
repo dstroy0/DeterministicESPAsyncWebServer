@@ -390,14 +390,14 @@ records) is ~41.5 KB; the default arena is 48 KB.
 
 **Files:**
 
-- [src/network_drivers/presentation/ssh/ssh_keymat.h](@ref ssh_keymat.h) - security model, types, wipe helpers
-- [src/network_drivers/presentation/ssh/ssh_bignum.h](@ref ssh_bignum.h) / [.cpp](@ref ssh_bignum.cpp) - 2048-bit Montgomery arithmetic
-- [src/network_drivers/presentation/ssh/ssh_sha256.h](@ref ssh_sha256.h) / [.cpp](@ref ssh_sha256.cpp) - SHA-256
-- [src/network_drivers/presentation/ssh/ssh_hmac_sha256.h](@ref ssh_hmac_sha256.h) / [.cpp](@ref ssh_hmac_sha256.cpp) - HMAC-SHA2-256
-- [src/network_drivers/presentation/ssh/ssh_aes256ctr.h](@ref ssh_aes256ctr.h) / [.cpp](@ref ssh_aes256ctr.cpp) - AES-256-CTR
-- [src/network_drivers/presentation/ssh/ssh_dh.h](@ref ssh_dh.h) / [.cpp](@ref ssh_dh.cpp) - DH-group14-SHA256 KEX
-- [src/network_drivers/presentation/ssh/ssh_rsa.h](@ref ssh_rsa.h) / [.cpp](@ref ssh_rsa.cpp) - RSA-SHA2-256 host key
-- [src/network_drivers/presentation/ssh/ssh_packet.h](@ref ssh_packet.h) / [.cpp](@ref ssh_packet.cpp) - binary packet protocol
+- [src/network_drivers/presentation/ssh/transport/ssh_keymat.h](@ref ssh_keymat.h) - security model, types, wipe helpers
+- [src/network_drivers/presentation/ssh/crypto/ssh_bignum.h](@ref ssh_bignum.h) / [.cpp](@ref ssh_bignum.cpp) - 2048-bit Montgomery arithmetic
+- [src/network_drivers/presentation/ssh/crypto/ssh_sha256.h](@ref ssh_sha256.h) / [.cpp](@ref ssh_sha256.cpp) - SHA-256
+- [src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h](@ref ssh_hmac_sha256.h) / [.cpp](@ref ssh_hmac_sha256.cpp) - HMAC-SHA2-256
+- [src/network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h](@ref ssh_aes256ctr.h) / [.cpp](@ref ssh_aes256ctr.cpp) - AES-256-CTR
+- [src/network_drivers/presentation/ssh/transport/ssh_dh.h](@ref ssh_dh.h) / [.cpp](@ref ssh_dh.cpp) - DH-group14-SHA256 KEX
+- [src/network_drivers/presentation/ssh/crypto/ssh_rsa.h](@ref ssh_rsa.h) / [.cpp](@ref ssh_rsa.cpp) - RSA-SHA2-256 host key
+- [src/network_drivers/presentation/ssh/transport/ssh_packet.h](@ref ssh_packet.h) / [.cpp](@ref ssh_packet.cpp) - binary packet protocol
 
 ---
 

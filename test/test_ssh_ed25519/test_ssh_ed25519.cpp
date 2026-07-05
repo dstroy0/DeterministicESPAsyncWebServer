@@ -7,9 +7,9 @@
 // tool-generated digests (sha512sum), so the tests ground the implementation
 // against the standards, not against itself.
 
-#include "network_drivers/presentation/ssh/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/ssh_sha512.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <string.h>
 #include <unity.h>
 

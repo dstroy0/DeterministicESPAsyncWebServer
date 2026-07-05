@@ -19,7 +19,7 @@
  * internally and used directly as the HMAC key.
  */
 
-#include "ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------

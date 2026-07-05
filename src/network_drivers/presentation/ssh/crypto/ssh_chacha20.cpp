@@ -6,7 +6,7 @@
  * @brief ChaCha20 (RFC 8439) - implementation. See ssh_chacha20.h.
  */
 
-#include "ssh_chacha20.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
 
 namespace
 {

@@ -6,7 +6,7 @@
 // {"sub":"alice","role":"admin","exp":2000000000,"iat":1700000000}.
 
 #include "network_drivers/presentation/base64/base64.h"
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "services/jwt/jwt.h"
 #include <stdio.h>
 #include <string.h>

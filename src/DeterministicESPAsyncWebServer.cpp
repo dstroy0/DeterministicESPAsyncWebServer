@@ -52,7 +52,7 @@
 #include "network_drivers/presentation/base64/base64.h"
 #endif
 #if DETWS_ENABLE_AUTH
-#include "network_drivers/presentation/ssh/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/det_clock.h" // detws_millis() for the stateless Digest nonce timestamp
 #if DETWS_ENABLE_AUTH_LOCKOUT
 #include "services/auth_lockout/auth_lockout.h"

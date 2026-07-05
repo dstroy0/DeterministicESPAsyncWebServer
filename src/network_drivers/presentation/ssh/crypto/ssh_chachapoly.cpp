@@ -6,9 +6,9 @@
  * @brief chacha20-poly1305@openssh.com - implementation. See ssh_chachapoly.h.
  */
 
-#include "ssh_chachapoly.h"
-#include "ssh_chacha20.h"
-#include "ssh_poly1305.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 #include <string.h>
 
 namespace

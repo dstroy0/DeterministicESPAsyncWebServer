@@ -52,9 +52,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_DH_H
 
 #include "DetWebServerConfig.h"
-#include "ssh_bignum.h"
-#include "ssh_keymat.h"
-#include "ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <stddef.h>
 #include <stdint.h>
 

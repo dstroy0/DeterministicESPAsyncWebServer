@@ -6,8 +6,8 @@
  * @brief RSA-SHA2-256 host-key signing (stack-only private key, PKCS#1 v1.5).
  */
 
-#include "ssh_rsa.h"
-#include "ssh_keymat.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
+#include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------

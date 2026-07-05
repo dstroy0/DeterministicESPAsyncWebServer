@@ -4,10 +4,10 @@
 // SSH user-authentication tests (RFC 4252): service request/accept, request
 // parsing, and the password method.
 
-#include "network_drivers/presentation/ssh/ssh_auth.h"
-#include "network_drivers/presentation/ssh/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/ssh_packet.h"
-#include "network_drivers/presentation/ssh/ssh_transport.h"
+#include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

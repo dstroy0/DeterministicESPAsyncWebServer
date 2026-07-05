@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SNMP_V3
 
-#include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
 #include "services/snmp/snmp_crypto.h"
