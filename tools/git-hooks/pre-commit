@@ -34,6 +34,13 @@ if [ "${#PF[@]}" -gt 0 ]; then
     npx --no-install prettier --write --end-of-line auto "${PF[@]}" >/dev/null 2>&1 && git add -- "${PF[@]}"
 fi
 
+# 3b) prettier the user-editable web-asset HTML under src/web (kept readable; build_assets.py minifies
+# it into the served string). Scoped to src/web so generated docs/*.html (configurator) is left alone.
+mapfile -t HF < <(git diff --cached --name-only --diff-filter=ACM -- 'src/web' 2>/dev/null | grep -E '\.html$')
+if [ "${#HF[@]}" -gt 0 ]; then
+    npx --no-install prettier --write --end-of-line auto "${HF[@]}" >/dev/null 2>&1 && git add -- "${HF[@]}"
+fi
+
 # 4) cspell: add unknown words from the scanned files (README.md + docs/**/*.md) to cspell.json
 mapfile -t MD < <(staged 'README.md' 'docs' | grep -E '^(README\.md|docs/.*\.md)$')
 if [ "${#MD[@]}" -gt 0 ] && [ -f cspell.json ]; then

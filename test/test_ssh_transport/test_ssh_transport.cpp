@@ -5,11 +5,11 @@
 // KEXINIT algorithm negotiation.
 
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/transport/ssh_dh.h"
+#include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
 #include <string.h>

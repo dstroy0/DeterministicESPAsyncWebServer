@@ -97,12 +97,30 @@ def inject_theme(html, name, warn):
     return block + html
 
 
+def minify_js(js):
+    """Collapse the layout whitespace of inline JS *safely*: strip each line's leading indentation
+    and trailing whitespace, and drop blank lines. Newlines and every token are preserved, so
+    semantics - including automatic semicolon insertion - are unchanged. Deliberately conservative
+    because these documents are user-editable; it removes pretty-print bloat without risking a
+    user's JS (no comment stripping, no token joining across lines)."""
+    return "\n".join(s for s in (ln.strip() for ln in js.split("\n")) if s)
+
+
 def minify_html(html):
-    """Collapse whitespace in markup while preserving <script>/<style> verbatim."""
+    """Collapse whitespace in the markup, the CSS in <style>, and (safely) the JS in <script>, so
+    the source document can stay human-readable while the served body is compact."""
     parts = re.split(r"(<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>)", html, flags=re.DOTALL | re.IGNORECASE)
     out = []
     for i, part in enumerate(parts):
-        if i % 2 == 1:  # a protected script/style block
+        if i % 2 == 1:  # a <script> or <style> block
+            m = re.match(r"(<script\b[^>]*>)(.*)(</script>)", part, flags=re.DOTALL | re.IGNORECASE)
+            if m:
+                out.append(m.group(1) + minify_js(m.group(2)) + m.group(3))
+                continue
+            m = re.match(r"(<style\b[^>]*>)(.*)(</style>)", part, flags=re.DOTALL | re.IGNORECASE)
+            if m:
+                out.append(m.group(1) + minify_css(m.group(2)) + m.group(3))
+                continue
             out.append(part)
             continue
         part = re.sub(r"<!--(?!\s*#).*?-->", "", part, flags=re.DOTALL)  # drop non-directive comments
