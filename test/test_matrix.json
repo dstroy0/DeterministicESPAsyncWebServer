@@ -1439,6 +1439,19 @@
       ],
       "tests": ["test_quic_frame"]
     },
+    "native_quic_crypto": {
+      "desc": "QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead +\nquic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 +\nGHASH) and header protection. Checked against FIPS 197 (AES block), GCM Test Case 4, and RFC 9001\nAppendix A - A.1 secrets, A.3 server Initial byte-exact, A.2 client Initial + sample, A.4 Retry tag.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>",
+        "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<network_drivers/presentation/http3/quic_packet.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>"
+      ],
+      "tests": ["test_quic_crypto"]
+    },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
       "flags": [],

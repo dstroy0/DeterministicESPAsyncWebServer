@@ -22,6 +22,15 @@ newer entry here.
 - [RFC 6265](https://www.rfc-editor.org/rfc/rfc6265) - HTTP State Management (Cookies) - **roadmap**.
 - [RFC 7239](https://www.rfc-editor.org/rfc/rfc7239) - Forwarded HTTP Extension - **roadmap** (trust-proxy gated).
 
+## HTTP/2 & HTTP/3
+
+- [RFC 9113](https://www.rfc-editor.org/rfc/rfc9113) - HTTP/2 - **impl** (framing, stream multiplexing, `h2` ALPN; PSRAM-gated).
+- [RFC 7541](https://www.rfc-editor.org/rfc/rfc7541) - HPACK (HTTP/2 header compression) - **impl** (static + dynamic table, canonical Huffman).
+- [RFC 9204](https://www.rfc-editor.org/rfc/rfc9204) - QPACK (HTTP/3 header compression) - **impl** (static-table field-section codec).
+- [RFC 9000](https://www.rfc-editor.org/rfc/rfc9000) - QUIC transport - **roadmap** (varint / packet-header / frame codecs **impl**; loss recovery + congestion control + the stateful engine are planned).
+- [RFC 9001](https://www.rfc-editor.org/rfc/rfc9001) - Using TLS to Secure QUIC - **impl** (Initial secret derivation, AEAD_AES_128_GCM packet protection, header protection, Retry integrity tag; the full TLS 1.3-in-QUIC handshake is **roadmap**).
+- [RFC 9114](https://www.rfc-editor.org/rfc/rfc9114) - HTTP/3 - **roadmap** (framing codec **impl**; runs once the QUIC transport lands).
+
 ## HTTP authentication & authorization
 
 - [RFC 7617](https://www.rfc-editor.org/rfc/rfc7617) - HTTP Basic auth - **impl**.
@@ -91,8 +100,10 @@ newer entry here.
 
 - [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) - Secure Hash Standard (SHA-2) - **impl**.
 - [RFC 3174](https://www.rfc-editor.org/rfc/rfc3174) - SHA-1 - **impl** (WebSocket handshake only).
-- [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) - AES - **impl** (SNMP priv) / **via mbedTLS** (TLS).
+- [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) - AES - **impl** (SNMP priv; QUIC AES-128 block + header protection) / **via mbedTLS** (TLS; QUIC AES block on ESP32).
+- [NIST SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final) - GCM (Galois/Counter Mode) - **impl** (QUIC packet protection AEAD_AES_128_GCM; software GHASH).
 - [FIPS 198-1](https://csrc.nist.gov/pubs/fips/198-1/final) / [RFC 2104](https://www.rfc-editor.org/rfc/rfc2104) - HMAC - **impl**.
+- [RFC 5869](https://www.rfc-editor.org/rfc/rfc5869) - HKDF - **impl** (TLS 1.3 HKDF-Expand-Label; QUIC Initial key schedule).
 - [RFC 8017](https://www.rfc-editor.org/rfc/rfc8017) - PKCS#1 (RSA) - **impl** (RS256 verify) / **via mbedTLS**.
 - [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748) - Elliptic curves for security (X25519) - **impl** (SSH KEX; field inversion on the ESP32 MPI accelerator).
 - [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032) - EdDSA (Ed25519) - **impl** (SSH host key + client auth).

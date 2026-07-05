@@ -1,0 +1,63 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file quic_hkdf.h
+ * @brief HKDF-SHA256 (RFC 5869) and TLS 1.3 HKDF-Expand-Label (RFC 8446 sec 7.1).
+ *
+ * QUIC packet protection keys are derived with the TLS 1.3 key schedule (RFC 9001 sec 5.2):
+ * an Initial secret is HKDF-Extract'd from a fixed salt and the client's Destination Connection
+ * ID, and every packet-protection value (key / iv / hp) is an HKDF-Expand-Label of a traffic
+ * secret. This is the same HMAC-SHA256 the SSH transport already ships, so these two routines are
+ * a thin layer over ssh_hmac_sha256 rather than a second HMAC.
+ *
+ * Pure, zero heap, host-tested against the RFC 9001 Appendix A worked examples (the HkdfLabel
+ * byte strings and the derived client/server secrets).
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H
+#define DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H
+
+#include "DetWebServerConfig.h"
+
+#if DETWS_ENABLE_HTTP3
+
+#include <stddef.h>
+#include <stdint.h>
+
+/** @brief HKDF-SHA256 output block length (== SHA-256 digest length). */
+#define QUIC_HKDF_HASH_LEN 32
+
+/**
+ * @brief HKDF-Extract (RFC 5869 sec 2.2): PRK = HMAC-SHA256(salt, ikm).
+ *
+ * @param salt      Optional salt (may be NULL only when @p salt_len is 0).
+ * @param salt_len  Salt length in bytes.
+ * @param ikm       Input keying material.
+ * @param ikm_len   Input keying material length.
+ * @param prk       Output pseudo-random key, must be QUIC_HKDF_HASH_LEN bytes.
+ */
+void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
+                       uint8_t prk[QUIC_HKDF_HASH_LEN]);
+
+/**
+ * @brief HKDF-Expand-Label (RFC 8446 sec 7.1) with the QUIC/TLS 1.3 "tls13 " label prefix.
+ *
+ * Builds the HkdfLabel structure
+ *   struct { uint16 length; opaque label<7..255> = "tls13 " + label; opaque context<0..255>; }
+ * and runs HKDF-Expand (RFC 5869 sec 2.3) with an empty context (all QUIC uses of this function
+ * pass an empty context). @p out_len must not exceed 255*32 bytes; QUIC only ever asks for
+ * <= 32, which is a single HMAC block.
+ *
+ * @param secret    Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.
+ * @param label     Short ASCII label, e.g. "quic key" (without the "tls13 " prefix), <= 249 bytes.
+ * @param out       Output keying material.
+ * @param out_len   Number of output bytes requested.
+ */
+void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len);
+
+#endif // DETWS_ENABLE_HTTP3
+#endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H

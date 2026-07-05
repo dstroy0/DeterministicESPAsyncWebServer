@@ -361,12 +361,20 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       mbedTLS integration; make the negotiated version observable and configurable.
 - [ ] **TLS 1.3** (L, RFC 8446) - TLS 1.3 handshake (1-RTT, optional 0-RTT early
       data with replay safeguards), modern AEAD-only suites, after TLS 1.2 lands.
-- [ ] **HTTP/2** (L, RFC 9113) - HPACK header compression (RFC 7541), stream
-      multiplexing + flow control, and `h2` ALPN over the TLS layer above; map
-      streams onto the deterministic per-connection model without per-stream heap.
+- [x] **HTTP/2** (L, RFC 9113) _(shipped, PSRAM-gated)_ - HPACK header compression
+      (RFC 7541), stream multiplexing + flow control, and `h2` ALPN over the TLS
+      layer above; streams mapped onto the deterministic per-connection model
+      without per-stream heap.
 - [ ] **HTTP/3** (L, RFC 9114) - QUIC transport (UDP) + HTTP/3 with QPACK
-      (RFC 9204), after HTTP/2; the largest item (a full UDP congestion / loss
-      recovery + TLS 1.3 transport).
+      (RFC 9204); the largest item (a full UDP congestion / loss recovery + TLS 1.3
+      transport). Progress: the codec layer is shipped - QUIC varint (RFC 9000
+      sec 16), packet-header + packet-number coding (sec 17), frame codec (sec 19),
+      HTTP/3 framing (RFC 9114 sec 7), QPACK (RFC 9204); and the QUIC Initial packet
+      crypto (RFC 9001) - HKDF-Expand-Label key schedule, AEAD_AES_128_GCM packet
+      protection, header protection, and the Retry integrity tag, all host-verified
+      against RFC 9001 Appendix A. Remaining: the stateful QUIC engine (packet-number
+      spaces, ACK / loss / congestion, CRYPTO + STREAM reassembly) and the
+      TLS 1.3-in-QUIC handshake (mbedTLS has no QUIC-TLS API, so it is hand-driven).
 
 ### Supporting HTTP specs (smaller, fold in alongside the above)
 
