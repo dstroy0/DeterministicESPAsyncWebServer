@@ -16,6 +16,7 @@
 #include "network_drivers/presentation/ssh/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/ssh_dh.h"
 #include "network_drivers/presentation/ssh/ssh_hmac_sha256.h"
+#include "network_drivers/presentation/ssh/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/ssh_packet.h"
 #include "network_drivers/presentation/ssh/ssh_rsa.h"
@@ -171,6 +172,53 @@ static void test_hmac_sha256_streaming(void)
     uint8_t expected[32];
     hex_to_bytes(expected, "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7", 32);
     TEST_ASSERT_EQUAL_MEMORY(expected, got, 32);
+}
+
+static void test_hmac_sha512_tc1(void)
+{
+    // RFC 4231 Test Case 1: Key = 0x0b x20, Data = "Hi There".
+    uint8_t key[20];
+    memset(key, 0x0b, 20);
+    uint8_t got[64];
+    ssh_hmac_sha512(key, 20, (const uint8_t *)"Hi There", 8, got);
+    uint8_t expected[64];
+    hex_to_bytes(expected,
+                 "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cded"
+                 "aa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854",
+                 64);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, 64);
+}
+
+static void test_hmac_sha512_tc2(void)
+{
+    // RFC 4231 Test Case 2: Key = "Jefe", Data = "what do ya want for nothing?".
+    uint8_t got[64];
+    ssh_hmac_sha512((const uint8_t *)"Jefe", 4, (const uint8_t *)"what do ya want for nothing?", 28, got);
+    uint8_t expected[64];
+    hex_to_bytes(expected,
+                 "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549"
+                 "758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737",
+                 64);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, 64);
+}
+
+static void test_hmac_sha512_streaming(void)
+{
+    // Same as tc1 but via the streaming API (also exercises the 128-byte block boundary).
+    uint8_t key[20];
+    memset(key, 0x0b, 20);
+    SshHmacSha512Ctx ctx;
+    ssh_hmac_sha512_init(&ctx, key, 20);
+    ssh_hmac_sha512_update(&ctx, (const uint8_t *)"Hi ", 3);
+    ssh_hmac_sha512_update(&ctx, (const uint8_t *)"There", 5);
+    uint8_t got[64];
+    ssh_hmac_sha512_final(&ctx, got);
+    uint8_t expected[64];
+    hex_to_bytes(expected,
+                 "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cded"
+                 "aa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854",
+                 64);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, 64);
 }
 
 // ============================================================================
@@ -956,6 +1004,9 @@ int main(void)
     RUN_TEST(test_hmac_sha256_tc2);
     RUN_TEST(test_hmac_sha256_tc3);
     RUN_TEST(test_hmac_sha256_streaming);
+    RUN_TEST(test_hmac_sha512_tc1);
+    RUN_TEST(test_hmac_sha512_tc2);
+    RUN_TEST(test_hmac_sha512_streaming);
 
     // AES-256-CTR
     RUN_TEST(test_aes256ctr_encrypt);

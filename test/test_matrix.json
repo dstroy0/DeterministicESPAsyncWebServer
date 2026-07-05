@@ -192,6 +192,7 @@
       "src": [
         "+<network_drivers/presentation/ssh/ssh_sha256.cpp>",
         "+<network_drivers/presentation/ssh/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/ssh_keymat.cpp>",
