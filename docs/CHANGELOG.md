@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.120.2] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.120.2 - 2026-07-05</b></summary>
+
+### Bug Fixes
+
+- readable web-asset HTML source + clang-format the ssh test files ([`7fbf4e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fbf4e0dff9ed8070fa52859714305cc9382d943))
+
+### CI / Build
+
+- update test report [skip ci] ([`aa9c813`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa9c813daf9e84719746bbc76a852712c5bf0d1e))
+- update CHANGELOG.md [skip ci] ([`4e5b785`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e5b78506ff31ed7fab1646c472244cb83b725ee))
+
+### Changes
+
+- Bump version: 4.120.1 → 4.120.2 ([`e470cbf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e470cbfae5502454813cb422a2c33e99bde635cd))
+
+</details>
+
 ## [4.120.1] - 2026-07-05
 
 <details>
