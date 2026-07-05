@@ -1369,6 +1369,16 @@
         "+<network_drivers/presentation/http3/quic_varint.cpp>"
       ],
       "tests": ["test_quic_frame"]
+    },
+    "native_ssh_chachapoly": {
+      "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
+      "flags": [],
+      "src": [
+        "+<network_drivers/presentation/ssh/ssh_chacha20.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_poly1305.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_chachapoly.cpp>"
+      ],
+      "tests": ["test_ssh_chachapoly"]
     }
   }
 }
