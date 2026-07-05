@@ -2,6 +2,96 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.113.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.113.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d63bce1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d63bce11de8dada704178fdde846b879ae32a949))
+
+### Changes
+
+- Bump version: 4.112.0 → 4.113.0 ([`db2b2e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db2b2e6a2568b33d695e9fcba668cf69d65ebef0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d85f5d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d85f5d7b3d9ecec8648e7f44f3fc22166520ec73))
+
+### Features
+
+- HTTP/3 framing (RFC 9114 sec 7) ([`43863c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43863c60fdfbf1b8f451a89003e56a4ca029d2bd))
+
+</details>
+
+## [4.112.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.112.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`ac5c830`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac5c8303f2bdd192b10e91626bf5b30629ba7282))
+
+### Changes
+
+- Bump version: 4.111.0 → 4.112.0 ([`ab136e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab136e9b2a54a5015efc59975865b6664e3dbca7))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`f8bdfe8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8bdfe89dc75f551e1e81d449e17fff4346b0e92))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4a40353`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a4035353923d24f9dfb2a15a7ac8e5e2bcb48f3))
+
+### Features
+
+- QUIC variable-length integer codec (RFC 9000 sec 16) ([`f815310`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f81531068ee5790bc59392fabec8ced91f891869))
+
+</details>
+
+## [4.111.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.111.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`0af43d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0af43d7f7b440ef7dc7e58dce18d3270a72143a5))
+
+### Changes
+
+- Bump version: 4.110.0 → 4.111.0 ([`924fbed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/924fbeda4ef8efa5c3a5800d833304d1a636a1d3))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6890a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6890a2f2939f627006d6cb3dd0249c7cd7056ccc))
+
+### Features
+
+- live-server wiring - HTTP/2 goes end-to-end (PSRAM-gated) ([`967e5ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/967e5edad85d249d9be9a3abb14d2a61993f3f93))
+
+</details>
+
+## [4.110.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.110.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`cb7a1fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb7a1fb072b7a0d21118b386e56b66c069111542))
+- update CHANGELOG.md [skip ci] ([`1dccd44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1dccd44d34088066a200a90809a55fbd82b6c439))
+
+### Changes
+
+- Bump version: 4.109.0 → 4.110.0 ([`62e467f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62e467f3736684ffbb23b631c48238a60b5e2bf3))
+
+### Features
+
+- connection + stream engine (RFC 9113) ([`384a628`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/384a6281bc3902342bd152af4b40aa46dc84adb1))
+
+</details>
+
 ## [4.109.0] - 2026-07-05
 
 <details>
