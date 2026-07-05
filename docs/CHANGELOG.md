@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.117.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.117.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`bb31672`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb3167293057bf3390dc18b8f458b9a826745f54))
+- update CHANGELOG.md [skip ci] ([`3e30bff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e30bfffc5716a741e833d41c985d893e7e74e37))
+
+### Changes
+
+- Bump version: 4.116.0 → 4.117.0 ([`9ecabe8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ecabe88a828960026796929d0973a806aeeeca9))
+
+### Features
+
+- HMAC-SHA2-512 (RFC 2104 + RFC 4231), for the -etm/sha512 MACs ([`3d8319f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d8319f816743e55ffa5869dfaea01b5a6d6200e))
+
+</details>
+
 ## [4.116.0] - 2026-07-05
 
 <details>
