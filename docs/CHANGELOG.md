@@ -2,6 +2,54 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [4.126.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.126.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`d0fe4d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0fe4d2dd077c5dbb852e896f86d429e0d2e07a2))
+
+### Changes
+
+- Bump version: 4.125.0 → 4.126.0 ([`ee0c202`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee0c202d4130965284958d183d6d26c942d8539c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a2a594d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2a594dd65d365a9eb03a283b8a01b5a0c99f6b4))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d07426c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d07426cc7886d71de710636361987ad8feeb4bb8))
+
+### Features
+
+- stateful QUIC v1 server connection engine ([`a121025`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1210255aa97b0fee9a77b12c4435442c4bdcc84))
+
+</details>
+
+## [4.125.0] - 2026-07-05
+
+<details>
+<summary><b>Show Changelog for version 4.125.0 - 2026-07-05</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`61e929b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61e929b882ba4a193db538d76aaae991c63667de))
+- update CHANGELOG.md [skip ci] ([`2837ff6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2837ff6588b8a75d06b539b5d0ff95ebb93b81e0))
+
+### Changes
+
+- Bump version: 4.124.0 → 4.125.0 ([`14547ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14547adecd8be54f3ae0bf0a15d6786414ee2b8d))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`90d1157`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90d1157cceb7facec0710efcd9d0060084f11ba3))
+
+### Features
+
+- TLS 1.3 server handshake state machine for QUIC ([`28063b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28063b0f0ff0ec9dafccc677c020514d358b7e70))
+
+</details>
+
 ## [4.124.0] - 2026-07-05
 
 <details>
