@@ -80,7 +80,7 @@
     "example": "L7-Application/35.Dashboard",
     "flags": "-DDETWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 775525,
+    "flash_bytes": 771397,
     "ram_bytes": 66560
   },
   "DEVICE_ID": {
@@ -91,11 +91,11 @@
     "ram_bytes": 66232
   },
   "DIAG": {
-    "example": "Foundation/05.Configuration",
+    "example": "L7-Application/20.Diagnostics",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 752273,
-    "ram_bytes": 62944
+    "flash_bytes": 750809,
+    "ram_bytes": 66192
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -409,7 +409,7 @@
     "example": "L7-Application/17.Provisioning",
     "flags": "-DDETWS_ENABLE_PROVISIONING=1",
     "board": "esp32dev",
-    "flash_bytes": 758149,
+    "flash_bytes": 758181,
     "ram_bytes": 67764
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
@@ -584,7 +584,7 @@
     "example": "L6-Presentation/10.WebTerminal",
     "flags": "-DDETWS_ENABLE_WEB_TERMINAL=1",
     "board": "esp32dev",
-    "flash_bytes": 755153,
+    "flash_bytes": 755393,
     "ram_bytes": 66272
   },
   "WS_CLIENT+TLS+WS_CLIENT_TLS": {

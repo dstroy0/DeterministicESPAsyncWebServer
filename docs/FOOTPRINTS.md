@@ -19,9 +19,9 @@ from each example's `pio ci` size report and aggregated into
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.2 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 737.9 KB (57.6%) | 64.7 KB (20.2%)  |
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.4 KB (57.4%) | 64.7 KB (20.2%)  |
-| `DASHBOARD`                              | L7-Application/35.Dashboard             | 757.3 KB (59.2%) | 65.0 KB (20.3%)  |
+| `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.3 KB (58.9%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.4 KB (57.3%) | 64.7 KB (20.2%)  |
-| `DIAG`                                   | Foundation/05.Configuration             | 734.6 KB (57.4%) | 61.5 KB (19.2%)  |
+| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.2 KB (57.3%) | 64.6 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
@@ -91,7 +91,7 @@ from each example's `pio ci` size report and aggregated into
 | `UPLOAD`                                 | L7-Application/11.FileUpload            | 774.5 KB (60.5%) | 69.8 KB (21.8%)  |
 | `VFS`                                    | L7-Application/51.Vfs                   | 775.5 KB (60.6%) | 64.8 KB (20.2%)  |
 | `WEBDAV`                                 | L7-Application/29.WebDav                | 800.5 KB (62.5%) | 103.1 KB (32.2%) |
-| `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 737.5 KB (57.6%) | 64.7 KB (20.2%)  |
+| `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 737.7 KB (57.6%) | 64.7 KB (20.2%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 812.2 KB (63.5%) | 117.6 KB (36.8%) |
 | `WS_DEFLATE`                             | L6-Presentation/11.WebSocketCompression | 737.5 KB (57.6%) | 72.6 KB (22.7%)  |
 | `ZIGBEE+GATEWAY`                         | Foundation/17.ZigbeeGateway             | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
