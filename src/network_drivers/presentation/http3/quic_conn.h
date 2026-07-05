@@ -1,0 +1,173 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file quic_conn.h
+ * @brief Stateful QUIC v1 server connection engine (RFC 9000 / RFC 9001).
+ *
+ * One QuicConn drives a single QUIC connection: it parses each inbound UDP datagram into its
+ * coalesced packets, removes header + AEAD protection at the right encryption level (Initial keys
+ * from the client's Destination Connection ID; Handshake and 1-RTT keys from the TLS handshake it
+ * runs via quic_tls), dispatches the frames, reassembles the CRYPTO stream to advance the handshake,
+ * tracks packet numbers to generate ACKs, and coalesces the outbound Initial / Handshake / 1-RTT
+ * packets back into datagrams. Application streams are surfaced to HTTP/3 (h3_conn) through a small
+ * callback + send API, so the transport engine has no HTTP dependency.
+ *
+ * It is transport-free (no lwIP): quic_conn_recv() takes a received datagram and quic_conn_send()
+ * pulls the next datagram to transmit, so the engine is host-testable by shuttling byte buffers
+ * between a server QuicConn and a client written in the test. quic_server wires it to det_udp.
+ *
+ * Scope (a faithful minimal server): QUIC v1 only, no Retry / 0-RTT / key update / connection
+ * migration / connection-ID rotation, in-order CRYPTO and stream reassembly, and single-range ACKs.
+ * Loss recovery (PTO retransmission) is not yet implemented - the engine relies on the peer
+ * retransmitting, which is correct on a reliable path; it is the next hardening step. Small packets
+ * are padded to the header-protection minimum (RFC 9001 sec 5.4.2). Fixed storage, no heap.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H
+#define DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H
+
+#include "DetWebServerConfig.h"
+
+#if DETWS_ENABLE_HTTP3
+
+#include "network_drivers/presentation/http3/quic_crypto.h"
+#include "network_drivers/presentation/http3/quic_tls.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#ifndef DETWS_QUIC_MAX_DATAGRAM
+#define DETWS_QUIC_MAX_DATAGRAM 1350 ///< largest UDP payload we send/accept (conservative < 1500 MTU)
+#endif
+#ifndef DETWS_QUIC_CRYPTO_RX
+#define DETWS_QUIC_CRYPTO_RX 2048 ///< per-level inbound CRYPTO reassembly window (ClientHello, Finished)
+#endif
+#ifndef DETWS_QUIC_MAX_STREAMS
+#define DETWS_QUIC_MAX_STREAMS DETWS_H3_MAX_STREAMS ///< tracked streams (request + control/QPACK)
+#endif
+#ifndef DETWS_QUIC_STREAM_RX
+#define DETWS_QUIC_STREAM_RX 2048 ///< per-stream inbound reassembly buffer
+#endif
+#ifndef DETWS_QUIC_STREAM_TX
+#define DETWS_QUIC_STREAM_TX 2048 ///< per-stream outbound buffer (drained into STREAM frames)
+#endif
+
+/** @brief Per-connection stream state (client-initiated + server-initiated). */
+struct QuicStream
+{
+    uint64_t id;      ///< stream id (UINT64_MAX = free slot)
+    uint64_t rx_off;  ///< next in-order byte offset expected
+    uint64_t tx_off;  ///< next send offset
+    bool rx_fin;      ///< a FIN was received (final size known)
+    bool tx_fin;      ///< a FIN should be sent after the buffered tx bytes
+    bool tx_fin_sent; ///< the FIN has been sent
+    uint8_t rx[DETWS_QUIC_STREAM_RX];
+    size_t rx_have; ///< contiguous bytes buffered in rx (from offset rx_off - rx_have)
+    uint8_t tx[DETWS_QUIC_STREAM_TX];
+    size_t tx_have; ///< bytes buffered to send
+    size_t tx_sent; ///< bytes of tx already put on the wire
+};
+
+struct QuicConn;
+
+/** @brief HTTP/3 (or test) hooks the engine drives. All nullable. */
+struct QuicConnCallbacks
+{
+    /** @brief In-order stream bytes arrived on @p stream_id (@p fin marks the final bytes). */
+    void (*on_stream_data)(void *app, QuicConn *qc, uint64_t stream_id, const uint8_t *data, size_t len, bool fin);
+    /** @brief The handshake completed (client Finished verified); 1-RTT is open. */
+    void (*on_handshake_done)(void *app, QuicConn *qc);
+    void *app; ///< opaque, passed back to the callbacks
+};
+
+/** @brief One packet-number space (Initial / Handshake / Application). */
+struct QuicPnSpace
+{
+    uint64_t next_pn;       ///< next packet number to send in this space
+    int64_t largest_acked;  ///< largest of our PNs the peer has acknowledged (-1 = none)
+    uint64_t largest_rx;    ///< largest PN received in this space
+    bool have_rx;           ///< at least one packet received
+    bool ack_eliciting_rx;  ///< an ack-eliciting packet is unacknowledged (we owe an ACK)
+    bool discarded;         ///< this space's keys have been dropped (nothing more sent/received)
+    uint64_t crypto_rx_off; ///< in-order CRYPTO bytes already delivered to quic_tls
+    uint8_t crypto_rx[DETWS_QUIC_CRYPTO_RX];
+    size_t crypto_rx_have;  ///< contiguous CRYPTO bytes buffered at crypto_rx_off
+    uint64_t crypto_tx_off; ///< CRYPTO flight bytes already sent from this level
+};
+
+/** @brief One QUIC connection's engine state (fixed storage, no heap). */
+struct QuicConn
+{
+    uint8_t scid[QUIC_MAX_CID_LEN]; ///< our connection ID (peer's DCID toward us)
+    uint8_t scid_len;
+    uint8_t dcid[QUIC_MAX_CID_LEN]; ///< peer's connection ID (our DCID toward the peer)
+    uint8_t dcid_len;
+    uint8_t odcid[QUIC_MAX_CID_LEN]; ///< client's original DCID (Initial keys + transport param)
+    uint8_t odcid_len;
+
+    QuicInitialSecrets initial; ///< Initial keys derived from odcid
+    QuicTls tls;                ///< the TLS 1.3 handshake
+
+    QuicPnSpace space[3]; ///< indexed by QUIC_ENC_*
+
+    QuicStream streams[DETWS_QUIC_MAX_STREAMS];
+
+    QuicConnCallbacks cb;
+
+    bool handshake_done_queued; ///< a HANDSHAKE_DONE frame still needs sending
+    bool handshake_done_sent;
+    bool closed;            ///< a CONNECTION_CLOSE has been sent or received
+    bool draining;          ///< peer closed; we only drain
+    uint64_t recv_bytes;    ///< total bytes received (anti-amplification budget)
+    uint64_t sent_bytes;    ///< total bytes sent before address validation
+    bool address_validated; ///< handshake-complete or received enough to lift the 3x limit
+};
+
+/**
+ * @brief Initialize a server connection from the client's first Initial packet.
+ *
+ * @param cfg        TLS server config (cert / key / transport params); the engine fills the
+ *                   original_destination_connection_id and initial_source_connection_id parameters.
+ * @param odcid      the Destination Connection ID from the client's first Initial (Initial keys).
+ * @param odcid_len  its length.
+ * @param peer_scid  the client's Source Connection ID (our DCID toward the client).
+ * @param peer_scid_len its length.
+ * @param our_scid   the connection ID we choose for ourselves (peer's DCID toward us).
+ * @param our_scid_len its length.
+ * @param cb         stream / handshake callbacks (may be all NULL).
+ */
+void quic_conn_init(QuicConn *qc, const QuicTlsConfig *cfg, const uint8_t *odcid, uint8_t odcid_len,
+                    const uint8_t *peer_scid, uint8_t peer_scid_len, const uint8_t *our_scid, uint8_t our_scid_len,
+                    const QuicConnCallbacks *cb);
+
+/**
+ * @brief Process one received UDP datagram (one or more coalesced QUIC packets).
+ * @return true if the datagram was processed (even partially); false if it was undecryptable /
+ * malformed enough to drop entirely. Frames drive the handshake, ACK state, and stream callbacks.
+ */
+bool quic_conn_recv(QuicConn *qc, const uint8_t *datagram, size_t len);
+
+/**
+ * @brief Build the next outbound datagram (coalesced Initial / Handshake / 1-RTT packets).
+ * @return its length, or 0 when there is nothing to send right now. Call repeatedly until it
+ * returns 0. Honors the pre-validation 3x anti-amplification limit.
+ */
+size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap);
+
+/**
+ * @brief Queue @p len bytes (with optional @p fin) to send on @p stream_id.
+ * @return bytes accepted into the stream's send buffer (may be < len if it is full).
+ */
+size_t quic_conn_stream_send(QuicConn *qc, uint64_t stream_id, const uint8_t *data, size_t len, bool fin);
+
+/** @brief True once the TLS handshake has completed (client Finished verified). */
+bool quic_conn_established(const QuicConn *qc);
+
+/** @brief True if the connection is closed or draining. */
+bool quic_conn_is_closed(const QuicConn *qc);
+
+#endif // DETWS_ENABLE_HTTP3
+#endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H

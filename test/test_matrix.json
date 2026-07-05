@@ -1504,6 +1504,29 @@
       ],
       "tests": ["test_quic_tls"]
     },
+    "native_quic_conn": {
+      "desc": "QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000\n/ RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and\ndrives a server QuicConn through a full handshake (per-level AEAD, CRYPTO reassembly, ACKs,\ncoalescing, HANDSHAKE_DONE) and a 1-RTT request/response stream exchange.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_conn.cpp>",
+        "+<network_drivers/presentation/http3/quic_tls.cpp>",
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
+        "+<network_drivers/presentation/http3/tls13_msg.cpp>",
+        "+<network_drivers/presentation/http3/quic_tp.cpp>",
+        "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_packet.cpp>",
+        "+<network_drivers/presentation/http3/quic_frame.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
+      ],
+      "tests": ["test_quic_conn"]
+    },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
       "flags": [],
