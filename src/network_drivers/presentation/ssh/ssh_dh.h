@@ -141,7 +141,7 @@ void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_
  * @param session_id  Session id (H of the first KEX), 32 bytes.
  */
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN]);
+                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg);
 
 /** @brief Max bytes ssh_kdf_derive() can produce (4 SHA-256 blocks). */
 #define SSH_KDF_MAX (4 * SSH_SHA256_DIGEST_LEN)

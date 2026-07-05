@@ -8,6 +8,7 @@
 
 #include "ssh_packet.h"
 #include "network_drivers/session/scratch.h"
+#include "ssh_chachapoly.h"
 #include "ssh_hmac_sha256.h"
 #include "ssh_keymat.h"
 #include <string.h>
@@ -105,30 +106,47 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     if (s->seq_no_send >= SSH_SEQ_CLOSE_THRESHOLD)
         return -1;
 
-    size_t pad_len = compute_padding(payload_len);
+    // chacha20-poly1305@openssh.com pads (padding_length + payload) to a multiple of 8 with the
+    // 4-byte length excluded (it is AAD, encrypted separately); aes256-ctr pads the whole plaintext
+    // (incl. the length) to a multiple of 16.
+    bool chacha = s->encrypted && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
+    size_t pad_len, tag_len;
+    if (chacha)
+    {
+        size_t base = 1 + payload_len;
+        pad_len = 8 - (base % 8);
+        if (pad_len < 4)
+            pad_len += 8;
+        tag_len = SSH_CHACHAPOLY_TAG_LEN;
+    }
+    else
+    {
+        pad_len = compute_padding(payload_len);
+        tag_len = s->encrypted ? SSH_HMAC_SHA256_LEN : 0;
+    }
     size_t pkt_len = 1 + payload_len + pad_len; // padding_length + payload + padding
-    size_t wire_len = 4 + pkt_len + (s->encrypted ? SSH_HMAC_SHA256_LEN : 0);
+    size_t wire_len = 4 + pkt_len + tag_len;
 
     if (wire_len > out_cap)
         return -1;
 
-    // Assemble plaintext packet into out[].
+    // Assemble the plaintext packet into out[].
     write_u32_be(out, (uint32_t)pkt_len);            // packet_length
     out[4] = (uint8_t)pad_len;                       // padding_length
     memcpy(out + 5, payload, payload_len);           // payload
     esp_fill_random(out + 5 + payload_len, pad_len); // random padding
 
-    if (s->encrypted)
+    if (chacha)
     {
-        // MAC over plaintext (RFC 4253: MAC over seq || unencrypted packet).
+        // Encrypt length (header key) + payload (main key) and append the Poly1305 tag.
+        ssh_chachapoly_encrypt(km->chacha_key_s2c, s->seq_no_send, out, out, (uint32_t)pkt_len);
+    }
+    else if (s->encrypted)
+    {
+        // MAC over plaintext (RFC 4253: MAC over seq || unencrypted packet), then AES-256-CTR.
         uint8_t mac[SSH_HMAC_SHA256_LEN];
         compute_mac(km->mac_key_s2c, s->seq_no_send, out, 4 + pkt_len, mac);
-
-        // Encrypt in-place: AES-256-CTR over the entire 4+pkt_len bytes,
-        // using the server→client cipher.
         ssh_aes256ctr_crypt(&km->s2c_ctx, out, out, 4 + pkt_len);
-
-        // Append MAC (unencrypted).
         memcpy(out + 4 + pkt_len, mac, SSH_HMAC_SHA256_LEN);
         ssh_wipe(mac, sizeof(mac));
     }
@@ -164,7 +182,66 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
     // Extract complete packets.
     while (s->rx_len >= 4)
     {
-        if (s->encrypted)
+        if (s->encrypted && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305)
+        {
+            // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
+            // length is stateless/repeatable - no cipher-state peek/restore is needed.
+            if (s->rx_len < 4)
+                break; // need the encrypted length field
+
+            uint32_t pkt_len = ssh_chachapoly_get_length(km->chacha_key_c2s, s->seq_no_recv, s->rx_buf);
+            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_CHACHAPOLY_TAG_LEN)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+            size_t wire_need = 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
+            if (s->rx_len < wire_need)
+                break; // incomplete packet
+
+            const size_t scratch_sz = 4 + pkt_len; // plaintext = length(4) || (pad_len||payload||pad)
+            ScratchScope scratch_scope;
+            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+            if (!scratch)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+
+            // Verify the Poly1305 tag over the ciphertext, then decrypt. No plaintext on failure.
+            if (!ssh_chachapoly_decrypt(km->chacha_key_c2s, s->seq_no_recv, scratch, s->rx_buf, pkt_len))
+            {
+                ssh_wipe(scratch, scratch_sz);
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1; // caller must close connection
+            }
+
+            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+            {
+                ssh_wipe(scratch, scratch_sz);
+                return -1;
+            }
+            s->seq_no_recv++;
+
+            uint8_t pad_len_byte = scratch[4];
+            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+            {
+                ssh_wipe(scratch, scratch_sz);
+                return -1;
+            }
+            size_t payload_len = pkt_len - 1 - pad_len_byte;
+            uint8_t msg_type = scratch[5];
+            handler(i, msg_type, scratch + 5, payload_len);
+
+            size_t consumed = wire_need;
+            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+            s->rx_len -= consumed;
+            ssh_wipe(scratch, scratch_sz);
+        }
+        else if (s->encrypted)
         {
             // We need the first cipher block (16 bytes) to read packet_length.
             if (s->rx_len < 16)

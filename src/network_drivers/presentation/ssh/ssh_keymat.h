@@ -98,9 +98,17 @@
 #include "DetWebServerConfig.h"
 #include "ssh_aes256ctr.h"
 #include "ssh_bignum.h"
+#include "ssh_chachapoly.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
+/** @brief Negotiated bulk cipher for a session. */
+enum
+{
+    SSH_CIPHER_AES256CTR = 0,        ///< aes256-ctr + a separate HMAC (the fallback)
+    SSH_CIPHER_CHACHA20POLY1305 = 1, ///< chacha20-poly1305@openssh.com (AEAD; no separate MAC)
+};
 
 // ---------------------------------------------------------------------------
 // Secure wipe
@@ -155,8 +163,13 @@ struct SshKeyMat
     SshAesCtrCtx c2s_ctx; ///< Client→server cipher (AES-256-CTR); server decrypts inbound with it.
     SshAesCtrCtx s2c_ctx; ///< Server→client cipher (AES-256-CTR); server encrypts outbound with it.
 
-    uint8_t mac_key_c2s[32]; ///< HMAC-SHA2-256 key, client-to-server direction.
-    uint8_t mac_key_s2c[32]; ///< HMAC-SHA2-256 key, server-to-client direction.
+    uint8_t mac_key_c2s[32]; ///< HMAC-SHA2-256 key, client-to-server direction (aes256-ctr mode).
+    uint8_t mac_key_s2c[32]; ///< HMAC-SHA2-256 key, server-to-client direction (aes256-ctr mode).
+
+    uint8_t cipher_mode; ///< SSH_CIPHER_* selected for this session (0 = aes256-ctr).
+    // chacha20-poly1305@openssh.com: 512-bit key per direction (K_main || K_header); no IV, no MAC key.
+    uint8_t chacha_key_c2s[SSH_CHACHAPOLY_KEY_LEN]; ///< client-to-server, used only in chacha mode.
+    uint8_t chacha_key_s2c[SSH_CHACHAPOLY_KEY_LEN]; ///< server-to-client, used only in chacha mode.
 
     bool active; ///< True once keys are installed after successful KEX.
 };

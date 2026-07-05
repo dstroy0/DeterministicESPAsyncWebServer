@@ -807,6 +807,48 @@ static void test_pkt_encrypted_roundtrip(void)
     TEST_ASSERT_EQUAL_UINT32(1, ssh_pkt[0].seq_no_recv);
 }
 
+static void test_pkt_chacha20poly1305_roundtrip(void)
+{
+    // Install a chacha20-poly1305 session with the same key both directions, so ssh_pkt_send()
+    // (server encrypts with the s2c key) round-trips through ssh_pkt_recv() (decrypts with c2s).
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
+    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+    {
+        km->chacha_key_c2s[i] = (uint8_t)(i * 3 + 1);
+        km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
+    }
+    km->active = true;
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].encrypted = true;
+
+    uint8_t payload[] = {SSH_MSG_IGNORE, 'c', 'h', 'a', 'c', 'h', 'a', '2', '0'};
+    uint8_t wire[256];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    TEST_ASSERT_TRUE(wlen > 4 + SSH_CHACHAPOLY_TAG_LEN); // length + payload + tag
+    // The payload region is actually encrypted (not equal to plaintext).
+    TEST_ASSERT_TRUE(memcmp(wire + 5, payload + 1, sizeof(payload) - 1) != 0);
+
+    last_msg_type = 0xFF;
+    last_payload_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    TEST_ASSERT_EQUAL_INT(SSH_MSG_IGNORE, last_msg_type);
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), (int)last_payload_len);
+    TEST_ASSERT_EQUAL_MEMORY(payload, last_payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_UINT32(1, ssh_pkt[0].seq_no_recv);
+
+    // Tamper with a ciphertext byte -> Poly1305 rejects -> recv returns -1.
+    ssh_pkt_init(0);
+    ssh_pkt[0].encrypted = true;
+    wire[6] ^= 0x01;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    ssh_keymat_wipe(0); // leave no chacha state for later (aes) tests
+}
+
 static void test_pkt_encrypted_fragmented(void)
 {
     setup_encrypted_keys();
@@ -1044,6 +1086,7 @@ int main(void)
     RUN_TEST(test_pkt_seq_increments);
     RUN_TEST(test_pkt_disconnect_zeroes_state);
     RUN_TEST(test_pkt_encrypted_roundtrip);
+    RUN_TEST(test_pkt_chacha20poly1305_roundtrip);
     RUN_TEST(test_pkt_encrypted_fragmented);
     RUN_TEST(test_pkt_encrypted_two_packets);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);

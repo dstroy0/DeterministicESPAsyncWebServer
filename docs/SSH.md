@@ -27,8 +27,9 @@ socket.
 - **Crypto-agnostic key exchange** - the KEX method and host-key type are negotiated, not fixed: the server advertises both suites in a runtime-selectable preference order (`ssh_kex_set_prefer_rsa()`, default RSA/DH) and picks the first mutually supported one it holds a key for. A stock `ssh` client gets modern crypto; a device that wants the ESP32-accelerated path forces RSA/DH
 - **curve25519-sha256 key exchange** (RFC 8731 + RFC 7748) - X25519 ECDH; software radix-2^16 field arithmetic, with the field inversion offloaded to the ESP32 MPI/RSA hardware accelerator (the same modexp engine RSA and DH use)
 - **DH-group14-SHA256 key exchange** (RFC 3526 + RFC 8268) - 2048-bit MODP, g=2, full exchange-hash + host-key signature; the HW-accelerated path on ESP32
-- **AES-256-CTR** encryption (RFC 4344) - hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
-- **HMAC-SHA2-256** integrity (RFC 6668) - MAC-verify-before-use invariant
+- **`chacha20-poly1305@openssh.com`** encryption - OpenSSH's default AEAD cipher (the negotiated preference); ChaCha20 (RFC 8439) + Poly1305 with the length field encrypted under a separate key, verified against the RFC 8439 vectors and cross-checked byte-for-byte against OpenSSL. A stock `ssh` client negotiates it; HW-verified against OpenSSH on an ESP32-S3
+- **AES-256-CTR** encryption (RFC 4344) - the fallback cipher, hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
+- **HMAC-SHA2-256 / HMAC-SHA2-512** integrity (RFC 6668) - MAC-verify-before-use invariant (the chacha20-poly1305 AEAD carries its own implicit MAC)
 - **ssh-ed25519 host key** (RFC 8709 + RFC 8032) - Ed25519 signing over the exchange hash; installed from a 32-byte seed via `ssh_hostkey_ed25519_set()` alongside or instead of the RSA host key
 - **RSA-SHA2-256** host key (RFC 8332) - PKCS#1 v1.5 signing; real on both platforms (ESP32 mbedTLS, native full-width modexp), HW-accelerated on ESP32
 - **Publickey authentication** (RFC 4252 §7) - client `rsa-sha2-256` **and** `ssh-ed25519` signatures are verified for real on both platforms; an application callback authorizes keys per user

@@ -100,6 +100,7 @@ struct SshSession
 
     uint8_t kex_alg;     ///< SshKexAlg negotiated in KEXINIT.
     uint8_t hostkey_alg; ///< SshHostkeyAlg negotiated in KEXINIT.
+    uint8_t cipher_alg;  ///< SSH_CIPHER_* negotiated in KEXINIT (0 = aes256-ctr).
     uint8_t ecdh_sk[32]; ///< Server X25519 ephemeral private (curve25519 KEX only; wiped after).
     uint8_t ecdh_pk[32]; ///< Server X25519 ephemeral public (curve25519 KEX only).
 

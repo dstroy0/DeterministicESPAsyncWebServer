@@ -190,10 +190,22 @@ void test_kexinit_parse_steers_to_curve_ed25519()
 
 void test_kexinit_parse_rejects_missing_cipher()
 {
+    // Only ciphers we do not implement -> no mutual cipher -> reject.
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes128-ctr,3des-cbc",
+                                    "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+}
+
+// chacha20-poly1305@openssh.com is now a supported cipher: a client offering only it is accepted,
+// and the AEAD cipher is selected (no separate MAC required).
+void test_kexinit_parse_selects_chacha20poly1305()
+{
     uint8_t buf[SSH_KEXINIT_MAX];
     size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256",
                                     "chacha20-poly1305@openssh.com", "hmac-sha2-256", "none");
-    TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg);
 }
 
 void test_kexinit_parse_rejects_truncated()
@@ -631,15 +643,15 @@ void test_derive_keys_session_id_affects_output()
         sid[j] = (uint8_t)(0xF0 - j); // distinct from H
     }
 
-    ssh_dh_derive_keys_sid(0, K, H, H);
+    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR);
     uint8_t a[32];
     memcpy(a, ssh_keys[0].mac_key_c2s, 32);
 
-    ssh_dh_derive_keys_sid(0, K, H, sid);
+    ssh_dh_derive_keys_sid(0, K, H, sid, SSH_CIPHER_AES256CTR);
     TEST_ASSERT_NOT_EQUAL(0, memcmp(a, ssh_keys[0].mac_key_c2s, 32));
 
     // Deterministic: same inputs reproduce the same key.
-    ssh_dh_derive_keys_sid(0, K, H, H);
+    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_AES256CTR);
     TEST_ASSERT_EQUAL_MEMORY(a, ssh_keys[0].mac_key_c2s, 32);
 }
 
@@ -838,6 +850,7 @@ int main()
     RUN_TEST(test_kexinit_parse_rejects_hostkey_we_lack);
     RUN_TEST(test_kexinit_parse_steers_to_curve_ed25519);
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
+    RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
     RUN_TEST(test_exchange_hash_changes_with_input);

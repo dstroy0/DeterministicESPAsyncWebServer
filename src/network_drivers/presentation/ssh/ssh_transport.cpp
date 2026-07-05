@@ -33,6 +33,9 @@ static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // 
 static const char *const HOSTKEY_RSA = "rsa-sha2-256";
 static const char *const HOSTKEY_ED = "ssh-ed25519";
 static const char *const ALG_CIPHER = "aes256-ctr";
+// Advertised cipher preference: chacha20-poly1305@openssh.com (OpenSSH's default, an AEAD) first,
+// aes256-ctr (the HW-accelerated fallback) second.
+static const char *const ALG_CIPHER_LIST = "chacha20-poly1305@openssh.com,aes256-ctr";
 static const char *const ALG_MAC = "hmac-sha2-256";
 static const char *const ALG_COMP = "none";
 // RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
@@ -304,18 +307,18 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     char kexlist[160], hklist[48];
     build_kex_list(kexlist, sizeof(kexlist));
     build_hostkey_list(hklist, sizeof(hklist));
-    w_namelist(w, kexlist);    // kex_algorithms (preference-ordered, + ext-info-s)
-    w_namelist(w, hklist);     // server_host_key_algorithms (only keys we hold)
-    w_namelist(w, ALG_CIPHER); // encryption c2s
-    w_namelist(w, ALG_CIPHER); // encryption s2c
-    w_namelist(w, ALG_MAC);    // mac c2s
-    w_namelist(w, ALG_MAC);    // mac s2c
-    w_namelist(w, ALG_COMP);   // compression c2s
-    w_namelist(w, ALG_COMP);   // compression s2c
-    w_namelist(w, "");         // languages c2s
-    w_namelist(w, "");         // languages s2c
-    w_u8(w, 0);                // first_kex_packet_follows = false
-    w_u32(w, 0);               // reserved
+    w_namelist(w, kexlist);         // kex_algorithms (preference-ordered, + ext-info-s)
+    w_namelist(w, hklist);          // server_host_key_algorithms (only keys we hold)
+    w_namelist(w, ALG_CIPHER_LIST); // encryption c2s (chacha20-poly1305 preferred, aes256-ctr fallback)
+    w_namelist(w, ALG_CIPHER_LIST); // encryption s2c
+    w_namelist(w, ALG_MAC);         // mac c2s (used only with aes256-ctr; ignored for the AEAD cipher)
+    w_namelist(w, ALG_MAC);         // mac s2c
+    w_namelist(w, ALG_COMP);        // compression c2s
+    w_namelist(w, ALG_COMP);        // compression s2c
+    w_namelist(w, "");              // languages c2s
+    w_namelist(w, "");              // languages s2c
+    w_u8(w, 0);                     // first_kex_packet_follows = false
+    w_u32(w, 0);                    // reserved
 
     if (!w.ok)
         return -1;
@@ -411,17 +414,25 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
             return -1; // no mutual host-key algorithm
         s->hostkey_alg = (uint8_t)h;
     }
-    // encryption c2s
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_CIPHER))
+    // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com (preferred) or aes256-ctr.
+    const AlgCand cc[2] = {{"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true},
+                           {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
+    if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    // encryption s2c
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_CIPHER))
+    int c2s = negotiate_alg(list, nlen, cc, 2);
+    if (c2s < 0)
         return -1;
-    // mac c2s
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_MAC))
+    if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    // mac s2c
-    if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_MAC))
+    int s2c = negotiate_alg(list, nlen, cc, 2);
+    if (s2c < 0 || s2c != c2s) // require the same cipher both directions
+        return -1;
+    s->cipher_alg = (uint8_t)c2s;
+    // mac c2s / s2c: the AEAD cipher provides its own MAC, so a MAC is only required for aes256-ctr.
+    bool need_mac = (s->cipher_alg == SSH_CIPHER_AES256CTR);
+    if (!read_namelist(payload, len, &off, &list, &nlen) || (need_mac && !namelist_contains(list, nlen, ALG_MAC)))
+        return -1;
+    if (!read_namelist(payload, len, &off, &list, &nlen) || (need_mac && !namelist_contains(list, nlen, ALG_MAC)))
         return -1;
     // compression c2s
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
@@ -762,7 +773,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         ssh_wipe(k_be, sizeof(k_be));
         return -1;
     }
-    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id);
+    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg);
     ssh_wipe(k_be, sizeof(k_be));
 
     s->phase = SSH_PHASE_NEWKEYS;

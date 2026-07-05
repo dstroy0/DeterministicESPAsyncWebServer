@@ -171,15 +171,26 @@ static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGES
 }
 
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN])
+                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg)
 {
     if (i >= MAX_SSH_CONNS)
         return;
     SshKeyMat *km = &ssh_keys[i];
+    km->cipher_mode = cipher_alg;
 
-    // RFC 4253 §7.2 derives six values, each keyed by a label byte 'A'..'F'.
-    // The AES contexts need both key and IV at init time, so derive all six
-    // values first, then initialize the contexts once.
+    if (cipher_alg == SSH_CIPHER_CHACHA20POLY1305)
+    {
+        // chacha20-poly1305@openssh.com: a 512-bit key per direction (labels 'C'/'D'), no IV and
+        // no separate MAC key (the AEAD authenticates). The 64 bytes come from the RFC 4253 §7.2
+        // extension chain (K1 || K2).
+        ssh_kdf_derive(K_be, H, session_id, 'C', km->chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);
+        ssh_kdf_derive(K_be, H, session_id, 'D', km->chacha_key_s2c, SSH_CHACHAPOLY_KEY_LEN);
+        km->active = true;
+        return;
+    }
+
+    // aes256-ctr + HMAC-SHA2-256: RFC 4253 §7.2 derives six values, each keyed by a label 'A'..'F'.
+    // The AES contexts need both key and IV at init time, so derive all six values first.
     uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN], iv_s2c[SSH_SHA256_DIGEST_LEN];
     uint8_t key_c2s[32], key_s2c[32];
 
@@ -204,6 +215,6 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
 
 void ssh_dh_derive_keys(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN])
 {
-    // First-KEX convenience: the session id equals H.
-    ssh_dh_derive_keys_sid(i, K_be, H, H);
+    // First-KEX convenience: the session id equals H; aes256-ctr (the pre-negotiation default).
+    ssh_dh_derive_keys_sid(i, K_be, H, H, SSH_CIPHER_AES256CTR);
 }
