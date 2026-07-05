@@ -546,6 +546,7 @@
     "nonmatching",
     "nonnull",
     "nopath",
+    "nosniff",
     "NOSONAR",
     "nosuchinstance",
     "notexist",

@@ -6,6 +6,7 @@
 // first request decode with dynamic-table insertion (C.3.1), plus dynamic-table indexing +
 // FIFO eviction + size updates, and the server encoder (static indexing + literal round-trip).
 
+#include "network_drivers/presentation/hpack_prim/hpack_prim.h" // prefix-int + Huffman primitives
 #include "network_drivers/presentation/http2/hpack.h"
 #include <string.h>
 #include <string>

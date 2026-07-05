@@ -28,7 +28,11 @@
     "native_ssh_ed25519": {
       "desc": "Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth):\nSHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). Vectors are the published RFC\ntest vectors + tool-generated digests, grounding the impl against the standards. Pure host tests.",
       "flags": [],
-      "src": ["+<network_drivers/presentation/ssh/ssh_sha512.cpp>", "+<network_drivers/presentation/ssh/ssh_curve25519.cpp>", "+<network_drivers/presentation/ssh/ssh_ed25519.cpp>"],
+      "src": [
+        "+<network_drivers/presentation/ssh/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/ssh_ed25519.cpp>"
+      ],
       "tests": ["test_ssh_ed25519"]
     },
     "native_promisc": {
@@ -58,7 +62,10 @@
     "native_nmea2000": {
       "desc": "NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet\ntransport (frame count, build, reassembly), built on the J1939 id codec (implied). Pure\nhost tests.",
       "flags": ["-DDETWS_ENABLE_NMEA2000=1"],
-      "src": ["+<services/nmea2000/nmea2000.cpp>", "+<services/j1939/j1939.cpp>"],
+      "src": [
+        "+<services/nmea2000/nmea2000.cpp>",
+        "+<services/j1939/j1939.cpp>"
+      ],
       "tests": ["test_nmea2000"]
     },
     "native_mbus": {
@@ -98,7 +105,7 @@
       "tests": ["test_iolink"]
     },
     "native": {
-      "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 \u00a75.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
+      "desc": "Layers 4-6: transport + session + presentation + standalone parser (no app layer)\nThese suites predate the RFC 7230 §5.4 Host rule and feed bare HTTP/1.1\nrequest lines to exercise parser mechanics; Host enforcement is verified\nseparately in env:native_compliance.",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0"],
       "src": [
         "+<network_drivers/network/det_ip.cpp>",
@@ -168,7 +175,10 @@
     "native_ota": {
       "desc": "Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1\nusing a mock sink (no ESP32 Update dependency).",
       "flags": ["-DDETWS_ENFORCE_HOST_HEADER=0", "-DDETWS_ENABLE_OTA=1"],
-      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>", "+<network_drivers/network/det_ip.cpp>"],
+      "src": [
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
+        "+<network_drivers/network/det_ip.cpp>"
+      ],
       "tests": ["test_http_ota"]
     },
     "native_prov": {
@@ -370,7 +380,11 @@
     },
     "native_snmp_v3": {
       "desc": "SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery,\ntimeliness. Pulls in the SHA-256/HMAC primitives from the SSH crypto layer.",
-      "flags": ["-DDETWS_ENABLE_SNMP=1", "-DDETWS_ENABLE_SNMP_V3=1", "-DDETWS_ENABLE_SNMP_TRAP=1"],
+      "flags": [
+        "-DDETWS_ENABLE_SNMP=1",
+        "-DDETWS_ENABLE_SNMP_V3=1",
+        "-DDETWS_ENABLE_SNMP_TRAP=1"
+      ],
       "src": [
         "+<services/snmp/snmp_ber.cpp>",
         "+<services/snmp/snmp_agent.cpp>",
@@ -478,19 +492,32 @@
     },
     "native_preempt_queue": {
       "desc": "Preempting work queue (services/preempt_queue), v5 real-time ingest: the host\nfixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water,\nand drain/handler dispatch. The ARDUINO FreeRTOS task + ISR post + preempt latency\nare HW-verified separately (the host has no tasks/ISRs).",
-      "flags": ["-DDETWS_ENABLE_PREEMPT_QUEUE=1", "-DDETWS_PQ_DEPTH=4", "-DDETWS_PQ_ITEM_SIZE=4"],
+      "flags": [
+        "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
+        "-DDETWS_PQ_DEPTH=4",
+        "-DDETWS_PQ_ITEM_SIZE=4"
+      ],
       "src": ["+<services/preempt_queue/preempt_queue.cpp>"],
       "tests": ["test_preempt_queue"]
     },
     "native_dma": {
       "desc": "DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an\ningress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms,\negress DMA is captured, TX is one-in-flight fail-closed, and a loopback channel\nround-trips its own TX into RX. The ARDUINO ISR-post + preempt-queue hand-off is\nHW-verified separately (the host has no ISRs).",
-      "flags": ["-DDETWS_ENABLE_DMA=1", "-DDETWS_DMA_BUF_SIZE=8", "-DDETWS_DMA_CHANNELS=2"],
+      "flags": [
+        "-DDETWS_ENABLE_DMA=1",
+        "-DDETWS_DMA_BUF_SIZE=8",
+        "-DDETWS_DMA_CHANNELS=2"
+      ],
       "src": ["+<services/dma/det_dma.cpp>"],
       "tests": ["test_dma"]
     },
     "native_forward": {
       "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, and the ingress ACL (byte-pattern permit/deny, first-match, default\naction). Pure host tests; the DMA-driven wiring is HW-verified.",
-      "flags": ["-DDETWS_ENABLE_FORWARD=1", "-DDETWS_FWD_MAX_IFACES=4", "-DDETWS_FWD_MAX_RULES=4", "-DDETWS_FWD_MAX_ACL=4"],
+      "flags": [
+        "-DDETWS_ENABLE_FORWARD=1",
+        "-DDETWS_FWD_MAX_IFACES=4",
+        "-DDETWS_FWD_MAX_RULES=4",
+        "-DDETWS_FWD_MAX_ACL=4"
+      ],
       "src": ["+<services/forward/det_forward.cpp>"],
       "tests": ["test_forward"]
     },
@@ -551,7 +578,10 @@
     "native_wamp": {
       "desc": "WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO /\nSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional\narray parser (type / ids / URIs, nesting-aware). Pure host tests.",
       "flags": ["-DDETWS_ENABLE_WAMP=1"],
-      "src": ["+<services/wamp/wamp.cpp>", "+<network_drivers/presentation/json/json.cpp>"],
+      "src": [
+        "+<services/wamp/wamp.cpp>",
+        "+<network_drivers/presentation/json/json.cpp>"
+      ],
       "tests": ["test_wamp"]
     },
     "native_sunspec": {
@@ -669,7 +699,10 @@
     "native_sparkplug": {
       "desc": "Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload\nprotobuf serializers (over the protobuf codec). Field numbers per the Eclipse Tahu proto.\nPure host tests.",
       "flags": ["-DDETWS_ENABLE_SPARKPLUG=1"],
-      "src": ["+<services/sparkplug/sparkplug.cpp>", "+<services/protobuf/protobuf.cpp>"],
+      "src": [
+        "+<services/sparkplug/sparkplug.cpp>",
+        "+<services/protobuf/protobuf.cpp>"
+      ],
       "tests": ["test_sparkplug"]
     },
     "native_modbus_master": {
@@ -935,7 +968,10 @@
     "native_hpack": {
       "desc": "HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the\nHuffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion\n(C.3.1), dynamic-table indexing + FIFO eviction + size updates, and the server encoder\n(static indexing + literal round-trip). Pure host codec.",
       "flags": ["-DDETWS_ENABLE_HTTP2=1"],
-      "src": ["+<network_drivers/presentation/http2/hpack.cpp>"],
+      "src": [
+        "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
+        "+<network_drivers/presentation/http2/hpack.cpp>"
+      ],
       "tests": ["test_hpack"]
     },
     "native_h2frame": {
@@ -950,6 +986,7 @@
       "src": [
         "+<network_drivers/presentation/http2/h2_conn.cpp>",
         "+<network_drivers/presentation/http2/h2_frame.cpp>",
+        "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
         "+<network_drivers/presentation/http2/hpack.cpp>"
       ],
       "tests": ["test_h2_conn"]
@@ -1015,7 +1052,10 @@
     },
     "native_compliance": {
       "desc": "RFC-compliance suite: builds with all enforcement at production defaults\n(DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors.",
-      "src": ["+<network_drivers/presentation/http_parser/http_parser.cpp>", "+<network_drivers/network/det_ip.cpp>"],
+      "src": [
+        "+<network_drivers/presentation/http_parser/http_parser.cpp>",
+        "+<network_drivers/network/det_ip.cpp>"
+      ],
       "tests": ["test_compliance"]
     },
     "native_mqtt": {
@@ -1109,7 +1149,10 @@
     "native_auth_lockout": {
       "desc": "Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff\nlockout state machine. Pure core (the millisecond clock is passed in), so it\nunit-tests on the host. DETWS_ENABLE_AUTH_LOCKOUT (and its required parent\nDETWS_ENABLE_AUTH) are set so the flag-guarded code compiles.",
       "flags": ["-DDETWS_ENABLE_AUTH=1", "-DDETWS_ENABLE_AUTH_LOCKOUT=1"],
-      "src": ["+<services/auth_lockout/auth_lockout.cpp>", "+<network_drivers/network/det_ip.cpp>"],
+      "src": [
+        "+<services/auth_lockout/auth_lockout.cpp>",
+        "+<network_drivers/network/det_ip.cpp>"
+      ],
       "tests": ["test_auth_lockout"]
     },
     "native_csrf": {
@@ -1302,6 +1345,15 @@
       "src": ["-<*>"],
       "tests": ["test_concurrency"],
       "test_build_src": "no"
+    },
+    "native_qpack": {
+      "desc": "QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack,\nRFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the\nencoder's exact bytes for an indexed / name-reference / literal-name field line, a round-trip\nthrough all three representations, and rejection of any dynamic-table reference. Pure host codec.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
+        "+<network_drivers/presentation/http3/qpack.cpp>"
+      ],
+      "tests": ["test_qpack"]
     }
   }
 }

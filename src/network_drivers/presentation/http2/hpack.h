@@ -76,18 +76,7 @@ bool hpack_decode(HpackDynTable *t, const uint8_t *block, size_t len, char *scra
 size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t name_len, const char *value,
                            size_t value_len);
 
-// --- Low-level primitives (exposed for testing) ----------------------------------------------
-
-/** @brief Encode a prefix-@p prefix_bits integer with the high @p flags bits set in byte 0. */
-size_t hpack_encode_int(uint8_t *out, size_t cap, uint8_t prefix_bits, uint8_t flags, uint32_t value);
-/** @brief Decode a prefix-@p prefix_bits integer; sets @p consumed / @p value. */
-bool hpack_decode_int(const uint8_t *in, size_t len, uint8_t prefix_bits, size_t *consumed, uint32_t *value);
-/** @brief Huffman-encode @p n bytes of @p s (RFC 7541 Appendix B). @return bytes written or 0. */
-size_t hpack_huff_encode(uint8_t *out, size_t cap, const char *s, size_t n);
-/** @brief Huffman byte length of @p s without encoding (to choose Huffman vs raw). */
-size_t hpack_huff_len(const char *s, size_t n);
-/** @brief Huffman-decode @p n bytes into @p out; sets @p out_len. @return false on a bad code. */
-bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_t *out_len);
+// The prefix-integer and Huffman primitives moved to hpack_prim.h (shared with QPACK).
 
 #endif // DETWS_ENABLE_HTTP2
 #endif // DETERMINISTICESPASYNCWEBSERVER_HPACK_H
