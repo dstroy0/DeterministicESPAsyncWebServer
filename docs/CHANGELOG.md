@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [4.128.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 4.128.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`91c926b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91c926b9d1d607f9c80ff99bdf14fd8d9e0b93f2))
+- update CHANGELOG.md [skip ci] ([`8d8600d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d8600d13d7fec00e91898cc9d6c6524460b1e8f))
 - update test report [skip ci] ([`d12672c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12672ca3d48e30673c5a096ee495ddbafca1ad6))
 - update CHANGELOG.md [skip ci] ([`990d65a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/990d65a754c42b8bf7fc225f304bc79d5a1f4bdf))
 - bump cspell from 8.19.4 to 10.0.1 ([`61d2b6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61d2b6a4e3ed835fa8bc14589101f20997ea8c7c))
@@ -16,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 4.127.1 → 4.128.0 ([`759af2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/759af2bc9f938af073198d7f92c04887af50e192))
 - Merge Dependabot #12: chore(deps-dev): bump cspell from 8.19.4 to 10.0.1 ([`c5e2145`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5e2145495a30eaea68295f4952309235fb458ed))
 
 ### Documentation
@@ -25,9 +31,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - HTTP/3 stack built + host-tested (QUIC + TLS 1.3 + HTTP/3) ([`6c6497c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c6497c62ee1da5a535c0cf8d005ba38f9ee0a81))
 - update ESP32 build footprints [skip ci] ([`0a1c7c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a1c7c1ec0c15294c5cf8c095efd2028b3d0fdee))
 
+### Features
+
+- quic_server - UDP-facing pool that binds QUIC + HTTP/3 to the wire ([`4c40fe7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c40fe7e5aa2f0cebdffa1ebf485acd52c7b5f8f))
+
 ### Testing
 
 - end-to-end capstone - full QUIC handshake + HTTP/3 GET ([`04e2ec7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04e2ec79a9ca9eab77a8309a4f3b158ae47eca0a))
+
+</details>
 
 ## [4.127.1] - 2026-07-05
 
