@@ -73,7 +73,7 @@
     "example": "L7-Application/33.Csrf",
     "flags": "-DDETWS_ENABLE_CSRF=1",
     "board": "esp32dev",
-    "flash_bytes": 752321,
+    "flash_bytes": 752461,
     "ram_bytes": 66248
   },
   "DASHBOARD": {
@@ -122,7 +122,7 @@
     "example": "L7-Application/48.DnsResolver",
     "flags": "-DDETWS_ENABLE_DNS_RESOLVER=1",
     "board": "esp32dev",
-    "flash_bytes": 756841,
+    "flash_bytes": 756981,
     "ram_bytes": 67480
   },
   "DNS_SERVER": {
@@ -332,7 +332,7 @@
     "example": "L7-Application/50.OidcAuth",
     "flags": "-DDETWS_ENABLE_OIDC=1",
     "board": "esp32dev",
-    "flash_bytes": 764329,
+    "flash_bytes": 764469,
     "ram_bytes": 79328
   },
   "OPCUA": {
@@ -507,7 +507,7 @@
     "example": "L7-Application/34.Telemetry",
     "flags": "-DDETWS_ENABLE_TELEMETRY=1",
     "board": "esp32dev",
-    "flash_bytes": 759713,
+    "flash_bytes": 759853,
     "ram_bytes": 66524
   },
   "TELNET": {

@@ -18,14 +18,14 @@ from each example's `pio ci` size report and aggregated into
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.4 KB (55.5%) | 47.2 KB (14.8%)  |
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.2 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.3 KB (57.7%) | 64.7 KB (20.2%)  |
-| `CSRF`                                   | L7-Application/33.Csrf                  | 734.7 KB (57.4%) | 64.7 KB (20.2%)  |
+| `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.7 KB (20.2%)  |
 | `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
-| `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 739.1 KB (57.7%) | 65.9 KB (20.6%)  |
+| `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 739.2 KB (57.8%) | 65.9 KB (20.6%)  |
 | `DNS_SERVER`                             | L7-Application/60.DnsServer             | 708.6 KB (55.4%) | 44.9 KB (14.0%)  |
 | `ENOCEAN+GATEWAY`                        | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                 | L7-Application/53.EspNow                | 714.1 KB (55.8%) | 42.6 KB (13.3%)  |
@@ -55,7 +55,7 @@ from each example's `pio ci` size report and aggregated into
 | `NTP+TIME_SOURCE`                        | L7-Application/31.TimeSourceFallback    | 754.1 KB (58.9%) | 66.2 KB (20.7%)  |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`    | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
 | `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 745.6 KB (58.2%) | 86.9 KB (27.2%)  |
-| `OIDC`                                   | L7-Application/50.OidcAuth              | 746.4 KB (58.3%) | 77.5 KB (24.2%)  |
+| `OIDC`                                   | L7-Application/50.OidcAuth              | 746.6 KB (58.3%) | 77.5 KB (24.2%)  |
 | `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.4 KB (57.9%) | 74.7 KB (23.3%)  |
 | `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.8 KB (59.7%) | 78.5 KB (24.5%)  |
 | `OTA`                                    | L7-Application/16.OTA                   | 738.6 KB (57.7%) | 99.9 KB (31.2%)  |
@@ -80,7 +80,7 @@ from each example's `pio ci` size report and aggregated into
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.3 KB (57.6%) | 64.8 KB (20.2%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.2 KB (55.6%) | 44.0 KB (13.8%)  |
 | `SYSLOG`                                 | L7-Application/19.Syslog                | 736.6 KB (57.6%) | 66.5 KB (20.8%)  |
-| `TELEMETRY`                              | L7-Application/34.Telemetry             | 741.9 KB (58.0%) | 65.0 KB (20.3%)  |
+| `TELEMETRY`                              | L7-Application/34.Telemetry             | 742.0 KB (58.0%) | 65.0 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.7 KB (57.5%) | 65.2 KB (20.4%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
 | `TLS`                                    | L6-Presentation/07.SecureWebSocket      | 835.1 KB (65.2%) | 114.4 KB (35.7%) |
