@@ -3089,6 +3089,20 @@
 #endif
 
 /**
+ * @brief Opt-in multi-interface egress selection / failover policy (DETWS_ENABLE_LINK_MANAGER).
+ *
+ * The policy that drives which interface carries traffic once a device has more than one (a wired
+ * Ethernet PHY alongside WiFi STA / softAP): services/link_manager keeps a small table of interfaces
+ * (kind + priority + up/down) and deterministically selects the best link that is up, escalating to a
+ * higher-priority interface when it comes up and failing over when it drops, reporting only real
+ * transitions so the app reconfigures the netif once. The PHY bring-up (esp_eth) stays the app's. No
+ * heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_LINK_MANAGER
+#define DETWS_ENABLE_LINK_MANAGER 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

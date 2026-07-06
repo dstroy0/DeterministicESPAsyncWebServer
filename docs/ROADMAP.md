@@ -308,7 +308,14 @@ preempting queue, so sensing shares the real-time ingest path.
 ## Networking / connectivity
 
 - [x] Egress-interface reporting _(shipped)_ - `det_net_egress()` / `det_net_egress_ip()` read the live lwIP default route so the app always knows which interface (WiFi STA / softAP / Ethernet) its traffic is leaving on; the stack owns the actual failover, so no manager or polling tick is added (example 63.NetEgress).
-- [ ] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report above already work once both links exist. Multi-interface bridge / graceful escalation (L).
+- [~] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report
+  above already work once both links exist. Multi-interface bridge / graceful escalation (L)
+  _(escalation policy shipped)_ - `DETWS_ENABLE_LINK_MANAGER` (`services/link_manager`): a table of
+  interfaces (kind + priority + up/down) with deterministic best-link-up selection, graceful escalation to
+  a higher-priority interface when it comes up, failover to the next best when it drops, and change
+  detection so the app reconfigures the netif only on a real transition. Pure, host-tested
+  (`native_link_manager`). _Remaining:_ the `esp_eth` PHY init on hardware + the multi-interface bridge /
+  packet forwarding (the v5 interface-forwarding milestone).
 - [~] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L) _(dual-stack +
   fallback shipped)_ - the address plumbing is `DetIp` (RFC 4291 parse / RFC 5952 format / scope classify
   / CIDR) and the netif bring-up is `DETWS_ENABLE_IPV6` (physical layer; listeners bind
