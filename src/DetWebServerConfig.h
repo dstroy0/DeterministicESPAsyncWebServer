@@ -2936,6 +2936,18 @@
 #endif
 
 /**
+ * @brief Opt-in UTMC (Urban Traffic Management and Control) common-database codec (DETWS_ENABLE_UTMC).
+ *
+ * When set, services/utmc builds/parses the UTMC common-database HTTP+XML messages - a UTMCRequest for
+ * an object id and a UTMCResponse carrying the object value + a data-quality flag + a timestamp - the UK
+ * modular framework for sharing traffic data across municipal systems, over the existing HTTP server.
+ * Pure text framing. Default off.
+ */
+#ifndef DETWS_ENABLE_UTMC
+#define DETWS_ENABLE_UTMC 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

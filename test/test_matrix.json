@@ -1482,6 +1482,12 @@
       "src": ["+<services/wave/wave.cpp>"],
       "tests": ["test_wave"]
     },
+    "native_utmc": {
+      "desc": "UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse\n(value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_UTMC=1"],
+      "src": ["+<services/utmc/utmc.cpp>"],
+      "tests": ["test_utmc"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1558,6 +1564,7 @@
         "-DDETWS_ENABLE_INTERBUS=1",
         "-DDETWS_ENABLE_ICCP=1",
         "-DDETWS_ENABLE_WAVE=1",
+        "-DDETWS_ENABLE_UTMC=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1635,6 +1642,7 @@
         "+<services/interbus/interbus.cpp>",
         "+<services/iccp/iccp.cpp>",
         "+<services/wave/wave.cpp>",
+        "+<services/utmc/utmc.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
