@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.21.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.21.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`3697907`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36979072cfed23629a76a1e70624bd4fc5fb0bb8))
+
+### Changes
+
+- Bump version: 5.20.0 → 5.21.0 ([`4a2775a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a2775aa983148f11751d20d540213b737204045))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aa655db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa655dbc31cc52b222bd0d9a1b76bad23fe064e8))
+
+### Features
+
+- AutomationDirect / Koyo DirectNET serial frame codec ([`439ba11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/439ba116b7807844e373365d76f67dc0788e7491))
+
+</details>
+
 ## [5.20.0] - 2026-07-06
 
 <details>
