@@ -378,8 +378,8 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Layer | Feature        | Flash (best-worst) | RAM (best-worst) |
 | ----- | -------------- | -----------------: | ---------------: |
 | Core  | `ETHERNET`     |            35.6 KB |         < 0.5 KB |
-| Core  | `BUS_CAPTURE`  |            17.5 KB |         < 0.5 KB |
 | Core  | `FORWARD`      |            17.5 KB |         < 0.5 KB |
+| Core  | `BUS_CAPTURE`  |            17.5 KB |         < 0.5 KB |
 | Core  | `PROMISC`      |            11.1 KB |         < 0.5 KB |
 | L4    | `TLS`          |            99.7 KB |          49.7 KB |
 | L5    | `SSH`          |       66.3-66.7 KB |          21.8 KB |
@@ -411,8 +411,8 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DNS_RESOLVER` |             3.7 KB |           1.2 KB |
 | L7    | `COAP`         |             3.4 KB |           2.4 KB |
 | L7    | `OTA`          |             3.1 KB |          35.3 KB |
-| L7    | `CONFIG_STORE` |             2.8 KB |         < 0.5 KB |
 | L7    | `CONFIG_IO`    |             2.8 KB |         < 0.5 KB |
+| L7    | `CONFIG_STORE` |             2.8 KB |         < 0.5 KB |
 | L7    | `GRAPHQL`      |             2.7 KB |           4.3 KB |
 | L7    | `GPIO_MAP`     |             2.1 KB |         < 0.5 KB |
 | L7    | `METRICS`      |             1.8 KB |         < 0.5 KB |
