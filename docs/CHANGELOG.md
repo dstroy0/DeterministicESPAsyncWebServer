@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.7.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.7.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a71db74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a71db7421e631a0cd7757dae49d14a03fba1d54b))
+
+### Changes
+
+- Bump version: 5.6.0 → 5.7.0 ([`e49085d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e49085d05320376a9539e4e4a8edf807f599f543))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`79ebe65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79ebe65a601343c3091ce68f09d5424a63071c58))
+- update ESP32 build footprints [skip ci] ([`54895b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54895b5a52b46e4aa5bdc0ccdb1b51be2f1b0d50))
+
+### Features
+
+- TCP window sizing by free RAM + DHCP->static fallback ([`591b8b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/591b8b6998d90b63ad01ad24fcee815052a56a1e))
+
+</details>
+
 ## [5.6.0] - 2026-07-06
 
 <details>
