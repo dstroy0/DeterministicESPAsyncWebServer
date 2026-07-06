@@ -28,13 +28,20 @@ struct LockoutBucket
     uint16_t fails;         ///< consecutive failures from this address.
 };
 
-LockoutBucket g_buckets[DETWS_AUTH_LOCKOUT_SLOTS];
+// All lockout state, owned by one instance (internal linkage): the per-peer bucket table,
+// so it is one named owner, unreachable from any other translation unit.
+struct LockoutCtx
+{
+    LockoutBucket buckets[DETWS_AUTH_LOCKOUT_SLOTS];
+};
+LockoutCtx s_lock;
 
-LockoutBucket *find_bucket(const DetIp *ip)
+// Returns a mutable bucket (callers mutate it), so it takes the owner by non-const reference.
+LockoutBucket *find_bucket(LockoutCtx &c, const DetIp *ip)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
-        if (g_buckets[i].addr.family != DET_IP_NONE && det_ip_equal(&g_buckets[i].addr, ip))
-            return &g_buckets[i];
+        if (c.buckets[i].addr.family != DET_IP_NONE && det_ip_equal(&c.buckets[i].addr, ip))
+            return &c.buckets[i];
     return nullptr;
 }
 
@@ -50,7 +57,7 @@ uint32_t auth_lockout_remaining_ms(const DetIp *ip, uint32_t now_ms)
 {
     if (det_ip_is_unspecified(ip))
         return 0; // untrackable source -> never reported as locked
-    LockoutBucket *b = find_bucket(ip);
+    LockoutBucket *b = find_bucket(s_lock, ip);
     if (!b || b->lock_ms == 0)
         return 0;
     uint32_t elapsed = now_ms - b->lock_start_ms; // wraps correctly across rollover
@@ -64,7 +71,7 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
     if (det_ip_is_unspecified(ip))
         return; // untrackable source
 
-    LockoutBucket *b = find_bucket(ip);
+    LockoutBucket *b = find_bucket(s_lock, ip);
     if (!b)
     {
         // Claim a bucket: an empty one first; else evict the least-recently-used
@@ -74,20 +81,21 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
         int slot = -1, lru = 0;
         for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
         {
-            if (g_buckets[i].addr.family == DET_IP_NONE)
+            if (s_lock.buckets[i].addr.family == DET_IP_NONE)
             {
                 slot = i;
                 break;
             }
-            if ((uint32_t)(now_ms - g_buckets[i].last_ms) > (uint32_t)(now_ms - g_buckets[lru].last_ms))
+            if ((uint32_t)(now_ms - s_lock.buckets[i].last_ms) > (uint32_t)(now_ms - s_lock.buckets[lru].last_ms))
                 lru = i;
-            if (!bucket_locked(&g_buckets[i], now_ms) &&
-                (slot < 0 || (uint32_t)(now_ms - g_buckets[i].last_ms) > (uint32_t)(now_ms - g_buckets[slot].last_ms)))
+            if (!bucket_locked(&s_lock.buckets[i], now_ms) &&
+                (slot < 0 ||
+                 (uint32_t)(now_ms - s_lock.buckets[i].last_ms) > (uint32_t)(now_ms - s_lock.buckets[slot].last_ms)))
                 slot = i;
         }
         if (slot < 0)
             slot = lru; // table full of active lockouts
-        b = &g_buckets[slot];
+        b = &s_lock.buckets[slot];
         b->addr = *ip;
         b->fails = 0;
         b->lock_ms = 0;
@@ -125,7 +133,7 @@ void auth_lockout_succeed(const DetIp *ip)
 {
     if (det_ip_is_unspecified(ip))
         return;
-    LockoutBucket *b = find_bucket(ip);
+    LockoutBucket *b = find_bucket(s_lock, ip);
     if (b)
     {
         b->addr.family = DET_IP_NONE;
@@ -140,11 +148,11 @@ void auth_lockout_reset(void)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
     {
-        g_buckets[i].addr.family = DET_IP_NONE;
-        g_buckets[i].lock_start_ms = 0;
-        g_buckets[i].lock_ms = 0;
-        g_buckets[i].last_ms = 0;
-        g_buckets[i].fails = 0;
+        s_lock.buckets[i].addr.family = DET_IP_NONE;
+        s_lock.buckets[i].lock_start_ms = 0;
+        s_lock.buckets[i].lock_ms = 0;
+        s_lock.buckets[i].last_ms = 0;
+        s_lock.buckets[i].fails = 0;
     }
 }
 
