@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`321f006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/321f006cc104c90d9d2a18d01a7cd0b4bdbc054b))
+- update CHANGELOG.md [skip ci] ([`f8fe0fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8fe0fadef1993013ab709c9668f9fb6567d48f2))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`cf9a59d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf9a59db260984e9696d944b768cc0796159e532))
+
+### Features
+
+- generalize PTO loss recovery to 1-RTT (retransmit the response) ([`336736a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336736a4680d8c6e33287829c5b73a30e20e00f1))
+- PTO loss recovery - retransmit the handshake flight (RFC 9002) ([`d39d183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d39d183563daa1845f3313da100d1a7435e237fb))
+
 ## [5.1.0] - 2026-07-06
 
 <details>
