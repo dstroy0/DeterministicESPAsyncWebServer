@@ -135,7 +135,7 @@ def mermaid(hard, resource, derived):
     out.append("  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.")
     out.append("")
     if resource:
-        out.append('  PSRAM(["PSRAM (or *_ACK_DRAM)"]):::res')
+        out.append('  PSRAM(["PSRAM (or *_ACK_DRAM)"])')
     for p, c in sorted(hard):
         out.append(f"  {p} --> {c}")
     for c, label in sorted(resource):
@@ -148,6 +148,10 @@ def mermaid(hard, resource, derived):
         members = sorted(n for n, k in cls.items() if k == klass)
         if members:
             out.append(f"  class {','.join(members)} {klass};")
+    if resource:
+        out.append(
+            "  class PSRAM res;"
+        )  # a class statement, not inline :::res (GitHub rejects inline class on a shaped node)
     out.append("  classDef parent fill:#2d6a4f,stroke:#1b4332,color:#fff;")
     out.append("  classDef child fill:#1d3557,stroke:#0d1b2a,color:#fff;")
     out.append("  classDef derived fill:#5a189a,stroke:#3c096c,color:#fff;")

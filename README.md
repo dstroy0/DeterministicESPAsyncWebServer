@@ -60,20 +60,20 @@ How a request flows through the OSI layers: the app registers routes and calls `
 ```mermaid
 flowchart TB
   %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.
-  client(("client")):::ext
+  client(("client"))
 
   subgraph APP["Application L7 - DetWebServer"]
-    reg["Register: on() · on_regex() · serve_static() · dav() · on_not_found() +4"]
-    cfg["Configure: tls_cert() · tls_require_client_cert() · tls_client_subject() · set_ap_ip() · enable_rate_limit() +3"]
-    run["Run: begin() · begin_tls() · stop() · handle() · service_once() +1"]
+    reg["Register: on() / on_regex() / serve_static() / dav() / on_not_found() +4"]
+    cfg["Configure: tls_cert() / tls_require_client_cert() / tls_client_subject() / set_ap_ip() / enable_rate_limit() +3"]
+    run["Run: begin() / begin_tls() / stop() / handle() / service_once() +1"]
     mae[["match_and_execute"]]
     mw["middleware chain"]
     routes[("route table")]
     handler>"your Handler"]
-    resp["Respond: serve_file() · stats() · metrics() · send() · send_empty() +5"]
+    resp["Respond: serve_file() / stats() / metrics() / send() / send_empty() +5"]
   end
 
-  subgraph L6["Presentation L6 - base64 · cbor · deflate · hpack_prim · http2 · http3 · http_parser · inflate · json · msgpack · multipart · sha1 · sse · ssh · telnet · websocket"]
+  subgraph L6["Presentation L6 - base64 / cbor / deflate / hpack_prim / http2 / http3 / http_parser / inflate / json / msgpack / multipart / sha1 / sse / ssh / telnet / websocket"]
     tls["det_tls decrypt + ALPN"]
     parser["http_parser fills http_pool slot"]
     h2["h2_conn"]
@@ -82,7 +82,7 @@ flowchart TB
 
   subgraph L5["Session L5 - worker task"]
     tick["server_tick / dispatch_event"]
-    seam{{"ProtoHandler seam: HTTP · TELNET · SSH · MODBUS · OPCUA"}}
+    seam{{"ProtoHandler seam: HTTP / TELNET / SSH / MODBUS / OPCUA"}}
   end
 
   subgraph L4["Transport L4"]
@@ -108,6 +108,7 @@ flowchart TB
   resp -- h2 --> h2
   resp -- HTTP/3 --> h3 --> udp --> client
 
+  class client ext;
   classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;
 ```
 
@@ -390,7 +391,7 @@ flowchart TD
   %% Reading: A --> B means B requires A (enable the parent to build the child).
   %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
 
-  PSRAM(["PSRAM (or *_ACK_DRAM)"]):::res
+  PSRAM(["PSRAM (or *_ACK_DRAM)"])
   AUTH --> AUTH_LOCKOUT
   COAP --> COAP_BLOCK
   COAP --> COAP_OBSERVE
@@ -433,6 +434,7 @@ flowchart TD
   class AUTH,COAP,CONFIG_STORE,FILE_SERVING,HTTP_CLIENT,MQTT,OPCUA,SNMP,SSE,SSH,STATS,TLS,WEBSOCKET,WS_CLIENT parent;
   class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
   class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
+  class PSRAM res;
   classDef parent fill:#2d6a4f,stroke:#1b4332,color:#fff;
   classDef child fill:#1d3557,stroke:#0d1b2a,color:#fff;
   classDef derived fill:#5a189a,stroke:#3c096c,color:#fff;

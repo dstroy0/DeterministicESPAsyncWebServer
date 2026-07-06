@@ -108,7 +108,7 @@ def presentation_modules():
 
 def label(names, cap=5):
     shown = names[:cap]
-    text = " · ".join(f"{n}()" for n in shown)
+    text = " / ".join(f"{n}()" for n in shown)  # ASCII separator (a middle-dot can trip GitHub's parser)
     if len(names) > cap:
         text += f" +{len(names) - cap}"
     return text or "-"
@@ -118,12 +118,12 @@ def mermaid():
     api = public_methods()
     protos = protocols()
     pres = presentation_modules()
-    proto_names = " · ".join(p for p, _ in protos)
-    pres_names = " · ".join(pres)
+    proto_names = " / ".join(p for p, _ in protos)
+    pres_names = " / ".join(pres)
 
     out = ["flowchart TB"]
     out.append("  %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.")
-    out.append('  client(("client")):::ext')
+    out.append('  client(("client"))')
     out.append("")
     out.append('  subgraph APP["Application L7 - DetWebServer"]')
     out.append(f'    reg["Register: {label(api["Register"])}"]')
@@ -175,6 +175,9 @@ def mermaid():
     out.append("  resp -- h2 --> h2")
     out.append("  resp -- HTTP/3 --> h3 --> udp --> client")
     out.append("")
+    out.append(
+        "  class client ext;"
+    )  # class statement, not inline :::ext (GitHub rejects inline class on a shaped node)
     out.append("  classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;")
     return "\n".join(out)
 
