@@ -64,7 +64,7 @@ from each example's `pio ci` size report and aggregated into
 | `PCA9685`                                | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 733.8 KB (57.3%) | 65.1 KB (20.3%)  |
 | `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
-| `PREEMPT_QUEUE`                          | Foundation/06.PreemptQueue              | 267.6 KB (20.9%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.0 KB (20.5%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 746.3 KB (58.3%) | 46.2 KB (14.4%)  |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 740.8 KB (57.9%) | 66.2 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.4 KB (57.3%) | 64.6 KB (20.2%)  |
