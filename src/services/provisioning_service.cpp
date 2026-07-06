@@ -79,8 +79,15 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 #include <Preferences.h>
 #include <WiFi.h>
 
-static DetWebServer *g_server = nullptr;
-static uint8_t g_ap_ip[4] = {192, 168, 4, 1};
+// All provisioning-service state, owned by one instance (internal linkage): the server handle
+// and the softAP IP the captive-portal DNS answers with. Grouped so it is one named owner,
+// unreachable cross-TU.
+struct ProvCtx
+{
+    DetWebServer *server = nullptr;
+    uint8_t ap_ip[4] = {192, 168, 4, 1};
+};
+static ProvCtx s_prov;
 
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
 static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *peer, void *ctx)
@@ -121,10 +128,10 @@ static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *pe
     resp[n++] = 0x3C; // TTL 60s
     resp[n++] = 0x00;
     resp[n++] = 0x04; // RDLENGTH 4
-    resp[n++] = g_ap_ip[0];
-    resp[n++] = g_ap_ip[1];
-    resp[n++] = g_ap_ip[2];
-    resp[n++] = g_ap_ip[3];
+    resp[n++] = s_prov.ap_ip[0];
+    resp[n++] = s_prov.ap_ip[1];
+    resp[n++] = s_prov.ap_ip[2];
+    resp[n++] = s_prov.ap_ip[3];
 
     det_udp_send(peer, resp, n);
 }
@@ -163,7 +170,7 @@ void detws_provisioning_clear()
 static void prov_form_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    g_server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_FORM);
+    s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_FORM);
 }
 
 static void prov_save_handler(uint8_t slot_id, HttpReq *req)
@@ -174,7 +181,7 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     detws_prov_form_field((const char *)req->body, "psk", psk, sizeof(psk));
     if (!have_ssid)
     {
-        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "SSID required");
+        s_prov.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "SSID required");
         return;
     }
     Preferences prefs;
@@ -182,21 +189,21 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     prefs.putString("ssid", ssid);
     prefs.putString("psk", psk);
     prefs.end();
-    g_server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
+    s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
     delay(500);
     ESP.restart();
 }
 
 void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
 {
-    g_server = &server;
+    s_prov.server = &server;
     WiFi.mode(WIFI_AP);
     WiFi.softAP(ap_ssid);
     IPAddress ip = WiFi.softAPIP();
-    g_ap_ip[0] = ip[0];
-    g_ap_ip[1] = ip[1];
-    g_ap_ip[2] = ip[2];
-    g_ap_ip[3] = ip[3];
+    s_prov.ap_ip[0] = ip[0];
+    s_prov.ap_ip[1] = ip[1];
+    s_prov.ap_ip[2] = ip[2];
+    s_prov.ap_ip[3] = ip[3];
 
     // Catch-all DNS on UDP/53 via the transport-layer UDP service (callback-driven).
     det_udp_listen(53, prov_dns_recv, nullptr);
