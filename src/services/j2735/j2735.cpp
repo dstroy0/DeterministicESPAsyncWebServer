@@ -151,4 +151,44 @@ bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
     return r.ok;
 }
 
+size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap)
+{
+    if (!out || (count && !states) || count > 31)
+        return 0;
+    UperWriter w;
+    uper_writer_init(&w, out, cap);
+    uper_put_cint(&w, (int64_t)count, 0, 31);
+    for (size_t i = 0; i < count; i++)
+    {
+        uper_put_cint(&w, states[i].signal_group, 0, 255);
+        uper_put_cint(&w, states[i].phase, 0, 9);
+        uper_put_cint(&w, states[i].min_end_time, 0, 36000);
+        uper_put_cint(&w, states[i].max_end_time, 0, 36000);
+    }
+    return uper_writer_finish(&w);
+}
+
+bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
+                             size_t *out_count)
+{
+    if (!in || !out_states || !out_count)
+        return false;
+    UperReader r;
+    uper_reader_init(&r, in, len * 8);
+    size_t count = (size_t)uper_get_cint(&r, 0, 31);
+    if (!r.ok || count > max_states)
+        return false;
+    for (size_t i = 0; i < count; i++)
+    {
+        out_states[i].signal_group = (uint8_t)uper_get_cint(&r, 0, 255);
+        out_states[i].phase = (uint8_t)uper_get_cint(&r, 0, 9);
+        out_states[i].min_end_time = (uint16_t)uper_get_cint(&r, 0, 36000);
+        out_states[i].max_end_time = (uint16_t)uper_get_cint(&r, 0, 36000);
+    }
+    if (!r.ok)
+        return false;
+    *out_count = count;
+    return true;
+}
+
 #endif // DETWS_ENABLE_J2735

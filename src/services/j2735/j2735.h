@@ -91,5 +91,48 @@ size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t c
 /** @brief UPER-decode a BSMcore block. @return true on success. */
 bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c);
 
+/** @brief J2735 MovementPhaseState (the signal-group state in a SPaT MovementState). */
+enum J2735PhaseState
+{
+    J2735_PHASE_DARK = 0,                        ///< unavailable / dark.
+    J2735_PHASE_STOP_THEN_PROCEED = 1,           ///< flashing red.
+    J2735_PHASE_STOP_AND_REMAIN = 3,             ///< red.
+    J2735_PHASE_PERMISSIVE_MOVEMENT_ALLOWED = 5, ///< permissive green.
+    J2735_PHASE_PROTECTED_MOVEMENT_ALLOWED = 6,  ///< protected green.
+    J2735_PHASE_PERMISSIVE_CLEARANCE = 7,        ///< permissive yellow.
+    J2735_PHASE_PROTECTED_CLEARANCE = 8,         ///< protected yellow.
+    J2735_PHASE_CAUTION_CONFLICTING_TRAFFIC = 9  ///< flashing yellow.
+};
+
+/** @brief One SPaT MovementState: a signal group, its current phase, and the min/max end times. */
+struct J2735MovementState
+{
+    uint8_t signal_group;  ///< SignalGroupID 0..255.
+    uint8_t phase;         ///< J2735PhaseState (eventState 0..9).
+    uint16_t min_end_time; ///< TimeMark 0..36000 (tenths of a second in the hour; 36001 = undefined here).
+    uint16_t max_end_time; ///< TimeMark 0..36000.
+};
+
+/**
+ * @brief UPER-encode a SPaT MovementState list into @p out.
+ * @param states  the movement states.
+ * @param count   number of states (0..31; encoded as a 5-bit count).
+ * @return octets written, or 0 on overflow.
+ *
+ * Encodes count [0..31] then, per state: signalGroup [0..255], eventState [0..9], minEndTime [0..36000],
+ * maxEndTime [0..36000] - the timing core a vehicle uses for a countdown.
+ */
+size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap);
+
+/**
+ * @brief UPER-decode a SPaT MovementState list.
+ * @param out_states  buffer for the decoded states.
+ * @param max_states  capacity of @p out_states.
+ * @param out_count   set to the number decoded.
+ * @return true on success (and the encoded count fit in @p max_states).
+ */
+bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
+                             size_t *out_count);
+
 #endif // DETWS_ENABLE_J2735
 #endif // DETERMINISTICESPASYNCWEBSERVER_J2735_H
