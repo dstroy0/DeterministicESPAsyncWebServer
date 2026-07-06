@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 ## 3. PlatformIO Test Environments
 
-PlatformIO separates configurations into different "environments" using [platformio.ini](file:///C:/Users/Douglas/Desktop/git_project/DeterministicESPAsyncWebserver/platformio.ini). Each environment compiles a specific slice of the codebase with custom compile-time flags to verify behavior in isolation:
+PlatformIO separates configurations into different "environments" using [platformio.ini](../platformio.ini). Each environment compiles a specific slice of the codebase with custom compile-time flags to verify behavior in isolation:
 
 | Environment           | Compile-Time Configuration    | Primary Purpose                                                                                         |
 | :-------------------- | :---------------------------- | :------------------------------------------------------------------------------------------------------ |

@@ -14,8 +14,8 @@ observe. The C/C++ analyzer needs a **compilation database**
    running" error.
 2. **Add the token.** Create a SonarCloud _user/project token_ and add it as the
    repository secret **`SONAR_TOKEN`** (Settings -> Secrets and variables ->
-   Actions). The [`SonarCloud` workflow](../.github/workflows/sonarcloud.yml) is a
-   no-op until this secret exists.
+   Actions). The SonarCloud scan (part of the [Test & Analyze workflow](../.github/workflows/test-report.yml))
+   is a no-op until this secret exists.
 3. **Check the keys.** Confirm `sonar.projectKey` and `sonar.organization` in
    [`sonar-project.properties`](../sonar-project.properties) match your SonarCloud
    project (SonarCloud -> _Information_). The defaults follow SonarCloud's
