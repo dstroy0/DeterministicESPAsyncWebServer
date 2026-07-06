@@ -2406,6 +2406,18 @@
 #define DETWS_ENABLE_THEMES 0
 #endif
 
+/**
+ * @brief Include the trademark-named themes in the embedded set (default on / open-source).
+ *
+ * A few themes are named after a company or product (Darcula, Windows XP, Discord, Spotify, ...). The
+ * palette is just colors, but a commercial product should not ship the branded name, so a commercial
+ * build sets this to 0 to drop those blobs from the registry (the list is `RESTRICTED` in
+ * `src/web/wizard/gen_themes.py`). The open-source (AGPL) build keeps them.
+ */
+#ifndef DETWS_THEMES_INCLUDE_TRADEMARKED
+#define DETWS_THEMES_INCLUDE_TRADEMARKED 1
+#endif
+
 /** @brief Maximum widgets in the dashboard table (BSS value array). */
 #ifndef DETWS_DASHBOARD_MAX_WIDGETS
 #define DETWS_DASHBOARD_MAX_WIDGETS 16

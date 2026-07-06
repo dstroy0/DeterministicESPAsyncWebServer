@@ -8,6 +8,8 @@
 python src/web/wizard/gen_themes.py custom --base '#36454f' --mode dark --name charcoal --out my.css
 ```
 
+&dagger; = named after a company/product trademark: shipped in the open-source (AGPL) build, but dropped from a commercial build (`DETWS_THEMES_INCLUDE_TRADEMARKED=0`). The palette is just colors; only the branded name is gated.
+
 ## Bespoke
 
 Hand-authored, with personality the palette engine cannot capture (CRT scanlines, nyan trails).
@@ -19,8 +21,8 @@ Hand-authored, with personality the palette engine cannot capture (CRT scanlines
 <td align="center"><img src="theme_preview/cute.png" width="240" alt="cute"><br><code>cute</code></td>
 </tr>
 <tr>
-<td align="center"><img src="theme_preview/keroppi.png" width="240" alt="keroppi"><br><code>keroppi</code></td>
-<td align="center"><img src="theme_preview/nyancat.png" width="240" alt="nyancat"><br><code>nyancat</code></td>
+<td align="center"><img src="theme_preview/keroppi.png" width="240" alt="keroppi"><br><code>keroppi</code> &dagger;</td>
+<td align="center"><img src="theme_preview/nyancat.png" width="240" alt="nyancat"><br><code>nyancat</code> &dagger;</td>
 <td align="center"><img src="theme_preview/rainbow.png" width="240" alt="rainbow"><br><code>rainbow</code></td>
 </tr>
 <tr>
@@ -95,7 +97,7 @@ Recognizable code-editor schemes, matched to their canonical palettes.
 <td align="center"><img src="theme_preview/cobalt2.png" width="240" alt="cobalt2"><br><code>cobalt2</code></td>
 </tr>
 <tr>
-<td align="center"><img src="theme_preview/darcula.png" width="240" alt="darcula"><br><code>darcula</code></td>
+<td align="center"><img src="theme_preview/darcula.png" width="240" alt="darcula"><br><code>darcula</code> &dagger;</td>
 <td align="center"><img src="theme_preview/dracula.png" width="240" alt="dracula"><br><code>dracula</code></td>
 <td align="center"><img src="theme_preview/everforest.png" width="240" alt="everforest"><br><code>everforest</code></td>
 </tr>
@@ -168,12 +170,12 @@ Terminals and 8-bit machines.
 </tr>
 <tr>
 <td align="center"><img src="theme_preview/commodore-pet.png" width="240" alt="commodore-pet"><br><code>commodore-pet</code></td>
-<td align="center"><img src="theme_preview/gameboy.png" width="240" alt="gameboy"><br><code>gameboy</code></td>
+<td align="center"><img src="theme_preview/gameboy.png" width="240" alt="gameboy"><br><code>gameboy</code> &dagger;</td>
 <td align="center"><img src="theme_preview/green-phosphor.png" width="240" alt="green-phosphor"><br><code>green-phosphor</code></td>
 </tr>
 <tr>
 <td align="center"><img src="theme_preview/ibm-3270.png" width="240" alt="ibm-3270"><br><code>ibm-3270</code></td>
-<td align="center"><img src="theme_preview/pip-boy.png" width="240" alt="pip-boy"><br><code>pip-boy</code></td>
+<td align="center"><img src="theme_preview/pip-boy.png" width="240" alt="pip-boy"><br><code>pip-boy</code> &dagger;</td>
 <td align="center"><img src="theme_preview/zx-spectrum.png" width="240" alt="zx-spectrum"><br><code>zx-spectrum</code></td>
 </tr>
 </table>
@@ -221,28 +223,28 @@ Loud and fun - for the kids (and the young at heart).
 
 <table>
 <tr>
-<td align="center"><img src="theme_preview/among-us.png" width="240" alt="among-us"><br><code>among-us</code></td>
-<td align="center"><img src="theme_preview/barbie.png" width="240" alt="barbie"><br><code>barbie</code></td>
+<td align="center"><img src="theme_preview/among-us.png" width="240" alt="among-us"><br><code>among-us</code> &dagger;</td>
+<td align="center"><img src="theme_preview/barbie.png" width="240" alt="barbie"><br><code>barbie</code> &dagger;</td>
 <td align="center"><img src="theme_preview/bubblegum.png" width="240" alt="bubblegum"><br><code>bubblegum</code></td>
 </tr>
 <tr>
 <td align="center"><img src="theme_preview/cyberpunk.png" width="240" alt="cyberpunk"><br><code>cyberpunk</code></td>
-<td align="center"><img src="theme_preview/discord.png" width="240" alt="discord"><br><code>discord</code></td>
+<td align="center"><img src="theme_preview/discord.png" width="240" alt="discord"><br><code>discord</code> &dagger;</td>
 <td align="center"><img src="theme_preview/doge.png" width="240" alt="doge"><br><code>doge</code></td>
 </tr>
 <tr>
-<td align="center"><img src="theme_preview/doom.png" width="240" alt="doom"><br><code>doom</code></td>
+<td align="center"><img src="theme_preview/doom.png" width="240" alt="doom"><br><code>doom</code> &dagger;</td>
 <td align="center"><img src="theme_preview/hotdog-stand.png" width="240" alt="hotdog-stand"><br><code>hotdog-stand</code></td>
 <td align="center"><img src="theme_preview/matrix.png" width="240" alt="matrix"><br><code>matrix</code></td>
 </tr>
 <tr>
-<td align="center"><img src="theme_preview/minecraft.png" width="240" alt="minecraft"><br><code>minecraft</code></td>
+<td align="center"><img src="theme_preview/minecraft.png" width="240" alt="minecraft"><br><code>minecraft</code> &dagger;</td>
 <td align="center"><img src="theme_preview/rgb-gamer.png" width="240" alt="rgb-gamer"><br><code>rgb-gamer</code></td>
-<td align="center"><img src="theme_preview/slack-aubergine.png" width="240" alt="slack-aubergine"><br><code>slack-aubergine</code></td>
+<td align="center"><img src="theme_preview/slack-aubergine.png" width="240" alt="slack-aubergine"><br><code>slack-aubergine</code> &dagger;</td>
 </tr>
 <tr>
-<td align="center"><img src="theme_preview/spotify.png" width="240" alt="spotify"><br><code>spotify</code></td>
+<td align="center"><img src="theme_preview/spotify.png" width="240" alt="spotify"><br><code>spotify</code> &dagger;</td>
 <td align="center"><img src="theme_preview/vaporwave.png" width="240" alt="vaporwave"><br><code>vaporwave</code></td>
-<td align="center"><img src="theme_preview/windows-xp.png" width="240" alt="windows-xp"><br><code>windows-xp</code></td>
+<td align="center"><img src="theme_preview/windows-xp.png" width="240" alt="windows-xp"><br><code>windows-xp</code> &dagger;</td>
 </tr>
 </table>

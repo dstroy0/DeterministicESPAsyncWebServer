@@ -37,6 +37,19 @@ BANNER = (
 )
 
 
+def _restricted():
+    """The trademark-named themes (from gen_themes.RESTRICTED) - their blobs are gated for commercial."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("gen_themes", os.path.join(SCRIPT_DIR, "gen_themes.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return set(mod.RESTRICTED)
+
+
+RESTRICTED = _restricted()
+
+
 def minify_css(css):
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
     css = re.sub(r"\s+", " ", css)
@@ -137,15 +150,25 @@ def render_source(themes):
     ]
     for name, css in themes:
         segs = escape_segments(css)
-        decl = "static const char %s[] =" % c_ident(name)
-        lines.append(decl)
+        restricted = name in RESTRICTED
+        if restricted:  # a trademark-named theme: keep it in OSS, drop it from a commercial build
+            lines.append("#if DETWS_THEMES_INCLUDE_TRADEMARKED")
+        lines.append("static const char %s[] =" % c_ident(name))
         lines.append('    "' + '"\n    "'.join(segs) + '";')
+        if restricted:
+            lines.append("#endif")
         lines.append("")
     lines.append("const DetThemeBlob DETWS_THEME_BLOBS[] = {")
     for name, _ in themes:
-        lines.append('    {"%s", %s},' % (name, c_ident(name)))
+        if name in RESTRICTED:
+            lines.append("#if DETWS_THEMES_INCLUDE_TRADEMARKED")
+            lines.append('    {"%s", %s},' % (name, c_ident(name)))
+            lines.append("#endif")
+        else:
+            lines.append('    {"%s", %s},' % (name, c_ident(name)))
     lines.append("};")
-    lines.append("const size_t DETWS_THEME_BLOB_COUNT = %d;" % len(themes))
+    # sizeof so the count stays correct whether or not the trademark-gated entries are compiled in.
+    lines.append("const size_t DETWS_THEME_BLOB_COUNT = sizeof(DETWS_THEME_BLOBS) / sizeof(DETWS_THEME_BLOBS[0]);")
     lines.append("")
     lines.append("const char *detws_theme_css(const char *name)")
     lines.append("{")

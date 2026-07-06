@@ -37,6 +37,30 @@ def add(name, category, mode, bg, bg2, card, ink, muted, accent, accent2):
     P[name] = (category, mode, bg, bg2, card, ink, muted, accent, accent2)
 
 
+# Themes named after a company / product trademark: kept in the OPEN-SOURCE library (a color palette is
+# not the trademark), but a commercial build should not ship the branded name/association, so the theme
+# blobs (gen_theme_blobs.py) gate these behind DETWS_THEMES_INCLUDE_TRADEMARKED - default 1 (open source),
+# set 0 in a commercial build to drop them. Edit this set freely; it is the single source the packager
+# and the gallery both read. Includes the seven bespoke themes by name where relevant.
+RESTRICTED = frozenset(
+    {
+        "darcula",  # JetBrains
+        "windows-xp",  # Microsoft
+        "discord",  # Discord Inc.
+        "slack-aubergine",  # Slack / Salesforce
+        "spotify",  # Spotify
+        "doom",  # id Software / Bethesda
+        "minecraft",  # Mojang / Microsoft
+        "barbie",  # Mattel
+        "among-us",  # InnerSloth
+        "pip-boy",  # Bethesda (Fallout)
+        "gameboy",  # Nintendo
+        "keroppi",  # Sanrio (bespoke)
+        "nyancat",  # the Nyan Cat character (bespoke)
+    }
+)
+
+
 # --- enterprise: calm, professional, boardroom-safe -------------------------------------------------
 add(
     "corporate-slate",
@@ -398,8 +422,9 @@ def _grid(names):
     for i in range(0, len(names), 3):
         out.append("<tr>")
         for n in names[i : i + 3]:
+            mark = " &dagger;" if n in RESTRICTED else ""  # trademark-named: open-source only
             out.append(
-                f'<td align="center"><img src="theme_preview/{n}.png" width="240" alt="{n}"><br><code>{n}</code></td>'
+                f'<td align="center"><img src="theme_preview/{n}.png" width="240" alt="{n}"><br><code>{n}</code>{mark}</td>'
             )
         out.append("</tr>")
     out.append("</table>")
@@ -424,6 +449,10 @@ def cmd_gallery():
         "```sh",
         "python src/web/wizard/gen_themes.py custom --base '#36454f' --mode dark --name charcoal --out my.css",
         "```",
+        "",
+        "&dagger; = named after a company/product trademark: shipped in the open-source (AGPL) build, but"
+        " dropped from a commercial build (`DETWS_THEMES_INCLUDE_TRADEMARKED=0`). The palette is just colors;"
+        " only the branded name is gated.",
         "",
         "## Bespoke",
         "",

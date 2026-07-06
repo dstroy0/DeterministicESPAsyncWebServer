@@ -28,6 +28,7 @@ static const char DETWS_THEME_AMBER_CRT[] =
     "\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);"
     "}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_AMONG_US[] =
     ":root{--bg:#132a3e;--bg2:#1a3a52;--card:#c51111;--ink:#ffffff;--muted:#7a8b99;--accent:#c51111;--accent2:#ef7d"
     "0d;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -45,6 +46,7 @@ static const char DETWS_THEME_AMONG_US[] =
     "x(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\""
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_ANDROMEDA[] =
     ":root{--bg:#23262e;--bg2:#1e2025;--card:#2b2f38;--ink:#d5ced9;--muted:#746f77;--accent:#00e8c6;--accent2:#ff53"
@@ -190,6 +192,7 @@ static const char DETWS_THEME_AZURE_PRO[] =
     "las,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0."
     "6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_BARBIE[] =
     ":root{--bg:#ffe0f0;--bg2:#ffd0ec;--card:#ffffff;--ink:#a10c58;--muted:#d16ba5;--accent:#e91e8c;--accent2:#ff4f"
     "a3;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -207,6 +210,7 @@ static const char DETWS_THEME_BARBIE[] =
     "--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\",\"Cascadia Co"
     "de\",Consolas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--ra"
     "dius) * 0.6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_BLULOCO_DARK[] =
     ":root{--bg:#282c34;--bg2:#21252b;--card:#2c313a;--ink:#abb2bf;--muted:#636d83;--accent:#3691ff;--accent2:#ff64"
@@ -525,6 +529,7 @@ static const char DETWS_THEME_CYBERPUNK[] =
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_DARCULA[] =
     ":root{--bg:#2b2b2b;--bg2:#313335;--card:#3c3f41;--ink:#a9b7c6;--muted:#808080;--accent:#cc7832;--accent2:#6897"
     "bb;--radius:6px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 15"
@@ -542,6 +547,7 @@ static const char DETWS_THEME_DARCULA[] =
     ",var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\",\"Cascad"
     "ia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);}code{pa"
     "dding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_DEEP_SEA[] =
     ":root{--bg:#031b2e;--bg2:#052a45;--card:#073a5c;--ink:#cfe8f7;--muted:#5a8aa8;--accent:#00b4d8;--accent2:#48ca"
@@ -579,6 +585,7 @@ static const char DETWS_THEME_DESERT[] =
     "las,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0."
     "6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_DISCORD[] =
     ":root{--bg:#313338;--bg2:#2b2d31;--card:#383a40;--ink:#dbdee1;--muted:#949ba4;--accent:#5865f2;--accent2:#00a8"
     "fc;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -596,6 +603,7 @@ static const char DETWS_THEME_DISCORD[] =
     "x(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\""
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_DOGE[] =
     ":root{--bg:#f5e6c8;--bg2:#f0dcae;--card:#ffffff;--ink:#5a4a2a;--muted:#a08a5a;--accent:#f2a900;--accent2:#3fa7"
@@ -615,6 +623,7 @@ static const char DETWS_THEME_DOGE[] =
     "de\",Consolas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--ra"
     "dius) * 0.6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_DOOM[] =
     ":root{--bg:#1a0000;--bg2:#2a0505;--card:#3a0a0a;--ink:#ffcc66;--muted:#8b3a3a;--accent:#ff4500;--accent2:#b222"
     "22;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -632,6 +641,7 @@ static const char DETWS_THEME_DOOM[] =
     "x(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\""
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_DRACULA[] =
     ":root{--bg:#282a36;--bg2:#21222c;--card:#343746;--ink:#f8f8f2;--muted:#6272a4;--accent:#bd93f9;--accent2:#ff79"
@@ -723,6 +733,7 @@ static const char DETWS_THEME_FOREST_EXEC[] =
     "las,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0."
     "6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_GAMEBOY[] =
     ":root{--bg:#9bbc0f;--bg2:#8bac0f;--card:#9bbc0f;--ink:#0f380f;--muted:#306230;--accent:#0f380f;--accent2:#3062"
     "30;--radius:0;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 15px"
@@ -740,6 +751,7 @@ static const char DETWS_THEME_GAMEBOY[] =
     "-muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\",\"Cascadia Cod"
     "e\",Consolas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--rad"
     "ius) * 0.6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_GITHUB_DARK[] =
     ":root{--bg:#0d1117;--bg2:#161b22;--card:#161b22;--ink:#c9d1d9;--muted:#8b949e;--accent:#58a6ff;--accent2:#a371"
@@ -993,6 +1005,7 @@ static const char DETWS_THEME_KANAGAWA[] =
     "ia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);}code{pa"
     "dding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_KEROPPI[] =
     ":root{--pond:#d6f1ff;--frog:#6cc24a;--frog2:#3f9e3a;--cheek:#ff9ec3;--red:#e8453c;--ink:#244a22;--white:#fffff"
     "f;}html,body{margin:0;background:var(--pond);color:var(--ink);font:16px/1.6 \"Segoe UI Rounded\",\"Comic Sans "
@@ -1005,6 +1018,7 @@ static const char DETWS_THEME_KEROPPI[] =
     "g);color:var(--white);border:2px solid var(--white);border-radius:14px;padding:10px 20px;font:inherit;font-wei"
     "ght:800;cursor:pointer;box-shadow:0 4px 0 var(--frog2);}button:hover{background:var(--red);}button:active{tran"
     "sform:translateY(3px);box-shadow:0 1px 0 var(--frog2);}";
+#endif
 
 static const char DETWS_THEME_LAVENDER[] =
     ":root{--bg:#f3f0fb;--bg2:#e8e2f7;--card:#ffffff;--ink:#3a2f5a;--muted:#8579a5;--accent:#8b5cf6;--accent2:#ec48"
@@ -1096,6 +1110,7 @@ static const char DETWS_THEME_MATRIX[] =
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_MINECRAFT[] =
     ":root{--bg:#7fb238;--bg2:#8fc44a;--card:#8b6f47;--ink:#3a2a16;--muted:#6b5333;--accent:#5a9e2f;--accent2:#8b6f"
     "47;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -1113,6 +1128,7 @@ static const char DETWS_THEME_MINECRAFT[] =
     "--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\",\"Cascadia Co"
     "de\",Consolas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--ra"
     "dius) * 0.6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_MINT[] =
     ":root{--bg:#eafaf1;--bg2:#d6f5e3;--card:#ffffff;--ink:#1e4635;--muted:#5f8a74;--accent:#2ecc71;--accent2:#16a0"
@@ -1312,6 +1328,7 @@ static const char DETWS_THEME_NOTION_DARK[] =
     "a Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);}code{pad"
     "ding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_NYANCAT[] =
     ":root{--space:#0a0a2e;--ink:#ffffff;--tart:#fc99cc;--tart2:#ff6ab3;--trail:repeating-linear-gradient( 0deg,#ff"
     "0000 0 6px,#ff9900 6px 12px,#ffff00 12px 18px,#33ff00 18px 24px,#0099ff 24px 30px,#6633ff 30px 36px );}html,bo"
@@ -1326,6 +1343,7 @@ static const char DETWS_THEME_NYANCAT[] =
     "px;font:inherit;font-weight:800;cursor:pointer;background:var(--tart);box-shadow:0 4px 0 var(--tart2);}button:"
     "hover{background:var(--trail);background-size:100% 36px;color:#fff;text-shadow:0 0 4px #000;}button:active{tra"
     "nsform:translateY(3px);box-shadow:none;}";
+#endif
 
 static const char DETWS_THEME_OCEANIC_NEXT[] =
     ":root{--bg:#1b2b34;--bg2:#22333b;--card:#2b3a42;--ink:#d8dee9;--muted:#65737e;--accent:#6699cc;--accent2:#5fb3"
@@ -1435,6 +1453,7 @@ static const char DETWS_THEME_PEACH[] =
     "las,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0."
     "6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_PIP_BOY[] =
     ":root{--bg:#0a1a0a;--bg2:#0f240f;--card:#0f240f;--ink:#41ff00;--muted:#1a7a1a;--accent:#41ff00;--accent2:#88ff"
     "44;--radius:0;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 15px"
@@ -1452,6 +1471,7 @@ static const char DETWS_THEME_PIP_BOY[] =
     "(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\","
     "\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);"
     "}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_POIMANDRES[] =
     ":root{--bg:#1b1e28;--bg2:#171922;--card:#252b37;--ink:#e4f0fb;--muted:#767c9d;--accent:#5de4c7;--accent2:#add7"
@@ -1626,6 +1646,7 @@ static const char DETWS_THEME_SKY[] =
     "las,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0."
     "6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_SLACK_AUBERGINE[] =
     ":root{--bg:#3f0e40;--bg2:#350d36;--card:#4a154b;--ink:#f8f8f8;--muted:#b49bb5;--accent:#ecb22e;--accent2:#36c5"
     "f0;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -1643,6 +1664,7 @@ static const char DETWS_THEME_SLACK_AUBERGINE[] =
     "x(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\""
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_SOLARIZED_DARK[] =
     ":root{--bg:#002b36;--bg2:#073642;--card:#073642;--ink:#eee8d5;--muted:#93a1a1;--accent:#268bd2;--accent2:#2aa1"
@@ -1680,6 +1702,7 @@ static const char DETWS_THEME_SOLARIZED_LIGHT[] =
     "olas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--radius) * 0"
     ".6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_SPOTIFY[] =
     ":root{--bg:#121212;--bg2:#181818;--card:#282828;--ink:#ffffff;--muted:#b3b3b3;--accent:#1db954;--accent2:#1ed7"
     "60;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -1697,6 +1720,7 @@ static const char DETWS_THEME_SPOTIFY[] =
     "x(in srgb,var(--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\""
     ",\"Cascadia Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6)"
     ";}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_SSH_TERMINAL[] =
     ":root{--bg:#000000;--fg:#c5c8c6;--accent:#81a2be;--muted:#5f6b75;}html,body{margin:0;background:var(--bg);colo"
@@ -1922,6 +1946,7 @@ static const char DETWS_THEME_VOLCANO[] =
     "a Code\",Consolas,monospace;background:rgba(255,255,255,.08);border-radius:calc(var(--radius) * 0.6);}code{pad"
     "ding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
 
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
 static const char DETWS_THEME_WINDOWS_XP[] =
     ":root{--bg:#3a6ea5;--bg2:#245edb;--card:#ece9d8;--ink:#0a246a;--muted:#7a96c8;--accent:#316ac5;--accent2:#f5a6"
     "23;--radius:18px;}*{box-sizing:border-box;}html,body{margin:0;min-height:100%;color:var(--ink);font:16px/1.6 1"
@@ -1939,6 +1964,7 @@ static const char DETWS_THEME_WINDOWS_XP[] =
     "--muted) 30%,transparent);}th{color:var(--accent);}code,pre{font-family:ui-monospace,\"SF Mono\",\"Cascadia Co"
     "de\",Consolas,monospace;background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:calc(var(--ra"
     "dius) * 0.6);}code{padding:2px 6px;}pre{padding:14px 16px;overflow-x:auto;}";
+#endif
 
 static const char DETWS_THEME_ZENBURN[] =
     ":root{--bg:#3f3f3f;--bg2:#383838;--card:#4a4a4a;--ink:#dcdccc;--muted:#7f9f7f;--accent:#f0dfaf;--accent2:#dca3"
@@ -1978,7 +2004,9 @@ static const char DETWS_THEME_ZX_SPECTRUM[] =
 
 const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"amber-crt", DETWS_THEME_AMBER_CRT},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"among-us", DETWS_THEME_AMONG_US},
+#endif
     {"andromeda", DETWS_THEME_ANDROMEDA},
     {"arctic", DETWS_THEME_ARCTIC},
     {"aura", DETWS_THEME_AURA},
@@ -1987,7 +2015,9 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"ayu-light", DETWS_THEME_AYU_LIGHT},
     {"ayu-mirage", DETWS_THEME_AYU_MIRAGE},
     {"azure-pro", DETWS_THEME_AZURE_PRO},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"barbie", DETWS_THEME_BARBIE},
+#endif
     {"bluloco-dark", DETWS_THEME_BLULOCO_DARK},
     {"bordeaux", DETWS_THEME_BORDEAUX},
     {"borland", DETWS_THEME_BORLAND},
@@ -2007,18 +2037,26 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"crt-green", DETWS_THEME_CRT_GREEN},
     {"cute", DETWS_THEME_CUTE},
     {"cyberpunk", DETWS_THEME_CYBERPUNK},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"darcula", DETWS_THEME_DARCULA},
+#endif
     {"deep-sea", DETWS_THEME_DEEP_SEA},
     {"desert", DETWS_THEME_DESERT},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"discord", DETWS_THEME_DISCORD},
+#endif
     {"doge", DETWS_THEME_DOGE},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"doom", DETWS_THEME_DOOM},
+#endif
     {"dracula", DETWS_THEME_DRACULA},
     {"everforest", DETWS_THEME_EVERFOREST},
     {"firewatch", DETWS_THEME_FIREWATCH},
     {"fluent-dark", DETWS_THEME_FLUENT_DARK},
     {"forest-exec", DETWS_THEME_FOREST_EXEC},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"gameboy", DETWS_THEME_GAMEBOY},
+#endif
     {"github-dark", DETWS_THEME_GITHUB_DARK},
     {"github-light", DETWS_THEME_GITHUB_LIGHT},
     {"graphite", DETWS_THEME_GRAPHITE},
@@ -2033,13 +2071,17 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"ibm-g10", DETWS_THEME_IBM_G10},
     {"ibm-g90", DETWS_THEME_IBM_G90},
     {"kanagawa", DETWS_THEME_KANAGAWA},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"keroppi", DETWS_THEME_KEROPPI},
+#endif
     {"lavender", DETWS_THEME_LAVENDER},
     {"linear", DETWS_THEME_LINEAR},
     {"material-darker", DETWS_THEME_MATERIAL_DARKER},
     {"material-ocean", DETWS_THEME_MATERIAL_OCEAN},
     {"matrix", DETWS_THEME_MATRIX},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"minecraft", DETWS_THEME_MINECRAFT},
+#endif
     {"mint", DETWS_THEME_MINT},
     {"molokai", DETWS_THEME_MOLOKAI},
     {"mono-minimal", DETWS_THEME_MONO_MINIMAL},
@@ -2051,14 +2093,18 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"nightfly", DETWS_THEME_NIGHTFLY},
     {"nord", DETWS_THEME_NORD},
     {"notion-dark", DETWS_THEME_NOTION_DARK},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"nyancat", DETWS_THEME_NYANCAT},
+#endif
     {"oceanic-next", DETWS_THEME_OCEANIC_NEXT},
     {"one-dark", DETWS_THEME_ONE_DARK},
     {"one-light", DETWS_THEME_ONE_LIGHT},
     {"palenight", DETWS_THEME_PALENIGHT},
     {"panda", DETWS_THEME_PANDA},
     {"peach", DETWS_THEME_PEACH},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"pip-boy", DETWS_THEME_PIP_BOY},
+#endif
     {"poimandres", DETWS_THEME_POIMANDRES},
     {"rainbow", DETWS_THEME_RAINBOW},
     {"rgb-gamer", DETWS_THEME_RGB_GAMER},
@@ -2069,10 +2115,14 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"seafoam", DETWS_THEME_SEAFOAM},
     {"shades-of-purple", DETWS_THEME_SHADES_OF_PURPLE},
     {"sky", DETWS_THEME_SKY},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"slack-aubergine", DETWS_THEME_SLACK_AUBERGINE},
+#endif
     {"solarized-dark", DETWS_THEME_SOLARIZED_DARK},
     {"solarized-light", DETWS_THEME_SOLARIZED_LIGHT},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"spotify", DETWS_THEME_SPOTIFY},
+#endif
     {"ssh-terminal", DETWS_THEME_SSH_TERMINAL},
     {"steel", DETWS_THEME_STEEL},
     {"stripe", DETWS_THEME_STRIPE},
@@ -2086,11 +2136,13 @@ const DetThemeBlob DETWS_THEME_BLOBS[] = {
     {"vitesse-dark", DETWS_THEME_VITESSE_DARK},
     {"vitesse-light", DETWS_THEME_VITESSE_LIGHT},
     {"volcano", DETWS_THEME_VOLCANO},
+#if DETWS_THEMES_INCLUDE_TRADEMARKED
     {"windows-xp", DETWS_THEME_WINDOWS_XP},
+#endif
     {"zenburn", DETWS_THEME_ZENBURN},
     {"zx-spectrum", DETWS_THEME_ZX_SPECTRUM},
 };
-const size_t DETWS_THEME_BLOB_COUNT = 112;
+const size_t DETWS_THEME_BLOB_COUNT = sizeof(DETWS_THEME_BLOBS) / sizeof(DETWS_THEME_BLOBS[0]);
 
 const char *detws_theme_css(const char *name)
 {
