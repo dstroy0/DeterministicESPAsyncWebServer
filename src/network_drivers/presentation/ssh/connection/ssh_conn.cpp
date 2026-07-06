@@ -177,6 +177,10 @@ void ssh_conn_poll(uint8_t conn_slot)
 {
 #if DETWS_SSH_PORT_FORWARD
     TcpConn *conn = &conn_pool[conn_slot];
+    // The dispatch loop now calls on_poll for every slot uniformly (no per-protocol gate); it used to
+    // poll only ACTIVE slots, so keep that here to preserve behavior.
+    if (conn->state != CONN_ACTIVE)
+        return;
     uint8_t j = conn->proto_slot;
     if (j < MAX_SSH_CONNS && conn_for_ssh[j] == conn_slot)
         ssh_forward_pump(j);

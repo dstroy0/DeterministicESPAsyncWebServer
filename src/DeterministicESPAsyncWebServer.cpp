@@ -36,6 +36,7 @@
  */
 
 #include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/presentation/presentation.h" // http_proto_set_poll (install the instance-bound HTTP poll)
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/session/worker.h"
 #include "network_drivers/tls/det_tls.h"
@@ -540,6 +541,18 @@ static void detws_h3_rng(uint8_t *out, size_t len)
 #endif
 }
 #endif // DETWS_ENABLE_HTTP3
+
+// HTTP's poll is instance-bound (it dispatches into this server's routes), so it cannot be a plain
+// global on_poll like the singleton protocols. begin() records the serving instance here and installs
+// this forwarder as the HTTP ProtoHandler's on_poll, so the worker loop pumps HTTP through the one
+// uniform seam. The library serves from a single DetWebServer (the slot pools are global singletons),
+// which is exactly what this one instance pointer models.
+static DetWebServer *s_http_instance = nullptr;
+static void detws_http_on_poll(uint8_t slot)
+{
+    if (s_http_instance)
+        s_http_instance->http_poll_slot(slot);
+}
 
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
 {
@@ -1239,6 +1252,13 @@ void DetWebServer::handle()
 
 void DetWebServer::service_once(int worker_id)
 {
+    // Wire HTTP's instance-bound poll to the server currently being serviced, so the dispatch loop
+    // pumps HTTP through the uniform ProtoHandler::on_poll seam (see http_poll_slot). Done here (not
+    // just begin()) so test paths that drive service_once() directly also install it, and so it always
+    // targets the running instance. Two pointer stores; negligible at poll cadence.
+    s_http_instance = this;
+    http_proto_set_poll(detws_http_on_poll);
+
     server_tick(worker_id);
 
 #if DETWS_ENABLE_HTTP3
@@ -1259,142 +1279,141 @@ void DetWebServer::service_once(int worker_id)
         // Transport owns the window math; we just nudge it once per slot per loop.
         det_conn_ack_consumed(i);
 
-        // Non-HTTP protocols (Telnet/SSH and registered services such as
-        // MQTT/Modbus) are pumped through their registered poll handler. HTTP -
-        // with its WebSocket/SSE upgrades - keeps the inline pump below, which is
-        // bound to this DetWebServer instance (it dispatches into routes).
-        ConnProto proto = conn_pool[i].proto;
-        if (proto != PROTO_HTTP)
-        {
-            if (conn_pool[i].state == CONN_ACTIVE)
-            {
-                const ProtoHandler *ph = proto_get(proto);
-                if (ph && ph->on_poll)
-                    ph->on_poll(i);
-            }
-            continue;
-        }
-
-#if DETWS_ENABLE_FILE_SERVING
-        // A file response in flight owns the slot: page out the next window and
-        // skip the rest of the pipeline until the whole body has been sent.
-        if (g_file_send[i].active)
-        {
-            file_send_pump(i);
-            continue;
-        }
-#endif
-        // Likewise a chunked response in flight: pull + frame the next window.
-        if (g_chunk_send[i].active)
-        {
-            chunk_send_pump(i);
-            continue;
-        }
-
-#if DETWS_ENABLE_WEBSOCKET
-        // WebSocket slot - drain ring buffer and dispatch ready frames
-        WsConn *ws = ws_find(i);
-        if (ws)
-        {
-#if DETWS_ENABLE_TLS
-            if (conn_pool[i].tls)
-            {
-                // wss://: the rx ring holds ciphertext, so decrypt records here and
-                // feed the frame parser, dispatching each completed frame as it
-                // finishes (one TLS record may carry several WS frames).
-                uint8_t tbuf[256];
-                int n;
-                while ((n = det_tls_read(i, tbuf, sizeof(tbuf))) > 0)
-                {
-                    for (int k = 0; k < n; k++)
-                    {
-                        ws_feed_byte(ws, tbuf[k]);
-                        if (ws->parse_state == WS_FRAME_READY)
-                        {
-                            ws_dispatch_message(ws);
-                            ws_reset_frame(ws);
-                        }
-                        else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
-                            break;
-                    }
-                    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
-                        break;
-                }
-                if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR || n < 0)
-                {
-                    ws_dispatch_close(ws);
-                    ws_free(i);
-                    det_conn_abort_slot(i); // transport owns TLS-free + detach + reset + RST
-                    http_reset(i);
-                }
-                continue;
-            }
-#endif // DETWS_ENABLE_TLS
-
-            ws_parse(ws);
-
-            if (ws->parse_state == WS_FRAME_READY)
-            {
-                ws_dispatch_message(ws);
-                ws_reset_frame(ws);
-            }
-            else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
-            {
-                ws_dispatch_close(ws);
-                ws_free(i);
-                // RFC 6455 5.5.1: close the underlying TCP connection after the close
-                // handshake. begin_close moves the slot out of CONN_ACTIVE so the
-                // post-close bytes are NOT re-parsed as a new HTTP request (the
-                // close-frame the WS layer queued still flushes during the dwell).
-                det_conn_begin_close(i);
-                http_reset(i);
-            }
-            continue; // slot is owned by WS; skip HTTP dispatch
-        }
-#endif // DETWS_ENABLE_WEBSOCKET
-
-#if DETWS_ENABLE_SSE
-        // SSE slot - connection stays open, nothing to parse from client
-        if (sse_find(i))
-            continue;
-#endif // DETWS_ENABLE_SSE
-
-#if DETWS_ENABLE_KEEPALIVE
-        // Keep-alive: a slot recycled after a response may already hold the next
-        // (pipelined) request in its ring buffer with no new EVT_DATA to trigger a
-        // parse. Drain it here each tick so it gets dispatched. TLS slots are
-        // skipped - their ring holds ciphertext, decrypted in the session layer.
-        if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != PARSE_COMPLETE
-#if DETWS_ENABLE_TLS
-            && !conn_pool[i].tls
-#endif
-        )
-            http_parse(i);
-#endif
-
-        // HTTP slot
-        if (http_pool[i].parse_state == PARSE_COMPLETE)
-        {
-            match_and_execute(i);
-            if (http_pool[i].parse_state == PARSE_COMPLETE)
-                http_reset(i);
-        }
-        else if (http_pool[i].parse_state == PARSE_ERROR)
-        {
-            send(i, 400, DET_MIME_TEXT_PLAIN, "Bad Request");
-        }
-        else if (http_pool[i].parse_state == PARSE_ENTITY_TOO_LARGE)
-        {
-            send(i, 413, DET_MIME_TEXT_PLAIN, "Payload Too Large");
-        }
-        else if (http_pool[i].parse_state == PARSE_URI_TOO_LONG)
-        {
-            send(i, 414, DET_MIME_TEXT_PLAIN, "URI Too Long");
-        }
+        // Every protocol - HTTP included - is pumped through the one uniform ProtoHandler::on_poll
+        // seam (no per-protocol branch here). HTTP's poll is instance-bound (it dispatches into this
+        // server's routes), installed at begin() via http_proto_set_poll() -> http_poll_slot(); the
+        // singleton pollers (SSH etc.) gate on CONN_ACTIVE inside their own on_poll.
+        const ProtoHandler *ph = proto_get(conn_pool[i].proto);
+        if (ph && ph->on_poll)
+            ph->on_poll(i);
     }
 
     // Run any callbacks app code deferred to this worker (race-free push path).
     detws_worker_run_deferred(worker_id);
+}
+
+// HTTP's instance-bound poll pump. Installed as the HTTP ProtoHandler's on_poll at begin() (via
+// http_proto_set_poll) so the worker dispatch loop pumps HTTP through the same uniform seam as every
+// other protocol - no HTTP special case in the loop. Runs the file/chunk send pumps, the WebSocket +
+// SSE drains, the keep-alive re-parse, and dispatches a completed request into this server's routes.
+void DetWebServer::http_poll_slot(uint8_t i)
+{
+#if DETWS_ENABLE_FILE_SERVING
+    // A file response in flight owns the slot: page out the next window and
+    // skip the rest of the pipeline until the whole body has been sent.
+    if (g_file_send[i].active)
+    {
+        file_send_pump(i);
+        return;
+    }
+#endif
+    // Likewise a chunked response in flight: pull + frame the next window.
+    if (g_chunk_send[i].active)
+    {
+        chunk_send_pump(i);
+        return;
+    }
+
+#if DETWS_ENABLE_WEBSOCKET
+    // WebSocket slot - drain ring buffer and dispatch ready frames
+    WsConn *ws = ws_find(i);
+    if (ws)
+    {
+#if DETWS_ENABLE_TLS
+        if (conn_pool[i].tls)
+        {
+            // wss://: the rx ring holds ciphertext, so decrypt records here and
+            // feed the frame parser, dispatching each completed frame as it
+            // finishes (one TLS record may carry several WS frames).
+            uint8_t tbuf[256];
+            int n;
+            while ((n = det_tls_read(i, tbuf, sizeof(tbuf))) > 0)
+            {
+                for (int k = 0; k < n; k++)
+                {
+                    ws_feed_byte(ws, tbuf[k]);
+                    if (ws->parse_state == WS_FRAME_READY)
+                    {
+                        ws_dispatch_message(ws);
+                        ws_reset_frame(ws);
+                    }
+                    else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                        break;
+                }
+                if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                    break;
+            }
+            if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR || n < 0)
+            {
+                ws_dispatch_close(ws);
+                ws_free(i);
+                det_conn_abort_slot(i); // transport owns TLS-free + detach + reset + RST
+                http_reset(i);
+            }
+            return;
+        }
+#endif // DETWS_ENABLE_TLS
+
+        ws_parse(ws);
+
+        if (ws->parse_state == WS_FRAME_READY)
+        {
+            ws_dispatch_message(ws);
+            ws_reset_frame(ws);
+        }
+        else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+        {
+            ws_dispatch_close(ws);
+            ws_free(i);
+            // RFC 6455 5.5.1: close the underlying TCP connection after the close
+            // handshake. begin_close moves the slot out of CONN_ACTIVE so the
+            // post-close bytes are NOT re-parsed as a new HTTP request (the
+            // close-frame the WS layer queued still flushes during the dwell).
+            det_conn_begin_close(i);
+            http_reset(i);
+        }
+        return; // slot is owned by WS; skip HTTP dispatch
+    }
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+    // SSE slot - connection stays open, nothing to parse from client
+    if (sse_find(i))
+        return;
+#endif // DETWS_ENABLE_SSE
+
+#if DETWS_ENABLE_KEEPALIVE
+    // Keep-alive: a slot recycled after a response may already hold the next
+    // (pipelined) request in its ring buffer with no new EVT_DATA to trigger a
+    // parse. Drain it here each tick so it gets dispatched. TLS slots are
+    // skipped - their ring holds ciphertext, decrypted in the session layer.
+    if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != PARSE_COMPLETE
+#if DETWS_ENABLE_TLS
+        && !conn_pool[i].tls
+#endif
+    )
+        http_parse(i);
+#endif
+
+    // HTTP slot
+    if (http_pool[i].parse_state == PARSE_COMPLETE)
+    {
+        match_and_execute(i);
+        if (http_pool[i].parse_state == PARSE_COMPLETE)
+            http_reset(i);
+    }
+    else if (http_pool[i].parse_state == PARSE_ERROR)
+    {
+        send(i, 400, DET_MIME_TEXT_PLAIN, "Bad Request");
+    }
+    else if (http_pool[i].parse_state == PARSE_ENTITY_TOO_LARGE)
+    {
+        send(i, 413, DET_MIME_TEXT_PLAIN, "Payload Too Large");
+    }
+    else if (http_pool[i].parse_state == PARSE_URI_TOO_LONG)
+    {
+        send(i, 414, DET_MIME_TEXT_PLAIN, "URI Too Long");
+    }
 }
 
 bool DetWebServer::defer(uint8_t slot, detws_deferred_fn fn, void *arg)

@@ -327,6 +327,10 @@ static void rfwd_on_close(uint8_t conn_slot)
 
 static void rfwd_on_poll(uint8_t conn_slot)
 {
+    // The dispatch loop now polls every slot uniformly; it used to poll only ACTIVE slots, so preserve
+    // that gate here (a closing/free forward slot has nothing to pump).
+    if (conn_pool[conn_slot].state != CONN_ACTIVE)
+        return;
     SshRFwdBridge *br = rbridge_by_conn(conn_slot);
     if (!br || !br->confirmed)
         return;

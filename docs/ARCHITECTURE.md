@@ -1,10 +1,12 @@
 # Architecture & internal data piping
 
-How bytes and control flow move between the OSI-style layers, who owns each
-cross-layer concern, and where the piping is still being straightened. This is the
-map referenced by the internal-piping cleanup: the rule we are converging on is
-**one owner per cross-layer concern, behind a clean API** - no layer reaches into
-another's internals.
+How bytes and control flow move between the OSI-style layers and who owns each
+cross-layer concern. This is the map referenced by the internal-piping cleanup: the
+rule is **one owner per cross-layer concern, behind a clean API** - no layer reaches
+into another's internals. Both axes are now settled: the data-piping axis (who owns
+RX / TX / window / events / scratch / streaming / client I/O) and the dispatch axis
+(how each protocol attaches) both meet the one-uniform-seam rule, with no protocol
+special-cased. The piping is straight; what remains below is the map, not a to-do.
 
 ## Layers
 
@@ -75,7 +77,7 @@ used by SNMP / CoAP / captive-DNS / syslog / telemetry), the outbound client
 asserts on a raw call from any task but `tcpip_thread` (see docs/BUGS.md); keeping raw
 lwIP out of the app and worker tasks is the one thing this layer exists to enforce.
 
-## RX path - the concern being straightened
+## RX path - one owner for the window and the drain
 
 Inbound:
 
@@ -243,14 +245,17 @@ every public API method, every registered protocol, and every Layer-6 module on 
    already the HTTP-connection glue) now owns the HTTP `ProtoHandler`: `http_evt_{accept,
 data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + WebSocket
    upgrade check before the HTTP/1.1 parser). L5 no longer includes TLS / http2 / websocket /
-   http_parser. The one remaining HTTP special case is inherent: HTTP's **poll** is a large
-   inline block in `handle()` (file/chunk/WS/SSE pumps), not an `on_poll`, because HTTP is
-   **instance-bound** (routing needs the `DetWebServer` object) while every other protocol is
-   a global singleton - so that block correctly lives in the `DetWebServer` translation unit.
+   http_parser.
 
-3. **TLS is an inline transform inside the HTTP handler**, not a composable wrapper, so only
-   HTTP can be TLS-wrapped. Acceptable and inherent (SSH carries its own crypto; Telnet /
-   Modbus / OPC UA are plaintext by definition), noted for completeness.
+3. **HTTP's poll now plugs into the uniform `on_poll` seam - DONE.** HTTP's poll (the file/chunk send
+   pumps, the WebSocket + SSE drains, the keep-alive re-parse, request dispatch) is instance-bound - it
+   dispatches into a `DetWebServer`'s routes - so it used to be a large inline block in the worker loop
+   guarded by `if (proto != PROTO_HTTP)`. That block is now `DetWebServer::http_poll_slot()`, installed
+   as the HTTP `ProtoHandler`'s `on_poll` (via `http_proto_set_poll()`, the `on_poll` analogue of the
+   `resp_sink` TX seam; the running instance is wired in at the top of `service_once()`). The worker
+   dispatch loop now calls `on_poll` uniformly for **every** protocol including HTTP - it names no
+   protocol and has no special case. The singleton pollers (ssh, rfwd) gate on `CONN_ACTIVE` inside
+   their own `on_poll`, preserving the behavior the loop-level gate used to give them.
 
 4. **The response path is behind a uniform TX seam - DONE.** `send()` / `send_empty()` no longer
    branch on `conn->h2` / `conn->h3`; a self-framing protocol installs a `TcpConn::resp_sink`
@@ -258,10 +263,15 @@ data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + Web
    L7 responders name no protocol. This is the TX counterpart of the RX `ProtoHandler` seam; adding
    a self-framing protocol means installing one `resp_sink`, not editing the responders.
 
-Net: L5 is pure dispatch, every protocol (including HTTP) lives behind the same uniform seam
-via its own module - request decode through the `ProtoHandler` seam, response encode through the
-`resp_sink` seam - and the one HTTP asymmetry that remains (the instance-bound poll) is
-inherent to HTTP being the routing core. None of this was ever a correctness bug.
+5. **TLS is an inline transform inside the HTTP handler**, not a composable wrapper, so only
+   HTTP can be TLS-wrapped. Acceptable and inherent (SSH carries its own crypto; Telnet /
+   Modbus / OPC UA are plaintext by definition), noted for completeness.
+
+Net: L5 is pure dispatch and every protocol (including HTTP) lives behind the same uniform seam via
+its own module - request decode through the `ProtoHandler` seam (accept / data / close / **poll**),
+response encode through the `resp_sink` seam. The worker dispatch loop names no protocol and has no
+special case: HTTP plugs in exactly like SSH, Telnet, Modbus, or OPC UA. The one remaining inherent
+trait is that TLS is an HTTP-only inline transform (item 5). The piping is straight.
 
 ## Unified arena primitive (`session/det_arena`)
 

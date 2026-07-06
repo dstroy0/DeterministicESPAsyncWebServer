@@ -208,7 +208,22 @@ static void http_evt_close(uint8_t slot)
 #endif
     http_reset(slot);
 }
-static const ProtoHandler s_http_handler = {http_evt_accept, http_evt_data, http_evt_close, nullptr};
+// HTTP's poll pump is instance-bound (it dispatches into a DetWebServer's routes), so the routing
+// core installs it here at begin() via http_proto_set_poll(). The trampoline lets the ProtoHandler
+// stay a plain static const while the actual pump lives in the application TU - the on_poll analogue
+// of the resp_sink TX seam. Until installed (e.g. the native harness before begin()) it is a no-op.
+static void (*s_http_poll)(uint8_t slot) = nullptr;
+static void http_evt_poll(uint8_t slot)
+{
+    if (s_http_poll)
+        s_http_poll(slot);
+}
+void http_proto_set_poll(void (*fn)(uint8_t slot))
+{
+    s_http_poll = fn;
+}
+
+static const ProtoHandler s_http_handler = {http_evt_accept, http_evt_data, http_evt_close, http_evt_poll};
 
 const ProtoHandler *http_proto_handler(void)
 {
