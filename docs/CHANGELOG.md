@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`3e2a537`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e2a5375e95041072e1c4f32bdc48983290e5b77))
 - update CHANGELOG.md [skip ci] ([`612038b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/612038bab65872d8cf2cfb5b2a28aaf48463b85a))
 - update CHANGELOG.md [skip ci] ([`6f8ed2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f8ed2a9cf5b11873fbb060cef8d85e046a8ca3f))
 - update CHANGELOG.md [skip ci] ([`38bc476`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38bc47640f750e4fbd82a459f119e3835f0e0330))
@@ -28,6 +29,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- correct stale header comment - /.well-known/core IS served ([`f98b5a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f98b5a317b922d5bc3c857945839d29319f45038))
 - remove 4 limitations that have since shipped ([`ec478a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec478a74d7616ef606538f423b9e62b9f204bdf0))
 - correct stale test count (600+ -> 2,300+) ([`1a427a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a427a5700c4fa7215d1f4986e3c4c70686d6a48))
 - fix two broken references caught by a link audit ([`f3ee602`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3ee60265ec4bb6853a41c45783cfdc45929912e))
