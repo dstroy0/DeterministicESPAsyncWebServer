@@ -56,8 +56,14 @@ int detws_health_json(const DetwsHealth *h, char *out, size_t cap)
 
 namespace
 {
-detws_breach_fn s_cb = nullptr;
-}
+// All guardrails sampler state, owned by one instance (internal linkage): the breach
+// callback, so it is one named owner, unreachable from any other translation unit.
+struct GuardrailsCtx
+{
+    detws_breach_fn cb = nullptr;
+};
+GuardrailsCtx s_gr;
+} // namespace
 
 void detws_guardrails_sample(DetwsHealth *h)
 {
@@ -71,7 +77,7 @@ void detws_guardrails_sample(DetwsHealth *h)
 
 void detws_guardrails_begin(detws_breach_fn cb)
 {
-    s_cb = cb;
+    s_gr.cb = cb;
 }
 
 uint8_t detws_guardrails_check(void)
@@ -80,8 +86,8 @@ uint8_t detws_guardrails_check(void)
     detws_guardrails_sample(&h);
     uint8_t b =
         detws_guardrail_eval(&h, DETWS_GUARDRAIL_HEAP_MIN, DETWS_GUARDRAIL_FRAG_MIN_BLOCK, DETWS_GUARDRAIL_STACK_MIN);
-    if (b != DETWS_BREACH_NONE && s_cb)
-        s_cb(b, &h);
+    if (b != DETWS_BREACH_NONE && s_gr.cb)
+        s_gr.cb(b, &h);
     return b;
 }
 
