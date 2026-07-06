@@ -133,19 +133,25 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
 
 namespace
 {
-char s_host[64];
-uint16_t s_port = DETWS_STATSD_PORT;
-char s_tags[96];
-bool s_ready = false;
-
-void emit(const char *name, const char *value, char type, float rate)
+// All StatsD client state, owned by one instance (internal linkage): destination host/port,
+// global tags, and the ready flag, grouped so it is one named owner, unreachable cross-TU.
+struct StatsdCtx
 {
-    if (!s_ready)
+    char host[64] = {};
+    uint16_t port = DETWS_STATSD_PORT;
+    char tags[96] = {};
+    bool ready = false;
+};
+StatsdCtx s_statsd;
+
+void emit(const StatsdCtx &c, const char *name, const char *value, char type, float rate)
+{
+    if (!c.ready)
         return;
     char line[DETWS_STATSD_LINE_MAX];
-    size_t n = statsd_format(line, sizeof(line), name, value, type, rate, s_tags[0] ? s_tags : nullptr);
+    size_t n = statsd_format(line, sizeof(line), name, value, type, rate, c.tags[0] ? c.tags : nullptr);
     if (n)
-        det_udp_sendto(s_host, s_port, (const uint8_t *)line, n);
+        det_udp_sendto(c.host, c.port, (const uint8_t *)line, n);
 }
 } // namespace
 
@@ -153,60 +159,60 @@ void statsd_begin(const char *host, uint16_t port, const char *global_tags)
 {
     if (!host)
     {
-        s_ready = false;
+        s_statsd.ready = false;
         return;
     }
-    strncpy(s_host, host, sizeof(s_host) - 1);
-    s_host[sizeof(s_host) - 1] = '\0';
-    s_port = port ? port : DETWS_STATSD_PORT;
+    strncpy(s_statsd.host, host, sizeof(s_statsd.host) - 1);
+    s_statsd.host[sizeof(s_statsd.host) - 1] = '\0';
+    s_statsd.port = port ? port : DETWS_STATSD_PORT;
     if (global_tags)
     {
-        strncpy(s_tags, global_tags, sizeof(s_tags) - 1);
-        s_tags[sizeof(s_tags) - 1] = '\0';
+        strncpy(s_statsd.tags, global_tags, sizeof(s_statsd.tags) - 1);
+        s_statsd.tags[sizeof(s_statsd.tags) - 1] = '\0';
     }
     else
-        s_tags[0] = '\0';
-    s_ready = true;
+        s_statsd.tags[0] = '\0';
+    s_statsd.ready = true;
 }
 
 void statsd_count(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
-    emit(name, v, STATSD_COUNTER, 1.0f);
+    emit(s_statsd, name, v, STATSD_COUNTER, 1.0f);
 }
 
 void statsd_count_sampled(const char *name, int64_t delta, float rate)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
-    emit(name, v, STATSD_COUNTER, rate);
+    emit(s_statsd, name, v, STATSD_COUNTER, rate);
 }
 
 void statsd_gauge(const char *name, int64_t value)
 {
     char v[24];
     v[i64_str(v, value)] = '\0';
-    emit(name, v, STATSD_GAUGE, 1.0f);
+    emit(s_statsd, name, v, STATSD_GAUGE, 1.0f);
 }
 
 void statsd_gauge_delta(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_delta_str(v, delta)] = '\0';
-    emit(name, v, STATSD_GAUGE, 1.0f);
+    emit(s_statsd, name, v, STATSD_GAUGE, 1.0f);
 }
 
 void statsd_timing(const char *name, uint32_t ms)
 {
     char v[16];
     v[u64_str(v, ms)] = '\0';
-    emit(name, v, STATSD_TIMING, 1.0f);
+    emit(s_statsd, name, v, STATSD_TIMING, 1.0f);
 }
 
 void statsd_set(const char *name, const char *member)
 {
-    emit(name, member ? member : "", STATSD_SET, 1.0f);
+    emit(s_statsd, name, member ? member : "", STATSD_SET, 1.0f);
 }
 
 #endif // DETWS_ENABLE_STATSD
