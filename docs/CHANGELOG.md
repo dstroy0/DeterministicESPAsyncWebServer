@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.19.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.19.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`76c9d27`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76c9d2712707f0a0c4f1cfa81dc3301e13b86ba7))
+
+### Changes
+
+- Bump version: 5.18.0 → 5.19.0 ([`4d6475c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d6475cfd1b8a6b954642dc1d5eb860122dfdd35))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`98d63f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/98d63f18c902e660f206dcccd217ea5601a19712))
+- update ESP32 build footprints [skip ci] ([`6cd0152`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cd0152c1617318ef096f500b9f71a61ce77215d))
+
+### Features
+
+- NEMA TS 2 traffic-cabinet SDLC frame codec ([`1d39c8c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d39c8c1b5440d5c5e41489ed794bc1c69dfabbd))
+
+</details>
+
 ## [5.18.0] - 2026-07-06
 
 <details>
