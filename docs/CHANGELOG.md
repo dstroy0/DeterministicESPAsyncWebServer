@@ -2,10 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.1.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.1.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`4365243`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43652439158e0017ad199994cbbac6f15d7368eb))
 - update test report [skip ci] ([`874667d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/874667db1541a03a468e639530c4b4ea25e05f56))
 - update CHANGELOG.md [skip ci] ([`8f3e53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f3e53b2f829edd813c1b3bb52e2c11f2b1b1ef8))
 - update CHANGELOG.md [skip ci] ([`1e706ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e706ab47ca008faa38058d6ab8a648c94f49db1))
@@ -13,6 +17,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`bd5c82e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd5c82e9900b558f852215ead8c7dbfe602ff2b3))
 - update test report [skip ci] ([`a44432f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a44432f0515e2d5e524dcf82fff6505c36d1f099))
 - update CHANGELOG.md [skip ci] ([`cc1559d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc1559df9e9c6a10a43641538daf9f292fdf93f5))
+
+### Changes
+
+- Bump version: 5.0.0 → 5.1.0 ([`9e74547`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e74547e0dcd29eaf2ce0260d2d640c5ad0bb6e1))
 
 ### Features
 
@@ -23,6 +31,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - h3_conn split uni-stream varint + field-truncation coverage ([`122eaec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/122eaec11873b9cf198a3e5cff4025c07e748550))
 - cover h3_conn client uni-streams + malformed / overflow paths ([`d50b2b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d50b2b3c323dbfcb8a6b1a3e54be513bd80c68d7))
 - cover TLS 1.3 handshake-rejection + transport-param reject paths ([`cbbf1b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbbf1b19ccfaa1ff6686d5f256d798761b1e4e6b))
+
+</details>
 
 ## [5.0.0] - 2026-07-06
 
