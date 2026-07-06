@@ -90,33 +90,15 @@ jobs:
             arduino-cli core update-index
             arduino-cli core install "$ESP32_CORE"
           }
-      # Cache + wrap the toolchain with ccache so every example reuses the Arduino-core object compiles
-      # (the bulk of each build) across examples and, via ~/.ccache, across runs - same win as the
-      # PlatformIO build. arduino-cli invokes the xtensa compiler by absolute path, so the binaries are
-      # wrapped in place (idempotent, no-op if the core is not installed yet).
-      - name: Cache ccache
-        uses: actions/cache@v6
-        with:
-          path: ~/.ccache
-          key: arduino-ccache-${{ env.ESP32_CORE }}-${{ github.sha }}
-          restore-keys: arduino-ccache-${{ env.ESP32_CORE }}-
-      - name: Enable ccache for the xtensa toolchain
-        # esp32 core 3.x invokes the unified esp-elf compiler (xtensa-esp-elf-*); older cores
-        # used xtensa-esp32-elf-*. Pass both basenames so ccache applies whichever the installed
-        # core ships (a name that is absent, or present only as a compat symlink, is skipped).
-        run: |
-          sudo apt-get update && sudo apt-get install -y ccache
-          bash tools/ci/ccache_wrap.sh ~/.arduino15/packages \
-            xtensa-esp-elf-gcc xtensa-esp-elf-g++ xtensa-esp32-elf-gcc xtensa-esp32-elf-g++
+      # No ccache here (unlike the PlatformIO ESP32 build). arduino-esp32 3.x ships the newer
+      # xtensa-esp-elf toolchain, whose endianness/ISA is loaded at runtime from a dynamic config
+      # found relative to the compiler binary. The ccache masquerade replaces that binary with a
+      # shim, which breaks the dynconfig lookup: the driver falls back to the stock big-endian
+      # xtensa default and the link fails with "libstdc++.a compiled for a big endian system and
+      # target is little endian". (The PlatformIO build uses the older, statically-little-endian
+      # xtensa-esp32-elf toolchain, so wrapping is safe there.) Each example does a full compile.
       - name: Compile ${{ matrix.example.name }} (Arduino IDE, esp32 3.x)
         # No --build-property / build_flags: the example's build_opt.h supplies the feature
         # flags, so this is byte-for-byte how the Arduino IDE builds it.
-        env:
-          # arduino-cli builds under a temp/cache path that varies, so normalize the paths (as for
-          # PlatformIO) so the cached core objects hit regardless of the build dir.
-          CCACHE_BASEDIR: /
-          CCACHE_NOHASHDIR: "1"
-          CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime,locale,random_seed,pch_defines
         run: |
           arduino-cli compile --fqbn esp32:esp32:esp32 --library . "examples/${{ matrix.example.name }}"
-          ccache -s 2>/dev/null | grep -iE "Cacheable|Hits:" || true
