@@ -2,15 +2,47 @@
 
 A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC in progress), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
-> [!WARNING]
-> **Extremely active development - expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks. **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility** - include paths, method signatures, defaults, and wire behavior can change between releases. **We do not write backwards-compatibility shims** (the only compatibility we maintain is platform/toolchain support); removing cruft is the price of a clean, auditable, deterministic core. Pin an exact version if you need stability, and read [CHANGELOG.md](CHANGELOG.md) before every upgrade.
+## Installation
 
-![Version](https://img.shields.io/badge/version-v5.62.0-blue)
-[![Test Build Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/test-report.yml)
-[![Docs Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/docs.yml)
-[![Changelog Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/changelog.yml)
-[![C++ Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/clang-format.yml)
-[![Markdown Formatting Status](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml/badge.svg)](https://github.com/dstroy0/DeterministicESPAsyncWebServer/actions/workflows/markdown-format.yml)
+**PlatformIO:**
+
+```ini
+lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
+```
+
+**Arduino IDE:** Download the repository as a ZIP and use _Sketch → Include Library → Add .ZIP Library_.
+
+## Quick Start
+
+```cpp
+#include <WiFi.h>
+#include "DeterministicESPAsyncWebServer.h"
+#include "network_drivers/physical.h"
+
+DetWebServer server;
+
+void handle_status(uint8_t slot_id, HttpReq *req)
+{
+    server.send(slot_id, 200, "application/json", "{\"ok\":true}");
+}
+
+void setup()
+{
+    init_wifi_physical("SSID", "PASSWORD");
+    while (!wifi_ready()) delay(250);
+
+    server.on("/status", HTTP_GET, handle_status);
+    server.set_cors("*");
+    server.begin(80);
+}
+
+void loop()
+{
+    server.handle();
+}
+```
+
+See `examples/Foundation/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
 
 ## Features
 
@@ -348,72 +380,6 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <!-- END GENERATED FEATURE TABLES -->
 
 
-## Build Footprint
-
-Measured on `esp32dev` (Arduino core, `pio ci`). The baseline → server jump is almost entirely the WiFi/lwIP stack; the library and most HTTP features add little on top. Each indented row enables one optional subsystem over the default server.
-
-| Build                                                                               | Flash (bytes) | RAM (bytes) |
-| ----------------------------------------------------------------------------------- | ------------: | ----------: |
-| Empty sketch (no WiFi, no library) - _RTOS/Arduino baseline_                        |       233,257 |      21,032 |
-| Minimal REST server (WS/SSE/multipart/file/auth stripped)                           |       734,745 |      57,936 |
-| **Default server** (HTTP + WebSocket + SSE + multipart + file serving + Basic auth) |       745,133 |      64,264 |
-| &nbsp;&nbsp;+ HTTPS / TLS (static-pool mbedTLS)                                     |       847,185 |     115,164 |
-| &nbsp;&nbsp;+ SSH 2.0 server                                                        |       798,005 |      76,556 |
-| &nbsp;&nbsp;+ SNMP agent (v1/v2c)                                                   |       751,277 |      76,648 |
-| &nbsp;&nbsp;+ CoAP server (RFC 7252, UDP)                                           |       747,921 |      66,760 |
-| &nbsp;&nbsp;+ mDNS                                                                  |       768,037 |      66,160 |
-| &nbsp;&nbsp;+ SNTP                                                                  |       768,861 |      66,808 |
-| &nbsp;&nbsp;+ OTA update                                                            |       748,417 |      64,544 |
-| &nbsp;&nbsp;+ Captive-portal provisioning                                           |       750,709 |      65,836 |
-| &nbsp;&nbsp;+ Static files via LittleFS (incl. ETag)                                |       784,361 |      64,288 |
-| &nbsp;&nbsp;+ Telnet console                                                        |       745,137 |      64,784 |
-| &nbsp;&nbsp;+ Web terminal (WebSocket)                                              |       747,613 |      64,336 |
-| SSH crypto self-test (Serial only, no WiFi)                                         |       269,585 |      21,476 |
-
-TLS's larger RAM is the fixed mbedTLS arena ([`DETWS_TLS_ARENA_SIZE`](@ref DETWS_TLS_ARENA_SIZE), 48 KB default). Small HTTP features (CORS, JSON, middleware, regex / path / form params, templating, chunked, response headers, Digest auth, stats, diagnostics, accept-throttle) stay within a few KB of the default server. The outbound HTTP client ([`DETWS_ENABLE_HTTP_CLIENT`](@ref DETWS_ENABLE_HTTP_CLIENT)) links no code unless a sketch actually calls [`http_get()`](@ref http_get) / [`http_post()`](@ref http_post); the standalone client example builds to 732,961 B flash / 46,752 B RAM, and adding `https://` (which pulls in mbedTLS) makes it 827,853 B / 100,620 B. The MQTT client ([`DETWS_ENABLE_MQTT`](@ref DETWS_ENABLE_MQTT)) example builds to 734,293 B flash / 48,896 B RAM; `mqtts://` makes it 830,285 B / 108,732 B. The WebSocket client ([`DETWS_ENABLE_WS_CLIENT`](@ref DETWS_ENABLE_WS_CLIENT)) example builds to 734,329 B / 48,824 B; `wss://` makes it 830,165 B / 108,660 B. ESP32 capacity: 1,310,720 B flash / 327,680 B RAM.
-
-## Installation
-
-**PlatformIO:**
-
-```ini
-lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
-```
-
-**Arduino IDE:** Download the repository as a ZIP and use _Sketch → Include Library → Add .ZIP Library_.
-
-## Quick Start
-
-```cpp
-#include <WiFi.h>
-#include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/physical.h"
-
-DetWebServer server;
-
-void handle_status(uint8_t slot_id, HttpReq *req)
-{
-    server.send(slot_id, 200, "application/json", "{\"ok\":true}");
-}
-
-void setup()
-{
-    init_wifi_physical("SSID", "PASSWORD");
-    while (!wifi_ready()) delay(250);
-
-    server.on("/status", HTTP_GET, handle_status);
-    server.set_cors("*");
-    server.begin(80);
-}
-
-void loop()
-{
-    server.handle();
-}
-```
-
-See `examples/Foundation/05.Configuration/05.Configuration.ino` for a full reference of every configurable flag and constant.
-
 ## New to this? Start here
 
 If networking is new to you, the [**learn series**](learn/) is a from-scratch on-ramp
@@ -457,8 +423,514 @@ L1  src/network_drivers/physical/
         oauth2/, totp/, audit_log/, vfs/, graphql/, espnow/, ...  (see FEATURES.md)
 ```
 
-(Representative, not exhaustive - the full file set is under `src/`; each optional
-service is gated by a `DETWS_ENABLE_*` flag.)
+The conceptual layer map above is a summary; the complete file layout is generated
+below from `src/` by `docs/utilities/gen_readme_sections.py` (single-`.h`/`.cpp`
+service folders are collapsed to their name; generated web-asset blobs are counted,
+not listed).
+
+<details>
+<summary><b>Full source tree (every library file)</b></summary>
+
+<!-- BEGIN GENERATED SOURCE-TREE (docs/utilities/gen_readme_sections.py) -->
+
+```text
+src/
+├── network_drivers/
+│   ├── application/
+│   │   ├── binary_asset_blobs.cpp
+│   │   ├── binary_asset_blobs.h
+│   │   ├── web_assets.cpp
+│   │   └── web_assets.h
+│   ├── datalink/  (datalink.h, datalink.cpp)
+│   ├── network/
+│   │   ├── det_ip.cpp
+│   │   ├── det_ip.h
+│   │   ├── network.cpp
+│   │   └── network.h
+│   ├── physical/  (physical.h, physical.cpp)
+│   ├── presentation/
+│   │   ├── base64/  (base64.h, base64.cpp)
+│   │   ├── cbor/  (cbor.h, cbor.cpp)
+│   │   ├── deflate/  (deflate.h, deflate.cpp)
+│   │   ├── hpack_prim/  (hpack_prim.h, hpack_prim.cpp)
+│   │   ├── http2/
+│   │   │   ├── h2_conn.cpp
+│   │   │   ├── h2_conn.h
+│   │   │   ├── h2_frame.cpp
+│   │   │   ├── h2_frame.h
+│   │   │   ├── h2_server.cpp
+│   │   │   ├── h2_server.h
+│   │   │   ├── hpack.cpp
+│   │   │   └── hpack.h
+│   │   ├── http3/
+│   │   │   ├── h3_conn.cpp
+│   │   │   ├── h3_conn.h
+│   │   │   ├── h3_frame.cpp
+│   │   │   ├── h3_frame.h
+│   │   │   ├── qpack.cpp
+│   │   │   ├── qpack.h
+│   │   │   ├── quic_aead.cpp
+│   │   │   ├── quic_aead.h
+│   │   │   ├── quic_conn.cpp
+│   │   │   ├── quic_conn.h
+│   │   │   ├── quic_crypto.cpp
+│   │   │   ├── quic_crypto.h
+│   │   │   ├── quic_frame.cpp
+│   │   │   ├── quic_frame.h
+│   │   │   ├── quic_hkdf.cpp
+│   │   │   ├── quic_hkdf.h
+│   │   │   ├── quic_packet.cpp
+│   │   │   ├── quic_packet.h
+│   │   │   ├── quic_server.cpp
+│   │   │   ├── quic_server.h
+│   │   │   ├── quic_tls.cpp
+│   │   │   ├── quic_tls.h
+│   │   │   ├── quic_tp.cpp
+│   │   │   ├── quic_tp.h
+│   │   │   ├── quic_varint.cpp
+│   │   │   ├── quic_varint.h
+│   │   │   ├── tls13_kdf.cpp
+│   │   │   ├── tls13_kdf.h
+│   │   │   ├── tls13_msg.cpp
+│   │   │   └── tls13_msg.h
+│   │   ├── http_parser/  (http_parser.h, http_parser.cpp)
+│   │   ├── inflate/  (inflate.h, inflate.cpp)
+│   │   ├── json/  (json.h, json.cpp)
+│   │   ├── msgpack/  (msgpack.h, msgpack.cpp)
+│   │   ├── multipart/  (multipart.h, multipart.cpp)
+│   │   ├── sha1/  (sha1.h, sha1.cpp)
+│   │   ├── sse/  (sse.h, sse.cpp)
+│   │   ├── ssh/
+│   │   │   ├── auth/  (ssh_auth.h, ssh_auth.cpp)
+│   │   │   ├── connection/
+│   │   │   │   ├── ssh_channel.cpp
+│   │   │   │   ├── ssh_channel.h
+│   │   │   │   ├── ssh_conn.cpp
+│   │   │   │   ├── ssh_conn.h
+│   │   │   │   ├── ssh_forward.cpp
+│   │   │   │   ├── ssh_forward.h
+│   │   │   │   ├── ssh_server.cpp
+│   │   │   │   └── ssh_server.h
+│   │   │   ├── crypto/
+│   │   │   │   ├── ssh_aes256ctr.cpp
+│   │   │   │   ├── ssh_aes256ctr.h
+│   │   │   │   ├── ssh_bignum.cpp
+│   │   │   │   ├── ssh_bignum.h
+│   │   │   │   ├── ssh_chacha20.cpp
+│   │   │   │   ├── ssh_chacha20.h
+│   │   │   │   ├── ssh_chachapoly.cpp
+│   │   │   │   ├── ssh_chachapoly.h
+│   │   │   │   ├── ssh_curve25519.cpp
+│   │   │   │   ├── ssh_curve25519.h
+│   │   │   │   ├── ssh_ed25519.cpp
+│   │   │   │   ├── ssh_ed25519.h
+│   │   │   │   ├── ssh_hmac_sha256.cpp
+│   │   │   │   ├── ssh_hmac_sha256.h
+│   │   │   │   ├── ssh_hmac_sha512.cpp
+│   │   │   │   ├── ssh_hmac_sha512.h
+│   │   │   │   ├── ssh_poly1305.cpp
+│   │   │   │   ├── ssh_poly1305.h
+│   │   │   │   ├── ssh_rsa.cpp
+│   │   │   │   ├── ssh_rsa.h
+│   │   │   │   ├── ssh_sha256.cpp
+│   │   │   │   ├── ssh_sha256.h
+│   │   │   │   ├── ssh_sha512.cpp
+│   │   │   │   └── ssh_sha512.h
+│   │   │   └── transport/
+│   │   │       ├── ssh_comp.cpp
+│   │   │       ├── ssh_comp.h
+│   │   │       ├── ssh_dh.cpp
+│   │   │       ├── ssh_dh.h
+│   │   │       ├── ssh_keymat.cpp
+│   │   │       ├── ssh_keymat.h
+│   │   │       ├── ssh_packet.cpp
+│   │   │       ├── ssh_packet.h
+│   │   │       ├── ssh_transport.cpp
+│   │   │       ├── ssh_transport.h
+│   │   │       ├── ssh_zlib.cpp
+│   │   │       └── ssh_zlib.h
+│   │   ├── telnet/  (telnet.h, telnet.cpp)
+│   │   ├── websocket/  (websocket.h, websocket.cpp)
+│   │   ├── presentation.cpp
+│   │   └── presentation.h
+│   ├── session/
+│   │   ├── det_arena.cpp
+│   │   ├── det_arena.h
+│   │   ├── proto_builtins.cpp
+│   │   ├── proto_handler.h
+│   │   ├── scratch.cpp
+│   │   ├── scratch.h
+│   │   ├── session.cpp
+│   │   ├── session.h
+│   │   ├── worker.cpp
+│   │   └── worker.h
+│   ├── tls/  (det_tls.h, det_tls.cpp)
+│   └── transport/
+│       ├── det_client.cpp
+│       ├── det_client.h
+│       ├── listener.cpp
+│       ├── listener.h
+│       ├── transport.cpp
+│       ├── transport.h
+│       ├── udp_transport.cpp
+│       └── udp_transport.h
+├── services/
+│   ├── ads1115/  (ads1115.h, ads1115.cpp)
+│   ├── amqp/  (amqp.h, amqp.cpp)
+│   ├── atc/  (atc.h, atc.cpp)
+│   ├── audit_log/  (audit_log.h, audit_log.cpp)
+│   ├── auth_lockout/  (auth_lockout.h, auth_lockout.cpp)
+│   ├── bacnet/  (bacnet.h, bacnet.cpp)
+│   ├── ble_gatt/  (ble_gatt.h, ble_gatt.cpp)
+│   ├── bus_capture/  (bus_capture.h, bus_capture.cpp)
+│   ├── c37118/  (c37118.h, c37118.cpp)
+│   ├── canopen/  (canopen.h, canopen.cpp)
+│   ├── cc1101/  (cc1101.h, cc1101.cpp)
+│   ├── cclink/  (cclink.h, cclink.cpp)
+│   ├── cip/  (cip.h, cip.cpp)
+│   ├── coap/  (coap.h, coap.cpp)
+│   ├── config_io/  (config_io.h, config_io.cpp)
+│   ├── config_store/  (config_store.h, config_store.cpp)
+│   ├── cotp/  (cotp.h, cotp.cpp)
+│   ├── csrf/  (csrf.h, csrf.cpp)
+│   ├── dashboard/
+│   │   ├── dashboard.cpp
+│   │   ├── dashboard.h
+│   │   └── dashboard_routes.cpp
+│   ├── dds/  (dds.h, dds.cpp)
+│   ├── device_id/  (device_id.h, device_id.cpp)
+│   ├── devicenet/  (devicenet.h, devicenet.cpp)
+│   ├── df1/  (df1.h, df1.cpp)
+│   ├── directnet/  (directnet.h, directnet.cpp)
+│   ├── dma/  (det_dma.h, det_dma.cpp)
+│   ├── dmx/  (dmx.h, dmx.cpp)
+│   ├── dnp3/  (dnp3.h, dnp3.cpp)
+│   ├── dns_resolver/  (dns_resolver.h, dns_resolver.cpp)
+│   ├── dns_server/  (dns_server.h, dns_server.cpp)
+│   ├── dshot/  (dshot.h, dshot.cpp)
+│   ├── enip/  (enip.h, enip.cpp)
+│   ├── enocean/  (enocean.h, enocean.cpp)
+│   ├── espnow/  (espnow.h, espnow.cpp)
+│   ├── exc_decoder/  (exc_decoder.h, exc_decoder.cpp)
+│   ├── failsafe/  (failsafe.h, failsafe.cpp)
+│   ├── fdc2214/  (fdc2214.h, fdc2214.cpp)
+│   ├── fins/  (fins.h, fins.cpp)
+│   ├── flow_export/  (flow_export.h, flow_export.cpp)
+│   ├── forward/  (det_forward.h, det_forward.cpp)
+│   ├── gateway/  (det_gateway.h, det_gateway.cpp)
+│   ├── goose/  (goose.h, goose.cpp)
+│   ├── gpio_map/
+│   │   ├── gpio_map.cpp
+│   │   ├── gpio_map.h
+│   │   └── gpio_map_routes.cpp
+│   ├── graphql/  (graphql.h, graphql.cpp)
+│   ├── grpcweb/  (grpcweb.h, grpcweb.cpp)
+│   ├── guardrails/  (guardrails.h, guardrails.cpp)
+│   ├── happy_eyeballs/  (happy_eyeballs.h, happy_eyeballs.cpp)
+│   ├── hart/  (hart.h, hart.cpp)
+│   ├── hostlink/  (hostlink.h, hostlink.cpp)
+│   ├── http_client/  (http_client.h, http_client.cpp)
+│   ├── http_delivery/  (http_delivery.h, http_delivery.cpp)
+│   ├── hw_health/  (hw_health.h, hw_health.cpp)
+│   ├── iccp/  (iccp.h, iccp.cpp)
+│   ├── iec60870/  (iec60870.h, iec60870.cpp)
+│   ├── ina219/  (ina219.h, ina219.cpp)
+│   ├── interbus/  (interbus.h, interbus.cpp)
+│   ├── iolink/  (iolink.h, iolink.cpp)
+│   ├── j1939/  (j1939.h, j1939.cpp)
+│   ├── j2735/  (j2735.h, j2735.cpp)
+│   ├── jwt/  (jwt.h, jwt.cpp)
+│   ├── ld2410/  (ld2410.h, ld2410.cpp)
+│   ├── ldc1614/  (ldc1614.h, ldc1614.cpp)
+│   ├── link_manager/  (link_manager.h, link_manager.cpp)
+│   ├── logbuf/  (logbuf.h, logbuf.cpp)
+│   ├── lonworks/  (lonworks.h, lonworks.cpp)
+│   ├── lora/  (lora.h, lora.cpp)
+│   ├── lwm2m/  (lwm2m_tlv.h, lwm2m_tlv.cpp)
+│   ├── mbplus/  (mbplus.h, mbplus.cpp)
+│   ├── mbus/  (mbus.h, mbus.cpp)
+│   ├── mdns_adaptive/  (mdns_adaptive.h, mdns_adaptive.cpp)
+│   ├── melsec/  (melsec.h, melsec.cpp)
+│   ├── mms/  (mms.h, mms.cpp)
+│   ├── modbus/
+│   │   ├── modbus.cpp
+│   │   ├── modbus.h
+│   │   ├── modbus_master.cpp
+│   │   └── modbus_master.h
+│   ├── mpr121/  (mpr121.h, mpr121.cpp)
+│   ├── mqtt/
+│   │   ├── mqtt.cpp
+│   │   ├── mqtt.h
+│   │   ├── mqtt_sn.cpp
+│   │   └── mqtt_sn.h
+│   ├── mtconnect/  (mtconnect.h, mtconnect.cpp)
+│   ├── nats/  (nats.h, nats.cpp)
+│   ├── nema_ts2/  (nema_ts2.h, nema_ts2.cpp)
+│   ├── netadapt/  (netadapt.h, netadapt.cpp)
+│   ├── nmea0183/  (nmea0183.h, nmea0183.cpp)
+│   ├── nmea2000/  (nmea2000.h, nmea2000.cpp)
+│   ├── nrf24/  (nrf24.h, nrf24.cpp)
+│   ├── ntcip/  (ntcip.h, ntcip.cpp)
+│   ├── ntp_server/  (ntp_server.h, ntp_server.cpp)
+│   ├── nts/  (nts.h, nts.cpp)
+│   ├── oauth2/  (oauth2.h, oauth2.cpp)
+│   ├── ocit/  (ocit.h, ocit.cpp)
+│   ├── oidc/  (oidc.h, oidc.cpp)
+│   ├── opcua/  (opcua.h, opcua.cpp)
+│   ├── opcua_client/  (opcua_client.h, opcua_client.cpp)
+│   ├── openadr/  (openadr.h, openadr.cpp)
+│   ├── ota_rollback/  (ota_rollback.h, ota_rollback.cpp)
+│   ├── partition_monitor/
+│   │   ├── partition_monitor.cpp
+│   │   ├── partition_monitor.h
+│   │   └── partition_monitor_routes.cpp
+│   ├── pca9685/  (pca9685.h, pca9685.cpp)
+│   ├── pn532/  (pn532.h, pn532.cpp)
+│   ├── powerlink/  (powerlink.h, powerlink.cpp)
+│   ├── preempt_queue/  (preempt_queue.h, preempt_queue.cpp)
+│   ├── profibus/  (profibus.h, profibus.cpp)
+│   ├── profinet/  (profinet.h, profinet.cpp)
+│   ├── promisc/  (promisc.h, promisc.cpp)
+│   ├── protobuf/  (protobuf.h, protobuf.cpp)
+│   ├── proxy_protocol/  (proxy_protocol.h, proxy_protocol.cpp)
+│   ├── psram_pool/  (psram_pool.h, psram_pool.cpp)
+│   ├── radio_power/  (radio_power.h, radio_power.cpp)
+│   ├── radio_sniff/  (radio_sniff.h, radio_sniff.cpp)
+│   ├── rawl2/  (rawl2.h, rawl2.cpp)
+│   ├── rtc/  (rtc.h, rtc.cpp)
+│   ├── s7comm/  (s7comm.h, s7comm.cpp)
+│   ├── sdi12/  (sdi12.h, sdi12.cpp)
+│   ├── senml/  (senml.h, senml.cpp)
+│   ├── sep2/  (sep2.h, sep2.cpp)
+│   ├── sercos/  (sercos.h, sercos.cpp)
+│   ├── sht3x/  (sht3x.h, sht3x.cpp)
+│   ├── sigfox/  (sigfox.h, sigfox.cpp)
+│   ├── sleep_sched/  (sleep_sched.h, sleep_sched.cpp)
+│   ├── smtp/  (smtp.h, smtp.cpp)
+│   ├── snmp/
+│   │   ├── snmp_agent.cpp
+│   │   ├── snmp_agent.h
+│   │   ├── snmp_ber.cpp
+│   │   ├── snmp_ber.h
+│   │   ├── snmp_crypto.cpp
+│   │   ├── snmp_crypto.h
+│   │   ├── snmp_notify.cpp
+│   │   ├── snmp_notify.h
+│   │   ├── snmp_v3.cpp
+│   │   └── snmp_v3.h
+│   ├── snp/  (snp.h, snp.cpp)
+│   ├── sockpool/  (sockpool.h, sockpool.cpp)
+│   ├── southbound/  (southbound.h, southbound.cpp)
+│   ├── spa_router/  (spa_router.h, spa_router.cpp)
+│   ├── sparkplug/  (sparkplug.h, sparkplug.cpp)
+│   ├── statsd/  (statsd.h, statsd.cpp)
+│   ├── sunspec/  (sunspec.h, sunspec.cpp)
+│   ├── syslog/  (syslog.h, syslog.cpp)
+│   ├── telemetry/  (telemetry.h, telemetry.cpp)
+│   ├── thread/  (thread.h, thread.cpp)
+│   ├── time_source/  (time_source.h, time_source.cpp)
+│   ├── tls_policy/  (tls_policy.h, tls_policy.cpp)
+│   ├── totp/  (totp.h, totp.cpp)
+│   ├── udp_telemetry/  (udp_telemetry.h, udp_telemetry.cpp)
+│   ├── utmc/  (utmc.h, utmc.cpp)
+│   ├── vfs/  (vfs.h, vfs.cpp)
+│   ├── vl53l0x/  (vl53l0x.h, vl53l0x.cpp)
+│   ├── wamp/  (wamp.h, wamp.cpp)
+│   ├── wave/  (wave.h, wave.cpp)
+│   ├── wearlevel/  (wearlevel.h, wearlevel.cpp)
+│   ├── webdav/  (webdav.h, webdav.cpp)
+│   ├── webhook/  (webhook.h, webhook.cpp)
+│   ├── wifi_sniffer/  (wifi_sniffer.h, wifi_sniffer.cpp)
+│   ├── wisun/  (wisun.h, wisun.cpp)
+│   ├── ws_client/  (ws_client.h, ws_client.cpp)
+│   ├── xmpp/  (xmpp.h, xmpp.cpp)
+│   ├── zigbee/  (zigbee.h, zigbee.cpp)
+│   ├── zwave/  (zwave.h, zwave.cpp)
+│   ├── cloudevents.cpp
+│   ├── cloudevents.h
+│   ├── det_clock.h
+│   ├── det_i2c.h
+│   ├── mdns_service.cpp
+│   ├── mdns_service.h
+│   ├── ntp_service.cpp
+│   ├── ntp_service.h
+│   ├── ota_service.cpp
+│   ├── ota_service.h
+│   ├── provisioning_service.cpp
+│   ├── provisioning_service.h
+│   ├── redis_resp.cpp
+│   ├── redis_resp.h
+│   ├── stomp.cpp
+│   ├── stomp.h
+│   ├── upload_service.cpp
+│   ├── upload_service.h
+│   ├── web_terminal.cpp
+│   └── web_terminal.h
+├── shared_primitives/
+│   ├── det_bytes.h
+│   ├── det_can.h
+│   ├── det_hex.h
+│   ├── det_mime.h
+│   ├── det_numparse.h
+│   ├── det_pcap.h
+│   ├── det_ring.h
+│   └── det_utf8.h
+├── web/
+│   ├── favicons/  (288 generated files)
+│   ├── input/
+│   │   ├── DETWS_DASHBOARD_PAGE.html
+│   │   ├── DETWS_METRICS_PROM.txt
+│   │   ├── DETWS_PROV_FORM.html
+│   │   ├── DETWS_PROV_SAVED_HTML.html
+│   │   ├── DETWS_STATS_JSON.json
+│   │   └── DETWS_TERMINAL_PAGE.html
+│   ├── themes/  (112 generated files)
+│   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
+│   │   ├── build_assets.py
+│   │   ├── gen_favicons.py
+│   │   ├── gen_theme_blobs.py
+│   │   └── gen_themes.py
+│   └── README.md
+├── DeterministicESPAsyncWebServer.cpp
+├── DeterministicESPAsyncWebServer.h
+└── DetWebServerConfig.h
+```
+
+<!-- END GENERATED SOURCE-TREE -->
+
+</details>
+
+### Build Footprint
+
+Measured flash + static RAM for each optional feature, built in isolation over the
+base server on `esp32dev`. Generated from `docs/footprints.json` (produced by the
+RPi build matrix) by `docs/utilities/gen_readme_sections.py`.
+
+<details>
+<summary><b>Per-feature build footprint</b></summary>
+
+<!-- BEGIN GENERATED BUILD-FOOTPRINT (docs/utilities/gen_readme_sections.py) -->
+
+Measured on `esp32dev` from each feature's isolated example (one feature enabled over the
+base server). Flash is the program image; RAM is static `.data + .bss`. Regenerated by the
+Feature Tables workflow from `docs/footprints.json`.
+
+| Feature | Example | Flash (bytes) | Static RAM (bytes) |
+| :------ | :------ | ------------: | -----------------: |
+| `SIGFOX` | `Foundation/15.SigfoxUplink` | 267,961 | 21,464 |
+| `PREEMPT_QUEUE` | `Foundation/08.PreemptLanes` | 268,321 | 23,936 |
+| `ENOCEAN+GATEWAY` | `Foundation/13.EnOceanGateway` | 268,669 | 21,840 |
+| `ZWAVE+GATEWAY` | `Foundation/16.ZWaveGateway` | 268,881 | 21,840 |
+| `THREAD+GATEWAY` | `Foundation/18.ThreadGateway` | 269,113 | 22,608 |
+| `ZIGBEE+GATEWAY` | `Foundation/17.ZigbeeGateway` | 269,213 | 22,096 |
+| `DMA+PREEMPT_QUEUE+DMA_SIMULATE` | `Foundation/07.DmaIngest` | 269,325 | 28,600 |
+| `core/02.SSHCryptoSelfTest` | `L5-Session/02.SSHCryptoSelfTest` | 269,537 | 21,476 |
+| `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/09.InterfaceForward` | 270,349 | 28,888 |
+| `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Foundation/10.RadioGateway` | 270,421 | 28,720 |
+| `LD2410` | `L7-Application/62.Ld2410` | 270,661 | 21,576 |
+| `NRF24+GATEWAY` | `Foundation/12.Nrf24Gateway` | 276,081 | 21,680 |
+| `LORA+GATEWAY` | `Foundation/11.LoRaGateway` | 276,305 | 21,680 |
+| `PCA9685` | `L7-Application/65.Pca9685` | 284,609 | 21,800 |
+| `ADS1115` | `L7-Application/66.Ads1115` | 286,841 | 21,800 |
+| `SHT3X` | `L7-Application/64.Sht3x` | 286,909 | 21,800 |
+| `INA219` | `L7-Application/67.Ina219` | 287,009 | 21,800 |
+| `MPR121` | `L7-Application/63.Mpr121` | 287,609 | 21,800 |
+| `PN532+GATEWAY` | `Foundation/14.NfcGateway` | 288,121 | 21,928 |
+| `DNS_SERVER` | `L7-Application/60.DnsServer` | 725,605 | 45,976 |
+| `SMTP` | `L7-Application/57.SmtpAlert` | 726,893 | 43,408 |
+| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/28.CoapBlock` | 727,489 | 48,352 |
+| `UDP_TELEMETRY` | `L7-Application/39.UdpTelemetry` | 727,893 | 44,944 |
+| `STATSD` | `L7-Application/59.StatsdMetrics` | 728,221 | 45,088 |
+| `SNMP+SNMP_TRAP` | `L7-Application/26.SnmpTrap` | 728,377 | 44,928 |
+| `COAP+COAP_OBSERVE` | `L7-Application/27.CoapObserve` | 729,285 | 46,112 |
+| `ESPNOW` | `L7-Application/53.EspNow` | 731,285 | 43,576 |
+| `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,453 | 63,176 |
+| `MQTT` | `L7-Application/24.MqttClient` | 736,105 | 65,328 |
+| `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,013 | 46,668 |
+| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 750,833 | 66,208 |
+| `core/02.CORS` | `L7-Application/02.CORS` | 750,993 | 66,200 |
+| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 751,021 | 66,200 |
+| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 751,073 | 66,200 |
+| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 751,189 | 66,200 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 751,225 | 66,200 |
+| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 751,305 | 66,200 |
+| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,369 | 66,648 |
+| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,401 | 66,240 |
+| `core/05.PathParams` | `L7-Application/05.PathParams` | 751,405 | 66,200 |
+| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 751,461 | 66,200 |
+| `GUARDRAILS` | `L7-Application/40.Guardrails` | 751,545 | 66,208 |
+| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 751,553 | 66,200 |
+| `core/04.Middleware` | `L7-Application/04.Middleware` | 751,657 | 66,200 |
+| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 751,705 | 66,208 |
+| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 751,713 | 66,208 |
+| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 751,713 | 66,200 |
+| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 751,753 | 66,208 |
+| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 751,797 | 66,208 |
+| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 751,845 | 66,200 |
+| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 751,985 | 66,200 |
+| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 752,057 | 66,208 |
+| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 752,073 | 66,776 |
+| `TOTP` | `L7-Application/45.Totp` | 752,201 | 66,232 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 752,357 | 66,344 |
+| `CSRF` | `L7-Application/33.Csrf` | 752,461 | 66,248 |
+| `LOGBUF` | `L7-Application/41.LogBuffer` | 752,497 | 69,288 |
+| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,629 | 66,200 |
+| `MODBUS` | `L7-Application/30.ModbusTcp` | 752,777 | 66,480 |
+| `core/08.Templating` | `L7-Application/08.Templating` | 752,825 | 66,240 |
+| `STATS` | `L7-Application/22.Stats` | 752,881 | 66,304 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 753,097 | 66,480 |
+| `core/01.Basic` | `Foundation/01.Basic` | 753,101 | 66,208 |
+| `JWT` | `L6-Presentation/06.JWTAuth` | 753,189 | 66,776 |
+| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 753,277 | 69,192 |
+| `CBOR` | `L6-Presentation/13.Cbor` | 753,277 | 66,280 |
+| `TELNET` | `L5-Session/03.Telnet` | 753,313 | 66,736 |
+| `IPV6` | `Foundation/20.IPv6` | 753,465 | 66,200 |
+| `core/03.Expert` | `Foundation/03.Expert` | 753,713 | 66,224 |
+| `SYSLOG` | `L7-Application/19.Syslog` | 754,325 | 68,056 |
+| `MSGPACK` | `L6-Presentation/14.MsgPack` | 754,581 | 66,280 |
+| `core/02.Json` | `L6-Presentation/02.Json` | 754,737 | 66,208 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 755,033 | 66,344 |
+| `GPIO_MAP` | `L7-Application/38.GpioMap` | 755,317 | 66,256 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 755,677 | 74,392 |
+| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 755,805 | 66,280 |
+| `GRAPHQL` | `L7-Application/52.GraphQL` | 755,913 | 70,608 |
+| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 755,997 | 66,260 |
+| `OTA` | `L7-Application/16.OTA` | 756,313 | 102,328 |
+| `COAP` | `L7-Application/13.CoAP` | 756,617 | 68,712 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 756,981 | 67,480 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 758,601 | 67,772 |
+| `OPCUA` | `L7-Application/55.OpcUa` | 759,217 | 76,496 |
+| `SNMP` | `L7-Application/14.SNMP` | 759,705 | 78,608 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 759,737 | 66,312 |
+| `TELEMETRY` | `L7-Application/34.Telemetry` | 759,853 | 66,524 |
+| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 761,505 | 85,952 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 763,453 | 89,024 |
+| `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,217 | 47,320 |
+| `OIDC` | `L7-Application/50.OidcAuth` | 764,469 | 79,328 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 764,953 | 66,216 |
+| `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,625 | 45,372 |
+| `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 770,769 | 45,332 |
+| `DASHBOARD` | `L7-Application/35.Dashboard` | 771,837 | 66,568 |
+| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 772,181 | 67,820 |
+| `MDNS` | `L7-Application/15.mDNS` | 776,469 | 68,104 |
+| `NTP` | `L7-Application/18.SNTP` | 776,725 | 68,752 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 782,117 | 80,352 |
+| `ETHERNET` | `Foundation/19.Ethernet` | 789,645 | 66,252 |
+| `core/10.FileServing` | `L7-Application/10.FileServing` | 792,377 | 66,240 |
+| `UPLOAD` | `L7-Application/11.FileUpload` | 793,505 | 71,432 |
+| `RANGE` | `L7-Application/12.Range` | 793,645 | 66,240 |
+| `VFS` | `L7-Application/51.Vfs` | 794,577 | 66,344 |
+| `WEBDAV` | `L7-Application/29.WebDav` | 820,129 | 105,576 |
+| `SSH` | `L5-Session/01.SSH` | 821,537 | 88,524 |
+| `ETAG` | `L7-Application/09.ETag` | 827,157 | 67,512 |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,685 | 120,436 |
+| `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,165 | 117,116 |
+| `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,001 | 117,276 |
+| `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,109 | 117,452 |
+
+<!-- END GENERATED BUILD-FOOTPRINT -->
 
 </details>
 
@@ -484,6 +956,8 @@ Every byte of memory the library uses is accounted for at compile time:
 [`begin()`](@ref DetWebServer::begin) calls `xQueueCreateStatic()` - no `pvPortMalloc`, no fragmentation risk. The library makes no heap allocations.
 
 The only post-`begin()` allocation that can occur is inside `fs::File` construction in `serve_file()`, which is an Arduino FS implementation detail outside the library's control.
+
+Every pool above is a fixed BSS array sized from the compile-time constants, so the memory cost is exactly what the configuration says - it never grows at runtime. For the measured flash and static-RAM cost of each optional feature, see the [Build Footprint](#build-footprint) table above.
 
 ## Feature Flags & Configuration
 
@@ -511,22 +985,213 @@ Any feature flag set to `0` strips the corresponding code and its includes from 
 
 ### Feature Flags
 
-Here are the available compile-time feature flags and their default values:
+The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
+`src/DetWebServerConfig.h` by `docs/utilities/gen_readme_sections.py` (see
+[FEATURES.md](FEATURES.md) for the full description of each):
 
-| Flag                                                          | Default | Description                                                   |
-| :------------------------------------------------------------ | :------ | :------------------------------------------------------------ |
-| [`DETWS_ENABLE_WEBSOCKET`](@ref DETWS_ENABLE_WEBSOCKET)       | `1`     | WebSocket support (RFC 6455, SHA-1/base64 via mbedTLS)        |
-| [`DETWS_ENABLE_SSE`](@ref DETWS_ENABLE_SSE)                   | `1`     | Server-Sent Events push support                               |
-| [`DETWS_ENABLE_MULTIPART`](@ref DETWS_ENABLE_MULTIPART)       | `1`     | `multipart/form-data` body parser                             |
-| [`DETWS_ENABLE_FILE_SERVING`](@ref DETWS_ENABLE_FILE_SERVING) | `1`     | Static file serving via Arduino `FS`                          |
-| [`DETWS_ENABLE_AUTH`](@ref DETWS_ENABLE_AUTH)                 | `1`     | HTTP Basic Auth per-route                                     |
-| `DETWS_ENABLE_DIAG`                                           | `0`     | JSON build-config diagnostic endpoint (disable in production) |
-| [`DETWS_ENABLE_MDNS`](@ref DETWS_ENABLE_MDNS)                 | `0`     | mDNS/DNS-SD advertisement via ESPmDNS                         |
-| [`DETWS_ENABLE_NTP`](@ref DETWS_ENABLE_NTP)                   | `0`     | SNTP wall-clock time synchronization                          |
-| [`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)                   | `0`     | Authenticated OTA firmware updates                            |
-| [`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING) | `0`     | WiFi provisioning wizard (SoftAP + captive portal)            |
-| [`DETWS_ENABLE_TELNET`](@ref DETWS_ENABLE_TELNET)             | `0`     | RFC 854 Telnet server                                         |
-| [`DETWS_ENABLE_SSH`](@ref DETWS_ENABLE_SSH)                   | `0`     | RFC 4253/4252/4254 SSH server                                 |
+<details>
+<summary><b>All feature flags and their defaults</b></summary>
+
+<!-- BEGIN GENERATED FEATURE-FLAGS (docs/utilities/gen_readme_sections.py) -->
+
+| Flag | Default | Description |
+| :--- | :-----: | :---------- |
+| `DETWS_ENABLE_ACCEPT_THROTTLE` | `0` | Opt-in global accept-rate throttle (connection-flood defense). |
+| `DETWS_ENABLE_ADS1115` | `0` | TI ADS1115 16-bit ADC (I2C) - a precise external analog input. |
+| `DETWS_ENABLE_AMQP` | `0` | AMQP 0-9-1 frame codec (`services/amqp`). |
+| `DETWS_ENABLE_ATC` | `0` | Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot. |
+| `DETWS_ENABLE_AUDIT_LOG` | `0` | Tamper-evident audit log. |
+| `DETWS_ENABLE_AUTH` | `1` | HTTP Basic Authentication per-route. |
+| `DETWS_ENABLE_AUTH_LOCKOUT` | `0` | Opt-in per-IP brute-force lockout for HTTP auth (requires DETWS_ENABLE_AUTH). |
+| `DETWS_ENABLE_BACNET` | `0` | BACnet/IP BVLC + NPDU codec (`services/bacnet`). |
+| `DETWS_ENABLE_BLE_GATT` | `0` | Opt-in Bluetooth ATT protocol codec + GATT characteristic bridge. |
+| `DETWS_ENABLE_BUS_CAPTURE` | `0` | Wired field-bus listen-only capture. |
+| `DETWS_ENABLE_C37118` | `0` | IEEE C37.118.2 synchrophasor frame codec (`services/c37118`). |
+| `DETWS_ENABLE_CANOPEN` | `0` | CANopen (CiA 301) message codec (`services/canopen`). |
+| `DETWS_ENABLE_CBOR` | `0` | Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. |
+| `DETWS_ENABLE_CC1101` | `0` | Opt-in CC1101 sub-GHz radio driver. |
+| `DETWS_ENABLE_CCLINK` | `0` | Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. |
+| `DETWS_ENABLE_CIP` | `0` | CIP (Common Industrial Protocol) message codec (`services/cip`). |
+| `DETWS_ENABLE_CLOUDEVENTS` | `0` | CloudEvents v1.0 (CNCF) event envelope (structured JSON + binary headers). |
+| `DETWS_ENABLE_COAP` | `0` | CoAP server (RFC 7252) over UDP/5683. |
+| `DETWS_ENABLE_COAP_BLOCK` | `0` | CoAP block-wise transfer - RFC 7959 (requires DETWS_ENABLE_COAP). |
+| `DETWS_ENABLE_COAP_OBSERVE` | `0` | CoAP resource observation - RFC 7641 (requires DETWS_ENABLE_COAP). |
+| `DETWS_ENABLE_CONFIG_IO` | `0` | Opt-in schema-driven config export / restore. |
+| `DETWS_ENABLE_CONFIG_STORE` | `0` | Typed NVS configuration store (WiFi creds, IP config, ... |
+| `DETWS_ENABLE_COTP` | `0` | TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`). |
+| `DETWS_ENABLE_CSRF` | `0` | Opt-in CSRF protection for state-changing HTTP requests. |
+| `DETWS_ENABLE_DASHBOARD` | `0` | Real-time SVG dashboard (DETWS_ENABLE_DASHBOARD; requires DETWS_ENABLE_SSE). |
+| `DETWS_ENABLE_DDS` | `0` | Opt-in DDS / RTPS wire-protocol codec. |
+| `DETWS_ENABLE_DEVICENET` | `0` | DeviceNet link-adaptation codec (`services/devicenet`). |
+| `DETWS_ENABLE_DEVICE_ID` | `0` | Stable device UUID derived from the chip MAC (RFC 4122 v5). |
+| `DETWS_ENABLE_DF1` | `0` | Allen-Bradley DF1 full-duplex frame codec (`services/df1`). |
+| `DETWS_ENABLE_DIAG` | `0` | Expose a diagnostic JSON endpoint via server.diag(). |
+| `DETWS_ENABLE_DIRECTNET` | `0` | Opt-in AutomationDirect / Koyo DirectNET serial frame codec. |
+| `DETWS_ENABLE_DMA` | `0` | Enable the DMA peripheral ingest / egress primitive (default off). |
+| `DETWS_ENABLE_DMX` | `0` | DMX512 + RDM (ANSI E1.20) lighting codec (`services/dmx`). |
+| `DETWS_ENABLE_DNP3` | `0` | DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`). |
+| `DETWS_ENABLE_DNS_RESOLVER` | `0` | Opt-in DNS resolver with answer verification. |
+| `DETWS_ENABLE_DNS_SERVER` | `0` | Authoritative DNS server (services/dns_server) on UDP/53. |
+| `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
+| `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
+| `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
+| `DETWS_ENABLE_ESPNOW` | `0` | ESP-NOW peer messaging. |
+| `DETWS_ENABLE_ETAG` | `0` | Conditional GET (ETag + Last-Modified) for served files. |
+| `DETWS_ENABLE_ETHERNET` | `0` | Enable wired Ethernet bring-up (init_eth_physical / eth_ready). |
+| `DETWS_ENABLE_EXC_DECODER` | `0` | Opt-in ESP32 panic / exception decoder for a live diagnostics panel. |
+| `DETWS_ENABLE_FAILSAFE` | `0` | Opt-in software watchdog: deadlock detection + fail-safe safe-state. |
+| `DETWS_ENABLE_FDC2214` | `0` | Opt-in FDC2114/2214 capacitance-to-digital field sensor. |
+| `DETWS_ENABLE_FILE_SERVING` | `1` | Static file serving via Arduino FS (LittleFS, SPIFFS, SD). |
+| `DETWS_ENABLE_FINS` | `0` | Omron FINS frame codec (`services/fins`). |
+| `DETWS_ENABLE_FLOW_EXPORT` | `0` | Flow-record export codec (`services/flow_export`). |
+| `DETWS_ENABLE_FORWARD` | `0` | Enable the interface forwarding plane (default off). |
+| `DETWS_ENABLE_GATEWAY` | `0` | Enable the radio / wireless gateway bridge (default off). |
+| `DETWS_ENABLE_GOOSE` | `0` | Opt-in IEC 61850 GOOSE publisher codec. |
+| `DETWS_ENABLE_GPIO_MAP` | `0` | Opt-in browser GPIO pin-mapper / diagnostics endpoint. |
+| `DETWS_ENABLE_GRAPHQL` | `0` | GraphQL query subset. |
+| `DETWS_ENABLE_GRPC_WEB` | `0` | gRPC-Web message framing (`services/grpcweb`). |
+| `DETWS_ENABLE_GUARDRAILS` | `0` | Opt-in runtime heap/stack guardrails. |
+| `DETWS_ENABLE_HAPPY_EYEBALLS` | `0` | Opt-in dual-stack Happy Eyeballs destination selection. |
+| `DETWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
+| `DETWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
+| `DETWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
+| `DETWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first. |
+| `DETWS_ENABLE_HTTP_CLIENT` | `0` | Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). |
+| `DETWS_ENABLE_HTTP_CLIENT_TLS` | `0` | HTTPS client support inside the HTTP client (needs DETWS_ENABLE_TLS). |
+| `DETWS_ENABLE_HTTP_DELIVERY` | `0` | Opt-in HTTP delivery optimizations. |
+| `DETWS_ENABLE_HW_HEALTH` | `0` | Opt-in hardware-health diagnostics. |
+| `DETWS_ENABLE_ICCP` | `0` | Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec. |
+| `DETWS_ENABLE_IEC60870` | `0` | IEC 60870-5-101 / -104 telecontrol (SCADA) codec (`services/iec60870`). |
+| `DETWS_ENABLE_INA219` | `0` | TI INA219 high-side current / power monitor (I2C). |
+| `DETWS_ENABLE_INTERBUS` | `0` | Opt-in INTERBUS summation-frame fieldbus codec. |
+| `DETWS_ENABLE_IOLINK` | `0` | IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`). |
+| `DETWS_ENABLE_IPV6` | `0` | Enable IPv6 on the network interface (dual-stack). |
+| `DETWS_ENABLE_IP_ALLOWLIST` | `0` | Opt-in source-IP allowlist (accept-time firewall, IPv4 and IPv6). |
+| `DETWS_ENABLE_J1939` | `0` | SAE J1939 message codec (`services/j1939`). |
+| `DETWS_ENABLE_J2735` | `0` | Opt-in SAE J2735 V2X codec. |
+| `DETWS_ENABLE_JWT` | `0` | JWT bearer-token authentication (HS256). |
+| `DETWS_ENABLE_KEEPALIVE` | `0` | HTTP/1.1 persistent connections (keep-alive). |
+| `DETWS_ENABLE_LD2410` | `0` | HLK-LD2410 24 GHz mmWave presence / motion radar (UART). |
+| `DETWS_ENABLE_LDC1614` | `0` | Opt-in LDC1614 inductance-to-digital field sensor. |
+| `DETWS_ENABLE_LINK_MANAGER` | `0` | Opt-in multi-interface egress selection / failover policy. |
+| `DETWS_ENABLE_LOGBUF` | `0` | Opt-in fixed-RAM rotating log buffer with severity traps. |
+| `DETWS_ENABLE_LONWORKS` | `0` | Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec. |
+| `DETWS_ENABLE_LORA` | `0` | Enable the LoRa (SX127x) radio codec + driver (default off). |
+| `DETWS_ENABLE_LWM2M` | `0` | OMA LwM2M TLV codec (`services/lwm2m`). |
+| `DETWS_ENABLE_MBPLUS` | `0` | Opt-in Modbus Plus HDLC token-bus frame codec. |
+| `DETWS_ENABLE_MBUS` | `0` | Wired M-Bus (Meter-Bus, EN 13757) frame codec (`services/mbus`). |
+| `DETWS_ENABLE_MDNS` | `0` | mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS. |
+| `DETWS_ENABLE_MDNS_ADAPTIVE` | `0` | Opt-in adaptive mDNS beacon scheduling. |
+| `DETWS_ENABLE_MELSEC` | `0` | Mitsubishi MELSEC MC protocol (binary 3E) codec (`services/melsec`). |
+| `DETWS_ENABLE_METRICS` | `0` | Prometheus `/metrics` endpoint (text exposition format 0.0.4). |
+| `DETWS_ENABLE_MMS` | `0` | Opt-in IEC 61850 MMS PDU codec. |
+| `DETWS_ENABLE_MODBUS` | `0` | Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502. |
+| `DETWS_ENABLE_MODBUS_MASTER` | `0` | Opt-in Modbus master codec + register scanner. |
+| `DETWS_ENABLE_MODBUS_RTU` | `0` | Modbus RTU framing (serial / RS-485) over the same data model + PDU dispatch. |
+| `DETWS_ENABLE_MPR121` | `0` | NXP MPR121 12-channel capacitive-touch controller (I2C). |
+| `DETWS_ENABLE_MQTT` | `0` | MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS). |
+| `DETWS_ENABLE_MQTT_SN` | `0` | MQTT-SN v1.2 wire codec (`services/mqtt/mqtt_sn`). |
+| `DETWS_ENABLE_MQTT_TLS` | `0` | MQTTS: run the MQTT client over client-side TLS (needs DETWS_ENABLE_TLS). |
+| `DETWS_ENABLE_MSGPACK` | `0` | Zero-heap MessagePack encoder and decoder for compact binary payloads. |
+| `DETWS_ENABLE_MTCONNECT` | `0` | Opt-in MTConnect agent response codec. |
+| `DETWS_ENABLE_MTLS` | `0` | Mutual TLS - require and verify a client certificate (mTLS). |
+| `DETWS_ENABLE_MULTIPART` | `1` | multipart/form-data body parser. |
+| `DETWS_ENABLE_NATS` | `0` | NATS client protocol codec (`services/nats`). |
+| `DETWS_ENABLE_NEMA_TS2` | `0` | Opt-in NEMA TS 2 traffic-cabinet SDLC frame codec. |
+| `DETWS_ENABLE_NETADAPT` | `0` | Opt-in network adaptation decisions. |
+| `DETWS_ENABLE_NMEA0183` | `0` | NMEA 0183 sentence codec (`services/nmea0183`). |
+| `DETWS_ENABLE_NMEA2000` | `0` | NMEA 2000 codec (`services/nmea2000`). |
+| `DETWS_ENABLE_NRF24` | `0` | Enable the nRF24L01+ radio driver (default off). |
+| `DETWS_ENABLE_NTCIP` | `0` | Opt-in NTCIP transportation-device object identifiers. |
+| `DETWS_ENABLE_NTP` | `0` | SNTP wall-clock time sync via the ESP-IDF SNTP client. |
+| `DETWS_ENABLE_NTP_SERVER` | `0` | NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/ntp_server). |
+| `DETWS_ENABLE_NTS` | `0` | Opt-in Network Time Security (NTS, RFC 8915) wire codec. |
+| `DETWS_ENABLE_OAUTH2` | `0` | OAuth2 token-endpoint client. |
+| `DETWS_ENABLE_OBSERVABILITY` | `0` | Transport-layer observability: connection event hook + counters. |
+| `DETWS_ENABLE_OCIT` | `0` | Opt-in OCIT-Outstations message codec. |
+| `DETWS_ENABLE_OIDC` | `0` | OpenID Connect ID-token verification, RS256. |
+| `DETWS_ENABLE_OPCUA` | `0` | OPC UA Binary server. |
+| `DETWS_ENABLE_OPCUA_CLIENT` | `0` | OPC UA Binary client. |
+| `DETWS_ENABLE_OPENADR` | `0` | Opt-in OpenADR 3.0 (Automated Demand Response) JSON codec. |
+| `DETWS_ENABLE_OTA` | `0` | Authenticated OTA firmware update (streaming POST to the ESP32 Update API). |
+| `DETWS_ENABLE_OTA_ROLLBACK` | `0` | Opt-in OTA rollback protection / soft-brick safeguard. |
+| `DETWS_ENABLE_PARTITION_MONITOR` | `0` | Opt-in flash partition-map monitor endpoint. |
+| `DETWS_ENABLE_PCA9685` | `0` | NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C). |
+| `DETWS_ENABLE_PER_IP_THROTTLE` | `0` | Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). |
+| `DETWS_ENABLE_PN532` | `0` | Enable the PN532 NFC frame codec (default off). |
+| `DETWS_ENABLE_POWERLINK` | `0` | Opt-in Ethernet POWERLINK (EPSG) basic frame codec. |
+| `DETWS_ENABLE_PREEMPT_QUEUE` | `0` | Enable the preempting work queue primitive (default off). |
+| `DETWS_ENABLE_PROFIBUS` | `0` | Opt-in PROFIBUS-DP FDL telegram codec. |
+| `DETWS_ENABLE_PROFINET` | `0` | Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec. |
+| `DETWS_ENABLE_PROMISC` | `0` | Wi-Fi promiscuous (monitor) capture. |
+| `DETWS_ENABLE_PROTOBUF` | `0` | Protocol Buffers wire codec (`services/protobuf`). |
+| `DETWS_ENABLE_PROVISIONING` | `0` | First-boot WiFi provisioning: softAP + captive-portal credentials form. |
+| `DETWS_ENABLE_PROXY_PROTOCOL` | `0` | HAProxy PROXY protocol codec (`services/proxy_protocol`). |
+| `DETWS_ENABLE_PSRAM_POOL` | `0` | Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager. |
+| `DETWS_ENABLE_RADIO_POWER` | `0` | Opt-in radio power controls. |
+| `DETWS_ENABLE_RADIO_SNIFF` | `0` | Opt-in receive-only radio channel sniffer to pcap. |
+| `DETWS_ENABLE_RANGE` | `0` | HTTP Range requests / 206 Partial Content for served files. |
+| `DETWS_ENABLE_RAWL2` | `0` | Opt-in raw Layer-2 Ethernet frame codec. |
+| `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
+| `DETWS_ENABLE_RTC` | `0` | I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source. |
+| `DETWS_ENABLE_S7COMM` | `0` | Siemens S7comm PDU codec (`services/s7comm`). |
+| `DETWS_ENABLE_SDI12` | `0` | SDI-12 sensor-bus codec (`services/sdi12`). |
+| `DETWS_ENABLE_SENML` | `0` | SenML (RFC 8428) measurement-pack builder (`services/senml`). |
+| `DETWS_ENABLE_SEP2` | `0` | Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec. |
+| `DETWS_ENABLE_SERCOS` | `0` | Opt-in SERCOS III motion-bus telegram codec. |
+| `DETWS_ENABLE_SHT3X` | `0` | Sensirion SHT3x temperature / humidity sensor (I2C). |
+| `DETWS_ENABLE_SIGFOX` | `0` | Enable the Sigfox AT-command codec (default off). |
+| `DETWS_ENABLE_SLEEP_SCHED` | `0` | Opt-in dynamic sleep-cycle scheduler. |
+| `DETWS_ENABLE_SMTP` | `0` | Outbound SMTP client (RFC 5321) for device email alerts (services/smtp). |
+| `DETWS_ENABLE_SNMP` | `0` | SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP. |
+| `DETWS_ENABLE_SNMP_TRAP` | `0` | Outbound SNMP notifications - traps and informs (requires DETWS_ENABLE_SNMP). |
+| `DETWS_ENABLE_SNMP_V3` | `0` | Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). |
+| `DETWS_ENABLE_SNP` | `0` | Opt-in GE Fanuc SNP (Series Ninety Protocol) serial frame codec. |
+| `DETWS_ENABLE_SOCKPOOL` | `0` | Opt-in dynamic socket recycling: an LRU connection-slot pool. |
+| `DETWS_ENABLE_SOUTHBOUND` | `0` | Opt-in southbound protocol-driver framework. |
+| `DETWS_ENABLE_SPARKPLUG` | `0` | Sparkplug B payload + topic codec (`services/sparkplug`). |
+| `DETWS_ENABLE_SPA_ROUTER` | `0` | Opt-in single-page-app micro-routing decision. |
+| `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
+| `DETWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
+| `DETWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
+| `DETWS_ENABLE_STATS` | `0` | Runtime stats endpoint (uptime, request/error counts, pool usage, heap). |
+| `DETWS_ENABLE_STATSD` | `0` | Opt-in StatsD metrics client. |
+| `DETWS_ENABLE_STOMP` | `0` | STOMP 1.2 frame codec (`services/stomp`). |
+| `DETWS_ENABLE_SUNSPEC` | `0` | SunSpec Modbus device-information-model codec (`services/sunspec`). |
+| `DETWS_ENABLE_SYSLOG` | `0` | Syslog client (RFC 5424 over UDP). |
+| `DETWS_ENABLE_TELEMETRY` | `0` | Telemetry math helpers (moving-window stats, rate-of-change, totalizer). |
+| `DETWS_ENABLE_TELNET` | `0` | Telnet server support (RFC 854 / IAC option negotiation). |
+| `DETWS_ENABLE_THEMES` | `0` | Embed the theme stylesheet library as runtime-selectable blobs (default off). |
+| `DETWS_ENABLE_THREAD` | `0` | Enable the Thread spinel / HDLC-lite framing codec (default off). |
+| `DETWS_ENABLE_TIME_SOURCE` | `0` | Multi-source time fallback (NTP / RTC / GPS / ... |
+| `DETWS_ENABLE_TLS` | `0` | TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only). |
+| `DETWS_ENABLE_TLS_POLICY` | `0` | Opt-in TLS version negotiation + pinned cipher-suite policy. |
+| `DETWS_ENABLE_TLS_RESUMPTION` | `0` | TLS session resumption via RFC 5077 session tickets (requires DETWS_ENABLE_TLS). |
+| `DETWS_ENABLE_TOTP` | `0` | Opt-in TOTP two-factor auth (RFC 6238). |
+| `DETWS_ENABLE_UDP_TELEMETRY` | `0` | Opt-in fire-and-forget UDP telemetry cast. |
+| `DETWS_ENABLE_UPLOAD` | `0` | Streaming file upload: POST a body straight to a file on the filesystem. |
+| `DETWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
+| `DETWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
+| `DETWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
+| `DETWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
+| `DETWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
+| `DETWS_ENABLE_WEARLEVEL` | `0` | Opt-in flash wear-leveling slot selector. |
+| `DETWS_ENABLE_WEBDAV` | `0` | WebDAV server (RFC 4918, class 1 + advisory locks) over the file system. |
+| `DETWS_ENABLE_WEBHOOK` | `0` | Opt-in outbound webhooks / IFTTT. |
+| `DETWS_ENABLE_WEBSOCKET` | `1` | WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). |
+| `DETWS_ENABLE_WEB_TERMINAL` | `0` | Browser "web serial" terminal over WebSocket (src/services/web_terminal). |
+| `DETWS_ENABLE_WIFI_SNIFFER` | `0` | Opt-in 802.11 sniffer / traffic analyzer. |
+| `DETWS_ENABLE_WISUN` | `0` | Opt-in Wi-SUN FAN border-router connector. |
+| `DETWS_ENABLE_WS_CLIENT` | `0` | Outbound WebSocket client (RFC 6455 over raw lwIP, optional wss:// TLS). |
+| `DETWS_ENABLE_WS_CLIENT_TLS` | `0` | wss://: run the WebSocket client over client-side TLS (needs DETWS_ENABLE_TLS). |
+| `DETWS_ENABLE_WS_DEFLATE` | `0` | WebSocket permessage-deflate (RFC 7692) - bidirectional compression. |
+| `DETWS_ENABLE_XMPP` | `0` | Opt-in XMPP (RFC 6120) stanza codec. |
+| `DETWS_ENABLE_ZIGBEE` | `0` | Enable the Zigbee EZSP / ASH framing codec (default off). |
+| `DETWS_ENABLE_ZWAVE` | `0` | Enable the Z-Wave Serial API frame codec (default off). |
+
+<!-- END GENERATED FEATURE-FLAGS -->
+
+</details>
 
 Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `#error` messages at compile time with a descriptive reason string.
 
@@ -537,64 +1202,228 @@ All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`
 <details>
 <summary><b>Expand Configuration constants and options</b></summary>
 
-**Capacity**
+The full list of tunable `#define` constants and their defaults, scraped from
+`src/DetWebServerConfig.h` by `docs/utilities/gen_readme_sections.py`. Override any
+with a build flag (e.g. `-DMAX_CONNS=6`); illegal combinations are caught by `#error`
+guards at compile time.
 
-| Constant                                    | Default | Description                                           |
-| ------------------------------------------- | ------- | ----------------------------------------------------- |
-| [`MAX_CONNS`](@ref MAX_CONNS)               | 4       | Simultaneous TCP connections (1–255)                  |
-| [`EVT_QUEUE_DEPTH`](@ref EVT_QUEUE_DEPTH)   | 16      | FreeRTOS event queue depth; must be ≥ `MAX_CONNS * 4` |
-| [`RX_BUF_SIZE`](@ref RX_BUF_SIZE)           | 1024    | Ring buffer bytes per connection                      |
-| [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE)       | 256     | Request body bytes; must be ≤ `RX_BUF_SIZE`           |
-| [`MAX_ROUTES`](@ref MAX_ROUTES)             | 16      | Registered route handlers                             |
-| [`MAX_HEADERS`](@ref MAX_HEADERS)           | 8       | Headers stored per request                            |
-| [`MAX_PATH_LEN`](@ref MAX_PATH_LEN)         | 64      | URL path bytes including leading `/`                  |
-| [`MAX_KEY_LEN`](@ref MAX_KEY_LEN)           | 32      | Header field-name bytes                               |
-| [`MAX_VAL_LEN`](@ref MAX_VAL_LEN)           | 48      | Header field-value bytes                              |
-| [`MAX_QUERY_LEN`](@ref MAX_QUERY_LEN)       | 128     | Raw query string bytes (after `?`)                    |
-| [`MAX_QUERY_PARAMS`](@ref MAX_QUERY_PARAMS) | 8       | Parsed query key=value pairs                          |
-| [`QUERY_KEY_LEN`](@ref QUERY_KEY_LEN)       | 24      | Query parameter key bytes                             |
-| [`QUERY_VAL_LEN`](@ref QUERY_VAL_LEN)       | 48      | Query parameter value bytes                           |
+<!-- BEGIN GENERATED CONFIG-OVERRIDES (docs/utilities/gen_readme_sections.py) -->
 
-**Response Buffers**
+| Constant | Default | Description |
+| :------- | :-----: | :---------- |
+| `BODY_BUF_SIZE` | `256` | Maximum request body bytes stored in `HttpReq::body`. |
+| `CACHE_CONTROL_BUF_SIZE` | `64` | Size of the optional Cache-Control header line stored in DetWebServer. |
+| `CHUNK_BUF_SIZE` | `256` | Per-chunk staging buffer for send_chunked()'s ChunkSource (max bytes a source produces per call, hence the largest single chunk on the wire). |
+| `CONN_TIMEOUT_MS` | `5000` | Compile-time default for connection idle timeout in milliseconds. |
+| `CORS_HDR_BUF_SIZE` | `192` | Size of the pre-built CORS header block stored in DetWebServer. |
+| `DETWS_ACCEPT_THROTTLE_MAX` | `20` | Max accepted connections per throttle window (see DETWS_ENABLE_ACCEPT_THROTTLE). |
+| `DETWS_ACCEPT_THROTTLE_WINDOW_MS` | `1000` | Throttle window length in milliseconds (see DETWS_ENABLE_ACCEPT_THROTTLE). |
+| `DETWS_ADS1115_I2C_ADDR` | `0x48` | I2C address of the ADS1115 (0x48 with ADDR to GND; 0x49/0x4A/0x4B for VDD/SDA/SCL). |
+| `DETWS_AUTH_LOCKOUT_BASE_MS` | `1000` | First lockout duration in ms; doubles on each further failure. |
+| `DETWS_AUTH_LOCKOUT_MAX_MS` | `300000` | Maximum lockout duration in ms (the exponential backoff cap). |
+| `DETWS_AUTH_LOCKOUT_SLOTS` | `16` | Number of source IPs the auth lockout tracks (BSS bucket table). |
+| `DETWS_AUTH_LOCKOUT_THRESHOLD` | `5` | Consecutive failed auths from one IP before it is locked out. |
+| `DETWS_CLIENT_CONNS` | `2` | Number of simultaneous outbound client connections (BSS pool size). |
+| `DETWS_CLIENT_RX_BUF` | `8192` | Per-connection wire receive ring size (bytes). |
+| `DETWS_CLOSING_TIMEOUT_MS` | `2000` | Upper bound (ms) a slot may dwell in CONN_CLOSING after a graceful close before the idle sweep force-aborts it. |
+| `DETWS_COAP_BLOCK1_MAX` | `1024` | Reassembly buffer for a block-wise (Block1) request upload, in bytes. |
+| `DETWS_COAP_BLOCK_SZX_MAX` | `6` | Largest block-size exponent (SZX) the server will use: block size = 2^(SZX+4) bytes, SZX 0..6 (16..1024). |
+| `DETWS_COAP_MAX_OBSERVERS` | `4` | Maximum simultaneous CoAP observers (one slot per observed resource per client). |
+| `DETWS_COAP_MAX_PATH` | `64` | Maximum reconstructed Uri-Path length, including separators and the leading '/'. |
+| `DETWS_COAP_MAX_PAYLOAD` | `256` | Maximum CoAP request/response payload in bytes. |
+| `DETWS_COAP_MAX_QUERY` | `64` | Maximum reconstructed Uri-Query length (segments joined by '&'). |
+| `DETWS_COAP_MAX_RESOURCES` | `8` | Maximum registered CoAP resources (the server's fixed routing table). |
+| `DETWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
+| `DETWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
+| `DETWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
+| `DETWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
+| `DETWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
+| `DETWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |
+| `DETWS_DMA_BUF_SIZE` | `256` | Bytes per DMA transfer buffer (RX is double-buffered at this size). |
+| `DETWS_DMA_CHANNELS` | `2` | Number of DMA channels (static-allocated; each is one peripheral link). |
+| `DETWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
+| `DETWS_DNS_NAME_MAX` | `128` | Max length of a queried/stored DNS name (bytes, incl NUL). |
+| `DETWS_DNS_SERVER_MAX_RECORDS` | `8` | Max A records in the DNS server's fixed table. |
+| `DETWS_DNS_SERVER_TTL` | `60` | TTL (seconds) the DNS server puts on its answers. |
+| `DETWS_DNS_TIMEOUT_MS` | `5000` | DNS resolve timeout in milliseconds. |
+| `DETWS_ENFORCE_HOST_HEADER` | `1` | Enforce the RFC 7230 §5.4 Host-header requirement (default on). |
+| `DETWS_ENOCEAN_MAX_DATA` | `512` | Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). |
+| `DETWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
+| `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
+| `DETWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
+| `DETWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
+| `DETWS_FWD_MAX_RULES` | `8` | Max forwarding rules (src -> dst allow/deny + rate cap; static-allocated). |
+| `DETWS_GPIO_JSON_BUF` | `1024` | Stack buffer for the GPIO-map JSON (bytes). |
+| `DETWS_GPIO_MAX` | `40` | Maximum GPIO pins the mapper reports (BSS table). |
+| `DETWS_GUARDRAIL_FRAG_MIN_BLOCK` | `4096` | Largest-free-block floor (bytes); below this trips the fragmentation guardrail. |
+| `DETWS_GUARDRAIL_HEAP_MIN` | `8192` | Free-heap floor (bytes); below this trips the heap guardrail. |
+| `DETWS_GUARDRAIL_STACK_MIN` | `512` | Task remaining-stack floor (bytes); below this trips the stack guardrail. |
+| `DETWS_GW_MAX_PORTS` | `4` | Max southbound gateway ports (radios / buses; static-allocated). |
+| `DETWS_H2_HDR_BLOCK` | `4096` | Header-block reassembly buffer for HTTP/2 requests that span HEADERS + CONTINUATION frames (a single END_HEADERS frame decodes in place and needs no copy). |
+| `DETWS_H2_MAX_FRAME` | `16384` | Largest HTTP/2 frame we accept, in bytes (advertised as SETTINGS_MAX_FRAME_SIZE). |
+| `DETWS_H2_MAX_STREAMS` | `8` | Max concurrent HTTP/2 streams per connection (advertised as MAX_CONCURRENT_STREAMS). |
+| `DETWS_H2_POOL_IN_PSRAM` | `0` | Place the HTTP/2 connection-engine pool in external PSRAM (ESP32). |
+| `DETWS_H3_CRYPTO_BUF` | `2048` | Maximum bytes of one QUIC/TLS handshake CRYPTO flight (RFC 9001). |
+| `DETWS_H3_MAX_STREAMS` | `8` | Maximum concurrent request streams per HTTP/3 connection. |
+| `DETWS_HPACK_MAX_ENTRIES` | `128` | Max HPACK dynamic-table entries (>= DETWS_HPACK_TABLE_BYTES / 32, the min entry size). |
+| `DETWS_HPACK_TABLE_BYTES` | `4096` | Per-connection HPACK dynamic-table size in bytes (our decoder; advertised to the peer as SETTINGS_HEADER_TABLE_SIZE). |
+| `DETWS_HTTP3_PORT` | `443` | UDP port the HTTP/3 (QUIC) server binds by default (used by DetWebServer::h3_cert). |
+| `DETWS_HTTP_CLIENT_BUF_SIZE` | `2048` | Receive buffer (and max response size) for the outbound HTTP client, bytes. |
+| `DETWS_HTTP_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for the https:// client, bytes. |
+| `DETWS_HTTP_CLIENT_TIMEOUT_MS` | `8000` | Outbound HTTP client connect/response timeout in milliseconds. |
+| `DETWS_HTTP_EMIT_DATE` | `0` | Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock time is available. |
+| `DETWS_INA219_I2C_ADDR` | `0x40` | I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). |
+| `DETWS_IP_ALLOWLIST_SLOTS` | `8` | Number of CIDR rules the source-IP allowlist can hold (BSS table). |
+| `DETWS_JWT_MAX_LEN` | `512` | Maximum accepted JWT length in bytes (header.payload.signature). |
+| `DETWS_KEEPALIVE_MAX_REQUESTS` | `100` | Maximum requests served on one keep-alive connection before it is closed. |
+| `DETWS_LD2410_BAUD` | `256000` | LD2410 UART baud rate (the module's fixed factory default is 256000). |
+| `DETWS_LOG_LINES` | `32` | Number of log lines retained in the ring. |
+| `DETWS_LOG_LINE_LEN` | `96` | Maximum length of one stored log line (bytes, including null). |
+| `DETWS_LORA_MAX_PAYLOAD` | `251` | Max LoRa payload bytes (SX127x FIFO is 256; RadioHead uses 251 + 4 header). |
+| `DETWS_MAX_UDP_LISTENERS` | `2` | Maximum simultaneously bound UDP ports (transport-layer UDP service). |
+| `DETWS_MODBUS_COILS` | `64` | Number of Modbus coils (FC 1/5/15), single-bit R/W (BSS, bit-packed). |
+| `DETWS_MODBUS_DISCRETE_INPUTS` | `64` | Number of Modbus discrete inputs (FC 2), single-bit read-only (BSS, bit-packed). |
+| `DETWS_MODBUS_HOLDING_REGS` | `64` | Number of Modbus holding registers (FC 3/6/16), 16-bit R/W (BSS). |
+| `DETWS_MODBUS_INPUT_REGS` | `64` | Number of Modbus input registers (FC 4), 16-bit read-only (BSS). |
+| `DETWS_MPR121_I2C_ADDR` | `0x5A` | I2C address of the MPR121 (0x5A default; 0x5B/0x5C/0x5D via the ADDR pin). |
+| `DETWS_MQTT_BUF_SIZE` | `1024` | MQTT packet buffer size in bytes (bounds one outgoing/incoming packet). |
+| `DETWS_MQTT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for MQTTS (draining ring; must exceed one TCP_MSS). |
+| `DETWS_MQTT_INFLIGHT_BUF` | `256` | Stored-packet size per in-flight QoS 1/2 slot (caps a retransmittable PUBLISH). |
+| `DETWS_MQTT_KEEPALIVE_S` | `30` | Default MQTT keep-alive interval in seconds (PINGREQ cadence / CONNECT field). |
+| `DETWS_MQTT_MAX_INFLIGHT` | `4` | Outbound QoS 1/2 in-flight slots (unacknowledged messages held for DUP retransmit). |
+| `DETWS_MQTT_MAX_TOPIC` | `128` | Maximum inbound MQTT topic length (including NUL) delivered to the callback. |
+| `DETWS_MQTT_RETRANSMIT_MS` | `5000` | Retransmit timeout (ms) for an unacknowledged in-flight QoS 1/2 message. |
+| `DETWS_MQTT_RX_QOS2_SLOTS` | `8` | Inbound QoS 2 packet-id de-duplication ring depth (PUBREC-acknowledged, awaiting PUBREL). |
+| `DETWS_MTLS_SUBJECT_MAX` | `128` | Maximum length of a verified mTLS peer subject DN string (incl. |
+| `DETWS_NEED_DET_CLIENT` | `0` |  |
+| `DETWS_NRF24_PAYLOAD` | `32` | nRF24 fixed payload width in bytes (1..32; the chip's static payload size). |
+| `DETWS_NTP_SERVER_STRATUM` | `3` | Stratum the NTP server advertises (distance from a reference clock; 1-15). |
+| `DETWS_OIDC_MAX_LEN` | `1600` | Max accepted OIDC ID-token length (also sizes the Authorization buffer). |
+| `DETWS_OTA_CONFIRM_WINDOW_MS` | `30000` | Confirm window (ms): a pending image not confirmed within this rolls back. |
+| `DETWS_PARTITION_JSON_BUF` | `1024` | Stack buffer for the partition-map JSON (bytes). |
+| `DETWS_PARTITION_MAX` | `16` | Maximum partitions the monitor reports (BSS table). |
+| `DETWS_PCA9685_FREQ` | `50` | Default PWM output frequency in Hz (50 Hz suits hobby servos). |
+| `DETWS_PCA9685_I2C_ADDR` | `0x40` | I2C address of the PCA9685 (0x40 default; the six address pins select 0x40..0x7F). |
+| `DETWS_PER_IP_THROTTLE_MAX` | `10` | Max accepted connections per window from one source IP (see DETWS_ENABLE_PER_IP_THROTTLE). |
+| `DETWS_PER_IP_THROTTLE_SLOTS` | `16` | Number of source IPv4 addresses tracked by the per-IP throttle (BSS bucket table). |
+| `DETWS_PER_IP_THROTTLE_WINDOW_MS` | `10000` | Per-IP throttle window length in milliseconds (see DETWS_ENABLE_PER_IP_THROTTLE). |
+| `DETWS_PN532_MAX_DATA` | `254` | Reject a PN532 normal frame whose declared length exceeds this (framing sanity). |
+| `DETWS_PQ_DEPTH` | `16` | Capacity of the preempting queue in items (static-allocated). |
+| `DETWS_PQ_INTERNAL_PRIORITY` | `8` | Base FreeRTOS priority for the internal preempting lanes (DMA / forwarding / device access). |
+| `DETWS_PQ_ITEM_SIZE` | `32` | Bytes per preempting-queue item (the posted item must fit). |
+| `DETWS_PQ_STACK` | `4096` | Stack (bytes) for each preempting-queue processing task (ESP32). |
+| `DETWS_PROTO_MAX` | `8` | Largest ConnProto id the protocol-handler dispatch table holds. |
+| `DETWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
+| `DETWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
+| `DETWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
+| `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
+| `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
+| `DETWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
+| `DETWS_SMTP_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for SMTPS, bytes (only used when the message is TLS). |
+| `DETWS_SMTP_LINE_MAX` | `256` | Max length of one SMTP command / address line (bytes, incl. |
+| `DETWS_SMTP_MSG_MAX` | `2048` | Max size of the assembled DATA payload (headers + dot-stuffed body), bytes. |
+| `DETWS_SMTP_REPLY_MAX` | `512` | Max size of one (possibly multi-line) server reply held while parsing, bytes. |
+| `DETWS_SMTP_TIMEOUT_MS` | `10000` | SMTP connect / per-reply timeout in milliseconds. |
+| `DETWS_SNMP_TRAP_BUF_SIZE` | `1024` | Static datagram buffer for an outbound SNMP notification, bytes. |
+| `DETWS_SNMP_TRAP_MAX_VARBINDS` | `8` | Maximum extra variable-bindings (beyond sysUpTime/snmpTrapOID) in one notification. |
+| `DETWS_SPB_METRIC_MAX` | `256` | Max serialized size of one Sparkplug B metric submessage (stack temp, bytes). |
+| `DETWS_SSH_ALLOW_PASSWORD` | `1` | Allow SSH password authentication (default on). |
+| `DETWS_SSH_FWD_CHUNK` | `1024` | Max bytes moved per forward channel per poll, target -> client (<= SSH_PKT_BUF_SIZE). |
+| `DETWS_SSH_FWD_CONNECT_MS` | `3000` | Blocking connect timeout (ms) when opening a forward target. |
+| `DETWS_SSH_FWD_HOST_MAX` | `64` | Maximum forward target hostname length including null terminator. |
+| `DETWS_SSH_FWD_MAX` | `2` | Maximum concurrent forwarded TCP connections (must be <= DETWS_CLIENT_CONNS). |
+| `DETWS_SSH_MAX_CHANNELS` | `1` | Maximum concurrent SSH channels per connection (RFC 4254 multiplexing). |
+| `DETWS_SSH_PORT_FORWARD` | `0` | SSH TCP port forwarding (`direct-tcpip`, i.e. |
+| `DETWS_SSH_RFWD_BRIDGE_MAX` | `2` | Maximum concurrent bridged connections across all remote forwards. |
+| `DETWS_SSH_RFWD_MAX` | `1` | Maximum concurrent remote-forward listeners (`ssh -R` / `tcpip-forward`). |
+| `DETWS_SSH_ZLIB_ACK_DRAM` | `0` | Acknowledge placing the SSH compressor in internal DRAM (no PSRAM). |
+| `DETWS_SSH_ZLIB_IN_PSRAM` | `0` | Place the per-connection SSH compression state in external PSRAM (ESP32). |
+| `DETWS_SSH_ZLIB_MAX_IN` | `2048` | Largest uncompressed payload the s2c compressor accepts in one call (bytes). |
+| `DETWS_SSH_ZLIB_WINDOW` | `8192` | SSH s2c DEFLATE sliding-window size in bytes (max back-reference distance). |
+| `DETWS_STATSD_LINE_MAX` | `256` | Stack buffer for one StatsD line (bytes; caps metric name + value + tags). |
+| `DETWS_STATSD_PORT` | `8125` | Default StatsD collector UDP port (StatsD/Graphite standard). |
+| `DETWS_STOMP_MAX_HEADERS` | `16` | Max header lines parsed per STOMP frame (extras beyond this are ignored). |
+| `DETWS_SYSLOG_FIELD_MAX` | `32` | Maximum syslog HOSTNAME / APP-NAME field length (including NUL). |
+| `DETWS_SYSLOG_MSG_MAX` | `256` | Maximum formatted syslog datagram length in bytes (RFC 5424 line). |
+| `DETWS_THEMES_INCLUDE_TRADEMARKED` | `1` | Include the trademark-named themes in the embedded set (default on / open-source). |
+| `DETWS_THREAD_MAX_DATA` | `256` | Max spinel payload bytes carried in one HDLC-lite frame. |
+| `DETWS_TIME_SOURCE_MAX` | `4` | Maximum registered time sources. |
+| `DETWS_TLS_ACK_MULTI_CONN_DRAM` | `0` | Acknowledge that a MAX_TLS_CONNS > 1 build has been sized to fit. |
+| `DETWS_TLS_ARENA_IN_PSRAM` | `0` | Place the TLS arena in external PSRAM instead of internal DRAM (ESP32). |
+| `DETWS_TLS_ARENA_SIZE` | `49152` | Bytes of the static BSS arena mbedTLS allocates from. |
+| `DETWS_TLS_MAX_FRAG_LEN` | `0` | Cap TLS records via the Maximum Fragment Length extension (RFC 6066). |
+| `DETWS_TLS_TICKET_LIFETIME_S` | `86400` | Session-ticket lifetime / key-rotation period in seconds (see DETWS_ENABLE_TLS_RESUMPTION). |
+| `DETWS_UDP_RX_BUF_SIZE` | `1472` | Shared receive-scratch size for the transport-layer UDP service. |
+| `DETWS_UDP_TELEMETRY_BUF` | `256` | Stack buffer for one telemetry line (bytes). |
+| `DETWS_WEBDAV_BUF_SIZE` | `2048` | Buffer (BSS) for a WebDAV 207 Multi-Status response, in bytes (see DETWS_ENABLE_WEBDAV). |
+| `DETWS_WEBDAV_MAX_ENTRIES` | `32` | Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). |
+| `DETWS_WEBDAV_MAX_PROPS` | `16` | Maximum properties echoed in a WebDAV PROPPATCH 207 response (bounds the response). |
+| `DETWS_WORKER_CORE` | `1` | Core that worker 0 pins to (ESP32). |
+| `DETWS_WORKER_COUNT` | `1` | Number of server worker tasks (slots partitioned i % N). |
+| `DETWS_WORKER_POLL_TICKS` | `1` | Idle-sweep timeout, in FreeRTOS ticks, that a worker blocks between service iterations when no events are pending. |
+| `DETWS_WORKER_STACK_CURVE_MIN` | `12288` | Minimum worker-task stack (bytes) required once SSH is compiled in. |
+| `DETWS_WORKER_STACK_RSA_MIN` | `8192` | Minimum worker-task stack (bytes) required once an RSA-2048 verifier is compiled in (OIDC / SSH). |
+| `DETWS_WORKER_TASK_PRIORITY` | `5` | FreeRTOS priority for each server worker task (ESP32). |
+| `DETWS_WS_CLIENT_BUF_SIZE` | `1024` | WebSocket client send/receive buffer size in bytes (bounds one frame). |
+| `DETWS_WS_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for wss:// (draining ring; must exceed one TCP_MSS). |
+| `DETWS_WS_FRAG_SIZE` | `0` | WebSocket outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes. |
+| `DETWS_ZIGBEE_MAX_DATA` | `128` | Max ASH payload bytes (an EZSP frame; the ASH data field caps near 128). |
+| `DETWS_ZWAVE_MAX_DATA` | `64` | Reject a Z-Wave frame whose declared length exceeds this data cap (sanity). |
+| `DIGEST_AUTH_HDR_MAX` | `384` | Capacity for the full `Authorization` header value (Digest auth). |
+| `EVT_QUEUE_DEPTH` | `16` | Depth of the FreeRTOS event queue shared between lwIP callbacks and the main-loop task. |
+| `EXTRA_HDR_BUF_SIZE` | `256` | Per-connection buffer for app-supplied custom response headers and cookies. |
+| `FILE_CHUNK_SIZE` | `512` | Bytes read from the filesystem and passed to tcp_write() per loop(). |
+| `JSON_MAX_DEPTH` | `8` | Maximum object/array nesting depth for the JsonWriter (see json.h). |
+| `MAX_AUTH_LEN` | `32` | Maximum username or password length for HTTP Basic Authentication. |
+| `MAX_BOUNDARY_LEN` | `72` | Maximum MIME boundary length (RFC 2046 allows up to 70 characters). |
+| `MAX_CONNS` | `4` | Maximum simultaneous TCP connections. |
+| `MAX_HEADERS` | `8` | Maximum HTTP headers stored per request. |
+| `MAX_KEY_LEN` | `32` | Maximum header field-name length (e.g. |
+| `MAX_LISTENERS` | `3` | Maximum number of simultaneously active listener ports. |
+| `MAX_MIDDLEWARE` | `4` | Maximum globally-registered middleware functions. |
+| `MAX_MULTIPART_PARTS` | `4` | Maximum simultaneously parsed multipart parts per request. |
+| `MAX_PATH_LEN` | `64` | Maximum URL path length (including leading `/`). |
+| `MAX_PATH_PARAMS` | `4` | Maximum number of `:name` path parameters captured per route match. |
+| `MAX_QUERY_LEN` | `128` | Maximum raw query-string length (everything after `?`). |
+| `MAX_QUERY_PARAMS` | `8` | Maximum number of parsed query-string parameters. |
+| `MAX_ROUTES` | `16` | Maximum simultaneously registered routes. |
+| `MAX_SSE_CONNS` | `2` | Maximum simultaneous SSE connections. |
+| `MAX_SSH_CONNS` | `1` | Maximum simultaneous SSH connections. |
+| `MAX_TELNET_CONNS` | `2` | Maximum simultaneous Telnet connections. |
+| `MAX_TLS_CONNS` | `1` | Maximum simultaneous TLS connections (each holds mbedTLS record buffers). |
+| `MAX_VAL_LEN` | `48` | Maximum header field-value length. |
+| `MAX_WS_CONNS` | `2` | Maximum simultaneous WebSocket connections. |
+| `QUERY_KEY_LEN` | `24` | Maximum query-parameter key length. |
+| `QUERY_VAL_LEN` | `48` | Maximum query-parameter value length. |
+| `RESP_HDR_BUF_SIZE` | `768` | Stack buffer for HTTP response header lines in send() / send_empty() / send_unauth() / serve_file(). |
+| `RE_MAX_STEPS` | `2000` | Step budget for the regex route matcher (see on_regex()). |
+| `RX_BUF_SIZE` | `1024` | Ring-buffer capacity in bytes per connection slot. |
+| `SNMP_COMMUNITY_MAX` | `32` | Maximum SNMP community-string length (including null terminator). |
+| `SNMP_MAX_MIB_ENTRIES` | `16` | Maximum registered MIB objects (the agent's fixed OID table). |
+| `SNMP_MAX_OID_LEN` | `32` | Maximum sub-identifiers (arcs) in an SNMP object identifier. |
+| `SNMP_MAX_VARBINDS` | `16` | Maximum variable bindings the agent will emit in one response. |
+| `SNMP_MSG_BUF_SIZE` | `1472` | Static request/response datagram buffers for the SNMP UDP agent. |
+| `SNMP_V3_ENGINEID_MAX` | `32` | Maximum SNMPv3 authoritative engine-ID length in bytes (RFC 3411 allows 5..32). |
+| `SNMP_V3_USER_MAX` | `32` | Maximum SNMPv3 USM user-name length (including null terminator). |
+| `SSE_BUF_SIZE` | `256` | Output buffer size in bytes for a single SSE event. |
+| `SSH_AUTH_PASS_MAX` | `64` | Max stored password length. |
+| `SSH_AUTH_USER_MAX` | `32` | Max stored user name (RFC 4252 imposes no limit; we cap for BSS). |
+| `SSH_CHAN_MAX_PACKET` | `32768u` | Maximum SSH channel data payload the server accepts per message. |
+| `SSH_CHAN_WINDOW` | `32768u` | Initial receive window the SSH server advertises (RFC 4254 §5.1). |
+| `SSH_CRYPTO_WORK_SIZE` | `1536` | Shared scratch buffer for SSH big-number operations. |
+| `SSH_KEXINIT_MAX` | `2048` | Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange hash). |
+| `SSH_MAX_AUTH_ATTEMPTS` | `6` | Maximum failed SSH authentication attempts per connection. |
+| `SSH_MAX_PASSWORD_LEN` | `64` | Maximum SSH password length including null terminator. |
+| `SSH_MAX_USERNAME_LEN` | `32` | Maximum SSH username length including null terminator. |
+| `SSH_PKT_BUF_SIZE` | `2048` | Packet assembly buffer per SSH connection (bytes). |
+| `SSH_REKEY_PACKET_THRESHOLD` | `0x40000000u` | Re-key when either packet sequence number reaches this value. |
+| `SSH_REKEY_TIME_MS` | `3600000u` | Elapsed-time re-key trigger in milliseconds (RFC 4253 §9: "after each hour"). |
+| `TELNET_BUF_SIZE` | `256` | Stack buffer for one Telnet I/O chunk. |
+| `TERM_TX_BUF_SIZE` | `256` | Stack scratch for detws_web_terminal_printf()/println() formatting. |
+| `WS_FRAME_SIZE` | `512` | Maximum WebSocket frame payload in bytes. |
+| `WS_HDR_BUF_SIZE` | `256` | Stack buffer for the HTTP 101 Switching Protocols response sent during the WebSocket handshake. |
 
-| Constant                                      | Default | Minimum | Description                                                           |
-| --------------------------------------------- | ------- | ------- | --------------------------------------------------------------------- |
-| [`RESP_HDR_BUF_SIZE`](@ref RESP_HDR_BUF_SIZE) | 768     | 128     | Stack buffer for HTTP response headers                                |
-| [`WS_HDR_BUF_SIZE`](@ref WS_HDR_BUF_SIZE)     | 256     | 128     | Stack buffer for WebSocket 101 response                               |
-| [`CORS_HDR_BUF_SIZE`](@ref CORS_HDR_BUF_SIZE) | 192     | 64      | Buffer for pre-built CORS header block; must be ≤ `RESP_HDR_BUF_SIZE` |
-
-**WebSocket (DETWS_ENABLE_WEBSOCKET)**
-
-| Constant                              | Default | Description                                         |
-| ------------------------------------- | ------- | --------------------------------------------------- |
-| [`MAX_WS_CONNS`](@ref MAX_WS_CONNS)   | 2       | WebSocket slots; each consumes one `MAX_CONNS` slot |
-| [`WS_FRAME_SIZE`](@ref WS_FRAME_SIZE) | 512     | Max WebSocket frame payload bytes                   |
-
-**SSE (DETWS_ENABLE_SSE)**
-
-| Constant                              | Default | Description                                   |
-| ------------------------------------- | ------- | --------------------------------------------- |
-| [`MAX_SSE_CONNS`](@ref MAX_SSE_CONNS) | 2       | SSE slots; each consumes one `MAX_CONNS` slot |
-| [`SSE_BUF_SIZE`](@ref SSE_BUF_SIZE)   | 256     | Stack buffer for one formatted SSE event      |
-
-**File Serving (DETWS_ENABLE_FILE_SERVING)**
-
-| Constant                                  | Default | Description                                                        |
-| ----------------------------------------- | ------- | ------------------------------------------------------------------ |
-| [`FILE_CHUNK_SIZE`](@ref FILE_CHUNK_SIZE) | 512     | Bytes read from FS per `tcp_write()` call; must be ≤ `RX_BUF_SIZE` |
-
-**Auth (DETWS_ENABLE_AUTH)**
-
-| Constant                            | Default | Description                                               |
-| ----------------------------------- | ------- | --------------------------------------------------------- |
-| [`MAX_AUTH_LEN`](@ref MAX_AUTH_LEN) | 32      | Max username or password length including null terminator |
-
-**Multipart (DETWS_ENABLE_MULTIPART)**
-
-| Constant                                    | Default | Description                |
-| ------------------------------------------- | ------- | -------------------------- |
-| `MAX_MULTIPART_PARTS`                       | 4       | Max form parts per request |
-| [`MAX_BOUNDARY_LEN`](@ref MAX_BOUNDARY_LEN) | 72      | Max MIME boundary length   |
+<!-- END GENERATED CONFIG-OVERRIDES -->
 
 **Runtime Config**
 
@@ -721,50 +1550,6 @@ compiled out (`DETWS_SSH_ALLOW_PASSWORD=0`) for publickey-only hardening.
 See **[SSH.md](SSH.md)** for the feature summary, RFC/FIPS compliance
 table, authentication/hardening details, and memory footprint, and
 **[SECURITY.md](SECURITY.md)** for the security treatment.
-
-## Memory Table
-
-<details>
-<summary><b>Memory Usage Breakdown Table</b></summary>
-
-```
-Feature            Pool / symbol                    Size (bytes)    Notes
-────────────────── ──────────────────────────────── ─────────────── ──────────────────────────
-Transport          conn_pool[4 × (1024 + 22)]             4,184     Ring bufs + TCP state
-                   listener_pool[3 × ~218]                  654     Per-port listener state
-                   _queue_storage[16 × sizeof(TcpEvt)]      384     FreeRTOS queue backing
-                   _queue_struct (StaticQueue_t)             ~88     FreeRTOS struct
-
-HTTP               http_pool[4 × ~1,667]                  6,668     HttpReq + body buf
-
-WebSocket          ws_pool[2 × (512 + 29)]                1,082     WS frame + state
-
-SSE                sse_pool[2 × (64 + 3)]                   134     SSE path + state
-
-SSH                ssh_pkt[1 × ~1,034]                    1,034     Pkt state + RX buf
-                   ssh_keys[1 × ~240]                       240     AES CTR ctx + MAC keys
-                   ssh_dh[1 × ~800]                          800     DH scalars + H
-                   crypto_work[1536]                        1,536     Bignum scratch (zeroed)
-                   group14_p + group14_g                     512     RFC 3526 constants
-                   ssh_host_pubkey                            260     RSA-2048 public key
-
-Application        _routes[16 × ~32]                        512     Route table
-
-────────────────── ──────────────────────────────── ─────────────── ──────────────────────────
-GRAND TOTAL (all features, default config)               ~18,088 B  ≈ 18 KB
-```
-
-</details>
-
-### Default Build Footprint
-
-The **Default server** in the Build Footprint table above - HTTP + WebSocket + SSE + multipart + file serving + Basic auth, including the Arduino/ESP-IDF framework core, ESP32 WiFi drivers, and the lwIP TCP/IP stack - measures:
-
-- **Flash**: **745,133 bytes** (~56.8% of a 1.31 MB application partition); the WiFi/lwIP stack dominates (an empty no-WiFi sketch is already ~233 KB).
-- **Static RAM**: **64,264 bytes** (~19.6% of the 320 KB internal SRAM), all statically placed.
-- **Zero dynamic allocations**: the library requests exactly **0 bytes** of heap after `begin()`, managing every session and packet buffer statically (event queues via `xQueueCreateStatic()`).
-
-Optional subsystems (HTTPS/TLS, SSH, SNMP, ...) add to this - see the per-row deltas in the Build Footprint table above.
 
 ## Utility Tools
 

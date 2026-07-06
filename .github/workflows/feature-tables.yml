@@ -31,6 +31,12 @@ jobs:
       - name: Regenerate tables from FEATURES.md
         run: python docs/utilities/gen_feature_tables.py
 
+      # Regenerate the source-derived reference sections of docs/README.md (feature-flag
+      # defaults, tunable constants, the full source tree, per-feature build footprint) from
+      # DetWebServerConfig.h / src / docs/footprints.json so they never drift from the code.
+      - name: Regenerate README source-derived sections
+        run: python docs/utilities/gen_readme_sections.py
+
       # Regenerate the interactive build configurator from DetWebServerConfig.h so it
       # always reflects the current feature flags, tuning knobs, and dependencies.
       - name: Regenerate configurator from DetWebServerConfig.h
