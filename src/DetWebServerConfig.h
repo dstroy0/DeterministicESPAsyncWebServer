@@ -2828,6 +2828,18 @@
 #endif
 
 /**
+ * @brief Opt-in CC-Link (CLPA) cyclic fieldbus frame codec (DETWS_ENABLE_CCLINK).
+ *
+ * When set, services/cclink builds/validates the CC-Link cyclic frame ([station][command][RX/RY bit
+ * data][RWr/RWw word data][sum checksum]) a Mitsubishi CC-Link master exchanges with remote stations
+ * over RS-485, plus bit/word process-image accessors. Pure codec (the RS-485 timing + CC-Link IE Field
+ * PHY are hardware-gated). Default off.
+ */
+#ifndef DETWS_ENABLE_CCLINK
+#define DETWS_ENABLE_CCLINK 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

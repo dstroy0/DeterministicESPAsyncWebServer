@@ -578,12 +578,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   against hand-verified vectors (`native_hart`, command-0 checksum 0x82). _Remaining:_ the command set
   (universal + common-practice) + device-variable/status model + burst mode, and the FSK modem
   (over UART) / 4-20 mA-off-the-ADC transports. Fixed BSS, no heap.
-- [ ] **CC-Link / CC-Link IE** (L, CLPA) - Mitsubishi's factory networks: **CC-Link**
-      (the RS-485 cyclic remote-I/O / remote-device station model) and **CC-Link IE
-      Field** (the Gigabit-Ethernet successor, cyclic + transient messaging). The
-      cyclic process-image + station model reuse the existing data-model pattern; IE's
-      Gbit timing is PHY-gated, so scope to the protocol/cyclic-frame layer as the
-      platform allows. Fixed BSS, one build flag per variant.
+- [~] **CC-Link / CC-Link IE** (L, CLPA) _(cyclic frame codec shipped)_ - `DETWS_ENABLE_CCLINK`
+  (`services/cclink`): the CC-Link cyclic frame - `detws_cclink_build` / `_parse` for
+  `[station][command][RX/RY bit data][RWr/RWw word data][sum checksum]` that a Mitsubishi CC-Link
+  master exchanges with remote stations over RS-485, plus the bit/word process-image accessors
+  (`get_bit` / `set_bit` / `get_word`); host-tested (`native_cclink`). _Remaining:_ the master
+  poll/refresh state machine + the RS-485 timing, and **CC-Link IE Field** (Gbit PHY-gated). Fixed
+  BSS station model, no heap.
 - [ ] **PROFIBUS PA** (M, process automation) - the process-automation profile of
       PROFIBUS: the same DP-V0/V1 application as PROFINET/PROFIBUS-DP above but over the
       MBP (Manchester Bus Powered, IEC 61158-2) physical layer for hazardous areas,

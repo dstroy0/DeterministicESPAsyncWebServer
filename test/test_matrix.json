@@ -1428,6 +1428,12 @@
       "src": ["+<services/mms/mms.cpp>"],
       "tests": ["test_mms"]
     },
+    "native_cclink": {
+      "desc": "CC-Link cyclic fieldbus frame codec (services/cclink): the frame ([station][command][bit\ndata][word data][sum]) build + parse and the bit/word process-image accessors. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_CCLINK=1"],
+      "src": ["+<services/cclink/cclink.cpp>"],
+      "tests": ["test_cclink"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1495,6 +1501,7 @@
         "-DDETWS_ENABLE_NTCIP=1",
         "-DDETWS_ENABLE_OPENADR=1",
         "-DDETWS_ENABLE_MMS=1",
+        "-DDETWS_ENABLE_CCLINK=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1563,6 +1570,7 @@
         "+<services/ntcip/ntcip.cpp>",
         "+<services/openadr/openadr.cpp>",
         "+<services/mms/mms.cpp>",
+        "+<services/cclink/cclink.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
