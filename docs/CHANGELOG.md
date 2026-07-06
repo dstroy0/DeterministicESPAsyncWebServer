@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.39.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.39.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`61106ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61106ab663498252824e32d5bb5cffb567c62677))
+
+### Changes
+
+- Bump version: 5.38.0 → 5.39.0 ([`9ec4fdb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ec4fdbc3d66003ce8f264b995bef59112a78ac4))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`9e3b75a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e3b75a2d8a224441a6b9e8922f8a0f1bb875448))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fefea36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fefea36820d335a10c81e3f8a27f82a5007a39c0))
+
+### Features
+
+- OCIT-Outstations road-traffic-control message codec ([`4b6d3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b6d3cd9eb4fb8ad8f17f407e9b910302fc3c842))
+
+</details>
+
 ## [5.38.0] - 2026-07-06
 
 <details>
