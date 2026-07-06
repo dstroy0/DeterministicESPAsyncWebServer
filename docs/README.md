@@ -1594,7 +1594,7 @@ python src/web/wizard/build_assets.py          # rebuild the embedded web assets
 
 ## Testing
 
-**600+ Unity tests** across the native suites, all runnable on a native x86/x64 host
+**2,300+ Unity tests** across the native suites, all runnable on a native x86/x64 host
 (no hardware required). See **[TEST_REPORT.md](TEST_REPORT.md)** for the current
 per-suite breakdown and totals. Run a representative subset with:
 
