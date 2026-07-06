@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- ccache the xtensa toolchain for the Arduino-CLI example builds too ([`4ae0f7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ae0f7e5a3eccaac505aebcbed334ad982411edf))
+- update test report [skip ci] ([`aff2cc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aff2cc0402b3d4b1cfa5455d3c9f2e16f4b1f9d0))
+- update CHANGELOG.md [skip ci] ([`b626c2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b626c2e9dcada4a59fc344a16f16008c24ce98df))
 - ccache the xtensa toolchain so examples reuse the Arduino-core build ([`08e4bdd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08e4bdd69bdf8b92f52072bce24c5bf11d211fc4))
 - update CHANGELOG.md [skip ci] ([`71341d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71341d4dd22dce380426f3c069b4d5a42a87a4d8))
 - run the native suite once for report + coverage; ccache the compiles ([`8c36195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c3619514c791f46edce249f312a023bfc03e5e0))
@@ -14,6 +17,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`fe1e9fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe1e9fc40f562bf47f06096ec93af91577e28c0a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7e3448e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e3448e47ac06af74548b85d22a73bdf7fe81218))
 - update ESP32 build footprints [skip ci] ([`f4be549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4be549fe6a815f1e3762331541befdb1397387b))
 
