@@ -2840,6 +2840,18 @@
 #endif
 
 /**
+ * @brief Opt-in Ethernet POWERLINK (EPSG) basic frame codec (DETWS_ENABLE_POWERLINK).
+ *
+ * When set, services/powerlink builds/parses the EPL basic frames ([messageType][dest][source][payload])
+ * of the isochronous managed-node cycle - SoC (start of cycle), PReq (poll request), PRes (poll
+ * response with process data), SoA (start of async) - over raw L2 (ethertype 0x88AB, on the shipped
+ * services/rawl2). Pure codec (the raw-L2 transmit + isochronous timing are the device step). Default off.
+ */
+#ifndef DETWS_ENABLE_POWERLINK
+#define DETWS_ENABLE_POWERLINK 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

@@ -603,11 +603,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   hand-computed known-answer vector; host-tested (`native_iolink`). _Remaining:_ the on-request
   ISDU parameter service, the IODD-described device model + state machine, and the 3-wire physical
   layer (hardware-gated). Fixed BSS, no heap.
-- [ ] **POWERLINK** (XL, EPSG) - Ethernet POWERLINK managed-node stack: the cyclic
-      isochronous SoC/PReq/PRes/SoA slot schedule plus asynchronous SDO. Raw L2 +
-      the high-priority preempting-task timing model (single-feature build) are both
-      reachable (see Low-level networking), so the full isochronous managed-node cycle is
-      in scope - object dictionary + the SoC/PReq/PRes slot schedule. Fixed BSS, no heap.
+- [~] **POWERLINK** (XL, EPSG) _(basic frame codec shipped)_ - `DETWS_ENABLE_POWERLINK`
+  (`services/powerlink`): the EPL basic frames - `detws_epl_build` / `_parse` (and the SoC / PReq /
+  PRes convenience builders) for `[messageType][dest][source][payload]`, the four cyclic message
+  types (SoC start-of-cycle, PReq poll-request, PRes poll-response with process data, SoA
+  start-of-async) that make the isochronous managed-node cycle, over raw L2 (ethertype 0x88AB, on the
+  shipped services/rawl2); host-tested (`native_powerlink`). _Remaining:_ the MN slot-schedule state
+  machine + async SDO + object dictionary, and the isochronous timing (the preempting-task model).
+  Fixed BSS, no heap.
 - [ ] **SERCOS III** (XL, motion bus) - the real-time motion/drive bus over Ethernet:
       the IDN parameter model + cyclic MDT/AT telegrams. Raw L2 + the preempting-task
       cyclic timing (single-feature build) are reachable (see Low-level networking), so
