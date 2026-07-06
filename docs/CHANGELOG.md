@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a38f164`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a38f1642b872d7048c3d0ed4725e5224c8dbb9a4))
 - update CHANGELOG.md [skip ci] ([`51e64f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51e64f5f97107015e15c42ed9070374b90b215f2))
 - update CHANGELOG.md [skip ci] ([`683b707`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/683b707552ea17b8fdeffcf726e03bb707a1d972))
 - update test report [skip ci] ([`f1dc56c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1dc56c3a8648910fb76608c935019dde123a7c8))
@@ -41,6 +42,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`300d48c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/300d48cfdbe2474c17731ea3f5d9cf23c9f66a37))
+- update ESP32 build footprints [skip ci] ([`9e05e0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e05e0f9b932094df2be32aff83c7258cec9196e))
 - update ESP32 build footprints [skip ci] ([`a066d63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a066d633cd7b5f0bd38df19d2a10b12de055be3d))
 - correct stale header comment - /.well-known/core IS served ([`f98b5a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f98b5a317b922d5bc3c857945839d29319f45038))
 - remove 4 limitations that have since shipped ([`ec478a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec478a74d7616ef606538f423b9e62b9f204bdf0))
@@ -56,6 +59,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the forwarding plane in one ForwardCtx (owner sweep) ([`0ba257e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ba257e80b42a5cf233dd671af8708293832acfc))
 - own the A-record table in one DnsSrvCtx (owner sweep) ([`904aa59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/904aa5998a2c2afe5814b1e03e782f45605dec13))
 - own state in one FailsafeCtx (owner-refactor sweep) ([`0d980b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d980b22723ee792a04c9defd29df1af4e2cfe92))
 - own CoAP state in one feature-gated CoapCtx (pattern reference) ([`6092e6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6092e6bede068068225f74ca850572b574b19976))
