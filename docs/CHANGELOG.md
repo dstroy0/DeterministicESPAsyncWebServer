@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.4.1] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.4.1 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- make the memcpy bounds unambiguous for the SE analyzer (S3519) ([`b0e0206`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0e02065b5697841387865df8136010d0bd3485d))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8e1bbfe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e1bbfe7e67d043f9424b067db64322891bc419e))
+
+### Changes
+
+- Bump version: 5.4.0 → 5.4.1 ([`bdf1c89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdf1c8931ee920e528108d78e8db1af6c5aa9deb))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`034b51d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/034b51dc1d4d4a2679e8dcff91b884319fd10541))
+- update ESP32 build footprints [skip ci] ([`9712bb5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9712bb52927c44652bf02eeb92fb59183795aa2a))
+
+</details>
+
 ## [5.4.0] - 2026-07-06
 
 <details>
