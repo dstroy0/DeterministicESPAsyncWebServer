@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`51e64f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51e64f5f97107015e15c42ed9070374b90b215f2))
 - update CHANGELOG.md [skip ci] ([`683b707`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/683b707552ea17b8fdeffcf726e03bb707a1d972))
 - update test report [skip ci] ([`f1dc56c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1dc56c3a8648910fb76608c935019dde123a7c8))
 - update CHANGELOG.md [skip ci] ([`d772206`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d772206007f06d7dda7ee2f8cadbb5dbf8b1be65))
@@ -40,6 +41,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`a066d63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a066d633cd7b5f0bd38df19d2a10b12de055be3d))
 - correct stale header comment - /.well-known/core IS served ([`f98b5a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f98b5a317b922d5bc3c857945839d29319f45038))
 - remove 4 limitations that have since shipped ([`ec478a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec478a74d7616ef606538f423b9e62b9f204bdf0))
 - correct stale test count (600+ -> 2,300+) ([`1a427a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a427a5700c4fa7215d1f4986e3c4c70686d6a48))
@@ -54,6 +56,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the A-record table in one DnsSrvCtx (owner sweep) ([`904aa59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/904aa5998a2c2afe5814b1e03e782f45605dec13))
 - own state in one FailsafeCtx (owner-refactor sweep) ([`0d980b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d980b22723ee792a04c9defd29df1af4e2cfe92))
 - own CoAP state in one feature-gated CoapCtx (pattern reference) ([`6092e6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6092e6bede068068225f74ca850572b574b19976))
 - unnest ternaries into if/else (cpp:S3358) ([`e826411`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e826411c45275728b98dfc2395cd7b094ba63169))
