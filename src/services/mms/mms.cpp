@@ -56,10 +56,15 @@ size_t tlv(uint8_t tag, const uint8_t *val, size_t val_len, uint8_t *out, size_t
         return 0;
     out[0] = tag;
     write_len(out + 1, val_len); // writes exactly lo octets
-    // The copy writes val_len bytes at out+k, ending at out+n-1 < out+cap (n <= cap, restated at the
-    // copy site so the bound is explicit to a static analyzer, not just implied through k and n).
-    if (val_len && k + val_len <= cap)
-        memcpy(out + k, val, val_len);
+    // Copy the value only when there is room at out+k, clamping to that room. n <= cap already guarantees
+    // val_len <= cap - k, so the clamp is a no-op here; nesting the copy under k < cap makes the bound
+    // explicit (room = cap - k is positive, cpy <= room -> out+k+cpy <= out+cap) for a static analyzer.
+    if (val_len && k < cap)
+    {
+        size_t room = cap - k;
+        size_t cpy = val_len < room ? val_len : room;
+        memcpy(out + k, val, cpy);
+    }
     return n;
 }
 
