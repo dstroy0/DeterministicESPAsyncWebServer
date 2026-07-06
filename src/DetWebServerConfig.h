@@ -3011,6 +3011,19 @@
 #endif
 
 /**
+ * @brief Opt-in hardware-health diagnostics (DETWS_ENABLE_HW_HEALTH).
+ *
+ * Four pure decision cores fed with samples the app reads from the hardware: a power-rail voltage-drop
+ * logger (detws_hwhealth_rail_sample tracks worst droop + sag/brownout counts), a SPI-bus CRC audit with
+ * hysteretic clock backoff (detws_hwhealth_spi_result halves/doubles the clock on fail/ok streaks), a
+ * GPIO short-circuit test (detws_hwhealth_gpio_short: driven vs readback), and a capacitor-leakage diag
+ * (detws_hwhealth_cap_leak: measured vs expected RC decay). No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_HW_HEALTH
+#define DETWS_ENABLE_HW_HEALTH 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

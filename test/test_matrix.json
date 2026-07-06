@@ -1518,6 +1518,12 @@
       "src": ["+<services/http_delivery/http_delivery.cpp>"],
       "tests": ["test_http_delivery"]
     },
+    "native_hw_health": {
+      "desc": "Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst\ndroop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test\n(driven vs readback), and capacitor-leakage diag (measured vs expected RC decay). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HW_HEALTH=1"],
+      "src": ["+<services/hw_health/hw_health.cpp>"],
+      "tests": ["test_hw_health"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1600,6 +1606,7 @@
         "-DDETWS_ENABLE_SOUTHBOUND=1",
         "-DDETWS_ENABLE_EXC_DECODER=1",
         "-DDETWS_ENABLE_HTTP_DELIVERY=1",
+        "-DDETWS_ENABLE_HW_HEALTH=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1683,6 +1690,7 @@
         "+<services/southbound/southbound.cpp>",
         "+<services/exc_decoder/exc_decoder.cpp>",
         "+<services/http_delivery/http_delivery.cpp>",
+        "+<services/hw_health/hw_health.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

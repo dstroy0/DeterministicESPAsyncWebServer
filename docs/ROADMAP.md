@@ -382,7 +382,15 @@ preempting queue, so sensing shares the real-time ingest path.
       App-defined and per-lifeline, on top of the hardware task WDT; the pure core takes an explicit
       `now` so it is fully host-tested (`native_failsafe`), plus a `/health`-style JSON serializer.
       Zero heap, no stdlib.
-- [ ] Hardware health (M): power-rail voltage-drop logger, SPI-bus CRC audit + clock backoff, GPIO short-circuit test, capacitor-leakage diag.
+- [~] Hardware health (M): power-rail voltage-drop logger, SPI-bus CRC audit + clock backoff, GPIO
+  short-circuit test, capacitor-leakage diag _(decision cores shipped)_ - `DETWS_ENABLE_HW_HEALTH`
+  (`services/hw_health`): `detws_hwhealth_rail_sample` tracks a rail's worst droop + sag/brownout counts
+  (with a `/health` JSON serializer), `detws_hwhealth_spi_result` is a hysteretic clock-backoff state
+  machine (halve on a CRC-fail streak, step up on an ok streak, clamped to a floor/ceiling),
+  `detws_hwhealth_gpio_short` classifies a driven-vs-readback mismatch as a short to ground / Vcc, and
+  `detws_hwhealth_cap_leak` compares a measured RC decay to expected (too fast = leak, too slow = high
+  ESR). Pure, host-tested (`native_hw_health`). _Remaining:_ the ADC / SPI / GPIO sampling glue that
+  feeds them on real hardware (M).
 
 ## Build / tooling
 
