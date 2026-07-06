@@ -2736,6 +2736,17 @@
 #endif
 
 /**
+ * @brief Opt-in NEMA TS 2 traffic-cabinet SDLC frame codec (DETWS_ENABLE_NEMA_TS2).
+ *
+ * When set, services/nema_ts2 builds/validates the TS 2 SDLC bus frames ([address][control][frame-type]
+ * [data][CRC-16/X-25]) that link a traffic-signal controller to the MMU, BIUs, and detector racks. Pure
+ * codec (the synchronous serial PHY + BIU timing are hardware-gated). Default off.
+ */
+#ifndef DETWS_ENABLE_NEMA_TS2
+#define DETWS_ENABLE_NEMA_TS2 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

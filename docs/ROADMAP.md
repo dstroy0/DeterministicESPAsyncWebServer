@@ -777,12 +777,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       radio/MAC comes from an external V2X module (SPI/UART, see Front-end assumption);
       the deliverable is the WSMP message framing + the 1609.2 security envelope codec on
       a fixed BSS model (pairs with the J2735 work above). No heap.
-- [ ] **NEMA TS 2** (M, traffic cabinet bus) - the North-American control-cabinet
-      internal bus: a synchronous serial (SDLC) topology linking the controller, the
-      Malfunction Management Unit / conflict monitor, and the detector/BIU racks (the
-      TS 2 frame set - command/status/detector frames). The SDLC frame + cabinet object
-      model is host-testable; the synchronous serial PHY (and the SCdetector/BIU timing)
-      is hardware-gated, so scope the frame codec + cabinet model. Fixed BSS, no heap.
+- [~] **NEMA TS 2** (M, traffic cabinet bus) _(SDLC frame codec shipped)_ - `DETWS_ENABLE_NEMA_TS2`
+  (`services/nema_ts2`): the traffic-cabinet SDLC bus frame - `detws_nema_ts2_build` / `_parse` for
+  `[address][control][frame-type][data][CRC-16/X-25]` linking the controller to the MMU / BIUs /
+  detector racks, with the common frame-type constants; host-tested (`native_nema_ts2`, CRC check
+  value 0x906E). _Remaining:_ the per-frame-type cabinet object model + the synchronous serial PHY
+  / BIU timing (hardware-gated).
 - [ ] **ATC** (S, platform note) - the Advanced Traffic Controller spec moves cabinets
       from closed microcontrollers to a standard Linux engine API (the ITS Cabinet /
       ATC API for field-device I/O) for local video analytics + sensor fusion. This is

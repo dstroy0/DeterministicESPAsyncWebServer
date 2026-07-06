@@ -1380,6 +1380,12 @@
       "src": ["+<services/j2735/j2735.cpp>"],
       "tests": ["test_j2735"]
     },
+    "native_nema_ts2": {
+      "desc": "NEMA TS 2 SDLC frame codec (services/nema_ts2): the traffic-cabinet bus frame\n([address][control][frame-type][data][CRC-16/X-25]) build + validate. Pure host tests (CRC check\nvalue 0x906E).",
+      "flags": ["-DDETWS_ENABLE_NEMA_TS2=1"],
+      "src": ["+<services/nema_ts2/nema_ts2.cpp>"],
+      "tests": ["test_nema_ts2"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1439,6 +1445,7 @@
         "-DDETWS_ENABLE_GOOSE=1",
         "-DDETWS_ENABLE_MTCONNECT=1",
         "-DDETWS_ENABLE_J2735=1",
+        "-DDETWS_ENABLE_NEMA_TS2=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1499,6 +1506,7 @@
         "+<services/goose/goose.cpp>",
         "+<services/mtconnect/mtconnect.cpp>",
         "+<services/j2735/j2735.cpp>",
+        "+<services/nema_ts2/nema_ts2.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
