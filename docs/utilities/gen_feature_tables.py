@@ -24,6 +24,16 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_MD = os.path.join(ROOT, "docs", "FEATURES.md")
+CONFIG_H = os.path.join(ROOT, "src", "DetWebServerConfig.h")
+
+# Internal derived flags: auto-set from other flags, not user-facing opt-ins, so they
+# get no FEATURES.md entry of their own. Every other DETWS_ENABLE_* must be documented
+# (the coverage guard below fails CI otherwise - this is how the whole industrial-protocol
+# wave once drifted out of the feature grid unnoticed).
+INTERNAL_FLAGS = {
+    "DETWS_ENABLE_STREAM_BODY",  # = OTA || UPLOAD || WEBDAV (shared parser machinery)
+    "DETWS_ENABLE_CLIENT_TLS",  # = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS
+}
 
 BEGIN = "<!-- BEGIN GENERATED FEATURE TABLES (docs/utilities/gen_feature_tables.py) -->"
 END = "<!-- END GENERATED FEATURE TABLES -->"
@@ -51,22 +61,34 @@ LAYER_MEMBERS = {
         "Config Store",
         "Device ID",
         "DMA Peripheral Ingest",
+        "Exception Decoder",
+        "Failsafe Watchdog",
         "GPIO Map",
         "Guardrails",
+        "Hardware Health",
         "Preempting Work Queue",
+        "PSRAM Pool",
         "RTC",
+        "Sleep Scheduler",
+        "Southbound",
         "Time Source",
         "VFS",
+        "Wear Leveling",
     },
     "Physical & Data Link (L1-L2)": {
         "ADS1115",
+        "BLE GATT",
         "Bus Capture",
+        "CC1101",
+        "DShot",
         "EnOcean",
         "ESP-NOW",
         "Ethernet",
+        "FDC2214",
         "INA219",
         "Interface Forwarding",
         "LD2410",
+        "LDC1614",
         "LoRa",
         "MPR121",
         "nRF24",
@@ -74,16 +96,24 @@ LAYER_MEMBERS = {
         "PN532",
         "Radio Gateway",
         "Radio Power",
+        "Radio Sniffer",
+        "Raw L2",
         "SHT3x",
         "Sigfox",
         "Thread",
+        "VL53L0X",
         "Wi-Fi Capture",
+        "Wi-Fi Sniffer",
+        "Wi-SUN",
         "Z-Wave",
         "Zigbee",
     },
     "Network (L3)": {
         "Dns Resolver",
+        "Happy Eyeballs",
         "IPv6",
+        "Link Manager",
+        "Network Adaptation",
         "Proxy Protocol",
     },
     "Transport (L4)": {
@@ -92,7 +122,9 @@ LAYER_MEMBERS = {
         "Keep-Alive",
         "MTLS",
         "Per IP Throttle",
+        "Socket Pool",
         "TLS",
+        "TLS Policy",
         "TLS Resumption",
     },
     "Session (L5)": {
@@ -105,8 +137,10 @@ LAYER_MEMBERS = {
         "Auth Lockout",
         "CBOR",
         "CloudEvents",
+        "HTTP Delivery",
         "HTTP/1.1 Parser",
         "HTTP/2",
+        "HTTP/3",
         "JSON",
         "JWT",
         "MessagePack",
@@ -249,8 +283,26 @@ def apply_to(path, link_prefix, check):
     return True
 
 
+def check_flag_coverage():
+    """Fail if a DETWS_ENABLE_* flag in the config header has no FEATURES.md entry
+    (excluding the internal derived flags). Guards against a shipped feature silently
+    never reaching the feature grid."""
+    cfg = open(CONFIG_H, "r", encoding="utf-8").read()
+    feat = open(FEATURES_MD, "r", encoding="utf-8").read()
+    defined = set(re.findall(r"^#define (DETWS_ENABLE_[A-Z0-9_]+) 0", cfg, re.M))
+    documented = set(re.findall(r"^`(DETWS_ENABLE_[A-Z0-9_]+)`", feat, re.M))
+    missing = sorted(defined - documented - INTERNAL_FLAGS)
+    if missing:
+        raise SystemExit(
+            "FEATURES.md is missing entries for these DETWS_ENABLE_* flags "
+            "(add a `## Name` section, or list the flag in INTERNAL_FLAGS if it is "
+            f"internal): {missing}"
+        )
+
+
 def main():
     check = "--check" in sys.argv[1:]
+    check_flag_coverage()
     ok = True
     for path, prefix in TARGETS.items():
         result = apply_to(path, prefix, check)

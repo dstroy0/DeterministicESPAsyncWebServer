@@ -8,6 +8,28 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## 54 shipped features were missing from the feature grid (FEATURES.md drift)
+
+- **Status:** FIXED (gen_feature_tables.py coverage guard green; all DETWS_ENABLE\_\* flags now documented).
+- **Found:** 2026-07-06, answering "did all the features make it into docs/FEATURES.md?".
+- **Symptom:** 54 opt-in features had a `DETWS_ENABLE_*` flag, a `src/services/*` implementation, and
+  tests, but no `##` heading in docs/FEATURES.md - so they were absent from the README/docs feature
+  tables too (those tables are generated _from_ FEATURES.md). The whole industrial-protocol wave
+  (HART, GOOSE, MMS, PROFINET, PROFIBUS, J2735, NTCIP, OpenADR, ...), HTTP/3, and several infra
+  features (Failsafe, Sleep Scheduler, Wear Leveling, Network Adaptation, PSRAM Pool, Themes, ...)
+  had shipped without ever being listed.
+- **Root cause:** FEATURES.md is hand-maintained and nothing enforced that every feature flag has an
+  entry. gen_feature_tables.py guarded the README tables against drift from FEATURES.md, but not
+  FEATURES.md against drift from the config header, so shipped features silently never reached the grid
+  (the same failure mode as the "silently lost 28 features" the generator docstring already warned of).
+- **Fix:** backfilled all 54 entries (descriptions extracted verbatim from each flag's config-header
+  doc comment) into FEATURES.md, mapped them to their OSI layer, regenerated the tables, and added a
+  coverage guard to gen_feature_tables.py: it fails (in the Feature Tables CI job) if any
+  `DETWS_ENABLE_*` flag lacks a FEATURES.md entry, excluding a small allowlist of internal derived
+  flags (STREAM_BODY, CLIENT_TLS). Docs-only; no library code changed.
+
+---
+
 ## HTTP/3 TLS flight append ignored its buffer cap (potential `flight_hs` overflow)
 
 - **Status:** FIXED (native_quic_tls / native_tls13_msg / native_h3_e2e green; flagged by SonarCloud

@@ -8,6 +8,12 @@ Every optional feature is a compile-time flag (default off unless noted); enable
 
 Opt-in global accept-rate throttle (connection-flood defense). Default off (zero cost / no behavior change). When set to 1 the accept callback rejects new connections once more than DETWS_ACCEPT_THROTTLE_MAX have been accepted within a DETWS_ACCEPT_THROTTLE_WINDOW_MS fixed window (global across all listeners, two static counters - no per-IP table). This bounds connection churn (e.g. reconnect brute-force) on top of the bounded connection pool and the per-connection auth limits. mitigate finer-grained / per-IP attacks at the network layer.
 
+## Adaptive mDNS
+
+`DETWS_ENABLE_MDNS_ADAPTIVE`
+
+Opt-in adaptive mDNS beacon scheduling. Pure scheduling decisions on top of the shipped mDNS service: detws_mdns_beacon_adapt backs the announce interval off toward a ceiling under RF contention and recovers it when the air is quiet, detws_mdns_refresh_interval gives the TTL/2 continuous-refresher cadence, detws_mdns_beacon_due says when an announce is due, and detws_mdns_beacon_presleep_due says whether to announce before a sleep window that would otherwise let the record lapse. Wrap-safe time math, no heap/stdlib. Default off.
+
 ## ADS1115
 
 `DETWS_ENABLE_ADS1115`
@@ -19,6 +25,12 @@ TI ADS1115 4-channel 16-bit ADC with programmable gain (I2C). Default off. servi
 `DETWS_ENABLE_AMQP`
 
 AMQP 0-9-1 frame codec - the RabbitMQ wire protocol. Default off. services/amqp lets a device be an AMQP client over the outbound client transport: `amqp_protocol_header` writes the `"AMQP" 0 0 9 1` preamble, `amqp_build_frame` / `amqp_parse_frame` build and validate a frame (type + channel + 4-octet size + payload + the mandatory 0xCE frame-end), `amqp_build_method` / `amqp_parse_method` handle a METHOD frame's class-id / method-id / arguments, and `amqp_build_heartbeat` emits a keep-alive. Pure and host-tested; the method-argument field encoding and the connection state are the application's. See src/services/amqp/amqp.h.
+
+## ATC
+
+`DETWS_ENABLE_ATC`
+
+Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot. When set, services/atc exposes this device's field-I/O (a fixed table of named input/output points it already gathers via the NTCIP / NEMA-TS2 / gpio services) to an ATC Linux engine over the existing HTTP surface: detws_atc_snapshot_json serializes the FIO map as JSON, and detws_atc_set_output drives an output point from an ATC command. Pure interop codec (ATC is a platform spec, not a wire protocol). Default off.
 
 ## Audit Log
 
@@ -44,6 +56,12 @@ Opt-in per-IP brute-force lockout for HTTP auth (requires AUTH). Default off (ze
 
 BACnet/IP BVLC + NPDU codec - the ASHRAE 135 building-automation network framing over UDP (47808). Default off. services/bacnet provides `bvlc_build` / `bvlc_parse` for the BACnet/IP virtual-link envelope (type 0x81, function such as Original-Unicast-NPDU 0x0A / Original-Broadcast-NPDU 0x0B, 2-octet length) and `npdu_build` / `npdu_parse` for the network layer (version 0x01 + the NPCI control octet + optional DNET/DLEN/DADR destination addressing + hop count), slicing out the APDU. Layout verified against ASHRAE 135 Annex J / Clause 6; pure and host-tested. The APDU application layer (objects / properties / services) layers on top. See src/services/bacnet/bacnet.h.
 
+## BLE GATT
+
+`DETWS_ENABLE_BLE_GATT`
+
+Opt-in Bluetooth ATT protocol codec + GATT characteristic bridge. The wire protocol under GATT for bridging the on-chip BLE radio to the web: services/ble_gatt builds and parses the common ATT PDUs (read / write / notify / error, Bluetooth Core Vol 3 Part F) and serializes a GATT characteristic table as JSON for the web stack (att_read_req / att_write_req / att_notify / att_error_rsp / att_parse / gatt_char_json). The BLE stack owns the radio; this owns the ATT bytes + the northbound JSON. Pure, no heap/stdlib. Default off.
+
 ## Bus Capture
 
 `DETWS_ENABLE_BUS_CAPTURE`
@@ -67,6 +85,18 @@ CANopen (CiA 301) message codec. Default off. services/canopen is a zero-heap bu
 `DETWS_ENABLE_CBOR`
 
 Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. Default off. When set, network_drivers/presentation/cbor/cbor.h provides a writer that serializes ints, strings, byte strings, arrays, maps, booleans, null, and float32 into a caller-provided buffer - a compact binary alternative to the JSON writer for telemetry. Pure, no heap, host-tested against the RFC 8949 vectors.
+
+## CC-Link
+
+`DETWS_ENABLE_CCLINK`
+
+Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. When set, services/cclink builds/validates the CC-Link cyclic frame ([station][command][RX/RY bit data][RWr/RWw word data][sum checksum]) a Mitsubishi CC-Link master exchanges with remote stations over RS-485, plus bit/word process-image accessors. Pure codec (the RS-485 timing + CC-Link IE Field PHY are hardware-gated). Default off.
+
+## CC1101
+
+`DETWS_ENABLE_CC1101`
+
+Opt-in CC1101 sub-GHz radio driver. A gateway radio plugin for the TI CC1101 300-928 MHz transceiver over SPI: services/cc1101 drives the chip's SPI header protocol (config registers, command strobes, status registers, TX/RX FIFO) - reset + apply a SmartRF register table + set channel + verify VERSION (cc1101_init), send a variable-length packet (cc1101_send), poll TX-done, enter RX, and read a packet with appended RSSI/LQI (cc1101_recv), plus the RSSI-to-dBm decode. The huge modem config is a caller-supplied register table. Host-tested against a mock; the RF link needs the module. Default off.
 
 ## Chunked Responses
 
@@ -136,6 +166,12 @@ Opt-in CSRF protection for state-changing HTTP requests. Default off (zero cost 
 
 Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-contained, hand-rolled SVG dashboard page whose widgets are declared in a fixed compile-time DetwsWidget table (zero-heap, deterministic). The page fetches the widget layout as JSON and subscribes to an SSE stream of live values; detws_dashboard_set() + detws_dashboard_publish() push the current readings. The widget-table -> JSON serializers are host-testable; WebSocket controls are a follow-up.
 
+## DDS-RTPS
+
+`DETWS_ENABLE_DDS`
+
+Opt-in DDS / RTPS wire-protocol codec. When set, services/dds provides the RTPS (DDSI-RTPS) message + submessage framing: the 20-octet header (magic / version / vendor / guidPrefix) and the typed submessages (INFO_TS, DATA, HEARTBEAT, ACKNACK, ...) with the endianness flag, built by detws_rtps_header / _submessage and walked by detws_rtps_parse. Pure framing (CDR payloads + SPDP/SEDP discovery layer on top). Default off.
+
 ## Device ID
 
 `DETWS_ENABLE_DEVICE_ID`
@@ -159,6 +195,12 @@ Allen-Bradley DF1 full-duplex frame codec. Default off. services/df1 is a zero-h
 `DETWS_ENABLE_DIAG`
 
 Expose a diagnostic JSON endpoint via server.diag(). Disabled by default - enabling it exposes compile-time configuration (buffer sizes, feature flags) which could aid an attacker. Only enable in development or behind an authenticated route. When enabled, DETWS_DIAG_JSON is a compile-time string constant you can serve from any route handler:
+
+## DirectNET
+
+`DETWS_ENABLE_DIRECTNET`
+
+Opt-in AutomationDirect / Koyo DirectNET serial frame codec. When set, services/directnet builds/validates the DirectNET master-slave serial frames - the header (SOH + slave/type/address/blocks ASCII-hex + ETB + LRC) and the data frame (STX + data + ETX + LRC) - for V-memory read/write on an AutomationDirect DirectLOGIC PLC. Pure codec (the UART transport + ACK/NAK handshake are the device step). Default off.
 
 ## DMA Peripheral Ingest
 
@@ -190,6 +232,12 @@ Opt-in DNS resolver with answer verification. Default off. services/dns_resolver
 
 Authoritative DNS server on UDP/53. Default off. services/dns_server answers A/IN queries from a small fixed table of `name -> IPv4` records you register with `dns_server_add()`, so devices on an offline / air-gapped LAN can use names (`printer.lan`) instead of raw IPs - a companion to the NTP server for self-hosted infrastructure. It parses the question, looks the name up case-insensitively, and on a hit appends one answer record using DNS name compression (a 2-byte pointer back to the question); an unknown name returns NXDOMAIN and non-A queries return no answer. The response builder (`dns_server_build_response`) is pure and host-tested against the wire format; the binding is the transport UDP service. Zero heap. This is a general resolver, distinct from the provisioning captive-portal DNS (which points every name at the softAP) - do not enable both. Example 60.DnsServer. See src/services/dns_server/dns_server.h.
 
+## DShot
+
+`DETWS_ENABLE_DSHOT`
+
+Opt-in DShot ESC throttle protocol codec. When set, services/dshot provides detws_dshot_encode() / _decode(): the 16-bit DShot frame (11-bit throttle/command + telemetry bit + 4-bit CRC), the bidirectional/extended inverted-CRC variant, and the per-rate bit timing for an RMT driver. Pure codec (the app clocks it out via RMT). Default off.
+
 ## EnOcean
 
 `DETWS_ENABLE_ENOCEAN`
@@ -220,6 +268,24 @@ Wired Ethernet bring-up. Default off (the ETH library is not linked). When set, 
 
 EtherNet/IP encapsulation codec - the ODVA EtherNet/IP transport (TCP/UDP 44818) that carries CIP. Default off. services/enip provides `eip_build` / `eip_parse` for the 24-octet encapsulation header (little-endian command / length / session handle / status / sender context / options), `eip_build_register_session` to open a session, and `eip_build_send_rr_data` / `eip_parse_send_rr_data` to wrap + unwrap a CIP message as an unconnected message via the Common Packet Format (a Null Address item plus an Unconnected Data item). Commands and CPF item types verified against the Wireshark ENIP dissector; pure and host-tested. The CIP object model inside the Unconnected Data item layers on top. See src/services/enip/enip.h.
 
+## Exception Decoder
+
+`DETWS_ENABLE_EXC_DECODER`
+
+Opt-in ESP32 panic / exception decoder for a live diagnostics panel. When set, services/exc_decoder parses a captured Guru Meditation panic dump (the cause, the register PC + EXCVADDR, and the backtrace PC:SP frames) into a structured ExcInfo and serializes it as JSON for a "/exception" panel; the browser or a build server resolves the PCs to file:line against the firmware ELF (addr2line lives off-device). Pure, no heap/stdlib. Default off.
+
+## Failsafe Watchdog
+
+`DETWS_ENABLE_FAILSAFE`
+
+Opt-in software watchdog: deadlock detection + fail-safe safe-state. When set, services/failsafe provides a fixed registry of "lifelines" (a task / worker / control loop that must check in within its deadline). detws_failsafe_check() detects one that stopped feeding (a hang / deadlock) and fires a breach callback once per episode so the app can enter a known-safe state. App-defined and per-lifeline, on top of the hardware task watchdog. Pure core, zero heap. Default off.
+
+## FDC2214
+
+`DETWS_ENABLE_FDC2214`
+
+Opt-in FDC2114/2214 capacitance-to-digital field sensor. A field-perturbation sensing peripheral: services/fdc2214 decodes the FDC2x14's 28-bit conversion result (a capacitance shift moves the LC-tank frequency, giving contactless proximity / liquid-level / material sensing) - fdc2214_data combines the register pair, fdc2214_error pulls the flags, fdc2214_sensor_freq_hz scales to frequency, and fdc2214_build_config emits a single-channel bring-up; the ESP32 binding replays it and reads the channel over I2C. Pure codec host-tested. Default off.
+
 ## File Serving
 
 `DETWS_ENABLE_FILE_SERVING`
@@ -237,6 +303,12 @@ Omron FINS frame codec. Default off. services/fins is a zero-heap command/respon
 `DETWS_ENABLE_FLOW_EXPORT`
 
 Flow-record export codec. Default off. services/flow_export is a zero-heap exporter-side codec for on-device flow accounting in three formats: NetFlow v5 (the fixed 24-octet header + 48-octet record, via `flow_v5_write_header` / `flow_v5_write_record`), NetFlow v9 (RFC 3954), and IPFIX (RFC 7011). The v9 / IPFIX side is a small cursor (`FlowWriter`): begin the message (`flow_ipfix_begin` / `flow_v9_begin`), emit a Template (`flow_export_template`), open a matching Data Set and append records (`flow_export_data_begin` / `flow_export_data_record` / `flow_export_data_end`), then `flow_export_finish()` patches the IPFIX message length or the NetFlow v9 record count (and pads each v9 FlowSet to a 4-octet boundary). Field offsets verified against RFC 7011 / RFC 3954 / the published v5 layout; pure and host-tested. The flow cache (5-tuple + counters) and the UDP send (det_udp_sendto) are the application's. See src/services/flow_export/flow_export.h.
+
+## GOOSE
+
+`DETWS_ENABLE_GOOSE`
+
+Opt-in IEC 61850 GOOSE publisher codec. When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event publish. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit is the device step). Default off.
 
 ## GPIO Map
 
@@ -262,6 +334,24 @@ gRPC-Web message framing. Default off. services/grpcweb is a zero-heap length-pr
 
 Opt-in runtime heap/stack guardrails. Default off. When set, services/guardrails samples free heap, the heap low-water mark, the largest free block (fragmentation), and the calling task's remaining stack, and fires a callback when any crosses its threshold - a proactive fail-safe hook beyond the passive numbers in /metrics. The threshold evaluator and the JSON serializer are pure and host-tested; the sample reads esp_* / the FreeRTOS stack high-water on ESP32.
 
+## Happy Eyeballs
+
+`DETWS_ENABLE_HAPPY_EYEBALLS`
+
+Opt-in dual-stack Happy Eyeballs destination selection. The client-side IPv6/IPv4 fallback decision on top of the shipped DetIp: detws_he_pref scores a destination (RFC 6724 scope + family), detws_he_order sorts a candidate list and interleaves the address families (RFC 8305) so successive connection attempts alternate v6/v4, and detws_he_attempt_due gates the next attempt by the Connection Attempt Delay. Fast IPv6 when it works, quick fallback to IPv4 when it does not. Needs DETWS_ENABLE_IPV6 to matter. No heap/stdlib. Default off.
+
+## Hardware Health
+
+`DETWS_ENABLE_HW_HEALTH`
+
+Opt-in hardware-health diagnostics. Four pure decision cores fed with samples the app reads from the hardware: a power-rail voltage-drop logger (detws_hwhealth_rail_sample tracks worst droop + sag/brownout counts), a SPI-bus CRC audit with hysteretic clock backoff (detws_hwhealth_spi_result halves/doubles the clock on fail/ok streaks), a GPIO short-circuit test (detws_hwhealth_gpio_short: driven vs readback), and a capacitor-leakage diag (detws_hwhealth_cap_leak: measured vs expected RC decay). No heap/stdlib. Default off.
+
+## HART
+
+`DETWS_ENABLE_HART`
+
+Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR checksum, short + long addressing) and the 8-octet HART-IP message header, so a device speaks HART over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested. Default off.
+
 ## Host Link
 
 `DETWS_ENABLE_HOSTLINK`
@@ -280,6 +370,12 @@ Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). Default off. W
 
 HTTPS client support inside the HTTP client (needs TLS).
 
+## HTTP Delivery
+
+`DETWS_ENABLE_HTTP_DELIVERY`
+
+Opt-in HTTP delivery optimizations. Three pure cores for cheaper HTTP serving, each a real web standard: RFC 5861 stale-while-revalidate (detws_delivery_swr decision + detws_delivery_cache_control header), RFC 7233 byte-range delta/offset fetch (detws_delivery_range parse of X-Y / X- / -N + detws_delivery_content_range for a 206), and a versioned service-worker precache manifest (detws_delivery_sw_manifest). No heap/stdlib. Default off.
+
 ## HTTP/1.1 Parser
 
 RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.
@@ -289,6 +385,18 @@ RFC 7230 request parser - validates method, path, header names and values byte-b
 `DETWS_ENABLE_HTTP2`
 
 HTTP/2 (RFC 9113) over the version-agnostic request/response core. Default off. Negotiated by TLS ALPN ("h2", falling back to "http/1.1"); an h2 connection speaks the binary framing + HPACK header compression on top of the same routes and handlers as HTTP/1.1 (the response serializer branches on the connection's protocol). The three layers are pure and host-tested against the RFCs: **HPACK** (RFC 7541 - static + dynamic table, prefix-integer / string / canonical-Huffman coding; `native_hpack` vs the Appendix C vectors), the **frame layer** (RFC 9113 sec 4/6 - the 9-byte header + SETTINGS / WINDOW_UPDATE / RST_STREAM / GOAWAY / PING / HEADERS / DATA; `native_h2frame`), and the **connection/stream engine** (preface, SETTINGS exchange, per-stream HEADERS->request + DATA/flow-control, PING/RST/GOAWAY, reassembly; `native_h2conn` drives a full request/response cycle). A connection's engine is ~28 KB, so it does not fit internal DRAM alongside TLS: **HTTP/2 requires PSRAM** (set DETWS_H2_POOL_IN_PSRAM=1 on an S3 / P4 / WROVER; a compile-time guard enforces it). See src/network_drivers/presentation/http2/.
+
+## HTTP/3
+
+`DETWS_ENABLE_HTTP3`
+
+HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first. Default off. HTTP/3 runs over QUIC (a reliable transport over UDP) with QPACK (RFC 9204) header compression and its own binary framing. The pure, host-testable pieces land first - the QUIC variable-length integer (RFC 9000 sec 16), the HTTP/3 + QPACK codecs - ahead of the QUIC transport engine. Like HTTP/2 this is a PSRAM-class feature.
+
+## ICCP
+
+`DETWS_ENABLE_ICCP`
+
+Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec. When set, services/iccp builds the TASE.2 Data_Value BER structures - StateQ (a discrete state + quality) and RealQ (a scaled real + quality), each with an optional timestamp - the indication points a control center transfers as MMS Reads (on the shipped services/mms + services/cotp). Pure BER codec. Default off.
 
 ## IEC 60870
 
@@ -302,17 +410,17 @@ IEC 60870-5-101 / -104 telecontrol (SCADA) codec. Default off. services/iec60870
 
 TI INA219 high-side current / power monitor (I2C). Default off. services/ina219 decodes the bus-voltage register (`ina219_bus_mv`: value in bits [15:3], LSB 4 mV) and the shunt-voltage register (`ina219_shunt_uv`: signed, LSB 10 µV), computes the calibration register from the current LSB and shunt resistance (`ina219_calibration`: `40960000 / (current_lsb_ua * shunt_mohm)`, so 100 µA + 0.1 Ω -> 4096), and scales the raw current / power registers to microamps / microwatts (`ina219_current_ua`, `ina219_power_uw`; the power LSB is 20x the current LSB). All the decode / calibration / scaling math is pure and host-tested (`native_ina219`); only the register read/write touches I2C. A cheap solder-and-test breakout for measuring how much current and power a circuit draws. Example 67.Ina219 is a live power meter. See src/services/ina219/ina219.h.
 
+## INTERBUS
+
+`DETWS_ENABLE_INTERBUS`
+
+Opt-in INTERBUS summation-frame fieldbus codec. When set, services/interbus assembles/disassembles the INTERBUS summation frame (loopback word + per-device 16-bit process-image slices + CRC-16/CCITT FCS) of the Phoenix Contact ring fieldbus, where every device is a shift-register slice of one circulating frame. Pure codec (the physical ring clocking is hardware-gated). Default off.
+
 ## Interface Forwarding
 
 `DETWS_ENABLE_FORWARD`
 
 Opt-in forwarding plane (v5 milestone). Default off. services/forward turns the device into a bridge / router: register interfaces (Wi-Fi STA / AP, Ethernet, a peripheral bus, a radio), each with an egress send callback, then add per-pair rules (`det_forward_add_rule(src, dst, ALLOW/DENY, rate_cap)`). A frame arriving on one interface (`det_forward_ingress()`, the canonical wiring being a DMA-complete event posted onto the internal FORWARD lane of the preempting queue) is forwarded to every allowed destination by calling that destination's send callback, so the device bridges / routes between its interfaces instead of only terminating traffic. Default-deny (a pair forwards only with an ALLOW rule and no DENY; a DENY always wins), never reflects a frame to its source, and fail-closed (an exceeded rate cap or a send callback returning false drops and is counted via `det_forward_get_stats()`, never blocks). Multi-destination fan-out (several ALLOW rules for one source) gives hub behavior; a single ALLOW gives point-to-point routing. An optional ingress **ACL** filters frames by content before any forwarding rule runs: ordered entries (`det_forward_acl_add()`) match on the source interface (or DET_FWD_IF_ANY) and a byte pattern under a mask at an offset, first-match-wins, with a configurable default action (`det_forward_acl_set_default()`) - permit-by-default for a denylist, or deny-by-default for an allowlist. Static tables (zero heap): DETWS_FWD_MAX_IFACES interfaces, DETWS_FWD_MAX_RULES rules, DETWS_FWD_MAX_ACL ACL entries. Host-tested (services/forward) + HW-verified on a DevKitV1: 800k+ frames ingested over DMA, ACL-filtered, and forwarded through the plane with exact accounting (forwarded + acl_denied == frames_in), zero loss, and zero integrity errors while an HTTP server was stress-loaded on the same core. This is the generic data path the post-v5 wireless gateway bridges sit on. See src/services/forward/det_forward.h.
-
-## IPv6
-
-`DETWS_ENABLE_IPV6`
-
-Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DETWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -> SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DetIp address core (`network_drivers/network/det_ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_det_ip`); the netif bring-up is ESP32-only. Example 20.IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it).
 
 ## IO-Link
 
@@ -326,11 +434,23 @@ IO-Link (SDCI, IEC 61131-9) data-link message codec. Default off. services/iolin
 
 Opt-in source-IP allowlist (accept-time firewall, keyed by source IPv4). Default off (zero cost / no behavior change). When set, the accept callback drops any connection whose source address does not match a configured CIDR rule (see listener_ip_allow_add()). An empty allowlist allows everything, so enabling the feature before adding rules never locks the device out. Rules live in a fixed BSS table of DETWS_IP_ALLOWLIST_SLOTS entries (no heap). This is a coarse first-line filter - a spoofed source address can still pass it - so combine it with the accept throttles and network-layer filtering.
 
+## IPv6
+
+`DETWS_ENABLE_IPV6`
+
+Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DETWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -> SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DetIp address core (`network_drivers/network/det_ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_det_ip`); the netif bring-up is ESP32-only. Example 20.IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it).
+
 ## J1939
 
 `DETWS_ENABLE_J1939`
 
 SAE J1939 codec. Default off. services/j1939 is a zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/det_can.h`): `j1939_encode_id` / `j1939_decode_id` pack and unpack the priority / PGN / source / destination identifier (both the PDU1 peer-to-peer and PDU2 broadcast forms), `j1939_build_message` emits single frames, `j1939_build_request` and `j1939_build_address_claim` (with `j1939_build_name` for the 64-bit NAME) handle the Request PGN and Address Claimed messages, and the Transport Protocol (BAM announce + TP.DT data packets) reassembles multi-packet messages up to `DETWS_J1939_TP_MAX` octets via `j1939_tp_feed`. Identifier layout, NAME bit fields, and the TP control bytes verified against SAE J1939-21 / -81; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a J1939 bus onto Wi-Fi. See src/services/j1939/j1939.h.
+
+## J2735
+
+`DETWS_ENABLE_J2735`
+
+Opt-in SAE J2735 V2X codec. When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive codec (constrained INTEGER / BOOLEAN / bit fields) and, on top of it, the J2735 BSMcore safety-message block (msgCnt / id / secMark / lat / long / elev / speed / heading) encode + decode, for connected- vehicle messaging. Pure codec (the DSRC / C-V2X radio is an external module). Default off.
 
 ## JSON
 
@@ -354,11 +474,29 @@ HTTP/1.1 persistent connections (keep-alive). Default off (every response carrie
 
 HLK-LD2410 24 GHz mmWave presence / motion radar (UART). Default off. services/ld2410 syncs to the module's framed serial output (256000 baud: header `F4 F3 F2 F1`, little-endian length, payload, footer `F8 F7 F6 F5`) and decodes the target report - presence state (none / moving / stationary / both), the moving and stationary target distance (cm) and energy (0-100), the overall detection distance, and, in engineering mode, the per-gate energy of all nine range gates - plus encodes the config commands (enter / exit config, enable / disable engineering, restart). Unlike a PIR sensor it detects a perfectly still person (micro-motion / breathing), in the dark, through thin walls. The `Ld2410Stream` byte-by-byte reassembler is fixed-buffer, no-heap, and resyncs cleanly on dropped bytes or noise; the frame decoder + reassembler + command encoders are host-tested (`native_ld2410`), and only the UART read/write touches hardware. Example 62.Ld2410 lights the onboard LED on presence. See src/services/ld2410/ld2410.h.
 
+## LDC1614
+
+`DETWS_ENABLE_LDC1614`
+
+Opt-in LDC1614 inductance-to-digital field sensor. A field-perturbation sensing peripheral: services/ldc1614 decodes the LDC1614's 28-bit conversion result (a nearby conductor changes the coil inductance via eddy currents, giving contactless metal proximity / displacement / EM-field sensing) - ldc1614_data combines the register pair, ldc1614_error pulls the flags, ldc1614_sensor_freq_hz scales to frequency, and ldc1614_build_config emits a single-channel bring-up; the ESP32 binding replays it and reads the channel over I2C. Pure codec host-tested. Default off.
+
+## Link Manager
+
+`DETWS_ENABLE_LINK_MANAGER`
+
+Opt-in multi-interface egress selection / failover policy. The policy that drives which interface carries traffic once a device has more than one (a wired Ethernet PHY alongside WiFi STA / softAP): services/link_manager keeps a small table of interfaces (kind + priority + up/down) and deterministically selects the best link that is up, escalating to a higher-priority interface when it comes up and failing over when it drops, reporting only real transitions so the app reconfigures the netif once. The PHY bring-up (esp_eth) stays the app's. No heap/stdlib. Default off.
+
 ## Log-Buffer
 
 `DETWS_ENABLE_LOGBUF`
 
 Opt-in fixed-RAM rotating log buffer with severity traps. Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines in a fixed ring (oldest pruned on overflow - no heap, bounded), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback when a line is logged at/above a severity threshold (forward criticals as an SNMP trap / webhook). The ring + trap logic is pure and host-tested.
+
+## LonWorks
+
+`DETWS_ENABLE_LONWORKS`
+
+Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec. When set, services/lonworks builds/parses the LonTalk network-variable PDU ([msg-code][14-bit selector][value]) that a building-automation device exchanges - over LON/IP (14908-4) UDP, so no Neuron chip is needed - plus the common SNVT scalar encodings (SNVT_temp, SNVT_switch). Pure codec (the UDP transport is the shipped UDP layer). Default off.
 
 ## LoRa
 
@@ -406,6 +544,12 @@ Prometheus `/metrics` endpoint (text exposition format 0.0.4). Default off (requ
 
 Composable use() pipeline with a fixed-window rate limiter. Always on.
 
+## MMS
+
+`DETWS_ENABLE_MMS`
+
+Opt-in IEC 61850 MMS PDU codec. When set, services/mms builds/parses the MMS (ISO 9506) confirmed-request/response Read PDUs (BER-encoded, the ACSI client/server core of IEC 61850) - detws_mms_read_request builds a Read of a named Data Object, detws_mms_read_response the data reply. Carried over ISO-on-TCP (TPKT + COTP via the shipped services/cotp) on port 102. Pure BER codec. Default off.
+
 ## Modbus
 
 `DETWS_ENABLE_MODBUS`
@@ -417,6 +561,12 @@ Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502. Default
 `DETWS_ENABLE_MODBUS_MASTER`
 
 Opt-in Modbus master codec + register scanner. Default off. services/modbus/modbus_master builds Modbus TCP read-request ADUs and parses the responses (register values or exception), so an app can poll / auto-discover a slave's registers. Pure and host-tested as a full round-trip against the slave codec (modbus_process_adu); the actual send is the app's TCP.
+
+## Modbus Plus
+
+`DETWS_ENABLE_MBPLUS`
+
+Opt-in Modbus Plus HDLC token-bus frame codec. When set, services/mbplus builds/validates the Modbus Plus HDLC frame (7E addr ctrl payload CRC-16/X-25 7E) that Schneider's token-passing peer bus exchanges, plus the token-rotation helper (next station in the logical ring). Reuses the shipped Modbus PDU model for the data. Pure codec (the 1 Mbit/s bus is hardware-gated). Default off.
 
 ## Modbus RTU
 
@@ -448,6 +598,12 @@ MQTT-SN v1.2 wire codec. Default off. services/mqtt/mqtt_sn is a zero-heap codec
 
 MQTTS: run the MQTT client over client-side TLS (needs TLS).
 
+## MTConnect
+
+`DETWS_ENABLE_MTCONNECT`
+
+Opt-in MTConnect agent response codec. When set, services/mtconnect builds the MTConnectStreams (current/sample) and MTConnectError XML response documents (ANSI/MTC1.4) into a caller buffer - header with instanceId + nextSequence, then per-DataItem Samples/Events/Condition observations - so the web server is an MTConnect agent over the existing HTTP stack. Pure text framing (values XML-escaped). Default off.
+
 ## MTLS
 
 `DETWS_ENABLE_MTLS`
@@ -465,6 +621,18 @@ multipart/form-data body parser.
 `DETWS_ENABLE_NATS`
 
 NATS client protocol codec - the text-based NATS pub/sub messaging protocol. Default off. services/nats lets a device be a NATS client over the outbound client transport: builders for `CONNECT`, `PUB` (with optional reply-to), `SUB` (with optional queue group), `UNSUB`, `PING`, and `PONG`, plus `nats_parse` which decodes an inbound `MSG` / `INFO` / `PING` / `PONG` / `+OK` / `-ERR` (a MSG yields subject / sid / reply-to / payload). Line-oriented (CRLF, space-delimited); only PUB and MSG carry a payload. Pure and host-tested; the connection and subscription state are the application's. See src/services/nats/nats.h.
+
+## NEMA TS2
+
+`DETWS_ENABLE_NEMA_TS2`
+
+Opt-in NEMA TS 2 traffic-cabinet SDLC frame codec. When set, services/nema_ts2 builds/validates the TS 2 SDLC bus frames ([address][control][frame-type] [data][CRC-16/X-25]) that link a traffic-signal controller to the MMU, BIUs, and detector racks. Pure codec (the synchronous serial PHY + BIU timing are hardware-gated). Default off.
+
+## Network Adaptation
+
+`DETWS_ENABLE_NETADAPT`
+
+Opt-in network adaptation decisions. When set, services/netadapt provides two pure decisions: detws_netadapt_window() sizes the TCP receive window from the free heap (bigger when RAM is plentiful, shrinking when tight), and detws_netadapt_dhcp_fallback() decides when to give up on DHCP and use a static IP. The app applies the results (lwIP window / netif config). Default off.
 
 ## NMEA 0183
 
@@ -484,6 +652,12 @@ NMEA 2000 codec. Default off; implies J1939 (NMEA 2000 is J1939 at the transport
 
 Opt-in nRF24L01+ radio driver (v5 gateway plugin). Default off. services/nrf24 is a driver for the Nordic nRF24L01+ 2.4 GHz module - cheap point-to-multipoint sensor links bridged to the web stack. Unlike the SX127x (plain register read/write), the nRF24 speaks an SPI command protocol (each transaction is a command byte + data with the STATUS register shifted out first) and needs a separate CE pin, so the driver runs over an `nrf_bus` that carries a full-duplex SPI transfer plus a CE-set callback - the only board-specific code. `nrf24_init` verifies the chip via a register read-back and programs the channel, data rate, power, 5-byte address, and static payload width; `nrf24_send` (zero-padded to the width) / `nrf24_tx_done`, `nrf24_set_rx`, and `nrf24_recv` (reports the receiving pipe). The chip's hardware pipe addressing means a received frame's source is the pipe number (no in-payload codec); bridge it northbound with `det_gw_uplink(port, pipe, ...)`. The command protocol is host-tested against a mock chip (register file + payload buffers + STATUS write-1-to-clear); the RF link itself needs the module. Example 12.Nrf24Gateway drives a real module over SPI. See src/services/nrf24/nrf24.h.
 
+## NTCIP
+
+`DETWS_ENABLE_NTCIP`
+
+Opt-in NTCIP transportation-device object identifiers. When set, services/ntcip provides the NTCIP (National Transportation Communications for ITS Protocol) object OID definitions for the common device classes - NTCIP 1202 (actuated signal controller: phases, timing, live states) and 1203 (dynamic message sign) - plus an OID builder, so an app exposes them via the shipped SNMP agent (services/snmp). Pure OID data. Default off.
+
 ## NTP
 
 `DETWS_ENABLE_NTP`
@@ -496,6 +670,12 @@ SNTP wall-clock time sync via the ESP-IDF SNTP client.
 
 NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123. Default off. services/ntp_server turns the device into a local time source: it answers client NTP requests from its own clock, so an offline or air-gapped LAN can keep its devices in sync without reaching the public pool. The 48-octet response builder (`ntp_server_build_response`) is pure - it echoes the request's protocol version, copies the client's transmit timestamp into the origin field (so the client can compute round-trip delay), and stamps reference/receive/transmit times - and is host-tested against the wire format. `ntp_server_begin(stratum, refid)` binds the port via the transport UDP service and drives it from `detws_time_now()` (seconds) plus a `detws_millis()`-derived sub-second fraction; while the device has no time it stays silent rather than serve a wrong clock. Pair it with a GPS receiver (parsed via the NMEA 0183 codec into a stratum-1 time source) and an upstream-NTP fallback for a self-hosted, offline-capable time server. Example 58.NtpServer. See src/services/ntp_server/ntp_server.h.
 
+## NTS
+
+`DETWS_ENABLE_NTS`
+
+Opt-in Network Time Security (NTS, RFC 8915) wire codec. When set, services/nts provides the NTS-KE record codec (build/parse the TLV records - next protocol, AEAD, cookies, server/port) and the NTS NTP extension-field framing (Unique Identifier, Cookie, Authenticator). Pure framing (the AES-SIV-CMAC-256 AEAD + TLS-exporter key derivation are the crypto integration on top). Default off.
+
 ## OAuth2
 
 `DETWS_ENABLE_OAUTH2`
@@ -507,6 +687,12 @@ OAuth2 token-endpoint client. Default off. services/oauth2 obtains tokens - the 
 `DETWS_ENABLE_OBSERVABILITY`
 
 Transport-layer observability: connection-event hook + counters. Default off (zero cost when unset - the notify points compile to nothing). When set, the transport (L4) fires an application callback on every connection state transition - `det_conn_on_event(slot, old_state, new_state, reason)` - and maintains lock-free counters (accepts, closes by reason, idle timeouts, RX backpressure events, dropped deferred events, and a live CONN_CLOSING gauge) readable via `det_conn_counters()`. The only state-transition trace the L4/L5 core exposes; pair it with STATS for request-level metrics.
+
+## OCIT
+
+`DETWS_ENABLE_OCIT`
+
+Opt-in OCIT-Outstations message codec. When set, services/ocit builds/parses the OCIT (DE/AT/CH road-traffic-control) object messages ([msg-type][object-type][instance][data-type][value]) between central traffic computers and field controllers / detectors, with typed values (bool / byte / u16 / u32 / octets). Pure codec (the OCIT transport is the shipped transport). Default off.
 
 ## OIDC
 
@@ -525,6 +711,12 @@ OPC UA Binary server. Default off. services/opcua provides an OPC UA (IEC 62541)
 `DETWS_ENABLE_OPCUA_CLIENT`
 
 OPC UA Binary client. Default off (requires OPC-UA, shares the codec). services/opcua_client builds the client-side requests (Hello, OpenSecureChannel, CreateSession, ActivateSession, Read, Browse, CloseSession, CloseSecureChannel) and parses the server responses, reusing the opcua.h codec. Transport-agnostic - the app supplies the outbound socket (e.g. an Arduino WiFiClient). No heap, no stdlib.
+
+## OpenADR
+
+`DETWS_ENABLE_OPENADR`
+
+Opt-in OpenADR 3.0 (Automated Demand Response) JSON codec. When set, services/openadr builds the OpenADR 3.0 event (a demand-response signal: programID + eventName + interval payload points) and report (a VEN reading back to the VTN) JSON objects into a caller buffer, over the existing HTTP client/server + OAuth2. Pure JSON framing. Default off.
 
 ## OTA
 
@@ -562,11 +754,29 @@ Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IP
 
 PN532 NFC frame codec (v5 gateway plugin). Default off. services/pn532 is the command-frame protocol of the NXP PN532 - the ubiquitous NFC / RFID reader on I2C / SPI / HSU breakouts - so a tag read/write becomes an HTTP / MQTT event. The host and the chip exchange normal information frames `00 00 FF | LEN | LCS | TFI | PData | DCS | 00`, where TFI is 0xD4 (host) / 0xD5 (chip), LCS is the length checksum and DCS the data checksum, plus a 6-byte ACK frame. `pn532_build_frame` assembles a command (the per-command PData - GetFirmwareVersion, InListPassiveTarget, InDataExchange - is the application's), `pn532_parse_frame` frames + verifies a response (returning the length consumed, need-more, or a resync signal), and `pn532_is_ack` / `pn532_build_ack` handle the ACK. Pure - you carry the bytes over your I2C / SPI / UART - and host-tested against the documented GetFirmwareVersion command / response frames and their LCS / DCS. Example 14.NfcGateway reads a real PN532 over I2C and bridges each tag UID northbound. See src/services/pn532/pn532.h.
 
+## POWERLINK
+
+`DETWS_ENABLE_POWERLINK`
+
+Opt-in Ethernet POWERLINK (EPSG) basic frame codec. When set, services/powerlink builds/parses the EPL basic frames ([messageType][dest][source][payload]) of the isochronous managed-node cycle - SoC (start of cycle), PReq (poll request), PRes (poll response with process data), SoA (start of async) - over raw L2 (ethertype 0x88AB, on the shipped services/rawl2). Pure codec (the raw-L2 transmit + isochronous timing are the device step). Default off.
+
 ## Preempting Work Queue
 
 `DETWS_ENABLE_PREEMPT_QUEUE`
 
 Opt-in real-time ingest primitive (v5 milestone). Default off. Fixed-capacity queues, each feeding one dedicated core-pinned task: a producer posts a fixed-size item from a task (back or urgent-front, each with a wait timeout) or from an ISR (interrupt-safe via xQueueSendFromISR + portYIELD_FROM_ISR), and the scheduler preempts straight to the processing task so the work runs immediately instead of on the next tick - the clean ISR-to-"process now" hand-off for DMA-complete / GPIO / bus events. There are named lanes: one USER lane exposed to the app (the no-arg detws_pq_* API drives it) plus internal DMA / FORWARD / DEVICE lanes for the library's own real-time work. The internal lanes run above the user lane (base DETWS_PQ_INTERNAL_PRIORITY, DMA highest) and below the lwIP tcpip / WiFi tasks, so internal ingest always preempts user work without starving networking; detws_pq_lane_priority() reports the ordering. Zero heap (static FreeRTOS queue storage per lane, compile-time DETWS_PQ_DEPTH / DETWS_PQ_ITEM_SIZE / DETWS_PQ_STACK; a lane's task stack is created only when it starts, so unused lanes cost only their queue storage), fail-closed on a full queue, no hot-path locks so latency stays bounded. detws_pq_high_water_lane() reports the peak depth for sizing. HW-verified on a DevKitV1 (~12 us ISR-to-handler latency; the DMA and USER lanes ran continuously with zero errors under an HTTP flood); host-tested via the per-lane ring core (services/preempt_queue). See src/services/preempt_queue/preempt_queue.h.
+
+## PROFIBUS
+
+`DETWS_ENABLE_PROFIBUS`
+
+Opt-in PROFIBUS-DP FDL telegram codec. When set, services/profibus builds/validates the PROFIBUS-DP FDL telegrams - SD1 (no-data: SD1 DA SA FC FCS ED) and SD2 (variable-data: SD2 LE LEr SD2 DA SA FC data FCS ED, arithmetic-sum FCS) - a Siemens DP master exchanges with slaves over RS-485 (the DP-V0 cyclic I/O exchange). Pure codec (the RS-485 timing + DP state machine are the device step). Default off.
+
+## PROFINET
+
+`DETWS_ENABLE_PROFINET`
+
+Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec. When set, services/profinet builds/parses the DCP frames (10-octet header + option/suboption blocks) PROFINET uses to discover and name IO-Devices over raw L2 (ethertype 0x8892) - Identify request/ response and Set (assign NameOfStation / IP). Pure codec (the raw-L2 transmit via services/rawl2 + esp_eth is the device step). Default off.
 
 ## Protobuf
 
@@ -586,6 +796,12 @@ First-boot WiFi provisioning: softAP + captive-portal credentials form.
 
 HAProxy PROXY protocol codec - recover the real client IPv4 when the server sits behind a load balancer / reverse proxy that prepends a PROXY header. Default off. services/proxy_protocol provides `proxy_parse` (detects + decodes a v1 text `PROXY TCP4 ...\r\n` header or a v2 binary header - 12-octet signature + ver_cmd / family / address block - and reports the bytes to skip before the real stream) plus `proxy_v1_build` / `proxy_v2_build` for a TCP/IPv4 header. Handles the library's IPv4 family; IPv6 / UNIX / LOCAL headers parse to their length but yield no addresses. Format per the HAProxy PROXY protocol spec; pure and host-tested. See src/services/proxy_protocol/proxy_protocol.h.
 
+## PSRAM Pool
+
+`DETWS_ENABLE_PSRAM_POOL`
+
+Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager. Pure buffer-management decisions for a PSRAM-equipped ESP32: detws_psram_place picks DRAM vs PSRAM for a buffer by size, DMA requirement, and free-heap headroom (large/cold to PSRAM, small/hot + DMA to DRAM, always leaving an internal-DRAM reserve), and detws_pingpong_* keeps the classic SPI DMA double-buffer bookkeeping (CPU fills one buffer while DMA drains the other; swap flips their roles). The actual heap_caps_calloc is the app's. No heap/stdlib. Default off.
+
 ## Radio Gateway
 
 `DETWS_ENABLE_GATEWAY`
@@ -598,11 +814,23 @@ Opt-in radio / wireless gateway bridge (v5 milestone). Default off. services/gat
 
 Opt-in radio power controls. Default off. services/radio_power applies the WiFi modem-sleep mode and an optional max-TX-power cap in one call (esp_wifi_set_ps / esp_wifi_set_max_tx_power) - trade throughput/latency for lower average power on a battery device. The mode names are host-tested; the apply is ESP32-only.
 
+## Radio Sniffer
+
+`DETWS_ENABLE_RADIO_SNIFF`
+
+Opt-in receive-only radio channel sniffer to pcap. Feeds frames pulled off the air by the RF gateway drivers (CC1101 / LoRa / 802.15.4) in receive-only mode into the capture pipeline: services/radio_sniff wraps each 802.15.4 MAC frame in the Wireshark TAP pseudo-header (carrying per-frame RSSI + channel) and a pcap record so the forwarded stream is a valid .pcap. detws_radiosniff_global writes the DLT-TAP global header and detws_radiosniff_tap_record writes one record. Pure framing (no heap/stdlib); the radio drivers own the receive. Default off.
+
 ## Range
 
 `DETWS_ENABLE_RANGE`
 
 HTTP Range requests / 206 Partial Content for served files. Default off. When set (requires FILE_SERVING), serve_file() / serve_static() honor a single-range `Range: bytes=...` request header: they answer `206 Partial Content` with a `Content-Range` header and stream only the requested bytes (seeking the file to the start offset), advertise `Accept-Ranges: bytes` on full responses, and answer an unsatisfiable range with `416 Range Not Satisfiable`. This enables resumable downloads and media seeking. Multi-range (multipart/byteranges) requests are not supported - the server falls back to a full 200 response, which is RFC 7233 §3.1 compliant.
+
+## Raw L2
+
+`DETWS_ENABLE_RAWL2`
+
+Opt-in raw Layer-2 Ethernet frame codec. When set, services/rawl2 builds/parses Ethernet II + 802.1Q VLAN frames (no FCS - the MAC appends it; detws_eth_fcs is provided for the cases that need it), so the app can inject/receive arbitrary L2 frames via esp_eth_transmit / esp_wifi_80211_tx - the basis for the raw-L2 industrial protocols (PROFINET DCP, GOOSE, POWERLINK). Pure codec, host-tested. Default off.
 
 ## Redis
 
@@ -638,6 +866,18 @@ SDI-12 sensor-bus codec. Default off. services/sdi12 is a zero-heap command / re
 
 SenML (RFC 8428) measurement-pack builder. Default off; implies CBOR. services/senml is a zero-heap SenML-JSON + SenML-CBOR encoder over the shipped JSON / CBOR writers: the caller fills a `SenmlRecord` array (optional base name / base time, name, unit, one value - number / string / boolean, optional time) and `senml_json_build` / `senml_cbor_build` emit the whole pack. SenML-JSON uses the text labels (bn/n/u/v/vs/vb/t); SenML-CBOR uses the integer labels (n=0, u=1, v=2, ..., bn=-2, bt=-3). Numbers that are integral are emitted as integers so timestamps keep full precision. The standard measurement format for CoAP / LwM2M / HTTP telemetry; verified against the RFC example, host-tested. See src/services/senml/senml.h.
 
+## SEP2
+
+`DETWS_ENABLE_SEP2`
+
+Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec. When set, services/sep2 builds the core 2030.5 XML resource documents (DeviceCapability, EndDevice, DERControl) in the urn:ieee:std:2030.5:ns namespace, so the web server is a 2030.5 smart-grid server/client over the existing HTTP stack (DER dispatch / curtailment). Pure text framing. Default off.
+
+## SERCOS III
+
+`DETWS_ENABLE_SERCOS`
+
+Opt-in SERCOS III motion-bus telegram codec. When set, services/sercos builds/parses the SERCOS III MDT/AT telegrams (type + phase + cycle + cyclic device data) the real-time drive/motion bus exchanges over raw L2 (ethertype 0x88CD, on the shipped services/rawl2), plus the IDN (IDentification Number) encode/decode for drive-parameter addressing. Pure codec (the isochronous timing + ring topology are hardware-gated). Default off.
+
 ## SHT3x
 
 `DETWS_ENABLE_SHT3X`
@@ -649,6 +889,12 @@ Sensirion SHT3x (SHT30/31/35) temperature / humidity sensor (I2C). Default off. 
 `DETWS_ENABLE_SIGFOX`
 
 Sigfox modem AT-command codec (v5 gateway plugin). Default off. services/sigfox is the tiny-uplink half of a Sigfox-to-web bridge: a Wisol (SFM10R) / Murata Sigfox modem is driven by AT commands over UART for ultra-low-power telemetry over the Sigfox 0G network (a message is capped at 12 bytes and ~140/day, so uplinks are rare and small). `sigfox_build_uplink` formats an `AT$SF=<hex>` command (uppercase hex of the payload) and `sigfox_parse_response` classifies the modem's reply as OK, ERROR, or still pending. Uplink-only (the common Sigfox use - a device sends readings up, it is not addressed downlink). Pure text codec - you carry the bytes over your UART - and host-tested (the AT$SF encoding, its 12-byte / output-buffer bounds, and the response classification). Example 15.SigfoxUplink sends a reading from a real modem. See src/services/sigfox/sigfox.h.
+
+## Sleep Scheduler
+
+`DETWS_ENABLE_SLEEP_SCHED`
+
+Opt-in dynamic sleep-cycle scheduler. When set, services/sleep_sched provides detws_sleep_next(): from the time since the last activity it returns how long a low-power device should sleep (0 = stay awake), ramping the window from a floor up to a ceiling the longer the idle streak runs. Pure decision core (the app applies the window via light / modem / deep sleep). Complements services/radio_power. Default off.
 
 ## SMTP
 
@@ -673,6 +919,30 @@ Outbound SNMP notifications - traps and informs (requires SNMP). Default off. Wh
 `DETWS_ENABLE_SNMP_V3`
 
 Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). Default off.
+
+## SNP
+
+`DETWS_ENABLE_SNP`
+
+Opt-in GE Fanuc SNP (Series Ninety Protocol) serial frame codec. When set, services/snp builds/validates the SNP master-slave serial frame ([control][length][data] [arithmetic-sum BCC]) for reading/writing registers on a GE Fanuc Series 90 (90-30/90-70) PLC over RS-485. Pure codec (the UART transport + SNP-X session are the device step). Default off.
+
+## Socket Pool
+
+`DETWS_ENABLE_SOCKPOOL`
+
+Opt-in dynamic socket recycling: an LRU connection-slot pool. The transport-pool half of the adaptive-networking work: services/sockpool keeps a fixed table of connection slots and, when saturated, recycles the least-recently-used slot for a new peer (detws_sockpool_acquire returns the evicted id so the transport closes it), plus touch / release / find. The app owns the real sockets; this owns which slot a connection lives in and which to reclaim under pressure. No heap/stdlib. Default off.
+
+## Southbound
+
+`DETWS_ENABLE_SOUTHBOUND`
+
+Opt-in southbound protocol-driver framework. The uniform seam every field-device driver plugs into so the app polls/drives any southbound device (a Modbus slave, a BACnet controller, a raw sensor over SPI/I2C/UART) through one facade: register a SouthboundDriver (a read/write/read_block/write_block vtable + its transport ctx), then address points by driver name via detws_southbound_read / _write / _read_block / _write_block. The block calls are the atomic multi-point (register-matrix) path. Bounded registry (DETWS_SOUTHBOUND_MAX_DRIVERS, default 8), no heap; Modbus master is the one such driver today. Default off.
+
+## SPA Router
+
+`DETWS_ENABLE_SPA_ROUTER`
+
+Opt-in single-page-app micro-routing decision. When set, services/spa_router provides detws_spa_route(): given a request path it returns whether to serve a real asset file, serve the SPA shell (index.html) for a client-side route, or pass through to the app's handlers under an API prefix - so a single-page UI's client routing works. Pure decision core (the caller wires the result into serve_static / the router). Default off.
 
 ## Sparkplug
 
@@ -744,6 +1014,12 @@ Telnet server support (RFC 854 / IAC option negotiation).
 
 {{var}} response templating via send_template(). Always on.
 
+## Themes
+
+`DETWS_ENABLE_THEMES`
+
+Embed the theme stylesheet library as runtime-selectable blobs (default off). Off by default: build-time theme injection (`<!--#theme NAME-->`) costs nothing extra, but embedding the whole library for runtime switching links every theme's CSS into flash (~1 KB each). When set, application/binary_asset_blobs.{h,cpp} exposes `detws_theme_css(name)` + the registry `DETWS_THEME_BLOBS`, so a route (e.g. `/themes/<name>.css`) or a picker can switch themes live. Regenerate with `src/web/wizard/gen_theme_blobs.py` after adding a theme.
+
 ## Thread
 
 `DETWS_ENABLE_THREAD`
@@ -761,6 +1037,12 @@ Multi-source time fallback (NTP / RTC / GPS /... by priority). When set, src/ser
 `DETWS_ENABLE_TLS`
 
 TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only). When set, the server can accept TLS connections using mbedTLS configured with MBEDTLS_MEMORY_BUFFER_ALLOC_C over a fixed BSS arena (DETWS_TLS_ARENA_SIZE) - no system heap, so the determinism guarantee is preserved. The TLS engine is compiled only on Arduino/ESP32 (mbedTLS is not part of the native build). Default off.
+
+## TLS Policy
+
+`DETWS_ENABLE_TLS_POLICY`
+
+Opt-in TLS version negotiation + pinned cipher-suite policy. A policy layer on top of the mbedTLS-backed transport TLS (which already runs the 1.2 / 1.3 record + handshake): services/tls_policy pins the version to an audited [min,max] and makes the negotiated version observable (detws_tls_negotiate_version / detws_tls_version_name), and pins the cipher suites to an audited allowlist selected by server preference (detws_tls_select_cipher), with an AEAD-only classifier (detws_tls_is_aead) for a hardened profile. Pure, host-tested; the app feeds the results to the mbedTLS config. Default off.
 
 ## TLS Resumption
 
@@ -786,17 +1068,41 @@ Opt-in fire-and-forget UDP telemetry cast. Default off. When set, services/udp_t
 
 Streaming file upload: POST a body straight to a file on the filesystem. Default off. When set, src/services/upload_service.h registers a POST route that streams the request body directly into an Arduino FS file (LittleFS / SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser streaming-body hook as OTA. For reliable uploads set RX_BUF_SIZE above the largest inbound TCP segment (TCP_MSS, ~1460): the transport refuses-and-redelivers a segment that will not fit the receive ring (lossless backpressure), but a ring smaller than one segment would stall. The 1024 default suits ordinary requests, not uploads.
 
+## UTMC
+
+`DETWS_ENABLE_UTMC`
+
+Opt-in UTMC (Urban Traffic Management and Control) common-database codec. When set, services/utmc builds/parses the UTMC common-database HTTP+XML messages - a UTMCRequest for an object id and a UTMCResponse carrying the object value + a data-quality flag + a timestamp - the UK modular framework for sharing traffic data across municipal systems, over the existing HTTP server. Pure text framing. Default off.
+
 ## VFS
 
 `DETWS_ENABLE_VFS`
 
 Unified virtual filesystem wrapper. Default off. services/vfs exposes one small file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a feature can target storage without knowing the medium. A built-in zero-heap RAM backend (fixed BSS pool - deterministic, host-identical) ships for scratch / tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD / SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise. Pool dimensions are tunable in DetWebServerConfig.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE, _MAX_OPEN, _NAME_MAX).
 
+## VL53L0X
+
+`DETWS_ENABLE_VL53L0X`
+
+Opt-in VL53L0X optical time-of-flight ranging sensor. A field-perturbation sensing peripheral for contactless distance / gesture: services/vl53l0x decodes the ST VL53L0X ranging registers - vl53l0x_range_mm combines the range byte pair, vl53l0x_data_ready decodes the interrupt-status byte, and vl53l0x_range_valid checks the device range-status field; the ESP32 binding verifies the model id, starts continuous ranging, and reads the distance over I2C. Default-settings ranging (ST's tuning blob is not applied). Pure codec host-tested. Default off.
+
 ## WAMP
 
 `DETWS_ENABLE_WAMP`
 
 WAMP messaging codec. Default off. services/wamp is a zero-heap codec for the Web Application Messaging Protocol (unified RPC + PubSub over WebSocket, subprotocol `wamp.2.json`): builders for HELLO / SUBSCRIBE / UNSUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE (JSON arrays emitted via the shared JsonWriter - Options/Details default to `{}`, Arguments / ArgumentsKw are passed as JSON literals), plus a nesting-aware positional parser (`wamp_get_type`, `wamp_get_uint`, `wamp_get_uri`, `wamp_element`) that pulls the message type, ids, and URIs out of an inbound WELCOME / SUBSCRIBED / EVENT / RESULT / INVOCATION / ERROR. Message codes verified against the WAMP spec; pure and host-tested. It rides the shipped WebSocket layer; the session / subscription / registration tables are the application's. See src/services/wamp/wamp.h.
+
+## WAVE
+
+`DETWS_ENABLE_WAVE`
+
+Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. When set, services/wave builds/parses the IEEE 1609 vehicular-radio framing that carries J2735: the 1609.3 WSMP header (version + P-encoded PSID + length + payload) and the 1609.2 secured-message envelope header (version + content type). Pairs with services/j2735. Pure codec (the DSRC / C-V2X radio is an external module). Default off.
+
+## Wear Leveling
+
+`DETWS_ENABLE_WEARLEVEL`
+
+Opt-in flash wear-leveling slot selector. When set, services/wearlevel provides detws_wearlevel_pick(): given per-slot write counts it returns the least-worn slot to write next, so repeated flash/NVS writes spread evenly and the region ages together instead of burning out one block. Pure core (the app owns the slots + persisted counts). Default off.
 
 ## Web Terminal
 
@@ -822,6 +1128,24 @@ Opt-in outbound webhooks / IFTTT. Default off. Requires HTTP_CLIENT. services/we
 
 WebSocket support (RFC 6455 framing + SHA-1/base64 handshake).
 
+## Wi-Fi Capture
+
+`DETWS_ENABLE_PROMISC`
+
+Passive 802.11 promiscuous (monitor) capture. Default off. `promisc_begin(channel, sink)` puts the radio in promiscuous mode (`esp_wifi_set_promiscuous`) and delivers every frame - with RSSI and channel - to a sink; capture is strictly passive (no injection). Wire the sink into the forwarding plane (`DETWS_ENABLE_FORWARD`) to bridge captured Wi-Fi frames to another interface - e.g. stream them to a wired collector over Ethernet ("capture on Wi-Fi, forward to Ethernet"). Ships a pure 802.11 MAC-header parser (`wifi_frame_parse`: type/subtype, the to/from-DS src/dst/bssid layout, QoS, WDS 4-address, sequence number) and libpcap framing (`DLT_IEEE802_11`) so a forwarded frame is a valid PCAP a wired Wireshark / tcpdump reads. The parser and PCAP framing are pure and host-tested (`native_promisc`); the radio bring-up is ESP32-only. Example 21.WifiCapture.
+
+## Wi-Fi Sniffer
+
+`DETWS_ENABLE_WIFI_SNIFFER`
+
+Opt-in 802.11 sniffer / traffic analyzer. The decode + decision layer for a promiscuous-mode WiFi sniffer: detws_wifi_parse decodes an 802.11 MAC header (frame-control type/subtype + flags and the addresses whose roles depend on ToDS/FromDS), detws_wifi_stats_* tallies frames by type for a traffic panel, and detws_wifi_should_roam decides when a candidate AP is enough stronger (RSSI hysteresis) to justify channel-agility roaming. The promiscuous-mode radio callback stays the app's. No heap/stdlib. Default off.
+
+## Wi-SUN
+
+`DETWS_ENABLE_WISUN`
+
+Opt-in Wi-SUN FAN border-router connector. Wi-SUN FAN is an IPv6/UDP/CoAP mesh terminated by a border router, so the connector rides the existing IP stack rather than driving a radio: services/wisun keeps a table of FAN nodes (their DetIp addresses + join state) behind the border router and builds the CoAP client requests to their resources (wisun_build_coap frames an RFC 7252 header + Uri-Path options + payload; the CoAP service ships only a server). wisun_nodes_json exposes the mesh to the web. The app sends the built PDU over det_udp; the chosen devboard only sets which border router you point at. Pure, no heap/stdlib. Default off.
+
 ## WS Client
 
 `DETWS_ENABLE_WS_CLIENT`
@@ -840,17 +1164,17 @@ wss://: run the WebSocket client over client-side TLS (needs TLS).
 
 WebSocket permessage-deflate (RFC 7692) - bidirectional compression. When set (and WEBSOCKET is on), the server negotiates the `permessage-deflate` extension and both decompresses inbound compressed (RSV1) messages via a bounded INFLATE (network_drivers/presentation/inflate._) and compresses outbound data frames via a bounded DEFLATE (network_drivers/presentation/deflate._); both borrow their table scratch from the shared per-dispatch arena. The extension is negotiated with `{client,server}_no_context_takeover` so every message (de)compresses independently - no window is carried between messages. An outbound frame that would not shrink is sent uncompressed (the per-message RSV1 flag permits this). Default off.
 
+## XMPP
+
+`DETWS_ENABLE_XMPP`
+
+Opt-in XMPP (RFC 6120) stanza codec. When set, services/xmpp builds correctly XML-escaped `<stream:stream>` / `<message>` / `<presence>` / `<iq>` stanzas into a caller buffer and reads the stanza element name + an attribute value out of a received stanza, so a device is an IoT XMPP client. Pure text framing (TLS/SASL ride the client TLS path; the IoT XEPs layer inside `<iq>`). Default off.
+
 ## Z-Wave
 
 `DETWS_ENABLE_ZWAVE`
 
 Z-Wave Serial API frame codec (v5 gateway plugin). Default off. services/zwave is the host-side Serial API of a Silicon Labs 500 / 700-series Z-Wave controller over UART, so a Z-Wave mesh is bridged to the web. Data frames are `SOF (0x01) | LEN | Type | Command | Data | Checksum`, where LEN counts Type..Checksum, Type is 0x00 (REQ) / 0x01 (RES), and the checksum is 0xFF XOR-folded over LEN..last-data; single-byte ACK (0x06) / NAK (0x15) / CAN (0x18) frames flow-control them. `zwave_build_frame` assembles a function command (GetVersion, SendData, AddNodeToNetwork, ...), `zwave_parse_frame` frames + verifies a response (length / need-more / resync), and `zwave_is_ack` / `_nak` / `_can` / `zwave_build_ack` handle the control bytes; the per-command payload is the application's. Pull the source node id + payload out of an ApplicationCommandHandler report and bridge it northbound with `det_gw_uplink()`. Pure - you carry the bytes over your UART - and host-tested against the documented GetVersion frame (`01 03 00 15 E9`) and its XOR checksum. Example 16.ZWaveGateway bridges a real controller. See src/services/zwave/zwave.h.
-
-## Wi-Fi Capture
-
-`DETWS_ENABLE_PROMISC`
-
-Passive 802.11 promiscuous (monitor) capture. Default off. `promisc_begin(channel, sink)` puts the radio in promiscuous mode (`esp_wifi_set_promiscuous`) and delivers every frame - with RSSI and channel - to a sink; capture is strictly passive (no injection). Wire the sink into the forwarding plane (`DETWS_ENABLE_FORWARD`) to bridge captured Wi-Fi frames to another interface - e.g. stream them to a wired collector over Ethernet ("capture on Wi-Fi, forward to Ethernet"). Ships a pure 802.11 MAC-header parser (`wifi_frame_parse`: type/subtype, the to/from-DS src/dst/bssid layout, QoS, WDS 4-address, sequence number) and libpcap framing (`DLT_IEEE802_11`) so a forwarded frame is a valid PCAP a wired Wireshark / tcpdump reads. The parser and PCAP framing are pure and host-tested (`native_promisc`); the radio bring-up is ESP32-only. Example 21.WifiCapture.
 
 ## Zigbee
 
