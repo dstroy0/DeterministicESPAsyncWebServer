@@ -55,7 +55,7 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 
 > Generated from the public API, `proto_builtins.cpp`, and `presentation/` by `docs/utilities/gen_api_flow.py` - do not edit by hand.
 
-How a request flows through the OSI layers: the app registers routes and calls `begin()`, the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7).
+How a request flows through the OSI layers: the app registers routes and calls `begin()`, the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7). Responses funnel back out through the symmetric per-connection `resp_sink` TX seam, so `send()` stays protocol-agnostic (null sink = the HTTP/1.1 builder; h2 / h3 install their own).
 
 ```mermaid
 flowchart TB
@@ -82,7 +82,8 @@ flowchart TB
 
   subgraph L5["Session L5 - worker task"]
     tick["server_tick / dispatch_event"]
-    seam{{"ProtoHandler seam: HTTP / TELNET / SSH / MODBUS / OPCUA"}}
+    seam{{"ProtoHandler seam (RX): HTTP / TELNET / SSH / MODBUS / OPCUA"}}
+    sink{{"resp_sink seam (TX): HTTP/1.1 / h2 / h3"}}
   end
 
   subgraph L4["Transport L4"]
@@ -97,16 +98,21 @@ flowchart TB
   client -- TCP --> listen --> ring --> tick
   client -- UDP / QUIC --> udp --> tick
   tick --> seam
-  seam -- TLS/TCP --> tls --> parser
-  seam -- h2 --> h2
+  seam -- TLS/TCP --> tls
+  tls -- HTTP/1.1 --> parser
+  tls -- ALPN h2 --> h2
   seam -- HTTP/3 --> h3
   parser -- PARSE_COMPLETE --> mae
-  h2 --> mae
+  h2 -- PARSE_COMPLETE --> mae
   h3 --> mae
   mae --> mw --> routes --> handler --> resp
-  resp -- HTTP/1.1 --> consend --> client
-  resp -- h2 --> h2
-  resp -- HTTP/3 --> h3 --> udp --> client
+  resp --> sink
+  sink -- default builder --> consend
+  sink -- resp_sink --> h2
+  sink -- resp_sink --> h3
+  h2 --> consend
+  consend --> client
+  h3 --> udp --> client
 
   class client ext;
   classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;

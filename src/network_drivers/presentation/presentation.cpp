@@ -141,6 +141,7 @@ static void tls_data(uint8_t slot)
         if (alpn && strcmp(alpn, "h2") == 0)
         {
             conn_pool[slot].h2 = 1;
+            conn_pool[slot].resp_sink = h2_server_respond; // route responses through the h2 framer
             h2_server_open(slot);
         }
     }
@@ -185,6 +186,7 @@ static void http_evt_accept(uint8_t slot)
 #if DETWS_ENABLE_HTTP2
     conn_pool[slot].h2 = 0; // a reused slot must re-run the post-handshake ALPN check
     conn_pool[slot].h2_checked = 0;
+    conn_pool[slot].resp_sink = nullptr; // back to the HTTP/1.1 builder until ALPN says otherwise
 #endif
 }
 static void http_evt_data(uint8_t slot)

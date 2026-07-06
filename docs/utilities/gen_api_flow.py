@@ -145,7 +145,8 @@ def mermaid():
     out.append("")
     out.append('  subgraph L5["Session L5 - worker task"]')
     out.append('    tick["server_tick / dispatch_event"]')
-    out.append(f'    seam{{{{"ProtoHandler seam: {proto_names}"}}}}')
+    out.append(f'    seam{{{{"ProtoHandler seam (RX): {proto_names}"}}}}')
+    out.append('    sink{{"resp_sink seam (TX): HTTP/1.1 / h2 / h3"}}')
     out.append("  end")
     out.append("")
     out.append('  subgraph L4["Transport L4"]')
@@ -162,18 +163,23 @@ def mermaid():
     out.append("  client -- TCP --> listen --> ring --> tick")
     out.append("  client -- UDP / QUIC --> udp --> tick")
     out.append("  tick --> seam")
-    out.append("  seam -- TLS/TCP --> tls --> parser")
-    out.append("  seam -- h2 --> h2")
+    out.append("  seam -- TLS/TCP --> tls")
+    out.append("  tls -- HTTP/1.1 --> parser")
+    out.append("  tls -- ALPN h2 --> h2")
     out.append("  seam -- HTTP/3 --> h3")
     out.append("  parser -- PARSE_COMPLETE --> mae")
-    out.append("  h2 --> mae")
+    out.append("  h2 -- PARSE_COMPLETE --> mae")
     out.append("  h3 --> mae")
     # dispatch
     out.append("  mae --> mw --> routes --> handler --> resp")
-    # TX path
-    out.append("  resp -- HTTP/1.1 --> consend --> client")
-    out.append("  resp -- h2 --> h2")
-    out.append("  resp -- HTTP/3 --> h3 --> udp --> client")
+    # TX path: every response funnels through the one resp_sink TX seam (null = HTTP/1.1 builder)
+    out.append("  resp --> sink")
+    out.append("  sink -- default builder --> consend")
+    out.append("  sink -- resp_sink --> h2")
+    out.append("  sink -- resp_sink --> h3")
+    out.append("  h2 --> consend")
+    out.append("  consend --> client")
+    out.append("  h3 --> udp --> client")
     out.append("")
     out.append(
         "  class client ext;"
@@ -193,7 +199,9 @@ def build_block():
             "How a request flows through the OSI layers: the app registers routes and calls `begin()`,"
             " the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the"
             " protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and"
-            " every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7).",
+            " every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7)."
+            " Responses funnel back out through the symmetric per-connection `resp_sink` TX seam, so"
+            " `send()` stays protocol-agnostic (null sink = the HTTP/1.1 builder; h2 / h3 install their own).",
             "",
             "```mermaid",
             mermaid(),

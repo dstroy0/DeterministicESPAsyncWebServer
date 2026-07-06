@@ -89,6 +89,12 @@ struct TcpConn
         proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
     uint8_t iface;  ///< DetIface this connection arrived on; set at accept time.
     uint8_t tls;    ///< Non-zero when this connection is TLS (set at accept time).
+#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+    /// Self-framing protocol response sink (Layer 5 TX seam): HTTP/2 installs it at ALPN, HTTP/3 at
+    /// dispatch, so the response methods route through it instead of building an HTTP/1.1 message.
+    /// Null means plain HTTP/1.1 (the default builder). Extends the ProtoHandler seam to the TX side.
+    bool (*resp_sink)(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
+#endif
 #if DETWS_ENABLE_HTTP2
     uint8_t h2;         ///< Non-zero once this connection negotiated HTTP/2 (ALPN "h2").
     uint8_t h2_checked; ///< The post-handshake ALPN check ran (once per connection).

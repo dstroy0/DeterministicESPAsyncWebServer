@@ -171,6 +171,7 @@ void h2_server_close(uint8_t slot)
 {
     conn_pool[slot].h2 = 0;
     conn_pool[slot].h2_checked = 0;
+    conn_pool[slot].resp_sink = nullptr;
 }
 
 #endif // DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS

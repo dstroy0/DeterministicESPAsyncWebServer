@@ -200,9 +200,15 @@ datagram-in/datagram-out callback. This heterogeneity is correct, not a defect: 
 no accept/close/slot lifecycle, so folding it into the slot-based `ProtoHandler` table
 would be a forced fit. Two transport models, two matched seams.
 
-**The request/response core is protocol(version)-agnostic already:** `HttpReq` +
-`DetWebServer::send()` are HTTP-version-neutral, so HTTP/1.1 and HTTP/2 dispatch through
-one `match_and_execute` (and HTTP/3 will) over the same routes/handlers.
+**The request/response core is protocol(version)-agnostic:** every version decodes into the
+shared `HttpReq` and converges on one `match_and_execute` / route / `Handler` (HTTP/1.1,
+HTTP/2, and HTTP/3), and the response funnels back through the symmetric **TX seam** - a
+per-connection `resp_sink` function pointer (`TcpConn::resp_sink`) that HTTP/2 installs at
+ALPN and HTTP/3 at dispatch. `DetWebServer::send()` / `send_empty()` call `conn->resp_sink(...)`
+when it is set (h2 frames the reply as HEADERS+DATA on the stream; h3 as an HTTP/3 response on
+its QUIC stream) and otherwise build the HTTP/1.1 message - so the response methods name no
+protocol. It is the RX `ProtoHandler` seam's TX counterpart: request decode and response encode
+both sit behind one uniform per-connection seam.
 
 ### Homogeneity work (status)
 
@@ -230,8 +236,15 @@ data,close}` plus `tls_data` (the TLS handshake pump + ALPN "h2" detection + Web
    HTTP can be TLS-wrapped. Acceptable and inherent (SSH carries its own crypto; Telnet /
    Modbus / OPC UA are plaintext by definition), noted for completeness.
 
+4. **The response path is behind a uniform TX seam - DONE.** `send()` / `send_empty()` no longer
+   branch on `conn->h2` / `conn->h3`; a self-framing protocol installs a `TcpConn::resp_sink`
+   function pointer (h2 at ALPN, h3 at dispatch) and the response methods route through it, so the
+   L7 responders name no protocol. This is the TX counterpart of the RX `ProtoHandler` seam; adding
+   a self-framing protocol means installing one `resp_sink`, not editing the responders.
+
 Net: L5 is pure dispatch, every protocol (including HTTP) lives behind the same uniform seam
-via its own module, and the one HTTP asymmetry that remains (the instance-bound poll) is
+via its own module - request decode through the `ProtoHandler` seam, response encode through the
+`resp_sink` seam - and the one HTTP asymmetry that remains (the instance-bound poll) is
 inherent to HTTP being the routing core. None of this was ever a correctness bug.
 
 ## Unified arena primitive (`session/det_arena`)

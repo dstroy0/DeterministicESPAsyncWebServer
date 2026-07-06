@@ -628,6 +628,15 @@ bool DetWebServer::h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8
     return true;
 }
 
+// Response sink for the HTTP/3 dispatch slot: route (code, content_type, body) onto the QUIC stream
+// the request arrived on (ids stashed on the slot by dispatch_h3_request). Installed as conn->resp_sink
+// so send()/send_empty() stay protocol-agnostic.
+static bool h3_resp_sink(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
+{
+    TcpConn *c = &conn_pool[slot];
+    return quic_server_respond(c->h3_conn_id, c->h3_stream, code, content_type, (const uint8_t *)body, len);
+}
+
 void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
                                        const char *authority, const uint8_t *body, size_t body_len)
 {
@@ -682,19 +691,22 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     }
     r->parse_state = PARSE_COMPLETE;
 
-    // Mark the reserved slot as HTTP/3 so send() / send_empty() route the response back to the stream.
+    // Mark the reserved slot as HTTP/3 and install the response sink so send() / send_empty() route the
+    // response back onto this stream (no TCP pcb here - the sink owns the QUIC framing).
     TcpConn *c = &conn_pool[slot];
     c->h3 = 1;
     c->h3_conn_id = conn_id;
     c->h3_stream = stream_id;
+    c->resp_sink = h3_resp_sink;
     c->iface = DETIFACE_STA;
     c->state = CONN_ACTIVE;
     c->pcb = nullptr;
 
-    match_and_execute(slot); // -> handler -> send() -> quic_server_respond()
+    match_and_execute(slot); // -> handler -> send() -> resp_sink -> quic_server_respond()
 
     // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
     c->h3 = 0;
+    c->resp_sink = nullptr;
     c->state = CONN_FREE;
     http_reset(slot);
 }
@@ -1913,13 +1925,14 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     if (slot_id >= CONN_POOL_SLOTS)
         return; // guard the public entry: never index conn_pool out of range
     TcpConn *conn = &conn_pool[slot_id];
-#if DETWS_ENABLE_HTTP3
-    // HTTP/3 dispatch slot: write the response onto its QUIC stream (no TCP pcb here), so branch
-    // before the pcb check that the TCP paths make.
-    if (conn->h3)
+#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+    // A self-framing protocol (HTTP/2, HTTP/3) installed its own response sink at negotiation /
+    // dispatch time; route through it and let it own its framing + connection lifecycle. This runs
+    // before the HTTP/1.1 pcb check because that check is a TCP-transport concern (the HTTP/3 slot
+    // has no pcb by design, and an h2 connection manages its own).
+    if (conn->resp_sink)
     {
-        quic_server_respond(conn->h3_conn_id, conn->h3_stream, code, content_type, (const uint8_t *)payload,
-                            strlen(payload));
+        conn->resp_sink(slot_id, code, content_type, payload, strlen(payload));
         return;
     }
 #endif
@@ -1928,15 +1941,6 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
         http_reset(slot_id);
         return;
     }
-
-#if DETWS_ENABLE_HTTP2
-    // HTTP/2 slot: serialize as HEADERS + DATA on the request's stream and keep the connection.
-    if (conn->h2)
-    {
-        h2_server_respond(slot_id, code, content_type, payload, strlen(payload));
-        return;
-    }
-#endif
 
     int payload_len = (int)strlen(payload);
 
@@ -1989,10 +1993,10 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
     if (slot_id >= CONN_POOL_SLOTS)
         return;
     TcpConn *conn = &conn_pool[slot_id];
-#if DETWS_ENABLE_HTTP3
-    if (conn->h3)
+#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+    if (conn->resp_sink)
     {
-        quic_server_respond(conn->h3_conn_id, conn->h3_stream, code, "text/plain", (const uint8_t *)"", 0);
+        conn->resp_sink(slot_id, code, "text/plain", "", 0);
         return;
     }
 #endif
@@ -2001,14 +2005,6 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         http_reset(slot_id);
         return;
     }
-
-#if DETWS_ENABLE_HTTP2
-    if (conn->h2)
-    {
-        h2_server_respond(slot_id, code, "text/plain", "", 0);
-        return;
-    }
-#endif
 
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);
