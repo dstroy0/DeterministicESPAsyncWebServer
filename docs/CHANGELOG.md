@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.50.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.50.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`44c1373`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44c1373c3b222d472fd2dd1b8b5a11354dcdf5a4))
+
+### Changes
+
+- Bump version: 5.49.0 → 5.50.0 ([`22c79de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22c79de4f27087c7d51a177f0ee0e25627d32126))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d5cc2c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5cc2c918008c21bcf9da0f7f40bd58155baa323))
+
+### Features
+
+- multi-interface egress selection + escalation/failover ([`d9002b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9002b3b87c434f4438b1fa3fc94709f78470737))
+
+</details>
+
 ## [5.49.0] - 2026-07-06
 
 <details>
