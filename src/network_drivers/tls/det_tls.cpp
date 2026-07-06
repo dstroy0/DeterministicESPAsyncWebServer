@@ -42,7 +42,7 @@
 // The precompiled Arduino mbedTLS does not ship MBEDTLS_MEMORY_BUFFER_ALLOC_C,
 // so instead we install our own calloc/free via mbedtls_platform_set_calloc_free
 // (MBEDTLS_PLATFORM_MEMORY). Every mbedTLS allocation (record buffers, handshake
-// temporaries, cert/key) is then served from s_arena - no system heap, so the
+// temporaries, cert/key) is then served from s_pool.arena - no system heap, so the
 // determinism guarantee holds. Bounded by the arena: exhaustion fails the
 // handshake cleanly (calloc returns NULL) rather than corrupting anything.
 //
@@ -80,11 +80,16 @@
 #else
 #define DETWS_TLS_ARENA_ATTR
 #endif
-DETWS_TLS_ARENA_ATTR static uint8_t s_arena[DETWS_TLS_ARENA_SIZE];
-static bool s_ready = false;
-static bool s_pool_init = false;
-static size_t s_pool_used = 0;
-static size_t s_pool_peak = 0;
+// Arena allocator state, owned by one instance (internal linkage): the static arena backing
+// every mbedTLS object plus the first-fit pool cursors. One named owner, unreachable cross-TU.
+struct TlsPoolCtx
+{
+    uint8_t arena[DETWS_TLS_ARENA_SIZE];
+    bool inited = false;
+    size_t used = 0;
+    size_t peak = 0;
+};
+DETWS_TLS_ARENA_ATTR static TlsPoolCtx s_pool;
 
 #define TLS_ALIGN 8u
 struct PoolBlk
@@ -96,18 +101,18 @@ static const size_t POOL_HDR = (sizeof(PoolBlk) + (TLS_ALIGN - 1)) & ~(size_t)(T
 
 static void pool_init()
 {
-    PoolBlk *b = (PoolBlk *)s_arena;
-    b->size = sizeof(s_arena) - POOL_HDR;
+    PoolBlk *b = (PoolBlk *)s_pool.arena;
+    b->size = sizeof(s_pool.arena) - POOL_HDR;
     b->used = 0;
-    s_pool_used = 0;
-    s_pool_peak = 0;
-    s_pool_init = true;
+    s_pool.used = 0;
+    s_pool.peak = 0;
+    s_pool.inited = true;
 }
 
 static void pool_coalesce()
 {
-    uint8_t *p = s_arena;
-    uint8_t *end = s_arena + sizeof(s_arena);
+    uint8_t *p = s_pool.arena;
+    uint8_t *end = s_pool.arena + sizeof(s_pool.arena);
     while (p < end)
     {
         PoolBlk *b = (PoolBlk *)p;
@@ -127,7 +132,7 @@ static void pool_coalesce()
 
 static void *pool_calloc(size_t n, size_t size)
 {
-    if (!s_pool_init)
+    if (!s_pool.inited)
         pool_init();
     if (n != 0 && size > (size_t)-1 / n)
         return nullptr; // overflow
@@ -136,8 +141,8 @@ static void *pool_calloc(size_t n, size_t size)
     if (want == 0)
         want = TLS_ALIGN;
 
-    uint8_t *p = s_arena;
-    uint8_t *end = s_arena + sizeof(s_arena);
+    uint8_t *p = s_pool.arena;
+    uint8_t *end = s_pool.arena + sizeof(s_pool.arena);
     while (p < end)
     {
         PoolBlk *b = (PoolBlk *)p;
@@ -152,9 +157,9 @@ static void *pool_calloc(size_t n, size_t size)
                 b->size = want;
             }
             b->used = 1;
-            s_pool_used += b->size;
-            if (s_pool_used > s_pool_peak)
-                s_pool_peak = s_pool_used;
+            s_pool.used += b->size;
+            if (s_pool.used > s_pool.peak)
+                s_pool.peak = s_pool.used;
             void *payload = p + POOL_HDR;
             memset(payload, 0, b->size);
             return payload;
@@ -172,21 +177,29 @@ static void pool_free(void *ptr)
     if (b->used)
     {
         b->used = 0;
-        if (s_pool_used >= b->size)
-            s_pool_used -= b->size;
+        if (s_pool.used >= b->size)
+            s_pool.used -= b->size;
     }
     pool_coalesce();
 }
 
-static mbedtls_ssl_config s_conf;
-static mbedtls_x509_crt s_cert;
-static mbedtls_pk_context s_key;
+// TLS server config, owned by one instance (internal linkage): the ready flag, the mbedTLS
+// config/cert/key, the optional mTLS client-cert trust anchor, and the resumption ticket key.
+// One named owner, unreachable from any other translation unit.
+struct TlsServerCtx
+{
+    bool ready = false;
+    mbedtls_ssl_config conf;
+    mbedtls_x509_crt cert;
+    mbedtls_pk_context key;
 #if DETWS_ENABLE_MTLS
-static mbedtls_x509_crt s_ca; // client-cert trust anchor (mTLS)
+    mbedtls_x509_crt ca; // client-cert trust anchor (mTLS)
 #endif
 #if DETWS_ENABLE_TLS_RESUMPTION
-static mbedtls_ssl_ticket_context s_ticket_ctx; // server-held key for sealing session tickets
+    mbedtls_ssl_ticket_context ticket_ctx; // server-held key for sealing session tickets
 #endif
+};
+static TlsServerCtx s_srv;
 
 struct TlsConn
 {
@@ -196,13 +209,19 @@ struct TlsConn
     bool active;
     bool established;
 };
-static TlsConn s_tls[MAX_TLS_CONNS];
+// TLS connection pool, owned by one instance (internal linkage): the per-slot mbedTLS session
+// contexts. One named owner, unreachable from any other translation unit.
+struct TlsConnsCtx
+{
+    TlsConn conns[MAX_TLS_CONNS];
+};
+static TlsConnsCtx s_conns;
 
 static TlsConn *find(uint8_t slot)
 {
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
-        if (s_tls[i].active && s_tls[i].slot == slot)
-            return &s_tls[i];
+        if (s_conns.conns[i].active && s_conns.conns[i].slot == slot)
+            return &s_conns.conns[i];
     return nullptr;
 }
 
@@ -280,7 +299,7 @@ static void tls_apply_max_frag_len(mbedtls_ssl_config *conf)
 // ---------------------------------------------------------------------------
 bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
 {
-    if (s_ready)
+    if (s_srv.ready)
         return true;
     if (!cert || !key)
         return false;
@@ -290,41 +309,41 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     pool_init();
     mbedtls_platform_set_calloc_free(pool_calloc, pool_free);
 
-    mbedtls_x509_crt_init(&s_cert);
-    mbedtls_pk_init(&s_key);
-    mbedtls_ssl_config_init(&s_conf);
+    mbedtls_x509_crt_init(&s_srv.cert);
+    mbedtls_pk_init(&s_srv.key);
+    mbedtls_ssl_config_init(&s_srv.conf);
 
-    if (mbedtls_x509_crt_parse(&s_cert, cert, cert_len) != 0)
+    if (mbedtls_x509_crt_parse(&s_srv.cert, cert, cert_len) != 0)
         return false;
 
 #if MBEDTLS_VERSION_MAJOR >= 3
-    if (mbedtls_pk_parse_key(&s_key, key, key_len, nullptr, 0, tls_rng, nullptr) != 0)
+    if (mbedtls_pk_parse_key(&s_srv.key, key, key_len, nullptr, 0, tls_rng, nullptr) != 0)
         return false;
 #else
-    if (mbedtls_pk_parse_key(&s_key, key, key_len, nullptr, 0) != 0)
+    if (mbedtls_pk_parse_key(&s_srv.key, key, key_len, nullptr, 0) != 0)
         return false;
 #endif
 
-    if (mbedtls_ssl_config_defaults(&s_conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
+    if (mbedtls_ssl_config_defaults(&s_srv.conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
                                     MBEDTLS_SSL_PRESET_DEFAULT) != 0)
         return false;
 
-    mbedtls_ssl_conf_rng(&s_conf, tls_rng, nullptr);
-    tls_apply_max_frag_len(&s_conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
+    mbedtls_ssl_conf_rng(&s_srv.conf, tls_rng, nullptr);
+    tls_apply_max_frag_len(&s_srv.conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
 #if MBEDTLS_VERSION_MAJOR >= 3
-    mbedtls_ssl_conf_min_tls_version(&s_conf, MBEDTLS_SSL_VERSION_TLS1_2);
+    mbedtls_ssl_conf_min_tls_version(&s_srv.conf, MBEDTLS_SSL_VERSION_TLS1_2);
 #else
-    mbedtls_ssl_conf_min_version(&s_conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+    mbedtls_ssl_conf_min_version(&s_srv.conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 #endif
 
-    if (mbedtls_ssl_conf_own_cert(&s_conf, &s_cert, &s_key) != 0)
+    if (mbedtls_ssl_conf_own_cert(&s_srv.conf, &s_srv.cert, &s_srv.key) != 0)
         return false;
 
 #if DETWS_ENABLE_HTTP2
     // Offer HTTP/2 over TLS via ALPN (RFC 7301), falling back to HTTP/1.1. The list must outlive
     // the config, so it is static; det_tls_alpn() reports the negotiated choice post-handshake.
     static const char *s_alpn[] = {"h2", "http/1.1", nullptr}; // mbedTLS keeps this pointer
-    if (mbedtls_ssl_conf_alpn_protocols(&s_conf, s_alpn) != 0)
+    if (mbedtls_ssl_conf_alpn_protocols(&s_srv.conf, s_alpn) != 0)
         return false;
 #endif
 
@@ -333,23 +352,24 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     // handshake. Stateless (the session lives in the client's sealed ticket), so
     // no per-session cache grows in the arena. The ticket key rotates on the
     // configured lifetime. mbedtls_ssl_ticket_write/parse are the default codec.
-    mbedtls_ssl_ticket_init(&s_ticket_ctx);
-    if (mbedtls_ssl_ticket_setup(&s_ticket_ctx, tls_rng, nullptr, MBEDTLS_CIPHER_AES_256_GCM,
+    mbedtls_ssl_ticket_init(&s_srv.ticket_ctx);
+    if (mbedtls_ssl_ticket_setup(&s_srv.ticket_ctx, tls_rng, nullptr, MBEDTLS_CIPHER_AES_256_GCM,
                                  DETWS_TLS_TICKET_LIFETIME_S) != 0)
         return false;
-    mbedtls_ssl_conf_session_tickets_cb(&s_conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &s_ticket_ctx);
+    mbedtls_ssl_conf_session_tickets_cb(&s_srv.conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse,
+                                        &s_srv.ticket_ctx);
 #endif
 
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
-        s_tls[i].active = false;
+        s_conns.conns[i].active = false;
 
-    s_ready = true;
+    s_srv.ready = true;
     return true;
 }
 
 bool det_tls_ready()
 {
-    return s_ready;
+    return s_srv.ready;
 }
 
 const char *det_tls_alpn(uint8_t slot)
@@ -360,14 +380,14 @@ const char *det_tls_alpn(uint8_t slot)
 
 bool det_tls_conn_begin(uint8_t slot)
 {
-    if (!s_ready)
+    if (!s_srv.ready)
         return false;
     TlsConn *e = nullptr;
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
     {
-        if (!s_tls[i].active)
+        if (!s_conns.conns[i].active)
         {
-            e = &s_tls[i];
+            e = &s_conns.conns[i];
             break;
         }
     }
@@ -379,7 +399,7 @@ bool det_tls_conn_begin(uint8_t slot)
     e->active = true;
     e->established = false;
     mbedtls_ssl_init(&e->ssl);
-    if (mbedtls_ssl_setup(&e->ssl, &s_conf) != 0)
+    if (mbedtls_ssl_setup(&e->ssl, &s_srv.conf) != 0)
     {
         mbedtls_ssl_free(&e->ssl);
         e->active = false;
@@ -477,21 +497,21 @@ void det_tls_conn_free(uint8_t slot)
 
 size_t det_tls_arena_peak()
 {
-    return s_pool_peak;
+    return s_pool.peak;
 }
 
 #if DETWS_ENABLE_MTLS
 bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
 {
-    if (!s_ready || !ca)
+    if (!s_srv.ready || !ca)
         return false;
-    mbedtls_x509_crt_init(&s_ca);
-    if (mbedtls_x509_crt_parse(&s_ca, ca, ca_len) != 0)
+    mbedtls_x509_crt_init(&s_srv.ca);
+    if (mbedtls_x509_crt_parse(&s_srv.ca, ca, ca_len) != 0)
         return false;
     // Trust anchor for the client chain + demand a (valid) client cert: an absent
     // or untrusted client certificate now fails the handshake.
-    mbedtls_ssl_conf_ca_chain(&s_conf, &s_ca, nullptr);
-    mbedtls_ssl_conf_authmode(&s_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+    mbedtls_ssl_conf_ca_chain(&s_srv.conf, &s_srv.ca, nullptr);
+    mbedtls_ssl_conf_authmode(&s_srv.conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     return true;
 }
 
@@ -518,16 +538,23 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
 //    constant-time compared after the handshake.
 // Either, both, or neither may be set; both must pass when both are set. Shared by
 // the one-shot HTTP client (det_tls_client_run) and the persistent session (csess).
-static mbedtls_x509_crt s_client_ca;
-static bool s_client_ca_set = false;
-static uint8_t s_client_pin[32];
-static bool s_client_pin_set = false;
+// Client-side server-authentication config, owned by one instance (internal linkage): the CA
+// trust anchor (+set flag) and the SHA-256 cert pin (+set flag). Shared by the one-shot HTTP
+// client and the persistent session. One named owner, unreachable from any other TU.
+struct TlsClientAuthCtx
+{
+    mbedtls_x509_crt ca;
+    bool ca_set = false;
+    uint8_t pin[32];
+    bool pin_set = false;
+};
+static TlsClientAuthCtx s_cli;
 
 // Route mbedTLS allocations through the static arena (the client may run before
 // any server-side TLS init has installed the allocator).
 static void client_arena_ensure()
 {
-    if (!s_pool_init)
+    if (!s_pool.inited)
     {
         pool_init();
         mbedtls_platform_set_calloc_free(pool_calloc, pool_free);
@@ -537,34 +564,34 @@ static void client_arena_ensure()
 void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len)
 {
     client_arena_ensure();
-    if (s_client_ca_set)
-        mbedtls_x509_crt_free(&s_client_ca);
-    s_client_ca_set = false;
+    if (s_cli.ca_set)
+        mbedtls_x509_crt_free(&s_cli.ca);
+    s_cli.ca_set = false;
     if (!ca || ca_len == 0)
         return;
-    mbedtls_x509_crt_init(&s_client_ca);
-    s_client_ca_set = (mbedtls_x509_crt_parse(&s_client_ca, ca, ca_len) == 0);
-    if (!s_client_ca_set)
-        mbedtls_x509_crt_free(&s_client_ca);
+    mbedtls_x509_crt_init(&s_cli.ca);
+    s_cli.ca_set = (mbedtls_x509_crt_parse(&s_cli.ca, ca, ca_len) == 0);
+    if (!s_cli.ca_set)
+        mbedtls_x509_crt_free(&s_cli.ca);
 }
 
 void det_tls_client_set_pin(const uint8_t sha256[32])
 {
     if (!sha256)
     {
-        s_client_pin_set = false;
+        s_cli.pin_set = false;
         return;
     }
-    memcpy(s_client_pin, sha256, 32);
-    s_client_pin_set = true;
+    memcpy(s_cli.pin, sha256, 32);
+    s_cli.pin_set = true;
 }
 
 void det_tls_client_clear_verify()
 {
-    if (s_client_ca_set)
-        mbedtls_x509_crt_free(&s_client_ca);
-    s_client_ca_set = false;
-    s_client_pin_set = false;
+    if (s_cli.ca_set)
+        mbedtls_x509_crt_free(&s_cli.ca);
+    s_cli.ca_set = false;
+    s_cli.pin_set = false;
 }
 
 // Constant-time 32-byte compare (no early-out on the first differing byte).
@@ -585,9 +612,9 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
         return -1;
     mbedtls_ssl_conf_rng(conf, tls_rng, nullptr);
     tls_apply_max_frag_len(conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
-    if (s_client_ca_set)
+    if (s_cli.ca_set)
     {
-        mbedtls_ssl_conf_ca_chain(conf, &s_client_ca, nullptr);
+        mbedtls_ssl_conf_ca_chain(conf, &s_cli.ca, nullptr);
         mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     }
     else
@@ -609,7 +636,7 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
 // certificate DER hashes to the installed pin (constant-time compared).
 static bool client_pin_ok(mbedtls_ssl_context *ssl)
 {
-    if (!s_client_pin_set)
+    if (!s_cli.pin_set)
         return true;
     const mbedtls_x509_crt *peer = mbedtls_ssl_get_peer_cert(ssl);
     if (!peer)
@@ -620,7 +647,7 @@ static bool client_pin_ok(mbedtls_ssl_context *ssl)
 #else
     int hret = mbedtls_sha256_ret(peer->raw.p, peer->raw.len, hash, 0);
 #endif
-    return (hret == 0) && ct_eq32(hash, s_client_pin);
+    return (hret == 0) && ct_eq32(hash, s_cli.pin);
 }
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
@@ -742,22 +769,31 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
 // --- Persistent client session (csess): one long-lived outbound TLS connection
 // (e.g. MQTTS). Handshake once, then read/write application data over the
 // caller's BIO until det_tls_csess_end(). Honors the CA/pin trust config above. ---
-static mbedtls_ssl_context s_csess_ssl;
-static mbedtls_ssl_config s_csess_conf;
-static bool s_csess_active = false;
+// Persistent client session (csess) state, owned by one instance (internal linkage): the
+// long-lived outbound TLS ssl/config + active flag, and (with resumption) the saved session
+// holding the server's ticket. One named owner, unreachable from any other translation unit.
+struct TlsCsessCtx
+{
+    mbedtls_ssl_context ssl;
+    mbedtls_ssl_config conf;
+    bool active = false;
+#if DETWS_ENABLE_TLS_RESUMPTION
+    mbedtls_ssl_session saved;
+    bool saved_valid = false;
+#endif
+};
+static TlsCsessCtx s_csess;
 
 #if DETWS_ENABLE_TLS_RESUMPTION
 // Session saved from the last successful csess handshake (holds the server's
 // ticket). Presented on the next begin() for an abbreviated handshake. Lives in
 // the static arena like every other mbedTLS object - no heap growth.
-static mbedtls_ssl_session s_csess_saved;
-static bool s_csess_saved_valid = false;
 
 void det_tls_csess_forget_session()
 {
-    if (s_csess_saved_valid)
-        mbedtls_ssl_session_free(&s_csess_saved);
-    s_csess_saved_valid = false;
+    if (s_csess.saved_valid)
+        mbedtls_ssl_session_free(&s_csess.saved);
+    s_csess.saved_valid = false;
 }
 #else
 void det_tls_csess_forget_session()
@@ -769,44 +805,44 @@ bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_
 {
     if (!send_fn || !recv_fn)
         return false;
-    if (s_csess_active)
+    if (s_csess.active)
         det_tls_csess_end();
     client_arena_ensure();
-    mbedtls_ssl_init(&s_csess_ssl);
-    mbedtls_ssl_config_init(&s_csess_conf);
-    if (client_conf_apply(&s_csess_conf) != 0 || mbedtls_ssl_setup(&s_csess_ssl, &s_csess_conf) != 0)
+    mbedtls_ssl_init(&s_csess.ssl);
+    mbedtls_ssl_config_init(&s_csess.conf);
+    if (client_conf_apply(&s_csess.conf) != 0 || mbedtls_ssl_setup(&s_csess.ssl, &s_csess.conf) != 0)
     {
-        mbedtls_ssl_free(&s_csess_ssl);
-        mbedtls_ssl_config_free(&s_csess_conf);
+        mbedtls_ssl_free(&s_csess.ssl);
+        mbedtls_ssl_config_free(&s_csess.conf);
         return false;
     }
     if (host)
-        mbedtls_ssl_set_hostname(&s_csess_ssl, host);
+        mbedtls_ssl_set_hostname(&s_csess.ssl, host);
 #if DETWS_ENABLE_TLS_RESUMPTION
     // Present the saved session (server ticket) so this handshake resumes if the
     // server still honors it; a full handshake transparently replaces it below.
-    if (s_csess_saved_valid)
-        mbedtls_ssl_set_session(&s_csess_ssl, &s_csess_saved);
+    if (s_csess.saved_valid)
+        mbedtls_ssl_set_session(&s_csess.ssl, &s_csess.saved);
 #endif
-    mbedtls_ssl_set_bio(&s_csess_ssl, nullptr, send_fn, recv_fn, nullptr);
-    s_csess_active = true;
+    mbedtls_ssl_set_bio(&s_csess.ssl, nullptr, send_fn, recv_fn, nullptr);
+    s_csess.active = true;
     return true;
 }
 
 int det_tls_csess_handshake()
 {
-    if (!s_csess_active)
+    if (!s_csess.active)
         return -1;
-    int ret = mbedtls_ssl_handshake(&s_csess_ssl);
+    int ret = mbedtls_ssl_handshake(&s_csess.ssl);
     if (ret == 0)
     {
-        if (!client_pin_ok(&s_csess_ssl)) // verify the pin once established
+        if (!client_pin_ok(&s_csess.ssl)) // verify the pin once established
             return -1;
 #if DETWS_ENABLE_TLS_RESUMPTION
         // Capture the established session (incl. any new ticket) for next time.
         det_tls_csess_forget_session();
-        mbedtls_ssl_session_init(&s_csess_saved);
-        s_csess_saved_valid = (mbedtls_ssl_get_session(&s_csess_ssl, &s_csess_saved) == 0);
+        mbedtls_ssl_session_init(&s_csess.saved);
+        s_csess.saved_valid = (mbedtls_ssl_get_session(&s_csess.ssl, &s_csess.saved) == 0);
 #endif
         return 1;
     }
@@ -817,9 +853,9 @@ int det_tls_csess_handshake()
 
 int det_tls_csess_read(uint8_t *buf, size_t len)
 {
-    if (!s_csess_active)
+    if (!s_csess.active)
         return -1;
-    int ret = mbedtls_ssl_read(&s_csess_ssl, buf, len);
+    int ret = mbedtls_ssl_read(&s_csess.ssl, buf, len);
     if (ret > 0)
         return ret;
     if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -829,13 +865,13 @@ int det_tls_csess_read(uint8_t *buf, size_t len)
 
 int det_tls_csess_write(const uint8_t *data, size_t len)
 {
-    if (!s_csess_active)
+    if (!s_csess.active)
         return -1;
     size_t sent = 0;
     uint16_t guard = 0;
     while (sent < len)
     {
-        int ret = mbedtls_ssl_write(&s_csess_ssl, data + sent, len - sent);
+        int ret = mbedtls_ssl_write(&s_csess.ssl, data + sent, len - sent);
         if (ret > 0)
         {
             sent += (size_t)ret;
@@ -856,12 +892,12 @@ int det_tls_csess_write(const uint8_t *data, size_t len)
 
 void det_tls_csess_end()
 {
-    if (!s_csess_active)
+    if (!s_csess.active)
         return;
-    mbedtls_ssl_close_notify(&s_csess_ssl);
-    mbedtls_ssl_free(&s_csess_ssl);
-    mbedtls_ssl_config_free(&s_csess_conf);
-    s_csess_active = false;
+    mbedtls_ssl_close_notify(&s_csess.ssl);
+    mbedtls_ssl_free(&s_csess.ssl);
+    mbedtls_ssl_config_free(&s_csess.conf);
+    s_csess.active = false;
 }
 
 #endif // DETWS_ENABLE_CLIENT_TLS
