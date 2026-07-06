@@ -37,6 +37,12 @@ END = "<!-- END GENERATED API FLOW -->"
 # The detailed variant lives in the architecture / API doc (every method, protocol, and L6 module).
 BEGIN_DETAIL = "<!-- BEGIN GENERATED API FLOW DETAIL (docs/utilities/gen_api_flow.py) -->"
 END_DETAIL = "<!-- END GENERATED API FLOW DETAIL -->"
+# The diagrams embed as pre-rendered PNGs (not a live ```mermaid block) so they show in the GitHub web
+# UI, the GitHub mobile app, AND Doxygen - the app + Doxygen do not render mermaid fences, and GitHub
+# strips the foreignObject an SVG needs for the multi-line labels. tools/render_diagrams.sh turns each
+# .mmd here into a light + dark PNG; a <picture> serves the theme-matching one (the light PNG is a
+# self-contained white card, so it stays readable even where <picture> falls back to it).
+DIAGRAMS = os.path.join(ROOT, "docs", "diagrams")
 
 # name -> API group. First matching rule wins; a startswith() prefix or an exact-name set.
 GROUPS = ["Register", "Configure", "Run", "Respond"]
@@ -145,18 +151,18 @@ def mermaid(detailed=False):
 
     # Layout only (curved edges, roomy spacing). Deliberately NO 'theme' override: that lets GitHub swap
     # its light / dark Mermaid theme automatically, and the classDefs below use translucent fills with no
-    # fixed text colour so a node reads on either background (the page tints through the glassy fill).
+    # fixed text color so a node reads on either background (the page tints through the glassy fill).
     init = (
         "%%{init: {'themeVariables':{"
         "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
-        "'lineColor':'#94a3b8'},"  # a soft slate-grey edge colour, gentle on both light and dark (not harsh black)
+        "'lineColor':'#94a3b8'},"  # a soft slate-gray edge color, gentle on both light and dark (not harsh black)
         "'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%"
     )
     out = [init, "flowchart TB"]
     out.append("  %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.")
     # A single top-to-bottom spine: request flows down to your handler, response flows back to the client.
     # No per-layer boxes (they stretch to enclose both the incoming and outgoing node of a layer, which
-    # is what made this sprawl) - the layer is shown by colour instead, per the key above the diagram.
+    # is what made this sprawl) - the layer is shown by color instead, per the key above the diagram.
     # Setup runs once at boot; keep it as a small reference panel, wired in with one faint dashed edge.
     out.append('  subgraph SETUP["First, set up your server (once, at boot)"]')
     out.append("    direction LR")
@@ -167,7 +173,7 @@ def mermaid(detailed=False):
     out.append("")
     # One straight waterfall: a client sends at the top, the request flows down to your handler, the
     # response flows on down, and a client receives at the bottom - so there are no long back-edges. The
-    # bidirectional UDP socket is drawn as its receive + send directions for the same reason. Node colour
+    # bidirectional UDP socket is drawn as its receive + send directions for the same reason. Node color
     # is the OSI layer (L4 amber, L5 green seams, L6 blue, L7 indigo), per the key above the diagram.
     out.append('  cin(["A client sends a request<br/>browser / app / curl"])')
     out.append('  listen["Accept a connection<br/>listener_accept_cb"]')
@@ -193,7 +199,7 @@ def mermaid(detailed=False):
         out.append(f'  mods["All L6 presentation modules ({len(pres)})<br/>{rows}"]')
     out.append("")
 
-    # Edges. Track response-path edge indices so linkStyle can tint them a distinct colour.
+    # Edges. Track response-path edge indices so linkStyle can tint them a distinct color.
     edges = []
     res = []
 
@@ -231,7 +237,7 @@ def mermaid(detailed=False):
     out += edges
     out.append("")
 
-    # Palette: one soft colour per OSI layer, an accent for the two seams and the two you-touch parts.
+    # Palette: one soft color per OSI layer, an accent for the two seams and the two you-touch parts.
     out.append("  class cin,cout ext;")  # class statement, not inline :::ext (GitHub rejects inline)
     out.append("  class reg,cfg,run,routes setup;")
     out.append("  class listen,ring,udprx,udptx,consend l4;")
@@ -239,8 +245,8 @@ def mermaid(detailed=False):
     out.append(f"  class tls,parser,h2,h3{',mods' if detailed else ''} l6;")
     out.append("  class mae,mw l7;")
     out.append("  class handler,resp you;")
-    # Translucent fills (8-digit hex = ~15% alpha) + accent stroke + NO fixed text colour, so the page
-    # background (light or dark) shows through and the theme's own text colour keeps every label readable.
+    # Translucent fills (8-digit hex = ~15% alpha) + accent stroke + NO fixed text color, so the page
+    # background (light or dark) shows through and the theme's own text color keeps every label readable.
     # The two seams (green) and the two parts you write (amber) stay solid so they still pop on both.
     out.append("  classDef ext fill:#64748b33,stroke:#475569,stroke-width:1.5px;")
     out.append("  classDef setup fill:#94a3b81f,stroke:#94a3b8;")
@@ -257,13 +263,33 @@ def mermaid(detailed=False):
     return "\n".join(out)
 
 
+def write_mmd(name, mmd):
+    """Write the mermaid source to docs/diagrams/<name>.mmd (the render input + the editable source)."""
+    os.makedirs(DIAGRAMS, exist_ok=True)
+    with open(os.path.join(DIAGRAMS, name + ".mmd"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(mmd + "\n")
+
+
+def picture(name, alt, rel):
+    """A <picture> that serves the dark PNG in dark mode and the light PNG otherwise (@ rel path prefix)."""
+    return (
+        "<picture>\n"
+        f'  <source media="(prefers-color-scheme: dark)" srcset="{rel}/{name}.dark.png">\n'
+        f'  <img alt="{alt}" src="{rel}/{name}.light.png">\n'
+        "</picture>"
+    )
+
+
 def build_block():
+    write_mmd("api_flow", mermaid())
     return "\n".join(
         [
             BEGIN,
             "",
             "> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by"
-            " `docs/utilities/gen_api_flow.py` - do not edit by hand.",
+            " `docs/utilities/gen_api_flow.py` - do not edit by hand. The picture is a pre-rendered PNG"
+            " (so it shows in the GitHub app and Doxygen too); its mermaid source is"
+            " [`docs/diagrams/api_flow.mmd`](docs/diagrams/api_flow.mmd).",
             "",
             "**How to read it:** follow the arrows. A **request comes in** at the top from a client, travels"
             " **down** through the four OSI layers - L4 wire bytes, L5 protocol pick, L6 decode into a request,"
@@ -275,7 +301,7 @@ def build_block():
             " and answered through *one* response seam, so your routes and handlers never care which protocol a"
             " client used.",
             "",
-            "| Colour | Layer |",
+            "| Color | Layer |",
             "| --- | --- |",
             "| Amber outline | **L4 Transport** - raw bytes on/off the wire |",
             "| Green | **L5 Session** - the two seams that pick the protocol in and frame the reply out |",
@@ -283,9 +309,11 @@ def build_block():
             "| Indigo | **L7 Application** - route matching + your handlers |",
             "| Solid amber fill | the parts **you** write |",
             "",
-            "```mermaid",
-            mermaid(),
-            "```",
+            picture(
+                "api_flow",
+                "Request lifecycle: a request travels down the OSI layers to your handler; the response returns",
+                "docs/diagrams",
+            ),
             "",
             END,
         ]
@@ -293,6 +321,7 @@ def build_block():
 
 
 def build_detail_block():
+    write_mmd("api_flow_detail", mermaid(detailed=True))
     return "\n".join(
         [
             BEGIN_DETAIL,
@@ -301,11 +330,10 @@ def build_detail_block():
             " `docs/utilities/gen_api_flow.py` - do not edit by hand. This is the fully expanded twin of the"
             " simplified request-lifecycle chart in the [README](../README.md): the same top-to-bottom"
             " waterfall, but every public method, every registered protocol, and every Layer-6 module on disk"
-            " is listed (nothing is capped). Colour is the OSI layer; the green path is the response.",
+            " is listed (nothing is capped). Color is the OSI layer; the green path is the response. Mermaid"
+            " source: [`diagrams/api_flow_detail.mmd`](diagrams/api_flow_detail.mmd).",
             "",
-            "```mermaid",
-            mermaid(detailed=True),
-            "```",
+            picture("api_flow_detail", "Full request lifecycle with every method, protocol, and module", "diagrams"),
             "",
             END_DETAIL,
         ]

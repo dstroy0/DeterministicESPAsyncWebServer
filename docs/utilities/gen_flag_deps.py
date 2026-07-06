@@ -38,6 +38,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONFIG_H = os.path.join(ROOT, "src", "DetWebServerConfig.h")
 README = os.path.join(ROOT, "README.md")
+DIAGRAMS = os.path.join(ROOT, "docs", "diagrams")
 
 BEGIN = "<!-- BEGIN GENERATED FLAG DEPS (docs/utilities/gen_flag_deps.py) -->"
 END = "<!-- END GENERATED FLAG DEPS -->"
@@ -131,11 +132,11 @@ def node_class(hard, resource, derived):
 
 def mermaid(hard, resource, derived):
     # Layout only (curved edges, roomy spacing). No 'theme' override so GitHub swaps its light / dark
-    # Mermaid theme automatically; the classDefs use translucent fills + no fixed text colour to match.
+    # Mermaid theme automatically; the classDefs use translucent fills + no fixed text color to match.
     init = (
         "%%{init: {'themeVariables':{"
         "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
-        "'lineColor':'#94a3b8'},"  # soft slate-grey edges, gentle on both light and dark
+        "'lineColor':'#94a3b8'},"  # soft slate-gray edges, gentle on both light and dark
         "'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%"
     )
     out = [init, "flowchart TD"]
@@ -160,8 +161,8 @@ def mermaid(hard, resource, derived):
         out.append(
             "  class PSRAM res;"
         )  # a class statement, not inline :::res (GitHub rejects inline class on a shaped node)
-    # Translucent fills (~15% alpha) + accent stroke + no fixed text colour, so nodes read on either the
-    # light or dark GitHub background (the page tints through) and the theme's text colour stays legible.
+    # Translucent fills (~15% alpha) + accent stroke + no fixed text color, so nodes read on either the
+    # light or dark GitHub background (the page tints through) and the theme's text color stays legible.
     out.append("  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;")
     out.append("  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;")
     out.append("  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;")
@@ -173,24 +174,30 @@ def mermaid(hard, resource, derived):
 
 def build_block():
     hard, resource, derived = parse_guards(open(CONFIG_H, encoding="utf-8").read())
+    # Pre-render to a PNG (via tools/render_diagrams.sh) so it shows in the GitHub app + Doxygen too.
+    os.makedirs(DIAGRAMS, exist_ok=True)
+    with open(os.path.join(DIAGRAMS, "flag_deps.mmd"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(mermaid(hard, resource, derived) + "\n")
     return "\n".join(
         [
             BEGIN,
             "",
             "> Generated from the `#error` / `#if` guards in"
             " [src/DetWebServerConfig.h](src/DetWebServerConfig.h) by"
-            " `docs/utilities/gen_flag_deps.py` - do not edit by hand.",
+            " `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the"
+            " GitHub app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).",
             "",
             "**Green** = a parent feature; **blue** = a child that requires it (hard `#error`);"
             " **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM;"
             " needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag"
             " (do not set it yourself).",
             "",
-            "```mermaid",
-            mermaid(hard, resource, derived),
-            "```",
+            "<picture>",
+            '  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flag_deps.dark.png">',
+            '  <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">',
+            "</picture>",
             "",
-            f"_{len(hard)} hard dependencies · {len(resource)} PSRAM gates · {len(derived)} derived flags._",
+            f"_{len(hard)} hard dependencies, {len(resource)} PSRAM gates, {len(derived)} derived flags._",
             "",
             END,
         ]

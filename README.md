@@ -53,13 +53,13 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 
 <!-- BEGIN GENERATED API FLOW (docs/utilities/gen_api_flow.py) -->
 
-> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by `docs/utilities/gen_api_flow.py` - do not edit by hand.
+> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by `docs/utilities/gen_api_flow.py` - do not edit by hand. The picture is a pre-rendered PNG (so it shows in the GitHub app and Doxygen too); its mermaid source is [`docs/diagrams/api_flow.mmd`](docs/diagrams/api_flow.mmd).
 
 **How to read it:** follow the arrows. A **request comes in** at the top from a client, travels **down** through the four OSI layers - L4 wire bytes, L5 protocol pick, L6 decode into a request, L7 your routes - your handler runs, and the **response goes back out** along the **green** arrows. Each box shows a plain-English step with the exact function underneath. You only write the two **amber** parts: register your routes (top) and your handler (middle).
 
 The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into the _same_ request and answered through _one_ response seam, so your routes and handlers never care which protocol a client used.
 
-| Colour           | Layer                                                                            |
+| Color            | Layer                                                                            |
 | ---------------- | -------------------------------------------------------------------------------- |
 | Amber outline    | **L4 Transport** - raw bytes on/off the wire                                     |
 | Green            | **L5 Session** - the two seams that pick the protocol in and frame the reply out |
@@ -67,77 +67,10 @@ The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into t
 | Indigo           | **L7 Application** - route matching + your handlers                              |
 | Solid amber fill | the parts **you** write                                                          |
 
-```mermaid
-%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%
-flowchart TB
-  %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.
-  subgraph SETUP["First, set up your server (once, at boot)"]
-    direction LR
-    reg["1 Register routes<br/>on() / on_regex()<br/>+7 more"]
-    cfg["2 Set options<br/>tls_cert() / tls_require_client_cert()<br/>+6 more"]
-    run["3 Start it<br/>begin() / begin_tls()<br/>+4 more"]
-  end
-
-  cin(["A client sends a request<br/>browser / app / curl"])
-  listen["Accept a connection<br/>listener_accept_cb"]
-  ring[("Hold the bytes<br/>conn_pool + rx ring")]
-  udprx["Receive a datagram<br/>det_udp"]
-  seam{{"Which protocol?<br/>ProtoHandler seam<br/>HTTP / TELNET / SSH / +2"}}
-  tls["Decrypt + choose version<br/>det_tls + ALPN"]
-  parser["Read HTTP/1.1<br/>http_parser"]
-  h2["Decode HTTP/2<br/>h2_conn"]
-  h3["Decode HTTP/3<br/>quic_conn + h3_conn"]
-  mae{{"Find the matching route<br/>match_and_execute"}}
-  mw["Run your middleware"]
-  routes[("Route table")]
-  handler>"YOUR HANDLER runs"]
-  resp["Build the response<br/>serve_file() / stats()<br/>+8 more"]
-  sink{{"Frame the reply per protocol<br/>resp_sink seam<br/>HTTP/1.1 / h2 / h3"}}
-  consend["Write bytes back<br/>det_conn_send"]
-  udptx["Send a datagram<br/>det_udp"]
-  cout(["The client gets the response"])
-
-  run -.->|starts| listen
-  cin ==>|TCP| listen
-  listen --> ring
-  ring --> seam
-  cin ==>|UDP / QUIC| udprx
-  udprx --> seam
-  seam --> tls
-  tls -->|HTTP/1.1| parser
-  tls -->|ALPN h2| h2
-  seam -->|HTTP/3| h3
-  parser --> mae
-  h2 --> mae
-  h3 --> mae
-  mae --> mw
-  mw --> routes
-  routes --> handler
-  handler --> resp
-  resp --> sink
-  sink -->|TCP: 1.1, h2| consend
-  sink -->|QUIC: h3| udptx
-  consend ==> cout
-  udptx ==> cout
-
-  class cin,cout ext;
-  class reg,cfg,run,routes setup;
-  class listen,ring,udprx,udptx,consend l4;
-  class seam,sink seam;
-  class tls,parser,h2,h3 l6;
-  class mae,mw l7;
-  class handler,resp you;
-  classDef ext fill:#64748b33,stroke:#475569,stroke-width:1.5px;
-  classDef setup fill:#94a3b81f,stroke:#94a3b8;
-  classDef l4 fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
-  classDef seam fill:#10b981,stroke:#047857,color:#ffffff;
-  classDef l6 fill:#3b82f626,stroke:#3b82f6,stroke-width:1.5px;
-  classDef l7 fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
-  classDef you fill:#f59e0b,stroke:#b45309,color:#3b2508;
-  style SETUP fill:#8888880f,stroke:#94a3b8,stroke-width:1px;
-  linkStyle default stroke-width:2.5px;
-  linkStyle 17,18,19,20,21 stroke:#10b981,stroke-width:3px;
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/api_flow.dark.png">
+  <img alt="Request lifecycle: a request travels down the OSI layers to your handler; the response returns" src="docs/diagrams/api_flow.light.png">
+</picture>
 
 <!-- END GENERATED API FLOW -->
 
@@ -409,68 +342,16 @@ cryptic linker error). Enable a child flag only together with its parent.
 
 <!-- BEGIN GENERATED FLAG DEPS (docs/utilities/gen_flag_deps.py) -->
 
-> Generated from the `#error` / `#if` guards in [src/DetWebServerConfig.h](src/DetWebServerConfig.h) by `docs/utilities/gen_flag_deps.py` - do not edit by hand.
+> Generated from the `#error` / `#if` guards in [src/DetWebServerConfig.h](src/DetWebServerConfig.h) by `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the GitHub app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).
 
 **Green** = a parent feature; **blue** = a child that requires it (hard `#error`); **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM; needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag (do not set it yourself).
 
-```mermaid
-%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
-flowchart TD
-  %% Reading: A --> B means B requires A (enable the parent to build the child).
-  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flag_deps.dark.png">
+  <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">
+</picture>
 
-  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])
-  AUTH --> AUTH_LOCKOUT
-  COAP --> COAP_BLOCK
-  COAP --> COAP_OBSERVE
-  CONFIG_STORE --> CONFIG_IO
-  FILE_SERVING --> RANGE
-  FILE_SERVING --> WEBDAV
-  HTTP_CLIENT --> HTTP_CLIENT_TLS
-  MQTT --> MQTT_TLS
-  OPCUA --> OPCUA_CLIENT
-  SNMP --> SNMP_TRAP
-  SNMP --> SNMP_V3
-  SSE --> DASHBOARD
-  SSH --> SSH_ZLIB
-  STATS --> METRICS
-  TLS --> HTTP_CLIENT_TLS
-  TLS --> MQTT_TLS
-  TLS --> MTLS
-  TLS --> TLS_RESUMPTION
-  TLS --> WS_CLIENT_TLS
-  WEBSOCKET --> WEB_TERMINAL
-  WEBSOCKET --> WS_DEFLATE
-  WS_CLIENT --> WS_CLIENT_TLS
-  PSRAM -.-> HTTP2
-  PSRAM -.-> SSH_ZLIB
-  PSRAM -. MAX_TLS_CONNS gt 1 .-> TLS
-  HTTP_CLIENT -. derived .-> DNS_RESOLVER
-  HTTP_CLIENT_TLS -. derived .-> CLIENT_TLS
-  MODBUS_RTU -. derived .-> MODBUS
-  MQTT -. derived .-> DNS_RESOLVER
-  MQTT_TLS -. derived .-> CLIENT_TLS
-  NMEA2000 -. derived .-> J1939
-  OTA -. derived .-> STREAM_BODY
-  SENML -. derived .-> CBOR
-  SPARKPLUG -. derived .-> PROTOBUF
-  UPLOAD -. derived .-> STREAM_BODY
-  WEBDAV -. derived .-> STREAM_BODY
-  WS_CLIENT -. derived .-> DNS_RESOLVER
-  WS_CLIENT_TLS -. derived .-> CLIENT_TLS
-
-  class AUTH,COAP,CONFIG_STORE,FILE_SERVING,HTTP_CLIENT,MQTT,OPCUA,SNMP,SSE,SSH,STATS,TLS,WEBSOCKET,WS_CLIENT parent;
-  class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
-  class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
-  class PSRAM res;
-  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;
-  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
-  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;
-  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
-  linkStyle default stroke-width:2px;
-```
-
-_22 hard dependencies · 3 PSRAM gates · 13 derived flags._
+_22 hard dependencies, 3 PSRAM gates, 13 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 

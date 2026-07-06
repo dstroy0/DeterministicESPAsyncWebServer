@@ -1,0 +1,54 @@
+%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
+flowchart TD
+  %% Reading: A --> B means B requires A (enable the parent to build the child).
+  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
+
+  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])
+  AUTH --> AUTH_LOCKOUT
+  COAP --> COAP_BLOCK
+  COAP --> COAP_OBSERVE
+  CONFIG_STORE --> CONFIG_IO
+  FILE_SERVING --> RANGE
+  FILE_SERVING --> WEBDAV
+  HTTP_CLIENT --> HTTP_CLIENT_TLS
+  MQTT --> MQTT_TLS
+  OPCUA --> OPCUA_CLIENT
+  SNMP --> SNMP_TRAP
+  SNMP --> SNMP_V3
+  SSE --> DASHBOARD
+  SSH --> SSH_ZLIB
+  STATS --> METRICS
+  TLS --> HTTP_CLIENT_TLS
+  TLS --> MQTT_TLS
+  TLS --> MTLS
+  TLS --> TLS_RESUMPTION
+  TLS --> WS_CLIENT_TLS
+  WEBSOCKET --> WEB_TERMINAL
+  WEBSOCKET --> WS_DEFLATE
+  WS_CLIENT --> WS_CLIENT_TLS
+  PSRAM -.-> HTTP2
+  PSRAM -.-> SSH_ZLIB
+  PSRAM -. MAX_TLS_CONNS gt 1 .-> TLS
+  HTTP_CLIENT -. derived .-> DNS_RESOLVER
+  HTTP_CLIENT_TLS -. derived .-> CLIENT_TLS
+  MODBUS_RTU -. derived .-> MODBUS
+  MQTT -. derived .-> DNS_RESOLVER
+  MQTT_TLS -. derived .-> CLIENT_TLS
+  NMEA2000 -. derived .-> J1939
+  OTA -. derived .-> STREAM_BODY
+  SENML -. derived .-> CBOR
+  SPARKPLUG -. derived .-> PROTOBUF
+  UPLOAD -. derived .-> STREAM_BODY
+  WEBDAV -. derived .-> STREAM_BODY
+  WS_CLIENT -. derived .-> DNS_RESOLVER
+  WS_CLIENT_TLS -. derived .-> CLIENT_TLS
+
+  class AUTH,COAP,CONFIG_STORE,FILE_SERVING,HTTP_CLIENT,MQTT,OPCUA,SNMP,SSE,SSH,STATS,TLS,WEBSOCKET,WS_CLIENT parent;
+  class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
+  class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
+  class PSRAM res;
+  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;
+  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
+  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;
+  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
+  linkStyle default stroke-width:2px;

@@ -46,6 +46,15 @@ jobs:
       - name: Regenerate core API-flow graph
         run: python docs/utilities/gen_api_flow.py
 
+      # Render each diagram .mmd (written by the two generators above) to a light + dark PNG. The
+      # READMEs / docs embed the PNGs via <picture> instead of a live mermaid fence, so the diagrams
+      # show in the GitHub web UI, the GitHub mobile app, AND Doxygen (the app + Doxygen do not render
+      # mermaid). mermaid-cli pulls its own Chromium; the render script passes --no-sandbox for CI.
+      - name: Render diagram PNGs
+        run: |
+          npm install -g @mermaid-js/mermaid-cli@11
+          bash tools/render_diagrams.sh
+
       # Regenerate each example's Arduino build_opt.h from its README build_flags so the
       # examples keep building unmodified in the Arduino IDE.
       - name: Regenerate example build_opt.h files
@@ -79,6 +88,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: regenerate feature tables + configurator + build_opt.h + example index [skip ci]"
-          file_pattern: "README.md docs/README.md docs/configurator.html docs/EXAMPLES.md examples/*/*/build_opt.h"
+          file_pattern: "README.md docs/README.md docs/ARCHITECTURE.md docs/configurator.html docs/EXAMPLES.md docs/diagrams/* examples/*/*/build_opt.h"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
