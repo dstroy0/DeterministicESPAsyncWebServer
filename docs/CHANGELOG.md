@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.51.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.51.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`91a71af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91a71afdc971a907217b0344a41beffdb5282683))
+
+### Changes
+
+- Bump version: 5.50.0 → 5.51.0 ([`345dccd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/345dccd872a47ae85dddca220c03dad797496eda))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e4cd708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4cd70806fce49696364d2d1beb1f46155774f40))
+
+### Features
+
+- CC1101 sub-GHz radio driver (services/cc1101) ([`07d3ee2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07d3ee25f097a68482f4683ccfb128b80d61ed75))
+
+</details>
+
 ## [5.50.0] - 2026-07-06
 
 <details>
