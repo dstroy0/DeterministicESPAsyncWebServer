@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.12.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.12.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e860911`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e860911a369ed4baf64a8af802afdc5ae16250f6))
+
+### Changes
+
+- Bump version: 5.11.0 → 5.12.0 ([`5a87fb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a87fb9cdee4dd224920ba40727f99d4c9936cb6))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`adf2f42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/adf2f4270c520047203c6ac32bc29a380defd7fd))
+
+### Features
+
+- DDS / RTPS wire-protocol framing codec ([`b661137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6611378ed0ad36041eb579762f365b185c7bbf2))
+
+</details>
+
 ## [5.11.0] - 2026-07-06
 
 <details>
