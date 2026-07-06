@@ -2,10 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.3.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.3.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`39eefcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39eefcd63f9195396b7cef9cd63f44410bc7a63e))
 - ccache the xtensa toolchain for the Arduino-CLI example builds too ([`4ae0f7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ae0f7e5a3eccaac505aebcbed334ad982411edf))
 - update test report [skip ci] ([`aff2cc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aff2cc0402b3d4b1cfa5455d3c9f2e16f4b1f9d0))
 - update CHANGELOG.md [skip ci] ([`b626c2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b626c2e9dcada4a59fc344a16f16008c24ce98df))
@@ -15,11 +19,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report [skip ci] ([`e0461d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0461d3967bb3a9f4cf6b7f910f9eb439ae18ed6))
 - update CHANGELOG.md [skip ci] ([`847269b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/847269bf5ba6a7e05e3d32cf77e546c0653b88e8))
 
+### Changes
+
+- Bump version: 5.2.3 → 5.3.0 ([`bbd40eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbd40eb52291fb5d2e84fb65c85a9240c42e8797))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d6c6e56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6c6e567f4c062f5815ad3e35f13b1818a86d156))
 - update ESP32 build footprints [skip ci] ([`fe1e9fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe1e9fc40f562bf47f06096ec93af91577e28c0a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7e3448e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e3448e47ac06af74548b85d22a73bdf7fe81218))
 - update ESP32 build footprints [skip ci] ([`f4be549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4be549fe6a815f1e3762331541befdb1397387b))
+
+### Features
+
+- outbound MTU-aligned fragmentation (RFC 6455 sec 5.4) ([`c4e9611`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4e96117275dd2dc9eb73b60f9bb4ef0dac30230))
+
+</details>
 
 ## [5.2.3] - 2026-07-06
 
