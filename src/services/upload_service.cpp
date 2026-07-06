@@ -16,35 +16,41 @@
 #include <stdio.h>
 #include <string.h>
 
-static DetWebServer *g_server = nullptr;
-static const char *g_path = nullptr;
-static fs::FS *g_fs = nullptr;
-static const char *g_dest = nullptr;
+// All upload-service state, owned by one instance (internal linkage): the server handle, the
+// route path, the destination filesystem + path, and the per-upload file/flags/counter (one
+// upload at a time on this single-task device). Grouped so it is one named owner, cross-TU
+// unreachable.
+struct UploadCtx
+{
+    DetWebServer *server = nullptr;
+    const char *path = nullptr;
+    fs::FS *fs = nullptr;
+    const char *dest = nullptr;
+    fs::File file;
+    bool active = false; ///< Destination file opened for the current upload.
+    bool error = false;  ///< A write failed during the current upload.
+    size_t written = 0;  ///< Bytes written so far / in the last upload.
+};
+static UploadCtx s_upl;
 
-// Per-upload state (one upload at a time on this single-task device).
-static fs::File g_file;
-static bool g_active = false; ///< Destination file opened for the current upload.
-static bool g_error = false;  ///< A write failed during the current upload.
-static size_t g_written = 0;  ///< Bytes written so far / in the last upload.
-
-/// @brief Stream-begin hook: accept POST @p g_path and open the destination file.
+/// @brief Stream-begin hook: accept POST @p s_upl.path and open the destination file.
 static bool upload_stream_begin(HttpReq *req)
 {
     if (strcmp(req->method, "POST") != 0)
         return false;
-    if (!g_path || strcmp(req->path, g_path) != 0)
+    if (!s_upl.path || strcmp(req->path, s_upl.path) != 0)
         return false;
 
-    g_active = false;
-    g_error = false;
-    g_written = 0;
-    if (g_fs && g_dest)
+    s_upl.active = false;
+    s_upl.error = false;
+    s_upl.written = 0;
+    if (s_upl.fs && s_upl.dest)
     {
-        g_file = g_fs->open(g_dest, "w");
-        if (g_file)
-            g_active = true;
+        s_upl.file = s_upl.fs->open(s_upl.dest, "w");
+        if (s_upl.file)
+            s_upl.active = true;
         else
-            g_error = true;
+            s_upl.error = true;
     }
     // Stream regardless so the body is consumed and the route handler can reply.
     return true;
@@ -54,12 +60,12 @@ static bool upload_stream_begin(HttpReq *req)
 static void upload_stream_data(HttpReq *req, const uint8_t *data, size_t len)
 {
     (void)req; // a single upload streams at a time
-    if (g_active && !g_error)
+    if (s_upl.active && !s_upl.error)
     {
-        if (g_file.write(data, len) != len)
-            g_error = true;
+        if (s_upl.file.write(data, len) != len)
+            s_upl.error = true;
         else
-            g_written += len;
+            s_upl.written += len;
     }
 }
 
@@ -68,32 +74,32 @@ static void upload_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a file body");
+        s_upl.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a file body");
         return;
     }
-    if (g_active)
-        g_file.close();
-    if (!g_active || g_error)
+    if (s_upl.active)
+        s_upl.file.close();
+    if (!s_upl.active || s_upl.error)
     {
-        g_server->send(slot_id, 500, DET_MIME_TEXT_PLAIN, "upload failed");
+        s_upl.server->send(slot_id, 500, DET_MIME_TEXT_PLAIN, "upload failed");
         return;
     }
     char msg[48];
-    snprintf(msg, sizeof(msg), "OK %u bytes", (unsigned)g_written);
-    g_server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, msg);
+    snprintf(msg, sizeof(msg), "OK %u bytes", (unsigned)s_upl.written);
+    s_upl.server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, msg);
 }
 
 size_t detws_upload_last_size()
 {
-    return g_written;
+    return s_upl.written;
 }
 
 void detws_upload_begin(DetWebServer &server, const char *path, fs::FS &fs, const char *dest_path)
 {
-    g_server = &server;
-    g_path = path;
-    g_fs = &fs;
-    g_dest = dest_path;
+    s_upl.server = &server;
+    s_upl.path = path;
+    s_upl.fs = &fs;
+    s_upl.dest = dest_path;
 
     http_parser_set_stream_hooks(upload_stream_begin, upload_stream_data);
     server.on(path, HTTP_POST, upload_handle);
