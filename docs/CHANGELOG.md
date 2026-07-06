@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.5.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.5.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`2d53f88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2d53f8838dc7c4eb303973db48f9d3770d71046a))
+- update CHANGELOG.md [skip ci] ([`09dd3ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09dd3ac2d3eed43ca15d4c6e2cf60d722b9e5737))
+
+### Changes
+
+- Bump version: 5.4.1 → 5.5.0 ([`3d173c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d173c609b4fe9be6ab3501900533ffd0e721f92))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a1b200d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1b200decb8191aa83f18d8b440dded29953bb76))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3f9a837`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f9a837cec57f2c97982266c893ad2b6abfb0c88))
+
+### Features
+
+- dynamic sleep-cycle scheduler for low-power nodes ([`5ed1dd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ed1dd639bf205ef3671c5f08c595a9a31b4649c))
+
+</details>
+
 ## [5.4.1] - 2026-07-06
 
 <details>
