@@ -308,6 +308,46 @@ void test_stream_pool_full()
     TEST_ASSERT_EQUAL_INT(0, g_requests);
 }
 
+// A uni-stream type varint split across two deliveries: the first (incomplete) is buffered until the
+// rest arrives, then the stream is classified.
+void test_uni_stream_partial_type()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t b0 = 0x40; // first byte of a 2-byte varint - incomplete on its own
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, &b0, 1, false);
+    TEST_ASSERT_FALSE(find_h3(&h3, 2)->type_read); // needs more bytes; not yet classified
+    uint8_t b1 = 0x00;                             // completes the varint 0x4000 -> value 0 -> control stream
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, &b1, 1, false);
+    TEST_ASSERT_TRUE(find_h3(&h3, 2)->type_read);
+    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, find_h3(&h3, 2)->role);
+}
+
+// A pseudo-header longer than its capture buffer is truncated, not overrun.
+void test_overlong_field_truncated()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t block[128];
+    size_t bp = qpack_encode_prefix(block, sizeof(block));
+    const char *m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // 26 chars > DETWS_H3_METHOD_LEN (16)
+    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, m, 26);
+    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/", 1);
+    uint8_t req[256];
+    size_t rp = h3_build_headers(req, sizeof(req), block, bp);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, req, rp, true);
+
+    TEST_ASSERT_EQUAL_INT(1, g_requests);
+    TEST_ASSERT_EQUAL_UINT(DETWS_H3_METHOD_LEN - 1, strlen(g_method)); // truncated to fit
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -320,5 +360,7 @@ int main(int, char **)
     RUN_TEST(test_malformed_request_frame);
     RUN_TEST(test_respond_body_too_large);
     RUN_TEST(test_stream_pool_full);
+    RUN_TEST(test_uni_stream_partial_type);
+    RUN_TEST(test_overlong_field_truncated);
     return UNITY_END();
 }
