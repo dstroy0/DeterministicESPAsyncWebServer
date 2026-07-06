@@ -2,6 +2,19 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d1564ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1564ab5ecb781824ee520ea9750607be6003c92))
+
+### Documentation
+
+- reconcile build-flag tree + build configurator to [~] ([`3c8ac3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8ac3c4ec2a826a540aee403db93715d0d5c455))
+- reconcile Fieldbuses to [~] (CANopen/PROFIBUS/DeviceNet/Modbus shipped) ([`7c34625`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c34625de0d539efe27bcf5cf54767322fed73cb))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50d617e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50d617e65fa97c3b327fcf1f94f31d640fc05755))
+- update ESP32 build footprints [skip ci] ([`d6c09ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6c09cef2c20a05a61b4e3451439b68257c18b05))
+
 ## [5.57.0] - 2026-07-06
 
 <details>
