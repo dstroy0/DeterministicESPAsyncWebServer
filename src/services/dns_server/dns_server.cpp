@@ -147,20 +147,26 @@ size_t dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl
 
 namespace
 {
-char s_names[DETWS_DNS_SERVER_MAX_RECORDS][DETWS_DNS_NAME_MAX];
-uint32_t s_ips[DETWS_DNS_SERVER_MAX_RECORDS];
-size_t s_count = 0;
+// All DNS-server state, owned by one instance (internal linkage): the A-record table,
+// grouped so it is one named owner, unreachable from other translation units.
+struct DnsSrvCtx
+{
+    char names[DETWS_DNS_SERVER_MAX_RECORDS][DETWS_DNS_NAME_MAX];
+    uint32_t ips[DETWS_DNS_SERVER_MAX_RECORDS];
+    size_t count = 0;
+};
+DnsSrvCtx s_dns;
 } // namespace
 
 bool dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     if (!name || !name[0] || strlen(name) >= DETWS_DNS_NAME_MAX)
         return false;
-    if (s_count >= DETWS_DNS_SERVER_MAX_RECORDS)
+    if (s_dns.count >= DETWS_DNS_SERVER_MAX_RECORDS)
         return false;
-    memcpy(s_names[s_count], name, strlen(name) + 1);
-    s_ips[s_count] = ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)c << 8) | (uint32_t)d;
-    s_count++;
+    memcpy(s_dns.names[s_dns.count], name, strlen(name) + 1);
+    s_dns.ips[s_dns.count] = ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)c << 8) | (uint32_t)d;
+    s_dns.count++;
     return true;
 }
 
@@ -168,15 +174,15 @@ uint32_t dns_server_lookup(const char *name)
 {
     if (!name)
         return 0;
-    for (size_t i = 0; i < s_count; i++)
-        if (ci_eq(s_names[i], name))
-            return s_ips[i];
+    for (size_t i = 0; i < s_dns.count; i++)
+        if (ci_eq(s_dns.names[i], name))
+            return s_dns.ips[i];
     return 0;
 }
 
 void dns_server_clear()
 {
-    s_count = 0;
+    s_dns.count = 0;
 }
 
 #if defined(ARDUINO)
