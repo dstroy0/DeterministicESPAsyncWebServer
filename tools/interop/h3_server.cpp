@@ -104,6 +104,10 @@ int main(int argc, char **argv)
         perror("bind");
         return 1;
     }
+    // A short receive timeout so the loop polls on a timer even when no datagram arrives - this is
+    // what drives loss recovery (the PTO) on schedule, exactly as the ESP32 worker loop does.
+    struct timeval rcv = {0, 50000}; // 50 ms
+    setsockopt(g_sock, SOL_SOCKET, SO_RCVTIMEO, &rcv, sizeof rcv);
 
     quic_server_set_out_sink(out_sink, NULL);
     if (!quic_server_begin(port, &cfg, on_request, NULL))
@@ -119,11 +123,12 @@ int main(int argc, char **argv)
         struct sockaddr_in src;
         socklen_t sl = sizeof src;
         ssize_t n = recvfrom(g_sock, buf, sizeof buf, 0, (struct sockaddr *)&src, &sl);
-        if (n <= 0)
-            continue;
-        char ip[16];
-        inet_ntop(AF_INET, &src.sin_addr, ip, sizeof ip);
-        quic_server_ingest(buf, (size_t)n, ip, ntohs(src.sin_port));
-        quic_server_poll(monotonic_ms());
+        if (n > 0)
+        {
+            char ip[16];
+            inet_ntop(AF_INET, &src.sin_addr, ip, sizeof ip);
+            quic_server_ingest(buf, (size_t)n, ip, ntohs(src.sin_port));
+        }
+        quic_server_poll(monotonic_ms()); // always poll (drives PTO retransmission on schedule)
     }
 }
