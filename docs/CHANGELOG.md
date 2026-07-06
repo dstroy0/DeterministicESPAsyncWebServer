@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.31.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.31.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`9efb507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9efb5070721d37bf3eb37fd8b393a35a05ce2c04))
+
+### Changes
+
+- Bump version: 5.30.0 → 5.31.0 ([`35cdee9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35cdee9d5f56c8978e847932c909114516e7486c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a8306b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8306b5d620fc2590eba7e865764aa2ef99deecf))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9fe3885`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9fe388531b619f166ec53a11b81d430966109c66))
+
+### Features
+
+- SERCOS III motion-bus telegram + IDN codec ([`72a80ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72a80ecc8fc8197dc820b9aa83ec6bfff7d9f5a3))
+
+</details>
+
 ## [5.30.0] - 2026-07-06
 
 <details>
