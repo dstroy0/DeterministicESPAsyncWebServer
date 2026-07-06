@@ -237,6 +237,14 @@ void ws_reset_frame(WsConn *ws);
 bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t len);
 
 /**
+ * @brief Set the outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes; 0 = off.
+ *
+ * A runtime override of DETWS_WS_FRAG_SIZE. When >0, a data message longer than @p bytes is split into
+ * that-sized frames by ws_send_frame() (see DETWS_WS_FRAG_SIZE). Applies to all connections.
+ */
+void ws_set_frag_size(uint16_t bytes);
+
+/**
  * @brief Send a Close frame and mark the slot WS_CLOSED.
  *
  * @param ws    WebSocket connection.

@@ -1038,6 +1038,21 @@
 #define DETWS_ENABLE_WS_DEFLATE 0
 #endif
 
+/**
+ * @brief WebSocket outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes. 0 = off.
+ *
+ * When >0, an outbound data message (text/binary) longer than this many payload bytes is split into
+ * that-sized WebSocket frames - the first carrying the opcode (and the RFC 7692 RSV1 bit if the message
+ * is compressed), the rest CONTINUATION, the last with FIN - instead of one large frame. Sizing it near
+ * the TCP MSS (e.g. 1400) keeps each frame within whole segments (MTU-aligned) and lets a peer with a
+ * bounded per-frame reassembly buffer receive an arbitrarily long message. The runtime override is
+ * ws_set_frag_size(). Compression applies to the whole message first, then the compressed bytes are
+ * split. Default 0 (one frame per message, unchanged).
+ */
+#ifndef DETWS_WS_FRAG_SIZE
+#define DETWS_WS_FRAG_SIZE 0
+#endif
+
 /** @brief Server-Sent Events push support. */
 #ifndef DETWS_ENABLE_SSE
 #define DETWS_ENABLE_SSE 1

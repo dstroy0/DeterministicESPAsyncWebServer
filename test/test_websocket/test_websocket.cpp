@@ -1020,6 +1020,46 @@ void test_ws_outbound_incompressible_not_flagged()
 }
 #endif // DETWS_ENABLE_WS_DEFLATE
 
+// Outbound fragmentation (RFC 6455 sec 5.4): a data message longer than the frag size is split into
+// opcode|FIN=0, CONTINUATION|FIN=0..., CONTINUATION|FIN=1 frames; frag=0 restores the single frame.
+void test_ws_outbound_fragmentation()
+{
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+#if DETWS_ENABLE_WS_DEFLATE
+    ws->pmd = false; // send the payload verbatim so the split is exactly these bytes
+#endif
+    const uint8_t msg[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    ws_set_frag_size(4);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_BINARY, msg, sizeof(msg)));
+    tcp_capture_disable();
+    ws_set_frag_size(0); // restore the default for every other test
+
+    const uint8_t *s = (const uint8_t *)tcp_captured();
+    // 3 frames, each a 2-byte header (len <= 125): [BINARY,FIN=0,4][CONT,FIN=0,4][CONT,FIN=1,2].
+    TEST_ASSERT_EQUAL_size_t(3 * 2 + 10, tcp_captured_len());
+    TEST_ASSERT_EQUAL_UINT8(WS_OP_BINARY, s[0]); // first: FIN clear, opcode
+    TEST_ASSERT_EQUAL_UINT8(4, s[1]);
+    TEST_ASSERT_EQUAL_UINT8(1, s[2]);
+    TEST_ASSERT_EQUAL_UINT8(WS_OP_CONTINUATION, s[6]); // middle: FIN clear, CONTINUATION
+    TEST_ASSERT_EQUAL_UINT8(4, s[7]);
+    TEST_ASSERT_EQUAL_UINT8(5, s[8]);
+    TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_CONTINUATION, s[12]); // last: FIN set, CONTINUATION
+    TEST_ASSERT_EQUAL_UINT8(2, s[13]);
+    TEST_ASSERT_EQUAL_UINT8(9, s[14]);
+    TEST_ASSERT_EQUAL_UINT8(10, s[15]);
+
+    // frag == 0 -> a single FIN frame again (default behavior).
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_BINARY, msg, sizeof(msg)));
+    tcp_capture_disable();
+    s = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_BINARY, s[0]); // FIN set, one frame
+    TEST_ASSERT_EQUAL_UINT8(10, s[1]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1099,6 +1139,8 @@ int main()
     RUN_TEST(test_ws_permessage_deflate_outbound);
     RUN_TEST(test_ws_outbound_incompressible_not_flagged);
 #endif
+
+    RUN_TEST(test_ws_outbound_fragmentation);
 
     // Stress tests
     RUN_TEST(stress_ws_parse_reset_100_cycles);

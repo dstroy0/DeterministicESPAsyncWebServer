@@ -268,7 +268,13 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] GraphQL bounded subset _(shipped)_ - `DETWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example 81.GraphQL). Feature-dependent schema generation remains open (M).
 - [x] Browser diag tools _(shipped, GPIO mapper)_ - `DETWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example 67.GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
 - [ ] SPA micro-routing + conditional UI streaming (M); local SCADA/HMI fallback (M).
-- [ ] WS MTU-aligned chunking / fragmentation control (M).
+- [x] WS MTU-aligned chunking / fragmentation control (M) _(shipped)_ - `DETWS_WS_FRAG_SIZE` (0 = off,
+      default) / the runtime `ws_set_frag_size()`: an outbound data message longer than the set payload
+      size is split into that-sized WebSocket frames (RFC 6455 sec 5.4: opcode+RSV1 on the first,
+      CONTINUATION on the rest, FIN on the last), so each frame maps to whole TCP segments (MTU-aligned)
+      and a peer with a bounded per-frame reassembly buffer can receive an arbitrarily long message.
+      Compression (RFC 7692) applies to the whole message first, then the compressed bytes are split.
+      Host-tested (`test_ws_outbound_fragmentation`); default 0 keeps the single-frame behavior unchanged.
 
 ## Protocols & integrations
 

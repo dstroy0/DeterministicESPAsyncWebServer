@@ -107,6 +107,39 @@ void ws_reset_frame(WsConn *ws)
 // Frame send helpers
 // ---------------------------------------------------------------------------
 
+// Outbound fragmentation size (RFC 6455 sec 5.4), payload bytes; 0 = one frame per message (default).
+static uint16_t s_ws_frag_size = DETWS_WS_FRAG_SIZE;
+void ws_set_frag_size(uint16_t bytes)
+{
+    s_ws_frag_size = bytes;
+}
+
+// Emit one WebSocket frame. b0 is the finished first header byte (FIN | RSV1 | opcode). Server frames
+// are never masked (RFC 6455 sec 5.1). Returns false if a transport send fails.
+static bool ws_emit_one(TcpConn *conn, uint8_t b0, const uint8_t *payload, uint16_t len)
+{
+    uint8_t header[4];
+    uint8_t hlen;
+    header[0] = b0;
+    if (len <= 125)
+    {
+        header[1] = (uint8_t)len;
+        hlen = 2;
+    }
+    else
+    {
+        header[1] = 126;
+        header[2] = (uint8_t)(len >> 8);
+        header[3] = (uint8_t)len;
+        hlen = 4;
+    }
+    if (!det_conn_send(conn->id, header, hlen))
+        return false;
+    if (len > 0 && payload && !det_conn_send(conn->id, payload, len))
+        return false;
+    return true;
+}
+
 bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t len)
 {
     TcpConn *conn = &conn_pool[ws->slot_id];
@@ -142,29 +175,29 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     }
 #endif
 
-    // Server-to-client frames are never masked (RFC 6455 §5.1)
-    uint8_t header[4];
-    uint8_t hlen;
+    // Fragment only data frames (RFC 6455 §5.4: control frames MUST NOT be fragmented, and are small
+    // anyway). frag == 0, a non-data frame, or a message that already fits -> a single FIN frame (the
+    // default, unchanged). Server-to-client frames are never masked (§5.1).
+    bool data = (opcode == WS_OP_TEXT || opcode == WS_OP_BINARY);
+    uint16_t frag = s_ws_frag_size;
+    if (!data || frag == 0 || len <= frag)
+        return ws_emit_one(conn, (uint8_t)(0x80 | rsv1 | (uint8_t)opcode), payload, len);
 
-    header[0] = 0x80 | rsv1 | (uint8_t)opcode; // FIN=1 (+ RSV1 if compressed)
-
-    if (len <= 125)
+    // Split into <= frag-byte frames: the opcode (+ RSV1) rides the first frame, the rest are
+    // CONTINUATION, and FIN marks the last. The compressed bytes (RFC 7692) are split as-is - the peer
+    // concatenates the fragment payloads back into one stream before inflating.
+    uint16_t off = 0;
+    bool first = true;
+    while (off < len)
     {
-        header[1] = (uint8_t)len;
-        hlen = 2;
+        uint16_t chunk = (uint16_t)(len - off) < frag ? (uint16_t)(len - off) : frag;
+        bool last = (uint16_t)(off + chunk) >= len;
+        uint8_t b0 = (uint8_t)((last ? 0x80 : 0x00) | (first ? (rsv1 | (uint8_t)opcode) : (uint8_t)WS_OP_CONTINUATION));
+        if (!ws_emit_one(conn, b0, payload + off, chunk))
+            return false;
+        off = (uint16_t)(off + chunk);
+        first = false;
     }
-    else
-    {
-        header[1] = 126;
-        header[2] = (uint8_t)(len >> 8);
-        header[3] = (uint8_t)(len);
-        hlen = 4;
-    }
-
-    det_conn_send(conn->id, header, hlen);
-    if (len > 0 && payload)
-        det_conn_send(conn->id, payload, len);
-
     return true;
 }
 
