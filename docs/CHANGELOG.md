@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.28.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.28.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a7785f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7785f5a8e3794c842a5964dc2d861d2ab1d0d7e))
+
+### Changes
+
+- Bump version: 5.27.0 → 5.28.0 ([`5a0c7fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a0c7fcca490384c21a7fdf16fb61250b69e13bd))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b6a2f6e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6a2f6e184c0d625cc3f7b54a829332ace2ae0aa))
+
+### Features
+
+- IEC 61850 MMS confirmed Read PDU codec ([`1853698`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1853698d70c522a9d7d755d0cf966cfc957c84fd))
+
+</details>
+
 ## [5.27.0] - 2026-07-06
 
 <details>
