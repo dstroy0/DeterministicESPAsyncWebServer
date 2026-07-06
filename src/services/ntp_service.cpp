@@ -55,10 +55,19 @@ size_t detws_ntp_http_date(char *out, size_t out_cap)
 // Host build: no SNTP. A test seam lets a unit test inject a wall-clock epoch so
 // the Date-header path (and any time-dependent code) is exercisable off-device.
 #include <time.h>
-static time_t s_host_test_epoch = 0;
+// All host NTP test-seam state, owned by one instance (internal linkage): the injected
+// wall-clock epoch, so it is one named owner, unreachable from any other translation unit.
+namespace
+{
+struct NtpSvcCtx
+{
+    time_t host_test_epoch = 0;
+};
+NtpSvcCtx s_ntp_svc;
+} // namespace
 void detws_ntp_set_test_epoch(time_t epoch)
 {
-    s_host_test_epoch = epoch;
+    s_ntp_svc.host_test_epoch = epoch;
 }
 
 bool detws_ntp_begin(const char *tz, const char *server1, const char *server2)
@@ -70,23 +79,23 @@ bool detws_ntp_begin(const char *tz, const char *server1, const char *server2)
 }
 bool detws_ntp_synced()
 {
-    return s_host_test_epoch != 0;
+    return s_ntp_svc.host_test_epoch != 0;
 }
 time_t detws_ntp_epoch()
 {
-    return s_host_test_epoch;
+    return s_ntp_svc.host_test_epoch;
 }
 size_t detws_ntp_http_date(char *out, size_t out_cap)
 {
     if (!out || out_cap == 0)
         return 0;
-    if (s_host_test_epoch == 0)
+    if (s_ntp_svc.host_test_epoch == 0)
     {
         out[0] = '\0';
         return 0;
     }
     struct tm tmv; // reentrant: gmtime_r, never the shared static buffer (worker-safe)
-    if (!gmtime_r(&s_host_test_epoch, &tmv))
+    if (!gmtime_r(&s_ntp_svc.host_test_epoch, &tmv))
     {
         out[0] = '\0';
         return 0;
