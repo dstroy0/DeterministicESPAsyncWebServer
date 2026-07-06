@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.0.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.0.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update test report [skip ci] ([`39a33e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39a33e42d51e3e916d0252d85b1590f67a3b02a0))
+- update CHANGELOG.md [skip ci] ([`375f1f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/375f1f3b9f03f261e821763f81ef76a571688115))
 - update test report [skip ci] ([`b15cf00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b15cf00ef43273b30ffc2a405487e26f38b0284b))
+
+### Changes
+
+- Bump version: 4.129.0 → 5.0.0 ([`1066ad4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1066ad44327d9b25ed2e986a4f5376c4f9fec834))
 
 ### Documentation
 
 - render the Mermaid diagrams on GitHub (stricter parser than mmdc) ([`75ead4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75ead4d69f7c3474768600858803ceb1880c441e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9ab58e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ab58e5f184b074562cbaba3c6318ab8cffc9245))
+
+### Testing
+
+- real-client interop harness + mark HTTP/3 complete ([`0b19616`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b19616d55993499a56f48c836f26964411ed6b7))
+
+</details>
 
 ## [4.129.0] - 2026-07-06
 
