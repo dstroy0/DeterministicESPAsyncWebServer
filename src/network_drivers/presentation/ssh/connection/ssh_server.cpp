@@ -94,7 +94,8 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         emit(i, buf, n); // KEXDH_REPLY
         {
             uint8_t newkeys = SSH_MSG_NEWKEYS;
-            emit(i, &newkeys, 1); // server NEWKEYS (still unencrypted)
+            emit(i, &newkeys, 1); // server NEWKEYS (this one still goes out unencrypted)
+            ssh_newkeys_sent(i);  // ...but our outbound is encrypted from the next packet on
         }
         return 0; // ssh_kexdh_handle advanced phase to NEWKEYS
 

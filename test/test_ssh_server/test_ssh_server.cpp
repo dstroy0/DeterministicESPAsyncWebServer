@@ -185,13 +185,16 @@ void test_full_handshake_to_channel_data()
     TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, emt_type[0]);
     TEST_ASSERT_EQUAL(SSH_MSG_NEWKEYS, emt_type[1]);
     TEST_ASSERT_TRUE(ssh_keys[0].active);
+    // Sending our NEWKEYS activated the outbound direction; inbound waits for the client's NEWKEYS.
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_out);
+    TEST_ASSERT_FALSE(ssh_pkt[0].enc_in);
 
     // 3. Client NEWKEYS → encryption active, service phase. Because the client
     //    KEXINIT advertised ext-info-c, the server now sends EXT_INFO (RFC 8308).
     uint8_t nk = SSH_MSG_NEWKEYS;
     emt_reset();
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, nk, &nk, 1));
-    TEST_ASSERT_TRUE(ssh_pkt[0].encrypted);
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_in && ssh_pkt[0].enc_out); // both directions now encrypted
     TEST_ASSERT_EQUAL(SSH_PHASE_SERVICE, s->phase);
     TEST_ASSERT_EQUAL_INT(1, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_EXT_INFO, emt_type[0]);
@@ -569,7 +572,8 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
     memset(iv, 0x22, sizeof(iv));
 
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     ssh_aes256ctr_init(&ssh_keys[0].s2c_ctx, key, iv);
     ssh_aes256ctr_init(&ssh_keys[0].c2s_ctx, key, iv); // identical -> loopback
     memset(ssh_keys[0].mac_key_s2c, 0x33, 32);

@@ -521,13 +521,15 @@ shipped work:
       to the client's :9000 and back, both directions + close propagation). _Remaining:_
       **X11 forwarding** (and a bind-port policy hook for remote forwards, currently any free port).
 
-- [ ] **Per-direction NEWKEYS.** A single `ssh_pkt[i].encrypted` flag flips on
-      the client's NEWKEYS. Correct for the current send/receive ordering, but a
-      strict implementation tracks inbound/outbound cipher activation separately
-      (`ssh_packet.*`, `ssh_transport.cpp::ssh_newkeys_complete`). _(Deferred -
-      YAGNI: the current strict send-then-receive ordering makes a single flag
-      correct; splitting it is churn with no behavioral change until an
-      out-of-order activation path exists.)_
+- [x] **Per-direction NEWKEYS.** _(done)_ The single `ssh_pkt[i].encrypted` flag is
+      split into `enc_out` (outbound) and `enc_in` (inbound), tracked independently per
+      RFC 4253 sec 7.3. `ssh_newkeys_sent()` turns on the outbound cipher/MAC (+ the s2c
+      compression stream) the moment the server emits its NEWKEYS; `ssh_newkeys_complete()`
+      turns on the inbound cipher/MAC when the peer's NEWKEYS arrives. The send path (pack)
+      reads `enc_out`, the receive path (unpack) reads `enc_in`, so a strict peer that
+      activates its send direction before we activate ours is handled. Wire-equivalent on
+      the happy path; the 145 `native_ssh` cases (incl. the full KEXINIT->NEWKEYS->SERVICE
+      handshake with real crypto + rekey) pass, and it compiles for the ESP32 target.
 
 - [x] **Key-derivation extension (RFC 4253 §7.2).** _(done)_ `ssh_kdf_derive()`
       produces any length up to `SSH_KDF_MAX` (4 blocks) via the `K1‖K2‖…` chain

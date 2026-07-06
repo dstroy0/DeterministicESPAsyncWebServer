@@ -820,19 +820,29 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     return 0;
 }
 
+void ssh_newkeys_sent(uint8_t i)
+{
+    if (i >= MAX_SSH_CONNS)
+        return;
+    // We have emitted our SSH_MSG_NEWKEYS: our outbound direction is now encrypted (RFC 4253 sec 7.3).
+    ssh_pkt[i].enc_out = true;
+#if DETWS_ENABLE_SSH_ZLIB
+    // "zlib" (non-delayed) starts its s2c (outbound) stream here; idempotent, so a re-key does not restart it.
+    ssh_comp_on_newkeys(i);
+#endif
+}
+
 void ssh_newkeys_complete(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    ssh_pkt[i].encrypted = true;
+    // We have received the peer's SSH_MSG_NEWKEYS: our inbound direction is now encrypted. Both directions
+    // are keyed once we get here (the server always sends its NEWKEYS first), so the KEX is complete.
+    ssh_pkt[i].enc_in = true;
     ssh_pkt[i].kex_active = false;
     // On the first KEX advance to the service phase; on a re-key the connection
     // is already authenticated, so resume the open (channel) phase.
     ssh_sess[i].phase = ssh_sess[i].authed ? SSH_PHASE_OPEN : SSH_PHASE_SERVICE;
-#if DETWS_ENABLE_SSH_ZLIB
-    // "zlib" (non-delayed) starts its stream here; idempotent, so a re-key does not restart it.
-    ssh_comp_on_newkeys(i);
-#endif
 }
 
 bool ssh_rekey_needed(uint8_t i)

@@ -481,9 +481,9 @@ void test_kexdh_handle_produces_reply_and_installs_keys()
         }
     TEST_ASSERT_TRUE(alg);
 
-    // NEWKEYS activates encryption and advances to the service phase.
+    // Receiving the peer's NEWKEYS activates the inbound direction and advances to the service phase.
     ssh_newkeys_complete(0);
-    TEST_ASSERT_TRUE(ssh_pkt[0].encrypted);
+    TEST_ASSERT_TRUE(ssh_pkt[0].enc_in);
     TEST_ASSERT_EQUAL(SSH_PHASE_SERVICE, ssh_sess[0].phase);
 }
 

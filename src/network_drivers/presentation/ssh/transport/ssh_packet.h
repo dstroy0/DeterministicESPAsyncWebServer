@@ -146,7 +146,12 @@ struct SshPacketState
     uint32_t seq_no_send; ///< Outgoing sequence number (incremented per packet).
     uint32_t seq_no_recv; ///< Incoming sequence number (incremented per packet).
     bool kex_active;      ///< True while KEX is in progress (no user data).
-    bool encrypted;       ///< True after SSH_MSG_NEWKEYS exchange completes.
+    // Encryption activates per direction (RFC 4253 sec 7.3): our outbound turns on when we send our
+    // SSH_MSG_NEWKEYS, our inbound when we receive the peer's. The send path (pack) reads enc_out; the
+    // receive path (unpack) reads enc_in. A strict peer may activate its send direction before we
+    // activate ours, so the two are tracked independently rather than as one flag.
+    bool enc_out; ///< True once we have sent our NEWKEYS (outbound cipher/MAC active).
+    bool enc_in;  ///< True once we have received the peer's NEWKEYS (inbound cipher/MAC active).
 
     // Receive reassembly: we may receive partial packets across TCP segments.
     uint8_t rx_buf[SSH_PKT_BUF_SIZE]; ///< Raw receive buffer (from transport).

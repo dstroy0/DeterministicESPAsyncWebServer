@@ -104,7 +104,8 @@ void ssh_pkt_init(uint8_t i)
     SshPacketState *s = &ssh_pkt[i];
     memset(s, 0, sizeof(*s));
     s->kex_active = true;
-    s->encrypted = false;
+    s->enc_out = false;
+    s->enc_in = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,8 +146,8 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     //   chacha    : block 8,  base = padding_length + payload
     //   aes ETM   : block 16, base = padding_length + payload
     //   aes E&M / plaintext : block 16, base = length + padding_length + payload  (compute_padding)
-    bool chacha = s->encrypted && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
-    bool etm = s->encrypted && km->cipher_mode == SSH_CIPHER_AES256CTR && ssh_mac_is_etm(km->mac_mode);
+    bool chacha = s->enc_out && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
+    bool etm = s->enc_out && km->cipher_mode == SSH_CIPHER_AES256CTR && ssh_mac_is_etm(km->mac_mode);
     size_t pad_len, tag_len;
     if (chacha)
     {
@@ -167,7 +168,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     else
     {
         pad_len = compute_padding(payload_len);
-        tag_len = s->encrypted ? ssh_mac_len(km->mac_mode) : 0;
+        tag_len = s->enc_out ? ssh_mac_len(km->mac_mode) : 0;
     }
     size_t pkt_len = 1 + payload_len + pad_len; // padding_length + payload + padding
     size_t wire_len = 4 + pkt_len + tag_len;
@@ -192,7 +193,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         ssh_aes256ctr_crypt(&km->s2c_ctx, out + 4, out + 4, pkt_len);
         compute_mac_mode(km->mac_mode, km->mac_key_s2c, s->seq_no_send, out, 4 + pkt_len, out + 4 + pkt_len);
     }
-    else if (s->encrypted)
+    else if (s->enc_out)
     {
         // Encrypt-and-MAC: MAC over plaintext (seq || unencrypted packet), then AES-256-CTR.
         uint8_t mac[64];
@@ -233,7 +234,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
     // Extract complete packets.
     while (s->rx_len >= 4)
     {
-        if (s->encrypted && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305)
+        if (s->enc_in && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305)
         {
             // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
             // length is stateless/repeatable - no cipher-state peek/restore is needed.
@@ -292,7 +293,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             s->rx_len -= consumed;
             ssh_wipe(scratch, scratch_sz);
         }
-        else if (s->encrypted && ssh_mac_is_etm(km->mac_mode))
+        else if (s->enc_in && ssh_mac_is_etm(km->mac_mode))
         {
             // aes256-ctr + encrypt-then-MAC: the 4-byte packet_length is sent in the clear, and the
             // MAC is verified over (length || ciphertext) BEFORE anything is decrypted.
@@ -355,7 +356,7 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             s->rx_len -= consumed;
             ssh_wipe(scratch, scratch_sz);
         }
-        else if (s->encrypted)
+        else if (s->enc_in)
         {
             // aes256-ctr + encrypt-and-MAC. We need the first cipher block (16 bytes) for the length.
             if (s->rx_len < 16)

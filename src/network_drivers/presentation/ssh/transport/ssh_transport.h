@@ -315,11 +315,20 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
 int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *reply_out, size_t *reply_len, size_t cap);
 
 /**
- * @brief Complete the NEWKEYS exchange: activate encryption and advance phase.
+ * @brief Activate the outbound direction after emitting our SSH_MSG_NEWKEYS.
  *
- * Called once the client's SSH_MSG_NEWKEYS has been received (the server having
- * already sent its own). Flips ssh_pkt[i] into encrypted mode and moves to
- * SSH_PHASE_SERVICE (awaiting the ssh-userauth service request).
+ * Call this right after sending the server's NEWKEYS: it turns on the outbound cipher/MAC (enc_out) and
+ * starts the s2c compression stream. Per RFC 4253 sec 7.3 each direction activates independently, so the
+ * outbound turns on when we send, not when the peer's NEWKEYS arrives.
+ */
+void ssh_newkeys_sent(uint8_t i);
+
+/**
+ * @brief Complete the NEWKEYS exchange: activate the inbound direction and advance phase.
+ *
+ * Called once the client's SSH_MSG_NEWKEYS has been received (the server having already sent its own,
+ * via ssh_newkeys_sent()). Turns on the inbound cipher/MAC (enc_in), clears kex_active, and moves to
+ * SSH_PHASE_SERVICE (or back to SSH_PHASE_OPEN on a re-key).
  */
 void ssh_newkeys_complete(uint8_t i);
 

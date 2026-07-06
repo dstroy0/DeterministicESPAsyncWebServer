@@ -795,7 +795,8 @@ static void test_pkt_encrypted_roundtrip(void)
 
     setup_encrypted_keys(); // reset cipher state for the receiver
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     last_msg_type = 0xFF;
     last_payload_len = 0;
 
@@ -822,7 +823,8 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
     km->active = true;
 
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
 
     uint8_t payload[] = {SSH_MSG_IGNORE, 'c', 'h', 'a', 'c', 'h', 'a', '2', '0'};
     uint8_t wire[256];
@@ -842,7 +844,8 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
 
     // Tamper with a ciphertext byte -> Poly1305 rejects -> recv returns -1.
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
 
@@ -869,7 +872,8 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
     km->active = true;
 
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     uint8_t payload[] = {SSH_MSG_IGNORE, 'e', 't', 'm', '!', '1', '2', '3'};
     uint8_t wire[256];
     size_t wlen = 0;
@@ -887,7 +891,8 @@ static void etm_roundtrip_helper(uint8_t mac_mode)
 
     // Tamper a ciphertext byte -> MAC rejects before any decryption.
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
     wire[6] ^= 0x01;
     TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
@@ -915,7 +920,8 @@ static void test_pkt_encrypted_fragmented(void)
 
     setup_encrypted_keys();
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     last_msg_type = 0xFF;
     last_payload_len = 0;
 
@@ -949,7 +955,8 @@ static void test_pkt_encrypted_two_packets(void)
 
     setup_encrypted_keys();
     ssh_pkt_init(0);
-    ssh_pkt[0].encrypted = true;
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
     last_msg_type = 0xFF;
     last_payload_len = 0;
 
