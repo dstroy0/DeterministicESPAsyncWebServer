@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`95059e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95059e6f45f0c303465d12e41414e919e48452ad))
 - update CHANGELOG.md [skip ci] ([`358c4f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/358c4f9e36036fdb0995b59fe0a3d329387215b2))
 - update test report [skip ci] ([`4642dc7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4642dc719553243dbe11a98575d306ca988d1cb2))
 - update CHANGELOG.md [skip ci] ([`ee7d2e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee7d2e910f6ae43879e62e7efa62f0a026aaf287))
@@ -31,6 +32,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - backfill 54 feature entries missing from the grid + add coverage guard ([`48d3be7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48d3be78935ef6a569dfd1a6be98943c553a10c4))
 - close the multi-MCU portability item as a won't-do (per user request) ([`bcef60e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcef60e0ec60ea08fc9854c37b1796ba604238df))
 - fix broken SonarCloud badge (sonarcloud.yml -> test-report.yml) ([`450c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450c617280017a813c1519d0945673061b09679b))
+
+### Testing
+
+- homogenize output to 120 cols, right-justify the status ([`bf1a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf1a6d656c5998fcdad4891ce72bb859b8632f8d))
 
 ## [5.62.0] - 2026-07-06
 
