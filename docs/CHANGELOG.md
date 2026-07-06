@@ -2,21 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.58.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.58.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1c740be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c740be21b338a15f09e8ac4b143ea6a43b76e4c))
 - update CHANGELOG.md [skip ci] ([`489d02a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/489d02a0dfe73f22938094c7bfc500d5cd7ecda4))
 - update CHANGELOG.md [skip ci] ([`d1564ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1564ab5ecb781824ee520ea9750607be6003c92))
 
+### Changes
+
+- Bump version: 5.57.0 → 5.58.0 ([`d4ff947`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4ff9470a98c4e0b952d12cbf081638f19c9fe0e))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`cd89cc4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd89cc4d3ded0e83e5345d214a8672a17863021d))
 - reconcile post-v5 southbound backlog to [~] (per-module codecs shipped) ([`37f751a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37f751a8d8385ab12df36d34e5decf8d130289f4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5152758`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51527588bd8f4e3d0d0d4757024a3ad19c76b2d6))
 - reconcile build-flag tree + build configurator to [~] ([`3c8ac3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8ac3c4ec2a826a540aee403db93715d0d5c455))
 - reconcile Fieldbuses to [~] (CANopen/PROFIBUS/DeviceNet/Modbus shipped) ([`7c34625`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c34625de0d539efe27bcf5cf54767322fed73cb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50d617e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50d617e65fa97c3b327fcf1f94f31d640fc05755))
 - update ESP32 build footprints [skip ci] ([`d6c09ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6c09cef2c20a05a61b4e3451439b68257c18b05))
+
+### Features
+
+- Wi-SUN FAN border-router connector (CoAP client + FAN node registry) ([`f1adf64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1adf649a7ea32e4d253715f8a50fdb687b4fba1))
+
+</details>
 
 ## [5.57.0] - 2026-07-06
 
