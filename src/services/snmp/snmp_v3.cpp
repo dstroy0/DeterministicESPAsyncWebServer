@@ -44,31 +44,38 @@ enum UsmStat
 // Engine / user state
 // ---------------------------------------------------------------------------
 
-static uint8_t g_engine_id[SNMP_V3_ENGINEID_MAX] = {0x80, 0x00, 0xC0, 0xDE, 0x05, 0x01, 0x02, 0x03, 0x04};
-static size_t g_engine_id_len = 9;
-static uint32_t g_boots = 1;
+// All SNMPv3 USM engine state, owned by one instance (internal linkage): the engine id/boots,
+// the configured user + localized auth/priv keys, the USM stats counters, and the per-request
+// working buffers (staggered lifetimes; see snmp_v3_process), grouped so it is one named owner,
+// unreachable cross-TU. Single-threaded (the lwIP callback or a test, never reentrant).
+struct SnmpV3Ctx
+{
+    uint8_t engine_id[SNMP_V3_ENGINEID_MAX] = {0x80, 0x00, 0xC0, 0xDE, 0x05, 0x01, 0x02, 0x03, 0x04};
+    size_t engine_id_len = 9;
+    uint32_t boots = 1;
 
-static char g_user[SNMP_V3_USER_MAX] = "";
-static uint8_t g_auth_key[SNMP_USM_KEY_LEN];
-static uint8_t g_priv_key[SNMP_USM_KEY_LEN];
-static bool g_auth_set = false;
-static bool g_priv_set = false;
-static uint32_t g_salt_ctr = 0;
+    char user[SNMP_V3_USER_MAX] = "";
+    uint8_t auth_key[SNMP_USM_KEY_LEN];
+    uint8_t priv_key[SNMP_USM_KEY_LEN];
+    bool auth_set = false;
+    bool priv_set = false;
+    uint32_t salt_ctr = 0;
 
-// USM stats counters (reported in discovery / error Reports)
-static uint32_t g_stat_unknown_engine = 0;
-static uint32_t g_stat_unknown_user = 0;
-static uint32_t g_stat_wrong_digest = 0;
-static uint32_t g_stat_not_in_time = 0;
-static uint32_t g_stat_decrypt = 0;
+    // USM stats counters (reported in discovery / error Reports)
+    uint32_t stat_unknown_engine = 0;
+    uint32_t stat_unknown_user = 0;
+    uint32_t stat_wrong_digest = 0;
+    uint32_t stat_not_in_time = 0;
+    uint32_t stat_decrypt = 0;
 
-// Working buffers (BSS; only linked when SNMPv3 is enabled). Lifetimes are
-// staggered so they never alias within a single request (see snmp_v3_process).
-static uint8_t g_v3_a[SNMP_MSG_BUF_SIZE]; // auth-verify copy / decrypted scopedPDU
-static uint8_t g_v3_b[SNMP_MSG_BUF_SIZE]; // inner response PDU
-static uint8_t g_v3_c[SNMP_MSG_BUF_SIZE]; // outgoing scopedPDU
-static uint8_t g_v3_d[SNMP_MSG_BUF_SIZE]; // privacy ciphertext
-static uint8_t g_v3_sec[256];             // msgSecurityParameters scratch
+    // Working buffers; lifetimes staggered so they never alias within a single request.
+    uint8_t v3_a[SNMP_MSG_BUF_SIZE]; // auth-verify copy / decrypted scopedPDU
+    uint8_t v3_b[SNMP_MSG_BUF_SIZE]; // inner response PDU
+    uint8_t v3_c[SNMP_MSG_BUF_SIZE]; // outgoing scopedPDU
+    uint8_t v3_d[SNMP_MSG_BUF_SIZE]; // privacy ciphertext
+    uint8_t v3_sec[256];             // msgSecurityParameters scratch
+};
+static SnmpV3Ctx s_v3;
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -78,33 +85,33 @@ void snmp_v3_init(const uint8_t *engine_id, size_t engine_id_len)
 {
     if (engine_id && engine_id_len >= 5 && engine_id_len <= SNMP_V3_ENGINEID_MAX)
     {
-        memcpy(g_engine_id, engine_id, engine_id_len);
-        g_engine_id_len = engine_id_len;
+        memcpy(s_v3.engine_id, engine_id, engine_id_len);
+        s_v3.engine_id_len = engine_id_len;
     }
-    g_user[0] = '\0';
-    g_auth_set = false;
-    g_priv_set = false;
+    s_v3.user[0] = '\0';
+    s_v3.auth_set = false;
+    s_v3.priv_set = false;
 }
 
 void snmp_v3_set_user(const char *user, const char *auth_pass, const char *priv_pass)
 {
-    strncpy(g_user, user ? user : "", sizeof(g_user) - 1);
-    g_user[sizeof(g_user) - 1] = '\0';
-    g_auth_set = auth_pass && auth_pass[0];
-    g_priv_set = priv_pass && priv_pass[0];
-    if (g_auth_set)
-        snmp_usm_localize_key(auth_pass, g_engine_id, g_engine_id_len, g_auth_key);
-    if (g_priv_set)
-        snmp_usm_localize_key(priv_pass, g_engine_id, g_engine_id_len, g_priv_key);
+    strncpy(s_v3.user, user ? user : "", sizeof(s_v3.user) - 1);
+    s_v3.user[sizeof(s_v3.user) - 1] = '\0';
+    s_v3.auth_set = auth_pass && auth_pass[0];
+    s_v3.priv_set = priv_pass && priv_pass[0];
+    if (s_v3.auth_set)
+        snmp_usm_localize_key(auth_pass, s_v3.engine_id, s_v3.engine_id_len, s_v3.auth_key);
+    if (s_v3.priv_set)
+        snmp_usm_localize_key(priv_pass, s_v3.engine_id, s_v3.engine_id_len, s_v3.priv_key);
 }
 
 void snmp_v3_set_boots(uint32_t boots)
 {
-    g_boots = boots;
+    s_v3.boots = boots;
 }
 uint32_t snmp_v3_get_boots()
 {
-    return g_boots;
+    return s_v3.boots;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,26 +190,26 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
 
     if (priv)
     {
-        put_be32(salt, g_boots);
-        put_be32(salt + 4, ++g_salt_ctr);
+        put_be32(salt, s_v3.boots);
+        put_be32(salt + 4, ++s_v3.salt_ctr);
         uint8_t iv[16];
-        put_be32(iv, g_boots);
+        put_be32(iv, s_v3.boots);
         put_be32(iv + 4, now);
         memcpy(iv + 8, salt, SNMP_V3_PRIV_PARAM_LEN);
-        if (scoped_len > sizeof(g_v3_d))
+        if (scoped_len > sizeof(s_v3.v3_d))
             return 0;
-        snmp_aes128_cfb(g_priv_key, iv, scoped, g_v3_d, scoped_len, true);
-        data_ptr = g_v3_d;
+        snmp_aes128_cfb(s_v3.priv_key, iv, scoped, s_v3.v3_d, scoped_len, true);
+        data_ptr = s_v3.v3_d;
     }
 
     // msgSecurityParameters (a SEQUENCE, later wrapped in an OCTET STRING).
     BerEnc se;
-    ber_enc_init(&se, g_v3_sec, sizeof(g_v3_sec));
+    ber_enc_init(&se, s_v3.v3_sec, sizeof(s_v3.v3_sec));
     size_t ss = ber_seq_begin(&se, BER_SEQUENCE);
-    ber_put_octet_string(&se, BER_OCTET_STRING, g_engine_id, g_engine_id_len);
-    ber_put_integer(&se, (long)g_boots);
+    ber_put_octet_string(&se, BER_OCTET_STRING, s_v3.engine_id, s_v3.engine_id_len);
+    ber_put_integer(&se, (long)s_v3.boots);
     ber_put_integer(&se, (long)now);
-    ber_put_octet_string(&se, BER_OCTET_STRING, (const uint8_t *)g_user, strlen(g_user));
+    ber_put_octet_string(&se, BER_OCTET_STRING, (const uint8_t *)s_v3.user, strlen(s_v3.user));
     size_t auth_off = 0;
     if (auth)
     {
@@ -236,7 +243,7 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
     ber_put_octet_string(&e, BER_OCTET_STRING, &fl, 1);
     ber_put_integer(&e, 3); // msgSecurityModel = USM
     ber_seq_end(&e, hdr);
-    ber_put_octet_string(&e, BER_OCTET_STRING, g_v3_sec, sec_len);
+    ber_put_octet_string(&e, BER_OCTET_STRING, s_v3.v3_sec, sec_len);
     size_t sec_value_pos = e.len - sec_len;
     if (priv)
         ber_put_octet_string(&e, BER_OCTET_STRING, data_ptr, data_len);
@@ -250,7 +257,7 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
     if (auth)
     {
         uint8_t mac[SSH_HMAC_SHA256_LEN];
-        ssh_hmac_sha256(g_auth_key, SNMP_USM_KEY_LEN, resp, total, mac);
+        ssh_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, resp, total, mac);
         memcpy(resp + sec_value_pos + auth_off, mac, SNMP_V3_AUTH_PARAM_LEN);
     }
     return total;
@@ -267,7 +274,7 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
     oid[10] = 0;
 
     BerEnc e;
-    ber_enc_init(&e, g_v3_b, sizeof(g_v3_b));
+    ber_enc_init(&e, s_v3.v3_b, sizeof(s_v3.v3_b));
     size_t pdu = ber_seq_begin(&e, SNMP_PDU_REPORT);
     ber_put_integer(&e, request_id);
     ber_put_integer(&e, 0);
@@ -283,16 +290,16 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
         return 0;
 
     BerEnc sc;
-    ber_enc_init(&sc, g_v3_c, sizeof(g_v3_c));
+    ber_enc_init(&sc, s_v3.v3_c, sizeof(s_v3.v3_c));
     size_t s = ber_seq_begin(&sc, BER_SEQUENCE);
-    ber_put_octet_string(&sc, BER_OCTET_STRING, g_engine_id, g_engine_id_len);
+    ber_put_octet_string(&sc, BER_OCTET_STRING, s_v3.engine_id, s_v3.engine_id_len);
     ber_put_octet_string(&sc, BER_OCTET_STRING, nullptr, 0);
-    ber_put_raw(&sc, g_v3_b, e.len);
+    ber_put_raw(&sc, s_v3.v3_b, e.len);
     ber_seq_end(&sc, s);
     if (!sc.ok)
         return 0;
 
-    return build_message(msg_id, auth, false, g_v3_c, sc.len, resp, resp_cap);
+    return build_message(msg_id, auth, false, s_v3.v3_c, sc.len, resp, resp_cap);
 }
 
 // ---------------------------------------------------------------------------
@@ -372,11 +379,11 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     size_t mdata_len = req_len - d.pos;
 
     // Engine discovery: unknown/empty authoritative engine ID.
-    bool engine_match = (eid_len == g_engine_id_len) && (memcmp(eid, g_engine_id, eid_len) == 0);
+    bool engine_match = (eid_len == s_v3.engine_id_len) && (memcmp(eid, s_v3.engine_id, eid_len) == 0);
     if (!engine_match)
     {
-        g_stat_unknown_engine++;
-        return build_report(msg_id, false, USM_STAT_UNKNOWN_ENGINE, g_stat_unknown_engine,
+        s_v3.stat_unknown_engine++;
+        return build_report(msg_id, false, USM_STAT_UNKNOWN_ENGINE, s_v3.stat_unknown_engine,
                             inner_request_id(mdata, mdata_len, req_priv), resp, resp_cap);
     }
 
@@ -384,26 +391,26 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
         return 0;
 
     // Known user?
-    if (!g_auth_set || !(uname_len == strlen(g_user) && g_user[0] && memcmp(uname, g_user, uname_len) == 0))
+    if (!s_v3.auth_set || !(uname_len == strlen(s_v3.user) && s_v3.user[0] && memcmp(uname, s_v3.user, uname_len) == 0))
     {
-        g_stat_unknown_user++;
-        return build_report(msg_id, false, USM_STAT_UNKNOWN_USER, g_stat_unknown_user, 0, resp, resp_cap);
+        s_v3.stat_unknown_user++;
+        return build_report(msg_id, false, USM_STAT_UNKNOWN_USER, s_v3.stat_unknown_user, 0, resp, resp_cap);
     }
 
     // Authenticate: HMAC over the whole message with the auth field zeroed.
-    if (aparm_len != SNMP_V3_AUTH_PARAM_LEN || req_len > sizeof(g_v3_a))
+    if (aparm_len != SNMP_V3_AUTH_PARAM_LEN || req_len > sizeof(s_v3.v3_a))
     {
-        g_stat_wrong_digest++;
-        return build_report(msg_id, false, USM_STAT_WRONG_DIGEST, g_stat_wrong_digest, 0, resp, resp_cap);
+        s_v3.stat_wrong_digest++;
+        return build_report(msg_id, false, USM_STAT_WRONG_DIGEST, s_v3.stat_wrong_digest, 0, resp, resp_cap);
     }
-    memcpy(g_v3_a, req, req_len);
-    memset(g_v3_a + aparm_off, 0, SNMP_V3_AUTH_PARAM_LEN);
+    memcpy(s_v3.v3_a, req, req_len);
+    memset(s_v3.v3_a + aparm_off, 0, SNMP_V3_AUTH_PARAM_LEN);
     uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(g_auth_key, SNMP_USM_KEY_LEN, g_v3_a, req_len, mac);
+    ssh_hmac_sha256(s_v3.auth_key, SNMP_USM_KEY_LEN, s_v3.v3_a, req_len, mac);
     if (!ct_eq(mac, aparm, SNMP_V3_AUTH_PARAM_LEN))
     {
-        g_stat_wrong_digest++;
-        return build_report(msg_id, false, USM_STAT_WRONG_DIGEST, g_stat_wrong_digest, 0, resp, resp_cap);
+        s_v3.stat_wrong_digest++;
+        return build_report(msg_id, false, USM_STAT_WRONG_DIGEST, s_v3.stat_wrong_digest, 0, resp, resp_cap);
     }
 
     // Timeliness window (RFC 3414 §3.2): boots must match, time within +/-150s.
@@ -411,10 +418,10 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     long dt = (long)now - req_time;
     if (dt < 0)
         dt = -dt;
-    if ((uint32_t)req_boots != g_boots || dt > 150)
+    if ((uint32_t)req_boots != s_v3.boots || dt > 150)
     {
-        g_stat_not_in_time++;
-        return build_report(msg_id, true, USM_STAT_NOT_IN_TIME, g_stat_not_in_time, 0, resp, resp_cap);
+        s_v3.stat_not_in_time++;
+        return build_report(msg_id, true, USM_STAT_NOT_IN_TIME, s_v3.stat_not_in_time, 0, resp, resp_cap);
     }
 
     // Privacy: decrypt the scopedPDU if the priv flag is set.
@@ -422,10 +429,10 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     size_t scoped_len;
     if (req_priv)
     {
-        if (!g_priv_set || pparm_len != SNMP_V3_PRIV_PARAM_LEN)
+        if (!s_v3.priv_set || pparm_len != SNMP_V3_PRIV_PARAM_LEN)
         {
-            g_stat_decrypt++;
-            return build_report(msg_id, true, USM_STAT_DECRYPT, g_stat_decrypt, 0, resp, resp_cap);
+            s_v3.stat_decrypt++;
+            return build_report(msg_id, true, USM_STAT_DECRYPT, s_v3.stat_decrypt, 0, resp, resp_cap);
         }
         BerDec md;
         ber_dec_init(&md, mdata, mdata_len);
@@ -433,14 +440,14 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
             return 0;
         const uint8_t *ct = md.buf + md.pos;
         size_t ct_len = l;
-        if (ct_len > sizeof(g_v3_a))
+        if (ct_len > sizeof(s_v3.v3_a))
             return 0;
         uint8_t iv[16];
         put_be32(iv, (uint32_t)req_boots);
         put_be32(iv + 4, (uint32_t)req_time);
         memcpy(iv + 8, pparm, SNMP_V3_PRIV_PARAM_LEN);
-        snmp_aes128_cfb(g_priv_key, iv, ct, g_v3_a, ct_len, false);
-        scoped = g_v3_a;
+        snmp_aes128_cfb(s_v3.priv_key, iv, ct, s_v3.v3_a, ct_len, false);
+        scoped = s_v3.v3_a;
         scoped_len = ct_len;
     }
     else
@@ -454,22 +461,22 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     size_t ctxname_len, pdu_len;
     if (!parse_scoped(scoped, scoped_len, &ctxname, &ctxname_len, &pdu, &pdu_len))
         return 0;
-    size_t rpdu = snmp_dispatch_pdu(pdu, pdu_len, true, true, g_v3_b, sizeof(g_v3_b));
+    size_t rpdu = snmp_dispatch_pdu(pdu, pdu_len, true, true, s_v3.v3_b, sizeof(s_v3.v3_b));
     if (rpdu == 0)
         return 0;
 
     // Response scopedPDU { our engineID, echoed contextName, response PDU }.
     BerEnc sc;
-    ber_enc_init(&sc, g_v3_c, sizeof(g_v3_c));
+    ber_enc_init(&sc, s_v3.v3_c, sizeof(s_v3.v3_c));
     size_t s = ber_seq_begin(&sc, BER_SEQUENCE);
-    ber_put_octet_string(&sc, BER_OCTET_STRING, g_engine_id, g_engine_id_len);
+    ber_put_octet_string(&sc, BER_OCTET_STRING, s_v3.engine_id, s_v3.engine_id_len);
     ber_put_octet_string(&sc, BER_OCTET_STRING, ctxname, ctxname_len);
-    ber_put_raw(&sc, g_v3_b, rpdu);
+    ber_put_raw(&sc, s_v3.v3_b, rpdu);
     ber_seq_end(&sc, s);
     if (!sc.ok)
         return 0;
 
-    return build_message(msg_id, true, req_priv, g_v3_c, sc.len, resp, resp_cap);
+    return build_message(msg_id, true, req_priv, s_v3.v3_c, sc.len, resp, resp_cap);
 }
 
 #if DETWS_ENABLE_SNMP_TRAP
@@ -484,29 +491,29 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
 static bool send_v3_notify(const char *dst_ip, uint16_t port, uint8_t pdu_tag, uint32_t request_id,
                            const uint32_t *trap_oid, size_t trap_oid_len, const SnmpVarbind *vbs, size_t n)
 {
-    if (!g_auth_set) // a v3 notification must be authenticated
+    if (!s_v3.auth_set) // a v3 notification must be authenticated
         return false;
 
     // Notification PDU into the inner-PDU scratch.
     BerEnc e;
-    ber_enc_init(&e, g_v3_b, sizeof(g_v3_b));
+    ber_enc_init(&e, s_v3.v3_b, sizeof(s_v3.v3_b));
     snmp_notify_build_pdu(&e, pdu_tag, request_id, trap_oid, trap_oid_len, snmp_v3_uptime_s() * 100, vbs, n);
     if (!e.ok)
         return false;
 
     // scopedPDU { contextEngineID = our engine, contextName = "", PDU }.
     BerEnc sc;
-    ber_enc_init(&sc, g_v3_c, sizeof(g_v3_c));
+    ber_enc_init(&sc, s_v3.v3_c, sizeof(s_v3.v3_c));
     size_t s = ber_seq_begin(&sc, BER_SEQUENCE);
-    ber_put_octet_string(&sc, BER_OCTET_STRING, g_engine_id, g_engine_id_len);
+    ber_put_octet_string(&sc, BER_OCTET_STRING, s_v3.engine_id, s_v3.engine_id_len);
     ber_put_octet_string(&sc, BER_OCTET_STRING, nullptr, 0);
-    ber_put_raw(&sc, g_v3_b, e.len);
+    ber_put_raw(&sc, s_v3.v3_b, e.len);
     ber_seq_end(&sc, s);
     if (!sc.ok)
         return false;
 
     uint8_t out[SNMP_MSG_BUF_SIZE];
-    size_t len = build_message((long)request_id, g_auth_set, g_priv_set, g_v3_c, sc.len, out, sizeof(out));
+    size_t len = build_message((long)request_id, s_v3.auth_set, s_v3.priv_set, s_v3.v3_c, sc.len, out, sizeof(out));
     return len && det_udp_sendto(dst_ip, port, out, len);
 }
 
