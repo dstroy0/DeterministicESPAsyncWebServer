@@ -555,14 +555,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   with no reply. Host-tested (`test_modbus`, 5 RTU cases incl. the 0xCDC5 CRC vector + read round-trip + bad-CRC/wrong-addr/broadcast). The pure codec is fed a complete
   frame; a UART/RS-485 driver (3.5-char inter-frame idle) + HW-over-RS-485 verify are
   the remaining transport step. (Modbus ASCII is a lower-priority follow-on.)
-- [ ] **PROFINET / PROFIBUS** (XL, Siemens automation) - the Siemens factory-automation
-      stack as a focused target: **PROFIBUS-DP** (RS-485 master/slave, the cyclic DP-V0
-      I/O exchange + a GSD-described slave model) and **PROFINET IO** (the Ethernet
-      successor: `DCP` device discovery/naming over raw L2, the IO-Device cyclic data
-      exchange, and a GSDML device description). RT/IRT timing classes are gated on PHY + timing the stock ESP32 lacks, so scope to the DP-V0 cyclic subset and the
-      PROFINET `DCP`/acyclic-record subset first - fixed BSS process image, no heap,
-      one build flag each. (Overlaps the broader Industrial-Ethernet and Fieldbus items
-      above; this is the dedicated Siemens-interop slice.)
+- [~] **PROFINET / PROFIBUS** (XL, Siemens automation) _(PROFINET DCP codec shipped)_ -
+  `DETWS_ENABLE_PROFINET` (`services/profinet`): the **PROFINET DCP** (Discovery and Configuration
+  Protocol) frame codec - the 10-octet DCP header (frameID / serviceID / serviceType / xid /
+  dataLength) + the option/suboption blocks with DCP even-padding, built by `detws_pn_dcp_header` /
+  `_block` and walked by `detws_pn_dcp_walk` - for Identify request/response and Set (assign
+  NameOfStation / IP) over raw L2 (ethertype 0x8892, on the shipped services/rawl2); host-tested
+  (`native_profinet`). _Remaining:_ the PROFINET IO cyclic data exchange + GSDML, and **PROFIBUS-DP**
+  (the DP-V0 RS-485 cyclic subset). Fixed BSS process image, no heap.
 - [~] **DNP3** (L, IEEE 1815) - _data-link frame codec shipped._ `DETWS_ENABLE_DNP3`
   (`services\dnp3`): a zero-heap builder + CRC-validating parser for the data-link layer - `dnp3_build_frame` emits the `0x0564 LEN CTRL DEST SRC CRC` header block plus the
   CRC'd 16-octet user-data blocks, and `dnp3_parse_frame` validates the header and every

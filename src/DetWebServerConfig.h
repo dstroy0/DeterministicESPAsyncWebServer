@@ -2781,6 +2781,18 @@
 #endif
 
 /**
+ * @brief Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec (DETWS_ENABLE_PROFINET).
+ *
+ * When set, services/profinet builds/parses the DCP frames (10-octet header + option/suboption blocks)
+ * PROFINET uses to discover and name IO-Devices over raw L2 (ethertype 0x8892) - Identify request/
+ * response and Set (assign NameOfStation / IP). Pure codec (the raw-L2 transmit via services/rawl2 +
+ * esp_eth is the device step). Default off.
+ */
+#ifndef DETWS_ENABLE_PROFINET
+#define DETWS_ENABLE_PROFINET 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
