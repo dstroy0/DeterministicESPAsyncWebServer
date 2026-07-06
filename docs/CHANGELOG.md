@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.11.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.11.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1f6bfdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f6bfdf19763d4a5704da0f1534ad94c5885047d))
+
+### Changes
+
+- Bump version: 5.10.0 → 5.11.0 ([`92863bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92863bc748a87ad7ed90162d38e8f1169dac1896))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50acedf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50acedf042707fe2fbc7f13336ef7e8a4662bf45))
+
+### Features
+
+- Network Time Security (RFC 8915) wire codec ([`f413b97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f413b973b3245d5520067366956ec89204c28b2b))
+
+</details>
+
 ## [5.10.0] - 2026-07-06
 
 <details>
