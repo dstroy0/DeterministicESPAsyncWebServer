@@ -36,6 +36,16 @@ jobs:
       - name: Regenerate configurator from DetWebServerConfig.h
         run: python docs/utilities/gen_configurator.py
 
+      # Regenerate the build-flag dependency graph from the #error/#if guards in
+      # DetWebServerConfig.h so the README diagram tracks the guards the compiler enforces.
+      - name: Regenerate build-flag dependency graph
+        run: python docs/utilities/gen_flag_deps.py
+
+      # Regenerate the core API-flow graph from the public API + protocol registry so the
+      # README diagram tracks the actual surface and layer wiring.
+      - name: Regenerate core API-flow graph
+        run: python docs/utilities/gen_api_flow.py
+
       # Regenerate each example's Arduino build_opt.h from its README build_flags so the
       # examples keep building unmodified in the Arduino IDE.
       - name: Regenerate example build_opt.h files

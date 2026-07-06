@@ -93,6 +93,7 @@
     "configurator",
     "CONNACK",
     "connectionless",
+    "consend",
     "constexpr",
     "CORS",
     "CORS_HDR_BUF_SIZE",

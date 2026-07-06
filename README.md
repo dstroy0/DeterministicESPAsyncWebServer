@@ -51,6 +51,68 @@ PlatformIO users ignore all of this and just use `build_flags` in `platformio.in
 
 A zero-heap, asynchronous multi-protocol server library for ESP32. Network events fire asynchronously from the lwIP stack (driven by the WiFi ISRs) into fixed event queues that dedicated worker task(s) drain on their own core, leaving your `loop()` free; every connection, request, and protocol buffer is statically allocated in BSS, so the memory footprint is fixed at link time and no heap is touched after `begin()`. It serves HTTP/1.1 and HTTP/2 (with WebSocket and Server-Sent Events), with HTTP/3 over QUIC in progress, and, optionally, HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
+<!-- BEGIN GENERATED API FLOW (docs/utilities/gen_api_flow.py) -->
+
+> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by `docs/utilities/gen_api_flow.py` - do not edit by hand.
+
+How a request flows through the OSI layers: the app registers routes and calls `begin()`, the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7).
+
+```mermaid
+flowchart TB
+  %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.
+  client(("client")):::ext
+
+  subgraph APP["Application L7 - DetWebServer"]
+    reg["Register: on() · on_regex() · serve_static() · dav() · on_not_found() +4"]
+    cfg["Configure: tls_cert() · tls_require_client_cert() · tls_client_subject() · set_ap_ip() · enable_rate_limit() +3"]
+    run["Run: begin() · begin_tls() · stop() · handle() · service_once() +1"]
+    mae[["match_and_execute"]]
+    mw["middleware chain"]
+    routes[("route table")]
+    handler>"your Handler"]
+    resp["Respond: serve_file() · stats() · metrics() · send() · send_empty() +5"]
+  end
+
+  subgraph L6["Presentation L6 - base64 · cbor · deflate · hpack_prim · http2 · http3 · http_parser · inflate · json · msgpack · multipart · sha1 · sse · ssh · telnet · websocket"]
+    tls["det_tls decrypt + ALPN"]
+    parser["http_parser fills http_pool slot"]
+    h2["h2_conn"]
+    h3["quic_conn + h3_conn"]
+  end
+
+  subgraph L5["Session L5 - worker task"]
+    tick["server_tick / dispatch_event"]
+    seam{{"ProtoHandler seam: HTTP · TELNET · SSH · MODBUS · OPCUA"}}
+  end
+
+  subgraph L4["Transport L4"]
+    listen["listener_accept_cb"]
+    ring[("conn_pool slot + rx ring")]
+    udp["det_udp listeners"]
+    consend["det_conn_send"]
+  end
+
+  reg --> routes
+  run --> listen
+  client -- TCP --> listen --> ring --> tick
+  client -- UDP / QUIC --> udp --> tick
+  tick --> seam
+  seam -- TLS/TCP --> tls --> parser
+  seam -- h2 --> h2
+  seam -- HTTP/3 --> h3
+  parser -- PARSE_COMPLETE --> mae
+  h2 --> mae
+  h3 --> mae
+  mae --> mw --> routes --> handler --> resp
+  resp -- HTTP/1.1 --> consend --> client
+  resp -- h2 --> h2
+  resp -- HTTP/3 --> h3 --> udp --> client
+
+  classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;
+```
+
+<!-- END GENERATED API FLOW -->
+
 ## Features
 
 **Grouped by the OSI layer each feature lives at, alphabetized within each layer. Hover any entry for a one-line summary; full descriptions live in [docs/FEATURES.md](docs/FEATURES.md).** Each is an optional `DETWS_ENABLE_*` flag unless it is core (HTTP/1.1, routing, middleware, JSON, templating, chunked responses are always on). The tables are generated from `docs/FEATURES.md` by `docs/utilities/gen_feature_tables.py`, so they never drift.
@@ -317,36 +379,69 @@ compile without it; those hard dependencies are enforced at compile time with a
 clear `#error` (so an illegal combination fails fast instead of producing a
 cryptic linker error). Enable a child flag only together with its parent.
 
-```text
-FILE_SERVING
-├── WEBDAV
-└── RANGE
-TLS
-├── MTLS
-├── TLS_RESUMPTION
-├── HTTP_CLIENT_TLS   (also requires HTTP_CLIENT)
-├── MQTT_TLS          (also requires MQTT)
-└── WS_CLIENT_TLS     (also requires WS_CLIENT)
-WEBSOCKET
-├── WS_DEFLATE
-└── WEB_TERMINAL
-SSE
-└── DASHBOARD
-STATS
-└── METRICS
-AUTH
-└── AUTH_LOCKOUT
-SNMP
-├── SNMP_V3
-└── SNMP_TRAP
-COAP
-├── COAP_OBSERVE
-└── COAP_BLOCK
-OPCUA
-└── OPCUA_CLIENT
-CONFIG_STORE
-└── CONFIG_IO
+<!-- BEGIN GENERATED FLAG DEPS (docs/utilities/gen_flag_deps.py) -->
+
+> Generated from the `#error` / `#if` guards in [src/DetWebServerConfig.h](src/DetWebServerConfig.h) by `docs/utilities/gen_flag_deps.py` - do not edit by hand.
+
+**Green** = a parent feature; **blue** = a child that requires it (hard `#error`); **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM; needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag (do not set it yourself).
+
+```mermaid
+flowchart TD
+  %% Reading: A --> B means B requires A (enable the parent to build the child).
+  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
+
+  PSRAM(["PSRAM (or *_ACK_DRAM)"]):::res
+  AUTH --> AUTH_LOCKOUT
+  COAP --> COAP_BLOCK
+  COAP --> COAP_OBSERVE
+  CONFIG_STORE --> CONFIG_IO
+  FILE_SERVING --> RANGE
+  FILE_SERVING --> WEBDAV
+  HTTP_CLIENT --> HTTP_CLIENT_TLS
+  MQTT --> MQTT_TLS
+  OPCUA --> OPCUA_CLIENT
+  SNMP --> SNMP_TRAP
+  SNMP --> SNMP_V3
+  SSE --> DASHBOARD
+  SSH --> SSH_ZLIB
+  STATS --> METRICS
+  TLS --> HTTP_CLIENT_TLS
+  TLS --> MQTT_TLS
+  TLS --> MTLS
+  TLS --> TLS_RESUMPTION
+  TLS --> WS_CLIENT_TLS
+  WEBSOCKET --> WEB_TERMINAL
+  WEBSOCKET --> WS_DEFLATE
+  WS_CLIENT --> WS_CLIENT_TLS
+  PSRAM -.-> HTTP2
+  PSRAM -.-> SSH_ZLIB
+  PSRAM -. MAX_TLS_CONNS gt 1 .-> TLS
+  HTTP_CLIENT -. derived .-> DNS_RESOLVER
+  HTTP_CLIENT_TLS -. derived .-> CLIENT_TLS
+  MODBUS_RTU -. derived .-> MODBUS
+  MQTT -. derived .-> DNS_RESOLVER
+  MQTT_TLS -. derived .-> CLIENT_TLS
+  NMEA2000 -. derived .-> J1939
+  OTA -. derived .-> STREAM_BODY
+  SENML -. derived .-> CBOR
+  SPARKPLUG -. derived .-> PROTOBUF
+  UPLOAD -. derived .-> STREAM_BODY
+  WEBDAV -. derived .-> STREAM_BODY
+  WS_CLIENT -. derived .-> DNS_RESOLVER
+  WS_CLIENT_TLS -. derived .-> CLIENT_TLS
+
+  class AUTH,COAP,CONFIG_STORE,FILE_SERVING,HTTP_CLIENT,MQTT,OPCUA,SNMP,SSE,SSH,STATS,TLS,WEBSOCKET,WS_CLIENT parent;
+  class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
+  class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
+  classDef parent fill:#2d6a4f,stroke:#1b4332,color:#fff;
+  classDef child fill:#1d3557,stroke:#0d1b2a,color:#fff;
+  classDef derived fill:#5a189a,stroke:#3c096c,color:#fff;
+  classDef res fill:#e85d04,stroke:#9d0208,color:#fff;
 ```
+
+_22 hard dependencies · 3 PSRAM gates · 13 derived flags._
+
+<!-- END GENERATED FLAG DEPS -->
 
 Optional integrations (these build on their own; the named feature is inert or
 reduced until you also enable the other flag):
@@ -355,10 +450,7 @@ reduced until you also enable the other flag):
 - **OAUTH2** compiles its token-endpoint POST helpers only when **HTTP_CLIENT** is on.
 - **DASHBOARD** adds live control widgets when **WEBSOCKET** is on; the SSE value stream works without it.
 
-Three flags are auto-derived and must not be set by hand: `STREAM_BODY`
-(`OTA || UPLOAD`), `CLIENT_TLS` (any of the three client-TLS flags), and
-`CAPTURE_AUTH_HEADER` (`AUTH || JWT || OIDC`). The same tree is in
-[src/DetWebServerConfig.h](src/DetWebServerConfig.h) and the
+The same guards live in [src/DetWebServerConfig.h](src/DetWebServerConfig.h) and the
 [Configuration example](examples/Foundation/05.Configuration).
 
 ## Build Footprint
