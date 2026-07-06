@@ -30,9 +30,13 @@ API_H = os.path.join(ROOT, "src", "DeterministicESPAsyncWebServer.h")
 PROTO_CPP = os.path.join(ROOT, "src", "network_drivers", "session", "proto_builtins.cpp")
 PRESENTATION = os.path.join(ROOT, "src", "network_drivers", "presentation")
 README = os.path.join(ROOT, "README.md")
+ARCH = os.path.join(ROOT, "docs", "ARCHITECTURE.md")
 
 BEGIN = "<!-- BEGIN GENERATED API FLOW (docs/utilities/gen_api_flow.py) -->"
 END = "<!-- END GENERATED API FLOW -->"
+# The detailed variant lives in the architecture / API doc (every method, protocol, and L6 module).
+BEGIN_DETAIL = "<!-- BEGIN GENERATED API FLOW DETAIL (docs/utilities/gen_api_flow.py) -->"
+END_DETAIL = "<!-- END GENERATED API FLOW DETAIL -->"
 
 # name -> API group. First matching rule wins; a startswith() prefix or an exact-name set.
 GROUPS = ["Register", "Configure", "Run", "Respond"]
@@ -107,14 +111,18 @@ def presentation_modules():
 
 
 def label(title, names, cap=2):
-    """A compact multi-line node label: a bold-ish title, up to `cap` method names, then a +N tail.
+    """A compact multi-line node label: a title, up to `cap` method names, then a +N tail.
 
     Short labels are the single biggest lever against the wide, overlapping nodes long lists produce;
     <br/> wraps so a node grows in height (cheap) instead of width (expensive). ASCII separators only
-    (a middle-dot can trip GitHub's Mermaid parser).
+    (a middle-dot can trip GitHub's Mermaid parser). `cap=None` lists every method (the detailed doc
+    variant), wrapping three per line so the node stays a sane width.
     """
-    shown = [f"{n}()" for n in names[:cap]]
-    body = " / ".join(shown) if shown else "-"
+    methods = [f"{n}()" for n in names]
+    if cap is None:
+        rows = [" / ".join(methods[i : i + 3]) for i in range(0, len(methods), 3)]
+        return title + "<br/>" + ("<br/>".join(rows) if rows else "-")
+    body = " / ".join(methods[:cap]) if methods else "-"
     tail = f"<br/>+{len(names) - cap} more" if len(names) > cap else ""
     return f"{title}<br/>{body}{tail}"
 
@@ -125,11 +133,15 @@ def short(names, cap=3):
     return body + (f" / +{len(names) - cap}" if len(names) > cap else "")
 
 
-def mermaid():
+def mermaid(detailed=False):
+    """The request-lifecycle flowchart. `detailed=False` (README) caps method lists and hides the module
+    inventory for a beginner-friendly picture; `detailed=True` (the API doc) lists every scraped method,
+    every protocol, and every L6 module - the same clean waterfall, fully expanded."""
     api = public_methods()
     protos = protocols()
     pres = presentation_modules()
-    proto_short = short([p for p, _ in protos])
+    cap = None if detailed else 2
+    proto_short = short([p for p, _ in protos], cap=99 if detailed else 3)
 
     # Layout only (curved edges, roomy spacing). Deliberately NO 'theme' override: that lets GitHub swap
     # its light / dark Mermaid theme automatically, and the classDefs below use translucent fills with no
@@ -148,9 +160,9 @@ def mermaid():
     # Setup runs once at boot; keep it as a small reference panel, wired in with one faint dashed edge.
     out.append('  subgraph SETUP["First, set up your server (once, at boot)"]')
     out.append("    direction LR")
-    out.append(f'    reg["{label("1 Register routes", api["Register"])}"]')
-    out.append(f'    cfg["{label("2 Set options", api["Configure"])}"]')
-    out.append(f'    run["{label("3 Start it", api["Run"])}"]')
+    out.append(f'    reg["{label("1 Register routes", api["Register"], cap)}"]')
+    out.append(f'    cfg["{label("2 Set options", api["Configure"], cap)}"]')
+    out.append(f'    run["{label("3 Start it", api["Run"], cap)}"]')
     out.append("  end")
     out.append("")
     # One straight waterfall: a client sends at the top, the request flows down to your handler, the
@@ -170,11 +182,15 @@ def mermaid():
     out.append('  mw["Run your middleware"]')
     out.append('  routes[("Route table")]')
     out.append('  handler>"YOUR HANDLER runs"]')
-    out.append(f'  resp["{label("Build the response", api["Respond"])}"]')
+    out.append(f'  resp["{label("Build the response", api["Respond"], cap)}"]')
     out.append('  sink{{"Frame the reply per protocol<br/>resp_sink seam<br/>HTTP/1.1 / h2 / h3"}}')
     out.append('  consend["Write bytes back<br/>det_conn_send"]')
     out.append('  udptx["Send a datagram<br/>det_udp"]')
     out.append('  cout(["The client gets the response"])')
+    if detailed:
+        # The full L6 module inventory on disk, six per line, hung off the presentation layer.
+        rows = "<br/>".join(" / ".join(pres[i : i + 6]) for i in range(0, len(pres), 6))
+        out.append(f'  mods["All L6 presentation modules ({len(pres)})<br/>{rows}"]')
     out.append("")
 
     # Edges. Track response-path edge indices so linkStyle can tint them a distinct colour.
@@ -210,6 +226,8 @@ def mermaid():
     edge("sink -->|QUIC: h3| udptx", True)
     edge("consend ==> cout", True)
     edge("udptx ==> cout", True)
+    if detailed:
+        edge("tls -.- mods")  # the module inventory hangs off the presentation layer (association, no arrow)
     out += edges
     out.append("")
 
@@ -218,7 +236,7 @@ def mermaid():
     out.append("  class reg,cfg,run,routes setup;")
     out.append("  class listen,ring,udprx,udptx,consend l4;")
     out.append("  class seam,sink seam;")
-    out.append("  class tls,parser,h2,h3 l6;")
+    out.append(f"  class tls,parser,h2,h3{',mods' if detailed else ''} l6;")
     out.append("  class mae,mw l7;")
     out.append("  class handler,resp you;")
     # Translucent fills (8-digit hex = ~15% alpha) + accent stroke + NO fixed text colour, so the page
@@ -274,30 +292,53 @@ def build_block():
     )
 
 
-def apply_to(path, check):
+def build_detail_block():
+    return "\n".join(
+        [
+            BEGIN_DETAIL,
+            "",
+            "> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by"
+            " `docs/utilities/gen_api_flow.py` - do not edit by hand. This is the fully expanded twin of the"
+            " simplified request-lifecycle chart in the [README](../README.md): the same top-to-bottom"
+            " waterfall, but every public method, every registered protocol, and every Layer-6 module on disk"
+            " is listed (nothing is capped). Colour is the OSI layer; the green path is the response.",
+            "",
+            "```mermaid",
+            mermaid(detailed=True),
+            "```",
+            "",
+            END_DETAIL,
+        ]
+    )
+
+
+def apply_to(path, begin, end, block, check):
     with open(path, "r", encoding="utf-8", newline="") as f:
         text = f.read()
     nl = "\r\n" if "\r\n" in text else "\n"
     flat = text.replace("\r\n", "\n")
-    if BEGIN not in flat or END not in flat:
-        raise SystemExit(f"{path}: missing the {BEGIN!r} / {END!r} markers")
-    block = build_block()
-    i = flat.index(BEGIN)
-    j = flat.index(END) + len(END)
+    if begin not in flat or end not in flat:
+        raise SystemExit(f"{path}: missing the {begin!r} / {end!r} markers")
+    i = flat.index(begin)
+    j = flat.index(end) + len(end)
     updated = (flat[:i] + block + flat[j:]).replace("\n", nl)
+    rel = os.path.relpath(path, ROOT)
     if check:
         if updated != text:
-            sys.stderr.write("README api-flow block is stale - run: python docs/utilities/gen_api_flow.py\n")
+            sys.stderr.write(f"{rel} api-flow block is stale - run: python docs/utilities/gen_api_flow.py\n")
             return 1
         return 0
     if updated != text:
         with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(updated)
-        sys.stderr.write(f"updated {os.path.relpath(path, ROOT)}\n")
+        sys.stderr.write(f"updated {rel}\n")
     else:
-        sys.stderr.write("README api-flow block already up to date\n")
+        sys.stderr.write(f"{rel} api-flow block already up to date\n")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(apply_to(README, "--check" in sys.argv[1:]))
+    chk = "--check" in sys.argv[1:]
+    rc = apply_to(README, BEGIN, END, build_block(), chk)
+    rc |= apply_to(ARCH, BEGIN_DETAIL, END_DETAIL, build_detail_block(), chk)
+    raise SystemExit(rc)
