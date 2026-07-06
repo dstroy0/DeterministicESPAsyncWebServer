@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1e706ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e706ab47ca008faa38058d6ab8a648c94f49db1))
 - update test report [skip ci] ([`36c1182`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36c1182b088e98f02fc3108f0f5112cb81c5d1ee))
 - update CHANGELOG.md [skip ci] ([`bd5c82e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd5c82e9900b558f852215ead8c7dbfe602ff2b3))
 - update test report [skip ci] ([`a44432f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a44432f0515e2d5e524dcf82fff6505c36d1f099))
@@ -13,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- h3_conn split uni-stream varint + field-truncation coverage ([`122eaec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/122eaec11873b9cf198a3e5cff4025c07e748550))
 - cover h3_conn client uni-streams + malformed / overflow paths ([`d50b2b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d50b2b3c323dbfcb8a6b1a3e54be513bd80c68d7))
 - cover TLS 1.3 handshake-rejection + transport-param reject paths ([`cbbf1b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbbf1b19ccfaa1ff6686d5f256d798761b1e4e6b))
 
