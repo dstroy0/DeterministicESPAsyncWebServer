@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.60.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.60.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`3ba4036`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ba40367e60e7547cd845f45d42569846bfc81ad))
+
+### Changes
+
+- Bump version: 5.59.0 → 5.60.0 ([`1817162`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1817162c199df723f0bcc6817d1ab86aa81ce1d0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`807182e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/807182e9e90aef28307fd239d07e248f0b13c6db))
+
+### Features
+
+- server-initiated session rekeying by volume/time (RFC 4253 sec 9) ([`8fa7ba9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8fa7ba9112d0178f0e1f34ea0a909b1dfeb6ce20))
+
+</details>
+
 ## [5.59.0] - 2026-07-06
 
 <details>
