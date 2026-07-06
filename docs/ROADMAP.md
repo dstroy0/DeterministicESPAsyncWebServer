@@ -555,14 +555,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   with no reply. Host-tested (`test_modbus`, 5 RTU cases incl. the 0xCDC5 CRC vector + read round-trip + bad-CRC/wrong-addr/broadcast). The pure codec is fed a complete
   frame; a UART/RS-485 driver (3.5-char inter-frame idle) + HW-over-RS-485 verify are
   the remaining transport step. (Modbus ASCII is a lower-priority follow-on.)
-- [~] **PROFINET / PROFIBUS** (XL, Siemens automation) _(PROFINET DCP codec shipped)_ -
-  `DETWS_ENABLE_PROFINET` (`services/profinet`): the **PROFINET DCP** (Discovery and Configuration
-  Protocol) frame codec - the 10-octet DCP header (frameID / serviceID / serviceType / xid /
-  dataLength) + the option/suboption blocks with DCP even-padding, built by `detws_pn_dcp_header` /
-  `_block` and walked by `detws_pn_dcp_walk` - for Identify request/response and Set (assign
-  NameOfStation / IP) over raw L2 (ethertype 0x8892, on the shipped services/rawl2); host-tested
-  (`native_profinet`). _Remaining:_ the PROFINET IO cyclic data exchange + GSDML, and **PROFIBUS-DP**
-  (the DP-V0 RS-485 cyclic subset). Fixed BSS process image, no heap.
+- [~] **PROFINET / PROFIBUS** (XL, Siemens automation) _(PROFINET DCP + PROFIBUS-DP FDL codecs shipped)_ -
+  **PROFINET DCP**: `DETWS_ENABLE_PROFINET` (`services/profinet`) - the DCP frame codec (10-octet header +
+  option/suboption blocks with even-padding, built by `detws_pn_dcp_header` / `_block`, walked by
+  `detws_pn_dcp_walk`) for Identify + Set (assign NameOfStation / IP) over raw L2 (ethertype 0x8892);
+  host-tested (`native_profinet`). **PROFIBUS-DP**: `DETWS_ENABLE_PROFIBUS` (`services/profibus`) - the
+  FDL telegram codec - SD1 (no-data) and SD2 (variable-data: `SD2 LE LEr SD2 DA SA FC data FCS ED`,
+  arithmetic-sum FCS) that a DP master exchanges with slaves over RS-485; host-tested (`native_profibus`).
+  _Remaining:_ the PROFINET IO cyclic data exchange + GSDML, and the DP-V0 master state machine + GSD
+  slave model. Fixed BSS process image, no heap.
 - [~] **DNP3** (L, IEEE 1815) - _data-link frame codec shipped._ `DETWS_ENABLE_DNP3`
   (`services\dnp3`): a zero-heap builder + CRC-validating parser for the data-link layer - `dnp3_build_frame` emits the `0x0564 LEN CTRL DEST SRC CRC` header block plus the
   CRC'd 16-octet user-data blocks, and `dnp3_parse_frame` validates the header and every
@@ -585,12 +586,11 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   (`get_bit` / `set_bit` / `get_word`); host-tested (`native_cclink`). _Remaining:_ the master
   poll/refresh state machine + the RS-485 timing, and **CC-Link IE Field** (Gbit PHY-gated). Fixed
   BSS station model, no heap.
-- [ ] **PROFIBUS PA** (M, process automation) - the process-automation profile of
-      PROFIBUS: the same DP-V0/V1 application as PROFINET/PROFIBUS-DP above but over the
-      MBP (Manchester Bus Powered, IEC 61158-2) physical layer for hazardous areas,
-      with the PA device profiles (transmitters/valves). Builds on the PROFIBUS-DP work;
-      the MBP physical layer is hardware-gated (couples to a DP segment via a
-      segment coupler in practice).
+- [~] **PROFIBUS PA** (M, process automation) _(rides the shipped DP FDL codec)_ - PROFIBUS PA runs the
+  same DP-V0/V1 application (the shipped `services/profibus` FDL telegrams) over the MBP (Manchester
+  Bus Powered, IEC 61158-2) physical layer for hazardous areas. The FDL/DP telegram layer is done;
+  _remaining:_ the PA device profiles (transmitters/valves) + the MBP physical layer (hardware-gated -
+  couples to a DP segment via a segment coupler in practice).
 - [~] **CANopen** (M, CiA 301) _(message codec shipped)_ - `DETWS_ENABLE_CANOPEN`
   (`services/canopen`): a zero-heap CiA 301 message codec over the shared CAN frame
   (`shared_primitives/det_can.h`) - NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO

@@ -1446,6 +1446,12 @@
       "src": ["+<services/sercos/sercos.cpp>"],
       "tests": ["test_sercos"]
     },
+    "native_profibus": {
+      "desc": "PROFIBUS-DP FDL telegram codec (services/profibus): the SD1 (no-data) + SD2 (variable\ndata, LE/LEr + arithmetic-sum FCS) telegrams build + validate. Pure host tests with spec-derived\nvectors.",
+      "flags": ["-DDETWS_ENABLE_PROFIBUS=1"],
+      "src": ["+<services/profibus/profibus.cpp>"],
+      "tests": ["test_profibus"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1516,6 +1522,7 @@
         "-DDETWS_ENABLE_CCLINK=1",
         "-DDETWS_ENABLE_POWERLINK=1",
         "-DDETWS_ENABLE_SERCOS=1",
+        "-DDETWS_ENABLE_PROFIBUS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1587,6 +1594,7 @@
         "+<services/cclink/cclink.cpp>",
         "+<services/powerlink/powerlink.cpp>",
         "+<services/sercos/sercos.cpp>",
+        "+<services/profibus/profibus.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

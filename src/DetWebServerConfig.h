@@ -2864,6 +2864,18 @@
 #endif
 
 /**
+ * @brief Opt-in PROFIBUS-DP FDL telegram codec (DETWS_ENABLE_PROFIBUS).
+ *
+ * When set, services/profibus builds/validates the PROFIBUS-DP FDL telegrams - SD1 (no-data: SD1 DA SA
+ * FC FCS ED) and SD2 (variable-data: SD2 LE LEr SD2 DA SA FC data FCS ED, arithmetic-sum FCS) - a
+ * Siemens DP master exchanges with slaves over RS-485 (the DP-V0 cyclic I/O exchange). Pure codec (the
+ * RS-485 timing + DP state machine are the device step). Default off.
+ */
+#ifndef DETWS_ENABLE_PROFIBUS
+#define DETWS_ENABLE_PROFIBUS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
