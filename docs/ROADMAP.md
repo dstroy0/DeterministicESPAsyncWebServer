@@ -947,3 +947,22 @@ BSS, no heap, behind a build flag.
       `det_clock`; rotate the cookie list per exchange. The packet build / parse +
       AES-SIV are host-testable against the RFC vectors; HW-verify against a public
       NTS server (e.g. time.cloudflare.com).
+
+### Documentation: Sphinx over Doxygen (do last)
+
+> The final roadmap item - tackle only after everything else on the TODO and the
+> roadmap above is checked off.
+
+The docs today are Doxygen + a custom CSS theme. The goal is to add **Sphinx** on top and
+then apply **"squirty"** styling over it for a polished, modern docs site.
+
+- [ ] **Sphinx + Breathe bridge** (L) - stand up a Sphinx project that ingests the existing
+      Doxygen output via **Breathe** (Doxygen emits XML; Breathe renders it into Sphinx), so
+      the hand-written guides (`docs/learn`, architecture, feature reference) and the
+      API reference live in one site. Keep the Doxygen XML generation in the build; Sphinx
+      consumes it. RPi build host already has `doxygen` + `graphviz` + `python3-sphinx` deps
+      (install `sphinx` + `breathe` into a venv when starting).
+- [ ] **Apply "squirty" over the Sphinx theme** (M) - layer the "squirty" styling the user
+      asked for on top of the Sphinx output (confirm the exact tool/theme meant by "squirty"
+      at implementation time - most likely a modern Sphinx theme, e.g. Furo, plus the
+      project's brand CSS carried over from the current Doxygen theme).
