@@ -3197,6 +3197,20 @@
 #endif
 
 /**
+ * @brief Opt-in Wi-SUN FAN border-router connector (DETWS_ENABLE_WISUN).
+ *
+ * Wi-SUN FAN is an IPv6/UDP/CoAP mesh terminated by a border router, so the connector rides the existing
+ * IP stack rather than driving a radio: services/wisun keeps a table of FAN nodes (their DetIp addresses +
+ * join state) behind the border router and builds the CoAP client requests to their resources
+ * (wisun_build_coap frames an RFC 7252 header + Uri-Path options + payload; the CoAP service ships only a
+ * server). wisun_nodes_json exposes the mesh to the web. The app sends the built PDU over det_udp; the
+ * chosen devboard only sets which border router you point at. Pure, no heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_WISUN
+#define DETWS_ENABLE_WISUN 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

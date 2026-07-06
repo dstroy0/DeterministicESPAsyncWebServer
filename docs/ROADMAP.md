@@ -196,12 +196,18 @@ UART radios:
   `AT$SF=<hex>` uplink formatter + OK/ERROR/pending response classifier, host-tested;
   example 15.SigfoxUplink sends a reading from a real modem. Remaining: verify against
   a module + subscription.
-- [ ] \*Wi-SUN FAN **connector** (L) - NOT a radio-module driver: the direct FAN
-      UART modules (Rohm BP35A1 class) are obsoleted, so Wi-SUN is reached as a
-      **connector to a border router / devboard** that already terminates the FAN mesh.
-      Wi-SUN FAN is an IPv6 / UDP / CoAP network, so this rides the existing IP stack
-      (CoAP / UDP client to the border router) rather than a byte-level radio codec.
-      Deferred until a target devboard + its API is chosen.
+- [~] \*Wi-SUN FAN **connector** (L) - NOT a radio-module driver: the direct FAN
+  UART modules (Rohm BP35A1 class) are obsoleted, so Wi-SUN is reached as a
+  **connector to a border router / devboard** that already terminates the FAN mesh.
+  Wi-SUN FAN is an IPv6 / UDP / CoAP network, so this rides the existing IP stack
+  (CoAP / UDP client to the border router) rather than a byte-level radio codec.
+  **Connector shipped** (`DETWS_ENABLE_WISUN`, `services/wisun`): since the CoAP service ships only a
+  _server_, the connector adds the CoAP **client** request builder (`wisun_build_coap`: RFC 7252 header +
+  delta-encoded Uri-Path options with extended-length + payload) plus the FAN node registry (register /
+  find / joined-count) keyed on `DetIp`, and `wisun_nodes_json` for the web. The app sends the built PDU
+  to a node's IPv6 address over `det_udp`; pure + host-tested (`native_wisun`). _Remaining:_ point it at a
+  chosen border-router devboard and verify the mesh end to end (the devboard choice is the only external
+  dependency; the connector code is board-agnostic).
 
 I2C / SPI / UART:
 
