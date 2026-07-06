@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`719ed9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/719ed9c6e06e3d932b64808316b5ce5487528bbc))
+- update CHANGELOG.md [skip ci] ([`62f89fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62f89fb224b2f95f18e4c13839980fa5a38b156b))
 - update CHANGELOG.md [skip ci] ([`e01c07e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e01c07e8f5c50499ffd37fe9a76f99acba6059d5))
 - update test report [skip ci] ([`d2e2ff6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e2ff6981567275ac36c7dbb43f5a8503c90a19))
 - update CHANGELOG.md [skip ci] ([`7b9c910`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9c9101b9b17c9a28e2864e6e852c80aecb1450))
@@ -48,6 +50,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`04a90d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04a90d7047ef3626d21aec1a81da9eb842982188))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9edd590`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9edd590373cf9ed1e3e7833d56ff824118f78b0e))
 - update ESP32 build footprints [skip ci] ([`d113c88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d113c888a59204e37882fa331b0cd7843bf01d23))
 - update ESP32 build footprints [skip ci] ([`f12db9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f12db9a726f0a6daa09ae95374a67b2c7475b7e5))
@@ -72,6 +75,11 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own lane state in PqCtx + backend-specific PqQueueCtx/PqRingCtx (owner sweep) ([`23e0797`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23e0797ba65873a1285546dff6e3b664cdad4fe2))
+- own server identity + handlers + channel state in one OpcuaCtx (owner sweep) ([`72c5a5f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72c5a5fa3b75dfc0757f9b4297693d4989e13003))
+- own the response buffer + conn id in one HttpClientCtx (owner sweep) ([`93fa612`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93fa612ba204ef00a112e99d0b7a1541ac28a2d2))
+- own the connection + reassembly state in one WsClientCtx (owner sweep) ([`5ccc7c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ccc7c86223c59264057a0be472cda13e667e8c1))
+- own the broker connection state machine in one MqttCtx (owner sweep) ([`9e36112`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e36112e7f7dda085a1ed537bf2c37cefe7ddf09))
 - own the server + AP IP in one ProvCtx (owner sweep) ([`9ccf29e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ccf29e31c5ceebad1bf87b428b1c9277f452b47))
 - own the fs + dest + upload state in one UploadCtx (owner sweep) ([`bb9ecc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb9ecc159028c77ddd10972c01f5478217893229))
 - own the server + auth + upload flags in one OtaCtx (owner sweep) ([`48aa8bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48aa8bb192552f36de6218257fe1249215ae4516))
