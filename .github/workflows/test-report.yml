@@ -1,54 +1,90 @@
-name: Test Report
+name: Test & Analyze
+
+# Runs the native Unity suite ONCE, in a single instrumented pass, and gets both outputs from it:
+# docs/TEST_REPORT.md (the human report) and coverage.xml (for the SonarCloud scan). Previously the
+# suite ran twice - once here for the report, once in a separate SonarCloud workflow for coverage; that
+# doubled the slowest job in CI. ccache (installed below, auto-detected by run_tests.sh) caches the
+# ~150 envs' repeated library + Unity compiles across envs and, via the ~/.ccache cache, across runs.
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: test-report-${{ github.ref }}
+  group: test-analyze-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test-report:
-    name: Run native test suites and publish report
+  test-analyze:
+    name: Run native suite (report + coverage) and scan
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # With no SONAR_TOKEN the scan steps are skipped (the report + coverage still run); a quick green
+      # job until the secret is configured. SonarCloud C/C++ needs this CI scan (auto-analysis can't).
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
-          # Authenticate with the automatic-actions deploy key so the test-report
-          # commit pushes over SSH - this can pass the protected-main ruleset and
-          # trigger downstream workflows, which a GITHUB_TOKEN push cannot.
+          fetch-depth: 0 # full history: the report commit + SonarCloud new-code attribution
+          # Authenticate with the automatic-actions deploy key so the report commit pushes over SSH
+          # (past the protected-main ruleset), which a GITHUB_TOKEN push cannot.
           ssh-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
-      - name: Install PlatformIO
-        run: pip install --upgrade platformio
+      # Restore the PlatformIO toolchain + the ccache store before building. ccache keys on the
+      # preprocessed source + flags, so the ~150 envs' identical compiles hit across envs and (thanks
+      # to this cache) across runs. The key busts on platformio.ini changes; restore-keys keeps a warm
+      # cache across those (a superset that ccache still hits).
+      - name: Cache PlatformIO + ccache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.platformio
+            ~/.ccache
+          key: test-analyze-${{ hashFiles('platformio.ini') }}
+          restore-keys: test-analyze-
+
+      - name: Install PlatformIO + gcovr + ccache
+        # gcovr is pinned: an unpinned drift to 8.6+ changed --filter anchoring and silently emptied
+        # every coverage report (0% on Sonar). ccache provides the /usr/lib/ccache masquerade dir that
+        # run_tests.sh auto-detects.
+        run: |
+          pip install --upgrade platformio 'gcovr==8.6'
+          sudo apt-get update && sudo apt-get install -y ccache
 
       - name: Check platformio.ini is in sync with the test matrix
         run: python3 test/gen_test_envs.py --check
 
-      - name: Run tests and regenerate docs/TEST_REPORT.md
-        run: bash test/run_tests.sh || true
+      # The SonarCloud C/C++ analysis needs a compile database (native platform, all envs merged).
+      - name: Generate merged compile_commands.json
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: bash tools/sonar/gen_compiledb.sh
+
+      # ONE instrumented pass -> docs/TEST_REPORT.md AND coverage.xml. `|| true` so the report + scan
+      # still publish when a suite fails (the report shows the failure); ccache is auto-enabled.
+      - name: Run the native suite once (report + coverage)
+        run: bash test/run_tests.sh --coverage || true
 
       - name: Format TEST_REPORT.md with Prettier
         run: npx prettier@3.9.1 --write docs/TEST_REPORT.md
 
       - name: Commit updated test report
+        if: ${{ github.event_name == 'push' }}
         env:
           CI_SIGNING_KEY: ${{ secrets.CI_SIGNING_KEY }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # SSH-sign the bot commit (Verified) when the signing key is available;
-          # commit unsigned if the secret is unset so CI never breaks.
+          # SSH-sign the bot commit (Verified) when the signing key is available; commit unsigned if
+          # the secret is unset so CI never breaks.
           if [ -n "$CI_SIGNING_KEY" ]; then
             mkdir -p ~/.ssh
             printf '%s\n' "$CI_SIGNING_KEY" > ~/.ssh/ci_signing_key
@@ -60,13 +96,10 @@ jobs:
           if ! git diff --quiet -- docs/TEST_REPORT.md; then
             git add docs/TEST_REPORT.md
             git commit -m "ci: update test report [skip ci]"
-            for i in {1..5}; do
-              echo "Attempt $i to push changes..."
-              if git pull --rebase origin main && git push; then
-                echo "Successfully pushed!"
-                exit 0
-              fi
-              echo "Push failed, retrying in 5 seconds..."
+            # Rebase-and-retry: other auto-committing workflows advance main during this multi-minute run.
+            for i in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then exit 0; fi
+              echo "push rejected (attempt $i/5), retrying"
               sleep 5
             done
             echo "Failed to push after 5 attempts."
@@ -74,3 +107,9 @@ jobs:
           else
             echo "Test report unchanged."
           fi
+
+      - name: SonarQube Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io

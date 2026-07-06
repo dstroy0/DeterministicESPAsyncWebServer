@@ -11,6 +11,29 @@
 
 set -uo pipefail
 
+# Optional --coverage: also emit the SonarQube coverage.xml from this same (instrumented) run, so CI
+# runs the whole suite ONCE for both the test report and the Sonar scan instead of twice. Strip the
+# flag out of $@ so an explicit env list still works.
+COVERAGE=0
+_pos=()
+for _a in "$@"; do
+    if [[ "$_a" == "--coverage" ]]; then COVERAGE=1; else _pos+=("$_a"); fi
+done
+set -- ${_pos[@]+"${_pos[@]}"}
+
+# Route every compile through ccache if a masquerade dir is present (gcc/g++ -> ccache symlinks on
+# PATH). The ~150 native envs each rebuild the library + Unity with their own flags, so identical
+# (source, flags) compiles recur across envs; ccache turns them into hits (and, with ~/.ccache restored,
+# across CI runs). PATH masquerade is used because PlatformIO builds Unity/libs in cloned sub-envs that
+# do not inherit a compiler-wrap set any other way. No-op when ccache is not installed.
+for _ccdir in /usr/lib/ccache /usr/lib64/ccache /usr/local/libexec/ccache /opt/homebrew/opt/ccache/libexec; do
+    if [[ -d "$_ccdir" ]]; then
+        export PATH="$_ccdir:$PATH"
+        echo "ccache: compiles routed through $_ccdir"
+        break
+    fi
+done
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -155,7 +178,17 @@ if [[ $# -gt 0 ]]; then
     ENV_NAMES=("$@")
 fi
 
-echo "Running ${#ENV_NAMES[@]} native envs"
+if [[ $COVERAGE -eq 1 ]]; then
+    # Instrument this run in a dedicated build dir (never clashes with the plain compile-DB build) and
+    # prepare per-env coverage output; each env is gcovr'd right after it runs, unioned at the end.
+    export PLATFORMIO_BUILD_DIR="${PLATFORMIO_BUILD_DIR:-.pio_cov}"
+    export PLATFORMIO_BUILD_FLAGS="-fprofile-arcs -ftest-coverage -lgcov"
+    rm -rf coverage_reports
+    mkdir -p coverage_reports
+fi
+
+_covnote=""; [[ $COVERAGE -eq 1 ]] && _covnote=" (with coverage)"
+echo "Running ${#ENV_NAMES[@]} native envs${_covnote}"
 
 # Run each env on its own so progress is visible (a counter + percent + spinner),
 # rather than one long silent block. Each env's output is formatted and appended
@@ -197,6 +230,16 @@ for _i in "${!ENV_NAMES[@]}"; do
     # Show this env's results and capture them for the report.
     format_output < "$_envout" | tee -a "$RAW_FILE"
     rm -f "$_envout"
+
+    if [[ $COVERAGE -eq 1 ]]; then
+        # gcovr this env right after it runs (one report per env; unioned after the loop). gcovr 8.x
+        # anchors --filter to the full relative path, so 'src/.*' (not bare 'src/') matches src/... and
+        # still excludes test/ + the Unity libdep. Same-source-different-flags cannot be merged in a
+        # single gcovr pass, hence per-env.
+        gcovr --root . --filter 'src/.*' --gcov-ignore-parse-errors --sonarqube \
+            "coverage_reports/${_env}.xml" "${PLATFORMIO_BUILD_DIR:-.pio_cov}/$_env" \
+            2>/dev/null || echo "WARN: gcovr failed for $_env"
+    fi
 done
 WALL_SECS=$(( SECONDS - T0 ))
 
@@ -454,4 +497,12 @@ printf '```\n\n</details>\n'
 
 echo ""
 echo "Report written: $REPORT_PATH"
+
+if [[ $COVERAGE -eq 1 ]]; then
+    # Union every per-env report into one SonarQube coverage.xml (src/ only) for the scan.
+    python3 tools/sonar/merge_coverage.py coverage.xml "coverage_reports/*.xml"
+    rm -rf coverage_reports
+    echo "Coverage written: coverage.xml"
+fi
+
 exit $PIO_EXIT
