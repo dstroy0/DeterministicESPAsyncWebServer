@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ef7a964`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef7a964fe5241f2f714667e7be3c756c0864d4b8))
+- update CHANGELOG.md [skip ci] ([`5dd9ed1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dd9ed15304de5fc07ec8cd1867d5f33bc1f4db8))
 - update test report [skip ci] ([`1c2d482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c2d48227d17889be8b221970c4bef740dbddf31))
 - update CHANGELOG.md [skip ci] ([`353ac0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353ac0ddcff667cc7a51a60b729e51186b69271f))
 - update CHANGELOG.md [skip ci] ([`3e2a537`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e2a5375e95041072e1c4f32bdc48983290e5b77))
@@ -46,6 +48,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - backfill 54 feature entries missing from the grid + add coverage guard ([`48d3be7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48d3be78935ef6a569dfd1a6be98943c553a10c4))
 - close the multi-MCU portability item as a won't-do (per user request) ([`bcef60e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcef60e0ec60ea08fc9854c37b1796ba604238df))
 - fix broken SonarCloud badge (sonarcloud.yml -> test-report.yml) ([`450c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450c617280017a813c1519d0945673061b09679b))
+
+### Refactor
+
+- unnest ternaries into if/else (cpp:S3358) ([`e826411`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e826411c45275728b98dfc2395cd7b094ba63169))
 
 ### Testing
 
