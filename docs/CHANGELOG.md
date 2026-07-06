@@ -2,11 +2,24 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.2.1] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.2.1 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- honor flight-buffer cap in emit + overflow-safe DATA clamp ([`85c7b1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85c7b1ea5c4f17df222cac15ec54d93c2822258b))
 
 ### CI / Build
 
+- update test report [skip ci] ([`338509d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/338509d19fe0db86c152916744a9242052a937e1))
+- update CHANGELOG.md [skip ci] ([`f306d03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f306d03075c042dba9d50f83e18767dc5beffa44))
 - update test report [skip ci] ([`f67d7e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f67d7e95405b0161a6447946f5f236339593ad57))
+
+### Changes
+
+- Bump version: 5.2.0 → 5.2.1 ([`2e82707`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e82707d7ea130481372184dc071433b83075877))
 
 ### Documentation
 
@@ -17,6 +30,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - gate trademark-named themes out of commercial builds (keep them in OSS) ([`8334989`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8334989086e4ab8d8f8f74cbe03f440842d3512d))
 - expand theme library to 112 + wire theme/favicon generators into CI ([`e6dfd84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6dfd84b1a462cc19194424d29c0827cb2c9b21c))
+
+</details>
 
 ## [5.2.0] - 2026-07-06
 
