@@ -136,7 +136,8 @@ native Unity tests before moving on. Each must keep the "no heap after
       - for very large streams add a per-chunk `tcp_output()` / send-window
       check before relying on it under load.
 
-- [ ] **8. Stretch / lower priority.**
+- [x] **8. Stretch / lower priority.** _(resolved: the sub-items are shipped, except multi-MCU
+      portability which is a closed won't-do per the user's standing request.)_
   - [x] Regex routes _(done)_: [`on_regex()`](@ref DetWebServer::on_regex):
         whole-path match via a bounded, allocation-free backtracker (`.`, `* + ?`,
         `[...]`/`[^...]` ranges, `\d \w \s`, `\` escapes; non-capturing). A
@@ -152,8 +153,12 @@ native Unity tests before moving on. Each must keep the "no heap after
         Each connection is tagged `DETIFACE_STA`/`DETIFACE_AP` at accept time by
         comparing its local IP to the softAP IP. Tested by `test_iface` (7 cases);
         example `09.InterfaceFilter`.
-  - [ ] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350). _(Deferred per
-        request: not pursued.)_
+  - [x] Portability beyond ESP32 (ESP8266 / RP2040 / RP2350). **Won't do (closed):** deferred at the
+        user's explicit request and confirmed not pursued - a deliberate scope decision, not an open gap.
+        The library targets the ESP32 family (Arduino core + ESP-IDF); porting the WiFi/BLE radio,
+        lwIP/FreeRTOS bindings, and the mbedTLS/MPI hardware-acceleration seams to the ESP8266 (no
+        FreeRTOS SMP, far less RAM) or the RP2040/RP2350 (no on-chip WiFi/BLE) is out of scope. Reopen only
+        if the ESP32-only assumption ever needs to change.
 
 </details>
 
