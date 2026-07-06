@@ -974,17 +974,16 @@ BSS, no heap, behind a build flag.
 > it with a GPS stratum-1 source + upstream-NTP fallback). NTS below hardens the time the
 > device _consumes_; a future NTS server mode could extend the server the same way.
 
-- [ ] **NTS-KE (Key Establishment)** (L) - a TLS 1.3 handshake to the NTS-KE server
-      that yields the AEAD key material (via RFC 5705 exporter), the NTP server
-      address, and the initial cookies. Reuses the static-pool mbedTLS client
-      (`det_tls` / the MQTT/WS-client TLS path); ALPN `ntske/1`.
-- [ ] **NTS-protected NTP** (L) - NTPv4 with the NTS extension fields: Unique
-      Identifier, NTS Cookie, and the NTS Authenticator + Encrypted EFs under
-      `AEAD_AES_SIV_CMAC_256` (RFC 5297 AES-SIV). Verify the response authenticator
-      and the echoed unique-id (anti-replay), then feed the validated offset to
-      `det_clock`; rotate the cookie list per exchange. The packet build / parse +
-      AES-SIV are host-testable against the RFC vectors; HW-verify against a public
-      NTS server (e.g. time.cloudflare.com).
+- [~] **NTS-KE (Key Establishment)** (L) _(record codec shipped)_ - `DETWS_ENABLE_NTS`
+  (`services/nts`): the NTS-KE TLV record codec - `detws_nts_ke_request` builds the standard client
+  request (Next Protocol NTPv4 + AEAD AES-SIV-CMAC-256 + End-of-Message, all critical) and
+  `detws_nts_ke_parse` walks a response, surfacing each record (cookies, negotiated AEAD, server,
+  port, error) via a callback; host-tested (`native_nts`). _Remaining:_ running it over the static-pool
+  mbedTLS client (ALPN `ntske/1`) + the RFC 5705 exporter key derivation (the label is exposed).
+- [~] **NTS-protected NTP** (L) _(extension-field framing shipped)_ - `services/nts` also builds the NTS
+  NTP extension fields (Unique Identifier, NTS Cookie, and the RFC 7822 4-byte-padded framing);
+  host-tested. _Remaining:_ the `AEAD_AES_SIV_CMAC_256` (RFC 5297) authenticator protect/verify + the
+  anti-replay unique-id echo + cookie rotation, then feed the validated offset to `det_clock`.
 
 ### Documentation: Sphinx over Doxygen (do last)
 

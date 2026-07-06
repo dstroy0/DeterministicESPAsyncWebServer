@@ -1332,6 +1332,12 @@
       "src": ["+<services/hart/hart.cpp>"],
       "tests": ["test_hart"]
     },
+    "native_nts": {
+      "desc": "Network Time Security codec (services/nts, RFC 8915): the NTS-KE TLV records (build the\nstandard request, parse a response) and the NTS NTP extension-field framing (unique id / cookie,\nRFC 7822 4-byte padding). Pure host tests with spec-derived vectors.",
+      "flags": ["-DDETWS_ENABLE_NTS=1"],
+      "src": ["+<services/nts/nts.cpp>"],
+      "tests": ["test_nts"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1383,6 +1389,7 @@
         "-DDETWS_ENABLE_NETADAPT=1",
         "-DDETWS_ENABLE_DSHOT=1",
         "-DDETWS_ENABLE_HART=1",
+        "-DDETWS_ENABLE_NTS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1435,6 +1442,7 @@
         "+<services/netadapt/netadapt.cpp>",
         "+<services/dshot/dshot.cpp>",
         "+<services/hart/hart.cpp>",
+        "+<services/nts/nts.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

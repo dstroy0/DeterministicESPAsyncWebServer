@@ -2639,6 +2639,18 @@
 #endif
 
 /**
+ * @brief Opt-in Network Time Security (NTS, RFC 8915) wire codec (DETWS_ENABLE_NTS).
+ *
+ * When set, services/nts provides the NTS-KE record codec (build/parse the TLV records - next protocol,
+ * AEAD, cookies, server/port) and the NTS NTP extension-field framing (Unique Identifier, Cookie,
+ * Authenticator). Pure framing (the AES-SIV-CMAC-256 AEAD + TLS-exporter key derivation are the crypto
+ * integration on top). Default off.
+ */
+#ifndef DETWS_ENABLE_NTS
+#define DETWS_ENABLE_NTS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
