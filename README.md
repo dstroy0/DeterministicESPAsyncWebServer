@@ -409,8 +409,8 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DNS_RESOLVER` |             3.7 KB |           1.2 KB |
 | L7    | `COAP`         |             3.4 KB |           2.4 KB |
 | L7    | `OTA`          |             3.1 KB |          35.3 KB |
-| L7    | `CONFIG_IO`    |             2.8 KB |         < 0.5 KB |
 | L7    | `CONFIG_STORE` |             2.8 KB |         < 0.5 KB |
+| L7    | `CONFIG_IO`    |             2.8 KB |         < 0.5 KB |
 | L7    | `GRAPHQL`      |             2.7 KB |           4.3 KB |
 | L7    | `GPIO_MAP`     |             2.1 KB |         < 0.5 KB |
 | L7    | `METRICS`      |             1.8 KB |         < 0.5 KB |
