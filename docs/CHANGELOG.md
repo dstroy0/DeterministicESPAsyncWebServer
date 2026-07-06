@@ -6,10 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`489d02a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/489d02a0dfe73f22938094c7bfc500d5cd7ecda4))
 - update CHANGELOG.md [skip ci] ([`d1564ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1564ab5ecb781824ee520ea9750607be6003c92))
 
 ### Documentation
 
+- reconcile post-v5 southbound backlog to [~] (per-module codecs shipped) ([`37f751a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37f751a8d8385ab12df36d34e5decf8d130289f4))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5152758`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51527588bd8f4e3d0d0d4757024a3ad19c76b2d6))
 - reconcile build-flag tree + build configurator to [~] ([`3c8ac3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8ac3c4ec2a826a540aee403db93715d0d5c455))
 - reconcile Fieldbuses to [~] (CANopen/PROFIBUS/DeviceNet/Modbus shipped) ([`7c34625`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c34625de0d539efe27bcf5cf54767322fed73cb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`50d617e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50d617e65fa97c3b327fcf1f94f31d640fc05755))
