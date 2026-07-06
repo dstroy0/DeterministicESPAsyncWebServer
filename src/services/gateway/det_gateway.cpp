@@ -35,12 +35,22 @@ struct port
     bool used;
 };
 
-port s_port[DETWS_GW_MAX_PORTS];
-det_gw_uplink_fn s_uplink = nullptr;
-void *s_uplink_ctx = nullptr;
-const char *s_prefix = "gw";
-uint32_t s_seq = 0;
-det_gw_stats s_stats;
+// All gateway state, owned by one instance (internal linkage): the port table, the
+// northbound uplink callback + context, the topic prefix, the uplink sequence, and stats,
+// grouped so it is one named owner, unreachable from any other translation unit.
+struct GatewayCtx
+{
+    port ports[DETWS_GW_MAX_PORTS];
+    det_gw_uplink_fn uplink = nullptr;
+    void *uplink_ctx = nullptr;
+    const char *prefix = "gw";
+    uint32_t seq = 0;
+    det_gw_stats stats;
+#ifndef ARDUINO
+    uint32_t now_ms = 0; // host test clock (real builds use detws_millis())
+#endif
+};
+GatewayCtx s_gw;
 
 #ifdef ARDUINO
 uint32_t gw_now()
@@ -48,18 +58,18 @@ uint32_t gw_now()
     return detws_millis();
 }
 #else
-uint32_t s_now_ms = 0;
 uint32_t gw_now()
 {
-    return s_now_ms;
+    return s_gw.now_ms;
 }
 #endif
 
-port *find_port(uint8_t id)
+// Returns a mutable port (callers mutate it), so it takes the owner by non-const reference.
+port *find_port(GatewayCtx &g, uint8_t id)
 {
     for (uint8_t i = 0; i < DETWS_GW_MAX_PORTS; i++)
-        if (s_port[i].used && s_port[i].id == id)
-            return &s_port[i];
+        if (g.ports[i].used && g.ports[i].id == id)
+            return &g.ports[i];
     return nullptr;
 }
 
@@ -108,30 +118,30 @@ bool put_u32(char *buf, uint16_t *pos, uint16_t cap, uint32_t v)
 
 void det_gw_reset(void)
 {
-    memset(s_port, 0, sizeof(s_port));
-    s_uplink = nullptr;
-    s_uplink_ctx = nullptr;
-    s_prefix = "gw";
-    s_seq = 0;
-    memset(&s_stats, 0, sizeof(s_stats));
+    memset(s_gw.ports, 0, sizeof(s_gw.ports));
+    s_gw.uplink = nullptr;
+    s_gw.uplink_ctx = nullptr;
+    s_gw.prefix = "gw";
+    s_gw.seq = 0;
+    memset(&s_gw.stats, 0, sizeof(s_gw.stats));
 }
 
 bool det_gw_add_port(const det_gw_port_config *cfg)
 {
-    if (!cfg || find_port(cfg->port_id))
+    if (!cfg || find_port(s_gw, cfg->port_id))
         return false;
     for (uint8_t i = 0; i < DETWS_GW_MAX_PORTS; i++)
     {
-        if (s_port[i].used)
+        if (s_gw.ports[i].used)
             continue;
-        s_port[i].tx = cfg->tx;
-        s_port[i].ctx = cfg->ctx;
-        s_port[i].window_start = 0;
-        s_port[i].rate_cap = cfg->rate_cap;
-        s_port[i].count = 0;
-        s_port[i].id = cfg->port_id;
-        s_port[i].kind = cfg->kind;
-        s_port[i].used = true;
+        s_gw.ports[i].tx = cfg->tx;
+        s_gw.ports[i].ctx = cfg->ctx;
+        s_gw.ports[i].window_start = 0;
+        s_gw.ports[i].rate_cap = cfg->rate_cap;
+        s_gw.ports[i].count = 0;
+        s_gw.ports[i].id = cfg->port_id;
+        s_gw.ports[i].kind = cfg->kind;
+        s_gw.ports[i].used = true;
         return true;
     }
     return false; // table full
@@ -139,51 +149,51 @@ bool det_gw_add_port(const det_gw_port_config *cfg)
 
 void det_gw_set_uplink(det_gw_uplink_fn fn, void *ctx)
 {
-    s_uplink = fn;
-    s_uplink_ctx = ctx;
+    s_gw.uplink = fn;
+    s_gw.uplink_ctx = ctx;
 }
 
 void det_gw_set_topic_prefix(const char *prefix)
 {
-    s_prefix = prefix ? prefix : "gw";
+    s_gw.prefix = prefix ? prefix : "gw";
 }
 
 bool det_gw_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)
 {
-    s_stats.up_in++;
-    port *p = find_port(port_id);
-    if (!p || !s_uplink || rate_exceeded(p))
+    s_gw.stats.up_in++;
+    port *p = find_port(s_gw, port_id);
+    if (!p || !s_gw.uplink || rate_exceeded(p))
     {
-        s_stats.up_dropped++;
+        s_gw.stats.up_dropped++;
         return false;
     }
     det_gw_msg msg;
     msg.payload = payload;
-    msg.seq = s_seq++;
+    msg.seq = s_gw.seq++;
     msg.len = len;
     msg.src_addr = src_addr;
     msg.rssi = rssi;
     msg.port_id = port_id;
     msg.kind = p->kind;
-    if (s_uplink(&msg, s_uplink_ctx))
+    if (s_gw.uplink(&msg, s_gw.uplink_ctx))
     {
-        s_stats.up_published++;
+        s_gw.stats.up_published++;
         return true;
     }
-    s_stats.up_dropped++;
+    s_gw.stats.up_dropped++;
     return false;
 }
 
 bool det_gw_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload, uint16_t len)
 {
-    s_stats.down_in++;
-    port *p = find_port(port_id);
+    s_gw.stats.down_in++;
+    port *p = find_port(s_gw, port_id);
     if (!p || !p->tx || !p->tx(port_id, dst_addr, payload, len, p->ctx))
     {
-        s_stats.down_dropped++;
+        s_gw.stats.down_dropped++;
         return false;
     }
-    s_stats.down_sent++;
+    s_gw.stats.down_sent++;
     return true;
 }
 
@@ -192,7 +202,7 @@ uint16_t det_gw_topic(const det_gw_msg *msg, char *buf, uint16_t buflen)
     if (!msg || !buf || buflen == 0)
         return 0;
     uint16_t pos = 0;
-    for (const char *s = s_prefix; *s; s++)
+    for (const char *s = s_gw.prefix; *s; s++)
         if (!put_ch(buf, &pos, buflen, *s))
             return 0;
     // Sequential, not one `||` chain: the two '/' separators are written at different
@@ -213,13 +223,13 @@ uint16_t det_gw_topic(const det_gw_msg *msg, char *buf, uint16_t buflen)
 void det_gw_get_stats(det_gw_stats *out)
 {
     if (out)
-        *out = s_stats;
+        *out = s_gw.stats;
 }
 
 #if !defined(ARDUINO)
 void det_gw_test_set_now(uint32_t ms)
 {
-    s_now_ms = ms;
+    s_gw.now_ms = ms;
 }
 #endif
 
