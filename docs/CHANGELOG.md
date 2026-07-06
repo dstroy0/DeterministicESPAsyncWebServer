@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.17.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.17.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8a1b7bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a1b7bf44f0171ae6519933bdc61fd3637dd85aa))
+
+### Changes
+
+- Bump version: 5.16.0 → 5.17.0 ([`f40dd34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f40dd34f7d3a996dcd58bfa231dcbf5c89dfba33))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2c6ebbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c6ebbeaa6cbc6bf960d06a3eff3bdc0a2e284b8))
+- update ESP32 build footprints [skip ci] ([`1079df6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1079df6897589458e31bcc039e34787542d6613d))
+
+### Features
+
+- MTConnect agent response codec (ANSI/MTC1.4) ([`d18e68d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d18e68d59d889236e006949ad95b6163389dec16))
+
+</details>
+
 ## [5.16.0] - 2026-07-06
 
 <details>
