@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.42.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.42.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e0bfb0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0bfb0be38f7581076f07b0c6a9b20288821427c))
+
+### Changes
+
+- Bump version: 5.41.0 → 5.42.0 ([`61e8189`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61e8189c6beddcf454cc9536eb013f21d91f5490))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`26552d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26552d1515f1071e1bb77caa507fe9b714f68e1b))
+
+### Features
+
+- ESP32 panic / exception decoder (services/exc_decoder) ([`49f1ae5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49f1ae5ed8a98c1dd1b8a39eb631a5869afab05b))
+
+</details>
+
 ## [5.41.0] - 2026-07-06
 
 <details>
