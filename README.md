@@ -391,30 +391,30 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L6    | `AUTH_LOCKOUT` |           < 0.5 KB |           0.6 KB |
 | L7    | `WS_CLIENT`    |            77.0 KB |          53.0 KB |
 | L7    | `ETAG`         |        0.0-72.4 KB |       0.0-1.3 KB |
-| L7    | `WEBDAV`       |       26.2-65.5 KB |     38.4-38.7 KB |
+| L7    | `WEBDAV`       |       26.2-65.6 KB |     38.4-38.7 KB |
 | L7    | `VFS`          |            40.6 KB |         < 0.5 KB |
 | L7    | `RANGE`        |        0.6-39.7 KB |         < 0.5 KB |
-| L7    | `UPLOAD`       |            39.5 KB |           5.1 KB |
-| L7    | `OPCUA_CLIENT` |        6.8-28.4 KB |     10.0-13.8 KB |
+| L7    | `UPLOAD`       |            39.6 KB |           5.1 KB |
+| L7    | `OPCUA_CLIENT` |        6.8-28.5 KB |     10.0-13.8 KB |
 | L7    | `NTP`          |            23.2 KB |           2.5 KB |
 | L7    | `MDNS`         |            22.9 KB |           1.9 KB |
 | L7    | `TIME_SOURCE`  |            18.7 KB |           1.6 KB |
 | L7    | `DASHBOARD`    |            18.4 KB |         < 0.5 KB |
-| L7    | `RTC`          |            13.4 KB |         < 0.5 KB |
+| L7    | `RTC`          |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`         |            11.2 KB |          12.8 KB |
 | L7    | `OAUTH2`       |            10.2 KB |          22.3 KB |
 | L7    | `WEBHOOK`      |             8.3 KB |          19.3 KB |
-| L7    | `OPCUA`        |         6.0-6.9 KB |     10.0-10.1 KB |
+| L7    | `OPCUA`        |         6.1-6.9 KB |     10.0-10.1 KB |
 | L7    | `TELEMETRY`    |             6.7 KB |         < 0.5 KB |
-| L7    | `SNMP`         |             6.5 KB |          12.1 KB |
+| L7    | `SNMP`         |             6.6 KB |          12.1 KB |
 | L7    | `PROVISIONING` |             5.5 KB |           1.5 KB |
 | L7    | `DNS_RESOLVER` |             3.9 KB |           1.2 KB |
-| L7    | `COAP`         |             3.5 KB |           2.5 KB |
+| L7    | `COAP`         |             3.6 KB |           2.5 KB |
 | L7    | `OTA`          |             3.2 KB |          35.3 KB |
 | L7    | `CONFIG_IO`    |             2.9 KB |         < 0.5 KB |
 | L7    | `CONFIG_STORE` |             2.9 KB |         < 0.5 KB |
-| L7    | `GRAPHQL`      |             2.8 KB |           4.3 KB |
-| L7    | `GPIO_MAP`     |             2.2 KB |         < 0.5 KB |
+| L7    | `GRAPHQL`      |             2.9 KB |           4.3 KB |
+| L7    | `GPIO_MAP`     |             2.3 KB |         < 0.5 KB |
 | L7    | `METRICS`      |             2.0 KB |         < 0.5 KB |
 | L7    | `SYSLOG`       |             1.3 KB |           1.8 KB |
 | L7    | `AUDIT_LOG`    |           < 0.5 KB |           2.9 KB |
