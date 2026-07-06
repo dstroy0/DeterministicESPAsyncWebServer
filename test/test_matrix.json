@@ -1593,6 +1593,12 @@
       "src": ["+<services/radio_sniff/radio_sniff.cpp>"],
       "tests": ["test_radio_sniff"]
     },
+    "native_ble_gatt": {
+      "desc": "Bluetooth ATT codec + GATT bridge (services/ble_gatt): build/parse the common ATT PDUs\n(read/write/notify/error, LE handles) and serialize a GATT characteristic table as JSON for the web\nstack. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_BLE_GATT=1"],
+      "src": ["+<services/ble_gatt/ble_gatt.cpp>"],
+      "tests": ["test_ble_gatt"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1687,6 +1693,7 @@
         "-DDETWS_ENABLE_LDC1614=1",
         "-DDETWS_ENABLE_VL53L0X=1",
         "-DDETWS_ENABLE_RADIO_SNIFF=1",
+        "-DDETWS_ENABLE_BLE_GATT=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1782,6 +1789,7 @@
         "+<services/ldc1614/ldc1614.cpp>",
         "+<services/vl53l0x/vl53l0x.cpp>",
         "+<services/radio_sniff/radio_sniff.cpp>",
+        "+<services/ble_gatt/ble_gatt.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

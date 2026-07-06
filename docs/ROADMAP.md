@@ -214,8 +214,12 @@ I2C / SPI / UART:
 
 Built-in radio:
 
-- [ ] \*BLE GATT bridge (M) - on-chip ESP32 BLE (and external HCI-UART modules):
-      scan / expose GATT characteristics and bridge them to the web stack.
+- [~] \*BLE GATT bridge (M) - on-chip ESP32 BLE (and external HCI-UART modules):
+  scan / expose GATT characteristics and bridge them to the web stack. **ATT codec + bridge shipped**
+  (`DETWS_ENABLE_BLE_GATT`, `services/ble_gatt`): the Attribute Protocol PDUs under GATT (Bluetooth Core
+  Vol 3 Part F) - build/parse read / write / notify / error with little-endian handles - plus a GATT
+  characteristic-table JSON serializer for the web, pure + host-tested (`native_ble_gatt`). Remaining:
+  wire it to the NimBLE / Bluedroid radio (scan + a GATT server) and an HCI-UART transport variant.
 
 ### post-v5: promiscuous / monitor capture
 

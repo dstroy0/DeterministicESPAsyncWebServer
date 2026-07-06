@@ -3170,6 +3170,19 @@
 #endif
 
 /**
+ * @brief Opt-in Bluetooth ATT protocol codec + GATT characteristic bridge (DETWS_ENABLE_BLE_GATT).
+ *
+ * The wire protocol under GATT for bridging the on-chip BLE radio to the web: services/ble_gatt builds
+ * and parses the common ATT PDUs (read / write / notify / error, Bluetooth Core Vol 3 Part F) and
+ * serializes a GATT characteristic table as JSON for the web stack (att_read_req / att_write_req /
+ * att_notify / att_error_rsp / att_parse / gatt_char_json). The BLE stack owns the radio; this owns the
+ * ATT bytes + the northbound JSON. Pure, no heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_BLE_GATT
+#define DETWS_ENABLE_BLE_GATT 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
