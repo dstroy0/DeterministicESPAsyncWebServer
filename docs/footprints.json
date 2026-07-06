@@ -458,7 +458,7 @@
     "example": "L7-Application/14.SNMP",
     "flags": "-DDETWS_ENABLE_SNMP=1",
     "board": "esp32dev",
-    "flash_bytes": 759705,
+    "flash_bytes": 759821,
     "ram_bytes": 78608
   },
   "SNMP+SNMP_TRAP": {
