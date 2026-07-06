@@ -19,8 +19,6 @@
 
 namespace
 {
-const DetwsVfsBackend *s_backend = nullptr;
-
 // ---- RAM backend ----------------------------------------------------------
 struct RamFile
 {
@@ -36,13 +34,23 @@ struct RamHandle
     size_t pos;
     int mode;
 };
-RamFile s_rf[DETWS_VFS_RAM_FILES];
-RamHandle s_rh[DETWS_VFS_MAX_OPEN];
+
+// All VFS dispatch + RAM-backend state, owned by one instance (internal linkage): the
+// mounted backend vtable, the RAM file pool, and the handle table, grouped so it is one
+// named owner, unreachable from any other translation unit. (The RAM ops are fixed-signature
+// vtable entries, so they reach this single owner directly.)
+struct VfsCtx
+{
+    const DetwsVfsBackend *backend = nullptr;
+    RamFile rf[DETWS_VFS_RAM_FILES];
+    RamHandle rh[DETWS_VFS_MAX_OPEN];
+};
+VfsCtx s_vfs;
 
 int ram_find(const char *name)
 {
     for (int i = 0; i < DETWS_VFS_RAM_FILES; i++)
-        if (s_rf[i].used && strncmp(s_rf[i].name, name, DETWS_VFS_NAME_MAX) == 0)
+        if (s_vfs.rf[i].used && strncmp(s_vfs.rf[i].name, name, DETWS_VFS_NAME_MAX) == 0)
             return i;
     return -1;
 }
@@ -52,12 +60,12 @@ int ram_create(const char *name)
     if (strlen(name) >= DETWS_VFS_NAME_MAX)
         return -1;
     for (int i = 0; i < DETWS_VFS_RAM_FILES; i++)
-        if (!s_rf[i].used)
+        if (!s_vfs.rf[i].used)
         {
-            s_rf[i].used = true;
-            strncpy(s_rf[i].name, name, DETWS_VFS_NAME_MAX - 1);
-            s_rf[i].name[DETWS_VFS_NAME_MAX - 1] = '\0';
-            s_rf[i].len = 0;
+            s_vfs.rf[i].used = true;
+            strncpy(s_vfs.rf[i].name, name, DETWS_VFS_NAME_MAX - 1);
+            s_vfs.rf[i].name[DETWS_VFS_NAME_MAX - 1] = '\0';
+            s_vfs.rf[i].len = 0;
             return i;
         }
     return -1;
@@ -65,7 +73,7 @@ int ram_create(const char *name)
 
 bool ram_handle_ok(int h)
 {
-    return h >= 0 && h < DETWS_VFS_MAX_OPEN && s_rh[h].open;
+    return h >= 0 && h < DETWS_VFS_MAX_OPEN && s_vfs.rh[h].open;
 }
 
 int ram_open(const char *path, int mode)
@@ -85,15 +93,15 @@ int ram_open(const char *path, int mode)
         if (f < 0)
             return -1;
         if (mode == DETWS_VFS_WRITE)
-            s_rf[f].len = 0;
+            s_vfs.rf[f].len = 0;
     }
     for (int h = 0; h < DETWS_VFS_MAX_OPEN; h++)
-        if (!s_rh[h].open)
+        if (!s_vfs.rh[h].open)
         {
-            s_rh[h].open = true;
-            s_rh[h].file = f;
-            s_rh[h].mode = mode;
-            s_rh[h].pos = (mode == DETWS_VFS_APPEND) ? s_rf[f].len : 0;
+            s_vfs.rh[h].open = true;
+            s_vfs.rh[h].file = f;
+            s_vfs.rh[h].mode = mode;
+            s_vfs.rh[h].pos = (mode == DETWS_VFS_APPEND) ? s_vfs.rf[f].len : 0;
             return h;
         }
     return -1; // handle pool exhausted
@@ -103,38 +111,38 @@ int ram_read(int h, void *buf, size_t n)
 {
     if (!ram_handle_ok(h))
         return -1;
-    RamFile *f = &s_rf[s_rh[h].file];
-    size_t avail = (s_rh[h].pos < f->len) ? (f->len - s_rh[h].pos) : 0;
+    RamFile *f = &s_vfs.rf[s_vfs.rh[h].file];
+    size_t avail = (s_vfs.rh[h].pos < f->len) ? (f->len - s_vfs.rh[h].pos) : 0;
     size_t k = n < avail ? n : avail;
-    memcpy(buf, f->data + s_rh[h].pos, k);
-    s_rh[h].pos += k;
+    memcpy(buf, f->data + s_vfs.rh[h].pos, k);
+    s_vfs.rh[h].pos += k;
     return (int)k;
 }
 
 int ram_write(int h, const void *buf, size_t n)
 {
-    if (!ram_handle_ok(h) || s_rh[h].mode == DETWS_VFS_READ)
+    if (!ram_handle_ok(h) || s_vfs.rh[h].mode == DETWS_VFS_READ)
         return -1;
-    RamFile *f = &s_rf[s_rh[h].file];
-    size_t cap = (s_rh[h].pos < DETWS_VFS_RAM_FILE_SIZE) ? (DETWS_VFS_RAM_FILE_SIZE - s_rh[h].pos) : 0;
+    RamFile *f = &s_vfs.rf[s_vfs.rh[h].file];
+    size_t cap = (s_vfs.rh[h].pos < DETWS_VFS_RAM_FILE_SIZE) ? (DETWS_VFS_RAM_FILE_SIZE - s_vfs.rh[h].pos) : 0;
     size_t k = n < cap ? n : cap;
-    memcpy(f->data + s_rh[h].pos, buf, k);
-    s_rh[h].pos += k;
-    if (s_rh[h].pos > f->len)
-        f->len = s_rh[h].pos;
+    memcpy(f->data + s_vfs.rh[h].pos, buf, k);
+    s_vfs.rh[h].pos += k;
+    if (s_vfs.rh[h].pos > f->len)
+        f->len = s_vfs.rh[h].pos;
     return (int)k;
 }
 
 void ram_close(int h)
 {
     if (h >= 0 && h < DETWS_VFS_MAX_OPEN)
-        s_rh[h].open = false;
+        s_vfs.rh[h].open = false;
 }
 
 long ram_size(const char *path)
 {
     int f = ram_find(path);
-    return f < 0 ? -1 : (long)s_rf[f].len;
+    return f < 0 ? -1 : (long)s_vfs.rf[f].len;
 }
 
 bool ram_exists(const char *path)
@@ -147,7 +155,7 @@ bool ram_remove(const char *path)
     int f = ram_find(path);
     if (f < 0)
         return false;
-    s_rf[f].used = false;
+    s_vfs.rf[f].used = false;
     return true;
 }
 
@@ -160,9 +168,9 @@ bool ram_rename(const char *from, const char *to)
         return false;
     int dst = ram_find(to);
     if (dst >= 0)
-        s_rf[dst].used = false; // overwrite an existing destination
-    strncpy(s_rf[f].name, to, DETWS_VFS_NAME_MAX - 1);
-    s_rf[f].name[DETWS_VFS_NAME_MAX - 1] = '\0';
+        s_vfs.rf[dst].used = false; // overwrite an existing destination
+    strncpy(s_vfs.rf[f].name, to, DETWS_VFS_NAME_MAX - 1);
+    s_vfs.rf[f].name[DETWS_VFS_NAME_MAX - 1] = '\0';
     return true;
 }
 
@@ -172,7 +180,7 @@ const DetwsVfsBackend s_ram_backend = {ram_open, ram_read,   ram_write,  ram_clo
 
 void detws_vfs_mount(const DetwsVfsBackend *backend)
 {
-    s_backend = backend;
+    s_vfs.backend = backend;
 }
 
 const DetwsVfsBackend *detws_vfs_ram(void)
@@ -183,43 +191,43 @@ const DetwsVfsBackend *detws_vfs_ram(void)
 void detws_vfs_ram_format(void)
 {
     for (int i = 0; i < DETWS_VFS_RAM_FILES; i++)
-        s_rf[i].used = false;
+        s_vfs.rf[i].used = false;
     for (int h = 0; h < DETWS_VFS_MAX_OPEN; h++)
-        s_rh[h].open = false;
+        s_vfs.rh[h].open = false;
 }
 
 int detws_vfs_open(const char *path, int mode)
 {
-    return s_backend ? s_backend->open(path, mode) : -1;
+    return s_vfs.backend ? s_vfs.backend->open(path, mode) : -1;
 }
 int detws_vfs_read(int handle, void *buf, size_t n)
 {
-    return s_backend ? s_backend->read(handle, buf, n) : -1;
+    return s_vfs.backend ? s_vfs.backend->read(handle, buf, n) : -1;
 }
 int detws_vfs_write(int handle, const void *buf, size_t n)
 {
-    return s_backend ? s_backend->write(handle, buf, n) : -1;
+    return s_vfs.backend ? s_vfs.backend->write(handle, buf, n) : -1;
 }
 void detws_vfs_close(int handle)
 {
-    if (s_backend)
-        s_backend->close(handle);
+    if (s_vfs.backend)
+        s_vfs.backend->close(handle);
 }
 long detws_vfs_size(const char *path)
 {
-    return s_backend ? s_backend->size(path) : -1;
+    return s_vfs.backend ? s_vfs.backend->size(path) : -1;
 }
 bool detws_vfs_exists(const char *path)
 {
-    return s_backend ? s_backend->exists(path) : false;
+    return s_vfs.backend ? s_vfs.backend->exists(path) : false;
 }
 bool detws_vfs_remove(const char *path)
 {
-    return s_backend ? s_backend->remove(path) : false;
+    return s_vfs.backend ? s_vfs.backend->remove(path) : false;
 }
 bool detws_vfs_rename(const char *from, const char *to)
 {
-    return s_backend ? s_backend->rename(from, to) : false;
+    return s_vfs.backend ? s_vfs.backend->rename(from, to) : false;
 }
 
 long detws_vfs_read_file(const char *path, void *buf, size_t cap)
@@ -270,51 +278,58 @@ bool detws_vfs_write_file(const char *path, const void *buf, size_t n)
 
 namespace
 {
-fs::FS *s_fs = nullptr;
-fs::File s_fsfile[DETWS_VFS_MAX_OPEN];
-bool s_fsopen[DETWS_VFS_MAX_OPEN];
+// All Arduino FS-backend state, owned by one instance (internal linkage): the mounted
+// filesystem and the open-file handle pool, grouped so it is one named owner. (The FS ops
+// are fixed-signature vtable entries, so they reach this single owner directly.)
+struct FsCtx
+{
+    fs::FS *fs = nullptr;
+    fs::File fsfile[DETWS_VFS_MAX_OPEN];
+    bool fsopen[DETWS_VFS_MAX_OPEN];
+};
+FsCtx s_vfs_fs;
 
 int fs_open(const char *path, int mode)
 {
-    if (!s_fs || !path)
+    if (!s_vfs_fs.fs || !path)
         return -1;
     const char *m = (mode == DETWS_VFS_WRITE) ? FILE_WRITE : (mode == DETWS_VFS_APPEND) ? FILE_APPEND : FILE_READ;
     for (int h = 0; h < DETWS_VFS_MAX_OPEN; h++)
-        if (!s_fsopen[h])
+        if (!s_vfs_fs.fsopen[h])
         {
-            s_fsfile[h] = s_fs->open(path, m);
-            if (!s_fsfile[h])
+            s_vfs_fs.fsfile[h] = s_vfs_fs.fs->open(path, m);
+            if (!s_vfs_fs.fsfile[h])
                 return -1;
-            s_fsopen[h] = true;
+            s_vfs_fs.fsopen[h] = true;
             return h;
         }
     return -1;
 }
 int fs_read(int h, void *buf, size_t n)
 {
-    if (h < 0 || h >= DETWS_VFS_MAX_OPEN || !s_fsopen[h])
+    if (h < 0 || h >= DETWS_VFS_MAX_OPEN || !s_vfs_fs.fsopen[h])
         return -1;
-    return (int)s_fsfile[h].read((uint8_t *)buf, n);
+    return (int)s_vfs_fs.fsfile[h].read((uint8_t *)buf, n);
 }
 int fs_write(int h, const void *buf, size_t n)
 {
-    if (h < 0 || h >= DETWS_VFS_MAX_OPEN || !s_fsopen[h])
+    if (h < 0 || h >= DETWS_VFS_MAX_OPEN || !s_vfs_fs.fsopen[h])
         return -1;
-    return (int)s_fsfile[h].write((const uint8_t *)buf, n);
+    return (int)s_vfs_fs.fsfile[h].write((const uint8_t *)buf, n);
 }
 void fs_close(int h)
 {
-    if (h >= 0 && h < DETWS_VFS_MAX_OPEN && s_fsopen[h])
+    if (h >= 0 && h < DETWS_VFS_MAX_OPEN && s_vfs_fs.fsopen[h])
     {
-        s_fsfile[h].close();
-        s_fsopen[h] = false;
+        s_vfs_fs.fsfile[h].close();
+        s_vfs_fs.fsopen[h] = false;
     }
 }
 long fs_size(const char *path)
 {
-    if (!s_fs)
+    if (!s_vfs_fs.fs)
         return -1;
-    fs::File f = s_fs->open(path, FILE_READ);
+    fs::File f = s_vfs_fs.fs->open(path, FILE_READ);
     if (!f)
         return -1;
     long sz = (long)f.size();
@@ -323,15 +338,15 @@ long fs_size(const char *path)
 }
 bool fs_exists(const char *path)
 {
-    return s_fs && s_fs->exists(path);
+    return s_vfs_fs.fs && s_vfs_fs.fs->exists(path);
 }
 bool fs_remove(const char *path)
 {
-    return s_fs && s_fs->remove(path);
+    return s_vfs_fs.fs && s_vfs_fs.fs->remove(path);
 }
 bool fs_rename(const char *from, const char *to)
 {
-    return s_fs && s_fs->rename(from, to);
+    return s_vfs_fs.fs && s_vfs_fs.fs->rename(from, to);
 }
 
 const DetwsVfsBackend s_fs_backend = {fs_open, fs_read, fs_write, fs_close, fs_size, fs_exists, fs_remove, fs_rename};
@@ -339,9 +354,9 @@ const DetwsVfsBackend s_fs_backend = {fs_open, fs_read, fs_write, fs_close, fs_s
 
 const DetwsVfsBackend *detws_vfs_fs(fs::FS *filesystem)
 {
-    s_fs = filesystem;
+    s_vfs_fs.fs = filesystem;
     for (int h = 0; h < DETWS_VFS_MAX_OPEN; h++)
-        s_fsopen[h] = false;
+        s_vfs_fs.fsopen[h] = false;
     return &s_fs_backend;
 }
 
