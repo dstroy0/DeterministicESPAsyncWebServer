@@ -309,7 +309,15 @@ preempting queue, so sensing shares the real-time ingest path.
 
 - [x] Egress-interface reporting _(shipped)_ - `det_net_egress()` / `det_net_egress_ip()` read the live lwIP default route so the app always knows which interface (WiFi STA / softAP / Ethernet) its traffic is leaving on; the stack owns the actual failover, so no manager or polling tick is added (example 63.NetEgress).
 - [ ] Ethernet PHY bring-up (L, greenlit) - a wired-PHY init alongside WiFi; failover + the egress report above already work once both links exist. Multi-interface bridge / graceful escalation (L).
-- [ ] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L).
+- [~] IPv6 dual-stack + fallback (L); VPN tunneling + reverse-SSH tunnel to a relay (L) _(dual-stack +
+  fallback shipped)_ - the address plumbing is `DetIp` (RFC 4291 parse / RFC 5952 format / scope classify
+  / CIDR) and the netif bring-up is `DETWS_ENABLE_IPV6` (physical layer; listeners bind
+  `IPADDR_TYPE_ANY`). The client-side fallback is `DETWS_ENABLE_HAPPY_EYEBALLS` (`services/happy_eyeballs`):
+  `detws_he_pref` scores a destination (RFC 6724 scope + family), `detws_he_order` sorts a candidate list
+  and interleaves the address families (RFC 8305) so successive attempts alternate v6/v4, and
+  `detws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
+  fallback. Pure, host-tested (`native_happy_eyeballs`). _Remaining:_ VPN tunneling + the reverse-SSH
+  tunnel to a relay (L; the `ssh -R` tcpip-forward seam already landed).
 - [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
 - [x] DNS resolver + answer verification _(shipped)_ - `DETWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.

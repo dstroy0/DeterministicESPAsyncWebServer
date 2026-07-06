@@ -1542,6 +1542,15 @@
       "src": ["+<services/psram_pool/psram_pool.cpp>"],
       "tests": ["test_psram_pool"]
     },
+    "native_happy_eyeballs": {
+      "desc": "Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination\npreference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection\nAttempt Delay gate, over the shipped DetIp. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HAPPY_EYEBALLS=1"],
+      "src": [
+        "+<services/happy_eyeballs/happy_eyeballs.cpp>",
+        "+<network_drivers/network/det_ip.cpp>"
+      ],
+      "tests": ["test_happy_eyeballs"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1628,6 +1637,7 @@
         "-DDETWS_ENABLE_MDNS_ADAPTIVE=1",
         "-DDETWS_ENABLE_SOCKPOOL=1",
         "-DDETWS_ENABLE_PSRAM_POOL=1",
+        "-DDETWS_ENABLE_HAPPY_EYEBALLS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1715,6 +1725,7 @@
         "+<services/mdns_adaptive/mdns_adaptive.cpp>",
         "+<services/sockpool/sockpool.cpp>",
         "+<services/psram_pool/psram_pool.cpp>",
+        "+<services/happy_eyeballs/happy_eyeballs.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

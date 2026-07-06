@@ -3063,6 +3063,19 @@
 #endif
 
 /**
+ * @brief Opt-in dual-stack Happy Eyeballs destination selection (DETWS_ENABLE_HAPPY_EYEBALLS).
+ *
+ * The client-side IPv6/IPv4 fallback decision on top of the shipped DetIp: detws_he_pref scores a
+ * destination (RFC 6724 scope + family), detws_he_order sorts a candidate list and interleaves the
+ * address families (RFC 8305) so successive connection attempts alternate v6/v4, and
+ * detws_he_attempt_due gates the next attempt by the Connection Attempt Delay. Fast IPv6 when it works,
+ * quick fallback to IPv4 when it does not. Needs DETWS_ENABLE_IPV6 to matter. No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_HAPPY_EYEBALLS
+#define DETWS_ENABLE_HAPPY_EYEBALLS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
