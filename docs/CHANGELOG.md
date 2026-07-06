@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.54.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.54.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`daa8364`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daa83647499ea00b01cf401eeaa822b11aa799cb))
+
+### Changes
+
+- Bump version: 5.53.0 → 5.54.0 ([`745a1d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/745a1d17c3008f445debbf18366986c132f47abd))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`82fab33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82fab33bc59e7f222f3ef5919ae3cd9351fbb03c))
+- update ESP32 build footprints [skip ci] ([`752e9ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/752e9ef263f1ab8e39a47fc1dc558c06944256b0))
+
+### Features
+
+- VL53L0X optical time-of-flight ranging driver ([`46c2e4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46c2e4ba9ec70b038db8be389643cd932daaecfa))
+
+</details>
+
 ## [5.53.0] - 2026-07-06
 
 <details>
