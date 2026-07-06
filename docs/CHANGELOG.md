@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.6.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.6.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`9238268`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92382680795a926748978984a2ee4ad25bf86e0c))
+
+### Changes
+
+- Bump version: 5.5.0 → 5.6.0 ([`1889570`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18895707bcfd43df4cd0338b07fdb685bae6ec26))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b85b932`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b85b9323e9d96aa3f576b378780b2b0ca9e230a4))
+
+### Features
+
+- flash wear-leveling slot selector ([`8c1860e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c1860e074df6523928f9a1a5dc3ef0990158038))
+
+</details>
+
 ## [5.5.0] - 2026-07-06
 
 <details>
