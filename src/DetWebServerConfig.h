@@ -2579,6 +2579,18 @@
 #endif
 
 /**
+ * @brief Opt-in dynamic sleep-cycle scheduler (DETWS_ENABLE_SLEEP_SCHED).
+ *
+ * When set, services/sleep_sched provides detws_sleep_next(): from the time since the last activity it
+ * returns how long a low-power device should sleep (0 = stay awake), ramping the window from a floor up
+ * to a ceiling the longer the idle streak runs. Pure decision core (the app applies the window via
+ * light / modem / deep sleep). Complements services/radio_power. Default off.
+ */
+#ifndef DETWS_ENABLE_SLEEP_SCHED
+#define DETWS_ENABLE_SLEEP_SCHED 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

@@ -1302,6 +1302,12 @@
       "src": ["+<services/failsafe/failsafe.cpp>"],
       "tests": ["test_failsafe"]
     },
+    "native_sleep_sched": {
+      "desc": "Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window\ndecision core with a doubling ramp clamped to a ceiling. Pure host tests, synthetic clock.",
+      "flags": ["-DDETWS_ENABLE_SLEEP_SCHED=1"],
+      "src": ["+<services/sleep_sched/sleep_sched.cpp>"],
+      "tests": ["test_sleep_sched"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1348,6 +1354,7 @@
         "-DDETWS_ENABLE_UDP_TELEMETRY=1",
         "-DDETWS_ENABLE_GUARDRAILS=1",
         "-DDETWS_ENABLE_FAILSAFE=1",
+        "-DDETWS_ENABLE_SLEEP_SCHED=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1395,6 +1402,7 @@
         "+<services/udp_telemetry/udp_telemetry.cpp>",
         "+<services/guardrails/guardrails.cpp>",
         "+<services/failsafe/failsafe.cpp>",
+        "+<services/sleep_sched/sleep_sched.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

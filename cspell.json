@@ -768,6 +768,7 @@
     "scalarmult",
     "scanline",
     "scanlines",
+    "SCHED",
     "scid",
     "SCL",
     "scons",

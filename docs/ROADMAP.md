@@ -300,7 +300,13 @@ preempting queue, so sensing shares the real-time ingest path.
 ## Power & radio management
 
 - [x] Radio power _(shipped)_ - `DETWS_ENABLE_RADIO_POWER`: `services/radio_power` applies a WiFi modem-sleep mode (`DETWS_RADIO_WIFI_PS` none/min/max) + an optional max-TX cap (`DETWS_RADIO_MAX_TX_DBM`) in one call (esp_wifi_set_ps / set_max_tx_power), trading throughput for lower average power; mode names host-tested, apply/readback HW-verified (example 76.RadioPower). Remaining: BT-coexistence preference (only relevant on a BT-enabled build).
-- [ ] Dynamic network sleep modes / sleep-cycle scheduler (M); dynamic power scaling, thermal throttling, brownout recovery, peripheral power gating (M).
+- [~] Dynamic network sleep modes / **sleep-cycle scheduler (M)** _(scheduler shipped)_ -
+  `DETWS_ENABLE_SLEEP_SCHED`: `services/sleep_sched` `detws_sleep_next()` decides, from the idle time,
+  how long a low-power device should sleep (0 = awake), ramping the window from a floor up to a
+  ceiling (doubling every `ramp_ms`) the longer the idle streak runs. Pure wrap-safe decision core,
+  fully host-tested (`native_sleep_sched`); the app applies the window via light / modem / deep sleep.
+  Complements `services/radio_power`. _Remaining (need real hardware to verify):_ dynamic power
+  scaling, thermal throttling, brownout recovery, peripheral power gating (M).
 
 ## Security & auth
 
