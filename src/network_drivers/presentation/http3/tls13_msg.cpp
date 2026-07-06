@@ -63,10 +63,11 @@ void w_bytes(Writer *w, const uint8_t *b, size_t n)
 {
     if (n == 0)
         return;
-    // Overflow-safe capacity check. pos <= cap is an invariant, but check it explicitly first so the
+    // Overflow-safe capacity check. The ternary keeps room in [0, cap] whatever pos is, so the
     // cap - pos subtraction provably cannot underflow (an underflow would defeat the bound and let the
-    // memcpy overrun buf - exactly the S3519 case). Guarding pos first also avoids the pos + n wrap.
-    if (w->pos > w->cap || n > w->cap - w->pos)
+    // memcpy overrun buf - exactly the S3519 case), and pos + n is never formed (no wrap).
+    size_t room = w->pos <= w->cap ? (size_t)(w->cap - w->pos) : (size_t)0;
+    if (n > room)
     {
         w->ok = false;
         return;

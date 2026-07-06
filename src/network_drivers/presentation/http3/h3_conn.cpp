@@ -85,12 +85,14 @@ void dispatch_request(H3Conn *h3, H3Stream *st)
         else if (fr.type == H3_DATA)
         {
             size_t take = (size_t)fr.length;
-            // body_len <= sizeof(body) holds by construction, so room never underflows; clamp with a
-            // subtraction (not a body_len + take sum that could wrap) so the copy stays in bounds.
-            size_t room = sizeof(body) - body_len;
+            // Clamp to the space left in body. The ternary keeps room in [0, sizeof(body)] whatever
+            // body_len is, so it provably never underflows and body_len + take never exceeds sizeof(body)
+            // (no body_len + take sum that could wrap). Guard the copy so take==0 touches nothing.
+            size_t room = body_len < sizeof(body) ? (size_t)(sizeof(body) - body_len) : (size_t)0;
             if (take > room)
                 take = room;
-            memcpy(body + body_len, fp, take);
+            if (take)
+                memcpy(body + body_len, fp, take);
             body_len += take;
         }
         off = payload + (size_t)fr.length;
