@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.55.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.55.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c95199d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c95199daba0b6dc349b37b78b85a12353bcdeb95))
+
+### Changes
+
+- Bump version: 5.54.0 → 5.55.0 ([`de1a5d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de1a5d6a06273ddaeb4d425d22e5b4b11200c72d))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0a95b2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a95b2d14da065e698d82ddf7ba6d3064d6d5da7))
+- update ESP32 build footprints [skip ci] ([`9b67d3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b67d3e6c4b9b598e4a7f4b50283b55d902266e7))
+
+### Features
+
+- receive-only radio channel sniffer to pcap (802.15.4 TAP) ([`3a2d625`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a2d625b77a0a2c3bbe95341b1e4a966373c256d))
+
+</details>
+
 ## [5.54.0] - 2026-07-06
 
 <details>
