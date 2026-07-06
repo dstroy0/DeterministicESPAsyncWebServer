@@ -43,8 +43,14 @@ size_t can_to_socketcan(const CanFrame *f, uint8_t *out, size_t cap)
 
 namespace
 {
-bus_capture_sink_fn s_sink = nullptr;
-bool s_running = false;
+// All bus-capture bind state, owned by one instance (internal linkage): the frame sink and
+// the running flag, grouped so it is one named owner, unreachable from any other TU.
+struct BusCaptureCtx
+{
+    bus_capture_sink_fn sink = nullptr;
+    bool running = false;
+};
+BusCaptureCtx s_bus;
 
 bool timing_for(uint32_t bitrate, twai_timing_config_t *t)
 {
@@ -93,14 +99,14 @@ bool bus_capture_begin(int tx_pin, int rx_pin, uint32_t bitrate, bus_capture_sin
         twai_driver_uninstall();
         return false;
     }
-    s_sink = sink;
-    s_running = true;
+    s_bus.sink = sink;
+    s_bus.running = true;
     return true;
 }
 
 void bus_capture_poll(void)
 {
-    if (!s_running || !s_sink)
+    if (!s_bus.running || !s_bus.sink)
         return;
     twai_message_t m;
     while (twai_receive(&m, 0) == ESP_OK) // 0 ticks = non-blocking drain
@@ -112,18 +118,18 @@ void bus_capture_poll(void)
         f.dlc = m.data_length_code > DET_CAN_MAX_DLC ? DET_CAN_MAX_DLC : m.data_length_code;
         for (int i = 0; i < DET_CAN_MAX_DLC; i++)
             f.data[i] = (i < f.dlc) ? m.data[i] : 0;
-        s_sink(&f);
+        s_bus.sink(&f);
     }
 }
 
 void bus_capture_end(void)
 {
-    if (!s_running)
+    if (!s_bus.running)
         return;
     twai_stop();
     twai_driver_uninstall();
-    s_running = false;
-    s_sink = nullptr;
+    s_bus.running = false;
+    s_bus.sink = nullptr;
 }
 
 #else // host build - no TWAI controller
