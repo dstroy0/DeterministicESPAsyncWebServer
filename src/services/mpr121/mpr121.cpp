@@ -92,11 +92,17 @@ size_t mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_thr,
 
 namespace
 {
-uint8_t s_addr = DETWS_MPR121_I2C_ADDR;
+// All MPR121 I2C-binding state, owned by one instance (internal linkage): the device address,
+// so it is one named owner, unreachable from any other translation unit.
+struct Mpr121Ctx
+{
+    uint8_t addr = DETWS_MPR121_I2C_ADDR;
+};
+Mpr121Ctx s_mpr;
 
 bool wr(uint8_t reg, uint8_t val)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_mpr.addr);
     Wire.write(reg);
     Wire.write(val);
     return Wire.endTransmission() == 0;
@@ -104,11 +110,11 @@ bool wr(uint8_t reg, uint8_t val)
 
 bool rd(uint8_t reg, uint8_t *out, uint8_t n)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_mpr.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, (int)n) != (int)n)
+    if (Wire.requestFrom((int)s_mpr.addr, (int)n) != (int)n)
         return false;
     for (uint8_t i = 0; i < n; i++)
         out[i] = (uint8_t)Wire.read();
@@ -118,7 +124,7 @@ bool rd(uint8_t reg, uint8_t *out, uint8_t n)
 
 bool mpr121_begin(uint8_t addr)
 {
-    s_addr = addr ? addr : (uint8_t)DETWS_MPR121_I2C_ADDR;
+    s_mpr.addr = addr ? addr : (uint8_t)DETWS_MPR121_I2C_ADDR;
     detws_i2c_begin();
     uint8_t seq[MPR121_INIT_MAX];
     size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, 12, 6);
