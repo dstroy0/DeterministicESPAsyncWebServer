@@ -21,69 +21,77 @@
 // ---------------------------------------------------------------------------
 // State (all static / BSS - no heap)
 // ---------------------------------------------------------------------------
-static DetWebServer *s_srv = nullptr;
-static TermCommandCb s_cb = nullptr;
-static char s_ws_path[MAX_PATH_LEN];
-static bool s_is_client[MAX_WS_CONNS]; // which ws slots are terminal browsers
+// All web-terminal state, owned by one instance (internal linkage): the server handle, the
+// command callback, the WebSocket path, and which ws slots are terminal browsers. Grouped so
+// it is one named owner, unreachable cross-TU. (The route/ws handlers are fixed-signature
+// callbacks, so they reach this single owner directly.)
+struct WebTerminalCtx
+{
+    DetWebServer *srv = nullptr;
+    TermCommandCb cb = nullptr;
+    char ws_path[MAX_PATH_LEN] = {0};
+    bool is_client[MAX_WS_CONNS] = {}; // which ws slots are terminal browsers
+};
+static WebTerminalCtx s_term;
 
 // ---- internal route handlers ----------------------------------------------
 
 static void term_page_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    if (s_srv)
-        s_srv->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_TERMINAL_PAGE);
+    if (s_term.srv)
+        s_term.srv->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_TERMINAL_PAGE);
 }
 
 static void term_ws_connect(uint8_t ws_id)
 {
     if (ws_id < MAX_WS_CONNS)
-        s_is_client[ws_id] = true;
-    if (s_srv)
-        s_srv->ws_send_text(ws_id, "DeterministicESPAsyncWebServer terminal ready\n");
+        s_term.is_client[ws_id] = true;
+    if (s_term.srv)
+        s_term.srv->ws_send_text(ws_id, "DeterministicESPAsyncWebServer terminal ready\n");
 }
 
 static void term_ws_message(uint8_t ws_id)
 {
-    if (s_cb && ws_id < MAX_WS_CONNS)
-        s_cb((const char *)ws_pool[ws_id].buf, ws_id);
+    if (s_term.cb && ws_id < MAX_WS_CONNS)
+        s_term.cb((const char *)ws_pool[ws_id].buf, ws_id);
 }
 
 static void term_ws_close(uint8_t ws_id)
 {
     if (ws_id < MAX_WS_CONNS)
-        s_is_client[ws_id] = false;
+        s_term.is_client[ws_id] = false;
 }
 
 // ---- public API -----------------------------------------------------------
 
 void detws_web_terminal_begin(DetWebServer &server, const char *path)
 {
-    s_srv = &server;
+    s_term.srv = &server;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
-        s_is_client[i] = false;
+        s_term.is_client[i] = false;
 
     if (!path || !path[0])
         path = "/terminal";
-    snprintf(s_ws_path, sizeof(s_ws_path), "%s/ws", path);
+    snprintf(s_term.ws_path, sizeof(s_term.ws_path), "%s/ws", path);
 
     server.on(path, HTTP_GET, term_page_handler);
-    server.on_ws(s_ws_path, term_ws_connect, term_ws_message, term_ws_close);
+    server.on_ws(s_term.ws_path, term_ws_connect, term_ws_message, term_ws_close);
 }
 
 void detws_web_terminal_on_command(TermCommandCb cb)
 {
-    s_cb = cb;
+    s_term.cb = cb;
 }
 
 void detws_web_terminal_print(const char *s)
 {
-    if (!s_srv || !s)
+    if (!s_term.srv || !s)
         return;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
     {
-        if (s_is_client[i] && ws_pool[i].active)
-            s_srv->ws_send_text(i, s);
+        if (s_term.is_client[i] && ws_pool[i].active)
+            s_term.srv->ws_send_text(i, s);
     }
 }
 
@@ -108,7 +116,7 @@ uint8_t detws_web_terminal_client_count()
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
-        if (s_is_client[i] && ws_pool[i].active)
+        if (s_term.is_client[i] && ws_pool[i].active)
             n++;
     return n;
 }
