@@ -2900,6 +2900,18 @@
 #endif
 
 /**
+ * @brief Opt-in INTERBUS summation-frame fieldbus codec (DETWS_ENABLE_INTERBUS).
+ *
+ * When set, services/interbus assembles/disassembles the INTERBUS summation frame (loopback word +
+ * per-device 16-bit process-image slices + CRC-16/CCITT FCS) of the Phoenix Contact ring fieldbus,
+ * where every device is a shift-register slice of one circulating frame. Pure codec (the physical ring
+ * clocking is hardware-gated). Default off.
+ */
+#ifndef DETWS_ENABLE_INTERBUS
+#define DETWS_ENABLE_INTERBUS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

@@ -638,9 +638,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   logical ring) - reusing the shipped Modbus PDU model for the payload; host-tested (`native_mbplus`,
   CRC check value 0x906E). _Remaining:_ the full path/routing model + the token-rotation timing, and
   the custom 1 Mbit/s bus (hardware-gated).
-- [ ] **INTERBUS** (L, Phoenix Contact) - the ring/summation-frame fieldbus: the single
-      rotating summation frame (each device a shift-register slice) + the PCP parameter
-      channel. Ring physical layer is hardware-gated; scope the summation-frame protocol + process-image model, document the gating. Fixed BSS, no heap.
+- [~] **INTERBUS** (L, Phoenix Contact) _(summation-frame codec shipped)_ - `DETWS_ENABLE_INTERBUS`
+  (`services/interbus`): the summation frame - `detws_interbus_build` / `_parse` assemble the single
+  rotating frame (loopback word + each device's 16-bit process-image slice + CRC-16/CCITT FCS) from a
+  list of per-device word slices and disassemble a received frame back into them; host-tested
+  (`native_interbus`, FCS check value 0x29B1). _Remaining:_ the PCP parameter channel + the physical
+  ring shift-register clocking (hardware-gated). Fixed BSS, no heap.
 - [~] **AMQP** (L, OASIS AMQP 1.0 / 0-9-1) - _the 0-9-1 frame codec is shipped._
   `DETWS_ENABLE_AMQP` (`services\amqp`): `amqp_protocol_header` (the `"AMQP" 0 0 9 1`
   preamble), `amqp_build_frame` / `amqp_parse_frame` (type + channel + size + payload +

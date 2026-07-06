@@ -1464,6 +1464,12 @@
       "src": ["+<services/mbplus/mbplus.cpp>"],
       "tests": ["test_mbplus"]
     },
+    "native_interbus": {
+      "desc": "INTERBUS summation-frame codec (services/interbus): the summation frame (loopback +\nper-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. Pure host tests (FCS 0x29B1).",
+      "flags": ["-DDETWS_ENABLE_INTERBUS=1"],
+      "src": ["+<services/interbus/interbus.cpp>"],
+      "tests": ["test_interbus"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1537,6 +1543,7 @@
         "-DDETWS_ENABLE_PROFIBUS=1",
         "-DDETWS_ENABLE_LONWORKS=1",
         "-DDETWS_ENABLE_MBPLUS=1",
+        "-DDETWS_ENABLE_INTERBUS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1611,6 +1618,7 @@
         "+<services/profibus/profibus.cpp>",
         "+<services/lonworks/lonworks.cpp>",
         "+<services/mbplus/mbplus.cpp>",
+        "+<services/interbus/interbus.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
