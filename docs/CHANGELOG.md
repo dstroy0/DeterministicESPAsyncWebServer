@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.37.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.37.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7779e87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7779e87c74ba192776a0690b36eeed0fea4a8b00))
+
+### Changes
+
+- Bump version: 5.36.0 → 5.37.0 ([`65a2d2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65a2d2c80d0835a1833ed850c7fea2806be34815))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8b177ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b177ad601f3f3e0975396b20768ada64ba37cc2))
+
+### Features
+
+- IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec ([`0fee617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fee617454c61db8338c388492c7fad4e1ef4ff0))
+
+</details>
+
 ## [5.36.0] - 2026-07-06
 
 <details>
