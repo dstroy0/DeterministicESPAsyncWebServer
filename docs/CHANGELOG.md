@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.25.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.25.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c7589e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7589e1e3c12c4b8c24d4437971befb79dada892))
+
+### Changes
+
+- Bump version: 5.24.0 → 5.25.0 ([`f135b13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f135b13da7110973db850386cc58477e4fc20679))
+
+### Features
+
+- NTCIP transportation-device object OIDs on the SNMP agent ([`815c271`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/815c2710c309c6ddcde6bd9ba263d0d2a50b907f))
+
+</details>
+
 ## [5.24.0] - 2026-07-06
 
 <details>
