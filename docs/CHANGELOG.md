@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.60.3] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.60.3 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- clamp tlv value copy to remaining room (clears S3519 at source) ([`5d6ac87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d6ac87bcd72fc8aece5337c9b332e910058ec9c))
+
+### CI / Build
+
+- update test report [skip ci] ([`7abc3a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7abc3a051e11d1077f6649ca87827cc581250e32))
+- update CHANGELOG.md [skip ci] ([`bc63f4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc63f4afb448fe6dede9b5553d0503c78159a8a4))
+
+### Changes
+
+- Bump version: 5.60.2 → 5.60.3 ([`9004f76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9004f76c71c2906881d52da037a6990c23c8a535))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`048575a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/048575a8b4d8d2bfbc566d17e09d7aaa5e3da5a5))
+
+</details>
+
 ## [5.60.2] - 2026-07-06
 
 <details>
