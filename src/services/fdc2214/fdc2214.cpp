@@ -58,15 +58,21 @@ size_t fdc2214_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t 
 
 namespace
 {
-uint8_t s_addr = 0x2A;
+// All FDC2214 I2C-binding state, owned by one instance (internal linkage): the device address,
+// so it is one named owner, unreachable from any other translation unit.
+struct Fdc2214Ctx
+{
+    uint8_t addr = 0x2A;
+};
+Fdc2214Ctx s_fdc;
 
 bool read16(uint8_t reg, uint16_t *out)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_fdc.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, 2) != 2)
+    if (Wire.requestFrom((int)s_fdc.addr, 2) != 2)
         return false;
     uint16_t hi = Wire.read();
     uint16_t lo = Wire.read();
@@ -76,7 +82,7 @@ bool read16(uint8_t reg, uint16_t *out)
 
 bool write16(uint8_t reg, uint16_t val)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_fdc.addr);
     Wire.write(reg);
     Wire.write((uint8_t)(val >> 8));
     Wire.write((uint8_t)val);
@@ -87,7 +93,7 @@ bool write16(uint8_t reg, uint16_t val)
 bool fdc2214_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
 {
     detws_i2c_begin();
-    s_addr = addr;
+    s_fdc.addr = addr;
     uint16_t id = 0;
     if (!read16(FDC2214_REG_DEVICE_ID, &id))
         return false;
