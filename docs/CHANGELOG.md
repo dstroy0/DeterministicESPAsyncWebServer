@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.15.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.15.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a865067`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a865067e5e2663d9d471fc2f8f13dc7a77ffd662))
+
+### Changes
+
+- Bump version: 5.14.0 → 5.15.0 ([`82777e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82777e942de4fd173ca5bf628c4811a019a99df8))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e819849`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e81984987cef4209bfa220c98a2077279cf0ad8e))
+- update ESP32 build footprints [skip ci] ([`c9afe41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9afe41211845df8979f85739ae85fcce8ba572b))
+
+### Features
+
+- single-page-app micro-routing decision ([`8fd8f9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8fd8f9ac985d244d92e7fa5fc18040a284475ab0))
+
+</details>
+
 ## [5.14.0] - 2026-07-06
 
 <details>
