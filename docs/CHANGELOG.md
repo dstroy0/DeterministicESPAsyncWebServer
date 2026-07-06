@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`5c21807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c218079e5bc5fe99ee0950e2db3164a5e892f1f))
+- update CHANGELOG.md [skip ci] ([`a40f9ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a40f9adf88fe5d1692c46c772ccdb80c40966714))
 - update test report [skip ci] ([`f3cb9ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3cb9ae73c0ca012d86766c0480db8881d31e106))
 - update CHANGELOG.md [skip ci] ([`e5a9f71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5a9f71c2f5deeb01bd5cb1819c6ccdab3a0a7a8))
 - update test report [skip ci] ([`f14c9b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f14c9b67d1d343f7ad19b87becaee7380366cf39))
@@ -53,6 +55,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- theme library generator + 61 curated themes + a custom-palette tool ([`d12e883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12e883e21a0d3cb7b309dbd0cf0966b9eca4a5e))
 - send CONNECTION_CLOSE on a fatal handshake / transport error ([`79fc358`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79fc35866426e8b2e3996f0318f59dcac219431e))
 - re-send the handshake flight on a duplicate ClientHello (loss signal) ([`a651d81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a651d8177854e1ba4b887c76cdbb25572fd53814))
 - generalize PTO loss recovery to 1-RTT (retransmit the response) ([`336736a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336736a4680d8c6e33287829c5b73a30e20e00f1))
