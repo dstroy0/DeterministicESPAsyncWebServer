@@ -267,7 +267,12 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] MessagePack encoder + decoder _(shipped)_ - `DETWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`msgpack_peek` / `msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example 66.MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
 - [x] GraphQL bounded subset _(shipped)_ - `DETWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example 81.GraphQL). Feature-dependent schema generation remains open (M).
 - [x] Browser diag tools _(shipped, GPIO mapper)_ - `DETWS_ENABLE_GPIO_MAP`: a compile-time pin table (number / label / direction / live level) served at GET `/gpio` as JSON, with a POST control (`pin`, `level`) that drives a mapped output; the serializer + control parser are host-tested, and the example ships a zero-dependency browser panel (example 67.GpioMap). Remaining (M): ping / tracert panel, web logic analyzer.
-- [ ] SPA micro-routing + conditional UI streaming (M); local SCADA/HMI fallback (M).
+- [~] **SPA micro-routing** + conditional UI streaming (M) _(routing decision shipped)_ -
+  `DETWS_ENABLE_SPA_ROUTER`: `services/spa_router` `detws_spa_route()` decides, from a request path,
+  whether to serve a real asset file, serve the SPA shell (`index.html`) for an extensionless
+  client-side route, or pass through to the app under an API prefix - so a single-page UI's client
+  routing works over static file serving. Pure decision core, host-tested (`native_spa_router`).
+  _Remaining:_ conditional UI streaming + a local SCADA/HMI fallback (M).
 - [x] WS MTU-aligned chunking / fragmentation control (M) _(shipped)_ - `DETWS_WS_FRAG_SIZE` (0 = off,
       default) / the runtime `ws_set_frag_size()`: an outbound data message longer than the set payload
       size is split into that-sized WebSocket frames (RFC 6455 sec 5.4: opcode+RSV1 on the first,

@@ -1356,6 +1356,12 @@
       "src": ["+<services/rawl2/rawl2.cpp>"],
       "tests": ["test_rawl2"]
     },
+    "native_spa_router": {
+      "desc": "Single-page-app micro-routing (services/spa_router): the serve-file / serve-shell /\npassthrough decision from a request path (extension test + API prefix). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SPA_ROUTER=1"],
+      "src": ["+<services/spa_router/spa_router.cpp>"],
+      "tests": ["test_spa_router"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1411,6 +1417,7 @@
         "-DDETWS_ENABLE_DDS=1",
         "-DDETWS_ENABLE_XMPP=1",
         "-DDETWS_ENABLE_RAWL2=1",
+        "-DDETWS_ENABLE_SPA_ROUTER=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1467,6 +1474,7 @@
         "+<services/dds/dds.cpp>",
         "+<services/xmpp/xmpp.cpp>",
         "+<services/rawl2/rawl2.cpp>",
+        "+<services/spa_router/spa_router.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

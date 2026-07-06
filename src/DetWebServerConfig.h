@@ -2687,6 +2687,18 @@
 #endif
 
 /**
+ * @brief Opt-in single-page-app micro-routing decision (DETWS_ENABLE_SPA_ROUTER).
+ *
+ * When set, services/spa_router provides detws_spa_route(): given a request path it returns whether to
+ * serve a real asset file, serve the SPA shell (index.html) for a client-side route, or pass through to
+ * the app's handlers under an API prefix - so a single-page UI's client routing works. Pure decision
+ * core (the caller wires the result into serve_static / the router). Default off.
+ */
+#ifndef DETWS_ENABLE_SPA_ROUTER
+#define DETWS_ENABLE_SPA_ROUTER 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
