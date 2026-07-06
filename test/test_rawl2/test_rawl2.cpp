@@ -1,0 +1,86 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Host tests for services/rawl2: the Ethernet II / 802.1Q frame codec + the FCS.
+
+#include "services/rawl2/rawl2.h"
+#include <string.h>
+#include <unity.h>
+
+void setUp(void)
+{
+}
+void tearDown(void)
+{
+}
+
+static const uint8_t DST[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
+static const uint8_t SRC[6] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+
+void test_build_ethernet_ii(void)
+{
+    uint8_t pl[2] = {0xDE, 0xAD};
+    uint8_t out[32];
+    size_t n = detws_eth_build(DST, SRC, ETHERTYPE_IPV4, pl, 2, out, sizeof(out));
+    const uint8_t expect[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0A, 0x0B,
+                              0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x00, 0xDE, 0xAD};
+    TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
+}
+
+void test_build_vlan(void)
+{
+    uint8_t pl[2] = {0x11, 0x22};
+    uint8_t out[32];
+    // pcp 3, dei 0, vid 100 -> TCI 0x6064; PROFINET ethertype.
+    size_t n = detws_eth_build_vlan(DST, SRC, 3, false, 100, ETHERTYPE_PROFINET, pl, 2, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(20, n);
+    TEST_ASSERT_EQUAL_HEX8(0x81, out[12]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, out[13]);
+    TEST_ASSERT_EQUAL_HEX8(0x60, out[14]);
+    TEST_ASSERT_EQUAL_HEX8(0x64, out[15]);
+    TEST_ASSERT_EQUAL_HEX8(0x88, out[16]);
+    TEST_ASSERT_EQUAL_HEX8(0x92, out[17]);
+}
+
+void test_parse(void)
+{
+    uint8_t pl[2] = {0xDE, 0xAD};
+    uint8_t buf[32];
+    size_t n = detws_eth_build(DST, SRC, ETHERTYPE_IPV4, pl, 2, buf, sizeof(buf));
+    EthFrame f;
+    TEST_ASSERT_TRUE(detws_eth_parse(buf, n, &f));
+    TEST_ASSERT_FALSE(f.vlan);
+    TEST_ASSERT_EQUAL_UINT16(ETHERTYPE_IPV4, f.ethertype);
+    TEST_ASSERT_EQUAL_size_t(2, f.payload_len);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(pl, f.payload, 2);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(SRC, f.src, 6);
+
+    // VLAN roundtrip.
+    n = detws_eth_build_vlan(DST, SRC, 5, true, 4094, ETHERTYPE_GOOSE, pl, 2, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(detws_eth_parse(buf, n, &f));
+    TEST_ASSERT_TRUE(f.vlan);
+    TEST_ASSERT_EQUAL_UINT8(5, f.pcp);
+    TEST_ASSERT_EQUAL_UINT16(4094, f.vid);
+    TEST_ASSERT_EQUAL_UINT16(ETHERTYPE_GOOSE, f.ethertype);
+
+    // Too short -> false.
+    TEST_ASSERT_FALSE(detws_eth_parse(buf, 10, &f));
+}
+
+void test_fcs_check_vector(void)
+{
+    // The canonical CRC-32 check value: CRC of "123456789" = 0xCBF43926.
+    const uint8_t msg[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    TEST_ASSERT_EQUAL_HEX32(0xCBF43926, detws_eth_fcs(msg, sizeof(msg)));
+}
+
+int main(void)
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_build_ethernet_ii);
+    RUN_TEST(test_build_vlan);
+    RUN_TEST(test_parse);
+    RUN_TEST(test_fcs_check_vector);
+    return UNITY_END();
+}

@@ -491,8 +491,10 @@ MBP / LON** transceivers, etc. **Analog I/O** is native: a **4-20 mA** current l
 (scale = known full-scale range), and driven out via the DAC / PWM - so analog
 instrument variables (incl. HART's 4-20 mA primary value) need no special front end.
 
-- [ ] **Raw L2 frame TX/RX** (M, platform enabler) - a thin, zero-heap raw-frame API
-      the raw-L2 protocols build on:
+- [~] **Raw L2 frame TX/RX** (M, platform enabler) _(Ethernet frame codec shipped)_ -
+  `DETWS_ENABLE_RAWL2` (`services/rawl2`): the host-testable core - build/parse Ethernet II + 802.1Q
+  VLAN frames and the 802.3 FCS (CRC-32, check value 0xCBF43926); host-tested (`native_rawl2`). The
+  raw-frame API the raw-L2 protocols build on. _Remaining (device transport):_
     - **Wi-Fi (802.11):** `esp_wifi_80211_tx()` injects arbitrary management / data
       frames (custom beacons, proprietary MAC headers) - bypasses the Wi-Fi state
       machine. Also the basis for the pentest/observability angle (beacon/mgmt crafting).

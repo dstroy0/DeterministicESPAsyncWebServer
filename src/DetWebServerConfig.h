@@ -2675,6 +2675,18 @@
 #endif
 
 /**
+ * @brief Opt-in raw Layer-2 Ethernet frame codec (DETWS_ENABLE_RAWL2).
+ *
+ * When set, services/rawl2 builds/parses Ethernet II + 802.1Q VLAN frames (no FCS - the MAC appends it;
+ * detws_eth_fcs is provided for the cases that need it), so the app can inject/receive arbitrary L2
+ * frames via esp_eth_transmit / esp_wifi_80211_tx - the basis for the raw-L2 industrial protocols
+ * (PROFINET DCP, GOOSE, POWERLINK). Pure codec, host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_RAWL2
+#define DETWS_ENABLE_RAWL2 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

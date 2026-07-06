@@ -1350,6 +1350,12 @@
       "src": ["+<services/xmpp/xmpp.cpp>"],
       "tests": ["test_xmpp"]
     },
+    "native_rawl2": {
+      "desc": "Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the\n802.3 FCS (CRC-32). Pure host tests (FCS check value 0xCBF43926).",
+      "flags": ["-DDETWS_ENABLE_RAWL2=1"],
+      "src": ["+<services/rawl2/rawl2.cpp>"],
+      "tests": ["test_rawl2"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1404,6 +1410,7 @@
         "-DDETWS_ENABLE_NTS=1",
         "-DDETWS_ENABLE_DDS=1",
         "-DDETWS_ENABLE_XMPP=1",
+        "-DDETWS_ENABLE_RAWL2=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1459,6 +1466,7 @@
         "+<services/nts/nts.cpp>",
         "+<services/dds/dds.cpp>",
         "+<services/xmpp/xmpp.cpp>",
+        "+<services/rawl2/rawl2.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
