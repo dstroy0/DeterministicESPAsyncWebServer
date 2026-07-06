@@ -16,47 +16,54 @@
 #include "DeterministicESPAsyncWebServer.h"
 #include "shared_primitives/det_mime.h"
 
-static DetWebServer *s_srv = nullptr;
-static DetwsGpioPin *s_pins = nullptr;
-static uint8_t s_count = 0;
+// All gpio-map-routes state, owned by one instance (internal linkage): the server handle plus
+// the pin table pointer and count, grouped so it is one named owner, unreachable cross-TU.
+// (The route handlers are fixed-signature callbacks, so they reach this single owner directly.)
+struct GpioRoutesCtx
+{
+    DetWebServer *srv = nullptr;
+    DetwsGpioPin *pins = nullptr;
+    uint8_t count = 0;
+};
+static GpioRoutesCtx s_gpior;
 
 static void gpio_get_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    detws_gpio_read(s_pins, s_count);
+    detws_gpio_read(s_gpior.pins, s_gpior.count);
     char buf[DETWS_GPIO_JSON_BUF];
-    detws_gpio_json(s_pins, s_count, buf, sizeof(buf));
-    if (s_srv)
-        s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
+    detws_gpio_json(s_gpior.pins, s_gpior.count, buf, sizeof(buf));
+    if (s_gpior.srv)
+        s_gpior.srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 static void gpio_post_handler(uint8_t slot_id, HttpReq *req)
 {
-    if (!s_srv)
+    if (!s_gpior.srv)
         return;
     uint8_t pin, level;
     if (!detws_gpio_parse_set((const char *)req->body, req->body_len, &pin, &level))
     {
-        s_srv->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "bad request");
+        s_gpior.srv->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "bad request");
         return;
     }
-    if (!detws_gpio_is_output(s_pins, s_count, pin))
+    if (!detws_gpio_is_output(s_gpior.pins, s_gpior.count, pin))
     {
-        s_srv->send(slot_id, 403, DET_MIME_TEXT_PLAIN, "pin not a mapped output");
+        s_gpior.srv->send(slot_id, 403, DET_MIME_TEXT_PLAIN, "pin not a mapped output");
         return;
     }
     detws_gpio_write(pin, level);
-    detws_gpio_read(s_pins, s_count);
+    detws_gpio_read(s_gpior.pins, s_gpior.count);
     char buf[DETWS_GPIO_JSON_BUF];
-    detws_gpio_json(s_pins, s_count, buf, sizeof(buf));
-    s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
+    detws_gpio_json(s_gpior.pins, s_gpior.count, buf, sizeof(buf));
+    s_gpior.srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 void detws_gpio_map_begin(DetWebServer &server, const char *path, DetwsGpioPin *pins, uint8_t count)
 {
-    s_srv = &server;
-    s_pins = pins;
-    s_count = count;
+    s_gpior.srv = &server;
+    s_gpior.pins = pins;
+    s_gpior.count = count;
     detws_gpio_begin_pins(pins, count);
     const char *p = (path && path[0]) ? path : "/gpio";
     server.on(p, HTTP_GET, gpio_get_handler);
