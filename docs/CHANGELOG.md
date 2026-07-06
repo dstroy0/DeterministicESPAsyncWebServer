@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.59.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.59.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`65e3ebd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65e3ebd9bebb23d507716e9813b8573221077e0f))
+- update CHANGELOG.md [skip ci] ([`d66ced0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d66ced0a0324e06a3818b44fae6384db02ac037a))
+
+### Changes
+
+- Bump version: 5.58.0 → 5.59.0 ([`88ba48d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88ba48d818b370486cb3cfff6f64ab2dc3f09a52))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`b4e5d6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4e5d6d365bc865e9364d84b12bed38584ebc988))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`742f661`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/742f661dd3c38bac4cb74bd7023185eaf07398b4))
+
+### Features
+
+- per-direction NEWKEYS cipher activation (RFC 4253 sec 7.3) ([`623ae31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/623ae317e52d4dd3b52e06d18084610621dddd24))
+
+</details>
+
 ## [5.58.0] - 2026-07-06
 
 <details>
