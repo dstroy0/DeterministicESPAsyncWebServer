@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.9.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.9.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c2acf42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2acf427e1e7d0b61fcc691e054283443151365c))
+
+### Changes
+
+- Bump version: 5.8.0 → 5.9.0 ([`ad113c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad113c2e6a09dc0072de3c218c005236b37bcd06))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8e34b8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e34b8e31c668fea2887c757da5677d9fc6f18b9))
+
+### Features
+
+- OneShot/Multishot analog-PWM throttle mapping (+ ProShot note) ([`0550cf1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0550cf1038d79a6894ea4b0cca27bfeb68d03c46))
+
+</details>
+
 ## [5.8.0] - 2026-07-06
 
 <details>
