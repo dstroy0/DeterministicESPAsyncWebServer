@@ -4,13 +4,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- make footprint budget row order deterministic (stop per-push README churn) ([`a908c4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a908c4fa9f9d9f850a642bf98019578f94d51d77))
+
 ### CI / Build
 
+- update test report [skip ci] ([`c969dae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c969dae3ad83a0f392ef830102823ee19c009fca))
+- update CHANGELOG.md [skip ci] ([`04fba3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04fba3f8a937bdbc10f1e5163bb2f613cdf7edbd))
 - update test report [skip ci] ([`0177116`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01771166a6573349febe45559df114033c323bf8))
 - update CHANGELOG.md [skip ci] ([`b17859d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b17859da0011e1cba7ea70a1fc2ec857504bd0b0))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a1867ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1867ac4e76663b04321abc2bca2de9b8079eda6))
 - complete per-feature footprint budget from the full 95-feature RPi matrix ([`4f6c7ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f6c7ef9e39247b9eabc48a3af32e5d5856cc60f))
 - update ESP32 build footprints [skip ci] ([`bdcca10`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdcca10db1f6a6826205be38874f1c6fe2b8eea7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f270386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f270386384ec37b8358f4e6664cc7fb5e14d932b))
