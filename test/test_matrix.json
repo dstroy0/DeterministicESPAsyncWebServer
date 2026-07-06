@@ -1512,6 +1512,12 @@
       "src": ["+<services/exc_decoder/exc_decoder.cpp>"],
       "tests": ["test_exc_decoder"]
     },
+    "native_http_delivery": {
+      "desc": "HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate\ndecision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206\nContent-Range), and a versioned service-worker precache manifest. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HTTP_DELIVERY=1"],
+      "src": ["+<services/http_delivery/http_delivery.cpp>"],
+      "tests": ["test_http_delivery"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1593,6 +1599,7 @@
         "-DDETWS_ENABLE_ATC=1",
         "-DDETWS_ENABLE_SOUTHBOUND=1",
         "-DDETWS_ENABLE_EXC_DECODER=1",
+        "-DDETWS_ENABLE_HTTP_DELIVERY=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1675,6 +1682,7 @@
         "+<services/atc/atc.cpp>",
         "+<services/southbound/southbound.cpp>",
         "+<services/exc_decoder/exc_decoder.cpp>",
+        "+<services/http_delivery/http_delivery.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

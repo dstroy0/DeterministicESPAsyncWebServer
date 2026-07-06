@@ -2999,6 +2999,18 @@
 #endif
 
 /**
+ * @brief Opt-in HTTP delivery optimizations (DETWS_ENABLE_HTTP_DELIVERY).
+ *
+ * Three pure cores for cheaper HTTP serving, each a real web standard: RFC 5861 stale-while-revalidate
+ * (detws_delivery_swr decision + detws_delivery_cache_control header), RFC 7233 byte-range delta/offset
+ * fetch (detws_delivery_range parse of X-Y / X- / -N + detws_delivery_content_range for a 206), and a
+ * versioned service-worker precache manifest (detws_delivery_sw_manifest). No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_HTTP_DELIVERY
+#define DETWS_ENABLE_HTTP_DELIVERY 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

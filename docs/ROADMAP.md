@@ -262,7 +262,14 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] Dashboard phase 2 _(shipped)_ - WebSocket controls (button / toggle / slider widgets send values to a `detws_dashboard_on_control` callback) and a Canvas chart widget for dense series.
 - [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
-- [ ] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching.
+- [~] HTTP delivery (S-M): stale-while-revalidate, service-worker cache injection, delta/offset log fetching
+  _(cores shipped)_ - `DETWS_ENABLE_HTTP_DELIVERY` (`services/http_delivery`): RFC 5861
+  `detws_delivery_swr` freshness decision + `detws_delivery_cache_control` header (stale-while-revalidate),
+  RFC 7233 `detws_delivery_range` byte-range parse (`X-Y` / `X-` / `-N`, clamped, 416/multi-range rejected)
+  plus `detws_delivery_content_range` for a 206 (delta/offset log fetch), and `detws_delivery_sw_manifest`
+  emitting the versioned `{"version":..,"precache":[..]}` a service worker consumes (SW cache injection).
+  Pure, host-tested (`native_http_delivery`). _Remaining:_ wiring the cores into the served endpoints +
+  shipping the static service-worker asset (M).
 - [x] CBOR encoder + decoder _(shipped)_ - `DETWS_ENABLE_CBOR`: a zero-heap RFC 8949 writer plus a cursor decoder (`cbor_peek` / `cbor_read_*`, no-copy strings) over caller buffers - ints / strings / bytes / arrays / maps / bool / null / float; host-tested against the spec vectors + round-trip (example 65.Cbor).
 - [x] MessagePack encoder + decoder _(shipped)_ - `DETWS_ENABLE_MSGPACK`: a zero-heap streaming writer over a caller buffer - shortest-form ints (fixint / 8 / 16 / 32 / 64) / str / bin / arrays / maps / bool / nil / float32; overflow tracked, fails closed - plus a cursor decoder (`msgpack_peek` / `msgpack_read_*`, no-copy strings, fail-closed on malformed/truncated input, ext reported as INVALID) host-tested against spec vectors + round-trip and fuzzed in the pentest harness (example 66.MsgPack, both directions). Remaining (M-L): Protobuf / FlatBuffers zero-copy.
 - [x] GraphQL bounded subset _(shipped)_ - `DETWS_ENABLE_GRAPHQL`: `services/graphql` parses a query into a fixed AST pool (no heap) and emits `{"data":{...}}` shaped by the selection; schema-free (sub-selection = object, leaf = one resolver call, args collected along the path), with nesting + arguments (example 81.GraphQL). Feature-dependent schema generation remains open (M).
