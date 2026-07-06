@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`a44432f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a44432f0515e2d5e524dcf82fff6505c36d1f099))
+- update CHANGELOG.md [skip ci] ([`cc1559d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc1559df9e9c6a10a43641538daf9f292fdf93f5))
+
+### Testing
+
+- cover TLS 1.3 handshake-rejection + transport-param reject paths ([`cbbf1b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbbf1b19ccfaa1ff6686d5f256d798761b1e4e6b))
+
 ## [5.0.0] - 2026-07-06
 
 <details>
