@@ -266,8 +266,13 @@ preempting queue, so sensing shares the real-time ingest path.
   scale (`data/2^28 * fref`) + single-channel config-sequence builder, pure codec host-tested
   (`native_ldc1614`), with an ESP32 I2C binding that verifies the device id, applies the config, and reads
   the channel. Remaining: verify eddy-current shift on a real coil / bench, and the magnetometer EM path.
-- [ ] \*Time-of-flight ranging (S) - VL53L0X / VL53L1X (I2C) optical ToF distance and
-      gesture, bridged to the same sink.
+- [~] \*Time-of-flight ranging (S) - VL53L0X / VL53L1X (I2C) optical ToF distance and
+  gesture, bridged to the same sink. **Driver shipped** (`DETWS_ENABLE_VL53L0X`, `services/vl53l0x`): the
+  documented ranging registers - `vl53l0x_range_mm` combines the range byte pair, `vl53l0x_data_ready`
+  decodes the interrupt-status byte, `vl53l0x_range_valid` checks the device range-status field - pure
+  codec host-tested (`native_vl53l0x`), with an ESP32 I2C binding that verifies the model id, starts
+  continuous ranging, and reads the distance. Remaining: apply ST's tuning blob for best accuracy, a
+  VL53L1X variant, and a bench range check.
 
 ## Web / API / UI
 

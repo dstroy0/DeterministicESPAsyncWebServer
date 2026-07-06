@@ -1581,6 +1581,12 @@
       "src": ["+<services/ldc1614/ldc1614.cpp>"],
       "tests": ["test_ldc1614"]
     },
+    "native_vl53l0x": {
+      "desc": "VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to\nmillimeters, the interrupt-status data-ready decode, and the device range-status validity check. Pure\ncodec host tests (the I2C ranging binding is ESP32-only).",
+      "flags": ["-DDETWS_ENABLE_VL53L0X=1"],
+      "src": ["+<services/vl53l0x/vl53l0x.cpp>"],
+      "tests": ["test_vl53l0x"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1673,6 +1679,7 @@
         "-DDETWS_ENABLE_CC1101=1",
         "-DDETWS_ENABLE_FDC2214=1",
         "-DDETWS_ENABLE_LDC1614=1",
+        "-DDETWS_ENABLE_VL53L0X=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1766,6 +1773,7 @@
         "+<services/cc1101/cc1101.cpp>",
         "+<services/fdc2214/fdc2214.cpp>",
         "+<services/ldc1614/ldc1614.cpp>",
+        "+<services/vl53l0x/vl53l0x.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

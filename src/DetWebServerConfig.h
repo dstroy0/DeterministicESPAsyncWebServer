@@ -3144,6 +3144,19 @@
 #endif
 
 /**
+ * @brief Opt-in VL53L0X optical time-of-flight ranging sensor (DETWS_ENABLE_VL53L0X).
+ *
+ * A field-perturbation sensing peripheral for contactless distance / gesture: services/vl53l0x decodes
+ * the ST VL53L0X ranging registers - vl53l0x_range_mm combines the range byte pair, vl53l0x_data_ready
+ * decodes the interrupt-status byte, and vl53l0x_range_valid checks the device range-status field; the
+ * ESP32 binding verifies the model id, starts continuous ranging, and reads the distance over I2C.
+ * Default-settings ranging (ST's tuning blob is not applied). Pure codec host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_VL53L0X
+#define DETWS_ENABLE_VL53L0X 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
