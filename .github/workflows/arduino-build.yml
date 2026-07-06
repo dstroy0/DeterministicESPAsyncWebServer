@@ -84,7 +84,29 @@ jobs:
             arduino-cli core update-index
             arduino-cli core install "$ESP32_CORE"
           }
+      # Cache + wrap the toolchain with ccache so every example reuses the Arduino-core object compiles
+      # (the bulk of each build) across examples and, via ~/.ccache, across runs - same win as the
+      # PlatformIO build. arduino-cli invokes the xtensa compiler by absolute path, so the binaries are
+      # wrapped in place (idempotent, no-op if the core is not installed yet).
+      - name: Cache ccache
+        uses: actions/cache@v6
+        with:
+          path: ~/.ccache
+          key: arduino-ccache-${{ env.ESP32_CORE }}-${{ github.sha }}
+          restore-keys: arduino-ccache-${{ env.ESP32_CORE }}-
+      - name: Enable ccache for the xtensa toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install -y ccache
+          bash tools/ci/ccache_wrap.sh ~/.arduino15/packages xtensa-esp32-elf-gcc xtensa-esp32-elf-g++
       - name: Compile ${{ matrix.example.name }} (Arduino IDE, esp32 3.x)
         # No --build-property / build_flags: the example's build_opt.h supplies the feature
         # flags, so this is byte-for-byte how the Arduino IDE builds it.
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 --library . "examples/${{ matrix.example.name }}"
+        env:
+          # arduino-cli builds under a temp/cache path that varies, so normalize the paths (as for
+          # PlatformIO) so the cached core objects hit regardless of the build dir.
+          CCACHE_BASEDIR: /
+          CCACHE_NOHASHDIR: "1"
+          CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime,locale,random_seed,pch_defines
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 --library . "examples/${{ matrix.example.name }}"
+          ccache -s 2>/dev/null | grep -iE "Cacheable|Hits:" || true
