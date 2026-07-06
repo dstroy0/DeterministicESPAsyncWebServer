@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`f14c9b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f14c9b67d1d343f7ad19b87becaee7380366cf39))
+- update CHANGELOG.md [skip ci] ([`8449fb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8449fb76a7040040625f8f59dba7b4cf3c2fe13c))
 - update test report [skip ci] ([`0e926bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e926bde107e26cea9e23669111a7be1b2d3ae1a))
 - update CHANGELOG.md [skip ci] ([`d2db8c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2db8c219000b284ccd0b9453d10c20d7e1f8318))
 - update test report [skip ci] ([`30d53a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30d53a2184a27b8177d184a640947325d7242bb1))
@@ -34,6 +36,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- emit a fully-detailed lifecycle diagram into the architecture doc ([`81f4ac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81f4ac5212d727371badee61a5b5c5aa6da25be8))
 - theme-adaptive translucent palette + thicker links ([`952872e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/952872eff2a7c6e2fd409f8d1c5452cfa6e94d87))
 - redesign the README flowcharts to be beginner-friendly ([`f5862de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5862de5a7323fd222212eacc308b055a6b5710e))
 - log the QUIC anti-amplification build-then-discard desync [skip ci] ([`57c39c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57c39c280f16188afccb8b68881085d0a2c5a771))
