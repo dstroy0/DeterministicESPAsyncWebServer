@@ -9,8 +9,9 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 - **ESP32 only.** No ESP8266 / RP2040 / RP2350 port - the HW crypto, NVS, and
   lwIP raw-API integration are ESP32-specific. Host builds exist only for tests.
-- **IPv4 only.** No IPv6 dual-stack yet. Wi-Fi STA/AP and, with `DETWS_ENABLE_ETHERNET`,
-  a wired RMII Ethernet PHY (`init_eth_physical()`; the PHY bring-up needs the hardware).
+- **Interfaces.** Wi-Fi STA/AP and, with `DETWS_ENABLE_ETHERNET`, a wired RMII Ethernet
+  PHY (`init_eth_physical()`; the PHY bring-up needs the hardware). Dual-stack IPv6 is
+  opt-in via `DETWS_ENABLE_IPV6` (SLAAC; the listeners bind `IPADDR_TYPE_ANY`), off by default.
 
 ## HTTP core
 
@@ -100,17 +101,18 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
        `memory.ld` override is possible but risky: on the stock arduino-esp32 the base
        `0xdb5c` and the top cap are **ROM-reserved** (this is already the "BT not built"
        memory.ld variant), so a naive reclaim can corrupt boot. Prefer paths 1-2.
-- **Server-side session resumption only** (RFC 5077 tickets); the outbound client
-  does not yet present a ticket on reconnect.
+- **Session resumption** (RFC 5077 tickets): both the server and the outbound client
+  resume - the client accepts the server-issued ticket and presents it on the next
+  `begin()` for an abbreviated handshake.
 
 ## SSH
 
-- **Single `session` channel** - no port-forwarding, X11, or channel multiplexing.
-- **No rekeying** - the connection closes when a sequence number would wrap (the
-  safe fallback); there is no data-volume / time-based rekey.
+- **Single `session` channel** - no X11 or channel multiplexing (a `tcpip-forward`
+  global-request seam exists for `ssh -R`, but full port-forwarding is not wired).
 - Per-direction NEWKEYS is a single flag (correct for the strict
   send-then-receive ordering), and the KDF produces a single <= 32-byte block
-  (enough for the negotiated AES-256 / HMAC-SHA-256).
+  (enough for the negotiated AES-256 / HMAC-SHA-256). Time- and packet-count-based
+  in-session rekeying is supported (`SSH_REKEY_TIME_MS`, server-initiated).
 
 ## Protocol services
 
@@ -120,9 +122,9 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
 - **WebDAV:** `PROPPATCH` returns a 207 with every property refused (403); `LOCK`
   is advisory (a token is issued but not enforced). `PUT` streams to the file as the
   body arrives, and `COPY`/`MOVE` handle both files and collections (recursive).
-- **SNMP:** the engine ID uses a fixed placeholder enterprise OID. (Trap and the
-  confirmed _inform_ are implemented for both v2c and v3; the caller drives inform
-  retransmission until the receiver's Response arrives.)
+- **SNMP:** the v3 engine ID defaults to a placeholder enterprise OID; pass your own
+  to `snmp_v3_init()`. (Trap and the confirmed _inform_ are implemented for both v2c
+  and v3; the caller drives inform retransmission until the receiver's Response arrives.)
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN
   (prefer SSH or the WebSocket terminal otherwise).
 - **Multipart:** at most `MAX_MULTIPART_PARTS` parts; a binary part containing the
