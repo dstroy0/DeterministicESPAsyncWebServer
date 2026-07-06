@@ -3130,6 +3130,20 @@
 #endif
 
 /**
+ * @brief Opt-in LDC1614 inductance-to-digital field sensor (DETWS_ENABLE_LDC1614).
+ *
+ * A field-perturbation sensing peripheral: services/ldc1614 decodes the LDC1614's 28-bit conversion
+ * result (a nearby conductor changes the coil inductance via eddy currents, giving contactless metal
+ * proximity / displacement / EM-field sensing) - ldc1614_data combines the register pair, ldc1614_error
+ * pulls the flags, ldc1614_sensor_freq_hz scales to frequency, and ldc1614_build_config emits a
+ * single-channel bring-up; the ESP32 binding replays it and reads the channel over I2C. Pure codec
+ * host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_LDC1614
+#define DETWS_ENABLE_LDC1614 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

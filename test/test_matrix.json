@@ -1575,6 +1575,12 @@
       "src": ["+<services/fdc2214/fdc2214.cpp>"],
       "tests": ["test_fdc2214"]
     },
+    "native_ldc1614": {
+      "desc": "LDC1614 inductance-to-digital field sensor (services/ldc1614): the 28-bit data combine +\nerror flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder.\nPure codec host tests (the I2C binding is ESP32-only).",
+      "flags": ["-DDETWS_ENABLE_LDC1614=1"],
+      "src": ["+<services/ldc1614/ldc1614.cpp>"],
+      "tests": ["test_ldc1614"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1666,6 +1672,7 @@
         "-DDETWS_ENABLE_LINK_MANAGER=1",
         "-DDETWS_ENABLE_CC1101=1",
         "-DDETWS_ENABLE_FDC2214=1",
+        "-DDETWS_ENABLE_LDC1614=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1758,6 +1765,7 @@
         "+<services/link_manager/link_manager.cpp>",
         "+<services/cc1101/cc1101.cpp>",
         "+<services/fdc2214/fdc2214.cpp>",
+        "+<services/ldc1614/ldc1614.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

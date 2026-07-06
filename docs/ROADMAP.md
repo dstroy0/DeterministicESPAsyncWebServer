@@ -260,8 +260,12 @@ preempting queue, so sensing shares the real-time ingest path.
   combine + error flags + frequency scale + single-channel config-sequence builder, pure codec
   host-tested (`native_fdc2214`), with an ESP32 I2C binding that verifies the device id, applies the
   config, and reads the channel. Remaining: verify capacitance shift on a real electrode / bench.
-- [ ] \*Inductive / EM field sensing (S) - LDC1614 (I2C) inductance-to-digital for
-      metal / displacement, plus magnetometer-based EM-field perturbation detection.
+- [~] \*Inductive / EM field sensing (S) - LDC1614 (I2C) inductance-to-digital for
+  metal / displacement, plus magnetometer-based EM-field perturbation detection. **Driver shipped**
+  (`DETWS_ENABLE_LDC1614`, `services/ldc1614`): the LDC1614 28-bit data combine + error flags + frequency
+  scale (`data/2^28 * fref`) + single-channel config-sequence builder, pure codec host-tested
+  (`native_ldc1614`), with an ESP32 I2C binding that verifies the device id, applies the config, and reads
+  the channel. Remaining: verify eddy-current shift on a real coil / bench, and the magnetometer EM path.
 - [ ] \*Time-of-flight ranging (S) - VL53L0X / VL53L1X (I2C) optical ToF distance and
       gesture, bridged to the same sink.
 
