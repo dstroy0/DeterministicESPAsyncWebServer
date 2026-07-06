@@ -4,8 +4,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- reset the PTO backoff on acknowledged progress (RFC 9002 sec 6.2) ([`77f723d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77f723dc9ef426dfb6837539616a9e4c14aba62b))
+
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0f4f5a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f4f5a0c7812066fbde5e34fe2834975e5efbbb9))
 - update test report [skip ci] ([`321f006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/321f006cc104c90d9d2a18d01a7cd0b4bdbc054b))
 - update CHANGELOG.md [skip ci] ([`f8fe0fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8fe0fadef1993013ab709c9668f9fb6567d48f2))
 
