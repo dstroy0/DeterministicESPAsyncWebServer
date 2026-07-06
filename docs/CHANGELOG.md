@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.47.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.47.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`3cea423`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3cea42314b5c5cb2e0e10aa6c9c06f821be559f9))
+
+### Changes
+
+- Bump version: 5.46.0 → 5.47.0 ([`bb32a2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb32a2b9722b19d0d11e1103185482d15ed9a676))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e1a6667`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1a6667e7fd9f6cc4f67313cf2fd3f73b46539eb))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`07241a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07241a6b52773f69e8509758726b948871062f14))
+
+### Features
+
+- DRAM/PSRAM buffer placement policy + SPI DMA ping-pong ([`b4336ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4336ba860cdc585e905082f5d487507c7a8ff15))
+
+</details>
+
 ## [5.46.0] - 2026-07-06
 
 <details>
