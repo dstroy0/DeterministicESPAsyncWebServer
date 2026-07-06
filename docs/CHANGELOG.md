@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`3fa7377`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa7377fe3d9f7c4a94f30793bf90790ade81270))
+- update CHANGELOG.md [skip ci] ([`c357d3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c357d3bcf3ee4386453866113724ccfaeb439a77))
 - update test report [skip ci] ([`5b80427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b8042705c2c21609d1a49824ded0653f30b2747))
 - update CHANGELOG.md [skip ci] ([`2341d00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2341d00a4bf339f300f68cb4fa6f8fd72f752e53))
 - update test report [skip ci] ([`5c21807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c218079e5bc5fe99ee0950e2db3164a5e892f1f))
@@ -42,6 +44,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`4878ada`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4878adaa4fe0b2d994befdd9aafc078bc1d54c92))
 - theme gallery + 68 PNG previews + a custom-theme generator command ([`12cb3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12cb3c508c94a24f68d18e4e1bff61cd6bb518ec))
 - embed diagrams as pre-rendered PNGs so they show in the app + Doxygen ([`d2ad529`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2ad529cb73be60b8153d36e470c7e99ce8561fd))
 - emit a fully-detailed lifecycle diagram into the architecture doc ([`81f4ac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81f4ac5212d727371badee61a5b5c5aa6da25be8))
@@ -58,6 +61,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- 288 favicons (18 motifs x 16 palettes) + gallery + tarball packager ([`4551f09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4551f09f6fe8ae467b473afb4013986214772620))
+- toggleable theme blobs in Layer 7 (DETWS_ENABLE_THEMES) ([`dd02a26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd02a2683a04aaf4bca0d8c03eff5e91605d4ab1))
 - theme library generator + 61 curated themes + a custom-palette tool ([`d12e883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12e883e21a0d3cb7b309dbd0cf0966b9eca4a5e))
 - send CONNECTION_CLOSE on a fatal handshake / transport error ([`79fc358`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79fc35866426e8b2e3996f0318f59dcac219431e))
 - re-send the handshake flight on a duplicate ClientHello (loss signal) ([`a651d81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a651d8177854e1ba4b887c76cdbb25572fd53814))
