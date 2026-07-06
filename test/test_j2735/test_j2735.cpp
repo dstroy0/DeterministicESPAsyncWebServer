@@ -36,6 +36,17 @@ void test_bit_writer_pattern(void)
     TEST_ASSERT_EQUAL_HEX8(0xB8, buf[0]);
 }
 
+void test_writer_null_and_zero(void)
+{
+    // A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.
+    UperWriter w;
+    uper_writer_init(&w, nullptr, 8);
+    TEST_ASSERT_FALSE(w.ok);
+    uint8_t buf[4];
+    uper_writer_init(&w, buf, 0);
+    TEST_ASSERT_FALSE(w.ok);
+}
+
 void test_cint_roundtrip(void)
 {
     uint8_t buf[8];
@@ -156,6 +167,7 @@ int main(void)
     UNITY_BEGIN();
     RUN_TEST(test_cint_bits);
     RUN_TEST(test_bit_writer_pattern);
+    RUN_TEST(test_writer_null_and_zero);
     RUN_TEST(test_cint_roundtrip);
     RUN_TEST(test_bsm_core_roundtrip);
     RUN_TEST(test_bsm_core_bit_length);

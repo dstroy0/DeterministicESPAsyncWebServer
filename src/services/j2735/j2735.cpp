@@ -16,9 +16,10 @@ void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
     w->cap = cap;
     w->bit_pos = 0;
     w->ok = (buf != nullptr && cap > 0);
-    // Zero the buffer so we can OR bits in.
-    for (size_t i = 0; i < cap; i++)
-        buf[i] = 0;
+    // Zero the buffer so we can OR bits in - only when it is a real buffer (a null buf leaves ok=false).
+    if (buf)
+        for (size_t i = 0; i < cap; i++)
+            buf[i] = 0;
 }
 
 size_t uper_writer_finish(UperWriter *w)

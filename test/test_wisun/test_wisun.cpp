@@ -106,6 +106,31 @@ void test_node_registry(void)
     TEST_ASSERT_EQUAL_STRING("[{\"addr\":\"fd00::10\",\"joined\":true},{\"addr\":\"fd00::11\",\"joined\":true}]", js);
 }
 
+void test_registry_full_and_misses(void)
+{
+    WisunNode storage[2];
+    WisunFan fan;
+    DetIp br;
+    det_ip_parse("fd00::1", &br);
+    wisun_init(&fan, &br, storage, 2);
+    DetIp a, b, c;
+    det_ip_parse("fd00::a", &a);
+    det_ip_parse("fd00::b", &b);
+    det_ip_parse("fd00::c", &c);
+    TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &a, 1));
+    TEST_ASSERT_EQUAL_INT(1, wisun_node_register(&fan, &b, 2));
+    TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &c, 3)); // table full
+    TEST_ASSERT_FALSE(wisun_node_find(&fan, &c, nullptr));       // not present
+    TEST_ASSERT_EQUAL_size_t(2, wisun_joined_count(&fan));
+    // Bad args on init / register / build.
+    wisun_init(&fan, &br, nullptr, 2); // null storage -> cap 0
+    TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &a, 1));
+    uint8_t buf[8];
+    TEST_ASSERT_EQUAL_size_t(0,
+                             wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, nullptr, 0, "x", nullptr, 0, nullptr,
+                                              sizeof(buf))); // null out
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -114,5 +139,6 @@ int main(void)
     RUN_TEST(test_build_coap_long_segment_extended_length);
     RUN_TEST(test_build_coap_rejects_bad_args);
     RUN_TEST(test_node_registry);
+    RUN_TEST(test_registry_full_and_misses);
     return UNITY_END();
 }

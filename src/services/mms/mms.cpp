@@ -47,11 +47,15 @@ size_t write_len(uint8_t *p, size_t len)
 // Write a full TLV (tag + length + value) at out; returns total length, or 0 on overflow.
 size_t tlv(uint8_t tag, const uint8_t *val, size_t val_len, uint8_t *out, size_t cap)
 {
-    size_t n = 1 + len_octets(val_len) + val_len;
+    // One source of truth for the length-octet count: the value offset (k) and the total (n) both derive
+    // from it, so k + val_len == n is provable (write_len writes exactly this many octets).
+    size_t lo = len_octets(val_len);
+    size_t n = 1 + lo + val_len;
     if (n > cap)
         return 0;
     out[0] = tag;
-    size_t k = 1 + write_len(out + 1, val_len);
+    write_len(out + 1, val_len); // writes exactly lo octets
+    size_t k = 1 + lo;
     if (val_len)
         memcpy(out + k, val, val_len);
     return n;
