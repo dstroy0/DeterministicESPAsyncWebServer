@@ -16,7 +16,13 @@
 #include "DeterministicESPAsyncWebServer.h"
 #include "shared_primitives/det_mime.h"
 
-static DetWebServer *s_srv = nullptr;
+// All partition-monitor-routes state, owned by one instance (internal linkage): the server
+// handle. (The route handler is a fixed-signature callback, so it reaches this owner directly.)
+struct PartitionRoutesCtx
+{
+    DetWebServer *srv = nullptr;
+};
+static PartitionRoutesCtx s_partr;
 
 static void partition_handler(uint8_t slot_id, HttpReq *req)
 {
@@ -25,13 +31,13 @@ static void partition_handler(uint8_t slot_id, HttpReq *req)
     uint8_t n = detws_partition_collect(parts, DETWS_PARTITION_MAX);
     char buf[DETWS_PARTITION_JSON_BUF];
     detws_partition_json(parts, n, buf, sizeof(buf));
-    if (s_srv)
-        s_srv->send(slot_id, 200, DET_MIME_JSON, buf);
+    if (s_partr.srv)
+        s_partr.srv->send(slot_id, 200, DET_MIME_JSON, buf);
 }
 
 void detws_partition_monitor_begin(DetWebServer &server, const char *path)
 {
-    s_srv = &server;
+    s_partr.srv = &server;
     server.on((path && path[0]) ? path : "/partitions", HTTP_GET, partition_handler);
 }
 
