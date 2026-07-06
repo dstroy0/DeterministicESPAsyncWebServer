@@ -1386,6 +1386,12 @@
       "src": ["+<services/nema_ts2/nema_ts2.cpp>"],
       "tests": ["test_nema_ts2"]
     },
+    "native_snp": {
+      "desc": "GE Fanuc SNP serial frame codec (services/snp): the Series Ninety Protocol frame\n([control][length][data][arithmetic-sum BCC]) build + validate. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SNP=1"],
+      "src": ["+<services/snp/snp.cpp>"],
+      "tests": ["test_snp"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1446,6 +1452,7 @@
         "-DDETWS_ENABLE_MTCONNECT=1",
         "-DDETWS_ENABLE_J2735=1",
         "-DDETWS_ENABLE_NEMA_TS2=1",
+        "-DDETWS_ENABLE_SNP=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1507,6 +1514,7 @@
         "+<services/mtconnect/mtconnect.cpp>",
         "+<services/j2735/j2735.cpp>",
         "+<services/nema_ts2/nema_ts2.cpp>",
+        "+<services/snp/snp.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

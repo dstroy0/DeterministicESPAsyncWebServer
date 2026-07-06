@@ -2747,6 +2747,17 @@
 #endif
 
 /**
+ * @brief Opt-in GE Fanuc SNP (Series Ninety Protocol) serial frame codec (DETWS_ENABLE_SNP).
+ *
+ * When set, services/snp builds/validates the SNP master-slave serial frame ([control][length][data]
+ * [arithmetic-sum BCC]) for reading/writing registers on a GE Fanuc Series 90 (90-30/90-70) PLC over
+ * RS-485. Pure codec (the UART transport + SNP-X session are the device step). Default off.
+ */
+#ifndef DETWS_ENABLE_SNP
+#define DETWS_ENABLE_SNP 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

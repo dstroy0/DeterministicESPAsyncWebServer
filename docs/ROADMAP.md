@@ -684,10 +684,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   split a frame. Pairs with the FINS work (Host Link is the serial sibling); pure,
   host-tested. Remaining: the per-command text encoders (RD/WD/... of the DM/CIO areas)
   and the UART transport. Fixed BSS, no heap.
-- [ ] **SNP** (M, GE Fanuc Series Ninety Protocol) - the GE Fanuc Series 90 (90-30 /
-      90-70) serial protocol: the SNP / SNP-X master-slave framing over RS-485 for
-      register/bit read/write. UART transport, host-testable frame + checksum codec;
-      reuses the data-model + ADU parse/build pattern. Fixed BSS, no heap.
+- [~] **SNP** (M, GE Fanuc Series Ninety Protocol) _(frame codec shipped)_ - `DETWS_ENABLE_SNP`
+  (`services/snp`): the SNP master-slave serial frame - `detws_snp_build` / `_parse` for
+  `[control][length][data][arithmetic-sum BCC]` with the control-byte constants, for register
+  read/write on a GE Fanuc Series 90 (90-30/90-70) PLC over RS-485; host-tested (`native_snp`).
+  _Remaining:_ the SNP-X session setup + the per-command register-access encoders, and the UART
+  transport. Fixed BSS, no heap.
 - [ ] **DirectNET** (M, AutomationDirect) - the AutomationDirect / Koyo serial protocol
       (the DirectNET HostLink-style framed read/write of V-memory) for DirectLOGIC PLCs.
       UART transport, host-testable framing + checksum codec; pairs with the Modbus-RTU
