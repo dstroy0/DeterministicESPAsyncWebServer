@@ -55,6 +55,15 @@ jobs:
           npm install -g @mermaid-js/mermaid-cli@11
           bash tools/render_diagrams.sh
 
+      # Regenerate the per-feature footprint budget table in the README from the isolated
+      # measurements in docs/feature_ranges.json (produced periodically by the RPi build matrix,
+      # tools/ci/feature_budget.py collect) - a no-op if that file is absent.
+      - name: Regenerate footprint budget table
+        run: |
+          if [ -f docs/feature_ranges.json ]; then
+            python tools/ci/feature_budget.py readme docs/feature_ranges.json docs/footprints.json README.md
+          fi
+
       # Regenerate each example's Arduino build_opt.h from its README build_flags so the
       # examples keep building unmodified in the Arduino IDE.
       - name: Regenerate example build_opt.h files
