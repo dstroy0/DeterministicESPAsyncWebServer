@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.49.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.49.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`39f42b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39f42b9da8b94559c1e8408d6235906728d8d114))
+
+### Changes
+
+- Bump version: 5.48.0 → 5.49.0 ([`03c1af6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03c1af6b5796350c6c6f04217aaa0042f76b5628))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`cf7729d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf7729dc55c91241914697a702a49318da3189e2))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3a9863f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a9863f8d478c77c3f792bc7d8a1dd076d2a1dd9))
+
+### Features
+
+- 802.11 frame decode + traffic tally + roaming decision ([`f48fc38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f48fc383c5a27a013a7324ec9148010c6e294330))
+
+</details>
+
 ## [5.48.0] - 2026-07-06
 
 <details>
