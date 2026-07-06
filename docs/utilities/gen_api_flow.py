@@ -131,11 +131,13 @@ def mermaid():
     pres = presentation_modules()
     proto_short = short([p for p, _ in protos])
 
-    # A theme + layout directive: soft palette, curved edges, and roomy spacing so nodes never overlap.
+    # Layout only (curved edges, roomy spacing). Deliberately NO 'theme' override: that lets GitHub swap
+    # its light / dark Mermaid theme automatically, and the classDefs below use translucent fills with no
+    # fixed text colour so a node reads on either background (the page tints through the glassy fill).
     init = (
-        "%%{init: {'theme':'base','themeVariables':{"
+        "%%{init: {'themeVariables':{"
         "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
-        "'lineColor':'#94a3b8','clusterBkg':'transparent','clusterBorder':'#cbd5e1'},"
+        "'lineColor':'#94a3b8'},"  # a soft slate-grey edge colour, gentle on both light and dark (not harsh black)
         "'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%"
     )
     out = [init, "flowchart TB"]
@@ -219,16 +221,21 @@ def mermaid():
     out.append("  class tls,parser,h2,h3 l6;")
     out.append("  class mae,mw l7;")
     out.append("  class handler,resp you;")
-    out.append("  classDef ext fill:#0f172a,stroke:#0f172a,color:#fff;")
-    out.append("  classDef setup fill:#f1f5f9,stroke:#94a3b8,color:#334155;")
-    out.append("  classDef l4 fill:#fff7ed,stroke:#fb923c,color:#7c2d12;")
-    out.append("  classDef seam fill:#10b981,stroke:#047857,color:#fff;")
-    out.append("  classDef l6 fill:#eff6ff,stroke:#60a5fa,color:#1e3a8a;")
-    out.append("  classDef l7 fill:#eef2ff,stroke:#818cf8,color:#3730a3;")
+    # Translucent fills (8-digit hex = ~15% alpha) + accent stroke + NO fixed text colour, so the page
+    # background (light or dark) shows through and the theme's own text colour keeps every label readable.
+    # The two seams (green) and the two parts you write (amber) stay solid so they still pop on both.
+    out.append("  classDef ext fill:#64748b33,stroke:#475569,stroke-width:1.5px;")
+    out.append("  classDef setup fill:#94a3b81f,stroke:#94a3b8;")
+    out.append("  classDef l4 fill:#f9731626,stroke:#f97316,stroke-width:1.5px;")
+    out.append("  classDef seam fill:#10b981,stroke:#047857,color:#ffffff;")
+    out.append("  classDef l6 fill:#3b82f626,stroke:#3b82f6,stroke-width:1.5px;")
+    out.append("  classDef l7 fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;")
     out.append("  classDef you fill:#f59e0b,stroke:#b45309,color:#3b2508;")
-    out.append("  style SETUP fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px;")
-    # Tint the response path green so "reply going out" is visually distinct from "request coming in".
-    out.append(f"  linkStyle {','.join(str(i) for i in res)} stroke:#10b981,stroke-width:2.5px;")
+    out.append("  style SETUP fill:#8888880f,stroke:#94a3b8,stroke-width:1px;")
+    # Thicker links first (the default hairline is hard to follow), then tint the response path green so
+    # "reply going out" is visually distinct from "request coming in".
+    out.append("  linkStyle default stroke-width:2.5px;")
+    out.append(f"  linkStyle {','.join(str(i) for i in res)} stroke:#10b981,stroke-width:3px;")
     return "\n".join(out)
 
 

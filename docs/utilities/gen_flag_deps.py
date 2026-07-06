@@ -130,11 +130,12 @@ def node_class(hard, resource, derived):
 
 
 def mermaid(hard, resource, derived):
-    # Theme + layout: curved edges and roomy spacing so a dense dependency graph does not collide.
+    # Layout only (curved edges, roomy spacing). No 'theme' override so GitHub swaps its light / dark
+    # Mermaid theme automatically; the classDefs use translucent fills + no fixed text colour to match.
     init = (
-        "%%{init: {'theme':'base','themeVariables':{"
+        "%%{init: {'themeVariables':{"
         "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
-        "'lineColor':'#94a3b8'},"
+        "'lineColor':'#94a3b8'},"  # soft slate-grey edges, gentle on both light and dark
         "'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%"
     )
     out = [init, "flowchart TD"]
@@ -159,11 +160,14 @@ def mermaid(hard, resource, derived):
         out.append(
             "  class PSRAM res;"
         )  # a class statement, not inline :::res (GitHub rejects inline class on a shaped node)
-    # Soft, rounded palette (dark text on a light fill reads on both GitHub light + dark themes).
-    out.append("  classDef parent fill:#d1fae5,stroke:#059669,color:#065f46;")
-    out.append("  classDef child fill:#e0e7ff,stroke:#6366f1,color:#3730a3;")
-    out.append("  classDef derived fill:#f3e8ff,stroke:#a855f7,color:#6b21a8;")
-    out.append("  classDef res fill:#ffedd5,stroke:#f97316,color:#9a3412;")
+    # Translucent fills (~15% alpha) + accent stroke + no fixed text colour, so nodes read on either the
+    # light or dark GitHub background (the page tints through) and the theme's text colour stays legible.
+    out.append("  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;")
+    out.append("  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;")
+    out.append("  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;")
+    out.append("  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;")
+    # Thicker links - the default hairline is hard to follow (>= 2x).
+    out.append("  linkStyle default stroke-width:2px;")
     return "\n".join(out)
 
 

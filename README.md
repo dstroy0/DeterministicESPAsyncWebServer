@@ -68,7 +68,7 @@ The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into t
 | Solid amber fill | the parts **you** write                                                          |
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8','clusterBkg':'transparent','clusterBorder':'#cbd5e1'},'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%
+%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%
 flowchart TB
   %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.
   subgraph SETUP["First, set up your server (once, at boot)"]
@@ -127,15 +127,16 @@ flowchart TB
   class tls,parser,h2,h3 l6;
   class mae,mw l7;
   class handler,resp you;
-  classDef ext fill:#0f172a,stroke:#0f172a,color:#fff;
-  classDef setup fill:#f1f5f9,stroke:#94a3b8,color:#334155;
-  classDef l4 fill:#fff7ed,stroke:#fb923c,color:#7c2d12;
-  classDef seam fill:#10b981,stroke:#047857,color:#fff;
-  classDef l6 fill:#eff6ff,stroke:#60a5fa,color:#1e3a8a;
-  classDef l7 fill:#eef2ff,stroke:#818cf8,color:#3730a3;
+  classDef ext fill:#64748b33,stroke:#475569,stroke-width:1.5px;
+  classDef setup fill:#94a3b81f,stroke:#94a3b8;
+  classDef l4 fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
+  classDef seam fill:#10b981,stroke:#047857,color:#ffffff;
+  classDef l6 fill:#3b82f626,stroke:#3b82f6,stroke-width:1.5px;
+  classDef l7 fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
   classDef you fill:#f59e0b,stroke:#b45309,color:#3b2508;
-  style SETUP fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px;
-  linkStyle 17,18,19,20,21 stroke:#10b981,stroke-width:2.5px;
+  style SETUP fill:#8888880f,stroke:#94a3b8,stroke-width:1px;
+  linkStyle default stroke-width:2.5px;
+  linkStyle 17,18,19,20,21 stroke:#10b981,stroke-width:3px;
 ```
 
 <!-- END GENERATED API FLOW -->
@@ -413,7 +414,7 @@ cryptic linker error). Enable a child flag only together with its parent.
 **Green** = a parent feature; **blue** = a child that requires it (hard `#error`); **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM; needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag (do not set it yourself).
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
+%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
 flowchart TD
   %% Reading: A --> B means B requires A (enable the parent to build the child).
   %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
@@ -462,10 +463,11 @@ flowchart TD
   class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
   class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
   class PSRAM res;
-  classDef parent fill:#d1fae5,stroke:#059669,color:#065f46;
-  classDef child fill:#e0e7ff,stroke:#6366f1,color:#3730a3;
-  classDef derived fill:#f3e8ff,stroke:#a855f7,color:#6b21a8;
-  classDef res fill:#ffedd5,stroke:#f97316,color:#9a3412;
+  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;
+  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
+  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;
+  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
+  linkStyle default stroke-width:2px;
 ```
 
 _22 hard dependencies · 3 PSRAM gates · 13 derived flags._
