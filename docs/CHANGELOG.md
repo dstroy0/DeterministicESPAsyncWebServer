@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d12672c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12672ca3d48e30673c5a096ee495ddbafca1ad6))
+- update CHANGELOG.md [skip ci] ([`990d65a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/990d65a754c42b8bf7fc225f304bc79d5a1f4bdf))
 - bump cspell from 8.19.4 to 10.0.1 ([`61d2b6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61d2b6a4e3ed835fa8bc14589101f20997ea8c7c))
 - post-commit auto-merge of mergeable Dependabot PRs ([`d7484bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7484bf462a26d3c700956e55db1b8650802f9f8))
 - update test report [skip ci] ([`b9ad08a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9ad08a77a8d64295b82a95e228c1b8ca73b5a35))
@@ -18,6 +20,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- auto-generated build-flag dependency + core API-flow diagrams ([`ff341f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff341f17a304941cece939c6c94db8c45571b2dc))
 - update ESP32 build footprints [skip ci] ([`cb8b8ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb8b8ba3b72242108d3f269f961c084408d89018))
 - HTTP/3 stack built + host-tested (QUIC + TLS 1.3 + HTTP/3) ([`6c6497c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c6497c62ee1da5a535c0cf8d005ba38f9ee0a81))
 - update ESP32 build footprints [skip ci] ([`0a1c7c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a1c7c1ec0c15294c5cf8c095efd2028b3d0fdee))
