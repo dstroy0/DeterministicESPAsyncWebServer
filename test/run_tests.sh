@@ -75,7 +75,7 @@ echo ""
 format_output() {
     awk -F'\t' '
     BEGIN {
-        width = 80
+        width = 120
     }
     {
         line = $0
@@ -112,21 +112,24 @@ format_output() {
             gsub(/-+$/, "", orig_msg)
             gsub(/^[ \t]+|[ \t]+$/, "", orig_msg)
             
-            clean_msg = orig_msg
+            # Pull the [PASSED]/[FAILED] token (with any surrounding color codes) out of the message.
+            match(orig_msg, /(\x1b\[[0-9;?]*[a-zA-Z])*\[(PASSED|FAILED)\](\x1b\[[0-9;?]*[a-zA-Z])*/)
+            status = substr(orig_msg, RSTART, RLENGTH)
+            msg = substr(orig_msg, 1, RSTART - 1) substr(orig_msg, RSTART + RLENGTH)
+            gsub(/[ \t]+/, " ", msg)
+            gsub(/^ | $/, "", msg)
+
+            clean_msg = msg
             gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_msg)
-            msg_len = length(clean_msg)
-            
-            pad_total = width - msg_len - 2
-            if (pad_total >= 2) {
-                pad_left = int(pad_total / 2)
-                pad_right = pad_total - pad_left
-                dashes_left = ""
-                for (i = 1; i <= pad_left; i++) dashes_left = dashes_left "-"
-                dashes_right = ""
-                for (i = 1; i <= pad_right; i++) dashes_right = dashes_right "-"
-                print dashes_left " " orig_msg " " dashes_right
-                next
-            }
+            clean_status = status
+            gsub(/\x1b\[[0-9;?]*[a-zA-Z]/, "", clean_status)
+
+            fill = width - length(clean_msg) - length(clean_status) - 2
+            if (fill < 1) fill = 1
+            dashes = ""
+            for (i = 1; i <= fill; i++) dashes = dashes "-"
+            print msg " " dashes " " status
+            next
         }
         
         # Section line: "--------------------------------------------------------------------------------"
