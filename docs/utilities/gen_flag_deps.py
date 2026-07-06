@@ -130,12 +130,19 @@ def node_class(hard, resource, derived):
 
 
 def mermaid(hard, resource, derived):
-    out = ["flowchart TD"]
+    # Theme + layout: curved edges and roomy spacing so a dense dependency graph does not collide.
+    init = (
+        "%%{init: {'theme':'base','themeVariables':{"
+        "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
+        "'lineColor':'#94a3b8'},"
+        "'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%"
+    )
+    out = [init, "flowchart TD"]
     out.append("  %% Reading: A --> B means B requires A (enable the parent to build the child).")
     out.append("  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.")
     out.append("")
     if resource:
-        out.append('  PSRAM(["PSRAM (or *_ACK_DRAM)"])')
+        out.append('  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])')
     for p, c in sorted(hard):
         out.append(f"  {p} --> {c}")
     for c, label in sorted(resource):
@@ -152,10 +159,11 @@ def mermaid(hard, resource, derived):
         out.append(
             "  class PSRAM res;"
         )  # a class statement, not inline :::res (GitHub rejects inline class on a shaped node)
-    out.append("  classDef parent fill:#2d6a4f,stroke:#1b4332,color:#fff;")
-    out.append("  classDef child fill:#1d3557,stroke:#0d1b2a,color:#fff;")
-    out.append("  classDef derived fill:#5a189a,stroke:#3c096c,color:#fff;")
-    out.append("  classDef res fill:#e85d04,stroke:#9d0208,color:#fff;")
+    # Soft, rounded palette (dark text on a light fill reads on both GitHub light + dark themes).
+    out.append("  classDef parent fill:#d1fae5,stroke:#059669,color:#065f46;")
+    out.append("  classDef child fill:#e0e7ff,stroke:#6366f1,color:#3730a3;")
+    out.append("  classDef derived fill:#f3e8ff,stroke:#a855f7,color:#6b21a8;")
+    out.append("  classDef res fill:#ffedd5,stroke:#f97316,color:#9a3412;")
     return "\n".join(out)
 
 

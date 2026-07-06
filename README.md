@@ -55,67 +55,87 @@ A zero-heap, asynchronous multi-protocol server library for ESP32. Network event
 
 > Generated from the public API, `proto_builtins.cpp`, and `presentation/` by `docs/utilities/gen_api_flow.py` - do not edit by hand.
 
-How a request flows through the OSI layers: the app registers routes and calls `begin()`, the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7). Responses funnel back out through the symmetric per-connection `resp_sink` TX seam, so `send()` stays protocol-agnostic (null sink = the HTTP/1.1 builder; h2 / h3 install their own).
+**How to read it:** follow the arrows. A **request comes in** at the top from a client, travels **down** through the four OSI layers - L4 wire bytes, L5 protocol pick, L6 decode into a request, L7 your routes - your handler runs, and the **response goes back out** along the **green** arrows. Each box shows a plain-English step with the exact function underneath. You only write the two **amber** parts: register your routes (top) and your handler (middle).
+
+The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into the _same_ request and answered through _one_ response seam, so your routes and handlers never care which protocol a client used.
+
+| Colour           | Layer                                                                            |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Amber outline    | **L4 Transport** - raw bytes on/off the wire                                     |
+| Green            | **L5 Session** - the two seams that pick the protocol in and frame the reply out |
+| Blue             | **L6 Presentation** - decrypt + turn bytes into a request                        |
+| Indigo           | **L7 Application** - route matching + your handlers                              |
+| Solid amber fill | the parts **you** write                                                          |
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8','clusterBkg':'transparent','clusterBorder':'#cbd5e1'},'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%
 flowchart TB
   %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.
-  client(("client"))
-
-  subgraph APP["Application L7 - DetWebServer"]
-    reg["Register: on() / on_regex() / serve_static() / dav() / on_not_found() +4"]
-    cfg["Configure: tls_cert() / tls_require_client_cert() / tls_client_subject() / set_ap_ip() / enable_rate_limit() +3"]
-    run["Run: begin() / begin_tls() / stop() / handle() / service_once() +1"]
-    mae[["match_and_execute"]]
-    mw["middleware chain"]
-    routes[("route table")]
-    handler>"your Handler"]
-    resp["Respond: serve_file() / stats() / metrics() / send() / send_empty() +5"]
+  subgraph SETUP["First, set up your server (once, at boot)"]
+    direction LR
+    reg["1 Register routes<br/>on() / on_regex()<br/>+7 more"]
+    cfg["2 Set options<br/>tls_cert() / tls_require_client_cert()<br/>+6 more"]
+    run["3 Start it<br/>begin() / begin_tls()<br/>+4 more"]
   end
 
-  subgraph L6["Presentation L6 - base64 / cbor / deflate / hpack_prim / http2 / http3 / http_parser / inflate / json / msgpack / multipart / sha1 / sse / ssh / telnet / websocket"]
-    tls["det_tls decrypt + ALPN"]
-    parser["http_parser fills http_pool slot"]
-    h2["h2_conn"]
-    h3["quic_conn + h3_conn"]
-  end
+  cin(["A client sends a request<br/>browser / app / curl"])
+  listen["Accept a connection<br/>listener_accept_cb"]
+  ring[("Hold the bytes<br/>conn_pool + rx ring")]
+  udprx["Receive a datagram<br/>det_udp"]
+  seam{{"Which protocol?<br/>ProtoHandler seam<br/>HTTP / TELNET / SSH / +2"}}
+  tls["Decrypt + choose version<br/>det_tls + ALPN"]
+  parser["Read HTTP/1.1<br/>http_parser"]
+  h2["Decode HTTP/2<br/>h2_conn"]
+  h3["Decode HTTP/3<br/>quic_conn + h3_conn"]
+  mae{{"Find the matching route<br/>match_and_execute"}}
+  mw["Run your middleware"]
+  routes[("Route table")]
+  handler>"YOUR HANDLER runs"]
+  resp["Build the response<br/>serve_file() / stats()<br/>+8 more"]
+  sink{{"Frame the reply per protocol<br/>resp_sink seam<br/>HTTP/1.1 / h2 / h3"}}
+  consend["Write bytes back<br/>det_conn_send"]
+  udptx["Send a datagram<br/>det_udp"]
+  cout(["The client gets the response"])
 
-  subgraph L5["Session L5 - worker task"]
-    tick["server_tick / dispatch_event"]
-    seam{{"ProtoHandler seam (RX): HTTP / TELNET / SSH / MODBUS / OPCUA"}}
-    sink{{"resp_sink seam (TX): HTTP/1.1 / h2 / h3"}}
-  end
-
-  subgraph L4["Transport L4"]
-    listen["listener_accept_cb"]
-    ring[("conn_pool slot + rx ring")]
-    udp["det_udp listeners"]
-    consend["det_conn_send"]
-  end
-
-  reg --> routes
-  run --> listen
-  client -- TCP --> listen --> ring --> tick
-  client -- UDP / QUIC --> udp --> tick
-  tick --> seam
-  seam -- TLS/TCP --> tls
-  tls -- HTTP/1.1 --> parser
-  tls -- ALPN h2 --> h2
-  seam -- HTTP/3 --> h3
-  parser -- PARSE_COMPLETE --> mae
-  h2 -- PARSE_COMPLETE --> mae
+  run -.->|starts| listen
+  cin ==>|TCP| listen
+  listen --> ring
+  ring --> seam
+  cin ==>|UDP / QUIC| udprx
+  udprx --> seam
+  seam --> tls
+  tls -->|HTTP/1.1| parser
+  tls -->|ALPN h2| h2
+  seam -->|HTTP/3| h3
+  parser --> mae
+  h2 --> mae
   h3 --> mae
-  mae --> mw --> routes --> handler --> resp
+  mae --> mw
+  mw --> routes
+  routes --> handler
+  handler --> resp
   resp --> sink
-  sink -- default builder --> consend
-  sink -- resp_sink --> h2
-  sink -- resp_sink --> h3
-  h2 --> consend
-  consend --> client
-  h3 --> udp --> client
+  sink -->|TCP: 1.1, h2| consend
+  sink -->|QUIC: h3| udptx
+  consend ==> cout
+  udptx ==> cout
 
-  class client ext;
-  classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;
+  class cin,cout ext;
+  class reg,cfg,run,routes setup;
+  class listen,ring,udprx,udptx,consend l4;
+  class seam,sink seam;
+  class tls,parser,h2,h3 l6;
+  class mae,mw l7;
+  class handler,resp you;
+  classDef ext fill:#0f172a,stroke:#0f172a,color:#fff;
+  classDef setup fill:#f1f5f9,stroke:#94a3b8,color:#334155;
+  classDef l4 fill:#fff7ed,stroke:#fb923c,color:#7c2d12;
+  classDef seam fill:#10b981,stroke:#047857,color:#fff;
+  classDef l6 fill:#eff6ff,stroke:#60a5fa,color:#1e3a8a;
+  classDef l7 fill:#eef2ff,stroke:#818cf8,color:#3730a3;
+  classDef you fill:#f59e0b,stroke:#b45309,color:#3b2508;
+  style SETUP fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px;
+  linkStyle 17,18,19,20,21 stroke:#10b981,stroke-width:2.5px;
 ```
 
 <!-- END GENERATED API FLOW -->
@@ -393,11 +413,12 @@ cryptic linker error). Enable a child flag only together with its parent.
 **Green** = a parent feature; **blue** = a child that requires it (hard `#error`); **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM; needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag (do not set it yourself).
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
 flowchart TD
   %% Reading: A --> B means B requires A (enable the parent to build the child).
   %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.
 
-  PSRAM(["PSRAM (or *_ACK_DRAM)"])
+  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])
   AUTH --> AUTH_LOCKOUT
   COAP --> COAP_BLOCK
   COAP --> COAP_OBSERVE
@@ -441,10 +462,10 @@ flowchart TD
   class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
   class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
   class PSRAM res;
-  classDef parent fill:#2d6a4f,stroke:#1b4332,color:#fff;
-  classDef child fill:#1d3557,stroke:#0d1b2a,color:#fff;
-  classDef derived fill:#5a189a,stroke:#3c096c,color:#fff;
-  classDef res fill:#e85d04,stroke:#9d0208,color:#fff;
+  classDef parent fill:#d1fae5,stroke:#059669,color:#065f46;
+  classDef child fill:#e0e7ff,stroke:#6366f1,color:#3730a3;
+  classDef derived fill:#f3e8ff,stroke:#a855f7,color:#6b21a8;
+  classDef res fill:#ffedd5,stroke:#f97316,color:#9a3412;
 ```
 
 _22 hard dependencies · 3 PSRAM gates · 13 derived flags._

@@ -106,85 +106,129 @@ def presentation_modules():
     return sorted(d for d in os.listdir(PRESENTATION) if os.path.isdir(os.path.join(PRESENTATION, d)))
 
 
-def label(names, cap=5):
-    shown = names[:cap]
-    text = " / ".join(f"{n}()" for n in shown)  # ASCII separator (a middle-dot can trip GitHub's parser)
-    if len(names) > cap:
-        text += f" +{len(names) - cap}"
-    return text or "-"
+def label(title, names, cap=2):
+    """A compact multi-line node label: a bold-ish title, up to `cap` method names, then a +N tail.
+
+    Short labels are the single biggest lever against the wide, overlapping nodes long lists produce;
+    <br/> wraps so a node grows in height (cheap) instead of width (expensive). ASCII separators only
+    (a middle-dot can trip GitHub's Mermaid parser).
+    """
+    shown = [f"{n}()" for n in names[:cap]]
+    body = " / ".join(shown) if shown else "-"
+    tail = f"<br/>+{len(names) - cap} more" if len(names) > cap else ""
+    return f"{title}<br/>{body}{tail}"
+
+
+def short(names, cap=3):
+    """A ' / '-joined, capped list with a +N tail (ASCII only - a middle-dot trips GitHub's parser)."""
+    body = " / ".join(names[:cap])
+    return body + (f" / +{len(names) - cap}" if len(names) > cap else "")
 
 
 def mermaid():
     api = public_methods()
     protos = protocols()
     pres = presentation_modules()
-    proto_names = " / ".join(p for p, _ in protos)
-    pres_names = " / ".join(pres)
+    proto_short = short([p for p, _ in protos])
 
-    out = ["flowchart TB"]
+    # A theme + layout directive: soft palette, curved edges, and roomy spacing so nodes never overlap.
+    init = (
+        "%%{init: {'theme':'base','themeVariables':{"
+        "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
+        "'lineColor':'#94a3b8','clusterBkg':'transparent','clusterBorder':'#cbd5e1'},"
+        "'flowchart':{'curve':'basis','nodeSpacing':42,'rankSpacing':50,'padding':10,'useMaxWidth':true}}}%%"
+    )
+    out = [init, "flowchart TB"]
     out.append("  %% Auto-generated from the public API, proto_builtins.cpp, and presentation/ on disk.")
-    out.append('  client(("client"))')
-    out.append("")
-    out.append('  subgraph APP["Application L7 - DetWebServer"]')
-    out.append(f'    reg["Register: {label(api["Register"])}"]')
-    out.append(f'    cfg["Configure: {label(api["Configure"])}"]')
-    out.append(f'    run["Run: {label(api["Run"])}"]')
-    out.append('    mae[["match_and_execute"]]')
-    out.append('    mw["middleware chain"]')
-    out.append('    routes[("route table")]')
-    out.append('    handler>"your Handler"]')
-    out.append(f'    resp["Respond: {label(api["Respond"])}"]')
+    # A single top-to-bottom spine: request flows down to your handler, response flows back to the client.
+    # No per-layer boxes (they stretch to enclose both the incoming and outgoing node of a layer, which
+    # is what made this sprawl) - the layer is shown by colour instead, per the key above the diagram.
+    # Setup runs once at boot; keep it as a small reference panel, wired in with one faint dashed edge.
+    out.append('  subgraph SETUP["First, set up your server (once, at boot)"]')
+    out.append("    direction LR")
+    out.append(f'    reg["{label("1 Register routes", api["Register"])}"]')
+    out.append(f'    cfg["{label("2 Set options", api["Configure"])}"]')
+    out.append(f'    run["{label("3 Start it", api["Run"])}"]')
     out.append("  end")
     out.append("")
-    out.append(f'  subgraph L6["Presentation L6 - {pres_names}"]')
-    out.append('    tls["det_tls decrypt + ALPN"]')
-    out.append('    parser["http_parser fills http_pool slot"]')
-    out.append('    h2["h2_conn"]')
-    out.append('    h3["quic_conn + h3_conn"]')
-    out.append("  end")
+    # One straight waterfall: a client sends at the top, the request flows down to your handler, the
+    # response flows on down, and a client receives at the bottom - so there are no long back-edges. The
+    # bidirectional UDP socket is drawn as its receive + send directions for the same reason. Node colour
+    # is the OSI layer (L4 amber, L5 green seams, L6 blue, L7 indigo), per the key above the diagram.
+    out.append('  cin(["A client sends a request<br/>browser / app / curl"])')
+    out.append('  listen["Accept a connection<br/>listener_accept_cb"]')
+    out.append('  ring[("Hold the bytes<br/>conn_pool + rx ring")]')
+    out.append('  udprx["Receive a datagram<br/>det_udp"]')
+    out.append(f'  seam{{{{"Which protocol?<br/>ProtoHandler seam<br/>{proto_short}"}}}}')
+    out.append('  tls["Decrypt + choose version<br/>det_tls + ALPN"]')
+    out.append('  parser["Read HTTP/1.1<br/>http_parser"]')
+    out.append('  h2["Decode HTTP/2<br/>h2_conn"]')
+    out.append('  h3["Decode HTTP/3<br/>quic_conn + h3_conn"]')
+    out.append('  mae{{"Find the matching route<br/>match_and_execute"}}')
+    out.append('  mw["Run your middleware"]')
+    out.append('  routes[("Route table")]')
+    out.append('  handler>"YOUR HANDLER runs"]')
+    out.append(f'  resp["{label("Build the response", api["Respond"])}"]')
+    out.append('  sink{{"Frame the reply per protocol<br/>resp_sink seam<br/>HTTP/1.1 / h2 / h3"}}')
+    out.append('  consend["Write bytes back<br/>det_conn_send"]')
+    out.append('  udptx["Send a datagram<br/>det_udp"]')
+    out.append('  cout(["The client gets the response"])')
     out.append("")
-    out.append('  subgraph L5["Session L5 - worker task"]')
-    out.append('    tick["server_tick / dispatch_event"]')
-    out.append(f'    seam{{{{"ProtoHandler seam (RX): {proto_names}"}}}}')
-    out.append('    sink{{"resp_sink seam (TX): HTTP/1.1 / h2 / h3"}}')
-    out.append("  end")
+
+    # Edges. Track response-path edge indices so linkStyle can tint them a distinct colour.
+    edges = []
+    res = []
+
+    def edge(line, is_res=False):
+        if is_res:
+            res.append(len(edges))
+        edges.append("  " + line)
+
+    edge("run -.->|starts| listen")  # the one setup->flow link, faint + dashed
+    # Request in: a client's bytes travel down to your handler.
+    edge("cin ==>|TCP| listen")
+    edge("listen --> ring")
+    edge("ring --> seam")
+    edge("cin ==>|UDP / QUIC| udprx")
+    edge("udprx --> seam")
+    edge("seam --> tls")
+    edge("tls -->|HTTP/1.1| parser")
+    edge("tls -->|ALPN h2| h2")
+    edge("seam -->|HTTP/3| h3")
+    edge("parser --> mae")
+    edge("h2 --> mae")
+    edge("h3 --> mae")
+    edge("mae --> mw")
+    edge("mw --> routes")
+    edge("routes --> handler")
+    edge("handler --> resp")
+    # Response out (green): one seam frames the reply for whatever protocol, then it reaches the client.
+    edge("resp --> sink", True)
+    edge("sink -->|TCP: 1.1, h2| consend", True)
+    edge("sink -->|QUIC: h3| udptx", True)
+    edge("consend ==> cout", True)
+    edge("udptx ==> cout", True)
+    out += edges
     out.append("")
-    out.append('  subgraph L4["Transport L4"]')
-    out.append('    listen["listener_accept_cb"]')
-    out.append('    ring[("conn_pool slot + rx ring")]')
-    out.append('    udp["det_udp listeners"]')
-    out.append('    consend["det_conn_send"]')
-    out.append("  end")
-    out.append("")
-    # registration + startup
-    out.append("  reg --> routes")
-    out.append("  run --> listen")
-    # RX path
-    out.append("  client -- TCP --> listen --> ring --> tick")
-    out.append("  client -- UDP / QUIC --> udp --> tick")
-    out.append("  tick --> seam")
-    out.append("  seam -- TLS/TCP --> tls")
-    out.append("  tls -- HTTP/1.1 --> parser")
-    out.append("  tls -- ALPN h2 --> h2")
-    out.append("  seam -- HTTP/3 --> h3")
-    out.append("  parser -- PARSE_COMPLETE --> mae")
-    out.append("  h2 -- PARSE_COMPLETE --> mae")
-    out.append("  h3 --> mae")
-    # dispatch
-    out.append("  mae --> mw --> routes --> handler --> resp")
-    # TX path: every response funnels through the one resp_sink TX seam (null = HTTP/1.1 builder)
-    out.append("  resp --> sink")
-    out.append("  sink -- default builder --> consend")
-    out.append("  sink -- resp_sink --> h2")
-    out.append("  sink -- resp_sink --> h3")
-    out.append("  h2 --> consend")
-    out.append("  consend --> client")
-    out.append("  h3 --> udp --> client")
-    out.append("")
-    out.append(
-        "  class client ext;"
-    )  # class statement, not inline :::ext (GitHub rejects inline class on a shaped node)
-    out.append("  classDef ext fill:#e85d04,stroke:#9d0208,color:#fff;")
+
+    # Palette: one soft colour per OSI layer, an accent for the two seams and the two you-touch parts.
+    out.append("  class cin,cout ext;")  # class statement, not inline :::ext (GitHub rejects inline)
+    out.append("  class reg,cfg,run,routes setup;")
+    out.append("  class listen,ring,udprx,udptx,consend l4;")
+    out.append("  class seam,sink seam;")
+    out.append("  class tls,parser,h2,h3 l6;")
+    out.append("  class mae,mw l7;")
+    out.append("  class handler,resp you;")
+    out.append("  classDef ext fill:#0f172a,stroke:#0f172a,color:#fff;")
+    out.append("  classDef setup fill:#f1f5f9,stroke:#94a3b8,color:#334155;")
+    out.append("  classDef l4 fill:#fff7ed,stroke:#fb923c,color:#7c2d12;")
+    out.append("  classDef seam fill:#10b981,stroke:#047857,color:#fff;")
+    out.append("  classDef l6 fill:#eff6ff,stroke:#60a5fa,color:#1e3a8a;")
+    out.append("  classDef l7 fill:#eef2ff,stroke:#818cf8,color:#3730a3;")
+    out.append("  classDef you fill:#f59e0b,stroke:#b45309,color:#3b2508;")
+    out.append("  style SETUP fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px;")
+    # Tint the response path green so "reply going out" is visually distinct from "request coming in".
+    out.append(f"  linkStyle {','.join(str(i) for i in res)} stroke:#10b981,stroke-width:2.5px;")
     return "\n".join(out)
 
 
@@ -196,12 +240,23 @@ def build_block():
             "> Generated from the public API, `proto_builtins.cpp`, and `presentation/` by"
             " `docs/utilities/gen_api_flow.py` - do not edit by hand.",
             "",
-            "How a request flows through the OSI layers: the app registers routes and calls `begin()`,"
-            " the transport (L4) rings inbound bytes to a worker, the session (L5) dispatches through the"
-            " protocol-agnostic `ProtoHandler` seam, the presentation (L6) turns bytes into a request, and"
-            " every version converges on the one `match_and_execute` / `Handler` / `Respond` path (L7)."
-            " Responses funnel back out through the symmetric per-connection `resp_sink` TX seam, so"
-            " `send()` stays protocol-agnostic (null sink = the HTTP/1.1 builder; h2 / h3 install their own).",
+            "**How to read it:** follow the arrows. A **request comes in** at the top from a client, travels"
+            " **down** through the four OSI layers - L4 wire bytes, L5 protocol pick, L6 decode into a request,"
+            " L7 your routes - your handler runs, and the **response goes back out** along the **green** arrows."
+            " Each box shows a plain-English step with the exact function underneath. You only write the two"
+            " **amber** parts: register your routes (top) and your handler (middle).",
+            "",
+            "The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into the *same* request"
+            " and answered through *one* response seam, so your routes and handlers never care which protocol a"
+            " client used.",
+            "",
+            "| Colour | Layer |",
+            "| --- | --- |",
+            "| Amber outline | **L4 Transport** - raw bytes on/off the wire |",
+            "| Green | **L5 Session** - the two seams that pick the protocol in and frame the reply out |",
+            "| Blue | **L6 Presentation** - decrypt + turn bytes into a request |",
+            "| Indigo | **L7 Application** - route matching + your handlers |",
+            "| Solid amber fill | the parts **you** write |",
             "",
             "```mermaid",
             mermaid(),
