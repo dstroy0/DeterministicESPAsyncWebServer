@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.60.4] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.60.4 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- express tlv copy length as n-k + NOSONAR the S3519 false positive ([`39676f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39676f0790487d82f6d52ebecd73bbdc2eea9ee7))
+
+### CI / Build
+
+- update test report [skip ci] ([`7661989`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7661989e3135f60ffed95d5cdad4c8963c8b2cdc))
+- update CHANGELOG.md [skip ci] ([`6a76722`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a7672274ab6b97bb54ffd21309835282f518ab8))
+
+### Changes
+
+- Bump version: 5.60.3 → 5.60.4 ([`90f1fcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90f1fcd8fafcbd52e4f50a1f658369783c360b48))
+
+</details>
+
 ## [5.60.3] - 2026-07-06
 
 <details>
