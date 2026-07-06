@@ -952,13 +952,13 @@ flag; fixed BSS, no heap.
   validated by `_decode`). _Remaining:_ decoding the ESC's GCR-encoded return frame (eRPM /
   temperature / voltage / current) off the same wire, so the server can stream live ESC telemetry
   (pairs with the telemetry-math + dashboard services).
-- [ ] **ProShot** (S, RMT) - the hybrid analog/digital ESC protocol (pulse-position
-      carries the digital value) - less timing-critical than high-speed DShot, faster
-      than PWM. Same RMT backend + packet model as DShot.
-- [ ] **OneShot / Multishot** (S, MCPWM) - the fast legacy analog PWM ESC protocols
-      (OneShot125 / OneShot42, Multishot) synced to the control loop, driven by the
-      **MCPWM** (motor-control PWM) peripheral. A thin pulse-width mapping over MCPWM;
-      pairs with the DShot control surface as the legacy fallback.
+- [~] **ProShot** (S, RMT) _(shares the DShot packet)_ - ProShot carries the same 16-bit DShot value
+  (built by `detws_dshot_encode`, shipped) as four pulse-position symbols. _Remaining:_ the
+  nibble->pulse-position encoding + the RMT emission (the packet + CRC are done).
+- [~] **OneShot / Multishot** (S, MCPWM) _(pulse-width mapping shipped)_ - `detws_esc_pwm_ns()`
+  (`services/dshot`) maps a 0..1000 throttle to the pulse high-time for standard PWM (1-2 ms),
+  **OneShot125** (125-250 us), **OneShot42** (42-84 us), and **Multishot** (5-25 us); host-tested
+  (`native_dshot`). _Remaining:_ driving it from the MCPWM peripheral synced to the control loop.
 
 ### Network Time Security (NTS, RFC 8915)
 

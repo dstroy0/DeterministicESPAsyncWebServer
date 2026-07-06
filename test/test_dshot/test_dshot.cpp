@@ -69,6 +69,23 @@ void test_bit_timing(void)
     TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true)); // unknown rate
 }
 
+void test_esc_pwm_mapping(void)
+{
+    // OneShot125: 125..250 us.
+    TEST_ASSERT_EQUAL_UINT32(125000, detws_esc_pwm_ns(0, DETWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(1000, DETWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(187500, detws_esc_pwm_ns(500, DETWS_ESC_ONESHOT125));
+    // Multishot: 5..25 us.
+    TEST_ASSERT_EQUAL_UINT32(5000, detws_esc_pwm_ns(0, DETWS_ESC_MULTISHOT));
+    TEST_ASSERT_EQUAL_UINT32(25000, detws_esc_pwm_ns(1000, DETWS_ESC_MULTISHOT));
+    TEST_ASSERT_EQUAL_UINT32(15000, detws_esc_pwm_ns(500, DETWS_ESC_MULTISHOT));
+    // Standard PWM 1..2 ms, and OneShot42 42..84 us.
+    TEST_ASSERT_EQUAL_UINT32(1500000, detws_esc_pwm_ns(500, DETWS_ESC_PWM));
+    TEST_ASSERT_EQUAL_UINT32(84000, detws_esc_pwm_ns(1000, DETWS_ESC_ONESHOT42));
+    // Throttle clamps at 1000.
+    TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DETWS_ESC_ONESHOT125));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -78,5 +95,6 @@ int main(void)
     RUN_TEST(test_value_masked_to_11_bits);
     RUN_TEST(test_decode_roundtrip_and_crc);
     RUN_TEST(test_bit_timing);
+    RUN_TEST(test_esc_pwm_mapping);
     return UNITY_END();
 }
