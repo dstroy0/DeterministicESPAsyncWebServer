@@ -2591,6 +2591,18 @@
 #endif
 
 /**
+ * @brief Opt-in flash wear-leveling slot selector (DETWS_ENABLE_WEARLEVEL).
+ *
+ * When set, services/wearlevel provides detws_wearlevel_pick(): given per-slot write counts it returns
+ * the least-worn slot to write next, so repeated flash/NVS writes spread evenly and the region ages
+ * together instead of burning out one block. Pure core (the app owns the slots + persisted counts).
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_WEARLEVEL
+#define DETWS_ENABLE_WEARLEVEL 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

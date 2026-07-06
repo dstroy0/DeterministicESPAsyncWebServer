@@ -326,7 +326,13 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] Partition-map status monitor endpoint _(shipped)_ - `DETWS_ENABLE_PARTITION_MONITOR`: `detws_partition_monitor_begin()` serves the flash partition table (label, kind, type/subtype, offset, size, running app slot) as JSON via `esp_partition` / `esp_ota_ops`; kind classifier + serializer host-tested (example 64.PartitionMonitor).
 - [x] Config export / restore _(shipped, schema-driven)_ - `DETWS_ENABLE_CONFIG_IO`: `services/config_io` serializes a declared schema of fields to a portable `key=value` text blob and parses one back into the NVS config store - backup / migrate / bulk-provision, deterministic and zero-heap (host-tested round-trip; example 71.ConfigExport). Remaining (M): full enumeration-based export (needs NVS key iteration), ZTP multi-stage provisioning.
 - [x] Unified VFS wrapper _(shipped)_ - `DETWS_ENABLE_VFS`: `services/vfs` gives one file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend - a zero-heap RAM pool (deterministic, host-tested) or a real `fs::FS` (LittleFS / SD / SPIFFS) on ESP32 - so features target storage without knowing the medium (example 80.Vfs).
-- [ ] Wear leveling + log offload (server/SD) (M); hot-swap storage safeties (M).
+- [~] **Wear leveling** + log offload (server/SD) (M) _(wear-leveling shipped)_ - `DETWS_ENABLE_WEARLEVEL`:
+  `services/wearlevel` `detws_wearlevel_pick()` returns the least-worn slot (from per-slot write
+  counts the app persists) so repeated flash/NVS writes spread evenly and the region ages together
+  instead of burning out one block, plus a `detws_wearlevel_spread()` imbalance metric. Pure core,
+  host-tested (`native_wearlevel`; a 4000-write pick+mark loop levels every slot exactly). Log
+  offload rides the existing `services/logbuf` pluggable sink (SD / syslog / HTTP). _Remaining:_
+  hot-swap storage safeties (M).
 - [x] OTA rollback protection + soft-brick safeguard _(shipped)_ - `DETWS_ENABLE_OTA_ROLLBACK`: `services/ota_rollback` commits a freshly-updated image once a self-test passes, or rolls back to the previous image if the self-test fails or the confirm window elapses, so a bad update self-heals; decision logic pure + host-tested, commit/rollback via esp_ota_ops, HW-verified (example 73.OtaRollback). Remaining: modular partition swapping (M).
 - [ ] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M).
 
