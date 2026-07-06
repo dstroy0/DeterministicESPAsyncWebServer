@@ -2,7 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.41.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.41.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e250f7d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e250f7d08df1c9c31b0f0a1f01f7adaa7952d411))
+
+### Changes
+
+- Bump version: 5.40.0 → 5.41.0 ([`c52096f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c52096f437a9c8c05ce8266795a6db8605686e00))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`891322a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/891322a4d653d99f46f57b94cec1581b0d789d41))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4c937ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c937eaf1a13818202d233f036e92333103bb9d0))
+
+### Features
+
+- southbound protocol-driver framework (services/southbound) ([`75e8801`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75e88010815de1b5d40cf73b1aa7d8eec558ee2c))
+
+</details>
+
+## [5.40.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.40.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
@@ -19,6 +46,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - ATC field-I/O interop snapshot (services/atc) ([`1b96362`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b963629dd7e2d400249f928e02daeb49a676d10))
+
+</details>
 
 ## [5.39.0] - 2026-07-06
 
