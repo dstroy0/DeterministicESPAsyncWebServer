@@ -21,7 +21,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.7 KB (20.2%)  |
-| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 61.5 KB (19.2%)  |
+| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
@@ -41,12 +41,12 @@ from each example's `pio ci` size report and aggregated into
 | `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 734.7 KB (57.4%) | 64.8 KB (20.2%)  |
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 735.5 KB (57.5%) | 65.2 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 734.2 KB (57.4%) | 64.7 KB (20.2%)  |
-| `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.6%) | 21.1 KB (6.6%)   |
+| `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
 | `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.9 KB (57.4%) | 67.7 KB (21.2%)  |
 | `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
 | `MDNS`                                   | L7-Application/15.mDNS                  | 758.3 KB (59.2%) | 66.5 KB (20.8%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 735.1 KB (57.4%) | 64.9 KB (20.3%)  |
-| `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.4 KB (57.5%) | 64.9 KB (20.3%)  |
+| `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.5 KB (57.5%) | 64.9 KB (20.3%)  |
 | `MPR121`                                 | L7-Application/63.Mpr121                | 280.9 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                   | L7-Application/24.MqttClient            | 718.9 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                | L6-Presentation/14.MsgPack              | 736.9 KB (57.6%) | 64.7 KB (20.2%)  |
@@ -58,7 +58,7 @@ from each example's `pio ci` size report and aggregated into
 | `OIDC`                                   | L7-Application/50.OidcAuth              | 746.6 KB (58.3%) | 77.5 KB (24.2%)  |
 | `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.4 KB (57.9%) | 74.7 KB (23.3%)  |
 | `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.8 KB (59.7%) | 78.5 KB (24.5%)  |
-| `OTA`                                    | L7-Application/16.OTA                   | 738.6 KB (57.7%) | 99.9 KB (31.2%)  |
+| `OTA`                                    | L7-Application/16.OTA                   | 738.5 KB (57.7%) | 99.9 KB (31.2%)  |
 | `OTA_ROLLBACK`                           | L7-Application/44.OtaRollback           | 734.4 KB (57.4%) | 64.7 KB (20.2%)  |
 | `PARTITION_MONITOR`                      | L7-Application/37.PartitionMonitor      | 734.1 KB (57.4%) | 64.7 KB (20.2%)  |
 | `PCA9685`                                | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
@@ -79,7 +79,7 @@ from each example's `pio ci` size report and aggregated into
 | `STATS`                                  | L7-Application/22.Stats                 | 735.2 KB (57.4%) | 64.8 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.3 KB (57.6%) | 64.8 KB (20.2%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
-| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.6 KB (57.6%) | 66.5 KB (20.8%)  |
+| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.7 KB (57.6%) | 66.5 KB (20.8%)  |
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 742.0 KB (58.0%) | 65.0 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.7 KB (57.5%) | 65.2 KB (20.4%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
@@ -88,8 +88,8 @@ from each example's `pio ci` size report and aggregated into
 | `TLS+TLS_RESUMPTION`                     | L4-Transport/06.TlsResumption           | 835.9 KB (65.3%) | 114.5 KB (35.8%) |
 | `TOTP`                                   | L7-Application/45.Totp                  | 734.6 KB (57.4%) | 64.7 KB (20.2%)  |
 | `UDP_TELEMETRY`                          | L7-Application/39.UdpTelemetry          | 710.8 KB (55.5%) | 43.9 KB (13.7%)  |
-| `UPLOAD`                                 | L7-Application/11.FileUpload            | 774.9 KB (60.5%) | 69.8 KB (21.8%)  |
-| `VFS`                                    | L7-Application/51.Vfs                   | 776.0 KB (60.6%) | 64.8 KB (20.2%)  |
+| `UPLOAD`                                 | L7-Application/11.FileUpload            | 774.8 KB (60.5%) | 69.8 KB (21.8%)  |
+| `VFS`                                    | L7-Application/51.Vfs                   | 775.9 KB (60.6%) | 69.1 KB (21.6%)  |
 | `WEBDAV`                                 | L7-Application/29.WebDav                | 800.9 KB (62.6%) | 103.1 KB (32.2%) |
 | `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 738.1 KB (57.7%) | 64.7 KB (20.2%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 812.2 KB (63.5%) | 117.6 KB (36.8%) |
