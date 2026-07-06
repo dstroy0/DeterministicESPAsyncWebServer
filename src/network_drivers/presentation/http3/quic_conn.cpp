@@ -507,6 +507,12 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
 {
     if (qc->closed && !qc->draining)
         return 0;
+    // Anti-amplification (RFC 9000 sec 8.1): until the client's address is validated, send nothing
+    // once we have already put 3x the received bytes on the wire. Checked BEFORE building the packets
+    // so a blocked send never advances packet-number / CRYPTO / stream state (which would desync the
+    // flight); a build then discard was the bug. Being at-most one datagram approximate here is fine.
+    if (!qc->address_validated && qc->sent_bytes >= 3 * qc->recv_bytes)
+        return 0;
     if (cap > DETWS_QUIC_MAX_DATAGRAM)
         cap = DETWS_QUIC_MAX_DATAGRAM;
 
@@ -518,10 +524,6 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
         dg += n;
     }
     if (dg == 0)
-        return 0;
-
-    // Anti-amplification: before the client's address is validated, cap what we send at 3x received.
-    if (!qc->address_validated && qc->sent_bytes + dg > 3 * qc->recv_bytes)
         return 0;
     qc->sent_bytes += dg;
     return dg;
