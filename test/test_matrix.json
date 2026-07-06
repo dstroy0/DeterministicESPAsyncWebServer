@@ -1362,6 +1362,12 @@
       "src": ["+<services/spa_router/spa_router.cpp>"],
       "tests": ["test_spa_router"]
     },
+    "native_goose": {
+      "desc": "IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData,\nminimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame\n(ethertype 0x88B8). Pure host tests with structural + spec-derived vectors.",
+      "flags": ["-DDETWS_ENABLE_GOOSE=1"],
+      "src": ["+<services/goose/goose.cpp>"],
+      "tests": ["test_goose"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1418,6 +1424,7 @@
         "-DDETWS_ENABLE_XMPP=1",
         "-DDETWS_ENABLE_RAWL2=1",
         "-DDETWS_ENABLE_SPA_ROUTER=1",
+        "-DDETWS_ENABLE_GOOSE=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1475,6 +1482,7 @@
         "+<services/xmpp/xmpp.cpp>",
         "+<services/rawl2/rawl2.cpp>",
         "+<services/spa_router/spa_router.cpp>",
+        "+<services/goose/goose.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

@@ -2699,6 +2699,19 @@
 #endif
 
 /**
+ * @brief Opt-in IEC 61850 GOOSE publisher codec (DETWS_ENABLE_GOOSE).
+ *
+ * When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet /
+ * goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in
+ * the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event
+ * publish. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit is the device step).
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_GOOSE
+#define DETWS_ENABLE_GOOSE 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

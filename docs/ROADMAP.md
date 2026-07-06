@@ -698,15 +698,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   (`native_iec60870`). _Remaining:_ the fuller ASDU information-object type set (double points,
   measured values, commands) + the k/w sequence flow-control state machine over the shipped TCP
   transport. Fixed BSS point database, no heap.
-- [ ] **IEC 61850** (XL, substation automation) - the substation standard: **MMS**
-      (Manufacturing Message Specification over ISO-on-TCP 102, the ACSI object model -
-      logical devices/nodes, data objects, datasets, reports) as the host-reachable
-      client/server core, and **GOOSE** (the raw-L2 multicast event publish for fast
-      trips - raw L2 via `esp_eth_*` plus the high-priority preempting-task model (see
-      Low-level networking) meet the sub-ms trip deadline in a single-feature build, so
-      the APDU encode/decode + dataset model + the fast-retransmit cadence are in scope).
-      SCL (the SCD/CID config) drives a fixed BSS model; no heap. Heaviest of the grid
-      protocols - sequence behind 60870-5-104.
+- [~] **IEC 61850** (XL, substation automation) _(GOOSE publisher shipped)_ - `DETWS_ENABLE_GOOSE`
+  (`services/goose`): the **GOOSE** raw-L2 multicast event publish for fast trips - the BER-encoded
+  IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev
+  / ndsCom / numDatSetEntries / allData, with minimal-length INTEGERs) wrapped in the 8-octet GOOSE
+  header + Ethernet frame (ethertype 0x88B8); host-tested (`native_goose`). Sits on the shipped raw-L2
+  Ethernet codec; `esp_eth_transmit` + the preempting-task model meet the sub-ms cadence.
+  _Remaining:_ GOOSE subscribe/decode + the fast-retransmit timer, and **MMS** (Manufacturing Message
+  Specification over ISO-on-TCP 102, the ACSI object model) as the host-reachable client/server core;
+  SCL config drives a fixed BSS model.
 - [~] **IEEE C37.118** (M-L, synchrophasors) - _frame codec shipped._
   `DETWS_ENABLE_C37118` (`services\c37118`): a zero-heap builder + CRC-validating parser
   for the PMU synchrophasor wire frame (`SYNC FRAMESIZE IDCODE SOC FRACSEC DATA CHK`,
