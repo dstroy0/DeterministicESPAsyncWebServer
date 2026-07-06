@@ -2627,6 +2627,18 @@
 #endif
 
 /**
+ * @brief Opt-in HART / HART-IP process-instrument protocol codec (DETWS_ENABLE_HART).
+ *
+ * When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR
+ * checksum, short + long addressing) and the 8-octet HART-IP message header, so a device speaks HART
+ * over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested.
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_HART
+#define DETWS_ENABLE_HART 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

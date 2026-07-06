@@ -1326,6 +1326,12 @@
       "src": ["+<services/dshot/dshot.cpp>"],
       "tests": ["test_dshot"]
     },
+    "native_hart": {
+      "desc": "HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum,\nshort + long addressing) build/parse and the 8-octet HART-IP message header. Pure host tests with\nhand-verified vectors (command-0 checksum 0x82).",
+      "flags": ["-DDETWS_ENABLE_HART=1"],
+      "src": ["+<services/hart/hart.cpp>"],
+      "tests": ["test_hart"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1376,6 +1382,7 @@
         "-DDETWS_ENABLE_WEARLEVEL=1",
         "-DDETWS_ENABLE_NETADAPT=1",
         "-DDETWS_ENABLE_DSHOT=1",
+        "-DDETWS_ENABLE_HART=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1427,6 +1434,7 @@
         "+<services/wearlevel/wearlevel.cpp>",
         "+<services/netadapt/netadapt.cpp>",
         "+<services/dshot/dshot.cpp>",
+        "+<services/hart/hart.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

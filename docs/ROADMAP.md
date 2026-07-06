@@ -565,13 +565,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   objects with groups/variations, Class 0/1/2/3 polling, unsolicited responses,
   time-sync) layer on the de-blocked user data; fixed BSS point database, no heap.
   Optional Secure Authentication (IEEE 1815 SAv5) later.
-- [ ] **HART** (M, FieldComm) - process-instrument protocol: the FSK digital signal
-      riding the 4-20 mA loop (and HART-IP over UDP 5094 as the gateway-friendly path).
-      Command set (universal + common-practice), the device-variable + status model,
-      and burst mode; fixed BSS device model, no heap. Three reachable paths: **HART-IP**
-      (pure software, no front end), the **4-20 mA primary value read straight off the
-      ADC** (known-range shunt - see Front-end assumption), and the full **FSK digital**
-      channel via a HART modem IC over UART. No part is a blocker.
+- [~] **HART** (M, FieldComm) _(frame + HART-IP codec shipped)_ - `DETWS_ENABLE_HART` (`services/hart`):
+  the HART command-frame codec - `detws_hart_build` / `_parse` with the longitudinal XOR checksum and
+  short (polling) + long (unique-ID) addressing - and the 8-octet **HART-IP** message header
+  (version / type / id / status / seq / length) for the front-end-free UDP/TCP 5094 path; host-tested
+  against hand-verified vectors (`native_hart`, command-0 checksum 0x82). _Remaining:_ the command set
+  (universal + common-practice) + device-variable/status model + burst mode, and the FSK modem
+  (over UART) / 4-20 mA-off-the-ADC transports. Fixed BSS, no heap.
 - [ ] **CC-Link / CC-Link IE** (L, CLPA) - Mitsubishi's factory networks: **CC-Link**
       (the RS-485 cyclic remote-I/O / remote-device station model) and **CC-Link IE
       Field** (the Gigabit-Ethernet successor, cyclic + transient messaging). The
