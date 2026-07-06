@@ -5,6 +5,9 @@ authoritative text. This is the conformance map: when changing a subsystem, read
 its standard first (the full spec text is also kept locally while work is in
 progress). RFC links go to the RFC Editor; others to the issuing body.
 
+> The per-standard **conformance audit** - the MUST/SHOULD verdict and the evidence backing each entry
+> below - lives in **[AUDIT.md](AUDIT.md)**.
+
 Status legend: **impl** = implemented in the library - **via mbedTLS** = provided by
 the platform crypto/TLS stack the library binds to - **roadmap** = planned (see
 [ROADMAP.md](ROADMAP.md)) - **ref** = referenced for correctness but obsoleted by a
