@@ -109,14 +109,23 @@ size_t snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community, ui
 #include "network_drivers/transport/udp_transport.h"
 #include <Arduino.h>
 
-static uint32_t s_trap_reqid = 1;
+// All SNMP-notify transport state, owned by one instance (internal linkage): the trap
+// request-id counter, so it is one named owner, unreachable from any other translation unit.
+namespace
+{
+struct SnmpNotifyCtx
+{
+    uint32_t trap_reqid = 1;
+};
+SnmpNotifyCtx s_notify;
+} // namespace
 
 bool snmp_trap_v2c(const char *dst_ip, uint16_t port, const char *community, const uint32_t *trap_oid,
                    size_t trap_oid_len, const SnmpVarbind *vbs, size_t n)
 {
     uint8_t buf[DETWS_SNMP_TRAP_BUF_SIZE];
     uint32_t up = (uint32_t)(millis() / 10); // TimeTicks = hundredths of a second
-    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, SNMP_PDU_TRAPV2, s_trap_reqid++, trap_oid,
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, SNMP_PDU_TRAPV2, s_notify.trap_reqid++, trap_oid,
                                        trap_oid_len, up, vbs, n);
     return len && det_udp_sendto(dst_ip, port, buf, len);
 }
