@@ -83,7 +83,7 @@ void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const 
 
 void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len)
 {
-    quic_hkdf_expand_label_ctx(secret, label, NULL, 0, out, out_len);
+    quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len);
 }
 
 #endif // DETWS_ENABLE_HTTP3
