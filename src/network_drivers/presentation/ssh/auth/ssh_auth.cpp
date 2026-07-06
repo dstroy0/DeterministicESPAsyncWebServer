@@ -17,17 +17,23 @@
 // Application password callback
 // ---------------------------------------------------------------------------
 
-static SshPasswordCb g_pw_cb = nullptr;
-static SshPubkeyCb g_pk_cb = nullptr;
+// All SSH auth callbacks, owned by one instance (internal linkage): the application password
+// and public-key verifiers. One named owner, unreachable from any other translation unit.
+struct SshAuthCtx
+{
+    SshPasswordCb pw_cb = nullptr;
+    SshPubkeyCb pk_cb = nullptr;
+};
+static SshAuthCtx s_auth;
 
 void ssh_auth_set_password_cb(SshPasswordCb cb)
 {
-    g_pw_cb = cb;
+    s_auth.pw_cb = cb;
 }
 
 void ssh_auth_set_pubkey_cb(SshPubkeyCb cb)
 {
-    g_pk_cb = cb;
+    s_auth.pk_cb = cb;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +313,7 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
         uint8_t n_be[SSH_RSA_KEY_BYTES], e_be[4], ed_pub[32];
         bool key_ok = (is_ed ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
                              : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be)) &&
-                      g_pk_cb && g_pk_cb(req.user, req.pk_blob, req.pk_blob_len);
+                      s_auth.pk_cb && s_auth.pk_cb(req.user, req.pk_blob, req.pk_blob_len);
         if (!key_ok)
             return ssh_auth_build_failure(out, out_len, cap, false);
 
@@ -340,7 +346,7 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
     // ---- password method (RFC 4252 §8) ----
     // Password auth can be compiled out for publickey-only hardening.
 #if DETWS_SSH_ALLOW_PASSWORD
-    bool ok = req.is_password && g_pw_cb && g_pw_cb(req.user, req.password);
+    bool ok = req.is_password && s_auth.pw_cb && s_auth.pw_cb(req.user, req.password);
 #else
     bool ok = false;
 #endif
