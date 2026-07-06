@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.13.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.13.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2fca8c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fca8c9be56eec932ab857afca53779e148742b6))
+
+### Changes
+
+- Bump version: 5.12.0 → 5.13.0 ([`fd72093`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd7209361087d059345e4acf4b549e1dd7e434bc))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dc3572f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc3572f674ff185e4e9050129efd4df72594d925))
+
+### Features
+
+- XMPP (RFC 6120) stanza codec ([`6eaf205`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6eaf2056d26eac6db8d97cbda6b41b83d948b236))
+
+</details>
+
 ## [5.12.0] - 2026-07-06
 
 <details>
