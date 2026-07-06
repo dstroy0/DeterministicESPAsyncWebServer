@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.24.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.24.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`91f5fba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91f5fbaa1262cc7f28ea74f318eda33fe365d281))
+
+### Changes
+
+- Bump version: 5.23.0 → 5.24.0 ([`a23f6e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a23f6e1c8f8ffec43298f80c6ef6e5fd34bbeca8))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c30f159`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c30f15951990f054d1998a641ff7904d7bdee2a9))
+- update ESP32 build footprints [skip ci] ([`c6d3970`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6d3970fb9e4dec9759e56a7eee7b83202e33fba))
+
+### Features
+
+- SPaT MovementState (signal phase + timing) on the UPER codec ([`7449517`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74495177d04cb9813de2f6ab558369382f0e881d))
+
+</details>
+
 ## [5.23.0] - 2026-07-06
 
 <details>
