@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.27.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.27.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`06da0ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06da0ea6c1e558ede5dfadc3ff25f7ff5ac34668))
+
+### Changes
+
+- Bump version: 5.26.0 → 5.27.0 ([`2b071d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b071d622ed296a454e5d65a5c88c24d73872dc6))
+
+### Features
+
+- OpenADR 3.0 (Automated Demand Response) JSON codec ([`7a1baa1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a1baa15f6339d1af6928fde92c657a38be9c0b6))
+
+</details>
+
 ## [5.26.0] - 2026-07-06
 
 <details>
