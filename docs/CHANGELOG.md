@@ -2,7 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.60.2] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.60.2 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- clear remaining mms bug + raise new-code coverage over 80% ([`d3f5440`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3f544078938de4dd78949efcb08f8cad1e44b76))
+
+### CI / Build
+
+- update test report [skip ci] ([`8e39351`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e39351c71f7ef5ec0a3d36270ccfb25a123e402))
+- update CHANGELOG.md [skip ci] ([`3c74008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c740089aba795e87e508e530a9e1aa35d8e975a))
+
+### Changes
+
+- Bump version: 5.60.1 → 5.60.2 ([`ffcc2d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffcc2d18a29721043a26543ef64400bbbff2a9ff))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`d479b77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d479b7762cf22edd0bfb2c11704fae526f3ad294))
+
+</details>
+
+## [5.60.1] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.60.1 - 2026-07-06</b></summary>
 
 ### Bug Fixes
 
@@ -22,6 +49,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - mark Refresh build footprints [x] (CI auto-maintains footprints.json/FOOTPRINTS.md) ([`ede68ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede68ab855d5f118d263810aed03231dccc142c8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`121bc9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/121bc9dcd7f721c9ce96a3f05dfaa59b84ba88e6))
 - update ESP32 build footprints [skip ci] ([`1f746ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f746ba52f8ef1f3599c780af4cf45d604c57f0c))
+
+</details>
 
 ## [5.60.0] - 2026-07-06
 
