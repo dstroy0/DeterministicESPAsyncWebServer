@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.48.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.48.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a00f325`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a00f3255845aba3a5e851b933a329635fa79d100))
+
+### Changes
+
+- Bump version: 5.47.0 → 5.48.0 ([`b49b70f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b49b70f3010422426c9ab2de1686765a29942c2e))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bcb5919`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcb591937ab8491c47e2f1a320b1c440abdff17f))
+- update ESP32 build footprints [skip ci] ([`d8c8be4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d8c8be4e80b4566b875cb4ce108f11aa616f58ce))
+
+### Features
+
+- dual-stack IPv6/IPv4 fallback selection (RFC 8305 + 6724) ([`5b9fa5f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b9fa5f5b3f0e5279d771b23621fd088c4106258))
+
+</details>
+
 ## [5.47.0] - 2026-07-06
 
 <details>
