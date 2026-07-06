@@ -153,24 +153,30 @@ bool detws_line_ok(const DetwsLine *l)
 
 namespace
 {
-char s_ip[16] = {0};
-uint16_t s_port = 0;
-bool s_begun = false;
+// All UDP-telemetry cast state, owned by one instance (internal linkage): the collector
+// endpoint and the begun flag, grouped so it is one named owner, unreachable cross-TU.
+struct UdpTelemetryCtx
+{
+    char ip[16] = {0};
+    uint16_t port = 0;
+    bool begun = false;
+};
+UdpTelemetryCtx s_ut;
 } // namespace
 
 void detws_udp_telemetry_begin(const char *collector_ip, uint16_t port)
 {
-    strncpy(s_ip, collector_ip ? collector_ip : "", sizeof(s_ip) - 1);
-    s_ip[sizeof(s_ip) - 1] = '\0';
-    s_port = port;
-    s_begun = true;
+    strncpy(s_ut.ip, collector_ip ? collector_ip : "", sizeof(s_ut.ip) - 1);
+    s_ut.ip[sizeof(s_ut.ip) - 1] = '\0';
+    s_ut.port = port;
+    s_ut.begun = true;
 }
 
 bool detws_udp_telemetry_send(const char *data, size_t len)
 {
-    if (!s_begun || !data)
+    if (!s_ut.begun || !data)
         return false;
-    return det_udp_sendto(s_ip, s_port, (const uint8_t *)data, len);
+    return det_udp_sendto(s_ut.ip, s_ut.port, (const uint8_t *)data, len);
 }
 
 #else // host build - no network
