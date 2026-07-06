@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`358c4f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/358c4f9e36036fdb0995b59fe0a3d329387215b2))
 - update test report [skip ci] ([`4642dc7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4642dc719553243dbe11a98575d306ca988d1cb2))
 - update CHANGELOG.md [skip ci] ([`ee7d2e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee7d2e910f6ae43879e62e7efa62f0a026aaf287))
 - update CHANGELOG.md [skip ci] ([`2b91e54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b91e545a8befb874d99ca206847b3c4fd0ea62f))
@@ -23,6 +24,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- de-stale SSH, Utility Tools, RFC Compliance, API return code ([`7775247`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77752472adfc389c5add094d0e8ea4b96301ed41))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`86fed6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86fed6b6c34cd660d91d8d6827fbfb861f413e0e))
 - regenerate stale sections from source + restructure ([`34a6e55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34a6e55dbdcb9131c0ee29aa6310bd5c6f1f9a6c))
 - declutter Doxygen nav tree + drop sidebar highlight bar ([`eb2bd81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb2bd810b2669b30eb7b0a7fc1e847c76b2ed5af))
 - backfill 54 feature entries missing from the grid + add coverage guard ([`48d3be7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48d3be78935ef6a569dfd1a6be98943c553a10c4))
