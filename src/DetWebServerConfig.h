@@ -3157,6 +3157,19 @@
 #endif
 
 /**
+ * @brief Opt-in receive-only radio channel sniffer to pcap (DETWS_ENABLE_RADIO_SNIFF).
+ *
+ * Feeds frames pulled off the air by the RF gateway drivers (CC1101 / LoRa / 802.15.4) in receive-only
+ * mode into the capture pipeline: services/radio_sniff wraps each 802.15.4 MAC frame in the Wireshark
+ * TAP pseudo-header (carrying per-frame RSSI + channel) and a pcap record so the forwarded stream is a
+ * valid .pcap. detws_radiosniff_global writes the DLT-TAP global header and detws_radiosniff_tap_record
+ * writes one record. Pure framing (no heap/stdlib); the radio drivers own the receive. Default off.
+ */
+#ifndef DETWS_ENABLE_RADIO_SNIFF
+#define DETWS_ENABLE_RADIO_SNIFF 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

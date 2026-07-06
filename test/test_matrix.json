@@ -1587,6 +1587,12 @@
       "src": ["+<services/vl53l0x/vl53l0x.cpp>"],
       "tests": ["test_vl53l0x"]
     },
+    "native_radio_sniff": {
+      "desc": "Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI\nencode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs +\nMAC frame) so a sniffed radio channel opens in Wireshark. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_RADIO_SNIFF=1"],
+      "src": ["+<services/radio_sniff/radio_sniff.cpp>"],
+      "tests": ["test_radio_sniff"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1680,6 +1686,7 @@
         "-DDETWS_ENABLE_FDC2214=1",
         "-DDETWS_ENABLE_LDC1614=1",
         "-DDETWS_ENABLE_VL53L0X=1",
+        "-DDETWS_ENABLE_RADIO_SNIFF=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1774,6 +1781,7 @@
         "+<services/fdc2214/fdc2214.cpp>",
         "+<services/ldc1614/ldc1614.cpp>",
         "+<services/vl53l0x/vl53l0x.cpp>",
+        "+<services/radio_sniff/radio_sniff.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

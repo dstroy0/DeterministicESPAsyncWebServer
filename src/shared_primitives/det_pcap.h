@@ -25,9 +25,11 @@
 #define DET_PCAP_REC_HDR_LEN 16
 
 /** @brief Common libpcap DLT link-layer types. */
-#define DET_DLT_IEEE802_11 105    ///< raw 802.11 (Wi-Fi promiscuous capture)
-#define DET_DLT_CAN_SOCKETCAN 227 ///< Linux SocketCAN classic/FD frames
-#define DET_DLT_ETHERNET 1        ///< IEEE 802.3 Ethernet
+#define DET_DLT_IEEE802_11 105         ///< raw 802.11 (Wi-Fi promiscuous capture)
+#define DET_DLT_CAN_SOCKETCAN 227      ///< Linux SocketCAN classic/FD frames
+#define DET_DLT_ETHERNET 1             ///< IEEE 802.3 Ethernet
+#define DET_DLT_IEEE802_15_4_NOFCS 230 ///< raw 802.15.4 MAC frame, no FCS
+#define DET_DLT_IEEE802_15_4_TAP 283   ///< 802.15.4 with a TAP pseudo-header (RSSI / channel TLVs)
 
 namespace detpcap_detail
 {

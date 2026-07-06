@@ -239,8 +239,14 @@ fail-closed: a full capture queue drops frames rather than stalling the live dat
       Wireshark-readable (example 22.CanCapture, host-tested `native_bus_capture`; the SocketCAN
       framing shares `shared_primitives/det_pcap.h` with the Wi-Fi capture). Remaining: RS-485
       receive-only decode into the same sink.
-- [ ] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
-      LoRa / sub-GHz / 802.15.4 channel without joining) feeding the capture pipeline.
+- [~] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
+  LoRa / sub-GHz / 802.15.4 channel without joining) feeding the capture pipeline. **Capture framing
+  shipped** (`DETWS_ENABLE_RADIO_SNIFF`, `services/radio_sniff`): wraps each received 802.15.4 MAC frame
+  in the Wireshark IEEE 802.15.4 TAP pseudo-header (per-frame RSSI + channel TLVs, an exact int->float32
+  RSSI encode) and a pcap record (new `DET_DLT_IEEE802_15_4_TAP` / `_NOFCS` link types in
+  `shared_primitives/det_pcap.h`), so a sniffed channel opens directly in Wireshark; pure + host-tested
+  (`native_radio_sniff`). Remaining: put the CC1101 / LoRa / Thread drivers into receive-only and route
+  their frames through this into the existing forwarding sink on hardware.
 
 ### post-v5: field-perturbation sensing
 
@@ -250,9 +256,14 @@ device reads the sensor over SPI / I2C / UART and bridges the readings northboun
 dashboard, telemetry math, and MQTT / WebSocket. The data-ready ISR posts into the
 preempting queue, so sensing shares the real-time ingest path.
 
-- [ ] \*EM / radar presence + motion (M) - mmWave radar (24 / 60 GHz: LD2410 / MR60BHA
-      over UART, Infineon BGT60 over SPI) and Doppler motion (HB100 / RCWL-0516) for
-      presence, motion, distance, and vital-sign (breathing / heart-rate) sensing.
+- [~] \*EM / radar presence + motion (M) - mmWave radar (24 / 60 GHz: LD2410 / MR60BHA
+  over UART, Infineon BGT60 over SPI) and Doppler motion (HB100 / RCWL-0516) for
+  presence, motion, distance, and vital-sign (breathing / heart-rate) sensing. **LD2410 shipped**
+  (`DETWS_ENABLE_LD2410`, `services/ld2410`): the framed 256000-baud report codec (`ld2410_parse_report`
+  basic + engineering mode, a byte-by-byte `Ld2410Stream` reassembler that resyncs on noise, presence /
+  distance helpers) and the `FD FC FB FA` config-command encoders, pure + host-tested (`native_ld2410`),
+  with an ESP32 UART binding (example wired). Remaining: an MR60BHA 60 GHz vital-sign variant, the
+  Infineon BGT60 SPI radar, and the analog Doppler (HB100 / RCWL-0516) presence path.
 - [~] \*Capacitive / proximity field sensing (S) - FDC2x14 / MPR121 (I2C): touch,
   proximity, liquid level, and material sensing from capacitance shifts. **Both drivers shipped**:
   MPR121 12-channel touch/proximity (`DETWS_ENABLE_MPR121`, `services/mpr121`) and the FDC2114/2214
