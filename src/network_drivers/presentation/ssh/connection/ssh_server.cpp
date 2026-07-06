@@ -17,17 +17,23 @@
 #endif
 #include <string.h>
 
-static SshEmitCb g_emit = nullptr;
+// All SSH server-layer state, owned by one instance (internal linkage): the packet-emit
+// callback. One named owner, unreachable from any other translation unit.
+struct SshServerCtx
+{
+    SshEmitCb emit_cb = nullptr;
+};
+static SshServerCtx s_srv;
 
 void ssh_server_set_emit_cb(SshEmitCb cb)
 {
-    g_emit = cb;
+    s_srv.emit_cb = cb;
 }
 
 static inline void emit(uint8_t i, const uint8_t *p, size_t n)
 {
-    if (g_emit && n > 0)
-        g_emit(i, p, n);
+    if (s_srv.emit_cb && n > 0)
+        s_srv.emit_cb(i, p, n);
 }
 
 // Build and emit SSH_MSG_DISCONNECT("too many authentication failures") - the reason code, the
