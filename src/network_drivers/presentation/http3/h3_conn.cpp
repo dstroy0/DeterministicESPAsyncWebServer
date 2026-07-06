@@ -133,10 +133,14 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
         if (!quic_varint_decode(st->buf, st->buf_len, &type, &c))
             return; // need more bytes for the varint
         st->type_read = true;
-        st->role = type == 0x00   ? H3_ROLE_CONTROL
-                   : type == 0x02 ? H3_ROLE_QPACK_ENC
-                   : type == 0x03 ? H3_ROLE_QPACK_DEC
-                                  : H3_ROLE_OTHER_UNI;
+        if (type == 0x00)
+            st->role = H3_ROLE_CONTROL;
+        else if (type == 0x02)
+            st->role = H3_ROLE_QPACK_ENC;
+        else if (type == 0x03)
+            st->role = H3_ROLE_QPACK_DEC;
+        else
+            st->role = H3_ROLE_OTHER_UNI;
         memmove(st->buf, st->buf + c, st->buf_len - c);
         st->buf_len -= c;
     }

@@ -114,7 +114,11 @@ void detws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char 
         put(s, "<ComponentStream component=\"Device\">");
         s->in_comp = true;
     }
-    const char *wrap = cat == DETWS_MTC_SAMPLE ? "Samples" : (cat == DETWS_MTC_EVENT ? "Events" : "Condition");
+    const char *wrap = "Condition";
+    if (cat == DETWS_MTC_SAMPLE)
+        wrap = "Samples";
+    else if (cat == DETWS_MTC_EVENT)
+        wrap = "Events";
     put(s, "<");
     put(s, wrap);
     put(s, ">");

@@ -111,7 +111,12 @@ void detws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz
         return;
     s->min_hz = min_hz;
     s->max_hz = max_hz;
-    s->hz = start_hz < min_hz ? min_hz : (start_hz > max_hz ? max_hz : start_hz);
+    if (start_hz < min_hz)
+        s->hz = min_hz;
+    else if (start_hz > max_hz)
+        s->hz = max_hz;
+    else
+        s->hz = start_hz;
     s->fail_streak = 0;
     s->ok_streak = 0;
     s->fail_trip = fail_trip ? fail_trip : 1;
