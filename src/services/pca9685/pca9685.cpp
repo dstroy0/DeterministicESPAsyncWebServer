@@ -75,12 +75,18 @@ size_t pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t
 
 namespace
 {
-uint8_t s_addr = DETWS_PCA9685_I2C_ADDR;
-uint32_t s_freq = DETWS_PCA9685_FREQ;
+// All PCA9685 I2C-binding state, owned by one instance (internal linkage): the device address
+// and the configured PWM frequency, grouped so it is one named owner, unreachable cross-TU.
+struct Pca9685Ctx
+{
+    uint8_t addr = DETWS_PCA9685_I2C_ADDR;
+    uint32_t freq = DETWS_PCA9685_FREQ;
+};
+Pca9685Ctx s_pca;
 
 bool wr(uint8_t reg, uint8_t val)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_pca.addr);
     Wire.write(reg);
     Wire.write(val);
     return Wire.endTransmission() == 0;
@@ -89,12 +95,12 @@ bool wr(uint8_t reg, uint8_t val)
 
 bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
 {
-    s_addr = addr ? addr : (uint8_t)DETWS_PCA9685_I2C_ADDR;
-    s_freq = freq_hz ? freq_hz : (uint32_t)DETWS_PCA9685_FREQ;
+    s_pca.addr = addr ? addr : (uint8_t)DETWS_PCA9685_I2C_ADDR;
+    s_pca.freq = freq_hz ? freq_hz : (uint32_t)DETWS_PCA9685_FREQ;
     detws_i2c_begin();
     bool ok = true;
     ok &= wr(PCA9685_REG_MODE1, 0x10); // SLEEP (required before changing PRESCALE)
-    ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_freq));
+    ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_pca.freq));
     ok &= wr(PCA9685_REG_MODE1, 0x20); // wake, auto-increment (AI)
     delayMicroseconds(500);            // oscillator settle
     ok &= wr(PCA9685_REG_MODE1, 0xA0); // AI + RESTART
@@ -107,14 +113,14 @@ bool pca9685_set_pwm(uint8_t channel, uint16_t on, uint16_t off)
     uint8_t b[5];
     if (pca9685_set_pwm_bytes(b, sizeof(b), channel, on, off) != 5)
         return false;
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_pca.addr);
     Wire.write(b, 5);
     return Wire.endTransmission() == 0;
 }
 
 bool pca9685_set_servo_us(uint8_t channel, uint32_t microseconds)
 {
-    return pca9685_set_pwm(channel, 0, pca9685_us_to_count(microseconds, s_freq));
+    return pca9685_set_pwm(channel, 0, pca9685_us_to_count(microseconds, s_pca.freq));
 }
 
 #else // host build: no I2C. The prescale / count math + encoder above are host-tested.
