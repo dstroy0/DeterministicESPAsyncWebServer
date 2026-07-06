@@ -318,7 +318,12 @@ preempting queue, so sensing shares the real-time ingest path.
   `detws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
   fallback. Pure, host-tested (`native_happy_eyeballs`). _Remaining:_ VPN tunneling + the reverse-SSH
   tunnel to a relay (L; the `ssh -R` tcpip-forward seam already landed).
-- [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
+- [~] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(decode + decision shipped)_ -
+  `DETWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `detws_wifi_parse` decodes an 802.11 MAC header
+  (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),
+  `detws_wifi_stats_*` tallies frames by type for a traffic panel, and `detws_wifi_should_roam` is the
+  RSSI-hysteresis channel-agility roaming decision. Pure, host-tested (`native_wifi_sniffer`).
+  _Remaining:_ the promiscuous-mode radio callback + a live channel-hop scan loop on hardware (M).
 - [x] DNS resolver + answer verification _(shipped)_ - `DETWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
 - [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -

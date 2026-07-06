@@ -1551,6 +1551,12 @@
       ],
       "tests": ["test_happy_eyeballs"]
     },
+    "native_wifi_sniffer": {
+      "desc": "802.11 sniffer / traffic analyzer (services/wifi_sniffer): decode an 802.11 MAC header\n(frame-control type/subtype + flags, ToDS/FromDS-dependent addresses), tally frames by type, and the\nRSSI-hysteresis channel-agility roaming decision. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_WIFI_SNIFFER=1"],
+      "src": ["+<services/wifi_sniffer/wifi_sniffer.cpp>"],
+      "tests": ["test_wifi_sniffer"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1638,6 +1644,7 @@
         "-DDETWS_ENABLE_SOCKPOOL=1",
         "-DDETWS_ENABLE_PSRAM_POOL=1",
         "-DDETWS_ENABLE_HAPPY_EYEBALLS=1",
+        "-DDETWS_ENABLE_WIFI_SNIFFER=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1726,6 +1733,7 @@
         "+<services/sockpool/sockpool.cpp>",
         "+<services/psram_pool/psram_pool.cpp>",
         "+<services/happy_eyeballs/happy_eyeballs.cpp>",
+        "+<services/wifi_sniffer/wifi_sniffer.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

@@ -3076,6 +3076,19 @@
 #endif
 
 /**
+ * @brief Opt-in 802.11 sniffer / traffic analyzer (DETWS_ENABLE_WIFI_SNIFFER).
+ *
+ * The decode + decision layer for a promiscuous-mode WiFi sniffer: detws_wifi_parse decodes an 802.11
+ * MAC header (frame-control type/subtype + flags and the addresses whose roles depend on ToDS/FromDS),
+ * detws_wifi_stats_* tallies frames by type for a traffic panel, and detws_wifi_should_roam decides when
+ * a candidate AP is enough stronger (RSSI hysteresis) to justify channel-agility roaming. The
+ * promiscuous-mode radio callback stays the app's. No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_WIFI_SNIFFER
+#define DETWS_ENABLE_WIFI_SNIFFER 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
