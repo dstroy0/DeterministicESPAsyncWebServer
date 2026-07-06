@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`b4c7bc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4c7bc33cbfe2d76154f7efbcb067a994ef216d8))
+- update CHANGELOG.md [skip ci] ([`4db78d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4db78d464706b500259f949b027526429abdb808))
 - update test report [skip ci] ([`cd1574e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd1574e434d18fbc976f36f0522809e226e8fcb7))
 - update CHANGELOG.md [skip ci] ([`a99957c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a99957cedbb0c45e2f290973061c85a61375f8f5))
 - update test report [skip ci] ([`5accd88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5accd88aae48744de2d9405298cd5c8c466ccd3c))
@@ -28,6 +30,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add final item - Sphinx over Doxygen + squirty styling [skip ci] ([`baf558d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/baf558d757d4f6f15b9db9be22c23c1ee4c1063c))
+- update ESP32 build footprints [skip ci] ([`c9d3f7f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9d3f7f7bb15b4bd0a3af4985b8182abf8c4ac25))
 - update ESP32 build footprints [skip ci] ([`8da56e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8da56e5881687a86eb6e94d2d97e9b255c5f0eb4))
 - update ESP32 build footprints [skip ci] ([`d3d3836`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3d3836b87c13d76dea0a321d50da5d6da5afd0c))
 - update ESP32 build footprints [skip ci] ([`a237736`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2377369276d9b34f10efeac930743785bb5a92a))
@@ -36,6 +40,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- send CONNECTION_CLOSE on a fatal handshake / transport error ([`79fc358`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79fc35866426e8b2e3996f0318f59dcac219431e))
 - re-send the handshake flight on a duplicate ClientHello (loss signal) ([`a651d81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a651d8177854e1ba4b887c76cdbb25572fd53814))
 - generalize PTO loss recovery to 1-RTT (retransmit the response) ([`336736a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336736a4680d8c6e33287829c5b73a30e20e00f1))
 - PTO loss recovery - retransmit the handshake flight (RFC 9002) ([`d39d183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d39d183563daa1845f3313da100d1a7435e237fb))
