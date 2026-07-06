@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`0e926bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e926bde107e26cea9e23669111a7be1b2d3ae1a))
+- update CHANGELOG.md [skip ci] ([`d2db8c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2db8c219000b284ccd0b9453d10c20d7e1f8318))
 - update test report [skip ci] ([`30d53a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30d53a2184a27b8177d184a640947325d7242bb1))
 - update CHANGELOG.md [skip ci] ([`bc6261e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc6261ed957051ca9c1bce0ace48679ae2c8d1d5))
 - update test report [skip ci] ([`b4c7bc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4c7bc33cbfe2d76154f7efbcb067a994ef216d8))
@@ -32,6 +34,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- theme-adaptive translucent palette + thicker links ([`952872e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/952872eff2a7c6e2fd409f8d1c5452cfa6e94d87))
 - redesign the README flowcharts to be beginner-friendly ([`f5862de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5862de5a7323fd222212eacc308b055a6b5710e))
 - log the QUIC anti-amplification build-then-discard desync [skip ci] ([`57c39c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57c39c280f16188afccb8b68881085d0a2c5a771))
 - add final item - Sphinx over Doxygen + squirty styling [skip ci] ([`baf558d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/baf558d757d4f6f15b9db9be22c23c1ee4c1063c))
