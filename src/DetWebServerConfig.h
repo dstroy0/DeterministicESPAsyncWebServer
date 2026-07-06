@@ -2758,6 +2758,18 @@
 #endif
 
 /**
+ * @brief Opt-in AutomationDirect / Koyo DirectNET serial frame codec (DETWS_ENABLE_DIRECTNET).
+ *
+ * When set, services/directnet builds/validates the DirectNET master-slave serial frames - the header
+ * (SOH + slave/type/address/blocks ASCII-hex + ETB + LRC) and the data frame (STX + data + ETX + LRC) -
+ * for V-memory read/write on an AutomationDirect DirectLOGIC PLC. Pure codec (the UART transport +
+ * ACK/NAK handshake are the device step). Default off.
+ */
+#ifndef DETWS_ENABLE_DIRECTNET
+#define DETWS_ENABLE_DIRECTNET 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

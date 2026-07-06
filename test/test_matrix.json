@@ -1392,6 +1392,12 @@
       "src": ["+<services/snp/snp.cpp>"],
       "tests": ["test_snp"]
     },
+    "native_directnet": {
+      "desc": "AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH +\nASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse.\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_DIRECTNET=1"],
+      "src": ["+<services/directnet/directnet.cpp>"],
+      "tests": ["test_directnet"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1453,6 +1459,7 @@
         "-DDETWS_ENABLE_J2735=1",
         "-DDETWS_ENABLE_NEMA_TS2=1",
         "-DDETWS_ENABLE_SNP=1",
+        "-DDETWS_ENABLE_DIRECTNET=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1515,6 +1522,7 @@
         "+<services/j2735/j2735.cpp>",
         "+<services/nema_ts2/nema_ts2.cpp>",
         "+<services/snp/snp.cpp>",
+        "+<services/directnet/directnet.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

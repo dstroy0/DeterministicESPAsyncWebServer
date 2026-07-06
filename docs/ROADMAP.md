@@ -690,10 +690,11 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   read/write on a GE Fanuc Series 90 (90-30/90-70) PLC over RS-485; host-tested (`native_snp`).
   _Remaining:_ the SNP-X session setup + the per-command register-access encoders, and the UART
   transport. Fixed BSS, no heap.
-- [ ] **DirectNET** (M, AutomationDirect) - the AutomationDirect / Koyo serial protocol
-      (the DirectNET HostLink-style framed read/write of V-memory) for DirectLOGIC PLCs.
-      UART transport, host-testable framing + checksum codec; pairs with the Modbus-RTU
-      and other serial fieldbus work. Fixed BSS, no heap.
+- [~] **DirectNET** (M, AutomationDirect) _(frame codec shipped)_ - `DETWS_ENABLE_DIRECTNET`
+  (`services/directnet`): the DirectNET master-slave serial frames - `detws_dnet_header` (SOH +
+  ASCII-hex slave/type/address/blocks + ETB + LRC) and `detws_dnet_data` / `_data_parse` (STX + data + ETX + LRC) - for V-memory read/write on an AutomationDirect DirectLOGIC PLC, with the
+  longitudinal-XOR LRC and control-byte constants; host-tested (`native_directnet`). _Remaining:_ the
+  ACK/NAK handshake sequencing + the V-memory address map, and the UART transport. Fixed BSS, no heap.
 - [~] **IEC 60870-5-101 / -104** (L, power-grid SCADA) _(codec shipped)_ - `DETWS_ENABLE_IEC60870`
   (`services/iec60870`): the tele-control codec - the **-104** APCI (I/S/U frames), the ASDU header + 3-octet IOA, and the **-101** FT1.2 fixed/variable link frames (sum checksum); host-tested
   (`native_iec60870`). _Remaining:_ the fuller ASDU information-object type set (double points,
