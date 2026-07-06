@@ -1320,6 +1320,12 @@
       "src": ["+<services/netadapt/netadapt.cpp>"],
       "tests": ["test_netadapt"]
     },
+    "native_dshot": {
+      "desc": "DShot ESC throttle codec (services/dshot): the 16-bit frame (11-bit value + telemetry +\n4-bit nibble-xor CRC), the bidirectional inverted-CRC variant, decode/validate, and per-rate bit\ntiming. Pure host tests with hand-computed vectors.",
+      "flags": ["-DDETWS_ENABLE_DSHOT=1"],
+      "src": ["+<services/dshot/dshot.cpp>"],
+      "tests": ["test_dshot"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1369,6 +1375,7 @@
         "-DDETWS_ENABLE_SLEEP_SCHED=1",
         "-DDETWS_ENABLE_WEARLEVEL=1",
         "-DDETWS_ENABLE_NETADAPT=1",
+        "-DDETWS_ENABLE_DSHOT=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1419,6 +1426,7 @@
         "+<services/sleep_sched/sleep_sched.cpp>",
         "+<services/wearlevel/wearlevel.cpp>",
         "+<services/netadapt/netadapt.cpp>",
+        "+<services/dshot/dshot.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

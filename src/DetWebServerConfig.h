@@ -2615,6 +2615,18 @@
 #endif
 
 /**
+ * @brief Opt-in DShot ESC throttle protocol codec (DETWS_ENABLE_DSHOT).
+ *
+ * When set, services/dshot provides detws_dshot_encode() / _decode(): the 16-bit DShot frame
+ * (11-bit throttle/command + telemetry bit + 4-bit CRC), the bidirectional/extended inverted-CRC
+ * variant, and the per-rate bit timing for an RMT driver. Pure codec (the app clocks it out via RMT).
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_DSHOT
+#define DETWS_ENABLE_DSHOT 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

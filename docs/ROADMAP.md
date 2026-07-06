@@ -941,14 +941,17 @@ web server, using the ESP32's hardware timing peripherals (RMT / MCPWM) so the
 microsecond-precise pulse trains run without locking the CPU. Each behind a build
 flag; fixed BSS, no heap.
 
-- [ ] **DShot** (M, RMT) - the digital ESC standard (DShot150 / 300 / 600 / 1200): the
-      16-bit packet (11-bit throttle, 1-bit telemetry-request, 4-bit CRC) emitted as
-      microsecond-precise pulses via the **RMT** peripheral (no CPU lock). The bit-pack + CRC is host-testable; RMT is the HW timing backend. Expose throttle + arming over
-      an HTTP/WS/dashboard control.
-- [ ] **Bidirectional / Extended DShot (EDShot)** (M, RMT) - DShot with the return
-      channel: read live ESC diagnostics (eRPM, temperature, voltage, current, error
-      rate) back over the same signal wire, so the server streams real-time ESC telemetry
-      (pairs with the telemetry-math + dashboard services). Builds on DShot.
+- [~] **DShot** (M, RMT) _(codec shipped)_ - `DETWS_ENABLE_DSHOT` (`services/dshot`): the DShot frame
+  codec - `detws_dshot_encode` / `_decode` build + validate the 16-bit packet (11-bit throttle /
+  command + telemetry-request + 4-bit nibble-xor CRC), with the special-command constants and the
+  per-rate (150/300/600/1200) bit high-times for an RMT driver. Host-tested against hand-computed
+  vectors (`native_dshot`). _Remaining:_ the RMT pulse-train transport (the HW timing backend) and
+  the HTTP/WS/dashboard throttle+arming control surface.
+- [~] **Bidirectional / Extended DShot (EDShot)** (M, RMT) _(outbound frame shipped)_ - the
+  bidirectional inverted-CRC frame is built by `detws_dshot_encode(..., bidirectional=true)` (and
+  validated by `_decode`). _Remaining:_ decoding the ESC's GCR-encoded return frame (eRPM /
+  temperature / voltage / current) off the same wire, so the server can stream live ESC telemetry
+  (pairs with the telemetry-math + dashboard services).
 - [ ] **ProShot** (S, RMT) - the hybrid analog/digital ESC protocol (pulse-position
       carries the digital value) - less timing-critical than high-speed DShot, faster
       than PWM. Same RMT backend + packet model as DShot.
