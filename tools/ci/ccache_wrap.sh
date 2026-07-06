@@ -25,15 +25,29 @@ shift
 
 wrapped=0
 for name in "$@"; do
+    # -type f matches regular files only, so the toolchain's compat symlinks (e.g. the
+    # legacy xtensa-esp32-elf-* aliases pointing at xtensa-esp-elf-*) are left untouched -
+    # wrapping one would corrupt the name the platform actually invokes.
     while IFS= read -r real; do
         [ -n "$real" ] || continue
         case "$real" in *.real) continue ;; esac # already the saved original
         [ -e "$real.real" ] && continue           # already wrapped
-        mv "$real" "$real.real"
-        printf '#!/bin/sh\nexec ccache "%s" "$@"\n' "$real.real" >"$real"
-        chmod +x "$real"
-        echo "ccache_wrap: wrapped $real"
-        wrapped=$((wrapped + 1))
+        # Copy-then-replace (never mv): the saved original exists before we touch the live
+        # binary, and the shim is staged and atomically moved into place. A failure at any
+        # step restores the original, so this can never leave a shim whose .real is missing
+        # (which would break every compile that follows).
+        cp -p "$real" "$real.real" || {
+            echo "ccache_wrap: cp failed for $real - skipping"
+            continue
+        }
+        tmp="$real.shim.$$"
+        if printf '#!/bin/sh\nexec ccache "%s" "$@"\n' "$real.real" >"$tmp" && chmod +x "$tmp" && mv -f "$tmp" "$real"; then
+            echo "ccache_wrap: wrapped $real"
+            wrapped=$((wrapped + 1))
+        else
+            echo "ccache_wrap: shim install failed for $real - restoring original"
+            rm -f "$tmp" "$real.real"
+        fi
     done < <(find "$ROOT" -type f -name "$name" 2>/dev/null)
 done
 echo "ccache_wrap: $wrapped binaries newly wrapped"
