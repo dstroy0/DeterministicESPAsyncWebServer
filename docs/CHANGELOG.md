@@ -6,6 +6,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- bump actions/upload-artifact from 4 to 7 ([`08b79d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08b79d9a016bec41180b8ee647dc7c0d79ba509b))
+- drop ccache wrap - incompatible with 3.x dynconfig toolchain ([`0727844`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/072784457837ae4a9fbb1d0a706a2d006a3239b3))
+- update test report [skip ci] ([`2091108`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2091108404f1d150d07e82bd99672b8e191fb5d3))
+- update CHANGELOG.md [skip ci] ([`d090e8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d090e8f8dc0926dec3923dcc31ac1271cd1cb4de))
 - fix ccache toolchain wrap breaking every example build ([`b47f5eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b47f5eb3014825298fdf2362bbd4d236ce657533))
 - update CHANGELOG.md [skip ci] ([`7f9880c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f9880ce04167de209baa1d720c0881d7c25fcac))
 - update test report [skip ci] ([`fb6e066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6e066eb26d084c1fcf9341d22d13bfe065eff0))
