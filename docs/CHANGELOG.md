@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.46.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.46.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`22cc808`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22cc8089f577b40044e497508495924b82518d73))
+
+### Changes
+
+- Bump version: 5.45.0 → 5.46.0 ([`a105fad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a105fadf80074ec50d5beae357df5288b52fc858))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1959a3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1959a3cdfcd116b84e7747e5901a1e31fb8cd8b1))
+- update ESP32 build footprints [skip ci] ([`7bd76fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bd76fe4018f491611577c190dc68451ff7a83a2))
+
+### Features
+
+- dynamic socket recycling via an LRU connection-slot pool ([`c9c8ab4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9c8ab4705a2c500cae8e15c6d48bbbbfe07895c))
+
+</details>
+
 ## [5.45.0] - 2026-07-06
 
 <details>
