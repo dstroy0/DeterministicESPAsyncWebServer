@@ -141,7 +141,10 @@ def cmd_readme(ranges_json, footprints_json, readme_path):
             }
         )
     order = {"Core": 0, "L4": 1, "L5": 2, "L6": 3, "L7": 4, "-": 9}
-    rows.sort(key=lambda r: (order.get(r["layer"], 9), -r["fmax"]))
+    # Feature name is the final tiebreaker: `feats` is a set, so features that tie on (layer, -fmax)
+    # would otherwise land in set-iteration order, which is not stable across Python processes
+    # (PYTHONHASHSEED) - that produced a 2-line README churn commit on every CI run. Sort fully.
+    rows.sort(key=lambda r: (order.get(r["layer"], 9), -r["fmax"], r["feature"]))
 
     def rng(lo, hi):
         if hi < MIN_SHOW:
