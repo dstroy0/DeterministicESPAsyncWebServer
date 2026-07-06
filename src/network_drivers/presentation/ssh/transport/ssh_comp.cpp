@@ -50,7 +50,13 @@ struct SshCompState
     bool s2c_active;                   ///< true once the stream has started.
 };
 
-static DETWS_SSH_COMP_ATTR SshCompState s_comp[MAX_SSH_CONNS];
+// All SSH compression state, owned by one instance (internal linkage): the per-connection
+// deflate stream table. One named owner, unreachable from any other translation unit.
+struct SshCompCtx
+{
+    SshCompState comp[MAX_SSH_CONNS];
+};
+static DETWS_SSH_COMP_ATTR SshCompCtx s_ssh_comp;
 
 static void start_stream(SshCompState *c)
 {
@@ -62,22 +68,22 @@ void ssh_comp_reset(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    s_comp[i].s2c_alg = SSH_COMP_NONE;
-    s_comp[i].s2c_active = false;
+    s_ssh_comp.comp[i].s2c_alg = SSH_COMP_NONE;
+    s_ssh_comp.comp[i].s2c_active = false;
 }
 
 void ssh_comp_set_s2c(uint8_t i, uint8_t alg)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    s_comp[i].s2c_alg = alg;
+    s_ssh_comp.comp[i].s2c_alg = alg;
 }
 
 void ssh_comp_on_newkeys(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    SshCompState *c = &s_comp[i];
+    SshCompState *c = &s_ssh_comp.comp[i];
     if (c->s2c_alg == SSH_COMP_ZLIB && !c->s2c_active)
         start_stream(c);
 }
@@ -86,21 +92,21 @@ void ssh_comp_on_auth_success(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    SshCompState *c = &s_comp[i];
+    SshCompState *c = &s_ssh_comp.comp[i];
     if (c->s2c_alg == SSH_COMP_ZLIB_DELAYED && !c->s2c_active)
         start_stream(c);
 }
 
 bool ssh_comp_s2c_active(uint8_t i)
 {
-    return i < MAX_SSH_CONNS && s_comp[i].s2c_active;
+    return i < MAX_SSH_CONNS && s_ssh_comp.comp[i].s2c_active;
 }
 
 int ssh_comp_s2c(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len)
 {
-    if (i >= MAX_SSH_CONNS || !s_comp[i].s2c_active)
+    if (i >= MAX_SSH_CONNS || !s_ssh_comp.comp[i].s2c_active)
         return -1;
-    return ssh_deflate_packet(&s_comp[i].z, src, src_len, dst, dst_cap, out_len);
+    return ssh_deflate_packet(&s_ssh_comp.comp[i].z, src, src_len, dst, dst_cap, out_len);
 }
 
 #endif // DETWS_ENABLE_SSH_ZLIB
