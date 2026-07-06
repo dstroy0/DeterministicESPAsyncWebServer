@@ -185,7 +185,12 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
         case QUIC_FT_ACK:
         case QUIC_FT_ACK_ECN:
             if ((int64_t)f.ack.largest > qc->space[level].largest_acked)
+            {
                 qc->space[level].largest_acked = (int64_t)f.ack.largest;
+                // Forward progress: reset the PTO backoff and re-evaluate the timer (RFC 9002 sec 6.2).
+                qc->pto_count = 0;
+                qc->pto_armed = false;
+            }
             break;
         case QUIC_FT_CONNECTION_CLOSE:
         case QUIC_FT_CONNECTION_CLOSE_APP:
