@@ -269,11 +269,16 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 #define CL_DBG(...) ((void)0)
 #endif
 
-// Single in-flight request (one loop task). s_rx holds the *response to parse*:
-// the raw wire bytes for http, or (for https) the plaintext decrypted by the TLS
-// engine. The TCP connection lives in the shared client pool (det_client).
-static uint8_t s_rx[DETWS_HTTP_CLIENT_BUF_SIZE];
-static int s_cid = -1; // active outbound connection id (det_client pool)
+// All HTTP-client state, owned by one instance (internal linkage): a single in-flight request
+// (one loop task). rx holds the *response to parse*: the raw wire bytes for http, or (for
+// https) the plaintext decrypted by the TLS engine; the TCP connection lives in the shared
+// client pool (det_client). One named owner, unreachable from any other translation unit.
+struct HttpClientCtx
+{
+    uint8_t rx[DETWS_HTTP_CLIENT_BUF_SIZE];
+    int cid = -1; // active outbound connection id (det_client pool)
+};
+static HttpClientCtx s_http;
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
 // mbedTLS BIO over the shared client transport: send wire bytes through the pool,
@@ -282,14 +287,14 @@ static int cl_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
     size_t cap = len > 0xFFFF ? 0xFFFF : len;
-    return det_client_send(s_cid, buf, cap) ? (int)cap : -1;
+    return det_client_send(s_http.cid, buf, cap) ? (int)cap : -1;
 }
 static int cl_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t n = det_client_read(s_cid, buf, len);
+    size_t n = det_client_read(s_http.cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(s_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return det_client_is_closed(s_http.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 #endif // DETWS_ENABLE_HTTP_CLIENT_TLS
@@ -325,50 +330,50 @@ static int http_request(const char *method, const char *url, const char *content
     uint32_t deadline = millis() + DETWS_HTTP_CLIENT_TIMEOUT_MS;
 
     // Open the connection (DNS + connect) via the shared client transport.
-    s_cid = det_client_open(host, port, DETWS_HTTP_CLIENT_TIMEOUT_MS);
-    CL_DBG("[hc] det_client_open cid=%d\n", s_cid);
-    if (s_cid < 0)
-        return (s_cid == -2) ? HTTP_CLIENT_ERR_DNS : HTTP_CLIENT_ERR_CONNECT;
+    s_http.cid = det_client_open(host, port, DETWS_HTTP_CLIENT_TIMEOUT_MS);
+    CL_DBG("[hc] det_client_open cid=%d\n", s_http.cid);
+    if (s_http.cid < 0)
+        return (s_http.cid == -2) ? HTTP_CLIENT_ERR_DNS : HTTP_CLIENT_ERR_CONNECT;
 
     // The response to parse: raw wire bytes (http) or decrypted plaintext (https),
-    // both land in s_rx.
+    // both land in s_http.rx.
     size_t resp_len = 0;
 
     if (is_https)
     {
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
-        int rc = det_tls_client_run(host, (const uint8_t *)req, reqlen, s_rx, sizeof(s_rx), &resp_len, cl_tls_send,
-                                    cl_tls_recv, deadline);
+        int rc = det_tls_client_run(host, (const uint8_t *)req, reqlen, s_http.rx, sizeof(s_http.rx), &resp_len,
+                                    cl_tls_send, cl_tls_recv, deadline);
         CL_DBG("[hc] tls rc=%d pt_len=%u\n", rc, (unsigned)resp_len);
         if (rc < 0)
         {
-            det_client_close(s_cid);
-            s_cid = -1;
+            det_client_close(s_http.cid);
+            s_http.cid = -1;
             return HTTP_CLIENT_ERR_TLS;
         }
 #else
-        det_client_close(s_cid);
-        s_cid = -1;
+        det_client_close(s_http.cid);
+        s_http.cid = -1;
         return HTTP_CLIENT_ERR_TLS;
 #endif
     }
     else
     {
-        // Plaintext: send the request, then drain wire bytes into s_rx until the
+        // Plaintext: send the request, then drain wire bytes into s_http.rx until the
         // peer closes (and the ring is empty), the buffer fills, or we time out.
-        if (!det_client_send(s_cid, req, reqlen))
+        if (!det_client_send(s_http.cid, req, reqlen))
         {
-            det_client_close(s_cid);
-            s_cid = -1;
+            det_client_close(s_http.cid);
+            s_http.cid = -1;
             return HTTP_CLIENT_ERR_SEND;
         }
         while ((int32_t)(deadline - millis()) > 0)
         {
-            size_t n = det_client_read(s_cid, s_rx + resp_len, sizeof(s_rx) - resp_len);
+            size_t n = det_client_read(s_http.cid, s_http.rx + resp_len, sizeof(s_http.rx) - resp_len);
             resp_len += n;
-            if (resp_len >= sizeof(s_rx))
+            if (resp_len >= sizeof(s_http.rx))
                 break;
-            if (det_client_is_closed(s_cid) && det_client_available(s_cid) == 0)
+            if (det_client_is_closed(s_http.cid) && det_client_available(s_http.cid) == 0)
                 break;
             if (n == 0)
                 delay(5);
@@ -376,20 +381,20 @@ static int http_request(const char *method, const char *url, const char *content
     }
 
     CL_DBG("[hc] done resp_len=%u\n", (unsigned)resp_len);
-    det_client_close(s_cid);
-    s_cid = -1;
+    det_client_close(s_http.cid);
+    s_http.cid = -1;
 
     if (resp_len == 0)
         return HTTP_CLIENT_ERR_TIMEOUT;
 
     size_t body_off = 0, blen = 0;
-    int status = http_client_parse_response(s_rx, resp_len, &body_off, &blen);
+    int status = http_client_parse_response(s_http.rx, resp_len, &body_off, &blen);
     if (status < 0)
         return HTTP_CLIENT_ERR_RESPONSE;
     if (out)
     {
         out->status = status;
-        out->body = s_rx + body_off;
+        out->body = s_http.rx + body_off;
         out->body_len = blen;
     }
     return status;
