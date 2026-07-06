@@ -1,0 +1,154 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file j2735.cpp
+ * @brief SAE J2735 V2X UPER codec + BSMcore (see j2735.h).
+ */
+
+#include "services/j2735/j2735.h"
+
+#if DETWS_ENABLE_J2735
+
+void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
+{
+    w->buf = buf;
+    w->cap = cap;
+    w->bit_pos = 0;
+    w->ok = (buf != nullptr && cap > 0);
+    // Zero the buffer so we can OR bits in.
+    for (size_t i = 0; i < cap; i++)
+        buf[i] = 0;
+}
+
+size_t uper_writer_finish(UperWriter *w)
+{
+    if (!w->ok)
+        return 0;
+    return (w->bit_pos + 7) / 8;
+}
+
+void uper_put_bits(UperWriter *w, uint32_t value, unsigned nbits)
+{
+    if (!w->ok || nbits == 0)
+        return;
+    if (w->bit_pos + nbits > w->cap * 8)
+    {
+        w->ok = false;
+        return;
+    }
+    for (unsigned i = 0; i < nbits; i++)
+    {
+        unsigned bit = (value >> (nbits - 1 - i)) & 1u;
+        if (bit)
+        {
+            size_t p = w->bit_pos + i;
+            w->buf[p / 8] |= (uint8_t)(0x80u >> (p % 8));
+        }
+    }
+    w->bit_pos += nbits;
+}
+
+void uper_put_bool(UperWriter *w, bool v)
+{
+    uper_put_bits(w, v ? 1 : 0, 1);
+}
+
+unsigned uper_cint_bits(int64_t lo, int64_t hi)
+{
+    if (hi <= lo)
+        return 0;                         // single value: encoded in zero bits
+    uint64_t range = (uint64_t)(hi - lo); // number of steps above lo is 0..range
+    unsigned bits = 0;
+    while (((uint64_t)1 << bits) <= range)
+        bits++;
+    return bits;
+}
+
+void uper_put_cint(UperWriter *w, int64_t value, int64_t lo, int64_t hi)
+{
+    unsigned bits = uper_cint_bits(lo, hi);
+    if (bits == 0)
+        return;
+    uint64_t off = (uint64_t)(value - lo);
+    // Values wider than 32 bits are not used by the J2735 fields here, but support up to 32.
+    uper_put_bits(w, (uint32_t)off, bits);
+}
+
+void uper_reader_init(UperReader *r, const uint8_t *buf, size_t nbits)
+{
+    r->buf = buf;
+    r->nbits = nbits;
+    r->bit_pos = 0;
+    r->ok = (buf != nullptr);
+}
+
+uint32_t uper_get_bits(UperReader *r, unsigned nbits)
+{
+    if (!r->ok || nbits == 0)
+        return 0;
+    if (r->bit_pos + nbits > r->nbits)
+    {
+        r->ok = false;
+        return 0;
+    }
+    uint32_t v = 0;
+    for (unsigned i = 0; i < nbits; i++)
+    {
+        size_t p = r->bit_pos + i;
+        unsigned bit = (r->buf[p / 8] >> (7 - (p % 8))) & 1u;
+        v = (v << 1) | bit;
+    }
+    r->bit_pos += nbits;
+    return v;
+}
+
+bool uper_get_bool(UperReader *r)
+{
+    return uper_get_bits(r, 1) != 0;
+}
+
+int64_t uper_get_cint(UperReader *r, int64_t lo, int64_t hi)
+{
+    unsigned bits = uper_cint_bits(lo, hi);
+    if (bits == 0)
+        return lo;
+    uint32_t off = uper_get_bits(r, bits);
+    return lo + (int64_t)off;
+}
+
+size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap)
+{
+    if (!c || !out)
+        return 0;
+    UperWriter w;
+    uper_writer_init(&w, out, cap);
+    uper_put_cint(&w, c->msg_count, 0, 127);
+    uper_put_bits(&w, c->id, 32);
+    uper_put_cint(&w, c->sec_mark, 0, 65535);
+    uper_put_cint(&w, c->lat, -900000000, 900000001);
+    uper_put_cint(&w, c->lon, -1799999999, 1800000001);
+    uper_put_cint(&w, c->elev, -4096, 61439);
+    uper_put_cint(&w, c->speed, 0, 8191);
+    uper_put_cint(&w, c->heading, 0, 28800);
+    return uper_writer_finish(&w);
+}
+
+bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
+{
+    if (!in || !c)
+        return false;
+    UperReader r;
+    uper_reader_init(&r, in, len * 8);
+    c->msg_count = (uint8_t)uper_get_cint(&r, 0, 127);
+    c->id = uper_get_bits(&r, 32);
+    c->sec_mark = (uint16_t)uper_get_cint(&r, 0, 65535);
+    c->lat = (int32_t)uper_get_cint(&r, -900000000, 900000001);
+    c->lon = (int32_t)uper_get_cint(&r, -1799999999, 1800000001);
+    c->elev = (int32_t)uper_get_cint(&r, -4096, 61439);
+    c->speed = (uint16_t)uper_get_cint(&r, 0, 8191);
+    c->heading = (uint16_t)uper_get_cint(&r, 0, 28800);
+    return r.ok;
+}
+
+#endif // DETWS_ENABLE_J2735

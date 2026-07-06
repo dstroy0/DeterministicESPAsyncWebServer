@@ -467,6 +467,7 @@
     "Mbit",
     "mbpoll",
     "mbus",
+    "Mcore",
     "MCPWM",
     "MDIO",
     "mDNS",

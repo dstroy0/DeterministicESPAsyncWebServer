@@ -763,16 +763,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       Switzerland, defining decentralized communication between field controllers,
       vehicle detectors, and central traffic computers. Implement the OCIT-Outstations
       message set over the existing transport; fixed BSS device/detector model, no heap.
-- [ ] **V2X / SAE J2735** (XL, connected vehicle) - the Vehicle-to-Everything message
-      dictionary that feeds automated routing + AV safety. Implement the J2735 message
-      codec (ASN.1 UPER) for the core messages on a fixed BSS model: **BSM** (Basic
-      Safety Message - a vehicle's high-rate position / speed / heading / brake status),
-      **SPaT** (Signal Phase and Timing - live signal state + countdown pushed to
-      vehicles, pairs with the NTCIP signal-controller work above), and **MAP**
-      (intersection lane geometry / turn paths). The UPER codec is host-testable and
-      zero-heap; the DSRC / C-V2X radio is supplied by an external module over SPI/UART
-      (see Front-end assumption) or bridged via an IP gateway - the message + security
-      layer is the deliverable either way.
+- [~] **V2X / SAE J2735** (XL, connected vehicle) _(UPER codec + BSMcore shipped)_ - `DETWS_ENABLE_J2735`
+  (`services/j2735`): the ASN.1 **UPER** (Unaligned Packed Encoding Rules) bit-level primitive codec -
+  constrained INTEGER (offset in `ceil(log2(range))` bits), BOOLEAN, raw bit fields, a bit
+  writer/reader - and the **BSMcore** safety kernel (msgCnt / id / secMark / lat / long / elev / speed
+  / heading) encode + decode on top; host-tested against hand-computed bit patterns
+  (`native_j2735`; the 162-bit BSMcore packs to 21 octets). _Remaining:_ the full BSM (part II
+  optionals), **SPaT** (pairs with NTCIP signal control), and **MAP** messages, plus the 1609.2
+  security envelope. The DSRC / C-V2X radio is an external module; the message layer is the deliverable.
 - [ ] **IEEE 1609 (WAVE)** (XL, vehicular radio stack) - Wireless Access in Vehicular
       Environments: the architecture (1609.3 networking / WSMP, 1609.2 security) for
       secure low-latency highway-speed vehicle networks that carries J2735. The DSRC

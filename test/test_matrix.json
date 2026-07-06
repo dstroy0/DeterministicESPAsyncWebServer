@@ -1374,6 +1374,12 @@
       "src": ["+<services/mtconnect/mtconnect.cpp>"],
       "tests": ["test_mtconnect"]
     },
+    "native_j2735": {
+      "desc": "SAE J2735 V2X codec (services/j2735): the ASN.1 UPER bit primitive layer (constrained\nINTEGER / BOOLEAN / bit fields) and the BSMcore block encode/decode. Pure host tests with\nhand-computed bit patterns (162-bit BSMcore -> 21 octets).",
+      "flags": ["-DDETWS_ENABLE_J2735=1"],
+      "src": ["+<services/j2735/j2735.cpp>"],
+      "tests": ["test_j2735"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1432,6 +1438,7 @@
         "-DDETWS_ENABLE_SPA_ROUTER=1",
         "-DDETWS_ENABLE_GOOSE=1",
         "-DDETWS_ENABLE_MTCONNECT=1",
+        "-DDETWS_ENABLE_J2735=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1491,6 +1498,7 @@
         "+<services/spa_router/spa_router.cpp>",
         "+<services/goose/goose.cpp>",
         "+<services/mtconnect/mtconnect.cpp>",
+        "+<services/j2735/j2735.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

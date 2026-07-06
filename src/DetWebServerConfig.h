@@ -2724,6 +2724,18 @@
 #endif
 
 /**
+ * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
+ *
+ * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive
+ * codec (constrained INTEGER / BOOLEAN / bit fields) and, on top of it, the J2735 BSMcore safety-message
+ * block (msgCnt / id / secMark / lat / long / elev / speed / heading) encode + decode, for connected-
+ * vehicle messaging. Pure codec (the DSRC / C-V2X radio is an external module). Default off.
+ */
+#ifndef DETWS_ENABLE_J2735
+#define DETWS_ENABLE_J2735 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
