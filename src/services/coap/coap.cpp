@@ -41,48 +41,71 @@ struct CoapResource
     CoapHandler handler;
 };
 
-static CoapResource g_res[DETWS_COAP_MAX_RESOURCES];
-static size_t g_res_count = 0;
+#if DETWS_ENABLE_COAP_OBSERVE
+// An Observe registration (RFC 7641): a client awaiting notifications on a resource.
+struct CoapObserver
+{
+    bool active;
+    char ip[16];
+    uint16_t port;
+    uint8_t token[8];
+    uint8_t tkl;
+    int res_idx;
+    uint32_t seq; // last Observe value sent
+};
+#endif
 
-static char g_path[DETWS_COAP_MAX_PATH];     // reconstructed Uri-Path
-static char g_query[DETWS_COAP_MAX_QUERY];   // reconstructed Uri-Query
-static uint8_t g_pl[DETWS_COAP_MAX_PAYLOAD]; // handler response-body scratch
+// All CoAP server state, owned by one instance. Grouping what were scattered file-scope
+// mutables means state flows explicitly through the call graph (readers take a
+// `const CoapCtx&` and cannot mutate the table), and nothing here is ambient.
+struct CoapCtx
+{
+    CoapResource res[DETWS_COAP_MAX_RESOURCES]; // resource table: set before begin, read-only during dispatch
+    size_t res_count = 0;
+
+    char path[DETWS_COAP_MAX_PATH];      // scratch: reconstructed Uri-Path of the request in flight
+    char query[DETWS_COAP_MAX_QUERY];    // scratch: reconstructed Uri-Query
+    uint8_t pl[DETWS_COAP_MAX_PAYLOAD];  // scratch: handler response body
+    uint8_t tx[DETWS_COAP_MSG_BUF_SIZE]; // scratch: outbound response (request buffer is transport-owned)
 
 #if DETWS_ENABLE_COAP_OBSERVE
-// Last-request fields recorded by coap_server_process_ex() for the Observe
-// transport (single-threaded loop; valid right after the call).
-static int g_last_observe = -1; // request Observe option value, or -1 if absent
-static uint8_t g_last_method = 0;
-static uint8_t g_last_token[8];
-static uint8_t g_last_tkl = 0;
+    uint16_t port = 5683; // UDP port the observe transport notifies from
+    CoapObserver obs[DETWS_COAP_MAX_OBSERVERS];
+    // Last-request fields recorded by coap_server_process_ex() for the Observe transport.
+    int last_observe = -1;
+    uint8_t last_method = 0;
+    uint8_t last_token[8];
+    uint8_t last_tkl = 0;
 #endif
 
 #if DETWS_ENABLE_COAP_BLOCK
-// Single in-flight Block1 (request upload) reassembly buffer (RFC 7959). One
-// transfer at a time; a new transfer begins at block number 0.
-static uint8_t g_b1[DETWS_COAP_BLOCK1_MAX];
-static size_t g_b1_len = 0;  // bytes reassembled so far (also the next expected offset)
-static uint8_t g_b1_szx = 0; // negotiated block-size exponent for this transfer
+    // Single in-flight Block1 (request upload) reassembly (RFC 7959); one transfer at a time.
+    uint8_t b1[DETWS_COAP_BLOCK1_MAX];
+    size_t b1_len = 0;  // bytes reassembled so far (also the next expected offset)
+    uint8_t b1_szx = 0; // negotiated block-size exponent for this transfer
 #endif
+};
+
+static CoapCtx s_coap;
 
 void coap_server_init()
 {
-    g_res_count = 0;
-    memset(g_res, 0, sizeof(g_res));
+    s_coap.res_count = 0;
+    memset(s_coap.res, 0, sizeof(s_coap.res));
 #if DETWS_ENABLE_COAP_BLOCK
-    g_b1_len = 0;
-    g_b1_szx = 0;
+    s_coap.b1_len = 0;
+    s_coap.b1_szx = 0;
 #endif
 }
 
 bool coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler)
 {
-    if (g_res_count >= DETWS_COAP_MAX_RESOURCES || !path || !handler)
+    if (s_coap.res_count >= DETWS_COAP_MAX_RESOURCES || !path || !handler)
         return false;
-    g_res[g_res_count].path = path;
-    g_res[g_res_count].methods = methods;
-    g_res[g_res_count].handler = handler;
-    g_res_count++;
+    s_coap.res[s_coap.res_count].path = path;
+    s_coap.res[s_coap.res_count].methods = methods;
+    s_coap.res[s_coap.res_count].handler = handler;
+    s_coap.res_count++;
     return true;
 }
 
@@ -115,11 +138,11 @@ static bool seg_append(char *buf, size_t cap, size_t *len, char sep, const uint8
     return true;
 }
 
-static const CoapResource *find_resource(const char *path)
+static const CoapResource *find_resource(const CoapCtx &c, const char *path)
 {
-    for (size_t i = 0; i < g_res_count; i++)
-        if (strcmp(g_res[i].path, path) == 0)
-            return &g_res[i];
+    for (size_t i = 0; i < c.res_count; i++)
+        if (strcmp(c.res[i].path, path) == 0)
+            return &c.res[i];
     return nullptr;
 }
 
@@ -254,17 +277,17 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         return (type == COAP_TYPE_CON) ? emit_header(resp, resp_cap, COAP_TYPE_RST, 0, mid, nullptr, 0) : 0;
 
 #if DETWS_ENABLE_COAP_OBSERVE
-    g_last_observe = -1;
-    g_last_method = code;
-    g_last_tkl = tkl;
+    s_coap.last_observe = -1;
+    s_coap.last_method = code;
+    s_coap.last_tkl = tkl;
     if (tkl)
-        memcpy(g_last_token, token, tkl);
+        memcpy(s_coap.last_token, token, tkl);
 #endif
 
     // Decode options, reconstructing Uri-Path / Uri-Query and reading Content-Format.
     size_t path_len = 0, query_len = 0;
-    g_path[0] = '\0';
-    g_query[0] = '\0';
+    s_coap.path[0] = '\0';
+    s_coap.query[0] = '\0';
     uint16_t req_cf = COAP_CF_NONE;
     const uint8_t *payload = nullptr;
     size_t payload_len = 0;
@@ -343,11 +366,11 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         switch (opt_num)
         {
         case COAP_OPT_URI_PATH:
-            if (!seg_append(g_path, sizeof(g_path), &path_len, '/', val, olen))
+            if (!seg_append(s_coap.path, sizeof(s_coap.path), &path_len, '/', val, olen))
                 bad = true;
             break;
         case COAP_OPT_URI_QUERY:
-            if (!seg_append(g_query, sizeof(g_query), &query_len, query_len ? '&' : '\0', val, olen))
+            if (!seg_append(s_coap.query, sizeof(s_coap.query), &query_len, query_len ? '&' : '\0', val, olen))
                 bad = true;
             break;
         case COAP_OPT_CONTENT_FORMAT:
@@ -355,7 +378,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             break;
 #if DETWS_ENABLE_COAP_OBSERVE
         case COAP_OPT_OBSERVE:
-            g_last_observe = (int)opt_uint(val, olen); // 0 = register, 1 = deregister
+            s_coap.last_observe = (int)opt_uint(val, olen); // 0 = register, 1 = deregister
             break;
 #endif
 #if DETWS_ENABLE_COAP_BLOCK
@@ -392,8 +415,8 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
 
     if (path_len == 0)
     {
-        g_path[0] = '/';
-        g_path[1] = '\0';
+        s_coap.path[0] = '/';
+        s_coap.path[1] = '\0';
     }
 
     // Only class-0 GET/POST/PUT/DELETE are supported request methods. RFC 7252 5.8:
@@ -407,38 +430,38 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     CoapResponse cresp;
     cresp.code = COAP_RSP_CONTENT;
     cresp.content_format = COAP_CF_NONE;
-    cresp.payload = g_pl;
-    cresp.payload_cap = sizeof(g_pl);
+    cresp.payload = s_coap.pl;
+    cresp.payload_cap = sizeof(s_coap.pl);
     cresp.payload_len = 0;
     int32_t block1_echo = -1; // Block1 option to echo on the final-block response
 
     // RFC 6690: GET /.well-known/core returns the CoRE Link Format listing of the
     // registered resources, e.g. "</info>,</led>". Block2 (below) pages it if large.
-    if (strcmp(g_path, "/.well-known/core") == 0)
+    if (strcmp(s_coap.path, "/.well-known/core") == 0)
     {
         if (code != COAP_GET)
             return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
         size_t pl = 0;
-        for (size_t i = 0; i < g_res_count; i++)
+        for (size_t i = 0; i < s_coap.res_count; i++)
         {
-            const char *rpath = g_res[i].path;
+            const char *rpath = s_coap.res[i].path;
             size_t plen = strlen(rpath);
             size_t need = (pl ? 1u : 0u) + 2u + plen; // optional ',' + '<' + path + '>'
-            if (pl + need > sizeof(g_pl))
+            if (pl + need > sizeof(s_coap.pl))
                 break; // listing exceeds the payload buffer; truncate at a resource boundary
             if (pl)
-                g_pl[pl++] = ',';
-            g_pl[pl++] = '<';
-            memcpy(g_pl + pl, rpath, plen);
+                s_coap.pl[pl++] = ',';
+            s_coap.pl[pl++] = '<';
+            memcpy(s_coap.pl + pl, rpath, plen);
             pl += plen;
-            g_pl[pl++] = '>';
+            s_coap.pl[pl++] = '>';
         }
         cresp.content_format = COAP_CF_LINK;
         cresp.payload_len = pl;
     }
     else
     {
-        const CoapResource *r = find_resource(g_path);
+        const CoapResource *r = find_resource(s_coap, s_coap.path);
         if (!r)
             return emit_header(resp, resp_cap, rsp_type, COAP_RSP_NOT_FOUND, mid, token, tkl);
         if (!(r->methods & (1u << code)))
@@ -460,24 +483,24 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             uint32_t bsize = 1u << (szx + 4);
             if (num == 0) // first block starts a fresh transfer
             {
-                g_b1_len = 0;
-                g_b1_szx = szx;
+                s_coap.b1_len = 0;
+                s_coap.b1_szx = szx;
             }
             // The block size is fixed for a transfer; an offset gap means a lost or
             // reordered block. Either way the reassembly cannot continue: 4.08.
-            if (szx != g_b1_szx || (size_t)num * bsize != g_b1_len)
+            if (szx != s_coap.b1_szx || (size_t)num * bsize != s_coap.b1_len)
             {
-                g_b1_len = 0;
+                s_coap.b1_len = 0;
                 return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_INCOMPLETE, mid, token, tkl);
             }
-            if (g_b1_len + payload_len > sizeof(g_b1))
+            if (s_coap.b1_len + payload_len > sizeof(s_coap.b1))
             {
-                g_b1_len = 0;
+                s_coap.b1_len = 0;
                 return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_TOO_LARGE, mid, token, tkl);
             }
             if (payload_len)
-                memcpy(g_b1 + g_b1_len, payload, payload_len);
-            g_b1_len += payload_len;
+                memcpy(s_coap.b1 + s_coap.b1_len, payload, payload_len);
+            s_coap.b1_len += payload_len;
 
             if (more)
             {
@@ -490,30 +513,30 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
                                             (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
             }
             // Final block: hand the whole reassembled payload to the handler.
-            eff_payload = g_b1;
-            eff_payload_len = g_b1_len;
+            eff_payload = s_coap.b1;
+            eff_payload_len = s_coap.b1_len;
             block1_echo = (int32_t)((num << 4) | szx); // More = 0
         }
 #endif
 
         CoapRequest creq;
         creq.method = code;
-        creq.path = g_path;
-        creq.query = g_query;
+        creq.path = s_coap.path;
+        creq.query = s_coap.query;
         creq.payload = eff_payload;
         creq.payload_len = eff_payload_len;
         creq.content_format = req_cf;
 
         r->handler(&creq, &cresp);
-        if (cresp.payload_len > sizeof(g_pl))
-            cresp.payload_len = sizeof(g_pl); // defensive clamp
+        if (cresp.payload_len > sizeof(s_coap.pl))
+            cresp.payload_len = sizeof(s_coap.pl); // defensive clamp
     }
 
     int32_t block2_echo = -1;
 
 #if DETWS_ENABLE_COAP_BLOCK
     if (block1_echo >= 0)
-        g_b1_len = 0; // the reassembled upload has been handed to the handler; clear it
+        s_coap.b1_len = 0; // the reassembled upload has been handed to the handler; clear it
 
     // --- Block2: serve a (large or explicitly requested) representation one
     // block at a time (RFC 7959 §2.4). Applies only to a successful body. ---
@@ -575,30 +598,15 @@ size_t coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, si
 // UDP transport (det_udp_listen is a host stub on non-Arduino builds)
 // ---------------------------------------------------------------------------
 
-static uint8_t g_coap_tx[DETWS_COAP_MSG_BUF_SIZE]; // response scratch (request is transport-owned)
-
 #if DETWS_ENABLE_COAP_OBSERVE
 // ---------------------------------------------------------------------------
 // Observe registry + notifications (RFC 7641)
 // ---------------------------------------------------------------------------
-static uint16_t g_coap_port = 5683;
 
-struct CoapObserver
+static int find_resource_index(const CoapCtx &c, const char *path)
 {
-    bool active;
-    char ip[16];
-    uint16_t port;
-    uint8_t token[8];
-    uint8_t tkl;
-    int res_idx;
-    uint32_t seq; // last Observe value sent
-};
-static CoapObserver g_obs[DETWS_COAP_MAX_OBSERVERS];
-
-static int find_resource_index(const char *path)
-{
-    for (size_t i = 0; i < g_res_count; i++)
-        if (strcmp(g_res[i].path, path) == 0)
+    for (size_t i = 0; i < c.res_count; i++)
+        if (strcmp(c.res[i].path, path) == 0)
             return (int)i;
     return -1;
 }
@@ -612,21 +620,21 @@ static bool same_token(const CoapObserver *o, const uint8_t *token, uint8_t tkl)
 static int obs_register(const char *ip, uint16_t port, const uint8_t *token, uint8_t tkl, int res_idx)
 {
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
-        if (g_obs[i].active && g_obs[i].res_idx == res_idx && g_obs[i].port == port &&
-            same_token(&g_obs[i], token, tkl) && strcmp(g_obs[i].ip, ip) == 0)
+        if (s_coap.obs[i].active && s_coap.obs[i].res_idx == res_idx && s_coap.obs[i].port == port &&
+            same_token(&s_coap.obs[i], token, tkl) && strcmp(s_coap.obs[i].ip, ip) == 0)
             return i; // already observing
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
-        if (!g_obs[i].active)
+        if (!s_coap.obs[i].active)
         {
-            g_obs[i].active = true;
-            strncpy(g_obs[i].ip, ip, sizeof(g_obs[i].ip) - 1);
-            g_obs[i].ip[sizeof(g_obs[i].ip) - 1] = '\0';
-            g_obs[i].port = port;
-            g_obs[i].tkl = tkl;
+            s_coap.obs[i].active = true;
+            strncpy(s_coap.obs[i].ip, ip, sizeof(s_coap.obs[i].ip) - 1);
+            s_coap.obs[i].ip[sizeof(s_coap.obs[i].ip) - 1] = '\0';
+            s_coap.obs[i].port = port;
+            s_coap.obs[i].tkl = tkl;
             if (tkl)
-                memcpy(g_obs[i].token, token, tkl);
-            g_obs[i].res_idx = res_idx;
-            g_obs[i].seq = 1;
+                memcpy(s_coap.obs[i].token, token, tkl);
+            s_coap.obs[i].res_idx = res_idx;
+            s_coap.obs[i].seq = 1;
             return i;
         }
     return -1; // registry full -> observation declined (resource still returned)
@@ -637,24 +645,24 @@ static int obs_register(const char *ip, uint16_t port, const uint8_t *token, uin
 static void obs_remove(const char *ip, uint16_t port, const uint8_t *token, uint8_t tkl)
 {
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
-        if (g_obs[i].active && g_obs[i].port == port && strcmp(g_obs[i].ip, ip) == 0 &&
-            (token == nullptr || same_token(&g_obs[i], token, tkl)))
-            g_obs[i].active = false;
+        if (s_coap.obs[i].active && s_coap.obs[i].port == port && strcmp(s_coap.obs[i].ip, ip) == 0 &&
+            (token == nullptr || same_token(&s_coap.obs[i], token, tkl)))
+            s_coap.obs[i].active = false;
 }
 
 void coap_notify(const char *path)
 {
-    int ridx = find_resource_index(path);
+    int ridx = find_resource_index(s_coap, path);
     if (ridx < 0)
         return;
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
     {
-        if (!g_obs[i].active || g_obs[i].res_idx != ridx)
+        if (!s_coap.obs[i].active || s_coap.obs[i].res_idx != ridx)
             continue;
         // Re-render the resource via its GET handler.
         CoapRequest creq;
         creq.method = COAP_GET;
-        creq.path = g_res[ridx].path;
+        creq.path = s_coap.res[ridx].path;
         creq.query = "";
         creq.payload = nullptr;
         creq.payload_len = 0;
@@ -662,23 +670,23 @@ void coap_notify(const char *path)
         CoapResponse cresp;
         cresp.code = COAP_RSP_CONTENT;
         cresp.content_format = COAP_CF_NONE;
-        cresp.payload = g_pl;
-        cresp.payload_cap = sizeof(g_pl);
+        cresp.payload = s_coap.pl;
+        cresp.payload_cap = sizeof(s_coap.pl);
         cresp.payload_len = 0;
-        g_res[ridx].handler(&creq, &cresp);
-        if (cresp.payload_len > sizeof(g_pl))
-            cresp.payload_len = sizeof(g_pl);
+        s_coap.res[ridx].handler(&creq, &cresp);
+        if (cresp.payload_len > sizeof(s_coap.pl))
+            cresp.payload_len = sizeof(s_coap.pl);
 
         // Build a NON notification: header + token + Observe(seq) + body.
         uint16_t mid = (uint16_t)detws_millis();
-        g_obs[i].seq = (g_obs[i].seq + 1) & 0xFFFFFF;
-        size_t n =
-            emit_header(g_coap_tx, sizeof(g_coap_tx), COAP_TYPE_NON, cresp.code, mid, g_obs[i].token, g_obs[i].tkl);
+        s_coap.obs[i].seq = (s_coap.obs[i].seq + 1) & 0xFFFFFF;
+        size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), COAP_TYPE_NON, cresp.code, mid, s_coap.obs[i].token,
+                               s_coap.obs[i].tkl);
         if (n)
-            n = emit_options_payload(g_coap_tx, sizeof(g_coap_tx), n, cresp.code, (int32_t)g_obs[i].seq,
+            n = emit_options_payload(s_coap.tx, sizeof(s_coap.tx), n, cresp.code, (int32_t)s_coap.obs[i].seq,
                                      cresp.content_format, -1, -1, cresp.payload, cresp.payload_len);
-        if (!n || !det_udp_listener_sendto(g_coap_port, g_obs[i].ip, g_obs[i].port, g_coap_tx, n))
-            g_obs[i].active = false; // unreachable -> drop the observer
+        if (!n || !det_udp_listener_sendto(s_coap.port, s_coap.obs[i].ip, s_coap.obs[i].port, s_coap.tx, n))
+            s_coap.obs[i].active = false; // unreachable -> drop the observer
     }
 }
 
@@ -697,38 +705,39 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
         return;
     }
 
-    size_t rn = coap_server_process_ex(data, len, g_coap_tx, sizeof(g_coap_tx), -1);
+    size_t rn = coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
     if (!rn)
         return;
 
-    if (g_last_method == COAP_GET && g_last_observe == 0 && have_peer)
+    if (s_coap.last_method == COAP_GET && s_coap.last_observe == 0 && have_peer)
     {
-        int ridx = find_resource_index(g_path);
+        int ridx = find_resource_index(s_coap, s_coap.path);
         if (ridx >= 0)
         {
-            int slot = obs_register(ip, pport, g_last_token, g_last_tkl, ridx);
+            int slot = obs_register(ip, pport, s_coap.last_token, s_coap.last_tkl, ridx);
             if (slot >= 0)
             {
                 // Re-encode the response carrying the Observe option (registration ack).
-                size_t rn2 = coap_server_process_ex(data, len, g_coap_tx, sizeof(g_coap_tx), (int32_t)g_obs[slot].seq);
+                size_t rn2 =
+                    coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
                 if (rn2)
                     rn = rn2;
             }
         }
     }
-    else if (g_last_observe == 1 && have_peer)
+    else if (s_coap.last_observe == 1 && have_peer)
     {
-        obs_remove(ip, pport, g_last_token, g_last_tkl);
+        obs_remove(ip, pport, s_coap.last_token, s_coap.last_tkl);
     }
 
-    det_udp_send(peer, g_coap_tx, rn);
+    det_udp_send(peer, s_coap.tx, rn);
 }
 
 void coap_server_begin_udp(uint16_t port)
 {
-    g_coap_port = port;
+    s_coap.port = port;
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
-        g_obs[i].active = false;
+        s_coap.obs[i].active = false;
     det_udp_listen(port, coap_udp_handler, nullptr);
 }
 
@@ -737,9 +746,9 @@ void coap_server_begin_udp(uint16_t port)
 static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
 {
     (void)ctx;
-    size_t rn = coap_server_process(data, len, g_coap_tx, sizeof(g_coap_tx));
+    size_t rn = coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
     if (rn)
-        det_udp_send(peer, g_coap_tx, rn);
+        det_udp_send(peer, s_coap.tx, rn);
 }
 
 void coap_server_begin_udp(uint16_t port)
