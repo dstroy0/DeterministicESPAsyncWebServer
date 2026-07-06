@@ -16,9 +16,19 @@ trap 'rm -f "$PPTR"' EXIT
 shopt -s nullglob
 for mmd in "$DIR"/*.mmd; do
     name="$(basename "$mmd" .mmd)"
+    light="$DIR/$name.light.png"
+    dark="$DIR/$name.dark.png"
+    # Skip re-rendering an unchanged diagram: mmdc/Chromium rasterization is not byte-deterministic, so
+    # re-rendering a .mmd that did not change would emit phantom PNG churn every CI run - a needless
+    # commit that also makes the auto-commit race for main. The .mmd sources ARE deterministic (Python),
+    # so "source unchanged vs git AND both PNGs exist" means the committed PNGs are already current.
+    if [ -f "$light" ] && [ -f "$dark" ] && git diff --quiet HEAD -- "$mmd" 2>/dev/null; then
+        echo "unchanged $name (skip render)"
+        continue
+    fi
     width=1100
     [ "$name" = "flag_deps" ] && width=1600 # the dependency graph is wide and shallow
-    mmdc -p "$PPTR" -i "$mmd" -o "$DIR/$name.light.png" -t default -b white -w "$width" --scale 2
-    mmdc -p "$PPTR" -i "$mmd" -o "$DIR/$name.dark.png" -t dark -b "#0d1117" -w "$width" --scale 2
+    mmdc -p "$PPTR" -i "$mmd" -o "$light" -t default -b white -w "$width" --scale 2
+    mmdc -p "$PPTR" -i "$mmd" -o "$dark" -t dark -b "#0d1117" -w "$width" --scale 2
     echo "rendered $name (light + dark)"
 done
