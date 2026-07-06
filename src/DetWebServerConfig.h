@@ -2393,6 +2393,19 @@
 #define DETWS_ENABLE_DASHBOARD 0
 #endif
 
+/**
+ * @brief Embed the theme stylesheet library as runtime-selectable blobs (default off).
+ *
+ * Off by default: build-time theme injection (`<!--#theme NAME-->`) costs nothing extra, but
+ * embedding the whole library for runtime switching links every theme's CSS into flash (~1 KB each).
+ * When set, application/binary_asset_blobs.{h,cpp} exposes `detws_theme_css(name)` + the registry
+ * `DETWS_THEME_BLOBS`, so a route (e.g. `/themes/<name>.css`) or a picker can switch themes live.
+ * Regenerate with `src/web/wizard/gen_theme_blobs.py` after adding a theme.
+ */
+#ifndef DETWS_ENABLE_THEMES
+#define DETWS_ENABLE_THEMES 0
+#endif
+
 /** @brief Maximum widgets in the dashboard table (BSS value array). */
 #ifndef DETWS_DASHBOARD_MAX_WIDGETS
 #define DETWS_DASHBOARD_MAX_WIDGETS 16
