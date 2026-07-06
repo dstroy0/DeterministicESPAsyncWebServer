@@ -124,6 +124,33 @@ void test_spat_decode_too_many(void)
     TEST_ASSERT_FALSE(detws_j2735_spat_decode(buf, n, out, 1, &count));
 }
 
+void test_map_roundtrip(void)
+{
+    J2735MapIntersection isect = {12345, 40000, 55000};
+    J2735Lane lanes[3];
+    lanes[0] = {1, true, -100, 200};
+    lanes[1] = {2, false, 2047, -2048};
+    lanes[2] = {9, true, 0, 0};
+    uint8_t buf[64];
+    size_t n = detws_j2735_map_encode(&isect, lanes, 3, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+
+    J2735MapIntersection di;
+    J2735Lane out[8];
+    size_t count = 0;
+    TEST_ASSERT_TRUE(detws_j2735_map_decode(buf, n, &di, out, 8, &count));
+    TEST_ASSERT_EQUAL_UINT16(12345, di.intersection_id);
+    TEST_ASSERT_EQUAL_UINT16(40000, di.ref_lat);
+    TEST_ASSERT_EQUAL_size_t(3, count);
+    TEST_ASSERT_EQUAL_UINT8(1, out[0].lane_id);
+    TEST_ASSERT_TRUE(out[0].is_ingress);
+    TEST_ASSERT_EQUAL_INT16(-100, out[0].node_x);
+    TEST_ASSERT_EQUAL_INT16(200, out[0].node_y);
+    TEST_ASSERT_FALSE(out[1].is_ingress);
+    TEST_ASSERT_EQUAL_INT16(2047, out[1].node_x);
+    TEST_ASSERT_EQUAL_INT16(-2048, out[1].node_y);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -134,5 +161,6 @@ int main(void)
     RUN_TEST(test_bsm_core_bit_length);
     RUN_TEST(test_spat_roundtrip);
     RUN_TEST(test_spat_decode_too_many);
+    RUN_TEST(test_map_roundtrip);
     return UNITY_END();
 }

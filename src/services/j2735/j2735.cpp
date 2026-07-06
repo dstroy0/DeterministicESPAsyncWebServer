@@ -191,4 +191,51 @@ bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *
     return true;
 }
 
+size_t detws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
+                              size_t cap)
+{
+    if (!isect || !out || (count && !lanes) || count > 31)
+        return 0;
+    UperWriter w;
+    uper_writer_init(&w, out, cap);
+    uper_put_cint(&w, isect->intersection_id, 0, 65535);
+    uper_put_cint(&w, isect->ref_lat, 0, 65535);
+    uper_put_cint(&w, isect->ref_lon, 0, 65535);
+    uper_put_cint(&w, (int64_t)count, 0, 31);
+    for (size_t i = 0; i < count; i++)
+    {
+        uper_put_cint(&w, lanes[i].lane_id, 0, 255);
+        uper_put_bool(&w, lanes[i].is_ingress);
+        uper_put_cint(&w, lanes[i].node_x, -2048, 2047);
+        uper_put_cint(&w, lanes[i].node_y, -2048, 2047);
+    }
+    return uper_writer_finish(&w);
+}
+
+bool detws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
+                            size_t max_lanes, size_t *out_count)
+{
+    if (!in || !isect || !out_lanes || !out_count)
+        return false;
+    UperReader r;
+    uper_reader_init(&r, in, len * 8);
+    isect->intersection_id = (uint16_t)uper_get_cint(&r, 0, 65535);
+    isect->ref_lat = (uint16_t)uper_get_cint(&r, 0, 65535);
+    isect->ref_lon = (uint16_t)uper_get_cint(&r, 0, 65535);
+    size_t count = (size_t)uper_get_cint(&r, 0, 31);
+    if (!r.ok || count > max_lanes)
+        return false;
+    for (size_t i = 0; i < count; i++)
+    {
+        out_lanes[i].lane_id = (uint8_t)uper_get_cint(&r, 0, 255);
+        out_lanes[i].is_ingress = uper_get_bool(&r);
+        out_lanes[i].node_x = (int16_t)uper_get_cint(&r, -2048, 2047);
+        out_lanes[i].node_y = (int16_t)uper_get_cint(&r, -2048, 2047);
+    }
+    if (!r.ok)
+        return false;
+    *out_count = count;
+    return true;
+}
+
 #endif // DETWS_ENABLE_J2735

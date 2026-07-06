@@ -134,5 +134,37 @@ size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, u
 bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
                              size_t *out_count);
 
+/** @brief One MAP lane: an id and an approach/egress flag (the minimal LaneID + directionalUse bit). */
+struct J2735Lane
+{
+    uint8_t lane_id; ///< LaneID 0..255.
+    bool is_ingress; ///< true = an approach (ingress) lane, false = egress.
+    int16_t node_x;  ///< first node offset X, -2048..2047 (cm, node-XY offset).
+    int16_t node_y;  ///< first node offset Y, -2048..2047 (cm).
+};
+
+/** @brief The MAP intersection-geometry core: an intersection id + a list of lanes. */
+struct J2735MapIntersection
+{
+    uint16_t intersection_id; ///< IntersectionID 0..65535.
+    uint16_t ref_lat;         ///< reference point offset lat surrogate (0..65535 here for the codec).
+    uint16_t ref_lon;         ///< reference point offset lon surrogate (0..65535 here).
+};
+
+/**
+ * @brief UPER-encode a MAP intersection: id + refLat + refLon, then a 5-bit lane count and each lane
+ *        (laneID [0..255], directionalUse bit, nodeX [-2048..2047], nodeY [-2048..2047]).
+ * @param count number of lanes (0..31).
+ * @return octets written, or 0 on overflow.
+ */
+size_t detws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
+                              size_t cap);
+
+/**
+ * @brief UPER-decode a MAP intersection. @return true on success (and the lane count fit @p max_lanes).
+ */
+bool detws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
+                            size_t max_lanes, size_t *out_count);
+
 #endif // DETWS_ENABLE_J2735
 #endif // DETERMINISTICESPASYNCWEBSERVER_J2735_H
