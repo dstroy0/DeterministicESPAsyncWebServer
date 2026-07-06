@@ -56,32 +56,37 @@ static const char *const ALG_COMP_S2C = "none";
 // RFC 8308 indicator a client sets in its kex_algorithms to request EXT_INFO.
 static const char *const EXT_INFO_C = "ext-info-c";
 
-// Runtime negotiation preference (true = prefer the hardware-accelerated RSA/DH suite).
-static bool g_prefer_rsa = true;
+// All SSH transport host-key/KEX state, owned by one instance (internal linkage): the runtime
+// KEX preference (true = prefer the hardware-accelerated RSA/DH suite) and the optional
+// ssh-ed25519 host key (the RSA host key is loaded via ssh_rsa). One named owner, cross-TU
+// unreachable.
+struct SshTransportCtx
+{
+    bool prefer_rsa = true;
+    uint8_t ed_seed[32];
+    uint8_t ed_pub[32];
+    bool ed_have = false;
+};
+static SshTransportCtx s_sshtr;
 
 void ssh_kex_set_prefer_rsa(bool prefer)
 {
-    g_prefer_rsa = prefer;
+    s_sshtr.prefer_rsa = prefer;
 }
 bool ssh_kex_prefer_rsa(void)
 {
-    return g_prefer_rsa;
+    return s_sshtr.prefer_rsa;
 }
-
-// --- ssh-ed25519 host key (optional; the RSA host key is loaded via ssh_rsa) --
-static uint8_t g_ed_seed[32];
-static uint8_t g_ed_pub[32];
-static bool g_ed_have = false;
 
 void ssh_hostkey_ed25519_set(const uint8_t seed[32])
 {
-    memcpy(g_ed_seed, seed, 32);
-    ssh_ed25519_pubkey(g_ed_pub, g_ed_seed);
-    g_ed_have = true;
+    memcpy(s_sshtr.ed_seed, seed, 32);
+    ssh_ed25519_pubkey(s_sshtr.ed_pub, s_sshtr.ed_seed);
+    s_sshtr.ed_have = true;
 }
 bool ssh_hostkey_ed25519_available(void)
 {
-    return g_ed_have;
+    return s_sshtr.ed_have;
 }
 static bool hostkey_rsa_available(void)
 {
@@ -94,17 +99,17 @@ static bool hostkey_rsa_available(void)
 static void build_kex_list(char *out, size_t cap)
 {
     const char *c1 = KEX_C25519, *c2 = KEX_C25519_LIBSSH, *dh = KEX_DH;
-    if (g_prefer_rsa)
+    if (s_sshtr.prefer_rsa)
         snprintf(out, cap, "%s,%s,%s,ext-info-s", dh, c1, c2);
     else
         snprintf(out, cap, "%s,%s,%s,ext-info-s", c1, c2, dh);
 }
 static void build_hostkey_list(char *out, size_t cap)
 {
-    const char *first = g_prefer_rsa ? HOSTKEY_RSA : HOSTKEY_ED;
-    const char *second = g_prefer_rsa ? HOSTKEY_ED : HOSTKEY_RSA;
-    bool first_ok = g_prefer_rsa ? hostkey_rsa_available() : ssh_hostkey_ed25519_available();
-    bool second_ok = g_prefer_rsa ? ssh_hostkey_ed25519_available() : hostkey_rsa_available();
+    const char *first = s_sshtr.prefer_rsa ? HOSTKEY_RSA : HOSTKEY_ED;
+    const char *second = s_sshtr.prefer_rsa ? HOSTKEY_ED : HOSTKEY_RSA;
+    bool first_ok = s_sshtr.prefer_rsa ? hostkey_rsa_available() : ssh_hostkey_ed25519_available();
+    bool second_ok = s_sshtr.prefer_rsa ? ssh_hostkey_ed25519_available() : hostkey_rsa_available();
     out[0] = '\0';
     if (first_ok)
         snprintf(out, cap, "%s", first);
@@ -392,7 +397,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
     {
         AlgCand kc[3];
-        if (g_prefer_rsa)
+        if (s_sshtr.prefer_rsa)
         {
             kc[0] = {KEX_DH, SSH_KEX_DH_GROUP14, true};
             kc[1] = {KEX_C25519, SSH_KEX_CURVE25519, true};
@@ -414,7 +419,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         return -1;
     {
         AlgCand hc[2];
-        if (g_prefer_rsa)
+        if (s_sshtr.prefer_rsa)
         {
             hc[0] = {HOSTKEY_RSA, SSH_HOSTKEY_RSA, hostkey_rsa_available()};
             hc[1] = {HOSTKEY_ED, SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
@@ -496,7 +501,7 @@ int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap)
     // Accepted client public-key signature algorithms for userauth. Both are always
     // verifiable (independent of which host key we hold); ordered by our preference so a
     // modern client picks the steered-to type. A client uses this to choose a key to offer.
-    const char *siglist = g_prefer_rsa ? "rsa-sha2-256,ssh-ed25519" : "ssh-ed25519,rsa-sha2-256";
+    const char *siglist = s_sshtr.prefer_rsa ? "rsa-sha2-256,ssh-ed25519" : "ssh-ed25519,rsa-sha2-256";
     w_namelist(w, siglist); // value: accepted client-sig algorithms
     if (!w.ok)
         return -1;
@@ -658,7 +663,7 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
     {
         Writer w = {ks, cap, 0, true};
         w_string(w, (const uint8_t *)HOSTKEY_ED, strlen(HOSTKEY_ED));
-        w_string(w, g_ed_pub, 32);
+        w_string(w, s_sshtr.ed_pub, 32);
         if (!w.ok)
             return -1;
         *ks_len = w.len;
@@ -676,7 +681,7 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
     {
         if (sig_cap < 64)
             return -1;
-        ssh_ed25519_sign(sig, H, SSH_SHA256_DIGEST_LEN, g_ed_seed);
+        ssh_ed25519_sign(sig, H, SSH_SHA256_DIGEST_LEN, s_sshtr.ed_seed);
         *sig_len = 64;
         *sig_name = HOSTKEY_ED; // "ssh-ed25519"
         return 0;
