@@ -15,13 +15,13 @@ from each example's `pio ci` size report and aggregated into
 | `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 752.7 KB (58.8%) | 44.3 KB (13.8%)  |
 | `CBOR`                                   | L6-Presentation/13.Cbor                 | 735.6 KB (57.5%) | 64.7 KB (20.2%)  |
 | `COAP`                                   | L7-Application/13.CoAP                  | 738.9 KB (57.7%) | 67.1 KB (21.0%)  |
-| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.4 KB (55.5%) | 47.2 KB (14.8%)  |
+| `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.2 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.3 KB (57.7%) | 64.7 KB (20.2%)  |
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.7 KB (20.2%)  |
-| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 61.5 KB (19.2%)  |
+| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
