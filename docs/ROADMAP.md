@@ -748,15 +748,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ### Intelligent Transportation Systems (ITS)
 
-- [ ] **NTCIP** (L, US ITS) - National Transportation Communications for ITS Protocol.
-      It rides **SNMP** (and STMP), which this library already ships
-      ([snmp](../src/services/snmp/)), so the work is the NTCIP object definitions
-      (MIBs) on top of the existing agent, on a fixed BSS model. Target the common
-      device classes: **1202** (Actuated Traffic Signal Controllers - phase timing,
-      signal states, lane/detector triggers), **1203** (Dynamic Message Signs / variable
-      message boards - pushing live road messages), and **1211** (Signal Control and
-      Prioritization - emergency-vehicle / transit green-light priority requests). One
-      build flag per device class over the shared SNMP core; no heap.
+- [~] **NTCIP** (L, US ITS) _(object OIDs shipped)_ - `DETWS_ENABLE_NTCIP` (`services/ntcip`): the NTCIP
+  object definitions on top of the shipped SNMP agent ([snmp](../src/services/snmp/)) - the **1202**
+  (Actuated Signal Controller: maxPhases, phaseMinimumGreen, live phaseStatusGroupGreens) and **1203**
+  (Dynamic Message Sign: dmsMaxMultiStringLength, dmsMessageMultiString) object roots under
+  `1.3.6.1.4.1.1206.4.2`, plus `detws_ntcip_oid()` to build a full object OID (root + instance index)
+  to register with `snmp_agent_add_*`; host-tested (`native_ntcip`). _Remaining:_ the fuller 1202/1203
+  object set + **1211** (Signal Control and Prioritization). No heap.
 - [ ] **UTMC** (L, UK/EU ITS) - Urban Traffic Management and Control: the modular
       data-sharing framework used in the UK and parts of Europe, designed to share data
       across heterogeneous legacy municipal systems. Implement the UTMC datex/HTTP data

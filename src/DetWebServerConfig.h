@@ -2793,6 +2793,18 @@
 #endif
 
 /**
+ * @brief Opt-in NTCIP transportation-device object identifiers (DETWS_ENABLE_NTCIP).
+ *
+ * When set, services/ntcip provides the NTCIP (National Transportation Communications for ITS Protocol)
+ * object OID definitions for the common device classes - NTCIP 1202 (actuated signal controller: phases,
+ * timing, live states) and 1203 (dynamic message sign) - plus an OID builder, so an app exposes them via
+ * the shipped SNMP agent (services/snmp). Pure OID data. Default off.
+ */
+#ifndef DETWS_ENABLE_NTCIP
+#define DETWS_ENABLE_NTCIP 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
