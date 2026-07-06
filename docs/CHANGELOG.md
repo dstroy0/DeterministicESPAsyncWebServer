@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`5b80427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b8042705c2c21609d1a49824ded0653f30b2747))
+- update CHANGELOG.md [skip ci] ([`2341d00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2341d00a4bf339f300f68cb4fa6f8fd72f752e53))
 - update test report [skip ci] ([`5c21807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c218079e5bc5fe99ee0950e2db3164a5e892f1f))
 - update CHANGELOG.md [skip ci] ([`a40f9ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a40f9adf88fe5d1692c46c772ccdb80c40966714))
 - update test report [skip ci] ([`f3cb9ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3cb9ae73c0ca012d86766c0480db8881d31e106))
@@ -40,6 +42,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- theme gallery + 68 PNG previews + a custom-theme generator command ([`12cb3c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12cb3c508c94a24f68d18e4e1bff61cd6bb518ec))
 - embed diagrams as pre-rendered PNGs so they show in the app + Doxygen ([`d2ad529`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2ad529cb73be60b8153d36e470c7e99ce8561fd))
 - emit a fully-detailed lifecycle diagram into the architecture doc ([`81f4ac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81f4ac5212d727371badee61a5b5c5aa6da25be8))
 - theme-adaptive translucent palette + thicker links ([`952872e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/952872eff2a7c6e2fd409f8d1c5452cfa6e94d87))
