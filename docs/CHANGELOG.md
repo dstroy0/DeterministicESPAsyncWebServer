@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.4.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.4.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`294ea3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/294ea3b7977bd1f847574f3ff727a239ac9ffe45))
+- update CHANGELOG.md [skip ci] ([`4b817f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b817f194e09ed21d62bdec9b79b1109ebbd735e))
+
+### Changes
+
+- Bump version: 5.3.0 → 5.4.0 ([`86ce0a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86ce0a3da4cf0253f06b53a7d29a9e0c49ccf5e8))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8315b42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8315b4202db62287d9f26d109e83c43c897ed0be))
+
+### Features
+
+- software watchdog - deadlock detection + fail-safe safe-state ([`23bee33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23bee33e8f1c1036a6451ddd06607a1d9b5162d2))
+
+</details>
+
 ## [5.3.0] - 2026-07-06
 
 <details>
