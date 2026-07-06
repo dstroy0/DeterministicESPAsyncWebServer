@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.52.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.52.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1bf4f1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bf4f1d69f7b25455cb91424a98c5a140abf38c6))
+
+### Changes
+
+- Bump version: 5.51.0 → 5.52.0 ([`562811f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/562811f27c924b5dbd9e6665104c4806f14b0fec))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1e426c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e426c58997edea51800a8ed7859fb7ef7bad06d))
+- update ESP32 build footprints [skip ci] ([`d105ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d105ec927372f3cf45a701379c90f9f45db1652b))
+
+### Features
+
+- FDC2114/2214 capacitance-to-digital field sensor ([`eb59012`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb59012ba6d6f324d72236ebd53196bab9824293))
+
+</details>
+
 ## [5.51.0] - 2026-07-06
 
 <details>
