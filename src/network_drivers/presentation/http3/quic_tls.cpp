@@ -46,13 +46,14 @@ void snapshot_hash(const SshSha256Ctx *ctx, uint8_t out[32])
 // Append a handshake message to both the outbound flight buffer and the transcript.
 bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written)
 {
-    if (!written)
+    // *plen <= cap is the invariant this append maintains, so cap - *plen never underflows; refuse a
+    // write that would run past the flight buffer (each builder already caps to what it was told, so
+    // this only fires if that contract is ever broken - it keeps flight+*plen in bounds regardless).
+    if (!written || written > cap - *plen)
     {
         fail(qt, TLS_ALERT_INTERNAL_ERROR);
         return false;
     }
-    (void)flight;
-    (void)cap;
     ssh_sha256_update(&qt->transcript, flight + *plen, written);
     *plen += written;
     return true;
