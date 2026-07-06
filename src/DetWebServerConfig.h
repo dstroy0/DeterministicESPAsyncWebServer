@@ -2816,6 +2816,18 @@
 #endif
 
 /**
+ * @brief Opt-in IEC 61850 MMS PDU codec (DETWS_ENABLE_MMS).
+ *
+ * When set, services/mms builds/parses the MMS (ISO 9506) confirmed-request/response Read PDUs
+ * (BER-encoded, the ACSI client/server core of IEC 61850) - detws_mms_read_request builds a Read of a
+ * named Data Object, detws_mms_read_response the data reply. Carried over ISO-on-TCP (TPKT + COTP via
+ * the shipped services/cotp) on port 102. Pure BER codec. Default off.
+ */
+#ifndef DETWS_ENABLE_MMS
+#define DETWS_ENABLE_MMS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

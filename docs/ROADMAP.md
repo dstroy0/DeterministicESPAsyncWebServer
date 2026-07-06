@@ -700,15 +700,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   (`native_iec60870`). _Remaining:_ the fuller ASDU information-object type set (double points,
   measured values, commands) + the k/w sequence flow-control state machine over the shipped TCP
   transport. Fixed BSS point database, no heap.
-- [~] **IEC 61850** (XL, substation automation) _(GOOSE publisher shipped)_ - `DETWS_ENABLE_GOOSE`
-  (`services/goose`): the **GOOSE** raw-L2 multicast event publish for fast trips - the BER-encoded
-  IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev
-  / ndsCom / numDatSetEntries / allData, with minimal-length INTEGERs) wrapped in the 8-octet GOOSE
-  header + Ethernet frame (ethertype 0x88B8); host-tested (`native_goose`). Sits on the shipped raw-L2
-  Ethernet codec; `esp_eth_transmit` + the preempting-task model meet the sub-ms cadence.
-  _Remaining:_ GOOSE subscribe/decode + the fast-retransmit timer, and **MMS** (Manufacturing Message
-  Specification over ISO-on-TCP 102, the ACSI object model) as the host-reachable client/server core;
-  SCL config drives a fixed BSS model.
+- [~] **IEC 61850** (XL, substation automation) _(GOOSE publisher + MMS Read shipped)_ - **GOOSE**:
+  `DETWS_ENABLE_GOOSE` (`services/goose`) - the raw-L2 multicast event publish for fast trips (the
+  BER-encoded IECGoosePdu wrapped in the 8-octet GOOSE header + Ethernet frame, ethertype 0x88B8, on the
+  shipped raw-L2 codec; host-tested `native_goose`). **MMS**: `DETWS_ENABLE_MMS` (`services/mms`) - the
+  ACSI client/server core, the BER confirmed-request/response **Read** PDUs (invokeID + read service + a
+  named Data-Object ObjectName) build + parse, over ISO-on-TCP (TPKT + COTP via the shipped
+  `services/cotp`) on port 102; host-tested (`native_mms`). _Remaining:_ GOOSE subscribe/decode + the
+  fast-retransmit timer, the fuller MMS service set (Write, GetNameList, reports) + the SCL-driven object
+  model. Fixed BSS, no heap.
 - [~] **IEEE C37.118** (M-L, synchrophasors) - _frame codec shipped._
   `DETWS_ENABLE_C37118` (`services\c37118`): a zero-heap builder + CRC-validating parser
   for the PMU synchrophasor wire frame (`SYNC FRAMESIZE IDCODE SOC FRACSEC DATA CHK`,
