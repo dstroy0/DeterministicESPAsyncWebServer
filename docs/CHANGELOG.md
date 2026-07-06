@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.32.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.32.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`185c250`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/185c250bf1dfc70ac75ccbb71a3e5f2287b73011))
+
+### Changes
+
+- Bump version: 5.31.0 → 5.32.0 ([`e7e9ea9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7e9ea9ca5ff0fffece8df5f79ee47a61e386384))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9075f93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9075f930a860565113c3b85563a9eb441e2c56b2))
+
+### Features
+
+- PROFIBUS-DP FDL telegram codec ([`fba209b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fba209b1ba46be47b71572d586c3310e51e83700))
+
+</details>
+
 ## [5.31.0] - 2026-07-06
 
 <details>
