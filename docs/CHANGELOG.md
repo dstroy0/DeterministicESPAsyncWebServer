@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.23.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.23.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7e29b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e29b80bf7accbe005b574a2e07b9d752bcc4b13))
+
+### Changes
+
+- Bump version: 5.22.0 → 5.23.0 ([`17fc249`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17fc24914f3c2af319f2fe2ae421518f6e338ced))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ed45104`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed451043ac99137619676af945a616c3908c6f79))
+
+### Features
+
+- PROFINET DCP (Discovery and Configuration Protocol) frame codec ([`eab4056`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eab4056a9457b6c988f2feb5a9ac136f820080a2))
+
+</details>
+
 ## [5.22.0] - 2026-07-06
 
 <details>
