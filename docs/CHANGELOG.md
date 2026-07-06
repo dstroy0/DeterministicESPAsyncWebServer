@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`5accd88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5accd88aae48744de2d9405298cd5c8c466ccd3c))
+- update CHANGELOG.md [skip ci] ([`a32a881`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a32a881c4a547abb37654d4147faaff934869b14))
 - update test report [skip ci] ([`cf94d4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf94d4a2e89ac1e4edd355a1658f7e3ed533af3d))
 - update CHANGELOG.md [skip ci] ([`b6a076e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6a076e62cce685eacefd95d96a10eabfef7b5f2))
 - update CHANGELOG.md [skip ci] ([`5b3fecf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3fecf987a796b292519450e7c8e182b0bc8559))
@@ -26,6 +28,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- re-send the handshake flight on a duplicate ClientHello (loss signal) ([`a651d81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a651d8177854e1ba4b887c76cdbb25572fd53814))
 - generalize PTO loss recovery to 1-RTT (retransmit the response) ([`336736a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336736a4680d8c6e33287829c5b73a30e20e00f1))
 - PTO loss recovery - retransmit the handshake flight (RFC 9002) ([`d39d183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d39d183563daa1845f3313da100d1a7435e237fb))
 
