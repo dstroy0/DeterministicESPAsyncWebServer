@@ -2,16 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.8.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.8.0 - 2026-07-06</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`2ddf934`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ddf9340adc32fbb240294bef607e1665f65dc3c))
 - update CHANGELOG.md [skip ci] ([`1e8ca7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e8ca7be52dde1ced4f0045c43330d1dcb8122ec))
+
+### Changes
+
+- Bump version: 5.7.0 → 5.8.0 ([`e69a547`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e69a547e4d68626adf06e3c24e935b65a2cb4408))
 
 ### Documentation
 
 - reconcile 4 stale items - CANopen, IO-Link, DeviceNet, IEC 60870 ([`934864f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/934864fd2a2d9563f020d86d077b0af611b28182))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`10dfebe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10dfebe661d5246dba2060ffb5686b8c2a8d1a1d))
+
+### Features
+
+- DShot ESC digital throttle protocol codec ([`b90fdbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b90fdbd28370e3c65aafa3b9d78143144bd6e7a5))
+
+</details>
 
 ## [5.7.0] - 2026-07-06
 
