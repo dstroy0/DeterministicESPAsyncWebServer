@@ -1494,6 +1494,12 @@
       "src": ["+<services/ocit/ocit.cpp>"],
       "tests": ["test_ocit"]
     },
+    "native_atc": {
+      "desc": "ATC field-I/O interop snapshot (services/atc): serialize this device's field-I/O map\nas {\"inputs\":[...],\"outputs\":[...]} JSON for an ATC engine over HTTP, plus the output setter and\nvalue getter. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_ATC=1"],
+      "src": ["+<services/atc/atc.cpp>"],
+      "tests": ["test_atc"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1572,6 +1578,7 @@
         "-DDETWS_ENABLE_WAVE=1",
         "-DDETWS_ENABLE_UTMC=1",
         "-DDETWS_ENABLE_OCIT=1",
+        "-DDETWS_ENABLE_ATC=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1651,6 +1658,7 @@
         "+<services/wave/wave.cpp>",
         "+<services/utmc/utmc.cpp>",
         "+<services/ocit/ocit.cpp>",
+        "+<services/atc/atc.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

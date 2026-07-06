@@ -812,12 +812,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   detector racks, with the common frame-type constants; host-tested (`native_nema_ts2`, CRC check
   value 0x906E). _Remaining:_ the per-frame-type cabinet object model + the synchronous serial PHY
   / BIU timing (hardware-gated).
-- [ ] **ATC** (S, platform note) - the Advanced Traffic Controller spec moves cabinets
-      from closed microcontrollers to a standard Linux engine API (the ITS Cabinet /
-      ATC API for field-device I/O) for local video analytics + sensor fusion. This is
-      a host-platform specification more than a wire protocol; the relevant slice for
-      this library is interop - exposing NTCIP / NEMA-TS2 data to an ATC engine over the
-      existing HTTP/SNMP surface rather than implementing the Linux ATC stack itself.
+- [~] **ATC** (S, platform note) _(interop shipped)_ - the Advanced Traffic Controller
+  spec moves cabinets from closed microcontrollers to a standard Linux engine API (the
+  ITS Cabinet / ATC API for field-device I/O) for local video analytics + sensor fusion.
+  This is a host-platform specification more than a wire protocol; the relevant slice for
+  this library is interop - exposing NTCIP / NEMA-TS2 data to an ATC engine over the
+  existing HTTP/SNMP surface rather than implementing the Linux ATC stack itself.
+  `DETWS_ENABLE_ATC` (`services/atc`): the field-I/O map serialized as
+  `{"inputs":[...],"outputs":[...]}` JSON for an ATC engine over HTTP, plus the output
+  setter/getter. _Remaining:_ the Linux ATC engine + video analytics stack (out of scope).
 
 ### IoT device management
 

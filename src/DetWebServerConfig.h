@@ -2960,6 +2960,19 @@
 #endif
 
 /**
+ * @brief Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot (DETWS_ENABLE_ATC).
+ *
+ * When set, services/atc exposes this device's field-I/O (a fixed table of named input/output points it
+ * already gathers via the NTCIP / NEMA-TS2 / gpio services) to an ATC Linux engine over the existing
+ * HTTP surface: detws_atc_snapshot_json serializes the FIO map as JSON, and detws_atc_set_output drives
+ * an output point from an ATC command. Pure interop codec (ATC is a platform spec, not a wire protocol).
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_ATC
+#define DETWS_ENABLE_ATC 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
