@@ -758,11 +758,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       solar inverter / meter / battery is interoperable. Marker + header format verified
       against the SunSpec spec; pure, host-tested. Pairs with the shipped Modbus
       ([modbus](../src/services/modbus/)).
-- [ ] **ICCP / TASE.2** (XL, IEC 60870-6) - the Inter-Control-Center Communications
-      Protocol: utility control-center-to-control-center data exchange (data sets,
-      transfer sets, devices) carried over **MMS** (ISO-on-TCP 102), so it builds on the
-      IEC 61850 MMS stack above. Heavy (the full MMS/ACSI object model + bilateral
-      tables); sequence after IEC 61850. Fixed BSS object model, no heap.
+- [~] **ICCP / TASE.2** (XL, IEC 60870-6) _(Data_Value codec shipped)_ - `DETWS_ENABLE_ICCP`
+  (`services/iccp`): the TASE.2 indication-point Data_Value BER structures - `detws_iccp_state_q`
+  (StateQ: a discrete state + quality flags) and `detws_iccp_real_q` (RealQ: a scaled INTEGER value +
+  quality), each with an optional 4-octet TimeStamp - the telemetry a control center transfers as MMS
+  Reads (on the shipped `services/mms` + `services/cotp`, ISO-on-TCP 102); host-tested (`native_iccp`).
+  _Remaining:_ the data-set / transfer-set / bilateral-table object model on top of the MMS ACSI core.
+  Fixed BSS object model, no heap.
 
 ### Intelligent Transportation Systems (ITS)
 

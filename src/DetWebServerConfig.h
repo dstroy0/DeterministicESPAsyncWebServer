@@ -2912,6 +2912,18 @@
 #endif
 
 /**
+ * @brief Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec (DETWS_ENABLE_ICCP).
+ *
+ * When set, services/iccp builds the TASE.2 Data_Value BER structures - StateQ (a discrete state +
+ * quality) and RealQ (a scaled real + quality), each with an optional timestamp - the indication points
+ * a control center transfers as MMS Reads (on the shipped services/mms + services/cotp). Pure BER codec.
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_ICCP
+#define DETWS_ENABLE_ICCP 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

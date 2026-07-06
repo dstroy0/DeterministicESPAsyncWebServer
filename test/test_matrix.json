@@ -1470,6 +1470,12 @@
       "src": ["+<services/interbus/interbus.cpp>"],
       "tests": ["test_interbus"]
     },
+    "native_iccp": {
+      "desc": "ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality)\nand RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. Pure\nhost tests with spec-derived vectors.",
+      "flags": ["-DDETWS_ENABLE_ICCP=1"],
+      "src": ["+<services/iccp/iccp.cpp>"],
+      "tests": ["test_iccp"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1544,6 +1550,7 @@
         "-DDETWS_ENABLE_LONWORKS=1",
         "-DDETWS_ENABLE_MBPLUS=1",
         "-DDETWS_ENABLE_INTERBUS=1",
+        "-DDETWS_ENABLE_ICCP=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1619,6 +1626,7 @@
         "+<services/lonworks/lonworks.cpp>",
         "+<services/mbplus/mbplus.cpp>",
         "+<services/interbus/interbus.cpp>",
+        "+<services/iccp/iccp.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
