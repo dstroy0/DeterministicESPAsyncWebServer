@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.18.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.18.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a68c6c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a68c6c69912b345ed4431b3bf88a326feb7e3474))
+
+### Changes
+
+- Bump version: 5.17.0 → 5.18.0 ([`f21685f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f21685f2ceca9ac2f92469e2d158764f1e6bc47b))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7e083fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e083fc0ffe43bb45e7902ae1e2e8962716a65c6))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`06547bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06547bf181f25160fa11d099dc0a839c40a4a185))
+
+### Features
+
+- SAE J2735 V2X ASN.1 UPER codec + BSMcore ([`3d869d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d869d96dcbd231f8acc8f9ab666be2e2a98fe4a))
+
+</details>
+
 ## [5.17.0] - 2026-07-06
 
 <details>
