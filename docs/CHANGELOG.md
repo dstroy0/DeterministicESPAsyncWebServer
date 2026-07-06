@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`683b707`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/683b707552ea17b8fdeffcf726e03bb707a1d972))
 - update test report [skip ci] ([`f1dc56c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1dc56c3a8648910fb76608c935019dde123a7c8))
 - update CHANGELOG.md [skip ci] ([`d772206`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d772206007f06d7dda7ee2f8cadbb5dbf8b1be65))
 - update test report [skip ci] ([`ef7a964`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef7a964fe5241f2f714667e7be3c756c0864d4b8))
@@ -53,6 +54,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own state in one FailsafeCtx (owner-refactor sweep) ([`0d980b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d980b22723ee792a04c9defd29df1af4e2cfe92))
 - own CoAP state in one feature-gated CoapCtx (pattern reference) ([`6092e6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6092e6bede068068225f74ca850572b574b19976))
 - unnest ternaries into if/else (cpp:S3358) ([`e826411`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e826411c45275728b98dfc2395cd7b094ba63169))
 
