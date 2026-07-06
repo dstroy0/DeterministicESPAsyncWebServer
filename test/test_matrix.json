@@ -1344,6 +1344,12 @@
       "src": ["+<services/dds/dds.cpp>"],
       "tests": ["test_dds"]
     },
+    "native_xmpp": {
+      "desc": "XMPP stanza codec (services/xmpp, RFC 6120): XML-escaped stream/message/presence/iq\nbuilders and the stanza-name + attribute readers. Pure host tests with exact-output vectors.",
+      "flags": ["-DDETWS_ENABLE_XMPP=1"],
+      "src": ["+<services/xmpp/xmpp.cpp>"],
+      "tests": ["test_xmpp"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1397,6 +1403,7 @@
         "-DDETWS_ENABLE_HART=1",
         "-DDETWS_ENABLE_NTS=1",
         "-DDETWS_ENABLE_DDS=1",
+        "-DDETWS_ENABLE_XMPP=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1451,6 +1458,7 @@
         "+<services/hart/hart.cpp>",
         "+<services/nts/nts.cpp>",
         "+<services/dds/dds.cpp>",
+        "+<services/xmpp/xmpp.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

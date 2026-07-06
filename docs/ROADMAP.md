@@ -908,11 +908,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   BBMD foreign-device registration; then **BACnet/SC** (Secure Connect) reuses the shipped
   WebSocket + static-pool TLS for its BVLC-SC framing + the same APDU/object model. Fixed
   BSS object database, no heap.
-- [ ] **XMPP (IoT profile)** (L, XSF) - XMPP with the IoT extensions (XEP-0030 service
-      discovery, XEP-0060 pub/sub, XEP-0323 sensor data, XEP-0325 control). The XML
-      stream protocol over TCP (with the SASL/TLS handshake) is the heavy part; scope a
-      bounded streaming XML parser + the core IoT XEPs on a fixed BSS roster/node model,
-      no heap. TLS reuses the shipped client TLS.
+- [~] **XMPP (IoT profile)** (L, XSF) _(stanza codec shipped)_ - `DETWS_ENABLE_XMPP` (`services/xmpp`):
+  the RFC 6120 stanza codec - correctly XML-escaped `<stream:stream>` / `<message>` / `<presence>` /
+  `<iq>` builders and the stanza-name + attribute readers; host-tested against exact-output vectors
+  (`native_xmpp`). _Remaining:_ the streaming XML parser + the SASL/TLS handshake (TLS reuses the
+  shipped client TLS) and the IoT XEPs (0030 disco, 0060 pub/sub, 0323 sensor data, 0325 control) on
+  a fixed BSS roster/node model.
 
 ### Databases & time-series
 

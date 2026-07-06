@@ -2663,6 +2663,18 @@
 #endif
 
 /**
+ * @brief Opt-in XMPP (RFC 6120) stanza codec (DETWS_ENABLE_XMPP).
+ *
+ * When set, services/xmpp builds correctly XML-escaped `<stream:stream>` / `<message>` / `<presence>` /
+ * `<iq>` stanzas into a caller buffer and reads the stanza element name + an attribute value out of a
+ * received stanza, so a device is an IoT XMPP client. Pure text framing (TLS/SASL ride the client TLS
+ * path; the IoT XEPs layer inside `<iq>`). Default off.
+ */
+#ifndef DETWS_ENABLE_XMPP
+#define DETWS_ENABLE_XMPP 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
