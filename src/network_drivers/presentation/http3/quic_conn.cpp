@@ -69,7 +69,10 @@ void quic_conn_init(QuicConn *qc, const QuicTlsConfig *cfg, const uint8_t *odcid
     quic_derive_initial_secrets(odcid, odcid_len, &qc->initial);
 
     for (int i = 0; i < 3; i++)
+    {
         qc->space[i].largest_acked = -1;
+        qc->space[i].last_ae_pn = -1;
+    }
     for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
         qc->streams[i].id = UINT64_MAX;
 
@@ -319,10 +322,13 @@ bool quic_conn_recv(QuicConn *qc, const uint8_t *datagram, size_t len)
 namespace
 {
 // Build the frame payload for one encryption level into buf; returns its length (0 = nothing to send).
-size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap)
+// @p ae is set true if the payload carries an ack-eliciting frame (CRYPTO / STREAM / HANDSHAKE_DONE),
+// which arms loss recovery for this space.
+size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
 {
     QuicPnSpace *s = &qc->space[level];
     size_t p = 0;
+    *ae = false;
 
     // ACK first, if we owe one.
     if (s->ack_eliciting_rx && s->have_rx)
@@ -353,6 +359,7 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap)
                 {
                     p += n;
                     s->crypto_tx_off += take;
+                    *ae = true;
                 }
             }
         }
@@ -369,6 +376,7 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap)
                 p += n;
                 qc->handshake_done_queued = false;
                 qc->handshake_done_sent = true;
+                *ae = true;
             }
         }
         for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
@@ -392,6 +400,7 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap)
                 st->tx_sent += take;
                 if (fin)
                     st->tx_fin_sent = true;
+                *ae = true;
             }
         }
     }
@@ -415,7 +424,8 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
         return 0;
 
     uint8_t frames[DETWS_QUIC_MAX_DATAGRAM];
-    size_t frame_len = build_frames(qc, level, frames, sizeof(frames));
+    bool ae = false;
+    size_t frame_len = build_frames(qc, level, frames, sizeof(frames), &ae);
     if (frame_len == 0)
         return 0;
 
@@ -481,6 +491,8 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     size_t total = quic_packet_protect(out, cap, pn_offset, pn_len, pn, frame_len, keys, is_long);
     if (!total)
         return 0;
+    if (ae)
+        s->last_ae_pn = (int64_t)pn; // this space now has ack-eliciting data outstanding
     s->next_pn++;
     return total;
 }
@@ -520,20 +532,27 @@ uint32_t pto_period(uint8_t count)
         p <<= 1;
     return p;
 }
+// A space has unacknowledged ack-eliciting data outstanding: it sent an ack-eliciting packet the peer
+// has not yet acknowledged, and its keys are still live.
+bool space_outstanding(const QuicPnSpace *s)
+{
+    return !s->discarded && s->last_ae_pn >= 0 && s->largest_acked < s->last_ae_pn;
+}
 } // namespace
 
 void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms)
 {
     if (qc->closed)
         return;
-    // The one loss-recovery target for this minimal server is its handshake CRYPTO flight: it is sent
-    // once, and a lost datagram is not re-triggered by the peer's duplicate ClientHello (that CRYPTO
-    // is already delivered), so the server must retransmit on a Probe Timeout. Outstanding = the
-    // flight was built (WAIT_FINISHED) and the Handshake space is not yet acknowledged.
-    bool outstanding = qc->tls.state == QTLS_WAIT_FINISHED && qc->space[QUIC_ENC_HANDSHAKE].largest_acked < 0;
+    // Loss recovery (RFC 9002): retransmission is driven by a Probe Timeout, because a lost server
+    // packet is not re-triggered by the peer (a duplicate ClientHello re-delivers no CRYPTO; a lost
+    // 1-RTT response is never re-requested). Anything the peer has not acknowledged in a live space -
+    // the handshake CRYPTO flight, HANDSHAKE_DONE, or the 1-RTT response - is outstanding.
+    bool outstanding = space_outstanding(&qc->space[QUIC_ENC_INITIAL]) ||
+                       space_outstanding(&qc->space[QUIC_ENC_HANDSHAKE]) || space_outstanding(&qc->space[QUIC_ENC_APP]);
     if (!outstanding)
     {
-        qc->pto_armed = false; // acknowledged or handshake complete: nothing to retransmit
+        qc->pto_armed = false; // everything acknowledged: nothing to retransmit
         qc->pto_count = 0;
         return;
     }
@@ -546,10 +565,30 @@ void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms)
     if ((int32_t)(now_ms - qc->pto_deadline_ms) < 0)
         return; // not yet (wrap-safe compare)
 
-    // PTO fired: rewind the CRYPTO send offset so the next quic_conn_send() re-sends the flight (a
-    // discarded Initial space is skipped when its packet is built), then back the timer off.
-    qc->space[QUIC_ENC_INITIAL].crypto_tx_off = 0;
-    qc->space[QUIC_ENC_HANDSHAKE].crypto_tx_off = 0;
+    // PTO fired: mark the unacknowledged data in each outstanding space for retransmission so the next
+    // quic_conn_send() re-sends it, then back the timer off.
+    for (int level = QUIC_ENC_INITIAL; level <= QUIC_ENC_HANDSHAKE; level++)
+        if (space_outstanding(&qc->space[level]))
+            qc->space[level].crypto_tx_off = 0; // re-send the CRYPTO flight for this level
+    if (space_outstanding(&qc->space[QUIC_ENC_APP]))
+    {
+        // Re-send 1-RTT data. The peer dedups STREAM data by offset, so rewinding each stream to 0
+        // recovers a lost response and is a no-op for data already received.
+        if (qc->handshake_done_sent)
+        {
+            qc->handshake_done_queued = true;
+            qc->handshake_done_sent = false;
+        }
+        for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+        {
+            QuicStream *st = &qc->streams[i];
+            if (st->id == UINT64_MAX)
+                continue;
+            st->tx_off = 0;
+            st->tx_sent = 0;
+            st->tx_fin_sent = false;
+        }
+    }
     if (qc->pto_count < 8)
         qc->pto_count++;
     qc->pto_deadline_ms = now_ms + pto_period(qc->pto_count);

@@ -91,6 +91,7 @@ struct QuicPnSpace
 {
     uint64_t next_pn;       ///< next packet number to send in this space
     int64_t largest_acked;  ///< largest of our PNs the peer has acknowledged (-1 = none)
+    int64_t last_ae_pn;     ///< PN of the last ack-eliciting packet we sent here (-1 = none); loss recovery
     uint64_t largest_rx;    ///< largest PN received in this space
     bool have_rx;           ///< at least one packet received
     bool ack_eliciting_rx;  ///< an ack-eliciting packet is unacknowledged (we owe an ACK)

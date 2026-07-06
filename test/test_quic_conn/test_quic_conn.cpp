@@ -434,6 +434,46 @@ void test_full_handshake_and_stream()
         break;
     }
     TEST_ASSERT_TRUE(got_resp);
+
+    // --- Loss recovery: the client never ACKed the 1-RTT response, so a PTO retransmits it ---
+    quic_conn_on_timeout(&qc, 5000);                         // arm (APP space has unacknowledged stream data)
+    quic_conn_on_timeout(&qc, 5000 + DETWS_QUIC_PTO_MS + 1); // fire -> rewind the response stream
+    sl = quic_conn_send(&qc, sdg, sizeof(sdg));
+    TEST_ASSERT_TRUE(sl > 0);
+    bool resent = false;
+    off = 0;
+    while (off < sl)
+    {
+        if (quic_is_long_header(sdg[off]))
+        {
+            size_t w = 0;
+            uint8_t tp2 = 0;
+            open_long(sdg + off, sl - off, &hs_server_keys, plain, &w, &tp2);
+            off += w;
+            continue;
+        }
+        size_t p2 = open_short(sdg + off, sl - off, sizeof(SERVER_SCID), &ap_server_keys, plain);
+        TEST_ASSERT_NOT_EQUAL(SIZE_MAX, p2);
+        size_t fo = 0;
+        while (fo < p2)
+        {
+            if (plain[fo] == QUIC_FT_PADDING)
+            {
+                fo++;
+                continue;
+            }
+            QuicFrame f;
+            size_t n = quic_frame_parse(plain + fo, p2 - fo, &f);
+            if (!n)
+                break;
+            fo += n;
+            if (f.type >= QUIC_FT_STREAM && f.type <= QUIC_FT_STREAM + 7 && f.stream.id == 0 && f.stream.length == 2 &&
+                memcmp(f.stream.data, "OK", 2) == 0)
+                resent = true;
+        }
+        break;
+    }
+    TEST_ASSERT_TRUE(resent); // the response was retransmitted
 }
 
 // A lost server flight is retransmitted on the Probe Timeout, and stops once acknowledged (RFC 9002).
@@ -491,8 +531,10 @@ void test_pto_retransmits_flight()
     TEST_ASSERT_TRUE(sh_len > 0);
     TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted
 
-    // Once the Handshake flight is acknowledged, the PTO disarms and does not retransmit again.
-    qc.space[QUIC_ENC_HANDSHAKE].largest_acked = 0;
+    // Once the flight is acknowledged (Initial discarded as the client moves on; Handshake ACKed up
+    // to the last packet we sent), the PTO disarms and does not retransmit again.
+    qc.space[QUIC_ENC_INITIAL].discarded = true;
+    qc.space[QUIC_ENC_HANDSHAKE].largest_acked = qc.space[QUIC_ENC_HANDSHAKE].last_ae_pn;
     quic_conn_on_timeout(&qc, 1000 + 10 * DETWS_QUIC_PTO_MS);
     TEST_ASSERT_FALSE(qc.pto_armed);
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg2, sizeof(sdg2)));
