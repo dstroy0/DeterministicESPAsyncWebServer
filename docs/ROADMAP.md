@@ -611,11 +611,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   shipped services/rawl2); host-tested (`native_powerlink`). _Remaining:_ the MN slot-schedule state
   machine + async SDO + object dictionary, and the isochronous timing (the preempting-task model).
   Fixed BSS, no heap.
-- [ ] **SERCOS III** (XL, motion bus) - the real-time motion/drive bus over Ethernet:
-      the IDN parameter model + cyclic MDT/AT telegrams. Raw L2 + the preempting-task
-      cyclic timing (single-feature build) are reachable (see Low-level networking), so
-      the hard-real-time slot schedule is in scope alongside the IDN service channel.
-      Fixed BSS, no heap.
+- [~] **SERCOS III** (XL, motion bus) _(telegram + IDN codec shipped)_ - `DETWS_ENABLE_SERCOS`
+  (`services/sercos`): the cyclic **MDT/AT** telegram codec - `detws_sercos_build` / `_parse` for
+  `[type][phase][cycle][cyclic data]` (the master's setpoint telegram + the drive's actual-value
+  telegram) over raw L2 (ethertype 0x88CD, on the shipped services/rawl2) - and the 16-bit **IDN**
+  encode/decode (S/P bit + parameter-set + data-block, the "S-0-0100" drive-parameter addressing);
+  host-tested (`native_sercos`). _Remaining:_ the hard-real-time slot schedule + the IDN
+  service-channel transfer state machine, and the isochronous timing (preempting-task model). Fixed
+  BSS, no heap.
 - [~] **DeviceNet** (L, CIP over CAN) _(link-adaptation codec shipped)_ - `DETWS_ENABLE_DEVICENET`
   (`services/devicenet`): the CAN link adaptation for CIP-over-CAN - the 4-group 11-bit CAN id, the
   explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler

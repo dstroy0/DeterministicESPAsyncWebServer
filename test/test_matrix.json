@@ -1440,6 +1440,12 @@
       "src": ["+<services/powerlink/powerlink.cpp>"],
       "tests": ["test_powerlink"]
     },
+    "native_sercos": {
+      "desc": "SERCOS III motion-bus codec (services/sercos): the MDT/AT telegram (type + phase + cycle\n+ data) build + parse and the 16-bit IDN encode/decode (S/P + set + block). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SERCOS=1"],
+      "src": ["+<services/sercos/sercos.cpp>"],
+      "tests": ["test_sercos"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1509,6 +1515,7 @@
         "-DDETWS_ENABLE_MMS=1",
         "-DDETWS_ENABLE_CCLINK=1",
         "-DDETWS_ENABLE_POWERLINK=1",
+        "-DDETWS_ENABLE_SERCOS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1579,6 +1586,7 @@
         "+<services/mms/mms.cpp>",
         "+<services/cclink/cclink.cpp>",
         "+<services/powerlink/powerlink.cpp>",
+        "+<services/sercos/sercos.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

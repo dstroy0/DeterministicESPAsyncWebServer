@@ -2852,6 +2852,18 @@
 #endif
 
 /**
+ * @brief Opt-in SERCOS III motion-bus telegram codec (DETWS_ENABLE_SERCOS).
+ *
+ * When set, services/sercos builds/parses the SERCOS III MDT/AT telegrams (type + phase + cycle + cyclic
+ * device data) the real-time drive/motion bus exchanges over raw L2 (ethertype 0x88CD, on the shipped
+ * services/rawl2), plus the IDN (IDentification Number) encode/decode for drive-parameter addressing.
+ * Pure codec (the isochronous timing + ring topology are hardware-gated). Default off.
+ */
+#ifndef DETWS_ENABLE_SERCOS
+#define DETWS_ENABLE_SERCOS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
