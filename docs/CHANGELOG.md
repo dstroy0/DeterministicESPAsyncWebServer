@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`2b91e54`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b91e545a8befb874d99ca206847b3c4fd0ea62f))
 - bump actions/upload-artifact from 4 to 7 ([`08b79d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08b79d9a016bec41180b8ee647dc7c0d79ba509b))
 - drop ccache wrap - incompatible with 3.x dynconfig toolchain ([`0727844`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/072784457837ae4a9fbb1d0a706a2d006a3239b3))
 - update test report [skip ci] ([`2091108`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2091108404f1d150d07e82bd99672b8e191fb5d3))
@@ -20,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- declutter Doxygen nav tree + drop sidebar highlight bar ([`eb2bd81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb2bd810b2669b30eb7b0a7fc1e847c76b2ed5af))
 - backfill 54 feature entries missing from the grid + add coverage guard ([`48d3be7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48d3be78935ef6a569dfd1a6be98943c553a10c4))
 - close the multi-MCU portability item as a won't-do (per user request) ([`bcef60e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcef60e0ec60ea08fc9854c37b1796ba604238df))
 - fix broken SonarCloud badge (sonarcloud.yml -> test-report.yml) ([`450c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450c617280017a813c1519d0945673061b09679b))
