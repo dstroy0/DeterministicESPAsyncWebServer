@@ -1,6 +1,9 @@
 .pio
 .vscode/
 docs/html
+# Sphinx site build artifacts (generated from docs/Doxyfile XML + docs/sphinx sources)
+docs/sphinx/_build/
+docs/sphinx/xml/
 # Python (asset generator tooling)
 __pycache__/
 *.pyc

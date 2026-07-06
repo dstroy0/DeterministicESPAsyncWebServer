@@ -27,7 +27,10 @@ OUTPUT_DIRECTORY       = docs/html
 CREATE_SUBDIRS         = NO
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
-GENERATE_XML           = NO
+# XML is consumed by Breathe to render the API reference into the Sphinx site (docs/sphinx).
+GENERATE_XML           = YES
+XML_OUTPUT             = ../sphinx/xml
+XML_PROGRAMLISTING     = NO
 GENERATE_MAN           = NO
 
 #---------------------------------------------------------------------------

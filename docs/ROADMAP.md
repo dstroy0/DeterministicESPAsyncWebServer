@@ -1153,13 +1153,18 @@ BSS, no heap, behind a build flag.
 The docs today are Doxygen + a custom CSS theme. The goal is to add **Sphinx** on top and
 then apply **"squirty"** styling over it for a polished, modern docs site.
 
-- [ ] **Sphinx + Breathe bridge** (L) - stand up a Sphinx project that ingests the existing
-      Doxygen output via **Breathe** (Doxygen emits XML; Breathe renders it into Sphinx), so
-      the hand-written guides (`docs/learn`, architecture, feature reference) and the
-      API reference live in one site. Keep the Doxygen XML generation in the build; Sphinx
-      consumes it. RPi build host already has `doxygen` + `graphviz` + `python3-sphinx` deps
-      (install `sphinx` + `breathe` into a venv when starting).
-- [ ] **Apply "squirty" over the Sphinx theme** (M) - layer the "squirty" styling the user
-      asked for on top of the Sphinx output (confirm the exact tool/theme meant by "squirty"
-      at implementation time - most likely a modern Sphinx theme, e.g. Furo, plus the
-      project's brand CSS carried over from the current Doxygen theme).
+- [x] **Sphinx + Breathe bridge** (L) _(shipped)_ - the Sphinx project lives in `docs/sphinx`: `docs/Doxyfile`
+      now emits XML (`GENERATE_XML=YES` -> `docs/sphinx/xml`), **Breathe** renders it into the API reference
+      (the `DetWebServer` public surface), and **MyST** pulls the hand-written Markdown guides
+      (`ARCHITECTURE.md`, the `docs/learn` primers) into the same site via `include` stubs (one source of
+      truth). Built + verified on the RPi (doxygen + a `~/.sphinxdocs` venv from `docs/sphinx/requirements.txt`,
+      then `sphinx-build`), and kept buildable by the **Docs (Sphinx)** CI workflow
+      (`.github/workflows/docs-sphinx.yml`, build + artifact). The full per-symbol `doxygenindex` is not
+      inlined (the Sphinx C++ domain does not parse every macro-heavy declaration); that complete reference
+      stays in the Doxygen HTML.
+- [x] **Apply "squirty" over the Sphinx theme** (M) _(shipped)_ - "squirty" is the project brand: the
+      **Squirty the Injection Squid** mascot (`docs/squirty.svg`) plus the **Retro TTY Green Screen** palette
+      (phosphor `#2bb35a` on a near-black `#080c08` CRT, from `docs/custom.css`). Layered over **Furo** via
+      `docs/sphinx/conf.py` (light/dark brand css-variables) + `docs/sphinx/_static/squirty.css` (the mascot
+      logo, phosphor glow, a faint scanline wash, monospace headings, terminal-styled Breathe signatures),
+      light/dark aware.
