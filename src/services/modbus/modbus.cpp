@@ -16,11 +16,18 @@
 // Data model (all BSS - no heap)
 // ---------------------------------------------------------------------------
 
-static uint8_t g_coils[(DETWS_MODBUS_COILS + 7) / 8];
-static uint8_t g_discrete[(DETWS_MODBUS_DISCRETE_INPUTS + 7) / 8];
-static uint16_t g_holding[DETWS_MODBUS_HOLDING_REGS];
-static uint16_t g_input[DETWS_MODBUS_INPUT_REGS];
-static ModbusWriteCb g_write_cb = nullptr;
+// All Modbus data-model state, owned by one instance (internal linkage): the coil / discrete
+// bitfields, the holding / input registers, and the write callback, grouped so it is one
+// named owner, unreachable from any other translation unit.
+struct ModbusCtx
+{
+    uint8_t coils[(DETWS_MODBUS_COILS + 7) / 8];
+    uint8_t discrete[(DETWS_MODBUS_DISCRETE_INPUTS + 7) / 8];
+    uint16_t holding[DETWS_MODBUS_HOLDING_REGS];
+    uint16_t input[DETWS_MODBUS_INPUT_REGS];
+    ModbusWriteCb write_cb = nullptr;
+};
+static ModbusCtx s_modbus;
 
 static bool bit_get(const uint8_t *a, uint16_t i)
 {
@@ -36,53 +43,53 @@ static void bit_set(uint8_t *a, uint16_t i, bool v)
 
 void modbus_server_init()
 {
-    memset(g_coils, 0, sizeof(g_coils));
-    memset(g_discrete, 0, sizeof(g_discrete));
-    memset(g_holding, 0, sizeof(g_holding));
-    memset(g_input, 0, sizeof(g_input));
-    g_write_cb = nullptr;
+    memset(s_modbus.coils, 0, sizeof(s_modbus.coils));
+    memset(s_modbus.discrete, 0, sizeof(s_modbus.discrete));
+    memset(s_modbus.holding, 0, sizeof(s_modbus.holding));
+    memset(s_modbus.input, 0, sizeof(s_modbus.input));
+    s_modbus.write_cb = nullptr;
 }
 
 void modbus_on_write(ModbusWriteCb cb)
 {
-    g_write_cb = cb;
+    s_modbus.write_cb = cb;
 }
 
 bool modbus_get_coil(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_COILS) ? bit_get(g_coils, addr) : false;
+    return (addr < DETWS_MODBUS_COILS) ? bit_get(s_modbus.coils, addr) : false;
 }
 void modbus_set_coil(uint16_t addr, bool on)
 {
     if (addr < DETWS_MODBUS_COILS)
-        bit_set(g_coils, addr, on);
+        bit_set(s_modbus.coils, addr, on);
 }
 bool modbus_get_discrete_input(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_DISCRETE_INPUTS) ? bit_get(g_discrete, addr) : false;
+    return (addr < DETWS_MODBUS_DISCRETE_INPUTS) ? bit_get(s_modbus.discrete, addr) : false;
 }
 void modbus_set_discrete_input(uint16_t addr, bool on)
 {
     if (addr < DETWS_MODBUS_DISCRETE_INPUTS)
-        bit_set(g_discrete, addr, on);
+        bit_set(s_modbus.discrete, addr, on);
 }
 uint16_t modbus_get_holding_reg(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_HOLDING_REGS) ? g_holding[addr] : 0;
+    return (addr < DETWS_MODBUS_HOLDING_REGS) ? s_modbus.holding[addr] : 0;
 }
 void modbus_set_holding_reg(uint16_t addr, uint16_t value)
 {
     if (addr < DETWS_MODBUS_HOLDING_REGS)
-        g_holding[addr] = value;
+        s_modbus.holding[addr] = value;
 }
 uint16_t modbus_get_input_reg(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_INPUT_REGS) ? g_input[addr] : 0;
+    return (addr < DETWS_MODBUS_INPUT_REGS) ? s_modbus.input[addr] : 0;
 }
 void modbus_set_input_reg(uint16_t addr, uint16_t value)
 {
     if (addr < DETWS_MODBUS_INPUT_REGS)
-        g_input[addr] = value;
+        s_modbus.input[addr] = value;
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +133,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
         uint16_t limit = (fc == MODBUS_FC_READ_COILS) ? DETWS_MODBUS_COILS : DETWS_MODBUS_DISCRETE_INPUTS;
-        const uint8_t *src = (fc == MODBUS_FC_READ_COILS) ? g_coils : g_discrete;
+        const uint8_t *src = (fc == MODBUS_FC_READ_COILS) ? s_modbus.coils : s_modbus.discrete;
         if (qty < 1 || qty > 2000)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > limit)
@@ -150,7 +157,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
         uint16_t limit = (fc == MODBUS_FC_READ_HOLDING_REGS) ? DETWS_MODBUS_HOLDING_REGS : DETWS_MODBUS_INPUT_REGS;
-        const uint16_t *src = (fc == MODBUS_FC_READ_HOLDING_REGS) ? g_holding : g_input;
+        const uint16_t *src = (fc == MODBUS_FC_READ_HOLDING_REGS) ? s_modbus.holding : s_modbus.input;
         if (qty < 1 || qty > 125)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > limit)
@@ -174,9 +181,9 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if (addr >= DETWS_MODBUS_COILS)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
-        bit_set(g_coils, addr, value == 0xFF00);
-        if (g_write_cb)
-            g_write_cb(fc, addr, 1);
+        bit_set(s_modbus.coils, addr, value == 0xFF00);
+        if (s_modbus.write_cb)
+            s_modbus.write_cb(fc, addr, 1);
         if (out_cap < 5)
             return 0;
         memcpy(out, pdu, 5); // echo request
@@ -190,9 +197,9 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         uint16_t addr = rd16(pdu + 1), value = rd16(pdu + 3);
         if (addr >= DETWS_MODBUS_HOLDING_REGS)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
-        g_holding[addr] = value;
-        if (g_write_cb)
-            g_write_cb(fc, addr, 1);
+        s_modbus.holding[addr] = value;
+        if (s_modbus.write_cb)
+            s_modbus.write_cb(fc, addr, 1);
         if (out_cap < 5)
             return 0;
         memcpy(out, pdu, 5);
@@ -212,10 +219,10 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         for (uint16_t i = 0; i < qty; i++)
         {
             bool v = (pdu[6 + (i >> 3)] >> (i & 7)) & 1u;
-            bit_set(g_coils, (uint16_t)(start + i), v);
+            bit_set(s_modbus.coils, (uint16_t)(start + i), v);
         }
-        if (g_write_cb)
-            g_write_cb(fc, start, qty);
+        if (s_modbus.write_cb)
+            s_modbus.write_cb(fc, start, qty);
         if (out_cap < 5)
             return 0;
         out[0] = fc;
@@ -235,9 +242,9 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         if ((uint32_t)start + qty > DETWS_MODBUS_HOLDING_REGS)
             return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         for (uint16_t i = 0; i < qty; i++)
-            g_holding[start + i] = rd16(pdu + 6 + i * 2);
-        if (g_write_cb)
-            g_write_cb(fc, start, qty);
+            s_modbus.holding[start + i] = rd16(pdu + 6 + i * 2);
+        if (s_modbus.write_cb)
+            s_modbus.write_cb(fc, start, qty);
         if (out_cap < 5)
             return 0;
         out[0] = fc;
