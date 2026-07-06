@@ -2,6 +2,24 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c592f18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c592f182e0c451c9101a3a735835f0b4df4fffdf))
+
+### Changes
+
+- Bump version: 5.39.0 → 5.40.0 ([`fdc8ed8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdc8ed8db98c5187388937e6852cd656db8b4aff))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`82f56a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82f56a5eecce61c757902282427f89f7eb9d0cc4))
+
+### Features
+
+- ATC field-I/O interop snapshot (services/atc) ([`1b96362`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b963629dd7e2d400249f928e02daeb49a676d10))
+
 ## [5.39.0] - 2026-07-06
 
 <details>
