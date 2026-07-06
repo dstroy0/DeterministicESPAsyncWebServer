@@ -584,15 +584,18 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       with the PA device profiles (transmitters/valves). Builds on the PROFIBUS-DP work;
       the MBP physical layer is hardware-gated (couples to a DP segment via a
       segment coupler in practice).
-- [ ] **CANopen** (M, CiA 301) - first-class CANopen over the ESP32 TWAI/CAN
-      controller (also noted under Fieldbuses): the object dictionary, PDO/SDO
-      transfer, NMT state machine, and heartbeat/node-guarding; fixed BSS object
-      dictionary, no heap. The DS401 generic-I/O device profile as the first profile.
-- [ ] **IO-Link** (M, IEC 61131-9) - point-to-point sensor/actuator link: the device
-      stack (the SIO/SDCI cyclic process data + on-request ISDU parameter service, and
-      the IODD-described device model). The 3-wire UART-style physical layer is
-      hardware-gated; scope the protocol/state-machine + ISDU layer first. Fixed BSS
-      device model, no heap.
+- [~] **CANopen** (M, CiA 301) _(message codec shipped)_ - `DETWS_ENABLE_CANOPEN`
+  (`services/canopen`): a zero-heap CiA 301 message codec over the shared CAN frame
+  (`shared_primitives/det_can.h`) - NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO
+  read/write/abort plus the COB-ID classifier; host-tested (`native_canopen`, 17 cases).
+  _Remaining:_ a first-class object dictionary + node-guarding, the DS401 generic-I/O device
+  profile, and the ESP32 TWAI/CAN transport binding. Fixed BSS, no heap.
+- [~] **IO-Link** (M, IEC 61131-9) _(data-link codec shipped)_ - `DETWS_ENABLE_IOLINK`
+  (`services/iolink`): the SDCI data-link message codec - the MC / CKT / CKS control octets and
+  the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), against a
+  hand-computed known-answer vector; host-tested (`native_iolink`). _Remaining:_ the on-request
+  ISDU parameter service, the IODD-described device model + state machine, and the 3-wire physical
+  layer (hardware-gated). Fixed BSS, no heap.
 - [ ] **POWERLINK** (XL, EPSG) - Ethernet POWERLINK managed-node stack: the cyclic
       isochronous SoC/PReq/PRes/SoA slot schedule plus asynchronous SDO. Raw L2 +
       the high-priority preempting-task timing model (single-feature build) are both
@@ -603,10 +606,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       cyclic timing (single-feature build) are reachable (see Low-level networking), so
       the hard-real-time slot schedule is in scope alongside the IDN service channel.
       Fixed BSS, no heap.
-- [ ] **DeviceNet** (L, CIP over CAN) - already noted under Fieldbuses: the CIP object
-      model (shared with EtherNet/IP) over the ESP32 TWAI/CAN controller -
-      predefined master/slave connection set, explicit + I/O messaging. Fixed BSS
-      object model, no heap; pairs with the EtherNet/IP CIP work.
+- [~] **DeviceNet** (L, CIP over CAN) _(link-adaptation codec shipped)_ - `DETWS_ENABLE_DEVICENET`
+  (`services/devicenet`): the CAN link adaptation for CIP-over-CAN - the 4-group 11-bit CAN id, the
+  explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler
+  (the CIP body itself is built with the shared `cip` codec); host-tested (`native_devicenet`).
+  _Remaining:_ the predefined master/slave connection set, I/O (implicit) messaging, and the ESP32
+  TWAI/CAN transport. Fixed BSS, no heap; pairs with the EtherNet/IP CIP work.
 - [ ] **LonWorks / LON** (L, ISO/IEC 14908) - the building-automation network: the
       LonTalk protocol + network-variable (SNVT) model. The native TP/FT-10 physical
       layer needs a Neuron/transceiver, so target **LON/IP** (IEC 14908-4, ISO/IEC
@@ -681,12 +686,11 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       (the DirectNET HostLink-style framed read/write of V-memory) for DirectLOGIC PLCs.
       UART transport, host-testable framing + checksum codec; pairs with the Modbus-RTU
       and other serial fieldbus work. Fixed BSS, no heap.
-- [ ] **IEC 60870-5-101 / -104** (L, power-grid SCADA) - the tele-control telemetry
-      protocol: the ASDU information-object model (type IDs, cause-of-transmission,
-      single/double points, measured values, commands) shared by **-104** (over TCP
-      2404, the APCI/APDU framing with the I/S/U frames + k/w sequence flow control)
-      and **-101** (the serial FT 1.2 link layer). -104 first (host-reachable TCP);
-      -101 is the serial sibling. Fixed BSS point database, no heap, one build flag.
+- [~] **IEC 60870-5-101 / -104** (L, power-grid SCADA) _(codec shipped)_ - `DETWS_ENABLE_IEC60870`
+  (`services/iec60870`): the tele-control codec - the **-104** APCI (I/S/U frames), the ASDU header + 3-octet IOA, and the **-101** FT1.2 fixed/variable link frames (sum checksum); host-tested
+  (`native_iec60870`). _Remaining:_ the fuller ASDU information-object type set (double points,
+  measured values, commands) + the k/w sequence flow-control state machine over the shipped TCP
+  transport. Fixed BSS point database, no heap.
 - [ ] **IEC 61850** (XL, substation automation) - the substation standard: **MMS**
       (Manufacturing Message Specification over ISO-on-TCP 102, the ACSI object model -
       logical devices/nodes, data objects, datasets, reports) as the host-reachable
