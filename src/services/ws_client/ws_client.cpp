@@ -210,71 +210,77 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 #define WSC_DBG(...) ((void)0)
 #endif
 
-static WsClientMessageCb s_cb;
-static int s_cid = -1;         // outbound connection id (det_client pool)
-static volatile bool s_closed; // peer closed / error (set when the pump sees it)
-static bool s_ws_up;
-static bool s_use_tls;
+// All WebSocket-client connection state, owned by one instance (internal linkage): one server
+// at a time, all static / no heap. Grouped so it is one named owner, unreachable cross-TU.
+struct WsClientCtx
+{
+    WsClientMessageCb cb;
+    int cid = -1;         // outbound connection id (det_client pool)
+    volatile bool closed; // peer closed / error (set when the pump sees it)
+    bool ws_up;
+    bool use_tls;
 
-// Inbound plaintext ring, fed by a pump in the loop: from det_client_read for
-// plain ws, from the TLS session (det_tls_csess_read) for wss.
-static uint8_t s_rx[DETWS_WS_CLIENT_BUF_SIZE];
-static volatile size_t s_rx_head;
-static volatile size_t s_rx_tail;
-static uint8_t s_pkt[DETWS_WS_CLIENT_BUF_SIZE]; // a frame copied out to parse
-static uint8_t s_tx[DETWS_WS_CLIENT_BUF_SIZE];  // outgoing frame scratch
+    // Inbound plaintext ring, fed by a pump in the loop: from det_client_read for
+    // plain ws, from the TLS session (det_tls_csess_read) for wss.
+    uint8_t rx[DETWS_WS_CLIENT_BUF_SIZE];
+    volatile size_t rx_head;
+    volatile size_t rx_tail;
+    uint8_t pkt[DETWS_WS_CLIENT_BUF_SIZE]; // a frame copied out to parse
+    uint8_t tx[DETWS_WS_CLIENT_BUF_SIZE];  // outgoing frame scratch
 
-// Fragmented-message reassembly (continuation frames -> one delivered message).
-static uint8_t s_msg[DETWS_WS_CLIENT_BUF_SIZE];
-static size_t s_msg_len;
-static uint8_t s_msg_op;
+    // Fragmented-message reassembly (continuation frames -> one delivered message).
+    uint8_t msg[DETWS_WS_CLIENT_BUF_SIZE];
+    size_t msg_len;
+    uint8_t msg_op;
+};
+static WsClientCtx s_wsc;
 
 static inline size_t ring_avail()
 {
-    return (s_rx_head + sizeof(s_rx) - s_rx_tail) % sizeof(s_rx);
+    return (s_wsc.rx_head + sizeof(s_wsc.rx) - s_wsc.rx_tail) % sizeof(s_wsc.rx);
 }
 static inline uint8_t ring_peek(size_t i)
 {
-    return s_rx[(s_rx_tail + i) % sizeof(s_rx)];
+    return s_wsc.rx[(s_wsc.rx_tail + i) % sizeof(s_wsc.rx)];
 }
 static inline void ring_advance(size_t n)
 {
-    s_rx_tail = (s_rx_tail + n) % sizeof(s_rx);
+    s_wsc.rx_tail = (s_wsc.rx_tail + n) % sizeof(s_wsc.rx);
 }
 static void ring_copy(uint8_t *dst, size_t n)
 {
     for (size_t i = 0; i < n; i++)
-        dst[i] = s_rx[(s_rx_tail + i) % sizeof(s_rx)];
+        dst[i] = s_wsc.rx[(s_wsc.rx_tail + i) % sizeof(s_wsc.rx)];
 }
 
 // --- transport over the shared outbound client (det_client) ---
 
 static bool ws_tx_plain(const uint8_t *data, size_t len)
 {
-    return det_client_send(s_cid, data, len);
+    return det_client_send(s_wsc.cid, data, len);
 }
 
-// Drain plaintext wire bytes from the client into the s_rx ring (plain ws).
+// Drain plaintext wire bytes from the client into the s_wsc.rx ring (plain ws).
 static void ws_pump_plain()
 {
     uint8_t tmp[256];
     for (;;)
     {
-        size_t freey = (sizeof(s_rx) - 1) - ring_avail();
+        size_t freey = (sizeof(s_wsc.rx) - 1) - ring_avail();
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        size_t n = det_client_read(s_cid, tmp, want);
+        size_t n = det_client_read(s_wsc.cid, tmp, want);
         if (n == 0)
         {
-            if (det_client_is_closed(s_cid))
-                s_closed = true;
+            if (det_client_is_closed(s_wsc.cid))
+                s_wsc.closed = true;
             break;
         }
         for (size_t i = 0; i < n; i++)
         {
-            s_rx[s_rx_head] = tmp[i];
-            s_rx_head = (s_rx_head + 1) % sizeof(s_rx);
+            s_wsc.rx[s_wsc.rx_head] = tmp[i];
+            s_wsc.rx_head = (s_wsc.rx_head + 1) % sizeof(s_wsc.rx);
         }
     }
 }
@@ -286,14 +292,14 @@ static int ws_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
     size_t cap = len > 0xFFFF ? 0xFFFF : len;
-    return det_client_send(s_cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
+    return det_client_send(s_wsc.cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 static int ws_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t n = det_client_read(s_cid, buf, len);
+    size_t n = det_client_read(s_wsc.cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(s_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return det_client_is_closed(s_wsc.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 static void ws_pump_tls()
@@ -301,7 +307,7 @@ static void ws_pump_tls()
     uint8_t tmp[256];
     for (;;)
     {
-        size_t freey = (sizeof(s_rx) - 1) - ring_avail();
+        size_t freey = (sizeof(s_wsc.rx) - 1) - ring_avail();
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
@@ -309,13 +315,13 @@ static void ws_pump_tls()
         if (n <= 0)
         {
             if (n < 0)
-                s_closed = true;
+                s_wsc.closed = true;
             break;
         }
         for (int i = 0; i < n; i++)
         {
-            s_rx[s_rx_head] = tmp[i];
-            s_rx_head = (s_rx_head + 1) % sizeof(s_rx);
+            s_wsc.rx[s_wsc.rx_head] = tmp[i];
+            s_wsc.rx_head = (s_wsc.rx_head + 1) % sizeof(s_wsc.rx);
         }
     }
 }
@@ -325,7 +331,7 @@ static void ws_pump_tls()
 static bool ws_tx(const uint8_t *data, size_t len)
 {
 #if DETWS_ENABLE_WS_CLIENT_TLS
-    if (s_use_tls)
+    if (s_wsc.use_tls)
         return det_tls_csess_write(data, len) == (int)len;
 #endif
     return ws_tx_plain(data, len);
@@ -334,30 +340,30 @@ static bool ws_tx(const uint8_t *data, size_t len)
 // Frame and send a message with a fresh random masking key (RFC 6455 client rule).
 static bool ws_send_frame(uint8_t opcode, const uint8_t *payload, size_t len)
 {
-    if (!s_ws_up)
+    if (!s_wsc.ws_up)
         return false;
     uint8_t mask[4];
     esp_fill_random(mask, 4);
-    size_t n = ws_client_build_frame(s_tx, sizeof(s_tx), opcode, payload, len, mask);
-    return n && ws_tx(s_tx, n);
+    size_t n = ws_client_build_frame(s_wsc.tx, sizeof(s_wsc.tx), opcode, payload, len, mask);
+    return n && ws_tx(s_wsc.tx, n);
 }
 
 static void ws_close_tcp()
 {
 #if DETWS_ENABLE_WS_CLIENT_TLS
-    if (s_use_tls)
+    if (s_wsc.use_tls)
         det_tls_csess_end();
 #endif
-    if (s_cid >= 0)
-        det_client_close(s_cid);
-    s_cid = -1;
-    s_ws_up = false;
+    if (s_wsc.cid >= 0)
+        det_client_close(s_wsc.cid);
+    s_wsc.cid = -1;
+    s_wsc.ws_up = false;
 }
 
 static void deliver(uint8_t op, const uint8_t *payload, size_t len)
 {
-    if (s_cb && (op == WSC_OP_TEXT || op == WSC_OP_BINARY))
-        s_cb(op, payload, len);
+    if (s_wsc.cb && (op == WSC_OP_TEXT || op == WSC_OP_BINARY))
+        s_wsc.cb(op, payload, len);
 }
 
 // Dispatch one parsed frame (handles fragmentation, ping/pong, close).
@@ -373,21 +379,21 @@ static void handle_frame(uint8_t op, bool fin, const uint8_t *payload, size_t le
         }
         else
         {
-            s_msg_op = op; // first fragment
-            s_msg_len = len < sizeof(s_msg) ? len : sizeof(s_msg);
-            memcpy(s_msg, payload, s_msg_len);
+            s_wsc.msg_op = op; // first fragment
+            s_wsc.msg_len = len < sizeof(s_wsc.msg) ? len : sizeof(s_wsc.msg);
+            memcpy(s_wsc.msg, payload, s_wsc.msg_len);
         }
         break;
     case WSC_OP_CONT:
-        if (s_msg_len + len <= sizeof(s_msg))
+        if (s_wsc.msg_len + len <= sizeof(s_wsc.msg))
         {
-            memcpy(s_msg + s_msg_len, payload, len);
-            s_msg_len += len;
+            memcpy(s_wsc.msg + s_wsc.msg_len, payload, len);
+            s_wsc.msg_len += len;
         }
         if (fin)
         {
-            deliver(s_msg_op, s_msg, s_msg_len);
-            s_msg_len = 0;
+            deliver(s_wsc.msg_op, s_wsc.msg, s_wsc.msg_len);
+            s_wsc.msg_len = 0;
         }
         break;
     case WSC_OP_PING:
@@ -395,7 +401,7 @@ static void handle_frame(uint8_t op, bool fin, const uint8_t *payload, size_t le
         break;
     case WSC_OP_CLOSE:
         ws_send_frame(WSC_OP_CLOSE, nullptr, 0);
-        s_closed = true;
+        s_wsc.closed = true;
         break;
     case WSC_OP_PONG:
     default:
@@ -406,7 +412,7 @@ static void handle_frame(uint8_t op, bool fin, const uint8_t *payload, size_t le
 static void process_rx()
 {
 #if DETWS_ENABLE_WS_CLIENT_TLS
-    if (s_use_tls)
+    if (s_wsc.use_tls)
         ws_pump_tls();
     else
 #endif
@@ -427,20 +433,20 @@ static void process_rx()
         size_t off, plen, consumed;
         if (!ws_client_parse_frame(hdr, avail, &op, &fin, &off, &plen, &consumed))
             return; // header incomplete or full frame not yet arrived
-        if (consumed > sizeof(s_pkt))
+        if (consumed > sizeof(s_wsc.pkt))
         {
             ring_advance(consumed); // oversized frame: drop it
             continue;
         }
-        ring_copy(s_pkt, consumed);
+        ring_copy(s_wsc.pkt, consumed);
         ring_advance(consumed);
-        handle_frame(op, fin, s_pkt + off, plen);
+        handle_frame(op, fin, s_wsc.pkt + off, plen);
     }
 }
 
 void ws_client_on_message(WsClientMessageCb cb)
 {
-    s_cb = cb;
+    s_wsc.cb = cb;
 }
 
 bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char *path)
@@ -451,23 +457,23 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     if (use_tls)
         return false;
 #endif
-    s_rx_head = s_rx_tail = 0;
-    s_closed = s_ws_up = false;
-    s_msg_len = 0;
-    s_use_tls = use_tls;
+    s_wsc.rx_head = s_wsc.rx_tail = 0;
+    s_wsc.closed = s_wsc.ws_up = false;
+    s_wsc.msg_len = 0;
+    s_wsc.use_tls = use_tls;
 
     uint32_t deadline = millis() + 8000;
 
     // Open the TCP connection (DNS + connect) via the shared client transport.
-    s_cid = det_client_open(host, port, 8000);
-    if (s_cid < 0)
+    s_wsc.cid = det_client_open(host, port, 8000);
+    if (s_wsc.cid < 0)
     {
-        WSC_DBG("[wsc] det_client_open failed (%d)\n", s_cid);
+        WSC_DBG("[wsc] det_client_open failed (%d)\n", s_wsc.cid);
         return false;
     }
 
 #if DETWS_ENABLE_WS_CLIENT_TLS
-    if (s_use_tls)
+    if (s_wsc.use_tls)
     {
         if (!det_tls_csess_begin(host, ws_tls_send, ws_tls_recv))
         {
@@ -476,11 +482,11 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
             return false;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && !s_closed && (int32_t)(deadline - millis()) > 0)
+        while ((h = det_tls_csess_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
             delay(5);
         if (h != 1)
         {
-            WSC_DBG("[wsc] TLS handshake h=%d closed=%d\n", h, (int)s_closed);
+            WSC_DBG("[wsc] TLS handshake h=%d closed=%d\n", h, (int)s_wsc.closed);
             ws_close_tcp();
             return false;
         }
@@ -496,8 +502,8 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     char expect[32];
     ws_client_accept_for_key(key_b64, expect, sizeof(expect));
 
-    size_t n = ws_client_build_handshake(s_tx, sizeof(s_tx), host, path, key_b64);
-    if (n == 0 || !ws_tx(s_tx, n))
+    size_t n = ws_client_build_handshake(s_wsc.tx, sizeof(s_wsc.tx), host, path, key_b64);
+    if (n == 0 || !ws_tx(s_wsc.tx, n))
     {
         ws_close_tcp();
         return false;
@@ -507,10 +513,10 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     uint8_t hs[512];
     size_t hl = 0;
     bool done = false;
-    while (!done && !s_closed && (int32_t)(deadline - millis()) > 0)
+    while (!done && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
     {
 #if DETWS_ENABLE_WS_CLIENT_TLS
-        if (s_use_tls)
+        if (s_wsc.use_tls)
             ws_pump_tls();
         else
 #endif
@@ -534,7 +540,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
         ws_close_tcp();
         return false;
     }
-    s_ws_up = true;
+    s_wsc.ws_up = true;
     return true;
 }
 
@@ -549,10 +555,10 @@ bool ws_client_send_binary(const uint8_t *data, size_t len)
 
 bool ws_client_loop()
 {
-    if (!s_ws_up)
+    if (!s_wsc.ws_up)
         return false;
     process_rx();
-    if (s_closed)
+    if (s_wsc.closed)
     {
         ws_close_tcp();
         return false;
@@ -562,12 +568,12 @@ bool ws_client_loop()
 
 bool ws_client_connected()
 {
-    return s_ws_up;
+    return s_wsc.ws_up;
 }
 
 void ws_client_close()
 {
-    if (s_ws_up)
+    if (s_wsc.ws_up)
         ws_send_frame(WSC_OP_CLOSE, nullptr, 0);
     ws_close_tcp();
 }
