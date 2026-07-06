@@ -6,11 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`936db80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/936db8094bc2e31c0189838416223729f6d676f7))
 - update test report [skip ci] ([`0bf5086`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bf50860279a27b84622437133b7ed641addb7d3))
 - update CHANGELOG.md [skip ci] ([`39b61a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39b61a27b98af1c2358d3d18d0d7a0f341cee9d9))
 
 ### Documentation
 
+- close the multi-MCU portability item as a won't-do (per user request) ([`bcef60e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcef60e0ec60ea08fc9854c37b1796ba604238df))
 - fix broken SonarCloud badge (sonarcloud.yml -> test-report.yml) ([`450c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450c617280017a813c1519d0945673061b09679b))
 
 ## [5.62.0] - 2026-07-06
