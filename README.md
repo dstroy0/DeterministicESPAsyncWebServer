@@ -402,14 +402,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `TIME_SOURCE`  |            18.9 KB |           1.6 KB |
 | L7    | `DASHBOARD`    |            18.5 KB |         < 0.5 KB |
 | L7    | `RTC`          |            13.5 KB |         < 0.5 KB |
-| L7    | `OIDC`         |            11.2 KB |          12.8 KB |
+| L7    | `OIDC`         |            11.4 KB |          12.8 KB |
 | L7    | `OAUTH2`       |            10.4 KB |          22.3 KB |
 | L7    | `WEBHOOK`      |             8.5 KB |          19.3 KB |
 | L7    | `OPCUA`        |         6.2-6.9 KB |     10.0-10.1 KB |
-| L7    | `TELEMETRY`    |             6.7 KB |         < 0.5 KB |
+| L7    | `TELEMETRY`    |             6.8 KB |         < 0.5 KB |
 | L7    | `SNMP`         |             6.7 KB |          12.1 KB |
 | L7    | `PROVISIONING` |             5.6 KB |           1.5 KB |
-| L7    | `DNS_RESOLVER` |             3.9 KB |           1.2 KB |
+| L7    | `DNS_RESOLVER` |             4.0 KB |           1.2 KB |
 | L7    | `COAP`         |             3.7 KB |           2.5 KB |
 | L7    | `OTA`          |             3.4 KB |          35.3 KB |
 | L7    | `CONFIG_IO`    |             3.1 KB |         < 0.5 KB |
