@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.20.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.20.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f24c566`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f24c566a9362659bb4ba7baf4b02a80b504f8065))
+
+### Changes
+
+- Bump version: 5.19.0 → 5.20.0 ([`5e67a75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e67a75743d62df24ad6b6978fe320846d516650))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`64d0688`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64d0688d910c31ab342c8866fb4bf2e78ebd073a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`120749a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/120749a68fd60ca923bce22c136cc76a36ed7885))
+
+### Features
+
+- GE Fanuc SNP (Series Ninety Protocol) serial frame codec ([`71af240`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71af240905e6830ed249f99df934174b9b48e463))
+
+</details>
+
 ## [5.19.0] - 2026-07-06
 
 <details>
