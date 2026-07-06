@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`38bc476`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38bc47640f750e4fbd82a459f119e3835f0e0330))
 - update CHANGELOG.md [skip ci] ([`95059e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95059e6f45f0c303465d12e41414e919e48452ad))
 - update CHANGELOG.md [skip ci] ([`358c4f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/358c4f9e36036fdb0995b59fe0a3d329387215b2))
 - update test report [skip ci] ([`4642dc7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4642dc719553243dbe11a98575d306ca988d1cb2))
@@ -25,6 +26,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- fix two broken references caught by a link audit ([`f3ee602`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3ee60265ec4bb6853a41c45783cfdc45929912e))
 - de-stale SSH, Utility Tools, RFC Compliance, API return code ([`7775247`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77752472adfc389c5add094d0e8ea4b96301ed41))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`86fed6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86fed6b6c34cd660d91d8d6827fbfb861f413e0e))
 - regenerate stale sections from source + restructure ([`34a6e55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34a6e55dbdcb9131c0ee29aa6310bd5c6f1f9a6c))
