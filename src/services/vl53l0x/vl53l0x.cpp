@@ -39,11 +39,17 @@ bool vl53l0x_range_valid(uint8_t range_status_reg)
 
 namespace
 {
-uint8_t s_addr = 0x29;
+// All VL53L0X I2C-binding state, owned by one instance (internal linkage): the device address,
+// so it is one named owner, unreachable from any other translation unit.
+struct Vl53l0xCtx
+{
+    uint8_t addr = 0x29;
+};
+Vl53l0xCtx s_vl;
 
 bool w8(uint8_t reg, uint8_t val)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_vl.addr);
     Wire.write(reg);
     Wire.write(val);
     return Wire.endTransmission() == 0;
@@ -51,11 +57,11 @@ bool w8(uint8_t reg, uint8_t val)
 
 bool r8(uint8_t reg, uint8_t *val)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_vl.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, 1) != 1)
+    if (Wire.requestFrom((int)s_vl.addr, 1) != 1)
         return false;
     *val = (uint8_t)Wire.read();
     return true;
@@ -63,11 +69,11 @@ bool r8(uint8_t reg, uint8_t *val)
 
 bool rn(uint8_t reg, uint8_t *buf, uint8_t n)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_vl.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, (int)n) != n)
+    if (Wire.requestFrom((int)s_vl.addr, (int)n) != n)
         return false;
     for (uint8_t i = 0; i < n; i++)
         buf[i] = (uint8_t)Wire.read();
@@ -78,7 +84,7 @@ bool rn(uint8_t reg, uint8_t *buf, uint8_t n)
 bool vl53l0x_begin(uint8_t addr)
 {
     detws_i2c_begin();
-    s_addr = addr;
+    s_vl.addr = addr;
     uint8_t id = 0;
     if (!r8(VL53L0X_REG_IDENTIFICATION_MODEL_ID, &id) || id != VL53L0X_MODEL_ID)
         return false;
