@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d2e2ff6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e2ff6981567275ac36c7dbb43f5a8503c90a19))
+- update CHANGELOG.md [skip ci] ([`7b9c910`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9c9101b9b17c9a28e2864e6e852c80aecb1450))
 - update CHANGELOG.md [skip ci] ([`a9e0de7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e0de765aeff45f8360f65092925fb7dc116791))
 - update test report [skip ci] ([`ee742c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee742c86e7878cdd6b47e4bc0e9044e627378032))
 - update CHANGELOG.md [skip ci] ([`8f141bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f141bfafb3bf697e9f7cbc78447d2cd6bcf225c))
@@ -45,6 +47,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`d113c88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d113c888a59204e37882fa331b0cd7843bf01d23))
+- update ESP32 build footprints [skip ci] ([`f12db9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f12db9a726f0a6daa09ae95374a67b2c7475b7e5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6c18038`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c18038eb7254fc2b6aa3eaf893b38196ecbbbec))
 - update ESP32 build footprints [skip ci] ([`9c174d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c174d36e7422f2f9ce1565ef065fa4701d50295))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f70b3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f70b3bb16006e8bea44181948126103c7fe9aa9))
@@ -66,6 +70,21 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the client config + format scratch in one SyslogCtx (owner sweep) ([`212d78b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/212d78ba50a1cc655deb5799b54178f4cb6d097f))
+- own the I2C address in one Fdc2214Ctx (owner sweep) ([`91cc557`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91cc5572e6f2c4ae2f506f93f2b56fee58ac91ff))
+- own the I2C address in one Ldc1614Ctx (owner sweep) ([`ebd666e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebd666eb878e0abbfba68c5c0a2afe98ccb0f6e9))
+- own the I2C address in one Mpr121Ctx (owner sweep) ([`563eb6b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/563eb6b59d4a1d00b5fd023ce3a0b6d67d829415))
+- own the I2C address in one Vl53l0xCtx (owner sweep) ([`e2bb034`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2bb034e65c775b463ef93ea0f58df4a4b37a243))
+- own the I2C address in one Sht3xCtx (owner sweep) ([`df5d881`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df5d881c204549f262768fb3ac3c6f9f3e0c9b6c))
+- own the I2C address + PWM freq in one Pca9685Ctx (owner sweep) ([`d1e3510`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1e35105d30d69432720cc19aec2e7162307a614))
+- own the I2C address in one Ads1115Ctx (owner sweep) ([`7b09746`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b0974610687579202b2bfa68c08e65f5c00d185))
+- own the I2C address + current LSB in one Ina219Ctx (owner sweep) ([`8f102c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f102c024fbd27112f2e16d2e4abf06f596d3905))
+- own the parser+executor state in one GqlCtx (owner sweep) ([`11174f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11174f9d4ea0db6b64bb0e5fcfc7c87a0ffd4a4c))
+- own the USM engine/user/keys/stats/buffers in one SnmpV3Ctx (owner sweep) ([`818efd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/818efd518a1e6d62d2d3640155f9b3683a4ea1a9))
+- own MIB+community in SnmpAgentCtx, scratch in SnmpReqCtx (owner sweep) ([`08ade9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08ade9e52967de1e0530739e405d2fb2d2cf7731))
+- own dispatch+RAM in VfsCtx and the FS backend in FsCtx (owner sweep) ([`ecb16ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecb16acef1ed9f661a24f84554ba8ed2d4799e0b))
+- own the trap request-id in one SnmpNotifyCtx (owner sweep) ([`93112d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93112d86ee99fc8ec2287c7283c6955a12fc93c8))
+- own the data model + write cb in one ModbusCtx (owner sweep) ([`f0a36dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0a36dd60d8843bedae0b3b9da4b54612c6dab9b))
 - own the host test-epoch seam in one NtpSvcCtx (owner sweep) ([`f7767ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7767ba68d4b8f4d9f3c0bfbce26413ae9983aeb))
 - own the exchange scratch buffers in one Oauth2Ctx (owner sweep) ([`883b8c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/883b8c57f5aa456df02a9d32245f88cfc611041d))
 - own the collector endpoint in one UdpTelemetryCtx (owner sweep) ([`7e67bac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e67bace902894cb5fe3a31c473ec63769beeebf))
