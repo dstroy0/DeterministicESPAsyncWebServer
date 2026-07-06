@@ -4,9 +4,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- resolve SonarCloud new-code reliability + coverage gate ([`f62d9bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f62d9bb109842b8dee793924e1aef83ac3209e3d))
+
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`85169c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85169c617ecd8215cd45f1ce40b6afaac7e03f6a))
 - update CHANGELOG.md [skip ci] ([`ff15f05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff15f05e0c0570372f804e7c7b1310972c65394d))
+
+### Changes
+
+- Bump version: 5.60.0 → 5.60.1 ([`d5f7f0c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d5f7f0ccf3caa580cded61c29a087ac4c0b05aaf))
 
 ### Documentation
 
