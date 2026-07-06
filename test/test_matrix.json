@@ -1398,6 +1398,12 @@
       "src": ["+<services/directnet/directnet.cpp>"],
       "tests": ["test_directnet"]
     },
+    "native_sep2": {
+      "desc": "IEEE 2030.5 (SEP 2.0) resource codec (services/sep2): the DeviceCapability, EndDevice,\nand DERControl XML documents (urn:ieee:std:2030.5:ns), XML-escaped. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SEP2=1"],
+      "src": ["+<services/sep2/sep2.cpp>"],
+      "tests": ["test_sep2"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1460,6 +1466,7 @@
         "-DDETWS_ENABLE_NEMA_TS2=1",
         "-DDETWS_ENABLE_SNP=1",
         "-DDETWS_ENABLE_DIRECTNET=1",
+        "-DDETWS_ENABLE_SEP2=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1523,6 +1530,7 @@
         "+<services/nema_ts2/nema_ts2.cpp>",
         "+<services/snp/snp.cpp>",
         "+<services/directnet/directnet.cpp>",
+        "+<services/sep2/sep2.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

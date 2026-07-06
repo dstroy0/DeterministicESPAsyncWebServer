@@ -2770,6 +2770,17 @@
 #endif
 
 /**
+ * @brief Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec (DETWS_ENABLE_SEP2).
+ *
+ * When set, services/sep2 builds the core 2030.5 XML resource documents (DeviceCapability, EndDevice,
+ * DERControl) in the urn:ieee:std:2030.5:ns namespace, so the web server is a 2030.5 smart-grid
+ * server/client over the existing HTTP stack (DER dispatch / curtailment). Pure text framing. Default off.
+ */
+#ifndef DETWS_ENABLE_SEP2
+#define DETWS_ENABLE_SEP2 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

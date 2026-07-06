@@ -719,12 +719,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   configuration / data model (encoding the CFG-2 channel layout and the matching data
   frame, over TCP/UDP 4712/4713, streamed via the chunked / UDP cast path) remains to be
   layered on top. Pairs with the telemetry-math service for on-device PMU analytics.
-- [ ] **IEEE 2030.5 (SEP 2.0)** (M-L, DER / smart energy) - the Smart Energy Profile:
-      a RESTful resource model (the function-set resources - DER, metering, demand
-      response, pricing) over HTTP + TLS with client-cert auth. This is the best fit of
-      the grid protocols for this library - it rides the existing HTTP server, routes,
-      and TLS; the work is the SEP resource schema (XML, optionally EXI) + the function
-      sets, on a fixed BSS model. Strong near-term candidate among the DER protocols.
+- [~] **IEEE 2030.5 (SEP 2.0)** (M-L, DER / smart energy) _(resource codec shipped)_ -
+  `DETWS_ENABLE_SEP2` (`services/sep2`): the core 2030.5 XML resource documents in the
+  `urn:ieee:std:2030.5:ns` namespace - **DeviceCapability** (the root function-set links),
+  **EndDevice** (sFDI/lFDI registration), and **DERControl** (a DER dispatch/curtailment event:
+  interval + opModFixedW setpoint) - built into a caller buffer over the existing HTTP + TLS stack;
+  host-tested (`native_sep2`). _Remaining:_ the fuller function-set resource schema (metering, pricing,
+  demand response) + the resource discovery walk + optional EXI, on a fixed BSS model.
 - [ ] **OpenADR** (L, demand response) - Open Automated Demand Response (OpenADR 2.0a/b,
       and 3.0 which is REST/JSON + OAuth): the VEN (and optionally VTN) roles exchanging
       events / reports. 3.0 rides the existing HTTP client/server + OAuth2 + JSON cleanly
