@@ -22,9 +22,15 @@
 namespace
 {
 
-uint8_t g_secret[32];
-size_t g_secret_len = 0;
-uint64_t g_counter = 0;
+// All CSRF state, owned by one instance (internal linkage): the HMAC secret and the
+// monotonic nonce counter, grouped so it is one named owner, unreachable cross-TU.
+struct CsrfCtx
+{
+    uint8_t secret[32] = {};
+    size_t secret_len = 0;
+    uint64_t counter = 0;
+};
+CsrfCtx s_csrf;
 
 // hex encode/decode now via the shared det_hex.h primitive.
 
@@ -38,10 +44,10 @@ bool ct_equal(const char *a, const char *b, size_t n)
 }
 
 // Hex of the truncated HMAC-SHA256(secret, nonce) into sig_hex (2*CSRF_SIG_BYTES + 1).
-void sign_nonce(const uint8_t *nonce, size_t nlen, char *sig_hex)
+void sign_nonce(const CsrfCtx &c, const uint8_t *nonce, size_t nlen, char *sig_hex)
 {
     uint8_t mac[SSH_HMAC_SHA256_LEN];
-    ssh_hmac_sha256(g_secret, g_secret_len, nonce, nlen, mac);
+    ssh_hmac_sha256(c.secret, c.secret_len, nonce, nlen, mac);
     det_hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
 }
 
@@ -51,27 +57,27 @@ void csrf_set_secret(const uint8_t *secret, size_t len)
 {
     if (!secret)
     {
-        g_secret_len = 0;
+        s_csrf.secret_len = 0;
         return;
     }
-    g_secret_len = len > sizeof(g_secret) ? sizeof(g_secret) : len;
-    memcpy(g_secret, secret, g_secret_len);
+    s_csrf.secret_len = len > sizeof(s_csrf.secret) ? sizeof(s_csrf.secret) : len;
+    memcpy(s_csrf.secret, secret, s_csrf.secret_len);
 }
 
 int csrf_issue(char *out, size_t cap)
 {
-    if (g_secret_len == 0 || !out || cap < CSRF_TOKEN_BUF)
+    if (s_csrf.secret_len == 0 || !out || cap < CSRF_TOKEN_BUF)
         return 0;
 
     uint8_t nonce[CSRF_NONCE_BYTES];
-    uint64_t c = ++g_counter;
+    uint64_t c = ++s_csrf.counter;
     for (size_t i = 0; i < CSRF_NONCE_BYTES; i++)
         nonce[i] = (uint8_t)(c >> (8 * i));
 
     char nhex[CSRF_NONCE_BYTES * 2 + 1];
     char shex[CSRF_SIG_BYTES * 2 + 1];
     det_hex_encode(nonce, CSRF_NONCE_BYTES, nhex);
-    sign_nonce(nonce, CSRF_NONCE_BYTES, shex);
+    sign_nonce(s_csrf, nonce, CSRF_NONCE_BYTES, shex);
 
     int n = snprintf(out, cap, "%s.%s", nhex, shex);
     return (n > 0 && (size_t)n < cap) ? n : 0;
@@ -79,7 +85,7 @@ int csrf_issue(char *out, size_t cap)
 
 bool csrf_verify(const char *token)
 {
-    if (g_secret_len == 0 || !token)
+    if (s_csrf.secret_len == 0 || !token)
         return false;
 
     const char *dot = strchr(token, '.');
@@ -99,15 +105,15 @@ bool csrf_verify(const char *token)
         return false;
 
     char expect[CSRF_SIG_BYTES * 2 + 1];
-    sign_nonce(nonce, CSRF_NONCE_BYTES, expect);
+    sign_nonce(s_csrf, nonce, CSRF_NONCE_BYTES, expect);
     return ct_equal(sig, expect, CSRF_SIG_BYTES * 2);
 }
 
 void csrf_reset(void)
 {
-    memset(g_secret, 0, sizeof(g_secret));
-    g_secret_len = 0;
-    g_counter = 0;
+    memset(s_csrf.secret, 0, sizeof(s_csrf.secret));
+    s_csrf.secret_len = 0;
+    s_csrf.counter = 0;
 }
 
 #endif // DETWS_ENABLE_CSRF
