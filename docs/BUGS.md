@@ -8,6 +8,23 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## QUIC anti-amplification checked after building, desyncing the flight under loss
+
+- **Status:** FIXED (RPi netem loss interop + native_quic_conn; found while adding PTO loss recovery).
+- **Found:** 2026-07-06, driving the HTTP/3 interop harness under 10-20% netem packet loss - a
+  timer-polled server got _worse_ with loss, not better, and connections stalled.
+- **Symptom:** under loss, `quic_conn_send()` advanced packet-number / CRYPTO-offset / stream-send
+  state for a datagram it then discarded, so the retransmitted flight no longer matched what the peer
+  had (or had not) received. Loss recovery made the stall worse instead of curing it.
+- **Root cause:** the 3x anti-amplification check (RFC 9000 sec 8.1) ran _after_ `build_packet()` had
+  already bumped `next_pn` / `crypto_tx_off` / `tx_sent` / `last_ae_pn`. When the send was then
+  amplification-blocked and dropped, that state stayed advanced - a build-then-discard desync.
+- **Fix:** move the amplification check to the top of `quic_conn_send()`, before any packet is built,
+  so a blocked send advances no packet state. Also reset the PTO backoff on acknowledged progress
+  (RFC 9002 sec 6.2) so a recovering connection does not keep doubling its probe interval.
+
+---
+
 ## SSH outbound wire buffer under-sized for a near-max payload + long MAC
 
 - **Status:** FIXED (native SSH suites green; found while adding s2c compression, which made the

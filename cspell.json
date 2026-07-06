@@ -532,6 +532,7 @@
     "NCLR",
     "NCLT",
     "NEMA",
+    "netem",
     "netif",
     "newkeys",
     "NEWKEYS",
