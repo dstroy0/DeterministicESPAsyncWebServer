@@ -4,6 +4,25 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### CI / Build
+
+- update test report [skip ci] ([`f67d7e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f67d7e95405b0161a6447946f5f236339593ad57))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6e4c71e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e4c71eb92a2bd1e65de6a5a5129c04ed15009c5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`06d1d6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06d1d6d36c9d0fd8ff5d8c2df1f1214203a7ab7d))
+
+### Features
+
+- gate trademark-named themes out of commercial builds (keep them in OSS) ([`8334989`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8334989086e4ab8d8f8f74cbe03f440842d3512d))
+- expand theme library to 112 + wire theme/favicon generators into CI ([`e6dfd84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6dfd84b1a462cc19194424d29c0827cb2c9b21c))
+
+## [5.2.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.2.0 - 2026-07-06</b></summary>
+
 ### Bug Fixes
 
 - check anti-amplification before building, not after (flight desync) ([`34aa5f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34aa5f834231c6db478faf2080bdc429d1e9de7b))
@@ -11,6 +30,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`09f9e14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09f9e1402f68fea7972acd4b2bac9179c786e63f))
 - update test report [skip ci] ([`3fa7377`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa7377fe3d9f7c4a94f30793bf90790ade81270))
 - update CHANGELOG.md [skip ci] ([`c357d3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c357d3bcf3ee4386453866113724ccfaeb439a77))
 - update test report [skip ci] ([`5b80427`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b8042705c2c21609d1a49824ded0653f30b2747))
@@ -40,6 +60,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.1.0 → 5.2.0 ([`65ad53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65ad53bfa4bd857d80338f4a518274cf20b2890d))
 - Revert "feat(http3): re-send the handshake flight on a duplicate ClientHello (loss signal)" ([`3824cf9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3824cf99e902c759b9f872e958ee8299060d53f5))
 
 ### Documentation
@@ -61,6 +82,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- per-feature footprint budget table (best-worst flash/RAM), replacing 3 stale tables ([`3831183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38311830bcb9cdb3668a7a1da3165deb0269a422))
 - 288 favicons (18 motifs x 16 palettes) + gallery + tarball packager ([`4551f09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4551f09f6fe8ae467b473afb4013986214772620))
 - toggleable theme blobs in Layer 7 (DETWS_ENABLE_THEMES) ([`dd02a26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd02a2683a04aaf4bca0d8c03eff5e91605d4ab1))
 - theme library generator + 61 curated themes + a custom-palette tool ([`d12e883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12e883e21a0d3cb7b309dbd0cf0966b9eca4a5e))
@@ -76,6 +98,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Testing
 
 - poll the h3 harness on a timer so PTO fires without inbound traffic ([`3817028`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38170288fe0fa6f02bbbf4dc3ae405d49ad292e6))
+
+</details>
 
 ## [5.1.0] - 2026-07-06
 
