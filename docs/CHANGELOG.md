@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.45.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.45.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`17f7e33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17f7e33520668a73b472a37853c60cf4ebdc26a9))
+
+### Changes
+
+- Bump version: 5.44.0 → 5.45.0 ([`2852386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2852386754b11e6b679ac0a93c2937fc19c0f316))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`10a0f9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10a0f9c3078ac534babbd20daa78bbd22cd4e4df))
+
+### Features
+
+- RF-aware mDNS beacon scheduling (services/mdns_adaptive) ([`a014212`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a014212d01b050332fb8a7edcae22f4631a3b751))
+
+</details>
+
 ## [5.44.0] - 2026-07-06
 
 <details>
