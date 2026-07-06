@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.56.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.56.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0cd620f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cd620fdc880a6d0363139879b8acaaa787d64a0))
+
+### Changes
+
+- Bump version: 5.55.0 → 5.56.0 ([`7bf8014`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bf80140fc1ce29b0edfb58d9ae36e3e08083fe6))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e44e4a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44e4a13167e01bf629ccc3259f3a0231ff4d13f))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5b02ad1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b02ad12a5790801625a0556a39fc5c9447e3719))
+
+### Features
+
+- Bluetooth ATT protocol codec + GATT characteristic bridge ([`2124e08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2124e0889a901b6d62bd0071d2ead8b6b8fe2130))
+
+</details>
+
 ## [5.55.0] - 2026-07-06
 
 <details>
