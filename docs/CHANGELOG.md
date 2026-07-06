@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.26.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.26.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`aef6c2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aef6c2c4c70d88a249d5e4ef7b02b93532658a0c))
+
+### Changes
+
+- Bump version: 5.25.0 → 5.26.0 ([`38f74c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38f74c98b2ab11c8c90d3576cac78d3778eb2adb))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3841885`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3841885fabdbe7e4755583d176c4fcf5846421d7))
+- update ESP32 build footprints [skip ci] ([`7385d37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7385d37ef234fbc3ae00ee2d0d07ba9b0c301229))
+
+### Features
+
+- MAP intersection geometry - completes the V2X message trio ([`232d7a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/232d7a68570087918a07a1101bdc220d7e71b04d))
+
+</details>
+
 ## [5.25.0] - 2026-07-06
 
 <details>
