@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ff15f05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff15f05e0c0570372f804e7c7b1310972c65394d))
+
+### Documentation
+
+- mark Refresh build footprints [x] (CI auto-maintains footprints.json/FOOTPRINTS.md) ([`ede68ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede68ab855d5f118d263810aed03231dccc142c8))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`121bc9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/121bc9dcd7f721c9ce96a3f05dfaa59b84ba88e6))
+- update ESP32 build footprints [skip ci] ([`1f746ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f746ba52f8ef1f3599c780af4cf45d604c57f0c))
+
 ## [5.60.0] - 2026-07-06
 
 <details>
