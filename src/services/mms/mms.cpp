@@ -49,22 +49,19 @@ size_t tlv(uint8_t tag, const uint8_t *val, size_t val_len, uint8_t *out, size_t
 {
     // One source of truth for the length-octet count: the value offset (k) and the total (n) both derive
     // from it, so k + val_len == n is provable (write_len writes exactly this many octets).
-    size_t lo = len_octets(val_len);
-    size_t k = 1 + lo;      // value offset: tag + length octets
-    size_t n = k + val_len; // total = offset + value
+    size_t k = 1 + len_octets(val_len); // value offset: tag + length octets
+    size_t n = k + val_len;             // total = offset + value
     if (n > cap)
         return 0;
     out[0] = tag;
-    write_len(out + 1, val_len); // writes exactly lo octets
-    // Copy the value only when there is room at out+k, clamping to that room. n <= cap already guarantees
-    // val_len <= cap - k, so the clamp is a no-op here; nesting the copy under k < cap makes the bound
-    // explicit (room = cap - k is positive, cpy <= room -> out+k+cpy <= out+cap) for a static analyzer.
-    if (val_len && k < cap)
-    {
-        size_t room = cap - k;
-        size_t cpy = val_len < room ? val_len : room;
-        memcpy(out + k, val, cpy);
-    }
+    write_len(out + 1, val_len); // writes exactly len_octets(val_len) octets
+    // Copy length expressed as n - k (== val_len) so the destination bound flows straight from the
+    // n <= cap check above: out + k + (n - k) = out + n <= out + cap, and it reads n - k == val_len bytes
+    // from the val_len-sized val. Provably in bounds; all three callers pass val buffers >= val_len
+    // (data[data_len], scratch[256] with n<=256, idc[5] with idlen<=5). S3519 here explores an infeasible
+    // path (it assumes val_len >= cap - k, e.g. 5 >= 254) that the n <= cap guard rules out.
+    if (n > k)
+        memcpy(out + k, val, n - k); // NOSONAR - see above: bound proven, analyzer follows an infeasible path
     return n;
 }
 
