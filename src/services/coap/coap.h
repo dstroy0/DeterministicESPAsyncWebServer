@@ -16,9 +16,10 @@
  *
  * Only the message layer's piggybacked-response model is implemented: a CON
  * request is answered with a piggybacked ACK, a NON request with a NON response.
- * Separate responses, retransmission/deduplication and /.well-known/core
- * discovery are out of scope (a deterministic, constrained server typically
- * replies in-line). The codec understands the Uri-Path, Uri-Query and
+ * Separate responses and retransmission/deduplication are out of scope (a
+ * deterministic, constrained server typically replies in-line); the
+ * /.well-known/core resource-discovery listing (RFC 6690) is served. The codec
+ * understands the Uri-Path, Uri-Query and
  * Content-Format options; other options are skipped. Block-wise transfer
  * (RFC 7959, the Block1/Block2 options) is available under DETWS_ENABLE_COAP_BLOCK;
  * resource observation (RFC 7641) under DETWS_ENABLE_COAP_OBSERVE.
