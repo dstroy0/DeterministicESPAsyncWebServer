@@ -10,18 +10,24 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`5b3fecf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3fecf987a796b292519450e7c8e182b0bc8559))
 - update CHANGELOG.md [skip ci] ([`0f4f5a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f4f5a0c7812066fbde5e34fe2834975e5efbbb9))
 - update test report [skip ci] ([`321f006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/321f006cc104c90d9d2a18d01a7cd0b4bdbc054b))
 - update CHANGELOG.md [skip ci] ([`f8fe0fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8fe0fadef1993013ab709c9668f9fb6567d48f2))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`b2bbf18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2bbf18fb5f39c5944e4cea6cbc17d96ff960927))
 - update ESP32 build footprints [skip ci] ([`cf9a59d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf9a59db260984e9696d944b768cc0796159e532))
 
 ### Features
 
 - generalize PTO loss recovery to 1-RTT (retransmit the response) ([`336736a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/336736a4680d8c6e33287829c5b73a30e20e00f1))
 - PTO loss recovery - retransmit the handshake flight (RFC 9002) ([`d39d183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d39d183563daa1845f3313da100d1a7435e237fb))
+
+### Testing
+
+- poll the h3 harness on a timer so PTO fires without inbound traffic ([`3817028`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38170288fe0fa6f02bbbf4dc3ae405d49ad292e6))
 
 ## [5.1.0] - 2026-07-06
 
