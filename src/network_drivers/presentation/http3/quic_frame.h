@@ -51,6 +51,18 @@ enum
     QUIC_STREAM_OFF = 0x04,
 };
 
+/** @brief Transport error codes for CONNECTION_CLOSE (RFC 9000 sec 20.1). */
+enum
+{
+    QUIC_ERR_NO_ERROR = 0x00,
+    QUIC_ERR_INTERNAL = 0x01,
+    QUIC_ERR_FLOW_CONTROL = 0x03,
+    QUIC_ERR_STREAM_LIMIT = 0x04,
+    QUIC_ERR_FRAME_ENCODING = 0x07,     ///< a frame could not be decoded
+    QUIC_ERR_PROTOCOL_VIOLATION = 0x0a, ///< a frame/packet violated the protocol
+    QUIC_ERR_CRYPTO_BASE = 0x0100,      ///< 0x0100 + the TLS alert code (RFC 9001 sec 4.8)
+};
+
 /** @brief One parsed frame. Pointer fields alias the input buffer (not copied). */
 struct QuicFrame
 {

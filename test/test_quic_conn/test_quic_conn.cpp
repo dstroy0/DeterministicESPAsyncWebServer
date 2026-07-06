@@ -540,10 +540,136 @@ void test_pto_retransmits_flight()
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg2, sizeof(sdg2)));
 }
 
+// Init a server conn and feed it a padded client Initial (ClientHello); the server flight is left
+// pending. Returns the client's Initial secrets and the ClientHello bytes (for deriving later keys).
+static void feed_client_initial(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialSecrets *init, uint8_t *ch,
+                                size_t *ch_len)
+{
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    quic_conn_init(qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID, sizeof(SERVER_SCID),
+                   cb);
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), init);
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    *ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    uint8_t frames[1200];
+    size_t fl = quic_build_crypto(frames, sizeof(frames), 0, ch, *ch_len);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init->client, frames, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(qc, dg, dl));
+}
+
+// The public initiate-close API queues a transport CONNECTION_CLOSE the next send emits, after which
+// the connection is closed and sends nothing more.
+void test_connection_close_api()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+
+    quic_conn_close(&qc, QUIC_ERR_NO_ERROR);
+    uint8_t cdg[512];
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, cdg, sizeof(cdg)) > 0);
+    TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, cdg, sizeof(cdg))); // nothing more after the close
+}
+
+// A fatal transport error (an undecodable frame) makes the server report a CONNECTION_CLOSE with the
+// right error code instead of leaving the peer to time out (RFC 9000 sec 10.2 / 19.19).
+void test_connection_close_on_malformed_frame()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+
+    // Capture the server flight and derive the client-side Handshake keys (to send at + read that level).
+    uint8_t sdg[1500];
+    size_t sl = quic_conn_send(&qc, sdg, sizeof(sdg));
+    TEST_ASSERT_TRUE(sl > 0);
+    uint8_t plain[2048], sh[512];
+    size_t wire = 0;
+    uint8_t type = 0;
+    size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &type);
+    size_t sh_len = extract_crypto(plain, pt, sh);
+    uint8_t server_pub[32], ecdhe[32];
+    ssh_x25519_base(server_pub, SERVER_PRIV);
+    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    SshSha256Ctx tctx;
+    uint8_t ch_sh[32];
+    ssh_sha256_init(&tctx);
+    ssh_sha256_update(&tctx, ch, ch_len);
+    ssh_sha256_update(&tctx, sh, sh_len);
+    ssh_sha256_final(&tctx, ch_sh);
+    Tls13KeySchedule cks;
+    tls13_ks_early(&cks);
+    tls13_ks_handshake(&cks, ecdhe, ch_sh);
+    QuicPacketKeys hs_server_keys, hs_client_keys;
+    quic_keys_from_secret(cks.server_hs_traffic, &hs_server_keys);
+    quic_keys_from_secret(cks.client_hs_traffic, &hs_client_keys);
+
+    // Client -> server: a Handshake packet whose only frame is a malformed CRYPTO (its declared length
+    // dwarfs the packet), which the server cannot decode.
+    uint8_t bad[4] = {QUIC_FT_CRYPTO, 0x00, 0x7f, 0xff}; // CRYPTO off=0 len=16383, no data present
+    uint8_t bdg[256];
+    size_t bl = build_long(bdg, sizeof(bdg), QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
+                           0, &hs_client_keys, bad, sizeof(bad));
+    quic_conn_recv(&qc, bdg, bl); // fatal -> queues the close
+
+    // The next server datagram is a CONNECTION_CLOSE (FRAME_ENCODING) at the Handshake level.
+    uint8_t cdg[512];
+    size_t cl = quic_conn_send(&qc, cdg, sizeof(cdg));
+    TEST_ASSERT_TRUE(cl > 0);
+    size_t cw = 0;
+    uint8_t ctype = 0;
+    size_t cpt = open_long(cdg, cl, &hs_server_keys, plain, &cw, &ctype);
+    TEST_ASSERT_NOT_EQUAL(SIZE_MAX, cpt);
+    bool saw = false;
+    size_t fo = 0;
+    while (fo < cpt)
+    {
+        if (plain[fo] == QUIC_FT_PADDING)
+        {
+            fo++;
+            continue;
+        }
+        QuicFrame f;
+        size_t n = quic_frame_parse(plain + fo, cpt - fo, &f);
+        if (!n)
+            break;
+        fo += n;
+        if (f.type == QUIC_FT_CONNECTION_CLOSE)
+        {
+            saw = true;
+            TEST_ASSERT_EQUAL_UINT64(QUIC_ERR_FRAME_ENCODING, f.close.error_code);
+        }
+    }
+    TEST_ASSERT_TRUE(saw);
+    TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, cdg, sizeof(cdg))); // nothing more after the close
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake_and_stream);
     RUN_TEST(test_pto_retransmits_flight);
+    RUN_TEST(test_connection_close_api);
+    RUN_TEST(test_connection_close_on_malformed_frame);
     return UNITY_END();
 }

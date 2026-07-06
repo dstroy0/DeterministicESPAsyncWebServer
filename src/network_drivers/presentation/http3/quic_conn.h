@@ -19,9 +19,11 @@
  *
  * Scope (a faithful minimal server): QUIC v1 only, no Retry / 0-RTT / key update / connection
  * migration / connection-ID rotation, in-order CRYPTO and stream reassembly, and single-range ACKs.
- * Loss recovery (PTO retransmission) is not yet implemented - the engine relies on the peer
- * retransmitting, which is correct on a reliable path; it is the next hardening step. Small packets
- * are padded to the header-protection minimum (RFC 9001 sec 5.4.2). Fixed storage, no heap.
+ * Loss recovery is a Probe Timeout (RFC 9002): quic_conn_on_timeout() retransmits the outstanding
+ * ack-eliciting flight (handshake CRYPTO and 1-RTT streams) with exponential backoff, reset on
+ * acknowledged progress. Fatal handshake / frame errors emit a transport CONNECTION_CLOSE (RFC 9000
+ * sec 19.19) instead of timing out. Small packets are padded to the header-protection minimum
+ * (RFC 9001 sec 5.4.2). Fixed storage, no heap.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -132,6 +134,12 @@ struct QuicConn
     bool pto_armed;           ///< a Probe Timeout is running for the outstanding handshake flight
     uint8_t pto_count;        ///< consecutive PTO expirations (exponential backoff exponent)
     uint32_t pto_deadline_ms; ///< when the PTO fires (caller's monotonic ms; valid when pto_armed)
+
+    bool close_queued;         ///< a transport CONNECTION_CLOSE is owed to the peer (fatal error hit)
+    bool close_sent;           ///< the CONNECTION_CLOSE has been put on the wire
+    uint64_t close_error;      ///< transport error code to report (RFC 9000 sec 20.1)
+    uint64_t close_frame_type; ///< frame type that triggered it (0 when not frame-specific)
+    uint8_t close_level;       ///< encryption level to send the close at (the peer holds those keys)
 };
 
 /**
@@ -179,6 +187,14 @@ void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms);
  * @return bytes accepted into the stream's send buffer (may be < len if it is full).
  */
 size_t quic_conn_stream_send(QuicConn *qc, uint64_t stream_id, const uint8_t *data, size_t len, bool fin);
+
+/**
+ * @brief Initiate an immediate close: queue a transport CONNECTION_CLOSE (RFC 9000 sec 19.19) with
+ * @p error_code so the next quic_conn_send() reports the error to the peer instead of leaving it to
+ * time out. A no-op if the connection is already closing. The engine also calls this itself on a fatal
+ * handshake / frame error (CRYPTO_ERROR / FRAME_ENCODING_ERROR).
+ */
+void quic_conn_close(QuicConn *qc, uint64_t error_code);
 
 /** @brief True once the TLS handshake has completed (client Finished verified). */
 bool quic_conn_established(const QuicConn *qc);

@@ -90,6 +90,18 @@ void quic_conn_init(QuicConn *qc, const QuicTlsConfig *cfg, const uint8_t *odcid
 // --- Frame handling --------------------------------------------------------------------------
 namespace
 {
+// Queue a transport CONNECTION_CLOSE for a fatal error at @p level; the first error wins (RFC 9000 sec
+// 10.2.3). Sending at the level the error was seen on guarantees the peer holds keys to read it.
+void queue_close(QuicConn *qc, uint64_t error_code, uint64_t frame_type, int level)
+{
+    if (qc->close_queued || qc->closed)
+        return;
+    qc->close_queued = true;
+    qc->close_error = error_code;
+    qc->close_frame_type = frame_type;
+    qc->close_level = (uint8_t)level;
+}
+
 void handle_crypto(QuicConn *qc, int level, const QuicFrame *f)
 {
     QuicPnSpace *s = &qc->space[level];
@@ -112,6 +124,13 @@ void handle_crypto(QuicConn *qc, int level, const QuicFrame *f)
     {
         memmove(s->crypto_rx, s->crypto_rx + used, s->crypto_rx_have - used);
         s->crypto_rx_have -= used;
+    }
+    // A fatal TLS error (bad Finished, unsupported handshake) becomes a QUIC CRYPTO_ERROR: report it
+    // to the client with the TLS alert in the low byte (RFC 9001 sec 4.8) instead of stalling.
+    if (qc->tls.state == QTLS_FAILED)
+    {
+        queue_close(qc, QUIC_ERR_CRYPTO_BASE + qc->tls.alert, QUIC_FT_CRYPTO, level);
+        return;
     }
     // Completing the handshake opens 1-RTT and lets us send HANDSHAKE_DONE. We keep the Handshake
     // space live so the same outbound datagram still ACKs the client's Finished; HANDSHAKE_DONE (at
@@ -170,7 +189,11 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
         QuicFrame f;
         size_t n = quic_frame_parse(p + off, len - off, &f);
         if (!n)
+        {
+            // Undecodable frame: a transport FRAME_ENCODING_ERROR (RFC 9000 sec 20.1). Report it.
+            queue_close(qc, QUIC_ERR_FRAME_ENCODING, 0, level);
             return false;
+        }
         off += n;
 
         if (f.type != QUIC_FT_ACK && f.type != QUIC_FT_ACK_ECN && f.type != QUIC_FT_CONNECTION_CLOSE &&
@@ -334,6 +357,12 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
     QuicPnSpace *s = &qc->space[level];
     size_t p = 0;
     *ae = false;
+
+    // While closing, the only frame we send is the transport CONNECTION_CLOSE (RFC 9000 sec 10.2.3).
+    // It is not ack-eliciting (*ae stays false), so no PTO is armed for it. quic_conn_send() invokes
+    // this for a single level when a close is queued, so it is emitted exactly once.
+    if (qc->close_queued && !qc->close_sent)
+        return quic_build_connection_close(buf, cap, qc->close_error, qc->close_frame_type, nullptr, 0);
 
     // ACK first, if we owe one.
     if (s->ack_eliciting_rx && s->have_rx)
@@ -516,6 +545,34 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
     if (cap > DETWS_QUIC_MAX_DATAGRAM)
         cap = DETWS_QUIC_MAX_DATAGRAM;
 
+    // A queued transport CONNECTION_CLOSE is sent once - at the highest encryption level we still hold
+    // keys for (so the peer can decrypt it) - and then the connection is closed. It replaces the normal
+    // frame build (a closing endpoint sends nothing else) and is bounded by the amplification limit above.
+    if (qc->close_queued && !qc->close_sent)
+    {
+        // Send at the level the error was seen on (the peer holds those keys); if that space has since
+        // been discarded, fall back to the highest level we still hold keys for.
+        int level = qc->close_level;
+        if (level < QUIC_ENC_INITIAL || level > QUIC_ENC_APP || qc->space[level].discarded || !seal_keys(qc, level))
+        {
+            level = QUIC_ENC_INITIAL;
+            for (int l = QUIC_ENC_APP; l >= QUIC_ENC_INITIAL; l--)
+                if (!qc->space[l].discarded && seal_keys(qc, l))
+                {
+                    level = l;
+                    break;
+                }
+        }
+        size_t n = build_packet(qc, level, out, cap);
+        if (n)
+        {
+            qc->close_sent = true;
+            qc->closed = true;
+            qc->sent_bytes += n;
+        }
+        return n;
+    }
+
     size_t dg = 0;
     // Coalesce Initial, then Handshake, then 1-RTT into one datagram.
     for (int level = QUIC_ENC_INITIAL; level <= QUIC_ENC_APP; level++)
@@ -613,6 +670,19 @@ size_t quic_conn_stream_send(QuicConn *qc, uint64_t stream_id, const uint8_t *da
     if (fin && take == len)
         st->tx_fin = true;
     return take;
+}
+
+void quic_conn_close(QuicConn *qc, uint64_t error_code)
+{
+    // Application-initiated close: send at the highest level we still hold keys for.
+    int level = QUIC_ENC_INITIAL;
+    for (int l = QUIC_ENC_APP; l >= QUIC_ENC_INITIAL; l--)
+        if (!qc->space[l].discarded && seal_keys(qc, l))
+        {
+            level = l;
+            break;
+        }
+    queue_close(qc, error_code, 0, level);
 }
 
 bool quic_conn_established(const QuicConn *qc)
