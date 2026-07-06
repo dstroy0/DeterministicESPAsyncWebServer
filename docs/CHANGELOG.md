@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- run the native suite once for report + coverage; ccache the compiles ([`8c36195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c3619514c791f46edce249f312a023bfc03e5e0))
+- update test report [skip ci] ([`e0461d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0461d3967bb3a9f4cf6b7f910f9eb439ae18ed6))
+- update CHANGELOG.md [skip ci] ([`847269b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/847269bf5ba6a7e05e3d32cf77e546c0653b88e8))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`f4be549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4be549fe6a815f1e3762331541befdb1397387b))
+
 ## [5.2.3] - 2026-07-06
 
 <details>
