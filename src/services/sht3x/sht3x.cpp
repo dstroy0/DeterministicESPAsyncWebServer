@@ -60,11 +60,17 @@ bool sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
 
 namespace
 {
-uint8_t s_addr = DETWS_SHT3X_I2C_ADDR;
+// All SHT3x I2C-binding state, owned by one instance (internal linkage): the device address,
+// so it is one named owner, unreachable from any other translation unit.
+struct Sht3xCtx
+{
+    uint8_t addr = DETWS_SHT3X_I2C_ADDR;
+};
+Sht3xCtx s_sht;
 
 bool send_cmd(uint16_t cmd)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_sht.addr);
     Wire.write((uint8_t)(cmd >> 8));
     Wire.write((uint8_t)(cmd & 0xFF));
     return Wire.endTransmission() == 0;
@@ -73,7 +79,7 @@ bool send_cmd(uint16_t cmd)
 
 bool sht3x_begin(uint8_t addr)
 {
-    s_addr = addr ? addr : (uint8_t)DETWS_SHT3X_I2C_ADDR;
+    s_sht.addr = addr ? addr : (uint8_t)DETWS_SHT3X_I2C_ADDR;
     detws_i2c_begin();
     bool ok = send_cmd(SHT3X_CMD_SOFT_RESET);
     delay(2); // soft reset completes in < 1.5 ms
@@ -85,7 +91,7 @@ bool sht3x_read(int32_t *temp_mc, int32_t *rh_mpct)
     if (!send_cmd(SHT3X_CMD_SINGLE_HIGH))
         return false;
     delay(20); // a high-repeatability measurement completes in < 15 ms
-    if (Wire.requestFrom((int)s_addr, 6) != 6)
+    if (Wire.requestFrom((int)s_sht.addr, 6) != 6)
         return false;
     uint8_t r[6];
     for (int i = 0; i < 6; i++)
