@@ -651,14 +651,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   cyclic RT/IRT stack is on the table, not just a discovery subset; PROFINET `DCP` is
   the easy first milestone, EtherCAT/IRT the hard one. Each: fixed BSS
   object/process-image model, no heap.
-- [ ] **Fieldbuses** (L, classic serial/CAN buses) - the pre-Ethernet field protocols
-      built on the existing zero-heap codec pattern: **CANopen** (CiA 301: object
-      dictionary, PDO/SDO, NMT, heartbeat) over the ESP32 TWAI/CAN controller;
-      **PROFIBUS-DP** and **DeviceNet** as scope allows (DeviceNet is CIP-over-CAN, so
-      it shares the EtherNet/IP object model). Modbus TCP already ships
-      ([modbus](../src/services/modbus/)); these extend the same data-model + ADU
-      parse/build approach to the CAN/serial fieldbus families, each behind its own
-      build flag.
+- [~] **Fieldbuses** (L, classic serial/CAN buses) - the pre-Ethernet field protocols
+  built on the existing zero-heap codec pattern _(the named buses are shipped)_: **CANopen** (CiA 301:
+  object dictionary, PDO/SDO, NMT, heartbeat) over the ESP32 TWAI/CAN controller is
+  `DETWS_ENABLE_CANOPEN` (`services/canopen`); **PROFIBUS-DP** is `DETWS_ENABLE_PROFIBUS`
+  (`services/profibus`); **DeviceNet** (CIP-over-CAN) is `DETWS_ENABLE_DEVICENET`; Modbus TCP + RTU ship
+  as [modbus](../src/services/modbus/) (`DETWS_ENABLE_MODBUS` / `_MODBUS_RTU`). All host-tested behind
+  their own build flags. _Remaining:_ the per-bus serial/CAN PHY drivers + HW-over-RS-485/CAN verify
+  (tracked per protocol above).
 - [~] **Modbus RTU** (M, serial / RS-485) - _codec shipped._ `DETWS_ENABLE_MODBUS_RTU`
   adds `modbus_rtu_process_adu()`: the `[unit-id][PDU][CRC-16/Modbus]` serial frame
   around the existing data model + function-code dispatch - a CRC mismatch or a
