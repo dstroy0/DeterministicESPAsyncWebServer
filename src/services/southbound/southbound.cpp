@@ -18,8 +18,14 @@
 
 namespace
 {
-const SouthboundDriver *g_drivers[DETWS_SOUTHBOUND_MAX_DRIVERS] = {};
-size_t g_count = 0;
+// All southbound-registry state, owned by one instance (internal linkage): the bounded
+// driver table and its count, grouped so it is one named owner, unreachable cross-TU.
+struct SouthboundCtx
+{
+    const SouthboundDriver *drivers[DETWS_SOUTHBOUND_MAX_DRIVERS] = {};
+    size_t count = 0;
+};
+SouthboundCtx s_sb;
 } // namespace
 
 int detws_southbound_register(const SouthboundDriver *drv)
@@ -28,31 +34,31 @@ int detws_southbound_register(const SouthboundDriver *drv)
         return SB_ERR_ARG;
     if (detws_southbound_find(drv->name))
         return SB_ERR_DUP;
-    if (g_count >= DETWS_SOUTHBOUND_MAX_DRIVERS)
+    if (s_sb.count >= DETWS_SOUTHBOUND_MAX_DRIVERS)
         return SB_ERR_FULL;
-    g_drivers[g_count++] = drv;
+    s_sb.drivers[s_sb.count++] = drv;
     return SB_OK;
 }
 
 void detws_southbound_clear(void)
 {
     for (size_t i = 0; i < DETWS_SOUTHBOUND_MAX_DRIVERS; i++)
-        g_drivers[i] = nullptr;
-    g_count = 0;
+        s_sb.drivers[i] = nullptr;
+    s_sb.count = 0;
 }
 
 size_t detws_southbound_count(void)
 {
-    return g_count;
+    return s_sb.count;
 }
 
 const SouthboundDriver *detws_southbound_find(const char *name)
 {
     if (!name)
         return nullptr;
-    for (size_t i = 0; i < g_count; i++)
-        if (g_drivers[i] && g_drivers[i]->name && strcmp(g_drivers[i]->name, name) == 0)
-            return g_drivers[i];
+    for (size_t i = 0; i < s_sb.count; i++)
+        if (s_sb.drivers[i] && s_sb.drivers[i]->name && strcmp(s_sb.drivers[i]->name, name) == 0)
+            return s_sb.drivers[i];
     return nullptr;
 }
 
