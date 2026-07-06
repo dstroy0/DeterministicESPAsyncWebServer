@@ -104,7 +104,13 @@ struct dma_channel
     bool open;
 };
 
-dma_channel s_ch[DETWS_DMA_CHANNELS];
+// All DMA simulator state, owned by one instance (internal linkage): the channel table,
+// so it is one named owner, unreachable from any other translation unit.
+struct DmaCtx
+{
+    dma_channel ch[DETWS_DMA_CHANNELS];
+};
+DmaCtx s_dma;
 
 void emit(dma_channel &c, uint8_t id, uint8_t dir, const uint8_t *data, uint16_t len)
 {
@@ -163,7 +169,7 @@ bool det_dma_open(const det_dma_config *cfg)
 {
     if (!cfg || !cfg->on_complete || cfg->channel >= DETWS_DMA_CHANNELS)
         return false;
-    dma_channel &c = s_ch[cfg->channel];
+    dma_channel &c = s_dma.ch[cfg->channel];
     if (c.open)
         return false;
     c.ingress.reset();
@@ -185,7 +191,7 @@ bool det_dma_tx_submit(uint8_t ch, const uint8_t *buf, uint16_t len)
 {
     if (ch >= DETWS_DMA_CHANNELS || !buf || len == 0 || len > DETWS_DMA_BUF_SIZE)
         return false;
-    dma_channel &c = s_ch[ch];
+    dma_channel &c = s_dma.ch[ch];
     if (!c.open || c.tx_busy) // one transfer in flight at a time (fail-closed)
         return false;
     memcpy(c.tx_buf, buf, len);
@@ -198,21 +204,21 @@ void det_dma_close(uint8_t ch)
 {
     if (ch >= DETWS_DMA_CHANNELS)
         return;
-    s_ch[ch].open = false;
+    s_dma.ch[ch].open = false;
 }
 
 void det_dma_poll(void)
 {
     for (uint8_t i = 0; i < DETWS_DMA_CHANNELS; i++)
-        if (s_ch[i].open)
-            pump(s_ch[i], i);
+        if (s_dma.ch[i].open)
+            pump(s_dma.ch[i], i);
 }
 
 bool det_dma_sim_feed(uint8_t ch, const uint8_t *bytes, uint16_t len)
 {
     if (ch >= DETWS_DMA_CHANNELS || !bytes)
         return false;
-    dma_channel &c = s_ch[ch];
+    dma_channel &c = s_dma.ch[ch];
     if (!c.open)
         return false;
     return c.ingress.push(bytes, len);
@@ -222,7 +228,7 @@ uint16_t det_dma_sim_capture(uint8_t ch, uint8_t *out, uint16_t max)
 {
     if (ch >= DETWS_DMA_CHANNELS || !out)
         return 0;
-    dma_channel &c = s_ch[ch];
+    dma_channel &c = s_dma.ch[ch];
     if (!c.open)
         return 0;
     return c.egress.pop(out, max);
