@@ -1338,6 +1338,12 @@
       "src": ["+<services/nts/nts.cpp>"],
       "tests": ["test_nts"]
     },
+    "native_dds": {
+      "desc": "DDS / RTPS framing codec (services/dds): the 20-octet RTPS header (magic/version/vendor/\nguidPrefix) and the submessage TLV (id/flags/octetsToNextHeader, endianness flag), build + parse.\nPure host tests with spec-derived vectors.",
+      "flags": ["-DDETWS_ENABLE_DDS=1"],
+      "src": ["+<services/dds/dds.cpp>"],
+      "tests": ["test_dds"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1390,6 +1396,7 @@
         "-DDETWS_ENABLE_DSHOT=1",
         "-DDETWS_ENABLE_HART=1",
         "-DDETWS_ENABLE_NTS=1",
+        "-DDETWS_ENABLE_DDS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1443,6 +1450,7 @@
         "+<services/dshot/dshot.cpp>",
         "+<services/hart/hart.cpp>",
         "+<services/nts/nts.cpp>",
+        "+<services/dds/dds.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

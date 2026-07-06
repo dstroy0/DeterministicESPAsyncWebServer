@@ -2651,6 +2651,18 @@
 #endif
 
 /**
+ * @brief Opt-in DDS / RTPS wire-protocol codec (DETWS_ENABLE_DDS).
+ *
+ * When set, services/dds provides the RTPS (DDSI-RTPS) message + submessage framing: the 20-octet
+ * header (magic / version / vendor / guidPrefix) and the typed submessages (INFO_TS, DATA, HEARTBEAT,
+ * ACKNACK, ...) with the endianness flag, built by detws_rtps_header / _submessage and walked by
+ * detws_rtps_parse. Pure framing (CDR payloads + SPDP/SEDP discovery layer on top). Default off.
+ */
+#ifndef DETWS_ENABLE_DDS
+#define DETWS_ENABLE_DDS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

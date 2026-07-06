@@ -845,14 +845,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   shipped HTTP/1.1 server/client (host-tested). Full **gRPC** (the same framing but over
   **HTTP/2** with `application/grpc`) remains gated on the HTTP/2 roadmap item above. Fixed
   BSS, no heap.
-- [ ] **DDS** (XL, OMG DDS) - Data Distribution Service: a decentralized peer-to-peer
-      data-bus standard built on **RTPS** (the Real-Time Publish-Subscribe wire protocol
-      over UDP, with SPDP/SEDP discovery). Implement an RTPS participant with the QoS
-      subset that fits a fixed footprint (reliability, history depth), the CDR
-      serialization, and a bounded reader/writer/topic table - all zero-heap BSS. Large
-      (discovery + the reliability/heartbeat protocol); **DDS-XRCE** (the eXtremely
-      Resource Constrained Environments agent/client profile over a single agent link)
-      is the more MCU-appropriate entry point - target that first.
+- [~] **DDS** (XL, OMG DDS) _(RTPS framing shipped)_ - `DETWS_ENABLE_DDS` (`services/dds`): the RTPS
+  (DDSI-RTPS) message + submessage framing codec - the 20-octet header (magic / version / vendor /
+  guidPrefix) and the typed submessages (INFO_TS, DATA, HEARTBEAT, ACKNACK, ...) with the endianness
+  flag, built by `detws_rtps_header` / `_submessage` and walked by `detws_rtps_parse`; host-tested
+  (`native_dds`). _Remaining:_ the CDR serialized-payload encoding, SPDP/SEDP discovery, and the
+  reliability/heartbeat reader-writer protocol + QoS subset (all zero-heap BSS); **DDS-XRCE** (the
+  resource-constrained agent/client profile) is the more MCU-appropriate full target.
 - [x] **WAMP** (M, web messaging) _(shipped)_ - `DETWS_ENABLE_WAMP` (`services\wamp`): a
       zero-heap codec for the Web Application Messaging Protocol (unified RPC + PubSub over
       WebSocket, subprotocol `wamp.2.json`). Builders for HELLO / SUBSCRIBE / UNSUBSCRIBE /
