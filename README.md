@@ -483,7 +483,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `WEBHOOK`      |             8.5 KB |          19.3 KB |
 | L7    | `OPCUA`        |         6.2-6.9 KB |     10.0-10.1 KB |
 | L7    | `TELEMETRY`    |             6.8 KB |         < 0.5 KB |
-| L7    | `SNMP`         |             6.7 KB |          12.1 KB |
+| L7    | `SNMP`         |             6.8 KB |          12.1 KB |
 | L7    | `PROVISIONING` |             5.6 KB |           1.5 KB |
 | L7    | `DNS_RESOLVER` |             4.0 KB |           1.3 KB |
 | L7    | `COAP`         |             3.7 KB |           2.5 KB |
