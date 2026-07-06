@@ -2987,6 +2987,18 @@
 #endif
 
 /**
+ * @brief Opt-in ESP32 panic / exception decoder for a live diagnostics panel (DETWS_ENABLE_EXC_DECODER).
+ *
+ * When set, services/exc_decoder parses a captured Guru Meditation panic dump (the cause, the register
+ * PC + EXCVADDR, and the backtrace PC:SP frames) into a structured ExcInfo and serializes it as JSON for
+ * a "/exception" panel; the browser or a build server resolves the PCs to file:line against the firmware
+ * ELF (addr2line lives off-device). Pure, no heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_EXC_DECODER
+#define DETWS_ENABLE_EXC_DECODER 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

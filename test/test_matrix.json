@@ -1506,6 +1506,12 @@
       "src": ["+<services/southbound/southbound.cpp>"],
       "tests": ["test_southbound"]
     },
+    "native_exc_decoder": {
+      "desc": "ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation\ndump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it\nas JSON for a live /exception panel; tolerates missing fields + a trailing corruption marker. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_EXC_DECODER=1"],
+      "src": ["+<services/exc_decoder/exc_decoder.cpp>"],
+      "tests": ["test_exc_decoder"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1586,6 +1592,7 @@
         "-DDETWS_ENABLE_OCIT=1",
         "-DDETWS_ENABLE_ATC=1",
         "-DDETWS_ENABLE_SOUTHBOUND=1",
+        "-DDETWS_ENABLE_EXC_DECODER=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1667,6 +1674,7 @@
         "+<services/ocit/ocit.cpp>",
         "+<services/atc/atc.cpp>",
         "+<services/southbound/southbound.cpp>",
+        "+<services/exc_decoder/exc_decoder.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
