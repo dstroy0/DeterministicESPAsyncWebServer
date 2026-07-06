@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.38.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.38.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a84b3c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a84b3c25dd18ff12f77069e457ceb7cf05662dae))
+
+### Changes
+
+- Bump version: 5.37.0 → 5.38.0 ([`69ada5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69ada5ca8b45f6489d38cae23582021ea65bb890))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2dcce02`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2dcce02b9b02bbe446d2ecfba5b37b2d3b681ca7))
+
+### Features
+
+- UTMC (Urban Traffic Management and Control) common-database codec ([`b9274ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9274eca3091686478d4eefc9754bce5a5f6f828))
+
+</details>
+
 ## [5.37.0] - 2026-07-06
 
 <details>
