@@ -523,12 +523,31 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
 static const char *const OPCUA_TRANSPORT_URI =
     "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary"; // NOSONAR
 
-// Server identity advertised in endpoint descriptions (settable via opcua_set_endpoint_url).
-static OpcUaServerInfo s_server_info = {"opc.tcp://localhost:4840", "urn:det:opcua:server", "DetOpcUaServer"};
+// All OPC UA agent state, owned by one instance (internal linkage): the advertised server
+// identity, the application Read/Write/Browse resolvers, and (ESP32 only) the per-channel
+// reassembly / response buffers and the SecureChannel + Session state (single client at a
+// time). Grouped so it is one named owner, unreachable from any other translation unit.
+struct OpcuaCtx
+{
+    OpcUaServerInfo server_info = {"opc.tcp://localhost:4840", "urn:det:opcua:server", "DetOpcUaServer"};
+    OpcUaReadHandler read_handler = nullptr;
+    OpcUaWriteHandler write_handler = nullptr;
+    OpcUaBrowseHandler browse_handler = nullptr;
+#ifdef ARDUINO
+    uint8_t msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
+    uint8_t resp[2048];           // single-accessor response buffer (ACK / OPN / MSG response)
+    uint32_t channel_id = 0;
+    uint32_t token_id = 0;
+    uint32_t seq = 0;
+    uint32_t session_id = 0;
+    uint32_t auth_token = 0;
+#endif
+};
+static OpcuaCtx s_opcua;
 
 void opcua_set_endpoint_url(const char *url)
 {
-    s_server_info.endpoint_url = url;
+    s_opcua.server_info.endpoint_url = url;
 }
 
 void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info)
@@ -828,10 +847,9 @@ size_t opcua_build_read_response(const OpcUaReadRequest *req, const OpcUaVariant
 }
 
 // Application Read resolver (set via opcua_set_read_handler), used by opcua_rx.
-static OpcUaReadHandler s_read_handler = nullptr;
 void opcua_set_read_handler(OpcUaReadHandler fn)
 {
-    s_read_handler = fn;
+    s_opcua.read_handler = fn;
 }
 
 // ---------------------------------------------------------------------------
@@ -904,10 +922,9 @@ size_t opcua_build_write_response(const OpcUaWriteRequest *req, const uint32_t *
 }
 
 // Application Write resolver (set via opcua_set_write_handler), used by opcua_rx.
-static OpcUaWriteHandler s_write_handler = nullptr;
 void opcua_set_write_handler(OpcUaWriteHandler fn)
 {
-    s_write_handler = fn;
+    s_opcua.write_handler = fn;
 }
 
 // ---------------------------------------------------------------------------
@@ -1043,10 +1060,9 @@ size_t opcua_build_close_session_response(const OpcUaMsg *req, uint32_t seq, int
 }
 
 // Application Browse resolver (set via opcua_set_browse_handler), used by opcua_rx.
-static OpcUaBrowseHandler s_browse_handler = nullptr;
 void opcua_set_browse_handler(OpcUaBrowseHandler fn)
 {
-    s_browse_handler = fn;
+    s_opcua.browse_handler = fn;
 }
 
 // ---------------------------------------------------------------------------
@@ -1087,15 +1103,6 @@ void close_conn(uint8_t slot)
     det_conn_close(slot); // transport owns detach + slot reset + close
 }
 
-uint8_t s_msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
-uint8_t s_resp[2048];           // single-accessor response buffer (ACK / OPN / MSG response)
-
-// Per-channel SecureChannel + Session state (single client at a time).
-uint32_t s_channel_id = 0;
-uint32_t s_token_id = 0;
-uint32_t s_seq = 0;
-uint32_t s_session_id = 0;
-uint32_t s_auth_token = 0;
 } // namespace
 
 void opcua_rx(uint8_t slot)
@@ -1114,7 +1121,7 @@ void opcua_rx(uint8_t slot)
         uint8_t hdr[8];
         ring_peek(c, 0, hdr, 8);
         UaMsgHeader h;
-        if (!opcua_parse_header(hdr, 8, &h) || h.size < 8 || h.size > sizeof(s_msg))
+        if (!opcua_parse_header(hdr, 8, &h) || h.size < 8 || h.size > sizeof(s_opcua.msg))
         {
             close_conn(slot);
             return;
@@ -1122,15 +1129,16 @@ void opcua_rx(uint8_t slot)
         if (ring_avail(c) < h.size)
             return; // wait for the full message
 
-        ring_peek(c, 0, s_msg, h.size);
+        ring_peek(c, 0, s_opcua.msg, h.size);
         ring_consume(c, h.size);
 
         if (memcmp(h.type, "HEL", 3) == 0)
         {
             OpcUaHello hello;
             size_t n;
-            if (opcua_parse_hello(s_msg, h.size, &hello) && (n = opcua_build_ack(&hello, s_resp, sizeof(s_resp))) > 0)
-                raw_send(slot, s_resp, n);
+            if (opcua_parse_hello(s_opcua.msg, h.size, &hello) &&
+                (n = opcua_build_ack(&hello, s_opcua.resp, sizeof(s_opcua.resp))) > 0)
+                raw_send(slot, s_opcua.resp, n);
             else
             {
                 close_conn(slot);
@@ -1140,21 +1148,21 @@ void opcua_rx(uint8_t slot)
         else if (memcmp(h.type, "OPN", 3) == 0)
         {
             OpcUaOpenChannel oc;
-            if (!opcua_parse_open(s_msg, h.size, &oc))
+            if (!opcua_parse_open(s_opcua.msg, h.size, &oc))
             {
                 close_conn(slot);
                 return;
             }
             if (oc.secure_channel_id == 0) // fresh issue -> assign a channel id
-                oc.secure_channel_id = ++s_channel_id;
-            uint32_t token = ++s_token_id;
-            uint32_t seq = ++s_seq;
+                oc.secure_channel_id = ++s_opcua.channel_id;
+            uint32_t token = ++s_opcua.token_id;
+            uint32_t seq = ++s_opcua.seq;
             uint32_t lifetime = oc.requested_lifetime ? oc.requested_lifetime : 3600000u;
             int64_t now = opcua_filetime_from_unix((int64_t)time(nullptr));
-            size_t n =
-                opcua_build_open_response(&oc, oc.secure_channel_id, token, seq, now, lifetime, s_resp, sizeof(s_resp));
+            size_t n = opcua_build_open_response(&oc, oc.secure_channel_id, token, seq, now, lifetime, s_opcua.resp,
+                                                 sizeof(s_opcua.resp));
             if (n > 0)
-                raw_send(slot, s_resp, n);
+                raw_send(slot, s_opcua.resp, n);
             else
             {
                 close_conn(slot);
@@ -1164,25 +1172,27 @@ void opcua_rx(uint8_t slot)
         else if (memcmp(h.type, "MSG", 3) == 0)
         {
             OpcUaMsg m;
-            if (!opcua_parse_msg(s_msg, h.size, &m))
+            if (!opcua_parse_msg(s_opcua.msg, h.size, &m))
             {
                 close_conn(slot);
                 return;
             }
             int64_t now = opcua_filetime_from_unix((int64_t)time(nullptr));
-            uint32_t seq = ++s_seq;
+            uint32_t seq = ++s_opcua.seq;
             size_t n = 0;
             if (m.type_id == OPCUA_ID_GET_ENDPOINTS_REQ)
-                n = opcua_build_get_endpoints_response(&m, &s_server_info, seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_get_endpoints_response(&m, &s_opcua.server_info, seq, now, s_opcua.resp,
+                                                       sizeof(s_opcua.resp));
             else if (m.type_id == OPCUA_ID_CREATE_SESSION_REQ)
-                n = opcua_build_create_session_response(&m, ++s_session_id, ++s_auth_token, 1200000.0, &s_server_info,
-                                                        seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_create_session_response(&m, ++s_opcua.session_id, ++s_opcua.auth_token, 1200000.0,
+                                                        &s_opcua.server_info, seq, now, s_opcua.resp,
+                                                        sizeof(s_opcua.resp));
             else if (m.type_id == OPCUA_ID_ACTIVATE_SESSION_REQ)
-                n = opcua_build_activate_session_response(&m, seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_activate_session_response(&m, seq, now, s_opcua.resp, sizeof(s_opcua.resp));
             else if (m.type_id == OPCUA_ID_READ_REQ)
             {
                 OpcUaReadRequest rr;
-                if (!opcua_parse_read(s_msg, h.size, &rr))
+                if (!opcua_parse_read(s_opcua.msg, h.size, &rr))
                 {
                     close_conn(slot);
                     return;
@@ -1192,44 +1202,45 @@ void opcua_rx(uint8_t slot)
                 for (uint32_t i = 0; i < rr.count; i++)
                 {
                     memset(&vals[i], 0, sizeof(vals[i]));
-                    bool ok = s_read_handler &&
-                              s_read_handler(rr.items[i].ns, rr.items[i].id, rr.items[i].attribute, &vals[i]);
+                    bool ok = s_opcua.read_handler &&
+                              s_opcua.read_handler(rr.items[i].ns, rr.items[i].id, rr.items[i].attribute, &vals[i]);
                     sts[i] = ok ? OPCUA_STATUS_GOOD : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
                 }
-                n = opcua_build_read_response(&rr, vals, sts, seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_read_response(&rr, vals, sts, seq, now, s_opcua.resp, sizeof(s_opcua.resp));
             }
             else if (m.type_id == OPCUA_ID_BROWSE_REQ)
             {
                 OpcUaBrowseRequest br;
-                if (!opcua_parse_browse(s_msg, h.size, &br))
+                if (!opcua_parse_browse(s_opcua.msg, h.size, &br))
                 {
                     close_conn(slot);
                     return;
                 }
-                n = opcua_build_browse_response(&br, s_browse_handler, seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_browse_response(&br, s_opcua.browse_handler, seq, now, s_opcua.resp,
+                                                sizeof(s_opcua.resp));
             }
             else if (m.type_id == OPCUA_ID_WRITE_REQ)
             {
                 OpcUaWriteRequest wr;
-                if (!opcua_parse_write(s_msg, h.size, &wr))
+                if (!opcua_parse_write(s_opcua.msg, h.size, &wr))
                 {
                     close_conn(slot);
                     return;
                 }
                 uint32_t res[DETWS_OPCUA_WRITE_MAX];
                 for (uint32_t i = 0; i < wr.count; i++)
-                    res[i] = s_write_handler ? s_write_handler(wr.items[i].ns, wr.items[i].id, wr.items[i].attribute,
-                                                               &wr.items[i].value)
-                                             : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
-                n = opcua_build_write_response(&wr, res, seq, now, s_resp, sizeof(s_resp));
+                    res[i] = s_opcua.write_handler ? s_opcua.write_handler(wr.items[i].ns, wr.items[i].id,
+                                                                           wr.items[i].attribute, &wr.items[i].value)
+                                                   : OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
+                n = opcua_build_write_response(&wr, res, seq, now, s_opcua.resp, sizeof(s_opcua.resp));
             }
             else if (m.type_id == OPCUA_ID_CLOSE_SESSION_REQ)
-                n = opcua_build_close_session_response(&m, seq, now, s_resp, sizeof(s_resp));
+                n = opcua_build_close_session_response(&m, seq, now, s_opcua.resp, sizeof(s_opcua.resp));
             else // unknown/unsupported service -> ServiceFault (so the client never hangs)
-                n = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, seq, now, s_resp,
-                                              sizeof(s_resp));
+                n = opcua_build_service_fault(&m, OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED, seq, now, s_opcua.resp,
+                                              sizeof(s_opcua.resp));
             if (n > 0)
-                raw_send(slot, s_resp, n);
+                raw_send(slot, s_opcua.resp, n);
         }
         else if (memcmp(h.type, "CLO", 3) == 0)
         {
