@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.29.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.29.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7cc67c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7cc67c6b528c69d93b749b1023728080fecb6b0a))
+
+### Changes
+
+- Bump version: 5.28.0 → 5.29.0 ([`e94465f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e94465fc53a18289ed35d5f2a588a236f920378a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d4c0497`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4c0497debecbe918ab41be7a4a0a4a8ea678ce0))
+
+### Features
+
+- CC-Link (CLPA) cyclic fieldbus frame codec ([`6ffc643`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ffc643e968798bd8da67ba032c6329ebed98825))
+
+</details>
+
 ## [5.28.0] - 2026-07-06
 
 <details>
