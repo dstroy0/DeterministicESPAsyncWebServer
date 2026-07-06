@@ -839,6 +839,7 @@
     "sockaddr",
     "SOCKETCAN",
     "socketcan",
+    "SOCKPOOL",
     "softap",
     "sonarqube",
     "sparkline",

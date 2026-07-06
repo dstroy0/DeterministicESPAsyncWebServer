@@ -1530,6 +1530,12 @@
       "src": ["+<services/mdns_adaptive/mdns_adaptive.cpp>"],
       "tests": ["test_mdns_adaptive"]
     },
+    "native_sockpool": {
+      "desc": "Dynamic socket recycling (services/sockpool): a fixed LRU connection-slot pool - acquire\n(free slot, else recycle the least-recently-used and report the evicted id), touch, release, find, and\nin-use count. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SOCKPOOL=1"],
+      "src": ["+<services/sockpool/sockpool.cpp>"],
+      "tests": ["test_sockpool"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1614,6 +1620,7 @@
         "-DDETWS_ENABLE_HTTP_DELIVERY=1",
         "-DDETWS_ENABLE_HW_HEALTH=1",
         "-DDETWS_ENABLE_MDNS_ADAPTIVE=1",
+        "-DDETWS_ENABLE_SOCKPOOL=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1699,6 +1706,7 @@
         "+<services/http_delivery/http_delivery.cpp>",
         "+<services/hw_health/hw_health.cpp>",
         "+<services/mdns_adaptive/mdns_adaptive.cpp>",
+        "+<services/sockpool/sockpool.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

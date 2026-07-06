@@ -327,8 +327,11 @@ preempting queue, so sensing shares the real-time ingest path.
   from the free heap (a reserve left untouched, then a quarter of the spare, clamped to [min, max]) so
   a RAM-rich device gets throughput and a tight one stays alive; `detws_netadapt_dhcp_fallback()`
   decides when to give up on DHCP and use a static IP (elapsed timeout or retry budget). Pure cores,
-  host-tested (`native_netadapt`); the app applies the results (lwIP window / netif config).
-  _Remaining:_ dynamic socket recycling (a transport-pool concern).
+  host-tested (`native_netadapt`); the app applies the results (lwIP window / netif config). Dynamic
+  socket recycling (the transport-pool concern) shipped separately as `DETWS_ENABLE_SOCKPOOL`
+  (`services/sockpool`): a fixed LRU connection-slot pool that, when saturated, recycles the
+  least-recently-used slot for a new peer and reports the evicted id so the transport closes it (acquire /
+  touch / release / find), pure + host-tested (`native_sockpool`). _Remaining:_ none (cores complete).
 
 ## Power & radio management
 

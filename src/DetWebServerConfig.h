@@ -3037,6 +3037,19 @@
 #endif
 
 /**
+ * @brief Opt-in dynamic socket recycling: an LRU connection-slot pool (DETWS_ENABLE_SOCKPOOL).
+ *
+ * The transport-pool half of the adaptive-networking work: services/sockpool keeps a fixed table of
+ * connection slots and, when saturated, recycles the least-recently-used slot for a new peer
+ * (detws_sockpool_acquire returns the evicted id so the transport closes it), plus touch / release /
+ * find. The app owns the real sockets; this owns which slot a connection lives in and which to reclaim
+ * under pressure. No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_SOCKPOOL
+#define DETWS_ENABLE_SOCKPOOL 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
