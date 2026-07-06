@@ -14,14 +14,20 @@
 #include <stdio.h>
 #include <string.h>
 
-// Configuration + format scratch - all in BSS, no heap.
-static char g_server_ip[16]; // "255.255.255.255" + NUL
-static uint16_t g_port = 514;
-static char g_hostname[DETWS_SYSLOG_FIELD_MAX];
-static char g_appname[DETWS_SYSLOG_FIELD_MAX];
-static int g_facility = SYSLOG_FAC_LOCAL0;
-static bool g_ready = false;
-static char g_buf[DETWS_SYSLOG_MSG_MAX];
+// All syslog client state, owned by one instance (internal linkage): the collector endpoint,
+// the host/app identity, the facility, the ready flag, and the format scratch (all BSS, no
+// heap), grouped so it is one named owner, unreachable from any other translation unit.
+struct SyslogCtx
+{
+    char server_ip[16] = {0}; // "255.255.255.255" + NUL
+    uint16_t port = 514;
+    char hostname[DETWS_SYSLOG_FIELD_MAX] = {0};
+    char appname[DETWS_SYSLOG_FIELD_MAX] = {0};
+    int facility = SYSLOG_FAC_LOCAL0;
+    bool ready = false;
+    char buf[DETWS_SYSLOG_MSG_MAX];
+};
+static SyslogCtx s_syslog;
 
 static void copy_field(char *dst, size_t cap, const char *src)
 {
@@ -36,12 +42,12 @@ static void copy_field(char *dst, size_t cap, const char *src)
 
 void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname, int facility)
 {
-    copy_field(g_server_ip, sizeof(g_server_ip), server_ip);
-    g_port = port;
-    copy_field(g_hostname, sizeof(g_hostname), hostname);
-    copy_field(g_appname, sizeof(g_appname), appname);
-    g_facility = facility;
-    g_ready = (g_server_ip[0] != '\0');
+    copy_field(s_syslog.server_ip, sizeof(s_syslog.server_ip), server_ip);
+    s_syslog.port = port;
+    copy_field(s_syslog.hostname, sizeof(s_syslog.hostname), hostname);
+    copy_field(s_syslog.appname, sizeof(s_syslog.appname), appname);
+    s_syslog.facility = facility;
+    s_syslog.ready = (s_syslog.server_ip[0] != '\0');
 }
 
 size_t syslog_format(char *out, size_t cap, int facility, int severity, const char *hostname, const char *appname,
@@ -68,12 +74,13 @@ size_t syslog_format(char *out, size_t cap, int facility, int severity, const ch
 
 bool syslog_log(int severity, const char *msg)
 {
-    if (!g_ready)
+    if (!s_syslog.ready)
         return false;
-    size_t n = syslog_format(g_buf, sizeof(g_buf), g_facility, severity, g_hostname, g_appname, msg);
+    size_t n = syslog_format(s_syslog.buf, sizeof(s_syslog.buf), s_syslog.facility, severity, s_syslog.hostname,
+                             s_syslog.appname, msg);
     if (n == 0)
         return false;
-    return det_udp_sendto(g_server_ip, g_port, (const uint8_t *)g_buf, n);
+    return det_udp_sendto(s_syslog.server_ip, s_syslog.port, (const uint8_t *)s_syslog.buf, n);
 }
 
 #endif // DETWS_ENABLE_SYSLOG
