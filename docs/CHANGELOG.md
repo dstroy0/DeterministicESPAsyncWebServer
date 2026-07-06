@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.35.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.35.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`34289b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34289b938a594ab7ae76602f721437aae80640c4))
+
+### Changes
+
+- Bump version: 5.34.0 → 5.35.0 ([`cb8a309`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb8a30914444766f9c54f60f3d6a1d0f1b834b44))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`689fc85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/689fc859de196a35624bd8ffb1ca5e813b775abd))
+
+### Features
+
+- INTERBUS summation-frame fieldbus codec ([`4088f0c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4088f0c55cc401758278ec6572b5807612b6580f))
+
+</details>
+
 ## [5.34.0] - 2026-07-06
 
 <details>
