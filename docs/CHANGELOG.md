@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.30.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.30.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`84394d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84394d76cc187f5f4482fc0cc85e2ea12b3e66f2))
+
+### Changes
+
+- Bump version: 5.29.0 → 5.30.0 ([`defb27e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/defb27e5cf9fe6816e37a2d5255ef14a96d22f5a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`77011fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77011fa19f96184300c2275e213ce72feff67e0f))
+
+### Features
+
+- Ethernet POWERLINK (EPSG) basic frame codec ([`8eb5f2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8eb5f2e9077f35671aa2c8e12b92f327815fc036))
+
+</details>
+
 ## [5.29.0] - 2026-07-06
 
 <details>
