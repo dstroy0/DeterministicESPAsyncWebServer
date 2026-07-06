@@ -665,6 +665,7 @@
     "POWERON",
     "preflight",
     "preflights",
+    "presleep",
     "printf",
     "println",
     "prio",

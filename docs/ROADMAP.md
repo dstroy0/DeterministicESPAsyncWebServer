@@ -313,7 +313,14 @@ preempting queue, so sensing shares the real-time ingest path.
 - [ ] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming.
 - [x] DNS resolver + answer verification _(shipped)_ - `DETWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
-- [ ] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M).
+- [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -
+  `DETWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `detws_mdns_beacon_adapt` backs the announce
+  interval off toward a ceiling under RF contention and recovers it toward the nominal cadence when the
+  air is quiet, `detws_mdns_refresh_interval` gives the TTL/2 continuous-refresher cadence,
+  `detws_mdns_beacon_due` says when an announce is due, and `detws_mdns_beacon_presleep_due` is the
+  auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
+  pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
+  live contention counter from the WiFi driver (M).
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DETWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `det_udp_sendto`, zero-heap fire-and-forget (example 68.UdpTelemetry).
 - [~] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(decision core shipped)_ -
   `DETWS_ENABLE_NETADAPT`: `services/netadapt` `detws_netadapt_window()` sizes the TCP receive window

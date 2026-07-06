@@ -3024,6 +3024,19 @@
 #endif
 
 /**
+ * @brief Opt-in adaptive mDNS beacon scheduling (DETWS_ENABLE_MDNS_ADAPTIVE).
+ *
+ * Pure scheduling decisions on top of the shipped mDNS service: detws_mdns_beacon_adapt backs the
+ * announce interval off toward a ceiling under RF contention and recovers it when the air is quiet,
+ * detws_mdns_refresh_interval gives the TTL/2 continuous-refresher cadence, detws_mdns_beacon_due says
+ * when an announce is due, and detws_mdns_beacon_presleep_due says whether to announce before a sleep
+ * window that would otherwise let the record lapse. Wrap-safe time math, no heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_MDNS_ADAPTIVE
+#define DETWS_ENABLE_MDNS_ADAPTIVE 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

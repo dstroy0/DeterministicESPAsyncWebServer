@@ -1524,6 +1524,12 @@
       "src": ["+<services/hw_health/hw_health.cpp>"],
       "tests": ["test_hw_health"]
     },
+    "native_mdns_adaptive": {
+      "desc": "Adaptive mDNS beacon scheduling (services/mdns_adaptive): RF-contention backoff/recovery\nof the announce interval, the TTL/2 continuous-refresher cadence, the announce-due check, and the\nauto-sleep beacon (announce before a sleep that would lapse the record). Wrap-safe. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_MDNS_ADAPTIVE=1"],
+      "src": ["+<services/mdns_adaptive/mdns_adaptive.cpp>"],
+      "tests": ["test_mdns_adaptive"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1607,6 +1613,7 @@
         "-DDETWS_ENABLE_EXC_DECODER=1",
         "-DDETWS_ENABLE_HTTP_DELIVERY=1",
         "-DDETWS_ENABLE_HW_HEALTH=1",
+        "-DDETWS_ENABLE_MDNS_ADAPTIVE=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1691,6 +1698,7 @@
         "+<services/exc_decoder/exc_decoder.cpp>",
         "+<services/http_delivery/http_delivery.cpp>",
         "+<services/hw_health/hw_health.cpp>",
+        "+<services/mdns_adaptive/mdns_adaptive.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
