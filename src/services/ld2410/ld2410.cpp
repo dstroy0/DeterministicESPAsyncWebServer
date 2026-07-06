@@ -218,15 +218,22 @@ size_t ld2410_cmd_restart(uint8_t *buf, size_t cap)
 
 namespace
 {
-Ld2410Stream s_stream;
-Ld2410Report s_last;
-bool s_have = false;
+// All LD2410 UART-binding state, owned by one instance (internal linkage): the frame stream
+// assembler, the last decoded report, and the have-report flag, grouped so it is one named
+// owner, unreachable from any other translation unit.
+struct Ld2410Ctx
+{
+    Ld2410Stream stream;
+    Ld2410Report last;
+    bool have = false;
+};
+Ld2410Ctx s_ld;
 } // namespace
 
 bool ld2410_begin(int rx_pin, int tx_pin)
 {
-    ld2410_stream_reset(&s_stream);
-    s_have = false;
+    ld2410_stream_reset(&s_ld.stream);
+    s_ld.have = false;
     Serial2.begin(DETWS_LD2410_BAUD, SERIAL_8N1, rx_pin, tx_pin);
     return true;
 }
@@ -237,10 +244,10 @@ bool ld2410_poll()
     while (Serial2.available())
     {
         Ld2410Report r;
-        if (ld2410_stream_push(&s_stream, (uint8_t)Serial2.read(), &r))
+        if (ld2410_stream_push(&s_ld.stream, (uint8_t)Serial2.read(), &r))
         {
-            s_last = r;
-            s_have = true;
+            s_ld.last = r;
+            s_ld.have = true;
             fresh = true;
         }
     }
@@ -249,7 +256,7 @@ bool ld2410_poll()
 
 const Ld2410Report *ld2410_last()
 {
-    return s_have ? &s_last : nullptr;
+    return s_ld.have ? &s_ld.last : nullptr;
 }
 
 bool ld2410_set_engineering(bool on)
