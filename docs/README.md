@@ -1445,7 +1445,7 @@ Pass `nullptr` (or omit) to use the compile-time default [`CONN_TIMEOUT_MS`](@re
 
 | Method                                  | Description                                                                     |
 | --------------------------------------- | ------------------------------------------------------------------------------- |
-| `begin(port, cfg = nullptr)`            | Bind and listen. Returns `+1` on success, `-1` on lwIP error.                   |
+| `begin(port, cfg = nullptr)`            | Bind and listen. Returns `DETWS_OK` (1) on success, a negative error code on failure. |
 | [`stop()`](@ref DetWebServer::stop)     | Abort all connections, close listener, reset all pools.                         |
 | `restart(cfg = nullptr)`                | `stop()` + `begin()` on the same port. Returns `-1` if called before `begin()`. |
 | [`handle()`](@ref DetWebServer::handle) | Call every `loop()`. Runs timeout sweep, event drain, and dispatch.             |
@@ -1529,21 +1529,26 @@ const char *http_get_query (const HttpReq *req, const char *key); // case-sensit
 
 ## RFC Compliance
 
-The HTTP/1.1 parser enforces RFC 7230 byte-by-byte; the dispatcher returns the
-correct status codes (400/404/405/413/414/426/501) with `Allow`/`Sec-WebSocket-Version`
-headers where required; the WebSocket layer enforces RFC 6455 framing rules.
+The core HTTP/1.1 parser enforces RFC 7230 byte-by-byte; the dispatcher returns the
+correct status codes (400/404/405/413/414/426/501) with `Allow` / `Sec-WebSocket-Version`
+headers where required; the WebSocket layer enforces RFC 6455 framing. HTTP/2 (RFC 9113 +
+HPACK RFC 7541) and the in-progress HTTP/3 stack (RFC 9114 over QUIC, RFC 9000) follow
+their own specs, and every optional protocol is implemented against its authoritative
+standard.
 
-See **[RFC.md](RFC.md)** for the full conformance tables (HTTP, WebSocket,
-automatic error responses).
+See **[RFC.md](RFC.md)** for the HTTP / WebSocket / error-response conformance tables and
+**[STANDARDS.md](STANDARDS.md)** for the complete per-protocol standards map.
 
 ## SSH Support
 
-DeterministicESPAsyncWebServer includes a **complete SSH-2.0 server protocol** -
-banner exchange → `KEXINIT` negotiation → DH-group14-SHA256 key exchange →
-`NEWKEYS` → user authentication (**publickey** and password) → `ssh-connection`
-session channel, with transparent in-session re-keys. All state is static (BSS),
-the RSA private key never touches static memory, and password auth can be
-compiled out (`DETWS_SSH_ALLOW_PASSWORD=0`) for publickey-only hardening.
+DeterministicESPAsyncWebServer includes a **complete SSH-2.0 server** -
+banner exchange → `KEXINIT` negotiation → key exchange → `NEWKEYS` → user
+authentication (**publickey** and password) → `ssh-connection` session channel,
+with per-direction NEWKEYS and transparent in-session re-keys. Key exchange offers
+Curve25519 ECDH (`curve25519-sha256`) and `diffie-hellman-group14-sha256`; host keys
+are Ed25519 (`ssh-ed25519`) and RSA (`rsa-sha2-256` / `ssh-rsa`). All state is static
+(BSS), the host private key never touches static scratch memory, and password auth can
+be compiled out (`DETWS_SSH_ALLOW_PASSWORD=0`) for publickey-only hardening.
 
 See **[SSH.md](SSH.md)** for the feature summary, RFC/FIPS compliance
 table, authentication/hardening details, and memory footprint, and
@@ -1551,50 +1556,38 @@ table, authentication/hardening details, and memory footprint, and
 
 ## Utility Tools
 
-A set of Python utility tools for formatting documentation, managing the test report directories, and styling/compressing web page assets.
+Python tooling for generating documentation and building the embedded web assets. The
+documentation generators run in CI (the Feature Tables workflow) so their output never
+drifts; run any of them locally from the repo root.
 
 <details>
 <summary><b>Expand Utility Tools and Scripts Guide</b></summary>
 
-**1. Interactive Theme Wizard**
+**Documentation generators** (`docs/utilities/`)
 
-The wizard guides developers through styling choices, compiles the customized assets, and prints the gzipped C++ hex array to the console.
+| Script                   | Generates                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| `gen_feature_tables.py`  | the README / docs feature tables from `FEATURES.md`                                  |
+| `gen_readme_sections.py` | this file's feature-flag, configuration-override, source-tree, and footprint regions |
+| `gen_configurator.py`    | the interactive `configurator.html` from `DetWebServerConfig.h`                      |
+| `gen_flag_deps.py`       | the build-flag dependency diagram                                                    |
+| `gen_api_flow.py`        | the core API-flow diagram                                                            |
+| `gen_examples.py`        | the example index in `EXAMPLES.md`                                                   |
+| `generate_deep_dive.py`  | the per-test breakdown in `TEST_DOCUMENTATION.md`                                    |
+| `decorate_changelog.py`  | wraps each release in `CHANGELOG.md` in a collapsible block (CI)                     |
 
-```bash
-python src/utilities/theme_wizard.py
-```
+**Web-asset build** (`src/web/wizard/`)
 
-**2. HTML Beautification and Decoration Tool**
-
-Processes raw HTML source files to beautify, minify, or inject modern premium dark-mode styling.
-
-```bash
-# Beautify, minify, and inject CSS theme
-python src/utilities/process_html.py --input src/html/index.html --output src/html/index_processed.html --minify --decorate-css
-```
-
-**3. Gzip HTML to Hex Array Converter**
-
-Compresses a processed HTML template and outputs a C++ hex byte array in a timestamped text file to prevent naming collisions.
-
-```bash
-python src/utilities/gzip_html_to_hex.py --input src/html/index_processed.html
-```
-
-**4. Test Documentation Deep Dive Generator**
-
-Scans Unity C++ test suites and auto-generates a nested, collapsible directory of test cases inside `TEST_DOCUMENTATION.md`.
+| Script              | Purpose                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `build_assets.py`   | compile the editable web sources (`src/web/input/*`) into embedded C++ application assets   |
+| `gen_themes.py`     | build the theme CSS library + gallery from the palette sources                             |
+| `gen_theme_blobs.py`| pack the runtime-selectable theme CSS into C++ blobs                                        |
+| `gen_favicons.py`   | build the favicon library + gallery                                                        |
 
 ```bash
-python docs/utilities/generate_deep_dive.py
-```
-
-**5. Changelog Collapsible Decorator**
-
-Parses `CHANGELOG.md` and wraps individual release versions in collapsible details sections. Used dynamically inside the CI pipeline.
-
-```bash
-python docs/utilities/decorate_changelog.py
+python docs/utilities/gen_readme_sections.py   # refresh this file's generated sections
+python src/web/wizard/build_assets.py          # rebuild the embedded web assets
 ```
 
 </details>
