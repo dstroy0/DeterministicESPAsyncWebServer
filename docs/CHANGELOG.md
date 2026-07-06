@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.44.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.44.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`397009e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/397009eef30e2c53cfa8f30c44ea052e0c140850))
+
+### Changes
+
+- Bump version: 5.43.0 → 5.44.0 ([`7582c89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7582c899cbbf70689819fdc1f6aa70f98e76f9f1))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`391b30b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/391b30bdfbca221a4f59300c13313230c98ba1e8))
+
+### Features
+
+- hardware-health diagnostics (services/hw_health) ([`0de74f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0de74f18728ea1b4b78c5176b251782b7736d4c5))
+
+</details>
+
 ## [5.43.0] - 2026-07-06
 
 <details>
