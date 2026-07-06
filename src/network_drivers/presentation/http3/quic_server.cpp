@@ -258,6 +258,7 @@ void flush_and_reap(uint32_t now_ms)
         QuicSlot *s = &s_pool[i];
         if (!s->used)
             continue;
+        quic_conn_on_timeout(&s->qc, now_ms); // retransmit a lost handshake flight (PTO)
         size_t n;
         while ((n = quic_conn_send(&s->qc, out, sizeof out)) > 0)
             server_send(s->peer_ip, s->peer_port, out, n);

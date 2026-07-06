@@ -436,9 +436,72 @@ void test_full_handshake_and_stream()
     TEST_ASSERT_TRUE(got_resp);
 }
 
+// A lost server flight is retransmitted on the Probe Timeout, and stops once acknowledged (RFC 9002).
+void test_pto_retransmits_flight()
+{
+    fill();
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    quic_conn_init(&qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID, sizeof(SERVER_SCID),
+                   &cb);
+
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    // Client Initial(ClientHello), padded for the amplification budget.
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    uint8_t frames[1200];
+    size_t fl = quic_build_crypto(frames, sizeof(frames), 0, ch, ch_len);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, frames, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+
+    // Server's first flight (pretend it is lost: capture it and never ACK it).
+    uint8_t sdg[1500];
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, sdg, sizeof(sdg)) > 0);
+
+    // With the flight already sent and no PTO fired, there is nothing to send.
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg, sizeof(sdg)));
+    quic_conn_on_timeout(&qc, 1000);                                  // arm
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg, sizeof(sdg))); // still nothing (not fired)
+
+    // Advance past the PTO: the flight is marked for retransmission and re-sent.
+    quic_conn_on_timeout(&qc, 1000 + DETWS_QUIC_PTO_MS + 1);
+    uint8_t sdg2[1500];
+    size_t sl2 = quic_conn_send(&qc, sdg2, sizeof(sdg2));
+    TEST_ASSERT_TRUE(sl2 > 0);
+    uint8_t plain[2048], sh[512];
+    size_t wire = 0;
+    uint8_t type = 0;
+    size_t pt = open_long(sdg2, sl2, &init.server, plain, &wire, &type);
+    TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, type);
+    size_t sh_len = extract_crypto(plain, pt, sh);
+    TEST_ASSERT_TRUE(sh_len > 0);
+    TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted
+
+    // Once the Handshake flight is acknowledged, the PTO disarms and does not retransmit again.
+    qc.space[QUIC_ENC_HANDSHAKE].largest_acked = 0;
+    quic_conn_on_timeout(&qc, 1000 + 10 * DETWS_QUIC_PTO_MS);
+    TEST_ASSERT_FALSE(qc.pto_armed);
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg2, sizeof(sdg2)));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake_and_stream);
+    RUN_TEST(test_pto_retransmits_flight);
     return UNITY_END();
 }

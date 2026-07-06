@@ -54,6 +54,9 @@
 #ifndef DETWS_QUIC_STREAM_TX
 #define DETWS_QUIC_STREAM_TX 2048 ///< per-stream outbound buffer (drained into STREAM frames)
 #endif
+#ifndef DETWS_QUIC_PTO_MS
+#define DETWS_QUIC_PTO_MS 1000 ///< base Probe Timeout for retransmitting the handshake flight (RFC 9002)
+#endif
 
 /** @brief Per-connection stream state (client-initiated + server-initiated). */
 struct QuicStream
@@ -124,6 +127,10 @@ struct QuicConn
     uint64_t recv_bytes;    ///< total bytes received (anti-amplification budget)
     uint64_t sent_bytes;    ///< total bytes sent before address validation
     bool address_validated; ///< handshake-complete or received enough to lift the 3x limit
+
+    bool pto_armed;           ///< a Probe Timeout is running for the outstanding handshake flight
+    uint8_t pto_count;        ///< consecutive PTO expirations (exponential backoff exponent)
+    uint32_t pto_deadline_ms; ///< when the PTO fires (caller's monotonic ms; valid when pto_armed)
 };
 
 /**
@@ -156,6 +163,15 @@ bool quic_conn_recv(QuicConn *qc, const uint8_t *datagram, size_t len);
  * returns 0. Honors the pre-validation 3x anti-amplification limit.
  */
 size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap);
+
+/**
+ * @brief Drive loss recovery: if the server's handshake CRYPTO flight is outstanding (built but not
+ * yet acknowledged) and the Probe Timeout has elapsed, mark the flight for retransmission (RFC 9002)
+ * so the next quic_conn_send() re-sends it, and back the timer off exponentially. @p now_ms is the
+ * caller's monotonic millisecond clock (quic_conn stays clock-free). A no-op once the flight is
+ * acknowledged or the handshake completes. Call once per poll before quic_conn_send().
+ */
+void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms);
 
 /**
  * @brief Queue @p len bytes (with optional @p fin) to send on @p stream_id.

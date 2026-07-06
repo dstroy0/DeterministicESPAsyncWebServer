@@ -510,6 +510,51 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
     return dg;
 }
 
+namespace
+{
+// PTO period with exponential backoff, capped so the shift cannot overflow (RFC 9002 sec 6.2.1).
+uint32_t pto_period(uint8_t count)
+{
+    uint32_t p = DETWS_QUIC_PTO_MS;
+    for (uint8_t i = 0; i < count && p < (1u << 30); i++)
+        p <<= 1;
+    return p;
+}
+} // namespace
+
+void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms)
+{
+    if (qc->closed)
+        return;
+    // The one loss-recovery target for this minimal server is its handshake CRYPTO flight: it is sent
+    // once, and a lost datagram is not re-triggered by the peer's duplicate ClientHello (that CRYPTO
+    // is already delivered), so the server must retransmit on a Probe Timeout. Outstanding = the
+    // flight was built (WAIT_FINISHED) and the Handshake space is not yet acknowledged.
+    bool outstanding = qc->tls.state == QTLS_WAIT_FINISHED && qc->space[QUIC_ENC_HANDSHAKE].largest_acked < 0;
+    if (!outstanding)
+    {
+        qc->pto_armed = false; // acknowledged or handshake complete: nothing to retransmit
+        qc->pto_count = 0;
+        return;
+    }
+    if (!qc->pto_armed)
+    {
+        qc->pto_armed = true;
+        qc->pto_deadline_ms = now_ms + pto_period(qc->pto_count);
+        return;
+    }
+    if ((int32_t)(now_ms - qc->pto_deadline_ms) < 0)
+        return; // not yet (wrap-safe compare)
+
+    // PTO fired: rewind the CRYPTO send offset so the next quic_conn_send() re-sends the flight (a
+    // discarded Initial space is skipped when its packet is built), then back the timer off.
+    qc->space[QUIC_ENC_INITIAL].crypto_tx_off = 0;
+    qc->space[QUIC_ENC_HANDSHAKE].crypto_tx_off = 0;
+    if (qc->pto_count < 8)
+        qc->pto_count++;
+    qc->pto_deadline_ms = now_ms + pto_period(qc->pto_count);
+}
+
 size_t quic_conn_stream_send(QuicConn *qc, uint64_t stream_id, const uint8_t *data, size_t len, bool fin)
 {
     QuicStream *st = stream_get(qc, stream_id, true);
