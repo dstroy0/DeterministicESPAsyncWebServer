@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.34.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.34.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d03e3ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d03e3ee750b2a192fa4b70e4c6106e1aad059a78))
+
+### Changes
+
+- Bump version: 5.33.0 → 5.34.0 ([`2ce7b87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ce7b87e575c6595e1c4cc4d55f8a5fd062ade91))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0203cd0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0203cd09d58b957763fb587a42926ca91f558d68))
+- update ESP32 build footprints [skip ci] ([`59ece29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59ece29a9c2cab1c6f91ac4d5fdae741c8756edd))
+
+### Features
+
+- Modbus Plus HDLC token-bus frame codec ([`014c925`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/014c925a0287bcdb9ca8c1e97d92ffa45a1b27ad))
+
+</details>
+
 ## [5.33.0] - 2026-07-06
 
 <details>
