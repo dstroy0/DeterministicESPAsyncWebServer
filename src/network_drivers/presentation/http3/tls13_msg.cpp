@@ -63,9 +63,10 @@ void w_bytes(Writer *w, const uint8_t *b, size_t n)
 {
     if (n == 0)
         return;
-    // Overflow-safe capacity check: pos <= cap invariant means cap - pos never underflows, and this
-    // avoids the pos + n size_t wraparound a compiler/analyzer flags as a possible overflow (S3519).
-    if (n > w->cap - w->pos)
+    // Overflow-safe capacity check. pos <= cap is an invariant, but check it explicitly first so the
+    // cap - pos subtraction provably cannot underflow (an underflow would defeat the bound and let the
+    // memcpy overrun buf - exactly the S3519 case). Guarding pos first also avoids the pos + n wrap.
+    if (w->pos > w->cap || n > w->cap - w->pos)
     {
         w->ok = false;
         return;

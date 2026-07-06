@@ -22,9 +22,11 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 flight_hs_len` would underflow to a huge `cap` and `w_bytes()` would `memcpy` past the fixed array.
 - **Fix:** `emit()` now honors the `cap` contract it was given - it refuses an append that would run
   past the buffer (`written > cap - *plen`), maintaining the `*plen <= cap` invariant so the next
-  builder's capacity subtraction can never underflow. Separately, the HTTP/3 DATA-frame coalescing in
-  `dispatch_request()` now clamps with a room subtraction (`sizeof(body) - body_len`) instead of a
-  `body_len + take` sum that could wrap. Both are the codebase's own overflow-safe idiom.
+  builder's capacity subtraction can never underflow. `w_bytes()` also now checks `w->pos > w->cap`
+  explicitly before the `w->cap - w->pos` bound so that subtraction provably cannot underflow even for
+  a malformed `Writer`. Separately, the HTTP/3 DATA-frame coalescing in `dispatch_request()` now clamps
+  with a room subtraction (`sizeof(body) - body_len`) instead of a `body_len + take` sum that could
+  wrap. All three are the codebase's own overflow-safe idiom.
 
 ---
 
