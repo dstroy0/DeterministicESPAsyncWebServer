@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.53.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.53.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`75ebb07`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75ebb072bc0f95850ab5f1b1407daac8ccff2e3a))
+
+### Changes
+
+- Bump version: 5.52.0 → 5.53.0 ([`8727dfa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8727dfa87cbe3ee7481fcb72af6dcae183b7bec6))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4fddb5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fddb5bc9fc5cc092785565c0399e2e627152af6))
+
+### Features
+
+- LDC1614 inductance-to-digital field sensor ([`f3ec761`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3ec76126b423caee04c546eb07e808a2a7cef00))
+
+</details>
+
 ## [5.52.0] - 2026-07-06
 
 <details>
