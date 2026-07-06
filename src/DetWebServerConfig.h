@@ -2712,6 +2712,18 @@
 #endif
 
 /**
+ * @brief Opt-in MTConnect agent response codec (DETWS_ENABLE_MTCONNECT).
+ *
+ * When set, services/mtconnect builds the MTConnectStreams (current/sample) and MTConnectError XML
+ * response documents (ANSI/MTC1.4) into a caller buffer - header with instanceId + nextSequence, then
+ * per-DataItem Samples/Events/Condition observations - so the web server is an MTConnect agent over the
+ * existing HTTP stack. Pure text framing (values XML-escaped). Default off.
+ */
+#ifndef DETWS_ENABLE_MTCONNECT
+#define DETWS_ENABLE_MTCONNECT 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

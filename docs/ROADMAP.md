@@ -515,16 +515,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ## Industrial / standards protocols
 
-- [ ] **MTConnect** (L, ANSI/MTC1.4-2018) - implement the MTConnect agent standard:
-      the four HTTP request types (`probe`, `current`, `sample`, `asset`) returning
-      the MTConnect XML response documents (`MTConnectDevices`, `MTConnectStreams`,
-      `MTConnectAssets`, `MTConnectError`) per the schema, with a fixed-capacity
-      in-memory data model (Devices -> Components -> DataItems) and a bounded circular
-      sample buffer keyed by `instanceId` + `sequence` (the `from`/`count`/`interval`
-      semantics, including HTTP long-poll streaming of `sample`). Zero-heap: the device
-      model and sample buffer are fixed BSS, the XML is streamed via the chunked
-      response pump. Pairs with the existing data-source services (gpio_map / dashboard)
-      as MTConnect DataItems.
+- [~] **MTConnect** (L, ANSI/MTC1.4-2018) _(streams/error response codec shipped)_ -
+  `DETWS_ENABLE_MTCONNECT` (`services/mtconnect`): the MTConnect agent response documents over the
+  existing HTTP stack - an incremental **MTConnectStreams** builder (the `current` / `sample`
+  response: header with instanceId + nextSequence, then per-DataItem `<Samples>` / `<Events>` /
+  `<Condition>` observations) and the **MTConnectError** document, XML-escaped into a caller buffer;
+  host-tested (`native_mtconnect`). _Remaining:_ the `probe` **MTConnectDevices** doc, `MTConnectAssets`,
+  the fixed-capacity Devices->Components->DataItems model + the circular sample buffer keyed by
+  instanceId + sequence (the `from`/`count`/`interval` long-poll semantics). Pairs with gpio_map /
+  dashboard as DataItems.
 - [~] **Industrial Ethernet** (XL, EtherNet/IP, PROFINET, EtherCAT) - _EtherNet/IP + CIP
   messaging shipped._ `DETWS_ENABLE_ENIP` (`services/enip`): the encapsulation layer (TCP/UDP 44818) - `eip_build` / `eip_parse` (the 24-octet header), `eip_build_register_session`, and
   `eip_build_send_rr_data` / `eip_parse_send_rr_data` (wrap/unwrap a CIP message via the Common

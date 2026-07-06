@@ -1368,6 +1368,12 @@
       "src": ["+<services/goose/goose.cpp>"],
       "tests": ["test_goose"]
     },
+    "native_mtconnect": {
+      "desc": "MTConnect agent response codec (services/mtconnect, ANSI/MTC1.4): the incremental\nMTConnectStreams builder (header + Samples/Events/Condition) and the MTConnectError document,\nXML-escaped. Pure host tests with structural assertions.",
+      "flags": ["-DDETWS_ENABLE_MTCONNECT=1"],
+      "src": ["+<services/mtconnect/mtconnect.cpp>"],
+      "tests": ["test_mtconnect"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1425,6 +1431,7 @@
         "-DDETWS_ENABLE_RAWL2=1",
         "-DDETWS_ENABLE_SPA_ROUTER=1",
         "-DDETWS_ENABLE_GOOSE=1",
+        "-DDETWS_ENABLE_MTCONNECT=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1483,6 +1490,7 @@
         "+<services/rawl2/rawl2.cpp>",
         "+<services/spa_router/spa_router.cpp>",
         "+<services/goose/goose.cpp>",
+        "+<services/mtconnect/mtconnect.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
