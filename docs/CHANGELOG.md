@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1e8ca7b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e8ca7be52dde1ced4f0045c43330d1dcb8122ec))
+
+### Documentation
+
+- reconcile 4 stale items - CANopen, IO-Link, DeviceNet, IEC 60870 ([`934864f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/934864fd2a2d9563f020d86d077b0af611b28182))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`10dfebe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10dfebe661d5246dba2060ffb5686b8c2a8d1a1d))
+
 ## [5.7.0] - 2026-07-06
 
 <details>
