@@ -1581,6 +1581,34 @@
       ],
       "tests": ["test_h3_e2e"]
     },
+    "native_quic_server": {
+      "desc": "HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool\nthat routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. A QUIC\nclient in the test injects datagrams through the host ingest seam and captures the server's replies\nthrough the output sink, driving a full handshake + HTTP/3 GET and verifying the 200 + body - the\nsame end-to-end flow as test_h3_e2e but through quic_server_begin / poll / respond, exercising the\nconnection-ID routing, the ingest ring, and new-connection creation from a client Initial.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_server.cpp>",
+        "+<network_drivers/presentation/http3/h3_conn.cpp>",
+        "+<network_drivers/presentation/http3/h3_frame.cpp>",
+        "+<network_drivers/presentation/http3/qpack.cpp>",
+        "+<network_drivers/presentation/hpack_prim/hpack_prim.cpp>",
+        "+<network_drivers/presentation/http3/quic_conn.cpp>",
+        "+<network_drivers/presentation/http3/quic_tls.cpp>",
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
+        "+<network_drivers/presentation/http3/tls13_msg.cpp>",
+        "+<network_drivers/presentation/http3/quic_tp.cpp>",
+        "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_packet.cpp>",
+        "+<network_drivers/presentation/http3/quic_frame.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>"
+      ],
+      "tests": ["test_quic_server"]
+    },
     "native_ssh_chachapoly": {
       "desc": "chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC\n8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction\n(length decode, encrypt/decrypt round-trip, tag-tamper + wrong-seqnr rejection). Pure host crypto.",
       "flags": [],
