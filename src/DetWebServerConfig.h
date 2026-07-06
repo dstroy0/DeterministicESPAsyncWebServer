@@ -2973,6 +2973,20 @@
 #endif
 
 /**
+ * @brief Opt-in southbound protocol-driver framework (DETWS_ENABLE_SOUTHBOUND).
+ *
+ * The uniform seam every field-device driver plugs into so the app polls/drives any southbound device
+ * (a Modbus slave, a BACnet controller, a raw sensor over SPI/I2C/UART) through one facade: register a
+ * SouthboundDriver (a read/write/read_block/write_block vtable + its transport ctx), then address points
+ * by driver name via detws_southbound_read / _write / _read_block / _write_block. The block calls are the
+ * atomic multi-point (register-matrix) path. Bounded registry (DETWS_SOUTHBOUND_MAX_DRIVERS, default 8),
+ * no heap; Modbus master is the one such driver today. Default off.
+ */
+#ifndef DETWS_ENABLE_SOUTHBOUND
+#define DETWS_ENABLE_SOUTHBOUND 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

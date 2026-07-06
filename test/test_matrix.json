@@ -1500,6 +1500,12 @@
       "src": ["+<services/atc/atc.cpp>"],
       "tests": ["test_atc"]
     },
+    "native_southbound": {
+      "desc": "Southbound protocol-driver framework (services/southbound): the bounded driver registry\n(register / find / clear / count) and the name-dispatched read/write/read_block/write_block facade,\nincluding capability + not-found handling and transport-error passthrough. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_SOUTHBOUND=1"],
+      "src": ["+<services/southbound/southbound.cpp>"],
+      "tests": ["test_southbound"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1579,6 +1585,7 @@
         "-DDETWS_ENABLE_UTMC=1",
         "-DDETWS_ENABLE_OCIT=1",
         "-DDETWS_ENABLE_ATC=1",
+        "-DDETWS_ENABLE_SOUTHBOUND=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1659,6 +1666,7 @@
         "+<services/utmc/utmc.cpp>",
         "+<services/ocit/ocit.cpp>",
         "+<services/atc/atc.cpp>",
+        "+<services/southbound/southbound.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
