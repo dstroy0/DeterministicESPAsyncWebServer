@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.61.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.61.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`9631e16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9631e1602eeebf614078e33c2e214e26470aa40b))
+- update CHANGELOG.md [skip ci] ([`eb5c740`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb5c740630b34593eb9238d117daafb056c69808))
+
+### Changes
+
+- Bump version: 5.60.4 → 5.61.0 ([`fa8306e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa8306e11457d0593df8b39f0dded7b847a04605))
+
+### Documentation
+
+- Sphinx + Breathe bridge with the squirty (green-screen) theme ([`86ab1c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86ab1c1daf30bc2849aedefd83d1d51c6358b6b3))
+
+</details>
+
 ## [5.60.4] - 2026-07-06
 
 <details>
