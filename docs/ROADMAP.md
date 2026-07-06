@@ -493,11 +493,21 @@ new framing/record layer slots in behind one owner instead of threading through
 every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
 (RFC 9110 semantics, RFC 9112 messaging - which obsolete RFC 7230/7231).
 
-- [ ] **TLS 1.2** (L, RFC 5246) - explicit TLS 1.2 record/handshake support with a
-      pinned, audited cipher suite set, session resumption, and the static-pool
-      mbedTLS integration; make the negotiated version observable and configurable.
-- [ ] **TLS 1.3** (L, RFC 8446) - TLS 1.3 handshake (1-RTT, optional 0-RTT early
-      data with replay safeguards), modern AEAD-only suites, after TLS 1.2 lands.
+- [~] **TLS 1.2** (L, RFC 5246) - explicit TLS 1.2 record/handshake support with a
+  pinned, audited cipher suite set, session resumption, and the static-pool
+  mbedTLS integration; make the negotiated version observable and configurable.
+  The record + handshake run in `network_drivers/tls` (mbedTLS, floored at TLS 1.2). The version +
+  cipher **policy** shipped as `DETWS_ENABLE_TLS_POLICY` (`services/tls_policy`):
+  `detws_tls_negotiate_version` picks the version server-style, `detws_tls_version_name` makes it
+  observable, `detws_tls_select_cipher` pins the suite allowlist by server preference, and
+  `detws_tls_is_aead` classifies suites - pure + host-tested (`native_tls_policy`). _Remaining:_ wire the
+  policy into the mbedTLS conf (cert/cipher list) + session-resumption tickets.
+- [~] **TLS 1.3** (L, RFC 8446) - TLS 1.3 handshake (1-RTT, optional 0-RTT early
+  data with replay safeguards), modern AEAD-only suites, after TLS 1.2 lands. TLS 1.3 is already
+  negotiated by the mbedTLS transport (no max-version cap), and the AEAD-only cipher policy for the
+  hardened profile is the shared `services/tls_policy` (`detws_tls_is_aead` + the 1.3 suites 0x1301-0x1303
+  in the allowlist). _Remaining:_ optional 0-RTT early data with replay safeguards, and exposing a
+  1.3-only profile toggle.
 - [x] **HTTP/2** (L, RFC 9113) _(shipped, PSRAM-gated)_ - HPACK header compression
       (RFC 7541), stream multiplexing + flow control, and `h2` ALPN over the TLS
       layer above; streams mapped onto the deterministic per-connection model

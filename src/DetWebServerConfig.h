@@ -3183,6 +3183,20 @@
 #endif
 
 /**
+ * @brief Opt-in TLS version negotiation + pinned cipher-suite policy (DETWS_ENABLE_TLS_POLICY).
+ *
+ * A policy layer on top of the mbedTLS-backed transport TLS (which already runs the 1.2 / 1.3 record +
+ * handshake): services/tls_policy pins the version to an audited [min,max] and makes the negotiated
+ * version observable (detws_tls_negotiate_version / detws_tls_version_name), and pins the cipher suites
+ * to an audited allowlist selected by server preference (detws_tls_select_cipher), with an AEAD-only
+ * classifier (detws_tls_is_aead) for a hardened profile. Pure, host-tested; the app feeds the results to
+ * the mbedTLS config. Default off.
+ */
+#ifndef DETWS_ENABLE_TLS_POLICY
+#define DETWS_ENABLE_TLS_POLICY 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
