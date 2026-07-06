@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.43.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.43.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`490f9a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/490f9a7ee50acec77cb90db5ced547f320c70b69))
+
+### Changes
+
+- Bump version: 5.42.0 → 5.43.0 ([`dc8c6e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc8c6e2e3f1e56603073df4a8fbb01ddfd0e6c1c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`f92a301`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f92a30171bb46a7971d2884fca2ba062d0570754))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6336e83`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6336e8372ee6574a1adfc3fa69c23a20423d4706))
+
+### Features
+
+- stale-while-revalidate + Range delta fetch + SW precache ([`e44aa1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44aa1ffc889b67311f80d8aa853fe73612f4552))
+
+</details>
+
 ## [5.42.0] - 2026-07-06
 
 <details>
