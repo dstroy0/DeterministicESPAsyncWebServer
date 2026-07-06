@@ -22,19 +22,24 @@
 #include "services/det_clock.h" // detws_millis() for the server-initiated re-key timer
 #include <string.h>
 
-// SSH session slot ↔ TCP conn slot mapping. conn_for_ssh[j] == 0xFF means the
-// SSH slot j is free.
-static uint8_t conn_for_ssh[MAX_SSH_CONNS];
-static bool g_init_done = false;
-static volatile bool g_close[MAX_SSH_CONNS];
+// All SSH connection-layer state, owned by one instance (internal linkage): the SSH-slot ->
+// TCP-conn-slot mapping (0xFF = free), the one-time init flag, and the per-slot deferred-close
+// flags. Grouped so it is one named owner, unreachable from any other translation unit.
+struct SshConnCtx
+{
+    uint8_t conn_for_ssh[MAX_SSH_CONNS];
+    bool init_done = false;
+    volatile bool close[MAX_SSH_CONNS];
+};
+static SshConnCtx s_sshc;
 
 static void ensure_init()
 {
-    if (g_init_done)
+    if (s_sshc.init_done)
         return;
     for (uint8_t j = 0; j < MAX_SSH_CONNS; j++)
-        conn_for_ssh[j] = 0xFF;
-    g_init_done = true;
+        s_sshc.conn_for_ssh[j] = 0xFF;
+    s_sshc.init_done = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -43,9 +48,9 @@ static void ensure_init()
 
 static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
 {
-    if (i >= MAX_SSH_CONNS || conn_for_ssh[i] == 0xFF)
+    if (i >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[i] == 0xFF)
         return;
-    TcpConn *conn = &conn_pool[conn_for_ssh[i]];
+    TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[i]];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return;
 
@@ -66,7 +71,7 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
 static void ssh_msg_handler(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len)
 {
     if (ssh_server_dispatch(i, msg_type, payload, len) < 0)
-        g_close[i] = true;
+        s_sshc.close[i] = true;
 }
 
 void ssh_conn_setup()
@@ -85,9 +90,9 @@ const ProtoHandler *ssh_proto_handler(void)
 
 int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+    if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
-    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return -1;
 
@@ -114,9 +119,9 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
 
 int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
 {
-    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+    if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
-    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return -1;
 
@@ -147,9 +152,9 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
 int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
                             uint16_t orig_port)
 {
-    if (ssh_slot >= MAX_SSH_CONNS || conn_for_ssh[ssh_slot] == 0xFF)
+    if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
-    TcpConn *conn = &conn_pool[conn_for_ssh[ssh_slot]];
+    TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
         return -1;
 
@@ -182,7 +187,7 @@ void ssh_conn_poll(uint8_t conn_slot)
     if (conn->state != CONN_ACTIVE)
         return;
     uint8_t j = conn->proto_slot;
-    if (j >= MAX_SSH_CONNS || conn_for_ssh[j] != conn_slot)
+    if (j >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[j] != conn_slot)
         return;
 
     // Server-initiated re-key (RFC 4253 §9): once the volume (packet-count proxy) or time budget since
@@ -220,7 +225,7 @@ void ssh_conn_accept(uint8_t conn_slot)
     // Allocate a free SSH session slot.
     uint8_t j = 0xFF;
     for (uint8_t k = 0; k < MAX_SSH_CONNS; k++)
-        if (conn_for_ssh[k] == 0xFF)
+        if (s_sshc.conn_for_ssh[k] == 0xFF)
         {
             j = k;
             break;
@@ -232,9 +237,9 @@ void ssh_conn_accept(uint8_t conn_slot)
         return;
     }
 
-    conn_for_ssh[j] = conn_slot;
+    s_sshc.conn_for_ssh[j] = conn_slot;
     conn->proto_slot = j;
-    g_close[j] = false;
+    s_sshc.close[j] = false;
 
     ssh_transport_init(j);
     ssh_pkt_init(j);
@@ -263,7 +268,7 @@ void ssh_conn_rx(uint8_t conn_slot)
 {
     TcpConn *conn = &conn_pool[conn_slot];
     uint8_t j = conn->proto_slot;
-    if (j >= MAX_SSH_CONNS || conn_for_ssh[j] != conn_slot)
+    if (j >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[j] != conn_slot)
         return;
 
     // Drain the ring into a linear scratch buffer via the transport read API.
@@ -293,7 +298,7 @@ void ssh_conn_rx(uint8_t conn_slot)
 
     ssh_wipe(buf, n);
 
-    if (g_close[j])
+    if (s_sshc.close[j])
         close_conn(conn_slot);
 }
 
@@ -310,7 +315,7 @@ void ssh_conn_close(uint8_t conn_slot)
         ssh_keymat_wipe(j);
         ssh_dh_wipe(j);
         ssh_wipe(&ssh_sess[j], sizeof(SshSession));
-        conn_for_ssh[j] = 0xFF;
+        s_sshc.conn_for_ssh[j] = 0xFF;
     }
     conn->proto_slot = DETWS_PROTO_SLOT_NONE;
 }
