@@ -17,41 +17,48 @@
 
 SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 
-static SshChannelDataCb g_data_cb = nullptr;
-static SshForwardOpenCb g_forward_open_cb = nullptr;
-static SshForwardDataCb g_forward_data_cb = nullptr;
-static SshRemoteForwardOpenCb g_rfwd_open_cb = nullptr;
-static SshRemoteForwardCancelCb g_rfwd_cancel_cb = nullptr;
-static SshForwardConfirmCb g_forward_confirm_cb = nullptr;
+// All SSH channel-layer callbacks, owned by one instance (internal linkage): the channel-data
+// sink and the local/remote port-forward hooks. Grouped so it is one named owner, unreachable
+// from any other translation unit. (The ssh_chan[][] table is the shared cross-TU substrate.)
+struct SshChannelCtx
+{
+    SshChannelDataCb data_cb = nullptr;
+    SshForwardOpenCb forward_open_cb = nullptr;
+    SshForwardDataCb forward_data_cb = nullptr;
+    SshRemoteForwardOpenCb rfwd_open_cb = nullptr;
+    SshRemoteForwardCancelCb rfwd_cancel_cb = nullptr;
+    SshForwardConfirmCb forward_confirm_cb = nullptr;
+};
+static SshChannelCtx s_chcb;
 
 void ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
-    g_data_cb = cb;
+    s_chcb.data_cb = cb;
 }
 
 void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
 {
-    g_forward_open_cb = cb;
+    s_chcb.forward_open_cb = cb;
 }
 
 void ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
 {
-    g_forward_data_cb = cb;
+    s_chcb.forward_data_cb = cb;
 }
 
 void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
 {
-    g_rfwd_open_cb = cb;
+    s_chcb.rfwd_open_cb = cb;
 }
 
 void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
 {
-    g_rfwd_cancel_cb = cb;
+    s_chcb.rfwd_cancel_cb = cb;
 }
 
 void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
 {
-    g_forward_confirm_cb = cb;
+    s_chcb.forward_confirm_cb = cb;
 }
 
 void ssh_channel_init(uint8_t i)
@@ -190,10 +197,10 @@ int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uin
 
         // The owner allocates (or cancels) the real listener; -1 means "refused".
         int bound = -1;
-        if (is_fwd && g_rfwd_open_cb)
-            bound = g_rfwd_open_cb(i, (const char *)addr, addr_len, bind_port);
-        else if (is_cancel && g_rfwd_cancel_cb)
-            bound = g_rfwd_cancel_cb(i, (const char *)addr, addr_len, bind_port);
+        if (is_fwd && s_chcb.rfwd_open_cb)
+            bound = s_chcb.rfwd_open_cb(i, (const char *)addr, addr_len, bind_port);
+        else if (is_cancel && s_chcb.rfwd_cancel_cb)
+            bound = s_chcb.rfwd_cancel_cb(i, (const char *)addr, addr_len, bind_port);
 
         if (bound < 0)
         {
@@ -312,8 +319,8 @@ int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t le
     c->peer_max_pkt = rd_u32(payload + 13);
     c->pending = false;
     c->open = true;
-    if (g_forward_confirm_cb)
-        g_forward_confirm_cb(i, c->local_id, true);
+    if (s_chcb.forward_confirm_cb)
+        s_chcb.forward_confirm_cb(i, c->local_id, true);
     return 0;
 }
 
@@ -328,8 +335,8 @@ int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t le
     uint32_t ch = c->local_id;
     c->pending = false;
     c->open = false; // free the slot; the client refused the forward
-    if (g_forward_confirm_cb)
-        g_forward_confirm_cb(i, ch, false);
+    if (s_chcb.forward_confirm_cb)
+        s_chcb.forward_confirm_cb(i, ch, false);
     return 0;
 }
 
@@ -361,7 +368,7 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
     uint16_t fport = 0;
     if (is_dtcpip)
     {
-        if (!g_forward_open_cb)
+        if (!s_chcb.forward_open_cb)
             return build_open_failure(out, cap, sender, 1u, out_len); // forwarding off: prohibited
         if (!rd_string(payload, len, &off, &fhost, &fhost_len) || off + 4 > len)
             return -1;
@@ -385,7 +392,7 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
     {
         // The owner does the actual TCP connect (no I/O in this codec); on refusal
         // free the channel and fail closed.
-        if (g_forward_open_cb(i, c->local_id, (const char *)fhost, fhost_len, fport) < 0)
+        if (s_chcb.forward_open_cb(i, c->local_id, (const char *)fhost, fhost_len, fport) < 0)
         {
             c->open = false;
             return build_open_failure(out, cap, sender, 2u, out_len); // connect failed
@@ -467,12 +474,12 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
     {
         if (c->type != SSH_CHAN_SESSION) // forwarded TCP bytes (ssh -L / -R) -> the forward owner
         {
-            if (g_forward_data_cb)
-                g_forward_data_cb(i, c->local_id, data, dlen);
+            if (s_chcb.forward_data_cb)
+                s_chcb.forward_data_cb(i, c->local_id, data, dlen);
         }
-        else if (g_data_cb) // session bytes -> the application
+        else if (s_chcb.data_cb) // session bytes -> the application
         {
-            g_data_cb(i, c->local_id, data, dlen);
+            s_chcb.data_cb(i, c->local_id, data, dlen);
         }
     }
 
