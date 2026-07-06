@@ -6,10 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- check anti-amplification before building, not after (flight desync) ([`34aa5f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34aa5f834231c6db478faf2080bdc429d1e9de7b))
 - reset the PTO backoff on acknowledged progress (RFC 9002 sec 6.2) ([`77f723d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77f723dc9ef426dfb6837539616a9e4c14aba62b))
 
 ### CI / Build
 
+- update test report [skip ci] ([`cf94d4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf94d4a2e89ac1e4edd355a1658f7e3ed533af3d))
+- update CHANGELOG.md [skip ci] ([`b6a076e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6a076e62cce685eacefd95d96a10eabfef7b5f2))
 - update CHANGELOG.md [skip ci] ([`5b3fecf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b3fecf987a796b292519450e7c8e182b0bc8559))
 - update CHANGELOG.md [skip ci] ([`0f4f5a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f4f5a0c7812066fbde5e34fe2834975e5efbbb9))
 - update test report [skip ci] ([`321f006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/321f006cc104c90d9d2a18d01a7cd0b4bdbc054b))
@@ -17,6 +20,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`a237736`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2377369276d9b34f10efeac930743785bb5a92a))
 - update ESP32 build footprints [skip ci] ([`b2bbf18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b2bbf18fb5f39c5944e4cea6cbc17d96ff960927))
 - update ESP32 build footprints [skip ci] ([`cf9a59d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf9a59db260984e9696d944b768cc0796159e532))
 
