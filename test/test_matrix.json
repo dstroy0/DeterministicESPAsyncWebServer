@@ -1296,6 +1296,12 @@
       "src": ["+<services/guardrails/guardrails.cpp>"],
       "tests": ["test_guardrails"]
     },
+    "native_failsafe": {
+      "desc": "Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe\noverdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON.\nPure host tests with a synthetic clock.",
+      "flags": ["-DDETWS_ENABLE_FAILSAFE=1"],
+      "src": ["+<services/failsafe/failsafe.cpp>"],
+      "tests": ["test_failsafe"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1341,6 +1347,7 @@
         "-DDETWS_ENABLE_GPIO_MAP=1",
         "-DDETWS_ENABLE_UDP_TELEMETRY=1",
         "-DDETWS_ENABLE_GUARDRAILS=1",
+        "-DDETWS_ENABLE_FAILSAFE=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1387,6 +1394,7 @@
         "+<services/gpio_map/gpio_map_routes.cpp>",
         "+<services/udp_telemetry/udp_telemetry.cpp>",
         "+<services/guardrails/guardrails.cpp>",
+        "+<services/failsafe/failsafe.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

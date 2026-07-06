@@ -2561,6 +2561,24 @@
 #endif
 
 /**
+ * @brief Opt-in software watchdog: deadlock detection + fail-safe safe-state (DETWS_ENABLE_FAILSAFE).
+ *
+ * When set, services/failsafe provides a fixed registry of "lifelines" (a task / worker / control loop
+ * that must check in within its deadline). detws_failsafe_check() detects one that stopped feeding (a
+ * hang / deadlock) and fires a breach callback once per episode so the app can enter a known-safe
+ * state. App-defined and per-lifeline, on top of the hardware task watchdog. Pure core, zero heap.
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_FAILSAFE
+#define DETWS_ENABLE_FAILSAFE 0
+#endif
+
+/** @brief Max monitored lifelines in the fail-safe registry (static, zero-heap). */
+#ifndef DETWS_FAILSAFE_MAX_LIFELINES
+#define DETWS_FAILSAFE_MAX_LIFELINES 8
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
