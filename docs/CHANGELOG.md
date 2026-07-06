@@ -6,11 +6,17 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`874667d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/874667db1541a03a468e639530c4b4ea25e05f56))
+- update CHANGELOG.md [skip ci] ([`8f3e53b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f3e53b2f829edd813c1b3bb52e2c11f2b1b1ef8))
 - update CHANGELOG.md [skip ci] ([`1e706ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e706ab47ca008faa38058d6ab8a648c94f49db1))
 - update test report [skip ci] ([`36c1182`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36c1182b088e98f02fc3108f0f5112cb81c5d1ee))
 - update CHANGELOG.md [skip ci] ([`bd5c82e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd5c82e9900b558f852215ead8c7dbfe602ff2b3))
 - update test report [skip ci] ([`a44432f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a44432f0515e2d5e524dcf82fff6505c36d1f099))
 - update CHANGELOG.md [skip ci] ([`cc1559d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc1559df9e9c6a10a43641538daf9f292fdf93f5))
+
+### Features
+
+- quic_server idle-connection reaping + PSRAM build guard (v5.x hardening) ([`ec5679a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec5679a58176a9623e1d79a78af2bfd659ba51cf))
 
 ### Testing
 
