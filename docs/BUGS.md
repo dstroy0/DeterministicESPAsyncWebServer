@@ -8,6 +8,26 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## HTTP/3 TLS flight append ignored its buffer cap (potential `flight_hs` overflow)
+
+- **Status:** FIXED (native_quic_tls / native_tls13_msg / native_h3_e2e green; flagged by SonarCloud
+  cpp:S3519 as two BLOCKER "memory copy overflows the destination buffer" findings).
+- **Found:** 2026-07-06, reviewing the SonarCloud quality gate on the HTTP/3 handshake code.
+- **Symptom:** the TLS 1.3 server flight is built message-by-message into a fixed `qt->flight_hs`
+  buffer, each builder called with `sizeof(flight_hs) - flight_hs_len` as its capacity. `emit()` was
+  handed that same capacity but ignored it (`(void)cap;`) and did `*plen += written` unconditionally.
+- **Root cause:** nothing bounded `flight_hs_len` against `sizeof(flight_hs)`. In the correct flow each
+  builder returns `<= cap`, so the sum stayed in bounds, but the invariant was never enforced: if a
+  builder ever returned more than the remaining room, a later builder's `sizeof(flight_hs) -
+flight_hs_len` would underflow to a huge `cap` and `w_bytes()` would `memcpy` past the fixed array.
+- **Fix:** `emit()` now honors the `cap` contract it was given - it refuses an append that would run
+  past the buffer (`written > cap - *plen`), maintaining the `*plen <= cap` invariant so the next
+  builder's capacity subtraction can never underflow. Separately, the HTTP/3 DATA-frame coalescing in
+  `dispatch_request()` now clamps with a room subtraction (`sizeof(body) - body_len`) instead of a
+  `body_len + take` sum that could wrap. Both are the codebase's own overflow-safe idiom.
+
+---
+
 ## QUIC anti-amplification checked after building, desyncing the flight under loss
 
 - **Status:** FIXED (RPi netem loss interop + native_quic_conn; found while adding PTO loss recovery).
