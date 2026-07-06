@@ -31,8 +31,8 @@
     "example": "Foundation/22.CanCapture",
     "flags": "-DDETWS_ENABLE_BUS_CAPTURE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 770769,
-    "ram_bytes": 45332
+    "flash_bytes": 770773,
+    "ram_bytes": 45316
   },
   "CBOR": {
     "example": "L6-Presentation/13.Cbor",
@@ -108,8 +108,8 @@
     "example": "Foundation/09.InterfaceForward",
     "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270349,
-    "ram_bytes": 28888
+    "flash_bytes": 270377,
+    "ram_bytes": 28896
   },
   "DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE": {
     "example": "Foundation/10.RadioGateway",
@@ -392,17 +392,17 @@
     "ram_bytes": 21928
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/06.PreemptQueue",
+    "example": "Foundation/08.PreemptLanes",
     "flags": "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 274009,
-    "ram_bytes": 23968
+    "flash_bytes": 268321,
+    "ram_bytes": 23936
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Foundation/21.WifiCapture",
     "flags": "-DDETWS_ENABLE_PROMISC=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 764217,
+    "flash_bytes": 764241,
     "ram_bytes": 47320
   },
   "PROVISIONING": {
