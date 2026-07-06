@@ -64,6 +64,18 @@ jobs:
             python tools/ci/feature_budget.py readme docs/feature_ranges.json docs/footprints.json README.md
           fi
 
+      # Regenerate the theme library + gallery, the toggleable theme blobs (Layer 7), and the favicon
+      # library + gallery from their generators, so the committed CSS / C blobs / SVGs never drift from
+      # the palette + motif sources. (Theme PNG previews are rendered separately by
+      # tools/render_theme_previews.cjs; the favicon tarballs by tools/pack_favicons.sh.)
+      - name: Regenerate theme + favicon libraries
+        run: |
+          python src/web/wizard/gen_themes.py
+          python src/web/wizard/gen_themes.py gallery
+          python src/web/wizard/gen_theme_blobs.py
+          python src/web/wizard/gen_favicons.py
+          python src/web/wizard/gen_favicons.py gallery
+
       # Regenerate each example's Arduino build_opt.h from its README build_flags so the
       # examples keep building unmodified in the Arduino IDE.
       - name: Regenerate example build_opt.h files
@@ -76,7 +88,7 @@ jobs:
         run: python docs/utilities/gen_examples.py
 
       - name: Format with Prettier
-        run: npx prettier@3.9.1 --write README.md docs/README.md docs/EXAMPLES.md
+        run: npx prettier@3.9.1 --write README.md docs/README.md docs/EXAMPLES.md docs/THEMES.md docs/FAVICONS.md
 
       - name: Configure SSH commit signing
         env:
@@ -97,6 +109,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: regenerate feature tables + configurator + build_opt.h + example index [skip ci]"
-          file_pattern: "README.md docs/README.md docs/ARCHITECTURE.md docs/configurator.html docs/EXAMPLES.md docs/diagrams/* examples/*/*/build_opt.h"
+          file_pattern: "README.md docs/README.md docs/ARCHITECTURE.md docs/configurator.html docs/EXAMPLES.md docs/THEMES.md docs/FAVICONS.md docs/diagrams/* src/web/themes/generated/* src/web/favicons/* src/network_drivers/application/binary_asset_blobs.* examples/*/*/build_opt.h"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"

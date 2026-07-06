@@ -130,6 +130,62 @@ add("autumn", "nature", "light", "#fbf3e8", "#f3e2cc", "#ffffff", "#4a2f1a", "#8
 add("deep-sea", "nature", "dark", "#031b2e", "#052a45", "#073a5c", "#cfe8f7", "#5a8aa8", "#00b4d8", "#48cae4")
 add("volcano", "nature", "dark", "#1a0d0a", "#2a1410", "#3a1c16", "#ffddcc", "#a56a5a", "#ff5722", "#ffab00")
 
+# --- more editor schemes (canonical palettes) -------------------------------------------------------
+add("material-ocean", "editor", "dark", "#0f111a", "#0b0d14", "#1a1c25", "#a6accd", "#4b526d", "#82aaff", "#c792ea")
+add("material-darker", "editor", "dark", "#212121", "#1a1a1a", "#2a2a2a", "#eeffff", "#616161", "#82aaff", "#c792ea")
+add("tomorrow-night", "editor", "dark", "#1d1f21", "#282a2e", "#282a2e", "#c5c8c6", "#969896", "#81a2be", "#b294bb")
+add("zenburn", "editor", "dark", "#3f3f3f", "#383838", "#4a4a4a", "#dcdccc", "#7f9f7f", "#f0dfaf", "#dca3a3")
+add("molokai", "editor", "dark", "#1b1d1e", "#232526", "#293739", "#f8f8f2", "#465457", "#a6e22e", "#f92672")
+add("darcula", "editor", "dark", "#2b2b2b", "#313335", "#3c3f41", "#a9b7c6", "#808080", "#cc7832", "#6897bb")
+add("gruvbox-material", "editor", "dark", "#282828", "#32302f", "#3c3836", "#d4be98", "#928374", "#a9b665", "#d8a657")
+add("panda", "editor", "dark", "#292a2b", "#242526", "#31353a", "#e6e6e6", "#676b79", "#ff9ac1", "#45a9f9")
+add("horizon", "editor", "dark", "#1c1e26", "#16171e", "#232530", "#d5d8da", "#6c6f93", "#e95678", "#fab795")
+add("andromeda", "editor", "dark", "#23262e", "#1e2025", "#2b2f38", "#d5ced9", "#746f77", "#00e8c6", "#ff5370")
+add("bluloco-dark", "editor", "dark", "#282c34", "#21252b", "#2c313a", "#abb2bf", "#636d83", "#3691ff", "#ff6480")
+add("city-lights", "editor", "dark", "#1d252c", "#171d23", "#28323a", "#b7c5d3", "#41505e", "#5ec4ff", "#e27e8d")
+add("nightfly", "editor", "dark", "#011627", "#0e293f", "#0e293f", "#c3ccdc", "#7c8f8f", "#82aaff", "#c792ea")
+add("moonlight", "editor", "dark", "#212337", "#1e2030", "#2f334d", "#c8d3f5", "#7a88cf", "#82aaff", "#c099ff")
+add("poimandres", "editor", "dark", "#1b1e28", "#171922", "#252b37", "#e4f0fb", "#767c9d", "#5de4c7", "#add7ff")
+add("aura", "editor", "dark", "#15141b", "#110f18", "#1c1b22", "#edecee", "#6d6d6d", "#a277ff", "#61ffca")
+add("firewatch", "editor", "dark", "#1e2027", "#25282f", "#2c2f38", "#d5d8da", "#545864", "#dd6862", "#6cbcd8")
+add("vitesse-dark", "editor", "dark", "#121212", "#181818", "#222222", "#dbd7ca", "#758575", "#4d9375", "#cb7676")
+add("vitesse-light", "editor", "light", "#ffffff", "#f7f7f7", "#ffffff", "#393a34", "#a0ada0", "#1e754f", "#ab5959")
+
+# --- more enterprise (design-system neutrals) -------------------------------------------------------
+add("tailwind-zinc", "enterprise", "light", "#fafafa", "#f4f4f5", "#ffffff", "#18181b", "#71717a", "#6366f1", "#0ea5e9")
+add(
+    "tailwind-stone", "enterprise", "light", "#fafaf9", "#f5f5f4", "#ffffff", "#1c1917", "#78716c", "#0ea5e9", "#f59e0b"
+)
+add("neutral-dark", "enterprise", "dark", "#171717", "#0a0a0a", "#262626", "#fafafa", "#737373", "#3b82f6", "#22d3ee")
+add("ibm-g10", "enterprise", "light", "#f4f4f4", "#e0e0e0", "#ffffff", "#161616", "#8d8d8d", "#0f62fe", "#0072c3")
+add("ibm-g90", "enterprise", "dark", "#262626", "#333333", "#393939", "#f4f4f4", "#8d8d8d", "#4589ff", "#33b1ff")
+add("vercel", "enterprise", "dark", "#000000", "#0a0a0a", "#111111", "#ededed", "#888888", "#0070f3", "#7928ca")
+add("linear", "enterprise", "dark", "#0b0b0e", "#101014", "#18181c", "#e6e6e6", "#8a8f98", "#5e6ad2", "#26d0b0")
+add("stripe", "enterprise", "light", "#f6f9fc", "#eef3f8", "#ffffff", "#32325d", "#6b7c93", "#635bff", "#00d4ff")
+add("notion-dark", "enterprise", "dark", "#191919", "#202020", "#2f2f2f", "#d4d4d4", "#9b9b9b", "#529cca", "#e9a23b")
+add("fluent-dark", "enterprise", "dark", "#201f1e", "#292827", "#323130", "#ffffff", "#a19f9d", "#2899f5", "#8a8886")
+
+# --- more retro -------------------------------------------------------------------------------------
+add("borland", "retro", "dark", "#0000aa", "#0000cc", "#0000aa", "#ffff55", "#5555ff", "#ffff55", "#55ffff")
+add("pip-boy", "retro", "dark", "#0a1a0a", "#0f240f", "#0f240f", "#41ff00", "#1a7a1a", "#41ff00", "#88ff44")
+add("zx-spectrum", "retro", "dark", "#000000", "#0000d7", "#0000d7", "#ffffff", "#00d7d7", "#ffd700", "#00d700")
+add("commodore-pet", "retro", "dark", "#000000", "#0a1a0a", "#0a1a0a", "#4aff4a", "#2a8a2a", "#4aff4a", "#88ff88")
+
+# --- more meme / brand-nostalgia --------------------------------------------------------------------
+add("windows-xp", "meme", "light", "#3a6ea5", "#245edb", "#ece9d8", "#0a246a", "#7a96c8", "#316ac5", "#f5a623")
+add("discord", "meme", "dark", "#313338", "#2b2d31", "#383a40", "#dbdee1", "#949ba4", "#5865f2", "#00a8fc")
+add("slack-aubergine", "meme", "dark", "#3f0e40", "#350d36", "#4a154b", "#f8f8f8", "#b49bb5", "#ecb22e", "#36c5f0")
+add("spotify", "meme", "dark", "#121212", "#181818", "#282828", "#ffffff", "#b3b3b3", "#1db954", "#1ed760")
+add("doom", "meme", "dark", "#1a0000", "#2a0505", "#3a0a0a", "#ffcc66", "#8b3a3a", "#ff4500", "#b22222")
+add("rgb-gamer", "meme", "dark", "#0a0a0a", "#141414", "#1a1a1a", "#f0f0f0", "#666666", "#ff2d55", "#00e5ff")
+
+# --- more pastel / nature ---------------------------------------------------------------------------
+add("cotton-candy", "pastel", "light", "#fdf0f7", "#f7e0f0", "#ffffff", "#5a3a52", "#b088a5", "#f472b6", "#818cf8")
+add("seafoam", "pastel", "light", "#effcf6", "#d6f5e8", "#ffffff", "#134e4a", "#5f9a8f", "#14b8a6", "#0ea5e9")
+add("arctic", "nature", "light", "#f0f6fb", "#e2edf5", "#ffffff", "#1e3a4c", "#5f7d8f", "#0ea5e9", "#38bdf8")
+add("desert", "nature", "light", "#faf3e8", "#f0e2ca", "#ffffff", "#4a3520", "#8a7050", "#d97706", "#65a30d")
+add("cherry-blossom", "nature", "light", "#fff5f8", "#ffe4ec", "#ffffff", "#6a2540", "#b57a92", "#ec4899", "#a78bfa")
+
 
 # One template of CSS rules; every palette flows through it. {v} placeholders are the palette vars.
 TEMPLATE = """/* {name} ({category}, {mode}) - generated by src/web/wizard/gen_themes.py from a palette.
