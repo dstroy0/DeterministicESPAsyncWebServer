@@ -370,7 +370,14 @@ preempting queue, so sensing shares the real-time ingest path.
   offload rides the existing `services/logbuf` pluggable sink (SD / syslog / HTTP). _Remaining:_
   hot-swap storage safeties (M).
 - [x] OTA rollback protection + soft-brick safeguard _(shipped)_ - `DETWS_ENABLE_OTA_ROLLBACK`: `services/ota_rollback` commits a freshly-updated image once a self-test passes, or rolls back to the previous image if the self-test fails or the confirm window elapses, so a bad update self-heals; decision logic pure + host-tested, commit/rollback via esp_ota_ops, HW-verified (example 73.OtaRollback). Remaining: modular partition swapping (M).
-- [ ] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M).
+- [~] PSRAM web buffers / zero-copy net buffers (`heap_caps_calloc(MALLOC_CAP_SPIRAM)` at begin) + asset
+  offloading + COMPONENT_EMBED_TXTFILES (M); SPI DMA ping-pong buffers (M) _(placement policy shipped)_ -
+  `DETWS_ENABLE_PSRAM_POOL` (`services/psram_pool`): `detws_psram_place` picks DRAM vs PSRAM for a buffer
+  by size, DMA requirement, and free-heap headroom (large/cold to PSRAM, small/hot + DMA to DRAM, always
+  leaving an internal-DRAM reserve), and `detws_pingpong_*` keeps the SPI DMA double-buffer bookkeeping
+  (CPU fills one buffer while DMA drains the other; swap flips their roles). Pure, host-tested
+  (`native_psram_pool`). _Remaining:_ the `heap_caps_calloc` allocation glue at begin + the
+  COMPONENT_EMBED_TXTFILES asset-offload build wiring (M).
 
 ## Observability, diagnostics & reliability
 

@@ -1536,6 +1536,12 @@
       "src": ["+<services/sockpool/sockpool.cpp>"],
       "tests": ["test_sockpool"]
     },
+    "native_psram_pool": {
+      "desc": "Buffer placement policy + DMA ping-pong (services/psram_pool): detws_psram_place picks\nDRAM vs PSRAM by size / DMA requirement / free-heap headroom (large-cold to PSRAM, small-hot + DMA to\nDRAM, leaving a DRAM reserve), plus the SPI DMA ping-pong double-buffer index bookkeeping. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PSRAM_POOL=1"],
+      "src": ["+<services/psram_pool/psram_pool.cpp>"],
+      "tests": ["test_psram_pool"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1621,6 +1627,7 @@
         "-DDETWS_ENABLE_HW_HEALTH=1",
         "-DDETWS_ENABLE_MDNS_ADAPTIVE=1",
         "-DDETWS_ENABLE_SOCKPOOL=1",
+        "-DDETWS_ENABLE_PSRAM_POOL=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1707,6 +1714,7 @@
         "+<services/hw_health/hw_health.cpp>",
         "+<services/mdns_adaptive/mdns_adaptive.cpp>",
         "+<services/sockpool/sockpool.cpp>",
+        "+<services/psram_pool/psram_pool.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

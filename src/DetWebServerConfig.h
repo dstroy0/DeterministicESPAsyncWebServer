@@ -3050,6 +3050,19 @@
 #endif
 
 /**
+ * @brief Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager (DETWS_ENABLE_PSRAM_POOL).
+ *
+ * Pure buffer-management decisions for a PSRAM-equipped ESP32: detws_psram_place picks DRAM vs PSRAM for
+ * a buffer by size, DMA requirement, and free-heap headroom (large/cold to PSRAM, small/hot + DMA to
+ * DRAM, always leaving an internal-DRAM reserve), and detws_pingpong_* keeps the classic SPI DMA
+ * double-buffer bookkeeping (CPU fills one buffer while DMA drains the other; swap flips their roles).
+ * The actual heap_caps_calloc is the app's. No heap/stdlib. Default off.
+ */
+#ifndef DETWS_ENABLE_PSRAM_POOL
+#define DETWS_ENABLE_PSRAM_POOL 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

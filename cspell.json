@@ -647,6 +647,7 @@
     "permessage",
     "phasor",
     "photosensor",
+    "pingpong",
     "PINGREQ",
     "PINGRESP",
     "pioarduino",
