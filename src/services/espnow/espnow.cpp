@@ -55,12 +55,24 @@ struct Peer
     uint8_t mac[6];
     bool used;
 };
-Peer s_peers[DETWS_ESPNOW_MAX_PEERS];
 
-int peer_find(const uint8_t mac[6])
+// All ESP-NOW runtime state, owned by one instance (internal linkage): the peer registry
+// (host + radio) plus the radio binding's recv callback and channel, grouped so it is one
+// named owner, unreachable from any other translation unit.
+struct EspnowCtx
+{
+    Peer peers[DETWS_ESPNOW_MAX_PEERS];
+#ifdef ARDUINO
+    detws_espnow_recv_fn recv = nullptr;
+    uint8_t channel = 0;
+#endif
+};
+EspnowCtx s_espnow;
+
+int peer_find(const EspnowCtx &c, const uint8_t mac[6])
 {
     for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
-        if (s_peers[i].used && memcmp(s_peers[i].mac, mac, 6) == 0)
+        if (c.peers[i].used && memcmp(c.peers[i].mac, mac, 6) == 0)
             return i;
     return -1;
 }
@@ -69,20 +81,20 @@ int peer_find(const uint8_t mac[6])
 void detws_espnow_peers_reset(void)
 {
     for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
-        s_peers[i].used = false;
+        s_espnow.peers[i].used = false;
 }
 
 bool detws_espnow_peer_add(const uint8_t mac[6])
 {
     if (!mac)
         return false;
-    if (peer_find(mac) >= 0)
+    if (peer_find(s_espnow, mac) >= 0)
         return true; // idempotent
     for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
-        if (!s_peers[i].used)
+        if (!s_espnow.peers[i].used)
         {
-            memcpy(s_peers[i].mac, mac, 6);
-            s_peers[i].used = true;
+            memcpy(s_espnow.peers[i].mac, mac, 6);
+            s_espnow.peers[i].used = true;
             return true;
         }
     return false; // table full
@@ -90,15 +102,15 @@ bool detws_espnow_peer_add(const uint8_t mac[6])
 
 bool detws_espnow_peer_has(const uint8_t mac[6])
 {
-    return mac && peer_find(mac) >= 0;
+    return mac && peer_find(s_espnow, mac) >= 0;
 }
 
 bool detws_espnow_peer_remove(const uint8_t mac[6])
 {
-    int i = mac ? peer_find(mac) : -1;
+    int i = mac ? peer_find(s_espnow, mac) : -1;
     if (i < 0)
         return false;
-    s_peers[i].used = false;
+    s_espnow.peers[i].used = false;
     return true;
 }
 
@@ -106,7 +118,7 @@ int detws_espnow_peer_count(void)
 {
     int n = 0;
     for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
-        if (s_peers[i].used)
+        if (s_espnow.peers[i].used)
             n++;
     return n;
 }
@@ -122,8 +134,6 @@ int detws_espnow_peer_count(void)
 
 namespace
 {
-detws_espnow_recv_fn s_recv = nullptr;
-
 // The ESP-NOW receive callback signature changed in ESP-IDF 5.0 (Arduino-ESP32 3.x): the
 // source MAC moved into an esp_now_recv_info_t. Match whichever the compiled core expects.
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -134,13 +144,13 @@ void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len)
 void on_recv(const uint8_t *mac, const uint8_t *data, int len)
 {
 #endif
-    if (!s_recv || len < 0 || !mac)
+    if (!s_espnow.recv || len < 0 || !mac)
         return;
     uint8_t type;
     const uint8_t *payload;
     size_t plen;
     if (detws_espnow_decode(data, (size_t)len, &type, &payload, &plen))
-        s_recv(mac, type, payload, plen);
+        s_espnow.recv(mac, type, payload, plen);
 }
 
 bool radio_add_peer(const uint8_t mac[6], uint8_t channel)
@@ -154,14 +164,12 @@ bool radio_add_peer(const uint8_t mac[6], uint8_t channel)
         return true;
     return esp_now_add_peer(&p) == ESP_OK;
 }
-
-uint8_t s_channel = 0;
 } // namespace
 
 bool detws_espnow_begin(uint8_t channel, detws_espnow_recv_fn cb)
 {
-    s_channel = channel;
-    s_recv = cb;
+    s_espnow.channel = channel;
+    s_espnow.recv = cb;
     if (esp_now_init() != ESP_OK)
         return false;
     esp_now_register_recv_cb(on_recv);
@@ -173,7 +181,7 @@ bool detws_espnow_add_peer(const uint8_t mac[6])
 {
     if (!detws_espnow_peer_add(mac))
         return false;
-    return radio_add_peer(mac, s_channel);
+    return radio_add_peer(mac, s_espnow.channel);
 }
 
 bool detws_espnow_send(const uint8_t mac[6], uint8_t type, const uint8_t *payload, size_t len)
