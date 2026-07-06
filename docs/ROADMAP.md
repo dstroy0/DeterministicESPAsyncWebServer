@@ -781,11 +781,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   timestamp), and `detws_utmc_parse_request` (extract the requested id) - over the existing HTTP
   server, XML-escaped; host-tested (`native_utmc`). _Remaining:_ the fuller object model + the
   DATEX-II profile. Fixed BSS, no heap.
-- [ ] **OCIT** (L, DE/AT/CH ITS) - Open Communication Interface for Road Traffic
-      Control: the dominant open field-controller interface in Germany, Austria, and
-      Switzerland, defining decentralized communication between field controllers,
-      vehicle detectors, and central traffic computers. Implement the OCIT-Outstations
-      message set over the existing transport; fixed BSS device/detector model, no heap.
+- [~] **OCIT** (L, DE/AT/CH ITS) _(message codec shipped)_ - `DETWS_ENABLE_OCIT` (`services/ocit`): the
+  OCIT-Outstations object message - `detws_ocit_build` / `_parse` for
+  `[msg-type][object-type][instance][data-type][value]` (get / set / report of a field object) with
+  the typed values (bool / byte / u16 / u32 / octets) and typed-value accessors - between central
+  traffic computers and field controllers / detectors; host-tested (`native_ocit`). _Remaining:_ the
+  fuller object dictionary + the OCIT-O BTPPL transport profile. Fixed BSS device/detector model, no
+  heap.
 - [~] **V2X / SAE J2735** (XL, connected vehicle) _(UPER codec + BSMcore + SPaT shipped)_ -
   `DETWS_ENABLE_J2735` (`services/j2735`): the ASN.1 **UPER** (Unaligned Packed Encoding Rules) bit-level
   primitive codec - constrained INTEGER (offset in `ceil(log2(range))` bits), BOOLEAN, raw bit fields, a

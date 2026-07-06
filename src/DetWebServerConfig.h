@@ -2948,6 +2948,18 @@
 #endif
 
 /**
+ * @brief Opt-in OCIT-Outstations message codec (DETWS_ENABLE_OCIT).
+ *
+ * When set, services/ocit builds/parses the OCIT (DE/AT/CH road-traffic-control) object messages
+ * ([msg-type][object-type][instance][data-type][value]) between central traffic computers and field
+ * controllers / detectors, with typed values (bool / byte / u16 / u32 / octets). Pure codec (the OCIT
+ * transport is the shipped transport). Default off.
+ */
+#ifndef DETWS_ENABLE_OCIT
+#define DETWS_ENABLE_OCIT 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
