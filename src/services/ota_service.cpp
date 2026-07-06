@@ -18,17 +18,22 @@
 #include <Update.h>
 #include <string.h>
 
-static DetWebServer *g_server = nullptr;
-static const char *g_path = nullptr;
-static char g_user[MAX_AUTH_LEN];
-static char g_pass[MAX_AUTH_LEN];
+// All OTA-service state, owned by one instance (internal linkage): the server handle, the
+// route path, the Basic-auth credentials, and the per-upload flags (one upload at a time on
+// this single-task device). Grouped so it is one named owner, unreachable cross-TU.
+struct OtaCtx
+{
+    DetWebServer *server = nullptr;
+    const char *path = nullptr;
+    char user[MAX_AUTH_LEN] = {0};
+    char pass[MAX_AUTH_LEN] = {0};
+    bool authed = false; ///< Credentials validated for the current upload.
+    bool active = false; ///< Update.begin() succeeded for the current upload.
+    bool error = false;  ///< A write failed during the current upload.
+};
+static OtaCtx s_ota;
 
-// Per-upload state (one upload at a time on this single-task device).
-static bool g_authed = false; ///< Credentials validated for the current upload.
-static bool g_active = false; ///< Update.begin() succeeded for the current upload.
-static bool g_error = false;  ///< A write failed during the current upload.
-
-/// @brief Validate the request's HTTP Basic credentials against g_user/g_pass.
+/// @brief Validate the request's HTTP Basic credentials against s_ota.user/s_ota.pass.
 static bool ota_check_auth(HttpReq *req)
 {
     const char *h = http_get_header(req, "Authorization");
@@ -46,26 +51,26 @@ static bool ota_check_auth(HttpReq *req)
         return false;
     size_t ulen = (size_t)(colon - (const char *)decoded);
     const char *pass = colon + 1;
-    return (ulen == strlen(g_user)) && (memcmp(decoded, g_user, ulen) == 0) && (strcmp(pass, g_pass) == 0);
+    return (ulen == strlen(s_ota.user)) && (memcmp(decoded, s_ota.user, ulen) == 0) && (strcmp(pass, s_ota.pass) == 0);
 }
 
-/// @brief Stream-begin hook: accept POST @p g_path; begin Update if authorized.
+/// @brief Stream-begin hook: accept POST @p s_ota.path; begin Update if authorized.
 static bool ota_stream_begin(HttpReq *req)
 {
     if (strcmp(req->method, "POST") != 0)
         return false;
-    if (!g_path || strcmp(req->path, g_path) != 0)
+    if (!s_ota.path || strcmp(req->path, s_ota.path) != 0)
         return false;
 
-    g_authed = ota_check_auth(req);
-    g_active = false;
-    g_error = false;
-    if (g_authed)
+    s_ota.authed = ota_check_auth(req);
+    s_ota.active = false;
+    s_ota.error = false;
+    if (s_ota.authed)
     {
         if (Update.begin(UPDATE_SIZE_UNKNOWN))
-            g_active = true;
+            s_ota.active = true;
         else
-            g_error = true;
+            s_ota.error = true;
     }
     // Stream regardless so the body is consumed and the route handler can reply;
     // when unauthorized/!active the data hook simply discards.
@@ -76,10 +81,10 @@ static bool ota_stream_begin(HttpReq *req)
 static void ota_stream_data(HttpReq *req, const uint8_t *data, size_t len)
 {
     (void)req; // a single OTA image streams at a time
-    if (g_authed && g_active && !g_error)
+    if (s_ota.authed && s_ota.active && !s_ota.error)
     {
         if (Update.write((uint8_t *)data, len) != len)
-            g_error = true;
+            s_ota.error = true;
     }
 }
 
@@ -88,35 +93,35 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a raw firmware image");
+        s_ota.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a raw firmware image");
         return;
     }
-    if (!g_authed)
+    if (!s_ota.authed)
     {
-        g_server->send(slot_id, 401, DET_MIME_TEXT_PLAIN, "Unauthorized");
+        s_ota.server->send(slot_id, 401, DET_MIME_TEXT_PLAIN, "Unauthorized");
         return;
     }
-    bool ok = g_active && !g_error && Update.end(true);
+    bool ok = s_ota.active && !s_ota.error && Update.end(true);
     if (!ok)
     {
-        if (g_active)
+        if (s_ota.active)
             Update.abort();
-        g_server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Update failed");
+        s_ota.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Update failed");
         return;
     }
-    g_server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, "OK - rebooting");
+    s_ota.server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, "OK - rebooting");
     delay(150); // let the response flush before the reboot
     ESP.restart();
 }
 
 void detws_ota_begin(DetWebServer &server, const char *path, const char *user, const char *pass)
 {
-    g_server = &server;
-    g_path = path;
-    strncpy(g_user, user ? user : "", sizeof(g_user) - 1);
-    g_user[sizeof(g_user) - 1] = '\0';
-    strncpy(g_pass, pass ? pass : "", sizeof(g_pass) - 1);
-    g_pass[sizeof(g_pass) - 1] = '\0';
+    s_ota.server = &server;
+    s_ota.path = path;
+    strncpy(s_ota.user, user ? user : "", sizeof(s_ota.user) - 1);
+    s_ota.user[sizeof(s_ota.user) - 1] = '\0';
+    strncpy(s_ota.pass, pass ? pass : "", sizeof(s_ota.pass) - 1);
+    s_ota.pass[sizeof(s_ota.pass) - 1] = '\0';
 
     http_parser_set_stream_hooks(ota_stream_begin, ota_stream_data);
     server.on(path, HTTP_POST, ota_handle);
