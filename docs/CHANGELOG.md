@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.10.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.10.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2c0d331`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c0d33185b3d653f39ba8560ad3f158cbc4ef2a7))
+
+### Changes
+
+- Bump version: 5.9.0 → 5.10.0 ([`76465b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76465b12a4936a226b0497b2832c1d215e6f2a17))
+
+### Features
+
+- HART / HART-IP process-instrument protocol codec ([`d02389f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d02389f107e77b43e1d952d9400471b5765052cb))
+
+</details>
+
 ## [5.9.0] - 2026-07-06
 
 <details>
