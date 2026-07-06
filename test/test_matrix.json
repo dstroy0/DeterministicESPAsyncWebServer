@@ -1458,6 +1458,12 @@
       "src": ["+<services/lonworks/lonworks.cpp>"],
       "tests": ["test_lonworks"]
     },
+    "native_mbplus": {
+      "desc": "Modbus Plus HDLC token-bus codec (services/mbplus): the HDLC frame (7E addr ctrl payload\nCRC-16/X-25 7E) build + validate and the token-rotation ring helper. Pure host tests (CRC 0x906E).",
+      "flags": ["-DDETWS_ENABLE_MBPLUS=1"],
+      "src": ["+<services/mbplus/mbplus.cpp>"],
+      "tests": ["test_mbplus"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1530,6 +1536,7 @@
         "-DDETWS_ENABLE_SERCOS=1",
         "-DDETWS_ENABLE_PROFIBUS=1",
         "-DDETWS_ENABLE_LONWORKS=1",
+        "-DDETWS_ENABLE_MBPLUS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1603,6 +1610,7 @@
         "+<services/sercos/sercos.cpp>",
         "+<services/profibus/profibus.cpp>",
         "+<services/lonworks/lonworks.cpp>",
+        "+<services/mbplus/mbplus.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

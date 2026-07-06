@@ -2888,6 +2888,18 @@
 #endif
 
 /**
+ * @brief Opt-in Modbus Plus HDLC token-bus frame codec (DETWS_ENABLE_MBPLUS).
+ *
+ * When set, services/mbplus builds/validates the Modbus Plus HDLC frame (7E addr ctrl payload CRC-16/X-25
+ * 7E) that Schneider's token-passing peer bus exchanges, plus the token-rotation helper (next station in
+ * the logical ring). Reuses the shipped Modbus PDU model for the data. Pure codec (the 1 Mbit/s bus is
+ * hardware-gated). Default off.
+ */
+#ifndef DETWS_ENABLE_MBPLUS
+#define DETWS_ENABLE_MBPLUS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

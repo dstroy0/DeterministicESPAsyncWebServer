@@ -632,10 +632,12 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   encodings (`SNVT_temp` 0.01 K fixed-point, `SNVT_switch` level + state); host-tested
   (`native_lonworks`). _Remaining:_ the fuller SNVT type table + the NV binding/address table. Fixed
   BSS NV table, no heap.
-- [ ] **Modbus Plus** (L, HDLC token bus) - Schneider's token-passing peer bus: the
-      HDLC framing + token-rotation MAC and the path/routing model over the Modbus Plus
-      data link. Niche and physical-layer-gated (custom 1 Mbit/s bus); scope the
-      framing/token layer as the platform allows, reusing the existing Modbus PDU model.
+- [~] **Modbus Plus** (L, HDLC token bus) _(frame + token MAC shipped)_ - `DETWS_ENABLE_MBPLUS`
+  (`services/mbplus`): the Modbus Plus HDLC frame codec - `detws_mbplus_build` / `_parse` for
+  `[7E][addr][ctrl][payload][CRC-16/X-25][7E]` and `detws_mbplus_next_token` (the next station in the
+  logical ring) - reusing the shipped Modbus PDU model for the payload; host-tested (`native_mbplus`,
+  CRC check value 0x906E). _Remaining:_ the full path/routing model + the token-rotation timing, and
+  the custom 1 Mbit/s bus (hardware-gated).
 - [ ] **INTERBUS** (L, Phoenix Contact) - the ring/summation-frame fieldbus: the single
       rotating summation frame (each device a shift-register slice) + the PCP parameter
       channel. Ring physical layer is hardware-gated; scope the summation-frame protocol + process-image model, document the gating. Fixed BSS, no heap.
