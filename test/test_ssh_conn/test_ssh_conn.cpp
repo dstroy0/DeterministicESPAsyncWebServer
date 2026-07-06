@@ -148,10 +148,36 @@ void test_banner_then_kexinit_advances_and_replies()
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
 
+void test_poll_triggers_server_rekey()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    // An authenticated, open session that has spent its volume budget (packet-count proxy).
+    ssh_sess[j].authed = true;
+    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_sess[j].last_kex_ms = 0;
+    ssh_pkt[j].kex_active = false;
+    ssh_pkt[j].enc_out = true;
+    ssh_pkt[j].enc_in = true;
+    ssh_pkt[j].seq_no_send = SSH_REKEY_PACKET_THRESHOLD;
+    tcp_capture_reset();
+
+    ssh_conn_poll(0);
+    // The server emitted a fresh KEXINIT and entered the re-key handshake (RFC 4253 §9).
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
+    TEST_ASSERT_EQUAL(SSH_PHASE_KEXINIT, ssh_sess[j].phase);
+
+    // A poll on an already-re-keying / under-budget session does not fire again.
+    tcp_capture_reset();
+    ssh_conn_poll(0);
+    TEST_ASSERT_EQUAL(0, tcp_captured_len());
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_accept_sends_server_banner);
     RUN_TEST(test_banner_then_kexinit_advances_and_replies);
+    RUN_TEST(test_poll_triggers_server_rekey);
     return UNITY_END();
 }

@@ -50,13 +50,15 @@ size_t tlv(uint8_t tag, const uint8_t *val, size_t val_len, uint8_t *out, size_t
     // One source of truth for the length-octet count: the value offset (k) and the total (n) both derive
     // from it, so k + val_len == n is provable (write_len writes exactly this many octets).
     size_t lo = len_octets(val_len);
-    size_t n = 1 + lo + val_len;
+    size_t k = 1 + lo;      // value offset: tag + length octets
+    size_t n = k + val_len; // total = offset + value
     if (n > cap)
         return 0;
     out[0] = tag;
     write_len(out + 1, val_len); // writes exactly lo octets
-    size_t k = 1 + lo;
-    if (val_len)
+    // The copy writes val_len bytes at out+k, ending at out+n-1 < out+cap (n <= cap, restated at the
+    // copy site so the bound is explicit to a static analyzer, not just implied through k and n).
+    if (val_len && k + val_len <= cap)
         memcpy(out + k, val, val_len);
     return n;
 }

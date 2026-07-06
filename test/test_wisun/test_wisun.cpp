@@ -104,6 +104,9 @@ void test_node_registry(void)
     size_t jn = wisun_nodes_json(&fan, js, sizeof(js));
     TEST_ASSERT_EQUAL_size_t(strlen(js), jn);
     TEST_ASSERT_EQUAL_STRING("[{\"addr\":\"fd00::10\",\"joined\":true},{\"addr\":\"fd00::11\",\"joined\":true}]", js);
+    // Overflow path: a buffer too small to hold the array returns 0.
+    char tiny[8];
+    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(&fan, tiny, sizeof(tiny)));
 }
 
 void test_registry_full_and_misses(void)

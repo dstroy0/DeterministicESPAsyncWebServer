@@ -31,6 +31,9 @@ void test_rail_monitor(void)
     size_t n = detws_hwhealth_rail_json(&m, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
     TEST_ASSERT_EQUAL_STRING("{\"nominal_mv\":3300,\"min_mv\":2800,\"sag\":2,\"brownout\":1}", buf);
+    // Overflow path returns 0.
+    char tiny[8];
+    TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, tiny, sizeof(tiny)));
 }
 
 void test_spi_backoff(void)

@@ -83,6 +83,9 @@ void test_char_json(void)
     // Empty.
     gatt_char_json(nullptr, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_STRING("[]", buf);
+    // Overflow: a buffer too small returns 0.
+    char tiny[8];
+    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(chars, 2, tiny, sizeof(tiny)));
 }
 
 int main(void)
