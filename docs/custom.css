@@ -117,11 +117,22 @@ div.header .title {
     color: #2bb35a !important;
 }
 
+/* Hover / current page: brighter phosphor text + glow, NOT a full-width highlight
+   bar spanning the sidebar. The background bar (was #001100) read as a stripe across
+   the whole nav column, so it is dropped in favor of a subtle text-only indicator. */
 #nav-tree a:hover,
 #nav-tree .selected a {
-    color: #2bb35a !important;
+    color: #40ff40 !important;
     text-shadow: 0 0 8px rgba(0, 192, 0, 0.8) !important;
-    background-color: #001100 !important;
+    background-color: transparent !important;
+}
+
+#nav-tree .selected {
+    background: transparent !important;
+}
+
+#nav-tree .selected a {
+    font-weight: 700 !important;
 }
 
 #nav-tree .label {

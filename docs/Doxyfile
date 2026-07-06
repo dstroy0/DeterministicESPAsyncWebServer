@@ -16,7 +16,11 @@ PROJECT_LOGO           =
 #---------------------------------------------------------------------------
 # Input / output
 #---------------------------------------------------------------------------
-INPUT                  = src examples docs
+# examples/ is intentionally NOT an input: each examples/**/README.md would otherwise
+# become a top-level page and flood the navigation tree root with ~115 entries. The
+# examples are documented in the generated docs/EXAMPLES.md index (grouped by OSI layer,
+# one line each) and in full on GitHub; the site keeps the API reference + the guides.
+INPUT                  = src docs
 FILE_PATTERNS          = *.h *.cpp *.ino *.md
 RECURSIVE              = YES
 EXCLUDE                =
