@@ -579,11 +579,14 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       caller can no longer pass a pcb that disagrees with the slot. The remaining LOW
       findings (CBOR `text` vs MessagePack `str`; builder-returns-length vs
       parser-returns-bool) are spec-faithful, consistent house style - left as is.
-- [ ] **Refresh build footprints** (S) - regenerate the per-feature / per-example
-      flash + RAM footprint tables (the example READMEs and docs/FEATURES.md) so the
-      documented numbers track the current build after the shared-primitive dedup
-      (det_mime / det_bytes / base64url / DNS) and any later features. Run after a
-      batch of changes lands, not per commit.
+- [x] **Refresh build footprints** (S) _(automated)_ - the per-feature / per-example flash + RAM
+      footprint tables now track the current build automatically: the **ESP32 Build** workflow
+      (`.github/workflows/esp32-build.yml`) rebuilds every example on each push to main, merges the
+      totals into `docs/footprints.json`, regenerates `docs/FOOTPRINTS.md` and the per-feature ranges
+      (`tools/ci/example_footprints.py` + `feature_budget.py`), and commits them
+      (`docs: update ESP32 build footprints [skip ci]`). So the documented numbers stay current after a
+      batch of changes with no manual step - the opt-in codec services added since track through their
+      flags, and the auto-commit lands right after each release bump.
 - [ ] **Audit the library against its standards** (L) - go through every standard in
       [STANDARDS.md](STANDARDS.md) with the live spec text open and check the
       implementation against its MUST / SHOULD list + conformance vectors, to catch
