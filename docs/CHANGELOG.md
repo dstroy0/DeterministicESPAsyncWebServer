@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.33.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.33.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`b3e5467`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3e54672de57cf312c1fef909ccb947750c15bb9))
+
+### Changes
+
+- Bump version: 5.32.0 → 5.33.0 ([`1c705ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c705ae2fa5111f4c66d484c7df2571915fcf74a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5f95357`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f953573e4951a878658eaa442a60df7fbad26a5))
+
+### Features
+
+- LonWorks / LON-IP (ISO/IEC 14908) network-variable codec ([`0b7048c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b7048ca949c491880fe408e0397b867b3fbcb70))
+
+</details>
+
 ## [5.32.0] - 2026-07-06
 
 <details>
