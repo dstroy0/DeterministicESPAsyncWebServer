@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- use nullptr instead of NULL (cpp:S4962) ([`0ea30fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ea30fde86728a9fac5733a3ed6a9cfb8c87a166))
+
 ### CI / Build
 
+- update test report [skip ci] ([`1c2d482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c2d48227d17889be8b221970c4bef740dbddf31))
+- update CHANGELOG.md [skip ci] ([`353ac0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353ac0ddcff667cc7a51a60b729e51186b69271f))
 - update CHANGELOG.md [skip ci] ([`3e2a537`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e2a5375e95041072e1c4f32bdc48983290e5b77))
 - update CHANGELOG.md [skip ci] ([`612038b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/612038bab65872d8cf2cfb5b2a28aaf48463b85a))
 - update CHANGELOG.md [skip ci] ([`6f8ed2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f8ed2a9cf5b11873fbb060cef8d85e046a8ca3f))
