@@ -21,14 +21,14 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.0 KB (20.3%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.7 KB (20.2%)  |
-| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.6 KB (20.2%)  |
+| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 61.5 KB (19.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.0 KB (20.5%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.0 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.1 KB (20.6%) | 28.0 KB (8.8%)   |
 | `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 739.2 KB (57.8%) | 65.9 KB (20.6%)  |
 | `DNS_SERVER`                             | L7-Application/60.DnsServer             | 708.6 KB (55.4%) | 44.9 KB (14.0%)  |
 | `ENOCEAN+GATEWAY`                        | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
-| `ESPNOW`                                 | L7-Application/53.EspNow                | 714.1 KB (55.8%) | 42.6 KB (13.3%)  |
+| `ESPNOW`                                 | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                   | L7-Application/09.ETag                  | 807.8 KB (63.1%) | 65.9 KB (20.6%)  |
 | `ETHERNET`                               | Foundation/19.Ethernet                  | 771.1 KB (60.2%) | 64.7 KB (20.2%)  |
 | `GPIO_MAP`                               | L7-Application/38.GpioMap               | 737.6 KB (57.6%) | 64.7 KB (20.2%)  |
@@ -42,8 +42,8 @@ from each example's `pio ci` size report and aggregated into
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 735.5 KB (57.5%) | 65.2 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 734.2 KB (57.4%) | 64.7 KB (20.2%)  |
 | `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.6%) | 21.1 KB (6.6%)   |
-| `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.9 KB (57.4%) | 67.7 KB (21.1%)  |
-| `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.8 KB (21.1%) | 21.2 KB (6.6%)   |
+| `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.9 KB (57.4%) | 67.7 KB (21.2%)  |
+| `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
 | `MDNS`                                   | L7-Application/15.mDNS                  | 758.3 KB (59.2%) | 66.5 KB (20.8%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 735.1 KB (57.4%) | 64.9 KB (20.3%)  |
 | `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.4 KB (57.5%) | 64.9 KB (20.3%)  |
@@ -78,7 +78,7 @@ from each example's `pio ci` size report and aggregated into
 | `SSH`                                    | L5-Session/01.SSH                       | 802.3 KB (62.7%) | 86.4 KB (27.0%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 735.2 KB (57.4%) | 64.8 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.3 KB (57.6%) | 64.8 KB (20.2%)  |
-| `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.2 KB (55.6%) | 44.0 KB (13.8%)  |
+| `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
 | `SYSLOG`                                 | L7-Application/19.Syslog                | 736.6 KB (57.6%) | 66.5 KB (20.8%)  |
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 742.0 KB (58.0%) | 65.0 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.7 KB (57.5%) | 65.2 KB (20.4%)  |

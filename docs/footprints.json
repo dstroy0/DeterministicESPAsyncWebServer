@@ -31,7 +31,7 @@
     "example": "Foundation/22.CanCapture",
     "flags": "-DDETWS_ENABLE_BUS_CAPTURE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 770773,
+    "flash_bytes": 770765,
     "ram_bytes": 45316
   },
   "CBOR": {
@@ -73,7 +73,7 @@
     "example": "L7-Application/33.Csrf",
     "flags": "-DDETWS_ENABLE_CSRF=1",
     "board": "esp32dev",
-    "flash_bytes": 752461,
+    "flash_bytes": 752421,
     "ram_bytes": 66248
   },
   "DASHBOARD": {
@@ -91,11 +91,11 @@
     "ram_bytes": 66240
   },
   "DIAG": {
-    "example": "L7-Application/20.Diagnostics",
+    "example": "Foundation/05.Configuration",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 751225,
-    "ram_bytes": 66200
+    "flash_bytes": 752717,
+    "ram_bytes": 62952
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -115,7 +115,7 @@
     "example": "Foundation/10.RadioGateway",
     "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_GATEWAY=1 -DDETWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270421,
+    "flash_bytes": 270481,
     "ram_bytes": 28720
   },
   "DNS_RESOLVER": {
@@ -136,14 +136,14 @@
     "example": "Foundation/13.EnOceanGateway",
     "flags": "-DDETWS_ENABLE_ENOCEAN=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 268669,
-    "ram_bytes": 21840
+    "flash_bytes": 268693,
+    "ram_bytes": 21848
   },
   "ESPNOW": {
     "example": "L7-Application/53.EspNow",
     "flags": "-DDETWS_ENABLE_ESPNOW=1",
     "board": "esp32dev",
-    "flash_bytes": 731285,
+    "flash_bytes": 731293,
     "ram_bytes": 43576
   },
   "ETAG": {
@@ -241,15 +241,15 @@
     "example": "L7-Application/41.LogBuffer",
     "flags": "-DDETWS_ENABLE_LOGBUF=1",
     "board": "esp32dev",
-    "flash_bytes": 752497,
-    "ram_bytes": 69288
+    "flash_bytes": 752509,
+    "ram_bytes": 69320
   },
   "LORA+GATEWAY": {
     "example": "Foundation/11.LoRaGateway",
     "flags": "-DDETWS_ENABLE_LORA=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 276305,
-    "ram_bytes": 21680
+    "flash_bytes": 276329,
+    "ram_bytes": 21688
   },
   "MDNS": {
     "example": "L7-Application/15.mDNS",
@@ -297,7 +297,7 @@
     "example": "Foundation/12.Nrf24Gateway",
     "flags": "-DDETWS_ENABLE_NRF24=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 276081,
+    "flash_bytes": 276105,
     "ram_bytes": 21680
   },
   "NTP": {
@@ -311,7 +311,7 @@
     "example": "L7-Application/31.TimeSourceFallback",
     "flags": "-DDETWS_ENABLE_NTP=1 -DDETWS_ENABLE_TIME_SOURCE=1",
     "board": "esp32dev",
-    "flash_bytes": 772181,
+    "flash_bytes": 772185,
     "ram_bytes": 67820
   },
   "NTP_SERVER+TIME_SOURCE+NMEA0183+NTP": {
@@ -388,8 +388,8 @@
     "example": "Foundation/14.NfcGateway",
     "flags": "-DDETWS_ENABLE_PN532=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 288121,
-    "ram_bytes": 21928
+    "flash_bytes": 288129,
+    "ram_bytes": 21920
   },
   "PREEMPT_QUEUE": {
     "example": "Foundation/08.PreemptLanes",
@@ -493,7 +493,7 @@
     "example": "L7-Application/59.StatsdMetrics",
     "flags": "-DDETWS_ENABLE_STATSD=1",
     "board": "esp32dev",
-    "flash_bytes": 728221,
+    "flash_bytes": 728357,
     "ram_bytes": 45088
   },
   "SYSLOG": {
@@ -521,8 +521,8 @@
     "example": "Foundation/18.ThreadGateway",
     "flags": "-DDETWS_ENABLE_THREAD=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 269113,
-    "ram_bytes": 22608
+    "flash_bytes": 269137,
+    "ram_bytes": 22616
   },
   "TLS": {
     "example": "L6-Presentation/07.SecureWebSocket",
@@ -605,15 +605,15 @@
     "example": "Foundation/17.ZigbeeGateway",
     "flags": "-DDETWS_ENABLE_ZIGBEE=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 269213,
-    "ram_bytes": 22096
+    "flash_bytes": 269237,
+    "ram_bytes": 22104
   },
   "ZWAVE+GATEWAY": {
     "example": "Foundation/16.ZWaveGateway",
     "flags": "-DDETWS_ENABLE_ZWAVE=1 -DDETWS_ENABLE_GATEWAY=1",
     "board": "esp32dev",
-    "flash_bytes": 268881,
-    "ram_bytes": 21840
+    "flash_bytes": 268905,
+    "ram_bytes": 21848
   },
   "core/01.Basic": {
     "example": "Foundation/01.Basic",
