@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e01c07e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e01c07e8f5c50499ffd37fe9a76f99acba6059d5))
 - update test report [skip ci] ([`d2e2ff6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2e2ff6981567275ac36c7dbb43f5a8503c90a19))
 - update CHANGELOG.md [skip ci] ([`7b9c910`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9c9101b9b17c9a28e2864e6e852c80aecb1450))
 - update CHANGELOG.md [skip ci] ([`a9e0de7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e0de765aeff45f8360f65092925fb7dc116791))
@@ -47,6 +48,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9edd590`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9edd590373cf9ed1e3e7833d56ff824118f78b0e))
 - update ESP32 build footprints [skip ci] ([`d113c88`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d113c888a59204e37882fa331b0cd7843bf01d23))
 - update ESP32 build footprints [skip ci] ([`f12db9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f12db9a726f0a6daa09ae95374a67b2c7475b7e5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6c18038`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c18038eb7254fc2b6aa3eaf893b38196ecbbbec))
@@ -70,6 +72,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the server + AP IP in one ProvCtx (owner sweep) ([`9ccf29e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ccf29e31c5ceebad1bf87b428b1c9277f452b47))
+- own the fs + dest + upload state in one UploadCtx (owner sweep) ([`bb9ecc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bb9ecc159028c77ddd10972c01f5478217893229))
+- own the server + auth + upload flags in one OtaCtx (owner sweep) ([`48aa8bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48aa8bb192552f36de6218257fe1249215ae4516))
+- own the server + cb + ws state in one WebTerminalCtx (owner sweep) ([`18799ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18799ab472c0735792482a2fb14936409844ed43))
+- own the server handle in one PartitionRoutesCtx (owner sweep) ([`739e285`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/739e28525a8ee69bb304867bf75b970cff8e1910))
+- own the server + pin table in one GpioRoutesCtx (owner sweep) ([`7cb1ad8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7cb1ad8b0d6bdff379e7944445484a7fccfcb5e7))
+- own the UART stream + last report in one Ld2410Ctx (owner sweep) ([`46484f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46484f6da8f6a801c768760b325115bc4dcd5fe1))
+- own the server + SSE/ws paths in one DashRoutesCtx (owner sweep) ([`253977c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/253977c61d73b55ca95a5880424eac4439cc130f))
+- own the widget table + values + control cb in one DashboardCtx (owner sweep) ([`08f8bea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08f8bea5c0dcf1a52923bc28010f8ac865785dd8))
 - own the client config + format scratch in one SyslogCtx (owner sweep) ([`212d78b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/212d78ba50a1cc655deb5799b54178f4cb6d097f))
 - own the I2C address in one Fdc2214Ctx (owner sweep) ([`91cc557`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91cc5572e6f2c4ae2f506f93f2b56fee58ac91ff))
 - own the I2C address in one Ldc1614Ctx (owner sweep) ([`ebd666e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebd666eb878e0abbfba68c5c0a2afe98ccb0f6e9))
