@@ -2924,6 +2924,18 @@
 #endif
 
 /**
+ * @brief Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec (DETWS_ENABLE_WAVE).
+ *
+ * When set, services/wave builds/parses the IEEE 1609 vehicular-radio framing that carries J2735: the
+ * 1609.3 WSMP header (version + P-encoded PSID + length + payload) and the 1609.2 secured-message
+ * envelope header (version + content type). Pairs with services/j2735. Pure codec (the DSRC / C-V2X
+ * radio is an external module). Default off.
+ */
+#ifndef DETWS_ENABLE_WAVE
+#define DETWS_ENABLE_WAVE 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

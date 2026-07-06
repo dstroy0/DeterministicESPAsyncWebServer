@@ -795,12 +795,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   patterns (`native_j2735`; the 162-bit BSMcore packs to 21 octets). _Remaining:_ the full BSM part II
   optionals + the 1609.2 security envelope. The DSRC / C-V2X radio is an external module; the message
   layer is the deliverable.
-- [ ] **IEEE 1609 (WAVE)** (XL, vehicular radio stack) - Wireless Access in Vehicular
-      Environments: the architecture (1609.3 networking / WSMP, 1609.2 security) for
-      secure low-latency highway-speed vehicle networks that carries J2735. The DSRC
-      radio/MAC comes from an external V2X module (SPI/UART, see Front-end assumption);
-      the deliverable is the WSMP message framing + the 1609.2 security envelope codec on
-      a fixed BSS model (pairs with the J2735 work above). No heap.
+- [~] **IEEE 1609 (WAVE)** (XL, vehicular radio stack) _(WSMP + 1609.2 envelope codec shipped)_ -
+  `DETWS_ENABLE_WAVE` (`services/wave`): the 1609.3 **WSMP** (WAVE Short Message Protocol) header -
+  `detws_wsmp_build` / `_parse` (version + a P-encoded **PSID** + length + payload) with the PSID
+  variable-length p-encoding (`detws_wave_encode_psid` / `_decode_psid`) - and the **1609.2**
+  secured-message envelope header (`detws_wave_1609dot2_wrap`: protocolVersion + contentType); these
+  carry the shipped J2735 messages. Host-tested (`native_wave`). _Remaining:_ the full 1609.2
+  signature / certificate machinery (the crypto layer) + the WSA service advertisement. The DSRC /
+  C-V2X radio is an external module; no heap.
 - [~] **NEMA TS 2** (M, traffic cabinet bus) _(SDLC frame codec shipped)_ - `DETWS_ENABLE_NEMA_TS2`
   (`services/nema_ts2`): the traffic-cabinet SDLC bus frame - `detws_nema_ts2_build` / `_parse` for
   `[address][control][frame-type][data][CRC-16/X-25]` linking the controller to the MMU / BIUs /

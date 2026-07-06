@@ -1476,6 +1476,12 @@
       "src": ["+<services/iccp/iccp.cpp>"],
       "tests": ["test_iccp"]
     },
+    "native_wave": {
+      "desc": "IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID +\nlength) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. Pure host\ntests (carries J2735).",
+      "flags": ["-DDETWS_ENABLE_WAVE=1"],
+      "src": ["+<services/wave/wave.cpp>"],
+      "tests": ["test_wave"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1551,6 +1557,7 @@
         "-DDETWS_ENABLE_MBPLUS=1",
         "-DDETWS_ENABLE_INTERBUS=1",
         "-DDETWS_ENABLE_ICCP=1",
+        "-DDETWS_ENABLE_WAVE=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1627,6 +1634,7 @@
         "+<services/mbplus/mbplus.cpp>",
         "+<services/interbus/interbus.cpp>",
         "+<services/iccp/iccp.cpp>",
+        "+<services/wave/wave.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",
