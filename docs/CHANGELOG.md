@@ -2,6 +2,37 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`b15cf00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b15cf00ef43273b30ffc2a405487e26f38b0284b))
+
+### Documentation
+
+- render the Mermaid diagrams on GitHub (stricter parser than mmdc) ([`75ead4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75ead4d69f7c3474768600858803ceb1880c441e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9ab58e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ab58e5f184b074562cbaba3c6318ab8cffc9245))
+
+## [4.129.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 4.129.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update test report [skip ci] ([`f22ac9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f22ac9a8705da5297e43e3173efbb0a4c2ee38d2))
+- update CHANGELOG.md [skip ci] ([`7cb075f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7cb075f9424612ba9878ce9c8b638d3c68bb873f))
+
+### Changes
+
+- Bump version: 4.128.0 → 4.129.0 ([`33d19c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33d19c5ebb3342f915c799a03aeedd2f7f09453b))
+
+### Features
+
+- serve HTTP/3 through the shared DetWebServer route pipeline ([`d83c1ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83c1abbd8f51e3879c7ece638b0d1301de80118))
+
+</details>
+
 ## [4.128.0] - 2026-07-06
 
 <details>
