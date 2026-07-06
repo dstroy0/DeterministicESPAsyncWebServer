@@ -1314,6 +1314,12 @@
       "src": ["+<services/wearlevel/wearlevel.cpp>"],
       "tests": ["test_wearlevel"]
     },
+    "native_netadapt": {
+      "desc": "Network adaptation decisions (services/netadapt): TCP receive-window sizing from the free\nheap (reserve + quarter-of-spare, clamped) and the DHCP->static-IP fallback trigger. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_NETADAPT=1"],
+      "src": ["+<services/netadapt/netadapt.cpp>"],
+      "tests": ["test_netadapt"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1362,6 +1368,7 @@
         "-DDETWS_ENABLE_FAILSAFE=1",
         "-DDETWS_ENABLE_SLEEP_SCHED=1",
         "-DDETWS_ENABLE_WEARLEVEL=1",
+        "-DDETWS_ENABLE_NETADAPT=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1411,6 +1418,7 @@
         "+<services/failsafe/failsafe.cpp>",
         "+<services/sleep_sched/sleep_sched.cpp>",
         "+<services/wearlevel/wearlevel.cpp>",
+        "+<services/netadapt/netadapt.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

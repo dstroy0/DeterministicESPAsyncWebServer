@@ -295,7 +295,13 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
 - [ ] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M).
 - [x] Raw-UDP telemetry cast _(shipped)_ - `DETWS_ENABLE_UDP_TELEMETRY`: `services/udp_telemetry` builds InfluxDB line-protocol records (`measurement field=val,...`, host-tested) and casts them to a collector over UDP via `det_udp_sendto`, zero-heap fire-and-forget (example 68.UdpTelemetry).
-- [ ] Static-IP fallback automation, dynamic socket recycling, TCP window auto-scaling by free RAM (M).
+- [~] **Static-IP fallback + TCP window auto-scaling by free RAM (M)** _(decision core shipped)_ -
+  `DETWS_ENABLE_NETADAPT`: `services/netadapt` `detws_netadapt_window()` sizes the TCP receive window
+  from the free heap (a reserve left untouched, then a quarter of the spare, clamped to [min, max]) so
+  a RAM-rich device gets throughput and a tight one stays alive; `detws_netadapt_dhcp_fallback()`
+  decides when to give up on DHCP and use a static IP (elapsed timeout or retry budget). Pure cores,
+  host-tested (`native_netadapt`); the app applies the results (lwIP window / netif config).
+  _Remaining:_ dynamic socket recycling (a transport-pool concern).
 
 ## Power & radio management
 

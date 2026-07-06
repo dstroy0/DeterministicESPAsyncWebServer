@@ -2603,6 +2603,18 @@
 #endif
 
 /**
+ * @brief Opt-in network adaptation decisions (DETWS_ENABLE_NETADAPT).
+ *
+ * When set, services/netadapt provides two pure decisions: detws_netadapt_window() sizes the TCP
+ * receive window from the free heap (bigger when RAM is plentiful, shrinking when tight), and
+ * detws_netadapt_dhcp_fallback() decides when to give up on DHCP and use a static IP. The app applies
+ * the results (lwIP window / netif config). Default off.
+ */
+#ifndef DETWS_ENABLE_NETADAPT
+#define DETWS_ENABLE_NETADAPT 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
