@@ -53,12 +53,18 @@ int32_t ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
 
 namespace
 {
-uint8_t s_addr = DETWS_INA219_I2C_ADDR;
-uint32_t s_lsb_ua = 100;
+// All INA219 I2C-binding state, owned by one instance (internal linkage): the device address
+// and the current LSB, grouped so it is one named owner, unreachable from any other TU.
+struct Ina219Ctx
+{
+    uint8_t addr = DETWS_INA219_I2C_ADDR;
+    uint32_t lsb_ua = 100;
+};
+Ina219Ctx s_ina;
 
 bool wr16(uint8_t reg, uint16_t v)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_ina.addr);
     Wire.write(reg);
     Wire.write((uint8_t)(v >> 8)); // INA219 registers are big-endian
     Wire.write((uint8_t)(v & 0xFF));
@@ -67,11 +73,11 @@ bool wr16(uint8_t reg, uint16_t v)
 
 bool rd16(uint8_t reg, uint16_t *v)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_ina.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, 2) != 2)
+    if (Wire.requestFrom((int)s_ina.addr, 2) != 2)
         return false;
     uint8_t hi = (uint8_t)Wire.read();
     uint8_t lo = (uint8_t)Wire.read();
@@ -82,11 +88,11 @@ bool rd16(uint8_t reg, uint16_t *v)
 
 bool ina219_begin(uint8_t addr, uint32_t current_lsb_ua, uint32_t shunt_mohm)
 {
-    s_addr = addr ? addr : (uint8_t)DETWS_INA219_I2C_ADDR;
-    s_lsb_ua = current_lsb_ua ? current_lsb_ua : 100u;
+    s_ina.addr = addr ? addr : (uint8_t)DETWS_INA219_I2C_ADDR;
+    s_ina.lsb_ua = current_lsb_ua ? current_lsb_ua : 100u;
     detws_i2c_begin();
     bool ok = true;
-    ok &= wr16(INA219_REG_CALIBRATION, ina219_calibration(s_lsb_ua, shunt_mohm ? shunt_mohm : 100u));
+    ok &= wr16(INA219_REG_CALIBRATION, ina219_calibration(s_ina.lsb_ua, shunt_mohm ? shunt_mohm : 100u));
     ok &= wr16(INA219_REG_CONFIG, 0x399F); // 32 V range, /8 gain (320 mV), 12-bit, continuous
     return ok;
 }
@@ -117,7 +123,7 @@ bool ina219_read_current_ua(int32_t *microamps)
     if (!rd16(INA219_REG_CURRENT, &v))
         return false;
     if (microamps)
-        *microamps = ina219_current_ua((int16_t)v, s_lsb_ua);
+        *microamps = ina219_current_ua((int16_t)v, s_ina.lsb_ua);
     return true;
 }
 
@@ -127,7 +133,7 @@ bool ina219_read_power_uw(int32_t *microwatts)
     if (!rd16(INA219_REG_POWER, &v))
         return false;
     if (microwatts)
-        *microwatts = ina219_power_uw((int16_t)v, s_lsb_ua);
+        *microwatts = ina219_power_uw((int16_t)v, s_ina.lsb_ua);
     return true;
 }
 
