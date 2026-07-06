@@ -389,7 +389,16 @@ class DetWebServer
      * block. Cleared at the start of every dispatch so each request begins
      * with no carried-over headers.
      */
-    char _extra_hdr[MAX_CONNS][EXTRA_HDR_BUF_SIZE];
+    char _extra_hdr[CONN_POOL_SLOTS][EXTRA_HDR_BUF_SIZE];
+
+#if DETWS_ENABLE_HTTP3
+    // HTTP/3 leaf cert + seed and UDP port, held until begin() starts the QUIC server.
+    const uint8_t *_h3_cert = nullptr;
+    size_t _h3_cert_len = 0;
+    uint8_t _h3_seed[32] = {0};
+    uint16_t _h3_port = DETWS_HTTP3_PORT;
+    bool _h3_enabled = false;
+#endif
 
     /**
      * @brief Global middleware chain, run in registration order before dispatch.
@@ -674,6 +683,27 @@ class DetWebServer
     int tls_client_subject(uint8_t slot_id, char *out, size_t out_len);
 #endif // DETWS_ENABLE_MTLS
 #endif // DETWS_ENABLE_TLS
+
+#if DETWS_ENABLE_HTTP3
+    /**
+     * @brief Enable the HTTP/3 (QUIC) server: load its Ed25519 leaf certificate + key and choose the
+     * UDP port. Call before begin(); begin() then binds the port and serves HTTP/3 through the same
+     * routes as HTTP/1.1 and HTTP/2. @p cert_der is a DER X.509 leaf whose public key is the Ed25519
+     * key matching @p ed25519_seed (its 32-byte private seed). @return true if stored.
+     *
+     * Profile: TLS_AES_128_GCM_SHA256 + X25519 + Ed25519 (a client offering none of these is refused).
+     */
+    bool h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32],
+                 uint16_t port = DETWS_HTTP3_PORT);
+
+    /**
+     * @brief Internal: run a completed HTTP/3 request through the shared route dispatcher on the
+     * reserved conn-pool slot (called by the quic_server request trampoline, not by app code). The
+     * response routes back to @p stream_id on @p conn_id via send() -> quic_server_respond.
+     */
+    void dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
+                             const char *authority, const uint8_t *body, size_t body_len);
+#endif // DETWS_ENABLE_HTTP3
 
     /**
      * @brief Gracefully stop the server.

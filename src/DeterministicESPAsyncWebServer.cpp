@@ -45,6 +45,9 @@
 #if DETWS_ENABLE_HTTP2
 #include "network_drivers/presentation/http2/h2_server.h"
 #endif
+#if DETWS_ENABLE_HTTP3
+#include "network_drivers/presentation/http3/quic_server.h"
+#endif
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/sha1/sha1.h"
@@ -502,9 +505,49 @@ static void detws_pump_trampoline(int worker_id)
         s_worker_server->service_once(worker_id);
 }
 
+#if DETWS_ENABLE_HTTP3
+// The quic_server request seam has no DetWebServer type; this trampoline forwards a completed
+// HTTP/3 request into the instance's shared route dispatcher (app == the DetWebServer *).
+static bool s_h3_running = false;
+static void detws_h3_request_trampoline(void *app, uint32_t conn_id, uint64_t stream_id, const char *method,
+                                        const char *path, const char *authority, const uint8_t *body, size_t body_len)
+{
+    if (app)
+        ((DetWebServer *)app)->dispatch_h3_request(conn_id, stream_id, method, path, authority, body, body_len);
+}
+
+// Randomness for the QUIC ephemeral X25519 key, the ServerHello random, and our connection IDs: the
+// hardware TRNG on device; a deterministic PRNG on host (test builds carry no security context and
+// have no esp_random).
+static void detws_h3_rng(uint8_t *out, size_t len)
+{
+#ifdef ARDUINO
+    size_t i = 0;
+    while (i < len)
+    {
+        uint32_t r = esp_random();
+        size_t n = (len - i) < 4 ? (len - i) : 4;
+        memcpy(out + i, &r, n);
+        i += n;
+    }
+#else
+    static uint32_t s = 0x9e3779b9u;
+    for (size_t i = 0; i < len; i++)
+    {
+        s = s * 1664525u + 1013904223u;
+        out[i] = (uint8_t)(s >> 24);
+    }
+#endif
+}
+#endif // DETWS_ENABLE_HTTP3
+
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
 {
-    if (_listener_count == 0)
+    if (_listener_count == 0
+#if DETWS_ENABLE_HTTP3
+        && !_h3_enabled // an HTTP/3-only server binds UDP, not a TCP listener
+#endif
+    )
         return DETWS_ERR_NO_LISTENERS;
     DeterministicAsyncTCP::pool_init(cfg);
 #if DETWS_ENABLE_AUTH
@@ -541,6 +584,20 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         if (listener_add(i, _listen_ports[i], _listen_protos[i], _listen_tls[i]) < 0)
             return DETWS_ERR_LISTEN_FAILED;
     }
+#if DETWS_ENABLE_HTTP3
+    // Bind the HTTP/3 QUIC server (UDP on device; on host it is fed via quic_server_ingest). Requests
+    // dispatch through this instance's routes via the trampoline; quic_server_poll() runs in service_once.
+    if (_h3_enabled)
+    {
+        QuicServerConfig h3cfg;
+        memset(&h3cfg, 0, sizeof(h3cfg));
+        h3cfg.cert_der = _h3_cert;
+        h3cfg.cert_len = _h3_cert_len;
+        memcpy(h3cfg.ed25519_seed, _h3_seed, sizeof(h3cfg.ed25519_seed));
+        h3cfg.rng = detws_h3_rng;
+        s_h3_running = quic_server_begin(_h3_port, &h3cfg, detws_h3_request_trampoline, this);
+    }
+#endif
 #ifdef ARDUINO
     // Routes/listeners are now fixed; start the worker task(s) that drive the
     // pipeline off the user's loop(). On host the pipeline runs inline via handle().
@@ -557,6 +614,91 @@ int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
         return rc;
     return begin(cfg);
 }
+
+#if DETWS_ENABLE_HTTP3
+bool DetWebServer::h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32], uint16_t port)
+{
+    if (!cert_der || cert_len == 0 || !ed25519_seed)
+        return false;
+    _h3_cert = cert_der;
+    _h3_cert_len = cert_len;
+    memcpy(_h3_seed, ed25519_seed, sizeof(_h3_seed));
+    _h3_port = port;
+    _h3_enabled = true;
+    return true;
+}
+
+void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
+                                       const char *authority, const uint8_t *body, size_t body_len)
+{
+    const uint8_t slot = DETWS_H3_DISPATCH_SLOT;
+    HttpReq *r = &http_pool[slot];
+    http_reset(slot);
+
+    // Map the semantic request fields into the shared HttpReq (as h2_server does per stream).
+    size_t mn = strlen(method);
+    if (mn >= sizeof(r->method))
+        mn = sizeof(r->method) - 1;
+    memcpy(r->method, method, mn);
+    r->method[mn] = 0;
+
+    const char *q = strchr(path, '?');
+    size_t plen = q ? (size_t)(q - path) : strlen(path);
+    if (plen >= sizeof(r->path))
+        plen = sizeof(r->path) - 1;
+    memcpy(r->path, path, plen);
+    r->path[plen] = 0;
+    r->path_idx = strlen(r->path);
+    if (q)
+    {
+        size_t ql = strlen(q + 1);
+        if (ql >= sizeof(r->query))
+            ql = sizeof(r->query) - 1;
+        memcpy(r->query, q + 1, ql);
+        r->query[ql] = 0;
+        r->query_idx = strlen(r->query);
+    }
+
+    // :authority maps to Host, the way the h2 bridge does.
+    if (authority && authority[0] && r->header_count < MAX_HEADERS)
+    {
+        Header *h = &r->headers[r->header_count++];
+        memcpy(h->key, "host", 5);
+        size_t vl = strlen(authority);
+        if (vl >= sizeof(h->val))
+            vl = sizeof(h->val) - 1;
+        memcpy(h->val, authority, vl);
+        h->val[vl] = 0;
+    }
+
+    if (body && body_len)
+    {
+        size_t n = body_len > BODY_BUF_SIZE ? BODY_BUF_SIZE : body_len;
+        memcpy(r->body, body, n);
+        r->body_len = n;
+        r->body[r->body_len] = 0;
+        r->body_bytes_read = body_len;
+        r->content_length = body_len;
+    }
+    r->parse_state = PARSE_COMPLETE;
+
+    // Mark the reserved slot as HTTP/3 so send() / send_empty() route the response back to the stream.
+    TcpConn *c = &conn_pool[slot];
+    c->h3 = 1;
+    c->h3_conn_id = conn_id;
+    c->h3_stream = stream_id;
+    c->iface = DETIFACE_STA;
+    c->state = CONN_ACTIVE;
+    c->pcb = nullptr;
+
+    match_and_execute(slot); // -> handler -> send() -> quic_server_respond()
+
+    // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
+    c->h3 = 0;
+    c->state = CONN_FREE;
+    http_reset(slot);
+}
+#endif // DETWS_ENABLE_HTTP3
 
 #if DETWS_ENABLE_TLS
 bool DetWebServer::tls_cert(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
@@ -1086,6 +1228,13 @@ void DetWebServer::handle()
 void DetWebServer::service_once(int worker_id)
 {
     server_tick(worker_id);
+
+#if DETWS_ENABLE_HTTP3
+    // Drive the QUIC/HTTP-3 server: ingest queued datagrams, run the engines (which dispatch requests
+    // through this instance's routes), flush replies. One worker owns it, so requests stay single-threaded.
+    if (worker_id == 0 && s_h3_running)
+        quic_server_poll();
+#endif
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)
     {
@@ -1761,9 +1910,19 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
  */
 void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, const char *payload)
 {
-    if (slot_id >= MAX_CONNS)
+    if (slot_id >= CONN_POOL_SLOTS)
         return; // guard the public entry: never index conn_pool out of range
     TcpConn *conn = &conn_pool[slot_id];
+#if DETWS_ENABLE_HTTP3
+    // HTTP/3 dispatch slot: write the response onto its QUIC stream (no TCP pcb here), so branch
+    // before the pcb check that the TCP paths make.
+    if (conn->h3)
+    {
+        quic_server_respond(conn->h3_conn_id, conn->h3_stream, code, content_type, (const uint8_t *)payload,
+                            strlen(payload));
+        return;
+    }
+#endif
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
@@ -1827,9 +1986,16 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
  */
 void DetWebServer::send_empty(uint8_t slot_id, int code)
 {
-    if (slot_id >= MAX_CONNS)
+    if (slot_id >= CONN_POOL_SLOTS)
         return;
     TcpConn *conn = &conn_pool[slot_id];
+#if DETWS_ENABLE_HTTP3
+    if (conn->h3)
+    {
+        quic_server_respond(conn->h3_conn_id, conn->h3_stream, code, "text/plain", (const uint8_t *)"", 0);
+        return;
+    }
+#endif
     if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);

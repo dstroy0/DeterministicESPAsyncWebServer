@@ -155,8 +155,8 @@ struct HttpReq
 #endif
 };
 
-/** @brief Pool of parser contexts, one per transport slot. */
-extern HttpReq http_pool[MAX_CONNS];
+/** @brief Pool of parser contexts, one per connection-pool slot (incl. reserved dispatch slots). */
+extern HttpReq http_pool[CONN_POOL_SLOTS];
 
 #if DETWS_ENABLE_STREAM_BODY
 // ---------------------------------------------------------------------------

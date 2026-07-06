@@ -94,6 +94,11 @@ struct TcpConn
     uint8_t h2_checked; ///< The post-handshake ALPN check ran (once per connection).
     uint32_t h2_stream; ///< Stream id of the request currently being dispatched (for the response).
 #endif
+#if DETWS_ENABLE_HTTP3
+    uint8_t h3;          ///< Non-zero when this is the reserved HTTP/3 dispatch slot (no TCP pcb).
+    uint32_t h3_conn_id; ///< quic_server connection id the response routes back to.
+    uint64_t h3_stream;  ///< HTTP/3 request stream id the response is written on.
+#endif
 };
 
 /** @brief Sentinel for TcpConn::proto_slot meaning "no per-protocol session bound". */
@@ -108,8 +113,10 @@ struct TcpConn
  */
 extern uint32_t detws_ap_ip;
 
-/** @brief Static pool of connection contexts.  Defined in transport.cpp. */
-extern TcpConn conn_pool[MAX_CONNS];
+/** @brief Static pool of connection contexts.  Defined in transport.cpp.
+ *  Sized CONN_POOL_SLOTS: MAX_CONNS TCP slots plus any reserved internal dispatch slot(s)
+ *  (HTTP/3); the TCP accept path only ever uses [0, MAX_CONNS). */
+extern TcpConn conn_pool[CONN_POOL_SLOTS];
 
 // ---------------------------------------------------------------------------
 // Event queue

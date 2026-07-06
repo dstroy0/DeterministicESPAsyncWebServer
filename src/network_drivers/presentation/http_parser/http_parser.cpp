@@ -13,7 +13,7 @@
 #include "http_parser.h"
 #include "network_drivers/network/det_ip.h" // validate a recovered proxy client IP (v4/v6)
 
-HttpReq http_pool[MAX_CONNS];
+HttpReq http_pool[CONN_POOL_SLOTS];
 
 #if DETWS_ENABLE_STREAM_BODY
 // Streaming-body hooks (OTA / file upload). Null unless the application installs them.

@@ -260,7 +260,7 @@ static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *p
 }
 #endif // ARDUINO
 
-TcpConn conn_pool[MAX_CONNS];
+TcpConn conn_pool[CONN_POOL_SLOTS];
 
 uint32_t detws_ap_ip = 0;
 

@@ -3326,6 +3326,26 @@
 #define DETWS_ENABLE_HTTP3 0
 #endif
 
+// Internal request-dispatch slots appended to the connection pool for non-TCP transports.
+// HTTP/3 runs over QUIC/UDP and has no accept-time TCP slot, but it reuses the same request
+// pipeline (match_and_execute + send), which is indexed by a connection-pool slot. One reserved
+// slot at index MAX_CONNS lets an HTTP/3 request run through that pipeline. The TCP accept path only
+// ever scans [0, MAX_CONNS), and this slot is driven synchronously by the HTTP/3 poll on the worker
+// thread, so there is no accept race. CONN_POOL_SLOTS sizes conn_pool / http_pool / the per-slot
+// response-header buffer; every TCP loop still bounds itself with MAX_CONNS.
+#if DETWS_ENABLE_HTTP3
+#define DETWS_INTERNAL_SLOTS 1
+#define DETWS_H3_DISPATCH_SLOT MAX_CONNS ///< reserved conn-pool slot an HTTP/3 request dispatches through
+#else
+#define DETWS_INTERNAL_SLOTS 0
+#endif
+#define CONN_POOL_SLOTS (MAX_CONNS + DETWS_INTERNAL_SLOTS)
+
+/** @brief UDP port the HTTP/3 (QUIC) server binds by default (used by DetWebServer::h3_cert). */
+#ifndef DETWS_HTTP3_PORT
+#define DETWS_HTTP3_PORT 443
+#endif
+
 /**
  * @brief Maximum bytes of one QUIC/TLS handshake CRYPTO flight (RFC 9001).
  *
