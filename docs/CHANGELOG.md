@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.22.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.22.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ac55a60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac55a6072e8f272bc791711eb499a00fbdbfd620))
+
+### Changes
+
+- Bump version: 5.21.0 → 5.22.0 ([`7a9b4ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a9b4ff7a04f4a238ad854f41f46ae2b7e6db77b))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b1a8594`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a859492bef42500a3208cb40aab1787bb77e25))
+- update ESP32 build footprints [skip ci] ([`3d3b214`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d3b2144c7a4b26b38b8cbbf0c19a92254ad523e))
+
+### Features
+
+- IEEE 2030.5 (Smart Energy Profile 2.0) resource codec ([`c6a5b68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6a5b68af31797025b08c93f87076f2f4ec60508))
+
+</details>
+
 ## [5.21.0] - 2026-07-06
 
 <details>
