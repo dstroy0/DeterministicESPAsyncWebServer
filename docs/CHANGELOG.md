@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.2.3] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.2.3 - 2026-07-06</b></summary>
 
 ### Bug Fixes
 
@@ -10,10 +13,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`ae8d11b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae8d11b5f6b8248b6741e213c345466e558f3761))
+- update CHANGELOG.md [skip ci] ([`4f5e5ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f5e5ef5131f7540b501ac0eab1fff8bbaf9d3d2))
 - update test report [skip ci] ([`c969dae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c969dae3ad83a0f392ef830102823ee19c009fca))
 - update CHANGELOG.md [skip ci] ([`04fba3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04fba3f8a937bdbc10f1e5163bb2f613cdf7edbd))
 - update test report [skip ci] ([`0177116`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01771166a6573349febe45559df114033c323bf8))
 - update CHANGELOG.md [skip ci] ([`b17859d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b17859da0011e1cba7ea70a1fc2ec857504bd0b0))
+
+### Changes
+
+- Bump version: 5.2.2 → 5.2.3 ([`c538861`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c538861c618cc203ef53220aa18cdb335fe0580f))
 
 ### Documentation
 
@@ -22,6 +31,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update ESP32 build footprints [skip ci] ([`bdcca10`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdcca10db1f6a6826205be38874f1c6fe2b8eea7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f270386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f270386384ec37b8358f4e6664cc7fb5e14d932b))
 - update ESP32 build footprints [skip ci] ([`73d24eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73d24ebacfb273dcd188d133dfb14595147c35c2))
+
+### Refactor
+
+- route HTTP through the uniform ProtoHandler::on_poll seam ([`a56fe4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a56fe4e29e4fdcf01b4e7e890bda7508ce1031c3))
+
+</details>
 
 ## [5.2.2] - 2026-07-06
 
