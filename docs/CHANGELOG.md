@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report [skip ci] ([`0177116`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01771166a6573349febe45559df114033c323bf8))
+- update CHANGELOG.md [skip ci] ([`b17859d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b17859da0011e1cba7ea70a1fc2ec857504bd0b0))
+
+### Documentation
+
+- complete per-feature footprint budget from the full 95-feature RPi matrix ([`4f6c7ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f6c7ef9e39247b9eabc48a3af32e5d5856cc60f))
+- update ESP32 build footprints [skip ci] ([`bdcca10`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdcca10db1f6a6826205be38874f1c6fe2b8eea7))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f270386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f270386384ec37b8358f4e6664cc7fb5e14d932b))
+- update ESP32 build footprints [skip ci] ([`73d24eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73d24ebacfb273dcd188d133dfb14595147c35c2))
+
 ## [5.2.2] - 2026-07-06
 
 <details>
