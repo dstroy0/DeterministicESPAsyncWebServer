@@ -1233,7 +1233,7 @@ void DetWebServer::service_once(int worker_id)
     // Drive the QUIC/HTTP-3 server: ingest queued datagrams, run the engines (which dispatch requests
     // through this instance's routes), flush replies. One worker owns it, so requests stay single-threaded.
     if (worker_id == 0 && s_h3_running)
-        quic_server_poll();
+        quic_server_poll(detws_millis());
 #endif
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)

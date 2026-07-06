@@ -18,7 +18,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
+
+// Monotonic milliseconds for the server's idle clock (quic_server stays platform-agnostic).
+static uint32_t monotonic_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
 
 static int g_sock;
 
@@ -115,6 +124,6 @@ int main(int argc, char **argv)
         char ip[16];
         inet_ntop(AF_INET, &src.sin_addr, ip, sizeof ip);
         quic_server_ingest(buf, (size_t)n, ip, ntohs(src.sin_port));
-        quic_server_poll();
+        quic_server_poll(monotonic_ms());
     }
 }

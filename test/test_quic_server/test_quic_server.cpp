@@ -339,7 +339,7 @@ void test_quic_server_http3_get()
     // Deliver it: quic_server opens the connection and produces the server flight.
     g_out_n = 0;
     TEST_ASSERT_TRUE(quic_server_ingest(dg, dl, "192.0.2.10", 40000));
-    quic_server_poll();
+    quic_server_poll(0);
     TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());
     TEST_ASSERT_GREATER_THAN(0, g_out_n); // the coalesced Initial(SH) + Handshake(EE..Finished) flight
 
@@ -392,7 +392,7 @@ void test_quic_server_http3_get()
                             sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
     g_out_n = 0;
     TEST_ASSERT_TRUE(quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
-    quic_server_poll(); // drains HANDSHAKE_DONE + the server's control/QPACK streams (ignored)
+    quic_server_poll(0); // drains HANDSHAKE_DONE + the server's control/QPACK streams (ignored)
 
     // Client HTTP/3 GET on request stream 0 (1-RTT). The short-header DCID is the server's SCID.
     uint8_t block[128];
@@ -409,7 +409,7 @@ void test_quic_server_http3_get()
 
     g_out_n = 0;
     TEST_ASSERT_TRUE(quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
-    quic_server_poll(); // dispatches the request to app_request, which responds; flushed here
+    quic_server_poll(0); // dispatches the request to app_request, which responds; flushed here
 
     // The request reached the application through the server callback...
     TEST_ASSERT_EQUAL_STRING("GET", g_method);
@@ -421,9 +421,59 @@ void test_quic_server_http3_get()
     TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());
 }
 
+// A connection with no traffic past the idle timeout is reclaimed (the fixed pool cannot be leaked
+// by a client that never closes). The caller-supplied clock is advanced by hand.
+void test_idle_connection_reaped()
+{
+    fill();
+    uint32_t now = 100000;
+
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = test_rng;
+    quic_server_set_out_sink(out_sink, nullptr);
+    TEST_ASSERT_TRUE(quic_server_begin(443, &scfg, app_request, nullptr));
+
+    // Open a connection with a client Initial (the handshake need not complete to hold a slot).
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctpe[128];
+    size_t ctpl = quic_tp_encode(&ctp, ctpe, sizeof(ctpe));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t chl = build_client_hello(ch, client_pub, ctpe, ctpl);
+    uint8_t frames[1200];
+    size_t fl = quic_build_crypto(frames, sizeof(frames), 0, ch, chl);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, frames, fl);
+    quic_server_ingest(dg, dl, "192.0.2.10", 40000);
+    quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());
+
+    // Just before the timeout it is kept; just after, a poll reclaims it.
+    now += DETWS_QUIC_IDLE_MS - 1;
+    quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());
+    now += 2;
+    quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());
+
+    quic_server_stop();
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_quic_server_http3_get);
+    RUN_TEST(test_idle_connection_reaped);
     return UNITY_END();
 }

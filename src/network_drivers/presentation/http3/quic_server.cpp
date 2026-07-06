@@ -25,6 +25,16 @@
 #ifndef DETWS_QUIC_SERVER_IN_PSRAM
 #define DETWS_QUIC_SERVER_IN_PSRAM 0
 #endif
+#ifndef DETWS_QUIC_SERVER_ACK_DRAM
+#define DETWS_QUIC_SERVER_ACK_DRAM 0 ///< consciously accept the pool in internal DRAM (roomy S3 / P4)
+#endif
+// The QuicConn + H3Conn pool plus the ingest ring are tens of KB; on a device that is a deliberate
+// footprint choice. Fail fast (like DETWS_ENABLE_SSH_ZLIB / DETWS_ENABLE_HTTP2) so it is not an
+// accidental DRAM overflow: move the pool to PSRAM, or acknowledge the internal-DRAM cost.
+#if defined(ARDUINO) && !DETWS_QUIC_SERVER_IN_PSRAM && !DETWS_QUIC_SERVER_ACK_DRAM
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP3 - the quic_server QuicConn+H3Conn pool + ingest ring are tens of KB. Set DETWS_QUIC_SERVER_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DETWS_QUIC_SERVER_ACK_DRAM=1 to accept the internal-DRAM cost (fits a small pool on a roomy chip)."
+#endif
 #if DETWS_QUIC_SERVER_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h>
 #if defined(EXT_RAM_BSS_ATTR)
@@ -58,6 +68,7 @@ struct QuicSlot
     H3Conn h3;
     char peer_ip[16];
     uint16_t peer_port;
+    uint32_t last_ms; ///< detws_millis() of the last datagram received (idle-reaping clock)
 };
 
 DETWS_QUIC_POOL_ATTR QuicSlot s_pool[DETWS_QUIC_MAX_CONNS];
@@ -186,6 +197,7 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     tc.params.initial_max_sd_uni = 262144;         // client control / QPACK encoder+decoder streams
     tc.params.initial_max_streams_bidi = DETWS_H3_MAX_STREAMS;
     tc.params.initial_max_streams_uni = DETWS_H3_MAX_STREAMS;
+    tc.params.max_idle_timeout = DETWS_QUIC_IDLE_MS; // both ends reclaim the connection after this idle
     s_cfg.rng(tc.ephemeral_priv, sizeof tc.ephemeral_priv);
     s_cfg.rng(tc.random, sizeof tc.random);
 
@@ -199,7 +211,7 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
 
     copy_str(s->peer_ip, sizeof s->peer_ip, ip);
     s->peer_port = port;
-    return s;
+    return s; // last_ms is set by the poll that received this datagram
 }
 
 // Route a datagram to its connection by Destination Connection ID. Sets *is_initial when it is an
@@ -238,7 +250,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
     return nullptr;
 }
 
-void flush_and_reap()
+void flush_and_reap(uint32_t now_ms)
 {
     uint8_t out[DETWS_QUIC_MAX_DATAGRAM];
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
@@ -249,7 +261,9 @@ void flush_and_reap()
         size_t n;
         while ((n = quic_conn_send(&s->qc, out, sizeof out)) > 0)
             server_send(s->peer_ip, s->peer_port, out, n);
-        if (quic_conn_is_closed(&s->qc))
+        // Reap a closed connection, or one idle past the timeout (wrap-safe delta) so a client that
+        // never closes cannot leak the fixed pool.
+        if (quic_conn_is_closed(&s->qc) || (uint32_t)(now_ms - s->last_ms) >= DETWS_QUIC_IDLE_MS)
             s->used = false;
     }
 }
@@ -287,7 +301,7 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
 #endif
 }
 
-void quic_server_poll(void)
+void quic_server_poll(uint32_t now_ms)
 {
     if (!s_running)
         return;
@@ -301,9 +315,10 @@ void quic_server_poll(void)
             s = open_conn(&lh, ig.ip, ig.port);
         if (!s)
             continue;
+        s->last_ms = now_ms; // liveness for idle reaping
         quic_conn_recv(&s->qc, ig.data, ig.len);
     }
-    flush_and_reap();
+    flush_and_reap(now_ms);
 }
 
 bool quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,

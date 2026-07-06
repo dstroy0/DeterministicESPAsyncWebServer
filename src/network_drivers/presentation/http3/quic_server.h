@@ -50,6 +50,9 @@
 #ifndef DETWS_QUIC_SCID_LEN
 #define DETWS_QUIC_SCID_LEN 8 ///< length of the connection ID the server chooses for itself
 #endif
+#ifndef DETWS_QUIC_IDLE_MS
+#define DETWS_QUIC_IDLE_MS 30000 ///< reclaim a connection idle this long (also advertised as max_idle_timeout)
+#endif
 
 /**
  * @brief A completed HTTP/3 request handed to the application on the poll thread.
@@ -80,9 +83,10 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
 /**
  * @brief Drive the server once: drain queued inbound datagrams into their connections, run the
  * handshake + HTTP/3 engines (which may fire @p on_request), and flush outbound datagrams. Call every
- * loop iteration. Closed connections are reaped here.
+ * loop iteration. @p now_ms is the caller's monotonic millisecond clock (the module stays
+ * platform-agnostic); closed or idle (DETWS_QUIC_IDLE_MS) connections are reaped here.
  */
-void quic_server_poll(void);
+void quic_server_poll(uint32_t now_ms);
 
 /**
  * @brief Send an HTTP/3 response (HEADERS + DATA, finishing the stream) for @p stream_id on the
