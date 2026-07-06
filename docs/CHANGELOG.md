@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.36.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.36.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7545818`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7545818a09ffe41b80f8e10a48b26519142fc415))
+
+### Changes
+
+- Bump version: 5.35.0 → 5.36.0 ([`7478195`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74781955a554150a4bc94607e253d77df9a89b06))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a2c0b3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2c0b3f47aa921a71d22baa73df9198c70a420c1))
+
+### Features
+
+- ICCP / TASE.2 (IEC 60870-6) Data_Value codec ([`e2ff9f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2ff9f097ceccb4f0d7add50851742d8ec7f2282))
+
+</details>
+
 ## [5.35.0] - 2026-07-06
 
 <details>
