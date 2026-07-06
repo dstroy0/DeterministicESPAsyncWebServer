@@ -60,11 +60,17 @@ int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 
 namespace
 {
-uint8_t s_addr = DETWS_ADS1115_I2C_ADDR;
+// All ADS1115 I2C-binding state, owned by one instance (internal linkage): the device
+// address, so it is one named owner, unreachable from any other translation unit.
+struct Ads1115Ctx
+{
+    uint8_t addr = DETWS_ADS1115_I2C_ADDR;
+};
+Ads1115Ctx s_ads;
 
 bool wr16(uint8_t reg, uint16_t v)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_ads.addr);
     Wire.write(reg);
     Wire.write((uint8_t)(v >> 8)); // ADS1115 registers are big-endian
     Wire.write((uint8_t)(v & 0xFF));
@@ -73,11 +79,11 @@ bool wr16(uint8_t reg, uint16_t v)
 
 bool rd16(uint8_t reg, uint16_t *v)
 {
-    Wire.beginTransmission(s_addr);
+    Wire.beginTransmission(s_ads.addr);
     Wire.write(reg);
     if (Wire.endTransmission(false) != 0)
         return false;
-    if (Wire.requestFrom((int)s_addr, 2) != 2)
+    if (Wire.requestFrom((int)s_ads.addr, 2) != 2)
         return false;
     uint8_t hi = (uint8_t)Wire.read();
     uint8_t lo = (uint8_t)Wire.read();
@@ -88,7 +94,7 @@ bool rd16(uint8_t reg, uint16_t *v)
 
 bool ads1115_begin(uint8_t addr)
 {
-    s_addr = addr ? addr : (uint8_t)DETWS_ADS1115_I2C_ADDR;
+    s_ads.addr = addr ? addr : (uint8_t)DETWS_ADS1115_I2C_ADDR;
     detws_i2c_begin();
     return true;
 }
