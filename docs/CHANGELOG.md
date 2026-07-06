@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- fix ccache toolchain wrap breaking every example build ([`b47f5eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b47f5eb3014825298fdf2362bbd4d236ce657533))
+- update CHANGELOG.md [skip ci] ([`7f9880c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f9880ce04167de209baa1d720c0881d7c25fcac))
 - update test report [skip ci] ([`fb6e066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6e066eb26d084c1fcf9341d22d13bfe065eff0))
 - update CHANGELOG.md [skip ci] ([`b88207c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b88207cf26776afb94def4c907c22395b3f510ec))
 - update CHANGELOG.md [skip ci] ([`936db80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/936db8094bc2e31c0189838416223729f6d676f7))
