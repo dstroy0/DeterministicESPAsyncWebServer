@@ -97,17 +97,7 @@ void handle_crypto(QuicConn *qc, int level, const QuicFrame *f)
     if (f->crypto.offset > want)
         return; // out-of-order beyond our window; the peer will retransmit
     if (f->crypto.offset + f->crypto.length <= want)
-    {
-        // Wholly duplicate CRYPTO. If the peer is re-sending handshake data it already delivered, our
-        // flight was lost, so re-send it immediately rather than waiting for our own PTO - the peer's
-        // retransmission has also grown our anti-amplification budget, so the re-send can go out.
-        if (qc->tls.state == QTLS_WAIT_FINISHED)
-        {
-            qc->space[QUIC_ENC_INITIAL].crypto_tx_off = 0;
-            qc->space[QUIC_ENC_HANDSHAKE].crypto_tx_off = 0;
-        }
-        return;
-    }
+        return; // wholly duplicate
     size_t skip = (size_t)(want - f->crypto.offset);
     const uint8_t *nd = f->crypto.data + skip;
     size_t nl = (size_t)(f->crypto.length - skip);
