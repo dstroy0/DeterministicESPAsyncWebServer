@@ -58,6 +58,15 @@ static QuicStream *find_stream(QuicConn *qc, uint64_t id)
     return nullptr;
 }
 
+// Find an HTTP/3 stream (with its classified role) by id.
+static H3Stream *find_h3(H3Conn *h3, uint64_t id)
+{
+    for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+        if (h3->streams[i].role != H3_ROLE_FREE && h3->streams[i].id == id)
+            return &h3->streams[i];
+    return nullptr;
+}
+
 // Emit target for decoding a response field section.
 static char e_status[8], e_ctype[32];
 static bool resp_emit(void *, const char *name, size_t nlen, const char *value, size_t vlen)
@@ -182,11 +191,134 @@ void test_control_stream_settings_sent()
     TEST_ASSERT_NOT_NULL(find_stream(&qc, 11));
 }
 
+// The client's control stream (a uni stream, type 0x00) carries SETTINGS; the server classifies the
+// stream by its type varint and parses the SETTINGS into peer_settings.
+void test_client_control_stream_settings()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t s[64];
+    size_t sp = quic_varint_encode(s, sizeof(s), 0x00); // control stream type
+    const uint64_t ids[] = {H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
+    const uint64_t vals[] = {12345};
+    sp += h3_build_settings(s + sp, sizeof(s) - sp, ids, vals, 1);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 2, s, sp, false); // client-initiated uni stream (id 2)
+
+    H3Stream *st = find_h3(&h3, 2);
+    TEST_ASSERT_NOT_NULL(st);
+    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, st->role);
+    TEST_ASSERT_EQUAL_UINT64(12345, h3.peer_settings.max_field_section_size);
+}
+
+// The QPACK encoder / decoder streams (type 0x02 / 0x03) and an unknown uni stream are classified
+// and then drained (static-table only, nothing to process).
+void test_client_uni_stream_types()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t t;
+    size_t n = quic_varint_encode(&t, 1, 0x02);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 6, &t, n, false);
+    n = quic_varint_encode(&t, 1, 0x03);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 10, &t, n, false);
+    n = quic_varint_encode(&t, 1, 0x1f); // an unknown stream type
+    qc.cb.on_stream_data(qc.cb.app, &qc, 14, &t, n, false);
+
+    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_ENC, find_h3(&h3, 6)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_DEC, find_h3(&h3, 10)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_OTHER_UNI, find_h3(&h3, 14)->role);
+}
+
+// on_handshake_done opens the control + QPACK streams exactly once; a repeat call is a no-op.
+void test_handshake_done_idempotent()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    qc.cb.on_handshake_done(qc.cb.app, &qc);
+    QuicStream *ctrl = find_stream(&qc, 3);
+    TEST_ASSERT_NOT_NULL(ctrl);
+    size_t first = ctrl->tx_have;
+    qc.cb.on_handshake_done(qc.cb.app, &qc); // control_opened -> no-op
+    TEST_ASSERT_EQUAL_UINT(first, ctrl->tx_have);
+}
+
+// Malformed request frames (an incomplete varint header, or a length past the buffer) do not dispatch.
+void test_malformed_request_frame()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    // A HEADERS frame that declares length 9999 but has no payload -> incomplete -> not dispatched.
+    uint8_t hdr[8];
+    size_t hp = h3_frame_write_header(hdr, sizeof(hdr), H3_HEADERS, 9999);
+    qc.cb.on_stream_data(qc.cb.app, &qc, 0, hdr, hp, true);
+    TEST_ASSERT_EQUAL_INT(0, g_requests);
+
+    // A truncated frame-header varint -> parse fails -> not dispatched.
+    uint8_t junk[1] = {0xC0}; // first byte of an 8-byte varint, nothing after it
+    qc.cb.on_stream_data(qc.cb.app, &qc, 4, junk, sizeof(junk), true);
+    TEST_ASSERT_EQUAL_INT(0, g_requests);
+}
+
+// A response body too large to frame into the output buffer fails cleanly.
+void test_respond_body_too_large()
+{
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+    static uint8_t big[DETWS_H3_STREAM_BUF + 200];
+    memset(big, 'x', sizeof(big));
+    TEST_ASSERT_FALSE(h3_conn_respond(&h3, 0, 200, "text/plain", big, sizeof(big)));
+}
+
+// When every stream slot is occupied, a further new stream is dropped rather than overrunning.
+void test_stream_pool_full()
+{
+    g_requests = 0;
+    QuicConn qc;
+    minimal_qc(&qc);
+    H3Conn h3;
+    h3_conn_init(&h3, &qc, on_request, nullptr);
+
+    uint8_t b = 0x00;
+    for (uint64_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+        qc.cb.on_stream_data(qc.cb.app, &qc, i * 4, &b, 1, false); // partial request streams, no FIN
+
+    // One more distinct request stream cannot allocate a slot -> silently ignored.
+    uint8_t block[64];
+    size_t bp = qpack_encode_prefix(block, sizeof(block));
+    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, "GET", 3);
+    bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/x", 2);
+    uint8_t req[128];
+    size_t rp = h3_build_headers(req, sizeof(req), block, bp);
+    qc.cb.on_stream_data(qc.cb.app, &qc, (uint64_t)DETWS_H3_MAX_STREAMS * 4, req, rp, true);
+    TEST_ASSERT_EQUAL_INT(0, g_requests);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_request_dispatch_and_response);
     RUN_TEST(test_post_with_body);
     RUN_TEST(test_control_stream_settings_sent);
+    RUN_TEST(test_client_control_stream_settings);
+    RUN_TEST(test_client_uni_stream_types);
+    RUN_TEST(test_handshake_done_idempotent);
+    RUN_TEST(test_malformed_request_frame);
+    RUN_TEST(test_respond_body_too_large);
+    RUN_TEST(test_stream_pool_full);
     return UNITY_END();
 }
