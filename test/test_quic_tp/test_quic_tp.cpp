@@ -135,6 +135,18 @@ void test_reject_bad_values()
     // truncated: id present, length says 4 but only 1 byte follows.
     static const uint8_t e[] = {0x04, 0x04, 0x00};
     TEST_ASSERT_FALSE(quic_tp_parse(e, sizeof(e), &tp));
+    // retry_source_connection_id (0x10) with a 21-byte value (max is 20).
+    uint8_t f[2 + 21];
+    f[0] = QUIC_TP_RETRY_SCID;
+    f[1] = 21;
+    memset(f + 2, 0x11, 21);
+    TEST_ASSERT_FALSE(quic_tp_parse(f, sizeof(f), &tp));
+    // max_ack_delay = 16384 (>= 2^14); a 4-byte varint 80 00 40 00.
+    static const uint8_t g[] = {0x0b, 0x04, 0x80, 0x00, 0x40, 0x00};
+    TEST_ASSERT_FALSE(quic_tp_parse(g, sizeof(g), &tp));
+    // a numeric parameter (initial_max_sd_bidi_remote) with a zero-length value -> no varint to read.
+    static const uint8_t h[] = {0x06, 0x00};
+    TEST_ASSERT_FALSE(quic_tp_parse(h, sizeof(h), &tp));
 }
 
 int main(int, char **)

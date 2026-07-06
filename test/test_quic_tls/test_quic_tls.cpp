@@ -41,9 +41,21 @@ static void fill_test_material()
     }
 }
 
-// Build a minimal TLS 1.3 ClientHello (QUIC): x25519 key_share, tls13, x25519, ed25519, ALPN h3, and
-// the quic_transport_parameters extension. Returns the length of the whole handshake message.
-static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
+// Which ClientHello extensions to include (omitting one exercises the matching server rejection).
+enum
+{
+    INC_SV = 1,    // supported_versions (TLS 1.3)
+    INC_SG = 2,    // supported_groups (x25519)
+    INC_SA = 4,    // signature_algorithms (ed25519)
+    INC_KS = 8,    // key_share (x25519 + pub)
+    INC_ALPN = 16, // ALPN h3
+    INC_TP = 32,   // quic_transport_parameters
+    INC_ALL = 63,
+};
+
+// Build a TLS 1.3 ClientHello (QUIC) including exactly the extensions selected by @p inc. Returns the
+// length of the whole handshake message.
+static size_t build_ch_ext(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len, unsigned inc)
 {
     size_t p = 0;
     out[p++] = TLS_HS_CLIENT_HELLO;
@@ -65,35 +77,47 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], con
     // extensions
     size_t ext_len_at = p;
     p += 2;
-    // supported_versions
-    static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04};
-    memcpy(out + p, sv, sizeof(sv));
-    p += sizeof(sv);
-    // supported_groups (x25519)
-    static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d};
-    memcpy(out + p, sg, sizeof(sg));
-    p += sizeof(sg);
-    // signature_algorithms (ed25519)
-    static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07};
-    memcpy(out + p, sa, sizeof(sa));
-    p += sizeof(sa);
-    // key_share (x25519 + 32-byte pub)
-    static const uint8_t ks[] = {0x00, 0x33, 0x00, 0x26, 0x00, 0x24, 0x00, 0x1d, 0x00, 0x20};
-    memcpy(out + p, ks, sizeof(ks));
-    p += sizeof(ks);
-    memcpy(out + p, client_pub, 32);
-    p += 32;
-    // ALPN h3
-    static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
-    memcpy(out + p, alpn, sizeof(alpn));
-    p += sizeof(alpn);
-    // quic_transport_parameters
-    out[p++] = 0x00;
-    out[p++] = 0x39;
-    out[p++] = (uint8_t)(tp_len >> 8);
-    out[p++] = (uint8_t)tp_len;
-    memcpy(out + p, tp, tp_len);
-    p += tp_len;
+    if (inc & INC_SV) // supported_versions
+    {
+        static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04};
+        memcpy(out + p, sv, sizeof(sv));
+        p += sizeof(sv);
+    }
+    if (inc & INC_SG) // supported_groups (x25519)
+    {
+        static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d};
+        memcpy(out + p, sg, sizeof(sg));
+        p += sizeof(sg);
+    }
+    if (inc & INC_SA) // signature_algorithms (ed25519)
+    {
+        static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07};
+        memcpy(out + p, sa, sizeof(sa));
+        p += sizeof(sa);
+    }
+    if (inc & INC_KS) // key_share (x25519 + 32-byte pub)
+    {
+        static const uint8_t ks[] = {0x00, 0x33, 0x00, 0x26, 0x00, 0x24, 0x00, 0x1d, 0x00, 0x20};
+        memcpy(out + p, ks, sizeof(ks));
+        p += sizeof(ks);
+        memcpy(out + p, client_pub, 32);
+        p += 32;
+    }
+    if (inc & INC_ALPN) // ALPN h3
+    {
+        static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
+        memcpy(out + p, alpn, sizeof(alpn));
+        p += sizeof(alpn);
+    }
+    if (inc & INC_TP) // quic_transport_parameters
+    {
+        out[p++] = 0x00;
+        out[p++] = 0x39;
+        out[p++] = (uint8_t)(tp_len >> 8);
+        out[p++] = (uint8_t)tp_len;
+        memcpy(out + p, tp, tp_len);
+        p += tp_len;
+    }
     // patch ext_len and hs_len
     uint16_t ext_len = (uint16_t)(p - ext_len_at - 2);
     out[ext_len_at] = (uint8_t)(ext_len >> 8);
@@ -103,6 +127,12 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], con
     out[hs_len_at + 1] = (uint8_t)(hs_len >> 8);
     out[hs_len_at + 2] = (uint8_t)hs_len;
     return p;
+}
+
+// Build a full, valid ClientHello (all required extensions).
+static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
+{
+    return build_ch_ext(out, client_pub, tp, tp_len, INC_ALL);
 }
 
 static void make_server_config(QuicTlsConfig *cfg)
@@ -296,6 +326,80 @@ void test_partial_client_hello()
     TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
 }
 
+// Feed a ClientHello with extensions @p inc (and optional malformed transport params) and return the
+// alert the server failed with. Asserts the handshake ended in QTLS_FAILED.
+static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_len)
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    const uint8_t *tp = bad_tp ? bad_tp : ctp_enc;
+    size_t tpl = bad_tp ? bad_tp_len : ctp_len;
+
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_ch_ext(ch, client_pub, tp, tpl, inc);
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    return qt.alert;
+}
+
+// No supported_versions (TLS 1.3) -> protocol_version(70).
+void test_reject_no_tls13()
+{
+    TEST_ASSERT_EQUAL_UINT8(70, reject_alert(INC_ALL & ~INC_SV, nullptr, 0));
+}
+
+// Missing key_share, x25519, or ed25519 -> handshake_failure(40) (no usable ECDHE / signature).
+void test_reject_no_key_share()
+{
+    TEST_ASSERT_EQUAL_UINT8(40, reject_alert(INC_ALL & ~INC_KS, nullptr, 0));
+}
+void test_reject_no_x25519_group()
+{
+    TEST_ASSERT_EQUAL_UINT8(40, reject_alert(INC_ALL & ~INC_SG, nullptr, 0));
+}
+void test_reject_no_ed25519()
+{
+    TEST_ASSERT_EQUAL_UINT8(40, reject_alert(INC_ALL & ~INC_SA, nullptr, 0));
+}
+
+// No quic_transport_parameters extension -> missing_extension(109).
+void test_reject_no_transport_params()
+{
+    TEST_ASSERT_EQUAL_UINT8(109, reject_alert(INC_ALL & ~INC_TP, nullptr, 0));
+}
+
+// Malformed transport params (an oversize connection ID, 21 > QUIC_MAX_CID_LEN) -> illegal_parameter(47).
+void test_reject_bad_transport_params()
+{
+    uint8_t bad_tp[2 + 21] = {0x0f, 0x15}; // initial_scid, length 21, then 21 zero bytes
+    TEST_ASSERT_EQUAL_UINT8(47, reject_alert(INC_ALL, bad_tp, sizeof(bad_tp)));
+}
+
+// A structurally invalid ClientHello (declared length too small to hold the fields) -> decode_error(50).
+void test_reject_malformed_client_hello()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+    // ClientHello, handshake length 2, body = legacy_version only (no random / ciphers / extensions).
+    uint8_t bad[] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x02, 0x03, 0x03};
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, bad, sizeof(bad));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -303,5 +407,12 @@ int main(int, char **)
     RUN_TEST(test_reject_bad_client_finished);
     RUN_TEST(test_reject_no_h3_alpn);
     RUN_TEST(test_partial_client_hello);
+    RUN_TEST(test_reject_no_tls13);
+    RUN_TEST(test_reject_no_key_share);
+    RUN_TEST(test_reject_no_x25519_group);
+    RUN_TEST(test_reject_no_ed25519);
+    RUN_TEST(test_reject_no_transport_params);
+    RUN_TEST(test_reject_bad_transport_params);
+    RUN_TEST(test_reject_malformed_client_hello);
     return UNITY_END();
 }
