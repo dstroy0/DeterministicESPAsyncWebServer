@@ -5122,6 +5122,16 @@ enum DetIface : uint8_t
 #ifndef SSH_REKEY_PACKET_THRESHOLD
 #define SSH_REKEY_PACKET_THRESHOLD 0x40000000u
 #endif
+/**
+ * @brief Elapsed-time re-key trigger in milliseconds (RFC 4253 §9: "after each hour"). Default 1 hour.
+ *
+ * A server-initiated re-key fires when either this much time or SSH_REKEY_PACKET_THRESHOLD packets have
+ * passed since the last KEX, whichever comes first. Set to 0 to disable the time trigger (packet-count
+ * only). Measured with the pluggable clock (detws_millis()).
+ */
+#ifndef SSH_REKEY_TIME_MS
+#define SSH_REKEY_TIME_MS 3600000u
+#endif
 /** @brief Max stored user name (RFC 4252 imposes no limit; we cap for BSS). */
 #ifndef SSH_AUTH_USER_MAX
 #define SSH_AUTH_USER_MAX 32

@@ -123,6 +123,7 @@ struct SshSession
     bool ext_info_c;       ///< Client advertised ext-info-c (RFC 8308): send EXT_INFO.
     bool authed;           ///< True after successful user authentication.
     uint8_t auth_failures; ///< Failed USERAUTH_REQUESTs (brute-force limit, RFC 4252 §4).
+    uint32_t last_kex_ms;  ///< detws_millis() when the last KEX completed (server-initiated re-key timer).
 };
 
 /** @brief Static pool of SSH session state (BSS), one per SSH slot. */
@@ -338,6 +339,18 @@ void ssh_newkeys_complete(uint8_t i);
  * Checks both packet sequence numbers against SSH_REKEY_PACKET_THRESHOLD.
  */
 bool ssh_rekey_needed(uint8_t i);
+
+/**
+ * @brief Pure re-key decision (RFC 4253 §9: "after each gigabyte ... or after each hour").
+ *
+ * @param seq_send / @param seq_recv the outbound / inbound packet counters (a data-volume proxy).
+ * @param elapsed_ms milliseconds since the last KEX completed.
+ * @param pkt_threshold the packet-count trigger (SSH_REKEY_PACKET_THRESHOLD).
+ * @param time_threshold_ms the elapsed-time trigger (SSH_REKEY_TIME_MS); 0 disables the time trigger.
+ * @return true if either a packet counter or the elapsed time has crossed its threshold.
+ */
+bool ssh_rekey_due(uint32_t seq_send, uint32_t seq_recv, uint32_t elapsed_ms, uint32_t pkt_threshold,
+                   uint32_t time_threshold_ms);
 
 /**
  * @brief Begin a server-initiated re-key by emitting a fresh KEXINIT.

@@ -677,6 +677,22 @@ void test_rekey_needed_threshold()
     TEST_ASSERT_TRUE(ssh_rekey_needed(0));
 }
 
+void test_rekey_due_volume_and_time()
+{
+    const uint32_t PKT = 1000000, TIME = 3600000;
+    // Neither budget spent.
+    TEST_ASSERT_FALSE(ssh_rekey_due(500, 500, 60000, PKT, TIME));
+    // Outbound packet budget spent.
+    TEST_ASSERT_TRUE(ssh_rekey_due(PKT, 0, 0, PKT, TIME));
+    // Inbound packet budget spent.
+    TEST_ASSERT_TRUE(ssh_rekey_due(0, PKT, 0, PKT, TIME));
+    // Time budget spent (at the boundary).
+    TEST_ASSERT_TRUE(ssh_rekey_due(1, 1, TIME, PKT, TIME));
+    TEST_ASSERT_FALSE(ssh_rekey_due(1, 1, TIME - 1, PKT, TIME));
+    // Time trigger disabled (0): only the packet budget matters.
+    TEST_ASSERT_FALSE(ssh_rekey_due(1, 1, 0xFFFFFFFFu, PKT, 0));
+}
+
 void test_begin_rekey_preserves_session_and_auth()
 {
     ssh_transport_init(0);
@@ -878,6 +894,7 @@ int main()
     RUN_TEST(test_kexdh_handle_curve25519_rejects_low_order);
     RUN_TEST(test_derive_keys_session_id_affects_output);
     RUN_TEST(test_rekey_needed_threshold);
+    RUN_TEST(test_rekey_due_volume_and_time);
     RUN_TEST(test_begin_rekey_preserves_session_and_auth);
     return UNITY_END();
 }

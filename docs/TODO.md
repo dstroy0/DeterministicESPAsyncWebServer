@@ -538,13 +538,15 @@ shipped work:
       block). Host-tested: `test_ssh_crypto` `test_ssh_kdf_extension_chain` verifies K1
       equals the single-block derive and K2 chains correctly.
 
-- [ ] **Session rekeying (RFC 4253 §9).** Not implemented. The connection is
-      closed when the send/receive sequence number would wrap (`ssh_keymat.h`
-      DEFENSE 6, `ssh_transport.cpp`) - the safe fallback. There is no
-      data-volume / time-based rekey (the recommended ~1 GB / 1 h triggers), so a
-      very long-lived high-throughput session is dropped instead of rekeyed. Add a
-      KEXINIT-driven rekey if such sessions become a use case. _(Deferred - YAGNI:
-      a headless IoT shell never approaches the 2^32-packet wrap.)_
+- [x] **Session rekeying (RFC 4253 §9).** _(done)_ A server-initiated re-key now fires from
+      `ssh_conn_poll()` when either the volume budget (`SSH_REKEY_PACKET_THRESHOLD`, a packet-count
+      proxy for ~1 GB) or the time budget (`SSH_REKEY_TIME_MS`, default 1 h) since the last KEX is
+      spent, on an authenticated channel that is not already re-keying: it emits a fresh KEXINIT via the
+      existing `ssh_transport_begin_rekey()`, and the KEXINIT dispatch carries it to completion (session
+      + auth preserved). The decision is a pure, host-tested helper `ssh_rekey_due()`
+      (`test_rekey_due_volume_and_time`), the timer resets in `ssh_newkeys_complete()` off the pluggable
+      clock, and the sequence-number-wrap close remains the last-resort fallback. So a long-lived /
+      high-throughput session re-keys in place instead of being dropped.
 
 - [~] **Compression (RFC 4253 §6.2).** _(server->client done; client->server deferred)_
       `DETWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for the **s2c** direction: a

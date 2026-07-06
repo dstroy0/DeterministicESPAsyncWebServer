@@ -19,6 +19,7 @@
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/session/scratch.h"
 #include "network_drivers/transport/transport.h"
+#include "services/det_clock.h" // detws_millis() for the server-initiated re-key timer
 #include <string.h>
 
 // SSH session slot ↔ TCP conn slot mapping. conn_for_ssh[j] == 0xFF means the
@@ -175,17 +176,35 @@ int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t co
 
 void ssh_conn_poll(uint8_t conn_slot)
 {
-#if DETWS_SSH_PORT_FORWARD
+    // The dispatch loop calls on_poll for every slot uniformly (no per-protocol gate); it used to poll
+    // only ACTIVE slots, so keep that here to preserve behavior.
     TcpConn *conn = &conn_pool[conn_slot];
-    // The dispatch loop now calls on_poll for every slot uniformly (no per-protocol gate); it used to
-    // poll only ACTIVE slots, so keep that here to preserve behavior.
     if (conn->state != CONN_ACTIVE)
         return;
     uint8_t j = conn->proto_slot;
-    if (j < MAX_SSH_CONNS && conn_for_ssh[j] == conn_slot)
-        ssh_forward_pump(j);
-#else
-    (void)conn_slot;
+    if (j >= MAX_SSH_CONNS || conn_for_ssh[j] != conn_slot)
+        return;
+
+    // Server-initiated re-key (RFC 4253 §9): once the volume (packet-count proxy) or time budget since
+    // the last KEX is spent and the channel is not already re-keying, emit a fresh KEXINIT so a
+    // long-lived / high-throughput session re-keys in place instead of being dropped at the
+    // sequence-number wrap. The existing KEXINIT dispatch carries it to completion.
+    SshSession *s = &ssh_sess[j];
+    if (s->phase == SSH_PHASE_OPEN && !ssh_pkt[j].kex_active)
+    {
+        uint32_t elapsed = detws_millis() - s->last_kex_ms;
+        if (ssh_rekey_due(ssh_pkt[j].seq_no_send, ssh_pkt[j].seq_no_recv, elapsed, SSH_REKEY_PACKET_THRESHOLD,
+                          SSH_REKEY_TIME_MS))
+        {
+            uint8_t buf[SSH_PKT_BUF_SIZE];
+            size_t n = 0;
+            if (ssh_transport_begin_rekey(j, buf, &n, sizeof(buf)) == 0)
+                ssh_emit(j, buf, n);
+        }
+    }
+
+#if DETWS_SSH_PORT_FORWARD
+    ssh_forward_pump(j);
 #endif
 }
 

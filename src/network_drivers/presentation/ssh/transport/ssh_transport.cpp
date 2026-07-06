@@ -14,6 +14,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
+#include "services/det_clock.h"                                    // detws_millis() (re-key timer)
 #if DETWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
 #endif
@@ -843,6 +844,8 @@ void ssh_newkeys_complete(uint8_t i)
     // On the first KEX advance to the service phase; on a re-key the connection
     // is already authenticated, so resume the open (channel) phase.
     ssh_sess[i].phase = ssh_sess[i].authed ? SSH_PHASE_OPEN : SSH_PHASE_SERVICE;
+    // Reset the re-key timer: the volume/time budget is measured from this completed KEX.
+    ssh_sess[i].last_kex_ms = detws_millis();
 }
 
 bool ssh_rekey_needed(uint8_t i)
@@ -850,6 +853,16 @@ bool ssh_rekey_needed(uint8_t i)
     if (i >= MAX_SSH_CONNS)
         return false;
     return ssh_pkt[i].seq_no_send >= SSH_REKEY_PACKET_THRESHOLD || ssh_pkt[i].seq_no_recv >= SSH_REKEY_PACKET_THRESHOLD;
+}
+
+bool ssh_rekey_due(uint32_t seq_send, uint32_t seq_recv, uint32_t elapsed_ms, uint32_t pkt_threshold,
+                   uint32_t time_threshold_ms)
+{
+    if (seq_send >= pkt_threshold || seq_recv >= pkt_threshold)
+        return true; // volume budget (RFC 4253 sec 9: ~1 GB)
+    if (time_threshold_ms && elapsed_ms >= time_threshold_ms)
+        return true; // time budget (~1 hour)
+    return false;
 }
 
 int ssh_transport_begin_rekey(uint8_t i, uint8_t *out, size_t *out_len, size_t cap)
