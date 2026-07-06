@@ -20,9 +20,17 @@
 #include <stdio.h>
 #include <string.h>
 
-static const DetwsWidget *s_widgets = nullptr;
-static uint8_t s_count = 0;
-static float s_values[DETWS_DASHBOARD_MAX_WIDGETS];
+// All dashboard state, owned by one instance (internal linkage): the widget table, the
+// per-widget value array, and the inbound-control callback, grouped so it is one named owner,
+// unreachable from any other translation unit.
+struct DashboardCtx
+{
+    const DetwsWidget *widgets = nullptr;
+    uint8_t count = 0;
+    float values[DETWS_DASHBOARD_MAX_WIDGETS] = {};
+    DetwsControlCb control_cb = nullptr;
+};
+static DashboardCtx s_dash;
 
 static const char *widget_type_name(DetwsWidgetType t)
 {
@@ -65,21 +73,21 @@ static int json_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
 
 void detws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
 {
-    s_widgets = widgets;
-    s_count = count > DETWS_DASHBOARD_MAX_WIDGETS ? DETWS_DASHBOARD_MAX_WIDGETS : count;
+    s_dash.widgets = widgets;
+    s_dash.count = count > DETWS_DASHBOARD_MAX_WIDGETS ? DETWS_DASHBOARD_MAX_WIDGETS : count;
     for (uint8_t i = 0; i < DETWS_DASHBOARD_MAX_WIDGETS; i++)
-        s_values[i] = 0.0f;
+        s_dash.values[i] = 0.0f;
 }
 
 bool detws_dashboard_set(const char *key, float value)
 {
-    if (!key || !s_widgets)
+    if (!key || !s_dash.widgets)
         return false;
-    for (uint8_t i = 0; i < s_count; i++)
+    for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        if (s_widgets[i].key && strcmp(s_widgets[i].key, key) == 0)
+        if (s_dash.widgets[i].key && strcmp(s_dash.widgets[i].key, key) == 0)
         {
-            s_values[i] = value;
+            s_dash.values[i] = value;
             return true;
         }
     }
@@ -91,14 +99,14 @@ int detws_dashboard_layout_json(char *out, size_t cap)
     if (!out || cap == 0)
         return 0;
     out[0] = '\0';
-    if (!s_widgets)
+    if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
     if (json_append(out, cap, &pos, "[") != 0)
         return 0;
-    for (uint8_t i = 0; i < s_count; i++)
+    for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        const DetwsWidget *w = &s_widgets[i];
+        const DetwsWidget *w = &s_dash.widgets[i];
         if (json_append(out, cap, &pos,
                         "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
                         i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
@@ -115,15 +123,15 @@ int detws_dashboard_values_json(char *out, size_t cap)
     if (!out || cap == 0)
         return 0;
     out[0] = '\0';
-    if (!s_widgets)
+    if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
     if (json_append(out, cap, &pos, "{") != 0)
         return 0;
-    for (uint8_t i = 0; i < s_count; i++)
+    for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        if (json_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "", s_widgets[i].key ? s_widgets[i].key : "",
-                        (double)s_values[i]) != 0)
+        if (json_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "", s_dash.widgets[i].key ? s_dash.widgets[i].key : "",
+                        (double)s_dash.values[i]) != 0)
             return 0;
     }
     if (json_append(out, cap, &pos, "}") != 0)
@@ -135,11 +143,9 @@ int detws_dashboard_values_json(char *out, size_t cap)
 // Controls (inbound WebSocket messages)
 // ---------------------------------------------------------------------------
 
-static DetwsControlCb s_control_cb = nullptr;
-
 void detws_dashboard_on_control(DetwsControlCb cb)
 {
-    s_control_cb = cb;
+    s_dash.control_cb = cb;
 }
 
 // Locate the value of "key" in a {"k":...,"v":...} object: a pointer just past
@@ -196,9 +202,9 @@ bool detws_dashboard_dispatch_control(const char *msg)
     float value;
     if (!detws_dashboard_parse_control(msg, key, sizeof(key), &value))
         return false;
-    if (s_control_cb)
-        s_control_cb(key, value);
-    return s_control_cb != nullptr;
+    if (s_dash.control_cb)
+        s_dash.control_cb(key, value);
+    return s_dash.control_cb != nullptr;
 }
 
 #endif // DETWS_ENABLE_DASHBOARD
