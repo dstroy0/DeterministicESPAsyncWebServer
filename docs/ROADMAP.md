@@ -365,21 +365,24 @@ every layer. The current HTTP/1.1 core already tracks the modern HTTP specs
       (RFC 7541), stream multiplexing + flow control, and `h2` ALPN over the TLS
       layer above; streams mapped onto the deterministic per-connection model
       without per-stream heap.
-- [ ] **HTTP/3** (L, RFC 9114) - QUIC transport (UDP) + HTTP/3 with QPACK
-      (RFC 9204); the largest item. The whole protocol stack is now built and
-      host-tested end-to-end: the codecs (QUIC varint RFC 9000 sec 16, packet /
+- [x] **HTTP/3** (L, RFC 9114) - QUIC transport (UDP) + HTTP/3 with QPACK
+      (RFC 9204); the largest item, **DONE and the trigger for v5.0.0**. The whole stack
+      is built, host-tested end-to-end, HW-validated, and **proven against a real
+      third-party client**: the codecs (QUIC varint RFC 9000 sec 16, packet /
       packet-number coding sec 17, frame codec sec 19, HTTP/3 framing RFC 9114 sec 7,
       QPACK RFC 9204); the QUIC packet crypto (RFC 9001 - HKDF-Expand-Label key
       schedule, AEAD_AES_128_GCM, header protection, Retry tag); a hand-rolled TLS 1.3
       handshake (RFC 8446, TLS_AES_128_GCM_SHA256 + X25519 + Ed25519, pinned to the
       RFC 8448 traces - mbedTLS has no QUIC-TLS API); the transport-parameters codec
       (sec 18); the stateful QUIC v1 connection engine (per-level AEAD, CRYPTO / STREAM
-      reassembly, ACKs, coalescing, HANDSHAKE_DONE); and the HTTP/3 application engine
-      (control + QPACK streams, SETTINGS, request -> response). An end-to-end test
-      completes a full QUIC handshake and serves a real HTTP/3 GET. Remaining before it
-      ships: the UDP + DetWebServer wiring (det_udp glue, connection pool, request
-      pipeline), on-hardware interop with a real QUIC client, and loss-recovery / error
-      -close hardening. **Completing HTTP/3 is the trigger for the v5.0.0 major bump.**
+      reassembly, ACKs, coalescing, HANDSHAKE_DONE); the HTTP/3 application engine
+      (control + QPACK streams, SETTINGS, request -> response); the UDP-facing
+      `quic_server` pool (DCID routing, ingest ring); and the DetWebServer bridge that
+      serves HTTP/3 through the same routes as HTTP/1.1 and HTTP/2 (`server.h3_cert(...)` + `begin()`). **curl 8.14.1 (OpenSSL 3.5.6 QUIC + nghttp3) completes the handshake
+      and serves GET / POST at ~14 ms/request** (see `tools/interop/`); the ESP32-S3
+      mbedTLS hardware-crypto path is byte-identical to the software path. Remaining as
+      v5.x hardening (not correctness blockers): PTO loss recovery, CONNECTION_CLOSE on
+      idle / error, and the PSRAM build guard for a device deployment.
 
 ### Supporting HTTP specs (smaller, fold in alongside the above)
 
