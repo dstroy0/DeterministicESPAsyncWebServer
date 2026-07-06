@@ -2,6 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.2.2] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.2.2 - 2026-07-06</b></summary>
+
+### Bug Fixes
+
+- guard w_bytes pos<=cap explicitly so the bound cannot underflow ([`3f2b418`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f2b41867154d7c94900393482978a1d895b0f98))
+
+### CI / Build
+
+- make changelog + feature-tables auto-commit rebase-safe; skip unchanged diagram renders ([`e821b3e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e821b3e3afd4095a6f53f7f4e4547c930a219805))
+- update test report [skip ci] ([`f25a3b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f25a3b8032fd5d7c987ca0ef4f1a82a3ce804375))
+- update CHANGELOG.md [skip ci] ([`f22dc24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f22dc2497d5d1ac5b5ac38cce1f8d32857b2a1ba))
+
+### Changes
+
+- Bump version: 5.2.1 → 5.2.2 ([`5a27bb5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a27bb5b75c00dfee0a33c56abeda400f4232200))
+
+### Documentation
+
+- log the HTTP/3 flight-cap overflow fix (v5.2.1) ([`bd63100`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd63100ac4a5728110b937693ed83c3241b94ae8))
+- update ESP32 build footprints [skip ci] ([`5a6055f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a6055f1d80ea8a323880b291216757e881cabb6))
+
+</details>
+
 ## [5.2.1] - 2026-07-06
 
 <details>
