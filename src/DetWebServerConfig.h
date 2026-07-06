@@ -3117,6 +3117,19 @@
 #endif
 
 /**
+ * @brief Opt-in FDC2114/2214 capacitance-to-digital field sensor (DETWS_ENABLE_FDC2214).
+ *
+ * A field-perturbation sensing peripheral: services/fdc2214 decodes the FDC2x14's 28-bit conversion
+ * result (a capacitance shift moves the LC-tank frequency, giving contactless proximity / liquid-level /
+ * material sensing) - fdc2214_data combines the register pair, fdc2214_error pulls the flags,
+ * fdc2214_sensor_freq_hz scales to frequency, and fdc2214_build_config emits a single-channel
+ * bring-up; the ESP32 binding replays it and reads the channel over I2C. Pure codec host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_FDC2214
+#define DETWS_ENABLE_FDC2214 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

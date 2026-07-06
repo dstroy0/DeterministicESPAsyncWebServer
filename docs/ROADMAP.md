@@ -253,8 +253,13 @@ preempting queue, so sensing shares the real-time ingest path.
 - [ ] \*EM / radar presence + motion (M) - mmWave radar (24 / 60 GHz: LD2410 / MR60BHA
       over UART, Infineon BGT60 over SPI) and Doppler motion (HB100 / RCWL-0516) for
       presence, motion, distance, and vital-sign (breathing / heart-rate) sensing.
-- [ ] \*Capacitive / proximity field sensing (S) - FDC2x14 / MPR121 (I2C): touch,
-      proximity, liquid level, and material sensing from capacitance shifts.
+- [~] \*Capacitive / proximity field sensing (S) - FDC2x14 / MPR121 (I2C): touch,
+  proximity, liquid level, and material sensing from capacitance shifts. **Both drivers shipped**:
+  MPR121 12-channel touch/proximity (`DETWS_ENABLE_MPR121`, `services/mpr121`) and the FDC2114/2214
+  capacitance-to-digital field sensor (`DETWS_ENABLE_FDC2214`, `services/fdc2214`): the 28-bit data
+  combine + error flags + frequency scale + single-channel config-sequence builder, pure codec
+  host-tested (`native_fdc2214`), with an ESP32 I2C binding that verifies the device id, applies the
+  config, and reads the channel. Remaining: verify capacitance shift on a real electrode / bench.
 - [ ] \*Inductive / EM field sensing (S) - LDC1614 (I2C) inductance-to-digital for
       metal / displacement, plus magnetometer-based EM-field perturbation detection.
 - [ ] \*Time-of-flight ranging (S) - VL53L0X / VL53L1X (I2C) optical ToF distance and
