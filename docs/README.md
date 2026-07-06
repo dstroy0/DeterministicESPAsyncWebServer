@@ -818,7 +818,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | Feature | Example | Flash (bytes) | Static RAM (bytes) |
 | :------ | :------ | ------------: | -----------------: |
 | `SIGFOX` | `Foundation/15.SigfoxUplink` | 267,961 | 21,464 |
-| `PREEMPT_QUEUE` | `Foundation/08.PreemptLanes` | 268,321 | 23,936 |
 | `ENOCEAN+GATEWAY` | `Foundation/13.EnOceanGateway` | 268,669 | 21,840 |
 | `ZWAVE+GATEWAY` | `Foundation/16.ZWaveGateway` | 268,881 | 21,840 |
 | `THREAD+GATEWAY` | `Foundation/18.ThreadGateway` | 269,113 | 22,608 |
@@ -828,6 +827,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/09.InterfaceForward` | 270,349 | 28,888 |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Foundation/10.RadioGateway` | 270,421 | 28,720 |
 | `LD2410` | `L7-Application/62.Ld2410` | 270,661 | 21,576 |
+| `PREEMPT_QUEUE` | `Foundation/06.PreemptQueue` | 274,009 | 23,968 |
 | `NRF24+GATEWAY` | `Foundation/12.Nrf24Gateway` | 276,081 | 21,680 |
 | `LORA+GATEWAY` | `Foundation/11.LoRaGateway` | 276,305 | 21,680 |
 | `PCA9685` | `L7-Application/65.Pca9685` | 284,609 | 21,800 |
