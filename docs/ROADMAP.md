@@ -625,10 +625,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   (the CIP body itself is built with the shared `cip` codec); host-tested (`native_devicenet`).
   _Remaining:_ the predefined master/slave connection set, I/O (implicit) messaging, and the ESP32
   TWAI/CAN transport. Fixed BSS, no heap; pairs with the EtherNet/IP CIP work.
-- [ ] **LonWorks / LON** (L, ISO/IEC 14908) - the building-automation network: the
-      LonTalk protocol + network-variable (SNVT) model. The native TP/FT-10 physical
-      layer needs a Neuron/transceiver, so target **LON/IP** (IEC 14908-4, ISO/IEC
-      14908 over UDP) first as the host-reachable path. Fixed BSS NV table, no heap.
+- [~] **LonWorks / LON** (L, ISO/IEC 14908) _(network-variable codec shipped)_ - `DETWS_ENABLE_LONWORKS`
+  (`services/lonworks`): the LonTalk network-variable PDU - `detws_lon_build_nv` / `_parse_nv` for
+  `[msg-code][14-bit selector][value]` (an NV update / poll), over **LON/IP** (IEC 14908-4, over UDP,
+  so no Neuron/transceiver is needed - the host-reachable path) - plus the common SNVT scalar
+  encodings (`SNVT_temp` 0.01 K fixed-point, `SNVT_switch` level + state); host-tested
+  (`native_lonworks`). _Remaining:_ the fuller SNVT type table + the NV binding/address table. Fixed
+  BSS NV table, no heap.
 - [ ] **Modbus Plus** (L, HDLC token bus) - Schneider's token-passing peer bus: the
       HDLC framing + token-rotation MAC and the path/routing model over the Modbus Plus
       data link. Niche and physical-layer-gated (custom 1 Mbit/s bus); scope the

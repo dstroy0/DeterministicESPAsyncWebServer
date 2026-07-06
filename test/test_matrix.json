@@ -1452,6 +1452,12 @@
       "src": ["+<services/profibus/profibus.cpp>"],
       "tests": ["test_profibus"]
     },
+    "native_lonworks": {
+      "desc": "LonWorks / LON-IP network-variable codec (services/lonworks): the LonTalk NV PDU\n([msg-code][14-bit selector][value]) build + parse and the SNVT_temp / SNVT_switch scalar encodings.\nPure host tests.",
+      "flags": ["-DDETWS_ENABLE_LONWORKS=1"],
+      "src": ["+<services/lonworks/lonworks.cpp>"],
+      "tests": ["test_lonworks"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1523,6 +1529,7 @@
         "-DDETWS_ENABLE_POWERLINK=1",
         "-DDETWS_ENABLE_SERCOS=1",
         "-DDETWS_ENABLE_PROFIBUS=1",
+        "-DDETWS_ENABLE_LONWORKS=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1595,6 +1602,7 @@
         "+<services/powerlink/powerlink.cpp>",
         "+<services/sercos/sercos.cpp>",
         "+<services/profibus/profibus.cpp>",
+        "+<services/lonworks/lonworks.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

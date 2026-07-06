@@ -2876,6 +2876,18 @@
 #endif
 
 /**
+ * @brief Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec (DETWS_ENABLE_LONWORKS).
+ *
+ * When set, services/lonworks builds/parses the LonTalk network-variable PDU ([msg-code][14-bit
+ * selector][value]) that a building-automation device exchanges - over LON/IP (14908-4) UDP, so no
+ * Neuron chip is needed - plus the common SNVT scalar encodings (SNVT_temp, SNVT_switch). Pure codec
+ * (the UDP transport is the shipped UDP layer). Default off.
+ */
+#ifndef DETWS_ENABLE_LONWORKS
+#define DETWS_ENABLE_LONWORKS 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines
