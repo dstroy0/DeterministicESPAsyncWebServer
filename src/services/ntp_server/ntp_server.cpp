@@ -58,8 +58,14 @@ size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t str
 
 namespace
 {
-uint8_t s_stratum = DETWS_NTP_SERVER_STRATUM;
-uint32_t s_refid = NTP_REFID_LOCL;
+// All NTP-server binding state, owned by one instance (internal linkage): the advertised
+// stratum and reference id, grouped so it is one named owner, unreachable cross-TU.
+struct NtpServerCtx
+{
+    uint8_t stratum = DETWS_NTP_SERVER_STRATUM;
+    uint32_t refid = NTP_REFID_LOCL;
+};
+NtpServerCtx s_ntp;
 
 // UDP handler: answer each request from the current time (silent if we have none).
 void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
@@ -73,8 +79,8 @@ void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *
     uint32_t frac = (uint32_t)(((uint64_t)(detws_millis() % 1000u) << 32) / 1000u);
 
     uint8_t resp[NTP_PACKET_LEN];
-    size_t n =
-        ntp_server_build_response(data, len, s_stratum, s_refid, unix_secs + NTP_UNIX_OFFSET, frac, resp, sizeof(resp));
+    size_t n = ntp_server_build_response(data, len, s_ntp.stratum, s_ntp.refid, unix_secs + NTP_UNIX_OFFSET, frac, resp,
+                                         sizeof(resp));
     if (n)
         det_udp_send(peer, resp, n);
 }
@@ -82,8 +88,8 @@ void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *
 
 bool ntp_server_begin(uint8_t stratum, uint32_t refid)
 {
-    s_stratum = stratum;
-    s_refid = refid;
+    s_ntp.stratum = stratum;
+    s_ntp.refid = refid;
     return det_udp_listen(123, ntp_server_udp_handler, nullptr);
 }
 
