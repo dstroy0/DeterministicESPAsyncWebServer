@@ -61,9 +61,17 @@ bool detws_dns_verify(uint32_t ip)
 
 namespace
 {
-ip_addr_t s_addr;
-volatile bool s_done = false;
-volatile bool s_ok = false;
+// All DNS-resolve binding state, owned by one instance (internal linkage): the resolved
+// address plus the done/ok flags the lwIP callback sets, grouped so it is one named owner,
+// unreachable cross-TU. The flags are volatile: the callback runs on tcpip_thread while the
+// resolve loop polls them.
+struct DnsResolverCtx
+{
+    ip_addr_t addr;
+    volatile bool done = false;
+    volatile bool ok = false;
+};
+DnsResolverCtx s_dr;
 
 struct DnsCall
 {
@@ -77,23 +85,23 @@ void dns_cb(const char *name, const ip_addr_t *addr, void *arg)
     (void)arg;
     if (addr)
     {
-        s_addr = *addr;
-        s_ok = true;
+        s_dr.addr = *addr;
+        s_dr.ok = true;
     }
-    s_done = true;
+    s_dr.done = true;
 }
 
 err_t do_dns(struct tcpip_api_call_data *c)
 {
     const char *host = ((DnsCall *)c)->host;
-    err_t e = dns_gethostbyname(host, &s_addr, dns_cb, nullptr);
+    err_t e = dns_gethostbyname(host, &s_dr.addr, dns_cb, nullptr);
     if (e == ERR_OK) // already cached
     {
-        s_ok = true;
-        s_done = true;
+        s_dr.ok = true;
+        s_dr.done = true;
     }
     else if (e != ERR_INPROGRESS) // hard failure
-        s_done = true;
+        s_dr.done = true;
     return ERR_OK;
 }
 
@@ -115,20 +123,20 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
         return true;
     }
 
-    s_done = false;
-    s_ok = false;
+    s_dr.done = false;
+    s_dr.ok = false;
     DnsCall k;
     memset(&k, 0, sizeof(k));
     k.host = host;
     tcpip_api_call(do_dns, &k.base); // resolve in the lwIP thread
 
     uint32_t deadline = detws_millis() + DETWS_DNS_TIMEOUT_MS;
-    while (!s_done && (int32_t)(deadline - detws_millis()) > 0)
+    while (!s_dr.done && (int32_t)(deadline - detws_millis()) > 0)
         delay(5);
 
-    if (!s_ok)
+    if (!s_dr.ok)
         return false;
-    *out_ip = to_host_order(&s_addr);
+    *out_ip = to_host_order(&s_dr.addr);
     return true;
 }
 
