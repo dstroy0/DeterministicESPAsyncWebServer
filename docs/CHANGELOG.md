@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.57.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.57.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`175f834`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/175f83423df05f8e05415be0ddbe57c2ef5e00fa))
+
+### Changes
+
+- Bump version: 5.56.0 → 5.57.0 ([`14b388a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14b388a00f85c62e1a86b91ce6af3bd1d0fa3f06))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4db2724`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4db27240aad5fde38a8959534d9cb02219b4ec1c))
+
+### Features
+
+- TLS version negotiation + pinned cipher-suite policy ([`62b2619`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62b2619fe2182d1993f2751a7269c12847563520))
+
+</details>
+
 ## [5.56.0] - 2026-07-06
 
 <details>
