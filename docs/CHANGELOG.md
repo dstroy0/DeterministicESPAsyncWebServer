@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.16.0] - 2026-07-06
+
+<details>
+<summary><b>Show Changelog for version 5.16.0 - 2026-07-06</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a0d1597`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0d1597d4fd1e447497c4eff94d4d6d2a9c6a69d))
+
+### Changes
+
+- Bump version: 5.15.0 → 5.16.0 ([`699dbf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/699dbf2b3e8448481141256d98acca231bc7c98a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`975a783`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/975a7832309758d7845fd803aa216a55293cea39))
+
+### Features
+
+- IEC 61850 GOOSE publisher codec ([`6ee5506`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ee550638474742d45159dcb0604c639e498ad4f))
+
+</details>
+
 ## [5.15.0] - 2026-07-06
 
 <details>
