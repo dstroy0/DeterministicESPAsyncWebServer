@@ -2805,6 +2805,17 @@
 #endif
 
 /**
+ * @brief Opt-in OpenADR 3.0 (Automated Demand Response) JSON codec (DETWS_ENABLE_OPENADR).
+ *
+ * When set, services/openadr builds the OpenADR 3.0 event (a demand-response signal: programID +
+ * eventName + interval payload points) and report (a VEN reading back to the VTN) JSON objects into a
+ * caller buffer, over the existing HTTP client/server + OAuth2. Pure JSON framing. Default off.
+ */
+#ifndef DETWS_ENABLE_OPENADR
+#define DETWS_ENABLE_OPENADR 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

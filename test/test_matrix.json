@@ -1416,6 +1416,12 @@
       "src": ["+<services/ntcip/ntcip.cpp>"],
       "tests": ["test_ntcip"]
     },
+    "native_openadr": {
+      "desc": "OpenADR 3.0 JSON codec (services/openadr): the event (programID + eventName + interval\npayloads) and report (VEN reading) JSON documents build, with escaping + a no-stdlib 3-decimal\nformatter. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_OPENADR=1"],
+      "src": ["+<services/openadr/openadr.cpp>"],
+      "tests": ["test_openadr"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1481,6 +1487,7 @@
         "-DDETWS_ENABLE_SEP2=1",
         "-DDETWS_ENABLE_PROFINET=1",
         "-DDETWS_ENABLE_NTCIP=1",
+        "-DDETWS_ENABLE_OPENADR=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1547,6 +1554,7 @@
         "+<services/sep2/sep2.cpp>",
         "+<services/profinet/profinet.cpp>",
         "+<services/ntcip/ntcip.cpp>",
+        "+<services/openadr/openadr.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

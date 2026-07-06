@@ -726,10 +726,13 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   interval + opModFixedW setpoint) - built into a caller buffer over the existing HTTP + TLS stack;
   host-tested (`native_sep2`). _Remaining:_ the fuller function-set resource schema (metering, pricing,
   demand response) + the resource discovery walk + optional EXI, on a fixed BSS model.
-- [ ] **OpenADR** (L, demand response) - Open Automated Demand Response (OpenADR 2.0a/b,
-      and 3.0 which is REST/JSON + OAuth): the VEN (and optionally VTN) roles exchanging
-      events / reports. 3.0 rides the existing HTTP client/server + OAuth2 + JSON cleanly
-      (the 2.0 XML/EXI profile is heavier); fixed BSS event/report model, no heap.
+- [~] **OpenADR** (L, demand response) _(3.0 event/report codec shipped)_ - `DETWS_ENABLE_OPENADR`
+  (`services/openadr`): the OpenADR 3.0 REST/JSON objects - `detws_openadr_event` (a demand-response
+  signal: programID + eventName + interval payload points with start / duration / type / value) and
+  `detws_openadr_report` (a VEN reading back to the VTN) - built into a caller buffer over the
+  existing HTTP client/server + OAuth2, with JSON escaping and a no-stdlib 3-decimal value formatter;
+  host-tested (`native_openadr`). _Remaining:_ the full VEN/VTN role state machine + subscriptions,
+  and the OpenADR 2.0 XML/EXI profile. Fixed BSS, no heap.
 - [x] **SunSpec Modbus** (M, DER device models) _(shipped)_ - `DETWS_ENABLE_SUNSPEC`
       (`services\sunspec`): a zero-heap codec for the SunSpec Alliance register maps layered
       on the holding-register model. A model-chain walker (`sunspec_check_marker` /
