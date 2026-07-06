@@ -3103,6 +3103,20 @@
 #endif
 
 /**
+ * @brief Opt-in CC1101 sub-GHz radio driver (DETWS_ENABLE_CC1101).
+ *
+ * A gateway radio plugin (DETWS_ENABLE_GATEWAY) for the TI CC1101 300-928 MHz transceiver over SPI:
+ * services/cc1101 drives the chip's SPI header protocol (config registers, command strobes, status
+ * registers, TX/RX FIFO) - reset + apply a SmartRF register table + set channel + verify VERSION
+ * (cc1101_init), send a variable-length packet (cc1101_send), poll TX-done, enter RX, and read a packet
+ * with appended RSSI/LQI (cc1101_recv), plus the RSSI-to-dBm decode. The huge modem config is a
+ * caller-supplied register table. Host-tested against a mock; the RF link needs the module. Default off.
+ */
+#ifndef DETWS_ENABLE_CC1101
+#define DETWS_ENABLE_CC1101 0
+#endif
+
+/**
  * @brief Opt-in fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
  *
  * Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines

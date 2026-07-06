@@ -1563,6 +1563,12 @@
       "src": ["+<services/link_manager/link_manager.cpp>"],
       "tests": ["test_link_manager"]
     },
+    "native_cc1101": {
+      "desc": "CC1101 sub-GHz radio driver (services/cc1101): the TI SPI header protocol (config\nregisters, command strobes, status registers, TX/RX FIFO) - init/detect, variable-length send, TX-done,\nset-rx, packet recv with appended RSSI/LQI, and RSSI-to-dBm decode, against a mock chip. Host tests.",
+      "flags": ["-DDETWS_ENABLE_CC1101=1"],
+      "src": ["+<services/cc1101/cc1101.cpp>"],
+      "tests": ["test_cc1101"]
+    },
     "native_logbuf": {
       "desc": "Rotating log ring + severity trap (services/logbuf): pure, fully host-tested.",
       "flags": ["-DDETWS_ENABLE_LOGBUF=1"],
@@ -1652,6 +1658,7 @@
         "-DDETWS_ENABLE_HAPPY_EYEBALLS=1",
         "-DDETWS_ENABLE_WIFI_SNIFFER=1",
         "-DDETWS_ENABLE_LINK_MANAGER=1",
+        "-DDETWS_ENABLE_CC1101=1",
         "-DDETWS_ENABLE_LOGBUF=1",
         "-DDETWS_ENABLE_OTA_ROLLBACK=1",
         "-DDETWS_ENABLE_TOTP=1",
@@ -1742,6 +1749,7 @@
         "+<services/happy_eyeballs/happy_eyeballs.cpp>",
         "+<services/wifi_sniffer/wifi_sniffer.cpp>",
         "+<services/link_manager/link_manager.cpp>",
+        "+<services/cc1101/cc1101.cpp>",
         "+<services/logbuf/logbuf.cpp>",
         "+<services/ota_rollback/ota_rollback.cpp>",
         "+<services/totp/totp.cpp>",

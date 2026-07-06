@@ -156,8 +156,14 @@ SPI radios:
   static payload) over an SPI + CE bus, host-tested against a mock chip; example
   12.Nrf24Gateway bridges frames northbound via the gateway. Remaining: verify the
   RF link on the module (and optional dynamic-payload / auto-ack).
-- [ ] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
-      ISM-band remotes and sensors.
+- [~] \*CC1101 sub-GHz gateway (M) - TI 300-928 MHz OOK / 2-FSK over SPI; generic
+  ISM-band remotes and sensors. **Driver shipped** (`DETWS_ENABLE_CC1101`, `services/cc1101`): the CC1101
+  SPI header protocol (config registers, the 13 command strobes, status registers, TX/RX FIFO) - reset +
+  apply a caller-supplied SmartRF register table + set channel + verify VERSION (`cc1101_init`),
+  variable-length `cc1101_send`, TX-done poll, `cc1101_set_rx`, and `cc1101_recv` with the appended
+  RSSI/LQI status + `cc1101_rssi_dbm` decode, over a portable SPI bus; host-tested against a mock chip
+  (`native_cc1101`). Bridges northbound via the gateway framework. Remaining: verify the RF link on the
+  module (and an OOK/ASK preset variant).
 - [~] \*Thread / Matter RCP (L) - OpenThread radio co-processor (nRF52840 / EFR32)
   over SPI (spinel framing); 802.15.4 mesh bridged to IP. **spinel / HDLC-lite framing
     - command codec shipped** (`DETWS_ENABLE_THREAD`, `services/thread`): the byte-stuffed
