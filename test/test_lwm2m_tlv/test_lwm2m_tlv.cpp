@@ -260,6 +260,74 @@ void test_overflow_and_malformed()
     TEST_ASSERT_FALSE(lwm2m_tlv_value_int(three, 3, &v)); // 3 octets is not a valid int width
 }
 
+// Writer argument/length rejections: null writer, a length with a null value, the
+// 24-bit length-field branch, a value too large for any length field, and a null string.
+void test_write_error_paths()
+{
+    uint8_t buf[16];
+    Lwm2mTlvWriter w;
+    uint8_t dummy[1] = {0};
+
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(lwm2m_tlv_write(nullptr, LWM2M_TLV_RESOURCE, 0, dummy, 1)); // null writer
+    TEST_ASSERT_FALSE(lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 0, nullptr, 4));    // len but null value
+
+    // A value_len that needs the 24-bit length field: the type byte is built (length-type 3),
+    // then the capacity check rejects it, so the (huge) value is never read.
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 0, dummy, 0x10000));
+    // A value_len too large for even the 24-bit length field.
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(lwm2m_tlv_write(&w, LWM2M_TLV_RESOURCE, 0, dummy, 0x1000000));
+
+    TEST_ASSERT_FALSE(lwm2m_tlv_write_string(&w, 0, nullptr)); // null string
+}
+
+// The IEEE-754 float writer (big-endian 8 octets) round-trips through the reader.
+void test_write_float_roundtrip()
+{
+    uint8_t buf[16];
+    Lwm2mTlvWriter w;
+    lwm2m_tlv_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(lwm2m_tlv_write_float(&w, 6, 3.5));
+    size_t total = lwm2m_tlv_finish(&w);
+
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(buf, total, &pos, &t));
+    TEST_ASSERT_EQUAL_UINT16(6, t.id);
+    TEST_ASSERT_EQUAL_size_t(8, t.value_len);
+    uint64_t bits = 0;
+    for (int i = 0; i < 8; i++)
+        bits = (bits << 8) | t.value[i];
+    double back;
+    memcpy(&back, &bits, 8);
+    TEST_ASSERT_TRUE(back == 3.5); // 3.5 is exactly representable
+}
+
+// The reader's 16-bit-id decode plus its truncation rejects.
+void test_read_id16_and_truncation()
+{
+    // 16-bit-id resource: type 0xE1 (id16 flag + inline len 1), id 0x0405, value 0x07.
+    const uint8_t tlv16[] = {0xE1, 0x04, 0x05, 0x07};
+    size_t pos = 0;
+    Lwm2mTlv t;
+    TEST_ASSERT_TRUE(lwm2m_tlv_read(tlv16, sizeof(tlv16), &pos, &t));
+    TEST_ASSERT_EQUAL_UINT16(0x0405, t.id);
+    TEST_ASSERT_EQUAL_size_t(1, t.value_len);
+    TEST_ASSERT_EQUAL_HEX8(0x07, t.value[0]);
+
+    // id16 flag set but only the type byte is present -> not enough for the id.
+    const uint8_t just_type[] = {0xE1};
+    pos = 0;
+    TEST_ASSERT_FALSE(lwm2m_tlv_read(just_type, sizeof(just_type), &pos, &t));
+
+    // An 8-bit length-type header whose length octet is missing.
+    const uint8_t trunc_len[] = {0xC8, 0x00}; // lentype 1, id 0x00, then no length octet
+    pos = 0;
+    TEST_ASSERT_FALSE(lwm2m_tlv_read(trunc_len, sizeof(trunc_len), &pos, &t));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -274,5 +342,8 @@ int main()
     RUN_TEST(test_value_int_4_and_8_byte);
     RUN_TEST(test_zero_length_value);
     RUN_TEST(test_overflow_and_malformed);
+    RUN_TEST(test_write_error_paths);
+    RUN_TEST(test_write_float_roundtrip);
+    RUN_TEST(test_read_id16_and_truncation);
     return UNITY_END();
 }
