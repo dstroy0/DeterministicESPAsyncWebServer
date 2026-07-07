@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`643443b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/643443b413d01dd44a7e73a2191009788ad8029d))
+- update CHANGELOG.md [skip ci] ([`a4cb022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4cb022c8a84730711becfb939b2cb3d0aaa7bf6))
 - update CHANGELOG.md [skip ci] ([`0043319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0043319bc522c72735beb5ec0531d31ea5d4d6cd))
 - update test report [skip ci] ([`780effa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/780effa816064475cb37e8f613e4bb4a18540d83))
 - update CHANGELOG.md [skip ci] ([`52d5308`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52d5308f8a9a14a7ff870c8bd9aef1e89f3c7ea7))
@@ -206,6 +208,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover BER long-form len + all parse fail-paths (64.7%->91.4%) ([`6c3d8c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c3d8c56281730585400801b1c6b6a79aa2a15eb))
 - cover the dynamic table + error/overflow paths (69% -> 99.5%) ([`f5ce15e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5ce15e736e059234c650310a5263ca6aa325d99))
 - cover the decoder + error paths to 100% line coverage ([`a2b84fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2b84fce12bfdf0075af76c9173c8669b7d9608b))
 - per-run throwaway SSH keys + a fixed baseline set, a host-key generator, and a provisioning example ([`0c36935`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c3693547db01d2baccefca217a9e16b2a5c57e5))
