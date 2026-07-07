@@ -183,12 +183,23 @@ static void pool_free(void *ptr)
     pool_coalesce();
 }
 
-// TLS server config, owned by one instance (internal linkage): the ready flag, the mbedTLS
-// config/cert/key, the optional mTLS client-cert trust anchor, and the resumption ticket key.
-// One named owner, unreachable from any other translation unit.
-struct TlsServerCtx
+// The server-config "ready" flag, owned separately from the multi-hundred-byte mbedTLS
+// server state below. det_tls_ready() (and the client-side guards) read this flag every
+// call; grouping it into TlsServerCtx would anchor the whole server config/cert/key/ticket
+// via that always-live reference, keeping ~600 bytes linked even in a client-only firmware
+// that never runs det_tls_configure(). Kept apart, --gc-sections drops s_srv when server
+// setup is unused.
+struct TlsServerReadyCtx
 {
     bool ready = false;
+};
+static TlsServerReadyCtx s_srv_ready;
+
+// TLS server config, owned by one instance (internal linkage): the mbedTLS config/cert/key,
+// the optional mTLS client-cert trust anchor, and the resumption ticket key. Referenced only
+// by the server-setup path, so a client-only build garbage-collects it. One named owner.
+struct TlsServerCtx
+{
     mbedtls_ssl_config conf;
     mbedtls_x509_crt cert;
     mbedtls_pk_context key;
@@ -299,7 +310,7 @@ static void tls_apply_max_frag_len(mbedtls_ssl_config *conf)
 // ---------------------------------------------------------------------------
 bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
 {
-    if (s_srv.ready)
+    if (s_srv_ready.ready)
         return true;
     if (!cert || !key)
         return false;
@@ -363,13 +374,13 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
         s_conns.conns[i].active = false;
 
-    s_srv.ready = true;
+    s_srv_ready.ready = true;
     return true;
 }
 
 bool det_tls_ready()
 {
-    return s_srv.ready;
+    return s_srv_ready.ready;
 }
 
 const char *det_tls_alpn(uint8_t slot)
@@ -380,7 +391,7 @@ const char *det_tls_alpn(uint8_t slot)
 
 bool det_tls_conn_begin(uint8_t slot)
 {
-    if (!s_srv.ready)
+    if (!s_srv_ready.ready)
         return false;
     TlsConn *e = nullptr;
     for (uint8_t i = 0; i < MAX_TLS_CONNS; i++)
@@ -503,7 +514,7 @@ size_t det_tls_arena_peak()
 #if DETWS_ENABLE_MTLS
 bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
 {
-    if (!s_srv.ready || !ca)
+    if (!s_srv_ready.ready || !ca)
         return false;
     mbedtls_x509_crt_init(&s_srv.ca);
     if (mbedtls_x509_crt_parse(&s_srv.ca, ca, ca_len) != 0)

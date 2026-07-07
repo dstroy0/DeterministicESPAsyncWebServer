@@ -89,16 +89,24 @@ struct DeferCmd
     detws_deferred_fn fn;
     void *arg;
 };
-// All per-worker deferred-callback queue state, owned by one instance (internal linkage): the
-// static queue control blocks, their storage, and the queue handles. One named owner, cross-TU
-// unreachable.
+// The per-worker deferred-callback queue HANDLES, owned by one instance. The hot path
+// (detws_defer / run_deferred / wake) touches only these, so this stays small and live.
 struct DeferCtx
 {
-    StaticQueue_t dq_struct[DETWS_WORKER_COUNT];
-    uint8_t dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
     QueueHandle_t dq[DETWS_WORKER_COUNT] = {nullptr};
 };
 DeferCtx s_defer;
+
+// The FreeRTOS static-queue backing store (control blocks + byte storage), in its OWN
+// owned instance. Only detws_workers_start() references it (to create the queues), so a
+// firmware that never starts workers (e.g. a pure client sketch) garbage-collects this
+// multi-hundred-byte store instead of anchoring it through the always-live handle path.
+struct DeferStorageCtx
+{
+    StaticQueue_t dq_struct[DETWS_WORKER_COUNT];
+    uint8_t dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
+};
+DeferStorageCtx s_defer_store;
 } // namespace
 
 void detws_workers_start(detws_worker_pump_fn pump)
@@ -108,8 +116,8 @@ void detws_workers_start(detws_worker_pump_fn pump)
     s_worker.pump = pump;
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
         if (!s_defer.dq[i])
-            s_defer.dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_defer.dq_storage[i],
-                                               &s_defer.dq_struct[i]);
+            s_defer.dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_defer_store.dq_storage[i],
+                                               &s_defer_store.dq_struct[i]);
     s_worker.run.store(true, std::memory_order_release);
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
     {

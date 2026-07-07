@@ -8,6 +8,38 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Owner-context grouping anchored the server TLS config + worker queue store (Arduino 3.x DRAM)
+
+- **Status:** FIXED (25.WebSocketClient builds on the arduino-esp32 3.x core - 37% DRAM, was 408 bytes
+  over; 03.HTTPS/04.mTLS/06.TlsResumption/07.SecureWebSocket + 01.SSH still build; native_ssh /
+  native_crypto_kat 154/154).
+- **Found:** 2026-07-07, after the scratch-arena fix cleared the ESP32 (PIO 2.x) build and 4 of the 5
+  Arduino (3.x) failures. The last, `25.WebSocketClient` (a TLS WebSocket _client_), still overflowed
+  `dram0_0_seg` by 408 bytes - but only on the arduino-esp32 3.x core, whose larger core footprint
+  leaves less headroom than the 2.x core the PlatformIO job uses.
+- **Symptom:** an outbound-only WebSocket client linked ~900 bytes of server-only state it never uses:
+  the linked-map/cref diff (base vs HEAD) showed `tls.cpp` +600, `worker.cpp` +160, `listener.cpp`
+  +145. Two more instances of the same gc-liveness trap as the scratch arena.
+- **Root cause:** small always-referenced fields grouped into large owned `Ctx` symbols, so
+  `--gc-sections` (per-symbol) could not drop the big cold parts:
+    - `TlsServerCtx` bundled a 1-byte `ready` flag with the ~600-byte mbedTLS server config/cert/key/
+      ticket. `det_tls_ready()` (called on the client path) reads `ready`, anchoring the whole server
+      config into a client that never runs `det_tls_configure()`.
+    - `DeferCtx` bundled the per-worker FreeRTOS queue **handles** (hot; `detws_defer()` pushes to them)
+      with the multi-hundred-byte static queue **storage** (only `detws_workers_start()` touches it), so
+      the storage stayed linked in a build that never starts workers.
+- **Fix:** split each into a hot symbol + a cold symbol - `TlsServerReadyCtx s_srv_ready` apart from
+  `TlsServerCtx s_srv`; `DeferStorageCtx s_defer_store` apart from `DeferCtx s_defer`. The cold halves
+  are now referenced only by server-setup / worker-start code and garbage-collect out of client-only
+  firmwares. Server examples that do use them are unchanged (03.HTTPS DRAM identical). Both new types
+  end in `Ctx`, so the owner-context guard still passes. (`listener.cpp` +145 was left: the two splits
+  already reclaimed far more than the 408-byte deficit.)
+- **Lesson (reinforced):** verify on the tightest target - the arduino-esp32 3.x core overflows where
+  the 2.x core has room. Keep large conditionally-used buffers in their own owned symbol, separate
+  from small always-referenced fields. See the scratch-arena entry below for the first instance.
+
+---
+
 ## Owner-context grouping anchored the 8 KB scratch arena, overflowing TLS-example DRAM
 
 - **Status:** FIXED (all four TLS examples - 03.HTTPS, 04.mTLS, 06.TlsResumption, 07.SecureWebSocket -
