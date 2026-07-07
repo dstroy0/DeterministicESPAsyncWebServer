@@ -1231,6 +1231,7 @@ guards at compile time.
 | `DETWS_COAP_MAX_PAYLOAD` | `256` | Maximum CoAP request/response payload in bytes. |
 | `DETWS_COAP_MAX_QUERY` | `64` | Maximum reconstructed Uri-Query length (segments joined by '&'). |
 | `DETWS_COAP_MAX_RESOURCES` | `8` | Maximum registered CoAP resources (the server's fixed routing table). |
+| `DETWS_COAP_OBSERVE_PORT` | `5683` | Default UDP port the CoAP observe transport notifies from (IANA well-known 5683). |
 | `DETWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
 | `DETWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
 | `DETWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
@@ -1341,6 +1342,7 @@ guards at compile time.
 | `DETWS_STATSD_LINE_MAX` | `256` | Stack buffer for one StatsD line (bytes; caps metric name + value + tags). |
 | `DETWS_STATSD_PORT` | `8125` | Default StatsD collector UDP port (StatsD/Graphite standard). |
 | `DETWS_STOMP_MAX_HEADERS` | `16` | Max header lines parsed per STOMP frame (extras beyond this are ignored). |
+| `DETWS_SYSLOG_DEFAULT_PORT` | `514` | Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime via syslog_init and here for a non-standard collector). |
 | `DETWS_SYSLOG_FIELD_MAX` | `32` | Maximum syslog HOSTNAME / APP-NAME field length (including NUL). |
 | `DETWS_SYSLOG_MSG_MAX` | `256` | Maximum formatted syslog datagram length in bytes (RFC 5424 line). |
 | `DETWS_THEMES_INCLUDE_TRADEMARKED` | `1` | Include the trademark-named themes in the embedded set (default on / open-source). |
