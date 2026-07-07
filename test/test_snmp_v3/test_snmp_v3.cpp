@@ -598,9 +598,236 @@ void test_v3_notify_paths()
     TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
 }
 
+// Build a v3 message wrapping a caller-supplied (possibly malformed) *plaintext*
+// scopedPDU, with a valid outer frame + USM secparams and, when auth==true, a valid
+// HMAC digest. Lets a test drive the scopedPDU-parse rejects that a well-formed
+// scopedPDU (as build_get emits) can never reach.
+static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uint8_t *eid, size_t eid_len, long boots,
+                                  long time, const char *user, const uint8_t *authkey, long msg_id,
+                                  const uint8_t *scoped, size_t scoped_len, bool priv = false,
+                                  size_t auth_plen = SNMP_V3_AUTH_PARAM_LEN)
+{
+    bool digest = auth && auth_plen == SNMP_V3_AUTH_PARAM_LEN; // a non-standard authParams length is rejected pre-HMAC
+    uint8_t salt[SNMP_V3_PRIV_PARAM_LEN] = {0, 0, 0, 0, 0, 0, 0, 7};
+    uint8_t secp[128];
+    BerEnc se2;
+    ber_enc_init(&se2, secp, sizeof(secp));
+    size_t s2 = ber_seq_begin(&se2, BER_SEQUENCE);
+    ber_put_octet_string(&se2, BER_OCTET_STRING, eid, eid_len);
+    ber_put_integer(&se2, boots);
+    ber_put_integer(&se2, time);
+    ber_put_octet_string(&se2, BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
+    size_t auth_off = 0;
+    if (auth)
+    {
+        auth_off = se2.len + 2;
+        uint8_t z[SNMP_V3_AUTH_PARAM_LEN] = {0};
+        ber_put_octet_string(&se2, BER_OCTET_STRING, z, auth_plen);
+    }
+    else
+        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+    if (priv)
+        ber_put_octet_string(&se2, BER_OCTET_STRING, salt, sizeof(salt));
+    else
+        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+    ber_seq_end(&se2, s2);
+
+    BerEnc e;
+    ber_enc_init(&e, out, cap);
+    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
+    ber_put_integer(&e, SNMP_V3);
+    size_t hdr = ber_seq_begin(&e, BER_SEQUENCE);
+    ber_put_integer(&e, msg_id);
+    ber_put_integer(&e, 65507);
+    uint8_t fl = (uint8_t)((auth ? 0x01 : 0) | (priv ? 0x02 : 0) | (auth ? 0 : 0x04)); // reportable on discovery
+    ber_put_octet_string(&e, BER_OCTET_STRING, &fl, 1);
+    ber_put_integer(&e, 3);
+    ber_seq_end(&e, hdr);
+    ber_put_octet_string(&e, BER_OCTET_STRING, secp, se2.len);
+    size_t sec_value_pos = e.len - se2.len;
+    ber_put_raw(&e, scoped, scoped_len); // scopedPDU / msgData carried verbatim (may be deliberately malformed)
+    ber_seq_end(&e, msg);
+    if (!e.ok)
+        return 0;
+    if (digest)
+    {
+        uint8_t mac[SSH_HMAC_SHA256_LEN];
+        ssh_hmac_sha256(authkey, SNMP_USM_KEY_LEN, out, e.len, mac);
+        memcpy(out + sec_value_pos + auth_off, mac, SNMP_V3_AUTH_PARAM_LEN);
+    }
+    return e.len;
+}
+
+// Corrupt exactly one field of a well-formed noAuthNoPriv message (keeping the outer
+// length valid) so the message-layer / secparams parse fails closed at that precise
+// step. Truncation can't reach these: it trips the outer-length bound-check first.
+void test_v3_field_tag_corruption(void)
+{
+    V3View v;
+    discover(&v);
+    uint8_t req[300], resp[512];
+    size_t full = build_get(req, sizeof(req), false, false, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                            nullptr, nullptr, 300, 7, OID_SYSDESCR, 9);
+    TEST_ASSERT_TRUE(full > 0);
+
+    // Walk the message exactly as snmp_v3_process does, recording each field's offset.
+    BerDec d;
+    ber_dec_init(&d, req, full);
+    uint8_t tag;
+    size_t l;
+    long tmp;
+    ber_read_header(&d, &tag, &l); // outer SEQUENCE
+    size_t ver_tag = d.pos;
+    ber_read_integer(&d, &tmp);
+    size_t gdata_tag = d.pos;
+    ber_read_header(&d, &tag, &l); // msgGlobalData SEQUENCE
+    size_t msgid_tag = d.pos;
+    ber_read_integer(&d, &tmp); // msgID
+    ber_read_integer(&d, &tmp); // msgMaxSize
+    size_t flags_tag = d.pos;
+    ber_read_header(&d, &tag, &l);
+    d.pos += l; // msgFlags OCTET STRING
+    size_t secmodel_tag = d.pos;
+    ber_read_integer(&d, &tmp); // msgSecurityModel
+    size_t secp_tag = d.pos;
+    ber_read_header(&d, &tag, &l); // msgSecurityParameters OCTET STRING
+    size_t base = d.pos;           // secparams content begins here (== inner BerDec buf)
+    BerDec sd;
+    ber_dec_init(&sd, req + base, l);
+    size_t sseq_tag = base + sd.pos;
+    ber_read_header(&sd, &tag, &l); // secparams SEQUENCE
+    size_t eid_tag = base + sd.pos;
+    ber_read_header(&sd, &tag, &l);
+    sd.pos += l; // engineID OCTET STRING
+    size_t boots_tag = base + sd.pos;
+    ber_read_integer(&sd, &tmp); // engineBoots
+    ber_read_integer(&sd, &tmp); // engineTime
+    size_t uname_tag = base + sd.pos;
+    ber_read_header(&sd, &tag, &l);
+    sd.pos += l; // userName OCTET STRING
+    size_t aparm_tag = base + sd.pos;
+    ber_read_header(&sd, &tag, &l);
+    sd.pos += l; // authParams OCTET STRING
+    size_t pparm_tag = base + sd.pos;
+
+    // (offset, mutated-byte value) pairs. 0xFF as a tag is an unexpected tag; a value
+    // byte set to 0x04 flips version/securityModel off their required constants.
+    struct
+    {
+        size_t off;
+        uint8_t val;
+    } muts[] = {
+        {ver_tag + 2, 0x04},      // msgVersion != 3        -> line 319
+        {gdata_tag, 0xFF},        // msgGlobalData !SEQUENCE -> line 323
+        {msgid_tag, 0xFF},        // msgID !INTEGER          -> line 326
+        {flags_tag, 0xFF},        // msgFlags !OCTET STRING  -> line 330
+        {secmodel_tag + 2, 0x04}, // securityModel != 3  -> line 334
+        {secp_tag, 0xFF},         // secParams !OCTET STRING -> line 343
+        {sseq_tag, 0xFF},         // secParams inner !SEQUENCE-> line 350
+        {eid_tag, 0xFF},          // engineID !OCTET STRING  -> line 353
+        {boots_tag, 0xFF},        // engineBoots !INTEGER    -> line 358
+        {uname_tag, 0xFF},        // userName !OCTET STRING  -> line 361
+        {aparm_tag, 0xFF},        // authParams !OCTET STRING-> line 366
+        {pparm_tag, 0xFF},        // privParams !OCTET STRING-> line 372
+    };
+    for (size_t i = 0; i < sizeof(muts) / sizeof(muts[0]); i++)
+    {
+        uint8_t bad[300];
+        memcpy(bad, req, full);
+        bad[muts[i].off] = muts[i].val;
+        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(bad, full, resp, sizeof(resp)));
+    }
+}
+
+// An authenticated message whose (valid-HMAC) scopedPDU is malformed is rejected at
+// each layer of the scopedPDU split.
+void test_v3_scoped_parse_rejections(void)
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+
+    const uint8_t not_seq[] = {0x04, 0x01, 0x00};                                // scopedPDU not a SEQUENCE
+    const uint8_t bad_eid[] = {0x30, 0x03, 0x02, 0x01, 0x00};                    // contextEngineID not OCTET STRING
+    const uint8_t bad_ctx[] = {0x30, 0x06, 0x04, 0x01, 0x00, 0x02, 0x01, 0x00};  // contextName not OCTET STRING
+    const uint8_t no_pdu[] = {0x30, 0x06, 0x04, 0x01, 0x00, 0x04, 0x01, 0x00};   // missing inner PDU
+    const uint8_t empty_pdu[] = {0x30, 0x08, 0x04, 0x01, 0x00, 0x04, 0x01, 0x00, // eid, ctxName,
+                                 0xA0, 0x00}; // GET PDU with empty body -> dispatch 0
+    const uint8_t *scopeds[] = {not_seq, bad_eid, bad_ctx, no_pdu, empty_pdu};
+    const size_t lens[] = {sizeof(not_seq), sizeof(bad_eid), sizeof(bad_ctx), sizeof(no_pdu), sizeof(empty_pdu)};
+    for (size_t i = 0; i < sizeof(scopeds) / sizeof(scopeds[0]); i++)
+    {
+        size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                                        authkey, 400 + (long)i, scopeds[i], lens[i]);
+        TEST_ASSERT_TRUE(rl > 0);
+        TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, sizeof(resp)));
+    }
+}
+
+// The best-effort inner request-id probe on the discovery path tolerates a malformed
+// or non-INTEGER scopedPDU (a Report is still emitted, with request-id 0).
+void test_v3_discovery_malformed_scoped(void)
+{
+    V3View v;
+    discover(&v);
+    uint8_t wrong_eid[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33};
+    uint8_t req[320], resp[512];
+
+    const uint8_t not_seq[] = {0x04, 0x01, 0x00};                                  // parse_scoped fails -> request-id 0
+    const uint8_t non_int_rid[] = {0x30, 0x0B, 0x04, 0x01, 0x00, 0x04, 0x01, 0x00, // eid, ctxName,
+                                   0xA0, 0x03, 0x04, 0x01, 0x00}; // PDU whose request-id is not INTEGER
+    const uint8_t *scopeds[] = {not_seq, non_int_rid};
+    const size_t lens[] = {sizeof(not_seq), sizeof(non_int_rid)};
+    for (size_t i = 0; i < 2; i++)
+    {
+        size_t rl = build_v3_raw_scoped(req, sizeof(req), false, wrong_eid, sizeof(wrong_eid), v.boots, v.time, "",
+                                        nullptr, 410 + (long)i, scopeds[i], lens[i]);
+        TEST_ASSERT_TRUE(rl > 0);
+        // Engine mismatch -> a discovery Report is emitted regardless of the probe result.
+        TEST_ASSERT_TRUE(snmp_v3_process(req, rl, resp, sizeof(resp)) > 0);
+    }
+}
+
+// USM authentication edge rejects: an authParams field of the wrong length is a
+// wrong-digest (rejected before the HMAC is even computed), and an authPriv message
+// whose encrypted msgData is not wrapped in an OCTET STRING is dropped.
+void test_v3_auth_edge_rejections(void)
+{
+    V3View v;
+    discover(&v);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    snmp_usm_localize_key("authpass12", v.engine_id, v.engine_id_len, authkey);
+    uint8_t req[320], resp[512];
+
+    // authParams length != 24 -> usmStatsWrongDigests Report (short-circuits before HMAC).
+    const uint8_t any_scoped[] = {0x30, 0x02, 0x04, 0x00};
+    size_t rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser",
+                                    authkey, 420, any_scoped, sizeof(any_scoped), false, 16 /*bad authParams len*/);
+    TEST_ASSERT_TRUE(rl > 0);
+    size_t n = snmp_v3_process(req, rl, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+    V3View r;
+    TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
+    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_UINT32(5u, r.oid[9]); // usmStatsWrongDigests
+
+    // authPriv with a valid digest but msgData that is not an OCTET STRING -> dropped (0).
+    const uint8_t not_octet[] = {0x02, 0x01, 0x00};
+    rl = build_v3_raw_scoped(req, sizeof(req), true, v.engine_id, v.engine_id_len, v.boots, v.time, "myuser", authkey,
+                             421, not_octet, sizeof(not_octet), true /*priv*/);
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, sizeof(resp)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_v3_field_tag_corruption);
+    RUN_TEST(test_v3_scoped_parse_rejections);
+    RUN_TEST(test_v3_discovery_malformed_scoped);
+    RUN_TEST(test_v3_auth_edge_rejections);
     RUN_TEST(test_v3_message_structure_rejections);
     RUN_TEST(test_v3_init_and_boots_accessors);
     RUN_TEST(test_v3_discovery_variants);

@@ -197,7 +197,7 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
         put_be32(iv + 4, now);
         memcpy(iv + 8, salt, SNMP_V3_PRIV_PARAM_LEN);
         if (scoped_len > sizeof(s_v3.v3_d))
-            return 0;
+            return 0; // GCOVR_EXCL_LINE  scoped is built in v3_c, the same size (SNMP_MSG_BUF_SIZE) as v3_d
         snmp_aes128_cfb(s_v3.priv_key, iv, scoped, s_v3.v3_d, scoped_len, true);
         data_ptr = s_v3.v3_d;
     }
@@ -228,7 +228,8 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
         ber_put_octet_string(&se, BER_OCTET_STRING, nullptr, 0);
     ber_seq_end(&se, ss);
     if (!se.ok)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  secParams (<=~120B: 32B engineID + 32B user + 24B auth + ints) never overflow
+                  // v3_sec[256]
     size_t sec_len = se.len;
 
     // Full message.
@@ -287,7 +288,7 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
     ber_seq_end(&e, vbl);
     ber_seq_end(&e, pdu);
     if (!e.ok)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  the Report is one fixed usmStats varbind, far under v3_b (SNMP_MSG_BUF_SIZE)
 
     BerEnc sc;
     ber_enc_init(&sc, s_v3.v3_c, sizeof(s_v3.v3_c));
@@ -297,7 +298,7 @@ static size_t build_report(long msg_id, bool auth, uint32_t stat, uint32_t count
     ber_put_raw(&sc, s_v3.v3_b, e.len);
     ber_seq_end(&sc, s);
     if (!sc.ok)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  fixed tiny Report scopedPDU never overflows v3_c (SNMP_MSG_BUF_SIZE)
 
     return build_message(msg_id, auth, false, s_v3.v3_c, sc.len, resp, resp_cap);
 }
@@ -373,7 +374,8 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     const uint8_t *pparm = sd.buf + sd.pos;
     sd.pos += pparm_len;
     if (!sd.ok)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  redundant: every secParams field read above returns on failure, so sd.ok holds
+                  // here
 
     const uint8_t *mdata = d.buf + d.pos;
     size_t mdata_len = req_len - d.pos;
@@ -441,7 +443,8 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
         const uint8_t *ct = md.buf + md.pos;
         size_t ct_len = l;
         if (ct_len > sizeof(s_v3.v3_a))
-            return 0;
+            return 0; // GCOVR_EXCL_LINE  ct_len <= mdata_len < req_len, and req_len<=sizeof(v3_a) was enforced at the
+                      // digest step
         uint8_t iv[16];
         put_be32(iv, (uint32_t)req_boots);
         put_be32(iv + 4, (uint32_t)req_time);
