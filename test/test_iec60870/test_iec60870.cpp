@@ -152,6 +152,86 @@ void test_101_variable_frame_roundtrip()
     TEST_ASSERT_FALSE(iec101_parse(buf, n, &f, &c));
 }
 
+// -104 builders reject null buffers, oversize ASDUs, and buffers too small.
+void test_104_build_guards()
+{
+    uint8_t buf[32];
+    const uint8_t asdu[6] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_i(nullptr, sizeof(buf), 0, 0, asdu, 6)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_i(buf, sizeof(buf), 0, 0, nullptr, 6));  // len but null asdu
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_i(buf, 512, 0, 0, asdu, 250));           // asdu_len > 249
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_i(buf, 8, 0, 0, asdu, 6));               // cap < 6 + asdu_len
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_s(nullptr, sizeof(buf), 0));             // null buf
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_s(buf, 4, 0));                           // cap < APCI len
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_u(nullptr, sizeof(buf), 0));             // null buf
+    TEST_ASSERT_EQUAL_size_t(0, iec104_build_u(buf, 4, 0));                           // cap < APCI len
+}
+
+// -104 parse rejects a wrong start octet, an APDU length below 4, and a truncated frame.
+void test_104_parse_rejects()
+{
+    Iec104Apci a;
+    size_t c;
+    uint8_t bad_start[6] = {0x00, 0x04, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(iec104_parse(bad_start, sizeof(bad_start), &a, &c)); // buf[0] != 0x68
+    TEST_ASSERT_FALSE(iec104_parse(nullptr, 6, &a, &c));                   // null buf
+    uint8_t short_l[6] = {IEC_START_104, 0x03, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(iec104_parse(short_l, sizeof(short_l), &a, &c)); // L < 4
+    uint8_t trunc[2] = {IEC_START_104, 0x0A};
+    TEST_ASSERT_FALSE(iec104_parse(trunc, sizeof(trunc), &a, &c)); // len < 2 + L
+}
+
+// ASDU header / IOA helpers reject null buffers and buffers too small.
+void test_asdu_ioa_guards()
+{
+    uint8_t buf[8];
+    IecAsduHeader h = {};
+    IecAsduHeader g;
+    size_t c;
+    TEST_ASSERT_EQUAL_size_t(0, iec_asdu_build_header(buf, 4, &h)); // cap < 6
+    TEST_ASSERT_EQUAL_size_t(0, iec_asdu_build_header(nullptr, 8, &h));
+    TEST_ASSERT_FALSE(iec_asdu_parse_header(buf, 5, &g, &c));   // len < 6
+    TEST_ASSERT_EQUAL_size_t(0, iec_put_ioa(buf, 2, 0x123456)); // cap < 3
+    TEST_ASSERT_EQUAL_size_t(0, iec_put_ioa(nullptr, 8, 0));
+}
+
+// -101 builders reject null buffers, oversize ASDUs, and buffers too small.
+void test_101_build_guards()
+{
+    uint8_t buf[32];
+    const uint8_t asdu[6] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, iec101_build_fixed(buf, 4, 0x49, 0x01));                    // cap < 5
+    TEST_ASSERT_EQUAL_size_t(0, iec101_build_fixed(nullptr, sizeof(buf), 0x49, 0x01));      // null buf
+    TEST_ASSERT_EQUAL_size_t(0, iec101_build_variable(buf, sizeof(buf), 0, 0, nullptr, 6)); // len but null asdu
+    TEST_ASSERT_EQUAL_size_t(0, iec101_build_variable(buf, 512, 0, 0, asdu, 254));          // asdu_len > 253
+    TEST_ASSERT_EQUAL_size_t(0, iec101_build_variable(buf, 10, 0, 0, asdu, 6));             // cap < 6 + L
+}
+
+// -101 parse rejects an empty buffer, a corrupt fixed frame, and malformed variable frames.
+void test_101_parse_rejects()
+{
+    Iec101Frame f;
+    size_t c;
+    TEST_ASSERT_FALSE(iec101_parse(nullptr, 5, &f, &c)); // null buf
+    uint8_t empty[1] = {0};
+    TEST_ASSERT_FALSE(iec101_parse(empty, 0, &f, &c)); // len < 1
+
+    uint8_t bad_cksum[5] = {IEC_START_FIXED, 0x49, 0x01, 0xFF, IEC_STOP};
+    TEST_ASSERT_FALSE(iec101_parse(bad_cksum, sizeof(bad_cksum), &f, &c)); // checksum mismatch
+    uint8_t bad_stop[5] = {IEC_START_FIXED, 0x49, 0x01, 0x4A, 0x00};
+    TEST_ASSERT_FALSE(iec101_parse(bad_stop, sizeof(bad_stop), &f, &c)); // no 0x16 stop
+
+    uint8_t var_trunc[3] = {IEC_START_104, 0x08, 0x08};
+    TEST_ASSERT_FALSE(iec101_parse(var_trunc, sizeof(var_trunc), &f, &c)); // len < 4
+    uint8_t var_badhdr[8] = {IEC_START_104, 0x01, 0x01, IEC_START_104, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(iec101_parse(var_badhdr, sizeof(var_badhdr), &f, &c)); // L < 2
+    uint8_t var_mismatch[8] = {IEC_START_104, 0x08, 0x09, IEC_START_104, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(iec101_parse(var_mismatch, sizeof(var_mismatch), &f, &c)); // buf[2] != L
+
+    uint8_t unknown[5] = {0x99, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(iec101_parse(unknown, sizeof(unknown), &f, &c)); // neither 0x10 nor 0x68
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -163,5 +243,10 @@ int main()
     RUN_TEST(test_ioa_roundtrip);
     RUN_TEST(test_101_fixed_frame);
     RUN_TEST(test_101_variable_frame_roundtrip);
+    RUN_TEST(test_104_build_guards);
+    RUN_TEST(test_104_parse_rejects);
+    RUN_TEST(test_asdu_ioa_guards);
+    RUN_TEST(test_101_build_guards);
+    RUN_TEST(test_101_parse_rejects);
     return UNITY_END();
 }
