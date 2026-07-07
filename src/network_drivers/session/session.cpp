@@ -27,12 +27,18 @@
 // ---------------------------------------------------------------------------
 // Protocol-handler dispatch table (see proto_handler.h)
 // ---------------------------------------------------------------------------
-static const ProtoHandler *s_proto_handlers[DETWS_PROTO_MAX];
+// Protocol-handler dispatch table, owned by one instance (internal linkage): the per-protocol
+// ProtoHandler pointers. One named owner, unreachable from any other translation unit.
+struct SessionCtx
+{
+    const ProtoHandler *proto_handlers[DETWS_PROTO_MAX];
+};
+static SessionCtx s_session;
 
 void proto_register(ConnProto proto, const ProtoHandler *h)
 {
     if ((unsigned)proto < DETWS_PROTO_MAX)
-        s_proto_handlers[proto] = h;
+        s_session.proto_handlers[proto] = h;
 }
 
 const ProtoHandler *proto_get(ConnProto proto)
@@ -41,11 +47,11 @@ const ProtoHandler *proto_get(ConnProto proto)
     // harness drives server_tick() directly). The list itself lives in proto_builtins.cpp -
     // this dispatcher names no protocol; it just knows PROTO_HTTP is always registered, and
     // uses that as the "already bootstrapped" sentinel.
-    if (!s_proto_handlers[PROTO_HTTP])
+    if (!s_session.proto_handlers[PROTO_HTTP])
         proto_register_builtins();
     // No implicit fallback: a slot must carry an explicit, registered protocol.
     // PROTO_NONE and any unregistered protocol resolve to nullptr (event dropped).
-    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_proto_handlers[proto] : nullptr;
+    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_session.proto_handlers[proto] : nullptr;
 }
 
 // Dispatch one drained event to its slot's protocol handler. Shared by the
