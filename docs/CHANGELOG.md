@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- split hot flag/handles from cold buffers so client builds gc-drop server/worker state ([`73ced5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73ced5df6365c1278799d7a1729d784696e17877))
 - split the bump arena into its own owned symbol so --gc-sections can drop it ([`73cfe09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73cfe09f7eea210247cf6b0002ca7b444f140527))
 - use nullptr instead of NULL (cpp:S4962) ([`0ea30fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ea30fde86728a9fac5733a3ed6a9cfb8c87a166))
 
 ### CI / Build
 
+- update test report [skip ci] ([`203df44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/203df44891e939f910f7053d88c3f08c49fa3bbb))
+- update CHANGELOG.md [skip ci] ([`fb93a14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb93a14d4c95cc682bc0296f6425b7413815a869))
 - update test report [skip ci] ([`15d06ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15d06ff8dc52a0f529275a54fd1d6481e9a2a7d5))
 - update CHANGELOG.md [skip ci] ([`5202ffc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5202ffcaf68cde59f692fce4e3b23b640b4c939d))
 - update CHANGELOG.md [skip ci] ([`4fc1386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fc13865b9b9f44a6481d37200e8302ffafa7070))
@@ -71,6 +74,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`46e24ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46e24ee7bebe28a6893c6d2954d401116296ac36))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`38a90c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38a90c141c6bf5e76f34d85a01a1f5e89131b2cf))
 - update ESP32 build footprints [skip ci] ([`30a0844`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30a08441a34324bad7fbd3ca81bca1fd8346e67a))
 - update ESP32 build footprints [skip ci] ([`510261c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/510261c45da7d9e7d0cca91322ead8918e6fac75))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`34cf1b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34cf1b87cfb0b215bc24138934d141ff2efbaa1f))
