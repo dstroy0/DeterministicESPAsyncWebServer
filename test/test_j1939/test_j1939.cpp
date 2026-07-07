@@ -154,6 +154,67 @@ void test_tp_out_of_sequence_errors()
     TEST_ASSERT_FALSE(rx.active);
 }
 
+// Builder argument rejections, including the priority-out-of-range path that makes
+// ext_frame's id encode fail.
+void test_build_error_paths()
+{
+    CanFrame f;
+    const uint8_t data[3] = {1, 2, 3};
+    TEST_ASSERT_FALSE(j1939_decode_id(0x18FEEE21u, nullptr)); // null out
+
+    TEST_ASSERT_FALSE(j1939_build_message(nullptr, 6, 0x00FEEE, 0x21, 0xFF, data, 3)); // null out
+    TEST_ASSERT_FALSE(j1939_build_message(&f, 6, 0x00FEEE, 0x21, 0xFF, nullptr, 3));   // len but null data
+    TEST_ASSERT_FALSE(j1939_build_message(&f, 8, 0x00FEEE, 0x21, 0xFF, data, 3));      // priority>7 -> encode fails
+
+    TEST_ASSERT_FALSE(j1939_build_request(nullptr, 0x21, 0, 0x00FEEC)); // null out
+    TEST_ASSERT_FALSE(j1939_build_request(&f, 0x21, 0, 0x40000));       // pgn > 18 bits
+
+    TEST_ASSERT_FALSE(j1939_build_bam_cm(nullptr, 0x21, 0x00FECA, 16)); // null out
+    TEST_ASSERT_FALSE(j1939_build_bam_cm(&f, 0x21, 0x00FECA, 8));       // total_size < 9
+    TEST_ASSERT_FALSE(j1939_build_bam_cm(&f, 0x21, 0x40000, 16));       // pgn > 18 bits
+
+    const uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
+    TEST_ASSERT_FALSE(j1939_build_tp_dt(&f, 0x21, 0xFF, 0, chunk, 7));   // seq 0
+    TEST_ASSERT_FALSE(j1939_build_tp_dt(&f, 0x21, 0xFF, 1, chunk, 0));   // chunk_len 0
+    TEST_ASSERT_FALSE(j1939_build_tp_dt(&f, 0x21, 0xFF, 1, nullptr, 7)); // null chunk
+    TEST_ASSERT_FALSE(j1939_build_tp_dt(&f, 0x21, 0xFF, 1, chunk, 9));   // chunk_len > 7
+}
+
+// The transport-protocol reassembler's ignore/error branches.
+void test_tp_feed_error_paths()
+{
+    J1939TpRx rx;
+    j1939_tp_reset(&rx);
+    CanFrame cm;
+    j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16);
+
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(nullptr, &cm)); // null rx
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, nullptr)); // null frame
+    CanFrame notext = cm;
+    notext.extended = false;
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &notext)); // not a 29-bit frame
+
+    CanFrame cm_ctrl = cm;
+    cm_ctrl.data[0] = 0xFF; // not BAM/RTS -> not a receiver-side session start
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &cm_ctrl));
+
+    CanFrame cm_bad = cm;
+    cm_bad.data[3] = 99; // packet count != ceil(total/7)
+    TEST_ASSERT_EQUAL_INT(J1939_TP_ERROR, j1939_tp_feed(&rx, &cm_bad));
+
+    // A TP.DT with no active session is ignored.
+    j1939_tp_reset(&rx);
+    const uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
+    CanFrame dt;
+    j1939_build_tp_dt(&dt, 0x21, J1939_ADDR_GLOBAL, 1, chunk, 7);
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &dt));
+
+    // An extended frame whose PGN is neither TP.CM nor TP.DT is ignored.
+    CanFrame other;
+    j1939_build_message(&other, 6, 0x00FEEE, 0x21, 0xFF, chunk, 3);
+    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &other));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -166,5 +227,7 @@ int main()
     RUN_TEST(test_tp_num_packets);
     RUN_TEST(test_tp_bam_roundtrip);
     RUN_TEST(test_tp_out_of_sequence_errors);
+    RUN_TEST(test_build_error_paths);
+    RUN_TEST(test_tp_feed_error_paths);
     return UNITY_END();
 }

@@ -84,7 +84,8 @@ bool j1939_build_request(CanFrame *out, uint8_t sa, uint8_t da, uint32_t request
         return false;
     // Request PGN (priority 6): 3-octet little-endian requested PGN.
     if (!ext_frame(out, 6, J1939_PGN_REQUEST, sa, da, 3))
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: fixed priority 6 + J1939_PGN_REQUEST (<=0x3FFFF), encode can't
+                      // fail
     out->data[0] = (uint8_t)requested_pgn;
     out->data[1] = (uint8_t)(requested_pgn >> 8);
     out->data[2] = (uint8_t)(requested_pgn >> 16);
@@ -116,7 +117,8 @@ bool j1939_build_address_claim(CanFrame *out, uint8_t sa, uint64_t name)
 {
     // Address Claimed (priority 6, broadcast): NAME as 8 octets, little-endian.
     if (!ext_frame(out, 6, J1939_PGN_ADDRESS_CLAIM, sa, J1939_ADDR_GLOBAL, 8))
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: fixed priority 6 + J1939_PGN_ADDRESS_CLAIM (<=0x3FFFF), encode
+                      // can't fail
     for (int i = 0; i < 8; i++)
         out->data[i] = (uint8_t)(name >> (8 * i));
     return true;
@@ -132,7 +134,7 @@ bool j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_
     if (!out || total_size < 9 || total_size > DETWS_J1939_TP_MAX || pgn > 0x3FFFFu)
         return false; // BAM is for 9..1785 octet messages
     if (!ext_frame(out, 7, J1939_PGN_TP_CM, sa, J1939_ADDR_GLOBAL, 8))
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: fixed priority 7 + J1939_PGN_TP_CM (<=0x3FFFF), encode can't fail
     out->data[0] = J1939_TP_CM_BAM;
     out->data[1] = (uint8_t)total_size; // message size, little-endian
     out->data[2] = (uint8_t)(total_size >> 8);
@@ -149,7 +151,7 @@ bool j1939_build_tp_dt(CanFrame *out, uint8_t sa, uint8_t da, uint8_t seq, const
     if (!out || seq == 0 || chunk_len == 0 || chunk_len > J1939_TP_DT_LEN || !chunk)
         return false;
     if (!ext_frame(out, 7, J1939_PGN_TP_DT, sa, da, 8))
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: fixed priority 7 + J1939_PGN_TP_DT (<=0x3FFFF), encode can't fail
     out->data[0] = seq;                      // sequence number, 1-based
     memcpy(out->data + 1, chunk, chunk_len); // remaining octets stay 0xFF padding
     return true;
@@ -167,7 +169,8 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         return J1939_TP_IGNORED;
     J1939Id id;
     if (!j1939_decode_id(f->id, &id))
-        return J1939_TP_IGNORED;
+        return J1939_TP_IGNORED; // GCOVR_EXCL_LINE  unreachable: decode_id only fails on a null out, and &id is
+                                 // non-null
 
     if (id.pgn == J1939_PGN_TP_CM && f->dlc >= 8)
     {
