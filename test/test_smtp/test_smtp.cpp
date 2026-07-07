@@ -21,11 +21,16 @@ struct Mock
     std::string sent;     // everything the client wrote
     bool dribble = false; // return replies one byte at a time (exercise the accumulate loop)
     size_t dribble_pos = 0;
+    std::string fail_send_prefix; // a write beginning with this returns short (I/O failure)
 };
 
 int mock_send(void *c, const uint8_t *d, size_t n)
 {
-    ((Mock *)c)->sent.append((const char *)d, n);
+    Mock *m = (Mock *)c;
+    if (!m->fail_send_prefix.empty() && n >= m->fail_send_prefix.size() &&
+        memcmp(d, m->fail_send_prefix.data(), m->fail_send_prefix.size()) == 0)
+        return (int)n - 1; // short write -> send_str() / the body send sees != n
+    m->sent.append((const char *)d, n);
     return (int)n;
 }
 
@@ -225,6 +230,171 @@ void test_io_error_when_server_hangs()
     TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
 }
 
+// Run a dialogue with the given scripted replies and return smtp_run's result.
+static int dialogue(std::vector<std::string> replies, SmtpConfig c, SmtpMessage msg)
+{
+    Mock m;
+    m.replies = std::move(replies);
+    return smtp_run(&c, &msg, mock_send, mock_recv, &m);
+}
+
+// An overlong reply that never completes (all continuation lines) overflows the reply
+// buffer; smtp_run maps that to an I/O error on the greeting read.
+void test_reply_buffer_overflow()
+{
+    std::string huge;
+    while (huge.size() < 600)
+        huge += "250-continuation\r\n"; // > DETWS_SMTP_REPLY_MAX, no final line
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, dialogue({huge}, base_cfg(), base_msg()));
+}
+
+// A short write on a command line (here EHLO) is an I/O error.
+void test_command_send_fails()
+{
+    Mock m;
+    m.replies = {"220 ESMTP\r\n"};
+    m.fail_send_prefix = "EHLO";
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+}
+
+// The DATA payload send failing (short write) is an I/O error.
+void test_body_send_fails()
+{
+    Mock m;
+    m.replies = {"220 ESMTP\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "354 go\r\n"};
+    m.fail_send_prefix = "From:"; // only the DATA payload begins "From: <...>"
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+}
+
+// An AUTH secret too long to base64-encode into the line buffer overflows.
+void test_auth_secret_too_long()
+{
+    SmtpConfig c = base_cfg();
+    std::string longuser(400, 'u'); // base64 grows it past DETWS_SMTP_LINE_MAX
+    c.user = longuser.c_str();
+    c.pass = "pw";
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_OVERFLOW, dialogue({"220 ESMTP\r\n", "250 OK\r\n", "334 x\r\n"}, c, base_msg()));
+}
+
+// I/O failure (server hangs up) at each step of the dialogue -> SMTP_ERR_IO.
+void test_io_error_at_each_step()
+{
+    SmtpConfig c = base_cfg();
+    SmtpConfig cu = base_cfg();
+    cu.user = "user";
+    cu.pass = "pass";
+    SmtpMessage msg = base_msg();
+    // greeting ok, then hang before: EHLO / MAIL(no auth) / AUTH(user) / pass-leg / RCPT / DATA / final.
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, dialogue({"220 x\r\n"}, c, msg));                // EHLO
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, dialogue({"220 x\r\n", "250 OK\r\n"}, c, msg));  // MAIL FROM
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, dialogue({"220 x\r\n", "250 OK\r\n"}, cu, msg)); // AUTH LOGIN
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO,
+                          dialogue({"220 x\r\n", "250 OK\r\n", "334 a\r\n", "334 b\r\n"}, cu, msg)); // pass leg
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO, dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n"}, c, msg)); // RCPT
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO,
+                          dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n"}, c, msg)); // DATA
+    TEST_ASSERT_EQUAL_INT( // final acceptance read
+        SMTP_ERR_IO, dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "354 go\r\n"}, c, msg));
+}
+
+// A wrong reply code at each step -> the step-specific SmtpResult.
+void test_protocol_error_at_each_step()
+{
+    SmtpConfig c = base_cfg();
+    SmtpConfig cu = base_cfg();
+    cu.user = "user";
+    cu.pass = "pass";
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_PROTOCOL, dialogue({"220 x\r\n", "500 no ehlo\r\n"}, c, msg)); // EHLO != 250
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_AUTH,
+                          dialogue({"220 x\r\n", "250 OK\r\n", "500 no auth\r\n"}, cu, msg)); // AUTH != 334
+    TEST_ASSERT_EQUAL_INT(
+        SMTP_ERR_AUTH, dialogue({"220 x\r\n", "250 OK\r\n", "334 a\r\n", "500 bad user\r\n"}, cu, msg)); // user != 334
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_PROTOCOL,
+                          dialogue({"220 x\r\n", "250 OK\r\n", "550 denied\r\n"}, c, msg)); // MAIL != 250
+    TEST_ASSERT_EQUAL_INT(                                                                  // final acceptance != 250
+        SMTP_ERR_PROTOCOL,
+        dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "354 go\r\n", "451 rejected\r\n"}, c, msg));
+}
+
+// Each outgoing command line that is built with snprintf overflows when its variable
+// field (helo / from / to) is longer than DETWS_SMTP_LINE_MAX.
+void test_command_line_overflows()
+{
+    std::string big(300, 'z');
+    SmtpConfig ch = base_cfg();
+    ch.helo = big.c_str();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_OVERFLOW, dialogue({"220 x\r\n"}, ch, base_msg())); // EHLO line
+
+    SmtpConfig cf = base_cfg();
+    cf.from = big.c_str();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_OVERFLOW, dialogue({"220 x\r\n", "250 OK\r\n"}, cf, base_msg())); // MAIL FROM line
+
+    SmtpMessage mt = base_msg();
+    mt.to = big.c_str();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_OVERFLOW,
+                          dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n"}, base_cfg(), mt)); // RCPT TO line
+}
+
+// A header field so long that the message headers do not fit -> build_message overflow.
+void test_message_header_overflow()
+{
+    std::string bigsub(2100, 'S');
+    SmtpMessage msg = base_msg();
+    msg.subject = bigsub.c_str();
+    TEST_ASSERT_EQUAL_INT(
+        SMTP_ERR_OVERFLOW,
+        dialogue({"220 x\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "354 go\r\n"}, base_cfg(), msg));
+}
+
+// A CR in the body is dropped (CRLF normalization).
+void test_cr_in_body_dropped()
+{
+    Mock m;
+    m.replies = happy_replies();
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    msg.body = "x\r\ny"; // the bare CR is stripped, the LF becomes CRLF
+    TEST_ASSERT_EQUAL_INT(SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m));
+    TEST_ASSERT_TRUE(m.sent.find("x\r\ny\r\n") != std::string::npos);
+}
+
+// Sweep the body length across the DATA-buffer boundary so every build_message overflow
+// guard (regular char, LF->CRLF, dot-stuff, trailing CRLF, terminating dot) fires at its
+// own boundary length, without hard-coding exact byte counts.
+void test_build_message_boundary_overflows()
+{
+    const std::vector<std::string> to_data = {"220 x\r\n", "250 OK\r\n", "250 Ok\r\n", "250 Ok\r\n", "354 go\r\n"};
+    bool saw_overflow = false;
+    for (size_t L = 1850; L <= 2060; L++)
+    {
+        std::string base(L, 'x');
+        for (const std::string &suffix : {std::string(""), std::string("\n"), std::string("\n.")})
+        {
+            std::string body = base + suffix;
+            SmtpMessage msg = base_msg();
+            msg.body = body.c_str();
+            int r = dialogue(to_data, base_cfg(), msg);
+            TEST_ASSERT_NOT_EQUAL(SMTP_OK, r); // no final 250 scripted -> never succeeds
+            if (r == SMTP_ERR_OVERFLOW)
+                saw_overflow = true;
+        }
+    }
+    TEST_ASSERT_TRUE(saw_overflow); // the sweep crossed the buffer boundary
+}
+
+// The host build's smtp_send() is a stub (no lwIP) that reports a connect failure.
+void test_host_smtp_send_stub()
+{
+    SmtpConfig c = base_cfg();
+    SmtpMessage msg = base_msg();
+    TEST_ASSERT_EQUAL_INT(SMTP_ERR_CONNECT, smtp_send(&c, &msg));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -239,5 +409,16 @@ int main()
     RUN_TEST(test_partial_reads_dribble);
     RUN_TEST(test_missing_required_arg);
     RUN_TEST(test_io_error_when_server_hangs);
+    RUN_TEST(test_reply_buffer_overflow);
+    RUN_TEST(test_command_send_fails);
+    RUN_TEST(test_body_send_fails);
+    RUN_TEST(test_auth_secret_too_long);
+    RUN_TEST(test_io_error_at_each_step);
+    RUN_TEST(test_protocol_error_at_each_step);
+    RUN_TEST(test_command_line_overflows);
+    RUN_TEST(test_message_header_overflow);
+    RUN_TEST(test_cr_in_body_dropped);
+    RUN_TEST(test_build_message_boundary_overflows);
+    RUN_TEST(test_host_smtp_send_stub);
     return UNITY_END();
 }

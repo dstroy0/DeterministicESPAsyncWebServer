@@ -93,7 +93,8 @@ int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secre
     base64_encode((const uint8_t *)secret, slen, b64);
     int n = snprintf(line, sizeof(line), "%s\r\n", b64);
     if (n < 0 || (size_t)n >= sizeof(line))
-        return SMTP_ERR_OVERFLOW;
+        return SMTP_ERR_OVERFLOW; // GCOVR_EXCL_LINE  b64+CRLF was just checked to fit sizeof(b64)==sizeof(line); can't
+                                  // overflow
     return command(send, recv, ctx, line);
 }
 
