@@ -47,9 +47,15 @@ void detws_worker_set_self(int id)
 
 namespace
 {
-detws_worker_pump_fn s_pump = nullptr;
-TaskHandle_t s_tasks[DETWS_WORKER_COUNT] = {nullptr};
-std::atomic<bool> s_run{false}; // release on start publishes s_pump; acquire in the task
+// All worker-task state, owned by one instance (internal linkage): the pump callback, the task
+// handles, and the run flag. One named owner, unreachable from any other translation unit.
+struct WorkerCtx
+{
+    detws_worker_pump_fn pump = nullptr;
+    TaskHandle_t tasks[DETWS_WORKER_COUNT] = {nullptr};
+    std::atomic<bool> run{false}; // release on start publishes pump; acquire in the task
+};
+WorkerCtx s_worker;
 
 // Each worker binds its id, then pumps until asked to stop. Between iterations it
 // blocks on its task notification instead of free-running the poll: a producer
@@ -63,13 +69,13 @@ void worker_task(void *arg)
 {
     int id = (int)(intptr_t)arg;
     detws_worker_set_self(id);
-    while (s_run.load(std::memory_order_acquire))
+    while (s_worker.run.load(std::memory_order_acquire))
     {
-        if (s_pump)
-            s_pump(id);
+        if (s_worker.pump)
+            s_worker.pump(id);
         ulTaskNotifyTake(pdTRUE, DETWS_WORKER_POLL_TICKS); // wake on event, else idle-sweep timeout
     }
-    s_tasks[id] = nullptr;
+    s_worker.tasks[id] = nullptr;
     vTaskDelete(nullptr);
 }
 } // namespace
@@ -83,25 +89,33 @@ struct DeferCmd
     detws_deferred_fn fn;
     void *arg;
 };
-StaticQueue_t s_dq_struct[DETWS_WORKER_COUNT];
-uint8_t s_dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
-QueueHandle_t s_dq[DETWS_WORKER_COUNT] = {nullptr};
+// All per-worker deferred-callback queue state, owned by one instance (internal linkage): the
+// static queue control blocks, their storage, and the queue handles. One named owner, cross-TU
+// unreachable.
+struct DeferCtx
+{
+    StaticQueue_t dq_struct[DETWS_WORKER_COUNT];
+    uint8_t dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
+    QueueHandle_t dq[DETWS_WORKER_COUNT] = {nullptr};
+};
+DeferCtx s_defer;
 } // namespace
 
 void detws_workers_start(detws_worker_pump_fn pump)
 {
-    if (s_run.load(std::memory_order_acquire))
+    if (s_worker.run.load(std::memory_order_acquire))
         return; // already running
-    s_pump = pump;
+    s_worker.pump = pump;
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
-        if (!s_dq[i])
-            s_dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_dq_storage[i], &s_dq_struct[i]);
-    s_run.store(true, std::memory_order_release);
+        if (!s_defer.dq[i])
+            s_defer.dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_defer.dq_storage[i],
+                                               &s_defer.dq_struct[i]);
+    s_worker.run.store(true, std::memory_order_release);
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
     {
         int core = (DETWS_WORKER_CORE + i) % portNUM_PROCESSORS;
         xTaskCreatePinnedToCore(worker_task, "detws_worker", DETWS_WORKER_TASK_STACK, (void *)(intptr_t)i,
-                                DETWS_WORKER_TASK_PRIORITY, &s_tasks[i], core);
+                                DETWS_WORKER_TASK_PRIORITY, &s_worker.tasks[i], core);
     }
 }
 
@@ -109,10 +123,10 @@ bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg)
 {
     if (!fn)
         return false;
-    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_dq[worker_id])
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_defer.dq[worker_id])
         return false;
     DeferCmd cmd = {fn, arg};
-    if (xQueueSend(s_dq[worker_id], &cmd, 0) != pdTRUE)
+    if (xQueueSend(s_defer.dq[worker_id], &cmd, 0) != pdTRUE)
         return false;
     detws_worker_wake(worker_id); // run the callback now, not on the next idle sweep
     return true;
@@ -122,26 +136,26 @@ void detws_worker_wake(int worker_id)
 {
     if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT)
         return;
-    TaskHandle_t t = s_tasks[worker_id];
+    TaskHandle_t t = s_worker.tasks[worker_id];
     if (t)
         xTaskNotifyGive(t);
 }
 
 void detws_worker_run_deferred(int worker_id)
 {
-    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_dq[worker_id])
+    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_defer.dq[worker_id])
         return;
     DeferCmd cmd;
-    while (xQueueReceive(s_dq[worker_id], &cmd, 0) == pdTRUE)
+    while (xQueueReceive(s_defer.dq[worker_id], &cmd, 0) == pdTRUE)
         if (cmd.fn)
             cmd.fn(cmd.arg);
 }
 
 void detws_workers_stop(void)
 {
-    if (!s_run.load(std::memory_order_acquire))
+    if (!s_worker.run.load(std::memory_order_acquire))
         return;
-    s_run.store(false, std::memory_order_release);
+    s_worker.run.store(false, std::memory_order_release);
     // Tasks self-delete on their next iteration; give them a few ticks to exit
     // before the caller tears down the slots they were servicing.
     vTaskDelay(3);
@@ -149,7 +163,7 @@ void detws_workers_stop(void)
 
 bool detws_workers_running(void)
 {
-    return s_run.load(std::memory_order_acquire);
+    return s_worker.run.load(std::memory_order_acquire);
 }
 
 #else // host build - no tasks; handle()/tests drive the pipeline inline
