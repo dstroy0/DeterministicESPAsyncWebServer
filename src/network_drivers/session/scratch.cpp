@@ -23,9 +23,19 @@
 
 namespace
 {
-uint8_t s_arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
-size_t s_off[DETWS_WORKER_COUNT];                              // bump offset per worker
-size_t s_high_water[DETWS_WORKER_COUNT];                       // peak s_off per worker
+// All per-worker scratch state, owned by one instance (internal linkage): the bump arenas, the
+// per-worker bump offsets, and the high-water marks. One named owner, unreachable cross-TU.
+struct ScratchCtx
+{
+    // scratch_alloc aligns the bump OFFSET, so the arena base must itself be aligned to the
+    // strictest alignment callers can request. As a struct member the base would otherwise only
+    // inherit the struct's 8-byte (size_t) alignment; force 32 so a 16-/32-aligned request lands
+    // on an aligned address (a standalone array got this incidentally from the linker before).
+    alignas(32) uint8_t arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
+    size_t off[DETWS_WORKER_COUNT];                                          // bump offset per worker
+    size_t high_water[DETWS_WORKER_COUNT];                                   // peak off per worker
+};
+ScratchCtx s_scratch;
 
 // Default alignment when the caller passes 0: the strictest the platform needs.
 constexpr size_t SCRATCH_DEFAULT_ALIGN = sizeof(void *) > 8 ? sizeof(void *) : 8;
@@ -69,7 +79,7 @@ void *scratch_alloc(size_t n, size_t align)
     assert((align & (align - 1)) == 0 && "scratch alignment must be a power of two");
 
     // Round the current offset up to the requested alignment.
-    size_t base = (s_off[w] + (align - 1)) & ~(align - 1);
+    size_t base = (s_scratch.off[w] + (align - 1)) & ~(align - 1);
 
     // Overflow-safe capacity check: reject if n alone exceeds the arena, or if
     // the aligned allocation would run past the end. (n <= capacity here, so
@@ -77,10 +87,10 @@ void *scratch_alloc(size_t n, size_t align)
     if (n > DETWS_SCRATCH_ARENA_SIZE || base > DETWS_SCRATCH_ARENA_SIZE - n)
         return nullptr;
 
-    void *p = &s_arena[w][base];
-    s_off[w] = base + n;
-    if (s_off[w] > s_high_water[w])
-        s_high_water[w] = s_off[w];
+    void *p = &s_scratch.arena[w][base];
+    s_scratch.off[w] = base + n;
+    if (s_scratch.off[w] > s_scratch.high_water[w])
+        s_scratch.high_water[w] = s_scratch.off[w];
     return p;
 }
 
@@ -88,27 +98,27 @@ void scratch_reset(void)
 {
     int w = cur_worker();
     assert_single_owner(w);
-    s_off[w] = 0;
+    s_scratch.off[w] = 0;
 }
 
 size_t scratch_mark(void)
 {
     int w = cur_worker();
     assert_single_owner(w);
-    return s_off[w];
+    return s_scratch.off[w];
 }
 
 void scratch_release(size_t mark)
 {
     int w = cur_worker();
     assert_single_owner(w);
-    assert(mark <= s_off[w] && "scratch_release mark is above the current offset");
-    s_off[w] = mark;
+    assert(mark <= s_scratch.off[w] && "scratch_release mark is above the current offset");
+    s_scratch.off[w] = mark;
 }
 
 size_t scratch_used(void)
 {
-    return s_off[cur_worker()];
+    return s_scratch.off[cur_worker()];
 }
 
 size_t scratch_high_water(void)
@@ -116,8 +126,8 @@ size_t scratch_high_water(void)
     // Peak any single arena reached - the value to size DETWS_SCRATCH_ARENA_SIZE by.
     size_t peak = 0;
     for (int w = 0; w < DETWS_WORKER_COUNT; w++)
-        if (s_high_water[w] > peak)
-            peak = s_high_water[w];
+        if (s_scratch.high_water[w] > peak)
+            peak = s_scratch.high_water[w];
     return peak;
 }
 
