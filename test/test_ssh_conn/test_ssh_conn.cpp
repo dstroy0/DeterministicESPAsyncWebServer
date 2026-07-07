@@ -173,11 +173,54 @@ void test_poll_triggers_server_rekey()
     TEST_ASSERT_EQUAL(0, tcp_captured_len());
 }
 
+// The L5 ProtoHandler accessor exposes the installed dispatch table.
+void test_proto_handler_accessor()
+{
+    TEST_ASSERT_NOT_NULL(ssh_proto_handler());
+}
+
+// The channel-send entry points fail closed on an out-of-range slot and on a mapped
+// slot whose TCP conn has lost its pcb.
+void test_send_entrypoints_reject()
+{
+    uint8_t data[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(250, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(250, 0));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(250, "h", 22, "o", 1));
+
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    conn_pool[0].pcb = nullptr; // live SSH slot but the socket is gone
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1));
+}
+
+// poll and rx ignore a live conn that is not a mapped SSH session, and rx on an empty
+// ring reads nothing; a partial client banner leaves the session in the banner phase.
+void test_poll_rx_banner_guards()
+{
+    ssh_conn_poll(1); // conn 1 is ACTIVE but never accepted (proto_slot == NONE)
+    ssh_conn_rx(1);
+
+    ssh_conn_accept(0);
+    ssh_conn_rx(0); // empty rx ring -> reads nothing
+
+    const char *partial = "SSH-2.0-Incomplete"; // no CRLF yet
+    push_bytes(0, (const uint8_t *)partial, strlen(partial));
+    ssh_conn_rx(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    TEST_ASSERT_EQUAL(SSH_PHASE_BANNER, ssh_sess[j].phase);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_accept_sends_server_banner);
     RUN_TEST(test_banner_then_kexinit_advances_and_replies);
     RUN_TEST(test_poll_triggers_server_rekey);
+    RUN_TEST(test_proto_handler_accessor);
+    RUN_TEST(test_send_entrypoints_reject);
+    RUN_TEST(test_poll_rx_banner_guards);
     return UNITY_END();
 }
