@@ -100,11 +100,42 @@ void test_frame(void)
     TEST_ASSERT_EQUAL_HEX8(0x61, out[22]);       // APDU starts here
 }
 
+// The PDU/frame guards, the tlv-overflow fail path, and the multi-octet BER length
+// encoding (long-form), driven by a >=128-octet allData.
+void test_goose_error_and_longform(void)
+{
+    DetwsGoose g = base();
+    uint8_t out[512];
+
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(nullptr, out, sizeof(out))); // null g
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, nullptr, sizeof(out)));  // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 3));                // cap < reserved header
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 10)); // fits the header but overflows on a field -> !ok
+
+    // A >=128-octet allData forces multi-octet BER lengths (len_octets + write_len long-form).
+    static uint8_t big[200];
+    memset(big, 0x5A, sizeof(big));
+    g.all_data = big;
+    g.all_data_len = sizeof(big);
+    size_t n = detws_goose_pdu(&g, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 200);
+    TEST_ASSERT_EQUAL_HEX8(0x61, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x81, out[1]); // content length >= 128 -> long-form (one following octet)
+
+    uint8_t dst[6] = {0};
+    uint8_t src[6] = {0};
+    DetwsGoose g2 = base();
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap < 22
+    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // >=22 but the PDU cannot fit
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_pdu_structure);
     RUN_TEST(test_integer_leading_zero);
     RUN_TEST(test_frame);
+    RUN_TEST(test_goose_error_and_longform);
     return UNITY_END();
 }
