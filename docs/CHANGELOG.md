@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f66c7a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f66c7a8f8a93e6c3217676e0a2dac038f29e737a))
 - update test report [skip ci] ([`67ef56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67ef56e3539fc0b1ee255e8bd2cdc43d6a1d6b71))
 - update CHANGELOG.md [skip ci] ([`cf83943`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf8394376a19d675e4adfcd96e22d7c69bee26bb))
 - update test report [skip ci] ([`c56dd14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c56dd14d65dada64ee1492994f2f6f537350dc46))
@@ -58,6 +59,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e0d33cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0d33cf4156e1bbf93e28ae279ad608407a3b2a9))
 - update ESP32 build footprints [skip ci] ([`1cc701b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cc701b3925aff6483fe2f1a0445ce411bc074e7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`83b3f31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83b3f31876e4531ba9a15703b928a9c224b7dc5c))
 - update ESP32 build footprints [skip ci] ([`beeb7f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beeb7f4b852bb9bb33aea5c683e4eaf5d2f438d7))
@@ -89,6 +91,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- pull remaining tunable defaults into ServerConfig.h under their flag guards ([`f6bfc3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6bfc3ac6b462ca5eb5fed4fa757f71f5242ba6f))
 - dedup repeated literals; move OPC UA + provisioning string DEFAULTS to ServerConfig.h under their flag guards ([`199a58b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199a58ba6b99df8cf6d47ef9f9d58108b8c07016))
 - drop det_ prefix, transport->tcp/udp, DeterministicESPAsyncWebServer->dwserver, DetWebServerConfig->ServerConfig ([`3f8fcbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f8fcbd068f84040fe7dd0343c2f0a52270f0c37))
 - own the group14 Montgomery constants in one Group14Ctx (owner sweep) ([`df4e000`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df4e000caac9ac92da47f82e08638bf78fc69683))
