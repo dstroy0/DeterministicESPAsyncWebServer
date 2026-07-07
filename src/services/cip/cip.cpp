@@ -86,7 +86,8 @@ size_t cip_build_get_attr_single(uint8_t *buf, size_t cap, uint16_t class_id, ui
     uint8_t epath[12];
     size_t elen = cip_build_epath(epath, sizeof(epath), class_id, instance_id, attribute_id, true);
     if (!elen)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  unreachable: epath[12] holds the worst-case 3x4B logical segments, so build never
+                  // fails
     return cip_build_request(buf, cap, CIP_SC_GET_ATTR_SINGLE, epath, elen, nullptr, 0);
 }
 

@@ -165,6 +165,57 @@ void test_get_uri_dest_bounds()
     TEST_ASSERT_FALSE(wamp_get_uri("[2,\"abc\"]", 1, tight, sizeof(tight)));
 }
 
+// Every builder returns 0 on a null destination or a null required string argument.
+void test_builder_null_guards()
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_hello(nullptr, sizeof(buf), "r", nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_hello(buf, sizeof(buf), nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_goodbye(nullptr, sizeof(buf), "u", nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_goodbye(buf, sizeof(buf), nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_subscribe(nullptr, sizeof(buf), 1, "t", nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_subscribe(buf, sizeof(buf), 1, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_unsubscribe(nullptr, sizeof(buf), 1, 2));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_publish(nullptr, sizeof(buf), 1, "t", nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_publish(buf, sizeof(buf), 1, nullptr, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_call(nullptr, sizeof(buf), 1, "p", nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_call(buf, sizeof(buf), 1, nullptr, nullptr, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_register(nullptr, sizeof(buf), 1, "p", nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_register(buf, sizeof(buf), 1, nullptr, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, wamp_build_yield(nullptr, sizeof(buf), 1, nullptr, nullptr, nullptr));
+}
+
+// The emit_uint zero fast-path and an args-less PUBLISH (emit_args early return).
+void test_emit_uint_zero_and_no_args()
+{
+    char buf[64];
+    size_t n = wamp_build_subscribe(buf, sizeof(buf), 0, "t", nullptr); // request 0
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_STRING("[32,0,{},\"t\"]", buf);
+    n = wamp_build_publish(buf, sizeof(buf), 1, "t", nullptr, nullptr, nullptr); // no args, no kwargs
+    TEST_ASSERT_EQUAL_STRING("[16,1,{},\"t\"]", buf);
+}
+
+// The positional scanner's error paths: null message, empty array, and each way a value
+// scan can fail (unterminated string, trailing backslash, bad nested string, unclosed
+// bracket), plus wamp_get_uri's argument guards.
+void test_parser_error_paths()
+{
+    const char *s;
+    size_t len;
+    TEST_ASSERT_FALSE(wamp_element(nullptr, 0, &s, &len));  // null message
+    TEST_ASSERT_FALSE(wamp_element("[]", 0, &s, &len));     // empty array
+    TEST_ASSERT_FALSE(wamp_element("[\"abc", 0, &s, &len)); // unterminated string
+    TEST_ASSERT_FALSE(wamp_element("[\"x\\", 0, &s, &len)); // escape at end of string
+    TEST_ASSERT_FALSE(wamp_element("[{\"a", 0, &s, &len));  // bad string inside an object
+    TEST_ASSERT_FALSE(wamp_element("[[1,2", 0, &s, &len));  // unclosed nested array
+
+    char uri[16];
+    TEST_ASSERT_FALSE(wamp_get_uri("[2,\"abc\"]", 1, nullptr, sizeof(uri))); // null out
+    TEST_ASSERT_FALSE(wamp_get_uri("[2,\"abc\"]", 1, uri, 0));               // zero out_cap
+    TEST_ASSERT_FALSE(wamp_get_uri("[2]", 5, uri, sizeof(uri)));             // element not present
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -180,5 +231,8 @@ int main()
     RUN_TEST(test_parse_get_uri_and_nesting);
     RUN_TEST(test_parse_malformed);
     RUN_TEST(test_get_uri_dest_bounds);
+    RUN_TEST(test_builder_null_guards);
+    RUN_TEST(test_emit_uint_zero_and_no_args);
+    RUN_TEST(test_parser_error_paths);
     return UNITY_END();
 }

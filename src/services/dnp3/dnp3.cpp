@@ -80,7 +80,8 @@ bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *o
         return false;
     size_t user_len = (size_t)length - DNP3_LEN_OVERHEAD;
     if (user_len > DNP3_MAX_USER_DATA)
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: LEN is a uint8 (<=255) so user_len = LEN-5 <= 250 =
+                      // DNP3_MAX_USER_DATA
 
     uint16_t hcrc = dnp3_crc(buf, DNP3_HEADER_LEN);
     if ((uint16_t)(buf[DNP3_HEADER_LEN] | (buf[DNP3_HEADER_LEN + 1] << 8)) != hcrc)

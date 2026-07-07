@@ -118,6 +118,11 @@ void test_overflow_and_truncation()
     FinsHeader h = make_header();
     uint8_t small[8]; // smaller than even the header
     TEST_ASSERT_EQUAL_size_t(0, fins_build_command(small, sizeof(small), &h, 1, 1, nullptr, 0));
+    // Null destination / header / a param length with no params array.
+    uint8_t big[32];
+    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(nullptr, sizeof(big), &h, 1, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(big, sizeof(big), nullptr, 1, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, fins_build_command(big, sizeof(big), &h, 1, 1, nullptr, 4));
 
     FinsCommand c;
     const uint8_t short_buf[] = {0x80, 0x00, 0x02, 0x00}; // too short for header + MRC/SRC
