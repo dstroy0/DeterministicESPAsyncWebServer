@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6e55a99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e55a99f2405c6fbb27e133f822a1d7ba36abc48))
 - update CHANGELOG.md [skip ci] ([`9efd46d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9efd46dda2a44c8eb6f61a3fcab8bb32ef492f57))
 - update CHANGELOG.md [skip ci] ([`d6b9d3d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6b9d3dce6e0f95e93927e8edf25f1de83add239))
 - update CHANGELOG.md [skip ci] ([`e394e71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e394e7126cae9151b70068bf9680f995eba83554))
@@ -217,6 +218,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- builder guards + parser errors; EXCL dead dnp3/cip guards ([`446830d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/446830d846cb8901fb204e44d5675d543639e8ec))
 - cover parser edges + builder guards (->100%) ([`3f113aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f113aa1e933dc8a72ef54d898f6305599ef587f))
 - cover hex-decode + all reject guards (->100%) ([`1512fcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1512fcdd14a7c57471def0d6e0949310a83d120e))
 - cover remaining reject guards (->100%) ([`a7b5eca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7b5eca160ce227dd3faa7081ae38a5fa342b48d))
