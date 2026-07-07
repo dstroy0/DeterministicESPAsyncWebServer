@@ -16,10 +16,10 @@ from each example's `pio ci` size report and aggregated into
 | `CBOR`                                   | L6-Presentation/13.Cbor                 | 735.7 KB (57.5%) | 72.9 KB (22.8%)  |
 | `COAP`                                   | L7-Application/13.CoAP                  | 739.0 KB (57.7%) | 75.3 KB (23.5%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
-| `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.2 KB (55.6%) | 45.0 KB (14.1%)  |
+| `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.3 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.3 KB (57.7%) | 72.9 KB (22.8%)  |
-| `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.7 KB (20.2%)  |
-| `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.0 KB (20.3%)  |
+| `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 72.9 KB (22.8%)  |
+| `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 73.2 KB (22.9%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 72.9 KB (22.8%)  |
 | `DIAG`                                   | L7-Application/20.Diagnostics           | 733.7 KB (57.3%) | 72.8 KB (22.8%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
@@ -56,8 +56,8 @@ from each example's `pio ci` size report and aggregated into
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`    | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
 | `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 745.6 KB (58.3%) | 95.1 KB (29.7%)  |
 | `OIDC`                                   | L7-Application/50.OidcAuth              | 746.6 KB (58.3%) | 77.6 KB (24.3%)  |
-| `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.5 KB (57.9%) | 82.9 KB (25.9%)  |
-| `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.8 KB (59.7%) | 78.5 KB (24.5%)  |
+| `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.4 KB (57.9%) | 82.9 KB (25.9%)  |
+| `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.8 KB (59.7%) | 86.6 KB (27.1%)  |
 | `OTA`                                    | L7-Application/16.OTA                   | 738.6 KB (57.7%) | 108.1 KB (33.8%) |
 | `OTA_ROLLBACK`                           | L7-Application/44.OtaRollback           | 734.5 KB (57.4%) | 72.9 KB (22.8%)  |
 | `PARTITION_MONITOR`                      | L7-Application/37.PartitionMonitor      | 734.2 KB (57.4%) | 72.8 KB (22.8%)  |
@@ -77,9 +77,9 @@ from each example's `pio ci` size report and aggregated into
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SSH`                                    | L5-Session/01.SSH                       | 802.3 KB (62.7%) | 86.6 KB (27.1%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 735.3 KB (57.4%) | 72.9 KB (22.8%)  |
-| `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.3 KB (57.6%) | 64.8 KB (20.2%)  |
+| `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.4 KB (57.6%) | 73.0 KB (22.8%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
-| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.7 KB (57.6%) | 66.5 KB (20.8%)  |
+| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.7 KB (57.6%) | 74.6 KB (23.3%)  |
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 742.1 KB (58.0%) | 73.2 KB (22.9%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.7 KB (57.5%) | 73.4 KB (22.9%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
@@ -89,7 +89,7 @@ from each example's `pio ci` size report and aggregated into
 | `TOTP`                                   | L7-Application/45.Totp                  | 734.6 KB (57.4%) | 72.9 KB (22.8%)  |
 | `UDP_TELEMETRY`                          | L7-Application/39.UdpTelemetry          | 710.8 KB (55.5%) | 43.9 KB (13.7%)  |
 | `UPLOAD`                                 | L7-Application/11.FileUpload            | 774.9 KB (60.5%) | 78.0 KB (24.4%)  |
-| `VFS`                                    | L7-Application/51.Vfs                   | 775.9 KB (60.6%) | 69.1 KB (21.6%)  |
+| `VFS`                                    | L7-Application/51.Vfs                   | 776.0 KB (60.6%) | 77.3 KB (24.1%)  |
 | `WEBDAV`                                 | L7-Application/29.WebDav                | 800.9 KB (62.6%) | 111.3 KB (34.8%) |
 | `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 738.1 KB (57.7%) | 72.9 KB (22.8%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 812.2 KB (63.5%) | 118.5 KB (37.0%) |
