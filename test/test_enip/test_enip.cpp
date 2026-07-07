@@ -129,6 +129,42 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, eip_build_register_session(small, 16, nullptr));
 }
 
+// Builder null/oversize guards, the sender-context copy path in both convenience
+// builders, and the SendRRData reply extractor's short/truncated/oversize rejects.
+void test_build_and_parse_guards()
+{
+    uint8_t buf[64];
+    EipHeader h;
+    memset(&h, 0, sizeof(h));
+    const uint8_t data[] = {0xAA, 0xBB};
+
+    TEST_ASSERT_EQUAL_size_t(0, eip_build(nullptr, sizeof(buf), &h, data, 2));   // null buf
+    TEST_ASSERT_EQUAL_size_t(0, eip_build(buf, sizeof(buf), nullptr, data, 2));  // null header
+    TEST_ASSERT_EQUAL_size_t(0, eip_build(buf, sizeof(buf), &h, data, 0x10000)); // data_len > 0xFFFF
+
+    // Passing a sender context exercises the memcpy in each convenience builder.
+    const uint8_t ctx[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    size_t n = eip_build_register_session(buf, sizeof(buf), ctx);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(ctx, buf + 12, 8); // sender context at offset 12
+    n = eip_build_send_rr_data(buf, sizeof(buf), 0x01, ctx, 5, data, 2);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(ctx, buf + 12, 8);
+
+    TEST_ASSERT_EQUAL_size_t(0, eip_build_send_rr_data(nullptr, sizeof(buf), 1, nullptr, 5, data, 2)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, eip_build_send_rr_data(buf, sizeof(buf), 1, nullptr, 5, nullptr, 2)); // cip_len && !cip
+
+    const uint8_t *cip;
+    size_t clen;
+    TEST_ASSERT_FALSE(eip_parse_send_rr_data(nullptr, 8, &cip, &clen)); // null data
+    const uint8_t tooshort[7] = {0};
+    TEST_ASSERT_FALSE(eip_parse_send_rr_data(tooshort, sizeof(tooshort), &cip, &clen)); // data_len < 8
+    const uint8_t trunc_item[8] = {0, 0, 0, 0, 0, 0, 0x01, 0x00};                       // count 1 but no item octets
+    TEST_ASSERT_FALSE(eip_parse_send_rr_data(trunc_item, sizeof(trunc_item), &cip, &clen));
+    const uint8_t over_item[12] = {0, 0, 0, 0, 0, 0, 0x01, 0x00, 0xB2, 0x00, 0x10, 0x00}; // item len 16 > buffer
+    TEST_ASSERT_FALSE(eip_parse_send_rr_data(over_item, sizeof(over_item), &cip, &clen));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -138,5 +174,6 @@ int main()
     RUN_TEST(test_send_rr_data_round_trip);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_build_and_parse_guards);
     return UNITY_END();
 }

@@ -114,7 +114,8 @@ size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle,
     if (sender_context)
         memcpy(h.sender_context, sender_context, 8);
     if (eip_build(buf, cap, &h, nullptr, 0) == 0) // writes only the 24-octet header, length 0
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  unreachable: total>cap above already proved cap>=40>EIP_HEADER_SIZE, so this can't
+                  // fail
     // Patch the length field (offset 2) to the real command-data length.
     put16(buf + 2, (uint16_t)data_len);
 
