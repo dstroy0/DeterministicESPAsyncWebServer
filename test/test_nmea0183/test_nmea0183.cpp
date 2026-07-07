@@ -7,6 +7,7 @@
 // host tests.
 
 #include "services/nmea0183/nmea0183.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -99,6 +100,34 @@ void test_build_then_parse()
     TEST_ASSERT_EQUAL_MEMORY("A", m.fields[2], 1); // status = active
 }
 
+// Builder guards, the lowercase / invalid checksum-hex paths, a no-checksum sentence,
+// and the field-helper reject branches.
+void test_nmea0183_error_paths()
+{
+    char buf[96];
+    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(nullptr, sizeof(buf), "GPGGA")); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(buf, sizeof(buf), nullptr));     // null body
+    TEST_ASSERT_EQUAL_size_t(0, nmea0183_build(buf, 4, "GPGGA"));               // cap too small
+
+    Nmea0183 m;
+    // A lowercase checksum still validates (hex_val a-f). "GPGGA,1" -> checksum 0x4B -> "4b".
+    const char *body = "GPGGA,1";
+    uint8_t cs = nmea0183_checksum(body, strlen(body));
+    char lower[32];
+    snprintf(lower, sizeof(lower), "$%s*%02x\r\n", body, cs); // %02x emits lowercase hex
+    TEST_ASSERT_TRUE(nmea0183_parse(lower, strlen(lower), &m));
+
+    TEST_ASSERT_FALSE(nmea0183_parse("$GPGGA,1*4G\r\n", 13, &m)); // 'G' is not a hex digit
+    TEST_ASSERT_FALSE(nmea0183_parse("$GPGGA,123\r\n", 12, &m));  // no '*' checksum introducer
+
+    TEST_ASSERT_TRUE(nmea0183_parse(GGA, strlen(GGA), &m));
+    float f;
+    TEST_ASSERT_FALSE(nmea0183_field_float(&m, 3, &f)); // "N": non-empty but not a number
+    long v;
+    TEST_ASSERT_FALSE(nmea0183_field_int(nullptr, 0, &v)); // null message
+    TEST_ASSERT_FALSE(nmea0183_field_int(&m, 13, &v));     // empty field
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -109,5 +138,6 @@ int main()
     RUN_TEST(test_parse_rejects_bad_checksum);
     RUN_TEST(test_parse_rejects_no_dollar);
     RUN_TEST(test_build_then_parse);
+    RUN_TEST(test_nmea0183_error_paths);
     return UNITY_END();
 }
