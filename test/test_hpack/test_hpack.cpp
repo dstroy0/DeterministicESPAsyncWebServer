@@ -180,9 +180,161 @@ void test_reject_malformed()
     TEST_ASSERT_FALSE(hpack_decode(&t, trunc, sizeof trunc, scratch, sizeof scratch, collect, &c));
 }
 
+// 6.3 dynamic table size update: a huge value clamps to our storage; a zero evicts all.
+void test_dyn_size_update()
+{
+    HpackDynTable t;
+    hpack_dyn_init(&t, 4096);
+    char scratch[256];
+    Collected c;
+    const uint8_t ins[] = {0x40, 0x02, 'a', 'a', 0x02, 'b', 'b'}; // insert (aa: bb), size 36
+    TEST_ASSERT_TRUE(hpack_decode(&t, ins, sizeof ins, scratch, sizeof scratch, collect, &c));
+    TEST_ASSERT_EQUAL_INT(1, (int)t.ecount);
+    uint8_t up[8]; // size update to 100000 -> clamped to the table storage (no eviction here)
+    size_t un = hpack_encode_int(up, sizeof up, 5, 0x20, 100000);
+    Collected c2;
+    TEST_ASSERT_TRUE(hpack_decode(&t, up, un, scratch, sizeof scratch, collect, &c2));
+    TEST_ASSERT_EQUAL_INT(1, (int)t.ecount);
+    const uint8_t z[] = {0x20}; // size update to 0 -> evicts everything
+    Collected c3;
+    TEST_ASSERT_TRUE(hpack_decode(&t, z, 1, scratch, sizeof scratch, collect, &c3));
+    TEST_ASSERT_EQUAL_INT(0, (int)t.ecount);
+}
+
+// An entry larger than the max size clears the table without inserting (RFC 7541 sec 4.4).
+void test_oversize_entry_clears()
+{
+    HpackDynTable t;
+    hpack_dyn_init(&t, 40); // (aaaaa: bbbbb) = 5+5+32 = 42 > 40
+    char scratch[256];
+    Collected c;
+    const uint8_t ins[] = {0x40, 0x05, 'a', 'a', 'a', 'a', 'a', 0x05, 'b', 'b', 'b', 'b', 'b'};
+    TEST_ASSERT_TRUE(hpack_decode(&t, ins, sizeof ins, scratch, sizeof scratch, collect, &c));
+    TEST_ASSERT_EQUAL_INT(1, (int)c.h.size()); // still emitted
+    TEST_ASSERT_EQUAL_INT(0, (int)t.ecount);   // but the table was cleared, nothing indexed
+}
+
+// Resolve a name from the dynamic table (literal indexed name) and index a whole dynamic entry.
+void test_dynamic_name_and_index()
+{
+    HpackDynTable t;
+    hpack_dyn_init(&t, 4096);
+    char scratch[256];
+    Collected c;
+    const uint8_t ins[] = {0x40, 0x06, 'm', 'y', 'n', 'a', 'm', 'e', 0x02, 'v', '1'}; // insert (myname: v1)
+    TEST_ASSERT_TRUE(hpack_decode(&t, ins, sizeof ins, scratch, sizeof scratch, collect, &c));
+    // literal (incremental) with name index 62 (the dynamic "myname") + value "v2"
+    const uint8_t litname[] = {0x7e, 0x02, 'v', '2'};
+    Collected c2;
+    TEST_ASSERT_TRUE(hpack_decode(&t, litname, sizeof litname, scratch, sizeof scratch, collect, &c2));
+    TEST_ASSERT_EQUAL_STRING("myname", c2.h[0].first.c_str()); // name came from the dynamic table
+    TEST_ASSERT_EQUAL_STRING("v2", c2.h[0].second.c_str());
+    // indexed reference (0x80|62) to the newest dynamic entry (myname: v2)
+    const uint8_t idx[] = {0xbe};
+    Collected c3;
+    TEST_ASSERT_TRUE(hpack_decode(&t, idx, 1, scratch, sizeof scratch, collect, &c3));
+    TEST_ASSERT_EQUAL_STRING("myname", c3.h[0].first.c_str());
+    TEST_ASSERT_EQUAL_STRING("v2", c3.h[0].second.c_str());
+}
+
+// Decoder fail-closed paths: bad dynamic index, missing/oversized strings, bad name index.
+void test_hpack_decode_errors()
+{
+    HpackDynTable t;
+    char scratch[256];
+    Collected c;
+    hpack_dyn_init(&t, 4096); // indexed ref 62 into an empty dynamic table -> dyn_entry null
+    const uint8_t idx62[] = {0xbe};
+    TEST_ASSERT_FALSE(hpack_decode(&t, idx62, 1, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal, inline name, but the block ends before the name string
+    const uint8_t noname[] = {0x40};
+    TEST_ASSERT_FALSE(hpack_decode(&t, noname, 1, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal with name index 62 but the dynamic table is empty
+    const uint8_t badname[] = {0x7e, 0x00};
+    TEST_ASSERT_FALSE(hpack_decode(&t, badname, sizeof badname, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal-without-indexing (0x00), then truncated -> decode_literal fails
+    const uint8_t litni[] = {0x00};
+    TEST_ASSERT_FALSE(hpack_decode(&t, litni, 1, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096);              // a length varint that never terminates -> decode_int fails
+    const uint8_t badint[] = {0x40, 0xff}; // name string byte 0xff (huff + 7-bit len 0x7f, no continuation)
+    TEST_ASSERT_FALSE(hpack_decode(&t, badint, sizeof badint, scratch, sizeof scratch, collect, &c));
+}
+
+// Scratch/output too small: the resolve, emit, and decode-string bounds all fail closed.
+void test_hpack_buffer_bounds()
+{
+    HpackDynTable t;
+    Collected c;
+    char tiny[4];
+    hpack_dyn_init(&t, 4096);
+    // indexed static entry 2 (:method GET, 10 bytes) into a 4-byte scratch -> emit_indexed too big
+    const uint8_t idx2[] = {0x82};
+    TEST_ASSERT_FALSE(hpack_decode(&t, idx2, 1, tiny, sizeof tiny, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal name index 1 (:authority, 10 bytes) into a 4-byte scratch
+    const uint8_t litstatic[] = {0x41, 0x00};
+    TEST_ASSERT_FALSE(hpack_decode(&t, litstatic, sizeof litstatic, tiny, sizeof tiny, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal "" name + a 10-byte value into a 4-byte scratch
+    const uint8_t bigval[] = {0x40, 0x00, 0x0a, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    TEST_ASSERT_FALSE(hpack_decode(&t, bigval, sizeof bigval, tiny, sizeof tiny, collect, &c));
+    // indexed dynamic entry into a tiny scratch -> emit_indexed dynamic too big
+    hpack_dyn_init(&t, 4096);
+    char scratch[256];
+    const uint8_t ins[] = {0x40, 0x06, 'm', 'y', 'n', 'a', 'm', 'e', 0x02, 'v', '1'};
+    TEST_ASSERT_TRUE(hpack_decode(&t, ins, sizeof ins, scratch, sizeof scratch, collect, &c));
+    const uint8_t idxd[] = {0xbe};
+    TEST_ASSERT_FALSE(hpack_decode(&t, idxd, 1, tiny, sizeof tiny, collect, &c));
+}
+
+// Encoder: the non-Huffman string path, output-overflow fail-closed, and the size clamp on init.
+void test_hpack_encode_paths()
+{
+    // hpack_dyn_init clamps a too-large max to the table storage.
+    HpackDynTable t;
+    hpack_dyn_init(&t, 0xffffffffu);
+    TEST_ASSERT_TRUE(t.max_size <= DETWS_HPACK_TABLE_BYTES);
+
+    // A value whose Huffman form is not shorter takes the literal (non-Huffman) string path.
+    uint8_t out[64];
+    const char nul[1] = {0}; // 0x00 has a 13-bit Huffman code: 1 byte plain < huffman
+    size_t w = hpack_encode_header(out, sizeof out, "x", 1, nul, 1);
+    TEST_ASSERT_TRUE(w > 0);
+    // the same non-Huffman value, but the buffer runs out during its literal body
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_header(out, 4, "x", 1, nul, 1));
+
+    // Output buffer too small at each stage -> encode returns 0 (fails closed).
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_header(out, 0, "x-custom", 8, "value", 5)); // prefix int
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_header(out, 2, "x-custom", 8, "value", 5)); // name string
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_header(out, 8, "x-custom", 8, "value", 5)); // value string
+}
+
+// Malformed prefix-integers in the literal name-index and the size-update, and a
+// Huffman string that decodes with invalid padding.
+void test_hpack_more_errors()
+{
+    HpackDynTable t;
+    char scratch[128];
+    Collected c;
+    hpack_dyn_init(&t, 4096); // literal, name-index prefix-6 = 63 -> needs a continuation byte, none
+    const uint8_t badnameidx[] = {0x7f};
+    TEST_ASSERT_FALSE(hpack_decode(&t, badnameidx, 1, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096); // size update, prefix-5 = 31 -> needs a continuation byte, none
+    const uint8_t badupdate[] = {0x3f};
+    TEST_ASSERT_FALSE(hpack_decode(&t, badupdate, 1, scratch, sizeof scratch, collect, &c));
+    hpack_dyn_init(&t, 4096); // literal, inline name = Huffman "0" (00000) padded with 0s, not 1s
+    const uint8_t badhuff[] = {0x00, 0x81, 0x00};
+    TEST_ASSERT_FALSE(hpack_decode(&t, badhuff, sizeof badhuff, scratch, sizeof scratch, collect, &c));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_hpack_more_errors);
+    RUN_TEST(test_dyn_size_update);
+    RUN_TEST(test_oversize_entry_clears);
+    RUN_TEST(test_dynamic_name_and_index);
+    RUN_TEST(test_hpack_decode_errors);
+    RUN_TEST(test_hpack_buffer_bounds);
+    RUN_TEST(test_hpack_encode_paths);
     RUN_TEST(test_int_coding);
     RUN_TEST(test_huffman);
     RUN_TEST(test_decode_c31_and_index);
