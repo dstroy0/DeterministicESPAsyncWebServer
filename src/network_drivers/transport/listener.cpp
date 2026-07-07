@@ -43,27 +43,33 @@ extern void lowlevel_err_cb(void *arg, err_t err);
 // Always compiled (unit-testable); only consulted when the feature is enabled.
 // ---------------------------------------------------------------------------
 
-static uint32_t g_accept_window_start = 0;
-static uint16_t g_accept_count = 0;
+// Global accept-rate-limit state, owned by one instance (internal linkage): the fixed-window
+// start and the accept count in the current window. One named owner, unreachable cross-TU.
+struct AcceptThrottleCtx
+{
+    uint32_t window_start = 0;
+    uint16_t count = 0;
+};
+static AcceptThrottleCtx s_accept;
 
 bool listener_accept_allowed(uint32_t now_ms)
 {
     // Unsigned subtraction wraps correctly across the millis() rollover.
-    if ((uint32_t)(now_ms - g_accept_window_start) >= DETWS_ACCEPT_THROTTLE_WINDOW_MS)
+    if ((uint32_t)(now_ms - s_accept.window_start) >= DETWS_ACCEPT_THROTTLE_WINDOW_MS)
     {
-        g_accept_window_start = now_ms;
-        g_accept_count = 0;
+        s_accept.window_start = now_ms;
+        s_accept.count = 0;
     }
-    if (g_accept_count >= DETWS_ACCEPT_THROTTLE_MAX)
+    if (s_accept.count >= DETWS_ACCEPT_THROTTLE_MAX)
         return false;
-    g_accept_count++;
+    s_accept.count++;
     return true;
 }
 
 void listener_accept_throttle_reset(void)
 {
-    g_accept_window_start = 0;
-    g_accept_count = 0;
+    s_accept.window_start = 0;
+    s_accept.count = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,7 +84,13 @@ struct IpThrottleBucket
     uint32_t window_start; ///< millis() at the start of this bucket's current window.
     uint16_t count;        ///< connections counted from this address in the window.
 };
-static IpThrottleBucket g_ip_buckets[DETWS_PER_IP_THROTTLE_SLOTS];
+// Per-source-IP accept-throttle state, owned by one instance (internal linkage): the bounded
+// bucket table keyed by source address. One named owner, unreachable from any other TU.
+struct IpThrottleCtx
+{
+    IpThrottleBucket buckets[DETWS_PER_IP_THROTTLE_SLOTS];
+};
+static IpThrottleCtx s_iptt;
 
 bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
 {
@@ -88,7 +100,7 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
     int empty = -1, expired = -1, lru = 0;
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
-        IpThrottleBucket *b = &g_ip_buckets[i];
+        IpThrottleBucket *b = &s_iptt.buckets[i];
         if (b->addr.family != DET_IP_NONE && det_ip_equal(&b->addr, ip))
         {
             // Unsigned subtraction wraps correctly across the millis() rollover.
@@ -112,7 +124,7 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
             if (expired < 0 && (uint32_t)(now_ms - b->window_start) >= DETWS_PER_IP_THROTTLE_WINDOW_MS)
                 expired = i;
             // Track the oldest active bucket (largest elapsed) as the eviction victim.
-            if ((uint32_t)(now_ms - b->window_start) > (uint32_t)(now_ms - g_ip_buckets[lru].window_start))
+            if ((uint32_t)(now_ms - b->window_start) > (uint32_t)(now_ms - s_iptt.buckets[lru].window_start))
                 lru = i;
         }
     }
@@ -120,7 +132,7 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
     // No bucket yet for this address: claim one - empty, else expired, else evict
     // the least-recently-started active bucket.
     int slot = (empty >= 0) ? empty : (expired >= 0) ? expired : lru;
-    IpThrottleBucket *b = &g_ip_buckets[slot];
+    IpThrottleBucket *b = &s_iptt.buckets[slot];
     b->addr = *ip;
     b->window_start = now_ms;
     b->count = 1;
@@ -131,9 +143,9 @@ void listener_per_ip_throttle_reset(void)
 {
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
-        g_ip_buckets[i].addr.family = DET_IP_NONE;
-        g_ip_buckets[i].window_start = 0;
-        g_ip_buckets[i].count = 0;
+        s_iptt.buckets[i].addr.family = DET_IP_NONE;
+        s_iptt.buckets[i].window_start = 0;
+        s_iptt.buckets[i].count = 0;
     }
 }
 
@@ -149,8 +161,14 @@ struct IpAllowRule
     DetIp network;      ///< network address (family DET_IP_V4 / V6; DET_IP_NONE marks unused).
     uint8_t prefix_len; ///< CIDR prefix length: 0..32 for v4, 0..128 for v6.
 };
-static IpAllowRule g_ip_allow[DETWS_IP_ALLOWLIST_SLOTS];
-static uint8_t g_ip_allow_count = 0;
+// IP allowlist state, owned by one instance (internal linkage): the CIDR rule table and its
+// count (empty = allow all). One named owner, unreachable from any other translation unit.
+struct IpAllowCtx
+{
+    IpAllowRule rules[DETWS_IP_ALLOWLIST_SLOTS];
+    uint8_t count = 0;
+};
+static IpAllowCtx s_allow;
 
 bool listener_ip_allow_add(const DetIp *network, uint8_t prefix_len)
 {
@@ -159,11 +177,11 @@ bool listener_ip_allow_add(const DetIp *network, uint8_t prefix_len)
     int bits = (network->family == DET_IP_V4) ? 32 : (network->family == DET_IP_V6 ? 128 : -1);
     if (bits < 0 || prefix_len > (uint8_t)bits)
         return false; // reject a malformed family or an over-long prefix
-    if (g_ip_allow_count >= DETWS_IP_ALLOWLIST_SLOTS)
+    if (s_allow.count >= DETWS_IP_ALLOWLIST_SLOTS)
         return false;
-    g_ip_allow[g_ip_allow_count].network = *network;
-    g_ip_allow[g_ip_allow_count].prefix_len = prefix_len;
-    g_ip_allow_count++;
+    s_allow.rules[s_allow.count].network = *network;
+    s_allow.rules[s_allow.count].prefix_len = prefix_len;
+    s_allow.count++;
     return true;
 }
 
@@ -220,12 +238,12 @@ bool listener_ip_allow_add_cidr(const char *cidr)
 
 bool listener_ip_allowed(const DetIp *ip)
 {
-    if (g_ip_allow_count == 0)
+    if (s_allow.count == 0)
         return true; // no rules configured -> allow all (fail-open by design)
-    for (uint8_t i = 0; i < g_ip_allow_count; i++)
+    for (uint8_t i = 0; i < s_allow.count; i++)
     {
         // det_ip_prefix_match requires the same family, so a v4 peer never matches a v6 rule.
-        if (det_ip_prefix_match(ip, &g_ip_allow[i].network, g_ip_allow[i].prefix_len))
+        if (det_ip_prefix_match(ip, &s_allow.rules[i].network, s_allow.rules[i].prefix_len))
             return true;
     }
     return false;
@@ -234,30 +252,36 @@ bool listener_ip_allowed(const DetIp *ip)
 void listener_ip_allowlist_reset(void)
 {
     for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
-        g_ip_allow[i].network.family = DET_IP_NONE;
-    g_ip_allow_count = 0;
+        s_allow.rules[i].network.family = DET_IP_NONE;
+    s_allow.count = 0;
 }
 
 #if DETWS_WORKER_COUNT > 1
 // Per-worker event queues: each worker drains only its own queue, so connection
 // slots partition across workers with no shared-queue contention. Static BSS, no
 // heap. Created once (idempotent) before the first accept can fire.
-static StaticQueue_t s_wq_struct[DETWS_WORKER_COUNT];
-static uint8_t s_wq_storage[DETWS_WORKER_COUNT][EVT_QUEUE_DEPTH * sizeof(TcpEvt)];
-static QueueHandle_t s_wq[DETWS_WORKER_COUNT] = {nullptr};
+// Per-worker event-queue state, owned by one instance (internal linkage): the static queue
+// control blocks, their storage, and the queue handles. One named owner, unreachable cross-TU.
+struct ListenerQueueCtx
+{
+    StaticQueue_t wq_struct[DETWS_WORKER_COUNT];
+    uint8_t wq_storage[DETWS_WORKER_COUNT][EVT_QUEUE_DEPTH * sizeof(TcpEvt)];
+    QueueHandle_t wq[DETWS_WORKER_COUNT] = {nullptr};
+};
+static ListenerQueueCtx s_lq;
 
 void listener_worker_queues_init(void)
 {
     for (int i = 0; i < DETWS_WORKER_COUNT; i++)
-        if (!s_wq[i])
-            s_wq[i] = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), s_wq_storage[i], &s_wq_struct[i]);
+        if (!s_lq.wq[i])
+            s_lq.wq[i] = xQueueCreateStatic(EVT_QUEUE_DEPTH, sizeof(TcpEvt), s_lq.wq_storage[i], &s_lq.wq_struct[i]);
 }
 
 QueueHandle_t listener_worker_queue(int worker_id)
 {
     if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT)
         return nullptr;
-    return s_wq[worker_id];
+    return s_lq.wq[worker_id];
 }
 #endif // DETWS_WORKER_COUNT > 1
 
@@ -267,9 +291,9 @@ bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
     // Route by the slot's owner so the owning worker is the sole consumer.
     (void)listener_id;
     uint8_t owner = conn_pool[evt->slot_id].owner;
-    if (owner >= DETWS_WORKER_COUNT || !s_wq[owner])
+    if (owner >= DETWS_WORKER_COUNT || !s_lq.wq[owner])
         return false;
-    if (xQueueSend(s_wq[owner], evt, 0) != pdTRUE)
+    if (xQueueSend(s_lq.wq[owner], evt, 0) != pdTRUE)
         return false;
 #ifdef ARDUINO
     detws_worker_wake(owner); // nudge the owning worker so it services this now
