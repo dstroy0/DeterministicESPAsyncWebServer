@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bd8e0c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd8e0c85c8e4ea9175561a407e5a17d7a44c27a2))
 - update CHANGELOG.md [skip ci] ([`96275ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96275ced37a8ad91cfad94bb1c2fe86d39564987))
 - update CHANGELOG.md [skip ci] ([`c22e632`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c22e6321999be835f8bc875510eb0595fc5e8ff7))
 - update CHANGELOG.md [skip ci] ([`062a7a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062a7a297d3d9aa70845a2c28086664b1efff7e6))
@@ -234,6 +235,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover build cap/null guards + rdm_parse rejects (92->100%) ([`24c8522`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24c85225fa68388d59ab880eb06b76ec55977d28))
 - cover build/checksum-hex/field-helper rejects (90->100%) ([`c4a72f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4a72f7b3827326d12db9beabce6c698e3db0471))
 - cover builder/parser/CRC reject + skip branches (87->100%) ([`e4b7da2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4b7da265459ae7ba83ebb95aab9ffb20388c867))
 - cover writer/reader error + float + 16-bit-id paths (86->100%) ([`141af00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/141af002b1135c2ef44d34fa21a03e8e3894cf69))
