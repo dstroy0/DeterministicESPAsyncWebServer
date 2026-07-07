@@ -21,7 +21,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 72.9 KB (22.8%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 73.2 KB (22.9%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 72.9 KB (22.8%)  |
-| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.7 KB (57.3%) | 72.8 KB (22.8%)  |
+| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 69.7 KB (21.8%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.1 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
