@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ebdefea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebdefea9c69a94007118d2af4fd973502904bf53))
 - update test report [skip ci] ([`33a6e6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33a6e6cffa1bb90bbfc0debd0c6213d733967b58))
 - update CHANGELOG.md [skip ci] ([`7ba1ba2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba1ba2fb85ea181ad96761b80ea09ec21bfb654))
 - update test report [skip ci] ([`643443b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/643443b413d01dd44a7e73a2191009788ad8029d))
@@ -210,6 +211,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover every dialogue error/overflow branch (78.8%->100%) ([`5314982`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53149823767e10e01d88a86a4600173e8e8f1744))
 - cover snmp_v3 USM edge rejects; annotate provably-dead guards ([`8aa9a85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8aa9a859d2df89a78cd2d6f3ccfbd9cd05e3812e))
 - cover BER long-form len + all parse fail-paths (64.7%->91.4%) ([`6c3d8c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c3d8c56281730585400801b1c6b6a79aa2a15eb))
 - cover the dynamic table + error/overflow paths (69% -> 99.5%) ([`f5ce15e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5ce15e736e059234c650310a5263ca6aa325d99))
