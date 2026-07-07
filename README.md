@@ -9,31 +9,35 @@
 A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC in progress), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 # Active development
+
 > [!WARNING]
-> **Expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks. 
-> **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility** 
->   - include paths, method signatures, defaults, and wire behavior can change between releases. 
-> **We do not write backwards-compatibility shims** 
->   - We **only** support the current library, toolchains, and platforms; removing cruft is the price of a clean, auditable, deterministic core. 
-> **Releases are version-tagged**
->   - Pin an exact version if you need stability until we lock the core.
-> **The code is the source of truth** 
->   - Read [CHANGELOG.md](docs/CHANGELOG.md) before every upgrade.
+> **Expect breaking changes.** This library ships fast: on a busy day that can mean dozens of new features and several public-API breaks.
+> **We fix things the right way and put security and correctness first, even when that breaks backwards compatibility**
+>
+> - include paths, method signatures, defaults, and wire behavior can change between releases.
+>   **We do not write backwards-compatibility shims**
+> - We **only** support the current library, toolchains, and platforms; removing cruft is the price of a clean, auditable, deterministic core.
+>   **Releases are version-tagged**
+> - Pin an exact version if you need stability until we lock the core.
+>   **The code is the source of truth**
+> - Read [CHANGELOG.md](docs/CHANGELOG.md) before every upgrade.
 
 # Audit status
+
 > [!WARNING]
-> **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY** 
->   - What this means is that no one other than me and the tooling that I have written is examining the security aspects of this library.. yet.
->     The core crypto is provably sound from known answer tests, the problems arise in everything else, even if the crypto **IS** sound, which
->     we wont know until some security reasearcher gets bored and checks my implementation. I am dumping the core and RE a lot of what is happening
->     in opcode, but I am just ONE security researcher. Furthermore, for example, I just implemented
->     the owner ctx pattern, which is standard, but there are many other patterns that are currently lacking, like the framing of a house with no walls.
->     The exploitable surface is still undefined, really, even with all the testing, until I am finished implementing HTTP/3. Then I wont have any excuses
->     left to keep the core unlocked, which means we can really start to analyze what happens in memory cycle-by-cycle, for fun and to teach.
-> **YOU ARE THE 3RD PARTY** 
->   - Your contributions are valuable. Please report your findings, If your bug is untracked and genuine you will be credited prominently
->     in the src/ in docs/BUGS.md and any other system it touches, could be architecture, api, whichever subsystem 
->     with your preference of credit (name, handle, email, anonymous, your preference). 
+> **THIS LIBRARY HAS NOT BEEN AUDITED BY A 3RD PARTY**
+>
+> - What this means is that no one other than me and the tooling that I have written is examining the security aspects of this library.. yet.
+>   The core crypto is provably sound from known answer tests, the problems arise in everything else, even if the crypto **IS** sound, which
+>   we wont know until some security reasearcher gets bored and checks my implementation. I am dumping the core and RE a lot of what is happening
+>   in opcode, but I am just ONE security researcher. Furthermore, for example, I just implemented
+>   the owner ctx pattern, which is standard, but there are many other patterns that are currently lacking, like the framing of a house with no walls.
+>   The exploitable surface is still undefined, really, even with all the testing, until I am finished implementing HTTP/3. Then I wont have any excuses
+>   left to keep the core unlocked, which means we can really start to analyze what happens in memory cycle-by-cycle, for fun and to teach.
+>   **YOU ARE THE 3RD PARTY**
+> - Your contributions are valuable. Please report your findings, If your bug is untracked and genuine you will be credited prominently
+>   in the src/ in docs/BUGS.md and any other system it touches, could be architecture, api, whichever subsystem
+>   with your preference of credit (name, handle, email, anonymous, your preference).
 >
 >     [docs/AUDIT.md](docs/AUDIT.md) [docs/STANDARDS.md](docs/STANDARDS.md)
 
@@ -482,7 +486,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `PROMISC`         |            11.2 KB |         < 0.5 KB |
 | Core  | `IPV6`            |             0.6 KB |         < 0.5 KB |
 | L4    | `PER_IP_THROTTLE` |           < 0.5 KB |           0.6 KB |
-| L5    | `SSH`             |       66.6-67.1 KB |     21.8-21.9 KB |
+| L5    | `SSH`             |       66.5-66.7 KB |     21.8-21.9 KB |
 | L5    | `TELNET`          |           < 0.5 KB |           0.7 KB |
 | L6    | `TLS`             |           100.0 KB |          49.9 KB |
 | L6    | `WS_DEFLATE`      |         2.8-7.9 KB |       8.0-9.5 KB |
