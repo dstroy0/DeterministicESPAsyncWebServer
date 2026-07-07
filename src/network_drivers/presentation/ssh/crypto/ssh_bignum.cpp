@@ -21,7 +21,7 @@
  * ─── R² mod p ────────────────────────────────────────────────────────────
  * R = 2^2048.  R² mod p = 2^4096 mod p.
  * It is computed once at startup by bn_init() via 4096 doublings mod p,
- * and stored in the static g14_R2 constant.
+ * and stored in the static s_g14.r2 constant.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -63,11 +63,15 @@ const SshBigNum group14_g = {{
 // so this (data-dependent, non-constant-time) machinery must never be compiled
 // into firmware.  Guarded out on ARDUINO accordingly (SECURITY.md §timing).
 #ifndef ARDUINO
-// R mod p = 2^2048 - p  (computed as two's complement of p in 2048 bits)
-static SshBigNum g14_R1; // initialized by bn_init()
-// R^2 mod p = 2^4096 mod p (computed by bn_init() via repeated doubling)
-static SshBigNum g14_R2; // initialized by bn_init()
-static bool g14_initialized = false;
+// Group14 Montgomery constants, owned by one instance (internal linkage): R mod p, R^2 mod p,
+// and the init flag (all filled by bn_init()). One named owner, unreachable cross-TU.
+struct Group14Ctx
+{
+    SshBigNum r1; // R mod p = 2^2048 - p (two's complement of p in 2048 bits)
+    SshBigNum r2; // R^2 mod p = 2^4096 mod p (bn_init() via repeated doubling)
+    bool initialized = false;
+};
+static Group14Ctx s_g14;
 #endif // !ARDUINO
 
 // ---------------------------------------------------------------------------
@@ -118,7 +122,7 @@ static uint32_t bn_shl1(uint32_t *a, int n)
 
 static void bn_init(void)
 {
-    if (g14_initialized)
+    if (s_g14.initialized)
         return;
 
     // R mod p = 2^2048 mod p = 2^2048 - p
@@ -129,7 +133,7 @@ static void bn_init(void)
         for (int i = 0; i < SSH_BN_LIMBS; i++)
         {
             uint64_t v = (uint64_t)0 - group14_p.d[i] - borrow;
-            g14_R1.d[i] = (uint32_t)v;
+            s_g14.r1.d[i] = (uint32_t)v;
             borrow = (v >> 32) & 1u;
         }
         // borrow == 1 here (expected - we wrapped around 2^2048), which is
@@ -138,16 +142,16 @@ static void bn_init(void)
 
     // R^2 mod p = 2^4096 mod p.
     // Compute by starting from R mod p and doubling it 2048 times mod p.
-    memcpy(g14_R2.d, g14_R1.d, sizeof(SshBigNum));
+    memcpy(s_g14.r2.d, s_g14.r1.d, sizeof(SshBigNum));
     for (int i = 0; i < 2048; i++)
     {
-        uint32_t overflow = bn_shl1(g14_R2.d, SSH_BN_LIMBS);
+        uint32_t overflow = bn_shl1(s_g14.r2.d, SSH_BN_LIMBS);
         // If overflow bit set OR result >= p, subtract p.
-        if (overflow || bn_cmp_raw(g14_R2.d, group14_p.d, SSH_BN_LIMBS) >= 0)
-            bn_sub_inplace(g14_R2.d, group14_p.d, SSH_BN_LIMBS);
+        if (overflow || bn_cmp_raw(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS) >= 0)
+            bn_sub_inplace(s_g14.r2.d, group14_p.d, SSH_BN_LIMBS);
     }
 
-    g14_initialized = true;
+    s_g14.initialized = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -304,7 +308,7 @@ void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *e
 
 void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *exp)
 {
-    bn_init(); // ensure g14_R1, g14_R2 are computed
+    bn_init(); // ensure s_g14.r1, s_g14.r2 are computed
 
     // Map crypto_work regions (layout documented in ssh_bignum.h):
     SshBigNum *base_mont = (SshBigNum *)(crypto_work + 0);
@@ -314,10 +318,10 @@ void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *e
 
     // Convert base to Montgomery form: base_mont = base * R mod p
     //   = MonPro(base, R^2 mod p)
-    bn_monpro(base_mont, base, &g14_R2);
+    bn_monpro(base_mont, base, &s_g14.r2);
 
-    // result = 1 in Montgomery form = R mod p = g14_R1
-    memcpy(result->d, g14_R1.d, sizeof(SshBigNum));
+    // result = 1 in Montgomery form = R mod p = s_g14.r1
+    memcpy(result->d, s_g14.r1.d, sizeof(SshBigNum));
 
     // Left-to-right binary square-and-multiply (MSB first: d[63]..d[0], bit 31..0)
     for (int i = SSH_BN_LIMBS - 1; i >= 0; i--)
