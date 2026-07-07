@@ -108,7 +108,6 @@ struct FileSend
     bool keep;        ///< keep-alive vs close at completion.
     bool active;      ///< a transfer is in progress on this slot.
 };
-static FileSend g_file_send[MAX_CONNS];
 #endif
 
 // Per-slot chunked-send continuation. Mirrors FileSend but pulls body pieces from
@@ -123,7 +122,18 @@ struct ChunkSend
     bool active;        ///< a chunked response is in progress on this slot.
     bool raw;           ///< HTTP/1.0 client: stream the body unframed, close-delimited (no chunk wrapping).
 };
-static ChunkSend g_chunk_send[MAX_CONNS];
+
+// All per-slot outbound-transfer continuations, owned by one instance (internal linkage): the
+// cross-loop file-send state (when file serving is enabled) and the chunked-send state. Grouped
+// so it is one named owner, unreachable from any other translation unit.
+struct SendCtx
+{
+#if DETWS_ENABLE_FILE_SERVING
+    FileSend file[MAX_CONNS];
+#endif
+    ChunkSend chunk[MAX_CONNS];
+};
+static SendCtx s_send;
 
 /**
  * @brief Convert an HTTP status code to its standard reason phrase.
@@ -497,19 +507,29 @@ int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
     return DETWS_OK;
 }
 
-// Server instance whose pipeline the worker task pumps, plus the trampoline the
-// generic worker layer calls (it has no DetWebServer type). Set in begin().
-static DetWebServer *s_worker_server = nullptr;
+// Server instance bindings, owned by one instance (internal linkage): the instance whose
+// pipeline the worker task pumps, the HTTP/3-running flag, and the instance the HTTP on_poll
+// forwarder dispatches into. The library serves from a single DetWebServer (the slot pools are
+// global singletons), which is exactly what these instance pointers model. One named owner,
+// unreachable from any other translation unit. Set in begin().
+struct InstanceCtx
+{
+    DetWebServer *worker_server = nullptr;
+#if DETWS_ENABLE_HTTP3
+    bool h3_running = false;
+#endif
+    DetWebServer *http_instance = nullptr;
+};
+static InstanceCtx s_inst;
 static void detws_pump_trampoline(int worker_id)
 {
-    if (s_worker_server)
-        s_worker_server->service_once(worker_id);
+    if (s_inst.worker_server)
+        s_inst.worker_server->service_once(worker_id);
 }
 
 #if DETWS_ENABLE_HTTP3
 // The quic_server request seam has no DetWebServer type; this trampoline forwards a completed
 // HTTP/3 request into the instance's shared route dispatcher (app == the DetWebServer *).
-static bool s_h3_running = false;
 static void detws_h3_request_trampoline(void *app, uint32_t conn_id, uint64_t stream_id, const char *method,
                                         const char *path, const char *authority, const uint8_t *body, size_t body_len)
 {
@@ -547,11 +567,10 @@ static void detws_h3_rng(uint8_t *out, size_t len)
 // this forwarder as the HTTP ProtoHandler's on_poll, so the worker loop pumps HTTP through the one
 // uniform seam. The library serves from a single DetWebServer (the slot pools are global singletons),
 // which is exactly what this one instance pointer models.
-static DetWebServer *s_http_instance = nullptr;
 static void detws_http_on_poll(uint8_t slot)
 {
-    if (s_http_instance)
-        s_http_instance->http_poll_slot(slot);
+    if (s_inst.http_instance)
+        s_inst.http_instance->http_poll_slot(slot);
 }
 
 int32_t DetWebServer::begin(const WebServerConfig *cfg)
@@ -608,13 +627,13 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         h3cfg.cert_len = _h3_cert_len;
         memcpy(h3cfg.ed25519_seed, _h3_seed, sizeof(h3cfg.ed25519_seed));
         h3cfg.rng = detws_h3_rng;
-        s_h3_running = quic_server_begin(_h3_port, &h3cfg, detws_h3_request_trampoline, this);
+        s_inst.h3_running = quic_server_begin(_h3_port, &h3cfg, detws_h3_request_trampoline, this);
     }
 #endif
 #ifdef ARDUINO
     // Routes/listeners are now fixed; start the worker task(s) that drive the
     // pipeline off the user's loop(). On host the pipeline runs inline via handle().
-    s_worker_server = this;
+    s_inst.worker_server = this;
     detws_workers_start(detws_pump_trampoline);
 #endif
     return DETWS_OK;
@@ -1256,7 +1275,7 @@ void DetWebServer::service_once(int worker_id)
     // pumps HTTP through the uniform ProtoHandler::on_poll seam (see http_poll_slot). Done here (not
     // just begin()) so test paths that drive service_once() directly also install it, and so it always
     // targets the running instance. Two pointer stores; negligible at poll cadence.
-    s_http_instance = this;
+    s_inst.http_instance = this;
     http_proto_set_poll(detws_http_on_poll);
 
     server_tick(worker_id);
@@ -1264,7 +1283,7 @@ void DetWebServer::service_once(int worker_id)
 #if DETWS_ENABLE_HTTP3
     // Drive the QUIC/HTTP-3 server: ingest queued datagrams, run the engines (which dispatch requests
     // through this instance's routes), flush replies. One worker owns it, so requests stay single-threaded.
-    if (worker_id == 0 && s_h3_running)
+    if (worker_id == 0 && s_inst.h3_running)
         quic_server_poll(detws_millis());
 #endif
 
@@ -1301,14 +1320,14 @@ void DetWebServer::http_poll_slot(uint8_t i)
 #if DETWS_ENABLE_FILE_SERVING
     // A file response in flight owns the slot: page out the next window and
     // skip the rest of the pipeline until the whole body has been sent.
-    if (g_file_send[i].active)
+    if (s_send.file[i].active)
     {
         file_send_pump(i);
         return;
     }
 #endif
     // Likewise a chunked response in flight: pull + frame the next window.
-    if (g_chunk_send[i].active)
+    if (s_send.chunk[i].active)
     {
         chunk_send_pump(i);
         return;
@@ -2233,7 +2252,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
         return;
     }
 
-    ChunkSend &s = g_chunk_send[slot_id];
+    ChunkSend &s = s_send.chunk[slot_id];
     s.source = source;
     s.ctx = ctx;
     s.status = code;
@@ -2248,7 +2267,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
 // the send window each worker loop, resuming on later loops as the window drains.
 void DetWebServer::chunk_send_pump(uint8_t slot_id)
 {
-    ChunkSend &s = g_chunk_send[slot_id];
+    ChunkSend &s = s_send.chunk[slot_id];
     if (!s.active)
         return;
 
@@ -3201,7 +3220,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     // window now and resumes on later loops as the window drains, so a file larger
     // than TCP_SND_BUF is never truncated. The pump owns the file and calls
     // resp_end() at completion - do not close f or end the response here.
-    FileSend &s = g_file_send[slot_id];
+    FileSend &s = s_send.file[slot_id];
     s.file = f; // shared handle on ARDUINO; the local f going out of scope keeps it open
     s.off = body_off;
     s.remaining = body_len;
@@ -3218,7 +3237,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 // truncates, never blocks the worker.
 void DetWebServer::file_send_pump(uint8_t slot_id)
 {
-    FileSend &s = g_file_send[slot_id];
+    FileSend &s = s_send.file[slot_id];
     if (!s.active)
         return;
 
@@ -3361,7 +3380,13 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
 // services/webdav/webdav.{h,cpp} and is host-tested; this part needs a real FS.
 // ---------------------------------------------------------------------------
 
-static char g_dav_buf[DETWS_WEBDAV_BUF_SIZE]; // 207 Multi-Status scratch (BSS)
+// WebDAV response scratch, owned by one instance (internal linkage): the 207 Multi-Status build
+// buffer (BSS). One named owner, unreachable from any other translation unit.
+struct DavBufCtx
+{
+    char buf[DETWS_WEBDAV_BUF_SIZE];
+};
+static DavBufCtx s_dav;
 
 // http_rfc1123() lives in the FILE_SERVING section above (WEBDAV requires
 // FILE_SERVING), shared by both; used here for getlastmodified / creationdate.
@@ -3522,7 +3547,6 @@ static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size
 // Per-connection streaming-PUT state for WebDAV: each slot streams its body to its
 // own file, so concurrent PUTs never clobber one another, and a transfer is never
 // bounded by BODY_BUF_SIZE. Indexed by the request's slot (req - http_pool).
-static DetWebServer *g_dav_stream_srv = nullptr;
 struct DavPut
 {
     fs::File file;  ///< destination file for this slot's PUT.
@@ -3531,26 +3555,35 @@ struct DavPut
     bool existed;   ///< target existed before this PUT (204 vs 201).
     size_t written; ///< bytes written so far.
 };
-static DavPut g_dav_put[MAX_CONNS];
+
+// WebDAV streaming-PUT state, owned by one instance (internal linkage): the serving instance
+// and the per-slot destination-file state (each slot streams to its own file, so concurrent
+// PUTs never clobber one another). One named owner, unreachable from any other TU.
+struct DavPutCtx
+{
+    DetWebServer *stream_srv = nullptr;
+    DavPut put[MAX_CONNS];
+};
+static DavPutCtx s_davput;
 
 bool DetWebServer::dav_put_begin_tramp(HttpReq *req)
 {
-    return g_dav_stream_srv && g_dav_stream_srv->dav_stream_put_begin(req);
+    return s_davput.stream_srv && s_davput.stream_srv->dav_stream_put_begin(req);
 }
 void DetWebServer::dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len)
 {
-    if (g_dav_stream_srv)
-        g_dav_stream_srv->dav_stream_put_data(req, data, len);
+    if (s_davput.stream_srv)
+        s_davput.stream_srv->dav_stream_put_data(req, data, len);
 }
 void DetWebServer::dav_put_abort_tramp(HttpReq *req)
 {
     // The PUT was torn down before the handler ran: close the half-written file so
     // the handle is not leaked (a leak eventually exhausts LittleFS's open slots).
     uint8_t slot = (uint8_t)(req - http_pool);
-    if (slot < MAX_CONNS && g_dav_put[slot].active)
+    if (slot < MAX_CONNS && s_davput.put[slot].active)
     {
-        g_dav_put[slot].file.close();
-        g_dav_put[slot].active = false;
+        s_davput.put[slot].file.close();
+        s_davput.put[slot].active = false;
     }
 }
 
@@ -3573,7 +3606,7 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
         char fs_path[256];
         if (dav_resolve_path(r, req->path, fs_path, sizeof(fs_path)) != 0)
             return false; // traversal / too long - let it buffer; the handler answers 403/414
-        DavPut *d = &g_dav_put[slot];
+        DavPut *d = &s_davput.put[slot];
         d->active = false;
         d->error = false;
         d->written = 0;
@@ -3593,7 +3626,7 @@ void DetWebServer::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t
     uint8_t slot = (uint8_t)(req - http_pool);
     if (slot >= MAX_CONNS)
         return;
-    DavPut *d = &g_dav_put[slot];
+    DavPut *d = &s_davput.put[slot];
     if (d->active && !d->error)
     {
         if (d->file.write(data, len) != len)
@@ -3624,7 +3657,7 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
 
 #if DETWS_ENABLE_STREAM_BODY
     // Stream PUT bodies straight to the file (one global sink; see DETWS_ENABLE_STREAM_BODY).
-    g_dav_stream_srv = this;
+    s_davput.stream_srv = this;
     http_parser_set_stream_hooks(dav_put_begin_tramp, dav_put_data_tramp, dav_put_abort_tramp);
 #endif
 }
@@ -3721,7 +3754,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         if (req->body_streaming)
         {
             // The body was written to this slot's file as it arrived (dav_stream_put_*).
-            DavPut *d = &g_dav_put[slot_id];
+            DavPut *d = &s_davput.put[slot_id];
             if (d->active)
             {
                 d->file.close();
@@ -3859,7 +3892,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
 #endif
         char token[48];
         snprintf(token, sizeof(token), "opaquelocktoken:%08lx-detws", tok);
-        snprintf(g_dav_buf, sizeof(g_dav_buf),
+        snprintf(s_dav.buf, sizeof(s_dav.buf),
                  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                  "<D:prop xmlns:D=\"DAV:\"><D:lockdiscovery><D:activelock>"
                  "<D:locktype><D:write/></D:locktype>"
@@ -3872,7 +3905,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         char lt[64];
         snprintf(lt, sizeof(lt), "<%s>", token);
         add_response_header(slot_id, "Lock-Token", lt);
-        send(slot_id, 200, "application/xml; charset=utf-8", g_dav_buf);
+        send(slot_id, 200, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }
 
@@ -3919,11 +3952,11 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             }
         }
 
-        size_t cap = sizeof(g_dav_buf), len = 0;
-        len = webdav_ms_begin(g_dav_buf, cap, len);
+        size_t cap = sizeof(s_dav.buf), len = 0;
+        len = webdav_ms_begin(s_dav.buf, cap, len);
         char mt[40];
         http_rfc1123(mtime, mt, sizeof(mt));
-        len = webdav_ms_entry(g_dav_buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
+        len = webdav_ms_entry(s_dav.buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
 
         if (isdir && depth >= 1)
         {
@@ -3948,15 +3981,15 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                 http_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
                 c.close();
                 size_t before = len;
-                len = webdav_ms_entry(g_dav_buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
+                len = webdav_ms_entry(s_dav.buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
                 if (len == before)
                     break; // buffer full - stop listing
                 count++;
             }
         }
         f.close();
-        len = webdav_ms_end(g_dav_buf, cap, len);
-        send(slot_id, 207, "application/xml; charset=utf-8", g_dav_buf);
+        len = webdav_ms_end(s_dav.buf, cap, len);
+        send(slot_id, 207, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }
 
@@ -3969,13 +4002,13 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 404, "");
             return;
         }
-        size_t n = webdav_proppatch_ms(g_dav_buf, sizeof(g_dav_buf), req->path, (const char *)req->body, req->body_len);
+        size_t n = webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
         if (!n)
         {
             dav_send_status(slot_id, 507, ""); // Insufficient Storage: response did not fit the buffer
             return;
         }
-        send(slot_id, 207, "application/xml; charset=utf-8", g_dav_buf);
+        send(slot_id, 207, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }
 
