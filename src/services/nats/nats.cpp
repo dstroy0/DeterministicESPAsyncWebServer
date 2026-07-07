@@ -26,7 +26,8 @@ static void put_str(Buf *b, const char *s)
     if (!b->ok || !s)
     {
         if (!s)
-            b->ok = false;
+            b->ok = false; // GCOVR_EXCL_LINE  unreachable: every put_str arg is a literal or a checked/guarded non-null
+                           // string
         return;
     }
     size_t n = strlen(s);
@@ -185,7 +186,8 @@ static size_t find_crlf(const char *buf, size_t len)
 static bool parse_uint(const char *s, size_t n, size_t *out)
 {
     if (n == 0)
-        return false;
+        return false; // GCOVR_EXCL_LINE  unreachable: the sole caller passes a space-delimited MSG token, always
+                      // length>=1
     size_t v = 0;
     for (size_t i = 0; i < n; i++)
     {

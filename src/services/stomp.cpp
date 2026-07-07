@@ -156,7 +156,8 @@ bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *con
     out->command = buf + i;
     out->command_len = line_len(buf, i, nl);
     if (out->command_len == 0)
-        return false; // empty command
+        return false; // GCOVR_EXCL_LINE  unreachable: leading EOLs are skipped so buf[i] is non-newline =>
+                      // command_len>=1
     size_t cur = nl + 1;
 
     // Header lines until a blank line.
@@ -201,7 +202,7 @@ bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *con
         }
         cur = nl + 1;
         if (cur > len)
-            return false;
+            return false; // GCOVR_EXCL_LINE  unreachable: the nl>=len check above guarantees nl<len, so cur=nl+1<=len
     }
 
     // Body.
