@@ -49,14 +49,20 @@ struct TelnetConn
     char line[TELNET_BUF_SIZE];
 };
 
-static TelnetConn g_tn[MAX_TELNET_CONNS];
-static TelnetCommandCb g_cmd_cb = nullptr;
+// All telnet presentation state, owned by one instance (internal linkage): the per-slot
+// connection table and the command callback. One named owner, unreachable cross-TU.
+struct TelnetCtx
+{
+    TelnetConn tn[MAX_TELNET_CONNS];
+    TelnetCommandCb cmd_cb = nullptr;
+};
+static TelnetCtx s_telnet;
 
 static TelnetConn *find_conn(uint8_t slot)
 {
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
-        if (g_tn[i].used && g_tn[i].slot == slot)
-            return &g_tn[i];
+        if (s_telnet.tn[i].used && s_telnet.tn[i].slot == slot)
+            return &s_telnet.tn[i];
     return nullptr;
 }
 
@@ -103,9 +109,9 @@ void telnet_accept(uint8_t slot)
 {
     TelnetConn *t = nullptr;
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
-        if (!g_tn[i].used)
+        if (!s_telnet.tn[i].used)
         {
-            t = &g_tn[i];
+            t = &s_telnet.tn[i];
             break;
         }
     if (!t)
@@ -141,8 +147,8 @@ static void handle_data(uint8_t slot, TelnetConn *t, uint8_t b)
     {
         t->line[t->len] = '\0';
         raw_send(slot, "\r\n", 2);
-        if (g_cmd_cb)
-            g_cmd_cb(t->line, (uint8_t)(t - g_tn));
+        if (s_telnet.cmd_cb)
+            s_telnet.cmd_cb(t->line, (uint8_t)(t - s_telnet.tn));
         t->len = 0;
         raw_send(slot, "> ", 2);
         return;
@@ -228,14 +234,14 @@ void telnet_rx(uint8_t slot)
 
 void telnet_on_command(TelnetCommandCb cb)
 {
-    g_cmd_cb = cb;
+    s_telnet.cmd_cb = cb;
 }
 
 static void broadcast(const char *s, size_t n)
 {
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
-        if (g_tn[i].used)
-            send_escaped(g_tn[i].slot, s, n); // app output: escape IAC (RFC 854)
+        if (s_telnet.tn[i].used)
+            send_escaped(s_telnet.tn[i].slot, s, n); // app output: escape IAC (RFC 854)
 }
 
 void telnet_print(const char *s)
@@ -266,7 +272,7 @@ uint8_t telnet_client_count()
 {
     uint8_t c = 0;
     for (int i = 0; i < MAX_TELNET_CONNS; i++)
-        if (g_tn[i].used)
+        if (s_telnet.tn[i].used)
             c++;
     return c;
 }
