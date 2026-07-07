@@ -124,6 +124,46 @@ void test_rdm_parse_rejects_bad()
     TEST_ASSERT_FALSE(rdm_parse(bad_sc, n, &g, &c));
 }
 
+// Builder cap/null guards and the remaining rdm_parse rejects.
+void test_dmx_rdm_error_paths()
+{
+    uint8_t ch[4] = {1, 2, 3, 4};
+    uint8_t small[3];
+    TEST_ASSERT_EQUAL_size_t(0, dmx_build(small, sizeof(small), 0, ch, 4)); // needs 5, cap 3
+
+    RdmPacket p;
+    memset(&p, 0, sizeof(p));
+    p.cc = RDM_CC_GET;
+    p.pid = RDM_PID_DEVICE_INFO;
+    uint8_t buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, rdm_build(nullptr, sizeof(buf), &p, nullptr, 0));  // null buf
+    TEST_ASSERT_EQUAL_size_t(0, rdm_build(buf, sizeof(buf), nullptr, nullptr, 0)); // null packet
+    TEST_ASSERT_EQUAL_size_t(0, rdm_build(buf, sizeof(buf), &p, nullptr, 2));      // pdl but null pdata
+    TEST_ASSERT_EQUAL_size_t(0, rdm_build(buf, 8, &p, nullptr, 0));                // cap too small
+
+    size_t n = rdm_build(buf, sizeof(buf), &p, nullptr, 0);
+    RdmPacket g;
+    size_t c;
+    TEST_ASSERT_FALSE(rdm_parse(nullptr, n, &g, &c)); // null buf
+    TEST_ASSERT_FALSE(rdm_parse(buf, 5, &g, &c));     // len < RDM_OVERHEAD
+
+    uint8_t bad_ml[64];
+    memcpy(bad_ml, buf, n);
+    bad_ml[2] = 20; // message length below the fixed 24-octet header
+    TEST_ASSERT_FALSE(rdm_parse(bad_ml, n, &g, &c));
+
+    uint8_t bad_pdl[64];
+    memcpy(bad_pdl, buf, n);
+    bad_pdl[23] = 5; // pdl 5 but ml stays 24 -> ml != 24 + pdl
+    TEST_ASSERT_FALSE(rdm_parse(bad_pdl, n, &g, &c));
+
+    uint8_t trunc[64];
+    memcpy(trunc, buf, n);
+    trunc[2] = 40;                                  // ml 40 -> total 42
+    trunc[23] = 16;                                 // pdl 16 so ml == 24 + pdl (passes the pdl check)
+    TEST_ASSERT_FALSE(rdm_parse(trunc, n, &g, &c)); // buffered n < 42
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -132,5 +172,6 @@ int main()
     RUN_TEST(test_rdm_get_roundtrip);
     RUN_TEST(test_rdm_set_with_data);
     RUN_TEST(test_rdm_parse_rejects_bad);
+    RUN_TEST(test_dmx_rdm_error_paths);
     return UNITY_END();
 }
