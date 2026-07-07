@@ -116,6 +116,39 @@ void test_fastpacket_out_of_order_errors()
     TEST_ASSERT_FALSE(rx.active);
 }
 
+// Fast Packet builder guards, an out-of-range frame index, an encode failure (priority>7),
+// and the feed reject branches (null/non-extended/short frame + a bad first-frame length).
+void test_nmea2000_error_paths()
+{
+    CanFrame f;
+    const uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(nullptr, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8)); // null out
+    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, nullptr, 8));   // null data
+    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 8, 0, 6, 0x01F801, 0x15, 0xFF, data, 8));      // seq > 7
+    TEST_ASSERT_FALSE(n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 0));      // total_len 0
+    TEST_ASSERT_FALSE(
+        n2k_fastpacket_build_frame(&f, 0, 5, 6, 0x01F801, 0x15, 0xFF, data, 8)); // frame_idx past the count
+    TEST_ASSERT_FALSE(
+        n2k_fastpacket_build_frame(&f, 0, 0, 8, 0x01F801, 0x15, 0xFF, data, 8)); // priority>7 -> encode fails
+
+    N2kFastPacketRx rx;
+    n2k_fastpacket_reset(&rx);
+    n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 8);
+    TEST_ASSERT_EQUAL_INT(N2K_FP_IGNORED, n2k_fastpacket_feed(nullptr, &f));  // null rx
+    TEST_ASSERT_EQUAL_INT(N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, nullptr)); // null frame
+    CanFrame notext = f;
+    notext.extended = false;
+    TEST_ASSERT_EQUAL_INT(N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &notext)); // not a 29-bit frame
+    CanFrame shortdlc = f;
+    shortdlc.dlc = 1;
+    TEST_ASSERT_EQUAL_INT(N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &shortdlc)); // dlc < 2
+
+    CanFrame bad_total = f;
+    bad_total.data[1] = 0; // first frame declaring a zero total length
+    TEST_ASSERT_EQUAL_INT(N2K_FP_ERR, n2k_fastpacket_feed(&rx, &bad_total));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -125,5 +158,6 @@ int main()
     RUN_TEST(test_fastpacket_single_frame_completes);
     RUN_TEST(test_fastpacket_interleaved_sequence_ignored);
     RUN_TEST(test_fastpacket_out_of_order_errors);
+    RUN_TEST(test_nmea2000_error_paths);
     return UNITY_END();
 }
