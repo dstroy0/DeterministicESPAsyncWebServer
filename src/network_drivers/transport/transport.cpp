@@ -48,28 +48,33 @@
 #if DETWS_ENABLE_OBSERVABILITY
 #include <atomic>
 
-static DetConnEventCb g_conn_event_cb = nullptr;
-// Cumulative counters, indexed by reason (0..7). The live CONN_CLOSING gauge is
-// not a counter - it is derived on read by scanning the pool, so it can never
-// drift out of sync with the actual slot states.
-static std::atomic<uint32_t> g_obs_ctr[8];
+// All connection-observability state, owned by one instance (internal linkage): the event
+// callback and the cumulative per-reason counters (indexed 0..7). The live CONN_CLOSING gauge
+// is not a counter - it is derived on read by scanning the pool, so it can never drift out of
+// sync with the actual slot states. One named owner, unreachable from any other TU.
+struct ObsCtx
+{
+    DetConnEventCb conn_event_cb = nullptr;
+    std::atomic<uint32_t> ctr[8];
+};
+static ObsCtx s_obs;
 
 void det_conn_on_event(DetConnEventCb cb)
 {
-    g_conn_event_cb = cb;
+    s_obs.conn_event_cb = cb;
 }
 
 DetConnCounters det_conn_counters()
 {
     DetConnCounters c;
-    c.accepts = g_obs_ctr[0].load(std::memory_order_relaxed);
-    c.closes_remote = g_obs_ctr[1].load(std::memory_order_relaxed);
-    c.closes_local = g_obs_ctr[2].load(std::memory_order_relaxed);
-    c.closes_error = g_obs_ctr[3].load(std::memory_order_relaxed);
-    c.closes_timeout = g_obs_ctr[4].load(std::memory_order_relaxed);
-    c.closes_abort = g_obs_ctr[5].load(std::memory_order_relaxed);
-    c.backpressure = g_obs_ctr[6].load(std::memory_order_relaxed);
-    c.defer_drops = g_obs_ctr[7].load(std::memory_order_relaxed);
+    c.accepts = s_obs.ctr[0].load(std::memory_order_relaxed);
+    c.closes_remote = s_obs.ctr[1].load(std::memory_order_relaxed);
+    c.closes_local = s_obs.ctr[2].load(std::memory_order_relaxed);
+    c.closes_error = s_obs.ctr[3].load(std::memory_order_relaxed);
+    c.closes_timeout = s_obs.ctr[4].load(std::memory_order_relaxed);
+    c.closes_abort = s_obs.ctr[5].load(std::memory_order_relaxed);
+    c.backpressure = s_obs.ctr[6].load(std::memory_order_relaxed);
+    c.defer_drops = s_obs.ctr[7].load(std::memory_order_relaxed);
     // Derive the live gauge from the actual pool so it cannot drift.
     c.closing_gauge = 0;
     for (int i = 0; i < MAX_CONNS; i++)
@@ -81,7 +86,7 @@ DetConnCounters det_conn_counters()
 void det_conn_counters_reset()
 {
     for (int i = 0; i < 8; i++)
-        g_obs_ctr[i].store(0, std::memory_order_relaxed);
+        s_obs.ctr[i].store(0, std::memory_order_relaxed);
 }
 
 static void obs_bump(DetConnReason reason)
@@ -118,7 +123,7 @@ static void obs_bump(DetConnReason reason)
         break;
     }
     if (idx >= 0)
-        g_obs_ctr[idx].fetch_add(1, std::memory_order_relaxed);
+        s_obs.ctr[idx].fetch_add(1, std::memory_order_relaxed);
 }
 
 // A real state transition: bump the reason counter and fire the callback. The
@@ -128,16 +133,16 @@ static void obs_bump(DetConnReason reason)
 void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason)
 {
     obs_bump(reason);
-    if (g_conn_event_cb)
-        g_conn_event_cb(slot, olds, news, reason);
+    if (s_obs.conn_event_cb)
+        s_obs.conn_event_cb(slot, olds, news, reason);
 }
 
 // A non-transition notice (backpressure / defer-drop): bump + fire with old==new.
 void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason)
 {
     obs_bump(reason);
-    if (g_conn_event_cb)
-        g_conn_event_cb(slot, st, st, reason);
+    if (s_obs.conn_event_cb)
+        s_obs.conn_event_cb(slot, st, st, reason);
 }
 #endif // DETWS_ENABLE_OBSERVABILITY
 
@@ -177,10 +182,15 @@ enum DetTcpOp
     DET_OP_RECVED       // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
 };
 
-// True while det_tcp_do() is executing, i.e. while we are running inside the lwIP
-// thread. Lets det_conn_raw_send() pick a direct vs. marshaled tcp_write so the
-// TLS BIO is safe from either context without re-marshaling (which would deadlock).
-static volatile bool s_in_tcpip_thread = false;
+// TCP transport reentrancy state, owned by one instance (internal linkage): true while
+// det_tcp_do() is executing, i.e. while we are running inside the lwIP thread. Lets
+// det_conn_raw_send() pick a direct vs. marshaled tcp_write so the TLS BIO is safe from either
+// context without re-marshaling (which would deadlock). One named owner, unreachable cross-TU.
+struct TransportCtx
+{
+    volatile bool in_tcpip_thread = false;
+};
+static TransportCtx s_tp;
 
 struct DetTcpCall
 {
@@ -200,7 +210,7 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
 {
     DetTcpCall *k = (DetTcpCall *)c;
     k->result = ERR_OK;
-    s_in_tcpip_thread = true; // any tcp_write reached from here is already in-thread
+    s_tp.in_tcpip_thread = true; // any tcp_write reached from here is already in-thread
     switch (k->op)
     {
     case DET_OP_RAWSEND:
@@ -242,7 +252,7 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
         break;
     }
-    s_in_tcpip_thread = false;
+    s_tp.in_tcpip_thread = false;
     return ERR_OK;
 }
 
@@ -346,7 +356,7 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
     if (!pcb)
         return false;
 #if defined(ARDUINO)
-    if (s_in_tcpip_thread)
+    if (s_tp.in_tcpip_thread)
     {
         // Already inside the lwIP thread (the marshaled app-data send path): write
         // directly - re-marshaling here would deadlock on the tcpip mailbox.
