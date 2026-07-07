@@ -238,6 +238,18 @@ void test_record_edges()
     TEST_ASSERT_FALSE(mbus_record_next(lvar_big, sizeof(lvar_big), &pos, &r));
 }
 
+// A VIF with the extension bit set is followed by a present VIFE octet (the chain read).
+void test_record_vife_chain()
+{
+    const uint8_t body[] = {MBUS_DIF_INT8, 0x93, 0x13, 0x42}; // DIF INT8, VIF 0x93 (ext), VIFE 0x13, data
+    size_t pos = 0;
+    MbusRecord r;
+    TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
+    TEST_ASSERT_EQUAL_HEX8(0x93, r.vif);
+    TEST_ASSERT_EQUAL_UINT8(1, r.data_len);
+    TEST_ASSERT_EQUAL_HEX8(0x42, r.data[0]);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -252,5 +264,6 @@ int main()
     RUN_TEST(test_build_and_parse_guards);
     RUN_TEST(test_dif_data_len_remaining);
     RUN_TEST(test_record_edges);
+    RUN_TEST(test_record_vife_chain);
     return UNITY_END();
 }

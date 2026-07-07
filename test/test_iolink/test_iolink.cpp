@@ -74,6 +74,16 @@ void test_device_reply_cks_roundtrip()
     TEST_ASSERT_EQUAL_HEX8(0x8A, cks); // 0x52^0xAA^0x80 = 0x78 -> compress = 0x0A; 0x80|0x0A
 }
 
+// iol_finalize and iol_verify reject a null message or an out-of-range check index.
+void test_iol_finalize_verify_guards()
+{
+    uint8_t msg[4] = {0x11, 0x22, 0x33, 0x00};
+    TEST_ASSERT_EQUAL_UINT8(0, iol_finalize(nullptr, 4, 3)); // null msg
+    TEST_ASSERT_EQUAL_UINT8(0, iol_finalize(msg, 4, 4));     // check_idx >= len
+    TEST_ASSERT_FALSE(iol_verify(nullptr, 4, 3));            // null msg
+    TEST_ASSERT_FALSE(iol_verify(msg, 4, 4));                // check_idx >= len
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -82,5 +92,6 @@ int main()
     RUN_TEST(test_checksum_known_vector);
     RUN_TEST(test_finalize_preserves_type_and_detects_corruption);
     RUN_TEST(test_device_reply_cks_roundtrip);
+    RUN_TEST(test_iol_finalize_verify_guards);
     return UNITY_END();
 }

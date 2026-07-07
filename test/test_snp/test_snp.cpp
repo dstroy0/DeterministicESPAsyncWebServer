@@ -66,6 +66,17 @@ void test_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_snp_parse(bad, sizeof(bad), &f));
 }
 
+// detws_snp_build rejects a null output, a length with a null data pointer, and a
+// destination too small for the framed message.
+void test_snp_build_guards(void)
+{
+    uint8_t out[16];
+    const uint8_t data[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, data, 2, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, nullptr, 2, out, sizeof(out)));  // len but null data
+    TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, data, 2, out, 3));               // needs 5, cap 3
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -73,5 +84,6 @@ int main(void)
     RUN_TEST(test_build_and_parse);
     RUN_TEST(test_empty_data);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_snp_build_guards);
     return UNITY_END();
 }
