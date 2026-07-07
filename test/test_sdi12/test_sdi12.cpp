@@ -108,6 +108,38 @@ void test_crc_encode_printable()
         TEST_ASSERT_TRUE((uint8_t)crc[i] >= 0x40 && (uint8_t)crc[i] <= 0x7F);
 }
 
+// Builder / parser / CRC reject and skip branches.
+void test_sdi12_error_paths()
+{
+    char buf[16];
+    TEST_ASSERT_EQUAL_size_t(0, sdi12_build(nullptr, sizeof(buf), '0', "M")); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, sdi12_build(buf, sizeof(buf), '0', nullptr)); // null body
+    TEST_ASSERT_EQUAL_size_t(0, sdi12_build(buf, 2, '0', "M"));               // cap too small
+    TEST_ASSERT_EQUAL_size_t(0, sdi12_build_data(buf, sizeof(buf), '0', 10)); // d_index > 9
+
+    char addr;
+    uint16_t ready;
+    uint8_t n;
+    TEST_ASSERT_FALSE(sdi12_parse_measure(nullptr, 5, &addr, &ready, &n)); // null resp
+    TEST_ASSERT_FALSE(sdi12_parse_measure("012", 3, &addr, &ready, &n));   // len < 5
+    TEST_ASSERT_FALSE(sdi12_parse_measure("0X122", 5, &addr, &ready, &n)); // non-digit in the ttt field
+    TEST_ASSERT_FALSE(sdi12_parse_measure("0120X", 5, &addr, &ready, &n)); // non-digit value count
+
+    float v[4];
+    size_t cnt = 0;
+    TEST_ASSERT_FALSE(sdi12_parse_values(nullptr, 3, v, 4, &cnt));     // null resp
+    TEST_ASSERT_FALSE(sdi12_parse_values("0+1", 3, nullptr, 4, &cnt)); // null out
+    TEST_ASSERT_FALSE(sdi12_parse_values("0+1", 3, v, 4, nullptr));    // null count
+    // A non +/- separator is skipped; a trailing '+' with no digits is skipped.
+    const char *r = "0X+1.5+\r\n";
+    TEST_ASSERT_TRUE(sdi12_parse_values(r, strlen(r), v, 4, &cnt));
+    TEST_ASSERT_EQUAL_size_t(1, cnt);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.5f, v[0]);
+
+    TEST_ASSERT_FALSE(sdi12_check_crc(nullptr, 5));  // null
+    TEST_ASSERT_FALSE(sdi12_check_crc("ab\r\n", 4)); // after trimming CRLF, too short for data + CRC
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -117,5 +149,6 @@ int main()
     RUN_TEST(test_parse_values);
     RUN_TEST(test_crc_roundtrip);
     RUN_TEST(test_crc_encode_printable);
+    RUN_TEST(test_sdi12_error_paths);
     return UNITY_END();
 }
