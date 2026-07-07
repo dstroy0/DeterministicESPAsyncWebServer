@@ -107,11 +107,17 @@ void ws_reset_frame(WsConn *ws)
 // Frame send helpers
 // ---------------------------------------------------------------------------
 
-// Outbound fragmentation size (RFC 6455 sec 5.4), payload bytes; 0 = one frame per message (default).
-static uint16_t s_ws_frag_size = DETWS_WS_FRAG_SIZE;
+// WebSocket presentation config, owned by one instance (internal linkage): the outbound
+// fragmentation size (RFC 6455 sec 5.4), payload bytes; 0 = one frame per message (default).
+// One named owner, unreachable cross-TU. (The ws_pool[] table is the shared substrate.)
+struct WsCtx
+{
+    uint16_t frag_size = DETWS_WS_FRAG_SIZE;
+};
+static WsCtx s_ws;
 void ws_set_frag_size(uint16_t bytes)
 {
-    s_ws_frag_size = bytes;
+    s_ws.frag_size = bytes;
 }
 
 // Emit one WebSocket frame. b0 is the finished first header byte (FIN | RSV1 | opcode). Server frames
@@ -179,7 +185,7 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     // anyway). frag == 0, a non-data frame, or a message that already fits -> a single FIN frame (the
     // default, unchanged). Server-to-client frames are never masked (§5.1).
     bool data = (opcode == WS_OP_TEXT || opcode == WS_OP_BINARY);
-    uint16_t frag = s_ws_frag_size;
+    uint16_t frag = s_ws.frag_size;
     if (!data || frag == 0 || len <= frag)
         return ws_emit_one(conn, (uint8_t)(0x80 | rsv1 | (uint8_t)opcode), payload, len);
 
