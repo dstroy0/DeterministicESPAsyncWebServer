@@ -2,62 +2,68 @@ name: Code Formatting Check
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   clang-format:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-    - name: Install Clang-Format 22
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x llvm.sh
-        sudo ./llvm.sh 22
-        sudo apt-get install -y clang-format-22
-        sudo ln -sf /usr/bin/clang-format-22 /usr/bin/clang-format
+      - name: Install Clang-Format 22
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get install -y clang-format-22
+          sudo ln -sf /usr/bin/clang-format-22 /usr/bin/clang-format
 
-    - name: Run Clang-Format Lint
-      run: |
-        # 1. Register a GitHub Problem Matcher for native LLVM diagnostic strings
-        echo '{
-          "problemMatcher": [
-            {
-              "owner": "clang-format-native",
-              "pattern": [
-                {
-                  "regexp": "^([^:]+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
-                  "file": 1,
-                  "line": 2,
-                  "column": 3,
-                  "severity": 4,
-                  "message": 5
-                }
-              ]
-            }
-          ]
-        }' > .github/cf-matcher.json
-        echo "::add-matcher::.github/cf-matcher.json"
+      - name: Run Clang-Format Lint
+        run: |
+          # 1. Register a GitHub Problem Matcher for native LLVM diagnostic strings
+          echo '{
+            "problemMatcher": [
+              {
+                "owner": "clang-format-native",
+                "pattern": [
+                  {
+                    "regexp": "^([^:]+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                  }
+                ]
+              }
+            ]
+          }' > .github/cf-matcher.json
+          echo "::add-matcher::.github/cf-matcher.json"
 
-        # 2. Gather all matching source files
-        # Bypasses hidden directories like .git automatically.
-        # build_opt.h is excluded: despite the .h suffix it is an Arduino build-options file
-        # (a list of -D compiler flags, not C++), and its name is fixed by the Arduino toolchain.
-        FILES=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.ino" \) -not -path "*/.*" -not -name "build_opt.h")
+          # 2. Gather all matching source files
+          # Bypasses hidden directories like .git automatically.
+          # build_opt.h is excluded: despite the .h suffix it is an Arduino build-options file
+          # (a list of -D compiler flags, not C++), and its name is fixed by the Arduino toolchain.
+          FILES=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.ino" \) -not -path "*/.*" -not -name "build_opt.h")
 
-        # 3. Handle empty repository safety edge-case
-        if [ -z "$FILES" ]; then
-          echo "No source files found matching (.cpp, .h, .ino). Skipping check."
-          exit 0
-        fi
+          # 3. Handle empty repository safety edge-case
+          if [ -z "$FILES" ]; then
+            echo "No source files found matching (.cpp, .h, .ino). Skipping check."
+            exit 0
+          fi
 
-        # 4. Run dry-run compilation style audit end-to-end
-        # --style=file natively climbs to the root directory to find your .clang-format rules
-        # --dry-run handles the formatting calculations safely
-        # --Werror forces an exit code 1 if style rules are breached
-        echo "$FILES" | xargs clang-format --style=file --dry-run --Werror
+          # 4. Run dry-run compilation style audit end-to-end
+          # --style=file natively climbs to the root directory to find your .clang-format rules
+          # --dry-run handles the formatting calculations safely
+          # --Werror forces an exit code 1 if style rules are breached
+          echo "$FILES" | xargs clang-format --style=file --dry-run --Werror
+
+      - name: Owner-context guard (no loose file-scope mutables)
+        # Enforces the least-privilege owner pattern: every subsystem's mutable state must live in
+        # one owned <Name>Ctx, not scattered ambient globals. Uniformity is how the outliers are
+        # caught. See tools/check_owned_context.py for the allow-list rationale (shared substrate).
+        run: python3 tools/check_owned_context.py
