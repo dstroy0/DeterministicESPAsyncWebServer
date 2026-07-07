@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d6b9d3d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d6b9d3dce6e0f95e93927e8edf25f1de83add239))
 - update CHANGELOG.md [skip ci] ([`e394e71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e394e7126cae9151b70068bf9680f995eba83554))
 - update CHANGELOG.md [skip ci] ([`1955b11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1955b11b916b46dbf11dc6bd0f251744d73bb98d))
 - update CHANGELOG.md [skip ci] ([`ebdefea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebdefea9c69a94007118d2af4fd973502904bf53))
@@ -215,6 +216,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover hex-decode + all reject guards (->100%) ([`1512fcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1512fcdd14a7c57471def0d6e0949310a83d120e))
 - cover remaining reject guards (->100%) ([`a7b5eca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7b5eca160ce227dd3faa7081ae38a5fa342b48d))
 - cover all builder/parser reject guards (88.8%->100%) ([`c290493`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c29049326fde9d16f16412f003c5eff6f0cfcfee))
 - cover every dialogue error/overflow branch (78.8%->100%) ([`5314982`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53149823767e10e01d88a86a4600173e8e8f1744))
