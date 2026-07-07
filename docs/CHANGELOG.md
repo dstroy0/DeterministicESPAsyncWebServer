@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9da05dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da05ddfdde2c1a710d76bd0f5774fbdb280ca37))
 - update test report [skip ci] ([`f794e0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f794e0e9bb900b01bac5aa339bf9c188d36144e5))
 - update CHANGELOG.md [skip ci] ([`55df77a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55df77a34d6855e5257556de47ce88879bab90d2))
 - update CHANGELOG.md [skip ci] ([`a2b5a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2b5a2f06b7cc6a7bb2ff99e2a80a74a6c6d378f))
@@ -226,6 +227,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover channel send/close/open + accept/poll paths (64->91%) ([`42e4097`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42e409718aacd8a4d78213725c746d814900b01d))
 - cover L5 accessor + send/poll/rx guards; drop stale exclusions ([`c57598d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c57598ddb34a6ba345db2f864c79c79064fcde99))
 - cover builder/parser guards (->100%) ([`828be72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/828be7228a36c70277037768bbb0cf7a862656d3))
 - cover reader/writer + trailer guards (->100%) ([`d1e8ebf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1e8ebfc6e9c5b3b4fd04b87725d1d2a953779e5))
