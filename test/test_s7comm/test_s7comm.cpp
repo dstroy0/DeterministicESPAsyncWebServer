@@ -152,6 +152,31 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, s7_build_setup(small, 8, 1, 1, 1, 480));                   // needs 18
 }
 
+// Null-pointer, empty, oversize-count and short-buffer guards on every entry point.
+void test_null_and_short_guards()
+{
+    uint8_t buf[48];
+    S7ReadItem item = {};
+    item.area = S7_AREA_DB;
+    TEST_ASSERT_EQUAL_size_t(0, s7_build_setup(nullptr, sizeof(buf), 1, 1, 1, 480));       // null buf
+    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(nullptr, sizeof(buf), 1, &item, 1)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, nullptr, 1));   // null items
+    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, &item, 0));     // n == 0
+    TEST_ASSERT_EQUAL_size_t(0, s7_build_read_request(buf, sizeof(buf), 1, &item, 0x100)); // n > 0xFF
+
+    S7Header h;
+    TEST_ASSERT_FALSE(s7_parse_header(nullptr, 10, &h)); // null buf
+    const uint8_t shorthdr[9] = {S7_PROTOCOL_ID, 0x01, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(s7_parse_header(shorthdr, sizeof(shorthdr), &h)); // len < 10
+    // Ack_Data ROSCTR promises a 12-octet header but only 11 octets are present.
+    const uint8_t ack_short[11] = {S7_PROTOCOL_ID, S7_ROSCTR_ACK_DATA, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_FALSE(s7_parse_header(ack_short, sizeof(ack_short), &h)); // len < 12
+
+    size_t off = 0;
+    S7DataItem it;
+    TEST_ASSERT_FALSE(s7_read_next_item(nullptr, 10, &off, &it)); // null data
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -163,5 +188,6 @@ int main()
     RUN_TEST(test_parse_octet_and_error);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_null_and_short_guards);
     return UNITY_END();
 }

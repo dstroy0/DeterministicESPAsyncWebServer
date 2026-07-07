@@ -90,6 +90,22 @@ void test_walk_rejects_truncated(void)
     TEST_ASSERT_FALSE(detws_pn_dcp_walk(bad, sizeof(bad), nullptr, nullptr));
 }
 
+// Null-buffer / short-buffer / oversize guards on the header, block, and parse entry points.
+void test_pn_guards(void)
+{
+    uint8_t out[16];
+    TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_header(0, 0, 0, 0, 0, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_header(0, 0, 0, 0, 0, out, 4));               // cap < header len
+    TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, (const uint8_t *)"x", 1, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, nullptr, 5, out, sizeof(out)));         // len but null value
+    TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, (const uint8_t *)"sixval", 6, out, 4)); // block > cap
+
+    PnDcpHeader h;
+    TEST_ASSERT_FALSE(detws_pn_dcp_parse_header(nullptr, 10, &h)); // null frame
+    uint8_t shortf[9] = {0};
+    TEST_ASSERT_FALSE(detws_pn_dcp_parse_header(shortf, sizeof(shortf), &h)); // len < header len
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -97,5 +113,6 @@ int main(void)
     RUN_TEST(test_block_even_padding);
     RUN_TEST(test_walk_blocks);
     RUN_TEST(test_walk_rejects_truncated);
+    RUN_TEST(test_pn_guards);
     return UNITY_END();
 }

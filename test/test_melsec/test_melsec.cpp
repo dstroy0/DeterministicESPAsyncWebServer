@@ -95,6 +95,19 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, melsec_build_read(small, sizeof(small), MELSEC_DEV_D, 0, 1, 0)); // needs 21
 }
 
+// The response parser rejects a null/short buffer and a data-length field smaller than
+// the mandatory 2-octet end code.
+void test_parse_guards()
+{
+    MelsecResponse r;
+    TEST_ASSERT_FALSE(melsec_parse_response(nullptr, 16, &r)); // null buf
+    const uint8_t shortr[10] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00};
+    TEST_ASSERT_FALSE(melsec_parse_response(shortr, sizeof(shortr), &r)); // len < minimum
+    // Valid response header but the length field claims 1 octet - less than the end code.
+    const uint8_t tiny_len[11] = {0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00};
+    TEST_ASSERT_FALSE(melsec_parse_response(tiny_len, sizeof(tiny_len), &r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -104,5 +117,6 @@ int main()
     RUN_TEST(test_parse_response_error);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_parse_guards);
     return UNITY_END();
 }
