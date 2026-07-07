@@ -523,13 +523,18 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
 static const char *const OPCUA_TRANSPORT_URI =
     "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary"; // NOSONAR
 
+// The server-identity defaults (DETWS_DETWS_OPCUA_DEFAULT_ENDPOINT / _APP_URI / _APP_NAME) live in
+// ServerConfig.h under DETWS_ENABLE_OPCUA so a deployment can override them; used here for both
+// the struct default and the builder fallback so the two cannot drift apart.
+
 // All OPC UA agent state, owned by one instance (internal linkage): the advertised server
 // identity, the application Read/Write/Browse resolvers, and (ESP32 only) the per-channel
 // reassembly / response buffers and the SecureChannel + Session state (single client at a
 // time). Grouped so it is one named owner, unreachable from any other translation unit.
 struct OpcuaCtx
 {
-    OpcUaServerInfo server_info = {"opc.tcp://localhost:4840", "urn:det:opcua:server", "DetOpcUaServer"};
+    OpcUaServerInfo server_info = {DETWS_OPCUA_DEFAULT_ENDPOINT, DETWS_OPCUA_DEFAULT_APP_URI,
+                                   DETWS_OPCUA_DEFAULT_APP_NAME};
     OpcUaReadHandler read_handler = nullptr;
     OpcUaWriteHandler write_handler = nullptr;
     OpcUaBrowseHandler browse_handler = nullptr;
@@ -552,9 +557,9 @@ void opcua_set_endpoint_url(const char *url)
 
 void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info)
 {
-    const char *url = (info && info->endpoint_url) ? info->endpoint_url : "opc.tcp://localhost:4840";
-    const char *auri = (info && info->application_uri) ? info->application_uri : "urn:det:opcua:server";
-    const char *aname = (info && info->application_name) ? info->application_name : "DetOpcUaServer";
+    const char *url = (info && info->endpoint_url) ? info->endpoint_url : DETWS_OPCUA_DEFAULT_ENDPOINT;
+    const char *auri = (info && info->application_uri) ? info->application_uri : DETWS_OPCUA_DEFAULT_APP_URI;
+    const char *aname = (info && info->application_name) ? info->application_name : DETWS_OPCUA_DEFAULT_APP_NAME;
 
     ua_w_string(w, url, (int32_t)strlen(url)); // EndpointUrl
     // Server (ApplicationDescription).

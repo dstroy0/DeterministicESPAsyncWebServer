@@ -5268,7 +5268,33 @@ enum DetIface : uint8_t
 #ifndef DETWS_OPCUA_WRITE_MAX
 #define DETWS_OPCUA_WRITE_MAX 8 ///< max NodesToWrite handled per WriteRequest.
 #endif
+// Advertised server identity (endpoint descriptions), overridable per deployment; the app may
+// also set these at runtime via opcua_set_endpoint_url() / the OpcUaServerInfo it passes.
+#ifndef DETWS_OPCUA_DEFAULT_ENDPOINT
+#define DETWS_OPCUA_DEFAULT_ENDPOINT "opc.tcp://localhost:4840" ///< default endpoint URL.
+#endif
+#ifndef DETWS_OPCUA_DEFAULT_APP_URI
+#define DETWS_OPCUA_DEFAULT_APP_URI "urn:det:opcua:server" ///< default ApplicationUri.
+#endif
+#ifndef DETWS_OPCUA_DEFAULT_APP_NAME
+#define DETWS_OPCUA_DEFAULT_APP_NAME "DetOpcUaServer" ///< default ApplicationName.
+#endif
 #endif // DETWS_ENABLE_OPCUA
+
+#if DETWS_ENABLE_PROVISIONING
+// -- Wi-Fi provisioning credential store (services/provisioning_service) --
+// The NVS namespace and its keys, overridable per deployment (e.g. to avoid an NVS-namespace
+// collision with the application's own store).
+#ifndef DETWS_PROV_NVS_NAMESPACE
+#define DETWS_PROV_NVS_NAMESPACE "wifi_prov" ///< NVS namespace holding the saved credentials.
+#endif
+#ifndef DETWS_PROV_KEY_SSID
+#define DETWS_PROV_KEY_SSID "ssid" ///< NVS key + HTML form field for the SSID.
+#endif
+#ifndef DETWS_PROV_KEY_PSK
+#define DETWS_PROV_KEY_PSK "psk" ///< NVS key + HTML form field for the pre-shared key.
+#endif
+#endif // DETWS_ENABLE_PROVISIONING
 
 #if DETWS_ENABLE_VFS
 // -- Virtual filesystem (services/vfs) --

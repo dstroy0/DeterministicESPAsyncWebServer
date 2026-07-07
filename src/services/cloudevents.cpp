@@ -18,6 +18,11 @@ static bool ce_present(const char *s)
     return s != nullptr && s[0] != '\0';
 }
 
+// CloudEvents 1.0 JSON attribute names emitted in more than one branch below; named once so the
+// (typo-prone) spec keys stay identical across the has-data / no-data paths. (Flash-resident.)
+static const char *const CE_KEY_DATACONTENTTYPE = "datacontenttype";
+static const char *const CE_KEY_DATA = "data";
+
 size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
 {
     if (!buf || cap == 0 || !ce)
@@ -38,19 +43,19 @@ size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
     // data: a pre-formatted JSON value (verbatim) or a plain string (escaped).
     if (ce->data_json && ce->data_json[0] != '\0')
     {
-        w.kv_str("datacontenttype", ce_present(ce->datacontenttype) ? ce->datacontenttype : "application/json");
-        w.key("data");
+        w.kv_str(CE_KEY_DATACONTENTTYPE, ce_present(ce->datacontenttype) ? ce->datacontenttype : "application/json");
+        w.key(CE_KEY_DATA);
         w.raw(ce->data_json);
     }
     else if (ce->data_str)
     {
         if (ce_present(ce->datacontenttype))
-            w.kv_str("datacontenttype", ce->datacontenttype);
-        w.kv_str("data", ce->data_str);
+            w.kv_str(CE_KEY_DATACONTENTTYPE, ce->datacontenttype);
+        w.kv_str(CE_KEY_DATA, ce->data_str);
     }
     else if (ce_present(ce->datacontenttype))
     {
-        w.kv_str("datacontenttype", ce->datacontenttype);
+        w.kv_str(CE_KEY_DATACONTENTTYPE, ce->datacontenttype);
     }
 
     w.end_object();

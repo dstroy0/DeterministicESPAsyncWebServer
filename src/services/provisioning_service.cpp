@@ -89,6 +89,10 @@ struct ProvCtx
 };
 static ProvCtx s_prov;
 
+// The NVS namespace + credential keys (DETWS_PROV_NVS_NAMESPACE / _KEY_SSID / _KEY_PSK) live in
+// ServerConfig.h under DETWS_ENABLE_PROVISIONING so a deployment can override them; used across
+// the read / clear / save paths (and, for ssid/psk, as the HTML form field names).
+
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
 static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *peer, void *ctx)
 {
@@ -143,10 +147,10 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
     if (psk && psk_cap)
         psk[0] = '\0';
     Preferences prefs;
-    if (!prefs.begin("wifi_prov", true))
+    if (!prefs.begin(DETWS_PROV_NVS_NAMESPACE, true))
         return false;
-    String s = prefs.getString("ssid", "");
-    String k = prefs.getString("psk", "");
+    String s = prefs.getString(DETWS_PROV_KEY_SSID, "");
+    String k = prefs.getString(DETWS_PROV_KEY_PSK, "");
     prefs.end();
     if (s.length() == 0)
         return false;
@@ -160,7 +164,7 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
 void detws_provisioning_clear()
 {
     Preferences prefs;
-    if (prefs.begin("wifi_prov", false))
+    if (prefs.begin(DETWS_PROV_NVS_NAMESPACE, false))
     {
         prefs.clear();
         prefs.end();
@@ -177,17 +181,18 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
 {
     char ssid[33];
     char psk[64];
-    bool have_ssid = detws_prov_form_field((const char *)req->body, "ssid", ssid, sizeof(ssid)) && ssid[0] != '\0';
-    detws_prov_form_field((const char *)req->body, "psk", psk, sizeof(psk));
+    bool have_ssid =
+        detws_prov_form_field((const char *)req->body, DETWS_PROV_KEY_SSID, ssid, sizeof(ssid)) && ssid[0] != '\0';
+    detws_prov_form_field((const char *)req->body, DETWS_PROV_KEY_PSK, psk, sizeof(psk));
     if (!have_ssid)
     {
         s_prov.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "SSID required");
         return;
     }
     Preferences prefs;
-    prefs.begin("wifi_prov", false);
-    prefs.putString("ssid", ssid);
-    prefs.putString("psk", psk);
+    prefs.begin(DETWS_PROV_NVS_NAMESPACE, false);
+    prefs.putString(DETWS_PROV_KEY_SSID, ssid);
+    prefs.putString(DETWS_PROV_KEY_PSK, psk);
     prefs.end();
     s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
     delay(500);
