@@ -124,6 +124,30 @@ void test_from_headers_missing_required()
     TEST_ASSERT_FALSE(cloudevents_from_headers(&http_pool[0], &ce));
 }
 
+// build_json argument guards, the datacontenttype-without-data branch, and the
+// from_headers null guard.
+void test_guards_and_datacontenttype_only()
+{
+    char buf[256];
+    CloudEvent ce = {};
+    ce.id = "1";
+    ce.source = "/s";
+    ce.type = "t";
+    TEST_ASSERT_EQUAL_size_t(0, cloudevents_build_json(nullptr, sizeof(buf), &ce)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, cloudevents_build_json(buf, 0, &ce));               // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, cloudevents_build_json(buf, sizeof(buf), nullptr)); // null event
+
+    // datacontenttype set but no data_json/data_str -> the third data branch emits only the type.
+    ce.datacontenttype = "application/json";
+    size_t n = cloudevents_build_json(buf, sizeof(buf), &ce);
+    TEST_ASSERT_GREATER_THAN(0, (int)n);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"datacontenttype\":\"application/json\""));
+    TEST_ASSERT_NULL(strstr(buf, "\"data\":")); // no data value emitted
+
+    CloudEvent out;
+    TEST_ASSERT_FALSE(cloudevents_from_headers(nullptr, &out)); // null request
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -134,5 +158,6 @@ int main()
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_from_headers_binary_mode);
     RUN_TEST(test_from_headers_missing_required);
+    RUN_TEST(test_guards_and_datacontenttype_only);
     return UNITY_END();
 }

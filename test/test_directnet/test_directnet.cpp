@@ -66,6 +66,27 @@ void test_data_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_dnet_data_parse(bad, sizeof(bad), &d, &dl));
 }
 
+// Null-buffer / too-small-buffer guards on the builders, and the parser's null/short
+// and missing-ETX rejects.
+void test_guards(void)
+{
+    uint8_t out[16];
+    uint8_t payload[4] = {'A', 'B', 'C', 'D'};
+    TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DNET_READ, 0x40, 2, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DNET_READ, 0x40, 2, out, 5));               // cap too small
+    TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, nullptr, sizeof(out)));              // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(nullptr, 4, out, sizeof(out)));                  // len but null data
+    TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, out, 3));                            // n > cap
+
+    const uint8_t *d;
+    size_t dl;
+    TEST_ASSERT_FALSE(detws_dnet_data_parse(nullptr, 5, &d, &dl)); // null frame
+    uint8_t two[2] = {DNET_STX, DNET_ETX};
+    TEST_ASSERT_FALSE(detws_dnet_data_parse(two, sizeof(two), &d, &dl)); // len < 3
+    uint8_t no_etx[4] = {DNET_STX, 0x11, 0x22, 0x33};                    // octet before the LRC is not ETX
+    TEST_ASSERT_FALSE(detws_dnet_data_parse(no_etx, sizeof(no_etx), &d, &dl));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -73,5 +94,6 @@ int main(void)
     RUN_TEST(test_header_frame);
     RUN_TEST(test_data_frame_roundtrip);
     RUN_TEST(test_data_parse_rejects);
+    RUN_TEST(test_guards);
     return UNITY_END();
 }
