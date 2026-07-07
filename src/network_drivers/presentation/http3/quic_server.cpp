@@ -71,22 +71,35 @@ struct QuicSlot
     uint32_t last_ms; ///< detws_millis() of the last datagram received (idle-reaping clock)
 };
 
-DETWS_QUIC_POOL_ATTR QuicSlot s_pool[DETWS_QUIC_MAX_CONNS];
-DETWS_QUIC_POOL_ATTR QuicIngest s_ring[DETWS_QUIC_INGEST_RING];
-DetAtomic<size_t> s_ring_head; ///< producer (udp / ingest) advances
-DetAtomic<size_t> s_ring_tail; ///< consumer (poll) advances
+// HTTP/3 QUIC connection + ingest buffers, owned by one instance (internal linkage). Placed in
+// PSRAM (DETWS_QUIC_POOL_ATTR) when configured; kept separate from the DRAM control state below
+// so only the large buffers move off internal RAM. One named owner, unreachable cross-TU.
+struct QuicServerPoolCtx
+{
+    QuicSlot pool[DETWS_QUIC_MAX_CONNS];
+    QuicIngest ring[DETWS_QUIC_INGEST_RING];
+};
+DETWS_QUIC_POOL_ATTR QuicServerPoolCtx s_qpool;
 
-QuicServerConfig s_cfg;
-QuicServerRequestFn s_on_request = nullptr;
-void *s_app = nullptr;
-uint16_t s_port = 0;
-bool s_running = false;
-uint32_t s_next_id = 1;
-
+// All HTTP/3 QUIC server control state, owned by one instance (internal linkage): the ingest
+// ring cursors, the server config + request callback + app pointer, the bound port / running
+// flag / next connection id, and (host) the outbound sink. One named owner, unreachable cross-TU.
+struct QuicServerCtx
+{
+    DetAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
+    DetAtomic<size_t> ring_tail; ///< consumer (poll) advances
+    QuicServerConfig cfg;
+    QuicServerRequestFn on_request = nullptr;
+    void *app = nullptr;
+    uint16_t port = 0;
+    bool running = false;
+    uint32_t next_id = 1;
 #if !defined(ARDUINO)
-QuicServerOutFn s_out_sink = nullptr;
-void *s_out_ctx = nullptr;
+    QuicServerOutFn out_sink = nullptr;
+    void *out_ctx = nullptr;
 #endif
+};
+QuicServerCtx s_quic;
 
 void copy_str(char *dst, size_t cap, const char *src)
 {
@@ -108,10 +121,10 @@ bool cid_eq(const uint8_t *a, uint8_t alen, const uint8_t *b, uint8_t blen)
 void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
 {
 #if defined(ARDUINO)
-    det_udp_listener_sendto(s_port, ip, port, data, len);
+    det_udp_listener_sendto(s_quic.port, ip, port, data, len);
 #else
-    if (s_out_sink)
-        s_out_sink(s_out_ctx, data, len, ip, port);
+    if (s_quic.out_sink)
+        s_quic.out_sink(s_quic.out_ctx, data, len, ip, port);
 #endif
 }
 
@@ -120,26 +133,26 @@ bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
 {
     if (len == 0 || len > DETWS_QUIC_MAX_DATAGRAM)
         return false;
-    size_t head = s_ring_head;
+    size_t head = s_quic.ring_head;
     size_t next = (head + 1) % DETWS_QUIC_INGEST_RING;
-    if (next == (size_t)s_ring_tail)
+    if (next == (size_t)s_quic.ring_tail)
         return false; // ring full: drop (QUIC recovers via retransmission)
-    QuicIngest *e = &s_ring[head];
+    QuicIngest *e = &s_qpool.ring[head];
     memcpy(e->data, dg, len);
     e->len = (uint16_t)len;
     copy_str(e->ip, sizeof e->ip, ip);
     e->port = port;
-    s_ring_head = next; // publish after the record is fully written
+    s_quic.ring_head = next; // publish after the record is fully written
     return true;
 }
 
 bool ring_pop(QuicIngest *out)
 {
-    size_t tail = s_ring_tail;
-    if (tail == (size_t)s_ring_head)
+    size_t tail = s_quic.ring_tail;
+    if (tail == (size_t)s_quic.ring_head)
         return false;
-    *out = s_ring[tail];
-    s_ring_tail = (tail + 1) % DETWS_QUIC_INGEST_RING;
+    *out = s_qpool.ring[tail];
+    s_quic.ring_tail = (tail + 1) % DETWS_QUIC_INGEST_RING;
     return true;
 }
 
@@ -147,22 +160,22 @@ bool ring_pop(QuicIngest *out)
 QuicSlot *slot_by_id(uint32_t id)
 {
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
-        if (s_pool[i].used && s_pool[i].id == id)
-            return &s_pool[i];
+        if (s_qpool.pool[i].used && s_qpool.pool[i].id == id)
+            return &s_qpool.pool[i];
     return nullptr;
 }
 
 QuicSlot *alloc_slot()
 {
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
-        if (!s_pool[i].used)
+        if (!s_qpool.pool[i].used)
         {
-            QuicSlot *s = &s_pool[i];
+            QuicSlot *s = &s_qpool.pool[i];
             memset(s, 0, sizeof *s);
             s->used = true;
-            s->id = s_next_id++;
-            if (s_next_id == 0)
-                s_next_id = 1; // never hand out 0
+            s->id = s_quic.next_id++;
+            if (s_quic.next_id == 0)
+                s_quic.next_id = 1; // never hand out 0
             return s;
         }
     return nullptr;
@@ -173,8 +186,8 @@ void h3_on_request(void *app, H3Conn * /*h3*/, uint64_t stream_id, const char *m
                    const char *authority, const uint8_t *body, size_t body_len)
 {
     QuicSlot *s = (QuicSlot *)app;
-    if (s_on_request)
-        s_on_request(s_app, s->id, stream_id, method, path, authority, body, body_len);
+    if (s_quic.on_request)
+        s_quic.on_request(s_quic.app, s->id, stream_id, method, path, authority, body, body_len);
 }
 
 // Open a connection for a client's first Initial packet.
@@ -186,9 +199,9 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
 
     QuicTlsConfig tc;
     memset(&tc, 0, sizeof tc);
-    tc.cert_der = s_cfg.cert_der;
-    tc.cert_len = s_cfg.cert_len;
-    memcpy(tc.ed25519_seed, s_cfg.ed25519_seed, sizeof tc.ed25519_seed);
+    tc.cert_der = s_quic.cfg.cert_der;
+    tc.cert_len = s_quic.cfg.cert_len;
+    memcpy(tc.ed25519_seed, s_quic.cfg.ed25519_seed, sizeof tc.ed25519_seed);
     quic_tp_defaults(&tc.params);
     // A real HTTP/3 endpoint must advertise flow-control room, or every request stream (and the
     // client's control / QPACK streams) is blocked - the RFC 9000 sec 18.2 defaults are all zero.
@@ -198,11 +211,11 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     tc.params.initial_max_streams_bidi = DETWS_H3_MAX_STREAMS;
     tc.params.initial_max_streams_uni = DETWS_H3_MAX_STREAMS;
     tc.params.max_idle_timeout = DETWS_QUIC_IDLE_MS; // both ends reclaim the connection after this idle
-    s_cfg.rng(tc.ephemeral_priv, sizeof tc.ephemeral_priv);
-    s_cfg.rng(tc.random, sizeof tc.random);
+    s_quic.cfg.rng(tc.ephemeral_priv, sizeof tc.ephemeral_priv);
+    s_quic.cfg.rng(tc.random, sizeof tc.random);
 
     uint8_t our_scid[DETWS_QUIC_SCID_LEN];
-    s_cfg.rng(our_scid, sizeof our_scid);
+    s_quic.cfg.rng(our_scid, sizeof our_scid);
 
     QuicConnCallbacks cb;
     memset(&cb, 0, sizeof cb); // h3_conn_init installs the real callbacks
@@ -227,7 +240,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
             return nullptr;
         for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
         {
-            QuicSlot *s = &s_pool[i];
+            QuicSlot *s = &s_qpool.pool[i];
             if (!s->used)
                 continue;
             if (cid_eq(lh_out->dcid, lh_out->dcid_len, s->qc.scid, s->qc.scid_len) ||
@@ -243,7 +256,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
         return nullptr;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
     {
-        QuicSlot *s = &s_pool[i];
+        QuicSlot *s = &s_qpool.pool[i];
         if (s->used && s->qc.scid_len == DETWS_QUIC_SCID_LEN && memcmp(dg + 1, s->qc.scid, DETWS_QUIC_SCID_LEN) == 0)
             return s;
     }
@@ -255,7 +268,7 @@ void flush_and_reap(uint32_t now_ms)
     uint8_t out[DETWS_QUIC_MAX_DATAGRAM];
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
     {
-        QuicSlot *s = &s_pool[i];
+        QuicSlot *s = &s_qpool.pool[i];
         if (!s->used)
             continue;
         quic_conn_on_timeout(&s->qc, now_ms); // retransmit a lost handshake flight (PTO)
@@ -285,18 +298,18 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
 {
     if (!cfg || !cfg->rng)
         return false;
-    s_cfg = *cfg;
-    s_on_request = on_request;
-    s_app = app;
-    s_port = port ? port : DETWS_HTTP3_PORT;
+    s_quic.cfg = *cfg;
+    s_quic.on_request = on_request;
+    s_quic.app = app;
+    s_quic.port = port ? port : DETWS_HTTP3_PORT;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
-        s_pool[i].used = false;
-    s_ring_head = 0;
-    s_ring_tail = 0;
-    s_next_id = 1;
-    s_running = true;
+        s_qpool.pool[i].used = false;
+    s_quic.ring_head = 0;
+    s_quic.ring_tail = 0;
+    s_quic.next_id = 1;
+    s_quic.running = true;
 #if defined(ARDUINO)
-    return det_udp_listen(s_port, udp_ingest_cb, nullptr);
+    return det_udp_listen(s_quic.port, udp_ingest_cb, nullptr);
 #else
     return true; // host: fed through quic_server_ingest()
 #endif
@@ -304,7 +317,7 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
 
 void quic_server_poll(uint32_t now_ms)
 {
-    if (!s_running)
+    if (!s_quic.running)
         return;
     QuicIngest ig;
     while (ring_pop(&ig))
@@ -335,25 +348,25 @@ uint8_t quic_server_active_conns(void)
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
-        if (s_pool[i].used)
+        if (s_qpool.pool[i].used)
             n++;
     return n;
 }
 
 void quic_server_stop(void)
 {
-    s_running = false;
+    s_quic.running = false;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
-        s_pool[i].used = false;
-    s_ring_head = 0;
-    s_ring_tail = 0;
+        s_qpool.pool[i].used = false;
+    s_quic.ring_head = 0;
+    s_quic.ring_tail = 0;
 }
 
 #if !defined(ARDUINO)
 void quic_server_set_out_sink(QuicServerOutFn fn, void *ctx)
 {
-    s_out_sink = fn;
-    s_out_ctx = ctx;
+    s_quic.out_sink = fn;
+    s_quic.out_ctx = ctx;
 }
 
 bool quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
