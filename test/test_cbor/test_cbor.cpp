@@ -366,9 +366,121 @@ void test_read_map_type_mismatch()
     TEST_ASSERT_FALSE(cbor_reader_ok(&r));
 }
 
+// Decoder happy paths + wrong-type rejections not covered elsewhere: read_int
+// (positive / wrong major), read_bool (false / non-bool), read_null (valid /
+// non-null), read_float (double / non-float), read_bytes, read_array (valid / wrong).
+void test_cbor_decode_more_types()
+{
+    CborReader r;
+    int64_t iv;
+    bool bv;
+    float fv;
+    const uint8_t *bp;
+    const char *s;
+    size_t n, sl, c;
+
+    uint8_t p[] = {0x05}; // positive int via read_int (major 0)
+    cbor_reader_init(&r, p, sizeof(p));
+    TEST_ASSERT_TRUE(cbor_read_int(&r, &iv));
+    TEST_ASSERT_EQUAL_INT64(5, iv);
+    uint8_t wt[] = {0x40}; // empty byte string (major 2) -> not an int
+    cbor_reader_init(&r, wt, sizeof(wt));
+    TEST_ASSERT_FALSE(cbor_read_int(&r, &iv));
+
+    uint8_t bf[] = {0xf4}; // false
+    cbor_reader_init(&r, bf, sizeof(bf));
+    TEST_ASSERT_TRUE(cbor_read_bool(&r, &bv));
+    TEST_ASSERT_FALSE(bv);
+    uint8_t bn[] = {0xf6}; // null -> not a bool
+    cbor_reader_init(&r, bn, sizeof(bn));
+    TEST_ASSERT_FALSE(cbor_read_bool(&r, &bv));
+
+    uint8_t nz[] = {0xf6}; // null
+    cbor_reader_init(&r, nz, sizeof(nz));
+    TEST_ASSERT_TRUE(cbor_read_null(&r));
+    uint8_t nt[] = {0xf5}; // true -> not null
+    cbor_reader_init(&r, nt, sizeof(nt));
+    TEST_ASSERT_FALSE(cbor_read_null(&r));
+
+    uint8_t fbad[] = {0xf4}; // bool -> not a float
+    cbor_reader_init(&r, fbad, sizeof(fbad));
+    TEST_ASSERT_FALSE(cbor_read_float(&r, &fv));
+
+    uint8_t by[] = {0x42, 0xde, 0xad}; // byte string of 2
+    cbor_reader_init(&r, by, sizeof(by));
+    TEST_ASSERT_TRUE(cbor_read_bytes(&r, &bp, &n));
+    TEST_ASSERT_EQUAL_size_t(2, n);
+    TEST_ASSERT_EQUAL_UINT8(0xde, bp[0]);
+
+    uint8_t ar[] = {0x83}; // array(3)
+    cbor_reader_init(&r, ar, sizeof(ar));
+    TEST_ASSERT_TRUE(cbor_read_array(&r, &c));
+    TEST_ASSERT_EQUAL_size_t(3, c);
+    uint8_t aw[] = {0x00}; // uint -> not an array
+    cbor_reader_init(&r, aw, sizeof(aw));
+    TEST_ASSERT_FALSE(cbor_read_array(&r, &c));
+
+    uint8_t tw[] = {0x00}; // uint -> not text
+    cbor_reader_init(&r, tw, sizeof(tw));
+    TEST_ASSERT_FALSE(cbor_read_text(&r, &s, &sl));
+}
+
+// read_head rejects reserved additional-info (28-31) and truncated float args.
+void test_cbor_head_reserved_and_trunc()
+{
+    CborReader r;
+    uint64_t v;
+    float fv;
+    uint8_t rsv[] = {0x1c}; // major 0, additional-info 28 (reserved / indefinite)
+    cbor_reader_init(&r, rsv, sizeof(rsv));
+    TEST_ASSERT_FALSE(cbor_read_uint(&r, &v));
+    TEST_ASSERT_FALSE(cbor_reader_ok(&r));
+    uint8_t f4[] = {0xfa, 0x00, 0x00}; // float32 arg short
+    cbor_reader_init(&r, f4, sizeof(f4));
+    TEST_ASSERT_FALSE(cbor_read_float(&r, &fv));
+    uint8_t f8[] = {0xfb, 0x00, 0x00}; // float64 arg short
+    cbor_reader_init(&r, f8, sizeof(f8));
+    TEST_ASSERT_FALSE(cbor_read_float(&r, &fv));
+}
+
+// Every reader on a 0-length buffer fails closed.
+void test_cbor_read_empty()
+{
+    CborReader r;
+    uint8_t d = 0;
+    uint64_t uv;
+    int64_t iv;
+    bool bv;
+    float fv;
+    const char *s;
+    const uint8_t *bp;
+    size_t n, c;
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_uint(&r, &uv));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_int(&r, &iv));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_bool(&r, &bv));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_null(&r));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_float(&r, &fv));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_text(&r, &s, &n));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_bytes(&r, &bp, &n));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_array(&r, &c));
+    cbor_reader_init(&r, &d, 0);
+    TEST_ASSERT_FALSE(cbor_read_map(&r, &c));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_cbor_decode_more_types);
+    RUN_TEST(test_cbor_head_reserved_and_trunc);
+    RUN_TEST(test_cbor_read_empty);
     RUN_TEST(test_uint);
     RUN_TEST(test_peek_each_type);
     RUN_TEST(test_uint_8byte);
