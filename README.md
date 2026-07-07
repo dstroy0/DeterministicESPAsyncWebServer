@@ -474,14 +474,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `WS_CLIENT`         |            77.0 KB |          53.8 KB |
 | L7    | `ETAG`              |        0.0-72.6 KB |       0.0-9.5 KB |
 | L7    | `WEBDAV`            |       26.2-65.7 KB |     38.4-46.6 KB |
-| L7    | `VFS`               |            40.7 KB |           4.4 KB |
+| L7    | `VFS`               |            40.8 KB |          12.6 KB |
 | L7    | `RANGE`             |        0.6-39.9 KB |       0.0-8.2 KB |
 | L7    | `UPLOAD`            |            39.7 KB |          13.3 KB |
-| L7    | `OPCUA_CLIENT`      |        6.8-28.6 KB |     10.0-13.8 KB |
+| L7    | `OPCUA_CLIENT`      |        6.8-28.6 KB |     10.0-22.0 KB |
 | L7    | `NTP`               |            23.4 KB |          10.7 KB |
 | L7    | `MDNS`              |            23.1 KB |          10.0 KB |
 | L7    | `TIME_SOURCE`       |            18.9 KB |           9.8 KB |
-| L7    | `DASHBOARD`         |            18.5 KB |         < 0.5 KB |
+| L7    | `DASHBOARD`         |            18.5 KB |           8.5 KB |
 | L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`              |            11.4 KB |          13.0 KB |
 | L7    | `OAUTH2`            |            10.4 KB |          30.5 KB |
@@ -497,13 +497,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `CONFIG_STORE`      |             3.1 KB |           8.3 KB |
 | L7    | `GRAPHQL`           |             3.0 KB |          12.5 KB |
 | L7    | `GPIO_MAP`          |             2.4 KB |           8.2 KB |
-| L7    | `METRICS`           |             2.1 KB |         < 0.5 KB |
-| L7    | `SYSLOG`            |             1.5 KB |           1.8 KB |
+| L7    | `METRICS`           |             2.2 KB |           8.3 KB |
+| L7    | `SYSLOG`            |             1.5 KB |          10.0 KB |
 | L7    | `AUDIT_LOG`         |           < 0.5 KB |          11.1 KB |
 | L7    | `MODBUS_MASTER`     |           < 0.5 KB |           8.5 KB |
 | L7    | `STATS`             |           < 0.5 KB |           8.3 KB |
 | L7    | `MODBUS`            |           < 0.5 KB |           8.5 KB |
 | L7    | `LOGBUF`            |           < 0.5 KB |          11.2 KB |
+| L7    | `CSRF`              |           < 0.5 KB |           8.2 KB |
 | L7    | `TOTP`              |           < 0.5 KB |           8.2 KB |
 | L7    | `OTA_ROLLBACK`      |           < 0.5 KB |           8.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |           8.2 KB |
