@@ -90,17 +90,23 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
 
 namespace
 {
-promisc_sink_fn s_sink = nullptr;
+// All promiscuous-capture state, owned by one instance (internal linkage): the frame sink.
+// One named owner, unreachable from any other translation unit.
+struct PromiscCtx
+{
+    promisc_sink_fn sink = nullptr;
+};
+PromiscCtx s_promisc;
 
 void promisc_rx(void *buf, wifi_promiscuous_pkt_type_t)
 {
-    if (!s_sink || !buf)
+    if (!s_promisc.sink || !buf)
         return;
     const wifi_promiscuous_pkt_t *pkt = (const wifi_promiscuous_pkt_t *)buf;
     uint16_t len = (uint16_t)pkt->rx_ctrl.sig_len; // includes the 4-byte FCS
     if (len < 4)
         return;
-    s_sink(pkt->payload, (uint16_t)(len - 4), (int8_t)pkt->rx_ctrl.rssi, (uint8_t)pkt->rx_ctrl.channel);
+    s_promisc.sink(pkt->payload, (uint16_t)(len - 4), (int8_t)pkt->rx_ctrl.rssi, (uint8_t)pkt->rx_ctrl.channel);
 }
 } // namespace
 
@@ -108,7 +114,7 @@ bool promisc_begin(uint8_t channel, promisc_sink_fn sink)
 {
     if (!sink)
         return false;
-    s_sink = sink;
+    s_promisc.sink = sink;
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&promisc_rx);
     esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
@@ -123,7 +129,7 @@ void promisc_set_channel(uint8_t channel)
 void promisc_end(void)
 {
     esp_wifi_set_promiscuous(false);
-    s_sink = nullptr;
+    s_promisc.sink = nullptr;
 }
 
 #else // host build - no radio
