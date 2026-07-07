@@ -1,7 +1,11 @@
 # SSH test host key (TEST ONLY - INSECURE)
 
-A **known, public, throwaway** RSA-2048 SSH host key, committed so the SSH server can
-be provisioned for hardware and interop testing without per-developer key juggling.
+A **known, public, baseline** RSA-2048 SSH host key, committed so the SSH server can
+be provisioned for hardware and interop testing with a fixed, reproducible key -
+no per-developer key juggling. It is deliberately public (like a known-answer
+vector); it authenticates nothing. To provision with a **fresh** key instead, run
+`python3 tools/gen_ssh_host_key.py --type rsa` (or `--type ed25519`) and use its
+output - see the [`03.SSHHostKey`](../../../examples/L5-Session/03.SSHHostKey/) example.
 
 > [!WARNING]
 > The private key is committed to this repository in plain sight. It therefore

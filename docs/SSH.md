@@ -101,7 +101,15 @@ The server reads its RSA-2048 private key from NVS (namespace `ssh_host_key`,
 key `priv_der`) as a DER-encoded PKCS#1/PKCS#8 blob. Generate and store it once
 per device:
 
-1. **Generate a 2048-bit key and export DER (PKCS#8) on your workstation:**
+1. **Generate a 2048-bit key and export DER (PKCS#8) on your workstation.** The
+   bundled generator does both and prints the matching `.pub`:
+
+   ```sh
+   python3 tools/gen_ssh_host_key.py --type rsa --out-dir ./keys
+   # -> keys/ssh_host_key.der (store in NVS) and keys/ssh_host_key.pub (known_hosts)
+   ```
+
+   or by hand with the same tools:
 
    ```sh
    openssl genrsa -out ssh_host.pem 2048
@@ -109,6 +117,8 @@ per device:
    ```
 
    (`ssh_host.der` must be ≤ [`SSH_RSA_KEY_DER_MAX`](@ref SSH_RSA_KEY_DER_MAX) bytes - ~1.2 KB for RSA-2048.)
+   For a worked end-to-end walkthrough of both provisioning paths, see the
+   [`03.SSHHostKey`](../examples/L5-Session/03.SSHHostKey/) example.
 
 2. **Write the DER blob into NVS** from a one-time provisioning sketch:
 

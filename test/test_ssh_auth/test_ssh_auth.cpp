@@ -4,6 +4,7 @@
 // SSH user-authentication tests (RFC 4252): service request/accept, request
 // parsing, and the password method.
 
+#include "baseline_keys.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -375,9 +376,7 @@ static size_t build_pubkey_req_ed(uint8_t *pkt, const uint8_t *pub, const uint8_
 // authenticates; flipping any signature byte is rejected.
 void test_pubkey_ed25519_valid_signature_succeeds()
 {
-    static const uint8_t seed[32] = {0x4c, 0xcd, 0x08, 0x9b, 0x28, 0xff, 0x96, 0xda, 0x9d, 0xb6, 0xc3,
-                                     0x46, 0xec, 0x11, 0x4e, 0x0f, 0x5b, 0x8a, 0x31, 0x9f, 0x35, 0xab,
-                                     0xa6, 0x24, 0xda, 0x8c, 0xf6, 0xed, 0x4f, 0xb8, 0xa6, 0xfb};
+    const uint8_t *seed = BASELINE_ED25519_SEEDS[0]; // deterministic baseline client key
     ssh_auth_set_pubkey_cb(pk_cb_alice);
     set_session_id_0_to_31();
     uint8_t pub[32];
