@@ -16,16 +16,22 @@
 HttpReq http_pool[CONN_POOL_SLOTS];
 
 #if DETWS_ENABLE_STREAM_BODY
-// Streaming-body hooks (OTA / file upload). Null unless the application installs them.
-static HttpStreamBeginCb g_stream_begin = nullptr;
-static HttpStreamDataCb g_stream_data = nullptr;
-static HttpStreamAbortCb g_stream_abort = nullptr;
+// Streaming-body hooks (OTA / file upload), owned by one instance (internal linkage): null
+// unless the application installs them. One named owner, unreachable cross-TU. (The http_pool[]
+// request table is the shared cross-TU substrate.)
+struct HttpParserCtx
+{
+    HttpStreamBeginCb stream_begin = nullptr;
+    HttpStreamDataCb stream_data = nullptr;
+    HttpStreamAbortCb stream_abort = nullptr;
+};
+static HttpParserCtx s_hp;
 
 void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data, HttpStreamAbortCb abort)
 {
-    g_stream_begin = begin;
-    g_stream_data = data;
-    g_stream_abort = abort;
+    s_hp.stream_begin = begin;
+    s_hp.stream_data = data;
+    s_hp.stream_abort = abort;
 }
 #endif // DETWS_ENABLE_STREAM_BODY
 
@@ -170,8 +176,8 @@ void http_parser_reset(HttpReq *req)
     // reset / timeout / error): let the sink release its resource before we wipe
     // the state. The normal-completion reset runs while parse_state==PARSE_COMPLETE
     // (the handler already finished the sink), so this fires only on abort.
-    if (req->body_streaming && req->parse_state != PARSE_COMPLETE && g_stream_abort)
-        g_stream_abort(req);
+    if (req->body_streaming && req->parse_state != PARSE_COMPLETE && s_hp.stream_abort)
+        s_hp.stream_abort(req);
 #endif
     *req = {};         // zero all fields
     req->slot_id = id; // restore slot identity
@@ -464,7 +470,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // hook can match method/path/Authorization and begin a sink (Update
             // or a file). If it accepts, the body streams in chunks and the size
             // cap is bypassed; the matching route handler still runs at COMPLETE.
-            else if (p->content_length > 0 && g_stream_begin && g_stream_begin(p))
+            else if (p->content_length > 0 && s_hp.stream_begin && s_hp.stream_begin(p))
             {
                 p->body_streaming = true;
                 p->parse_state = PARSE_BODY;
@@ -499,15 +505,15 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             p->body[p->body_len++] = byte;
             if (p->body_len == BODY_BUF_SIZE)
             {
-                if (g_stream_data)
-                    g_stream_data(p, p->body, p->body_len);
+                if (s_hp.stream_data)
+                    s_hp.stream_data(p, p->body, p->body_len);
                 p->body_len = 0;
             }
             p->body_bytes_read++;
             if (p->body_bytes_read >= p->content_length)
             {
-                if (p->body_len && g_stream_data)
-                    g_stream_data(p, p->body, p->body_len); // flush the tail
+                if (p->body_len && s_hp.stream_data)
+                    s_hp.stream_data(p, p->body, p->body_len); // flush the tail
                 p->body_len = 0;
                 p->body[0] = '\0';
                 p->parse_state = PARSE_COMPLETE;
