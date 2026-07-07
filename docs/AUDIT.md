@@ -31,6 +31,8 @@ harness - `vec:<spec>` = pinned spec test vectors - `HW` = verified on ESP32 har
 | RFC 9111 Caching   | ✅      | `ETag`/`Last-Modified`, `304` on conditional GET, `Cache-Control`                                              | `native_http_delivery`, `native_etag`               |
 | RFC 3986 URI       | ✅      | Path/query split, percent-decoding, dot-segment handling                                                       | `native_http_parser`                                |
 | RFC 1123 HTTP-date | ✅      | IMF-fixdate format for `Last-Modified` / `If-Modified-Since` (gmtime_r, no locale)                             | `native_http_time`                                  |
+| RFC 6265 Cookies   | ✅      | Inbound cookie parsing (`http_get_cookie`), outbound `set_cookie` emission                                    | `native_http_parser`, `native_auth`, HW             |
+| RFC 7239 Forwarded | ✅      | Parsing client IP / HTTPS scheme from `Forwarded` / `X-Forwarded-*` headers                                     | `native_http_parser`                                |
 | RFC 5234 ABNF      | 📎      | Grammar notation only                                                                                          | -                                                   |
 | RFC 7230/7231/7233 | 📎      | Obsoleted by 9110/9112; cited where code predates the renumbering                                              | -                                                   |
 
@@ -45,7 +47,7 @@ harness - `vec:<spec>` = pinned spec test vectors - `HW` = verified on ESP32 har
 | RFC 9001 QUIC-TLS      | ✅      | Initial/Handshake/1-RTT protection, header protection, Retry integrity tag                                                                                         | `native_quic_crypto` (vs App A), HW |
 | RFC 8446 TLS1.3 (QUIC) | 🔷      | From-scratch handshake for HTTP/3 (AES-128-GCM + X25519 + Ed25519, §7.1 schedule, §4 msgs) pinned to RFC 8448                                                      | `native_quic_tls` (`vec:RFC 8448`)  |
 | RFC 8448 traces        | ✅      | Key schedule + ServerHello/Certificate/Finished bytes pinned                                                                                                       | `vec:RFC 8448`                      |
-| RFC 9114 HTTP/3        | 🔷      | Control + QPACK streams, SETTINGS, request→response mapping. UDP/server wiring + HW interop remaining                                                              | `native_h3_*` end-to-end            |
+| RFC 9114 HTTP/3        | ✅      | Control + QPACK streams, SETTINGS, request→response mapping, UDP/server wiring, and hardware-interop                | `native_h3_*` end-to-end, HW        |
 
 ## HTTP authentication & authorization
 
@@ -149,7 +151,7 @@ harness - `vec:<spec>` = pinned spec test vectors - `HW` = verified on ESP32 har
 | ---------------- | ------- | ----------------------------------------------------------------------------- | ---------------------------- |
 | RFC 8446 TLS 1.3 | 🔗      | Record/handshake owned by mbedTLS; version + cipher **policy** layered on top | `native_tls_policy`, mbedTLS |
 | RFC 5246 TLS 1.2 | 🔗      | mbedTLS; floored at 1.2, negotiated version observable                        | `native_tls_policy`, mbedTLS |
-| RFC 5077 tickets | 🔗      | Session resumption via mbedTLS; explicit control is roadmap                   | mbedTLS                      |
+| RFC 5077 tickets | ✅      | Session resumption via mbedTLS with explicit server ticket key rotation                                       | `native_tls_policy`, HW             |
 
 ---
 

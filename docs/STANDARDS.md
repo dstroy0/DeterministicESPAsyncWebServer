@@ -22,8 +22,8 @@ newer entry here.
 - [RFC 5234](https://www.rfc-editor.org/rfc/rfc5234) - ABNF - **ref** (grammar notation used by the HTTP specs).
 - [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123) - Host Requirements - **impl** (the IMF-fixdate / HTTP-date format for Last-Modified / If-Modified-Since).
 - [RFC 7230](https://www.rfc-editor.org/rfc/rfc7230) / [7231](https://www.rfc-editor.org/rfc/rfc7231) / [7233](https://www.rfc-editor.org/rfc/rfc7233) - HTTP/1.1 (messaging / semantics / range) - **ref** (obsoleted by 9110 / 9112; cited where the code predates the renumbering).
-- [RFC 6265](https://www.rfc-editor.org/rfc/rfc6265) - HTTP State Management (Cookies) - **roadmap**.
-- [RFC 7239](https://www.rfc-editor.org/rfc/rfc7239) - Forwarded HTTP Extension - **roadmap** (trust-proxy gated).
+- [RFC 6265](https://www.rfc-editor.org/rfc/rfc6265) - HTTP State Management (Cookies) - **impl** (cookie get/set).
+- [RFC 7239](https://www.rfc-editor.org/rfc/rfc7239) - Forwarded HTTP Extension - **impl** (client ip/scheme parsing).
 
 ## HTTP/2 & HTTP/3
 
@@ -34,7 +34,7 @@ newer entry here.
 - [RFC 9001](https://www.rfc-editor.org/rfc/rfc9001) - Using TLS to Secure QUIC - **impl** (Initial / Handshake / 1-RTT packet protection, header protection, Retry integrity tag, and the hand-rolled TLS 1.3 handshake carried in CRYPTO frames).
 - [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446) - TLS 1.3 - **impl for QUIC** (a from-scratch server handshake for HTTP/3: TLS_AES_128_GCM_SHA256 + X25519 + Ed25519, the sec 7.1 key schedule + sec 4 messages, pinned to the RFC 8448 traces; mbedTLS has no QUIC-TLS API). TLS over TCP remains **via mbedTLS**.
 - [RFC 8448](https://www.rfc-editor.org/rfc/rfc8448) - Example TLS 1.3 Handshake Traces - **test vectors** (the QUIC TLS 1.3 key schedule + ServerHello / Certificate / Finished bytes are pinned to sec 3).
-- [RFC 9114](https://www.rfc-editor.org/rfc/rfc9114) - HTTP/3 - **impl** (application engine over QUIC streams: control + QPACK streams, SETTINGS, request stream -> response; end-to-end host-tested). The UDP + server wiring and on-hardware interop are the remaining step.
+- [RFC 9114](https://www.rfc-editor.org/rfc/rfc9114) - HTTP/3 - **impl** (application engine over QUIC streams: control + QPACK streams, SETTINGS, request stream -> response; end-to-end host-tested and hardware-validated).
 
 ## HTTP authentication & authorization
 
@@ -128,4 +128,4 @@ newer entry here.
 
 - [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446) - TLS 1.3 - **via mbedTLS** (server + client); explicit version control is **roadmap**.
 - [RFC 5246](https://www.rfc-editor.org/rfc/rfc5246) - TLS 1.2 - **via mbedTLS**; explicit support is **roadmap**.
-- [RFC 5077](https://www.rfc-editor.org/rfc/rfc5077) - TLS session resumption (tickets) - **roadmap** / **via mbedTLS**.
+- [RFC 5077](https://www.rfc-editor.org/rfc/rfc5077) - TLS session resumption (tickets) - **impl** (stateless ticket key-rotation and resumption context).
