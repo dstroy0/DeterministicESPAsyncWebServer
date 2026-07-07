@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- suppress S125 false positive on ServerConfig.h section headers ([`17045a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17045a0f25aaa3b37fbaa655ba0aeede21f88816))
+- update CHANGELOG.md [skip ci] ([`004ecc7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/004ecc7127fb6de8fa8b107632705d3b6002fd72))
 - suppress design-constraint-conflict rules + the tls13_msg S3519 false positive ([`430074d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/430074d244afc366bf35d7e4b36e20c23412412f))
 - update CHANGELOG.md [skip ci] ([`c9c634e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9c634e30eb3bdd9eb4c27be33d3414ae0d52d61))
 - update test report [skip ci] ([`203df44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/203df44891e939f910f7053d88c3f08c49fa3bbb))
