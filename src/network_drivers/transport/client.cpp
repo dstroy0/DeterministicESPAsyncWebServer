@@ -22,9 +22,9 @@
 
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
-#include "services/clock.h"                 // detws_millis()
+#include "services/clock.h"                     // detws_millis()
 #include "services/dns_resolver/dns_resolver.h" // shared host->IP resolve (one DNS owner)
-#include "shared_primitives/ring.h"         // shared DetAtomic + SPSC ring drain (same primitive as the server)
+#include "shared_primitives/ring.h"             // shared DetAtomic + SPSC ring drain (same primitive as the server)
 #include <Arduino.h>                            // delay()
 #include <string.h>
 
