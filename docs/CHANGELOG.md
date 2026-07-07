@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`062a7a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062a7a297d3d9aa70845a2c28086664b1efff7e6))
 - update CHANGELOG.md [skip ci] ([`250ba48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/250ba485be5c9f409ae5d73ba7fd4e3435229341))
 - update CHANGELOG.md [skip ci] ([`ae42734`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae42734ba8e5160d4af18424b1441ceda044a92b))
 - update CHANGELOG.md [skip ci] ([`9da05dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da05ddfdde2c1a710d76bd0f5774fbdb280ca37))
@@ -229,6 +230,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover build/TP error paths; EXCL 5 dead encode guards (88->100%) ([`7dbe6b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dbe6b62d8e00ea390727110ac0f680bec07718d))
 - cover id/frag error paths; EXCL 2 dead append guards (84->100%) ([`8b777a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b777a21bc83063431cd40f3b2dc4332126d0b3b))
 - cover DISCONNECT teardown + overlong-banner reject (91->95%) ([`c95be3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c95be3a6ac135dc0a3d9f0aaa772ab4a2fff7d8f))
 - cover channel send/close/open + accept/poll paths (64->91%) ([`42e4097`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42e409718aacd8a4d78213725c746d814900b01d))
