@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DNP3_H
 #define DETERMINISTICESPASYNCWEBSERVER_DNP3_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_DNP3
 

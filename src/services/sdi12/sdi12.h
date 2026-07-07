@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SDI12_H
 #define DETERMINISTICESPASYNCWEBSERVER_SDI12_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_SDI12
 

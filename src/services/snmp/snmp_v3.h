@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_V3_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_V3_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

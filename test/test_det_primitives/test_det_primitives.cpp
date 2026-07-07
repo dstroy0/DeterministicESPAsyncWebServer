@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Unit tests for the shared no-stdlib primitives: the base-10 number parsers
-// (shared_primitives/det_numparse.h - det_strtol / det_strtoul / det_strtof, the
+// (shared_primitives/numparse.h - det_strtol / det_strtoul / det_strtof, the
 // strtol-family endptr contract) and the strict RFC 3629 UTF-8 validator
-// (det_utf8.h). Pure host tests.
+// (utf8.h). Pure host tests.
 
-#include "shared_primitives/det_numparse.h"
-#include "shared_primitives/det_utf8.h"
+#include "shared_primitives/numparse.h"
+#include "shared_primitives/utf8.h"
 #include <unity.h>
 
 void setUp()

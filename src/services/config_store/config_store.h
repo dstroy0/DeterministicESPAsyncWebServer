@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CONFIG_STORE_H
 #define DETERMINISTICESPASYNCWEBSERVER_CONFIG_STORE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

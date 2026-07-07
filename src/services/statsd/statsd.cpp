@@ -11,11 +11,11 @@
  */
 
 #include "services/statsd/statsd.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_STATSD
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include <string.h>
 
 namespace

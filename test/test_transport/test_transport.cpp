@@ -5,12 +5,12 @@
 // ring-buffer arithmetic, timeout logic, event-queue behavior, and
 // sustained-load correctness.
 
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 #include "network_drivers/transport/listener.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <unity.h>
 
-// transport.cpp + listener.cpp are compiled into the native env - no stubs needed.
+// tcp.cpp + listener.cpp are compiled into the native env - no stubs needed.
 
 // Build a v4 DetIp from a host-order word (0xC0A80005 -> 192.168.0.5). The accept-time
 // gates key on the full family-tagged address, so the tests carry a DetIp, not a uint32.

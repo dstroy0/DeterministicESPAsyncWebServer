@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WIFI_SNIFFER_H
 #define DETERMINISTICESPASYNCWEBSERVER_WIFI_SNIFFER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

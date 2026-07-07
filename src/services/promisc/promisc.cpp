@@ -81,7 +81,7 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
 }
 
 // libpcap framing (det_pcap_global_header / det_pcap_record_header) is in
-// shared_primitives/det_pcap.h - shared with the other capture features.
+// shared_primitives/pcap.h - shared with the other capture features.
 
 // --- ESP32 radio binding -----------------------------------------------------------------
 #ifdef ARDUINO

@@ -287,7 +287,7 @@ Open follow-ups discovered during the above:
 - [~] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0)._ `DETWS_ENABLE_IPV6`
       enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The
-      `DetIp` address core (`network_drivers/network/det_ip.h`) parses / formats / classifies both
+      `DetIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
       families (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2
       (done):** the transport carries the peer as a protocol-agnostic family-tagged `DetIp`
       (`det_conn_remote_addr()` / `det_lwip_to_detip()`), and every IP-keyed abuse-prevention feature
@@ -379,7 +379,7 @@ shipped work:
       SSH now bounds failed `USERAUTH_REQUEST`s per connection: the dispatcher
       (`ssh_server.cpp`) counts [`SSH_MSG_USERAUTH_FAILURE`](@ref SSH_MSG_USERAUTH_FAILURE) responses in
       `SshSession.auth_failures` and, after [`SSH_MAX_AUTH_ATTEMPTS`](@ref SSH_MAX_AUTH_ATTEMPTS)
-      (`DetWebServerConfig.h`, default 6), emits [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)
+      (`ServerConfig.h`, default 6), emits [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)
       (reason 14) and closes (RFC 4252 §4). The publickey probe (PK_OK) and a
       SUCCESS do not count. Tested by `test_auth_bruteforce_disconnect` /
       `test_auth_success_after_failures`.
@@ -404,7 +404,7 @@ shipped work:
       ([`listener_accept_allowed()`](@ref listener_accept_allowed)): when [`DETWS_ENABLE_ACCEPT_THROTTLE`](@ref DETWS_ENABLE_ACCEPT_THROTTLE) is set,
       the accept callback drops connections beyond
       [`DETWS_ACCEPT_THROTTLE_MAX`](@ref DETWS_ACCEPT_THROTTLE_MAX) per [`DETWS_ACCEPT_THROTTLE_WINDOW_MS`](@ref DETWS_ACCEPT_THROTTLE_WINDOW_MS)
-      (`DetWebServerConfig.h`) before claiming a pool slot. Default off (zero
+      (`ServerConfig.h`) before claiming a pool slot. Default off (zero
       cost / no behavior change). Two static counters, global across listeners -
       a per-IP table was deliberately not added (YAGNI; the mock PCB carries no
       remote IP and a 1-3 connection device gains little from per-IP state).
@@ -418,7 +418,7 @@ shipped work:
       _(done)_ `base64_decode()` now takes a `dst_cap` parameter
       (`base64.cpp`/`.h`, both platforms) and bounds every write; an over-capacity
       decode returns 0 instead of overrunning. `check_basic_auth()`
-      (`DeterministicESPAsyncWebServer.cpp`) passes `sizeof(decoded) - 1`, leaving
+      (`dwserver.cpp`) passes `sizeof(decoded) - 1`, leaving
       room for the null terminator regardless of how [`MAX_VAL_LEN`](@ref MAX_VAL_LEN)/[`MAX_AUTH_LEN`](@ref MAX_AUTH_LEN)
       are set. Tested by `test_base64_decode_respects_capacity`; all callers
       (WS handshake tests) updated to the new signature.
@@ -434,7 +434,7 @@ shipped work:
       each detach the pcb, free the per-connection TLS context, reset the slot, and
       then FIN/RST - on a captured pcb pointer, so a late lwIP callback finds a freed
       slot. Every hand-rolled teardown now passes only the slot: the WS/SSE close +
-      upgrade-fail sites in `DeterministicESPAsyncWebServer.cpp`, `session.cpp`
+      upgrade-fail sites in `dwserver.cpp`, `session.cpp`
       `tls_abort`, and the SSH (x2) / telnet / modbus / opcua drop paths. This also
       fixed a latent pcb leak (the WS/SSE upgrade-alloc-fail paths detached but never
       aborted). Host-tested (`test_observability`: local-close frees the slot,
@@ -462,7 +462,7 @@ shipped work:
       SSH server host key, JWKS) drops the task stack high-water by ~7 KB, dominated by
       the mbedTLS bignum modexp. The "documented minimum worker-stack" option is now
       **enforced at build time**: [`DETWS_WORKER_STACK_RSA_MIN`](@ref DETWS_WORKER_STACK_RSA_MIN)
-      (default 8192, `DetWebServerConfig.h`) is the floor, and a validation `#error`
+      (default 8192, `ServerConfig.h`) is the floor, and a validation `#error`
       fires when `DETWS_ENABLE_OIDC` or `DETWS_ENABLE_SSH` is set while
       [`DETWS_WORKER_TASK_STACK`](@ref DETWS_WORKER_TASK_STACK) is below it - so a lowered
       worker stack is caught at compile time instead of overflowing on the first verify.
@@ -675,7 +675,7 @@ shipped work:
 Capabilities a small IoT web server commonly needs but the library does not yet
 provide. Each should follow the existing feature-flag convention - a
 `DETWS_ENABLE_*` macro defaulting to 0, gating its own `.cpp`/pool so it costs
-no code, RAM, or flash when disabled (`DetWebServerConfig.h`). Roughly ordered
+no code, RAM, or flash when disabled (`ServerConfig.h`). Roughly ordered
 by how often a deployed device needs it.
 
 - [x] **mDNS / DNS-SD advertisement ([`DETWS_ENABLE_MDNS`](@ref DETWS_ENABLE_MDNS)).** _(done)_
@@ -888,7 +888,7 @@ deployed device.
 Newbie / developer experience:
 
 - [x] **One-call static directory mount.** _(done)_
-      `serve_static(url_prefix, fs, fs_root)` (`DeterministicESPAsyncWebServer.h`)
+      `serve_static(url_prefix, fs, fs_root)` (`dwserver.h`)
       mounts a filesystem subtree at a URL prefix via a wildcard `ROUTE_STATIC`:
       `index.html` fallback for `/` or directory requests, MIME auto-detection,
       gzip-static, path-traversal rejection, GET/HEAD only (else 405). Tested by
@@ -902,7 +902,7 @@ Newbie / developer experience:
 - [x] **Named `begin()` failure codes.** _(done)_ `begin()`/[`listen()`](@ref DetWebServer::listen)/[`restart()`](@ref DetWebServer::restart)
       now return a [`DetWebServerResult`](@ref DetWebServerResult) enum: [`DETWS_OK`](@ref DETWS_OK), [`DETWS_ERR_NO_LISTENERS`](@ref DETWS_ERR_NO_LISTENERS),
       [`DETWS_ERR_LISTENER_FULL`](@ref DETWS_ERR_LISTENER_FULL), [`DETWS_ERR_LISTEN_FAILED`](@ref DETWS_ERR_LISTEN_FAILED)
-      (`DeterministicESPAsyncWebServer.h`/`.cpp`). Subsumes the heap-bytes mismatch
+      (`dwserver.h`/`.cpp`). Subsumes the heap-bytes mismatch
       item below (docstring corrected).
 
 - [x] **`redirect()` helper.** _(done)_ `server.redirect(slot_id, code, location)`

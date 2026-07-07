@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CSRF_H
 #define DETERMINISTICESPASYNCWEBSERVER_CSRF_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_CSRF
 

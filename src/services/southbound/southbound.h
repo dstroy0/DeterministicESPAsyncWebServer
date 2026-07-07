@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SOUTHBOUND_H
 #define DETERMINISTICESPASYNCWEBSERVER_SOUTHBOUND_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

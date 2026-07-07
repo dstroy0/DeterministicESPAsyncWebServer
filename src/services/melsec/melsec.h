@@ -35,7 +35,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MELSEC_H
 #define DETERMINISTICESPASYNCWEBSERVER_MELSEC_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_MELSEC
 

@@ -23,7 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DDS_H
 #define DETERMINISTICESPASYNCWEBSERVER_DDS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

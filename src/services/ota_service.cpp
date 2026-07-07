@@ -10,10 +10,10 @@
 
 #if DETWS_ENABLE_OTA && defined(ARDUINO)
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/mime.h"
 #include <Arduino.h>
 #include <Update.h>
 #include <string.h>

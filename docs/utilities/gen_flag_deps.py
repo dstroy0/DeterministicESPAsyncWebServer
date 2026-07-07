@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Generate the build-flag dependency flowchart from the config header's own guards.
 
-The single source of truth is src/DetWebServerConfig.h. A child feature that cannot compile
+The single source of truth is src/ServerConfig.h. A child feature that cannot compile
 without a parent is enforced there by a preprocessor guard whose #error says "... requires ...":
 
     #if DETWS_ENABLE_CHILD && !DETWS_ENABLE_PARENT
@@ -36,7 +36,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CONFIG_H = os.path.join(ROOT, "src", "DetWebServerConfig.h")
+CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
 README = os.path.join(ROOT, "README.md")
 DIAGRAMS = os.path.join(ROOT, "docs", "diagrams")
 
@@ -141,7 +141,7 @@ def mermaid(hard, resource, derived):
     )
     out = [init, "flowchart TD"]
     out.append("  %% Reading: A --> B means B requires A (enable the parent to build the child).")
-    out.append("  %% Auto-generated from the #error / #if guards in src/DetWebServerConfig.h.")
+    out.append("  %% Auto-generated from the #error / #if guards in src/ServerConfig.h.")
     out.append("")
     if resource:
         out.append('  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])')
@@ -183,7 +183,7 @@ def build_block():
             BEGIN,
             "",
             "> Generated from the `#error` / `#if` guards in"
-            " [src/DetWebServerConfig.h](src/DetWebServerConfig.h) by"
+            " [src/ServerConfig.h](src/ServerConfig.h) by"
             " `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the"
             " GitHub app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).",
             "",

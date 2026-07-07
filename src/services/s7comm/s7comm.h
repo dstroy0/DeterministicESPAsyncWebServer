@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_S7COMM_H
 #define DETERMINISTICESPASYNCWEBSERVER_S7COMM_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_S7COMM
 

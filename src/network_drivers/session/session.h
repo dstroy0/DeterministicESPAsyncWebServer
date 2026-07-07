@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 #define DETERMINISTICESPASYNCWEBSERVER_SESSION_H
 
-#include "../transport/transport.h"
+#include "../transport/tcp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include <Arduino.h>

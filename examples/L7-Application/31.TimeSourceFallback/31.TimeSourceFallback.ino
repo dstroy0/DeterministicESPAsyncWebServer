@@ -21,7 +21,7 @@
 #define DETWS_ENABLE_NTP 1
 #define DETWS_ENABLE_TIME_SOURCE 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/ntp_service.h"
 #include "services/time_source/time_source.h"

@@ -7,7 +7,7 @@
  */
 
 #include "services/fdc2214/fdc2214.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_FDC2214
 
@@ -52,7 +52,7 @@ size_t fdc2214_build_config(uint8_t *buf, size_t cap, uint16_t rcount, uint16_t 
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

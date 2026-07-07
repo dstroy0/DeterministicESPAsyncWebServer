@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_BACNET_H
 #define DETERMINISTICESPASYNCWEBSERVER_BACNET_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_BACNET
 

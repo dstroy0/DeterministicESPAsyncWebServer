@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_can.h
+ * @file can.h
  * @brief Shared CAN 2.0 frame type for the CAN-based industrial codecs (one source of truth).
  *
  * CANopen, J1939, DeviceNet, and NMEA 2000 all ride classic CAN frames (an 11-bit or

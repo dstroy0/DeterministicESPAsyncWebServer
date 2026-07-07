@@ -15,7 +15,7 @@
 #if DETWS_ENABLE_CSRF
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
-#include "shared_primitives/det_hex.h"
+#include "shared_primitives/hex.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -32,7 +32,7 @@ struct CsrfCtx
 };
 CsrfCtx s_csrf;
 
-// hex encode/decode now via the shared det_hex.h primitive.
+// hex encode/decode now via the shared hex.h primitive.
 
 // Constant-time compare of n characters (no early exit on mismatch).
 bool ct_equal(const char *a, const char *b, size_t n)

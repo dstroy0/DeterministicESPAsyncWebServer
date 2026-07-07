@@ -11,7 +11,7 @@
 //   - The WWW-Authenticate header includes the correct realm
 //   - Credentials are checked exactly (no prefix match)
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <string.h>
 #include <unity.h>
 

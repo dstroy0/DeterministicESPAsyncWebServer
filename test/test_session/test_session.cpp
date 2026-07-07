@@ -13,7 +13,7 @@
 #include "network_drivers/transport/listener.h"
 #include <unity.h>
 
-// transport.cpp + presentation.cpp + session.cpp compiled into native env.
+// tcp.cpp + presentation.cpp + session.cpp compiled into native env.
 // No stubs required.
 
 // Push ASCII bytes into a slot's ring buffer (mirrors test_presentation helper).

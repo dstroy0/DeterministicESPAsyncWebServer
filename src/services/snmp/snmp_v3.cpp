@@ -480,7 +480,7 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
 }
 
 #if DETWS_ENABLE_SNMP_TRAP
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include "services/snmp/snmp_notify.h"
 
 // Shared SNMPv3 USM notification path: authenticated, and encrypted when a

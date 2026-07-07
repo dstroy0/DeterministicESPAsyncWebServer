@@ -15,11 +15,11 @@
 //   ETH_PHY_TYPE=ETH_PHY_LAN8720 ETH_PHY_ADDR=1 ETH_PHY_POWER=-1
 //   ETH_PHY_MDC=23 ETH_PHY_MDIO=18 ETH_CLK_MODE=ETH_CLOCK_GPIO0_IN
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include "services/bus_capture/bus_capture.h"
-#include "services/forward/det_forward.h"
+#include "services/forward/forward.h"
 #include <ETH.h>
 #include <string.h>
 

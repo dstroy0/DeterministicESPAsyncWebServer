@@ -21,7 +21,7 @@ while (!ipv6_ready()) delay(250); // waits for a global (routable) v6 address
 
 ## The DetIp address core
 
-`network_drivers/network/det_ip.h` is one family-tagged type for both v4 and v6, with:
+`network_drivers/network/ip.h` is one family-tagged type for both v4 and v6, with:
 
 - **`det_ip_parse()`** - RFC 4291 text (dotted-quad; v6 with `::` zero-compression and the
   embedded-v4 `::ffff:a.b.c.d` tail).

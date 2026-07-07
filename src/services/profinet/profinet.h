@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROFINET_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROFINET_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

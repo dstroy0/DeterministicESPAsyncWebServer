@@ -27,7 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TLS13_KDF_H
 #define DETERMINISTICESPASYNCWEBSERVER_TLS13_KDF_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_HTTP3
 

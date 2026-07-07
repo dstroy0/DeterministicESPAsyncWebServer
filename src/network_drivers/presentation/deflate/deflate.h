@@ -33,7 +33,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DEFLATE_H
 #define DETERMINISTICESPASYNCWEBSERVER_DEFLATE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

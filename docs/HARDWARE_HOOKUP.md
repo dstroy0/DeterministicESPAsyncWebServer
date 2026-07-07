@@ -689,7 +689,7 @@ already include the small pull-up resistors I2C needs. If two boards share an ad
 (the PCA9685 and INA219 both default to 0x40), change one with its address solder pads.
 
 All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin()` in
-`services/det_i2c.h`), so there is a single place to move the pins:
+`services/i2c.h`), so there is a single place to move the pins:
 **`DETWS_I2C_SDA_PIN` / `DETWS_I2C_SCL_PIN`** (default `-1` = the platform default 21 /
 22). Set both to free GPIOs to relocate the whole bus.
 

@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CC1101_H
 #define DETERMINISTICESPASYNCWEBSERVER_CC1101_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_CC1101
 

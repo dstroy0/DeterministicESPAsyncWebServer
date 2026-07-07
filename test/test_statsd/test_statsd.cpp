@@ -6,7 +6,7 @@
 // (statsd_count/gauge/timing/set), whose formatted-and-sent bytes are captured through the
 // transport UDP service's host capture seam.
 
-#include "network_drivers/transport/udp_transport.h" // det_udp_capture_* (host seam)
+#include "network_drivers/transport/udp.h" // det_udp_capture_* (host seam)
 #include "services/statsd/statsd.h"
 #include <string>
 #include <unity.h>

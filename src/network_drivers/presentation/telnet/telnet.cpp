@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_TELNET
 
 #include "network_drivers/session/proto_handler.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

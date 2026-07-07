@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
 #define DETERMINISTICESPASYNCWEBSERVER_DASHBOARD_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

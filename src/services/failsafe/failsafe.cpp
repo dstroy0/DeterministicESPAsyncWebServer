@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_FAILSAFE
 
-#include "services/det_clock.h" // detws_millis() - the pluggable monotonic clock
+#include "services/clock.h" // detws_millis() - the pluggable monotonic clock
 
 namespace
 {

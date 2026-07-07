@@ -44,7 +44,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SCRATCH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SCRATCH_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 
 /**

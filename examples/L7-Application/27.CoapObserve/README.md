@@ -58,7 +58,7 @@ verbatim with added explanatory comments:
 #define DETWS_ENABLE_COAP 1
 #define DETWS_ENABLE_COAP_OBSERVE 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/coap/coap.h"
 #include <WiFi.h>

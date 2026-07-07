@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H
 #define DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stdint.h>
 
 /**

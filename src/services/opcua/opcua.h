@@ -51,7 +51,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OPCUA_H
 #define DETERMINISTICESPASYNCWEBSERVER_OPCUA_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_utf8.h
+ * @file utf8.h
  * @brief Strict UTF-8 validation (RFC 3629), one shared copy.
  *
  * Several protocols must reject non-UTF-8 input: WebSocket TEXT frames

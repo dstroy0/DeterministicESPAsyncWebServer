@@ -32,7 +32,7 @@ SRC = ROOT / "src"
 # through the L5 seam (see docs/ARCHITECTURE.md). These are the documented "one seam", not
 # scattered outliers, so they are exempt. Keyed by the exact variable name.
 SHARED_SUBSTRATE = {
-    "conn_pool",  # transport.cpp   - the TCP connection pool (extern in transport.h)
+    "conn_pool",  # tcp.cpp   - the TCP connection pool (extern in tcp.h)
     "http_pool",  # http_parser.cpp - the parsed-request pool (extern in http_parser.h)
     "ws_pool",  # websocket.cpp   - the WebSocket connection pool (extern in websocket.h)
     "sse_pool",  # sse.cpp         - the SSE connection pool (extern in sse.h)
@@ -46,7 +46,7 @@ SHARED_SUBSTRATE = {
     "ssh_sess",  # ssh_transport.cpp- per-conn session state
     "ssh_host_pubkey",  # ssh_rsa.cpp      - the loaded RSA host public key
     "crypto_work",  # ssh_bignum.cpp   - shared SSH bignum scratch
-    "detws_ap_ip",  # transport.cpp    - the softAP IP (extern)
+    "detws_ap_ip",  # tcp.cpp    - the softAP IP (extern)
 }
 
 # A file-scope definition line (column 0). Optional ALL_CAPS attribute macros

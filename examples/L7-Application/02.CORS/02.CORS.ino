@@ -14,7 +14,7 @@
  *   fetch('http://<ip>/api').then(r=>r.json()).then(console.log)
  */
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

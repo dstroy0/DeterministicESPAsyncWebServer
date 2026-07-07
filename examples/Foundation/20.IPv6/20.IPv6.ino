@@ -4,14 +4,14 @@
 // IPv6 address the server answers over v6 with no extra work. DETWS_ENABLE_IPV6 turns IPv6 on
 // for the Wi-Fi netif (init_ipv6_physical() -> SLAAC: a link-local address, plus a global one
 // if the network advertises a prefix). The DetIp address core
-// (network_drivers/network/det_ip.h) parses, formats (RFC 5952 canonical), and classifies both
+// (network_drivers/network/ip.h) parses, formats (RFC 5952 canonical), and classifies both
 // families - used here to print and report the acquired address.
 //
 // Build flag (whole build, not just this sketch):
 //   DETWS_ENABLE_IPV6=1
 
-#include "DeterministicESPAsyncWebServer.h"
-#include "network_drivers/network/det_ip.h"
+#include "dwserver.h"
+#include "network_drivers/network/ip.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

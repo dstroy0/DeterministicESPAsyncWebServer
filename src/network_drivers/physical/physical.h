@@ -20,8 +20,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
-#include "DetWebServerConfig.h" // DetIface
-#include "network_drivers/network/det_ip.h"
+#include "ServerConfig.h" // DetIface
+#include "network_drivers/network/ip.h"
 #include <stdint.h>
 
 /**

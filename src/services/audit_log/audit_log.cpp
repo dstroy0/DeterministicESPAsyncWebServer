@@ -13,12 +13,12 @@
  */
 
 #include "services/audit_log/audit_log.h"
-#include "shared_primitives/det_hex.h"
+#include "shared_primitives/hex.h"
 
 #if DETWS_ENABLE_AUDIT_LOG
 
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include "services/det_clock.h"
+#include "services/clock.h"
 #include <string.h>
 
 namespace

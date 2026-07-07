@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H
 #define DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

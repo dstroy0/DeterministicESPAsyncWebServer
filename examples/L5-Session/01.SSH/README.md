@@ -120,7 +120,7 @@ explanatory comments:
 // #define DETWS_CLIENT_CONNS 3
 // #define DETWS_SSH_FWD_MAX 3
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"    // ssh_auth_set_*_cb
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h" // ssh_channel_set_data_cb

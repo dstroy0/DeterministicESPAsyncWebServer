@@ -17,7 +17,7 @@
 
 #define DETWS_ENABLE_DNS_SERVER 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/dns_server/dns_server.h"
 #include <WiFi.h>

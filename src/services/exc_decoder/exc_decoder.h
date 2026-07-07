@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_EXC_DECODER_H
 #define DETERMINISTICESPASYNCWEBSERVER_EXC_DECODER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

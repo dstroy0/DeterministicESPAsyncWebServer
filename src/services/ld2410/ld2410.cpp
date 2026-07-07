@@ -13,7 +13,7 @@
  */
 
 #include "services/ld2410/ld2410.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_LD2410
 

@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_FAILSAFE_H
 #define DETERMINISTICESPASYNCWEBSERVER_FAILSAFE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

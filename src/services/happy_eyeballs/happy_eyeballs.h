@@ -19,8 +19,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HAPPY_EYEBALLS_H
 #define DETERMINISTICESPASYNCWEBSERVER_HAPPY_EYEBALLS_H
 
-#include "DetWebServerConfig.h"
-#include "network_drivers/network/det_ip.h"
+#include "ServerConfig.h"
+#include "network_drivers/network/ip.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -37,7 +37,7 @@
  *   OPCUA        -> OPCUA_CLIENT
  *   CONFIG_STORE -> CONFIG_IO
  *   Optional: WEBHOOK/OAUTH2 use HTTP_CLIENT to send; DASHBOARD uses WEBSOCKET
- *   for live controls. Full tree: README.md and src/DetWebServerConfig.h.
+ *   for live controls. Full tree: README.md and src/ServerConfig.h.
  *
  * ============================================================
  * CAPACITY CONSTANTS  (affect static array sizes → RAM / flash)
@@ -108,7 +108,7 @@
 #define QUERY_VAL_LEN 24
 #define CONN_TIMEOUT_MS 3000
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

@@ -36,7 +36,7 @@
   "license": "AGPL-3.0-or-later",
   "frameworks": ["arduino"],
   "platforms": ["espressif32"],
-  "headers": ["DeterministicESPAsyncWebServer.h"],
+  "headers": ["dwserver.h"],
   "export": {
     "exclude": [
       ".github",

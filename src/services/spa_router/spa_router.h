@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SPA_ROUTER_H
 #define DETERMINISTICESPASYNCWEBSERVER_SPA_ROUTER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

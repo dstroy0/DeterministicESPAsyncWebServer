@@ -12,7 +12,7 @@
 #include "network_drivers/presentation/presentation.h"
 #include <unity.h>
 
-// transport.cpp + presentation.cpp are compiled into the native env.
+// tcp.cpp + presentation.cpp are compiled into the native env.
 // No stubs or redefinitions needed.
 
 static void push(uint8_t slot, const char *data)

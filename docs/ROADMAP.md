@@ -48,7 +48,7 @@ flag (default off) so it costs nothing when unused.
       concurrency: N=1 ~5.9 req/s vs N=2 ~9.1 req/s (~1.5x; not a full 2x because
       worker 1 shares Core 0 with WiFi/lwIP), single-request latency unchanged.
       Confirms real parallel scaling with determinism intact (no hot-path locks).
-- [x] Pluggable monotonic clock _(shipped)_ - `services/det_clock.h`: all library
+- [x] Pluggable monotonic clock _(shipped)_ - `services/clock.h`: all library
       timing flows through `detws_millis()` (a single 1000 Hz source). Feed your own
       clock with `detws_set_clock(fn, ticks_per_second)` and it is divided down to
       the internal 1000 Hz, so timeouts/polling keep the tested 1 ms granularity
@@ -247,14 +247,14 @@ fail-closed: a full capture queue drops frames rather than stalling the live dat
       without ACKing and feeds the forwarding plane, so captured frames bridge to another
       interface. `can_to_socketcan()` + libpcap `DLT_CAN_SOCKETCAN` make the stream
       Wireshark-readable (example 22.CanCapture, host-tested `native_bus_capture`; the SocketCAN
-      framing shares `shared_primitives/det_pcap.h` with the Wi-Fi capture). Remaining: RS-485
+      framing shares `shared_primitives/pcap.h` with the Wi-Fi capture). Remaining: RS-485
       receive-only decode into the same sink.
 - [~] \*Radio channel sniff (L) - the RF gateways above in receive-only mode (sniff a
   LoRa / sub-GHz / 802.15.4 channel without joining) feeding the capture pipeline. **Capture framing
   shipped** (`DETWS_ENABLE_RADIO_SNIFF`, `services/radio_sniff`): wraps each received 802.15.4 MAC frame
   in the Wireshark IEEE 802.15.4 TAP pseudo-header (per-frame RSSI + channel TLVs, an exact int->float32
   RSSI encode) and a pcap record (new `DET_DLT_IEEE802_15_4_TAP` / `_NOFCS` link types in
-  `shared_primitives/det_pcap.h`), so a sniffed channel opens directly in Wireshark; pure + host-tested
+  `shared_primitives/pcap.h`), so a sniffed channel opens directly in Wireshark; pure + host-tested
   (`native_radio_sniff`). Remaining: put the CC1101 / LoRa / Thread drivers into receive-only and route
   their frames through this into the existing forwarding sink on hardware.
 
@@ -474,7 +474,7 @@ preempting queue, so sensing shares the real-time ingest path.
 
 - [x] Runtime build-flag reporter _(shipped)_ - `server.diag()` / `DETWS_ENABLE_DIAG` serves a build-info JSON (example 42.Diagnostics); the feature enumeration could be extended.
 - [~] Hierarchical build-flag tree (M); virtual protocol-mocking toggles (M) _(tree shipped)_ - the
-  `docs/utilities/gen_configurator.py` generator parses `src/DetWebServerConfig.h` and builds the flags
+  `docs/utilities/gen_configurator.py` generator parses `src/ServerConfig.h` and builds the flags
   as a hierarchy grouped under the file's section titles, with the hard dependency edges (`#if child &&
 !parent` guards) encoded - the build-flag tree, kept from drifting by the `check` CI gate. _Remaining:_
   the virtual protocol-mocking toggles (swap a real driver for a mock transport at build time).
@@ -493,7 +493,7 @@ preempting queue, so sensing shares the real-time ingest path.
   `peers/` (documented in its README). Remaining: wiring it into CI containers, and a
   peer per new protocol as it lands.
 - [x] **Pentesting / adversarial suite** _(shipped)_ - a separately-runnable harness (env `native_pentest` + a nightly `Pentest` CI job, _not_ part of the per-commit unit-test run) that fuzzes the untrusted-input parsers (HTTP request line/headers/body, Modbus ADU, base32) with malformed, oversized, partial slowloris-style, binary/protocol-confusion, and deterministically-random input, asserting the device's safety invariants: fixed footprint (no buffer index past its bound), fail-closed (defined error states only), and liveness (no hang/over-read). Plus a documented on-device stress playbook (slowloris / floods / brute-force vs the throttle / lockout / allowlist defenses). Full guide: [PENTEST.md](PENTEST.md). Extend it to the remaining codecs (CBOR / SNMP / CoAP / WS / multipart) as you go.
-- [~] **Server build configurator (CLI + GUI in `configurator/`)** (L) _(GUI + source-of-truth shipped)_ - a guided front end for the ~200 `DETWS_ENABLE_*` and sizing flags so a user assembles a firmware build without hand-editing `build_flags`. Shipped as `docs/utilities/gen_configurator.py` -> `docs/configurator.html`: it parses [DetWebServerConfig.h](../src/DetWebServerConfig.h) (the single source of truth, so it never drifts - a `check` CI gate fails on staleness) for every feature flag + tuning knob + section group + the hard `#if child && !parent` dependencies, and emits one self-contained page that ticks features, tunes knobs, resolves dependencies (mutual-exclusion), and copies out a `platformio.ini` `build_flags` block or a `#define` set (only the values that differ from the defaults). Beginner-friendly, ships to Pages. _Remaining:_ a live per-option build-footprint estimate (flash + RAM from the FEATURES tables), advisory "this is unwise, but here you go" guardrails, and a standalone CLI backend (the emission is client-side today).
+- [~] **Server build configurator (CLI + GUI in `configurator/`)** (L) _(GUI + source-of-truth shipped)_ - a guided front end for the ~200 `DETWS_ENABLE_*` and sizing flags so a user assembles a firmware build without hand-editing `build_flags`. Shipped as `docs/utilities/gen_configurator.py` -> `docs/configurator.html`: it parses [ServerConfig.h](../src/ServerConfig.h) (the single source of truth, so it never drifts - a `check` CI gate fails on staleness) for every feature flag + tuning knob + section group + the hard `#if child && !parent` dependencies, and emits one self-contained page that ticks features, tunes knobs, resolves dependencies (mutual-exclusion), and copies out a `platformio.ini` `build_flags` block or a `#define` set (only the values that differ from the defaults). Beginner-friendly, ships to Pages. _Remaining:_ a live per-option build-footprint estimate (flash + RAM from the FEATURES tables), advisory "this is unwise, but here you go" guardrails, and a standalone CLI backend (the emission is client-side today).
 
 ## Protocol & transport versions
 
@@ -719,7 +719,7 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   couples to a DP segment via a segment coupler in practice).
 - [~] **CANopen** (M, CiA 301) _(message codec shipped)_ - `DETWS_ENABLE_CANOPEN`
   (`services/canopen`): a zero-heap CiA 301 message codec over the shared CAN frame
-  (`shared_primitives/det_can.h`) - NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO
+  (`shared_primitives/can.h`) - NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO
   read/write/abort plus the COB-ID classifier; host-tested (`native_canopen`, 17 cases).
   _Remaining:_ a first-class object dictionary + node-guarding, the DS401 generic-I/O device
   profile, and the ESP32 TWAI/CAN transport binding. Fixed BSS, no heap.

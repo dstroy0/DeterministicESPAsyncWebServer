@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CBOR_H
 #define DETERMINISTICESPASYNCWEBSERVER_CBOR_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

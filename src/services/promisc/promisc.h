@@ -28,11 +28,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROMISC_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROMISC_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_PROMISC
 
-#include "shared_primitives/det_pcap.h" // det_pcap_* framing + DET_DLT_IEEE802_11
+#include "shared_primitives/pcap.h" // det_pcap_* framing + DET_DLT_IEEE802_11
 #include <stddef.h>
 #include <stdint.h>
 
@@ -67,7 +67,7 @@ struct WifiFrameInfo
  */
 bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out);
 
-// libpcap framing lives in shared_primitives/det_pcap.h: det_pcap_global_header() with
+// libpcap framing lives in shared_primitives/pcap.h: det_pcap_global_header() with
 // DET_DLT_IEEE802_11 + det_pcap_record_header() wrap a captured 802.11 frame as a valid PCAP.
 
 /**

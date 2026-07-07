@@ -13,11 +13,11 @@
 
 #if DETWS_ENABLE_DASHBOARD
 
-// Dependency (DASHBOARD requires SSE) is enforced centrally in DetWebServerConfig.h.
+// Dependency (DASHBOARD requires SSE) is enforced centrally in ServerConfig.h.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/application/web_assets.h" // DETWS_DASHBOARD_PAGE
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/mime.h"
 #include <stdio.h>
 #if DETWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool for inbound control messages

@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NETADAPT_H
 #define DETERMINISTICESPASYNCWEBSERVER_NETADAPT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

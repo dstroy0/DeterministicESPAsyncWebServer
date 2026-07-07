@@ -23,14 +23,14 @@ pio ci --board=esp32dev --project-option="framework=arduino" \
 > building with `pio ci`, pass each feature's flag as `build_flags` (the `-D...`
 > form above) so the **library** is compiled with it too. Each example's README
 > lists the exact flags. In the Arduino IDE the library compiles with your sketch,
-> so the in-sketch `#define` (or setting it in `DetWebServerConfig.h`) is enough.
+> so the in-sketch `#define` (or setting it in `ServerConfig.h`) is enough.
 
 ## Troubleshooting
 
 - **`undefined reference to ...`** - the build_flags gotcha above; pass the flags to the library build.
 - **`#error "... requires ..."`** - an illegal flag combination; see the [build-flag dependency tree](../README.md#build-flag-dependencies).
 - **No WiFi** - set `SSID`/`PASSWORD`; TLS examples also need wall-clock time (pair with the SNTP example).
-- **`begin()` returns negative** - a capacity constant is too small for the configured pools (the compile-time checks in `DetWebServerConfig.h` catch most first).
+- **`begin()` returns negative** - a capacity constant is too small for the configured pools (the compile-time checks in `ServerConfig.h` catch most first).
 - **Built but not flashed** - `pio ci` only compiles; use `pio run -t upload` from a project containing the sketch.
 
 <!-- BEGIN GENERATED EXAMPLE INDEX (docs/utilities/gen_examples.py) -->

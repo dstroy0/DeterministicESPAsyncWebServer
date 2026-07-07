@@ -21,7 +21,7 @@
 
 #define DETWS_ENABLE_STATSD 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/statsd/statsd.h"
 #include <WiFi.h>

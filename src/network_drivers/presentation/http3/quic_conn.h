@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H
 #define DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_HTTP3
 

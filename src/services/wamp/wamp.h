@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WAMP_H
 #define DETERMINISTICESPASYNCWEBSERVER_WAMP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_WAMP
 

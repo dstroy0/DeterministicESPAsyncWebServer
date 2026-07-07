@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_hex.h
+ * @file hex.h
  * @brief Tiny no-stdlib hex encode / decode / nibble helpers (one shared copy).
  *
  * Hex was open-coded in ~10 places (CSRF token, WebDAV %XX, provisioning, audit-log
  * hash, device-id, HTTP auth, OAuth2 percent-encode). These header-only inline
- * helpers are the single home for it, mirroring det_numparse.h - no `<stdlib.h>`,
+ * helpers are the single home for it, mirroring numparse.h - no `<stdlib.h>`,
  * no heap, and zero link cost when unused.
  *
  * @author  Douglas Quigg (dstroy0)

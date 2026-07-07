@@ -7,7 +7,7 @@
  */
 
 #include "services/ina219/ina219.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_INA219
 
@@ -47,7 +47,7 @@ int32_t ina219_power_uw(int16_t raw, uint32_t current_lsb_ua)
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

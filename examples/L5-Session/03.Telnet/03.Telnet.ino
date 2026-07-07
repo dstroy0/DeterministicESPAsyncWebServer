@@ -24,7 +24,7 @@
 
 #define DETWS_ENABLE_TELNET 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/telnet/telnet.h"
 #include <WiFi.h>

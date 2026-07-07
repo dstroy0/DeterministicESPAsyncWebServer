@@ -21,7 +21,7 @@
 
 #define DETWS_ENABLE_LD2410 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ld2410/ld2410.h"
 #include <Arduino.h>
 

@@ -27,7 +27,7 @@
 
 #define DETWS_ENABLE_AUDIT_LOG 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/audit_log/audit_log.h"
 #include <WiFi.h>

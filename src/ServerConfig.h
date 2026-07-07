@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file DetWebServerConfig.h
+ * @file ServerConfig.h
  * @brief User-facing configuration for DeterministicESPAsyncWebServer.
  *
  * **Compile-time sizing constants**
@@ -189,7 +189,7 @@
  * raising it lowers idle wakeups (CPU/power on a battery device) WITHOUT the
  * latency penalty the old poll-based knob carried - e.g. 100 -> a ~10 Hz idle
  * sweep, still far below any connection timeout. The internal time base stays
- * 1000 Hz regardless (see services/det_clock.h).
+ * 1000 Hz regardless (see services/clock.h).
  */
 #ifndef DETWS_WORKER_POLL_TICKS
 #define DETWS_WORKER_POLL_TICKS 1
@@ -258,7 +258,7 @@
 // queue (DETWS_ENABLE_PREEMPT_QUEUE) so the heavy processing runs off the ISR. RX
 // is double-buffered (ping-pong): the completed buffer is handed up while the DMA
 // engine fills the other. Storage is static (zero heap) - channel count and buffer
-// size are compile-time. See services/dma/det_dma.h.
+// size are compile-time. See services/dma/dma.h.
 //
 // DETWS_DMA_SIMULATE routes the transfers through an in-memory ingress/egress
 // simulator (feed bytes in, capture bytes out, optional TX->RX loopback) so the
@@ -304,7 +304,7 @@
 // FORWARD lane) is forwarded to every allowed destination, so the device bridges / routes
 // between its interfaces instead of only terminating traffic. Default-deny and fail-closed
 // (a full destination or an exceeded rate cap drops, never blocks). Static tables (zero
-// heap). See services/forward/det_forward.h.
+// heap). See services/forward/forward.h.
 
 /** @brief Enable the interface forwarding plane (default off). */
 #ifndef DETWS_ENABLE_FORWARD
@@ -347,7 +347,7 @@
 // way through det_gw_downlink() to the port's transmit callback. The radio TX + the
 // northbound publish are callbacks (the seam a real radio driver / protocol binding plugs
 // into), so the bridge is host- and device-testable with no radio. Static tables (zero
-// heap). See services/gateway/det_gateway.h.
+// heap). See services/gateway/gateway.h.
 
 /** @brief Enable the radio / wireless gateway bridge (default off). */
 #ifndef DETWS_ENABLE_GATEWAY
@@ -591,7 +591,7 @@
  * When set, init_ipv6_physical() turns on IPv6 for the Wi-Fi netif (SLAAC link-local plus any
  * router-advertised global address). The TCP and UDP listeners already bind IPADDR_TYPE_ANY, so
  * the server accepts IPv6 connections the moment the interface has a v6 address; the DetIp core
- * (network_drivers/network/det_ip.h) parses / formats / classifies both families. Requires an
+ * (network_drivers/network/ip.h) parses / formats / classifies both families. Requires an
  * lwIP built with LWIP_IPV6=1 (the stock Arduino-ESP32 core ships it).
  */
 #ifndef DETWS_ENABLE_IPV6
@@ -957,7 +957,7 @@
 // the feature from the build entirely (no code, no RAM, no flash cost).
 //
 //   #define DETWS_ENABLE_WEBSOCKET 0
-//   #include <DeterministicESPAsyncWebServer.h>
+//   #include <dwserver.h>
 //
 // ---------------------------------------------------------------------------
 // BUILD-FLAG DEPENDENCY TREE
@@ -1337,7 +1337,7 @@
  * @brief CANopen (CiA 301) message codec (`services/canopen`).
  *
  * Default off. A zero-heap builder + parser for the CANopen messaging set over classic CAN
- * frames (`shared_primitives/det_can.h`): NMT node control, SYNC, TIME, heartbeat / boot-up,
+ * frames (`shared_primitives/can.h`): NMT node control, SYNC, TIME, heartbeat / boot-up,
  * EMCY, PDO process data, and expedited SDO read / write / abort. The 11-bit COB-ID is a
  * 4-bit function code plus a 7-bit node id; builders compute it, parsers classify it back.
  * The object dictionary is the application's; SDO is expedited only (segmented / block not
@@ -1352,7 +1352,7 @@
  * @brief SAE J1939 message codec (`services/j1939`).
  *
  * Default off. A zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset
- * CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/det_can.h`):
+ * CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/can.h`):
  * `j1939_encode_id` / `j1939_decode_id` pack and unpack the priority / PGN / SA / DA
  * identifier (PDU1 peer + PDU2 broadcast), `j1939_build_message` emits single frames,
  * `j1939_build_request` / `j1939_build_address_claim` (+ `j1939_build_name`) handle the
@@ -2187,7 +2187,7 @@
 
 /**
  * @brief Shared I2C bus pins for the sensor / peripheral drivers (RTC, SHT3x, MPR121, ADS1115,
- * INA219, PCA9685). All of them share one bus via detws_i2c_begin() (services/det_i2c.h), so
+ * INA219, PCA9685). All of them share one bus via detws_i2c_begin() (services/i2c.h), so
  * this is the single place to move it. The default -1 uses the platform's default pins (GPIO 21
  * SDA / 22 SCL on the classic ESP32). Set both to free GPIOs when those pins are taken - most
  * importantly a **wired-Ethernet PHY**: the LAN8720 RMII uses GPIO 21 (TX_EN) and GPIO 22
@@ -4124,7 +4124,7 @@
 /**
  * @brief Maximum simultaneously bound UDP ports (transport-layer UDP service).
  *
- * Sizes the fixed pool in udp_transport.cpp. One slot per bound port, e.g. SNMP
+ * Sizes the fixed pool in udp.cpp. One slot per bound port, e.g. SNMP
  * (:161) and the captive-portal DNS responder (:53). Costs only a few pointers
  * of BSS each.
  */

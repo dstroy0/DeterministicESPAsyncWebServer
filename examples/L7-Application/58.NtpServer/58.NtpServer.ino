@@ -28,7 +28,7 @@
 #define DETWS_ENABLE_NMEA0183 1
 #define DETWS_ENABLE_NTP 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/nmea0183/nmea0183.h"
 #include "services/ntp_server/ntp_server.h"

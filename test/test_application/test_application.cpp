@@ -9,7 +9,7 @@
 //   STRESS        - route-table full scan, sequential requests, all-slots
 //   RACE SIM      - slot state hazards visible to handle()
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <unity.h>
 
 // All source layers compiled via native_app env - no stubs needed.

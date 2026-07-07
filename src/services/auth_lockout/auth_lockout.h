@@ -23,13 +23,13 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H
 #define DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_AUTH_LOCKOUT
 
 #include <stdint.h>
 
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 
 /**
  * @brief Remaining lockout time for @p ip at @p now_ms, in milliseconds.

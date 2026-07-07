@@ -11,7 +11,7 @@
 
 #if DETWS_ENABLE_MQTT
 
-#include "shared_primitives/det_utf8.h"
+#include "shared_primitives/utf8.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -335,12 +335,12 @@ bool mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *pac
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/det_client.h" // shared outbound TCP client (L4)
+#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
 #include <Arduino.h>
 
 #if DETWS_ENABLE_MQTT_TLS
-#include "network_drivers/tls/det_tls.h" // persistent client TLS session (csess)
-#include <mbedtls/ssl.h>                 // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
+#include "network_drivers/tls/tls.h" // persistent client TLS session (csess)
+#include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
 #endif
 
 #ifdef DETWS_MQTT_DEBUG

@@ -56,7 +56,7 @@ bool detws_dns_verify(uint32_t ip)
 #include "lwip/dns.h"
 #include "lwip/ip_addr.h"
 #include "lwip/priv/tcpip_priv.h"
-#include "services/det_clock.h" // detws_millis() - the single pluggable monotonic source
+#include "services/clock.h" // detws_millis() - the single pluggable monotonic source
 #include <Arduino.h>
 
 namespace

@@ -4,11 +4,11 @@
 #define DETERMINISTICESPASYNCWEBSERVER_DET_RING_H
 
 /**
- * @file det_ring.h
+ * @file ring.h
  * @brief Shared single-producer / single-consumer byte-ring primitive.
  *
  * The one implementation of the receive-ring drain math, used by BOTH transports:
- * the server (det_conn_* in transport.h, over conn_pool slots) and the outbound
+ * the server (det_conn_* in tcp.h, over conn_pool slots) and the outbound
  * client (det_client_* over its pool). Sharing it is deliberate - it keeps the ring
  * invariants in a single place so a consumer in any layer drains identically and
  * cannot reimplement (and subtly break) the wrap/ordering by hand.

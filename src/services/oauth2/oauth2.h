@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OAUTH2_H
 #define DETERMINISTICESPASYNCWEBSERVER_OAUTH2_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

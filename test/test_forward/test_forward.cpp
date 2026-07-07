@@ -9,7 +9,7 @@
 //
 // The env sizes DETWS_FWD_MAX_IFACES = 4, DETWS_FWD_MAX_RULES = 4.
 
-#include "services/forward/det_forward.h"
+#include "services/forward/forward.h"
 #include <map>
 #include <string.h>
 #include <unity.h>

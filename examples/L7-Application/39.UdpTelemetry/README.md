@@ -55,7 +55,7 @@ verbatim with added explanatory comments:
 
 #define DETWS_ENABLE_UDP_TELEMETRY 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/udp_telemetry/udp_telemetry.h"
 #include <WiFi.h>

@@ -71,7 +71,7 @@ with added explanatory comments:
 #define DETWS_ENABLE_COAP_BLOCK 1
 #define DETWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/coap/coap.h"
 #include <WiFi.h>

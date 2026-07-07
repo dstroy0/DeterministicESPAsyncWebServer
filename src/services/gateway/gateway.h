@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_gateway.h
+ * @file gateway.h
  * @brief Radio / wireless gateway bridge (DETWS_ENABLE_GATEWAY) - the v5 southbound-to-
  *        northbound bridge.
  *
@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_GATEWAY_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_GATEWAY_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_GATEWAY
 

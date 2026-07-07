@@ -149,7 +149,7 @@ bool detws_line_ok(const DetwsLine *l)
 
 #ifdef ARDUINO
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 
 namespace
 {

@@ -342,7 +342,7 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 #if defined(ARDUINO)
 
 #include "network_drivers/session/proto_handler.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 
 // Bytes available in the slot's rx ring.
 // Thin adapters over the transport RX read API - the ring is owned by transport;

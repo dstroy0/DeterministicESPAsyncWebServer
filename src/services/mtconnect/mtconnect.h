@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H
 #define DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -54,7 +54,7 @@
  * The Montgomery SOS multiplication uses a 129-word (516-byte) temporary
  * array.  The expmod function needs three SshBigNum temporaries (768 bytes).
  * All of these live in crypto_work[] (SSH_CRYPTO_WORK_SIZE = 1536 bytes)
- * defined in DetWebServerConfig.h and allocated in ssh_bignum.cpp.
+ * defined in ServerConfig.h and allocated in ssh_bignum.cpp.
  *
  * Layout during bn_expmod_group14():
  *   [0..255]    base_mont  (SshBigNum)
@@ -74,7 +74,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_BIGNUM_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_GOOSE_H
 #define DETERMINISTICESPASYNCWEBSERVER_GOOSE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

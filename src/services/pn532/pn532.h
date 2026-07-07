@@ -27,7 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PN532_H
 #define DETERMINISTICESPASYNCWEBSERVER_PN532_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_PN532
 

@@ -12,7 +12,7 @@
  * (e.g. stream them to a wired collector over Ethernet), exactly like the Wi-Fi capture path.
  *
  * The pure piece is can_to_socketcan(): format a ::CanFrame as a 16-byte Linux **SocketCAN**
- * frame, which with the libpcap DLT_CAN_SOCKETCAN link type (shared_primitives/det_pcap.h) is a
+ * frame, which with the libpcap DLT_CAN_SOCKETCAN link type (shared_primitives/pcap.h) is a
  * capture Wireshark opens directly. The TWAI bring-up (`driver/twai.h`, listen-only) is ESP32
  * only and needs a CAN transceiver on the bus.
  *
@@ -23,12 +23,12 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_BUS_CAPTURE_H
 #define DETERMINISTICESPASYNCWEBSERVER_BUS_CAPTURE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_BUS_CAPTURE
 
-#include "shared_primitives/det_can.h"  // CanFrame
-#include "shared_primitives/det_pcap.h" // DET_DLT_CAN_SOCKETCAN
+#include "shared_primitives/can.h"  // CanFrame
+#include "shared_primitives/pcap.h" // DET_DLT_CAN_SOCKETCAN
 #include <stddef.h>
 #include <stdint.h>
 

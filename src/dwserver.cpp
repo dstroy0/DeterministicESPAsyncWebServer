@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file DeterministicESPAsyncWebServer.cpp
+ * @file dwserver.cpp
  * @brief Layer 7 (Application) - HTTP routing and request handler implementation.
  *
  * **Dispatch pipeline (called from DetWebServer::handle())**
@@ -35,14 +35,14 @@
  * for a hard RST, det_conn_begin_close(slot) for the drain-then-close dwell.
  */
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/presentation/presentation.h" // http_proto_set_poll (install the instance-bound HTTP poll)
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/session/worker.h"
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 #include "network_drivers/transport/listener.h"
-#include "shared_primitives/det_hex.h"
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/hex.h"
+#include "shared_primitives/mime.h"
 #if DETWS_ENABLE_HTTP2
 #include "network_drivers/presentation/http2/h2_server.h"
 #endif
@@ -57,7 +57,7 @@
 #endif
 #if DETWS_ENABLE_AUTH
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include "services/det_clock.h" // detws_millis() for the stateless Digest nonce timestamp
+#include "services/clock.h" // detws_millis() for the stateless Digest nonce timestamp
 #if DETWS_ENABLE_AUTH_LOCKOUT
 #include "services/auth_lockout/auth_lockout.h"
 #endif
@@ -145,7 +145,7 @@ static SendCtx s_send;
  * @return Pointer to a string-literal reason phrase; never null.
  */
 // Response bytes go out via the transport-layer connection I/O API
-// (det_conn_send / det_conn_flush / det_conn_close, see transport.h) so this
+// (det_conn_send / det_conn_flush / det_conn_close, see tcp.h) so this
 // application layer never calls lwIP directly.
 
 static const char *status_text(int code)

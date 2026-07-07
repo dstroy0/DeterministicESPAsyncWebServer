@@ -23,7 +23,7 @@
 #include "network_drivers/presentation/websocket/websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
 #endif
 #if DETWS_ENABLE_TLS
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 #if DETWS_ENABLE_HTTP2
 #include "network_drivers/presentation/http2/h2_server.h"
 #endif

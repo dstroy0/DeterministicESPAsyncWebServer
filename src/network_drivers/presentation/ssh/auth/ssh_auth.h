@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

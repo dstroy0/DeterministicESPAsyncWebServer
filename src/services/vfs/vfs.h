@@ -33,7 +33,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_VFS_H
 #define DETERMINISTICESPASYNCWEBSERVER_VFS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

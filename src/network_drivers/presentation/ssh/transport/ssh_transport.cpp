@@ -14,7 +14,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
-#include "services/det_clock.h"                                    // detws_millis() (re-key timer)
+#include "services/clock.h"                                        // detws_millis() (re-key timer)
 #if DETWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
 #endif

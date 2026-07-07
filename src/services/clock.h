@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_clock.h
+ * @file clock.h
  * @brief Pluggable monotonic clock for all library timing.
  *
  * The library's internal timing runs at **1000 Hz** - one tick is one millisecond,
@@ -24,7 +24,7 @@
  * every subsystem follows.
  *
  * The worker poll cadence is fixed at 1000 Hz (the tested default); a build can
- * trade latency for idle power with DETWS_WORKER_POLL_TICKS - see DetWebServerConfig.h.
+ * trade latency for idle power with DETWS_WORKER_POLL_TICKS - see ServerConfig.h.
  *
  * Header-only (the override state lives in inline-function-local statics, a single
  * instance across the whole program), so there is nothing extra to compile or link.

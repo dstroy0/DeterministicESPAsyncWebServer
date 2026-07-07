@@ -96,7 +96,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
   before, the same `udp_bind` from the app task would have asserted like the listener did).
 - **Found:** 2026-07-04, immediately after the listener fix below - auditing for the same
   root cause in the UDP path, since UDP services bind at `begin()` from the app task too.
-- **Root cause:** `udp_transport.cpp` (`det_udp_*`, the single place lwIP UDP is touched)
+- **Root cause:** `udp.cpp` (`det_udp_*`, the single place lwIP UDP is touched)
   called raw `udp_new` / `udp_bind` / `udp_recv` / `udp_remove` / `udp_sendto` **directly from
   the app task**, never marshaled. On arduino-esp32 3.x (lwIP core-locking) that trips
   `LWIP_ASSERT_CORE_LOCKED`, so every UDP service - SNMP agent (`:161`), CoAP, the captive-portal
@@ -298,7 +298,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 - **Fix:** the callback now **copies the frame bytes into the queue item** (a self-contained
   message) instead of posting the pointer. Eliminates the dangling reference entirely
   (error rate 8% -> 0%). The example `07.DmaIngest` uses the same copy pattern, and
-  `det_dma.h` now documents that a deferred (queued) consumer must copy the `len` bytes
+  `dma.h` now documents that a deferred (queued) consumer must copy the `len` bytes
   rather than keep the RX pointer. The pointer API itself is unchanged and correct for an
   in-callback consumer (the standard DMA-HAL shape).
 - **Tests:** the host suite (`native_dma`) covers the ping-pong flip, byte-exact loopback
@@ -369,7 +369,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
   this deliberately terse C++11 / zero-heap embedded style and are not defects).
 - **Real issues fixed:**
     - **Dynamic-response header over-read on truncation (`cpp:S3519`,
-      `DeterministicESPAsyncWebServer.cpp`).** `append_resp_trailer()` returned `snprintf`'s
+      `dwserver.cpp`).** `append_resp_trailer()` returned `snprintf`'s
       _would-be_ length, which can exceed the header buffer when the trailer (Date + CORS +
       user `_extra_hdr` cookies/headers + Connection) does not fit. The caller then sent
       `(u16_t)hlen` bytes from a fixed `header[RESP_HDR_BUF_SIZE]` - reading past the stack
@@ -518,15 +518,15 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 
 ---
 
-## det_client.cpp failed to compile on a server-only Arduino build
+## client.cpp failed to compile on a server-only Arduino build
 
 - **Status:** FIXED (found while building the interop rig; HW build verified on COM3).
 - **Found:** 2026-06-29, bringing up the real-protocol interop harness (test/servers).
 - **A server-only Arduino build (no HTTP client / MQTT / WS client) did not compile
-  (build break).** `det_client.cpp` guarded its body with only `#if defined(ARDUINO)` yet
+  (build break).** `client.cpp` guarded its body with only `#if defined(ARDUINO)` yet
   calls `detws_dns_resolve()`, whose declaration lives behind `DETWS_ENABLE_DNS_RESOLVER`.
   That flag is force-enabled only by a client transport (`HTTP_CLIENT || MQTT || WS_CLIENT`,
-  DetWebServerConfig.h), so a build that enabled, e.g., WebSocket + SNMP + CoAP + Modbus but
+  ServerConfig.h), so a build that enabled, e.g., WebSocket + SNMP + CoAP + Modbus but
   no client left the symbol undeclared: `error: 'detws_dns_resolve' was not declared in this
 scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`), so the
   native suites never caught it. Fix: add `DETWS_NEED_DET_CLIENT` (set alongside the
@@ -548,7 +548,7 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
 - **MQTT topic validation (LOW, MQTT-3.3.2-2 / 1.5.3).** `mqtt_build_publish` now rejects a
   Topic Name containing wildcards (`+`/`#`); `mqtt_parse_publish` rejects a Topic Name that
   is not well-formed UTF-8 or contains U+0000. The UTF-8 validator was extracted to a shared
-  primitive (`shared_primitives/det_utf8.h`) and reused by WebSocket (no duplicate copy).
+  primitive (`shared_primitives/utf8.h`) and reused by WebSocket (no duplicate copy).
   Tests: `test_mqtt` `test_publish_wildcard_topic_rejected`,
   `test_publish_topic_nul_or_bad_utf8_rejected`.
 - **base64url decoder was lenient (LOW, RFC 4648 5 / RFC 7515).** `base64url_decode` also
@@ -657,7 +657,7 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
 - **Found:** 2026-06-29, multi-agent conformance audit against the live specs.
 - Five real conformance gaps, fixed with tests:
     - **WebSocket close left the TCP socket open (HIGH, RFC 6455 5.5.1).** The plaintext
-      WS close/error path (DeterministicESPAsyncWebServer.cpp) only freed the WS slot and
+      WS close/error path (dwserver.cpp) only freed the WS slot and
       `http_reset`'d it - it never closed the TCP connection (the TLS path did). The slot
       stayed CONN_ACTIVE and re-armed as an HTTP parser, so bytes after the Close frame
       were re-interpreted as a new HTTP request (state confusion). Fix: `det_conn_begin_close`
@@ -687,7 +687,7 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
   (`'millis' was not declared`), and even on ESP32 it violated the pluggable-clock rule
   that `detws_millis()` is the single monotonic source (same class as the dns_resolver
   bug above). Latent because the whole Observe path was never compiled in CI.
-- **Fix:** use `detws_millis()` (include `services/det_clock.h`), drop the Arduino.h
+- **Fix:** use `detws_millis()` (include `services/clock.h`), drop the Arduino.h
   include; added a `native_coap_observe` env so the Observe-gated code is compiled + the
   CoAP suite runs under the flag in CI (no longer bit-rots).
 
@@ -747,7 +747,7 @@ scope`. Host builds were unaffected (the body is already `#if defined(ARDUINO)`)
   loop, often different cores) the consumer could observe an advanced `head` before
   the buffer bytes it published were visible -> a rare stale read. The server ring
   already used `DetAtomic` (correct); the client was inconsistent.
-- **Fix:** both transports now share `det_ring.h` (the `DetAtomic` SPSC index +
+- **Fix:** both transports now share `ring.h` (the `DetAtomic` SPSC index +
   the drain math); the client ring's indices are `DetAtomic`, matching the server's
   acquire/release ordering. One ring primitive, no hand-rolled wrap/ordering.
 

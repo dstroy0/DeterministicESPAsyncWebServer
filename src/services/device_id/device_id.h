@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DEVICE_ID_H
 #define DETERMINISTICESPASYNCWEBSERVER_DEVICE_ID_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stdint.h>
 
 #if DETWS_ENABLE_DEVICE_ID

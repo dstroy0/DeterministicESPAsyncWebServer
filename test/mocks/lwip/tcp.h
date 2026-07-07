@@ -34,7 +34,7 @@ struct pbuf
 // Return a stable non-null address so init() path succeeds in native tests.
 // We use a single static instance since the mock never actually owns memory.
 static struct tcp_pcb _mock_pcb;
-// Typed callback aliases matching the real lwIP API so transport.cpp compiles
+// Typed callback aliases matching the real lwIP API so tcp.cpp compiles
 // without modification.
 typedef err_t (*tcp_accept_fn)(void *arg, struct tcp_pcb *newpcb, err_t err);
 typedef err_t (*tcp_recv_fn)(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);

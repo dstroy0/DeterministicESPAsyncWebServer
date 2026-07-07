@@ -6,9 +6,9 @@
 // effect as a worker draining it). These tests cover the host inline path, the
 // server.defer() owner routing, and the fail-closed cases.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/session/worker.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <unity.h>
 
 static int g_ran = 0;

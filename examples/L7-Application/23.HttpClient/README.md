@@ -52,7 +52,7 @@ with added explanatory comments:
 
 #define DETWS_ENABLE_HTTP_CLIENT 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/http_client/http_client.h"
 #include <WiFi.h>

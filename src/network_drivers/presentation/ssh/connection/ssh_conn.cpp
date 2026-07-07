@@ -18,8 +18,8 @@
 #endif
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/session/scratch.h"
-#include "network_drivers/transport/transport.h"
-#include "services/det_clock.h" // detws_millis() for the server-initiated re-key timer
+#include "network_drivers/transport/tcp.h"
+#include "services/clock.h" // detws_millis() for the server-initiated re-key timer
 #include <string.h>
 
 // All SSH connection-layer state, owned by one instance (internal linkage): the SSH-slot ->

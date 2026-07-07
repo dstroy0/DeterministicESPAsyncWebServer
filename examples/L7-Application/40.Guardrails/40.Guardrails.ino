@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_GUARDRAILS 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/guardrails/guardrails.h"
 #include <WiFi.h>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file transport.cpp
+ * @file tcp.cpp
  * @brief Layer 4 (Transport) - TCP connection management implementation.
  *
  * All lwIP raw-API callbacks run in the `tcpip_thread` FreeRTOS task context.
@@ -15,28 +15,28 @@
  * `rx_tail` and advances `rx_tail`.  `rx_head`/`rx_tail` are `DetAtomic`
  * (acquire/release): the producer's buffer writes are published by the release
  * store of `rx_head` and observed by the consumer's acquire load, correct on
- * either core. The ring math itself is the shared `det_ring.h` primitive.
+ * either core. The ring math itself is the shared `ring.h` primitive.
  *
  * **Listener coupling**
  * Each TcpConn carries `listener_id` (set at accept time by listener_accept_cb
  * in listener.cpp).  The `enqueue()` helper forwards events to
- * `listener_enqueue()` - defined in listener.cpp - so transport.cpp needs no
+ * `listener_enqueue()` - defined in listener.cpp - so tcp.cpp needs no
  * direct knowledge of the Listener struct.  `listener_enqueue()` is forward-
- * declared in transport.h to avoid a circular include.
+ * declared in tcp.h to avoid a circular include.
  */
 
-#include "transport.h"
+#include "tcp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "services/det_clock.h" // detws_millis() pluggable monotonic clock
+#include "services/clock.h" // detws_millis() pluggable monotonic clock
 
 #ifdef ARDUINO
 #include "network_drivers/session/worker.h" // detws_worker_wake() - resume a paced send when the window drains
 #endif
 
 #if DETWS_ENABLE_TLS
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 #endif
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ static void obs_bump(DetConnReason reason)
 // A real state transition: bump the reason counter and fire the callback. The
 // CONN_CLOSING gauge is derived on read (see det_conn_counters), so there is no
 // per-transition gauge bookkeeping to get wrong. Non-static so listener.cpp
-// (accept) can notify through the DETWS_OBS_TRANSITION macro declared in transport.h.
+// (accept) can notify through the DETWS_OBS_TRANSITION macro declared in tcp.h.
 void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason)
 {
     obs_bump(reason);

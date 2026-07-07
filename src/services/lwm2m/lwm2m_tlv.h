@@ -27,7 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LWM2M_TLV_H
 #define DETERMINISTICESPASYNCWEBSERVER_LWM2M_TLV_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_LWM2M
 

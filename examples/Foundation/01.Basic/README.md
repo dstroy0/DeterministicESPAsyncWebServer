@@ -79,7 +79,7 @@ parser auto-sends `400 Bad Request` for an RFC 7230 character violation,
 `414 URI Too Long` when the path exceeds `MAX_PATH_LEN`, and `501 Not Implemented`
 when a `Transfer-Encoding` header is present (chunked request bodies are not
 accepted). Those limits are the compile-time capacity constants in
-[DetWebServerConfig.h](../../../src/DetWebServerConfig.h).
+[ServerConfig.h](../../../src/ServerConfig.h).
 
 **Checking `begin()`.** It returns `1` on success and a negative error code on
 failure. Because `-1` is "truthy", test `result < 0`, not `!result`:
@@ -124,7 +124,7 @@ added explanatory comments:
 // HttpReq type, the HTTP_GET/HTTP_POST method constants, and the accessor
 // helpers (http_get_query / http_get_header). Any DETWS_ENABLE_* overrides must
 // be #defined BEFORE this include to take effect in the sketch.
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 // init_wifi_physical() / wifi_ready(): the physical-layer (L1) WiFi bring-up
 // helpers. They wrap the Arduino WiFi join so the example stays terse.
 #include "network_drivers/physical/physical.h"

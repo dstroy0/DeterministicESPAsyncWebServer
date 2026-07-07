@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_arena.cpp
- * @brief Unified double-ended server arena (Phase 1 core). See det_arena.h for the model.
+ * @file arena.cpp
+ * @brief Unified double-ended server arena (Phase 1 core). See arena.h for the model.
  */
 
-#include "network_drivers/session/det_arena.h"
+#include "network_drivers/session/arena.h"
 #include <string.h>
 
 namespace

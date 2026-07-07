@@ -4,7 +4,7 @@
 // Unit tests for the pluggable monotonic clock (services/det_clock): the platform
 // default, a custom clock divided down to the internal 1000 Hz, and revert.
 
-#include "services/det_clock.h"
+#include "services/clock.h"
 #include <Arduino.h> // set_millis (host mock)
 #include <unity.h>
 

@@ -7,7 +7,7 @@
  */
 
 #include "device_id.h"
-#include "shared_primitives/det_hex.h"
+#include "shared_primitives/hex.h"
 
 #if DETWS_ENABLE_DEVICE_ID
 

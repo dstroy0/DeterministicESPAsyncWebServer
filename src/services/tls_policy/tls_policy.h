@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TLS_POLICY_H
 #define DETERMINISTICESPASYNCWEBSERVER_TLS_POLICY_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

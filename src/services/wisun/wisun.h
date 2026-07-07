@@ -21,8 +21,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WISUN_H
 #define DETERMINISTICESPASYNCWEBSERVER_WISUN_H
 
-#include "DetWebServerConfig.h"
-#include "network_drivers/network/det_ip.h"
+#include "ServerConfig.h"
+#include "network_drivers/network/ip.h"
 #include <stddef.h>
 #include <stdint.h>
 

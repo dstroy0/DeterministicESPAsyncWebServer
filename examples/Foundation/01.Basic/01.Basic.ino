@@ -34,7 +34,7 @@
  *   curl http://<ip>/files/image.png
  */
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_bytes.h
+ * @file bytes.h
  * @brief Shared byte-cursor mechanics for the binary codecs (one source of truth).
  *
  * CBOR and MessagePack (and any future binary codec) kept their own copies of the

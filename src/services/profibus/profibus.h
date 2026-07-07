@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROFIBUS_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROFIBUS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

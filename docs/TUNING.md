@@ -7,7 +7,7 @@ path, so you only change these when you have a specific reason.
 
 > Prefer a UI? The [interactive build configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)
 > lets you tick features, tune every knob, and copy out the `build_flags` / `#define`s.
-> It is generated from `src/DetWebServerConfig.h`, so it always matches the library.
+> It is generated from `src/ServerConfig.h`, so it always matches the library.
 
 ## The execution model in one paragraph
 
@@ -39,7 +39,7 @@ into the slot's ring with a single SPSC publish, then one event is posted.
 ## Feature buffer & limit knobs
 
 Every per-feature tuning knob (buffer sizes, table depths, message limits,
-thresholds) lives in one place: [`src/DetWebServerConfig.h`](../src/DetWebServerConfig.h),
+thresholds) lives in one place: [`src/ServerConfig.h`](../src/ServerConfig.h),
 in the section **"Feature tuning knobs (grouped and gated by feature)"** at the end of
 the file. You never have to open a feature header to turn one. Each is an override-able
 default, so you set a new value in your `build_flags` (for example
@@ -105,4 +105,4 @@ latency is unchanged.
 - `DETWS_WORKER_COUNT > 1` adds `DETWS_SCRATCH_ARENA_SIZE` of BSS per extra worker
   and one event queue per worker; all static.
 - The internal time base stays 1000 Hz regardless of `DETWS_WORKER_POLL_TICKS`
-  (see `services/det_clock.h`), so timeouts keep their tested 1 ms granularity.
+  (see `services/clock.h`), so timeouts keep their tested 1 ms granularity.

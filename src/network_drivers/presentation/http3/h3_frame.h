@@ -17,7 +17,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_H3_FRAME_H
 #define DETERMINISTICESPASYNCWEBSERVER_H3_FRAME_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_HTTP3
 

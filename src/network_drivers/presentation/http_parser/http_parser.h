@@ -36,7 +36,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 #define DETERMINISTICESPASYNCWEBSERVER_HTTP_PARSER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <Arduino.h>
 
 // ---------------------------------------------------------------------------

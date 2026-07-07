@@ -8,8 +8,8 @@ from the code (wrong defaults, missing flags, a stale file layout). This script
 regenerates them from their real sources so they cannot drift again, writing each
 into a marked region:
 
-  FEATURE-FLAGS    every DETWS_ENABLE_* flag + default + one line   (DetWebServerConfig.h)
-  CONFIG-OVERRIDES every tunable #define constant + default + desc  (DetWebServerConfig.h)
+  FEATURE-FLAGS    every DETWS_ENABLE_* flag + default + one line   (ServerConfig.h)
+  CONFIG-OVERRIDES every tunable #define constant + default + desc  (ServerConfig.h)
   SOURCE-TREE      an ASCII tree of every library file              (src/)
   BUILD-FOOTPRINT  measured flash/RAM per feature                   (docs/footprints.json)
 
@@ -24,7 +24,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CONFIG_H = os.path.join(ROOT, "src", "DetWebServerConfig.h")
+CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
 SRC_DIR = os.path.join(ROOT, "src")
 FOOTPRINTS = os.path.join(ROOT, "docs", "footprints.json")
 README = os.path.join(ROOT, "docs", "README.md")

@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NEMA_TS2_H
 #define DETERMINISTICESPASYNCWEBSERVER_NEMA_TS2_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

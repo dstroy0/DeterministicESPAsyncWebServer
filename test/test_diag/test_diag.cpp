@@ -6,7 +6,7 @@
 // only compiled when the flag is on, so this env (native_diag) is what keeps that
 // code building + running in CI rather than bit-rotting.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <string.h>
 #include <unity.h>
 

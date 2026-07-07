@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_i2c.h
+ * @file i2c.h
  * @brief The one owner of the shared I2C bus bring-up for the peripheral drivers.
  *
  * The sensor / peripheral drivers (RTC, SHT3x, MPR121, ADS1115, INA219, PCA9685) all share a
@@ -23,7 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_I2C_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_I2C_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if defined(ARDUINO)
 

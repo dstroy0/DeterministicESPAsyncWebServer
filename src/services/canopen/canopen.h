@@ -6,7 +6,7 @@
  * @brief CANopen (CiA 301) application-layer message codec (DETWS_ENABLE_CANOPEN).
  *
  * A pure, zero-heap builder + parser for the CANopen messaging set carried over classic
- * CAN frames (see shared_primitives/det_can.h): NMT node control, SYNC, TIME, the
+ * CAN frames (see shared_primitives/can.h): NMT node control, SYNC, TIME, the
  * heartbeat / boot-up (NMT error control), EMCY, PDO (process data), and expedited SDO
  * (service data object) read / write / abort. The 11-bit CAN identifier is a 4-bit
  * function code plus a 7-bit node id; each builder computes the right COB-ID and each
@@ -25,11 +25,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CANOPEN_H
 #define DETERMINISTICESPASYNCWEBSERVER_CANOPEN_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_CANOPEN
 
-#include "shared_primitives/det_can.h"
+#include "shared_primitives/can.h"
 #include <stddef.h>
 #include <stdint.h>
 

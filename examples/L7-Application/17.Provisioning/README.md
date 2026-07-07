@@ -53,7 +53,7 @@ verbatim with added explanatory comments:
 
 #define DETWS_ENABLE_PROVISIONING 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/provisioning_service.h"
 #include <WiFi.h>

@@ -9,7 +9,7 @@
 //
 // The env sizes DETWS_DMA_BUF_SIZE = 8, DETWS_DMA_CHANNELS = 2 (staging = 24).
 
-#include "services/dma/det_dma.h"
+#include "services/dma/dma.h"
 #include <string.h>
 #include <unity.h>
 #include <vector>

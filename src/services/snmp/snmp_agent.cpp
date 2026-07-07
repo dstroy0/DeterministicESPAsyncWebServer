@@ -659,7 +659,7 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 // UDP binding (via the transport-layer UDP service - no lwIP here)
 // ---------------------------------------------------------------------------
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 
 // All SNMP UDP-binding state, owned by one instance (internal linkage): the response scratch
 // (the request is transport-owned), so it is one named owner, unreachable cross-TU.

@@ -7,7 +7,7 @@
  */
 
 #include "services/sht3x/sht3x.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_SHT3X
 
@@ -54,7 +54,7 @@ bool sht3x_parse(const uint8_t resp[6], int32_t *temp_mc, int32_t *rh_mpct)
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

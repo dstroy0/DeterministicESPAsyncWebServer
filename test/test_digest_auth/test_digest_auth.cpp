@@ -6,9 +6,9 @@
 // 401 challenge, the test computes the digest response with the same SHA-256
 // the server uses, then re-requests with an Authorization: Digest header.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#include "services/det_clock.h"
+#include "services/clock.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>

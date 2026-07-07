@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_MPR121 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/mpr121/mpr121.h"
 #include <Arduino.h>
 

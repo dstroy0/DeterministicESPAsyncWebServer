@@ -16,7 +16,7 @@ lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
 
 ```cpp
 #include <WiFi.h>
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical.h"
 
 DetWebServer server;
@@ -57,7 +57,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#config-io" title="Opt-in schema-driven config export / restore. Default off. Requires CONFIG_STORE. The app declares a fixed schema (key + type); services/config_io serializes the current values to a portable `key=value` text blob (backup / migrate) and parses one back into the store (restore / bulk template). Schema-driven rather than enumerating NVS, so it stays deterministic and zero-heap; the serialize / parse is host-tested.">Config IO</a></td>
   <td align="center"><a href="FEATURES.md#config-store" title="Typed NVS configuration store (WiFi creds, IP config,... as blobs). When set, src/services/config_store/config_store.h provides a typed key/value API (string / u32 / blob) that routes core settings into the ESP32's native NVS partition (via `Preferences`) instead of a JSON file on the filesystem - which survives FS corruption and is the corruption-resistant home for credentials. On host builds it is backed by a fixed in-memory table so the typed contract is unit-testable. Default off.">Config Store</a></td>
   <td align="center"><a href="FEATURES.md#device-id" title="Stable device UUID derived from the chip MAC (RFC 4122 v5). When set, src/services/device_id/device_id.h derives a deterministic v5 UUID from a MAC (via the library's SHA-1) - a storage-free, stable identity for mDNS hostnames, MQTT client IDs, etc. The MAC-&gt;UUID core is host-testable; detws_device_uuid() reads the ESP32 factory MAC. Default off.">Device ID</a></td>
-  <td align="center"><a href="FEATURES.md#dma-peripheral-ingest" title="Opt-in DMA ingest / egress path (v5 milestone). Default off. services/dma moves peripheral bytes (UART / I2C / SPI) between the wire and a static buffer while the CPU is free, then a DMA-complete event carries the result up - the high-throughput field-bus ingest path (RS-485 UART, CAN over SPI, IO-Link). RX is double-buffered (ping-pong): the completed buffer is handed to a callback while the engine fills the other; the canonical callback posts the bytes into the preempting work queue so a high-priority task processes them off the interrupt (see Preempting Work Queue). Zero heap (static DETWS_DMA_CHANNELS channels x DETWS_DMA_BUF_SIZE buffers), fail-closed (one TX in flight per channel, feeds past the staging capacity are rejected). DETWS_DMA_SIMULATE (default on) routes transfers through an in-memory ingress/egress simulator - feed bytes in, capture bytes out, optional TX-&gt;RX loopback - so the whole pipeline runs with no physical loopback wire, on the host bench and on-device; a real silicon driver plugs into the det_dma_hw_* hooks when the flag is off. Host-tested (services/dma) and HW-verified on a DevKitV1: 2.2M+ frames ingested with zero integrity errors while an HTTP server was stress-loaded on the same core, no heap growth. See src/services/dma/det_dma.h.">DMA Peripheral Ingest</a></td>
+  <td align="center"><a href="FEATURES.md#dma-peripheral-ingest" title="Opt-in DMA ingest / egress path (v5 milestone). Default off. services/dma moves peripheral bytes (UART / I2C / SPI) between the wire and a static buffer while the CPU is free, then a DMA-complete event carries the result up - the high-throughput field-bus ingest path (RS-485 UART, CAN over SPI, IO-Link). RX is double-buffered (ping-pong): the completed buffer is handed to a callback while the engine fills the other; the canonical callback posts the bytes into the preempting work queue so a high-priority task processes them off the interrupt (see Preempting Work Queue). Zero heap (static DETWS_DMA_CHANNELS channels x DETWS_DMA_BUF_SIZE buffers), fail-closed (one TX in flight per channel, feeds past the staging capacity are rejected). DETWS_DMA_SIMULATE (default on) routes transfers through an in-memory ingress/egress simulator - feed bytes in, capture bytes out, optional TX-&gt;RX loopback - so the whole pipeline runs with no physical loopback wire, on the host bench and on-device; a real silicon driver plugs into the det_dma_hw_* hooks when the flag is off. Host-tested (services/dma) and HW-verified on a DevKitV1: 2.2M+ frames ingested with zero integrity errors while an HTTP server was stress-loaded on the same core, no heap growth. See src/services/dma/dma.h.">DMA Peripheral Ingest</a></td>
   <td align="center"><a href="FEATURES.md#exception-decoder" title="Opt-in ESP32 panic / exception decoder for a live diagnostics panel. When set, services/exc_decoder parses a captured Guru Meditation panic dump (the cause, the register PC + EXCVADDR, and the backtrace PC:SP frames) into a structured ExcInfo and serializes it as JSON for a &quot;/exception&quot; panel; the browser or a build server resolves the PCs to file:line against the firmware ELF (addr2line lives off-device). Pure, no heap/stdlib. Default off.">Exception Decoder</a></td>
 </tr>
 <tr>
@@ -75,7 +75,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#time-source" title="Multi-source time fallback (NTP / RTC / GPS /... by priority). When set, src/services/time_source/time_source.h provides a small registry of user-defined time sources, each a callback returning Unix epoch seconds (0 when that source has no valid time). detws_time_now() queries them in priority order (lowest value first) and returns the first valid result, so the device falls back automatically when its preferred clock is unavailable. Pure and zero-heap (a fixed source table); host-testable. Default off.">Time Source</a></td>
 </tr>
 <tr>
-  <td align="center"><a href="FEATURES.md#vfs" title="Unified virtual filesystem wrapper. Default off. services/vfs exposes one small file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a feature can target storage without knowing the medium. A built-in zero-heap RAM backend (fixed BSS pool - deterministic, host-identical) ships for scratch / tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD / SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise. Pool dimensions are tunable in DetWebServerConfig.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE, _MAX_OPEN, _NAME_MAX).">VFS</a></td>
+  <td align="center"><a href="FEATURES.md#vfs" title="Unified virtual filesystem wrapper. Default off. services/vfs exposes one small file API (open/read/write/close, exists/size/remove/rename, whole-file helpers) over a pluggable backend, so a feature can target storage without knowing the medium. A built-in zero-heap RAM backend (fixed BSS pool - deterministic, host-identical) ships for scratch / tests; an Arduino-FS backend (ESP32) wraps a real fs::FS (LittleFS / SD / SPIFFS) for persistence. Mount one at startup; the API fails closed otherwise. Pool dimensions are tunable in ServerConfig.h (DETWS_VFS_RAM_FILES, _RAM_FILE_SIZE, _MAX_OPEN, _NAME_MAX).">VFS</a></td>
   <td align="center"><a href="FEATURES.md#wear-leveling" title="Opt-in flash wear-leveling slot selector. When set, services/wearlevel provides detws_wearlevel_pick(): given per-slot write counts it returns the least-worn slot to write next, so repeated flash/NVS writes spread evenly and the region ages together instead of burning out one block. Pure core (the app owns the slots + persisted counts). Default off.">Wear Leveling</a></td>
 </tr>
 </tbody>
@@ -99,7 +99,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#ina219" title="TI INA219 high-side current / power monitor (I2C). Default off. services/ina219 decodes the bus-voltage register (`ina219_bus_mv`: value in bits [15:3], LSB 4 mV) and the shunt-voltage register (`ina219_shunt_uv`: signed, LSB 10 µV), computes the calibration register from the current LSB and shunt resistance (`ina219_calibration`: `40960000 / (current_lsb_ua * shunt_mohm)`, so 100 µA + 0.1 Ω -&gt; 4096), and scales the raw current / power registers to microamps / microwatts (`ina219_current_ua`, `ina219_power_uw`; the power LSB is 20x the current LSB). All the decode / calibration / scaling math is pure and host-tested (`native_ina219`); only the register read/write touches I2C. A cheap solder-and-test breakout for measuring how much current and power a circuit draws. Example 67.Ina219 is a live power meter. See src/services/ina219/ina219.h.">INA219</a></td>
 </tr>
 <tr>
-  <td align="center"><a href="FEATURES.md#interface-forwarding" title="Opt-in forwarding plane (v5 milestone). Default off. services/forward turns the device into a bridge / router: register interfaces (Wi-Fi STA / AP, Ethernet, a peripheral bus, a radio), each with an egress send callback, then add per-pair rules (`det_forward_add_rule(src, dst, ALLOW/DENY, rate_cap)`). A frame arriving on one interface (`det_forward_ingress()`, the canonical wiring being a DMA-complete event posted onto the internal FORWARD lane of the preempting queue) is forwarded to every allowed destination by calling that destination's send callback, so the device bridges / routes between its interfaces instead of only terminating traffic. Default-deny (a pair forwards only with an ALLOW rule and no DENY; a DENY always wins), never reflects a frame to its source, and fail-closed (an exceeded rate cap or a send callback returning false drops and is counted via `det_forward_get_stats()`, never blocks). Multi-destination fan-out (several ALLOW rules for one source) gives hub behavior; a single ALLOW gives point-to-point routing. An optional ingress **ACL** filters frames by content before any forwarding rule runs: ordered entries (`det_forward_acl_add()`) match on the source interface (or DET_FWD_IF_ANY) and a byte pattern under a mask at an offset, first-match-wins, with a configurable default action (`det_forward_acl_set_default()`) - permit-by-default for a denylist, or deny-by-default for an allowlist. Static tables (zero heap): DETWS_FWD_MAX_IFACES interfaces, DETWS_FWD_MAX_RULES rules, DETWS_FWD_MAX_ACL ACL entries. Host-tested (services/forward) + HW-verified on a DevKitV1: 800k+ frames ingested over DMA, ACL-filtered, and forwarded through the plane with exact accounting (forwarded + acl_denied == frames_in), zero loss, and zero integrity errors while an HTTP server was stress-loaded on the same core. This is the generic data path the post-v5 wireless gateway bridges sit on. See src/services/forward/det_forward.h.">Interface Forwarding</a></td>
+  <td align="center"><a href="FEATURES.md#interface-forwarding" title="Opt-in forwarding plane (v5 milestone). Default off. services/forward turns the device into a bridge / router: register interfaces (Wi-Fi STA / AP, Ethernet, a peripheral bus, a radio), each with an egress send callback, then add per-pair rules (`det_forward_add_rule(src, dst, ALLOW/DENY, rate_cap)`). A frame arriving on one interface (`det_forward_ingress()`, the canonical wiring being a DMA-complete event posted onto the internal FORWARD lane of the preempting queue) is forwarded to every allowed destination by calling that destination's send callback, so the device bridges / routes between its interfaces instead of only terminating traffic. Default-deny (a pair forwards only with an ALLOW rule and no DENY; a DENY always wins), never reflects a frame to its source, and fail-closed (an exceeded rate cap or a send callback returning false drops and is counted via `det_forward_get_stats()`, never blocks). Multi-destination fan-out (several ALLOW rules for one source) gives hub behavior; a single ALLOW gives point-to-point routing. An optional ingress **ACL** filters frames by content before any forwarding rule runs: ordered entries (`det_forward_acl_add()`) match on the source interface (or DET_FWD_IF_ANY) and a byte pattern under a mask at an offset, first-match-wins, with a configurable default action (`det_forward_acl_set_default()`) - permit-by-default for a denylist, or deny-by-default for an allowlist. Static tables (zero heap): DETWS_FWD_MAX_IFACES interfaces, DETWS_FWD_MAX_RULES rules, DETWS_FWD_MAX_ACL ACL entries. Host-tested (services/forward) + HW-verified on a DevKitV1: 800k+ frames ingested over DMA, ACL-filtered, and forwarded through the plane with exact accounting (forwarded + acl_denied == frames_in), zero loss, and zero integrity errors while an HTTP server was stress-loaded on the same core. This is the generic data path the post-v5 wireless gateway bridges sit on. See src/services/forward/forward.h.">Interface Forwarding</a></td>
   <td align="center"><a href="FEATURES.md#ld2410" title="HLK-LD2410 24 GHz mmWave presence / motion radar (UART). Default off. services/ld2410 syncs to the module's framed serial output (256000 baud: header `F4 F3 F2 F1`, little-endian length, payload, footer `F8 F7 F6 F5`) and decodes the target report - presence state (none / moving / stationary / both), the moving and stationary target distance (cm) and energy (0-100), the overall detection distance, and, in engineering mode, the per-gate energy of all nine range gates - plus encodes the config commands (enter / exit config, enable / disable engineering, restart). Unlike a PIR sensor it detects a perfectly still person (micro-motion / breathing), in the dark, through thin walls. The `Ld2410Stream` byte-by-byte reassembler is fixed-buffer, no-heap, and resyncs cleanly on dropped bytes or noise; the frame decoder + reassembler + command encoders are host-tested (`native_ld2410`), and only the UART read/write touches hardware. Example 62.Ld2410 lights the onboard LED on presence. See src/services/ld2410/ld2410.h.">LD2410</a></td>
   <td align="center"><a href="FEATURES.md#ldc1614" title="Opt-in LDC1614 inductance-to-digital field sensor. A field-perturbation sensing peripheral: services/ldc1614 decodes the LDC1614's 28-bit conversion result (a nearby conductor changes the coil inductance via eddy currents, giving contactless metal proximity / displacement / EM-field sensing) - ldc1614_data combines the register pair, ldc1614_error pulls the flags, ldc1614_sensor_freq_hz scales to frequency, and ldc1614_build_config emits a single-channel bring-up; the ESP32 binding replays it and reads the channel over I2C. Pure codec host-tested. Default off.">LDC1614</a></td>
   <td align="center"><a href="FEATURES.md#lora" title="Opt-in LoRa radio codec + driver (v5 gateway plugin). Default off. services/lora is the southbound-radio half of a LoRa-to-web bridge (see Radio Gateway), in two layers. **Codec**: `lora_frame_parse` / `lora_frame_build` handle the RadioHead-compatible 4-byte header (`to` / `from` / `id` / `flags`) that virtually every hobby / sensor LoRa deployment lays over the header-less LoRa PHY. **Driver**: the Semtech SX127x (SX1276-79 / RFM95-96) register protocol - `lora_init` (verifies the chip id, switches to LoRa mode, programs the carrier frequency, spreading factor / bandwidth / coding rate, sync word, and PA power), `lora_send` / `lora_tx_done`, `lora_set_rx`, and `lora_recv` (reads the FIFO + packet RSSI on RxDone, drops on a CRC error) - all over a caller-supplied register-access bus (two callbacks that read/write a chip register), so the SPI + chip-select wiring is the integration's and the register sequence is portable. Bridge received frames northbound with `det_gw_uplink()`. The codec and the full register protocol are host-tested against a mock SX127x (a register file + a FIFO with the chip's auto-incrementing address pointer); the RF link itself needs the module. Example 11.LoRaGateway drives a real RFM95 over SPI. See src/services/lora/lora.h.">LoRa</a></td>
@@ -109,7 +109,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#nrf24" title="Opt-in nRF24L01+ radio driver (v5 gateway plugin). Default off. services/nrf24 is a driver for the Nordic nRF24L01+ 2.4 GHz module - cheap point-to-multipoint sensor links bridged to the web stack. Unlike the SX127x (plain register read/write), the nRF24 speaks an SPI command protocol (each transaction is a command byte + data with the STATUS register shifted out first) and needs a separate CE pin, so the driver runs over an `nrf_bus` that carries a full-duplex SPI transfer plus a CE-set callback - the only board-specific code. `nrf24_init` verifies the chip via a register read-back and programs the channel, data rate, power, 5-byte address, and static payload width; `nrf24_send` (zero-padded to the width) / `nrf24_tx_done`, `nrf24_set_rx`, and `nrf24_recv` (reports the receiving pipe). The chip's hardware pipe addressing means a received frame's source is the pipe number (no in-payload codec); bridge it northbound with `det_gw_uplink(port, pipe, ...)`. The command protocol is host-tested against a mock chip (register file + payload buffers + STATUS write-1-to-clear); the RF link itself needs the module. Example 12.Nrf24Gateway drives a real module over SPI. See src/services/nrf24/nrf24.h.">nRF24</a></td>
   <td align="center"><a href="FEATURES.md#pca9685" title="NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C). Default off. services/pca9685 turns the ESP32's two I2C wires into sixteen hardware PWM outputs. `pca9685_prescale` computes the PRESCALE register for a PWM frequency from the 25 MHz oscillator (`round(25e6 / (4096*freq)) - 1`, clamped 3..255; 50 Hz -&gt; 121); `pca9685_channel_reg` gives a channel's register base (`0x06 + 4*channel`); `pca9685_us_to_count` converts a servo pulse width (microseconds) to a 12-bit OFF count at the configured frequency; and `pca9685_set_pwm_bytes` packs the 5-byte channel write (12-bit ON/OFF little-endian, preserving the full-on/off flag). The prescale / count math + the register encoder are pure and host-tested (`native_pca9685`); only the register writes touch I2C. A cheap solder-and-test breakout for up to 16 servos or LEDs. Example 65.Pca9685 sweeps a servo. See src/services/pca9685/pca9685.h.">PCA9685</a></td>
   <td align="center"><a href="FEATURES.md#pn532" title="PN532 NFC frame codec (v5 gateway plugin). Default off. services/pn532 is the command-frame protocol of the NXP PN532 - the ubiquitous NFC / RFID reader on I2C / SPI / HSU breakouts - so a tag read/write becomes an HTTP / MQTT event. The host and the chip exchange normal information frames `00 00 FF | LEN | LCS | TFI | PData | DCS | 00`, where TFI is 0xD4 (host) / 0xD5 (chip), LCS is the length checksum and DCS the data checksum, plus a 6-byte ACK frame. `pn532_build_frame` assembles a command (the per-command PData - GetFirmwareVersion, InListPassiveTarget, InDataExchange - is the application's), `pn532_parse_frame` frames + verifies a response (returning the length consumed, need-more, or a resync signal), and `pn532_is_ack` / `pn532_build_ack` handle the ACK. Pure - you carry the bytes over your I2C / SPI / UART - and host-tested against the documented GetFirmwareVersion command / response frames and their LCS / DCS. Example 14.NfcGateway reads a real PN532 over I2C and bridges each tag UID northbound. See src/services/pn532/pn532.h.">PN532</a></td>
-  <td align="center"><a href="FEATURES.md#radio-gateway" title="Opt-in radio / wireless gateway bridge (v5 milestone). Default off. services/gateway is the generic southbound-to-northbound bridge that ties the hardware-ingest pipeline to the web stack: a southbound radio (LoRa / nRF24 / CC1101 / Zigbee / Z-Wave / ... reached over SPI / I2C / UART) is a **port**. When it receives a frame - the data-ready ISR reads it over DMA (services/dma), posts it onto the FORWARD lane (services/preempt_queue), and a per-radio codec extracts the source node address + payload - you call `det_gw_uplink()`; the gateway envelopes it (source address, port, RSSI, sequence) and publishes it northbound through the uplink callback, which you wire to MQTT / HTTP / WebSocket / UDP. A command runs the other way via `det_gw_downlink()` to the port's transmit callback (the radio's SPI / UART write). `det_gw_topic()` formats a routing key `&lt;prefix&gt;/&lt;port&gt;/&lt;addr&gt;`; a per-port uplink rate cap and fail-closed drops (no sink / unknown port / exceeded cap / refused, all counted via `det_gw_get_stats()`) keep it bounded. The radio transmit and the northbound publish are callbacks (the seam a real radio driver / protocol binding plugs into), so the bridge is host- and device-testable with no radio. Zero-heap static tables (DETWS_GW_MAX_PORTS). Host-tested (services/gateway) + HW-verified on a DevKitV1: 690k+ radio frames bridged northbound over DMA + the FORWARD lane with exact accounting (up_in == published) and zero payload-integrity errors while an HTTP server was stress-loaded on the same core. This is the framework the per-radio gateways (LoRa, Zigbee, ...) on the roadmap plug into. See src/services/gateway/det_gateway.h.">Radio Gateway</a></td>
+  <td align="center"><a href="FEATURES.md#radio-gateway" title="Opt-in radio / wireless gateway bridge (v5 milestone). Default off. services/gateway is the generic southbound-to-northbound bridge that ties the hardware-ingest pipeline to the web stack: a southbound radio (LoRa / nRF24 / CC1101 / Zigbee / Z-Wave / ... reached over SPI / I2C / UART) is a **port**. When it receives a frame - the data-ready ISR reads it over DMA (services/dma), posts it onto the FORWARD lane (services/preempt_queue), and a per-radio codec extracts the source node address + payload - you call `det_gw_uplink()`; the gateway envelopes it (source address, port, RSSI, sequence) and publishes it northbound through the uplink callback, which you wire to MQTT / HTTP / WebSocket / UDP. A command runs the other way via `det_gw_downlink()` to the port's transmit callback (the radio's SPI / UART write). `det_gw_topic()` formats a routing key `&lt;prefix&gt;/&lt;port&gt;/&lt;addr&gt;`; a per-port uplink rate cap and fail-closed drops (no sink / unknown port / exceeded cap / refused, all counted via `det_gw_get_stats()`) keep it bounded. The radio transmit and the northbound publish are callbacks (the seam a real radio driver / protocol binding plugs into), so the bridge is host- and device-testable with no radio. Zero-heap static tables (DETWS_GW_MAX_PORTS). Host-tested (services/gateway) + HW-verified on a DevKitV1: 690k+ radio frames bridged northbound over DMA + the FORWARD lane with exact accounting (up_in == published) and zero payload-integrity errors while an HTTP server was stress-loaded on the same core. This is the framework the per-radio gateways (LoRa, Zigbee, ...) on the roadmap plug into. See src/services/gateway/gateway.h.">Radio Gateway</a></td>
   <td align="center"><a href="FEATURES.md#radio-power" title="Opt-in radio power controls. Default off. services/radio_power applies the WiFi modem-sleep mode and an optional max-TX-power cap in one call (esp_wifi_set_ps / esp_wifi_set_max_tx_power) - trade throughput/latency for lower average power on a battery device. The mode names are host-tested; the apply is ESP32-only.">Radio Power</a></td>
 </tr>
 <tr>
@@ -138,7 +138,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <tr>
   <td align="center"><a href="FEATURES.md#dns-resolver" title="Opt-in DNS resolver with answer verification. Default off. services/dns_resolver resolves a hostname to an IPv4 address (lwIP dns_gethostbyname, marshalled to tcpip_thread like the http_client) and can reject suspicious answers - 0.0.0.0, broadcast, loopback, multicast - which are spoofing / DNS-rebinding indicators for a remote host. The address classifier / verifier is pure and host-tested; the resolve is ESP32-only (blocking, so call it off the request hot path).">Dns Resolver</a></td>
   <td align="center"><a href="FEATURES.md#happy-eyeballs" title="Opt-in dual-stack Happy Eyeballs destination selection. The client-side IPv6/IPv4 fallback decision on top of the shipped DetIp: detws_he_pref scores a destination (RFC 6724 scope + family), detws_he_order sorts a candidate list and interleaves the address families (RFC 8305) so successive connection attempts alternate v6/v4, and detws_he_attempt_due gates the next attempt by the Connection Attempt Delay. Fast IPv6 when it works, quick fallback to IPv4 when it does not. Needs DETWS_ENABLE_IPV6 to matter. No heap/stdlib. Default off.">Happy Eyeballs</a></td>
-  <td align="center"><a href="FEATURES.md#ipv6" title="Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DETWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -&gt; SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DetIp address core (`network_drivers/network/det_ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_det_ip`); the netif bring-up is ESP32-only. Example 20.IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it).">IPv6</a></td>
+  <td align="center"><a href="FEATURES.md#ipv6" title="Dual-stack IPv6. Default off. The TCP and UDP listeners already bind `IPADDR_TYPE_ANY`, so the server answers over IPv6 the moment the interface has a v6 address; `DETWS_ENABLE_IPV6` turns IPv6 on for the Wi-Fi netif (`init_ipv6_physical()` -&gt; SLAAC: a `fe80::` link-local address plus a global one if a router advertises a prefix), and `net_global_ipv6()` reads the acquired global address from lwIP. The DetIp address core (`network_drivers/network/ip.h`) is one family-tagged type for both v4 and v6, with RFC 4291 text parsing (`::` zero-compression, embedded-v4 `::ffff:a.b.c.d`), RFC 5952 canonical formatting, and scope classification (loopback / link-local / private-ULA / multicast / global). The address core is pure and host-tested (`native_det_ip`); the netif bring-up is ESP32-only. Example 20.IPv6. Requires an lwIP built with `LWIP_IPV6=1` (the stock Arduino-ESP32 core ships it).">IPv6</a></td>
   <td align="center"><a href="FEATURES.md#link-manager" title="Opt-in multi-interface egress selection / failover policy. The policy that drives which interface carries traffic once a device has more than one (a wired Ethernet PHY alongside WiFi STA / softAP): services/link_manager keeps a small table of interfaces (kind + priority + up/down) and deterministically selects the best link that is up, escalating to a higher-priority interface when it comes up and failing over when it drops, reporting only real transitions so the app reconfigures the netif once. The PHY bring-up (esp_eth) stays the app's. No heap/stdlib. Default off.">Link Manager</a></td>
   <td align="center"><a href="FEATURES.md#network-adaptation" title="Opt-in network adaptation decisions. When set, services/netadapt provides two pure decisions: detws_netadapt_window() sizes the TCP receive window from the free heap (bigger when RAM is plentiful, shrinking when tight), and detws_netadapt_dhcp_fallback() decides when to give up on DHCP and use a static IP. The app applies the results (lwIP window / netif config). Default off.">Network Adaptation</a></td>
 </tr>
@@ -222,7 +222,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#c37118" title="IEEE C37.118.2 synchrophasor frame codec. Default off. services/c37118 is a zero-heap builder + CRC-validating parser for the PMU / PDC wide-area measurement wire protocol: `c37118_build_frame` emits a `SYNC FRAMESIZE IDCODE SOC FRACSEC DATA CHK` frame (CHK = CRC-CCITT) for any payload, `c37118_build_command` handles the fixed Command frame, and `c37118_parse_frame` validates the CRC and reports the frame type / id / timestamp / payload slice (with `c37118_parse_command`). CRC verified against the canonical CRC-CCITT-FALSE check value; pure and host-tested. The fixed phasor configuration / data model layered on the framing is a future addition. See src/services/c37118/c37118.h.">C37.118</a></td>
-  <td align="center"><a href="FEATURES.md#canopen" title="CANopen (CiA 301) message codec. Default off. services/canopen is a zero-heap builder + parser for the CANopen messaging set over classic CAN frames (`shared_primitives/det_can.h`): NMT node control, SYNC, TIME, the heartbeat / boot-up (NMT error control), EMCY, PDO process data, and expedited SDO read / write / abort. The 11-bit COB-ID is a 4-bit function code plus a 7-bit node id, so `canopen_build_*` compute it and `canopen_parse` classifies a received frame back to its function + node; `canopen_parse_sdo_response` decodes a server's expedited upload value, download acknowledge, or abort code. The object dictionary itself is the application's, and SDO is expedited only (segmented / block transfer is a future addition). Identifier allocation verified against CiA 301; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a CANopen field bus onto Wi-Fi. See src/services/canopen/canopen.h.">CANopen</a></td>
+  <td align="center"><a href="FEATURES.md#canopen" title="CANopen (CiA 301) message codec. Default off. services/canopen is a zero-heap builder + parser for the CANopen messaging set over classic CAN frames (`shared_primitives/can.h`): NMT node control, SYNC, TIME, the heartbeat / boot-up (NMT error control), EMCY, PDO process data, and expedited SDO read / write / abort. The 11-bit COB-ID is a 4-bit function code plus a 7-bit node id, so `canopen_build_*` compute it and `canopen_parse` classifies a received frame back to its function + node; `canopen_parse_sdo_response` decodes a server's expedited upload value, download acknowledge, or abort code. The object dictionary itself is the application's, and SDO is expedited only (segmented / block transfer is a future addition). Identifier allocation verified against CiA 301; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a CANopen field bus onto Wi-Fi. See src/services/canopen/canopen.h.">CANopen</a></td>
   <td align="center"><a href="FEATURES.md#cc-link" title="Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. When set, services/cclink builds/validates the CC-Link cyclic frame ([station][command][RX/RY bit data][RWr/RWw word data][sum checksum]) a Mitsubishi CC-Link master exchanges with remote stations over RS-485, plus bit/word process-image accessors. Pure codec (the RS-485 timing + CC-Link IE Field PHY are hardware-gated). Default off.">CC-Link</a></td>
   <td align="center"><a href="FEATURES.md#chunked-responses" title="Streaming / chunked responses of unbounded length in constant memory via send_chunked(). Always on.">Chunked Responses</a></td>
   <td align="center"><a href="FEATURES.md#cip" title="CIP (Common Industrial Protocol) message codec - the message that rides inside an EtherNet/IP Unconnected Data item (DETWS_ENABLE_ENIP). Default off. services/cip builds the request - `cip_build_epath` encodes a class/instance/attribute EPATH from logical segments (`0x20 | type | format`, 8- or 16-bit ids), `cip_build_get_attr_single` / `cip_build_request` prepend the service code + path size - and `cip_parse_response` splits a reply into service / general status / additional status / data. Service codes and the segment encoding are verified against the Wireshark CIP dissector. Pure and host-tested; wrap the request with `eip_build_send_rr_data` for a working CIP read path. See src/services/cip/cip.h.">CIP</a></td>
@@ -257,7 +257,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#goose" title="Opt-in IEC 61850 GOOSE publisher codec. When set, services/goose builds the BER-encoded IECGoosePdu (gocbRef / timeAllowedToLive / datSet / goID / t / stNum / sqNum / simulation / confRev / ndsCom / numDatSetEntries / allData) and wraps it in the 8-octet GOOSE header + Ethernet frame (ethertype 0x88B8) for the fast raw-L2 substation-event publish. Pure codec (allData is a caller-encoded BER blob; the raw-L2 transmit is the device step). Default off.">GOOSE</a></td>
-  <td align="center"><a href="FEATURES.md#graphql" title="GraphQL query subset. Default off. services/graphql parses a GraphQL query into a fixed AST node pool (no heap) and emits a `{&quot;data&quot;:{...}}` response shaped exactly by the requested selection. Schema-free: a field with a sub-selection is an object (the engine recurses), a leaf field calls your single resolver, and arguments collected along the path are handed to it. Supports nested selections, field arguments, and the anonymous / `query` forms; mutations, subscriptions, fragments, and variables are out of scope. Pure and host-tested; bounds are compile-time (DETWS_GQL_* in DetWebServerConfig.h). Serve it from a POST /graphql route.">GraphQL</a></td>
+  <td align="center"><a href="FEATURES.md#graphql" title="GraphQL query subset. Default off. services/graphql parses a GraphQL query into a fixed AST node pool (no heap) and emits a `{&quot;data&quot;:{...}}` response shaped exactly by the requested selection. Schema-free: a field with a sub-selection is an object (the engine recurses), a leaf field calls your single resolver, and arguments collected along the path are handed to it. Supports nested selections, field arguments, and the anonymous / `query` forms; mutations, subscriptions, fragments, and variables are out of scope. Pure and host-tested; bounds are compile-time (DETWS_GQL_* in ServerConfig.h). Serve it from a POST /graphql route.">GraphQL</a></td>
   <td align="center"><a href="FEATURES.md#grpc-web" title="gRPC-Web message framing. Default off. services/grpcweb is a zero-heap length-prefixed frame builder + parser for gRPC-Web, the HTTP/1.1-reachable subset of gRPC (gRPC proper needs HTTP/2): `grpcweb_frame_message` wraps a Protobuf message in the 5-octet `[flags][length BE32]` prefix, `grpcweb_frame_trailer` emits the 0x80 trailers frame (`grpc-status` / `grpc-message`), and `grpcweb_parse` reads one frame back (with `grpcweb_trailer_status` to pull the status out of a trailers frame). Wraps the Protobuf codec (DETWS_ENABLE_PROTOBUF) and rides the shipped HTTP/1.1 server/client. Pure and host-tested. See src/services/grpcweb/grpcweb.h.">gRPC-Web</a></td>
   <td align="center"><a href="FEATURES.md#hart" title="Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart provides the HART command-frame codec (build/parse with the longitudinal XOR checksum, short + long addressing) and the 8-octet HART-IP message header, so a device speaks HART over UDP/TCP 5094 (front-end-free) or, with a HART FSK modem, over the 4-20 mA loop. Pure, host-tested. Default off.">HART</a></td>
   <td align="center"><a href="FEATURES.md#host-link" title="Omron Host Link (C-mode) frame codec. Default off. services/hostlink is a zero-heap ASCII command/response codec for Omron's serial host-link protocol (the RS-232/485 sibling of FINS): `hostlink_build` emits `@UU` + 2-char header code + text + FCS + `*`CR, and `hostlink_parse` FCS-validates and splits a frame (`hostlink_end_code` reads a response's end code). The FCS is the 8-bit XOR from `@` through the text, rendered as two hex digits (verified against the `@00RD00000010` -&gt; `57` example). Pure and host-tested; the UART transport is the application's. See src/services/hostlink/hostlink.h.">Host Link</a></td>
@@ -271,7 +271,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#io-link" title="IO-Link (SDCI, IEC 61131-9) data-link message codec. Default off. services/iolink implements the point-to-point smart-sensor link's data-link message layer: `iol_mc` (with decoders) builds the M-sequence Control octet (read/write, communication channel, address), `iol_ckt` builds a master message's checksum / M-sequence-type octet, `iol_cks` builds a device reply's checksum / status octet (Event + PD-valid flags), and `iol_checksum6` / `iol_finalize` / `iol_verify` implement the SDCI message checksum straight from the IO-Link Interface and System Specification v1.1.4 Annex A.1.6 (a 0x52 seed XORed octet by octet with the check octet's checksum bits zeroed, then the 8-to-6-bit compression of equation A.1). The checksum is verified against a vector hand-derived from the spec formula. Lay the per-type M-sequence and ISDU octets out per your device profile, then finalize / verify with this codec. Pure and host-tested. The wire is a UART through an IO-Link transceiver (MAX14819 / L6360 class); bridge sensor data onto Wi-Fi. See src/services/iolink/iolink.h.">IO-Link</a></td>
-  <td align="center"><a href="FEATURES.md#j1939" title="SAE J1939 codec. Default off. services/j1939 is a zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/det_can.h`): `j1939_encode_id` / `j1939_decode_id` pack and unpack the priority / PGN / source / destination identifier (both the PDU1 peer-to-peer and PDU2 broadcast forms), `j1939_build_message` emits single frames, `j1939_build_request` and `j1939_build_address_claim` (with `j1939_build_name` for the 64-bit NAME) handle the Request PGN and Address Claimed messages, and the Transport Protocol (BAM announce + TP.DT data packets) reassembles multi-packet messages up to `DETWS_J1939_TP_MAX` octets via `j1939_tp_feed`. Identifier layout, NAME bit fields, and the TP control bytes verified against SAE J1939-21 / -81; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a J1939 bus onto Wi-Fi. See src/services/j1939/j1939.h.">J1939</a></td>
+  <td align="center"><a href="FEATURES.md#j1939" title="SAE J1939 codec. Default off. services/j1939 is a zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset CAN higher-layer protocol over 29-bit extended frames (`shared_primitives/can.h`): `j1939_encode_id` / `j1939_decode_id` pack and unpack the priority / PGN / source / destination identifier (both the PDU1 peer-to-peer and PDU2 broadcast forms), `j1939_build_message` emits single frames, `j1939_build_request` and `j1939_build_address_claim` (with `j1939_build_name` for the 64-bit NAME) handle the Request PGN and Address Claimed messages, and the Transport Protocol (BAM announce + TP.DT data packets) reassembles multi-packet messages up to `DETWS_J1939_TP_MAX` octets via `j1939_tp_feed`. Identifier layout, NAME bit fields, and the TP control bytes verified against SAE J1939-21 / -81; pure and host-tested. Drive it from the ESP32 TWAI peripheral or an MCP2515 over SPI to bridge a J1939 bus onto Wi-Fi. See src/services/j1939/j1939.h.">J1939</a></td>
   <td align="center"><a href="FEATURES.md#j2735" title="Opt-in SAE J2735 V2X codec. When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive codec (constrained INTEGER / BOOLEAN / bit fields) and, on top of it, the J2735 BSMcore safety-message block (msgCnt / id / secMark / lat / long / elev / speed / heading) encode + decode, for connected- vehicle messaging. Pure codec (the DSRC / C-V2X radio is an external module). Default off.">J2735</a></td>
   <td align="center"><a href="FEATURES.md#log-buffer" title="Opt-in fixed-RAM rotating log buffer with severity traps. Default off. When set, services/logbuf keeps the last DETWS_LOG_LINES log lines in a fixed ring (oldest pruned on overflow - no heap, bounded), dumps them oldest-first for a `/logs` endpoint, and fires a trap callback when a line is logged at/above a severity threshold (forward criticals as an SNMP trap / webhook). The ring + trap logic is pure and host-tested.">Log-Buffer</a></td>
   <td align="center"><a href="FEATURES.md#lonworks" title="Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec. When set, services/lonworks builds/parses the LonTalk network-variable PDU ([msg-code][14-bit selector][value]) that a building-automation device exchanges - over LON/IP (14908-4) UDP, so no Neuron chip is needed - plus the common SNVT scalar encodings (SNVT_temp, SNVT_switch). Pure codec (the UDP transport is the shipped UDP layer). Default off.">LonWorks</a></td>
@@ -396,7 +396,7 @@ Each OSI layer lives in its own subdirectory under `src/network_drivers/`:
 <summary><b>View Directory and OSI Layer Layout</b></summary>
 
 ```
-L7  src/DeterministicESPAsyncWebServer.h/cpp     Route table, dispatch, send()
+L7  src/dwserver.h/cpp     Route table, dispatch, send()
 L6  src/network_drivers/presentation/
         presentation.h/cpp                        Drains ring buffer → parser
         http_parser.h/cpp                         RFC 7230 byte-stream state machine
@@ -406,7 +406,7 @@ L6  src/network_drivers/presentation/
 L5  src/network_drivers/session/
         session.h/cpp                             FreeRTOS event queue drain
 L4  src/network_drivers/transport/
-        transport.h/cpp                           lwIP callbacks, ring buffers, timeouts
+        tcp.h/cpp                           lwIP callbacks, ring buffers, timeouts
         listener.h/cpp                            Per-port TCP listener, per-listener queue
 L3  src/network_drivers/network/
         network.h/cpp                             lwIP stub
@@ -443,8 +443,8 @@ src/
 │   │   └── web_assets.h
 │   ├── datalink/  (datalink.h, datalink.cpp)
 │   ├── network/
-│   │   ├── det_ip.cpp
-│   │   ├── det_ip.h
+│   │   ├── ip.cpp
+│   │   ├── ip.h
 │   │   ├── network.cpp
 │   │   └── network.h
 │   ├── physical/  (physical.h, physical.cpp)
@@ -554,8 +554,8 @@ src/
 │   │   ├── presentation.cpp
 │   │   └── presentation.h
 │   ├── session/
-│   │   ├── det_arena.cpp
-│   │   ├── det_arena.h
+│   │   ├── arena.cpp
+│   │   ├── arena.h
 │   │   ├── proto_builtins.cpp
 │   │   ├── proto_handler.h
 │   │   ├── scratch.cpp
@@ -564,16 +564,16 @@ src/
 │   │   ├── session.h
 │   │   ├── worker.cpp
 │   │   └── worker.h
-│   ├── tls/  (det_tls.h, det_tls.cpp)
+│   ├── tls/  (tls.h, tls.cpp)
 │   └── transport/
-│       ├── det_client.cpp
-│       ├── det_client.h
+│       ├── client.cpp
+│       ├── client.h
 │       ├── listener.cpp
 │       ├── listener.h
-│       ├── transport.cpp
-│       ├── transport.h
-│       ├── udp_transport.cpp
-│       └── udp_transport.h
+│       ├── tcp.cpp
+│       ├── tcp.h
+│       ├── udp.cpp
+│       └── udp.h
 ├── services/
 │   ├── ads1115/  (ads1115.h, ads1115.cpp)
 │   ├── amqp/  (amqp.h, amqp.cpp)
@@ -602,7 +602,7 @@ src/
 │   ├── devicenet/  (devicenet.h, devicenet.cpp)
 │   ├── df1/  (df1.h, df1.cpp)
 │   ├── directnet/  (directnet.h, directnet.cpp)
-│   ├── dma/  (det_dma.h, det_dma.cpp)
+│   ├── dma/  (dma.h, dma.cpp)
 │   ├── dmx/  (dmx.h, dmx.cpp)
 │   ├── dnp3/  (dnp3.h, dnp3.cpp)
 │   ├── dns_resolver/  (dns_resolver.h, dns_resolver.cpp)
@@ -616,8 +616,8 @@ src/
 │   ├── fdc2214/  (fdc2214.h, fdc2214.cpp)
 │   ├── fins/  (fins.h, fins.cpp)
 │   ├── flow_export/  (flow_export.h, flow_export.cpp)
-│   ├── forward/  (det_forward.h, det_forward.cpp)
-│   ├── gateway/  (det_gateway.h, det_gateway.cpp)
+│   ├── forward/  (forward.h, forward.cpp)
+│   ├── gateway/  (gateway.h, gateway.cpp)
 │   ├── goose/  (goose.h, goose.cpp)
 │   ├── gpio_map/
 │   │   ├── gpio_map.cpp
@@ -748,8 +748,8 @@ src/
 │   ├── zwave/  (zwave.h, zwave.cpp)
 │   ├── cloudevents.cpp
 │   ├── cloudevents.h
-│   ├── det_clock.h
-│   ├── det_i2c.h
+│   ├── clock.h
+│   ├── i2c.h
 │   ├── mdns_service.cpp
 │   ├── mdns_service.h
 │   ├── ntp_service.cpp
@@ -767,14 +767,14 @@ src/
 │   ├── web_terminal.cpp
 │   └── web_terminal.h
 ├── shared_primitives/
-│   ├── det_bytes.h
-│   ├── det_can.h
-│   ├── det_hex.h
-│   ├── det_mime.h
-│   ├── det_numparse.h
-│   ├── det_pcap.h
-│   ├── det_ring.h
-│   └── det_utf8.h
+│   ├── bytes.h
+│   ├── can.h
+│   ├── hex.h
+│   ├── mime.h
+│   ├── numparse.h
+│   ├── pcap.h
+│   ├── ring.h
+│   └── utf8.h
 ├── web/
 │   ├── favicons/  (288 generated files)
 │   ├── input/
@@ -791,9 +791,9 @@ src/
 │   │   ├── gen_theme_blobs.py
 │   │   └── gen_themes.py
 │   └── README.md
-├── DeterministicESPAsyncWebServer.cpp
-├── DeterministicESPAsyncWebServer.h
-└── DetWebServerConfig.h
+├── dwserver.cpp
+├── dwserver.h
+└── ServerConfig.h
 ```
 
 <!-- END GENERATED SOURCE-TREE -->
@@ -984,7 +984,7 @@ Any feature flag set to `0` strips the corresponding code and its includes from 
 ### Feature Flags
 
 The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
-`src/DetWebServerConfig.h` by `docs/utilities/gen_readme_sections.py` (see
+`src/ServerConfig.h` by `docs/utilities/gen_readme_sections.py` (see
 [FEATURES.md](FEATURES.md) for the full description of each):
 
 <details>
@@ -1195,13 +1195,13 @@ Illegal combinations (e.g. `MAX_WS_CONNS + MAX_SSE_CONNS > MAX_CONNS`) produce `
 
 ## Configuration Overrides
 
-All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`). Default limits and sizes reside in [DetWebServerConfig.h](@ref DetWebServerConfig.h).
+All constants can be overridden using compiler build flags (e.g. `-DMAX_CONNS=6`). Default limits and sizes reside in [ServerConfig.h](@ref ServerConfig.h).
 
 <details>
 <summary><b>Expand Configuration constants and options</b></summary>
 
 The full list of tunable `#define` constants and their defaults, scraped from
-`src/DetWebServerConfig.h` by `docs/utilities/gen_readme_sections.py`. Override any
+`src/ServerConfig.h` by `docs/utilities/gen_readme_sections.py`. Override any
 with a build flag (e.g. `-DMAX_CONNS=6`); illegal combinations are caught by `#error`
 guards at compile time.
 
@@ -1569,7 +1569,7 @@ drifts; run any of them locally from the repo root.
 | ------------------------ | ------------------------------------------------------------------------------------ |
 | `gen_feature_tables.py`  | the README / docs feature tables from `FEATURES.md`                                  |
 | `gen_readme_sections.py` | this file's feature-flag, configuration-override, source-tree, and footprint regions |
-| `gen_configurator.py`    | the interactive `configurator.html` from `DetWebServerConfig.h`                      |
+| `gen_configurator.py`    | the interactive `configurator.html` from `ServerConfig.h`                      |
 | `gen_flag_deps.py`       | the build-flag dependency diagram                                                    |
 | `gen_api_flow.py`        | the core API-flow diagram                                                            |
 | `gen_examples.py`        | the example index in `EXAMPLES.md`                                                   |

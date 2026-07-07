@@ -11,29 +11,29 @@
  * all ports without a lookup table.
  *
  * The non-static per-connection callbacks (lowlevel_recv_cb, lowlevel_sent_cb,
- * lowlevel_err_cb) are defined in transport.cpp and declared extern here.
+ * lowlevel_err_cb) are defined in tcp.cpp and declared extern here.
  * The transport layer's enqueue() helper calls listener_enqueue(), which is
  * defined in this file - that indirection breaks the circular header dependency
- * (listener.h includes transport.h; transport.cpp includes listener.h).
+ * (listener.h includes tcp.h; tcp.cpp includes listener.h).
  */
 
 #include "listener.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "network_drivers/tls/det_tls.h" // TLS handshake begin (self-stubbing)
+#include "network_drivers/tls/tls.h" // TLS handshake begin (self-stubbing)
 #ifdef ARDUINO
 #include "lwip/ip_addr.h"                   // ip_2_ip4 / ip4_addr_get_u32 for interface tagging
 #include "lwip/priv/tcpip_priv.h"           // tcpip_api_call - marshal dynamic listener ops to tcpip_thread
 #include "network_drivers/session/worker.h" // detws_worker_wake() - nudge the owning worker task
 #endif
-#include "services/det_clock.h" // detws_millis() pluggable monotonic clock (host-safe)
+#include "services/clock.h" // detws_millis() pluggable monotonic clock (host-safe)
 #include <Arduino.h>
 
 // Listener pool - all storage in BSS.
 Listener listener_pool[MAX_LISTENERS];
 
-// Per-connection callbacks defined in transport.cpp.
+// Per-connection callbacks defined in tcp.cpp.
 extern err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 extern err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
 extern void lowlevel_err_cb(void *arg, err_t err);

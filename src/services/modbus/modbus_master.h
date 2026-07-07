@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MODBUS_MASTER_H
 #define DETERMINISTICESPASYNCWEBSERVER_MODBUS_MASTER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

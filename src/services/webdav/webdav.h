@@ -23,7 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

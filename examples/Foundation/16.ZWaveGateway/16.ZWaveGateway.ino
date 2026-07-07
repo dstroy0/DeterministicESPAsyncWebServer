@@ -16,8 +16,8 @@
 //
 // Build flags (whole build): DETWS_ENABLE_ZWAVE=1 DETWS_ENABLE_GATEWAY=1
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
-#include "services/gateway/det_gateway.h"
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
+#include "services/gateway/gateway.h"
 #include "services/zwave/zwave.h"
 #include <Arduino.h>
 

@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file DeterministicESPAsyncWebServer.h
+ * @file dwserver.h
  * @brief Layer 7 (Application) - public HTTP routing API.
  *
  * This is the only header most application code needs to include.
  * The full OSI include chain is pulled in automatically:
  * @code
- *   DeterministicESPAsyncWebServer.h                  (L7 Application)
+ *   dwserver.h                  (L7 Application)
  *     ├── network_drivers/presentation/presentation.h (L6 Presentation)
  *     │       ├── network_drivers/presentation/http_parser/http_parser.h (parser types)
- *     │       └── network_drivers/transport/transport.h      (L4 Transport)
- *     │               └── DetWebServerConfig.h   (compile-time config)
+ *     │       └── network_drivers/transport/tcp.h      (L4 Transport)
+ *     │               └── ServerConfig.h   (compile-time config)
  *     └── network_drivers/session/session.h      (L5 Session - event drain)
  * @endcode
  *
@@ -24,7 +24,7 @@
  *   #define DETWS_ENABLE_MULTIPART    0
  *   #define DETWS_ENABLE_FILE_SERVING 0
  *   #define DETWS_ENABLE_AUTH         0
- *   #include <DeterministicESPAsyncWebServer.h>
+ *   #include <dwserver.h>
  * @endcode
  *
  * **Determinism guarantees**

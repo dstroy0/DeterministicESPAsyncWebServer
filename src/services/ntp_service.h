@@ -17,7 +17,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>

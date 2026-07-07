@@ -7,7 +7,7 @@
 // kept-alive response leaves the slot CONN_ACTIVE with its PCB attached; a close
 // response frees it. Built with DETWS_KEEPALIVE_MAX_REQUESTS=3 (see env).
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <string.h>
 #include <unity.h>
 

@@ -60,8 +60,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBSOCKET_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEBSOCKET_H
 
-#include "DetWebServerConfig.h"
-#include "network_drivers/transport/transport.h"
+#include "ServerConfig.h"
+#include "network_drivers/transport/tcp.h"
 
 // ---------------------------------------------------------------------------
 // WebSocket opcodes (RFC 6455 §5.2)

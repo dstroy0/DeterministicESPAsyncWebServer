@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file udp_transport.cpp
+ * @file udp.cpp
  * @brief Layer 4 UDP datagram service - the only place lwIP UDP is touched.
  */
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 
 #include <string.h> // memcpy (both the lwIP and host builds)
 
@@ -33,7 +33,7 @@ struct UdpListener
 // in_tcpip_thread is true while a udp_recv trampoline (or a marshaled op) is running, i.e. while
 // we are already inside tcpip_thread. A handler replying from the trampoline then sends directly
 // instead of re-marshaling (which would deadlock on the tcpip mailbox) - the UDP mirror of
-// transport.cpp's TransportCtx::in_tcpip_thread.
+// tcp.cpp's TransportCtx::in_tcpip_thread.
 struct UdpCtx
 {
     UdpListener listeners[DETWS_MAX_UDP_LISTENERS];

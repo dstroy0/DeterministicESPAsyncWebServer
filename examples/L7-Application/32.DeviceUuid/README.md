@@ -44,7 +44,7 @@ with added explanatory comments:
 
 #define DETWS_ENABLE_DEVICE_ID 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/device_id/device_id.h"
 #include <WiFi.h>

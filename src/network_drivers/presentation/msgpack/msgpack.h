@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MSGPACK_H
 #define DETERMINISTICESPASYNCWEBSERVER_MSGPACK_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

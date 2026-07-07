@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_SMTP 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/smtp/smtp.h"
 #include <WiFi.h>

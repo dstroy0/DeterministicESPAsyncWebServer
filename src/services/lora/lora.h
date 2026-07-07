@@ -30,7 +30,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LORA_H
 #define DETERMINISTICESPASYNCWEBSERVER_LORA_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_LORA
 

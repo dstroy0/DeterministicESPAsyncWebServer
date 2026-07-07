@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_mime.h
+ * @file mime.h
  * @brief Shared HTTP Content-Type ("MIME") string constants (one source of truth).
  *
  * The same media types were typed as string literals in the core server, the
@@ -10,7 +10,7 @@
  * are the single home for the vocabulary: reference the pointer, never re-type the
  * string, so a value can never silently diverge across call sites.
  *
- * Header-only like det_hex.h / det_numparse.h - no .cpp to wire into every test
+ * Header-only like hex.h / numparse.h - no .cpp to wire into every test
  * env's src filter. Each is a `const char *const` to a string literal: the literal
  * lives in the linker's mergeable string section, so there is one copy in flash no
  * matter how many translation units reference it, and an unused one costs nothing.

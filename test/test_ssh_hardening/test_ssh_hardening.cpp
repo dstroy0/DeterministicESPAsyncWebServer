@@ -4,7 +4,7 @@
 // Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is
 // refused and not advertised, while publickey auth remains available.
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"

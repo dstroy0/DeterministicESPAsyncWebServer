@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_COTP_H
 #define DETERMINISTICESPASYNCWEBSERVER_COTP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_COTP
 

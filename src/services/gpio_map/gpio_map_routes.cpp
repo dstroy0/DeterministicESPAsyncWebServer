@@ -13,8 +13,8 @@
 
 #if DETWS_ENABLE_GPIO_MAP
 
-#include "DeterministicESPAsyncWebServer.h"
-#include "shared_primitives/det_mime.h"
+#include "dwserver.h"
+#include "shared_primitives/mime.h"
 
 // All gpio-map-routes state, owned by one instance (internal linkage): the server handle plus
 // the pin table pointer and count, grouped so it is one named owner, unreachable cross-TU.

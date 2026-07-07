@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_NOTIFY_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_NOTIFY_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

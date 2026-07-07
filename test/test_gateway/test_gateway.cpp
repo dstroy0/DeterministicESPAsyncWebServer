@@ -10,7 +10,7 @@
 //
 // The env sizes DETWS_GW_MAX_PORTS = 4.
 
-#include "services/gateway/det_gateway.h"
+#include "services/gateway/gateway.h"
 #include <string.h>
 #include <unity.h>
 #include <vector>

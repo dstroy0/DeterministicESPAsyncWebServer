@@ -29,7 +29,7 @@
 // Enable WebSocket permessage-deflate for this sketch (overrides default-off).
 #define DETWS_ENABLE_WS_DEFLATE 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

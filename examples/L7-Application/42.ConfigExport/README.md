@@ -57,7 +57,7 @@ verbatim with added explanatory comments:
 #define DETWS_ENABLE_CONFIG_STORE 1
 #define DETWS_ENABLE_CONFIG_IO 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/config_io/config_io.h"
 #include "services/config_store/config_store.h"

@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_IOLINK_H
 #define DETERMINISTICESPASYNCWEBSERVER_IOLINK_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_IOLINK
 

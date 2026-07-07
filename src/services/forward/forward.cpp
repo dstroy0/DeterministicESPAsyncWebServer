@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_forward.cpp
+ * @file forward.cpp
  * @brief Interface forwarding plane - implementation.
  *
  * Static interface + rule tables. A frame on one interface is resolved against the rules
@@ -11,14 +11,14 @@
  * callback. Zero heap, fail-closed.
  */
 
-#include "services/forward/det_forward.h"
+#include "services/forward/forward.h"
 
 #if DETWS_ENABLE_FORWARD
 
 #include <string.h>
 
 #ifdef ARDUINO
-#include "services/det_clock.h" // detws_millis()
+#include "services/clock.h" // detws_millis()
 #endif
 
 namespace

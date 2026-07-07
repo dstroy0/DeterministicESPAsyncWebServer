@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_XMPP_H
 #define DETERMINISTICESPASYNCWEBSERVER_XMPP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

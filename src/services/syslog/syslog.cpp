@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SYSLOG
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include <stdio.h>
 #include <string.h>
 

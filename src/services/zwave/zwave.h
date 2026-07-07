@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ZWAVE_H
 #define DETERMINISTICESPASYNCWEBSERVER_ZWAVE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_ZWAVE
 

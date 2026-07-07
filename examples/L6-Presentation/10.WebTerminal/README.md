@@ -64,7 +64,7 @@ verbatim with added explanatory comments:
 
 #define DETWS_ENABLE_WEB_TERMINAL 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/web_terminal.h"
 #include <WiFi.h>

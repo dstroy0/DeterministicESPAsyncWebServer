@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PARTITION_MONITOR_H
 #define DETERMINISTICESPASYNCWEBSERVER_PARTITION_MONITOR_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

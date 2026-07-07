@@ -64,7 +64,7 @@ with added explanatory comments:
 
 #define DETWS_ENABLE_MQTT 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/mqtt/mqtt.h"
 #include <WiFi.h>

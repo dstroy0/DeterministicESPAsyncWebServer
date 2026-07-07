@@ -106,7 +106,7 @@ size_t snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community, ui
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include <Arduino.h>
 
 // All SNMP-notify transport state, owned by one instance (internal linkage): the trap

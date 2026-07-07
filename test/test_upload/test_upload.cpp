@@ -6,8 +6,8 @@
 // BODY_BUF_SIZE=64 so a larger body exercises multi-chunk streaming; the mock FS
 // captures the written bytes for verification.
 
-#include "DeterministicESPAsyncWebServer.h"
 #include "FS.h"
+#include "dwserver.h"
 #include "services/upload_service.h"
 #include <stdio.h>
 #include <string.h>

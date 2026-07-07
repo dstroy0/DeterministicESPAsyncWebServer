@@ -6,9 +6,9 @@
 // uint32 flattening - so IPv4 and IPv6 peers are distinct buckets and no address can
 // share or poison another's lockout. The state machine takes the millisecond clock as
 // a parameter, so the host drives a synthetic clock - no real time, no ESP32. Uses the
-// default sizing (THRESHOLD=5, BASE=1000 ms, MAX=300000 ms) from DetWebServerConfig.h.
+// default sizing (THRESHOLD=5, BASE=1000 ms, MAX=300000 ms) from ServerConfig.h.
 
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 #include "services/auth_lockout/auth_lockout.h"
 #include <unity.h>
 

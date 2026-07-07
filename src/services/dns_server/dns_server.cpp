@@ -7,7 +7,7 @@
  */
 
 #include "services/dns_server/dns_server.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_DNS_SERVER
 
@@ -187,7 +187,7 @@ void dns_server_clear()
 
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 
 namespace
 {

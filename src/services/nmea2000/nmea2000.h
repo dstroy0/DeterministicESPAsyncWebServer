@@ -24,12 +24,12 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
 #define DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_NMEA2000
 
 #include "services/j1939/j1939.h" // reuses the J1939 29-bit identifier codec
-#include "shared_primitives/det_can.h"
+#include "shared_primitives/can.h"
 #include <stddef.h>
 #include <stdint.h>
 

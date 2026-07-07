@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_SHT3X 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/sht3x/sht3x.h"
 #include <Arduino.h>
 

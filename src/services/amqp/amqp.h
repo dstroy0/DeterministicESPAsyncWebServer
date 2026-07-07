@@ -26,7 +26,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AMQP_H
 #define DETERMINISTICESPASYNCWEBSERVER_AMQP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_AMQP
 

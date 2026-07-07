@@ -18,7 +18,7 @@
 // Use a function-local static so the variable is shared across all TUs
 // (inline functions with static locals are merged by the linker per C++11 §3.2).
 // A plain `static` variable in a header would give each TU its own copy,
-// causing set_millis() in test files to not affect millis() in transport.cpp.
+// causing set_millis() in test files to not affect millis() in tcp.cpp.
 inline uint32_t &_millis_ref()
 {
     static uint32_t v = 0;

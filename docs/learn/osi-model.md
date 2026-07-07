@@ -43,7 +43,7 @@ an email app speaks SMTP. This layer is about _meaning_: "GET me the page `/inde
 
 In this library, Layer 7 is the web server you write - your routes and handlers.
 Code: [`src/network_drivers/application/`](../../src/network_drivers/application/) and
-the public API in [`DeterministicESPAsyncWebServer.h`](../../src/DeterministicESPAsyncWebServer.h).
+the public API in [`dwserver.h`](../../src/dwserver.h).
 
 ### Layer 6 - Presentation
 

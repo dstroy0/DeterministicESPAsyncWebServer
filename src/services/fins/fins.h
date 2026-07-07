@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_FINS_H
 #define DETERMINISTICESPASYNCWEBSERVER_FINS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_FINS
 

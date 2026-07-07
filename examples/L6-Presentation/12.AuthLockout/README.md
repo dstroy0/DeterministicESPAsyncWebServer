@@ -20,7 +20,7 @@ server.on(
     "Restricted", "admin", "s3cret");
 ```
 
-**Tuning.** The thresholds live in `DetWebServerConfig.h`:
+**Tuning.** The thresholds live in `ServerConfig.h`:
 `DETWS_AUTH_LOCKOUT_THRESHOLD` (failures before locking),
 `DETWS_AUTH_LOCKOUT_BASE_MS` and `DETWS_AUTH_LOCKOUT_MAX_MS` (the backoff window,
 which doubles per subsequent failure up to the max), and
@@ -55,7 +55,7 @@ verbatim with added explanatory comments:
 
 #define DETWS_ENABLE_AUTH_LOCKOUT 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 
@@ -81,7 +81,7 @@ void setup()
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public page"); });
 
     // Protected route. Repeated wrong passwords from one IP trip the lockout
-    // (429) with exponential backoff; the tuning lives in DetWebServerConfig.h
+    // (429) with exponential backoff; the tuning lives in ServerConfig.h
     // (DETWS_AUTH_LOCKOUT_THRESHOLD / _BASE_MS / _MAX_MS).
     server.on(
         "/secret", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); },

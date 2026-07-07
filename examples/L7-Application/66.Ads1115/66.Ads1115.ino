@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_ADS1115 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ads1115/ads1115.h"
 #include <Arduino.h>
 

@@ -102,7 +102,7 @@ the tests to confirm no regression.
 ## Build flags
 
 Features are opt-in via `DETWS_ENABLE_*` flags (default off) in
-[src/DetWebServerConfig.h](../src/DetWebServerConfig.h). Some features depend on
+[src/ServerConfig.h](../src/ServerConfig.h). Some features depend on
 others; illegal combinations fail at compile time with a clear `#error`. If you
 add a feature that builds on another, add the matching dependency guard and
 update the build-flag tree in the README.

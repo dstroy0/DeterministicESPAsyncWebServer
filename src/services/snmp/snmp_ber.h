@@ -16,7 +16,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_BER_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_BER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -11,7 +11,7 @@
 // The client extracts the server's ephemeral X25519 public key and its chosen connection ID from the
 // ServerHello, so it needs no knowledge of the server's RNG.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/presentation/http3/h3_frame.h"
 #include "network_drivers/presentation/http3/qpack.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"

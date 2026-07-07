@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_WEBHOOK
 
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/mime.h"
 
 #include <stdio.h>
 #include <string.h>

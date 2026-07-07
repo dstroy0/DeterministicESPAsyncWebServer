@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_gateway.cpp
+ * @file gateway.cpp
  * @brief Radio / wireless gateway bridge - implementation.
  *
  * A static port table; det_gw_uplink() envelopes a received frame and publishes it through
@@ -11,14 +11,14 @@
  * Zero heap.
  */
 
-#include "services/gateway/det_gateway.h"
+#include "services/gateway/gateway.h"
 
 #if DETWS_ENABLE_GATEWAY
 
 #include <string.h>
 
 #ifdef ARDUINO
-#include "services/det_clock.h" // detws_millis()
+#include "services/clock.h" // detws_millis()
 #endif
 
 namespace

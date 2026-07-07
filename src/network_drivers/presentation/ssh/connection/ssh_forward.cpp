@@ -12,15 +12,15 @@
 
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
-#include "network_drivers/transport/det_client.h"
+#include "network_drivers/transport/client.h"
 
 // Remote forwarding (ssh -R) uses the inbound transport + listener layer directly:
 // it allocates a real listener and bridges each accepted socket to a server-initiated
 // forwarded-tcpip channel.
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/listener.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 
 #include <string.h>
 

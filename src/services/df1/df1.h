@@ -27,7 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DF1_H
 #define DETERMINISTICESPASYNCWEBSERVER_DF1_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_DF1
 

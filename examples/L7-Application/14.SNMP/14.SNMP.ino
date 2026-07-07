@@ -29,7 +29,7 @@
 
 #define DETWS_ENABLE_SNMP 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/snmp/snmp_agent.h"
 #include <WiFi.h>

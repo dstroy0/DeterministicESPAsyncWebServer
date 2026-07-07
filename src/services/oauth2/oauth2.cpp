@@ -7,7 +7,7 @@
  */
 
 #include "services/oauth2/oauth2.h"
-#include "shared_primitives/det_hex.h"
+#include "shared_primitives/hex.h"
 
 #if DETWS_ENABLE_OAUTH2
 

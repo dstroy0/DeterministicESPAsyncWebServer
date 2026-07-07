@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_FORWARD_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_FORWARD_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #include <stdint.h>
 

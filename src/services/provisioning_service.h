@@ -22,7 +22,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PROVISIONING_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_PROVISIONING_SERVICE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 
 class DetWebServer;

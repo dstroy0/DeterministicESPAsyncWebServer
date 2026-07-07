@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MULTIPART_H
 #define DETERMINISTICESPASYNCWEBSERVER_MULTIPART_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "network_drivers/presentation/presentation.h" // for HttpReq, http_get_header
 
 // ---------------------------------------------------------------------------

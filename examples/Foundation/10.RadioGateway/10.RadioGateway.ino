@@ -19,9 +19,9 @@
 // Build flags (whole build):
 //   DETWS_ENABLE_DMA=1 DETWS_ENABLE_PREEMPT_QUEUE=1 DETWS_ENABLE_GATEWAY=1 DETWS_DMA_SIMULATE=1
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
-#include "services/dma/det_dma.h"
-#include "services/gateway/det_gateway.h"
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
+#include "services/dma/dma.h"
+#include "services/gateway/gateway.h"
 #include "services/preempt_queue/preempt_queue.h"
 #include <Arduino.h>
 #include <string.h>

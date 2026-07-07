@@ -17,7 +17,7 @@
 
 #define DETWS_ENABLE_LOGBUF 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/logbuf/logbuf.h"
 #include <WiFi.h>

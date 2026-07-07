@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_tls.cpp
+ * @file tls.cpp
  * @brief Deterministic TLS engine implementation (mbedTLS + static pool).
  *
  * ESP32/Arduino only. All mbedTLS allocations are served from a fixed BSS arena
@@ -12,12 +12,12 @@
  * bridged with MBEDTLS_VERSION_MAJOR guards (same approach as the SSH layer).
  */
 
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 
 #if DETWS_ENABLE_TLS && defined(ARDUINO)
 
 #include "lwip/tcp.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <Arduino.h>    // millis(), delay() for the blocking client loop
 #include <esp_system.h> // esp_fill_random (HW CSPRNG)
 #include <string.h>

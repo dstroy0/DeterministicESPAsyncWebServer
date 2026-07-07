@@ -19,7 +19,7 @@
 //   HELPERS    - http_get_header, http_get_query edge cases
 //   STRESS     - large query, many headers, incremental feeds
 
-#include "network_drivers/network/det_ip.h" // DET_IP_STR_MAX for the recovered-client buffer
+#include "network_drivers/network/ip.h" // DET_IP_STR_MAX for the recovered-client buffer
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include <unity.h>
 

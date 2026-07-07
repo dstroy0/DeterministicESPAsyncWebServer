@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_dma.h
+ * @file dma.h
  * @brief DMA peripheral ingest / egress (DETWS_ENABLE_DMA) - the v5 high-throughput
  *        hardware-ingest path.
  *
@@ -47,7 +47,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_DMA_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_DMA_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_DMA
 

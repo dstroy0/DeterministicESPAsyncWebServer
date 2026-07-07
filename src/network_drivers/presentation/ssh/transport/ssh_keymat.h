@@ -95,7 +95,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_KEYMAT_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_KEYMAT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_forward.h
+ * @file forward.h
  * @brief Interface forwarding plane (DETWS_ENABLE_FORWARD) - the v5 bridge / router.
  *
  * A forwarding plane over the ingest pipeline. You register **interfaces** (Wi-Fi STA /
@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_FORWARD_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_FORWARD_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_FORWARD
 

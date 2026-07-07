@@ -26,7 +26,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ESPNOW_H
 #define DETERMINISTICESPASYNCWEBSERVER_ESPNOW_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

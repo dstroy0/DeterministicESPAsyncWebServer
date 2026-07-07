@@ -4,7 +4,7 @@
 // Unit tests for the unified double-ended arena (network_drivers/session/det_arena):
 // first-fit persistent end (bottom) + bump scratch end (top) sharing a floating middle.
 
-#include "network_drivers/session/det_arena.h"
+#include "network_drivers/session/arena.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>

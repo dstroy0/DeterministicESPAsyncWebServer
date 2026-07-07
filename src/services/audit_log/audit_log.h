@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_AUDIT_LOG_H
 #define DETERMINISTICESPASYNCWEBSERVER_AUDIT_LOG_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

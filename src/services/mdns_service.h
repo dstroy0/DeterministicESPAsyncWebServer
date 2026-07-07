@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MDNS_SERVICE_H
 #define DETERMINISTICESPASYNCWEBSERVER_MDNS_SERVICE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stdint.h>
 
 /**

@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_C37118_H
 #define DETERMINISTICESPASYNCWEBSERVER_C37118_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_C37118
 

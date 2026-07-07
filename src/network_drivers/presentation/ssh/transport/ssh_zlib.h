@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_ZLIB_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_ZLIB_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

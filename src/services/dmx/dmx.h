@@ -23,7 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DMX_H
 #define DETERMINISTICESPASYNCWEBSERVER_DMX_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_DMX
 

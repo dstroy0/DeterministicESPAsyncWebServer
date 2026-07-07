@@ -29,14 +29,14 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H
 #define DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "services/opcua/opcua.h"
 #include <stddef.h>
 #include <stdint.h>
 
 #if DETWS_ENABLE_OPCUA_CLIENT
 
-// Dependency (OPCUA_CLIENT requires OPCUA) is enforced centrally in DetWebServerConfig.h.
+// Dependency (OPCUA_CLIENT requires OPCUA) is enforced centrally in ServerConfig.h.
 
 /** @brief Per-connection OPC UA client state (SecureChannel + Session + counters). */
 struct OpcUaClient

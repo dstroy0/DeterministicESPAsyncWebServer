@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SIGFOX_H
 #define DETERMINISTICESPASYNCWEBSERVER_SIGFOX_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_SIGFOX
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_arena.h
+ * @file arena.h
  * @brief Unified double-ended server arena (Phase 1: core allocator, one region).
  *
  * One contiguous region is shared by two allocators that grow toward each other, with

@@ -42,7 +42,7 @@ reproduced verbatim with added explanatory comments:
 
 #define DETWS_ENABLE_PARTITION_MONITOR 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/partition_monitor/partition_monitor.h"
 #include <WiFi.h>

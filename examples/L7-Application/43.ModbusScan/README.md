@@ -51,7 +51,7 @@ with added explanatory comments:
 #define DETWS_ENABLE_MODBUS 1
 #define DETWS_ENABLE_MODBUS_MASTER 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/modbus/modbus.h"
 #include "services/modbus/modbus_master.h"

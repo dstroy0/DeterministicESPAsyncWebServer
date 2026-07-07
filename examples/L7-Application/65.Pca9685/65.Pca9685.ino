@@ -20,7 +20,7 @@
 
 #define DETWS_ENABLE_PCA9685 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/pca9685/pca9685.h"
 #include <Arduino.h>
 

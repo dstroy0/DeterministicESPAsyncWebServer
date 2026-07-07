@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /
-// rx_tail in transport.h). Two threads model the real tcpip_thread (producer) and
+// rx_tail in tcp.h). Two threads model the real tcpip_thread (producer) and
 // worker (consumer) hammering one slot's SPSC ring with the SAME access pattern as
 // the production code. It asserts byte-exact, in-order delivery (no tearing); run
 // under ThreadSanitizer (env native_tsan) it additionally proves there is no data
 // race - the acquire/release discipline in DetAtomic provides the happens-before
 // that lets the plain rx_buffer[] writes be read safely on the other core.
 
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <thread>
 #include <unity.h>
 

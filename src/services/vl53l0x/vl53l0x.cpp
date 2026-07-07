@@ -7,7 +7,7 @@
  */
 
 #include "services/vl53l0x/vl53l0x.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_VL53L0X
 
@@ -33,7 +33,7 @@ bool vl53l0x_range_valid(uint8_t range_status_reg)
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

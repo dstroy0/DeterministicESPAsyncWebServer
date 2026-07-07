@@ -26,11 +26,11 @@ src/network_drivers/
                 WebDAV
 src/services/         mqtt, modbus, opcua, snmp, coap, ... (protocol features)
 src/shared_primitives/  layer-agnostic header-only primitives shared across the
-                tree so logic is never duplicated: det_ring.h (SPSC ring, server +
-                client), det_hex.h (hex encode/decode), det_numparse.h (no-stdlib
-                number parsing), det_bytes.h (byte-cursor mechanics - bounded put +
+                tree so logic is never duplicated: ring.h (SPSC ring, server +
+                client), hex.h (hex encode/decode), numparse.h (no-stdlib
+                number parsing), bytes.h (byte-cursor mechanics - bounded put +
                 big-endian put/take - shared by the CBOR and MessagePack codecs),
-                det_mime.h (the Content-Type vocabulary, one copy referenced
+                mime.h (the Content-Type vocabulary, one copy referenced
                 everywhere). Header-only so nothing has to be added to the per-env
                 test src filters. Two more shared concerns live in their natural
                 module instead of here: base64url (base64 module, used by JWT +
@@ -97,9 +97,9 @@ See docs/BUGS.md "RX flow-control deadlock".
 **RX ring read API: now single-owner (transport).** Consumers no longer index
 `rx_buffer` or advance `rx_tail`. They drain through the transport read API -
 `det_conn_available` / `det_conn_read_byte` / `det_conn_read` / `det_conn_peek` /
-`det_conn_consume` (inline in transport.h, single-consumer per slot). Migrated:
+`det_conn_consume` (inline in tcp.h, single-consumer per slot). Migrated:
 `presentation.cpp` (HTTP), `websocket.cpp`, `telnet.cpp`, `ssh/ssh_conn.cpp`,
-`tls/det_tls.cpp`, and the conn_pool-ring services `modbus.cpp` / `opcua.cpp` (their
+`tls/tls.cpp`, and the conn_pool-ring services `modbus.cpp` / `opcua.cpp` (their
 duplicated `ring_peek/consume/avail` are now thin adapters over the API). The read
 functions only consume; the window is reopened by the worker's single
 `det_conn_ack_consumed()` per loop - so there is exactly one place that touches the
@@ -121,7 +121,7 @@ buffer** (post-decrypt for TLS, the assembly buffer the protocol parser reads),
 owned solely by that module - the client mirror of the server's `http body[]` vs the
 `conn_pool` wire ring. Not cross-layer, correct as-is.
 
-Both transports use ONE shared primitive for the whole ring: `det_ring.h` (the
+Both transports use ONE shared primitive for the whole ring: `ring.h` (the
 `DetAtomic` SPSC index wrapper + the drain math `det_ring_available / read_byte /
 read / peek / consume` AND the fill math `det_ring_free / det_ring_write_span`). The
 server (`det_conn_*` + `recv_cb`) and client (`det_client_*` + `cc_recv`) are thin
@@ -155,7 +155,7 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
 ## Straightening plan (phased; each phase host + HW regresses every consumer)
 
 1. **DONE - RX read API in transport** - `det_conn_available` / `det_conn_read_byte`
-   / `det_conn_read` / `det_conn_peek` / `det_conn_consume` (inline, transport.h).
+   / `det_conn_read` / `det_conn_peek` / `det_conn_consume` (inline, tcp.h).
 2. **DONE - migrate the consumers** - HTTP / websocket / telnet / ssh / tls + the
    conn_pool-ring services (modbus / opcua) all drain through the API; no external
    `rx_tail` modulo remains. The read functions consume only; `det_conn_ack_consumed`
@@ -173,7 +173,7 @@ each connection streams to its own file. This fixed the concurrent-PUT clobber
 All phases complete: every cross-layer concern (server TX/RX, RX window, RX read,
 streaming sink state, events, scratch, outbound client I/O) has exactly one owner
 behind a clean API, and the server and client ring drain math is a single shared
-primitive (`det_ring.h`) - two pools, one ring/read core.
+primitive (`ring.h`) - two pools, one ring/read core.
 
 ## Protocol dispatch (Layer 5) - how every protocol plugs into the core
 

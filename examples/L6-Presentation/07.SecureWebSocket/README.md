@@ -53,7 +53,7 @@ PEM cert/key are elided here (see the `.ino`); the C++ is verbatim with comments
 
 #define DETWS_ENABLE_TLS 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool[] for the echo payload
 #include <WiFi.h>

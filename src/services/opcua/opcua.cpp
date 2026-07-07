@@ -1071,7 +1071,7 @@ void opcua_set_browse_handler(OpcUaBrowseHandler fn)
 #ifdef ARDUINO
 
 #include "network_drivers/session/proto_handler.h"
-#include "network_drivers/transport/transport.h"
+#include "network_drivers/transport/tcp.h"
 #include <time.h>
 
 namespace

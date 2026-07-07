@@ -26,7 +26,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_JWT_H
 #define DETERMINISTICESPASYNCWEBSERVER_JWT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

@@ -12,11 +12,11 @@
 
 #include "network_drivers/presentation/http3/quic_packet.h"
 #include "network_drivers/presentation/http3/quic_tp.h"
-#include "shared_primitives/det_ring.h" // DetAtomic
+#include "shared_primitives/ring.h" // DetAtomic
 #include <string.h>
 
 #if defined(ARDUINO)
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #endif
 
 // The pool (QuicConn + H3Conn per slot) and the ingest ring are large, so on a PSRAM board they can

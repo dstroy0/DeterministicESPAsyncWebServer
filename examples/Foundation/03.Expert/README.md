@@ -11,11 +11,11 @@ content negotiation in the 404 handler. Everything here is allocation-free.
 
 **Inspecting the L4 connection pool.** The transport layer keeps every
 connection in a fixed BSS array `conn_pool[MAX_CONNS]`. Including
-`transport.h` lets the sketch read it directly to monitor TCP state, idle time,
+`tcp.h` lets the sketch read it directly to monitor TCP state, idle time,
 and how many unread bytes sit in each slot's RX ring:
 
 ```cpp
-#include "network_drivers/transport/transport.h" // conn_pool, TcpConn, ConnState
+#include "network_drivers/transport/tcp.h" // conn_pool, TcpConn, ConnState
 ...
 TcpConn *conn = &conn_pool[i];
 switch (conn->state) { case CONN_FREE: ...; case CONN_ACTIVE: ...; case CONN_CLOSING: ...; }
@@ -88,9 +88,9 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/transport/transport.h" // access conn_pool and ConnState
+#include "network_drivers/transport/tcp.h" // access conn_pool and ConnState
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

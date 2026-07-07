@@ -4,7 +4,7 @@
 // Unit tests for the RFC 5424 syslog client (syslog_format formatter + syslog_init /
 // syslog_log over the udp_transport host capture seam).
 
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include "services/syslog/syslog.h"
 #include <string.h>
 #include <unity.h>

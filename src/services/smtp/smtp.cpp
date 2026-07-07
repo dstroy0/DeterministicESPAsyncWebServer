@@ -10,7 +10,7 @@
  */
 
 #include "services/smtp/smtp.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_SMTP
 
@@ -251,10 +251,10 @@ int smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, Smt
 
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/det_client.h"
+#include "network_drivers/transport/client.h"
 #include <Arduino.h> // millis, delay
 #if DETWS_ENABLE_TLS
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 #endif
 
 namespace

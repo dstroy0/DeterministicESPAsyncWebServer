@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_MSGPACK
 
-#include "shared_primitives/det_bytes.h"
+#include "shared_primitives/bytes.h"
 #include <string.h>
 
 void msgpack_init(MsgpackWriter *w, uint8_t *buf, size_t cap)
@@ -28,7 +28,7 @@ bool msgpack_ok(const MsgpackWriter *w)
     return det_bw_ok(w);
 }
 
-// Thin local names over the shared byte cursor (det_bytes.h) so the call sites
+// Thin local names over the shared byte cursor (bytes.h) so the call sites
 // below read the same as before; the cursor invariants live in one place.
 static void put(MsgpackWriter *w, uint8_t b)
 {
@@ -212,7 +212,7 @@ bool msgpack_reader_ok(const MsgpackReader *r)
 }
 
 // Read @p nbytes big-endian immediately after the format byte at r->pos, advancing
-// past the format byte and the argument (shared byte cursor, det_bytes.h).
+// past the format byte and the argument (shared byte cursor, bytes.h).
 static bool take_be(MsgpackReader *r, size_t nbytes, uint64_t *out)
 {
     return det_br_take_be(r, nbytes, out);

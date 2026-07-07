@@ -10,9 +10,9 @@
 
 #if DETWS_ENABLE_UPLOAD
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/mime.h"
 #include <stdio.h>
 #include <string.h>
 

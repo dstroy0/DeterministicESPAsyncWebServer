@@ -19,7 +19,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_OTA_ROLLBACK_H
 #define DETERMINISTICESPASYNCWEBSERVER_OTA_ROLLBACK_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stdint.h>
 
 #if DETWS_ENABLE_OTA_ROLLBACK

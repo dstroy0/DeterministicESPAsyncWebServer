@@ -7,7 +7,7 @@
  */
 
 #include "services/ads1115/ads1115.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_ADS1115
 
@@ -54,7 +54,7 @@ int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

@@ -108,7 +108,7 @@ def render_header(themes):
         "#ifndef " + guard,
         "#define " + guard,
         "",
-        '#include "DetWebServerConfig.h"',
+        '#include "ServerConfig.h"',
         "",
         "#if DETWS_ENABLE_THEMES",
         "",

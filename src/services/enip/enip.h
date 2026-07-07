@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ENIP_H
 #define DETERMINISTICESPASYNCWEBSERVER_ENIP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_ENIP
 

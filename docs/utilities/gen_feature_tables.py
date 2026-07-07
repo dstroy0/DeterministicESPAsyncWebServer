@@ -24,7 +24,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FEATURES_MD = os.path.join(ROOT, "docs", "FEATURES.md")
-CONFIG_H = os.path.join(ROOT, "src", "DetWebServerConfig.h")
+CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
 
 # Internal derived flags: auto-set from other flags, not user-facing opt-ins, so they
 # get no FEATURES.md entry of their own. Every other DETWS_ENABLE_* must be documented

@@ -18,7 +18,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEBHOOK_H
 #define DETERMINISTICESPASYNCWEBSERVER_WEBHOOK_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 
 #if DETWS_ENABLE_WEBHOOK

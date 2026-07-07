@@ -26,7 +26,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NRF24_H
 #define DETERMINISTICESPASYNCWEBSERVER_NRF24_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_NRF24
 

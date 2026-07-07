@@ -57,7 +57,7 @@ toggles.
 
 #define DETWS_ENABLE_GPIO_MAP 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/gpio_map/gpio_map.h"
 #include <WiFi.h>

@@ -5,7 +5,7 @@
 
 The variable parts are read straight from the code so the picture cannot drift:
 
-  - the public `DetWebServer` API methods, from src/DeterministicESPAsyncWebServer.h
+  - the public `DetWebServer` API methods, from src/dwserver.h
     (access-specifier aware), bucketed into Register / Configure / Run / Respond;
   - the built-in application protocols, from the session registry
     src/network_drivers/session/proto_builtins.cpp (each `register_if(PROTO_x, ...)`);
@@ -26,7 +26,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-API_H = os.path.join(ROOT, "src", "DeterministicESPAsyncWebServer.h")
+API_H = os.path.join(ROOT, "src", "dwserver.h")
 PROTO_CPP = os.path.join(ROOT, "src", "network_drivers", "session", "proto_builtins.cpp")
 PRESENTATION = os.path.join(ROOT, "src", "network_drivers", "presentation")
 README = os.path.join(ROOT, "README.md")

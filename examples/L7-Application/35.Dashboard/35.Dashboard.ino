@@ -24,7 +24,7 @@
 
 #define DETWS_ENABLE_DASHBOARD 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/dashboard/dashboard.h"
 #include <WiFi.h>

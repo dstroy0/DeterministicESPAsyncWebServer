@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_SDI12
 
-#include "shared_primitives/det_numparse.h"
+#include "shared_primitives/numparse.h"
 #include <string.h>
 
 size_t sdi12_build(char *buf, size_t cap, char addr, const char *body)

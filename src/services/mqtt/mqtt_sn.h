@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MQTT_SN_H
 #define DETERMINISTICESPASYNCWEBSERVER_MQTT_SN_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_MQTT_SN
 

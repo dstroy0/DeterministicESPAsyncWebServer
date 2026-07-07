@@ -23,7 +23,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_QUIC_AEAD_H
 #define DETERMINISTICESPASYNCWEBSERVER_QUIC_AEAD_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_HTTP3
 

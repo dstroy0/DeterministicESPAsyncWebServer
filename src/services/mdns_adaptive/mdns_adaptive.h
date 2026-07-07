@@ -24,7 +24,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MDNS_ADAPTIVE_H
 #define DETERMINISTICESPASYNCWEBSERVER_MDNS_ADAPTIVE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

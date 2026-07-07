@@ -11,7 +11,7 @@
  */
 
 #include "services/mpr121/mpr121.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_MPR121
 
@@ -86,7 +86,7 @@ size_t mpr121_build_init(uint8_t *buf, size_t cap, uint8_t n, uint8_t touch_thr,
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

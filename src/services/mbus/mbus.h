@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MBUS_H
 #define DETERMINISTICESPASYNCWEBSERVER_MBUS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_MBUS
 

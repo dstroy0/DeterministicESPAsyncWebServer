@@ -29,7 +29,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_THREAD_H
 #define DETERMINISTICESPASYNCWEBSERVER_THREAD_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_THREAD
 

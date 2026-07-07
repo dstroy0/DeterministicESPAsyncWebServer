@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_numparse.h
+ * @file numparse.h
  * @brief Tiny no-stdlib base-10 number parsers (strtol/strtoul/strtof replacements).
  *
  * This library does not pull in `<stdlib.h>` - no heap, no locale, no bloat. These

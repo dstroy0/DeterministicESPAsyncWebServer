@@ -10,8 +10,8 @@
  */
 
 #include "provisioning_service.h"
-#include "shared_primitives/det_hex.h"
-#include "shared_primitives/det_mime.h"
+#include "shared_primitives/hex.h"
+#include "shared_primitives/mime.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -72,9 +72,9 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 
 #if DETWS_ENABLE_PROVISIONING && defined(ARDUINO)
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/application/web_assets.h"
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include <Arduino.h>
 #include <Preferences.h>
 #include <WiFi.h>

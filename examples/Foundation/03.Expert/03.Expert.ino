@@ -22,9 +22,9 @@
  *   - Watch the connection-pool diagnostics printed on Serial every 5 s.
  */
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/transport/transport.h" // access conn_pool and ConnState
+#include "network_drivers/transport/tcp.h" // access conn_pool and ConnState
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

@@ -13,7 +13,7 @@
 //   - clear_response_headers() discards queued headers
 //   - An oversized header is dropped whole (no malformed half-line)
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "services/ntp_service.h" // detws_ntp_set_test_epoch() for the Date-header tests
 #include <stdio.h>
 #include <string.h>

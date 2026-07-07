@@ -12,7 +12,7 @@ runtime config struct. The sketch's header comment is itself a cheat-sheet of
 every flag and constant.
 
 **Overrides go BEFORE the include.** Each `#define` must appear before
-`#include "DeterministicESPAsyncWebServer.h"` so the library compiles with your
+`#include "dwserver.h"` so the library compiles with your
 value instead of the default. Here the optional subsystems are stripped and the
 buffers are shrunk for a small sensor node:
 
@@ -25,7 +25,7 @@ buffers are shrunk for a small sensor node:
 #define MAX_CONNS 2                 // tighten capacity to roughly halve RAM
 #define RX_BUF_SIZE 512
 #define BODY_BUF_SIZE 128
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 ```
 
 > When compiling with `pio ci` (separate library translation units), these
@@ -129,7 +129,7 @@ annotated.
 #define QUERY_VAL_LEN 24
 #define CONN_TIMEOUT_MS 3000
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file transport.h
+ * @file tcp.h
  * @brief Layer 4 (Transport) - TCP connection pool, ring buffers, and lwIP integration.
  *
  * Defines the static connection pool and the per-connection event plumbing.
@@ -33,12 +33,12 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_TRANSPORT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "network_drivers/network/det_ip.h" // DetIp (family-tagged peer address)
-#include "shared_primitives/det_ring.h"     // DetAtomic + the shared SPSC ring drain primitive
+#include "network_drivers/network/ip.h" // DetIp (family-tagged peer address)
+#include "shared_primitives/ring.h"     // DetAtomic + the shared SPSC ring drain primitive
 #include <Arduino.h>
 #include <atomic>
 
@@ -119,7 +119,7 @@ struct TcpConn
  */
 extern uint32_t detws_ap_ip;
 
-/** @brief Static pool of connection contexts.  Defined in transport.cpp.
+/** @brief Static pool of connection contexts.  Defined in tcp.cpp.
  *  Sized CONN_POOL_SLOTS: MAX_CONNS TCP slots plus any reserved internal dispatch slot(s)
  *  (HTTP/3); the TCP accept path only ever uses [0, MAX_CONNS). */
 extern TcpConn conn_pool[CONN_POOL_SLOTS];
@@ -217,7 +217,7 @@ class DeterministicAsyncTCP
 };
 
 // ---------------------------------------------------------------------------
-// Connection output API (defined in transport.cpp)
+// Connection output API (defined in tcp.cpp)
 // ---------------------------------------------------------------------------
 // The one send/flush/close path for all higher layers. Presentation (WebSocket,
 // SSE, SSH) and the HTTP application call these instead of touching lwIP, so the
@@ -275,7 +275,7 @@ void det_conn_ack_consumed(uint8_t slot);
 // inline because the byte path is hot and the ring internals live in this header.
 // ---------------------------------------------------------------------------
 
-// All five delegate to the shared SPSC ring primitive (det_ring.h) over the slot's
+// All five delegate to the shared SPSC ring primitive (ring.h) over the slot's
 // rx_buffer - the server transport never reimplements the ring math.
 
 /** @brief Bytes currently available to read from @p slot's ring. */
@@ -444,8 +444,8 @@ DetConnCounters det_conn_counters();
 /** @brief Zero the cumulative counters (the live CONN_CLOSING gauge is untouched). */
 void det_conn_counters_reset();
 
-// Internal notify points (transport.cpp), reached via the macros below so both
-// transport.cpp and listener.cpp (accept) record through one path.
+// Internal notify points (tcp.cpp), reached via the macros below so both
+// tcp.cpp and listener.cpp (accept) record through one path.
 void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason);
 void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason);
 #define DETWS_OBS_TRANSITION(slot, olds, news, reason) detws_obs_transition((slot), (olds), (news), (reason))
@@ -461,29 +461,29 @@ void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason);
 #endif // DETWS_ENABLE_OBSERVABILITY
 
 // ---------------------------------------------------------------------------
-// Per-connection lwIP callbacks (defined in transport.cpp, used in listener.cpp)
+// Per-connection lwIP callbacks (defined in tcp.cpp, used in listener.cpp)
 // ---------------------------------------------------------------------------
 
 /**
  * @brief lwIP receive callback - wired to each new connection by listener_accept_cb.
- * @see transport.cpp
+ * @see tcp.cpp
  */
 err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 
 /**
  * @brief lwIP sent callback - refreshes the idle-timeout timestamp.
- * @see transport.cpp
+ * @see tcp.cpp
  */
 err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len);
 
 /**
  * @brief lwIP error callback - fires when the stack detects a fatal error.
- * @see transport.cpp
+ * @see tcp.cpp
  */
 void lowlevel_err_cb(void *arg, err_t err);
 
 // ---------------------------------------------------------------------------
-// Event enqueue (defined in listener.cpp, called from transport.cpp)
+// Event enqueue (defined in listener.cpp, called from tcp.cpp)
 // ---------------------------------------------------------------------------
 
 /*

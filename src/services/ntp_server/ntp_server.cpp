@@ -7,7 +7,7 @@
  */
 
 #include "services/ntp_server/ntp_server.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_NTP_SERVER
 
@@ -52,8 +52,8 @@ size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t str
 
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/udp_transport.h"
-#include "services/det_clock.h"
+#include "network_drivers/transport/udp.h"
+#include "services/clock.h"
 #include "services/time_source/time_source.h"
 
 namespace

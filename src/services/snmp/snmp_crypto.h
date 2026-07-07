@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SNMP_CRYPTO_H
 #define DETERMINISTICESPASYNCWEBSERVER_SNMP_CRYPTO_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

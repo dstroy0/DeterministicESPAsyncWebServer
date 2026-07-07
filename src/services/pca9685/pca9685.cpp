@@ -10,7 +10,7 @@
  */
 
 #include "services/pca9685/pca9685.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_PCA9685
 
@@ -69,7 +69,7 @@ size_t pca9685_set_pwm_bytes(uint8_t *buf, size_t cap, uint8_t channel, uint16_t
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Arduino.h>
 #include <Wire.h>
 

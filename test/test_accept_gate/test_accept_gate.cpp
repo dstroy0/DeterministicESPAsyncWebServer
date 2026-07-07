@@ -15,7 +15,7 @@
 //   ACCEPT_THROTTLE_MAX 3 / WINDOW 1000   PER_IP_MAX 2 / WINDOW 1000 / SLOTS 4   ALLOWLIST_SLOTS 4
 // Pure host tests.
 
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 #include "network_drivers/transport/listener.h"
 #include <unity.h>
 

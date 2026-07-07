@@ -17,9 +17,9 @@
 //
 // Build flags (whole build): DETWS_ENABLE_ENOCEAN=1 DETWS_ENABLE_GATEWAY=1
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/enocean/enocean.h"
-#include "services/gateway/det_gateway.h"
+#include "services/gateway/gateway.h"
 #include <Arduino.h>
 
 static const uint8_t RADIO_PORT = 0;

@@ -54,7 +54,7 @@ cert/key are elided here (see the `.ino`); the C++ is verbatim with comments.
 #define DETWS_ENABLE_TLS 1
 #define DETWS_ENABLE_TLS_RESUMPTION 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

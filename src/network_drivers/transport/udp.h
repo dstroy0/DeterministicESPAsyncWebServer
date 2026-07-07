@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file udp_transport.h
+ * @file udp.h
  * @brief Layer 4 (Transport) - connectionless UDP datagram service.
  *
  * The transport layer's UDP counterpart to the TCP connection pool (see
- * transport.h / listener.h). It owns *all* lwIP UDP plumbing (`udp_pcb`,
+ * tcp.h / listener.h). It owns *all* lwIP UDP plumbing (`udp_pcb`,
  * `pbuf`); higher layers (application services such as SNMP and the captive
  * portal's DNS responder) bind a port and exchange datagrams through this API
  * without ever touching lwIP. This keeps the OSI layering honest: transport
@@ -25,7 +25,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H
 #define DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -34,7 +34,7 @@
  *
  * Wraps the lwIP source address / port / PCB. Valid only inside the
  * DetUdpHandler call; pass it to det_udp_send() to reply. The concrete layout
- * lives in udp_transport.cpp so no lwIP type escapes the transport layer.
+ * lives in udp.cpp so no lwIP type escapes the transport layer.
  */
 struct DetUdpPeer;
 

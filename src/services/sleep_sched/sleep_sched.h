@@ -21,7 +21,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SLEEP_SCHED_H
 #define DETERMINISTICESPASYNCWEBSERVER_SLEEP_SCHED_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

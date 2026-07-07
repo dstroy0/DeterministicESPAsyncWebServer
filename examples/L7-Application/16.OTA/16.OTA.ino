@@ -18,7 +18,7 @@
 
 #define DETWS_ENABLE_OTA 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/ota_service.h"
 #include <WiFi.h>

@@ -11,8 +11,8 @@
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
-#include "shared_primitives/det_mime.h"
-#include "shared_primitives/det_numparse.h"
+#include "shared_primitives/mime.h"
+#include "shared_primitives/numparse.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -253,11 +253,11 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
-#include "network_drivers/transport/det_client.h" // shared outbound TCP client (L4)
-#include <Arduino.h>                              // delay() / millis()
+#include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
+#include <Arduino.h>                          // delay() / millis()
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
-#include "network_drivers/tls/det_tls.h"
+#include "network_drivers/tls/tls.h"
 #include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_READ for the BIO recv callback
 #endif
 

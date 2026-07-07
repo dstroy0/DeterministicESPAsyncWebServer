@@ -26,7 +26,7 @@
 
 #define DETWS_ENABLE_PER_IP_THROTTLE 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <WiFi.h>
 

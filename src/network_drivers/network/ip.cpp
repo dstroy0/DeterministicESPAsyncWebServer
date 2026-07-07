@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_ip.cpp
+ * @file ip.cpp
  * @brief DetIp implementation: RFC 4291 text parsing, RFC 5952 canonical formatting, scope
  *        classification. Pure, hand-rolled (no stdlib parsing), host-identical.
  *
@@ -11,7 +11,7 @@
  * (parse a hextet, assemble the 16 bytes, find the zero run to compress, classify one family).
  */
 
-#include "network_drivers/network/det_ip.h"
+#include "network_drivers/network/ip.h"
 #include <string.h>
 
 namespace

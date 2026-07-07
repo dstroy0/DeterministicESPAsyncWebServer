@@ -19,8 +19,8 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_RADIO_SNIFF_H
 #define DETERMINISTICESPASYNCWEBSERVER_RADIO_SNIFF_H
 
-#include "DetWebServerConfig.h"
-#include "shared_primitives/det_pcap.h"
+#include "ServerConfig.h"
+#include "shared_primitives/pcap.h"
 #include <stddef.h>
 #include <stdint.h>
 

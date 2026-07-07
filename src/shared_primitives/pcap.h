@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_pcap.h
+ * @file pcap.h
  * @brief libpcap file framing - the classic global + per-record headers, link-type agnostic.
  *
  * One owner for the PCAP framing shared by every capture feature (Wi-Fi promiscuous capture,

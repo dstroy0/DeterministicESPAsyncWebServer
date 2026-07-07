@@ -58,7 +58,7 @@ with added explanatory comments:
 
 #define DETWS_ENABLE_OTA_ROLLBACK 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/ota_rollback/ota_rollback.h"
 #include <WiFi.h>

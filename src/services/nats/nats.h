@@ -31,7 +31,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_NATS_H
 #define DETERMINISTICESPASYNCWEBSERVER_NATS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_NATS
 

@@ -19,7 +19,7 @@
 
 #define DETWS_ENABLE_INA219 1
 
-#include "DeterministicESPAsyncWebServer.h" // declares the library dependency (Arduino build)
+#include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ina219/ina219.h"
 #include <Arduino.h>
 

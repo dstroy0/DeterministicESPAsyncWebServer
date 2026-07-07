@@ -24,7 +24,7 @@ DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t m
 #ifdef ARDUINO
 
 #include "esp_ota_ops.h"
-#include "services/det_clock.h" // detws_millis() (pulls in Arduino millis())
+#include "services/clock.h" // detws_millis() (pulls in Arduino millis())
 
 uint8_t detws_ota_img_state(void)
 {

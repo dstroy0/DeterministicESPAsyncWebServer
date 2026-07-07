@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_client.cpp
- * @brief Layer 4 outbound TCP client transport (pooled). See det_client.h.
+ * @file client.cpp
+ * @brief Layer 4 outbound TCP client transport (pooled). See client.h.
  *
  * Mirrors the server transport's cross-thread rule: every raw lwIP call runs in
  * tcpip_thread via tcpip_api_call(). Each slot owns its pcb and an SPSC wire ring
@@ -12,19 +12,19 @@
  * per-client implementations this consolidates.
  */
 
-#include "det_client.h"
+#include "client.h"
 
 // Compiles only on Arduino AND only when a client transport is actually enabled
 // (HTTP client / MQTT / WS client). A server-only build leaves DNS_RESOLVER off,
 // so the resolver symbols this unit calls would not be declared - see
-// DETWS_NEED_DET_CLIENT in DetWebServerConfig.h.
+// DETWS_NEED_DET_CLIENT in ServerConfig.h.
 #if defined(ARDUINO) && DETWS_NEED_DET_CLIENT
 
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/tcp.h"
-#include "services/det_clock.h"                 // detws_millis()
+#include "services/clock.h"                 // detws_millis()
 #include "services/dns_resolver/dns_resolver.h" // shared host->IP resolve (one DNS owner)
-#include "shared_primitives/det_ring.h"         // shared DetAtomic + SPSC ring drain (same primitive as the server)
+#include "shared_primitives/ring.h"         // shared DetAtomic + SPSC ring drain (same primitive as the server)
 #include <Arduino.h>                            // delay()
 #include <string.h>
 

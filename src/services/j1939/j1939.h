@@ -27,11 +27,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_J1939_H
 #define DETERMINISTICESPASYNCWEBSERVER_J1939_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_J1939
 
-#include "shared_primitives/det_can.h"
+#include "shared_primitives/can.h"
 #include <stddef.h>
 #include <stdint.h>
 

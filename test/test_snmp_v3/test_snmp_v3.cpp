@@ -10,7 +10,7 @@
 // the AES-128 block cipher is checked against the FIPS-197 Appendix C.1 KAT.
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
-#include "network_drivers/transport/udp_transport.h"
+#include "network_drivers/transport/udp.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
 #include "services/snmp/snmp_crypto.h"

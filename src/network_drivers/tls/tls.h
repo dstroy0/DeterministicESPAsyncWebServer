@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_tls.h
+ * @file tls.h
  * @brief Deterministic TLS engine: mbedTLS over a static memory pool (DETWS_ENABLE_TLS).
  *
  * Wraps mbedTLS as a server-side TLS layer that keeps the library's zero-heap
@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_TLS_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_TLS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

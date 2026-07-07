@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H
 #define DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

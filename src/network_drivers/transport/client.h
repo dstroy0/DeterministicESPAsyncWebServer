@@ -4,9 +4,9 @@
 #define DETERMINISTICESPASYNCWEBSERVER_DET_CLIENT_H
 
 /**
- * @file det_client.h
+ * @file client.h
  * @brief Layer 4 outbound TCP client transport - the client-side peer of the
- *        (server) transport in transport.cpp.
+ *        (server) transport in tcp.cpp.
  *
  * A small fixed pool of outbound connections so the application's clients
  * (services/http_client, services/mqtt, services/ws_client) no longer each own a
@@ -24,7 +24,7 @@
  * deadline. Only det_client_open() blocks, on DNS + connect.
  */
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 

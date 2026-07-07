@@ -14,7 +14,7 @@
 //
 // Build flag (whole build): DETWS_ENABLE_PREEMPT_QUEUE=1
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/preempt_queue/preempt_queue.h"
 #include <Arduino.h>
 

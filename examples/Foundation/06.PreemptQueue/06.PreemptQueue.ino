@@ -8,7 +8,7 @@
 //   DETWS_ENABLE_PREEMPT_QUEUE=1
 // Optional sizing: DETWS_PQ_DEPTH, DETWS_PQ_ITEM_SIZE, DETWS_PQ_STACK.
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "esp_timer.h"
 #include "services/preempt_queue/preempt_queue.h"
 #include <Arduino.h>

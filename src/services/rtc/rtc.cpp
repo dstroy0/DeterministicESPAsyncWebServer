@@ -10,7 +10,7 @@
  */
 
 #include "services/rtc/rtc.h"
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_RTC
 
@@ -103,7 +103,7 @@ void rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 
 #if defined(ARDUINO)
 
-#include "services/det_i2c.h"
+#include "services/i2c.h"
 #include <Wire.h>
 
 bool rtc_begin()

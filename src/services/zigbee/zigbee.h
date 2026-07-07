@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_ZIGBEE_H
 #define DETERMINISTICESPASYNCWEBSERVER_ZIGBEE_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_ZIGBEE
 

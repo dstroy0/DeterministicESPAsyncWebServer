@@ -27,7 +27,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_CIP_H
 #define DETERMINISTICESPASYNCWEBSERVER_CIP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_CIP
 

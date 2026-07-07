@@ -25,7 +25,7 @@
 
 #define DETWS_ENABLE_VFS 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/vfs/vfs.h"
 #include <LittleFS.h>

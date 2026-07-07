@@ -33,17 +33,17 @@ jobs:
 
       # Regenerate the source-derived reference sections of docs/README.md (feature-flag
       # defaults, tunable constants, the full source tree, per-feature build footprint) from
-      # DetWebServerConfig.h / src / docs/footprints.json so they never drift from the code.
+      # ServerConfig.h / src / docs/footprints.json so they never drift from the code.
       - name: Regenerate README source-derived sections
         run: python docs/utilities/gen_readme_sections.py
 
-      # Regenerate the interactive build configurator from DetWebServerConfig.h so it
+      # Regenerate the interactive build configurator from ServerConfig.h so it
       # always reflects the current feature flags, tuning knobs, and dependencies.
-      - name: Regenerate configurator from DetWebServerConfig.h
+      - name: Regenerate configurator from ServerConfig.h
         run: python docs/utilities/gen_configurator.py
 
       # Regenerate the build-flag dependency graph from the #error/#if guards in
-      # DetWebServerConfig.h so the README diagram tracks the guards the compiler enforces.
+      # ServerConfig.h so the README diagram tracks the guards the compiler enforces.
       - name: Regenerate build-flag dependency graph
         run: python docs/utilities/gen_flag_deps.py
 

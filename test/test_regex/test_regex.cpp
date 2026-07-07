@@ -3,7 +3,7 @@
 //
 // Unit tests for bounded regex routes (DetWebServer::on_regex()).
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>

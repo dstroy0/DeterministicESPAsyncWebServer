@@ -154,9 +154,9 @@ The remaining sections document each property in depth.
 
 ## 2. Memory Safety - HTTP / Core Stack {#memory-safety}
 
-**Files:** [src/network_drivers/transport/transport.cpp](@ref transport.cpp),
+**Files:** [src/network_drivers/transport/tcp.cpp](@ref tcp.cpp),
 [src/network_drivers/presentation/presentation.cpp](@ref presentation.cpp),
-[src/DetWebServerConfig.h](@ref DetWebServerConfig.h)
+[src/ServerConfig.h](@ref ServerConfig.h)
 
 ### Static Allocation {#core-static}
 
@@ -183,7 +183,7 @@ reach the SSH key store in a single linear stride (see §7.7).
 
 ### Compile-Time Safety Checks {#core-checks}
 
-`DetWebServerConfig.h` contains `#error` guards that catch impossible
+`ServerConfig.h` contains `#error` guards that catch impossible
 combinations at build time:
 
 ```cpp
@@ -288,7 +288,7 @@ in the WebSocket route handler and reject origins that are not in an allowlist.
 ## 5. Authentication (HTTP Basic Auth) {#auth-security}
 
 **Files:** [src/network_drivers/presentation/presentation.cpp](@ref presentation.cpp),
-[src/DetWebServerConfig.h](@ref DetWebServerConfig.h)
+[src/ServerConfig.h](@ref ServerConfig.h)
 
 ### Implementation {#auth-implementation}
 
@@ -866,7 +866,7 @@ environment.
 
 ## 8. Diagnostic Endpoint {#diagnostic-endpoint}
 
-**File:** [DeterministicESPAsyncWebServer.cpp](@ref DeterministicESPAsyncWebServer.cpp)
+**File:** [dwserver.cpp](@ref dwserver.cpp)
 
 The optional `DETWS_ENABLE_DIAG` build flag enables a JSON endpoint at `/diag`
 that returns all active feature flags and configuration constants.

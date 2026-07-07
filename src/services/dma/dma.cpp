@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * @file det_dma.cpp
+ * @file dma.cpp
  * @brief DMA peripheral ingest / egress - implementation.
  *
  * DETWS_DMA_SIMULATE (default) runs an in-memory model of the peripheral: an ingress
@@ -13,14 +13,14 @@
  * dispatches to the weak det_dma_hw_* hooks a real silicon driver overrides.
  */
 
-#include "services/dma/det_dma.h"
+#include "services/dma/dma.h"
 
 #if DETWS_ENABLE_DMA
 
 #include <string.h> // memcpy
 
 #ifdef ARDUINO
-#include "services/det_clock.h" // detws_millis()
+#include "services/clock.h" // detws_millis()
 #endif
 
 namespace

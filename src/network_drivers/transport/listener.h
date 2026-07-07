@@ -18,10 +18,10 @@
  * the PCB user-data so a single static `listener_accept_cb` handles all ports.
  *
  * **Circular-dependency resolution**
- * transport.cpp needs to post events to listener queues but cannot include
- * this header (listener.h already includes transport.h).  The symbol
- * `listener_enqueue()` is exported from listener.cpp; transport.cpp calls it
- * via a forward declaration added to transport.h so no circular include
+ * tcp.cpp needs to post events to listener queues but cannot include
+ * this header (listener.h already includes tcp.h).  The symbol
+ * `listener_enqueue()` is exported from listener.cpp; tcp.cpp calls it
+ * via a forward declaration added to tcp.h so no circular include
  * is introduced.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -31,11 +31,11 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_LISTENER_H
 #define DETERMINISTICESPASYNCWEBSERVER_LISTENER_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "transport.h"
+#include "tcp.h"
 
 // ---------------------------------------------------------------------------
 // Listener pool entry
@@ -125,7 +125,7 @@ void listener_stop_dynamic(uint8_t idx);
 /**
  * @brief Post @p evt to the queue owned by listener @p listener_id.
  *
- * Called from transport.cpp callbacks (running in tcpip_thread context) to
+ * Called from tcp.cpp callbacks (running in tcpip_thread context) to
  * deliver connection events to the session layer.  Uses xQueueSend with
  * timeout=0 - a full queue means the application is not calling server_tick()
  * fast enough; the dropped event is recoverable via connection timeout.

@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_STOMP_H
 #define DETERMINISTICESPASYNCWEBSERVER_STOMP_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_STOMP
 

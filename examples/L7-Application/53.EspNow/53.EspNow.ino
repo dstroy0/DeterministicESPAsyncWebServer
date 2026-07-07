@@ -20,7 +20,7 @@
 
 #define DETWS_ENABLE_ESPNOW 1
 
-#include "DeterministicESPAsyncWebServer.h" // discovers the library (adds src/ to the include path)
+#include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/espnow/espnow.h"
 #include <WiFi.h>
 #include <esp_wifi.h> // esp_wifi_set_channel(); not pulled in transitively by WiFi.h

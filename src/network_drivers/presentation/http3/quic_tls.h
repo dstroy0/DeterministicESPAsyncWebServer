@@ -28,7 +28,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_QUIC_TLS_H
 #define DETERMINISTICESPASYNCWEBSERVER_QUIC_TLS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 
 #if DETWS_ENABLE_HTTP3
 

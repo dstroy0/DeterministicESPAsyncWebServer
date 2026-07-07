@@ -3,12 +3,12 @@
 //
 // Host tests for the WebDAV request handler's recursive filesystem operations
 // (COPY / MOVE / DELETE of collections, RFC 4918). These exercise the real
-// handler in DeterministicESPAsyncWebServer.cpp against the directory-capable
+// handler in dwserver.cpp against the directory-capable
 // in-memory FS mock (test/mocks/FS.h, opt-in via mock_fs_tree_enable()), which
 // the files-only mock could not cover - so recursion was previously only
 // HW-verifiable.
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>

@@ -10,7 +10,7 @@
 
 #if DETWS_ENABLE_CBOR
 
-#include "shared_primitives/det_bytes.h"
+#include "shared_primitives/bytes.h"
 #include <string.h>
 
 void cbor_init(CborWriter *w, uint8_t *buf, size_t cap)

@@ -3334,7 +3334,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
-- centralize all tuning knobs in DetWebServerConfig.h ([`3852708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38527081ab839aeeb2a72c4c6dc26cffa343fa43))
+- centralize all tuning knobs in ServerConfig.h ([`3852708`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38527081ab839aeeb2a72c4c6dc26cffa343fa43))
 
 </details>
 

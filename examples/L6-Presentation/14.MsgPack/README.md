@@ -78,7 +78,7 @@ added explanatory comments:
 
 #define DETWS_ENABLE_MSGPACK 1
 
-#include "DeterministicESPAsyncWebServer.h"
+#include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "network_drivers/presentation/msgpack/msgpack.h"
 #include <WiFi.h>

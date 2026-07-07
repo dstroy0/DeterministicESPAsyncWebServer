@@ -32,7 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_MODBUS_H
 #define DETERMINISTICESPASYNCWEBSERVER_MODBUS_H
 
-#include "DetWebServerConfig.h"
+#include "ServerConfig.h"
 #include <stddef.h>
 #include <stdint.h>
 
