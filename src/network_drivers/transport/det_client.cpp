@@ -39,7 +39,13 @@ struct ClientConn
     DetAtomic<size_t> tail; // consumer (caller)
 };
 
-static ClientConn s_cc[DETWS_CLIENT_CONNS];
+// Outbound client connection pool, owned by one instance (internal linkage): the per-slot
+// ClientConn state. One named owner, unreachable from any other translation unit.
+struct DetClientCtx
+{
+    ClientConn cc[DETWS_CLIENT_CONNS];
+};
+static DetClientCtx s_client;
 
 // Hostname resolution is delegated to the shared DNS resolver (detws_dns_resolve,
 // services/dns_resolver) so there is one owner of the gethostbyname-marshal +
@@ -189,7 +195,7 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
 {
     int cid = -1;
     for (int i = 0; i < DETWS_CLIENT_CONNS; i++)
-        if (!s_cc[i].in_use)
+        if (!s_client.cc[i].in_use)
         {
             cid = i;
             break;
@@ -197,7 +203,7 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
     if (cid < 0)
         return -1; // pool full
 
-    ClientConn *c = &s_cc[cid];
+    ClientConn *c = &s_client.cc[cid];
     c->pcb = nullptr;
     c->connected = false;
     c->closed = false;
@@ -238,23 +244,24 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
 
 bool det_client_connected(int cid)
 {
-    return cid >= 0 && cid < DETWS_CLIENT_CONNS && s_cc[cid].in_use && s_cc[cid].connected && !s_cc[cid].closed;
+    return cid >= 0 && cid < DETWS_CLIENT_CONNS && s_client.cc[cid].in_use && s_client.cc[cid].connected &&
+           !s_client.cc[cid].closed;
 }
 
 bool det_client_is_closed(int cid)
 {
     if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
         return true;
-    return s_cc[cid].closed;
+    return s_client.cc[cid].closed;
 }
 
 bool det_client_send(int cid, const void *data, size_t len)
 {
-    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_cc[cid].in_use)
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_client.cc[cid].in_use)
         return false;
     CcSendCall k;
     memset(&k, 0, sizeof(k));
-    k.c = &s_cc[cid];
+    k.c = &s_client.cc[cid];
     k.data = data;
     k.len = (u16_t)(len > 0xFFFF ? 0xFFFF : len);
     tcpip_api_call(cc_do_send, &k.base);
@@ -265,7 +272,7 @@ size_t det_client_available(int cid)
 {
     if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
         return 0;
-    ClientConn *c = &s_cc[cid];
+    ClientConn *c = &s_client.cc[cid];
     return det_ring_available(c->head, c->tail, DETWS_CLIENT_RX_BUF);
 }
 
@@ -273,7 +280,7 @@ size_t det_client_read(int cid, uint8_t *buf, size_t cap)
 {
     if (cid < 0 || cid >= DETWS_CLIENT_CONNS)
         return 0;
-    ClientConn *c = &s_cc[cid];
+    ClientConn *c = &s_client.cc[cid];
     size_t n = det_ring_read(c->rx, DETWS_CLIENT_RX_BUF, c->head, c->tail, buf, cap);
     if (n > 0 && c->pcb)
     {
@@ -289,13 +296,13 @@ size_t det_client_read(int cid, uint8_t *buf, size_t cap)
 
 void det_client_close(int cid)
 {
-    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_cc[cid].in_use)
+    if (cid < 0 || cid >= DETWS_CLIENT_CONNS || !s_client.cc[cid].in_use)
         return;
     CcSendCall k;
     memset(&k, 0, sizeof(k));
-    k.c = &s_cc[cid];
+    k.c = &s_client.cc[cid];
     tcpip_api_call(cc_do_close, &k.base);
-    s_cc[cid].in_use = false;
+    s_client.cc[cid].in_use = false;
 }
 
 #else // !ARDUINO - host stub (the clients are ARDUINO-only; host builds no-op)
