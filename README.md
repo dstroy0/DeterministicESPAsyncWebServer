@@ -469,9 +469,9 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `WS_CLIENT`    |            77.0 KB |          53.0 KB |
 | L7    | `ETAG`         |        0.0-72.6 KB |       0.0-1.3 KB |
 | L7    | `WEBDAV`       |       26.2-65.7 KB |     38.4-38.7 KB |
-| L7    | `VFS`          |            40.8 KB |         < 0.5 KB |
+| L7    | `VFS`          |            40.7 KB |           4.4 KB |
 | L7    | `RANGE`        |        0.6-39.8 KB |         < 0.5 KB |
-| L7    | `UPLOAD`       |            39.7 KB |           5.1 KB |
+| L7    | `UPLOAD`       |            39.6 KB |           5.1 KB |
 | L7    | `OPCUA_CLIENT` |        6.8-28.6 KB |     10.0-13.8 KB |
 | L7    | `NTP`          |            23.3 KB |           2.5 KB |
 | L7    | `MDNS`         |            23.1 KB |           1.9 KB |
@@ -487,13 +487,13 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `PROVISIONING` |             5.6 KB |           1.5 KB |
 | L7    | `DNS_RESOLVER` |             4.0 KB |           1.3 KB |
 | L7    | `COAP`         |             3.7 KB |           2.5 KB |
-| L7    | `OTA`          |             3.4 KB |          35.3 KB |
+| L7    | `OTA`          |             3.3 KB |          35.3 KB |
 | L7    | `CONFIG_IO`    |             3.1 KB |         < 0.5 KB |
 | L7    | `CONFIG_STORE` |             3.1 KB |         < 0.5 KB |
 | L7    | `GRAPHQL`      |             3.0 KB |           4.3 KB |
 | L7    | `GPIO_MAP`     |             2.4 KB |         < 0.5 KB |
 | L7    | `METRICS`      |             2.1 KB |         < 0.5 KB |
-| L7    | `SYSLOG`       |             1.4 KB |           1.8 KB |
+| L7    | `SYSLOG`       |             1.5 KB |           1.8 KB |
 | L7    | `AUDIT_LOG`    |           < 0.5 KB |           2.9 KB |
 | L7    | `LOGBUF`       |           < 0.5 KB |           3.0 KB |
 | -     | `FILE_SERVING` |         0.0-4.2 KB |         < 0.5 KB |
