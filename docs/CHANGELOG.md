@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`96275ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96275ced37a8ad91cfad94bb1c2fe86d39564987))
 - update CHANGELOG.md [skip ci] ([`c22e632`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c22e6321999be835f8bc875510eb0595fc5e8ff7))
 - update CHANGELOG.md [skip ci] ([`062a7a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062a7a297d3d9aa70845a2c28086664b1efff7e6))
 - update CHANGELOG.md [skip ci] ([`250ba48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/250ba485be5c9f409ae5d73ba7fd4e3435229341))
@@ -102,6 +103,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a72bdfd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a72bdfdf84e756876867a5acc5040cff070a6a58))
 - update ESP32 build footprints [skip ci] ([`cca4be2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cca4be2e79f5f0db57045455a40e5d3680d206d8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2af27ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2af27bafa1068ae773cbbe08744f3d09352946a0))
 - update ESP32 build footprints [skip ci] ([`b335fdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b335fdf8dba025be30a436a0a624eb5bead649d7))
@@ -232,6 +234,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover build/checksum-hex/field-helper rejects (90->100%) ([`c4a72f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4a72f7b3827326d12db9beabce6c698e3db0471))
+- cover builder/parser/CRC reject + skip branches (87->100%) ([`e4b7da2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4b7da265459ae7ba83ebb95aab9ffb20388c867))
 - cover writer/reader error + float + 16-bit-id paths (86->100%) ([`141af00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/141af002b1135c2ef44d34fa21a03e8e3894cf69))
 - cover build/TP error paths; EXCL 5 dead encode guards (88->100%) ([`7dbe6b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dbe6b62d8e00ea390727110ac0f680bec07718d))
 - cover id/frag error paths; EXCL 2 dead append guards (84->100%) ([`8b777a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b777a21bc83063431cd40f3b2dc4332126d0b3b))
