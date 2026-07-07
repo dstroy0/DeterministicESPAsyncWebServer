@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c22e632`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c22e6321999be835f8bc875510eb0595fc5e8ff7))
 - update CHANGELOG.md [skip ci] ([`062a7a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062a7a297d3d9aa70845a2c28086664b1efff7e6))
 - update CHANGELOG.md [skip ci] ([`250ba48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/250ba485be5c9f409ae5d73ba7fd4e3435229341))
 - update CHANGELOG.md [skip ci] ([`ae42734`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae42734ba8e5160d4af18424b1441ceda044a92b))
@@ -101,6 +102,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`cca4be2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cca4be2e79f5f0db57045455a40e5d3680d206d8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2af27ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2af27bafa1068ae773cbbe08744f3d09352946a0))
 - update ESP32 build footprints [skip ci] ([`b335fdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b335fdf8dba025be30a436a0a624eb5bead649d7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b569b18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b569b187055ed536f14db9fc53950126a5905cd5))
@@ -230,6 +232,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover writer/reader error + float + 16-bit-id paths (86->100%) ([`141af00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/141af002b1135c2ef44d34fa21a03e8e3894cf69))
 - cover build/TP error paths; EXCL 5 dead encode guards (88->100%) ([`7dbe6b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7dbe6b62d8e00ea390727110ac0f680bec07718d))
 - cover id/frag error paths; EXCL 2 dead append guards (84->100%) ([`8b777a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b777a21bc83063431cd40f3b2dc4332126d0b3b))
 - cover DISCONNECT teardown + overlong-banner reject (91->95%) ([`c95be3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c95be3a6ac135dc0a3d9f0aaa772ab4a2fff7d8f))
