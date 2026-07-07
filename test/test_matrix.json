@@ -35,6 +35,23 @@
       ],
       "tests": ["test_ssh_ed25519"]
     },
+    "native_crypto_kat": {
+      "desc": "Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM,\nX25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases),\nplus HKDF-SHA256 Extract (RFC 5869), the ChaCha20 block (RFC 8439 2.4.2), and Poly1305\n(RFC 8439 2.5.2). Vectors are vendored as auditable JSON (test/vectors) and compiled to a\ntable by tools/gen_crypto_vectors.py. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HTTP3=1"],
+      "src": [
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>"
+      ],
+      "tests": ["test_crypto_kat"]
+    },
     "native_promisc": {
       "desc": "Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC header parser\n(to/from-DS src/dst/bssid resolution, QoS, WDS 4-address, control frames, malformed\nrejection) and libpcap (DLT_IEEE802_11) framing. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_PROMISC=1"],

@@ -8,6 +8,26 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Ed25519 verify accepted non-canonical S (signature malleability)
+
+- **Status:** FIXED (native_crypto_kat green: the Wycheproof SignatureMalleability vectors now reject;
+  native_ssh_ed25519 RFC 8032 7.1 regression still passes).
+- **Found:** 2026-07-06, standing up the data-driven external crypto KAT env (native_crypto_kat) that
+  runs Project Wycheproof vectors through the primitives. Wycheproof ed25519 tcId 63-70
+  (`SignatureMalleability`) verified when they must be rejected.
+- **Symptom:** `ssh_ed25519_verify` accepted a signature whose scalar S had been replaced by S + L
+  (L = the group order). Because L\*B is the identity, `S*B - h*A` recomputes the same R, so the
+  recompute-and-compare-R verification passed for both S and S + L - i.e. a third party could maul a
+  valid signature into a different byte string that still verifies.
+- **Root cause:** verification checked the group equation but never range-checked S. RFC 8032 5.1.7
+  requires the verifier to reject a signature whose S is not in `[0, L)`; that check was missing.
+- **Fix:** added `ed_scalar_canonical()` (compares the little-endian S against the group order `ED_L`
+  from the top byte down) and reject up front in `ssh_ed25519_verify` when S >= L. Verification is
+  public-data only, so a plain compare is fine. Legitimate signatures always have S < L (signing
+  reduces mod L), so no valid vector or existing test changes.
+
+---
+
 ## 54 shipped features were missing from the feature grid (FEATURES.md drift)
 
 - **Status:** FIXED (gen_feature_tables.py coverage guard green; all DETWS_ENABLE\_\* flags now documented).

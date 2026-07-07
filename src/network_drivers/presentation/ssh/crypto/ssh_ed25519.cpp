@@ -296,8 +296,28 @@ void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const ui
     ed_modL(sig + 32, x); // sig[32..63] = S
 }
 
+// True iff the little-endian 32-byte scalar S is canonical (0 <= S < L). RFC 8032
+// 5.1.7 requires this: S and S+L both satisfy the group equation (L*B is the
+// identity), so without the range check the signature is malleable. Verification
+// operates only on public data, so a plain compare from the top byte down is fine.
+static bool ed_scalar_canonical(const uint8_t s[32])
+{
+    for (int i = 31; i >= 0; i--)
+    {
+        uint8_t li = (uint8_t)ED_L[i];
+        if (s[i] < li)
+            return true;
+        if (s[i] > li)
+            return false;
+    }
+    return false; // S == L is out of range
+}
+
 bool ssh_ed25519_verify(const uint8_t pub[32], const uint8_t *msg, size_t mlen, const uint8_t sig[64])
 {
+    if (!ed_scalar_canonical(sig + 32))
+        return false; // non-canonical S (RFC 8032 5.1.7): reject to prevent malleability
+
     ssh_gf p[4], q[4];
     if (ed_unpackneg(q, pub) != 0)
         return false; // q = -A
