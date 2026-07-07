@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`4fc1386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fc13865b9b9f44a6481d37200e8302ffafa7070))
 - update test report [skip ci] ([`7151c6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7151c6f752c2c3bd2b21766663a842b3ff0880ea))
 - update CHANGELOG.md [skip ci] ([`bdb3890`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdb3890a79c6c54cc98c02f8d56cf58d44c85e12))
 - update test report [skip ci] ([`2beb794`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2beb794d700fa419b738ef8e79d36286ced42c0e))
@@ -61,8 +62,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report [skip ci] ([`0bf5086`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bf50860279a27b84622437133b7ed641addb7d3))
 - update CHANGELOG.md [skip ci] ([`39b61a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39b61a27b98af1c2358d3d18d0d7a0f341cee9d9))
 
+### Changes
+
+- clang-format client.cpp include-comment alignment ([`96a8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a8e810d52e26f6385693b0285606a67c30bcce))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`34cf1b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34cf1b87cfb0b215bc24138934d141ff2efbaa1f))
 - update ESP32 build footprints [skip ci] ([`f0787f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0787f2933a5249fe466b020baf6d980578f812f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2383c57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2383c57d6786728a3c9a91c7981dbcdb12836f8c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3382909`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3382909edbc081cfb28ab65bee28e84e7e50dd63))
