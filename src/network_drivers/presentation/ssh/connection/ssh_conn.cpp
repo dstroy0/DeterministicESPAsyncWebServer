@@ -49,10 +49,10 @@ static void ensure_init()
 static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[i] == 0xFF)
-        return;
+        return; // GCOVR_EXCL_LINE  defensive: ssh_emit is only invoked by dispatch/poll with a live, mapped slot
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[i]];
     if (conn->state != CONN_ACTIVE || !conn->pcb)
-        return;
+        return; // GCOVR_EXCL_LINE  defensive: the invoking dispatch/poll already verified the conn is ACTIVE with a pcb
 
     // Borrow the wire buffer from the shared scratch arena (released on return).
     const size_t wire_cap = SSH_WIRE_CAP;

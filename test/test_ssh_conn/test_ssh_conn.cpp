@@ -6,6 +6,7 @@
 // the bytes written back to the socket via the tcp_write capture mock.
 
 #include "lwip/tcp.h"
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -213,6 +214,73 @@ void test_poll_rx_banner_guards()
     TEST_ASSERT_EQUAL(SSH_PHASE_BANNER, ssh_sess[j].phase);
 }
 
+// With an open channel (white-box), ssh_conn_send frames CHANNEL_DATA to the socket;
+// ssh_conn_close_channel frames EOF+CLOSE; and ssh_conn_open_forwarded opens a
+// server-initiated forwarded-tcpip channel.
+void test_conn_send_close_open_channel()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_chan[j][0].open = true;
+    ssh_chan[j][0].local_id = 0;
+    ssh_chan[j][0].peer_id = 1;
+    ssh_chan[j][0].peer_window = 100000;
+    ssh_chan[j][0].peer_max_pkt = 100000;
+
+    const uint8_t data[5] = {'h', 'e', 'l', 'l', 'o'};
+    tcp_capture_reset();
+    TEST_ASSERT_EQUAL_INT(5, ssh_conn_send(j, 0, data, sizeof(data)));
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
+
+    ssh_chan[j][0].open = true; // ssh_conn_send left it open
+    tcp_capture_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_conn_close_channel(j, 0));
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
+
+    // The channel slot is free again -> a server-initiated forwarded-tcpip open succeeds.
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) >= 0);
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
+}
+
+// Channel-layer rejections propagate as -1: closing a channel that is not open,
+// sending more than the peer window allows, and opening a forwarded channel when the
+// (sole) channel slot is already occupied.
+void test_send_channel_reject_paths()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0)); // channel 0 is not open -> build_close fails
+
+    ssh_chan[j][0].open = true;
+    ssh_chan[j][0].peer_window = 2;
+    ssh_chan[j][0].peer_max_pkt = 100000;
+    const uint8_t data[5] = {1, 2, 3, 4, 5};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data))); // 5 > peer_window 2
+
+    // The sole channel slot is occupied -> no room for a server-initiated forward.
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1));
+}
+
+// The only SSH slot (MAX_SSH_CONNS == 1) is consumed by the first accept; a second
+// connection has no capacity and is dropped without a slot assignment.
+void test_accept_no_ssh_capacity()
+{
+    ssh_conn_accept(0);
+    TEST_ASSERT_NOT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot);
+    ssh_conn_accept(1);
+    TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[1].proto_slot);
+}
+
+// poll on a non-ACTIVE connection returns at the state guard.
+void test_poll_ignores_inactive_conn()
+{
+    conn_pool[2].state = CONN_CLOSING;
+    ssh_conn_poll(2);
+    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[2].state); // untouched
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -222,5 +290,9 @@ int main()
     RUN_TEST(test_proto_handler_accessor);
     RUN_TEST(test_send_entrypoints_reject);
     RUN_TEST(test_poll_rx_banner_guards);
+    RUN_TEST(test_conn_send_close_open_channel);
+    RUN_TEST(test_send_channel_reject_paths);
+    RUN_TEST(test_accept_no_ssh_capacity);
+    RUN_TEST(test_poll_ignores_inactive_conn);
     return UNITY_END();
 }
