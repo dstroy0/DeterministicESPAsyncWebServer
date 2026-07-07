@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c7c50ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7c50ec9c5113f03eb19afcf19aa528d77153f2a))
 - update CHANGELOG.md [skip ci] ([`03c8b00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03c8b00545facd0e5cf9831feeaafb9cc4b1cbdc))
 - update CHANGELOG.md [skip ci] ([`2aba84f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2aba84f0bcd6db175a989713e67c70d1aaa353f0))
 - update CHANGELOG.md [skip ci] ([`bd8e0c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd8e0c85c8e4ea9175561a407e5a17d7a44c27a2))
@@ -237,6 +238,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover BER long-form length + pdu/frame guards (80->100%) ([`943da2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/943da2e633e6f91e766e3bc6c6733e729531024a))
 - cover final guard/VIFE branches (->100%) ([`a9e71a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e71a74d791ba0e1eb47149827be991d75f3eab))
 - cover Fast Packet build/feed rejects; EXCL dead decode (92->100%) ([`f853684`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8536840bf16b08e08e030850b3f111707b91506))
 - cover build cap/null guards + rdm_parse rejects (92->100%) ([`24c8522`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24c85225fa68388d59ab880eb06b76ec55977d28))
