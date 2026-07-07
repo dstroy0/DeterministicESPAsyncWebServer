@@ -281,6 +281,33 @@ void test_poll_ignores_inactive_conn()
     TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[2].state); // untouched
 }
 
+// A DISCONNECT after the banner is fatal: ssh_server_dispatch returns <0, so
+// ssh_msg_handler flags the slot and ssh_conn_rx tears the connection down.
+void test_rx_disconnect_tears_down()
+{
+    ssh_conn_accept(0);
+    const char *banner = "SSH-2.0-TestClient\r\n";
+    push_bytes(0, (const uint8_t *)banner, strlen(banner));
+    uint8_t disc[13] = {SSH_MSG_DISCONNECT, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0}; // reason 11, empty desc+lang
+    uint8_t pkt[64];
+    size_t pktlen = frame_packet(pkt, disc, sizeof(disc));
+    push_bytes(0, pkt, pktlen);
+    ssh_conn_rx(0);
+    TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot); // slot released
+}
+
+// A client identification line that runs past SSH_VERSION_MAX with no CRLF is rejected
+// by recv_banner, and ssh_conn_rx closes the connection.
+void test_rx_overlong_banner_closes()
+{
+    ssh_conn_accept(0);
+    uint8_t longline[300];
+    memset(longline, 'A', sizeof(longline)); // >= SSH_VERSION_MAX (256), no CRLF
+    push_bytes(0, longline, sizeof(longline));
+    ssh_conn_rx(0);
+    TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot); // slot released
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -294,5 +321,7 @@ int main()
     RUN_TEST(test_send_channel_reject_paths);
     RUN_TEST(test_accept_no_ssh_capacity);
     RUN_TEST(test_poll_ignores_inactive_conn);
+    RUN_TEST(test_rx_disconnect_tears_down);
+    RUN_TEST(test_rx_overlong_banner_closes);
     return UNITY_END();
 }
