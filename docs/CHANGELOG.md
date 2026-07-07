@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- suppress design-constraint-conflict rules + the tls13_msg S3519 false positive ([`430074d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/430074d244afc366bf35d7e4b36e20c23412412f))
+- update CHANGELOG.md [skip ci] ([`c9c634e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9c634e30eb3bdd9eb4c27be33d3414ae0d52d61))
 - update test report [skip ci] ([`203df44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/203df44891e939f910f7053d88c3f08c49fa3bbb))
 - update CHANGELOG.md [skip ci] ([`fb93a14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb93a14d4c95cc682bc0296f6425b7413815a869))
 - update test report [skip ci] ([`15d06ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/15d06ff8dc52a0f529275a54fd1d6481e9a2a7d5))
@@ -74,6 +76,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3eeb643`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eeb6438298bcb5a158a709c675f29efceb25cd3))
 - update ESP32 build footprints [skip ci] ([`46e24ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46e24ee7bebe28a6893c6d2954d401116296ac36))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`38a90c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38a90c141c6bf5e76f34d85a01a1f5e89131b2cf))
 - update ESP32 build footprints [skip ci] ([`30a0844`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30a08441a34324bad7fbd3ca81bca1fd8346e67a))
