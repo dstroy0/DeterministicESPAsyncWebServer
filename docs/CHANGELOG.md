@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- add owner-context guard - fail on any loose file-scope mutable outside an owned Ctx ([`26b9556`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26b955658f7dc21db8da92f886dc423c5a7aa835))
+- update CHANGELOG.md [skip ci] ([`8643401`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8643401d73b8676cd2cfb18766d4427fd030bb6d))
 - update test report [skip ci] ([`21ccadf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21ccadf7990324d060e1be1f11b0cc0805a67b5b))
 - update CHANGELOG.md [skip ci] ([`6587460`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6587460c1921064fcfd1e7868079f36bfe545a93))
 - update test report [skip ci] ([`719ed9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/719ed9c6e06e3d932b64808316b5ce5487528bbc))
@@ -52,6 +54,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a6344b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6344b96efa55d426d7f6d4e82e1206b8dc9f768))
 - update ESP32 build footprints [skip ci] ([`80044f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80044f83174e9c133e647aee7f9832532052ecf7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`047abbf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/047abbf096a4cae6c841c645ebf7fd959bd1fa91))
 - update ESP32 build footprints [skip ci] ([`04a90d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04a90d7047ef3626d21aec1a81da9eb842982188))
@@ -79,6 +82,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the group14 Montgomery constants in one Group14Ctx (owner sweep) ([`df4e000`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df4e000caac9ac92da47f82e08638bf78fc69683))
+- own the capture sink in one PromiscCtx (owner sweep) ([`8a73043`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a730433b29078dcd3224b219948f3398759cf65))
+- own send/instance/webdav state in SendCtx/InstanceCtx/DavBufCtx/DavPutCtx (owner sweep) ([`7ab3a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ab3a2f5c74ab4fc4ed934ffc71190b9f509e957))
 - own the HTTP/2 connection pool in one H2ServerCtx (owner sweep) ([`be674cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be674cbb9b5eb01e1aace6bda79752737713a7a3))
 - own accept-throttle/ip-throttle/allowlist/worker-queues in four owned contexts (owner sweep) ([`fda5008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fda50085e72b28c00b16a0a012f73f8fa53b3e0b))
 - own UDP state in UdpCtx and the host capture seam in UdpCaptureCtx (owner sweep) ([`71700e7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71700e78b86ea0cf1a1409c74ccb4294ea181354))
