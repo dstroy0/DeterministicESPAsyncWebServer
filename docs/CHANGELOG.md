@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`7151c6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7151c6f752c2c3bd2b21766663a842b3ff0880ea))
+- update CHANGELOG.md [skip ci] ([`bdb3890`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdb3890a79c6c54cc98c02f8d56cf58d44c85e12))
 - update test report [skip ci] ([`2beb794`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2beb794d700fa419b738ef8e79d36286ced42c0e))
 - update CHANGELOG.md [skip ci] ([`4fd5ebd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fd5ebd0efb37eab5570765a38aa1a6d1a36d63d))
 - update CHANGELOG.md [skip ci] ([`f66c7a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f66c7a8f8a93e6c3217676e0a2dac038f29e737a))
@@ -61,6 +63,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f0787f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0787f2933a5249fe466b020baf6d980578f812f))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2383c57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2383c57d6786728a3c9a91c7981dbcdb12836f8c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3382909`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3382909edbc081cfb28ab65bee28e84e7e50dd63))
 - update ESP32 build footprints [skip ci] ([`a1e44d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1e44d013263cc557e2ec1a9202cbb8da6d16c30))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e0d33cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0d33cf4156e1bbf93e28ae279ad608407a3b2a9))
@@ -176,6 +180,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- per-run throwaway SSH keys + a fixed baseline set, a host-key generator, and a provisioning example ([`0c36935`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c3693547db01d2baccefca217a9e16b2a5c57e5))
 - data-driven external KAT env + fix Ed25519 signature malleability ([`804b66e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804b66eb349af9b434e58ea03285d8f2429b8f12))
 - homogenize output to 120 cols, right-justify the status ([`bf1a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf1a6d656c5998fcdad4891ce72bb859b8632f8d))
 
