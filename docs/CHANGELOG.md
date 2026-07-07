@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1955b11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1955b11b916b46dbf11dc6bd0f251744d73bb98d))
 - update CHANGELOG.md [skip ci] ([`ebdefea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebdefea9c69a94007118d2af4fd973502904bf53))
 - update test report [skip ci] ([`33a6e6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33a6e6cffa1bb90bbfc0debd0c6213d733967b58))
 - update CHANGELOG.md [skip ci] ([`7ba1ba2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba1ba2fb85ea181ad96761b80ea09ec21bfb654))
@@ -86,6 +87,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`81d7a47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81d7a477a7d010e062e0b6c5eedc9f0d5f3ddbc4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aa2da24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa2da24d322fd15df782a6a75881df527507de64))
 - update ESP32 build footprints [skip ci] ([`761c44c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/761c44c1905984b7bb132e6d2a0798fcc1b3d55c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3eeb643`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eeb6438298bcb5a158a709c675f29efceb25cd3))
@@ -211,6 +213,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover all builder/parser reject guards (88.8%->100%) ([`c290493`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c29049326fde9d16f16412f003c5eff6f0cfcfee))
 - cover every dialogue error/overflow branch (78.8%->100%) ([`5314982`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53149823767e10e01d88a86a4600173e8e8f1744))
 - cover snmp_v3 USM edge rejects; annotate provably-dead guards ([`8aa9a85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8aa9a859d2df89a78cd2d6f3ccfbd9cd05e3812e))
 - cover BER long-form len + all parse fail-paths (64.7%->91.4%) ([`6c3d8c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c3d8c56281730585400801b1c6b6a79aa2a15eb))
