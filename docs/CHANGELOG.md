@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`2beb794`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2beb794d700fa419b738ef8e79d36286ced42c0e))
+- update CHANGELOG.md [skip ci] ([`4fd5ebd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fd5ebd0efb37eab5570765a38aa1a6d1a36d63d))
 - update CHANGELOG.md [skip ci] ([`f66c7a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f66c7a8f8a93e6c3217676e0a2dac038f29e737a))
 - update test report [skip ci] ([`67ef56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67ef56e3539fc0b1ee255e8bd2cdc43d6a1d6b71))
 - update CHANGELOG.md [skip ci] ([`cf83943`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf8394376a19d675e4adfcd96e22d7c69bee26bb))
@@ -59,6 +61,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3382909`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3382909edbc081cfb28ab65bee28e84e7e50dd63))
+- update ESP32 build footprints [skip ci] ([`a1e44d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1e44d013263cc557e2ec1a9202cbb8da6d16c30))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e0d33cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0d33cf4156e1bbf93e28ae279ad608407a3b2a9))
 - update ESP32 build footprints [skip ci] ([`1cc701b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cc701b3925aff6483fe2f1a0445ce411bc074e7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`83b3f31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83b3f31876e4531ba9a15703b928a9c224b7dc5c))
@@ -172,6 +176,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- data-driven external KAT env + fix Ed25519 signature malleability ([`804b66e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804b66eb349af9b434e58ea03285d8f2429b8f12))
 - homogenize output to 120 cols, right-justify the status ([`bf1a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf1a6d656c5998fcdad4891ce72bb859b8632f8d))
 
 ## [5.62.0] - 2026-07-06
