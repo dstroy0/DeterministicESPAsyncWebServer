@@ -116,6 +116,40 @@ void test_parse_rejects_bad()
     TEST_ASSERT_EQUAL_size_t(0, cotp_build_dt(small, sizeof(small), (const uint8_t *)"abcd", 4, true));
 }
 
+// Builder guards (null / oversize) and the parser's short-buffer + per-TPDU-type branches.
+void test_guards_and_types()
+{
+    uint8_t buf[32];
+    const uint8_t data[] = {0xAA, 0xBB, 0xCC};
+
+    TEST_ASSERT_EQUAL_size_t(0, tpkt_build(nullptr, sizeof(buf), data, 3)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, tpkt_build(buf, sizeof(buf), nullptr, 3));  // len but null payload
+    TEST_ASSERT_EQUAL_size_t(0, tpkt_build(buf, 5, data, 3));               // total > cap
+
+    const uint8_t *p;
+    size_t plen, consumed;
+    TEST_ASSERT_FALSE(tpkt_parse(nullptr, 4, &p, &plen, &consumed)); // null buf
+    uint8_t two[2] = {0x03, 0x00};
+    TEST_ASSERT_FALSE(tpkt_parse(two, 2, &p, &plen, &consumed)); // len < TPKT header
+
+    TEST_ASSERT_EQUAL_size_t(0, cotp_build_dt(nullptr, sizeof(buf), data, 3, true)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, cotp_build_dt(buf, sizeof(buf), nullptr, 3, true));  // len but null data
+
+    TEST_ASSERT_EQUAL_size_t(0, cotp_build_cr(nullptr, sizeof(buf), 1, 0x0A, nullptr, 0)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, cotp_build_cr(buf, sizeof(buf), 1, 0x0A, nullptr, 5));     // len but null params
+    TEST_ASSERT_EQUAL_size_t(0, cotp_build_cr(buf, 8, 1, 0x0A, nullptr, 0));               // total > cap
+
+    CotpHeader h;
+    TEST_ASSERT_FALSE(cotp_parse(buf, 1, &h)); // len < 2
+    uint8_t dt_short[2] = {0x01, COTP_DT};
+    TEST_ASSERT_FALSE(cotp_parse(dt_short, sizeof(dt_short), &h)); // DT with LI < 2 (no NR/EOT octet)
+    uint8_t cr_short[6] = {0x03, COTP_CR, 0x00, 0x00, 0x00, 0x00};
+    TEST_ASSERT_FALSE(cotp_parse(cr_short, sizeof(cr_short), &h)); // CR with LI < 6
+    uint8_t other[3] = {0x02, 0x80, 0x00}; // a non-DT/CR/CC type code (e.g. DR): reported, no body
+    TEST_ASSERT_TRUE(cotp_parse(other, sizeof(other), &h));
+    TEST_ASSERT_EQUAL_HEX8(0x80, h.code);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -125,5 +159,6 @@ int main()
     RUN_TEST(test_cotp_cr_with_tsaps);
     RUN_TEST(test_full_stack);
     RUN_TEST(test_parse_rejects_bad);
+    RUN_TEST(test_guards_and_types);
     return UNITY_END();
 }

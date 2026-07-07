@@ -106,6 +106,41 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, hostlink_build(buf, sizeof(buf), 0, "R", "0", 1));
 }
 
+// Builder/parser guards plus the hex-digit decoder's letter and invalid branches.
+void test_guards_and_hex()
+{
+    char buf[32];
+    // build guards
+    TEST_ASSERT_EQUAL_size_t(0, hostlink_build(nullptr, sizeof(buf), 0, "RD", "0", 1)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, hostlink_build(buf, sizeof(buf), 0, nullptr, "0", 1));  // null header code
+    TEST_ASSERT_EQUAL_size_t(0, hostlink_build(buf, sizeof(buf), 100, "RD", "0", 1));   // node > 99
+    TEST_ASSERT_EQUAL_size_t(0, hostlink_build(buf, sizeof(buf), 0, "RD", nullptr, 4)); // text_len but null text
+
+    // parse: a non-digit node, and FCS characters that are not hex.
+    HostlinkFrame f;
+    TEST_ASSERT_FALSE(hostlink_parse("@A0RDFF*\r", 9, &f)); // node field not a digit
+    TEST_ASSERT_FALSE(hostlink_parse("@00RDGG*\r", 9, &f)); // FCS chars not hex digits
+
+    // end code: null, too-short text, then upper/lower/invalid hex through hex_val.
+    uint8_t code = 0;
+    TEST_ASSERT_FALSE(hostlink_end_code(nullptr, &code));
+    HostlinkFrame g;
+    g.text = "X";
+    g.text_len = 1;
+    TEST_ASSERT_FALSE(hostlink_end_code(&g, &code)); // text_len < 2
+    g.text = "AB";
+    g.text_len = 2;
+    TEST_ASSERT_TRUE(hostlink_end_code(&g, &code)); // uppercase A-F
+    TEST_ASSERT_EQUAL_HEX8(0xAB, code);
+    g.text = "cd";
+    g.text_len = 2;
+    TEST_ASSERT_TRUE(hostlink_end_code(&g, &code)); // lowercase a-f
+    TEST_ASSERT_EQUAL_HEX8(0xCD, code);
+    g.text = "G!";
+    g.text_len = 2;
+    TEST_ASSERT_FALSE(hostlink_end_code(&g, &code)); // non-hex character
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -116,5 +151,6 @@ int main()
     RUN_TEST(test_parse_response_end_code);
     RUN_TEST(test_parse_rejects_bad);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_guards_and_hex);
     return UNITY_END();
 }
