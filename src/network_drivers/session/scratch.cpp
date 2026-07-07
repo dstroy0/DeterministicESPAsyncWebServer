@@ -23,19 +23,32 @@
 
 namespace
 {
-// All per-worker scratch state, owned by one instance (internal linkage): the bump arenas, the
-// per-worker bump offsets, and the high-water marks. One named owner, unreachable cross-TU.
+// Per-worker scratch metadata (bump offsets + high-water marks), owned by one
+// instance (internal linkage). scratch_reset() runs every dispatch and touches
+// only this, so this symbol is always live.
 struct ScratchCtx
 {
-    // scratch_alloc aligns the bump OFFSET, so the arena base must itself be aligned to the
-    // strictest alignment callers can request. As a struct member the base would otherwise only
-    // inherit the struct's 8-byte (size_t) alignment; force 32 so a 16-/32-aligned request lands
-    // on an aligned address (a standalone array got this incidentally from the linker before).
-    alignas(32) uint8_t arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
-    size_t off[DETWS_WORKER_COUNT];                                          // bump offset per worker
-    size_t high_water[DETWS_WORKER_COUNT];                                   // peak off per worker
+    size_t off[DETWS_WORKER_COUNT];        // bump offset per worker
+    size_t high_water[DETWS_WORKER_COUNT]; // peak off per worker
 };
 ScratchCtx s_scratch;
+
+// The bump arenas, in their OWN owned instance so they are a distinct linker symbol.
+// Only scratch_alloc() references them, so a firmware that never allocates scratch
+// (e.g. a plain TLS/HTTP server - no SSH / WebSocket / OIDC) has scratch_alloc()
+// garbage-collected and, with it, these arenas - reclaiming DETWS_WORKER_COUNT *
+// DETWS_SCRATCH_ARENA_SIZE bytes of DRAM. They must NOT be merged into ScratchCtx:
+// scratch_reset()'s always-live reference to off[] would then anchor the whole
+// section (--gc-sections is per-symbol), keeping the multi-KB arenas linked in
+// builds that never touch them.
+struct ScratchArenaCtx
+{
+    // scratch_alloc aligns the bump OFFSET, so the arena base must itself be aligned to
+    // the strictest alignment a caller can request. As a struct member it would only
+    // inherit 8-byte alignment; force 32 (a standalone array got this from the linker).
+    alignas(32) uint8_t arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
+};
+ScratchArenaCtx s_scratch_arena;
 
 // Default alignment when the caller passes 0: the strictest the platform needs.
 constexpr size_t SCRATCH_DEFAULT_ALIGN = sizeof(void *) > 8 ? sizeof(void *) : 8;
@@ -87,7 +100,7 @@ void *scratch_alloc(size_t n, size_t align)
     if (n > DETWS_SCRATCH_ARENA_SIZE || base > DETWS_SCRATCH_ARENA_SIZE - n)
         return nullptr;
 
-    void *p = &s_scratch.arena[w][base];
+    void *p = &s_scratch_arena.arena[w][base];
     s_scratch.off[w] = base + n;
     if (s_scratch.off[w] > s_scratch.high_water[w])
         s_scratch.high_water[w] = s_scratch.off[w];

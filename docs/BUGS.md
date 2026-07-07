@@ -8,6 +8,37 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Owner-context grouping anchored the 8 KB scratch arena, overflowing TLS-example DRAM
+
+- **Status:** FIXED (all four TLS examples - 03.HTTPS, 04.mTLS, 06.TlsResumption, 07.SecureWebSocket -
+  build for esp32dev again; native_ssh 146/146 and the 01.SSH scratch-consumer build still pass).
+- **Found:** 2026-07-06, RCA'ing why ESP32 Build / Arduino Build were red. Last green at `f7767ba6`,
+  first red at `23e0797b` - both owner-context-refactor commits.
+- **Symptom:** the four largest TLS examples failed to link: `.dram0.bss will not fit in region
+dram0_0_seg`, overflowed by 944-1264 bytes. A per-object `.o` size diff showed only +62 bytes of
+  DRAM growth across the whole tree, which could not explain a ~1 KB overflow.
+- **Root cause:** a `--gc-sections` **liveness** change, invisible to a compiled-size diff (the object
+  is compiled in both trees; only its _linkage_ differs). The scratch owner-sweep merged three separate
+  symbols - the 8 KB per-worker bump `arena`, the `off[]` offsets, and `high_water[]` - into one
+  `struct ScratchCtx s_scratch`. `session.cpp` calls `scratch_reset()` **every dispatch**, touching only
+  `off[]`; but `off[]` and the arena were now one symbol/section, and `--gc-sections` is per-section, so
+  that always-live reference anchored the whole 8 KB. Previously the arena was its own symbol, referenced
+  only by `scratch_alloc()`, which is dead code in a plain TLS/HTTP build (its callers are SSH / WebSocket
+  / OIDC) - so the linker dropped it. The linked-map diff was unambiguous: `scratch.cpp` contributed
+  **8 bytes** of DRAM at `f7767ba6` and **8228 bytes** at HEAD. That +8 KB tipped the already
+  DRAM-marginal TLS examples (~122 KB `dram0_0_seg` ceiling) over.
+- **Fix:** split the arena back into its own owned instance (`struct ScratchArenaCtx s_scratch_arena`),
+  keeping only the small `off[]`/`high_water[]` metadata in `ScratchCtx`. `scratch_alloc()` is the sole
+  referrer of the arena, so a firmware that never allocates scratch garbage-collects both again; the
+  always-live `scratch_reset()` anchors only the tiny metadata. Both are `*Ctx` types, so the
+  owner-context guard still passes. Semantics are byte-for-byte unchanged.
+- **Lesson:** when consolidating globals into one owned `Ctx`, keep a large _conditionally-used_ buffer
+  in a **separate** owned symbol from small _always-referenced_ fields, or `--gc-sections` can no longer
+  drop the buffer from builds that never use it. Measure regressions with the **linked** map, not a
+  compiled `.o` size sum.
+
+---
+
 ## Ed25519 verify accepted non-canonical S (signature malleability)
 
 - **Status:** FIXED (native_crypto_kat green: the Wycheproof SignatureMalleability vectors now reject;
