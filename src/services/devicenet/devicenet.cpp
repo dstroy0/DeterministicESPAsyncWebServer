@@ -133,7 +133,8 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
     {
         devicenet_frag_reset(rx);
         if (body_len > 1 && !frag_append(rx, body + 1, (uint8_t)(body_len - 1)))
-            return DEVICENET_FRAG_ERR;
+            return DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE  unreachable: reset()->len 0, then a single append of <=254
+                                       // (uint8 body_len-1) < 256=MSG_MAX
         return DEVICENET_FRAG_COMPLETE;
     }
     if (body_len < 2)
@@ -150,7 +151,8 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
         rx->active = true;
         rx->next_count = (uint8_t)((count + 1u) & DEVICENET_FRAG_COUNT_MASK);
         if (data_len && !frag_append(rx, data, data_len))
-            return DEVICENET_FRAG_ERR;
+            return DEVICENET_FRAG_ERR; // GCOVR_EXCL_LINE  unreachable: FIRST reset()->len 0, then a single append of
+                                       // <=253 (uint8 body_len-2) < 256=MSG_MAX
         return DEVICENET_FRAG_STARTED;
     case DEVICENET_FRAG_MIDDLE:
         if (!rx->active || count != rx->next_count)

@@ -137,6 +137,67 @@ void test_frag_out_of_order_errors()
     TEST_ASSERT_FALSE(rx.active);
 }
 
+// Encode/decode/build argument rejections.
+void test_id_error_paths()
+{
+    uint32_t id = 0;
+    TEST_ASSERT_FALSE(devicenet_encode_id(&id, DEVICENET_GROUP_2, 8, 0));  // group 2 msg_id > 7
+    TEST_ASSERT_FALSE(devicenet_encode_id(&id, DEVICENET_GROUP_3, 8, 0));  // group 3 msg_id > 7
+    TEST_ASSERT_FALSE(devicenet_encode_id(&id, (DeviceNetGroup)99, 0, 0)); // invalid group
+    TEST_ASSERT_FALSE(devicenet_decode_id(0x100, nullptr));                // null out
+    CanFrame f;
+    const uint8_t one[1] = {0xAB};
+    TEST_ASSERT_FALSE(devicenet_build_explicit(&f, DEVICENET_GROUP_2, 8, 0, one, 1)); // id encode fails
+}
+
+// The reassembler's reject/ignore branches.
+void test_frag_reject_paths()
+{
+    DeviceNetFragRx rx;
+    devicenet_frag_reset(&rx);
+    const uint8_t body[3] = {0x80 | 0x21, DEVICENET_FRAG_FIRST, 0xAA};
+
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_IGNORED, devicenet_frag_feed(nullptr, body, 3)); // null rx
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, nullptr, 3));  // null body
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, body, 0));     // empty
+
+    const uint8_t hdr_only[1] = {0x80 | 0x21}; // FRAG set but no fragmentation octet
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, hdr_only, 1));
+
+    // A LAST fragment with no active session -> error.
+    devicenet_frag_reset(&rx);
+    uint8_t last_no_first[3] = {0x80 | 0x21, devicenet_frag_octet(DEVICENET_FRAG_LAST, 0), 0xCC};
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, last_no_first, sizeof(last_no_first)));
+
+    // An ACK fragment type is flow control, not data -> ignored.
+    devicenet_frag_reset(&rx);
+    uint8_t ack[3] = {0x80 | 0x21, devicenet_frag_octet(DEVICENET_FRAG_ACK, 0), 0xDD};
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, ack, sizeof(ack)));
+}
+
+// Accumulating fragments past DETWS_DEVICENET_MSG_MAX (256) overflows the reassembly
+// buffer, so the middle/last append fails and the session resets.
+void test_frag_overflow()
+{
+    static uint8_t frag[255]; // header + frag octet + 253 data
+    memset(frag + 2, 0xEE, 253);
+    DeviceNetFragRx rx;
+
+    devicenet_frag_reset(&rx);
+    frag[0] = 0x80 | 0x21;
+    frag[1] = devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0);
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)));
+    frag[1] = devicenet_frag_octet(DEVICENET_FRAG_MIDDLE, 1); // 253 + 253 = 506 > 256
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)));
+    TEST_ASSERT_FALSE(rx.active);
+
+    devicenet_frag_reset(&rx);
+    frag[1] = devicenet_frag_octet(DEVICENET_FRAG_FIRST, 0);
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)));
+    frag[1] = devicenet_frag_octet(DEVICENET_FRAG_LAST, 1); // last-fragment append overflow
+    TEST_ASSERT_EQUAL_INT(DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -148,5 +209,8 @@ int main()
     RUN_TEST(test_frag_non_fragmented);
     RUN_TEST(test_frag_reassembly_roundtrip);
     RUN_TEST(test_frag_out_of_order_errors);
+    RUN_TEST(test_id_error_paths);
+    RUN_TEST(test_frag_reject_paths);
+    RUN_TEST(test_frag_overflow);
     return UNITY_END();
 }
