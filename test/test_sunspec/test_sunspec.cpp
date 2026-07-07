@@ -124,6 +124,59 @@ void test_writer_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, sunspec_writer_finish(&w));
 }
 
+// Reader guards (next_model null args + no-room-for-header), the i32 point reader, and
+// the string reader's argument guards.
+void test_reader_guards_and_i32()
+{
+    uint8_t buf[16] = {0};
+    size_t off = 0;
+    SunSpecModel m;
+    TEST_ASSERT_FALSE(sunspec_next_model(nullptr, 16, &off, &m));  // null regs
+    TEST_ASSERT_FALSE(sunspec_next_model(buf, 16, nullptr, &m));   // null offset
+    TEST_ASSERT_FALSE(sunspec_next_model(buf, 16, &off, nullptr)); // null out
+    off = 14;
+    TEST_ASSERT_FALSE(sunspec_next_model(buf, 16, &off, &m)); // no room for the [id][length] header
+
+    const uint8_t body[4] = {0xFF, 0xFF, 0xFF, 0xFE}; // big-endian -2
+    TEST_ASSERT_EQUAL_INT32(-2, sunspec_i32(body, 0));
+
+    char out[8];
+    TEST_ASSERT_FALSE(sunspec_string(nullptr, 0, 1, out, sizeof(out)));  // null body
+    TEST_ASSERT_FALSE(sunspec_string(body, 0, 1, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_FALSE(sunspec_string(body, 0, 1, out, 0));               // zero out_cap
+}
+
+// The i32 writer, ss_put's error-flag short-circuit, and every sunspec_write_string
+// reject (null string, already-errored writer, and a field that overflows the buffer).
+void test_writer_error_and_string_paths()
+{
+    uint8_t buf[16];
+    SunSpecWriter w;
+    sunspec_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(sunspec_write_i32(&w, -123456));
+    TEST_ASSERT_EQUAL_size_t(4, sunspec_writer_finish(&w));
+
+    // Once a write overflows, the next ss_put bails on the sticky error flag.
+    uint8_t two[2];
+    SunSpecWriter e;
+    sunspec_writer_init(&e, two, sizeof(two));
+    TEST_ASSERT_FALSE(sunspec_write_u32(&e, 0)); // needs 4 > cap 2 -> sets error
+    TEST_ASSERT_FALSE(sunspec_write_u16(&e, 0)); // ss_put sees the error flag
+
+    sunspec_writer_init(&w, buf, sizeof(buf));
+    TEST_ASSERT_FALSE(sunspec_write_string(&w, nullptr, 1)); // null string
+
+    SunSpecWriter serr;
+    sunspec_writer_init(&serr, two, sizeof(two));
+    TEST_ASSERT_FALSE(sunspec_write_u32(&serr, 0));         // set the error flag
+    TEST_ASSERT_FALSE(sunspec_write_string(&serr, "x", 1)); // write_string sees it
+
+    uint8_t four[4];
+    SunSpecWriter sof;
+    sunspec_writer_init(&sof, four, sizeof(four));
+    TEST_ASSERT_FALSE(sunspec_write_string(&sof, "abcd", 4)); // field 8 > cap 4
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -132,5 +185,7 @@ int main()
     RUN_TEST(test_string_point);
     RUN_TEST(test_marker_and_truncation);
     RUN_TEST(test_writer_overflow_fails_closed);
+    RUN_TEST(test_reader_guards_and_i32);
+    RUN_TEST(test_writer_error_and_string_paths);
     return UNITY_END();
 }

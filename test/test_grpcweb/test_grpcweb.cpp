@@ -110,6 +110,33 @@ void test_frame_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame_trailer(small, 3, 0, "x")); // smaller than the prefix
 }
 
+// Frame builder null guards and every trailer-builder overflow/reject: the status-key
+// put, a negative status, the status digits, and the grpc-message line.
+void test_frame_and_trailer_guards()
+{
+    uint8_t buf[64];
+    const uint8_t msg[] = {1, 2, 3};
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame(nullptr, sizeof(buf), 0, msg, 3)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame(buf, sizeof(buf), 0, nullptr, 3)); // body_len but null body
+
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame_trailer(buf, 8, 0, nullptr));            // status key overflows
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame_trailer(buf, sizeof(buf), -1, nullptr)); // negative status
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame_trailer(buf, 17, 5, nullptr));           // status digits overflow
+    TEST_ASSERT_EQUAL_size_t(0, grpcweb_frame_trailer(buf, 24, 0, "msg"));             // grpc-message line overflows
+}
+
+// The status extractor rejects a null body, a key not followed by a digit, and a body
+// with no grpc-status line at all.
+void test_trailer_status_parse_paths()
+{
+    int status = -1;
+    TEST_ASSERT_FALSE(grpcweb_trailer_status(nullptr, 10, &status)); // null body
+    const char *nondigit = "grpc-status:X";
+    TEST_ASSERT_FALSE(grpcweb_trailer_status((const uint8_t *)nondigit, strlen(nondigit), &status));
+    const char *nokey = "foo:1\r\n";
+    TEST_ASSERT_FALSE(grpcweb_trailer_status((const uint8_t *)nokey, strlen(nokey), &status));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -120,5 +147,7 @@ int main()
     RUN_TEST(test_parse_stream);
     RUN_TEST(test_parse_incomplete);
     RUN_TEST(test_frame_overflow_fails_closed);
+    RUN_TEST(test_frame_and_trailer_guards);
+    RUN_TEST(test_trailer_status_parse_paths);
     return UNITY_END();
 }
