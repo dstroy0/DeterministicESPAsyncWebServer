@@ -38,7 +38,13 @@
 #define DETWS_H2_POOL_ATTR
 #endif
 
-static DETWS_H2_POOL_ATTR H2Conn s_pool[MAX_CONNS];
+// HTTP/2 connection pool, owned by one instance (internal linkage): the per-slot H2 connection
+// state. One named owner, unreachable from any other translation unit.
+struct H2ServerCtx
+{
+    H2Conn pool[MAX_CONNS];
+};
+static DETWS_H2_POOL_ATTR H2ServerCtx s_h2;
 
 namespace
 {
@@ -142,7 +148,7 @@ void h2_server_open(uint8_t slot)
     cb.on_data = cb_data;
     cb.io = (void *)(uintptr_t)slot;
     cb.app = (void *)(uintptr_t)slot;
-    h2_conn_init(&s_pool[slot], &cb); // emits our SETTINGS through cb_write
+    h2_conn_init(&s_h2.pool[slot], &cb); // emits our SETTINGS through cb_write
     http_parser_reset(&http_pool[slot]);
 }
 
@@ -152,9 +158,9 @@ void h2_server_data(uint8_t slot)
     int n;
     while ((n = det_tls_read(slot, buf, sizeof buf)) > 0)
     {
-        if (!h2_conn_recv(&s_pool[slot], buf, (size_t)n))
+        if (!h2_conn_recv(&s_h2.pool[slot], buf, (size_t)n))
         {
-            h2_conn_goaway(&s_pool[slot], 1 /* PROTOCOL_ERROR */);
+            h2_conn_goaway(&s_h2.pool[slot], 1 /* PROTOCOL_ERROR */);
             return;
         }
     }
@@ -162,7 +168,7 @@ void h2_server_data(uint8_t slot)
 
 bool h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
-    bool ok = h2_conn_respond(&s_pool[slot], conn_pool[slot].h2_stream, code, content_type, body, len);
+    bool ok = h2_conn_respond(&s_h2.pool[slot], conn_pool[slot].h2_stream, code, content_type, body, len);
     http_parser_reset(&http_pool[slot]); // ready for the next stream; keep the connection open
     return ok;
 }
