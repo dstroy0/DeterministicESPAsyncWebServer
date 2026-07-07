@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 113 runnable examples under [examples/](../examples), grouped by
+The library ships 114 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -80,7 +80,8 @@ Interactive consoles:
 
 [01.SSH](../examples/L5-Session/01.SSH) ·
 [02.SSHCryptoSelfTest](../examples/L5-Session/02.SSHCryptoSelfTest) ·
-[03.Telnet](../examples/L5-Session/03.Telnet)
+[03.Telnet](../examples/L5-Session/03.Telnet) ·
+[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey)
 
 ## L6 Presentation
 
