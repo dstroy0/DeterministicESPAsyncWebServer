@@ -20,7 +20,7 @@
 struct SyslogCtx
 {
     char server_ip[16] = {0}; // "255.255.255.255" + NUL
-    uint16_t port = 514;
+    uint16_t port = DETWS_SYSLOG_DEFAULT_PORT;
     char hostname[DETWS_SYSLOG_FIELD_MAX] = {0};
     char appname[DETWS_SYSLOG_FIELD_MAX] = {0};
     int facility = SYSLOG_FAC_LOCAL0;

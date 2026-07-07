@@ -69,7 +69,7 @@ struct CoapCtx
     uint8_t tx[DETWS_COAP_MSG_BUF_SIZE]; // scratch: outbound response (request buffer is transport-owned)
 
 #if DETWS_ENABLE_COAP_OBSERVE
-    uint16_t port = 5683; // UDP port the observe transport notifies from
+    uint16_t port = DETWS_COAP_OBSERVE_PORT; // UDP port the observe transport notifies from
     CoapObserver obs[DETWS_COAP_MAX_OBSERVERS];
     // Last-request fields recorded by coap_server_process_ex() for the Observe transport.
     int last_observe = -1;

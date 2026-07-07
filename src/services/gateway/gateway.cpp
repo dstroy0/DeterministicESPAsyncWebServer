@@ -43,7 +43,7 @@ struct GatewayCtx
     port ports[DETWS_GW_MAX_PORTS];
     det_gw_uplink_fn uplink = nullptr;
     void *uplink_ctx = nullptr;
-    const char *prefix = "gw";
+    const char *prefix = DETWS_GW_DEFAULT_PREFIX;
     uint32_t seq = 0;
     det_gw_stats stats;
 #ifndef ARDUINO
@@ -121,7 +121,7 @@ void det_gw_reset(void)
     memset(s_gw.ports, 0, sizeof(s_gw.ports));
     s_gw.uplink = nullptr;
     s_gw.uplink_ctx = nullptr;
-    s_gw.prefix = "gw";
+    s_gw.prefix = DETWS_GW_DEFAULT_PREFIX;
     s_gw.seq = 0;
     memset(&s_gw.stats, 0, sizeof(s_gw.stats));
 }
@@ -155,7 +155,7 @@ void det_gw_set_uplink(det_gw_uplink_fn fn, void *ctx)
 
 void det_gw_set_topic_prefix(const char *prefix)
 {
-    s_gw.prefix = prefix ? prefix : "gw";
+    s_gw.prefix = prefix ? prefix : DETWS_GW_DEFAULT_PREFIX;
 }
 
 bool det_gw_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)

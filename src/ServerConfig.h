@@ -359,6 +359,11 @@
 #define DETWS_GW_MAX_PORTS 4
 #endif
 
+/** @brief Default northbound topic prefix (overridable at runtime via det_gw_set_topic_prefix). */
+#ifndef DETWS_GW_DEFAULT_PREFIX
+#define DETWS_GW_DEFAULT_PREFIX "gw"
+#endif
+
 #if DETWS_ENABLE_GATEWAY && (DETWS_GW_MAX_PORTS < 1)
 #error "DeterministicESPAsyncWebServer: DETWS_GW_MAX_PORTS must be >= 1"
 #endif
@@ -1893,6 +1898,12 @@
 #define SNMP_COMMUNITY_MAX 32
 #endif
 
+/** @brief Default read-only community (overridable at runtime via snmp_agent_init). Deployments
+ *  SHOULD change this from the RFC-1157 well-known "public" for anything but a closed network. */
+#ifndef DETWS_SNMP_DEFAULT_RO_COMMUNITY
+#define DETWS_SNMP_DEFAULT_RO_COMMUNITY "public"
+#endif
+
 /** @brief Maximum SNMPv3 USM user-name length (including null terminator). */
 #ifndef SNMP_V3_USER_MAX
 #define SNMP_V3_USER_MAX 32
@@ -2020,6 +2031,11 @@
 #else
 #define DETWS_COAP_MSG_BUF_SIZE 512
 #endif
+#endif
+
+/** @brief Default UDP port the CoAP observe transport notifies from (IANA well-known 5683). */
+#ifndef DETWS_COAP_OBSERVE_PORT
+#define DETWS_COAP_OBSERVE_PORT 5683
 #endif
 
 /**
@@ -3556,6 +3572,12 @@
 /** @brief Maximum syslog HOSTNAME / APP-NAME field length (including NUL). */
 #ifndef DETWS_SYSLOG_FIELD_MAX
 #define DETWS_SYSLOG_FIELD_MAX 32
+#endif
+
+/** @brief Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime
+ *  via syslog_init and here for a non-standard collector). */
+#ifndef DETWS_SYSLOG_DEFAULT_PORT
+#define DETWS_SYSLOG_DEFAULT_PORT 514
 #endif
 
 /**

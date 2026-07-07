@@ -50,7 +50,7 @@ struct SnmpAgentCtx
 {
     SnmpMibEntry mib[SNMP_MAX_MIB_ENTRIES];
     size_t mib_count = 0;
-    char ro[SNMP_COMMUNITY_MAX] = "public";
+    char ro[SNMP_COMMUNITY_MAX] = DETWS_SNMP_DEFAULT_RO_COMMUNITY;
     char rw[SNMP_COMMUNITY_MAX] = "";
     bool rw_set = false;
 };
@@ -149,7 +149,7 @@ void snmp_agent_init(const char *ro_community)
     s_agent.mib_count = 0;
     s_agent.rw_set = false;
     s_agent.rw[0] = '\0';
-    const char *ro = (ro_community && ro_community[0]) ? ro_community : "public";
+    const char *ro = (ro_community && ro_community[0]) ? ro_community : DETWS_SNMP_DEFAULT_RO_COMMUNITY;
     strncpy(s_agent.ro, ro, sizeof(s_agent.ro) - 1);
     s_agent.ro[sizeof(s_agent.ro) - 1] = '\0';
 }
