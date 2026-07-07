@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a2b5a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2b5a2f06b7cc6a7bb2ff99e2a80a74a6c6d378f))
 - update CHANGELOG.md [skip ci] ([`2d2785d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2d2785d249c3478d26efb18754db8ae8a311f5c8))
 - update CHANGELOG.md [skip ci] ([`be0cad5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be0cad539e4fe13723bc6984c731810cf81350ce))
 - update CHANGELOG.md [skip ci] ([`6e55a99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e55a99f2405c6fbb27e133f822a1d7ba36abc48))
@@ -89,6 +90,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- annotate provably-dead guards in stomp + nats parsers (GCOVR_EXCL) ([`af7b6a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af7b6a6284c893e7c028bb9140d755fb07d5b618))
 - clang-format client.cpp include-comment alignment ([`96a8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a8e810d52e26f6385693b0285606a67c30bcce))
 
 ### Documentation
