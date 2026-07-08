@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ef42554`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef4255449372e6aadf31d6d20be87c4750f42ecf))
 - update CHANGELOG.md [skip ci] ([`e5ee29c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5ee29c2176282408b9cab62b6961ae3d8984952))
 - update CHANGELOG.md [skip ci] ([`6490442`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64904426f2ebb99c5ca7a19b1d8d680d24be92de))
 - update CHANGELOG.md [skip ci] ([`0871283`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0871283229fbf2e4466586a4933f6e762896e826))
@@ -253,6 +254,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover the response-buffer capacity-stop path ([`031107e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/031107e1a62faccd45be6e9927949c64816f50bd))
 - finish h2_conn.cpp to 100%; annotate dead respond guards ([`992da24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/992da24360a286cba8dd5e026eb2ee42262fde31))
 - cover the HTTP/2 connection frame handlers (57->94%) ([`b02e032`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b02e0328e076449e4d44fbb15bcc9170f60c3f1e))
 - cover listen() + begin() server bring-up paths ([`b4e7ba6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4e7ba60ad960b4f44283f8d8ae7ce977bc3a4ae))
