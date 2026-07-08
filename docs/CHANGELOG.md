@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`d1a29a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1a29a6a9b7001b5b7c742cbd36c32e8e69fbca3))
+- update CHANGELOG.md [skip ci] ([`0fea07d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fea07d7fb8d7e93964eb12b7df28fd0e32caf4d))
 - update test report [skip ci] ([`32335e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32335e3c71a83e383a09a4206972b77bb4bf29ad))
 - update CHANGELOG.md [skip ci] ([`d44e78d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d44e78d8a320bb5dbafa58f44bcc525e20e1c293))
 - update CHANGELOG.md [skip ci] ([`c7c50ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7c50ec9c5113f03eb19afcf19aa528d77153f2a))
@@ -109,6 +111,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`97978f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97978f825f7ee1d1d470752f2e789a0fb615e526))
 - update standards, audit, and root readme ([`f31b5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f31b5b3885998ff52b35eb37ef685c9d07c6e903))
 - update ESP32 build footprints [skip ci] ([`4a2b56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a2b56eac4b84dc71296c9647b2c675f5ee81a60))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a72bdfd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a72bdfdf84e756876867a5acc5040cff070a6a58))
@@ -242,6 +245,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover WebDAV streaming-PUT sink; annotate dead DAV guards ([`e89afd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e89afd36f5f86c25dcb6f24b27256891e24f1ab7))
 - cover BER long-form length + pdu/frame guards (80->100%) ([`943da2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/943da2e633e6f91e766e3bc6c6733e729531024a))
 - cover final guard/VIFE branches (->100%) ([`a9e71a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9e71a74d791ba0e1eb47149827be991d75f3eab))
 - cover Fast Packet build/feed rejects; EXCL dead decode (92->100%) ([`f853684`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8536840bf16b08e08e030850b3f111707b91506))
