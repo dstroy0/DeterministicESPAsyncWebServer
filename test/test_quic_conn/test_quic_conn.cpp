@@ -805,6 +805,80 @@ void test_quic_recv_truncated_long_header()
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, sizeof(dg)));
 }
 
+// Before address validation the server sends at most 3x the bytes received; a
+// fresh conn (nothing received) is amplification-blocked and sends nothing.
+void test_quic_send_amplification_limited()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, out, sizeof(out)));
+}
+
+// handle_crypto drops a CRYPTO frame beyond the reassembly window (out of order)
+// and one that is wholly a duplicate; the connection survives both.
+void test_quic_crypto_out_of_order_and_dup()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t data[4] = {0x01, 0x00, 0x00, 0xFF}; // partial ClientHello header: TLS buffers, no failure
+    uint8_t fr[32], dg[256];
+
+    // Out of order: CRYPTO at offset 100 while want==0 -> dropped.
+    size_t fl = quic_build_crypto(fr, sizeof(fr), 100, data, sizeof(data));
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+
+    // In-window then an identical copy: the second is a full duplicate.
+    fl = quic_build_crypto(fr, sizeof(fr), 0, data, sizeof(data));
+    dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 1,
+                    &init.client, fr, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    uint8_t dg2[256];
+    size_t dl2 = build_long(dg2, sizeof(dg2), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
+                            2, &init.client, fr, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg2, dl2)); // duplicate path
+}
+
+// on_timeout is a no-op once the connection is closed.
+void test_quic_timeout_when_closed()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[32];
+    size_t fl = quic_build_connection_close(fr, sizeof(fr), QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, fl);
+    quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
+    quic_conn_on_timeout(&qc, 1000); // closed -> immediate return, no effect
+}
+
+// quic_conn_stream_send refuses a new stream id once the stream table is full.
+void test_quic_stream_send_table_full()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    for (int i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+        TEST_ASSERT_EQUAL_UINT(2, quic_conn_stream_send(&qc, (uint64_t)(i * 4), (const uint8_t *)"hi", 2, false));
+    TEST_ASSERT_EQUAL_UINT(0, quic_conn_stream_send(&qc, 999, (const uint8_t *)"x", 1, false)); // table full
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -812,6 +886,10 @@ int main(int, char **)
     RUN_TEST(test_pto_retransmits_flight);
     RUN_TEST(test_connection_close_api);
     RUN_TEST(test_connection_close_on_malformed_frame);
+    RUN_TEST(test_quic_send_amplification_limited);
+    RUN_TEST(test_quic_crypto_out_of_order_and_dup);
+    RUN_TEST(test_quic_timeout_when_closed);
+    RUN_TEST(test_quic_stream_send_table_full);
     RUN_TEST(test_quic_recv_connection_close);
     RUN_TEST(test_quic_recv_ping_and_max_data);
     RUN_TEST(test_quic_recv_bad_version);
