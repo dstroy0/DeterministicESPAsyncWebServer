@@ -664,6 +664,147 @@ void test_connection_close_on_malformed_frame()
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, cdg, sizeof(cdg))); // nothing more after the close
 }
 
+// Init a bare server conn (Initial keys ready, handshake not started). cb is owned
+// by the caller (quic_conn_init keeps the pointer).
+static void init_conn(QuicConn *qc, QuicConnCallbacks *cb)
+{
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    quic_conn_init(qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID, sizeof(SERVER_SCID),
+                   cb);
+}
+
+// A received CONNECTION_CLOSE closes/drains the server connection.
+void test_quic_recv_connection_close()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    uint8_t fr[32];
+    size_t fl = quic_build_connection_close(fr, sizeof(fr), QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, fl);
+    quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
+    // A datagram arriving after the connection is closed is rejected outright.
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl));
+}
+
+// PING and MAX_DATA are accepted with no per-frame state kept.
+void test_quic_recv_ping_and_max_data()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+
+    uint8_t fr[16];
+    size_t fl = quic_build_ping(fr, sizeof(fr));
+    fl += quic_build_max_data(fr + fl, sizeof(fr) - fl, 1000000);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// A long header with an unknown version is dropped (Version Negotiation is a
+// client concern).
+void test_quic_recv_bad_version()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, 1);
+    dg[1] = dg[2] = dg[3] = dg[4] = 0xAA; // clobber the version (not header-protected)
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl));
+}
+
+// A long header of an unsupported type (0-RTT) is dropped before decryption.
+void test_quic_recv_unsupported_long_type()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_0RTT, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, 1);
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl));
+}
+
+// A short-header (1-RTT) packet arriving before the app keys exist is dropped.
+void test_quic_recv_short_before_app_keys()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t dg[256];
+    size_t dl = build_short(dg, sizeof(dg), SERVER_SCID, sizeof(SERVER_SCID), 0, &init.client, fr, 1);
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl)); // open_keys(APP) is null -> dropped
+}
+
+// A short-header datagram too small to hold the DCID + a packet number is dropped.
+void test_quic_recv_short_too_short()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    uint8_t dg[1] = {0x40}; // short header, no room for DCID/PN
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, sizeof(dg)));
+}
+
+// A packet whose AEAD tag fails to verify is consumed-and-dropped, not fatal.
+void test_quic_recv_unprotect_failure()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, fr, 1);
+    dg[dl - 1] ^= 0xFF; // corrupt the auth tag
+    quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc)); // dropped, no effect
+    TEST_ASSERT_FALSE(quic_conn_established(&qc));
+}
+
+// A truncated long header (too short to parse) is dropped.
+void test_quic_recv_truncated_long_header()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    uint8_t dg[4] = {0xC0, 0x00, 0x00, 0x00}; // long header flag, then a truncated version
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, sizeof(dg)));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -671,5 +812,13 @@ int main(int, char **)
     RUN_TEST(test_pto_retransmits_flight);
     RUN_TEST(test_connection_close_api);
     RUN_TEST(test_connection_close_on_malformed_frame);
+    RUN_TEST(test_quic_recv_connection_close);
+    RUN_TEST(test_quic_recv_ping_and_max_data);
+    RUN_TEST(test_quic_recv_bad_version);
+    RUN_TEST(test_quic_recv_unsupported_long_type);
+    RUN_TEST(test_quic_recv_short_before_app_keys);
+    RUN_TEST(test_quic_recv_short_too_short);
+    RUN_TEST(test_quic_recv_unprotect_failure);
+    RUN_TEST(test_quic_recv_truncated_long_header);
     return UNITY_END();
 }
