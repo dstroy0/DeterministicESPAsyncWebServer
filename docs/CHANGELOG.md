@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0871283`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0871283229fbf2e4466586a4933f6e762896e826))
 - update CHANGELOG.md [skip ci] ([`913c5aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/913c5aabbb9f430a1ffc9290d91e34613e13f6a0))
 - update CHANGELOG.md [skip ci] ([`605de4c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/605de4c2ffb64b22ba07c4366ef4a12d57f3f5f6))
 - update CHANGELOG.md [skip ci] ([`e6357b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6357b4f0eb43314cfc87012438947ab4b39e213))
@@ -250,6 +251,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover listen() + begin() server bring-up paths ([`b4e7ba6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4e7ba60ad960b4f44283f8d8ae7ce977bc3a4ae))
 - cover status_text reason phrases + method_name Allow tokens ([`89ef8c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89ef8c6755fa329c34948fa2b4d7ea8c242ef6d8))
 - cover Perl escape classes + char-class backslash escapes ([`e3a569a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3a569ada56f65686e76fbf97594da89209c7ddf))
 - cover WebSocket + SSE send API; isolate ws/sse pools in setUp ([`113b046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/113b046e96eaccde1ab236b3992bdbbe024b0a42))
