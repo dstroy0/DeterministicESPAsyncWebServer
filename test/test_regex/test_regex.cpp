@@ -151,6 +151,50 @@ void test_pathological_pattern_terminates_no_match()
     TEST_ASSERT_FALSE(hit("GET", "/aaaaaaaaaaaaaaaaaaaaaaaac"));
 }
 
+// Perl-style escape classes \d and \D (digit / non-digit).
+void test_escape_class_digit()
+{
+    server.on_regex("/d/\\d+", HTTP_GET, h_ok);
+    server.on_regex("/D/\\D+", HTTP_GET, h_ok);
+    TEST_ASSERT_TRUE(hit("GET", "/d/42"));   // \d matches digits
+    TEST_ASSERT_FALSE(hit("GET", "/d/x"));   // non-digit -> no match
+    TEST_ASSERT_TRUE(hit("GET", "/D/abc"));  // \D matches non-digits
+    TEST_ASSERT_FALSE(hit("GET", "/D/123")); // digit -> no match
+}
+
+// Escape classes \w and \W (word / non-word).
+void test_escape_class_word()
+{
+    server.on_regex("/w/\\w+", HTTP_GET, h_ok);
+    server.on_regex("/W/\\W+", HTTP_GET, h_ok);
+    TEST_ASSERT_TRUE(hit("GET", "/w/ab_9")); // letters/digits/underscore
+    TEST_ASSERT_FALSE(hit("GET", "/w/--"));  // '-' is not a word char
+    TEST_ASSERT_TRUE(hit("GET", "/W/---"));  // \W matches non-word chars
+    TEST_ASSERT_FALSE(hit("GET", "/W/abc")); // word char -> no match
+}
+
+// Escape classes \s and \S. A raw space can't ride in a request-line path, so
+// \s is exercised as a (non-matching) atom evaluation; \S matches non-space.
+void test_escape_class_space()
+{
+    server.on_regex("/s/\\S+", HTTP_GET, h_ok);
+    server.on_regex("/z/\\sx", HTTP_GET, h_ok);
+    TEST_ASSERT_TRUE(hit("GET", "/s/abc")); // \S matches non-space
+    TEST_ASSERT_FALSE(hit("GET", "/z/qx")); // \s vs 'q' -> false (case executes)
+}
+
+// Backslash escapes inside a character class: an escaped member [\.] and an
+// escaped range bound [0-\9].
+void test_class_escaped_members()
+{
+    server.on_regex("/c/[\\.]+", HTTP_GET, h_ok);
+    server.on_regex("/r/[0-\\9]+", HTTP_GET, h_ok);
+    TEST_ASSERT_TRUE(hit("GET", "/c/...")); // escaped '.' member
+    TEST_ASSERT_FALSE(hit("GET", "/c/x"));  // outside the class
+    TEST_ASSERT_TRUE(hit("GET", "/r/507")); // escaped range bound 0-9
+    TEST_ASSERT_FALSE(hit("GET", "/r/9a")); // 'a' outside 0-9
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -163,5 +207,9 @@ int main()
     RUN_TEST(test_anchored_full_match);
     RUN_TEST(test_method_still_enforced);
     RUN_TEST(test_pathological_pattern_terminates_no_match);
+    RUN_TEST(test_escape_class_digit);
+    RUN_TEST(test_escape_class_word);
+    RUN_TEST(test_escape_class_space);
+    RUN_TEST(test_class_escaped_members);
     return UNITY_END();
 }
