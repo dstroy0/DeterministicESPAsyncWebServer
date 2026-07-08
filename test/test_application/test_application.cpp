@@ -10,6 +10,7 @@
 //   RACE SIM      - slot state hazards visible to handle()
 
 #include "dwserver.h"
+#include "network_drivers/transport/listener.h" // listener_stop_all() for begin() test cleanup
 #include <unity.h>
 
 // All source layers compiled via native_app env - no stubs needed.
@@ -1229,6 +1230,42 @@ void test_allow_header_lists_methods()
     tcp_capture_disable();
 }
 
+// listen() registers listener slots and rejects once the table (MAX_LISTENERS)
+// is full; begin() requires at least one listener, then brings up the pools and
+// listeners. Uses a local server so the global listener slots are the only
+// shared state (released with listener_stop_all()).
+void test_listen_and_begin()
+{
+    DetWebServer srv;
+
+    // begin() before any listen() -> no-listeners error, no side effects.
+    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.begin());
+
+    // Fill the listener table, then the next listen() is rejected.
+    for (int i = 0; i < MAX_LISTENERS; i++)
+        TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)(9100 + i)));
+    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, srv.listen(9999));
+
+    // begin() now brings the registered listeners up.
+    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());
+    listener_stop_all(); // release the global listener slots for later tests
+}
+
+// begin(port) is the one-call convenience: listen(port) then begin(). When the
+// listener table is already full its listen() fails and begin(port) forwards the
+// error without binding.
+void test_begin_port_convenience()
+{
+    DetWebServer srv;
+    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin((uint16_t)8080));
+    listener_stop_all();
+
+    DetWebServer full;
+    for (int i = 0; i < MAX_LISTENERS; i++)
+        full.listen((uint16_t)(9300 + i));
+    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1306,6 +1343,8 @@ int main()
     RUN_TEST(test_stats_endpoint_emits_json);
     RUN_TEST(test_status_text_reason_phrases);
     RUN_TEST(test_allow_header_lists_methods);
+    RUN_TEST(test_listen_and_begin);
+    RUN_TEST(test_begin_port_convenience);
 
 #if DETWS_ENABLE_WEBSOCKET
     RUN_TEST(test_ws_send_api);
