@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`605de4c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/605de4c2ffb64b22ba07c4366ef4a12d57f3f5f6))
 - update CHANGELOG.md [skip ci] ([`e6357b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6357b4f0eb43314cfc87012438947ab4b39e213))
 - update CHANGELOG.md [skip ci] ([`1a31092`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a310926a2beea3476c0859e9ccd2802ca68aa85))
 - update test report [skip ci] ([`d1a29a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1a29a6a9b7001b5b7c742cbd36c32e8e69fbca3))
@@ -248,6 +249,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover Perl escape classes + char-class backslash escapes ([`e3a569a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3a569ada56f65686e76fbf97594da89209c7ddf))
 - cover WebSocket + SSE send API; isolate ws/sse pools in setUp ([`113b046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/113b046e96eaccde1ab236b3992bdbbe024b0a42))
 - cover WebDAV streaming-PUT sink; annotate dead DAV guards ([`e89afd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e89afd36f5f86c25dcb6f24b27256891e24f1ab7))
 - cover BER long-form length + pdu/frame guards (80->100%) ([`943da2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/943da2e633e6f91e766e3bc6c6733e729531024a))
