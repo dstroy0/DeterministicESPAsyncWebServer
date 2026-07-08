@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`36eab72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36eab72df771b1ef7e51c8e89b0fdb22ce5c4009))
 - update CHANGELOG.md [skip ci] ([`bfac83b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfac83b424d41a000c17fb28501db35acce6d0e8))
 - update test report [skip ci] ([`2477087`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24770872941e2f48e501553e539a276d017c4c17))
 - update CHANGELOG.md [skip ci] ([`ef7ab3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef7ab3b2b1f0253d01b066fbe477b53c0f5e230b))
@@ -125,6 +126,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`167f73e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/167f73ee85d64afd92986a2dd3ee09731bd2c5df))
 - reformat AUDIT.md table columns (prettier) ([`e95a6cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e95a6cce499f7f0d072292a3860a3812b4a6cc64))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`97978f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97978f825f7ee1d1d470752f2e789a0fb615e526))
 - update standards, audit, and root readme ([`f31b5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f31b5b3885998ff52b35eb37ef685c9d07c6e903))
@@ -260,6 +262,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover ssh_server dispatcher guard/error branches (73->99%) ([`4630d65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4630d653870b04e7ff71a1273e4f923375dfc3fe))
 - cover parse guards + NOTIMP + table/begin edges; 83->100% ([`bd3292a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd3292aa33f1cd6f2dfdb6eb049b597954bcc659))
 - injectable host UDP mock; cover CoAP Observe (76->99.5%) ([`dd44e43`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd44e4334476663bfcaa68d8c717efb78819b28e))
 - cover quic_conn send/crypto/stream edges ([`ac6504e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac6504e45893a4e72598ae6354580d602384055c))
