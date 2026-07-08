@@ -3601,8 +3601,10 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
             continue;
         if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
             continue;
+        // GCOVR_EXCL_START  a ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot fire
         if (!r->static_fs)
             return false;
+        // GCOVR_EXCL_STOP
         char fs_path[256];
         if (dav_resolve_path(r, req->path, fs_path, sizeof(fs_path)) != 0)
             return false; // traversal / too long - let it buffer; the handler answers 403/414
@@ -3624,8 +3626,10 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
 void DetWebServer::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len)
 {
     uint8_t slot = (uint8_t)(req - http_pool);
+    // GCOVR_EXCL_START  req is always one of the http_pool slots, so slot < MAX_CONNS; the bound cannot fire
     if (slot >= MAX_CONNS)
         return;
+    // GCOVR_EXCL_STOP
     DavPut *d = &s_davput.put[slot];
     if (d->active && !d->error)
     {
@@ -3698,11 +3702,13 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
 
 void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
+    // GCOVR_EXCL_START  a ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot fire
     if (!r->static_fs)
     {
         dav_send_status(slot_id, 404, "");
         return;
     }
+    // GCOVR_EXCL_STOP
     fs::FS &fsys = *r->static_fs;
 
     char fs_path[256];

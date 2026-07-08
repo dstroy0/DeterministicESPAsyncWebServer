@@ -250,6 +250,126 @@ void test_get_file_through_mount()
     TEST_ASSERT_NOT_NULL(strstr(r, "alpha"));
 }
 
+// --- streaming-PUT helpers -------------------------------------------------
+// Push `len` raw bytes into slot's rx ring (a body may exceed any single ring
+// so feed it in chunks, draining after each - as the real transport does).
+static void push_bytes(uint8_t slot, const uint8_t *b, size_t len)
+{
+    TcpConn *c = &conn_pool[slot];
+    for (size_t i = 0; i < len; i++)
+    {
+        c->rx_buffer[c->rx_head] = b[i];
+        c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+    }
+}
+
+// Feed a complete PUT with an arbitrary-length body and run the handler. The
+// body streams to the DAV file via dav_stream_put_*; chunked feeding keeps the
+// ring from overflowing regardless of RX_BUF_SIZE.
+static void feed_put(uint8_t slot, const char *path, const uint8_t *body, size_t n)
+{
+    char hdr[128];
+    snprintf(hdr, sizeof(hdr), "PUT %s HTTP/1.1\r\nHost: x\r\nContent-Length: %u\r\n\r\n", path, (unsigned)n);
+    push_str(slot, hdr);
+    http_parse(slot);
+    for (size_t off = 0; off < n;)
+    {
+        size_t chunk = n - off > 200 ? 200 : n - off;
+        push_bytes(slot, body + off, chunk);
+        http_parse(slot);
+        off += chunk;
+    }
+    server.handle();
+}
+
+// A new file streams straight to disk and answers 201 Created, byte-exact.
+void test_put_stream_create()
+{
+    const char *body = "hello world";
+    feed_put(0, "/dav/up.txt", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/up.txt", "hello world"));
+}
+
+// PUT over an existing file truncates and answers 204 (existed).
+void test_put_stream_overwrite()
+{
+    tree_put("/dav/up.txt", "stale contents");
+    const char *body = "new";
+    feed_put(0, "/dav/up.txt", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(resp_status(204));
+    TEST_ASSERT_TRUE(tree_content_eq("/dav/up.txt", "new"));
+}
+
+// An empty PUT has no streamed body (Content-Length 0), so it takes the buffered
+// fallback: create the file and answer 201.
+void test_put_empty_buffered()
+{
+    feed_and_handle(0, "PUT /dav/empty.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(201));
+    TEST_ASSERT_TRUE(tree_has("/dav/empty.txt"));
+}
+
+// A body larger than the mock node's buffer short-writes -> the sink flags an
+// error and the handler answers 507 Insufficient Storage.
+void test_put_stream_write_fails_507()
+{
+    static uint8_t big[2100];
+    memset(big, 'A', sizeof(big)); // > MockNode::data (2048) -> write() short-returns
+    feed_put(0, "/dav/big.txt", big, sizeof(big));
+    TEST_ASSERT_TRUE(resp_status(507));
+}
+
+// When the FS cannot open the target (here: the mock's node table is full), the
+// sink never activates and the handler answers 409 Conflict.
+void test_put_stream_open_fails_409()
+{
+    char p[24];
+    for (int i = 0; i < 64; i++) // exhaust MockNode table (64 slots)
+    {
+        snprintf(p, sizeof(p), "/dav/f%d", i);
+        TEST_ASSERT_NOT_NULL(fs::_tree_add(p, false));
+    }
+    const char *body = "abc";
+    feed_put(0, "/dav/overflow.txt", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(resp_status(409));
+}
+
+// A ".." in the target is rejected at the stream-begin resolve (so it never
+// streams) and again by the handler: 403 Forbidden.
+void test_put_stream_traversal_403()
+{
+    const char *body = "abc";
+    feed_put(0, "/dav/../secret", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(resp_status(403));
+}
+
+// The stream-begin hook fires for any bodied request: a non-PUT method and a
+// path that matches no DAV route both decline the sink (and don't crash).
+void test_put_stream_begin_declines()
+{
+    // Non-PUT with a body: begin sees method != PUT and declines.
+    feed_and_handle(0, "POST /dav/x.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 3\r\n\r\nabc");
+    rearm();
+    // PUT to a path outside any DAV mount: begin finds no route and declines.
+    const char *body = "abc";
+    feed_put(0, "/nomatch/y.txt", (const uint8_t *)body, strlen(body));
+    TEST_ASSERT_TRUE(resp_status(404)); // no route -> not found
+}
+
+// A streamed PUT torn down before completion (peer reset) runs the abort hook,
+// which closes the half-open file so the handle is not leaked.
+void test_put_stream_abort()
+{
+    // Headers + a partial body: Content-Length promises 10, only 4 arrive.
+    push_str(0, "PUT /dav/ab.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 10\r\n\r\nabcd");
+    http_parse(0);
+    TEST_ASSERT_TRUE(tree_has("/dav/ab.txt")); // begin opened (created) the file
+    http_reset(0);                             // body_streaming && !COMPLETE -> abort hook
+    // The file is still present (open created the node); the handle was closed.
+    TEST_ASSERT_TRUE(tree_has("/dav/ab.txt"));
+}
+
 // LOCK issues an advisory token (200 + Lock-Token); UNLOCK answers 204.
 void test_lock_unlock_advisory()
 {
@@ -278,6 +398,14 @@ int main()
     RUN_TEST(test_delete_single_file);
     RUN_TEST(test_options_advertises_dav);
     RUN_TEST(test_get_file_through_mount);
+    RUN_TEST(test_put_stream_create);
+    RUN_TEST(test_put_stream_overwrite);
+    RUN_TEST(test_put_empty_buffered);
+    RUN_TEST(test_put_stream_write_fails_507);
+    RUN_TEST(test_put_stream_open_fails_409);
+    RUN_TEST(test_put_stream_traversal_403);
+    RUN_TEST(test_put_stream_begin_declines);
+    RUN_TEST(test_put_stream_abort);
     RUN_TEST(test_lock_unlock_advisory);
     return UNITY_END();
 }
