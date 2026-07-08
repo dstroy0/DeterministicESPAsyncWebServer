@@ -74,6 +74,12 @@ void setUp()
     }
     handler_called = false;
     handler_slot = 255;
+#if DETWS_ENABLE_WEBSOCKET
+    ws_init(); // isolate ws_pool[] between tests (a leftover WS slot makes http_parse skip it)
+#endif
+#if DETWS_ENABLE_SSE
+    sse_init(); // isolate sse_pool[] between tests
+#endif
     g_server = new DetWebServer();
 }
 
@@ -1057,6 +1063,96 @@ void test_sse_broadcast_after_upgrade_matches_path()
 }
 #endif
 
+#if DETWS_ENABLE_WEBSOCKET
+// The WebSocket send API: bad-id / inactive / terminal-state guards send
+// nothing; a live connection frames text (0x81) and binary (0x82) payloads and
+// flushes, and ws_disconnect queues a Close frame (0x88).
+void test_ws_send_api()
+{
+    ws_init();
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].pcb = &_mock_pcb;
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+
+    // Guards: out-of-range id and an id that is in range but inactive.
+    tcp_capture_reset();
+    g_server->ws_send_text(MAX_WS_CONNS, "x");                       // id >= MAX
+    g_server->ws_send_text(1, "x");                                  // in range, inactive
+    g_server->ws_send_binary(MAX_WS_CONNS, (const uint8_t *)"x", 1); // id >= MAX
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    // Text frame -> FIN|TEXT opcode.
+    tcp_capture_reset();
+    g_server->ws_send_text(0, "hello");
+    TEST_ASSERT_TRUE(tcp_captured_len() >= 2);
+    TEST_ASSERT_EQUAL_HEX8(0x81, (uint8_t)tcp_captured()[0]);
+
+    // Binary frame -> FIN|BINARY opcode.
+    tcp_capture_reset();
+    const uint8_t payload[3] = {1, 2, 3};
+    g_server->ws_send_binary(0, payload, sizeof(payload));
+    TEST_ASSERT_TRUE(tcp_captured_len() >= 2);
+    TEST_ASSERT_EQUAL_HEX8(0x82, (uint8_t)tcp_captured()[0]);
+
+    // A terminal parse state suppresses further sends.
+    ws->parse_state = WS_CLOSED;
+    tcp_capture_reset();
+    g_server->ws_send_text(0, "nope");
+    g_server->ws_send_binary(0, payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    ws->parse_state = WS_HEADER1; // reopen for disconnect
+
+    // Disconnect: Close frame (opcode 0x88); the out-of-range id is a no-op.
+    tcp_capture_reset();
+    g_server->ws_disconnect(MAX_WS_CONNS);
+    g_server->ws_disconnect(0);
+    TEST_ASSERT_TRUE(tcp_captured_len() >= 2);
+    TEST_ASSERT_EQUAL_HEX8(0x88, (uint8_t)tcp_captured()[0]);
+    tcp_capture_disable();
+}
+#endif
+
+#if DETWS_ENABLE_SSE
+// The SSE send API: sse_send writes an event/id/data block to the bound slot;
+// bad-id / inactive guards send nothing; sse_broadcast skips connections whose
+// stored path does not match.
+void test_sse_send_api()
+{
+    sse_init();
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].pcb = &_mock_pcb;
+    SseConn *sse = sse_alloc(0, "/events");
+    TEST_ASSERT_NOT_NULL(sse);
+
+    // Guards send nothing.
+    tcp_capture_reset();
+    g_server->sse_send(MAX_SSE_CONNS, "x"); // id >= MAX
+    g_server->sse_send(1, "x");             // in range, inactive
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+
+    // A live send emits the event, id, and data fields (RFC-style SSE block).
+    tcp_capture_reset();
+    g_server->sse_send(0, "hi", "msg", "42");
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "event: msg"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "id: 42"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "data: hi"));
+
+    // Broadcast to a non-matching path skips the connection (no output).
+    tcp_capture_reset();
+    g_server->sse_broadcast("/other", "skip");
+    TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
+    tcp_capture_disable();
+}
+#endif
+
 int main()
 {
     UNITY_BEGIN();
@@ -1133,8 +1229,12 @@ int main()
     RUN_TEST(test_request_log_hook_fires);
     RUN_TEST(test_stats_endpoint_emits_json);
 
+#if DETWS_ENABLE_WEBSOCKET
+    RUN_TEST(test_ws_send_api);
+#endif
 #if DETWS_ENABLE_SSE
     RUN_TEST(test_sse_broadcast_after_upgrade_matches_path);
+    RUN_TEST(test_sse_send_api);
 #endif
 #if DETWS_ENABLE_METRICS
     RUN_TEST(test_metrics_emits_prometheus);
