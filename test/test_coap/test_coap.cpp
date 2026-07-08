@@ -1031,9 +1031,23 @@ void test_observe_large_seq_encoding()
     TEST_ASSERT_TRUE(coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) > 0); // 3-byte seq
 }
 
+// The response encoder ships what fits rather than overflowing a tight output
+// buffer: with room for only the 4-byte header, the Content-Format option (and
+// the payload) are dropped instead of running past the cap.
+void test_response_option_capacity_stop()
+{
+    const char *paths[] = {"temp"};
+    uint8_t req[64];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x77, paths, 1, nullptr, 0, -1, nullptr, 0);
+    uint8_t resp[64];
+    size_t n = coap_server_process_ex(req, rl, resp, 5, -1); // header (4) fits; the option does not
+    TEST_ASSERT_TRUE(n >= 4 && n <= 5);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_response_option_capacity_stop);
     RUN_TEST(test_add_resource_limits);
     RUN_TEST(test_short_and_truncated_token);
     RUN_TEST(test_malformed_options_bad_request);
