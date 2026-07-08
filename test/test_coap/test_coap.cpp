@@ -5,6 +5,7 @@
 // real RFC 7252 request datagram, runs it through the server, and decodes the
 // response - no sockets, no heap.
 
+#include "network_drivers/transport/udp.h" // det_udp_inject / capture (host UDP mock)
 #include "services/coap/coap.h"
 #include <string.h>
 #include <string> // std::string (test code may use the full STL; only src/ is constrained)
@@ -1044,10 +1045,131 @@ void test_response_option_capacity_stop()
     TEST_ASSERT_TRUE(n >= 4 && n <= 5);
 }
 
+// The UDP transport handler (compiled in both the plain and the Observe build): a GET datagram is
+// answered, and a received ACK (not a request) produces no reply.
+void test_coap_udp_handler_basic()
+{
+    det_udp_reset_listeners();
+    coap_server_begin_udp(5683);
+    det_udp_capture_enable();
+
+    const char *paths[] = {"temp"};
+    uint8_t req[64];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, nullptr, 0, 0x9001, paths, 1, nullptr, 0, -1, nullptr, 0);
+    det_udp_capture_reset();
+    det_udp_inject(5683, "10.0.0.5", 5000, req, rl);
+    TEST_ASSERT_TRUE(det_udp_captured_len() > 0); // 2.05 response served
+
+    uint8_t ack[8];
+    CoapEnc e;
+    enc_init(&e, ack, 2 /* ACK */, 0, nullptr, 0, 0x9001);
+    det_udp_capture_reset();
+    det_udp_inject(5683, "10.0.0.5", 5000, ack, e.len);
+    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len()); // an ACK is not a request -> nothing sent
+}
+
+#if DETWS_ENABLE_COAP_OBSERVE
+// Build a CON GET /<path> with an Observe option (0 = register, 1 = deregister). Options ascend:
+// Observe (6) before Uri-Path (11).
+static size_t build_observe_get(uint8_t *buf, const char *path, int observe, const uint8_t *token, uint8_t tkl,
+                                uint16_t mid)
+{
+    CoapEnc e;
+    enc_init(&e, buf, COAP_TYPE_CON, COAP_GET, token, tkl, mid);
+    uint8_t ov = (uint8_t)observe;
+    enc_option(&e, 6, observe ? &ov : nullptr, observe ? 1 : 0); // Observe (register = empty value)
+    enc_option(&e, 11, (const uint8_t *)path, strlen(path));
+    return e.len;
+}
+
+// RFC 7641 Observe over the UDP transport, driven through the injectable host UDP mock: a GET with
+// Observe:0 registers the client (the response carries an Observe option); coap_notify() pushes a
+// NON notification; an unreachable peer, an Observe:1, and a Reset each drop the observation.
+void test_coap_observe_over_udp()
+{
+    det_udp_reset_listeners();
+    coap_server_begin_udp(5683);
+    det_udp_capture_enable();
+    const uint8_t tok[2] = {0xAA, 0xBB};
+    uint8_t req[64];
+
+    // Register.
+    det_udp_capture_reset();
+    size_t rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0001);
+    det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    TEST_ASSERT_TRUE(det_udp_captured_len() > 0); // registration answered
+
+    // The identical GET again is a refresh of the same observation (dedup path).
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0005);
+    det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+
+    // Notify the registered observer.
+    det_udp_capture_reset();
+    coap_notify("/temp");
+    TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
+
+    // A notification to an unreachable peer drops the observer.
+    det_udp_set_listener_sendto_result(false);
+    coap_notify("/temp");
+    det_udp_set_listener_sendto_result(true);
+    det_udp_capture_reset();
+    coap_notify("/temp"); // observer gone -> nothing sent
+    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
+
+    // Re-register, then deregister with Observe:1.
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0002);
+    det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    rl = build_observe_get(req, "temp", 1, tok, sizeof(tok), 0x0003);
+    det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    det_udp_capture_reset();
+    coap_notify("/temp");
+    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
+
+    // Re-register, then a Reset from the peer drops all its observations.
+    rl = build_observe_get(req, "temp", 0, tok, sizeof(tok), 0x0004);
+    det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+    uint8_t rst[8];
+    CoapEnc re;
+    enc_init(&re, rst, COAP_TYPE_RST, 0, nullptr, 0, 0x0004);
+    det_udp_inject(5683, "10.0.0.9", 40000, rst, re.len);
+    det_udp_capture_reset();
+    coap_notify("/temp");
+    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
+
+    // A notification for an unknown resource path is a no-op.
+    coap_notify("/no-such-resource");
+}
+
+// A full observer registry declines further registrations; the resource is still served.
+void test_coap_observe_registry_full()
+{
+    det_udp_reset_listeners();
+    coap_server_begin_udp(5683);
+    det_udp_capture_enable();
+    uint8_t req[64];
+    // Distinct tokens from one peer fill the DETWS_COAP_MAX_OBSERVERS slots; extras are declined
+    // but still answered (RFC 7641: observation is best-effort, the GET response is unconditional).
+    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS + 2; i++)
+    {
+        uint8_t tok[1] = {(uint8_t)i};
+        size_t rl = build_observe_get(req, "temp", 0, tok, 1, (uint16_t)(0x100 + i));
+        det_udp_capture_reset();
+        det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
+        TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
+    }
+    coap_notify("/temp"); // deliver to the registered observers
+}
+#endif // DETWS_ENABLE_COAP_OBSERVE
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_response_option_capacity_stop);
+    RUN_TEST(test_coap_udp_handler_basic);
+#if DETWS_ENABLE_COAP_OBSERVE
+    RUN_TEST(test_coap_observe_over_udp);
+    RUN_TEST(test_coap_observe_registry_full);
+#endif
     RUN_TEST(test_add_resource_limits);
     RUN_TEST(test_short_and_truncated_token);
     RUN_TEST(test_malformed_options_bad_request);

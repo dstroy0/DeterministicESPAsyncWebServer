@@ -116,6 +116,12 @@ void det_udp_capture_enable();
 void det_udp_capture_reset();
 const uint8_t *det_udp_captured(); ///< bytes of the last captured datagram (nullptr if none)
 size_t det_udp_captured_len();     ///< length of the last captured datagram
+
+// Deliver a datagram from (src_ip, src_port) to the handler bound to listen_port, driving the
+// receive path of a UDP service (CoAP Observe, DNS, SNMP) as if a peer had sent it.
+void det_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len);
+void det_udp_set_listener_sendto_result(bool ok); ///< force det_udp_listener_sendto() to fail (unreachable peer)
+void det_udp_reset_listeners();                   ///< clear all bound listeners (per-test isolation)
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TRANSPORT_H

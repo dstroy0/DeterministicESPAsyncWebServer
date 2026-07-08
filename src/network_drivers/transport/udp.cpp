@@ -264,74 +264,140 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
     return k.result;
 }
 
-#else // host build: no lwIP. Stubs keep UDP-using services host-compilable.
+#else // host build: no lwIP. A test-injectable UDP mock keeps UDP-using services host-testable.
+
+// Concrete host peer: the source address/port of an injected datagram, which a service's handler
+// reads back via det_udp_peer_addr() to reply (or, for CoAP Observe, to key a registration).
+struct DetUdpPeer
+{
+    char ip[16];
+    uint16_t port;
+};
+
+// Host UDP mock state, owned by one instance (internal linkage): the bound listeners, a capture of
+// the last datagram sent (shared by det_udp_send/sendto/listener_sendto), and the listener_sendto
+// result knob. A test drives the receive path with det_udp_inject() and reads replies via
+// det_udp_captured(). One named owner, unreachable from any other translation unit.
+namespace
+{
+struct HostUdpListener
+{
+    uint16_t port;
+    DetUdpHandler handler;
+    void *ctx;
+    bool used;
+};
+struct HostUdpCtx
+{
+    HostUdpListener lst[DETWS_MAX_UDP_LISTENERS];
+    bool cap_on;
+    uint8_t cap_buf[2048];
+    size_t cap_len;
+    bool listener_sendto_ok;
+};
+HostUdpCtx s_udp = {{}, false, {}, 0, true};
+
+// Capture one outbound datagram if capture is enabled; return whether it was captured.
+bool host_capture(const uint8_t *data, size_t len)
+{
+    if (s_udp.cap_on && data && len && len <= sizeof(s_udp.cap_buf))
+    {
+        memcpy(s_udp.cap_buf, data, len);
+        s_udp.cap_len = len;
+        return true;
+    }
+    return false;
+}
+} // namespace
 
 bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
 {
-    (void)port;
-    (void)handler;
-    (void)ctx;
-    return false;
+    // Rebind an existing port, else take a free slot, else evict slot 0 (host tests only).
+    HostUdpListener *slot = nullptr;
+    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+        if (s_udp.lst[i].used && s_udp.lst[i].port == port)
+            slot = &s_udp.lst[i];
+    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS && !slot; i++)
+        if (!s_udp.lst[i].used)
+            slot = &s_udp.lst[i];
+    if (!slot)
+        slot = &s_udp.lst[0];
+    slot->port = port;
+    slot->handler = handler;
+    slot->ctx = ctx;
+    slot->used = true;
+    return true;
+}
+
+void det_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len)
+{
+    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+        if (s_udp.lst[i].used && s_udp.lst[i].port == listen_port && s_udp.lst[i].handler)
+        {
+            DetUdpPeer peer;
+            strncpy(peer.ip, src_ip ? src_ip : "", sizeof(peer.ip) - 1);
+            peer.ip[sizeof(peer.ip) - 1] = '\0';
+            peer.port = src_port;
+            s_udp.lst[i].handler(data, len, &peer, s_udp.lst[i].ctx);
+            return;
+        }
+}
+
+void det_udp_set_listener_sendto_result(bool ok)
+{
+    s_udp.listener_sendto_ok = ok;
+}
+
+void det_udp_reset_listeners()
+{
+    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+        s_udp.lst[i] = {};
+    s_udp.listener_sendto_ok = true;
 }
 
 bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
 {
     (void)peer;
-    (void)data;
-    (void)len;
-    return false;
+    return host_capture(data, len);
 }
-
-// Host capture seam (test-only), owned by one instance (internal linkage): the last datagram
-// handed to det_udp_sendto(). One named owner, unreachable from any other translation unit.
-struct UdpCaptureCtx
-{
-    bool on = false;
-    uint8_t buf[2048];
-    size_t len = 0;
-};
-static UdpCaptureCtx s_udpcap;
 
 void det_udp_capture_enable()
 {
-    s_udpcap.on = true;
-    s_udpcap.len = 0;
+    s_udp.cap_on = true;
+    s_udp.cap_len = 0;
 }
 void det_udp_capture_reset()
 {
-    s_udpcap.len = 0;
+    s_udp.cap_len = 0;
 }
 const uint8_t *det_udp_captured()
 {
-    return s_udpcap.len ? s_udpcap.buf : nullptr;
+    return s_udp.cap_len ? s_udp.cap_buf : nullptr;
 }
 size_t det_udp_captured_len()
 {
-    return s_udpcap.len;
+    return s_udp.cap_len;
 }
 
 bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
 {
     (void)dst_ip;
     (void)dst_port;
-    if (s_udpcap.on && data && len && len <= sizeof(s_udpcap.buf))
-    {
-        memcpy(s_udpcap.buf, data, len);
-        s_udpcap.len = len;
-        return true; // a captured "send" succeeds so the caller's success path is exercised
-    }
-    (void)data;
-    (void)len;
-    return false;
+    return host_capture(data, len); // captured "send" succeeds so the caller's success path runs
 }
 
 bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
 {
-    (void)peer;
-    (void)ip_out;
-    (void)ip_cap;
-    (void)port_out;
-    return false;
+    if (!peer)
+        return false;
+    if (ip_out && ip_cap)
+    {
+        strncpy(ip_out, peer->ip, ip_cap - 1);
+        ip_out[ip_cap - 1] = '\0';
+    }
+    if (port_out)
+        *port_out = peer->port;
+    return true;
 }
 
 bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
@@ -340,9 +406,10 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
     (void)listen_port;
     (void)dst_ip;
     (void)dst_port;
-    (void)data;
-    (void)len;
-    return false;
+    if (!s_udp.listener_sendto_ok)
+        return false; // test knob: model an unreachable peer (drops the observer)
+    host_capture(data, len);
+    return true;
 }
 
 #endif // ARDUINO
