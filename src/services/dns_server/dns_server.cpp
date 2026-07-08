@@ -37,8 +37,10 @@ bool ci_eq(const char *a, const char *b)
 // byte just past QTYPE/QCLASS). Returns false on a malformed or over-long question.
 bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, uint16_t *qtype, size_t *qend)
 {
+    // GCOVR_EXCL_START  the sole caller (dns_server_build_response) already rejects qlen < 12
     if (qlen < 12)
         return false;
+    // GCOVR_EXCL_STOP
     size_t i = 12, n = 0;
     for (;;)
     {

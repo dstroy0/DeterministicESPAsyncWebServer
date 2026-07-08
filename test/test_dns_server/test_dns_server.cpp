@@ -5,8 +5,10 @@
 // builder (A-record answer, NXDOMAIN, non-A query, malformed guards, header flags) and the
 // built-in name->IP table (add / case-insensitive lookup / clear).
 
+#include "ServerConfig.h" // DETWS_DNS_NAME_MAX / DETWS_DNS_SERVER_MAX_RECORDS
 #include "services/dns_server/dns_server.h"
 #include <stdint.h>
+#include <stdio.h> // snprintf
 #include <string.h>
 #include <unity.h>
 
@@ -169,6 +171,100 @@ void test_end_to_end_with_table()
     TEST_ASSERT_EQUAL_UINT8(1, a[15]);
 }
 
+// Build a DNS query with explicit label lengths (labels of 'a'), for the oversized-name guards.
+static size_t make_query_labels(uint8_t *buf, const uint8_t *label_lens, int nlabels)
+{
+    static const uint8_t hdr[12] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+    memcpy(buf, hdr, 12);
+    size_t n = 12;
+    for (int i = 0; i < nlabels; i++)
+    {
+        buf[n++] = label_lens[i];
+        for (int k = 0; k < label_lens[i]; k++)
+            buf[n++] = 'a';
+    }
+    buf[n++] = 0x00; // end of QNAME
+    buf[n++] = 0x00;
+    buf[n++] = 0x01; // QTYPE A
+    buf[n++] = 0x00;
+    buf[n++] = 0x01; // QCLASS IN
+    return n;
+}
+
+// A non-standard opcode (e.g. IQUERY) is answered NOTIMP (RCODE 4); too small an output is dropped.
+void test_dns_opcode_notimp()
+{
+    uint8_t q[128], out[256];
+    size_t qlen = make_query(q, 0x2222, "foo.lan", 1, false);
+    q[2] = (uint8_t)(q[2] | (2u << 3)); // opcode = 2 (STATUS)
+    size_t n = dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
+    TEST_ASSERT_EQUAL_UINT(12, n);
+    TEST_ASSERT_TRUE(out[2] & 0x80);                                                        // QR = 1
+    TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                           // NOTIMP
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 8)); // out_cap < 12
+}
+
+// Truncated questions are rejected: a header with no question, a label running past the datagram,
+// and a name with no room for QTYPE/QCLASS.
+void test_dns_truncated_questions()
+{
+    uint8_t out[64];
+    uint8_t hdr_only[12] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(hdr_only, sizeof(hdr_only), 60, resolve_foo, out, sizeof(out)));
+    uint8_t label_past[15] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x05, 'a', 'b'}; // label len 5, only 2 bytes
+    TEST_ASSERT_EQUAL_UINT(
+        0, dns_server_build_response(label_past, sizeof(label_past), 60, resolve_foo, out, sizeof(out)));
+    uint8_t no_qtype[17] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x03, 'a', 'b', 'c', 0x00}; // name ok, no QTYPE/QCLASS
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(no_qtype, sizeof(no_qtype), 60, resolve_foo, out, sizeof(out)));
+}
+
+// A name that overflows the reassembly buffer is rejected (both the dot-insert and the label-char
+// bounds guards).
+void test_dns_oversized_name()
+{
+    uint8_t q[320], out[64];
+    const uint8_t dot_overflow[3] = {63, 63, 1}; // 63 + '.' + 63 -> the dot before the 3rd label overflows
+    size_t qa = make_query_labels(q, dot_overflow, 3);
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)));
+    const uint8_t char_overflow[3] = {63, 62, 2}; // the first char of the 3rd label overflows
+    size_t qb = make_query_labels(q, char_overflow, 3);
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)));
+}
+
+// A valid question that does not fit the output buffer (before the answer) is dropped.
+void test_dns_question_exceeds_out_cap()
+{
+    uint8_t q[128], out[256];
+    size_t qlen = make_query(q, 1, "foo.lan", 1, false); // qend ~ 24
+    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 20));
+}
+
+// dns_server_add rejects an empty/null/over-long name and a full table; lookup(nullptr) is 0.
+void test_dns_add_and_lookup_guards()
+{
+    TEST_ASSERT_FALSE(dns_server_add(nullptr, 1, 2, 3, 4));
+    TEST_ASSERT_FALSE(dns_server_add("", 1, 2, 3, 4));
+    char toolong[DETWS_DNS_NAME_MAX + 4];
+    memset(toolong, 'a', sizeof(toolong) - 1);
+    toolong[sizeof(toolong) - 1] = '\0';
+    TEST_ASSERT_FALSE(dns_server_add(toolong, 1, 2, 3, 4));
+
+    char nm[16];
+    for (int i = 0; i < DETWS_DNS_SERVER_MAX_RECORDS; i++)
+    {
+        snprintf(nm, sizeof(nm), "h%d.lan", i);
+        TEST_ASSERT_TRUE(dns_server_add(nm, 10, 0, 0, (uint8_t)i));
+    }
+    TEST_ASSERT_FALSE(dns_server_add("overflow.lan", 10, 0, 0, 99)); // table full
+    TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup(nullptr));
+}
+
+// The host build's dns_server_begin() is a stub (no lwIP) and reports failure.
+void test_dns_begin_host_stub()
+{
+    TEST_ASSERT_FALSE(dns_server_begin());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -179,5 +275,11 @@ int main()
     RUN_TEST(test_malformed_guards);
     RUN_TEST(test_table_add_lookup_case_insensitive);
     RUN_TEST(test_end_to_end_with_table);
+    RUN_TEST(test_dns_opcode_notimp);
+    RUN_TEST(test_dns_truncated_questions);
+    RUN_TEST(test_dns_oversized_name);
+    RUN_TEST(test_dns_question_exceeds_out_cap);
+    RUN_TEST(test_dns_add_and_lookup_guards);
+    RUN_TEST(test_dns_begin_host_stub);
     return UNITY_END();
 }
