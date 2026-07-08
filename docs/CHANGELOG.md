@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bfac83b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfac83b424d41a000c17fb28501db35acce6d0e8))
 - update test report [skip ci] ([`2477087`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24770872941e2f48e501553e539a276d017c4c17))
 - update CHANGELOG.md [skip ci] ([`ef7ab3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef7ab3b2b1f0253d01b066fbe477b53c0f5e230b))
 - update CHANGELOG.md [skip ci] ([`697d22a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/697d22aa87ac8c819a62debbd7a3e6cbd839ecab))
@@ -259,6 +260,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover parse guards + NOTIMP + table/begin edges; 83->100% ([`bd3292a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd3292aa33f1cd6f2dfdb6eb049b597954bcc659))
 - injectable host UDP mock; cover CoAP Observe (76->99.5%) ([`dd44e43`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd44e4334476663bfcaa68d8c717efb78819b28e))
 - cover quic_conn send/crypto/stream edges ([`ac6504e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac6504e45893a4e72598ae6354580d602384055c))
 - cover quic_conn recv-path guards (87->90%) ([`b69be4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b69be4b8199a65a1d4972736924f585fee6ab3c0))
