@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1a31092`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a310926a2beea3476c0859e9ccd2802ca68aa85))
 - update test report [skip ci] ([`d1a29a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1a29a6a9b7001b5b7c742cbd36c32e8e69fbca3))
 - update CHANGELOG.md [skip ci] ([`0fea07d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fea07d7fb8d7e93964eb12b7df28fd0e32caf4d))
 - update test report [skip ci] ([`32335e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32335e3c71a83e383a09a4206972b77bb4bf29ad))
@@ -111,6 +112,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- reformat AUDIT.md table columns (prettier) ([`e95a6cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e95a6cce499f7f0d072292a3860a3812b4a6cc64))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`97978f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97978f825f7ee1d1d470752f2e789a0fb615e526))
 - update standards, audit, and root readme ([`f31b5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f31b5b3885998ff52b35eb37ef685c9d07c6e903))
 - update ESP32 build footprints [skip ci] ([`4a2b56e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a2b56eac4b84dc71296c9647b2c675f5ee81a60))
