@@ -549,6 +549,74 @@ void test_h2_respond_paths_and_goaway()
     TEST_ASSERT_EQUAL_INT(1, count_frames(cap.out, H2_GOAWAY));
 }
 
+// A fresh established conn fed one raw frame. A conn is dead after any false
+// return (recv leaves fhave stale on error), so each error-frame check needs its
+// own conn rather than reusing one.
+static bool fresh_feed(uint8_t type, uint8_t flags, uint32_t sid, const uint8_t *pl, size_t pn)
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    return feed_frame(c, type, flags, sid, pl, pn);
+}
+
+// The remaining per-frame guards: empty PADDED frames, a short PRIORITY prefix,
+// an undecodable HPACK block, an oversized header fragment, DATA pad-overflow,
+// and an unknown frame type (ignored per RFC 9113 sec 4.1).
+void test_h2_more_guards()
+{
+    TEST_ASSERT_FALSE(fresh_feed(H2_HEADERS, H2_FLAG_PADDED | H2_FLAG_END_HEADERS, 1, nullptr, 0)); // no pad byte
+    uint8_t p3[3] = {0, 0, 0};
+    TEST_ASSERT_FALSE(fresh_feed(H2_HEADERS, H2_FLAG_PRIORITY | H2_FLAG_END_HEADERS, 1, p3, 3)); // priority < 5
+    uint8_t bad_hpack[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    TEST_ASSERT_FALSE(fresh_feed(H2_HEADERS, H2_FLAG_END_HEADERS, 1, bad_hpack, 4)); // COMPRESSION_ERROR
+    std::vector<uint8_t> huge(DETWS_H2_HDR_BLOCK + 16, 0);
+    TEST_ASSERT_FALSE(fresh_feed(H2_HEADERS, 0, 1, huge.data(), huge.size())); // fragment > hblock
+    TEST_ASSERT_FALSE(fresh_feed(H2_DATA, H2_FLAG_PADDED, 1, nullptr, 0));     // no pad byte
+    uint8_t dpad[2] = {5, 1};
+    TEST_ASSERT_FALSE(fresh_feed(H2_DATA, H2_FLAG_PADDED, 1, dpad, 2)); // pad > payload
+    uint8_t x[1] = {0};
+    TEST_ASSERT_TRUE(fresh_feed(0x2A, 0, 1, x, 1)); // unknown frame type ignored
+}
+
+// A CONTINUATION without END_HEADERS keeps buffering (returns true); one that
+// overflows the reassembly buffer is a protocol error.
+void test_h2_continuation_more()
+{
+    uint8_t block[128];
+    size_t blen = build_request(block, sizeof block);
+    {
+        Cap cap;
+        H2Conn c;
+        establish(c, cap);
+        size_t t = blen / 3;
+        TEST_ASSERT_TRUE(feed_frame(c, H2_HEADERS, 0, 1, block, t));          // fragment 1
+        TEST_ASSERT_TRUE(feed_frame(c, H2_CONTINUATION, 0, 1, block + t, t)); // more to come
+        TEST_ASSERT_TRUE(feed_frame(c, H2_CONTINUATION, H2_FLAG_END_HEADERS, 1, block + 2 * t, blen - 2 * t));
+        TEST_ASSERT_EQUAL_INT(4, (int)cap.req_headers.size());
+    }
+    {
+        Cap cap;
+        H2Conn c;
+        establish(c, cap);
+        std::vector<uint8_t> frag(DETWS_H2_HDR_BLOCK - 8, 0);
+        TEST_ASSERT_TRUE(feed_frame(c, H2_HEADERS, 0, 1, frag.data(), frag.size())); // buffered (< hblock)
+        std::vector<uint8_t> more(64, 0);
+        TEST_ASSERT_FALSE(feed_frame(c, H2_CONTINUATION, 0, 1, more.data(), more.size())); // overflow
+    }
+}
+
+// respond() rejects a content-type too large to fit the HPACK header block.
+void test_h2_respond_content_type_too_big()
+{
+    Cap cap;
+    H2Conn c;
+    establish(c, cap);
+    open_stream(c, 1);
+    std::string big_ct(1000, 'a');
+    TEST_ASSERT_FALSE(h2_conn_respond(&c, 1, 200, big_ct.c_str(), "x", 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -571,5 +639,8 @@ int main()
     RUN_TEST(test_h2_ping_bad);
     RUN_TEST(test_h2_frame_too_big);
     RUN_TEST(test_h2_respond_paths_and_goaway);
+    RUN_TEST(test_h2_more_guards);
+    RUN_TEST(test_h2_continuation_more);
+    RUN_TEST(test_h2_respond_content_type_too_big);
     return UNITY_END();
 }

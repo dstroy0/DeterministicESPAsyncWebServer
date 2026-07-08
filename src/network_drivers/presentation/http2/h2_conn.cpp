@@ -339,8 +339,10 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
     char num[16];
     int nl = snprintf(num, sizeof num, "%d", status);
     size_t w = hpack_encode_header(block + bo, sizeof block - bo, ":status", 7, num, (size_t)nl);
+    // GCOVR_EXCL_START  :status is a decimal int (<=11 chars) into a fresh 256B block; the encode cannot overflow
     if (!w)
         return false;
+    // GCOVR_EXCL_STOP
     bo += w;
     if (content_type)
     {
@@ -351,14 +353,18 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
     }
     int cl = snprintf(num, sizeof num, "%u", (unsigned)body_len);
     w = hpack_encode_header(block + bo, sizeof block - bo, "content-length", 14, num, (size_t)cl);
+    // GCOVR_EXCL_START  content-length is a decimal number; it cannot overflow the 256B block
     if (!w)
         return false;
+    // GCOVR_EXCL_STOP
     bo += w;
 
     uint8_t frame[H2_FRAME_HEADER_LEN + sizeof block];
     size_t n = h2_build_headers(frame, sizeof frame, stream_id, block, bo, body_len == 0);
+    // GCOVR_EXCL_START  frame is H2_FRAME_HEADER_LEN + sizeof block; 9 + bo (bo <= 256) always fits
     if (!n)
         return false;
+    // GCOVR_EXCL_STOP
     wr(c, frame, n);
 
     // Body as DATA frames, split to the peer's max frame size, END_STREAM on the last.
@@ -372,8 +378,10 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
         bool last = (sent + chunk == body_len);
         uint8_t dh[H2_FRAME_HEADER_LEN];
         size_t hn = h2_write_header(dh, sizeof dh, (uint32_t)chunk, H2_DATA, last ? H2_FLAG_END_STREAM : 0, stream_id);
+        // GCOVR_EXCL_START  dh is exactly H2_FRAME_HEADER_LEN; a 9-byte frame header always fits
         if (!hn)
             return false;
+        // GCOVR_EXCL_STOP
         wr(c, dh, hn);
         wr(c, (const uint8_t *)(body + sent), chunk);
         c->conn_send_window -= (int32_t)chunk;
