@@ -608,9 +608,135 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
     ssh_pkt_init(0); // leave the slot clean for later tests
 }
 
+// ---------------------------------------------------------------------------
+// Dispatcher guard / error branches
+// ---------------------------------------------------------------------------
+
+// An out-of-range connection slot is rejected outright.
+void test_ssh_dispatch_bad_slot()
+{
+    uint8_t p[1] = {SSH_MSG_IGNORE};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1));
+}
+
+// A KEXINIT whose payload is far too short fails negotiation.
+void test_ssh_kexinit_parse_fail()
+{
+    ssh_sess[0].phase = SSH_PHASE_KEXINIT;
+    uint8_t p[4] = {SSH_MSG_KEXINIT, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, p[0], p, sizeof(p)));
+}
+
+// KEXDH_INIT outside the DH_INIT phase is rejected; a malformed one in-phase fails the handler.
+void test_ssh_kexdh_guards()
+{
+    ssh_sess[0].phase = SSH_PHASE_KEXINIT; // not DH_INIT
+    uint8_t bad[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // wrong phase
+
+    SshSession *s = &ssh_sess[0];
+    strcpy(s->v_c, "SSH-2.0-T");
+    s->v_c_len = (uint16_t)strlen(s->v_c);
+    s->phase = SSH_PHASE_KEXINIT;
+    uint8_t pkt[2048];
+    size_t n = build_client_kexinit(pkt);
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));            // -> DH_INIT
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // handler fails
+}
+
+// SERVICE_REQUEST with a truncated service name fails.
+void test_ssh_service_request_fail()
+{
+    ssh_sess[0].phase = SSH_PHASE_SERVICE;
+    uint8_t bad[2] = {SSH_MSG_SERVICE_REQUEST, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
+}
+
+// USERAUTH_REQUEST outside the AUTH phase is rejected; a truncated one in-phase fails the handler.
+void test_ssh_userauth_guards()
+{
+    ssh_sess[0].phase = SSH_PHASE_SERVICE; // not AUTH
+    uint8_t p[2] = {SSH_MSG_USERAUTH_REQUEST, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, p[0], p, sizeof(p)));
+    ssh_sess[0].phase = SSH_PHASE_AUTH;
+    uint8_t bad[3] = {SSH_MSG_USERAUTH_REQUEST, 0, 0};
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
+}
+
+// Every post-auth connection message is rejected while unauthenticated.
+void test_ssh_postauth_authed_guard()
+{
+    ssh_sess[0].authed = false;
+    const uint8_t mts[] = {SSH_MSG_GLOBAL_REQUEST, SSH_MSG_CHANNEL_OPEN_CONFIRM, SSH_MSG_CHANNEL_OPEN_FAILURE,
+                           SSH_MSG_CHANNEL_REQUEST, SSH_MSG_CHANNEL_DATA};
+    for (size_t j = 0; j < sizeof(mts) / sizeof(mts[0]); j++)
+    {
+        uint8_t p[8] = {mts[j], 0, 0, 0, 0};
+        TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, mts[j], p, sizeof(p)));
+    }
+}
+
+// Authenticated, a malformed post-auth message fails its handler.
+void test_ssh_postauth_handler_fails()
+{
+    ssh_sess[0].authed = true;
+    const uint8_t mts[] = {SSH_MSG_GLOBAL_REQUEST, SSH_MSG_CHANNEL_OPEN, SSH_MSG_CHANNEL_REQUEST, SSH_MSG_CHANNEL_DATA};
+    for (size_t j = 0; j < sizeof(mts) / sizeof(mts[0]); j++)
+    {
+        uint8_t p[2] = {mts[j], 0}; // too short for the handler to parse
+        TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, mts[j], p, sizeof(p)));
+    }
+}
+
+// Authenticated, a stray OPEN_CONFIRM / OPEN_FAILURE is accepted-and-ignored (returns 0).
+void test_ssh_open_confirm_failure_authed()
+{
+    ssh_sess[0].authed = true;
+    uint8_t c[9] = {SSH_MSG_CHANNEL_OPEN_CONFIRM, 0, 0, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, c[0], c, sizeof(c)));
+    uint8_t f[5] = {SSH_MSG_CHANNEL_OPEN_FAILURE, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, f[0], f, sizeof(f)));
+}
+
+// A well-formed GLOBAL_REQUEST with want_reply is handled and answered (REQUEST_SUCCESS/FAILURE).
+void test_ssh_global_request_reply()
+{
+    ssh_sess[0].authed = true;
+    uint8_t p[64];
+    size_t n = 0;
+    p[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(p + n, "tcpip-forward");
+    p[n++] = 1; // want_reply
+    n += put_string(p + n, "0.0.0.0");
+    wr_u32(p + n, 8080);
+    n += 4;
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, p[0], p, n));
+    TEST_ASSERT_EQUAL_INT(1, emt_n); // a REQUEST_SUCCESS or REQUEST_FAILURE was emitted
+}
+
+// WINDOW_ADJUST and CHANNEL_EOF are accepted (no reply, returns 0).
+void test_ssh_window_adjust_and_eof()
+{
+    uint8_t w[9] = {SSH_MSG_CHANNEL_WINDOW_ADJUST, 0, 0, 0, 0, 0, 0, 0, 10};
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, w[0], w, sizeof(w)));
+    uint8_t e[5] = {SSH_MSG_CHANNEL_EOF, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, e[0], e, sizeof(e)));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_ssh_dispatch_bad_slot);
+    RUN_TEST(test_ssh_kexinit_parse_fail);
+    RUN_TEST(test_ssh_kexdh_guards);
+    RUN_TEST(test_ssh_service_request_fail);
+    RUN_TEST(test_ssh_userauth_guards);
+    RUN_TEST(test_ssh_postauth_authed_guard);
+    RUN_TEST(test_ssh_postauth_handler_fails);
+    RUN_TEST(test_ssh_open_confirm_failure_authed);
+    RUN_TEST(test_ssh_global_request_reply);
+    RUN_TEST(test_ssh_window_adjust_and_eof);
     RUN_TEST(test_ssh_pkt_index_and_cap_guards);
     RUN_TEST(test_ssh_pkt_recv_unencrypted_errors);
     RUN_TEST(test_ssh_pkt_seq_overflow_guards);
