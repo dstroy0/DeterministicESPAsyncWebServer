@@ -1153,6 +1153,82 @@ void test_sse_send_api()
 }
 #endif
 
+// status_text() renders the reason phrase for every code the server emits.
+// send() formats "HTTP/1.1 <code> <reason>", so drive it across the codes that
+// higher-level tests do not already exercise (plus an unknown code -> default).
+void test_status_text_reason_phrases()
+{
+    struct StatusCase
+    {
+        int code;
+        const char *reason;
+    };
+    static const StatusCase cases[] = {
+        {201, "Created"},
+        {206, "Partial Content"},
+        {303, "See Other"},
+        {304, "Not Modified"},
+        {307, "Temporary Redirect"},
+        {308, "Permanent Redirect"},
+        {401, "Unauthorized"},
+        {405, "Method Not Allowed"},
+        {408, "Request Timeout"},
+        {409, "Conflict"},
+        {413, "Payload Too Large"},
+        {414, "URI Too Long"},
+        {416, "Range Not Satisfiable"},
+        {429, "Too Many Requests"},
+        {500, "Internal Server Error"},
+        {501, "Not Implemented"},
+        {503, "Service Unavailable"},
+        {999, "Unknown"}, // 999 -> default
+#if DETWS_ENABLE_WEBDAV
+        {207, "Multi-Status"},
+        {412, "Precondition Failed"},
+        {423, "Locked"},
+        {502, "Bad Gateway"},
+#endif
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+    {
+        conn_pool[0] = {};
+        conn_pool[0].id = 0;
+        conn_pool[0].state = CONN_ACTIVE;
+        conn_pool[0].proto = PROTO_HTTP;
+        conn_pool[0].pcb = &_mock_pcb;
+        http_reset(0);
+        tcp_capture_reset();
+        g_server->send(0, cases[i].code, "text/plain", "x");
+        char want[48];
+        snprintf(want, sizeof(want), "HTTP/1.1 %d %s", cases[i].code, cases[i].reason);
+        TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), want));
+    }
+    tcp_capture_disable();
+}
+
+// A 405 lists every method registered for the matched path in the Allow header;
+// method_name() renders each token. Register PATCH/HEAD/OPTIONS on one path and
+// request it with an unregistered method.
+void test_allow_header_lists_methods()
+{
+    g_server->on("/m", HTTP_PATCH, record_handler);
+    g_server->on("/m", HTTP_OPTIONS, record_handler);
+    g_server->on("/m", HTTP_HEAD, record_handler);
+    g_server->on("/m", HTTP_PUT, record_handler);
+    g_server->on("/m", HTTP_METHOD_UNKNOWN, record_handler); // -> method_name() default ""
+    arm_slot(0, "DELETE /m HTTP/1.1\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb; // arm_slot leaves pcb null; the 405 must emit
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "405"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "PATCH"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "OPTIONS"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "HEAD"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "PUT"));
+    tcp_capture_disable();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1228,6 +1304,8 @@ int main()
 
     RUN_TEST(test_request_log_hook_fires);
     RUN_TEST(test_stats_endpoint_emits_json);
+    RUN_TEST(test_status_text_reason_phrases);
+    RUN_TEST(test_allow_header_lists_methods);
 
 #if DETWS_ENABLE_WEBSOCKET
     RUN_TEST(test_ws_send_api);
