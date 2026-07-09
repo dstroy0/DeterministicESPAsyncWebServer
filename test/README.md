@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2664 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2665 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -801,7 +801,16 @@ A thorough directory of all **2664 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (70 tests)</b></summary>
+<summary><b>test_application (71 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_trailer_truncation_clamps</b> &mdash; <i>(a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.</i></summary>
+
+    * **Objective**: (a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "HTTP/1.1 200"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "HTTP/1.1 200"))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
