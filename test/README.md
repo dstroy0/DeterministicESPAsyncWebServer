@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2584 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2586 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16686,7 +16686,7 @@ A thorough directory of all **2584 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (15 tests)</b></summary>
+<summary><b>test_opcua_client (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_on_read_all_variant_types</b> &mdash; <i>On read all variant types</i></summary>
@@ -16891,6 +16891,28 @@ A thorough directory of all **2584 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_hello("opc.tcp://host:4840", tiny, sizeof(tiny)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_open(&c, tiny, sizeof(tiny)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_activate_session(&c, tiny, sizeof(tiny)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_read_unknown_variant_rejected</b> &mdash; <i>A server sending a DataValue whose Variant type byte is unsupported must be rejected, not</i></summary>
+
+    * **Objective**: A server sending a DataValue whose Variant type byte is unsupported must be rejected, not
+    * **Assertions**:
+      * <code>Assert true (opcua_parse_read(req, rn, &rr))</code>
+      * <code>Assert true (sn &gt; 0)</code>
+      * <code>Assert true (type_off &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn, cv, cs, 1)); // default arm -&gt; err -&gt; -1</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_parsers_reject_negative_count</b> &mdash; <i>Response parsers reject negative count</i></summary>
+
+    * **Objective**: Response parsers reject negative count
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, n, v, s, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_write(resp, n, wr, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_browse(resp, n, refs, 1));</code>
   </details>
 
 </details>
