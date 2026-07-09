@@ -1088,6 +1088,82 @@ static void test_ssh_kdf_extension_chain(void)
     TEST_ASSERT_EQUAL_MEMORY(k2, out + SSH_SHA256_DIGEST_LEN, SSH_SHA256_DIGEST_LEN);
 }
 
+// chacha20-poly1305: a payload whose (1+len) mod 8 lands in 5..7 forces the pad<4 -> pad+=8 branch;
+// and a truncated packet is held (recv returns 0, consumes nothing).
+static void test_pkt_chacha_padding_and_incomplete(void)
+{
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
+    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+        km->chacha_key_c2s[i] = km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
+    km->active = true;
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+
+    uint8_t p4[4] = {SSH_MSG_IGNORE, 1, 2, 3}; // 1+4=5 mod 8 -> pad 3 -> +8
+    uint8_t wire[256];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p4, sizeof(p4), wire, &wlen, sizeof(wire)));
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler)); // valid round-trip
+
+    // Truncated packet (length still decodes, but the body is incomplete) -> held, returns 0.
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p4, sizeof(p4), wire, &wlen, sizeof(wire)));
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen - 8, pkt_handler));
+    ssh_keymat_wipe(0);
+}
+
+// aes256-ctr ETM: (1+len) mod 16 in 13..15 forces the pad<4 -> pad+=16 branch; and a truncated
+// packet is held.
+static void test_pkt_etm_padding_and_incomplete(void)
+{
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_AES256CTR;
+    km->mac_mode = SSH_MAC_HMAC_SHA256_ETM;
+    uint8_t key[32], iv[16];
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i + 1);
+    for (int i = 0; i < 16; i++)
+        iv[i] = (uint8_t)(0x80 + i);
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    ssh_aes256ctr_init(&km->s2c_ctx, key, iv);
+    for (int i = 0; i < 64; i++)
+        km->mac_key_c2s[i] = km->mac_key_s2c[i] = (uint8_t)(i * 5 + 3);
+    km->active = true;
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+
+    uint8_t p12[12]; // 1+12=13 mod 16 -> pad 3 -> +16
+    p12[0] = SSH_MSG_IGNORE;
+    for (int i = 1; i < 12; i++)
+        p12[i] = (uint8_t)i;
+    uint8_t wire[256];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);                          // reset the receive cipher
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler)); // valid round-trip
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    ssh_aes256ctr_init(&km->s2c_ctx, key, iv);
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, p12, sizeof(p12), wire, &wlen, sizeof(wire)));
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen - 8, pkt_handler)); // truncated -> held
+    ssh_keymat_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1152,6 +1228,8 @@ int main(void)
     RUN_TEST(test_pkt_aes_etm_sha512_roundtrip);
     RUN_TEST(test_pkt_encrypted_fragmented);
     RUN_TEST(test_pkt_encrypted_two_packets);
+    RUN_TEST(test_pkt_chacha_padding_and_incomplete);
+    RUN_TEST(test_pkt_etm_padding_and_incomplete);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
 

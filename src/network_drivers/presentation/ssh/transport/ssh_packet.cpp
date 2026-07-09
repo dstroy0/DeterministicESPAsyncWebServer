@@ -238,8 +238,8 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
         {
             // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
             // length is stateless/repeatable - no cipher-state peek/restore is needed.
-            if (s->rx_len < 4)
-                break; // need the encrypted length field
+            if (s->rx_len < 4) // GCOVR_EXCL_LINE  the enclosing while already requires rx_len >= 4
+                break;         // GCOVR_EXCL_LINE  (defensive re-check)
 
             uint32_t pkt_len = ssh_chachapoly_get_length(km->chacha_key_c2s, s->seq_no_recv, s->rx_buf);
             if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_CHACHAPOLY_TAG_LEN)
