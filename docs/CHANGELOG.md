@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`a74992a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a74992aa45785aafbbbaeeb1189b3ed60b41faf7))
+- update CHANGELOG.md [skip ci] ([`98b529d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/98b529de5cf260ad9192c9b3c5831225f180e96b))
 - update test report + coverage [skip ci] ([`6cf4d8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cf4d8e11e8c0a31fc3a85040d3b8eef4a573793))
 - update CHANGELOG.md [skip ci] ([`f5ed66a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5ed66a543934d4adcecc11d283869e78b4ec5c3))
 - update test report + coverage [skip ci] ([`e163269`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1632692c59890da2dee51a18d3c2408a556274f))
@@ -379,6 +381,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- reject unsupported Variant type in read response (96->97%) ([`70efc23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70efc239fc6eec40ea2b2bebb8e921326f27e2c5))
 - cover builder-overflow guard (cw_patch fail-closed) ([`2935b3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2935b3a1804d76a49f54d5bef29f1ff48bd9a888))
 - cover ByteString-skip paths + rx/proto_handler (97->98%) ([`56ca2b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56ca2b4d0cfdf1206540d9c3177939df6fda902c))
 - cover GETBULK, malformed-message guards + UDP handler (92->97%) ([`5f300fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f300fd21ed3a289dd3629a49523816f955aeb1a))
