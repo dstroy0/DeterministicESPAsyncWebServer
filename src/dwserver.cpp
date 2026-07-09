@@ -534,11 +534,15 @@ struct InstanceCtx
     DetWebServer *http_instance = nullptr;
 };
 static InstanceCtx s_inst;
+#ifdef ARDUINO
+// The worker task's per-tick entry (registered with detws_workers_start below); ESP32-only, so it is
+// compiled only where it is used - on host the pipeline runs inline via handle().
 static void detws_pump_trampoline(int worker_id)
 {
     if (s_inst.worker_server)
         s_inst.worker_server->service_once(worker_id);
 }
+#endif
 
 #if DETWS_ENABLE_HTTP3
 // The quic_server request seam has no DetWebServer type; this trampoline forwards a completed

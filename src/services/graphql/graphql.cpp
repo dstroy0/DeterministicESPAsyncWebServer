@@ -526,7 +526,10 @@ void emit_field(Writer &w, int idx, int path_len)
     int pushed = 0;
     for (int a = 0; a < node->n_args; a++)
         if (s_gql.scope_n < DETWS_GQL_MAX_ARGS)
-            s_gql.scope[s_gql.scope_n++] = node->first_arg + a, pushed++;
+        {
+            s_gql.scope[s_gql.scope_n++] = node->first_arg + a;
+            pushed++;
+        }
 
     w_json_str(w, node->name);
     w_raw(w, ":", 1);
