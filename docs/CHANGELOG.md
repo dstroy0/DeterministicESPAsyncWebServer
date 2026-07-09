@@ -15,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f91568f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f91568ffc2f11f7f1d2ae4f7fce83a98d145f2d7))
+- update CHANGELOG.md [skip ci] ([`4d020a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d020a1105146aefbc2a2cea0a71086fb8122990))
 - update CHANGELOG.md [skip ci] ([`843f514`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/843f514a2fcc913060073fb6d0f75f415f0bc051))
 - update test report + coverage [skip ci] ([`cf78c50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf78c50eaa326b5700e8485d3df325611c2e9242))
 - update CHANGELOG.md [skip ci] ([`aab8ea0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aab8ea0d429a9f6750a0e5cb07354fb1625352b4))
@@ -290,6 +292,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`8530ca6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8530ca63d648a39e37db446c847123e07b00f653))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7b45c60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b45c60f9569ff51076aff42e8c4887361150b96))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdc17aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdc17aafb333db7ccc3048e9bb2ebb226953b7d0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cad9b42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cad9b42c2150a5f51b68f9221bc3bcb6ade4ec01))
@@ -544,6 +547,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover empty/null-password key localization (snmp_crypto 100%) ([`237aa2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/237aa2cabdb1741f4cfbfb991be8ef6fd788693a))
 - mark the compose remlen guard provably-dead (GCOVR_EXCL) ([`c814199`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c81419906a56382636e5a58c00b612700f82f678))
 - cover DisplayName Locale-skip in on_browse (100%) ([`7b2e0b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b2e0b2ce6af03e5d3d0ad4369b99838aee7ea82))
 - cover response scopedPDU overflow guard (100%) ([`53467fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53467fac390bc9e944b95598d5a610fe7d462be5))
