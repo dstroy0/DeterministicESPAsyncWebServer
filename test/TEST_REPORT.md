@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 11:28:05
+**Generated:** 2026-07-09 11:37:31
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2762 passed - 395s
+**Result:** ✅ 2764 passed - 381s
 
 ---
 
@@ -37,13 +37,13 @@
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.233 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.784 |
 | `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.760 |
-| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:21.952 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.776 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.091 |
-| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:02.050 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.737 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.244 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:02.021 |
+| `test_ssh_crypto`        | `native_ssh`            |    47 |   ✅   | 00:00:08.363 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.603 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:00.909 |
+| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:02.638 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.876 |
 | `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.537 |
 | `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.692 |
 | `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.694 |
@@ -153,7 +153,7 @@
 | `test_inflate`           | `native_inflate`        |    13 |   ✅   | 00:00:08.679 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.374 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.106 |
 | `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.366 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.824 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.838 |
@@ -1158,7 +1158,7 @@ _Unit tests for detws_prov_form_field(): the x-www-form-urlencoded field_
 
 ---
 
-## test_ssh_crypto - native_ssh - ✅ 45 passed
+## test_ssh_crypto - native_ssh - ✅ 47 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1210,8 +1210,10 @@ _SSH crypto layer test suite._
 |  41 | `test_pkt_aes_etm_sha512_roundtrip`          |   ✅   | Pkt aes etm sha512 roundtrip                                                             |
 |  42 | `test_pkt_encrypted_fragmented`              |   ✅   | Pkt encrypted fragmented                                                                 |
 |  43 | `test_pkt_encrypted_two_packets`             |   ✅   | Pkt encrypted two packets                                                                |
-|  44 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                |
-|  45 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                  |
+|  44 | `test_pkt_chacha_padding_and_incomplete`     |   ✅   | Pkt chacha padding and incomplete                                                        |
+|  45 | `test_pkt_etm_padding_and_incomplete`        |   ✅   | Pkt etm padding and incomplete                                                           |
+|  46 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                |
+|  47 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                  |
 
 </details>
 
