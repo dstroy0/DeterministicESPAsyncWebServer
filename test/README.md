@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2480 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2481 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -10410,7 +10410,7 @@ A thorough directory of all **2480 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ina219 (4 tests)</b></summary>
+<summary><b>test_ina219 (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bus_mv</b> &mdash; <i>3300 mV -> value 825 (0x339) in bits [15:3] -> register 825<<3 = 0x19C8.</i></summary>
@@ -10450,6 +10450,18 @@ A thorough directory of all **2480 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(100000, ina219_current_ua(1000, 100)); // 100 mA</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-50000, ina219_current_ua(-500, 100)); // signed</code>
       * <code>TEST_ASSERT_EQUAL_INT32(1000000, ina219_power_uw(500, 100));   // 1 W</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_i2c_stubs_fail_closed</b> &mdash; <i>On a host build there is no I2C: begin and every read fail closed (return false), so a caller</i></summary>
+
+    * **Objective**: On a host build there is no I2C: begin and every read fail closed (return false), so a caller
+    * **Assertions**:
+      * <code>Assert false (ina219_begin(0x40, 100, 100))</code>
+      * <code>Assert false (ina219_read_bus_mv(&v))</code>
+      * <code>Assert false (ina219_read_shunt_uv(&v))</code>
+      * <code>Assert false (ina219_read_current_ua(&v))</code>
+      * <code>Assert false (ina219_read_power_uw(&v))</code>
   </details>
 
 </details>
