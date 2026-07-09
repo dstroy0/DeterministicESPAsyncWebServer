@@ -776,9 +776,219 @@ void test_forwarded_inbound_data_routes_to_forward_cb()
     TEST_ASSERT_EQUAL_MEMORY("payload", fwd_data, 7);
 }
 
+// ---- guard / error-branch coverage ----------------------------------------
+
+// Every entry point rejects an out-of-range slot or a wrong leading message byte.
+void test_chan_slot_and_msgtype_guards()
+{
+    uint8_t out[32];
+    size_t ol = 0;
+    uint8_t z[17] = {0};             // leading byte 0 != any handled message type
+    ssh_channel_init(MAX_SSH_CONNS); // no-op
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, z, sizeof(z), out, &ol, sizeof(out)));      // 175
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)));    // 346
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open_confirm(MAX_SSH_CONNS, z, 17));                  // 312
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open_failure(0, z, 5));                               // 331
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_request(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out))); // 412
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_data(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)));    // 454
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_window_adjust(0, z, 9));                              // 533
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_build_close(MAX_SSH_CONNS, 0, out, &ol, sizeof(out)));       // 567
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_close(0, z, 5, out, &ol, sizeof(out)));               // 575
+}
+
+// Malformed payloads (over-long strings, missing trailing fields, unknown channel) are rejected.
+void test_chan_malformed_payloads()
+{
+    uint8_t out[64];
+    size_t ol = 0;
+    size_t n = 0;
+
+    uint8_t over[5] = {SSH_MSG_CHANNEL_OPEN, 0x00, 0x00, 0x00, 0xFF}; // type len 255 overruns -> rd_string (96)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(0, over, sizeof(over), out, &ol, sizeof(out)));
+
+    uint8_t shortpkt[16];
+    n = 0;
+    shortpkt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(shortpkt + n, "x"); // type ok but < 12 trailing bytes (354)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(0, shortpkt, n, out, &ol, sizeof(out)));
+
+    ssh_channel_set_forward_open_cb(fwd_open_cb); // forwarding on so direct-tcpip reaches the host parse
+    uint8_t dt[40];
+    n = 0;
+    dt[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(dt + n, "direct-tcpip");
+    wr_u32(dt + n, 7);
+    wr_u32(dt + n + 4, 32768);
+    wr_u32(dt + n + 8, 32768);
+    n += 12;
+    dt[n++] = 0;
+    dt[n++] = 0;
+    dt[n++] = 0;
+    dt[n++] = 0xFF; // host string len 255, truncated (374)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)));
+
+    uint8_t rq[32];
+    n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, 0);
+    n += 4;
+    rq[n++] = 0;
+    rq[n++] = 0;
+    rq[n++] = 0;
+    rq[n++] = 0xFF; // rtype len 255 -> rd_string fail (422)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, 0);
+    n += 4;
+    n += put_string(rq + n, "shell"); // no want_reply byte (424)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+    n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, 99);
+    n += 4;
+    n += put_string(rq + n, "shell");
+    rq[n++] = 1; // recipient 99 not open (429)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)));
+
+    uint8_t dp[16];
+    n = 0;
+    dp[n++] = SSH_MSG_CHANNEL_DATA;
+    wr_u32(dp + n, 0);
+    n += 4;
+    dp[n++] = 0;
+    dp[n++] = 0;
+    dp[n++] = 0;
+    dp[n++] = 0xFF; // data len 255 truncated (464)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_data(0, dp, n, out, &ol, sizeof(out)));
+
+    uint8_t g[40];
+    n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "x"); // name but no want_reply byte (183)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+    n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "tcpip-forward");
+    g[n++] = 1;
+    g[n++] = 0;
+    g[n++] = 0;
+    g[n++] = 0;
+    g[n++] = 0xFF; // truncated bind address (195)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)));
+}
+
+// build_open_failure / build_open_confirm reject an output buffer smaller than 17 bytes.
+void test_chan_open_cap_guards()
+{
+    uint8_t out[64];
+    size_t ol = 0, n = 0;
+    uint8_t unk[32];
+    unk[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(unk + n, "bogus");
+    wr_u32(unk + n, 1);
+    wr_u32(unk + n + 4, 32768);
+    wr_u32(unk + n + 8, 32768);
+    n += 12;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(0, unk, n, out, &ol, 10)); // unknown type -> failure cap<17 (143)
+
+    n = 0;
+    uint8_t ses[32];
+    ses[n++] = SSH_MSG_CHANNEL_OPEN;
+    n += put_string(ses + n, "session");
+    wr_u32(ses + n, 1);
+    wr_u32(ses + n + 4, 32768);
+    wr_u32(ses + n + 8, 32768);
+    n += 12;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -> confirm cap<17 (157)
+}
+
+// open_forwarded guards (null addr, tiny cap, pool full) + per-channel cap guards.
+void test_chan_forward_and_channel_guards()
+{
+    uint8_t out[64];
+    size_t ol = 0, n = 0;
+    // While a slot is free: null address (262) and a too-small buffer (273).
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out))); // 262
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10)); // 273
+
+    uint32_t ch = open_session(5, 32768);
+    uint8_t rq[32];
+    n = 0;
+    rq[n++] = SSH_MSG_CHANNEL_REQUEST;
+    wr_u32(rq + n, ch);
+    n += 4;
+    n += put_string(rq + n, "shell");
+    rq[n++] = 1;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap<5 (439)
+
+    ssh_chan[0][ch].peer_window = 1000;
+    ssh_chan[0][ch].peer_max_pkt = 1000;
+    TEST_ASSERT_EQUAL_INT(-1,
+                          ssh_channel_build_data(0, ch, (const uint8_t *)"hello", 5, out, &ol, 5)); // cap<9+len (515)
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_build_close(0, 99, out, &ol, sizeof(out)));               // null chan (553)
+
+    // With every channel slot occupied, a server-initiated open is refused (265).
+    for (int c = 0; c < DETWS_SSH_MAX_CHANNELS; c++)
+        ssh_chan[0][c].open = true;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)));
+}
+
+// GLOBAL_REQUEST reply paths that cannot fit the (tiny) output buffer.
+void test_chan_global_request_reply_caps()
+{
+    uint8_t out[64];
+    size_t ol = 0, n = 0;
+    uint8_t g[64];
+    // Unknown request name, want_reply, no room for the 1-byte reply (246).
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "unknown-req");
+    g[n++] = 1;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 0)); // 246
+
+    // tcpip-forward refused (no cb), want_reply, no room (210).
+    n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "tcpip-forward");
+    g[n++] = 1;
+    n += put_string(g + n, "0.0.0.0");
+    wr_u32(g + n, 8080);
+    n += 4;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 0)); // 210
+
+    // tcpip-forward accepted with port 0 (echo), want_reply, no room for the 5-byte reply (224).
+    ssh_channel_set_rforward_open_cb(rfwd_open_cb);
+    rfwd_open_ret = 9000;
+    n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "tcpip-forward");
+    g[n++] = 1;
+    n += put_string(g + n, "0.0.0.0");
+    wr_u32(g + n, 0);
+    n += 4;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 3)); // 224
+
+    // cancel accepted, want_reply, no room for the bare success (232).
+    ssh_channel_set_rforward_cancel_cb(rfwd_cancel_cb);
+    rfwd_cancel_ret = 0;
+    n = 0;
+    g[n++] = SSH_MSG_GLOBAL_REQUEST;
+    n += put_string(g + n, "cancel-tcpip-forward");
+    g[n++] = 1;
+    n += put_string(g + n, "0.0.0.0");
+    wr_u32(g + n, 8080);
+    n += 4;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_global_request_handle(0, g, n, out, &ol, 0)); // 232
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_chan_slot_and_msgtype_guards);
+    RUN_TEST(test_chan_malformed_payloads);
+    RUN_TEST(test_chan_open_cap_guards);
+    RUN_TEST(test_chan_forward_and_channel_guards);
+    RUN_TEST(test_chan_global_request_reply_caps);
     RUN_TEST(test_open_session_confirms);
     RUN_TEST(test_open_unknown_type_fails);
     RUN_TEST(test_direct_tcpip_no_cb_prohibited);
