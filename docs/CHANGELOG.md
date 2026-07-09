@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`83ad1a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83ad1a3c0cd42a3d22b0271bb0f25779856a5f54))
 - update CHANGELOG.md [skip ci] ([`787fd3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/787fd3a99b6abd2552f8b7381cac7b7763fbd09c))
 - update test report + coverage [skip ci] ([`399c94c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/399c94c6fd5a6bc24d109ce3f56bee74754506d2))
 - update CHANGELOG.md [skip ci] ([`f4b8bac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4b8bac1b90cc45316511e9ad8175c46ce079fe7))
@@ -201,6 +202,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ead1b96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ead1b96fcfa2896430c97d0db673577716d9d5b9))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5343d73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5343d73cdee38fc5dc609949437dea41a8d11af3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3449fea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3449feac2db6f4808b6cf7cbfd9a6f1c8209d12d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0d12ca6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d12ca6e4a9c545c42edb40910a3fc302448b2bf))
@@ -391,6 +393,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- reject malformed DataValue + AdditionalHeader underrun (99%) ([`a57af3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a57af3af689ff41a0276ec7ebe3f7d66e261583b))
 - parse_write truncated-item/IndexRange + parse_open wrong TypeId ([`4e6f9ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e6f9ca32fe411c90c3de8418bd3a69bc74cdc9c))
 - reject truncated NodesToRead/NodesToBrowse items (server hardening) ([`89178d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89178d21699482dacc34c325aa30177431280685))
 - cover ResponseHeader StringTable skip (99%) ([`2f0bced`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2f0bced135ad860283c682fa4cd743166d7fb7d3))
