@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2475 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2478 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -27860,7 +27860,7 @@ A thorough directory of all **2475 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_workers (3 tests)</b></summary>
+<summary><b>test_workers (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_worker_count_is_two</b> &mdash; <i>Worker count is two</i></summary>
@@ -27886,6 +27886,34 @@ A thorough directory of all **2475 test cases** across **228 suites**. Expand a 
     * **Objective**: Pool init defaults owner zero
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[i].owner);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_worker_self_id_roundtrip</b> &mdash; <i>detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back.</i></summary>
+
+    * **Objective**: detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back.
+    * **Assertions**:
+      * <code>Assert equal int (1, detws_worker_self())</code>
+      * <code>Assert equal int (0, detws_worker_self())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_worker_lifecycle_is_noops</b> &mdash; <i>On host there is no worker task: start/stop/wake are no-ops and running() stays false.</i></summary>
+
+    * **Objective**: On host there is no worker task: start/stop/wake are no-ops and running() stays false.
+    * **Assertions**:
+      * <code>Assert false (detws_workers_running())</code>
+      * <code>Assert false (detws_workers_running())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_defer_runs_inline_and_rejects_null</b> &mdash; <i>On host the caller and pipeline are the same thread, so detws_defer runs the callback inline</i></summary>
+
+    * **Objective**: On host the caller and pipeline are the same thread, so detws_defer runs the callback inline
+    * **Assertions**:
+      * <code>Assert false (detws_defer(0, nullptr, nullptr))</code>
+      * <code>Assert true (detws_defer(0, set_flag_to_42, &flag))</code>
+      * <code>Assert equal int (42, flag)</code>
   </details>
 
 </details>
