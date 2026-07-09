@@ -95,6 +95,14 @@ void test_build_init_guards()
     TEST_ASSERT_EQUAL_INT(0, (int)mpr121_build_init(seq, sizeof(seq), 13, 12, 6)); // n > 12
 }
 
+void test_host_i2c_stubs()
+{
+    // Host build: no I2C bus. begin() fails, register reads return 0.
+    TEST_ASSERT_FALSE(mpr121_begin(0x5A));
+    TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_touched());
+    TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_filtered(0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -103,5 +111,6 @@ int main()
     RUN_TEST(test_word10);
     RUN_TEST(test_build_init_bytes);
     RUN_TEST(test_build_init_guards);
+    RUN_TEST(test_host_i2c_stubs);
     return UNITY_END();
 }

@@ -62,6 +62,18 @@ void test_base32_rejects_invalid()
     TEST_ASSERT_EQUAL_INT(-1, detws_base32_decode("MZXW6MZXW6", out, 1));         // overflow
 }
 
+void test_long_key_default_period_and_base32()
+{
+    uint8_t longkey[80];
+    for (int i = 0; i < 80; i++)
+        longkey[i] = (uint8_t)i;
+    (void)detws_totp(longkey, sizeof(longkey), 59, 0, 6); // period 0 -> defaults to 30; long key pre-hashed
+    (void)detws_hotp(longkey, sizeof(longkey), 1, 6);
+    uint8_t out[16];
+    TEST_ASSERT_TRUE(detws_base32_decode("MFRGG===", out, sizeof(out)) >= 0);  // '=' padding skipped
+    TEST_ASSERT_EQUAL_INT(-1, detws_base32_decode("MFRG!", out, sizeof(out))); // invalid char
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -69,5 +81,6 @@ int main()
     RUN_TEST(test_verify_window);
     RUN_TEST(test_base32_decode);
     RUN_TEST(test_base32_rejects_invalid);
+    RUN_TEST(test_long_key_default_period_and_base32);
     return UNITY_END();
 }

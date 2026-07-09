@@ -84,6 +84,15 @@ void test_empty_pool_fails(void)
     TEST_ASSERT_EQUAL_INT(SOCK_ACQ_FAIL, detws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr));
 }
 
+void test_null_guard_subconditions()
+{
+    detws_sockpool_init(nullptr, nullptr, 0); // null pool -> no-op
+    detws_sockpool_touch(nullptr, 0, 0);      // null pool -> no-op
+    size_t idx = 0;
+    TEST_ASSERT_FALSE(detws_sockpool_find(nullptr, 1, &idx));    // null pool -> false
+    TEST_ASSERT_EQUAL_size_t(0, detws_sockpool_in_use(nullptr)); // null pool -> 0
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -92,5 +101,6 @@ int main(void)
     RUN_TEST(test_touch_changes_lru);
     RUN_TEST(test_release_reopens_free);
     RUN_TEST(test_empty_pool_fails);
+    RUN_TEST(test_null_guard_subconditions);
     return UNITY_END();
 }

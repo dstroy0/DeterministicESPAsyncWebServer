@@ -86,6 +86,22 @@ void test_hartip_header(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_hartip_build_header(0, 0, 0, 0, 0, out, 4));
 }
 
+void test_build_and_parse_guards()
+{
+    uint8_t out[32];
+    uint8_t addr[5] = {0};
+    uint8_t data[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0,
+                             detws_hart_build(0x82, addr, 2, 0, data, sizeof(data), out, sizeof(out))); // bad addr_len
+    TEST_ASSERT_EQUAL_size_t(0,
+                             detws_hart_build(0x82, nullptr, 5, 0, data, sizeof(data), out, sizeof(out))); // null addr
+    TEST_ASSERT_EQUAL_size_t(0, detws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small
+    HartFrame hf;
+    TEST_ASSERT_FALSE(detws_hart_parse(nullptr, 10, &hf)); // null frame
+    uint8_t tiny[2] = {0x82, 0x00};
+    TEST_ASSERT_FALSE(detws_hart_parse(tiny, sizeof(tiny), &hf)); // len < minimum
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -95,5 +111,6 @@ int main(void)
     RUN_TEST(test_build_long_address);
     RUN_TEST(test_parse_roundtrip_and_bad_checksum);
     RUN_TEST(test_hartip_header);
+    RUN_TEST(test_build_and_parse_guards);
     return UNITY_END();
 }

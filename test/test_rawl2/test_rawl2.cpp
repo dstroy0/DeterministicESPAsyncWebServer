@@ -75,6 +75,21 @@ void test_fcs_check_vector(void)
     TEST_ASSERT_EQUAL_HEX32(0xCBF43926, detws_eth_fcs(msg, sizeof(msg)));
 }
 
+void test_eth_build_parse_guards()
+{
+    uint8_t out[64];
+    uint8_t mac[6] = {1, 2, 3, 4, 5, 6};
+    uint8_t pay[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+    TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(nullptr, mac, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null dst
+    TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(mac, mac, 0x0800, pay, sizeof(pay), out, 8)); // cap too small
+    TEST_ASSERT_EQUAL_size_t(
+        0, detws_eth_build_vlan(nullptr, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null dst
+    TEST_ASSERT_EQUAL_size_t(0, detws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, 8)); // cap
+    EthFrame ef;
+    uint8_t vlanish[15] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x81, 0x00, 0x00}; // 802.1Q TPID then truncated
+    TEST_ASSERT_FALSE(detws_eth_parse(vlanish, sizeof(vlanish), &ef));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -82,5 +97,6 @@ int main(void)
     RUN_TEST(test_build_vlan);
     RUN_TEST(test_parse);
     RUN_TEST(test_fcs_check_vector);
+    RUN_TEST(test_eth_build_parse_guards);
     return UNITY_END();
 }

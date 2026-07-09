@@ -92,6 +92,16 @@ void test_roam(void)
     TEST_ASSERT_FALSE(detws_wifi_should_roam(-60, -75, 8));
 }
 
+void test_stats_add_null_and_default_type()
+{
+    detws_wifi_stats_add(nullptr, nullptr); // null guard
+    WifiStats st = {};
+    WifiFrame f = {};
+    f.type = 3; // reserved/extension type -> default switch arm (other++)
+    detws_wifi_stats_add(&st, &f);
+    TEST_ASSERT_EQUAL_UINT32(1, st.other);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -100,5 +110,6 @@ int main(void)
     RUN_TEST(test_parse_ctrl_short);
     RUN_TEST(test_stats);
     RUN_TEST(test_roam);
+    RUN_TEST(test_stats_add_null_and_default_type);
     return UNITY_END();
 }

@@ -245,6 +245,16 @@ void test_two_channels_independent()
     TEST_ASSERT_EQUAL_size_t(1, ch1);
 }
 
+void test_channel_guard_subconditions()
+{
+    det_dma_close(255); // out-of-range close is a no-op
+    det_dma_close(0);   // ensure channel 0 is closed
+    uint8_t b[4] = {0};
+    TEST_ASSERT_FALSE(det_dma_sim_feed(0, b, sizeof(b)));        // channel not open
+    TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(0, b, 4));   // channel not open
+    TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(255, b, 4)); // bad channel
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -259,5 +269,6 @@ int main()
     RUN_TEST(test_feed_fail_closed_when_full);
     RUN_TEST(test_closed_channel_is_inert);
     RUN_TEST(test_two_channels_independent);
+    RUN_TEST(test_channel_guard_subconditions);
     return UNITY_END();
 }

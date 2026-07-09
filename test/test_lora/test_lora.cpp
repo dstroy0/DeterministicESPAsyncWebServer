@@ -204,6 +204,18 @@ void test_recv_truncates_to_cap()
     TEST_ASSERT_EQUAL_MEMORY(frame, buf, 4);
 }
 
+void test_frame_parse_build_guards()
+{
+    lora_header hdr = {};
+    const uint8_t *payload = nullptr;
+    uint16_t payload_len = 0;
+    uint8_t too_short[1] = {0};
+    TEST_ASSERT_FALSE(lora_frame_parse(too_short, sizeof(too_short), &hdr, &payload, &payload_len)); // too short
+    uint8_t out[4];
+    uint8_t pay[8] = {0};
+    TEST_ASSERT_EQUAL_UINT16(0, lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -220,5 +232,6 @@ int main()
     RUN_TEST(test_recv_no_packet);
     RUN_TEST(test_recv_crc_error_dropped);
     RUN_TEST(test_recv_truncates_to_cap);
+    RUN_TEST(test_frame_parse_build_guards);
     return UNITY_END();
 }

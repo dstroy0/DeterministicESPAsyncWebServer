@@ -108,6 +108,16 @@ void test_issue_rejects_small_buffer()
     TEST_ASSERT_EQUAL_INT(0, csrf_issue(small, sizeof(small)));
 }
 
+void test_reset_and_verify_guards()
+{
+    csrf_reset();                               // clears the secret
+    TEST_ASSERT_FALSE(csrf_verify("anything")); // no secret -> false
+    uint8_t secret[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    csrf_set_secret(secret, sizeof(secret));
+    TEST_ASSERT_FALSE(csrf_verify("not-a-valid-token")); // malformed token -> false
+    TEST_ASSERT_FALSE(csrf_verify(nullptr));             // null token -> false
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -120,5 +130,6 @@ int main()
     RUN_TEST(test_no_secret_fails_closed);
     RUN_TEST(test_issue_unique);
     RUN_TEST(test_issue_rejects_small_buffer);
+    RUN_TEST(test_reset_and_verify_guards);
     return UNITY_END();
 }

@@ -79,6 +79,21 @@ void test_snvt_switch(void)
     TEST_ASSERT_EQUAL_UINT8(201, enc[0]); // 100.5 * 2
 }
 
+void test_snvt_clamps_and_guards()
+{
+    uint8_t out[16];
+    uint8_t val[2] = {0, 0};
+    TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small
+    LonNv nv;
+    uint8_t tiny[1] = {0};
+    TEST_ASSERT_FALSE(detws_lon_parse_nv(tiny, sizeof(tiny), &nv)); // too short
+    uint8_t t[2];
+    detws_lon_snvt_temp_encode(1e9, t);  // saturates at +32767
+    detws_lon_snvt_temp_encode(-1e9, t); // saturates at -32768
+    uint8_t sw[2];
+    detws_lon_snvt_switch_encode(-5.0, 1, sw); // negative percent clamps to 0
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -86,5 +101,6 @@ int main(void)
     RUN_TEST(test_nv_selector_masked_to_14_bits);
     RUN_TEST(test_snvt_temp);
     RUN_TEST(test_snvt_switch);
+    RUN_TEST(test_snvt_clamps_and_guards);
     return UNITY_END();
 }
