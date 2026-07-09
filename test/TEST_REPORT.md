@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 09:41:10
+**Generated:** 2026-07-09 10:04:13
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2736 passed - 325s
+**Result:** ✅ 2737 passed - 330s
 
 ---
 
@@ -89,7 +89,7 @@
 | `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.730 |
 | `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.732 |
 | `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.740 |
-| `test_thread`            | `native_thread`         |    14 |   ✅   | 00:00:00.753 |
+| `test_thread`            | `native_thread`         |    15 |   ✅   | 00:00:05.960 |
 | `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.789 |
 | `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.735 |
 | `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.741 |
@@ -2728,7 +2728,7 @@ _Unit tests for the Zigbee EZSP / ASH framing codec (services/zigbee): the CRC-1
 
 ---
 
-## test_thread - native_thread - ✅ 14 passed
+## test_thread - native_thread - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2751,6 +2751,7 @@ _Unit tests for the Thread spinel / HDLC-lite framing codec (services/thread): t
 |  12 | `test_spinel_command_build_parse_round_trip` |   ✅   | header 0x81, CMD_PROP_VALUE_SET, a large property id (multi-byte packed), a value.        |
 |  13 | `test_spinel_command_through_hdlc`           |   ✅   | The command payload rides inside an HDLC frame: build the command, frame it, decode       |
 |  14 | `test_spinel_guards`                         |   ✅   | Spinel guards                                                                             |
+|  15 | `test_thread_more_guards`                    |   ✅   | pack/unpack null-pointer guards.                                                          |
 
 </details>
 
