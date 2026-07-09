@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2662 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2664 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -801,7 +801,7 @@ A thorough directory of all **2662 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (68 tests)</b></summary>
+<summary><b>test_application (70 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
@@ -847,6 +847,24 @@ A thorough directory of all **2662 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(tcp_captured(), "Allow:"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "400"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "426"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_sse_upgrade_failure_paths</b> &mdash; <i>(a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400.</i></summary>
+
+    * **Objective**: (a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "400"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "400"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "101"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_upgrade_pool_exhausted</b> &mdash; <i>Sse upgrade pool exhausted</i></summary>
+
+    * **Objective**: Sse upgrade pool exhausted
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "text/event-stream"))</code>
   </details>
 
   <details style="margin-left: 20px;">
