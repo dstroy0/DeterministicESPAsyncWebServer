@@ -29,13 +29,13 @@ its batch/queue sizing follow directly from the measured IOPS/latency curve.
 
 Test matrix (to run on the ESP32-S3 with the SD card attached, over SDMMC and/or SPI):
 
-| Dimension        | Sweep                                                        |
-| ---------------- | ------------------------------------------------------------ |
-| Block size       | 512 B, 1 KiB, 4 KiB, 16 KiB, 64 KiB                          |
-| Pattern          | sequential vs random                                         |
-| Direction        | read vs write (and read-modify-write for the journal case)   |
-| Queue depth      | 1, then batched (to find the depth where throughput plateaus)|
-| Sync             | buffered vs `fsync`/flush-per-op (the durability cost)       |
+| Dimension   | Sweep                                                         |
+| ----------- | ------------------------------------------------------------- |
+| Block size  | 512 B, 1 KiB, 4 KiB, 16 KiB, 64 KiB                           |
+| Pattern     | sequential vs random                                          |
+| Direction   | read vs write (and read-modify-write for the journal case)    |
+| Queue depth | 1, then batched (to find the depth where throughput plateaus) |
+| Sync        | buffered vs `fsync`/flush-per-op (the durability cost)        |
 
 Metrics captured per cell: **IOPS**, **latency** (avg + p99), **throughput (MB/s)**, and the
 flush/`fsync` cost (the price of durability). The resulting curve sizes the atomic layer's write batch
@@ -63,11 +63,11 @@ Sustained is flat (a 139 MB run held ~1.4-1.5 MB/s with no SLC-cache knee).
 
 ### Random I/O (durable = flush per op, at 40 MHz)
 
-| Pattern     | IOPS       | Avg latency | Max latency | MB/s      |
-| ----------- | ---------: | ----------: | ----------: | --------: |
-| 4 KiB write | 37-87 \*   |      ~8 ms   |     ~107 ms  | 0.15-0.36 |
-| 4 KiB read  | 31-93 \*   |      ~3 ms   |     ~3.7 ms  | 0.13-0.38 |
-| 512 B write | 39-105 \*  |    ~6-8 ms   |     ~106 ms  | -         |
+| Pattern     |      IOPS | Avg latency | Max latency |      MB/s |
+| ----------- | --------: | ----------: | ----------: | --------: |
+| 4 KiB write |  37-87 \* |       ~8 ms |     ~107 ms | 0.15-0.36 |
+| 4 KiB read  |  31-93 \* |       ~3 ms |     ~3.7 ms | 0.13-0.38 |
+| 512 B write | 39-105 \* |     ~6-8 ms |     ~106 ms |         - |
 
 \* Durable random-**write** IOPS varied 2-3x run to run (the card's internal state / garbage collection).
 Reads are tight and predictable (~3 ms); durable writes carry **100+ ms tail-latency spikes** from SD
@@ -91,7 +91,7 @@ journal record and the queue depth.
 
 **A. Durable write size (one flush per write)**
 
-| Write size | MB/s  | IOPS | Avg latency | Max latency |
+| Write size |  MB/s | IOPS | Avg latency | Max latency |
 | ---------- | ----: | ---: | ----------: | ----------: |
 | 512 B      | 0.112 |  218 |      4.6 ms |      104 ms |
 | 1 KiB      | 0.171 |  167 |      6.0 ms |      106 ms |
@@ -105,7 +105,7 @@ journal record and the queue depth.
 
 **B. Batch depth (4 KiB writes, flush every N)**
 
-| Flush every N | MB/s  | Flushes/s | Avg flush | Max flush |
+| Flush every N |  MB/s | Flushes/s | Avg flush | Max flush |
 | ------------- | ----: | --------: | --------: | --------: |
 | 1             | 0.447 |       109 |    6.0 ms |    107 ms |
 | 2             | 0.530 |        65 |    9.0 ms |    109 ms |

@@ -59,11 +59,15 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 An on-device data-store stack. The user is attaching an **SD card** and wants an atomic buffer-to-flash
 layer built first, then the store codecs on top. Substrate before stores.
 
-- [ ] **Atomic buffer-to-flash layer (the substrate).** A power-loss-safe write path over the FS / SD:
-      a write-ahead journal or an A/B page double-buffer with a checksum + commit marker, so an
-      interrupted write is rolled back (never half-applied) on the next mount. Zero-heap, bounded
-      journal, static buffers. Co-designed with the user once the card is attached. Measure the write
-      path (see Performance).
+- [~] **Atomic buffer-to-flash layer (the substrate).** A power-loss-safe write path over the FS / SD:
+      a write-ahead log with a CRC per record and an A/B superblock commit marker, so an interrupted
+      write is discarded (never half-applied) on the next mount. Zero-heap, bounded, static buffers.
+      **Done:** `DETWS_ENABLE_WAL` - the pure record codec (`services/wal/wal.h`) plus the durable
+      store (`wal_store.h`: A/B superblock + `wal_store_checkpoint` + mount/tail-replay over a `WalDev`
+      block-device seam), host-tested (13 cases: CRC vector, torn/truncated-tail recovery, checkpoint
+      durability, superblock fallback). **Remaining:** bind the `WalDev` seam to a real `fs::FS` file
+      (SD / LittleFS) and run an on-device reset-and-remount durability check on the COM4 board; measure
+      the write path (see Performance).
 - [ ] **dbm**: a classic on-disk hash key-value store (ndbm / gdbm-style) - a bounded, host-testable
       file-format codec on top of the flash layer.
 - [ ] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record

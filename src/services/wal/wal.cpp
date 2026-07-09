@@ -56,6 +56,19 @@ uint32_t wal_crc32(const uint8_t *data, size_t len)
     return crc32_step(0xFFFFFFFFu, data, len) ^ 0xFFFFFFFFu;
 }
 
+uint32_t wal_crc32_init(void)
+{
+    return 0xFFFFFFFFu;
+}
+uint32_t wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n)
+{
+    return crc32_step(crc, d, n);
+}
+uint32_t wal_crc32_final(uint32_t crc)
+{
+    return crc ^ 0xFFFFFFFFu;
+}
+
 size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len)
 {
     size_t need = (size_t)WAL_RECORD_HEADER + len;

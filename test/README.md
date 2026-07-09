@@ -268,7 +268,7 @@ The native test matrix has **208 environments**, one per feature, generated from
 | `native_utmc` | `ETWS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
 | `native_vfs` | `ETWS_ENABLE_VFS=1` | `test_vfs` | Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM backend (the Arduino FS backend is ESP32-only and HW-verified). |
 | `native_vl53l0x` | `ETWS_ENABLE_VL53L0X=1` | `test_vl53l0x` | VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to millimeters, the interrupt-status data-ready decode, and the device range-status validity check. |
-| `native_wal` | `ETWS_ENABLE_WAL=1` | `test_wal` | Write-ahead journal for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core). |
+| `native_wal` | `ETWS_ENABLE_WAL=1` | `test_wal`, `test_wal_store` | Write-ahead store for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core), plus the A/B superblock + checkpoint + mount layer over a block-... |
 | `native_wamp` | `ETWS_ENABLE_WAMP=1` | `test_wamp` | WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional array parser (type / ids / URIs... |
 | `native_wave` | `ETWS_ENABLE_WAVE=1` | `test_wave` | IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID + length) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. |
 | `native_wearlevel` | `ETWS_ENABLE_WEARLEVEL=1` | `test_wearlevel` | Flash wear-leveling slot selector (services/wearlevel): least-worn pick (ties -> lowest index), saturating mark, and the wear-imbalance spread metric. |
@@ -498,7 +498,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2701 test cases** across **229 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2708 test cases** across **230 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28371,6 +28371,106 @@ A thorough directory of all **2701 test cases** across **229 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, wal_replay(nullptr, 0, collect, &c));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, wal_replay(junk, sizeof(junk), collect, &c));</code>
       * <code>Assert equal int (0, c.n)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_wal_store (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_format_then_mount_empty</b> &mdash; <i>Format then mount empty</i></summary>
+
+    * **Objective**: Format then mount empty
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_used(&s));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_committed(&s));</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_used(&m));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_committed(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mount_unformatted_fails</b> &mdash; <i>Mount unformatted fails</i></summary>
+
+    * **Objective**: Mount unformatted fails
+    * **Assertions**:
+      * <code>Assert false (wal_store_mount(&m, &dev))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_append_without_checkpoint_recovers_via_tail</b> &mdash; <i>Append without checkpoint recovers via tail</i></summary>
+
+    * **Objective**: Append without checkpoint recovers via tail
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"alpha", 5))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"bravo", 5))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"c", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(expect, wal_store_used(&s));</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(expect, wal_store_used(&m)); // all three recovered</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_committed(&m)); // but none were checkpointed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_checkpoint_commits_then_tail</b> &mdash; <i>Checkpoint commits then tail</i></summary>
+
+    * **Objective**: Checkpoint commits then tail
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"one", 3))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"two", 3))</code>
+      * <code>Assert true (wal_store_checkpoint(&s))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(committed, wal_store_committed(&s));</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"three", 5))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(committed, wal_store_committed(&m));      // durable pointer</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(committed + REC + 5, wal_store_used(&m)); // + the replayed 3rd</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_torn_tail_recovers_to_last_good</b> &mdash; <i>Corrupt a payload byte of the 3rd record on media -> its CRC now fails.</i></summary>
+
+    * **Objective**: Corrupt a payload byte of the 3rd record on media -> its CRC now fails.
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"one", 3))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"two", 3))</code>
+      * <code>Assert true (wal_store_checkpoint(&s))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"three", 5))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(good, wal_store_used(&m)); // torn 3rd dropped</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ab_superblock_fallback</b> &mdash; <i>Tear the *newest* superblock (copy A). Mount must fall back to copy B (gen 2, committed after 1 rec)</i></summary>
+
+    * **Objective**: Tear the *newest* superblock (copy A). Mount must fall back to copy B (gen 2, committed after 1 rec)
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"one", 3))</code>
+      * <code>Assert true (wal_store_checkpoint(&s)); // writes copy B (gen 2)</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"two", 3))</code>
+      * <code>Assert true (wal_store_checkpoint(&s)); // writes copy A (gen 3)</code>
+      * <code>Assert equal int (0, s.ab)</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(REC + 3, wal_store_committed(&m)); // fell back to B's committed head</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(committed, wal_store_used(&m));    // but recovered both via tail replay</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_append_full_fails_closed</b> &mdash; <i>Each header-only (len=0) record is WAL_RECORD_HEADER=20 bytes: 5 fit in 100, the 6th must fail.</i></summary>
+
+    * **Objective**: Each header-only (len=0) record is WAL_RECORD_HEADER=20 bytes: 5 fit in 100, the 6th must fail.
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(100, wal_store_capacity(&s));</code>
+      * <code>Assert equal int (5, ok)</code>
+      * <code>Assert true (wal_store_used(&s) &lt;= wal_store_capacity(&s))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5 * REC, wal_store_used(&m));</code>
   </details>
 
 </details>

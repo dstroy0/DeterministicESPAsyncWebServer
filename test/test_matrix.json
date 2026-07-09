@@ -1392,10 +1392,10 @@
       "tests": ["test_mtconnect"]
     },
     "native_wal": {
-      "desc": "Write-ahead journal for atomic buffer-to-flash storage (services/wal): CRC32 record\nframing + crash-recovery replay (the atomicity core). Pure host tests, incl. the CRC-32 check\nvector and torn/truncated-tail recovery to the last good record.",
+      "desc": "Write-ahead store for atomic buffer-to-flash storage (services/wal): CRC32 record\nframing + crash-recovery replay (the atomicity core), plus the A/B superblock + checkpoint + mount\nlayer over a block-device seam. Pure host tests, incl. the CRC-32 check vector, torn/truncated-tail\nrecovery to the last good record, checkpoint durability, and superblock fallback.",
       "flags": ["-DDETWS_ENABLE_WAL=1"],
-      "src": ["+<services/wal/wal.cpp>"],
-      "tests": ["test_wal"]
+      "src": ["+<services/wal/wal.cpp>", "+<services/wal/wal_store.cpp>"],
+      "tests": ["test_wal", "test_wal_store"]
     },
     "native_j2735": {
       "desc": "SAE J2735 V2X codec (services/j2735): the ASN.1 UPER bit primitive layer (constrained\nINTEGER / BOOLEAN / bit fields) and the BSMcore block encode/decode. Pure host tests with\nhand-computed bit patterns (162-bit BSMcore -> 21 octets).",

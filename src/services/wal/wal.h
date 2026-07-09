@@ -21,7 +21,9 @@
  * This is the atomicity core, and it is pure (no I/O) so it is fully host-testable: feed it a journal
  * image with a corrupted or truncated tail and it recovers to the last good record.
  *
- * (Increment 2 layers the fs::FS page ring + A/B superblock + checkpoint on top of this codec.)
+ * The durable store layer - A/B superblock, checkpoint, and mount/recover over a block-device seam - is
+ * built on this codec in wal_store.h; binding that seam to a real fs::FS file (SD / LittleFS) is the last
+ * step, then an on-device reset-and-remount durability check.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WAL_H
@@ -41,6 +43,18 @@
 
 /** @brief CRC-32 (IEEE 802.3, poly 0xEDB88320, init/final 0xFFFFFFFF) over @p data. */
 uint32_t wal_crc32(const uint8_t *data, size_t len);
+
+/**
+ * @name Streaming CRC-32
+ * The same CRC as ::wal_crc32, split so a record header and a large payload can be folded in without
+ * ever buffering both together - which is how the store CRCs an append (header then payload) and how
+ * recovery CRCs a record it reads back from media in small chunks.
+ * @{
+ */
+uint32_t wal_crc32_init(void);                                       ///< seed (0xFFFFFFFF)
+uint32_t wal_crc32_update(uint32_t crc, const uint8_t *d, size_t n); ///< fold @p n bytes into @p crc
+uint32_t wal_crc32_final(uint32_t crc);                              ///< finalize (xor 0xFFFFFFFF)
+/** @} */
 
 /**
  * @brief Encode one journal record into @p out.
