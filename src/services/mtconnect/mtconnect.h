@@ -14,6 +14,9 @@
  *  - **MTConnectDevices** (the `probe` response): the device model - a `<Device>` with its
  *    `<DataItems>` (each `category`/`id`/`type`, optional `name`/`units`) - that a client
  *    discovers before it streams.
+ *  - **MTConnectAssets** (the `asset` response): the tool/fixture inventory - a `<CuttingTool>`
+ *    with its `<CuttingToolLifeCycle>` (`<ToolLife>` remaining minutes / part count) - that a
+ *    client reads out of band from the observation stream.
  *  - **MTConnectError** (a request error): the header + an `<Errors><Error errorCode=..>` element.
  *
  * A streams document is assembled incrementally: open it, add each observation, close it. The instanceId
@@ -103,6 +106,44 @@ void detws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const 
 
 /** @brief Finish the probe document (close `<DataItems>` + `<Device>` + root). @return length, or 0 on overflow. */
 size_t detws_mtc_devices_end(DetwsMtcStreams *s);
+
+/**
+ * @brief Begin an MTConnectAssets (`asset`) document: XML declaration + header + open `<Assets>`.
+ * @param instance_id       agent instanceId (boot id).
+ * @param asset_count       the number of assets in this response (the Header `assetCount`).
+ * @param asset_buffer_size the agent's total asset capacity (the Header `assetBufferSize`).
+ *
+ * Reuses ::DetwsMtcStreams as the incremental buffer builder (as ::detws_mtc_devices_begin does).
+ */
+void detws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
+                            uint32_t asset_buffer_size);
+
+/**
+ * @brief Open one `<CuttingTool>` asset and its `<CuttingToolLifeCycle>`.
+ * @param asset_id      the CuttingTool `assetId` (required).
+ * @param serial_number optional `serialNumber` attribute (omitted when null/empty).
+ * @param tool_id       optional `toolId` attribute (omitted when null/empty).
+ * @param device_uuid   optional `deviceUuid` attribute (omitted when null/empty).
+ * @param timestamp     optional ISO-8601 `timestamp` attribute (omitted when null/empty).
+ */
+void detws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id, const char *serial_number,
+                                         const char *tool_id, const char *device_uuid, const char *timestamp);
+
+/**
+ * @brief Add one `<ToolLife>` element to the open cutting tool's life cycle.
+ * @param type            the life kind: "MINUTES", "PART_COUNT", or "WEAR".
+ * @param count_direction "UP" (accumulating) or "DOWN" (remaining).
+ * @param limit           optional `limit` attribute (the max/threshold; omitted when null/empty).
+ * @param value           the current life value text (XML-escaped).
+ */
+void detws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char *count_direction, const char *limit,
+                                const char *value);
+
+/** @brief Close the open `<CuttingToolLifeCycle>` + `<CuttingTool>`. */
+void detws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s);
+
+/** @brief Finish the asset document (close `<Assets>` + root). @return length, or 0 on overflow. */
+size_t detws_mtc_assets_end(DetwsMtcStreams *s);
 
 #endif // DETWS_ENABLE_MTCONNECT
 #endif // DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H

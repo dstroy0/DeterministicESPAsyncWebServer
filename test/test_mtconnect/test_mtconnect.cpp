@@ -132,6 +132,55 @@ void test_devices_escape_and_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));
 }
 
+void test_assets_document(void)
+{
+    char buf[1024];
+    DetwsMtcStreams s;
+    detws_mtc_assets_begin(&s, buf, sizeof(buf), 1500, 2, 1024);
+    detws_mtc_assets_cutting_tool_begin(&s, "tool-1", "SN-42", "T17", "uuid-abc", "2026-07-09T00:00:00Z");
+    detws_mtc_assets_tool_life(&s, "MINUTES", "DOWN", "100", "42");
+    detws_mtc_assets_cutting_tool_end(&s);
+    // A second tool with only the required assetId - optional attrs omitted.
+    detws_mtc_assets_cutting_tool_begin(&s, "tool-2", nullptr, nullptr, nullptr, nullptr);
+    detws_mtc_assets_tool_life(&s, "PART_COUNT", "UP", nullptr, "7");
+    detws_mtc_assets_cutting_tool_end(&s);
+    size_t n = detws_mtc_assets_end(&s);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+
+    TEST_ASSERT_TRUE(contains(buf, "<MTConnectAssets"));
+    TEST_ASSERT_TRUE(contains(buf, "instanceId=\"1500\" version=\"1.4\" assetBufferSize=\"1024\" assetCount=\"2\""));
+    TEST_ASSERT_TRUE(contains(
+        buf, "<Assets><CuttingTool assetId=\"tool-1\" serialNumber=\"SN-42\" toolId=\"T17\" deviceUuid=\"uuid-abc\" "
+             "timestamp=\"2026-07-09T00:00:00Z\"><CuttingToolLifeCycle>"));
+    TEST_ASSERT_TRUE(contains(buf, "<ToolLife type=\"MINUTES\" countDirection=\"DOWN\" limit=\"100\">42</ToolLife>"));
+    TEST_ASSERT_TRUE(contains(buf, "</CuttingToolLifeCycle></CuttingTool>"));
+    // Second tool: no optional attrs, no limit.
+    TEST_ASSERT_TRUE(contains(buf, "<CuttingTool assetId=\"tool-2\"><CuttingToolLifeCycle>"));
+    TEST_ASSERT_TRUE(contains(buf, "<ToolLife type=\"PART_COUNT\" countDirection=\"UP\">7</ToolLife>"));
+    TEST_ASSERT_TRUE(contains(buf, "</Assets></MTConnectAssets>"));
+}
+
+void test_assets_escape_and_overflow(void)
+{
+    char buf[1024];
+    DetwsMtcStreams s;
+    detws_mtc_assets_begin(&s, buf, sizeof(buf), 1, 1, 8);
+    detws_mtc_assets_cutting_tool_begin(&s, "a<1", "s&n", nullptr, nullptr, nullptr);
+    detws_mtc_assets_tool_life(&s, "WEAR", "UP", nullptr, "1>2");
+    detws_mtc_assets_cutting_tool_end(&s);
+    TEST_ASSERT_TRUE(detws_mtc_assets_end(&s) > 0);
+    TEST_ASSERT_TRUE(contains(buf, "assetId=\"a&lt;1\" serialNumber=\"s&amp;n\""));
+    TEST_ASSERT_TRUE(contains(buf, ">1&gt;2</ToolLife>"));
+    // An asset document that does not fit fails closed.
+    char tiny[40];
+    DetwsMtcStreams s2;
+    detws_mtc_assets_begin(&s2, tiny, sizeof(tiny), 1, 1, 8);
+    detws_mtc_assets_cutting_tool_begin(&s2, "a-tool-with-a-very-long-asset-id", nullptr, nullptr, nullptr, nullptr);
+    detws_mtc_assets_cutting_tool_end(&s2);
+    TEST_ASSERT_EQUAL_size_t(0, detws_mtc_assets_end(&s2));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -142,5 +191,7 @@ int main(void)
     RUN_TEST(test_escape_gt_quote_and_overflow);
     RUN_TEST(test_devices_probe_document);
     RUN_TEST(test_devices_escape_and_overflow);
+    RUN_TEST(test_assets_document);
+    RUN_TEST(test_assets_escape_and_overflow);
     return UNITY_END();
 }

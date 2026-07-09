@@ -264,4 +264,93 @@ size_t detws_mtc_devices_end(DetwsMtcStreams *s)
     return s->len;
 }
 
+// --- asset (MTConnectAssets): the tool/fixture inventory a client reads by GET /asset ---
+
+void detws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
+                            uint32_t asset_buffer_size)
+{
+    s->buf = buf;
+    s->cap = cap;
+    s->len = 0;
+    s->ok = (buf != nullptr && cap > 0);
+    s->in_comp = false;
+    put(s, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    put(s, "<MTConnectAssets xmlns=\"urn:mtconnect.org:MTConnectAssets:1.4\">");
+    put(s, "<Header instanceId=\"");
+    put_u64(s, instance_id);
+    put(s, "\" version=\"1.4\" assetBufferSize=\"");
+    put_u64(s, asset_buffer_size);
+    put(s, "\" assetCount=\"");
+    put_u64(s, asset_count);
+    put(s, "\"/>");
+    put(s, "<Assets>");
+}
+
+void detws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id, const char *serial_number,
+                                         const char *tool_id, const char *device_uuid, const char *timestamp)
+{
+    put(s, "<CuttingTool assetId=\"");
+    put_escaped(s, asset_id ? asset_id : "");
+    put(s, "\"");
+    if (serial_number && serial_number[0])
+    {
+        put(s, " serialNumber=\"");
+        put_escaped(s, serial_number);
+        put(s, "\"");
+    }
+    if (tool_id && tool_id[0])
+    {
+        put(s, " toolId=\"");
+        put_escaped(s, tool_id);
+        put(s, "\"");
+    }
+    if (device_uuid && device_uuid[0])
+    {
+        put(s, " deviceUuid=\"");
+        put_escaped(s, device_uuid);
+        put(s, "\"");
+    }
+    if (timestamp && timestamp[0])
+    {
+        put(s, " timestamp=\"");
+        put_escaped(s, timestamp);
+        put(s, "\"");
+    }
+    put(s, "><CuttingToolLifeCycle>");
+}
+
+void detws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char *count_direction, const char *limit,
+                                const char *value)
+{
+    // <ToolLife type="MINUTES" countDirection="UP" limit="100">42</ToolLife>
+    put(s, "<ToolLife type=\"");
+    put_escaped(s, type ? type : "");
+    put(s, "\" countDirection=\"");
+    put_escaped(s, count_direction ? count_direction : "");
+    put(s, "\"");
+    if (limit && limit[0])
+    {
+        put(s, " limit=\"");
+        put_escaped(s, limit);
+        put(s, "\"");
+    }
+    put(s, ">");
+    put_escaped(s, value ? value : "");
+    put(s, "</ToolLife>");
+}
+
+void detws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s)
+{
+    put(s, "</CuttingToolLifeCycle></CuttingTool>");
+}
+
+size_t detws_mtc_assets_end(DetwsMtcStreams *s)
+{
+    put(s, "</Assets></MTConnectAssets>");
+    if (!s->ok)
+        return 0;
+    s->buf[s->len] = '\0';
+    return s->len;
+}
+
 #endif // DETWS_ENABLE_MTCONNECT
