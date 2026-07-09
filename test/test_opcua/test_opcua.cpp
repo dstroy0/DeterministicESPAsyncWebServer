@@ -1410,6 +1410,45 @@ void test_parse_open_with_cert_and_nonce()
     TEST_ASSERT_EQUAL_UINT32(42, oc.request_handle);
 }
 
+void test_parse_read_truncated_item_rejected()
+{
+    // A NodesToRead count larger than the items actually present makes the per-item NodeId read
+    // underrun; the server must reject it (a malformed / hostile client request).
+    uint32_t ids[1] = {0x1234};
+    uint8_t buf[256];
+    size_t n = build_read(buf, sizeof(buf), 88, 1, 100, 42, ids, 1);
+    int nid = -1; // item NodeId is FourByte {0x01, ns=0x01, id 0x34 0x12}; the count i32 sits just before it
+    for (size_t i = 0; i + 3 < n; i++)
+        if (buf[i] == 0x01 && buf[i + 1] == 0x01 && buf[i + 2] == 0x34 && buf[i + 3] == 0x12)
+        {
+            nid = (int)i;
+            break;
+        }
+    TEST_ASSERT_TRUE(nid >= 4);
+    buf[nid - 4] = 0x0A; // NodesToRead count = 10, but only one item follows
+    buf[nid - 3] = buf[nid - 2] = buf[nid - 1] = 0;
+    OpcUaReadRequest rr;
+    TEST_ASSERT_FALSE(opcua_parse_read(buf, n, &rr));
+}
+
+void test_parse_browse_truncated_item_rejected()
+{
+    uint8_t buf[256];
+    size_t n = build_browse(buf, sizeof(buf), 7, 6, 300, 70, 0, 0x07ED); // distinctive FourByte id
+    int nid = -1; // BrowseDescription NodeId {0x01, ns=0x00, id 0xED 0x07}; the count i32 sits just before it
+    for (size_t i = 0; i + 3 < n; i++)
+        if (buf[i] == 0x01 && buf[i + 1] == 0x00 && buf[i + 2] == 0xED && buf[i + 3] == 0x07)
+        {
+            nid = (int)i;
+            break;
+        }
+    TEST_ASSERT_TRUE(nid >= 4);
+    buf[nid - 4] = 0x0A; // NodesToBrowse count = 10, but only one item follows
+    buf[nid - 3] = buf[nid - 2] = buf[nid - 1] = 0;
+    OpcUaBrowseRequest br;
+    TEST_ASSERT_FALSE(opcua_parse_browse(buf, n, &br));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1453,5 +1492,7 @@ int main()
     RUN_TEST(test_parse_and_build_write);
     RUN_TEST(test_rx_and_proto_handler_host_stubs);
     RUN_TEST(test_parse_open_with_cert_and_nonce);
+    RUN_TEST(test_parse_read_truncated_item_rejected);
+    RUN_TEST(test_parse_browse_truncated_item_rejected);
     return UNITY_END();
 }
