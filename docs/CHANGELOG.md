@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`93449ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93449ad5b493b41376b35ae475f5d2872f2cbe49))
+- update CHANGELOG.md [skip ci] ([`c934cdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c934cdc31a522b71690495499d83213b2046753d))
 - update CHANGELOG.md [skip ci] ([`00223ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00223ea06ed921d09fd7d33a4d90ebf082c36485))
 - update CHANGELOG.md [skip ci] ([`a335022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3350224c5bcf5bc1b1c8030bcdbd4e6bd3e0eb2))
 - update CHANGELOG.md [skip ci] ([`bc91b79`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc91b798ce5f741274a61ddcd9f025abf45c0122))
@@ -243,6 +245,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`49c3005`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49c3005c4907c9b0c916dcf834872cd6cabb044c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bc621b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc621b54b8972b274b31245529cfdf95c5ab362d))
 - update ESP32 build footprints [skip ci] ([`10b1336`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10b133637d6702201555db51da80540eb85f8cf1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ac084c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac084c2b9418fd55aeb35204547d28d375e3b37f))
@@ -465,6 +468,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover notify PDU + scopedPDU overflow guards via a value-length sweep across the inner-buffer boundary ([`8728547`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87285478ae82795b7cb02ffd07a946941a77c76a))
 - cover zlib s2c compress-buffer scratch-exhaust fail-closed (->100% reachable) ([`7022392`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7022392fe357ff4256a5089393aa4f82bebaa3f2))
 - forge aes-E&M packets (bad length/padding, seq-threshold, scratch-exhaust) (96.5->99.7%) ([`12f8caf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12f8cafdd9261b6081812e768ed251d8b8a8d456))
 - cover chacha/aes-etm scratch-arena-exhaustion fail-closed (94.4->96.5%) ([`4cd8986`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cd898696d1da763ef7dcebcd8901967e346ad76))
