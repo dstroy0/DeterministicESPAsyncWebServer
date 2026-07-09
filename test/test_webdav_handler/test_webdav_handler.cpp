@@ -546,11 +546,50 @@ void test_webdav_copy_dest_path_too_long_414()
     TEST_ASSERT_TRUE(resp_status(414));
 }
 
+// The recursive delete/copy helpers re-open each node defensively (a core can invalidate
+// an open handle across the writes a copy makes). When a node that exists() reports cannot
+// actually be opened, the helper fails closed rather than proceeding on a bad handle:
+// DELETE of such a resource answers 403, and a COPY whose child cannot be opened answers 409.
+void test_webdav_recursive_open_failure()
+{
+    // DELETE: the resource exists but its open() fails -> dav_rm_recursive bails -> 403.
+    tree_put("/dav/locked.txt", "data");
+    fs::_mock_open_fail_path() = "/dav/locked.txt";
+    feed_and_handle(0, "DELETE /dav/locked.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(403));
+    fs::_mock_open_fail_path() = "";
+    TEST_ASSERT_TRUE(tree_has("/dav/locked.txt")); // nothing removed
+
+    // COPY of a collection whose child cannot be opened during recursion -> 409.
+    rearm();
+    populate_src();
+    fs::_mock_open_fail_path() = "/dav/src/a.txt"; // a child that openNextFile finds but open() rejects
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/cdst\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(409));
+    fs::_mock_open_fail_path() = "";
+}
+
+// A request under a mount whose fs root is so long that root + the request sub-path would
+// overflow the 256-byte resolve buffer: dav_resolve_path fails at the top -> 414 for the
+// method (here GET), before any method-specific handling.
+void test_webdav_source_path_too_long_414()
+{
+    static char longroot[255];
+    memset(longroot, 'r', sizeof(longroot) - 1);
+    longroot[0] = '/';
+    longroot[sizeof(longroot) - 1] = '\0'; // 254-char fs root: root + "/x" == 256, the join fails
+    server.dav("/d3", davfs, longroot);
+    feed_and_handle(0, "GET /d3/x HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(414));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_webdav_get_put_dest_edges);
     RUN_TEST(test_webdav_copy_dest_path_too_long_414);
+    RUN_TEST(test_webdav_recursive_open_failure);
+    RUN_TEST(test_webdav_source_path_too_long_414);
     RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_webdav_deep_tree_rejected);
     RUN_TEST(test_webdav_propfind_limit_and_proppatch);

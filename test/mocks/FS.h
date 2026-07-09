@@ -12,6 +12,16 @@
 namespace fs
 {
 
+// Test hook: FS::open() of exactly this path returns an invalid File even when the node
+// exists - models a resource that exists()/stat reports but that cannot be opened (a
+// concurrent delete, permission, or FS error), exercising the TOCTOU re-open guards.
+// Empty (default) disables it. Declared early so the tree/reset helpers can clear it.
+inline const char *&_mock_open_fail_path()
+{
+    static const char *p = "";
+    return p;
+}
+
 // ---------------------------------------------------------------------------
 // Opt-in in-memory directory tree (for WebDAV / recursive-FS handler tests)
 //
@@ -77,6 +87,7 @@ inline bool _tree_is_child(const char *dir, const char *path)
 inline void mock_fs_tree_enable()
 {
     _tree_on() = true;
+    _mock_open_fail_path() = ""; // clear a forced open-failure a prior test may have set
     MockNode *n = _tree_nodes();
     for (int i = 0; i < 64; i++)
         n[i].used = false;
@@ -347,6 +358,7 @@ inline void mock_fs_reset()
     _mock_entry_count() = 0;
     mock_fs_clear();
     _mock_read_limit() = (size_t)-1; // clear a short-read cap a prior test may have set
+    _mock_open_fail_path() = "";     // clear a forced open-failure a prior test may have set
 }
 inline const MockFsEntry *_mock_find(const char *path)
 {
@@ -365,6 +377,8 @@ class FS
   public:
     File open(const char *path, const char *mode = "r")
     {
+        if (_mock_open_fail_path()[0] && strcmp(path, _mock_open_fail_path()) == 0)
+            return File(); // test hook: exists() but open() fails (TOCTOU / FS error)
         if (_tree_on())
         {
             bool writing = mode && (mode[0] == 'w' || mode[0] == 'a');
