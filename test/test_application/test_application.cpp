@@ -740,6 +740,37 @@ void test_serve_static_wildcard_and_route_full()
         g_server->serve_static("/s", g_static_fs, "/www");
 }
 
+// The public header/cookie API rejects a bad slot / null args, and drops a cookie too large for the
+// 256-byte per-slot buffer while a small custom header still fits.
+static void hdr_guard_handler(uint8_t id, HttpReq *)
+{
+    static char big[512];
+    memset(big, 'a', sizeof(big) - 1);
+    big[sizeof(big) - 1] = '\0';
+    g_server->set_cookie(id, "toobig", big, nullptr); // overflow -> dropped
+    g_server->add_response_header(id, "X-Ok", "1");   // fits
+    g_server->send(id, 200, "text/plain", "ok");
+}
+
+void test_response_header_cookie_guards()
+{
+    g_server->add_response_header(MAX_CONNS, "X", "y"); // out-of-range slot
+    g_server->add_response_header(0, nullptr, "y");     // null name
+    g_server->set_cookie(MAX_CONNS, "s", "1", nullptr); // out-of-range slot
+    g_server->set_cookie(0, nullptr, "1", nullptr);     // null name
+    g_server->clear_response_headers(MAX_CONNS);        // out-of-range slot
+
+    g_server->on("/hdrtest", HTTP_GET, hdr_guard_handler);
+    arm_slot(0, "GET /hdrtest HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "X-Ok: 1")); // the small header was emitted
+    TEST_ASSERT_NULL(strstr(out, "toobig"));      // the oversized cookie was dropped
+}
+
 void test_serve_static_no_gzip_when_not_accepted()
 {
     fs::mock_fs_reset();
@@ -1473,6 +1504,7 @@ int main()
 
     RUN_TEST(test_serve_static_file_and_mime);
     RUN_TEST(test_serve_static_wildcard_and_route_full);
+    RUN_TEST(test_response_header_cookie_guards);
     RUN_TEST(test_serve_static_index_fallback);
     RUN_TEST(test_serve_static_gzip_when_accepted);
     RUN_TEST(test_serve_static_no_gzip_when_not_accepted);
