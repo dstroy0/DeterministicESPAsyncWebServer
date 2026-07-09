@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 12:22:28
+**Generated:** 2026-07-09 13:27:54
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2767 passed - 426s
+**Result:** ✅ 2783 passed - 427s
 
 ---
 
@@ -44,25 +44,25 @@
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.876 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.537 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.692 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.694 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.606 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.682 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.684 |
-| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.650 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.703 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.695 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.719 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.695 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.660 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.711 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.701 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.721 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.689 |
-| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.705 |
-| `test_application`       | `native_app`            |    64 |   ✅   | 00:00:00.859 |
-| `test_webdav_handler`    | `native_webdav_handler` |    22 |   ✅   | 00:00:13.199 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:12.372 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.717 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.742 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.657 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.713 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.771 |
+| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.711 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.750 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.751 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.752 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.712 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.721 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.747 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.738 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.748 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.731 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.779 |
+| `test_application`       | `native_app`            |    68 |   ✅   | 00:00:00.946 |
+| `test_webdav_handler`    | `native_webdav_handler` |    24 |   ✅   | 00:00:01.749 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
@@ -124,8 +124,8 @@
 | `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.778 |
 | `test_opcua`             | `native_opcua`          |    40 |   ✅   | 00:00:12.323 |
 | `test_opcua_client`      | `native_opcua_client`   |    19 |   ✅   | 00:00:25.656 |
-| `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.444 |
-| `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.437 |
+| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.449 |
+| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.551 |
 | `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.779 |
 | `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.983 |
 | `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.749 |
@@ -143,7 +143,7 @@
 | `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.743 |
 | `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.770 |
 | `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.820 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.472 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.547 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.748 |
 | `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.804 |
 | `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.774 |
@@ -1828,7 +1828,7 @@ _Dispatch-level RFC 7231 compliance:_
 
 ---
 
-## test_chunked - native_app - ✅ 12 passed
+## test_chunked - native_app - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1837,24 +1837,26 @@ _Unit tests for send_chunked() / ChunkedResponse streaming responses._
 
 |   # | Test                                              | Status | Description                                |
 | --: | :------------------------------------------------ | :----: | :----------------------------------------- |
-|   1 | `test_headers_announce_chunked_no_content_length` |   ✅   | Headers announce chunked no content length |
-|   2 | `test_single_chunk_framing`                       |   ✅   | Single chunk framing                       |
-|   3 | `test_multiple_chunks_in_order`                   |   ✅   | Multiple chunks in order                   |
-|   4 | `test_printf_chunk`                               |   ✅   | Printf chunk                               |
-|   5 | `test_single_piece_then_terminator`               |   ✅   | Single piece then terminator               |
-|   6 | `test_empty_body_is_just_terminator`              |   ✅   | Empty body is just terminator              |
-|   7 | `test_large_chunked_body_not_truncated`           |   ✅   | Large chunked body not truncated           |
-|   8 | `test_head_sends_headers_only`                    |   ✅   | Head sends headers only                    |
-|   9 | `test_custom_header_injected_into_chunked`        |   ✅   | Custom header injected into chunked        |
-|  10 | `test_log_hook_reports_total_body_length`         |   ✅   | Log hook reports total body length         |
-|  11 | `test_http10_falls_back_to_close_delimited`       |   ✅   | Http10 falls back to close delimited       |
-|  12 | `test_http10_large_body_not_truncated`            |   ✅   | Http10 large body not truncated            |
+|   1 | `test_chunked_source_overreport_clamped`          |   ✅   | Chunked source overreport clamped          |
+|   2 | `test_chunked_backpressure_resumes_across_polls`  |   ✅   | Chunked backpressure resumes across polls  |
+|   3 | `test_headers_announce_chunked_no_content_length` |   ✅   | Headers announce chunked no content length |
+|   4 | `test_single_chunk_framing`                       |   ✅   | Single chunk framing                       |
+|   5 | `test_multiple_chunks_in_order`                   |   ✅   | Multiple chunks in order                   |
+|   6 | `test_printf_chunk`                               |   ✅   | Printf chunk                               |
+|   7 | `test_single_piece_then_terminator`               |   ✅   | Single piece then terminator               |
+|   8 | `test_empty_body_is_just_terminator`              |   ✅   | Empty body is just terminator              |
+|   9 | `test_large_chunked_body_not_truncated`           |   ✅   | Large chunked body not truncated           |
+|  10 | `test_head_sends_headers_only`                    |   ✅   | Head sends headers only                    |
+|  11 | `test_custom_header_injected_into_chunked`        |   ✅   | Custom header injected into chunked        |
+|  12 | `test_log_hook_reports_total_body_length`         |   ✅   | Log hook reports total body length         |
+|  13 | `test_http10_falls_back_to_close_delimited`       |   ✅   | Http10 falls back to close delimited       |
+|  14 | `test_http10_large_body_not_truncated`            |   ✅   | Http10 large body not truncated            |
 
 </details>
 
 ---
 
-## test_application - native_app - ✅ 64 passed
+## test_application - native_app - ✅ 68 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1907,62 +1909,68 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 |  42 | `test_redirect_invalid_code_defaults_to_302`          |   ✅   | Redirect invalid code defaults to 302                                               |
 |  43 | `test_mime_type_detection`                            |   ✅   | Mime type detection                                                                 |
 |  44 | `test_serve_static_file_and_mime`                     |   ✅   | Serve static file and mime                                                          |
-|  45 | `test_serve_static_index_fallback`                    |   ✅   | Serve static index fallback                                                         |
-|  46 | `test_serve_static_gzip_when_accepted`                |   ✅   | Serve static gzip when accepted                                                     |
-|  47 | `test_serve_static_no_gzip_when_not_accepted`         |   ✅   | Serve static no gzip when not accepted                                              |
-|  48 | `test_serve_static_traversal_not_leaked`              |   ✅   | Serve static traversal not leaked                                                   |
-|  49 | `test_serve_static_missing_is_404`                    |   ✅   | Serve static missing is 404                                                         |
-|  50 | `test_serve_static_etag_conditional_get`              |   ✅   | First GET: 200 with an ETag header.                                                 |
-|  51 | `test_serve_static_inm_star_list_weak`                |   ✅   | First GET to capture the strong ETag (with quotes).                                 |
-|  52 | `test_serve_static_last_modified_conditional_get`     |   ✅   | (1) plain GET: 200 carries the Last-Modified header.                                |
-|  53 | `test_serve_static_if_modified_since_malformed`       |   ✅   | Serve static if modified since malformed                                            |
-|  54 | `test_serve_static_cache_control`                     |   ✅   | Serve static cache control                                                          |
-|  55 | `test_request_log_hook_fires`                         |   ✅   | Request log hook fires                                                              |
-|  56 | `test_stats_endpoint_emits_json`                      |   ✅   | Stats endpoint emits json                                                           |
-|  57 | `test_status_text_reason_phrases`                     |   ✅   | Status text reason phrases                                                          |
-|  58 | `test_allow_header_lists_methods`                     |   ✅   | Allow header lists methods                                                          |
-|  59 | `test_listen_and_begin`                               |   ✅   | begin() before any listen() -> no-listeners error, no side effects.                 |
-|  60 | `test_begin_port_convenience`                         |   ✅   | Begin port convenience                                                              |
-|  61 | `test_ws_send_api`                                    |   ✅   | Ws send api                                                                         |
-|  62 | `test_sse_broadcast_after_upgrade_matches_path`       |   ✅   | Sse broadcast after upgrade matches path                                            |
-|  63 | `test_sse_send_api`                                   |   ✅   | Sse send api                                                                        |
-|  64 | `test_metrics_emits_prometheus`                       |   ✅   | Metrics emits prometheus                                                            |
+|  45 | `test_serve_static_wildcard_and_route_full`           |   ✅   | Serve static wildcard and route full                                                |
+|  46 | `test_response_header_cookie_guards`                  |   ✅   | Response header cookie guards                                                       |
+|  47 | `test_serve_static_index_fallback`                    |   ✅   | Serve static index fallback                                                         |
+|  48 | `test_serve_static_gzip_when_accepted`                |   ✅   | Serve static gzip when accepted                                                     |
+|  49 | `test_serve_static_no_gzip_when_not_accepted`         |   ✅   | Serve static no gzip when not accepted                                              |
+|  50 | `test_serve_static_traversal_not_leaked`              |   ✅   | Serve static traversal not leaked                                                   |
+|  51 | `test_serve_static_missing_is_404`                    |   ✅   | Serve static missing is 404                                                         |
+|  52 | `test_serve_static_etag_conditional_get`              |   ✅   | First GET: 200 with an ETag header.                                                 |
+|  53 | `test_serve_static_inm_star_list_weak`                |   ✅   | First GET to capture the strong ETag (with quotes).                                 |
+|  54 | `test_serve_static_last_modified_conditional_get`     |   ✅   | (1) plain GET: 200 carries the Last-Modified header.                                |
+|  55 | `test_serve_static_ims_field_comparisons`             |   ✅   | Serve static ims field comparisons                                                  |
+|  56 | `test_serve_static_unrepresentable_mtime`             |   ✅   | (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).                |
+|  57 | `test_serve_static_if_modified_since_malformed`       |   ✅   | Serve static if modified since malformed                                            |
+|  58 | `test_serve_static_cache_control`                     |   ✅   | Serve static cache control                                                          |
+|  59 | `test_request_log_hook_fires`                         |   ✅   | Request log hook fires                                                              |
+|  60 | `test_stats_endpoint_emits_json`                      |   ✅   | Stats endpoint emits json                                                           |
+|  61 | `test_status_text_reason_phrases`                     |   ✅   | Status text reason phrases                                                          |
+|  62 | `test_allow_header_lists_methods`                     |   ✅   | Allow header lists methods                                                          |
+|  63 | `test_listen_and_begin`                               |   ✅   | begin() before any listen() -> no-listeners error, no side effects.                 |
+|  64 | `test_begin_port_convenience`                         |   ✅   | Begin port convenience                                                              |
+|  65 | `test_ws_send_api`                                    |   ✅   | Ws send api                                                                         |
+|  66 | `test_sse_broadcast_after_upgrade_matches_path`       |   ✅   | Sse broadcast after upgrade matches path                                            |
+|  67 | `test_sse_send_api`                                   |   ✅   | Sse send api                                                                        |
+|  68 | `test_metrics_emits_prometheus`                       |   ✅   | Metrics emits prometheus                                                            |
 
 </details>
 
 ---
 
-## test_webdav_handler - native_webdav_handler - ✅ 22 passed
+## test_webdav_handler - native_webdav_handler - ✅ 24 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for the WebDAV request handler's recursive filesystem operations_
 
-|   # | Test                                   | Status | Description                                                          |
-| --: | :------------------------------------- | :----: | :------------------------------------------------------------------- |
-|   1 | `test_webdav_error_paths`              |   ✅   | Webdav error paths                                                   |
-|   2 | `test_webdav_deep_tree_rejected`       |   ✅   | Webdav deep tree rejected                                            |
-|   3 | `test_copy_collection_recursive`       |   ✅   | Copy collection recursive                                            |
-|   4 | `test_copy_collection_depth0_shallow`  |   ✅   | Copy collection depth0 shallow                                       |
-|   5 | `test_copy_overwrite_semantics`        |   ✅   | Copy overwrite semantics                                             |
-|   6 | `test_move_collection_recursive`       |   ✅   | Move collection recursive                                            |
-|   7 | `test_delete_collection_recursive`     |   ✅   | Delete collection recursive                                          |
-|   8 | `test_propfind_depth0_collection_only` |   ✅   | Propfind depth0 collection only                                      |
-|   9 | `test_propfind_depth1_lists_members`   |   ✅   | Propfind depth1 lists members                                        |
-|  10 | `test_mkcol_create_and_conflict`       |   ✅   | Mkcol create and conflict                                            |
-|  11 | `test_delete_single_file`              |   ✅   | Delete single file                                                   |
-|  12 | `test_options_advertises_dav`          |   ✅   | Options advertises dav                                               |
-|  13 | `test_get_file_through_mount`          |   ✅   | Get file through mount                                               |
-|  14 | `test_put_stream_create`               |   ✅   | Put stream create                                                    |
-|  15 | `test_put_stream_overwrite`            |   ✅   | Put stream overwrite                                                 |
-|  16 | `test_put_empty_buffered`              |   ✅   | Put empty buffered                                                   |
-|  17 | `test_put_stream_write_fails_507`      |   ✅   | Put stream write fails 507                                           |
-|  18 | `test_put_stream_open_fails_409`       |   ✅   | Put stream open fails 409                                            |
-|  19 | `test_put_stream_traversal_403`        |   ✅   | Put stream traversal 403                                             |
-|  20 | `test_put_stream_begin_declines`       |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.          |
-|  21 | `test_put_stream_abort`                |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive. |
-|  22 | `test_lock_unlock_advisory`            |   ✅   | Lock unlock advisory                                                 |
+|   # | Test                                       | Status | Description                                                          |
+| --: | :----------------------------------------- | :----: | :------------------------------------------------------------------- |
+|   1 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                   |
+|   2 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                            |
+|   3 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                  |
+|   4 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                            |
+|   5 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                            |
+|   6 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                       |
+|   7 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                             |
+|   8 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                            |
+|   9 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                          |
+|  10 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                      |
+|  11 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                        |
+|  12 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                            |
+|  13 | `test_delete_single_file`                  |   ✅   | Delete single file                                                   |
+|  14 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                               |
+|  15 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                               |
+|  16 | `test_put_stream_create`                   |   ✅   | Put stream create                                                    |
+|  17 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                 |
+|  18 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                   |
+|  19 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                           |
+|  20 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                            |
+|  21 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                             |
+|  22 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.          |
+|  23 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive. |
+|  24 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                 |
 
 </details>
 
@@ -3605,7 +3613,7 @@ _Round-trip tests for the OPC UA client (services/opcua_client): the client buil
 
 ---
 
-## test_keepalive - native_keepalive - ✅ 10 passed
+## test_keepalive - native_keepalive - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3614,43 +3622,51 @@ _HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
 
 |   # | Test                                     | Status | Description                                                                |
 | --: | :--------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_http11_default_keeps_alive`        |   ✅   | Http11 default keeps alive                                                 |
-|   2 | `test_http11_explicit_close`             |   ✅   | Http11 explicit close                                                      |
-|   3 | `test_http10_default_closes`             |   ✅   | Http10 default closes                                                      |
-|   4 | `test_http10_explicit_keepalive`         |   ✅   | Http10 explicit keepalive                                                  |
-|   5 | `test_connection_token_list_close`       |   ✅   | "close" appearing in a token list must still be honored.                   |
-|   6 | `test_two_sequential_requests_same_slot` |   ✅   | Two sequential requests same slot                                          |
-|   7 | `test_pipelined_requests`                |   ✅   | Two requests delivered in one shot: the proactive drain in handle() must   |
-|   8 | `test_404_still_keeps_alive`             |   ✅   | A well-formed request to an unknown path is a normal response, not an      |
-|   9 | `test_max_requests_cap_closes`           |   ✅   | DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.    |
-|  10 | `test_fresh_connection_resets_count`     |   ✅   | Run a slot up to the cap, then re-open it (new connection) and confirm the |
+|   1 | `test_conn_token_ws_and_bare_keepalive`  |   ✅   | Conn token ws and bare keepalive                                           |
+|   2 | `test_http11_default_keeps_alive`        |   ✅   | Http11 default keeps alive                                                 |
+|   3 | `test_http11_explicit_close`             |   ✅   | Http11 explicit close                                                      |
+|   4 | `test_http10_default_closes`             |   ✅   | Http10 default closes                                                      |
+|   5 | `test_http10_explicit_keepalive`         |   ✅   | Http10 explicit keepalive                                                  |
+|   6 | `test_connection_token_list_close`       |   ✅   | "close" appearing in a token list must still be honored.                   |
+|   7 | `test_two_sequential_requests_same_slot` |   ✅   | Two sequential requests same slot                                          |
+|   8 | `test_pipelined_requests`                |   ✅   | Two requests delivered in one shot: the proactive drain in handle() must   |
+|   9 | `test_404_still_keeps_alive`             |   ✅   | A well-formed request to an unknown path is a normal response, not an      |
+|  10 | `test_max_requests_cap_closes`           |   ✅   | DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.    |
+|  11 | `test_fresh_connection_resets_count`     |   ✅   | Run a slot up to the cap, then re-open it (new connection) and confirm the |
 
 </details>
 
 ---
 
-## test_range - native_range - ✅ 13 passed
+## test_range - native_range - ✅ 20 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _HTTP Range requests / 206 Partial Content (DETWS_ENABLE_RANGE). Each test_
 
-|   # | Test                                      | Status | Description                        |
-| --: | :---------------------------------------- | :----: | :--------------------------------- |
-|   1 | `test_no_range_full_200`                  |   ✅   | No range full 200                  |
-|   2 | `test_range_prefix`                       |   ✅   | Range prefix                       |
-|   3 | `test_range_open_ended`                   |   ✅   | Range open ended                   |
-|   4 | `test_range_suffix`                       |   ✅   | Range suffix                       |
-|   5 | `test_range_single_byte`                  |   ✅   | Range single byte                  |
-|   6 | `test_range_clamped_to_eof`               |   ✅   | Range clamped to eof               |
-|   7 | `test_range_unsatisfiable_416`            |   ✅   | Range unsatisfiable 416            |
-|   8 | `test_malformed_range_ignored`            |   ✅   | Malformed range ignored            |
-|   9 | `test_range_overflow_start_unsatisfiable` |   ✅   | Range overflow start unsatisfiable |
-|  10 | `test_range_overflow_end_clamps`          |   ✅   | Range overflow end clamps          |
-|  11 | `test_range_suffix_zero_unsatisfiable`    |   ✅   | Range suffix zero unsatisfiable    |
-|  12 | `test_multirange_falls_back_to_200`       |   ✅   | Multirange falls back to 200       |
-|  13 | `test_head_with_range_no_body`            |   ✅   | Head with range no body            |
+|   # | Test                                               | Status | Description                                 |
+| --: | :------------------------------------------------- | :----: | :------------------------------------------ |
+|   1 | `test_file_send_backpressure_resumes_across_polls` |   ✅   | File send backpressure resumes across polls |
+|   2 | `test_file_send_write_fails_then_retries`          |   ✅   | File send write fails then retries          |
+|   3 | `test_file_send_short_read_stops`                  |   ✅   | File send short read stops                  |
+|   4 | `test_range_trailing_garbage_ignored`              |   ✅   | Range trailing garbage ignored              |
+|   5 | `test_range_start_after_end_unsatisfiable`         |   ✅   | Range start after end unsatisfiable         |
+|   6 | `test_range_suffix_on_empty_file`                  |   ✅   | Range suffix on empty file                  |
+|   7 | `test_serve_file_connection_gone`                  |   ✅   | Serve file connection gone                  |
+|   8 | `test_no_range_full_200`                           |   ✅   | No range full 200                           |
+|   9 | `test_range_prefix`                                |   ✅   | Range prefix                                |
+|  10 | `test_range_open_ended`                            |   ✅   | Range open ended                            |
+|  11 | `test_range_suffix`                                |   ✅   | Range suffix                                |
+|  12 | `test_range_single_byte`                           |   ✅   | Range single byte                           |
+|  13 | `test_range_clamped_to_eof`                        |   ✅   | Range clamped to eof                        |
+|  14 | `test_range_unsatisfiable_416`                     |   ✅   | Range unsatisfiable 416                     |
+|  15 | `test_malformed_range_ignored`                     |   ✅   | Malformed range ignored                     |
+|  16 | `test_range_overflow_start_unsatisfiable`          |   ✅   | Range overflow start unsatisfiable          |
+|  17 | `test_range_overflow_end_clamps`                   |   ✅   | Range overflow end clamps                   |
+|  18 | `test_range_suffix_zero_unsatisfiable`             |   ✅   | Range suffix zero unsatisfiable             |
+|  19 | `test_multirange_falls_back_to_200`                |   ✅   | Multirange falls back to 200                |
+|  20 | `test_head_with_range_no_body`                     |   ✅   | Head with range no body                     |
 
 </details>
 
