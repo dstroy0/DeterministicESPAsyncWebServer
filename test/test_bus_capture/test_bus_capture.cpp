@@ -106,6 +106,18 @@ void test_pcap_can_linktype()
     TEST_ASSERT_EQUAL_HEX8(227, g[20]); // DLT_CAN_SOCKETCAN
 }
 
+static void bus_sink_noop(const CanFrame *)
+{
+}
+
+void test_host_twai_stubs_fail_closed()
+{
+    // On host there is no TWAI controller: begin fails closed and poll/end are safe no-ops.
+    TEST_ASSERT_FALSE(bus_capture_begin(5, 4, 500000, bus_sink_noop));
+    bus_capture_poll(); // no-op, must not crash
+    bus_capture_end();  // no-op, must not crash
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -114,5 +126,6 @@ int main()
     RUN_TEST(test_rtr_flag_and_no_data);
     RUN_TEST(test_masks_and_bounds);
     RUN_TEST(test_pcap_can_linktype);
+    RUN_TEST(test_host_twai_stubs_fail_closed);
     return UNITY_END();
 }
