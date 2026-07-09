@@ -11,6 +11,9 @@
  *
  *  - **MTConnectStreams** (the `current` / `sample` response): a header carrying the agent
  *    instanceId + nextSequence, then per-DataItem `<Samples>/<Events>/<Condition>` values.
+ *  - **MTConnectDevices** (the `probe` response): the device model - a `<Device>` with its
+ *    `<DataItems>` (each `category`/`id`/`type`, optional `name`/`units`) - that a client
+ *    discovers before it streams.
  *  - **MTConnectError** (a request error): the header + an `<Errors><Error errorCode=..>` element.
  *
  * A streams document is assembled incrementally: open it, add each observation, close it. The instanceId
@@ -74,6 +77,32 @@ size_t detws_mtc_streams_end(DetwsMtcStreams *s);
  * @return length written, or 0 on overflow.
  */
 size_t detws_mtc_error(uint64_t instance_id, const char *error_code, const char *message, char *out, size_t cap);
+
+/**
+ * @brief Begin an MTConnectDevices (`probe`) document: XML declaration + header + open one `<Device>`.
+ * @param instance_id agent instanceId (boot id).
+ * @param device_id   the Device `id` attribute.
+ * @param device_name the Device `name` attribute.
+ * @param uuid        the Device `uuid` attribute.
+ *
+ * Reuses ::DetwsMtcStreams as the incremental buffer builder (as ::detws_mtc_error does).
+ */
+void detws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
+                             const char *device_name, const char *uuid);
+
+/**
+ * @brief Add one `<DataItem>` to the device model.
+ * @param cat   the DataItem category (SAMPLE / EVENT / CONDITION).
+ * @param id    the DataItem `id` attribute.
+ * @param type  the DataItem `type` attribute (e.g. "Position", "Execution", "Availability").
+ * @param name  optional `name` attribute (omitted when null/empty).
+ * @param units optional `units` attribute (omitted when null/empty).
+ */
+void detws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *id, const char *type,
+                                const char *name, const char *units);
+
+/** @brief Finish the probe document (close `<DataItems>` + `<Device>` + root). @return length, or 0 on overflow. */
+size_t detws_mtc_devices_end(DetwsMtcStreams *s);
 
 #endif // DETWS_ENABLE_MTCONNECT
 #endif // DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H

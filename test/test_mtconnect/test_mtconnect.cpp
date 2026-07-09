@@ -92,6 +92,46 @@ void test_escape_gt_quote_and_overflow()
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));
 }
 
+void test_devices_probe_document(void)
+{
+    char buf[1024];
+    DetwsMtcStreams s;
+    detws_mtc_devices_begin(&s, buf, sizeof(buf), 1500, "dev1", "cnc1", "uuid-abc");
+    detws_mtc_devices_add_item(&s, DETWS_MTC_EVENT, "avail", "Availability", nullptr, nullptr);
+    detws_mtc_devices_add_item(&s, DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    detws_mtc_devices_add_item(&s, DETWS_MTC_CONDITION, "sys", "SystemCondition", nullptr, nullptr);
+    size_t n = detws_mtc_devices_end(&s);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+
+    TEST_ASSERT_TRUE(contains(buf, "<MTConnectDevices"));
+    TEST_ASSERT_TRUE(contains(buf, "instanceId=\"1500\""));
+    TEST_ASSERT_TRUE(contains(buf, "<Devices><Device id=\"dev1\" name=\"cnc1\" uuid=\"uuid-abc\"><DataItems>"));
+    TEST_ASSERT_TRUE(contains(buf, "<DataItem category=\"EVENT\" id=\"avail\" type=\"Availability\"/>"));
+    // name + units are emitted only when present.
+    TEST_ASSERT_TRUE(contains(
+        buf, "<DataItem category=\"SAMPLE\" id=\"xpos\" type=\"Position\" name=\"Xabs\" units=\"MILLIMETER\"/>"));
+    TEST_ASSERT_TRUE(contains(buf, "<DataItem category=\"CONDITION\" id=\"sys\" type=\"SystemCondition\"/>"));
+    TEST_ASSERT_TRUE(contains(buf, "</DataItems></Device></Devices></MTConnectDevices>"));
+}
+
+void test_devices_escape_and_overflow(void)
+{
+    char buf[1024];
+    DetwsMtcStreams s;
+    detws_mtc_devices_begin(&s, buf, sizeof(buf), 1, "d<1", "n&m", "u");
+    detws_mtc_devices_add_item(&s, DETWS_MTC_EVENT, "i\"d", "T>y", nullptr, nullptr);
+    TEST_ASSERT_TRUE(detws_mtc_devices_end(&s) > 0);
+    TEST_ASSERT_TRUE(contains(buf, "id=\"d&lt;1\" name=\"n&amp;m\""));
+    TEST_ASSERT_TRUE(contains(buf, "id=\"i&quot;d\" type=\"T&gt;y\""));
+    // A device document that does not fit fails closed.
+    char tiny[40];
+    DetwsMtcStreams s2;
+    detws_mtc_devices_begin(&s2, tiny, sizeof(tiny), 1, "dev", "device-with-a-very-long-name", "uuid");
+    detws_mtc_devices_add_item(&s2, DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -100,5 +140,7 @@ int main(void)
     RUN_TEST(test_error_document);
     RUN_TEST(test_overflow_returns_zero);
     RUN_TEST(test_escape_gt_quote_and_overflow);
+    RUN_TEST(test_devices_probe_document);
+    RUN_TEST(test_devices_escape_and_overflow);
     return UNITY_END();
 }

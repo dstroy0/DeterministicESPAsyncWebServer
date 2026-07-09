@@ -82,6 +82,15 @@ void put_u64(DetwsMtcStreams *s, uint64_t v)
     out[n] = '\0';
     put(s, out);
 }
+
+const char *mtc_cat_str(DetwsMtcCategory cat)
+{
+    if (cat == DETWS_MTC_SAMPLE)
+        return "SAMPLE";
+    if (cat == DETWS_MTC_EVENT)
+        return "EVENT";
+    return "CONDITION";
+}
 } // namespace
 
 void detws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t next_seq,
@@ -193,6 +202,66 @@ size_t detws_mtc_error(uint64_t instance_id, const char *error_code, const char 
         return 0;
     out[s.len] = '\0';
     return s.len;
+}
+
+// --- probe (MTConnectDevices): the device model a client discovers before streaming ---
+
+void detws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
+                             const char *device_name, const char *uuid)
+{
+    s->buf = buf;
+    s->cap = cap;
+    s->len = 0;
+    s->ok = (buf != nullptr && cap > 0);
+    s->in_comp = false;
+    put(s, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    put(s, "<MTConnectDevices xmlns=\"urn:mtconnect.org:MTConnectDevices:1.4\">");
+    put(s, "<Header instanceId=\"");
+    put_u64(s, instance_id);
+    put(s, "\" version=\"1.4\"/>");
+    put(s, "<Devices><Device id=\"");
+    put_escaped(s, device_id ? device_id : "");
+    put(s, "\" name=\"");
+    put_escaped(s, device_name ? device_name : "");
+    put(s, "\" uuid=\"");
+    put_escaped(s, uuid ? uuid : "");
+    put(s, "\"><DataItems>");
+}
+
+void detws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *id, const char *type,
+                                const char *name, const char *units)
+{
+    if (!s->ok)
+        return;
+    put(s, "<DataItem category=\"");
+    put(s, mtc_cat_str(cat));
+    put(s, "\" id=\"");
+    put_escaped(s, id ? id : "");
+    put(s, "\" type=\"");
+    put_escaped(s, type ? type : "");
+    put(s, "\"");
+    if (name && name[0])
+    {
+        put(s, " name=\"");
+        put_escaped(s, name);
+        put(s, "\"");
+    }
+    if (units && units[0])
+    {
+        put(s, " units=\"");
+        put_escaped(s, units);
+        put(s, "\"");
+    }
+    put(s, "/>");
+}
+
+size_t detws_mtc_devices_end(DetwsMtcStreams *s)
+{
+    put(s, "</DataItems></Device></Devices></MTConnectDevices>");
+    if (!s->ok)
+        return 0;
+    s->buf[s->len] = '\0';
+    return s->len;
 }
 
 #endif // DETWS_ENABLE_MTCONNECT
