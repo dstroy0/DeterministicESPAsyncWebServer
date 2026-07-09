@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`1696f67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1696f67bda34d0788f58c3c855332f0e1adac7e8))
+- update CHANGELOG.md [skip ci] ([`e59721a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e59721a84a86431dba82b26806fdf4eb743076c5))
 - update CHANGELOG.md [skip ci] ([`859d407`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/859d40764d6ed65f0f96c7535fc44f782c7641aa))
 - update CHANGELOG.md [skip ci] ([`36eab72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36eab72df771b1ef7e51c8e89b0fdb22ce5c4009))
 - update CHANGELOG.md [skip ci] ([`bfac83b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfac83b424d41a000c17fb28501db35acce6d0e8))
@@ -264,6 +266,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover ClientHello parse guards + malformed exts + builder caps ([`9f50a04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f50a04b62035559f501c1fafc6d6e5b25fa22bf))
 - cover ssh_channel guard/error branches (91->100%) ([`71ea672`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71ea67206e5ddd88906e529cb0bf31afbd72c20a))
 - cover ssh_server dispatcher guard/error branches (73->99%) ([`4630d65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4630d653870b04e7ff71a1273e4f923375dfc3fe))
 - cover parse guards + NOTIMP + table/begin edges; 83->100% ([`bd3292a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd3292aa33f1cd6f2dfdb6eb049b597954bcc659))
