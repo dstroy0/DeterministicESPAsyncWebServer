@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6cf4d8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cf4d8e11e8c0a31fc3a85040d3b8eef4a573793))
+- update CHANGELOG.md [skip ci] ([`f5ed66a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5ed66a543934d4adcecc11d283869e78b4ec5c3))
 - update test report + coverage [skip ci] ([`e163269`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1632692c59890da2dee51a18d3c2408a556274f))
 - update CHANGELOG.md [skip ci] ([`23afdf6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23afdf6744f785e4f3c31c7e0710ae934270a002))
 - update CHANGELOG.md [skip ci] ([`7181802`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/718180253e0ddf7e67035b8dd9dbd380c791ee40))
@@ -191,6 +193,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3fa3465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa3465ae29ea9aa7ace2f8dfbb6e32121a961c5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1d36aee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d36aee3c42909c4f395e390dc8783c597a922ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a3244b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3244b35f40932ad6423b9e9123201706a6feda5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f76335`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f763357e418ec562c88ff60ffb62b796d705cd0))
@@ -376,6 +379,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover builder-overflow guard (cw_patch fail-closed) ([`2935b3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2935b3a1804d76a49f54d5bef29f1ff48bd9a888))
 - cover ByteString-skip paths + rx/proto_handler (97->98%) ([`56ca2b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56ca2b4d0cfdf1206540d9c3177939df6fda902c))
 - cover GETBULK, malformed-message guards + UDP handler (92->97%) ([`5f300fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f300fd21ed3a289dd3629a49523816f955aeb1a))
 - deep branch coverage for wisun (->100%) + webdav (->95%) ([`7c69e67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c69e6711250101e3faf43f1c5da55ac44aa8710))
