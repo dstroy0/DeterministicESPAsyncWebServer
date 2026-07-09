@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2512 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2515 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -17891,7 +17891,7 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_profibus (4 tests)</b></summary>
+<summary><b>test_profibus (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs</b> &mdash; <i>Fcs</i></summary>
@@ -17942,6 +17942,20 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_pb_parse(out, n, &t))</code>
       * <code>Assert false (detws_pb_parse(out, n, &t))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(0x05, 0x02, PB_FC_SRD_LOW, data, 300, out, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_and_parse_guard_subconditions</b> &mdash; <i>Build guards: null out and a capacity below the frame size fail closed.</i></summary>
+
+    * **Objective**: Build guards: null out and a capacity below the frame size fail closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, out, 5));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(3, 2, 0x6C, data, sizeof(data), out, 4));</code>
+      * <code>Assert false (detws_pb_parse(nullptr, 6, &tg))</code>
+      * <code>Assert false (detws_pb_parse(out, 6, nullptr))</code>
+      * <code>Assert false (detws_pb_parse(out, 3, &tg))</code>
+      * <code>Assert false (detws_pb_parse(bad_sd2, sizeof(bad_sd2), &tg))</code>
   </details>
 
 </details>
@@ -18370,7 +18384,7 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_proxy_protocol (8 tests)</b></summary>
+<summary><b>test_proxy_protocol (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v1_build</b> &mdash; <i>V1 build</i></summary>
@@ -18455,6 +18469,17 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, proxy_v1_build(small, sizeof(small), SRC, DST, 12345, 80));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, proxy_v2_build(v2small, sizeof(v2small), SRC, DST, 12345, 80)); // needs 28</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v1_malformed_addresses_fail_closed</b> &mdash; <i>Each malformed v1 source address drives a distinct parse_ipv4 reject path.</i></summary>
+
+    * **Objective**: Each malformed v1 source address drives a distinct parse_ipv4 reject path.
+    * **Assertions**:
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
 </details>
@@ -26269,7 +26294,7 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_vfs (11 tests)</b></summary>
+<summary><b>test_vfs (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_write_then_read_file</b> &mdash; <i>Write then read file</i></summary>
@@ -26391,6 +26416,18 @@ A thorough directory of all **2512 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_vfs_exists("/a"))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/a"));</code>
       * <code>Assert false (detws_vfs_write_file("/a", "x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ram_guard_subconditions</b> &mdash; <i>Null path and an over-long name both fail closed on open.</i></summary>
+
+    * **Objective**: Null path and an over-long name both fail closed on open.
+    * **Assertions**:
+      * <code>Assert equal int (-1, detws_vfs_open(nullptr, DETWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, detws_vfs_open(longname, DETWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, detws_vfs_read(999, b, sizeof(b)))</code>
+      * <code>Assert equal int (-1, detws_vfs_write(999, b, sizeof(b)))</code>
+      * <code>Assert true (detws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>
   </details>
 
 </details>
