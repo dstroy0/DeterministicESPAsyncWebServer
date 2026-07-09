@@ -163,6 +163,33 @@ void test_corrupt_stored_nlen_is_malformed()
     TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED, rc);
 }
 
+void test_inflate_error_paths()
+{
+    uint8_t out[64];
+    size_t out_len = 0;
+    // OVERFLOW: a valid stream decompressed into a buffer that is too small.
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW,
+                          inflate_raw(k_hello_in, sizeof(k_hello_in), out, 4, &out_len, g_scratch, sizeof(g_scratch)));
+    // A stored block into a too-small buffer also overflows.
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW, inflate_raw(k_stored_in, sizeof(k_stored_in), out, 3, &out_len,
+                                                            g_scratch, sizeof(g_scratch)));
+    // Reserved block type (BTYPE = 11) is malformed.
+    const uint8_t bad_btype[2] = {0x06, 0x00};
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED, inflate_raw(bad_btype, sizeof(bad_btype), out, sizeof(out), &out_len,
+                                                             g_scratch, sizeof(g_scratch)));
+    // Stored block whose NLEN is not the ones-complement of LEN.
+    const uint8_t bad_stored[5] = {0x01, 0x03, 0x00, 0x00, 0x00}; // BFINAL=1 BTYPE=00 LEN=3 NLEN=0
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED, inflate_raw(bad_stored, sizeof(bad_stored), out, sizeof(out), &out_len,
+                                                             g_scratch, sizeof(g_scratch)));
+    // A stored block truncated before its LEN/NLEN.
+    const uint8_t trunc_stored[1] = {0x00};
+    TEST_ASSERT_TRUE(inflate_raw(trunc_stored, 1, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch)) !=
+                     INFLATE_OK);
+    // A valid compressed stream cut short runs out of input mid-decode.
+    TEST_ASSERT_TRUE(inflate_raw(k_hello_in, 3, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch)) !=
+                     INFLATE_OK);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -178,5 +205,6 @@ int main()
     RUN_TEST(test_truncated_input_is_malformed);
     RUN_TEST(test_reserved_block_type_is_malformed);
     RUN_TEST(test_corrupt_stored_nlen_is_malformed);
+    RUN_TEST(test_inflate_error_paths);
     return UNITY_END();
 }
