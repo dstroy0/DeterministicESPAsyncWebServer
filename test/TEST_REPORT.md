@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 11:37:31
+**Generated:** 2026-07-09 11:59:05
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2764 passed - 381s
+**Result:** ✅ 2765 passed - 415s
 
 ---
 
@@ -153,7 +153,7 @@
 | `test_inflate`           | `native_inflate`        |    13 |   ✅   | 00:00:08.679 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.106 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:35.375 |
 | `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.366 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.824 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.838 |
@@ -4327,20 +4327,21 @@ _Unit tests for the SSH server-to-client streaming compressor_
 
 ---
 
-## test_ssh_comp - native_ssh_comp - ✅ 5 passed
+## test_ssh_comp - native_ssh_comp - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Integration test for SSH server-to-client compression WIRING (network_drivers/presentation/ssh):_
 
-|   # | Test                                 | Status | Description                   |
-| --: | :----------------------------------- | :----: | :---------------------------- |
-|   1 | `test_delayed_activation`            |   ✅   | Delayed activation            |
-|   2 | `test_immediate_activation`          |   ✅   | Immediate activation          |
-|   3 | `test_none_never_activates`          |   ✅   | None never activates          |
-|   4 | `test_packet_layer_stream_roundtrip` |   ✅   | Packet layer stream roundtrip |
-|   5 | `test_packet_layer_window_slide`     |   ✅   | Packet layer window slide     |
+|   # | Test                                     | Status | Description                       |
+| --: | :--------------------------------------- | :----: | :-------------------------------- |
+|   1 | `test_delayed_activation`                |   ✅   | Delayed activation                |
+|   2 | `test_immediate_activation`              |   ✅   | Immediate activation              |
+|   3 | `test_none_never_activates`              |   ✅   | None never activates              |
+|   4 | `test_packet_layer_stream_roundtrip`     |   ✅   | Packet layer stream roundtrip     |
+|   5 | `test_packet_layer_window_slide`         |   ✅   | Packet layer window slide         |
+|   6 | `test_packet_compress_scratch_exhausted` |   ✅   | Packet compress scratch exhausted |
 
 </details>
 
