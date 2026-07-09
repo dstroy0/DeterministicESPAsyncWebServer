@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2597 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2598 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6065,7 +6065,7 @@ A thorough directory of all **2597 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dns_resolver (4 tests)</b></summary>
+<summary><b>test_dns_resolver (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_classify</b> &mdash; <i>172.32.x is OUTSIDE the 172.16/12 private block -> public.</i></summary>
@@ -6112,6 +6112,18 @@ A thorough directory of all **2597 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_dns_resolve("example.com", &ip))</code>
       * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resolve_verified_paths</b> &mdash; <i>resolve fails -> false.</i></summary>
+
+    * **Objective**: resolve fails -> false.
+    * **Assertions**:
+      * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
+      * <code>Assert true (detws_dns_resolve_verified("example.com", &ip))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(IPV4(8, 8, 8, 8), ip);</code>
+      * <code>Assert true (detws_dns_resolve_verified("example.com", nullptr))</code>
   </details>
 
 </details>
