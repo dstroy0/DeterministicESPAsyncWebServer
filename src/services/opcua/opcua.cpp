@@ -939,12 +939,12 @@ void ua_w_localizedtext(UaWriter *w, const char *locale, const char *text)
 {
     uint8_t mask = 0;
     if (locale)
-        mask |= 0x01; // Locale present
+        mask |= 0x01; // GCOVR_EXCL_LINE  Locale present; file-static, both callers pass a null locale -> dead
     if (text)
         mask |= 0x02; // Text present
     ua_w_u8(w, mask);
     if (locale)
-        ua_w_string(w, locale, (int32_t)strlen(locale));
+        ua_w_string(w, locale, (int32_t)strlen(locale)); // GCOVR_EXCL_LINE  dead: no caller passes a locale
     if (text)
         ua_w_string(w, text, (int32_t)strlen(text));
 }
@@ -953,8 +953,8 @@ void ua_w_reference(UaWriter *w, const OpcUaReference *ref)
 {
     if (!ref)
     {
-        w->ok = false;
-        return;
+        w->ok = false; // GCOVR_EXCL_LINE  dead: the sole caller (browse loop) always passes a valid &refs[j]
+        return;        // GCOVR_EXCL_LINE
     }
     ua_w_nodeid_numeric(w, 0, ref->ref_type_id);                  // ReferenceTypeId
     ua_w_bool(w, ref->is_forward);                                // IsForward

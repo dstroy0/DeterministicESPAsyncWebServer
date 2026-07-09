@@ -1576,6 +1576,44 @@ void test_parse_request_header_truncated_addhdr()
     TEST_ASSERT_FALSE(opcua_parse_write(buf, n, &wr)); // AdditionalHeader ExtensionObject underruns
 }
 
+// Build an OPN frame truncated at a chosen stage: 0 = no body TypeId, 2 = valid TypeId + partial header.
+static size_t build_open_frame(uint8_t *out, size_t cap, int stage)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'O');
+    ua_w_u8(&w, 'P');
+    ua_w_u8(&w, 'N');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0);              // SecureChannelId
+    ua_w_string(&w, nullptr, -1); // SecurityPolicyUri
+    ua_w_string(&w, nullptr, -1); // SenderCertificate
+    ua_w_string(&w, nullptr, -1); // ReceiverCertificateThumbprint
+    ua_w_u32(&w, 1);              // SequenceNumber
+    ua_w_u32(&w, 100);            // RequestId
+    if (stage >= 1)
+        ua_w_nodeid_numeric(&w, 0, OPCUA_ID_OPEN_REQ); // body TypeId
+    if (stage >= 2)
+    {
+        ua_w_nodeid_numeric(&w, 0, 0); // RequestHeader: AuthenticationToken
+        ua_w_u64(&w, 0);               // Timestamp, then truncated
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_open_truncated_frames()
+{
+    OpcUaOpenChannel oc;
+    uint8_t buf[64];
+    size_t n = build_open_frame(buf, sizeof(buf), 0); // no body TypeId -> TypeId NodeId read underruns
+    TEST_ASSERT_FALSE(opcua_parse_open(buf, n, &oc));
+    n = build_open_frame(buf, sizeof(buf), 2); // valid TypeId, truncated RequestHeader -> r_request_header fails
+    TEST_ASSERT_FALSE(opcua_parse_open(buf, n, &oc));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1625,5 +1663,6 @@ int main()
     RUN_TEST(test_parse_open_wrong_body_typeid);
     RUN_TEST(test_parse_write_malformed_datavalue_rejected);
     RUN_TEST(test_parse_request_header_truncated_addhdr);
+    RUN_TEST(test_parse_open_truncated_frames);
     return UNITY_END();
 }
