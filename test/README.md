@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2638 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2639 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23000,7 +23000,7 @@ A thorough directory of all **2638 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_v3 (19 tests)</b></summary>
+<summary><b>test_snmp_v3 (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v3_field_tag_corruption</b> &mdash; <i>Walk the message exactly as snmp_v3_process does, recording each field's offset.</i></summary>
@@ -23089,6 +23089,15 @@ A thorough directory of all **2638 test cases** across **228 suites**. Expand a 
       * <code>Assert false (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0))</code>
       * <code>Assert true (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0))</code>
       * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_notify_overflow_guards</b> &mdash; <i>V3 notify overflow guards</i></summary>
+
+    * **Objective**: V3 notify overflow guards
+    * **Assertions**:
+      * <code>Assert true (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1))</code>
+      * <code>Assert false (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
