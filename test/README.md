@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2649 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2652 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -2954,7 +2954,17 @@ A thorough directory of all **2649 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_chunked (13 tests)</b></summary>
+<summary><b>test_chunked (14 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chunked_source_overreport_clamped</b> &mdash; <i>256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.</i></summary>
+
+    * **Objective**: 256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "100\\r\\n"))</code>
+      * <code>Assert not null (strstr(r, "0\\r\\n\\r\\n"))</code>
+      * <code>Assert equal int (CHUNK_BUF_SIZE, g_log_len)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_chunked_backpressure_resumes_across_polls</b> &mdash; <i>Chunked backpressure resumes across polls</i></summary>
@@ -20539,7 +20549,7 @@ A thorough directory of all **2649 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_range (14 tests)</b></summary>
+<summary><b>test_range (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_file_send_backpressure_resumes_across_polls</b> &mdash; <i>File send backpressure resumes across polls</i></summary>
@@ -20551,6 +20561,29 @@ A thorough directory of all **2649 test cases** across **228 suites**. Expand a 
       * <code>Assert equal uint (0, body_len())</code>
       * <code>Assert equal uint (20, body_len())</code>
       * <code>Assert equal memory (FILE_DATA, body_ptr(), 20)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_file_send_write_fails_then_retries</b> &mdash; <i>File send write fails then retries</i></summary>
+
+    * **Objective**: File send write fails then retries
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "200 OK"))</code>
+      * <code>Assert not null (strstr(r, "Content-Length: 20"))</code>
+      * <code>Assert equal uint (0, body_len())</code>
+      * <code>Assert equal uint (20, body_len())</code>
+      * <code>Assert equal memory (FILE_DATA, body_ptr(), 20)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_file_send_short_read_stops</b> &mdash; <i>File send short read stops</i></summary>
+
+    * **Objective**: File send short read stops
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "200 OK"))</code>
+      * <code>Assert not null (strstr(r, "Content-Length: 20"))</code>
+      * <code>Assert equal uint (8, body_len())</code>
+      * <code>Assert equal memory (FILE_DATA, body_ptr(), 8)</code>
   </details>
 
   <details style="margin-left: 20px;">
