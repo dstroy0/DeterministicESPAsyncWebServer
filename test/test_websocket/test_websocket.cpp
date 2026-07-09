@@ -1018,6 +1018,21 @@ void test_ws_outbound_incompressible_not_flagged()
     sent = (const uint8_t *)tcp_captured();
     TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_PONG, sent[0]); // RSV1 clear on control frames
 }
+// A frame marked compressed (RSV1) whose payload is not valid DEFLATE closes the connection.
+void test_ws_deflate_inflate_error_closes()
+{
+    static const uint8_t garbage[] = {0xFF, 0xFF, 0xFF}; // invalid deflate block type
+    WsConn *ws = ws_alloc(0);
+    TEST_ASSERT_NOT_NULL(ws);
+    ws->pmd = true;
+    uint8_t frame[32];
+    size_t n = build_frame(frame, WS_OP_BINARY, true, garbage, (uint16_t)sizeof(garbage), true);
+    frame[0] |= 0x40; // RSV1 = compressed
+    push_bytes(0, frame, n);
+    ws_parse(ws);
+    TEST_ASSERT_EQUAL(WS_ERROR, ws->parse_state); // inflate error -> closed
+}
+
 #endif // DETWS_ENABLE_WS_DEFLATE
 
 // Outbound fragmentation (RFC 6455 sec 5.4): a data message longer than the frag size is split into
@@ -1058,6 +1073,35 @@ void test_ws_outbound_fragmentation()
     s = (const uint8_t *)tcp_captured();
     TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_BINARY, s[0]); // FIN set, one frame
     TEST_ASSERT_EQUAL_UINT8(10, s[1]);
+}
+
+void test_ws_send_frame_paths_and_parse_guard()
+{
+    WsConn *ws = ws_alloc(0);
+    ws_set_frag_size(0); // single frame, no fragmentation
+    uint8_t payload[200];
+    for (int i = 0; i < 200; i++)
+        payload[i] = (uint8_t)i;
+    // Medium frame (len >= 126) uses the extended 16-bit length header.
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_BINARY, payload, 200));
+    const uint8_t *sent = (const uint8_t *)tcp_captured();
+    TEST_ASSERT_EQUAL_UINT8(126, sent[1]); // 16-bit extended-length marker (server->client unmasked)
+    TEST_ASSERT_EQUAL_UINT8(0, sent[2]);   // length high byte
+    TEST_ASSERT_EQUAL_UINT8(200, sent[3]); // length low byte
+    tcp_capture_disable();
+    // A payload larger than the fragment size emits multiple frames (continuation).
+    ws_set_frag_size(64);
+    tcp_capture_reset();
+    TEST_ASSERT_TRUE(ws_send_frame(ws, WS_OP_TEXT, payload, 200));
+    TEST_ASSERT_TRUE(tcp_captured_len() > 200); // payload + several frame headers
+    tcp_capture_disable();
+    ws_set_frag_size(0);
+    // ws_send_frame + ws_parse on an inactive connection both fail closed / return immediately.
+    conn_pool[0].state = CONN_CLOSING;
+    TEST_ASSERT_FALSE(ws_send_frame(ws, WS_OP_TEXT, payload, 10));
+    ws_parse(ws);
+    conn_pool[0].state = CONN_ACTIVE;
 }
 
 int main()
@@ -1137,6 +1181,7 @@ int main()
     RUN_TEST(test_ws_permessage_deflate_inbound);
     RUN_TEST(test_ws_rsv1_without_negotiation_closes);
     RUN_TEST(test_ws_permessage_deflate_outbound);
+    RUN_TEST(test_ws_deflate_inflate_error_closes);
     RUN_TEST(test_ws_outbound_incompressible_not_flagged);
 #endif
 
@@ -1149,5 +1194,6 @@ int main()
     RUN_TEST(stress_ws_parse_max_payload);
     RUN_TEST(stress_ws_parse_two_consecutive_frames);
 
+    RUN_TEST(test_ws_send_frame_paths_and_parse_guard);
     return UNITY_END();
 }
