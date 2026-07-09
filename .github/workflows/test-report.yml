@@ -152,6 +152,15 @@ jobs:
         if: ${{ steps.sel.outputs.mode != 'none' }}
         run: npx prettier@3.9.1 --write test/TEST_REPORT.md
 
+      # Scan the freshly-merged coverage.xml BEFORE the commit step: the commit does a rebase, and a
+      # concurrent-run conflict on the regenerated coverage.xml would otherwise leave git conflict
+      # markers in the file Sonar parses (the parse then fails). Scanning first keeps Sonar on a clean file.
+      - name: SonarQube Scan
+        if: ${{ env.SONAR_TOKEN != '' && steps.sel.outputs.mode != 'none' }}
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io
+
       - name: Commit updated report + coverage
         if: ${{ github.event_name == 'push' && steps.sel.outputs.mode != 'none' }}
         env:
@@ -173,8 +182,12 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "ci: update test report + coverage [skip ci]"
             # Rebase-and-retry: other auto-committing workflows advance main during this multi-minute run.
+            # The report + coverage are regenerated each run, so on a concurrent-update conflict keep OUR
+            # fresh version (-X theirs prefers the commits being replayed during a rebase) and abort cleanly
+            # on any other failure so no conflict markers ever linger in the working tree.
             for i in 1 2 3 4 5; do
-              if git pull --rebase origin main && git push; then exit 0; fi
+              if git pull --rebase -X theirs origin main && git push; then exit 0; fi
+              git rebase --abort 2>/dev/null || true
               echo "push rejected (attempt $i/5), retrying"
               sleep 5
             done
@@ -183,9 +196,3 @@ jobs:
           else
             echo "Report + coverage unchanged."
           fi
-
-      - name: SonarQube Scan
-        if: ${{ env.SONAR_TOKEN != '' && steps.sel.outputs.mode != 'none' }}
-        uses: SonarSource/sonarqube-scan-action@v8
-        env:
-          SONAR_HOST_URL: https://sonarcloud.io
