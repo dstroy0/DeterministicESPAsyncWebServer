@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 07:03:12
+**Generated:** 2026-07-09 07:47:07
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2662 passed - 231s
+**Result:** ✅ 2723 passed - 593s
 
 ---
 
@@ -10,238 +10,238 @@
 
 | Suite                    | Environment             | Tests | Status |     Duration |
 | :----------------------- | :---------------------- | ----: | :----: | -----------: |
-| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:05.184 |
-| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.655 |
-| `test_det_ip`            | `native_det_ip`         |    10 |   ✅   | 00:00:00.617 |
-| `test_det_arena`         | `native_det_arena`      |    17 |   ✅   | 00:00:00.621 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:03.890 |
-| `test_crypto_kat`        | `native_crypto_kat`     |     8 |   ✅   | 00:00:02.163 |
-| `test_promisc`           | `native_promisc`        |     8 |   ✅   | 00:00:00.639 |
-| `test_bus_capture`       | `native_bus_capture`    |     5 |   ✅   | 00:00:00.593 |
-| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.597 |
-| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.593 |
-| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.622 |
-| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.595 |
-| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.595 |
-| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.596 |
-| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.590 |
-| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.580 |
-| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.590 |
-| `test_sse`               | `native`                |    37 |   ✅   | 00:00:01.081 |
-| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.528 |
-| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.576 |
-| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.563 |
-| `test_websocket`         | `native`                |    68 |   ✅   | 00:00:00.612 |
-| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.554 |
-| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.722 |
-| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.030 |
-| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.701 |
-| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:12.127 |
-| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.156 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.609 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:00.972 |
-| `test_ssh_transport`     | `native_ssh`            |    34 |   ✅   | 00:00:01.655 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.579 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.049 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.647 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:05.296 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.620 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.570 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.499 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.559 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.561 |
-| `test_json`              | `native_app`            |    23 |   ✅   | 00:00:00.527 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.566 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.565 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.587 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.552 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.538 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.572 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.568 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.590 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.562 |
-| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.587 |
-| `test_application`       | `native_app`            |    64 |   ✅   | 00:00:00.699 |
-| `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.419 |
-| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.310 |
-| `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.704 |
-| `test_snmp_agent`        | `native_snmp`           |    19 |   ✅   | 00:00:00.529 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.386 |
-| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.748 |
-| `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.991 |
-| `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.759 |
-| `test_webdav`            | `native_webdav`         |    24 |   ✅   | 00:00:11.621 |
-| `test_modbus`            | `native_modbus`         |    22 |   ✅   | 00:00:00.601 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.897 |
-| `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:13.151 |
-| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.597 |
-| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.588 |
-| `test_flow_export`       | `native_flow_export`    |     6 |   ✅   | 00:00:00.598 |
-| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.609 |
-| `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.634 |
-| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:01.091 |
-| `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:01.073 |
-| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:01.444 |
-| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.785 |
-| `test_nrf24`             | `native_nrf24`          |    10 |   ✅   | 00:00:00.688 |
-| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.597 |
-| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.596 |
-| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.581 |
-| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.584 |
-| `test_zigbee`            | `native_zigbee`         |     9 |   ✅   | 00:00:00.596 |
-| `test_thread`            | `native_thread`         |    13 |   ✅   | 00:00:00.602 |
-| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.644 |
-| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.601 |
-| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.598 |
-| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.623 |
-| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.587 |
-| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.626 |
-| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.626 |
-| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.628 |
-| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.713 |
-| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.632 |
-| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.641 |
-| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.626 |
-| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.665 |
-| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.615 |
-| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.637 |
-| `test_amqp`              | `native_amqp`           |     7 |   ✅   | 00:00:00.603 |
-| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.590 |
-| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.606 |
-| `test_proxy_protocol`    | `native_proxy_protocol` |     8 |   ✅   | 00:00:00.674 |
-| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.632 |
-| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.629 |
-| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.578 |
-| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.785 |
-| `test_webhook`           | `native_webhook`        |     5 |   ✅   | 00:00:00.605 |
-| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.568 |
-| `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.620 |
-| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.668 |
-| `test_oidc`              | `native_oidc`           |    17 |   ✅   | 00:00:00.836 |
-| `test_vfs`               | `native_vfs`            |    11 |   ✅   | 00:00:00.592 |
-| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.708 |
-| `test_espnow`            | `native_espnow`         |     7 |   ✅   | 00:00:00.596 |
-| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.605 |
-| `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.731 |
-| `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.673 |
-| `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.124 |
-| `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.097 |
-| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.610 |
-| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.832 |
-| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.667 |
-| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.601 |
-| `test_rtc`               | `native_rtc`            |     8 |   ✅   | 00:00:00.586 |
-| `test_ld2410`            | `native_ld2410`         |     7 |   ✅   | 00:00:00.679 |
-| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.764 |
-| `test_sht3x`             | `native_sht3x`          |     5 |   ✅   | 00:00:00.634 |
-| `test_pca9685`           | `native_pca9685`        |     4 |   ✅   | 00:00:00.620 |
-| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:03.095 |
-| `test_ina219`            | `native_ina219`         |     4 |   ✅   | 00:00:00.571 |
-| `test_hpack`             | `native_hpack`          |    14 |   ✅   | 00:00:00.759 |
-| `test_h2_frame`          | `native_h2frame`        |     6 |   ✅   | 00:00:00.629 |
-| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:00.881 |
-| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.591 |
-| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.607 |
-| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.660 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.133 |
-| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.610 |
-| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.661 |
-| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.627 |
-| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.652 |
-| `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.647 |
-| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.647 |
-| `test_inflate`           | `native_inflate`        |    12 |   ✅   | 00:00:00.596 |
-| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.715 |
-| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.658 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.043 |
-| `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.178 |
-| `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.597 |
-| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.884 |
-| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.607 |
-| `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.658 |
-| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:10.876 |
-| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.594 |
-| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.608 |
-| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.574 |
-| `test_partition_monitor` | `native_partition`      |     5 |   ✅   | 00:00:00.593 |
-| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.608 |
-| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.600 |
-| `test_gpio_map`          | `native_gpio_map`       |     8 |   ✅   | 00:00:00.632 |
-| `test_udp_telemetry`     | `native_udp_telemetry`  |     7 |   ✅   | 00:00:00.600 |
-| `test_statsd`            | `native_statsd`         |     9 |   ✅   | 00:00:00.645 |
-| `test_guardrails`        | `native_guardrails`     |     6 |   ✅   | 00:00:00.665 |
-| `test_failsafe`          | `native_failsafe`       |     6 |   ✅   | 00:00:00.619 |
-| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.608 |
-| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.592 |
-| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.621 |
-| `test_dshot`             | `native_dshot`          |     7 |   ✅   | 00:00:00.643 |
-| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.739 |
-| `test_nts`               | `native_nts`            |     4 |   ✅   | 00:00:00.589 |
-| `test_dds`               | `native_dds`            |     4 |   ✅   | 00:00:00.585 |
-| `test_xmpp`              | `native_xmpp`           |     6 |   ✅   | 00:00:00.602 |
-| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.751 |
-| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.571 |
-| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.583 |
-| `test_mtconnect`         | `native_mtconnect`      |     4 |   ✅   | 00:00:00.644 |
-| `test_j2735`             | `native_j2735`          |     9 |   ✅   | 00:00:00.624 |
-| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.599 |
-| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.593 |
-| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.593 |
-| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.600 |
-| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.593 |
-| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.592 |
-| `test_openadr`           | `native_openadr`        |     4 |   ✅   | 00:00:00.657 |
-| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.592 |
-| `test_cclink`            | `native_cclink`         |     4 |   ✅   | 00:00:00.597 |
-| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.584 |
-| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.601 |
-| `test_profibus`          | `native_profibus`       |     4 |   ✅   | 00:00:00.597 |
-| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.752 |
-| `test_mbplus`            | `native_mbplus`         |     5 |   ✅   | 00:00:00.719 |
-| `test_interbus`          | `native_interbus`       |     4 |   ✅   | 00:00:00.596 |
-| `test_iccp`              | `native_iccp`           |     4 |   ✅   | 00:00:00.606 |
-| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.594 |
-| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.584 |
-| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.588 |
-| `test_atc`               | `native_atc`            |     4 |   ✅   | 00:00:00.595 |
-| `test_southbound`        | `native_southbound`     |     5 |   ✅   | 00:00:00.592 |
-| `test_exc_decoder`       | `native_exc_decoder`    |     5 |   ✅   | 00:00:00.638 |
-| `test_http_delivery`     | `native_http_delivery`  |     6 |   ✅   | 00:00:00.627 |
-| `test_hw_health`         | `native_hw_health`      |     5 |   ✅   | 00:00:00.613 |
-| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     4 |   ✅   | 00:00:00.623 |
-| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.764 |
-| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.592 |
-| `test_happy_eyeballs`    | `native_happy_eyeballs` |     4 |   ✅   | 00:00:00.628 |
-| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.750 |
-| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.733 |
-| `test_cc1101`            | `native_cc1101`         |    10 |   ✅   | 00:00:00.600 |
-| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.581 |
-| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.585 |
-| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.689 |
-| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.584 |
-| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.608 |
-| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.631 |
-| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.845 |
-| `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.612 |
-| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:04.972 |
-| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.709 |
-| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.624 |
-| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.951 |
-| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.074 |
-| `test_qpack`             | `native_qpack`          |     9 |   ✅   | 00:00:00.702 |
-| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.601 |
-| `test_quic_frame`        | `native_quic_frame`     |     8 |   ✅   | 00:00:00.636 |
-| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.704 |
-| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.820 |
-| `test_quic_tp`           | `native_quic_tp`        |     7 |   ✅   | 00:00:00.620 |
-| `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.762 |
-| `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:00.952 |
-| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.046 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.008 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.061 |
-| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.162 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:01.689 |
-| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.664 |
+| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:09.783 |
+| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.716 |
+| `test_det_ip`            | `native_det_ip`         |    10 |   ✅   | 00:00:00.750 |
+| `test_det_arena`         | `native_det_arena`      |    17 |   ✅   | 00:00:00.735 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.791 |
+| `test_crypto_kat`        | `native_crypto_kat`     |     8 |   ✅   | 00:00:02.644 |
+| `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.725 |
+| `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.725 |
+| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.738 |
+| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.734 |
+| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.767 |
+| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.731 |
+| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.755 |
+| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.740 |
+| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.745 |
+| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.744 |
+| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.731 |
+| `test_sse`               | `native`                |    37 |   ✅   | 00:00:01.297 |
+| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.657 |
+| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.714 |
+| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.712 |
+| `test_websocket`         | `native`                |    68 |   ✅   | 00:00:00.750 |
+| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.696 |
+| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.892 |
+| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.233 |
+| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.784 |
+| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.760 |
+| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.365 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.728 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.086 |
+| `test_ssh_transport`     | `native_ssh`            |    35 |   ✅   | 00:00:01.819 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.723 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.240 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.945 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.537 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.692 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.694 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.606 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.682 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.684 |
+| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.650 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.703 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.695 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.719 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.695 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.660 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.711 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.701 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.721 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.689 |
+| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.705 |
+| `test_application`       | `native_app`            |    64 |   ✅   | 00:00:00.859 |
+| `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.607 |
+| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
+| `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.819 |
+| `test_snmp_agent`        | `native_snmp`           |    26 |   ✅   | 00:00:00.625 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.656 |
+| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
+| `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.899 |
+| `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.935 |
+| `test_webdav`            | `native_webdav`         |    24 |   ✅   | 00:00:00.766 |
+| `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.752 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.878 |
+| `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:00.727 |
+| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.740 |
+| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.756 |
+| `test_flow_export`       | `native_flow_export`    |     7 |   ✅   | 00:00:00.741 |
+| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.742 |
+| `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.770 |
+| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:00.894 |
+| `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:00.986 |
+| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:00.887 |
+| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.739 |
+| `test_nrf24`             | `native_nrf24`          |    11 |   ✅   | 00:00:00.734 |
+| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.729 |
+| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.728 |
+| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.730 |
+| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.732 |
+| `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.740 |
+| `test_thread`            | `native_thread`         |    14 |   ✅   | 00:00:00.753 |
+| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.789 |
+| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.735 |
+| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.741 |
+| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.727 |
+| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.740 |
+| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.720 |
+| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.729 |
+| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.736 |
+| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.822 |
+| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.724 |
+| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.734 |
+| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.728 |
+| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.731 |
+| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.734 |
+| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.729 |
+| `test_amqp`              | `native_amqp`           |     8 |   ✅   | 00:00:00.739 |
+| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.732 |
+| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.742 |
+| `test_proxy_protocol`    | `native_proxy_protocol` |     9 |   ✅   | 00:00:00.722 |
+| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.781 |
+| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.781 |
+| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.718 |
+| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.768 |
+| `test_webhook`           | `native_webhook`        |     6 |   ✅   | 00:00:00.758 |
+| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.720 |
+| `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.735 |
+| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.786 |
+| `test_oidc`              | `native_oidc`           |    17 |   ✅   | 00:00:01.034 |
+| `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.723 |
+| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.778 |
+| `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.736 |
+| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.778 |
+| `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.845 |
+| `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.817 |
+| `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.444 |
+| `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.437 |
+| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.779 |
+| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.983 |
+| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.749 |
+| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.769 |
+| `test_rtc`               | `native_rtc`            |     9 |   ✅   | 00:00:00.744 |
+| `test_ld2410`            | `native_ld2410`         |     8 |   ✅   | 00:00:00.770 |
+| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.743 |
+| `test_sht3x`             | `native_sht3x`          |     6 |   ✅   | 00:00:00.741 |
+| `test_pca9685`           | `native_pca9685`        |     5 |   ✅   | 00:00:00.756 |
+| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:00.750 |
+| `test_ina219`            | `native_ina219`         |     5 |   ✅   | 00:00:00.743 |
+| `test_hpack`             | `native_hpack`          |    14 |   ✅   | 00:00:00.925 |
+| `test_h2_frame`          | `native_h2frame`        |     6 |   ✅   | 00:00:00.768 |
+| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.151 |
+| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.743 |
+| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.770 |
+| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.820 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.472 |
+| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.748 |
+| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.804 |
+| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.774 |
+| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.818 |
+| `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.784 |
+| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.777 |
+| `test_inflate`           | `native_inflate`        |    12 |   ✅   | 00:00:00.733 |
+| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
+| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.332 |
+| `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.423 |
+| `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.824 |
+| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.838 |
+| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.833 |
+| `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.928 |
+| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:00.964 |
+| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.835 |
+| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.910 |
+| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.884 |
+| `test_partition_monitor` | `native_partition`      |     6 |   ✅   | 00:00:00.798 |
+| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.910 |
+| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.911 |
+| `test_gpio_map`          | `native_gpio_map`       |     9 |   ✅   | 00:00:00.802 |
+| `test_udp_telemetry`     | `native_udp_telemetry`  |     8 |   ✅   | 00:00:00.908 |
+| `test_statsd`            | `native_statsd`         |    10 |   ✅   | 00:00:00.782 |
+| `test_guardrails`        | `native_guardrails`     |     9 |   ✅   | 00:00:00.731 |
+| `test_failsafe`          | `native_failsafe`       |     7 |   ✅   | 00:00:00.725 |
+| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.723 |
+| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.726 |
+| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.705 |
+| `test_dshot`             | `native_dshot`          |     8 |   ✅   | 00:00:00.726 |
+| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.727 |
+| `test_nts`               | `native_nts`            |     5 |   ✅   | 00:00:00.732 |
+| `test_dds`               | `native_dds`            |     5 |   ✅   | 00:00:00.733 |
+| `test_xmpp`              | `native_xmpp`           |    11 |   ✅   | 00:00:00.739 |
+| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.734 |
+| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.720 |
+| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.743 |
+| `test_mtconnect`         | `native_mtconnect`      |     5 |   ✅   | 00:00:00.738 |
+| `test_j2735`             | `native_j2735`          |    10 |   ✅   | 00:00:00.725 |
+| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.729 |
+| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.729 |
+| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.733 |
+| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.743 |
+| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.765 |
+| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.758 |
+| `test_openadr`           | `native_openadr`        |     5 |   ✅   | 00:00:00.780 |
+| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.755 |
+| `test_cclink`            | `native_cclink`         |     5 |   ✅   | 00:00:00.764 |
+| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.752 |
+| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.765 |
+| `test_profibus`          | `native_profibus`       |     5 |   ✅   | 00:00:00.763 |
+| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.765 |
+| `test_mbplus`            | `native_mbplus`         |     6 |   ✅   | 00:00:00.759 |
+| `test_interbus`          | `native_interbus`       |     5 |   ✅   | 00:00:00.754 |
+| `test_iccp`              | `native_iccp`           |     5 |   ✅   | 00:00:00.760 |
+| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.763 |
+| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.766 |
+| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.753 |
+| `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.759 |
+| `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.762 |
+| `test_exc_decoder`       | `native_exc_decoder`    |     6 |   ✅   | 00:00:00.781 |
+| `test_http_delivery`     | `native_http_delivery`  |     7 |   ✅   | 00:00:00.758 |
+| `test_hw_health`         | `native_hw_health`      |     6 |   ✅   | 00:00:00.768 |
+| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.759 |
+| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.776 |
+| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.754 |
+| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.795 |
+| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.759 |
+| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.758 |
+| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.769 |
+| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.756 |
+| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.769 |
+| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.732 |
+| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.765 |
+| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.764 |
+| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.770 |
+| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.804 |
+| `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.758 |
+| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.806 |
+| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.922 |
+| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.738 |
+| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.901 |
+| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.334 |
+| `test_qpack`             | `native_qpack`          |     9 |   ✅   | 00:00:00.905 |
+| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.771 |
+| `test_quic_frame`        | `native_quic_frame`     |     8 |   ✅   | 00:00:00.796 |
+| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.912 |
+| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.832 |
+| `test_quic_tp`           | `native_quic_tp`        |     7 |   ✅   | 00:00:00.802 |
+| `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
+| `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:01.210 |
+| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.308 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.251 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.300 |
+| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.367 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.114 |
+| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.833 |
 
 ---
 
@@ -402,42 +402,45 @@ _Data-driven external known-answer tests (KAT) for the library's crypto_
 
 ---
 
-## test_promisc - native_promisc - ✅ 8 passed
+## test_promisc - native_promisc - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC_
 
-|   # | Test                       | Status | Description                                                                    |
-| --: | :------------------------- | :----: | :----------------------------------------------------------------------------- |
-|   1 | `test_beacon_mgmt`         |   ✅   | Mgmt (type 0), Beacon (subtype 8): fc0 = (8<<4)                                | (0<<2) = 0x80; no DS bits.                      |
-|   2 | `test_data_from_ds`        |   ✅   | Data (type 2), from the AP: fc0 = (0<<4)                                       | (2<<2) = 0x08; from_ds = 0x02.                  |
-|   3 | `test_data_to_ds`          |   ✅   | Data to the AP: to_ds = 0x01. a1 = BSSID, a2 = SRC, a3 = DST.                  |
-|   4 | `test_qos_data_header_len` |   ✅   | QoS Data subtype 8: fc0 = (8<<4)                                               | (2<<2) = 0x88. Adds a 2-byte QoS Control field. |
-|   5 | `test_wds_four_address`    |   ✅   | WDS: to_ds & from_ds set (fc1 = 0x03). Addr4 at offset 24; DST = a3, SRC = a4. |
-|   6 | `test_control_frame`       |   ✅   | ACK (type 1, subtype 13): fc0 = (13<<4)                                        | (1<<2) = 0xD4. Only Addr1 (RA), 10-byte header. |
-|   7 | `test_reject_short`        |   ✅   | Reject short                                                                   |
-|   8 | `test_pcap_headers`        |   ✅   | Pcap headers                                                                   |
+|   # | Test                              | Status | Description                                                                    |
+| --: | :-------------------------------- | :----: | :----------------------------------------------------------------------------- |
+|   1 | `test_beacon_mgmt`                |   ✅   | Mgmt (type 0), Beacon (subtype 8): fc0 = (8<<4)                                | (0<<2) = 0x80; no DS bits.                      |
+|   2 | `test_data_from_ds`               |   ✅   | Data (type 2), from the AP: fc0 = (0<<4)                                       | (2<<2) = 0x08; from_ds = 0x02.                  |
+|   3 | `test_data_to_ds`                 |   ✅   | Data to the AP: to_ds = 0x01. a1 = BSSID, a2 = SRC, a3 = DST.                  |
+|   4 | `test_qos_data_header_len`        |   ✅   | QoS Data subtype 8: fc0 = (8<<4)                                               | (2<<2) = 0x88. Adds a 2-byte QoS Control field. |
+|   5 | `test_wds_four_address`           |   ✅   | WDS: to_ds & from_ds set (fc1 = 0x03). Addr4 at offset 24; DST = a3, SRC = a4. |
+|   6 | `test_control_frame`              |   ✅   | ACK (type 1, subtype 13): fc0 = (13<<4)                                        | (1<<2) = 0xD4. Only Addr1 (RA), 10-byte header. |
+|   7 | `test_reject_short`               |   ✅   | Reject short                                                                   |
+|   8 | `test_pcap_headers`               |   ✅   | Pcap headers                                                                   |
+|   9 | `test_host_stubs_and_short_frame` |   ✅   | Host stubs and short frame                                                     |
 
 </details>
 
 ---
 
-## test_bus_capture - native_bus_capture - ✅ 5 passed
+## test_bus_capture - native_bus_capture - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the CAN listen-only capture framing (services/bus_capture): can_to_socketcan()_
 
-|   # | Test                        | Status | Description          |
-| --: | :-------------------------- | :----: | :------------------- |
-|   1 | `test_standard_data_frame`  |   ✅   | Standard data frame  |
-|   2 | `test_extended_id_sets_eff` |   ✅   | Extended id sets eff |
-|   3 | `test_rtr_flag_and_no_data` |   ✅   | Rtr flag and no data |
-|   4 | `test_masks_and_bounds`     |   ✅   | Masks and bounds     |
-|   5 | `test_pcap_can_linktype`    |   ✅   | Pcap can linktype    |
+|   # | Test                               | Status | Description                                                                           |
+| --: | :--------------------------------- | :----: | :------------------------------------------------------------------------------------ |
+|   1 | `test_standard_data_frame`         |   ✅   | Standard data frame                                                                   |
+|   2 | `test_extended_id_sets_eff`        |   ✅   | Extended id sets eff                                                                  |
+|   3 | `test_rtr_flag_and_no_data`        |   ✅   | Rtr flag and no data                                                                  |
+|   4 | `test_masks_and_bounds`            |   ✅   | Masks and bounds                                                                      |
+|   5 | `test_pcap_can_linktype`           |   ✅   | Pcap can linktype                                                                     |
+|   6 | `test_host_twai_stubs_fail_closed` |   ✅   | On host there is no TWAI controller: begin fails closed and poll/end are safe no-ops. |
+|   7 | `test_host_can_stubs`              |   ✅   | Host build: no TWAI/CAN peripheral. begin() fails; poll/end are no-ops.               |
 
 </details>
 
@@ -1286,7 +1289,7 @@ _End-to-end SSH server dispatcher test: drives a full handshake_
 
 ---
 
-## test_ssh_transport - native_ssh - ✅ 34 passed
+## test_ssh_transport - native_ssh - ✅ 35 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1329,6 +1332,7 @@ _SSH transport handshake tests (RFC 4253): identification-string exchange and_
 |  32 | `test_rekey_needed_threshold`                              |   ✅   | Rekey needed threshold                                                          |
 |  33 | `test_rekey_due_volume_and_time`                           |   ✅   | Neither budget spent.                                                           |
 |  34 | `test_begin_rekey_preserves_session_and_auth`              |   ✅   | Begin rekey preserves session and auth                                          |
+|  35 | `test_kdf_edge_paths_and_slot_guards`                      |   ✅   | Kdf edge paths and slot guards                                                  |
 
 </details>
 
@@ -1554,7 +1558,7 @@ _Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIfa
 
 ---
 
-## test_json - native_app - ✅ 23 passed
+## test_json - native_app - ✅ 26 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1563,29 +1567,32 @@ _Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the_
 
 |   # | Test                                                    | Status | Description                                                          |
 | --: | :------------------------------------------------------ | :----: | :------------------------------------------------------------------- |
-|   1 | `test_writer_simple_object`                             |   ✅   | Writer simple object                                                 |
-|   2 | `test_writer_nested_and_array`                          |   ✅   | Writer nested and array                                              |
-|   3 | `test_writer_value_types`                               |   ✅   | Writer value types                                                   |
-|   4 | `test_writer_escapes_strings`                           |   ✅   | Writer escapes strings                                               |
-|   5 | `test_writer_control_char_unicode_escape`               |   ✅   | Writer control char unicode escape                                   |
-|   6 | `test_writer_overflow_sets_not_ok_and_stays_terminated` |   ✅   | Writer overflow sets not ok and stays terminated                     |
-|   7 | `test_writer_depth_overflow_sets_not_ok`                |   ✅   | Writer depth overflow sets not ok                                    |
-|   8 | `test_reader_get_string`                                |   ✅   | Reader get string                                                    |
-|   9 | `test_reader_get_int`                                   |   ✅   | Reader get int                                                       |
-|  10 | `test_reader_get_bool`                                  |   ✅   | Reader get bool                                                      |
-|  11 | `test_reader_only_matches_top_level_key`                |   ✅   | "x" exists both nested and at top level; the top-level one must win. |
-|  12 | `test_reader_missing_key`                               |   ✅   | Reader missing key                                                   |
-|  13 | `test_reader_type_mismatch`                             |   ✅   | "name" is a string, not an int or bool.                              |
-|  14 | `test_reader_unescapes_value`                           |   ✅   | Reader unescapes value                                               |
-|  15 | `test_reader_unicode_escape_to_byte`                    |   ✅   | Reader unicode escape to byte                                        |
-|  16 | `test_reader_truncates_to_capacity`                     |   ✅   | Reader truncates to capacity                                         |
-|  17 | `test_reader_negative_int`                              |   ✅   | Reader negative int                                                  |
-|  18 | `test_writer_null_and_remaining_escapes`                |   ✅   | Writer null and remaining escapes                                    |
-|  19 | `test_reader_null_guards`                               |   ✅   | Reader null guards                                                   |
-|  20 | `test_reader_all_escapes`                               |   ✅   | Reader all escapes                                                   |
-|  21 | `test_reader_unicode_hex_case`                          |   ✅   | Reader unicode hex case                                              |
-|  22 | `test_reader_false_bool`                                |   ✅   | Reader false bool                                                    |
-|  23 | `test_reader_malformed`                                 |   ✅   | Reader malformed                                                     |
+|   1 | `test_reader_non_object_and_bad_member`                 |   ✅   | Reader non object and bad member                                     |
+|   2 | `test_reader_int_rejects_string_and_nondigits`          |   ✅   | Reader int rejects string and nondigits                              |
+|   3 | `test_reader_unicode_escape_invalid_and_wide`           |   ✅   | Reader unicode escape invalid and wide                               |
+|   4 | `test_writer_simple_object`                             |   ✅   | Writer simple object                                                 |
+|   5 | `test_writer_nested_and_array`                          |   ✅   | Writer nested and array                                              |
+|   6 | `test_writer_value_types`                               |   ✅   | Writer value types                                                   |
+|   7 | `test_writer_escapes_strings`                           |   ✅   | Writer escapes strings                                               |
+|   8 | `test_writer_control_char_unicode_escape`               |   ✅   | Writer control char unicode escape                                   |
+|   9 | `test_writer_overflow_sets_not_ok_and_stays_terminated` |   ✅   | Writer overflow sets not ok and stays terminated                     |
+|  10 | `test_writer_depth_overflow_sets_not_ok`                |   ✅   | Writer depth overflow sets not ok                                    |
+|  11 | `test_reader_get_string`                                |   ✅   | Reader get string                                                    |
+|  12 | `test_reader_get_int`                                   |   ✅   | Reader get int                                                       |
+|  13 | `test_reader_get_bool`                                  |   ✅   | Reader get bool                                                      |
+|  14 | `test_reader_only_matches_top_level_key`                |   ✅   | "x" exists both nested and at top level; the top-level one must win. |
+|  15 | `test_reader_missing_key`                               |   ✅   | Reader missing key                                                   |
+|  16 | `test_reader_type_mismatch`                             |   ✅   | "name" is a string, not an int or bool.                              |
+|  17 | `test_reader_unescapes_value`                           |   ✅   | Reader unescapes value                                               |
+|  18 | `test_reader_unicode_escape_to_byte`                    |   ✅   | Reader unicode escape to byte                                        |
+|  19 | `test_reader_truncates_to_capacity`                     |   ✅   | Reader truncates to capacity                                         |
+|  20 | `test_reader_negative_int`                              |   ✅   | Reader negative int                                                  |
+|  21 | `test_writer_null_and_remaining_escapes`                |   ✅   | Writer null and remaining escapes                                    |
+|  22 | `test_reader_null_guards`                               |   ✅   | Reader null guards                                                   |
+|  23 | `test_reader_all_escapes`                               |   ✅   | Reader all escapes                                                   |
+|  24 | `test_reader_unicode_hex_case`                          |   ✅   | Reader unicode hex case                                              |
+|  25 | `test_reader_false_bool`                                |   ✅   | Reader false bool                                                    |
+|  26 | `test_reader_malformed`                                 |   ✅   | Reader malformed                                                     |
 
 </details>
 
@@ -2000,34 +2007,41 @@ _Unit tests for the SNMP ASN.1 BER codec. Encodings are checked against_
 
 ---
 
-## test_snmp_agent - native_snmp - ✅ 19 passed
+## test_snmp_agent - native_snmp - ✅ 26 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
 
-|   # | Test                                        | Status | Description                                                                     |
-| --: | :------------------------------------------ | :----: | :------------------------------------------------------------------------------ |
-|   1 | `test_registration_and_rw_edges`            |   ✅   | Registration and rw edges                                                       |
-|   2 | `test_ipaddress_value_encodes`              |   ✅   | Ipaddress value encodes                                                         |
-|   3 | `test_set_wrong_type_and_unknown`           |   ✅   | Set wrong type and unknown                                                      |
-|   4 | `test_getbulk_variants`                     |   ✅   | non-repeaters = 1, max-repetitions = 2, one varbind at the system prefix.       |
-|   5 | `test_dispatch_value_types_and_malformed`   |   ✅   | uint-typed and OID-typed varbind values decode without error.                   |
-|   6 | `test_get_string_v2c`                       |   ✅   | Get string v2c                                                                  |
-|   7 | `test_get_unknown_v2c_exception`            |   ✅   | Get unknown v2c exception                                                       |
-|   8 | `test_get_bad_instance_v2c_nosuchinstance`  |   ✅   | Get bad instance v2c nosuchinstance                                             |
-|   9 | `test_get_unknown_v1_error`                 |   ✅   | Get unknown v1 error                                                            |
-|  10 | `test_getnext_walks_to_first`               |   ✅   | Getnext walks to first                                                          |
-|  11 | `test_getnext_past_end_endofmibview`        |   ✅   | Getnext past end endofmibview                                                   |
-|  12 | `test_set_without_rw_community_denied`      |   ✅   | Set without rw community denied                                                 |
-|  13 | `test_set_with_rw_community_invokes_setter` |   ✅   | Set with rw community invokes setter                                            |
-|  14 | `test_set_readonly_not_writable`            |   ✅   | Set readonly not writable                                                       |
-|  15 | `test_getbulk_returns_multiple`             |   ✅   | non-repeaters=0, max-repetitions=3, one repeater starting at the system prefix. |
-|  16 | `test_dynamic_counter_value`                |   ✅   | Dynamic counter value                                                           |
-|  17 | `test_uptime_is_timeticks`                  |   ✅   | Uptime is timeticks                                                             |
-|  18 | `test_unknown_community_no_response`        |   ✅   | Unknown community no response                                                   |
-|  19 | `test_v3_message_dropped`                   |   ✅   | V3 message dropped                                                              |
+|   # | Test                                        | Status | Description                                                                       |
+| --: | :------------------------------------------ | :----: | :-------------------------------------------------------------------------------- |
+|   1 | `test_registration_and_rw_edges`            |   ✅   | Registration and rw edges                                                         |
+|   2 | `test_ipaddress_value_encodes`              |   ✅   | Ipaddress value encodes                                                           |
+|   3 | `test_set_wrong_type_and_unknown`           |   ✅   | Set wrong type and unknown                                                        |
+|   4 | `test_getbulk_variants`                     |   ✅   | non-repeaters = 1, max-repetitions = 2, one varbind at the system prefix.         |
+|   5 | `test_dispatch_value_types_and_malformed`   |   ✅   | uint-typed and OID-typed varbind values decode without error.                     |
+|   6 | `test_get_string_v2c`                       |   ✅   | Get string v2c                                                                    |
+|   7 | `test_get_unknown_v2c_exception`            |   ✅   | Get unknown v2c exception                                                         |
+|   8 | `test_get_bad_instance_v2c_nosuchinstance`  |   ✅   | Get bad instance v2c nosuchinstance                                               |
+|   9 | `test_get_unknown_v1_error`                 |   ✅   | Get unknown v1 error                                                              |
+|  10 | `test_getnext_walks_to_first`               |   ✅   | Getnext walks to first                                                            |
+|  11 | `test_getnext_past_end_endofmibview`        |   ✅   | Getnext past end endofmibview                                                     |
+|  12 | `test_set_without_rw_community_denied`      |   ✅   | Set without rw community denied                                                   |
+|  13 | `test_set_with_rw_community_invokes_setter` |   ✅   | Set with rw community invokes setter                                              |
+|  14 | `test_set_readonly_not_writable`            |   ✅   | Set readonly not writable                                                         |
+|  15 | `test_getbulk_returns_multiple`             |   ✅   | non-repeaters=0, max-repetitions=3, one repeater starting at the system prefix.   |
+|  16 | `test_dynamic_counter_value`                |   ✅   | Dynamic counter value                                                             |
+|  17 | `test_uptime_is_timeticks`                  |   ✅   | Uptime is timeticks                                                               |
+|  18 | `test_unknown_community_no_response`        |   ✅   | Unknown community no response                                                     |
+|  19 | `test_v3_message_dropped`                   |   ✅   | V3 message dropped                                                                |
+|  20 | `test_getbulk_repeaters_and_end`            |   ✅   | Pure repeaters (non_rep=0, max_rep=3) walk successive OIDs from the sys prefix.   |
+|  21 | `test_getbulk_nonrep_clamp_and_v1_reject`   |   ✅   | non_rep (5) exceeds the single varbind -> clamped to the varbind count.           |
+|  22 | `test_response_too_big_reencodes`           |   ✅   | Response too big reencodes                                                        |
+|  23 | `test_version_and_community_guards`         |   ✅   | v3 with the USM layer not built here -> 0.                                        |
+|  24 | `test_dispatch_malformed_pdu`               |   ✅   | A PDU whose header parses but whose request-id integer is truncated fails closed. |
+|  25 | `test_udp_handler_via_inject`               |   ✅   | Udp handler via inject                                                            |
+|  26 | `test_malformed_message_guards`             |   ✅   | Malformed message guards                                                          |
 
 </details>
 
@@ -2249,7 +2263,7 @@ _Unit tests for the WebDAV server core (services/webdav): method classification,
 
 ---
 
-## test_modbus - native_modbus - ✅ 22 passed
+## test_modbus - native_modbus - ✅ 23 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2280,6 +2294,7 @@ _Unit tests for the Modbus TCP slave core (services/modbus): the data model and_
 |  20 | `test_rtu_wrong_address_dropped`            |   ✅   | Rtu wrong address dropped                            |
 |  21 | `test_rtu_broadcast_executes_without_reply` |   ✅   | Rtu broadcast executes without reply                 |
 |  22 | `test_rtu_edge_cases`                       |   ✅   | Rtu edge cases                                       |
+|  23 | `test_server_init_bounds_and_handler`       |   ✅   | Server init bounds and handler                       |
 
 </details>
 
@@ -2386,7 +2401,7 @@ _Unit tests for the MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the message
 
 ---
 
-## test_flow_export - native_flow_export - ✅ 6 passed
+## test_flow_export - native_flow_export - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2401,6 +2416,7 @@ _Unit tests for the flow-export codec (services/flow_export): NetFlow v5 fixed r
 |   4 | `test_ipfix_message_bytes`          |   ✅   | Ipfix message bytes          |
 |   5 | `test_v9_count_and_padding`         |   ✅   | V9 count and padding         |
 |   6 | `test_finish_overflow_fails_closed` |   ✅   | Finish overflow fails closed |
+|   7 | `test_v5_write_overflow`            |   ✅   | V5 write overflow            |
 
 </details>
 
@@ -2568,7 +2584,7 @@ _Unit tests for the LoRa codec + SX127x driver (services/lora). The codec (Radio
 
 ---
 
-## test_nrf24 - native_nrf24 - ✅ 10 passed
+## test_nrf24 - native_nrf24 - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2587,6 +2603,7 @@ _Unit tests for the nRF24L01+ driver (services/nrf24) against a mock chip that e
 |   8 | `test_recv_no_packet`                 |   ✅   | Recv no packet                 |
 |   9 | `test_recv_fifo_empty_pipe`           |   ✅   | Recv fifo empty pipe           |
 |  10 | `test_recv_truncates_to_cap`          |   ✅   | Recv truncates to cap          |
+|  11 | `test_data_rate_variants`             |   ✅   | Data rate variants             |
 
 </details>
 
@@ -2685,7 +2702,7 @@ _Unit tests for the Z-Wave Serial API frame codec (services/zwave): the data-fra
 
 ---
 
-## test_zigbee - native_zigbee - ✅ 9 passed
+## test_zigbee - native_zigbee - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2703,12 +2720,13 @@ _Unit tests for the Zigbee EZSP / ASH framing codec (services/zigbee): the CRC-1
 |   7 | `test_decode_rejects_dangling_escape`      |   ✅   | Decode rejects dangling escape                                                       |
 |   8 | `test_decode_rejects_small_payload_buffer` |   ✅   | Decode rejects small payload buffer                                                  |
 |   9 | `test_encode_bounds`                       |   ✅   | Encode bounds                                                                        |
+|  10 | `test_encode_decode_guards`                |   ✅   | Encode decode guards                                                                 |
 
 </details>
 
 ---
 
-## test_thread - native_thread - ✅ 13 passed
+## test_thread - native_thread - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2730,6 +2748,7 @@ _Unit tests for the Thread spinel / HDLC-lite framing codec (services/thread): t
 |  11 | `test_spinel_unpack_needs_more_and_overflow` |   ✅   | Spinel unpack needs more and overflow                                                     |
 |  12 | `test_spinel_command_build_parse_round_trip` |   ✅   | header 0x81, CMD_PROP_VALUE_SET, a large property id (multi-byte packed), a value.        |
 |  13 | `test_spinel_command_through_hdlc`           |   ✅   | The command payload rides inside an HDLC frame: build the command, frame it, decode       |
+|  14 | `test_spinel_guards`                         |   ✅   | Spinel guards                                                                             |
 
 </details>
 
@@ -3076,7 +3095,7 @@ _Unit tests for the EtherNet/IP encapsulation codec (services/enip): the header,
 
 ---
 
-## test_amqp - native_amqp - ✅ 7 passed
+## test_amqp - native_amqp - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3092,6 +3111,7 @@ _Unit tests for the AMQP 0-9-1 frame codec (services/amqp): the protocol header,
 |   5 | `test_parse_stream`                |   ✅   | Parse stream                         |
 |   6 | `test_parse_rejects_bad`           |   ✅   | A frame whose end octet is not 0xCE. |
 |   7 | `test_build_overflow_fails_closed` |   ✅   | Build overflow fails closed          |
+|   8 | `test_build_and_parse_guards`      |   ✅   | Build and parse guards               |
 
 </details>
 
@@ -3148,23 +3168,24 @@ _Unit tests for the NATS client protocol codec (services/nats): the CONNECT/PUB/
 
 ---
 
-## test_proxy_protocol - native_proxy_protocol - ✅ 8 passed
+## test_proxy_protocol - native_proxy_protocol - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text)_
 
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_v1_build`                    |   ✅   | V1 build                    |
-|   2 | `test_v1_round_trip`               |   ✅   | V1 round trip               |
-|   3 | `test_v2_build_bytes`              |   ✅   | V2 build bytes              |
-|   4 | `test_v2_round_trip`               |   ✅   | V2 round trip               |
-|   5 | `test_v1_unknown`                  |   ✅   | V1 unknown                  |
-|   6 | `test_not_a_proxy_header`          |   ✅   | Not a proxy header          |
-|   7 | `test_incomplete`                  |   ✅   | v1 prefix but no CRLF yet.  |
-|   8 | `test_build_overflow_fails_closed` |   ✅   | Build overflow fails closed |
+|   # | Test                                      | Status | Description                                                                |
+| --: | :---------------------------------------- | :----: | :------------------------------------------------------------------------- |
+|   1 | `test_v1_build`                           |   ✅   | V1 build                                                                   |
+|   2 | `test_v1_round_trip`                      |   ✅   | V1 round trip                                                              |
+|   3 | `test_v2_build_bytes`                     |   ✅   | V2 build bytes                                                             |
+|   4 | `test_v2_round_trip`                      |   ✅   | V2 round trip                                                              |
+|   5 | `test_v1_unknown`                         |   ✅   | V1 unknown                                                                 |
+|   6 | `test_not_a_proxy_header`                 |   ✅   | Not a proxy header                                                         |
+|   7 | `test_incomplete`                         |   ✅   | v1 prefix but no CRLF yet.                                                 |
+|   8 | `test_build_overflow_fails_closed`        |   ✅   | Build overflow fails closed                                                |
+|   9 | `test_v1_malformed_addresses_fail_closed` |   ✅   | Each malformed v1 source address drives a distinct parse_ipv4 reject path. |
 
 </details>
 
@@ -3249,20 +3270,21 @@ _Unit tests for TOTP (services/totp): the RFC 6238 Appendix B test vectors_
 
 ---
 
-## test_webhook - native_webhook - ✅ 5 passed
+## test_webhook - native_webhook - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the webhook builders (services/webhook): IFTTT URL + payload_
 
-|   # | Test                         | Status | Description           |
-| --: | :--------------------------- | :----: | :-------------------- |
-|   1 | `test_ifttt_url`             |   ✅   | Ifttt url             |
-|   2 | `test_payload_three_values`  |   ✅   | Payload three values  |
-|   3 | `test_payload_omits_nulls`   |   ✅   | Payload omits nulls   |
-|   4 | `test_payload_escapes_json`  |   ✅   | Payload escapes json  |
-|   5 | `test_overflow_fails_closed` |   ✅   | Overflow fails closed |
+|   # | Test                               | Status | Description                                                                                          |
+| --: | :--------------------------------- | :----: | :--------------------------------------------------------------------------------------------------- |
+|   1 | `test_ifttt_url`                   |   ✅   | Ifttt url                                                                                            |
+|   2 | `test_payload_three_values`        |   ✅   | Payload three values                                                                                 |
+|   3 | `test_payload_omits_nulls`         |   ✅   | Payload omits nulls                                                                                  |
+|   4 | `test_payload_escapes_json`        |   ✅   | Payload escapes json                                                                                 |
+|   5 | `test_overflow_fails_closed`       |   ✅   | Overflow fails closed                                                                                |
+|   6 | `test_ifttt_trigger_and_post_stub` |   ✅   | Host build (no HTTP client): webhook_post is a -1 stub; ifttt_trigger builds url+payload then posts. |
 
 </details>
 
@@ -3363,7 +3385,7 @@ _Unit tests for the OIDC RS256 ID-token verifier (services/oidc). Vectors are_
 
 ---
 
-## test_vfs - native_vfs - ✅ 11 passed
+## test_vfs - native_vfs - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3383,6 +3405,7 @@ _Unit tests for the unified VFS (services/vfs) exercised through its built-in_
 |   9 | `test_file_pool_exhaustion`               |   ✅   | File pool exhaustion               |
 |  10 | `test_handle_pool_exhaustion`             |   ✅   | Handle pool exhaustion             |
 |  11 | `test_unmounted_fails_closed`             |   ✅   | Unmounted fails closed             |
+|  12 | `test_ram_guard_subconditions`            |   ✅   | Ram guard subconditions            |
 
 </details>
 
@@ -3434,7 +3457,7 @@ _Unit tests for the GraphQL query subset (services/graphql): selection shaping,_
 
 ---
 
-## test_espnow - native_espnow - ✅ 7 passed
+## test_espnow - native_espnow - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3450,6 +3473,7 @@ _Unit tests for the ESP-NOW host-testable core (services/espnow): the typed_
 |   5 | `test_peer_registry`                            |   ✅   | Peer registry                            |
 |   6 | `test_peer_table_full_fails_closed`             |   ✅   | Peer table full fails closed             |
 |   7 | `test_broadcast_address`                        |   ✅   | Broadcast address                        |
+|   8 | `test_peer_guard_and_host_stubs`                |   ✅   | Peer guard and host stubs                |
 
 </details>
 
@@ -3718,44 +3742,46 @@ _Unit tests for the authoritative DNS server (services/dns_server): the pure res
 
 ---
 
-## test_rtc - native_rtc - ✅ 8 passed
+## test_rtc - native_rtc - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the DS1307/DS3231 RTC conversions (services/rtc): the BCD time registers_
 
-|   # | Test                            | Status | Description                                                                          |
-| --: | :------------------------------ | :----: | :----------------------------------------------------------------------------------- |
-|   1 | `test_known_epoch_2000`         |   ✅   | Known epoch 2000                                                                     |
-|   2 | `test_decode_datetime`          |   ✅   | Decode datetime                                                                      |
-|   3 | `test_12hour_mode_equivalence`  |   ✅   | 14:00 as 24-hour (0x14) and as 12-hour PM 2 (0x40                                    | 0x20 | 0x02) must be the same time. |
-|   4 | `test_12hour_midnight_and_noon` |   ✅   | 12hour midnight and noon                                                             |
-|   5 | `test_roundtrip_over_range`     |   ✅   | Roundtrip over range                                                                 |
-|   6 | `test_leap_day`                 |   ✅   | Leap day                                                                             |
-|   7 | `test_masks_ch_and_century`     |   ✅   | The DS1307 clock-halt bit (sec bit7) and the DS3231 century bit (month bit7) must be |
-|   8 | `test_invalid_guards`           |   ✅   | Invalid guards                                                                       |
+|   # | Test                            | Status | Description                                                                                |
+| --: | :------------------------------ | :----: | :----------------------------------------------------------------------------------------- |
+|   1 | `test_known_epoch_2000`         |   ✅   | Known epoch 2000                                                                           |
+|   2 | `test_decode_datetime`          |   ✅   | Decode datetime                                                                            |
+|   3 | `test_12hour_mode_equivalence`  |   ✅   | 14:00 as 24-hour (0x14) and as 12-hour PM 2 (0x40                                          | 0x20 | 0x02) must be the same time. |
+|   4 | `test_12hour_midnight_and_noon` |   ✅   | 12hour midnight and noon                                                                   |
+|   5 | `test_roundtrip_over_range`     |   ✅   | Roundtrip over range                                                                       |
+|   6 | `test_leap_day`                 |   ✅   | Leap day                                                                                   |
+|   7 | `test_masks_ch_and_century`     |   ✅   | The DS1307 clock-halt bit (sec bit7) and the DS3231 century bit (month bit7) must be       |
+|   8 | `test_invalid_guards`           |   ✅   | Invalid guards                                                                             |
+|   9 | `test_host_i2c_stubs`           |   ✅   | Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0. |
 
 </details>
 
 ---
 
-## test_ld2410 - native_ld2410 - ✅ 7 passed
+## test_ld2410 - native_ld2410 - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the LD2410 mmWave radar codec (services/ld2410): decoding a basic and an_
 
-|   # | Test                              | Status | Description                |
-| --: | :-------------------------------- | :----: | :------------------------- |
-|   1 | `test_parse_basic`                |   ✅   | Parse basic                |
-|   2 | `test_parse_engineering`          |   ✅   | Parse engineering          |
-|   3 | `test_reject_malformed`           |   ✅   | bad header                 |
-|   4 | `test_stream_resync_and_split`    |   ✅   | Stream resync and split    |
-|   5 | `test_stream_absurd_length_drops` |   ✅   | Stream absurd length drops |
-|   6 | `test_helpers`                    |   ✅   | Helpers                    |
-|   7 | `test_command_encoders`           |   ✅   | Command encoders           |
+|   # | Test                               | Status | Description                                                    |
+| --: | :--------------------------------- | :----: | :------------------------------------------------------------- |
+|   1 | `test_parse_basic`                 |   ✅   | Parse basic                                                    |
+|   2 | `test_parse_engineering`           |   ✅   | Parse engineering                                              |
+|   3 | `test_reject_malformed`            |   ✅   | bad header                                                     |
+|   4 | `test_stream_resync_and_split`     |   ✅   | Stream resync and split                                        |
+|   5 | `test_stream_absurd_length_drops`  |   ✅   | Stream absurd length drops                                     |
+|   6 | `test_helpers`                     |   ✅   | Helpers                                                        |
+|   7 | `test_command_encoders`            |   ✅   | Command encoders                                               |
+|   8 | `test_host_stubs_and_parse_guards` |   ✅   | Host build: the UART bind functions fail closed / return null. |
 
 </details>
 
@@ -3781,38 +3807,40 @@ _Unit tests for the MPR121 capacitive-touch codec (services/mpr121): decoding th
 
 ---
 
-## test_sht3x - native_sht3x - ✅ 5 passed
+## test_sht3x - native_sht3x - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the Sensirion SHT3x codec (services/sht3x): the CRC-8 against the datasheet_
 
-|   # | Test                         | Status | Description                            |
-| --: | :--------------------------- | :----: | :------------------------------------- |
-|   1 | `test_crc8_datasheet_vector` |   ✅   | Crc8 datasheet vector                  |
-|   2 | `test_conversion`            |   ✅   | Endpoints of the linear map are exact. |
-|   3 | `test_parse_valid`           |   ✅   | Parse valid                            |
-|   4 | `test_parse_bad_crc`         |   ✅   | Parse bad crc                          |
-|   5 | `test_parse_null_out`        |   ✅   | Parse null out                         |
+|   # | Test                         | Status | Description                                                   |
+| --: | :--------------------------- | :----: | :------------------------------------------------------------ |
+|   1 | `test_crc8_datasheet_vector` |   ✅   | Crc8 datasheet vector                                         |
+|   2 | `test_conversion`            |   ✅   | Endpoints of the linear map are exact.                        |
+|   3 | `test_parse_valid`           |   ✅   | Parse valid                                                   |
+|   4 | `test_parse_bad_crc`         |   ✅   | Parse bad crc                                                 |
+|   5 | `test_parse_null_out`        |   ✅   | Parse null out                                                |
+|   6 | `test_host_i2c_stubs`        |   ✅   | Host build: no I2C. begin() fails and read() reports failure. |
 
 </details>
 
 ---
 
-## test_pca9685 - native_pca9685 - ✅ 4 passed
+## test_pca9685 - native_pca9685 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a_
 
-|   # | Test                 | Status | Description                                                           |
-| --: | :------------------- | :----: | :-------------------------------------------------------------------- |
-|   1 | `test_prescale`      |   ✅   | Prescale                                                              |
-|   2 | `test_channel_reg`   |   ✅   | Channel reg                                                           |
-|   3 | `test_us_to_count`   |   ✅   | Us to count                                                           |
-|   4 | `test_set_pwm_bytes` |   ✅   | channel 0, on=0, off=307 (0x133) -> reg 0x06, off_l 0x33, off_h 0x01. |
+|   # | Test                                | Status | Description                                                           |
+| --: | :---------------------------------- | :----: | :-------------------------------------------------------------------- |
+|   1 | `test_prescale`                     |   ✅   | Prescale                                                              |
+|   2 | `test_channel_reg`                  |   ✅   | Channel reg                                                           |
+|   3 | `test_us_to_count`                  |   ✅   | Us to count                                                           |
+|   4 | `test_set_pwm_bytes`                |   ✅   | channel 0, on=0, off=307 (0x133) -> reg 0x06, off_l 0x33, off_h 0x01. |
+|   5 | `test_prescale_zero_and_host_stubs` |   ✅   | Zero frequency takes the max-prescale early return.                   |
 
 </details>
 
@@ -3837,19 +3865,20 @@ _Unit tests for the ADS1115 ADC codec (services/ads1115): building the 16-bit co
 
 ---
 
-## test_ina219 - native_ina219 - ✅ 4 passed
+## test_ina219 - native_ina219 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the INA219 current/power codec (services/ina219): decoding the bus-voltage_
 
-|   # | Test                     | Status | Description                                                              |
-| --: | :----------------------- | :----: | :----------------------------------------------------------------------- |
-|   1 | `test_bus_mv`            |   ✅   | 3300 mV -> value 825 (0x339) in bits [15:3] -> register 825<<3 = 0x19C8. |
-|   2 | `test_shunt_uv`          |   ✅   | Shunt uv                                                                 |
-|   3 | `test_calibration`       |   ✅   | Calibration                                                              |
-|   4 | `test_current_and_power` |   ✅   | current = raw * current_LSB (uA); power = raw * 20 * current_LSB (uW).   |
+|   # | Test                              | Status | Description                                                                                   |
+| --: | :-------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
+|   1 | `test_bus_mv`                     |   ✅   | 3300 mV -> value 825 (0x339) in bits [15:3] -> register 825<<3 = 0x19C8.                      |
+|   2 | `test_shunt_uv`                   |   ✅   | Shunt uv                                                                                      |
+|   3 | `test_calibration`                |   ✅   | Calibration                                                                                   |
+|   4 | `test_current_and_power`          |   ✅   | current = raw * current_LSB (uA); power = raw * 20 * current_LSB (uW).                        |
+|   5 | `test_host_i2c_stubs_fail_closed` |   ✅   | On a host build there is no I2C: begin and every read fail closed (return false), so a caller |
 
 </details>
 
@@ -4572,7 +4601,7 @@ _Unit tests for egress-interface reporting (network_drivers/physical). The lwIP_
 
 ---
 
-## test_partition_monitor - native_partition - ✅ 5 passed
+## test_partition_monitor - native_partition - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4586,6 +4615,7 @@ _Unit tests for the partition-map core (services/partition_monitor): the_
 |   3 | `test_json`                           |   ✅   | Json                           |
 |   4 | `test_json_small_buffer_fails_closed` |   ✅   | Json small buffer fails closed |
 |   5 | `test_collect_host_stub`              |   ✅   | Collect host stub              |
+|   6 | `test_partition_kind_data_subtypes`   |   ✅   | Partition kind data subtypes   |
 
 </details>
 
@@ -4663,29 +4693,30 @@ _Unit tests for the MessagePack encoder and decoder_
 
 ---
 
-## test_gpio_map - native_gpio_map - ✅ 8 passed
+## test_gpio_map - native_gpio_map - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the GPIO pin-mapper core (services/gpio_map): the direction_
 
-|   # | Test                                  | Status | Description                                                       |
-| --: | :------------------------------------ | :----: | :---------------------------------------------------------------- |
-|   1 | `test_dir_name`                       |   ✅   | Dir name                                                          |
-|   2 | `test_json`                           |   ✅   | Json                                                              |
-|   3 | `test_json_empty`                     |   ✅   | Json empty                                                        |
-|   4 | `test_json_small_buffer_fails_closed` |   ✅   | Json small buffer fails closed                                    |
-|   5 | `test_parse_set`                      |   ✅   | Parse set                                                         |
-|   6 | `test_parse_set_rejects_partial`      |   ✅   | Parse set rejects partial                                         |
-|   7 | `test_parse_set_no_prefix_match`      |   ✅   | "spin=2" must not satisfy the "pin" field (field-boundary check). |
-|   8 | `test_is_output`                      |   ✅   | Is output                                                         |
+|   # | Test                                  | Status | Description                                                            |
+| --: | :------------------------------------ | :----: | :--------------------------------------------------------------------- |
+|   1 | `test_dir_name`                       |   ✅   | Dir name                                                               |
+|   2 | `test_json`                           |   ✅   | Json                                                                   |
+|   3 | `test_json_empty`                     |   ✅   | Json empty                                                             |
+|   4 | `test_json_small_buffer_fails_closed` |   ✅   | Json small buffer fails closed                                         |
+|   5 | `test_parse_set`                      |   ✅   | Parse set                                                              |
+|   6 | `test_parse_set_rejects_partial`      |   ✅   | Parse set rejects partial                                              |
+|   7 | `test_parse_set_no_prefix_match`      |   ✅   | "spin=2" must not satisfy the "pin" field (field-boundary check).      |
+|   8 | `test_is_output`                      |   ✅   | Is output                                                              |
+|   9 | `test_host_gpio_stubs`                |   ✅   | Host build: the GPIO bind functions are no-ops (no digitalRead/Write). |
 
 </details>
 
 ---
 
-## test_udp_telemetry - native_udp_telemetry - ✅ 7 passed
+## test_udp_telemetry - native_udp_telemetry - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4701,55 +4732,60 @@ _Unit tests for the UDP telemetry line builder (services/udp_telemetry): the_
 |   5 | `test_tags_and_timestamp`           |   ✅   | Tags and timestamp           |
 |   6 | `test_tag_escaping`                 |   ✅   | Tag escaping                 |
 |   7 | `test_tag_after_field_fails_closed` |   ✅   | Tag after field fails closed |
+|   8 | `test_host_stubs_and_line_overflow` |   ✅   | Host stubs and line overflow |
 
 </details>
 
 ---
 
-## test_statsd - native_statsd - ✅ 9 passed
+## test_statsd - native_statsd - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the StatsD client (services/statsd): the pure line formatter_
 
-|   # | Test                             | Status | Description               |
-| --: | :------------------------------- | :----: | :------------------------ |
-|   1 | `test_format_types`              |   ✅   | Format types              |
-|   2 | `test_format_sample_rate`        |   ✅   | Format sample rate        |
-|   3 | `test_format_tags_and_both`      |   ✅   | Format tags and both      |
-|   4 | `test_format_guards`             |   ✅   | Format guards             |
-|   5 | `test_emit_counter_and_negative` |   ✅   | Emit counter and negative |
-|   6 | `test_emit_gauge_and_delta`      |   ✅   | Emit gauge and delta      |
-|   7 | `test_emit_timing_set_sampled`   |   ✅   | Emit timing set sampled   |
-|   8 | `test_emit_global_tags`          |   ✅   | Emit global tags          |
-|   9 | `test_emit_noop_until_begin`     |   ✅   | Emit noop until begin     |
+|   # | Test                                 | Status | Description                                                                            |
+| --: | :----------------------------------- | :----: | :------------------------------------------------------------------------------------- |
+|   1 | `test_format_types`                  |   ✅   | Format types                                                                           |
+|   2 | `test_format_sample_rate`            |   ✅   | Format sample rate                                                                     |
+|   3 | `test_format_tags_and_both`          |   ✅   | Format tags and both                                                                   |
+|   4 | `test_format_guards`                 |   ✅   | Format guards                                                                          |
+|   5 | `test_emit_counter_and_negative`     |   ✅   | Emit counter and negative                                                              |
+|   6 | `test_emit_gauge_and_delta`          |   ✅   | Emit gauge and delta                                                                   |
+|   7 | `test_emit_timing_set_sampled`       |   ✅   | Emit timing set sampled                                                                |
+|   8 | `test_emit_global_tags`              |   ✅   | Emit global tags                                                                       |
+|   9 | `test_emit_noop_until_begin`         |   ✅   | Emit noop until begin                                                                  |
+|  10 | `test_rate_clamp_and_stage_overflow` |   ✅   | A rate rounding below one thousandth clamps up to 1; a rate near 1 clamps down to 999. |
 
 </details>
 
 ---
 
-## test_guardrails - native_guardrails - ✅ 6 passed
+## test_guardrails - native_guardrails - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the guardrails core (services/guardrails): the threshold_
 
-|   # | Test                                  | Status | Description                    |
-| --: | :------------------------------------ | :----: | :----------------------------- |
-|   1 | `test_eval_all_clear`                 |   ✅   | Eval all clear                 |
-|   2 | `test_eval_heap_breach`               |   ✅   | Eval heap breach               |
-|   3 | `test_eval_frag_and_stack`            |   ✅   | Eval frag and stack            |
-|   4 | `test_eval_all_breached`              |   ✅   | Eval all breached              |
-|   5 | `test_json`                           |   ✅   | Json                           |
-|   6 | `test_json_small_buffer_fails_closed` |   ✅   | Json small buffer fails closed |
+|   # | Test                                  | Status | Description                                                                                    |
+| --: | :------------------------------------ | :----: | :--------------------------------------------------------------------------------------------- |
+|   1 | `test_eval_all_clear`                 |   ✅   | Eval all clear                                                                                 |
+|   2 | `test_eval_heap_breach`               |   ✅   | Eval heap breach                                                                               |
+|   3 | `test_eval_frag_and_stack`            |   ✅   | Eval frag and stack                                                                            |
+|   4 | `test_eval_all_breached`              |   ✅   | Eval all breached                                                                              |
+|   5 | `test_json`                           |   ✅   | Json                                                                                           |
+|   6 | `test_json_small_buffer_fails_closed` |   ✅   | Json small buffer fails closed                                                                 |
+|   7 | `test_eval_null_health_is_clear`      |   ✅   | A null health snapshot reports no breach (nothing to evaluate).                                |
+|   8 | `test_json_guards_fail_closed`        |   ✅   | Null out or zero cap -> 0 (nothing written).                                                   |
+|   9 | `test_host_sampler_stubs`             |   ✅   | On host there are no live counters: sample() zeroes the snapshot (and no-ops on null), begin() |
 
 </details>
 
 ---
 
-## test_failsafe - native_failsafe - ✅ 6 passed
+## test_failsafe - native_failsafe - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4764,6 +4800,7 @@ _Host tests for services/failsafe: the software watchdog / deadlock detector. Us
 |   4 | `test_registry_full`                         |   ✅   | Registry full                                                                                 |
 |   5 | `test_feed_bad_id`                           |   ✅   | Feed bad id                                                                                   |
 |   6 | `test_json`                                  |   ✅   | Json                                                                                          |
+|   7 | `test_millis_wrappers_and_json`              |   ✅   | Millis wrappers and json                                                                      |
 
 </details>
 
@@ -4830,22 +4867,23 @@ _Host tests for services/netadapt: TCP window sizing by free RAM + DHCP->static 
 
 ---
 
-## test_dshot - native_dshot - ✅ 7 passed
+## test_dshot - native_dshot - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/dshot: the DShot ESC throttle frame codec (hand-computed vectors)._
 
-|   # | Test                                    | Status | Description                                                                |
-| --: | :-------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_encode_known_vector`              |   ✅   | Encode known vector                                                        |
-|   2 | `test_encode_telemetry_bit`             |   ✅   | value 1046, telemetry set: v12 = 0x82D, nibbles 8^2^D = 7, frame = 0x82D7. |
-|   3 | `test_encode_bidirectional_inverts_crc` |   ✅   | Same value, bidirectional: crc = ~6 & 0xF = 9, frame = 0x82C9.             |
-|   4 | `test_value_masked_to_11_bits`          |   ✅   | 0xF000                                                                     | 1046: the high bits are dropped to the 11-bit field -> same as 1046. |
-|   5 | `test_decode_roundtrip_and_crc`         |   ✅   | Decode roundtrip and crc                                                   |
-|   6 | `test_bit_timing`                       |   ✅   | 600 kbit: period 1667 ns; "1" ~3/4, "0" ~3/8.                              |
-|   7 | `test_esc_pwm_mapping`                  |   ✅   | OneShot125: 125..250 us.                                                   |
+|   # | Test                                    | Status | Description                                                                          |
+| --: | :-------------------------------------- | :----: | :----------------------------------------------------------------------------------- |
+|   1 | `test_encode_known_vector`              |   ✅   | Encode known vector                                                                  |
+|   2 | `test_encode_telemetry_bit`             |   ✅   | value 1046, telemetry set: v12 = 0x82D, nibbles 8^2^D = 7, frame = 0x82D7.           |
+|   3 | `test_encode_bidirectional_inverts_crc` |   ✅   | Same value, bidirectional: crc = ~6 & 0xF = 9, frame = 0x82C9.                       |
+|   4 | `test_value_masked_to_11_bits`          |   ✅   | 0xF000                                                                               | 1046: the high bits are dropped to the 11-bit field -> same as 1046. |
+|   5 | `test_decode_roundtrip_and_crc`         |   ✅   | Decode roundtrip and crc                                                             |
+|   6 | `test_bit_timing`                       |   ✅   | 600 kbit: period 1667 ns; "1" ~3/4, "0" ~3/8.                                        |
+|   7 | `test_esc_pwm_mapping`                  |   ✅   | OneShot125: 125..250 us.                                                             |
+|   8 | `test_bit_ns_all_rates`                 |   ✅   | Each supported line rate maps to a non-zero bit period; an unknown rate is rejected. |
 
 </details>
 
@@ -4872,7 +4910,7 @@ _Host tests for services/hart: the HART command frame + HART-IP header codec._
 
 ---
 
-## test_nts - native_nts - ✅ 4 passed
+## test_nts - native_nts - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4885,12 +4923,13 @@ _Host tests for services/nts: the NTS-KE record + NTS NTP extension-field wire c
 |   2 | `test_ke_request`              |   ✅   | Next-Protocol(NTPv4) + AEAD(AES-SIV-CMAC-256=15) + End-of-Message, all critical. |
 |   3 | `test_ke_parse`                |   ✅   | Ke parse                                                                         |
 |   4 | `test_extension_field_padding` |   ✅   | 32-byte unique id: 4 + 32 = 36, already a multiple of 4.                         |
+|   5 | `test_ef_wrappers_and_guards`  |   ✅   | Ef wrappers and guards                                                           |
 
 </details>
 
 ---
 
-## test_dds - native_dds - ✅ 4 passed
+## test_dds - native_dds - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4903,26 +4942,32 @@ _Host tests for services/dds: the RTPS message + submessage framing codec._
 |   2 | `test_submessage_endianness` |   ✅   | Little-endian (E flag set): octetsToNextHeader = 0x0008 -> 08 00. |
 |   3 | `test_parse_message`         |   ✅   | Parse message                                                     |
 |   4 | `test_parse_rejects`         |   ✅   | Parse rejects                                                     |
+|   5 | `test_rtps_build_guards`     |   ✅   | Rtps build guards                                                 |
 
 </details>
 
 ---
 
-## test_xmpp - native_xmpp - ✅ 6 passed
+## test_xmpp - native_xmpp - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/xmpp: the XMPP stanza builder + minimal reader._
 
-|   # | Test               | Status | Description |
-| --: | :----------------- | :----: | :---------- |
-|   1 | `test_escape`      |   ✅   | Escape      |
-|   2 | `test_message`     |   ✅   | Message     |
-|   3 | `test_presence`    |   ✅   | Presence    |
-|   4 | `test_iq`          |   ✅   | Iq          |
-|   5 | `test_stanza_name` |   ✅   | Stanza name |
-|   6 | `test_attr`        |   ✅   | Attr        |
+|   # | Test                                         | Status | Description                                                                                       |
+| --: | :------------------------------------------- | :----: | :------------------------------------------------------------------------------------------------ |
+|   1 | `test_escape`                                |   ✅   | Escape                                                                                            |
+|   2 | `test_message`                               |   ✅   | Message                                                                                           |
+|   3 | `test_presence`                              |   ✅   | Presence                                                                                          |
+|   4 | `test_iq`                                    |   ✅   | Iq                                                                                                |
+|   5 | `test_stanza_name`                           |   ✅   | Stanza name                                                                                       |
+|   6 | `test_attr`                                  |   ✅   | Attr                                                                                              |
+|   7 | `test_escape_all_entities_and_overflow`      |   ✅   | Every escapable character plus a normal one exercises each switch case in put_escaped.            |
+|   8 | `test_builders_overflow_fail_closed`         |   ✅   | Builders overflow fail closed                                                                     |
+|   9 | `test_builders_omit_optional_and_null_attrs` |   ✅   | body/child null skip the optional block; null attr values skip put_attr (its `!value` true side). |
+|  10 | `test_stanza_name_edges`                     |   ✅   | Each terminator: '>', '/', space, tab, newline.                                                   |
+|  11 | `test_attr_edges`                            |   ✅   | Single-quoted value + the leading-space substring guard (must not match 'to' inside 'xto').       |
 
 </details>
 
@@ -4981,42 +5026,44 @@ _Host tests for services/goose: the IEC 61850 GOOSE BER PDU + Ethernet frame cod
 
 ---
 
-## test_mtconnect - native_mtconnect - ✅ 4 passed
+## test_mtconnect - native_mtconnect - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/mtconnect: the MTConnectStreams + MTConnectError document builders._
 
-|   # | Test                         | Status | Description           |
-| --: | :--------------------------- | :----: | :-------------------- |
-|   1 | `test_streams_document`      |   ✅   | Streams document      |
-|   2 | `test_streams_escapes_value` |   ✅   | Streams escapes value |
-|   3 | `test_error_document`        |   ✅   | Error document        |
-|   4 | `test_overflow_returns_zero` |   ✅   | Overflow returns zero |
+|   # | Test                                | Status | Description                  |
+| --: | :---------------------------------- | :----: | :--------------------------- |
+|   1 | `test_streams_document`             |   ✅   | Streams document             |
+|   2 | `test_streams_escapes_value`        |   ✅   | Streams escapes value        |
+|   3 | `test_error_document`               |   ✅   | Error document               |
+|   4 | `test_overflow_returns_zero`        |   ✅   | Overflow returns zero        |
+|   5 | `test_escape_gt_quote_and_overflow` |   ✅   | Escape gt quote and overflow |
 
 </details>
 
 ---
 
-## test_j2735 - native_j2735 - ✅ 9 passed
+## test_j2735 - native_j2735 - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/j2735: the ASN.1 UPER primitive codec + the BSMcore block._
 
-|   # | Test                        | Status | Description                                                                                   |
-| --: | :-------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
-|   1 | `test_cint_bits`            |   ✅   | Cint bits                                                                                     |
-|   2 | `test_bit_writer_pattern`   |   ✅   | Write 0b101 (3 bits) then 0b11 (2 bits): stream 10111 000 -> 0xB8.                            |
-|   3 | `test_writer_null_and_zero` |   ✅   | A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.             |
-|   4 | `test_cint_roundtrip`       |   ✅   | Cint roundtrip                                                                                |
-|   5 | `test_bsm_core_roundtrip`   |   ✅   | Bsm core roundtrip                                                                            |
-|   6 | `test_bsm_core_bit_length`  |   ✅   | msgCnt 7 + id 32 + secMark 16 + lat 31 + long 32 + elev 16 + speed 13 + heading 15 = 162 bits |
-|   7 | `test_spat_roundtrip`       |   ✅   | Spat roundtrip                                                                                |
-|   8 | `test_spat_decode_too_many` |   ✅   | Only room for 1 but 2 encoded -> false.                                                       |
-|   9 | `test_map_roundtrip`        |   ✅   | Map roundtrip                                                                                 |
+|   # | Test                               | Status | Description                                                                                   |
+| --: | :--------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
+|   1 | `test_cint_bits`                   |   ✅   | Cint bits                                                                                     |
+|   2 | `test_bit_writer_pattern`          |   ✅   | Write 0b101 (3 bits) then 0b11 (2 bits): stream 10111 000 -> 0xB8.                            |
+|   3 | `test_writer_null_and_zero`        |   ✅   | A null buffer (or zero cap) leaves the writer not-ok and must not dereference it.             |
+|   4 | `test_cint_roundtrip`              |   ✅   | Cint roundtrip                                                                                |
+|   5 | `test_bsm_core_roundtrip`          |   ✅   | Bsm core roundtrip                                                                            |
+|   6 | `test_bsm_core_bit_length`         |   ✅   | msgCnt 7 + id 32 + secMark 16 + lat 31 + long 32 + elev 16 + speed 13 + heading 15 = 162 bits |
+|   7 | `test_spat_roundtrip`              |   ✅   | Spat roundtrip                                                                                |
+|   8 | `test_spat_decode_too_many`        |   ✅   | Only room for 1 but 2 encoded -> false.                                                       |
+|   9 | `test_map_roundtrip`               |   ✅   | Map roundtrip                                                                                 |
+|  10 | `test_uper_overflow_and_bsm_guard` |   ✅   | Uper overflow and bsm guard                                                                   |
 
 </details>
 
@@ -5133,19 +5180,20 @@ _Host tests for services/ntcip: the NTCIP object OID definitions + the OID build
 
 ---
 
-## test_openadr - native_openadr - ✅ 4 passed
+## test_openadr - native_openadr - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/openadr: the OpenADR 3.0 event / report JSON builders._
 
-|   # | Test                         | Status | Description           |
-| --: | :--------------------------- | :----: | :-------------------- |
-|   1 | `test_event`                 |   ✅   | Event                 |
-|   2 | `test_report_negative_value` |   ✅   | Report negative value |
-|   3 | `test_json_escape`           |   ✅   | Json escape           |
-|   4 | `test_overflow`              |   ✅   | Overflow              |
+|   # | Test                               | Status | Description                 |
+| --: | :--------------------------------- | :----: | :-------------------------- |
+|   1 | `test_event`                       |   ✅   | Event                       |
+|   2 | `test_report_negative_value`       |   ✅   | Report negative value       |
+|   3 | `test_json_escape`                 |   ✅   | Json escape                 |
+|   4 | `test_overflow`                    |   ✅   | Overflow                    |
+|   5 | `test_openadr_escape_and_overflow` |   ✅   | Openadr escape and overflow |
 
 </details>
 
@@ -5176,19 +5224,20 @@ _Host tests for services/mms: the IEC 61850 MMS Read PDU codec._
 
 ---
 
-## test_cclink - native_cclink - ✅ 4 passed
+## test_cclink - native_cclink - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/cclink: the CC-Link cyclic frame codec + process-image accessors._
 
-|   # | Test                   | Status | Description     |
-| --: | :--------------------- | :----: | :-------------- |
-|   1 | `test_sum`             |   ✅   | Sum             |
-|   2 | `test_build_and_parse` |   ✅   | Build and parse |
-|   3 | `test_bit_accessors`   |   ✅   | Bit accessors   |
-|   4 | `test_parse_rejects`   |   ✅   | Parse rejects   |
+|   # | Test                             | Status | Description               |
+| --: | :------------------------------- | :----: | :------------------------ |
+|   1 | `test_sum`                       |   ✅   | Sum                       |
+|   2 | `test_build_and_parse`           |   ✅   | Build and parse           |
+|   3 | `test_bit_accessors`             |   ✅   | Bit accessors             |
+|   4 | `test_parse_rejects`             |   ✅   | Parse rejects             |
+|   5 | `test_build_and_accessor_guards` |   ✅   | Build and accessor guards |
 
 </details>
 
@@ -5230,19 +5279,20 @@ _Host tests for services/sercos: the SERCOS III telegram + IDN codec._
 
 ---
 
-## test_profibus - native_profibus - ✅ 4 passed
+## test_profibus - native_profibus - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/profibus: the PROFIBUS-DP FDL telegram codec._
 
-|   # | Test                 | Status | Description                             |
-| --: | :------------------- | :----: | :-------------------------------------- |
-|   1 | `test_fcs`           |   ✅   | Fcs                                     |
-|   2 | `test_sd1`           |   ✅   | SD1 DA SA FC FCS ED : 10 03 02 49 4E 16 |
-|   3 | `test_sd2_roundtrip` |   ✅   | le = 3 + 3 = 6; total = 4 + 6 + 2 = 12. |
-|   4 | `test_parse_rejects` |   ✅   | Parse rejects                           |
+|   # | Test                                       | Status | Description                                                             |
+| --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------- |
+|   1 | `test_fcs`                                 |   ✅   | Fcs                                                                     |
+|   2 | `test_sd1`                                 |   ✅   | SD1 DA SA FC FCS ED : 10 03 02 49 4E 16                                 |
+|   3 | `test_sd2_roundtrip`                       |   ✅   | le = 3 + 3 = 6; total = 4 + 6 + 2 = 12.                                 |
+|   4 | `test_parse_rejects`                       |   ✅   | Parse rejects                                                           |
+|   5 | `test_build_and_parse_guard_subconditions` |   ✅   | Build guards: null out and a capacity below the frame size fail closed. |
 
 </details>
 
@@ -5267,56 +5317,59 @@ _Host tests for services/lonworks: the LonTalk NV PDU + SNVT scalar codec._
 
 ---
 
-## test_mbplus - native_mbplus - ✅ 5 passed
+## test_mbplus - native_mbplus - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/mbplus: the Modbus Plus HDLC token-bus frame codec._
 
-|   # | Test                          | Status | Description                                           |
-| --: | :---------------------------- | :----: | :---------------------------------------------------- |
-|   1 | `test_crc_check_vector`       |   ✅   | CRC-16/X-25 check value: CRC of "123456789" = 0x906E. |
-|   2 | `test_build_and_parse`        |   ✅   | 7E 05 00 10 03 00 CRClo CRChi 7E = 9 bytes.           |
-|   3 | `test_token_frame_no_payload` |   ✅   | Token frame no payload                                |
-|   4 | `test_next_token_ring`        |   ✅   | Next token ring                                       |
-|   5 | `test_parse_rejects`          |   ✅   | Parse rejects                                         |
+|   # | Test                              | Status | Description                                           |
+| --: | :-------------------------------- | :----: | :---------------------------------------------------- |
+|   1 | `test_crc_check_vector`           |   ✅   | CRC-16/X-25 check value: CRC of "123456789" = 0x906E. |
+|   2 | `test_build_and_parse`            |   ✅   | 7E 05 00 10 03 00 CRClo CRChi 7E = 9 bytes.           |
+|   3 | `test_token_frame_no_payload`     |   ✅   | Token frame no payload                                |
+|   4 | `test_next_token_ring`            |   ✅   | Next token ring                                       |
+|   5 | `test_parse_rejects`              |   ✅   | Parse rejects                                         |
+|   6 | `test_build_parse_and_token_wrap` |   ✅   | Build parse and token wrap                            |
 
 </details>
 
 ---
 
-## test_interbus - native_interbus - ✅ 4 passed
+## test_interbus - native_interbus - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/interbus: the summation-frame codec._
 
-|   # | Test                    | Status | Description                                                  |
-| --: | :---------------------- | :----: | :----------------------------------------------------------- |
-|   1 | `test_fcs_check_vector` |   ✅   | CRC-16/CCITT-FALSE check value: CRC of "123456789" = 0x29B1. |
-|   2 | `test_build_and_parse`  |   ✅   | Three device slices: 0x1111, 0x2222, 0x3333.                 |
-|   3 | `test_empty_frame`      |   ✅   | Empty frame                                                  |
-|   4 | `test_parse_rejects`    |   ✅   | Corrupt FCS.                                                 |
+|   # | Test                      | Status | Description                                                  |
+| --: | :------------------------ | :----: | :----------------------------------------------------------- |
+|   1 | `test_fcs_check_vector`   |   ✅   | CRC-16/CCITT-FALSE check value: CRC of "123456789" = 0x29B1. |
+|   2 | `test_build_and_parse`    |   ✅   | Three device slices: 0x1111, 0x2222, 0x3333.                 |
+|   3 | `test_empty_frame`        |   ✅   | Empty frame                                                  |
+|   4 | `test_parse_rejects`      |   ✅   | Corrupt FCS.                                                 |
+|   5 | `test_build_parse_guards` |   ✅   | Build parse guards                                           |
 
 </details>
 
 ---
 
-## test_iccp - native_iccp - ✅ 4 passed
+## test_iccp - native_iccp - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/iccp: the ICCP / TASE.2 Data_Value codec._
 
-|   # | Test                     | Status | Description                                      |
-| --: | :----------------------- | :----: | :----------------------------------------------- |
-|   1 | `test_state_q_no_time`   |   ✅   | A2 { 85 01 <sq> } ; sq = (ON=2)<<6               | valid(0) = 0x80. -> A2 03 85 01 80 |
-|   2 | `test_state_q_with_time` |   ✅   | State q with time                                |
-|   3 | `test_real_q`            |   ✅   | Real q                                           |
-|   4 | `test_real_q_negative`   |   ✅   | -1 -> minimal two's complement INTEGER 02 01 FF. |
+|   # | Test                           | Status | Description                                      |
+| --: | :----------------------------- | :----: | :----------------------------------------------- |
+|   1 | `test_state_q_no_time`         |   ✅   | A2 { 85 01 <sq> } ; sq = (ON=2)<<6               | valid(0) = 0x80. -> A2 03 85 01 80 |
+|   2 | `test_state_q_with_time`       |   ✅   | State q with time                                |
+|   3 | `test_real_q`                  |   ✅   | Real q                                           |
+|   4 | `test_real_q_negative`         |   ✅   | -1 -> minimal two's complement INTEGER 02 01 FF. |
+|   5 | `test_state_and_real_q_guards` |   ✅   | State and real q guards                          |
 
 </details>
 
@@ -5383,44 +5436,46 @@ _Host tests for services/ocit: the OCIT-Outstations message codec._
 
 ---
 
-## test_atc - native_atc - ✅ 4 passed
+## test_atc - native_atc - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/atc: the ATC field-I/O interop snapshot._
 
-|   # | Test                      | Status | Description        |
-| --: | :------------------------ | :----: | :----------------- |
-|   1 | `test_snapshot_json`      |   ✅   | Snapshot json      |
-|   2 | `test_set_output`         |   ✅   | Set an output.     |
-|   3 | `test_get`                |   ✅   | Get                |
-|   4 | `test_empty_and_overflow` |   ✅   | Empty and overflow |
+|   # | Test                             | Status | Description               |
+| --: | :------------------------------- | :----: | :------------------------ |
+|   1 | `test_snapshot_json`             |   ✅   | Snapshot json             |
+|   2 | `test_set_output`                |   ✅   | Set an output.            |
+|   3 | `test_get`                       |   ✅   | Get                       |
+|   4 | `test_empty_and_overflow`        |   ✅   | Empty and overflow        |
+|   5 | `test_json_escapes_and_overflow` |   ✅   | Json escapes and overflow |
 
 </details>
 
 ---
 
-## test_southbound - native_southbound - ✅ 5 passed
+## test_southbound - native_southbound - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/southbound: the driver registry + name-dispatched read/write facade._
 
-|   # | Test                          | Status | Description                                                   |
-| --: | :---------------------------- | :----: | :------------------------------------------------------------ |
-|   1 | `test_register_and_find`      |   ✅   | Register and find                                             |
-|   2 | `test_read_write_dispatch`    |   ✅   | Read write dispatch                                           |
-|   3 | `test_block_atomic`           |   ✅   | Block atomic                                                  |
-|   4 | `test_unsupported_capability` |   ✅   | A driver that only implements single-point read.              |
-|   5 | `test_registry_full`          |   ✅   | Fill the registry with distinct-named drivers, then overflow. |
+|   # | Test                             | Status | Description                                                   |
+| --: | :------------------------------- | :----: | :------------------------------------------------------------ |
+|   1 | `test_register_and_find`         |   ✅   | Register and find                                             |
+|   2 | `test_read_write_dispatch`       |   ✅   | Read write dispatch                                           |
+|   3 | `test_block_atomic`              |   ✅   | Block atomic                                                  |
+|   4 | `test_unsupported_capability`    |   ✅   | A driver that only implements single-point read.              |
+|   5 | `test_registry_full`             |   ✅   | Fill the registry with distinct-named drivers, then overflow. |
+|   6 | `test_dispatch_not_found_guards` |   ✅   | Dispatch not found guards                                     |
 
 </details>
 
 ---
 
-## test_exc_decoder - native_exc_decoder - ✅ 5 passed
+## test_exc_decoder - native_exc_decoder - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5434,63 +5489,67 @@ _Host tests for services/exc_decoder: parsing a real ESP32 Guru Meditation panic
 |   3 | `test_backtrace_only_and_corrupted`             |   ✅   | No register dump: PC must fall back to the first backtrace frame. Trailing corruption marker. |
 |   4 | `test_garbage_returns_false`                    |   ✅   | Garbage returns false                                                                         |
 |   5 | `test_json_omits_core_when_absent_and_overflow` |   ✅   | Json omits core when absent and overflow                                                      |
+|   6 | `test_upper_hex_and_json_overflow`              |   ✅   | Uppercase hex addresses exercise the A-F branch of the nibble parser.                         |
 
 </details>
 
 ---
 
-## test_http_delivery - native_http_delivery - ✅ 6 passed
+## test_http_delivery - native_http_delivery - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/http_delivery: RFC 5861 stale-while-revalidate, RFC 7233 byte ranges,_
 
-|   # | Test                 | Status | Description         |
-| --: | :------------------- | :----: | :------------------ |
-|   1 | `test_swr_decision`  |   ✅   | max-age=60, swr=30. |
-|   2 | `test_cache_control` |   ✅   | Cache control       |
-|   3 | `test_range_forms`   |   ✅   | X-Y                 |
-|   4 | `test_range_rejects` |   ✅   | Range rejects       |
-|   5 | `test_content_range` |   ✅   | Content range       |
-|   6 | `test_sw_manifest`   |   ✅   | Sw manifest         |
+|   # | Test                              | Status | Description                |
+| --: | :-------------------------------- | :----: | :------------------------- |
+|   1 | `test_swr_decision`               |   ✅   | max-age=60, swr=30.        |
+|   2 | `test_cache_control`              |   ✅   | Cache control              |
+|   3 | `test_range_forms`                |   ✅   | X-Y                        |
+|   4 | `test_range_rejects`              |   ✅   | Range rejects              |
+|   5 | `test_content_range`              |   ✅   | Content range              |
+|   6 | `test_sw_manifest`                |   ✅   | Sw manifest                |
+|   7 | `test_delivery_guards_and_escape` |   ✅   | Delivery guards and escape |
 
 </details>
 
 ---
 
-## test_hw_health - native_hw_health - ✅ 5 passed
+## test_hw_health - native_hw_health - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/hw_health: rail droop, SPI CRC backoff, GPIO short, cap leakage._
 
-|   # | Test                      | Status | Description                                       |
-| --: | :------------------------ | :----: | :------------------------------------------------ |
-|   1 | `test_rail_monitor`       |   ✅   | Rail monitor                                      |
-|   2 | `test_spi_backoff`        |   ✅   | Spi backoff                                       |
-|   3 | `test_spi_backoff_clamps` |   ✅   | Spi backoff clamps                                |
-|   4 | `test_gpio_short`         |   ✅   | Gpio short                                        |
-|   5 | `test_cap_leak`           |   ✅   | Expected 100ms decay, 10% tolerance -> [90, 110]. |
+|   # | Test                             | Status | Description                                       |
+| --: | :------------------------------- | :----: | :------------------------------------------------ |
+|   1 | `test_rail_monitor`              |   ✅   | Rail monitor                                      |
+|   2 | `test_spi_backoff`               |   ✅   | Spi backoff                                       |
+|   3 | `test_spi_backoff_clamps`        |   ✅   | Spi backoff clamps                                |
+|   4 | `test_gpio_short`                |   ✅   | Gpio short                                        |
+|   5 | `test_cap_leak`                  |   ✅   | Expected 100ms decay, 10% tolerance -> [90, 110]. |
+|   6 | `test_rail_ok_spi_clamps_probes` |   ✅   | Rail ok spi clamps probes                         |
 
 </details>
 
 ---
 
-## test_mdns_adaptive - native_mdns_adaptive - ✅ 4 passed
+## test_mdns_adaptive - native_mdns_adaptive - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/mdns_adaptive: RF-aware backoff, TTL refresher, auto-sleep beacon._
 
-|   # | Test                       | Status | Description         |
-| --: | :------------------------- | :----: | :------------------ |
-|   1 | `test_refresh_interval`    |   ✅   | Refresh interval    |
-|   2 | `test_backoff_and_recover` |   ✅   | Backoff and recover |
-|   3 | `test_due`                 |   ✅   | Due                 |
-|   4 | `test_presleep`            |   ✅   | Presleep            |
+|   # | Test                               | Status | Description                 |
+| --: | :--------------------------------- | :----: | :-------------------------- |
+|   1 | `test_refresh_interval`            |   ✅   | Refresh interval            |
+|   2 | `test_backoff_and_recover`         |   ✅   | Backoff and recover         |
+|   3 | `test_due`                         |   ✅   | Due                         |
+|   4 | `test_presleep`                    |   ✅   | Presleep                    |
+|   5 | `test_refresh_interval_and_beacon` |   ✅   | Refresh interval and beacon |
 
 </details>
 
@@ -5535,19 +5594,20 @@ _Host tests for services/psram_pool: DRAM/PSRAM placement policy + DMA ping-pong
 
 ---
 
-## test_happy_eyeballs - native_happy_eyeballs - ✅ 4 passed
+## test_happy_eyeballs - native_happy_eyeballs - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/happy_eyeballs: RFC 6724 ordering + RFC 8305 family interleave + attempt gate._
 
-|   # | Test                        | Status | Description                                                                               |
-| --: | :-------------------------- | :----: | :---------------------------------------------------------------------------------------- |
-|   1 | `test_pref_order`           |   ✅   | Global outranks link-local outranks loopback; within global, native v6 outranks v4.       |
-|   2 | `test_order_and_interleave` |   ✅   | Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates. |
-|   3 | `test_order_single_family`  |   ✅   | All v4: interleave is a no-op, order stays preference-sorted (global before private).     |
-|   4 | `test_attempt_due`          |   ✅   | Attempt due                                                                               |
+|   # | Test                               | Status | Description                                                                                      |
+| --: | :--------------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
+|   1 | `test_pref_order`                  |   ✅   | Global outranks link-local outranks loopback; within global, native v6 outranks v4.              |
+|   2 | `test_order_and_interleave`        |   ✅   | Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates.        |
+|   3 | `test_order_single_family`         |   ✅   | All v4: interleave is a no-op, order stays preference-sorted (global before private).            |
+|   4 | `test_attempt_due`                 |   ✅   | Attempt due                                                                                      |
+|   5 | `test_pref_scopes_and_order_edges` |   ✅   | Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified). |
 
 </details>
 
@@ -5591,7 +5651,7 @@ _Host tests for services/link_manager: egress selection, graceful escalation, fa
 
 ---
 
-## test_cc1101 - native_cc1101 - ✅ 10 passed
+## test_cc1101 - native_cc1101 - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5610,6 +5670,7 @@ _Unit tests for the CC1101 driver (services/cc1101) against a mock chip emulatin
 |   8 | `test_recv_empty`                      |   ✅   | Recv empty                                              |
 |   9 | `test_recv_truncates`                  |   ✅   | Recv truncates                                          |
 |  10 | `test_rssi_decode`                     |   ✅   | TI formula: raw>=128 -> (raw-256)/2-74 ; else raw/2-74. |
+|  11 | `test_send_guard_subconditions`        |   ✅   | Send guard subconditions                                |
 
 </details>
 
