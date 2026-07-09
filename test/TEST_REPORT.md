@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 10:36:36
+**Generated:** 2026-07-09 10:53:43
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2742 passed - 349s
+**Result:** ✅ 2750 passed - 347s
 
 ---
 
@@ -236,11 +236,11 @@
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:05.230 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
 | `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.285 |
-| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.283 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:11.206 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.305 |
-| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.110 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:06.555 |
+| `test_quic_conn`         | `native_quic_conn`      |    24 |   ✅   | 00:00:02.391 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:12.069 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.297 |
+| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.382 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.173 |
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.833 |
 
 ---
@@ -6114,7 +6114,7 @@ _Unit tests for the TLS 1.3 server handshake state machine (network_drivers/pres
 
 ---
 
-## test_quic_conn - native_quic_conn - ✅ 16 passed
+## test_quic_conn - native_quic_conn - ✅ 24 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6139,6 +6139,14 @@ _Unit tests for the QUIC v1 server connection engine (network_drivers/presentati
 |  14 | `test_quic_recv_short_too_short`           |   ✅   | Quic recv short too short           |
 |  15 | `test_quic_recv_unprotect_failure`         |   ✅   | Quic recv unprotect failure         |
 |  16 | `test_quic_recv_truncated_long_header`     |   ✅   | Quic recv truncated long header     |
+|  17 | `test_quic_recv_malformed_initial_headers` |   ✅   | Quic recv malformed initial headers |
+|  18 | `test_quic_recv_handshake_done_frame`      |   ✅   | Quic recv handshake done frame      |
+|  19 | `test_quic_conn_stream_frames`             |   ✅   | Quic conn stream frames             |
+|  20 | `test_quic_conn_crypto_window_clamp`       |   ✅   | Quic conn crypto window clamp       |
+|  21 | `test_quic_conn_crypto_error_close`        |   ✅   | Quic conn crypto error close        |
+|  22 | `test_quic_conn_no_keys_build`             |   ✅   | Quic conn no keys build             |
+|  23 | `test_quic_conn_pto_not_yet`               |   ✅   | Quic conn pto not yet               |
+|  24 | `test_quic_conn_send_tiny_cap`             |   ✅   | Quic conn send tiny cap             |
 
 </details>
 
