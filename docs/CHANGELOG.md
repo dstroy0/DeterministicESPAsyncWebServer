@@ -16,6 +16,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`910d41b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/910d41b80c227e7d71448c1a657471f043040aed))
 - update test report + coverage [skip ci] ([`ac5a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac5a6d62df621b0ada6ea17b1f80c43579917262))
 - update CHANGELOG.md [skip ci] ([`01e3bb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01e3bb96718e03c5738dccfc63e21893fc79d7e6))
 - update test report + coverage [skip ci] ([`f91568f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f91568ffc2f11f7f1d2ae4f7fce83a98d145f2d7))
@@ -289,6 +290,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- add reusable style-conflict triage script + document it ([`aee659f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aee659f32690ea5651c372d444c8c8834cea09b6))
 - one assignment/declaration per line (Sonar S1121/S1659) ([`fcf0049`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcf0049682e20f031815c46d0a32796244725437))
 - annotate provably-dead guards in stomp + nats parsers (GCOVR_EXCL) ([`af7b6a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af7b6a6284c893e7c028bb9140d755fb07d5b618))
 - clang-format client.cpp include-comment alignment ([`96a8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a8e810d52e26f6385693b0285606a67c30bcce))
