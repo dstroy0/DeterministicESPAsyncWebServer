@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2617 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2618 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -20105,7 +20105,7 @@ A thorough directory of all **2617 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_tp (7 tests)</b></summary>
+<summary><b>test_quic_tp (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_defaults</b> &mdash; <i>Defaults</i></summary>
@@ -20195,6 +20195,26 @@ A thorough directory of all **2617 test cases** across **228 suites**. Expand a 
       * <code>Assert false (quic_tp_parse(f, sizeof(f), &tp))</code>
       * <code>Assert false (quic_tp_parse(g, sizeof(g), &tp))</code>
       * <code>Assert false (quic_tp_parse(h, sizeof(h), &tp))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_tp_more_paths</b> &mdash; <i>Encode overflow: a CID param's ID varint, length varint, and value each fail at a tight cap.</i></summary>
+
+    * **Objective**: Encode overflow: a CID param's ID varint, length varint, and value each fail at a tight cap.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 0)); // ID varint has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 1)); // length varint has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 6)); // value (8 octets) overruns</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, sizeof(buf)));</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (quic_tp_parse(buf, n, &out))</code>
+      * <code>Assert true (out.has_retry_scid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, out.retry_scid_len);</code>
+      * <code>Assert false (quic_tp_parse(badlen, sizeof(badlen), &out))</code>
+      * <code>Assert false (quic_tp_parse(bigscid, sizeof(bigscid), &out))</code>
+      * <code>Assert false (quic_tp_parse(bad, sizeof(bad), &out))</code>
+      * <code>Assert true (quic_tp_parse(ade, sizeof(ade), &out))</code>
+      * <code>Assert true (quic_tp_parse(mad, sizeof(mad), &out))</code>
   </details>
 
 </details>
