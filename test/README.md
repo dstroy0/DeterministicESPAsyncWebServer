@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2604 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2605 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4859,7 +4859,7 @@ A thorough directory of all **2604 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_det_ip (10 tests)</b></summary>
+<summary><b>test_det_ip (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v4_round_trip</b> &mdash; <i>V4 round trip</i></summary>
@@ -5002,6 +5002,38 @@ A thorough directory of all **2604 test cases** across **228 suites**. Expand a 
       * <code>Assert false (det_ip_equal(&a, &c))</code>
       * <code>Assert true (det_ip_parse("::c0a8:101", &v6))</code>
       * <code>Assert false (det_ip_equal(&a, &v6))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DET_IP_NONE address are UNSPECIFIED.</i></summary>
+
+    * **Objective**: classify: null and a DET_IP_NONE address are UNSPECIFIED.
+    * **Assertions**:
+      * <code>Assert equal int (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr))</code>
+      * <code>Assert equal int (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none))</code>
+      * <code>Assert true (det_ip_equal(&none, &none2))</code>
+      * <code>Assert true (det_ip_prefix_match(&in, &net, 20))</code>
+      * <code>Assert false (det_ip_prefix_match(&out, &net, 20))</code>
+      * <code>Assert false (det_ip_parse(":1", &p))</code>
+      * <code>Assert false (det_ip_parse(toolong, &p))</code>
+      * <code>Assert false (det_ip_parse("1.2.3", &p))</code>
+      * <code>Assert false (det_ip_parse("1.2.3.4.5", &p))</code>
+      * <code>Assert false (det_ip_parse("256.0.0.1", &p))</code>
+      * <code>Assert false (det_ip_parse("gg::1", &p))</code>
+      * <code>Assert false (det_ip_parse("1:2:3:4:5:6:7:8:9", &p))</code>
+      * <code>Assert false (det_ip_parse(nullptr, &p))</code>
+      * <code>Assert false (det_ip_parse("1.2.3.4", nullptr))</code>
+      * <code>Assert false (det_ip_parse("1234.5.6.7", &p))</code>
+      * <code>Assert false (det_ip_parse("1.2.3.z", &p))</code>
+      * <code>Assert equal uint (0, det_ip_format(nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, det_ip_format(&none, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, det_ip_format(&v4, buf, 4))</code>
+      * <code>Assert true (det_ip_parse("2001:db8::1", &v6))</code>
+      * <code>Assert equal uint (0, det_ip_format(&v6, buf, 4))</code>
+      * <code>Assert true (det_ip_parse("::ffff:1.2.3.4", &mapped))</code>
+      * <code>Assert equal uint (0, det_ip_format(&mapped, buf, 5))</code>
+      * <code>Assert equal uint (0, det_ip_to_v4_be(nullptr))</code>
+      * <code>Assert equal uint (0, det_ip_to_v4_be(&v6))</code>
   </details>
 
 </details>
