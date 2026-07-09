@@ -121,6 +121,37 @@ void test_parse_incomplete_and_malformed()
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"$999999999999\r\nhi\r\n", 19, &r, &c));
 }
 
+// Every guard sub-condition of resp_encode_command, plus a null arg element and an arg-loop overflow.
+void test_encode_guard_subconditions()
+{
+    char buf[64];
+    const char *argv[] = {"GET", "k"};
+    size_t alen[] = {3, 1};
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(nullptr, sizeof(buf), argv, alen, 2)); // null buf
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, 0, argv, alen, 2));               // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), nullptr, alen, 2));  // null args
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), argv, alen, 0));     // zero argc
+    const char *withnull[] = {"GET", nullptr};
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), withnull, nullptr, 2)); // null arg elem
+    TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, 8, argv, alen, 2)); // header fits, arg overflows
+}
+
+// Parser guard sub-conditions and the integer / bulk terminator / nil-array edges.
+void test_parse_guard_subconditions_and_edges()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_FALSE(resp_parse(nullptr, 5, &r, &c));                           // null buf
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"+\r", 2, &r, &c));            // len < 3
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"+OK\r\n", 5, nullptr, &c));   // null out
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"+OK\r\n", 5, &r, nullptr));   // null consumed
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)":\r\n", 3, &r, &c));          // empty integer
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)":-\r\n", 4, &r, &c));         // '-' then no digit
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"$5\r\nhelloAB", 11, &r, &c)); // bulk with wrong terminator
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"*-1\r\n", 5, &r, &c));         // nil array
+    TEST_ASSERT_EQUAL_INT(RESP_NIL, r.type);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -132,5 +163,7 @@ int main()
     RUN_TEST(test_parse_bulk_and_nil);
     RUN_TEST(test_parse_array_cursor);
     RUN_TEST(test_parse_incomplete_and_malformed);
+    RUN_TEST(test_encode_guard_subconditions);
+    RUN_TEST(test_parse_guard_subconditions_and_edges);
     return UNITY_END();
 }
