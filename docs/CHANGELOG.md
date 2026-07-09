@@ -16,6 +16,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`1f8ab1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f8ab1dcf5be8cf5f9e44a24bb29c2daa9beff87))
+- update CHANGELOG.md [skip ci] ([`c81b5c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c81b5c058af1b36055200ab17f9ffc4fb13f0630))
 - update test report + coverage [skip ci] ([`16833fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16833fdd2f641f502fffe5a44f02e0a2b3354905))
 - update CHANGELOG.md [skip ci] ([`ef30307`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef30307f7809318e7ff89adf0c4881f24585965c))
 - update CHANGELOG.md [skip ci] ([`910d41b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/910d41b80c227e7d71448c1a657471f043040aed))
@@ -299,6 +301,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- correct stale chunked-response backpressure limitation ([`f92ef39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f92ef395e4b34063f52c38ab87c24e2b601f39be))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9dda138`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dda138a72c4686837b161afcbe0020361d63ac3))
 - update ESP32 build footprints [skip ci] ([`804ea21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804ea211ff47eb900d5d84b2bbcceb94936798c2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`147eaff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/147eaff9777b386da595704af0c7d98c731539c4))
 - update ESP32 build footprints [skip ci] ([`8530ca6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8530ca63d648a39e37db446c847123e07b00f653))
