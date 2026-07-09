@@ -285,6 +285,30 @@ static bool r_request_header(UaReader *r, uint32_t *request_handle)
     return r_ext_object_skip(r); // AdditionalHeader (ExtensionObject)
 }
 
+// Parse a MSG-envelope preamble: security + sequence headers, body TypeId, and the RequestHeader.
+// On success r is positioned at the service body and m is filled; false on a malformed frame.
+static bool r_msg_preamble(const uint8_t *msg, size_t len, UaReader *r, OpcUaMsg *m)
+{
+    UaMsgHeader h;
+    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
+        return false;
+    if (h.size != len)
+        return false;
+
+    UaReader rr = {msg + 8, len - 8, 0, false};
+    *r = rr;
+    m->secure_channel_id = ua_r_u32(r); // SecureChannelId
+    m->token_id = ua_r_u32(r);
+    m->sequence_number = ua_r_u32(r);
+    m->request_id = ua_r_u32(r);
+
+    UaNodeId tid;
+    if (!ua_r_nodeid(r, &tid)) // body TypeId
+        return false;
+    m->type_id = tid.numeric ? tid.id : 0;
+    return r_request_header(r, &m->request_handle);
+}
+
 int64_t opcua_filetime_from_unix(int64_t unix_seconds)
 {
     if (unix_seconds <= 0)
@@ -784,23 +808,8 @@ bool ua_r_datavalue(UaReader *r, OpcUaVariant *out_value, uint32_t *out_status)
 
 bool opcua_parse_read(const uint8_t *msg, size_t len, OpcUaReadRequest *out)
 {
-    UaMsgHeader h;
-    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
-        return false;
-    if (h.size != len)
-        return false;
-
-    UaReader r = {msg + 8, len - 8, 0, false};
-    out->msg.secure_channel_id = ua_r_u32(&r); // SecureChannelId
-    out->msg.token_id = ua_r_u32(&r);
-    out->msg.sequence_number = ua_r_u32(&r);
-    out->msg.request_id = ua_r_u32(&r);
-
-    UaNodeId tid;
-    if (!ua_r_nodeid(&r, &tid)) // body TypeId
-        return false;
-    out->msg.type_id = tid.numeric ? tid.id : 0;
-    if (!r_request_header(&r, &out->msg.request_handle))
+    UaReader r;
+    if (!r_msg_preamble(msg, len, &r, &out->msg))
         return false;
 
     // ReadRequest body.
@@ -862,23 +871,8 @@ void opcua_set_read_handler(OpcUaReadHandler fn)
 // ---------------------------------------------------------------------------
 bool opcua_parse_write(const uint8_t *msg, size_t len, OpcUaWriteRequest *out)
 {
-    UaMsgHeader h;
-    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
-        return false;
-    if (h.size != len)
-        return false;
-
-    UaReader r = {msg + 8, len - 8, 0, false};
-    out->msg.secure_channel_id = ua_r_u32(&r);
-    out->msg.token_id = ua_r_u32(&r);
-    out->msg.sequence_number = ua_r_u32(&r);
-    out->msg.request_id = ua_r_u32(&r);
-
-    UaNodeId tid;
-    if (!ua_r_nodeid(&r, &tid)) // body TypeId
-        return false;
-    out->msg.type_id = tid.numeric ? tid.id : 0;
-    if (!r_request_header(&r, &out->msg.request_handle))
+    UaReader r;
+    if (!r_msg_preamble(msg, len, &r, &out->msg))
         return false;
 
     int32_t cnt = ua_r_i32(&r); // NodesToWrite array length
@@ -973,23 +967,8 @@ void ua_w_reference(UaWriter *w, const OpcUaReference *ref)
 
 bool opcua_parse_browse(const uint8_t *msg, size_t len, OpcUaBrowseRequest *out)
 {
-    UaMsgHeader h;
-    if (!opcua_parse_header(msg, len, &h) || memcmp(h.type, "MSG", 3) != 0)
-        return false;
-    if (h.size != len)
-        return false;
-
-    UaReader r = {msg + 8, len - 8, 0, false};
-    out->msg.secure_channel_id = ua_r_u32(&r); // SecureChannelId
-    out->msg.token_id = ua_r_u32(&r);
-    out->msg.sequence_number = ua_r_u32(&r);
-    out->msg.request_id = ua_r_u32(&r);
-
-    UaNodeId tid;
-    if (!ua_r_nodeid(&r, &tid)) // body TypeId
-        return false;
-    out->msg.type_id = tid.numeric ? tid.id : 0;
-    if (!r_request_header(&r, &out->msg.request_handle))
+    UaReader r;
+    if (!r_msg_preamble(msg, len, &r, &out->msg))
         return false;
 
     // BrowseRequest body: View (ViewDescription) + RequestedMaxReferencesPerNode + NodesToBrowse.
