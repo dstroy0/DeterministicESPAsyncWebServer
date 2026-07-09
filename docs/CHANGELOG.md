@@ -6,8 +6,29 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ba309d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba309d9581b56d50ed27103f423e4ddee92c121c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e10e15c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e10e15cdf30c5818f533b856cb9386d3d0efdb29))
+
+### Features
+
+- log-structured hash key-value store on the WAL ([`e75bf9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e75bf9cc81b296512dfaefe3dc43be01f8ac6399))
+
+## [5.67.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.67.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`dd69959`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd69959fc0749b6dfcc4f77412ccb5e8154284bc))
 - update CHANGELOG.md [skip ci] ([`35a0170`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35a0170f094407abeafdfa8e10c0290c579dd390))
+
+### Changes
+
+- Bump version: 5.66.0 → 5.67.0 ([`845a08d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/845a08db8c31ae603cde1bd1fdda345526845ea3))
 
 ### Documentation
 
@@ -16,6 +37,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - fs::FS adapter + hardware-verified SD durability ([`381ab1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/381ab1e29ceb58655b38b52bbab957b159435358))
+
+</details>
 
 ## [5.66.0] - 2026-07-09
 
