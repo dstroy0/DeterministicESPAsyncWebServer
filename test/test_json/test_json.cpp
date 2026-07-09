@@ -279,9 +279,42 @@ void test_reader_malformed()
     TEST_ASSERT_FALSE(json_get_str("{\"a\" 5}", "a", out, sizeof(out))); // key with no ':'
 }
 
+// A non-object top level, an empty object, and a non-string member name each yield no match.
+void test_reader_non_object_and_bad_member()
+{
+    char out[16];
+    TEST_ASSERT_FALSE(json_get_str("[1,2,3]", "k", out, sizeof(out))); // top level is not '{'
+    TEST_ASSERT_FALSE(json_get_str("{}", "k", out, sizeof(out)));      // empty object -> '}'
+    TEST_ASSERT_FALSE(json_get_str("{42:1}", "k", out, sizeof(out)));  // member name is not a string
+}
+
+// json_get_int rejects a quoted (string) value and a value with no digits.
+void test_reader_int_rejects_string_and_nondigits()
+{
+    long v = 0;
+    TEST_ASSERT_FALSE(json_get_int("{\"n\":\"42\"}", "n", &v)); // "42" is a string, not a bare number
+    TEST_ASSERT_FALSE(json_get_int("{\"n\":xyz}", "n", &v));    // no digits parse
+}
+
+// \uXXXX with a codepoint > 0xFF, or with malformed / short hex, collapses to '?'.
+void test_reader_unicode_escape_invalid_and_wide()
+{
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u01F6\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?", out); // valid hex, codepoint > 0xFF -> '?' (digits consumed)
+    // Invalid / short \u emits '?' without consuming the bad chars, so they trail as literals.
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uZZZZ\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?ZZZZ", out); // invalid hex digit
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u0A\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("?0A", out); // short \u
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_reader_non_object_and_bad_member);
+    RUN_TEST(test_reader_int_rejects_string_and_nondigits);
+    RUN_TEST(test_reader_unicode_escape_invalid_and_wide);
     RUN_TEST(test_writer_simple_object);
     RUN_TEST(test_writer_nested_and_array);
     RUN_TEST(test_writer_value_types);
