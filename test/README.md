@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2634 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2635 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22382,7 +22382,7 @@ A thorough directory of all **2634 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_agent (27 tests)</b></summary>
+<summary><b>test_snmp_agent (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_registration_and_rw_edges</b> &mdash; <i>With the rw community cleared, a Set arriving on the ro community is answered</i></summary>
@@ -22664,6 +22664,15 @@ A thorough directory of all **2634 test cases** across **228 suites**. Expand a 
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (snmp_dispatch_pdu(pdu, n, false, true, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert true (snmp_dispatch_pdu(pdu, n, false, true, tiny, sizeof(tiny)) &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_snmp_oid_cmp_request_longer</b> &mdash; <i>Snmp oid cmp request longer</i></summary>
+
+    * **Objective**: Snmp oid cmp request longer
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (snmp_agent_process(req, rl, resp, sizeof(resp)) &gt; 0)</code>
   </details>
 
 </details>
