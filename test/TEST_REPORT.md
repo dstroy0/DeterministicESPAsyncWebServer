@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 05:35:21
+**Generated:** 2026-07-09 05:44:17
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2631 passed - 191s
+**Result:** ✅ 2633 passed - 203s
 
 ---
 
@@ -73,7 +73,7 @@
 | `test_webdav`            | `native_webdav`         |    19 |   ✅   | 00:00:00.615 |
 | `test_modbus`            | `native_modbus`         |    22 |   ✅   | 00:00:00.601 |
 | `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.897 |
-| `test_redis_resp`        | `native_redis`          |     8 |   ✅   | 00:00:00.602 |
+| `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:13.151 |
 | `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.597 |
 | `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.588 |
 | `test_flow_export`       | `native_flow_export`    |     6 |   ✅   | 00:00:00.598 |
@@ -2302,23 +2302,25 @@ _Unit tests for the CloudEvents v1.0 envelope (services/cloudevents): the_
 
 ---
 
-## test_redis_resp - native_redis - ✅ 8 passed
+## test_redis_resp - native_redis - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the Redis RESP2 codec (services/redis_resp): the command encoder_
 
-|   # | Test                                  | Status | Description                    |
-| --: | :------------------------------------ | :----: | :----------------------------- |
-|   1 | `test_encode_command`                 |   ✅   | Encode command                 |
-|   2 | `test_encode_binary_safe`             |   ✅   | Encode binary safe             |
-|   3 | `test_encode_overflow_fails_closed`   |   ✅   | Encode overflow fails closed   |
-|   4 | `test_parse_simple_and_error`         |   ✅   | Parse simple and error         |
-|   5 | `test_parse_integer`                  |   ✅   | Parse integer                  |
-|   6 | `test_parse_bulk_and_nil`             |   ✅   | Parse bulk and nil             |
-|   7 | `test_parse_array_cursor`             |   ✅   | Parse array cursor             |
-|   8 | `test_parse_incomplete_and_malformed` |   ✅   | Parse incomplete and malformed |
+|   # | Test                                       | Status | Description                         |
+| --: | :----------------------------------------- | :----: | :---------------------------------- |
+|   1 | `test_encode_command`                      |   ✅   | Encode command                      |
+|   2 | `test_encode_binary_safe`                  |   ✅   | Encode binary safe                  |
+|   3 | `test_encode_overflow_fails_closed`        |   ✅   | Encode overflow fails closed        |
+|   4 | `test_parse_simple_and_error`              |   ✅   | Parse simple and error              |
+|   5 | `test_parse_integer`                       |   ✅   | Parse integer                       |
+|   6 | `test_parse_bulk_and_nil`                  |   ✅   | Parse bulk and nil                  |
+|   7 | `test_parse_array_cursor`                  |   ✅   | Parse array cursor                  |
+|   8 | `test_parse_incomplete_and_malformed`      |   ✅   | Parse incomplete and malformed      |
+|   9 | `test_encode_guard_subconditions`          |   ✅   | Encode guard subconditions          |
+|  10 | `test_parse_guard_subconditions_and_edges` |   ✅   | Parse guard subconditions and edges |
 
 </details>
 
