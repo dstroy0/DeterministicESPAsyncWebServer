@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 16:34:04
+**Generated:** 2026-07-09 16:47:05
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2810 passed - 503s
+**Result:** ✅ 2811 passed - 507s
 
 ---
 
@@ -66,7 +66,7 @@
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    21 |   ✅   | 00:00:02.612 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   | 00:00:06.192 |
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
 | `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:20.919 |
 | `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.937 |
@@ -2085,7 +2085,7 @@ _Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
 
 ---
 
-## test_snmp_v3 - native_snmp_v3 - ✅ 21 passed
+## test_snmp_v3 - native_snmp_v3 - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2106,15 +2106,16 @@ _Unit tests for the SNMPv3 USM layer. The test acts as a full SNMP manager:_
 |  10 | `test_v3_notify_paths`                          |   ✅   | V3 notify paths                                                                 |
 |  11 | `test_v3_notify_overflow_guards`                |   ✅   | V3 notify overflow guards                                                       |
 |  12 | `test_localize_key_sha256_vector`               |   ✅   | password "maplesyrup", engineID 80 00 C0 DE 05 01 02 03 04 (the agent default). |
-|  13 | `test_aes128_fips197_vector`                    |   ✅   | FIPS-197 C.1. CFB with IV = plaintext and zero input yields E_key(plaintext).   |
-|  14 | `test_aes_cfb_roundtrip_partial_block`          |   ✅   | Aes cfb roundtrip partial block                                                 |
-|  15 | `test_discovery_reports_engine_id`              |   ✅   | Discovery reports engine id                                                     |
-|  16 | `test_authnopriv_get`                           |   ✅   | Authnopriv get                                                                  |
-|  17 | `test_authpriv_get`                             |   ✅   | Authpriv get                                                                    |
-|  18 | `test_wrong_auth_password_reports_wrong_digest` |   ✅   | Wrong auth password reports wrong digest                                        |
-|  19 | `test_unknown_user_reports`                     |   ✅   | Unknown user reports                                                            |
-|  20 | `test_not_in_time_window_reports`               |   ✅   | Not in time window reports                                                      |
-|  21 | `test_inform_v3_builds_informrequest`           |   ✅   | Inform v3 builds informrequest                                                  |
+|  13 | `test_localize_key_empty_password`              |   ✅   | Localize key empty password                                                     |
+|  14 | `test_aes128_fips197_vector`                    |   ✅   | FIPS-197 C.1. CFB with IV = plaintext and zero input yields E_key(plaintext).   |
+|  15 | `test_aes_cfb_roundtrip_partial_block`          |   ✅   | Aes cfb roundtrip partial block                                                 |
+|  16 | `test_discovery_reports_engine_id`              |   ✅   | Discovery reports engine id                                                     |
+|  17 | `test_authnopriv_get`                           |   ✅   | Authnopriv get                                                                  |
+|  18 | `test_authpriv_get`                             |   ✅   | Authpriv get                                                                    |
+|  19 | `test_wrong_auth_password_reports_wrong_digest` |   ✅   | Wrong auth password reports wrong digest                                        |
+|  20 | `test_unknown_user_reports`                     |   ✅   | Unknown user reports                                                            |
+|  21 | `test_not_in_time_window_reports`               |   ✅   | Not in time window reports                                                      |
+|  22 | `test_inform_v3_builds_informrequest`           |   ✅   | Inform v3 builds informrequest                                                  |
 
 </details>
 
