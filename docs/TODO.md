@@ -33,6 +33,39 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal join) needs
 > WiFi credentials / a phone.
 
+## From the working thread
+
+Ideas and intentions captured from the [Working Thread discussion](https://github.com/dstroy0/DeterministicESPAsyncWebServer/discussions/15) (the maintainer's thought-stream). Unpolished on purpose; refine as they are picked up.
+
+### Refactor / security hardening
+
+- [ ] Owner-refactor endgame: remove the remaining globals now that the core is integrated, and switch to known security patterns for owners. The mutable global pointers that supported a speedy implementation are no longer necessary.
+- [ ] Remediate SonarQube code smells and CodeQL gripes.
+
+### Test coverage
+
+- [ ] Keep extending test coverage. Provably-dead lines get `GCOVR_EXCL` with rationale inline; be conservative with exclusions (even a pointless test teaches) - guarded dead branches / unreachable guards are the main exclusion targets.
+- [ ] Raise condition (branch) coverage - line coverage is good, conditional lags. Test both sides of each condition.
+
+### Codecs / drivers / features
+
+- [ ] Write more niche pure codecs from old manuals - the ones wanted a while ago but never put down on paper.
+- [ ] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3.
+- [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
+- [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
+
+### Pentesting
+
+- [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server.
+
+### Docs
+
+- [ ] Chart how the docs are scraped and built; keep refining and implementing automation in the gaps to increase maintainability and catch outliers.
+- [ ] Full docs audit (not creative grep + diff): close the Grand-Canyon-sized gaps and the stale sections.
+- [ ] Docs theming: the color palette is close but a little off, and there are many alignment issues. Refine "squirty's house" (bubbles, rocks, sponge conceptually right) and his behavior.
+- [ ] Add a switch to the sandboxed docs so teachers can turn it off completely.
+- [ ] Let users preview the (silly) themes on the live docs. Maybe.
+
 ## Feature parity with ESPAsyncWebServer (ESP32Async)
 
 Conceptual features [ESP32Async/ESPAsyncWebServer](https://github.com/ESP32Async/ESPAsyncWebServer)
