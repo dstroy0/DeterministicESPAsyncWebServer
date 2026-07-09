@@ -20,7 +20,7 @@ bool read_u32(const char **p, uint32_t *out)
 {
     const char *s = *p;
     if (*s < '0' || *s > '9')
-        return false;
+        return false; // GCOVR_EXCL_LINE both call sites pre-check *p is a digit before calling, so this never fires
     uint64_t v = 0;
     int n = 0;
     while (*s >= '0' && *s <= '9')

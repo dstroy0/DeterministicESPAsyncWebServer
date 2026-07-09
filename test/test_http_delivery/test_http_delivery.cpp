@@ -121,9 +121,33 @@ void test_delivery_guards_and_escape()
     TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed
 }
 
+// Byte-range parser edges (u32 overflow guards, missing dash, trailing whitespace) and
+// the null-output guards on the content-range / service-worker-manifest builders.
+void test_range_and_builder_edge_guards(void)
+{
+    uint32_t s = 0, e = 0;
+    // Oversized start (>10 digits) -> read_u32 overflow guard rejects.
+    TEST_ASSERT_EQUAL_INT(0, detws_delivery_range("bytes=99999999999-", 1000, &s, &e));
+    // A start with no '-' following -> reject.
+    TEST_ASSERT_EQUAL_INT(0, detws_delivery_range("bytes=5", 1000, &s, &e));
+    // Oversized end (>10 digits) -> reject.
+    TEST_ASSERT_EQUAL_INT(0, detws_delivery_range("bytes=0-99999999999", 1000, &s, &e));
+    // Trailing whitespace after a valid range is tolerated.
+    TEST_ASSERT_EQUAL_INT(1, detws_delivery_range("bytes=0-5 ", 1000, &s, &e));
+    TEST_ASSERT_EQUAL_UINT32(0, s);
+    TEST_ASSERT_EQUAL_UINT32(5, e);
+
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out
+    const char *paths[1] = {"/a"};
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n>0, null paths
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_range_and_builder_edge_guards);
     RUN_TEST(test_swr_decision);
     RUN_TEST(test_cache_control);
     RUN_TEST(test_range_forms);
