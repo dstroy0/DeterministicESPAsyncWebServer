@@ -195,9 +195,39 @@ void test_parse_errors()
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(unhandled, 1, &f));
 }
 
+// Remaining per-field truncations (STREAM Length varint, transport CONNECTION_CLOSE
+// frame-type varint) and builder mid-write overflow guards (padding success; crypto/stream
+// header fits but the body/offset/length does not).
+void test_frame_edge_guards()
+{
+    QuicFrame f;
+    // STREAM with LEN set but the Length varint is absent -> rejected at the length read.
+    const uint8_t stream_len_trunc[2] = {0x0a, 0x00}; // STREAM|LEN, id 0, no Length
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(stream_len_trunc, 2, &f));
+    // Transport CONNECTION_CLOSE with an error code but no triggering-frame-type varint.
+    const uint8_t close_ft_trunc[2] = {0x1c, 0x00};
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(close_ft_trunc, 2, &f));
+
+    uint8_t b[8];
+    const uint8_t d[3] = {1, 2, 3};
+    // quic_build_padding success: n <= cap zeroes n bytes and returns n.
+    TEST_ASSERT_EQUAL_INT(3, (int)quic_build_padding(b, sizeof b, 3));
+    TEST_ASSERT_EQUAL_HEX8(0, b[0]);
+    TEST_ASSERT_EQUAL_HEX8(0, b[2]);
+    // CRYPTO: type+offset+length varints fit but the data does not.
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_crypto(b, 4, 7, d, 3));
+    // STREAM: type+id fit but the Offset varint does not.
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 2, 4, 100, d, 3, true));
+    // STREAM (no offset): type+id fit but the Length varint does not.
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 2, 0, 0, d, 3, false));
+    // STREAM: the header fits but the stream data does not.
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 3, 0, 0, d, 3, false));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_frame_edge_guards);
     RUN_TEST(test_simple_frames);
     RUN_TEST(test_ack);
     RUN_TEST(test_crypto);
