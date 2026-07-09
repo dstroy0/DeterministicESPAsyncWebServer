@@ -133,9 +133,19 @@ inline err_t tcp_write(struct tcp_pcb *, const void *data, uint16_t len, uint8_t
 inline void tcp_output(struct tcp_pcb *)
 {
 }
+// Advisory send window for the flow-control query. A real window shrinks as bytes go
+// unacked and reopens on ACK, which is what drives the file/chunk send pumps onto their
+// backpressure-and-resume path across worker loops. A test can shrink this (mock_sndbuf()
+// = 0) to force that path, then reopen it before the next poll to resume the transfer.
+static const uint16_t MOCK_SNDBUF_DEFAULT = 5744; // a typical lwIP TCP_SND_BUF
+inline uint16_t &mock_sndbuf()
+{
+    static uint16_t v = MOCK_SNDBUF_DEFAULT;
+    return v;
+}
 inline uint16_t tcp_sndbuf(struct tcp_pcb *)
 {
-    return 5744; // a typical lwIP TCP_SND_BUF; advisory send-space for the flow-control query
+    return mock_sndbuf();
 }
 inline err_t tcp_close(struct tcp_pcb *)
 {

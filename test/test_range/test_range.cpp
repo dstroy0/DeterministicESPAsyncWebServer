@@ -49,6 +49,7 @@ void setUp()
     fs::mock_fs_reset();
     fs::mock_fs_set(FILE_DATA); // 20-byte file at any path
     tcp_capture_reset();
+    mock_sndbuf() = MOCK_SNDBUF_DEFAULT; // reopen the window a backpressure test may have shrunk
 }
 
 void tearDown()
@@ -213,9 +214,32 @@ void test_head_with_range_no_body()
     TEST_ASSERT_EQUAL_UINT(0, body_len()); // HEAD: headers only
 }
 
+// A zero send window forces file_send_pump onto its backpressure path: it flushes the
+// queued headers and returns with the response still active, having sent no body. The
+// next worker poll - after the window reopens - resumes the transfer through
+// http_poll_slot()'s in-flight-file branch and pages the body out. Reopening to a window
+// smaller than the remaining body also exercises the per-loop clamp (want = avail), so
+// the 20-byte file pages out in several bounded reads without truncation - the
+// paging-across-loops path a real file transfer under flow control relies on.
+void test_file_send_backpressure_resumes_across_polls()
+{
+    mock_sndbuf() = 0; // window shut: no room to page any body this loop
+    request(nullptr);
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "Content-Length: 20")); // headers went out
+    TEST_ASSERT_EQUAL_UINT(0, body_len());                 // body deferred: nothing after the header terminator
+
+    mock_sndbuf() = 8; // window reopens, but narrower than the remaining 20 bytes
+    server.handle();   // worker poll resumes and pages the body in 8-byte-capped reads
+    TEST_ASSERT_EQUAL_UINT(20, body_len());
+    TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 20); // full body, no truncation
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_file_send_backpressure_resumes_across_polls);
     RUN_TEST(test_no_range_full_200);
     RUN_TEST(test_range_prefix);
     RUN_TEST(test_range_open_ended);

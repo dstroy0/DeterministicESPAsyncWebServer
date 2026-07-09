@@ -186,6 +186,7 @@ void setUp()
     ws_init();
     sse_init();
     tcp_capture_reset();
+    mock_sndbuf() = MOCK_SNDBUF_DEFAULT; // reopen the window a backpressure test may have shrunk
     g_log_status = 0;
     g_log_len = -1;
     g_step = 0;
@@ -331,9 +332,32 @@ void test_http10_large_body_not_truncated()
     TEST_ASSERT_EQUAL_INT(BIG_TOTAL, g_log_len); // full body paged out, none dropped
 }
 
+// A send window too small for even a framed chunk (avail <= FRAME) forces the pager
+// onto its backpressure path: chunk_send_pump flushes the queued headers and returns
+// with the response still active, having emitted no body. A later worker poll - after
+// the window reopens - resumes the in-flight response through http_poll_slot() and
+// finishes the body + terminator. This is the multi-loop resume a large streamed
+// response depends on under real flow control.
+void test_chunked_backpressure_resumes_across_polls()
+{
+    server.on("/c", HTTP_GET, h_two5);
+    mock_sndbuf() = 8; // below the 12-byte chunk framing reserve: no room for a useful chunk
+    feed_and_handle(0, "GET /c HTTP/1.1\r\n\r\n");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "Transfer-Encoding: chunked\r\n")); // headers went out
+    TEST_ASSERT_NULL(strstr(r, "hello"));                              // body deferred
+    TEST_ASSERT_NULL(strstr(r, "0\r\n\r\n"));                          // no terminating chunk yet
+
+    mock_sndbuf() = MOCK_SNDBUF_DEFAULT; // window reopens
+    server.handle();                     // worker poll resumes the in-flight chunked response
+    r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "5\r\nhello\r\n5\r\nworld\r\n0\r\n\r\n")); // full body + terminator
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_chunked_backpressure_resumes_across_polls);
     RUN_TEST(test_headers_announce_chunked_no_content_length);
     RUN_TEST(test_single_chunk_framing);
     RUN_TEST(test_multiple_chunks_in_order);
