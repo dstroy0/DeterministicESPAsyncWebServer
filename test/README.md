@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2497 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2500 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -790,7 +790,7 @@ A thorough directory of all **2497 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (61 tests)</b></summary>
+<summary><b>test_application (64 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
@@ -809,6 +809,33 @@ A thorough directory of all **2497 test cases** across **228 suites**. Expand a 
     * **Objective**: The dropped iface route does not dispatch: a request to it falls through (handler untouched).
     * **Assertions**:
       * <code>Assert false (handler_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_family_slot_and_conn_gone_guards</b> &mdash; <i>Send family slot and conn gone guards</i></summary>
+
+    * **Objective**: Send family slot and conn gone guards
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_redirect_response_and_code_normalization</b> &mdash; <i>An out-of-range redirect code normalizes to 302.</i></summary>
+
+    * **Objective**: An out-of-range redirect code normalizes to 302.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "307 Temporary Redirect"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Location: /new"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "302 Found"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_request_error_paths_te_method_ws</b> &mdash; <i>Wrong method to a GET-only route -> 405 with an Allow header.</i></summary>
+
+    * **Objective**: Wrong method to a GET-only route -> 405 with an Allow header.
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "405"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Allow:"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "400"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "426"))</code>
   </details>
 
   <details style="margin-left: 20px;">
