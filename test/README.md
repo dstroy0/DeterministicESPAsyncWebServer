@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2686 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2688 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11643,7 +11643,7 @@ A thorough directory of all **2686 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_json (26 tests)</b></summary>
+<summary><b>test_json (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_reader_non_object_and_bad_member</b> &mdash; <i>Reader non object and bad member</i></summary>
@@ -11670,7 +11670,9 @@ A thorough directory of all **2686 test cases** across **228 suites**. Expand a 
     * **Objective**: Invalid / short \u emits '?' without consuming the bad chars, so they trail as literals.
     * **Assertions**:
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u01F6\\"}", "u", out, sizeof(out)))</code>
-      * <code>Assert equal string ("?", out); // valid hex, codepoint &gt; 0xFF -&gt; '?' (digits consumed)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC7, (unsigned char)out[0]); // U+01F6 -&gt; 2-byte UTF-8 C7 B6</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB6, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);</code>
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uZZZZ\\"}", "u", out, sizeof(out)))</code>
       * <code>Assert equal string ("?ZZZZ", out)</code>
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u0A\\"}", "u", out, sizeof(out)))</code>
@@ -11874,9 +11876,45 @@ A thorough directory of all **2686 test cases** across **228 suites**. Expand a 
     * **Objective**: Reader unicode hex case
     * **Assertions**:
       * <code>Assert true (json_get_str(body, "a", out, sizeof(out)))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xAB, (unsigned char)out[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xCD, (unsigned char)out[1]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC2, (unsigned char)out[0]); // U+00AB</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAB, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC3, (unsigned char)out[2]); // U+00CD</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x8D, (unsigned char)out[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[4]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reader_unicode_utf8_multibyte</b> &mdash; <i>U+20AC EURO SIGN -> 3-byte UTF-8 E2 82 AC.</i></summary>
+
+    * **Objective**: U+20AC EURO SIGN -> 3-byte UTF-8 E2 82 AC.
+    * **Assertions**:
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u20AC\\"}", "u", out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xE2, (unsigned char)out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x82, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAC, (unsigned char)out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[3]);</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uD83D\\\\uDE00\\"}", "u", out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xF0, (unsigned char)out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x9F, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x98, (unsigned char)out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, (unsigned char)out[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[4]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reader_unicode_surrogate_edges</b> &mdash; <i>A 4-byte sequence that will not fit truncates before it rather than writing a partial char.</i></summary>
+
+    * **Objective**: A 4-byte sequence that will not fit truncates before it rather than writing a partial char.
+    * **Assertions**:
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uD800Z\\"}", "u", out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xBF, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xBD, (unsigned char)out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('Z', (unsigned char)out[3]);</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uDC00\\"}", "u", out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uD83D\\\\uDE00\\"}", "u", tiny, sizeof(tiny)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)tiny[0]); // nothing fit -&gt; empty, still NUL-terminated</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11902,7 +11940,9 @@ A thorough directory of all **2686 test cases** across **228 suites**. Expand a 
       * <code>Assert false (json_get_int("{\\"n\\":\\"42\\"}", "n", &v))</code>
       * <code>Assert false (json_get_int("{\\"n\\":xyz}", "n", &v))</code>
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u01F6\\"}", "u", out, sizeof(out)))</code>
-      * <code>Assert equal string ("?", out); // valid hex, codepoint &gt; 0xFF -&gt; '?' (digits consumed)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC7, (unsigned char)out[0]); // U+01F6 -&gt; 2-byte UTF-8 C7 B6</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB6, (unsigned char)out[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);</code>
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uZZZZ\\"}", "u", out, sizeof(out)))</code>
       * <code>Assert equal string ("?ZZZZ", out)</code>
       * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u0A\\"}", "u", out, sizeof(out)))</code>
