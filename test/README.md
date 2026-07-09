@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2678 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2679 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28481,7 +28481,7 @@ A thorough directory of all **2678 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav (24 tests)</b></summary>
+<summary><b>test_webdav (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_method_classification</b> &mdash; <i>Method classification</i></summary>
@@ -28497,8 +28497,24 @@ A thorough directory of all **2678 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (DAV_M_LOCK, webdav_method("LOCK"))</code>
       * <code>Assert equal int (DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
       * <code>Assert equal int (DAV_M_PUT, webdav_method("PUT"))</code>
+      * <code>Assert equal int (DAV_M_GET, webdav_method("GET"))</code>
+      * <code>Assert equal int (DAV_M_DELETE, webdav_method("DELETE"))</code>
       * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method("BREW"))</code>
       * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_builder_guards</b> &mdash; <i>A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.</i></summary>
+
+    * **Objective**: A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_xml_escape(out, 0, "x")); // zero cap</code>
+      * <code>Assert true (strlen(tiny) &lt; sizeof(tiny))</code>
+      * <code>Assert false (webdav_dest_path(nullptr, out, sizeof(out)))</code>
+      * <code>Assert false (webdav_dest_path("/x", nullptr, sizeof(out)))</code>
+      * <code>Assert false (webdav_dest_path("/x", out, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
