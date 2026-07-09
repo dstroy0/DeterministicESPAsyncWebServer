@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2679 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2680 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -3404,7 +3404,7 @@ A thorough directory of all **2679 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_coap (45 tests)</b></summary>
+<summary><b>test_coap (46 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_response_option_capacity_stop</b> &mdash; <i>Response option capacity stop</i></summary>
@@ -3681,6 +3681,15 @@ A thorough directory of all **2679 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (5, d.observe)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(COAP_CF_TEXT, d.content_format); // still ordered/decoded after Observe</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, d.payload_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_option_overflows_buffer</b> &mdash; <i>resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option.</i></summary>
+
+    * **Objective**: resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option.
+    * **Assertions**:
+      * <code>Assert true (dec(resp, n, &d))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(COAP_CF_NONE, d.content_format); // option dropped, response still well-formed</code>
   </details>
 
   <details style="margin-left: 20px;">
