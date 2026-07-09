@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2515 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2525 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -1396,7 +1396,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_atc (4 tests)</b></summary>
+<summary><b>test_atc (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_snapshot_json</b> &mdash; <i>Snapshot json</i></summary>
@@ -1439,6 +1439,16 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>Assert equal string ("{\\"inputs\\":[],\\"outputs\\":[]}", buf)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen("{\\"inputs\\":[],\\"outputs\\":[]}"), n);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io2, small, sizeof(small)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_escapes_and_overflow</b> &mdash; <i>Json escapes and overflow</i></summary>
+
+    * **Objective**: Json escapes and overflow
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "\\\\\\""))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -6166,7 +6176,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dshot (7 tests)</b></summary>
+<summary><b>test_dshot (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_encode_known_vector</b> &mdash; <i>motor stop (value 0) -> all zero.</i></summary>
@@ -6243,6 +6253,17 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(1500000, detws_esc_pwm_ns(500, DETWS_ESC_PWM));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(84000, detws_esc_pwm_ns(1000, DETWS_ESC_ONESHOT42));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DETWS_ESC_ONESHOT125));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bit_ns_all_rates</b> &mdash; <i>Each supported line rate maps to a non-zero bit period; an unknown rate is rejected.</i></summary>
+
+    * **Objective**: Each supported line rate maps to a non-zero bit period; an unknown rate is rejected.
+    * **Assertions**:
+      * <code>Assert true (detws_dshot_bit_ns(150, true) &gt; 0)</code>
+      * <code>Assert true (detws_dshot_bit_ns(300, false) &gt; 0)</code>
+      * <code>Assert true (detws_dshot_bit_ns(1200, true) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true));</code>
   </details>
 
 </details>
@@ -6437,7 +6458,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_espnow (7 tests)</b></summary>
+<summary><b>test_espnow (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_encode_decode_roundtrip</b> &mdash; <i>Encode decode roundtrip</i></summary>
@@ -6517,10 +6538,21 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(0xFF, DETWS_ESPNOW_BROADCAST[i]);</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_peer_guard_and_host_stubs</b> &mdash; <i>Host build: the ESP-NOW bind functions are unavailable.</i></summary>
+
+    * **Objective**: Host build: the ESP-NOW bind functions are unavailable.
+    * **Assertions**:
+      * <code>Assert false (detws_espnow_peer_add(nullptr))</code>
+      * <code>Assert false (detws_espnow_begin(1, nullptr))</code>
+      * <code>Assert false (detws_espnow_send(mac, 1, payload, sizeof(payload)))</code>
+      * <code>Assert false (detws_espnow_broadcast(1, payload, sizeof(payload)))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_exc_decoder (5 tests)</b></summary>
+<summary><b>test_exc_decoder (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_full</b> &mdash; <i>Parse full</i></summary>
@@ -6586,10 +6618,22 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, tiny, sizeof(tiny)));</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_upper_hex_and_json_overflow</b> &mdash; <i>Uppercase hex addresses exercise the A-F branch of the nibble parser.</i></summary>
+
+    * **Objective**: Uppercase hex addresses exercise the A-F branch of the nibble parser.
+    * **Assertions**:
+      * <code>Assert true (detws_exc_parse(up, &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400D1234, info.frames[0].pc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400DABCD, info.frames[1].pc);</code>
+      * <code>Assert true (detws_exc_json(&info, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 8)); // tiny cap fails closed</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_failsafe (6 tests)</b></summary>
+<summary><b>test_failsafe (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_overdue_predicate</b> &mdash; <i>Across a millis() rollover: last_feed just before wrap, now just after.</i></summary>
@@ -6660,6 +6704,16 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(buf, "\\"age_ms\\":200"))</code>
       * <code>Assert not null (strstr(buf, "\\"deadline_ms\\":500"))</code>
       * <code>Assert not null (strstr(buf, "\\"overdue\\":true"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_millis_wrappers_and_json</b> &mdash; <i>A second lifeline drives the JSON comma separator.</i></summary>
+
+    * **Objective**: A second lifeline drives the JSON comma separator.
+    * **Assertions**:
+      * <code>Assert true (id &gt;= 0)</code>
+      * <code>Assert true (detws_failsafe_feed(id))</code>
+      * <code>Assert true (detws_failsafe_json_at(0, buf, sizeof(buf)) &gt; 0)</code>
   </details>
 
 </details>
@@ -8594,7 +8648,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_happy_eyeballs (4 tests)</b></summary>
+<summary><b>test_happy_eyeballs (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_pref_order</b> &mdash; <i>Global outranks link-local outranks loopback; within global, native v6 outranks v4.</i></summary>
@@ -8633,6 +8687,12 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_he_attempt_due(1000, 1000 + 249, DETWS_HE_ATTEMPT_DELAY_MS))</code>
       * <code>Assert true (detws_he_attempt_due(1000, 1000 + 250, DETWS_HE_ATTEMPT_DELAY_MS))</code>
       * <code>Assert true (detws_he_attempt_due(0xFFFFFF00u, 0xFFFFFF00u + 250, DETWS_HE_ATTEMPT_DELAY_MS))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pref_scopes_and_order_edges</b> &mdash; <i>Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified).</i></summary>
+
+    * **Objective**: Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified).
   </details>
 
 </details>
@@ -10149,7 +10209,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hw_health (5 tests)</b></summary>
+<summary><b>test_hw_health (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_rail_monitor</b> &mdash; <i>Overflow path returns 0.</i></summary>
@@ -10217,6 +10277,14 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (HW_CAP_LEAK, detws_hwhealth_cap_leak(80, 100, 10))</code>
       * <code>Assert equal int (HW_CAP_HIGH_ESR, detws_hwhealth_cap_leak(130, 100, 10))</code>
       * <code>Assert equal int (HW_CAP_OK, detws_hwhealth_cap_leak(50, 0, 10))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rail_ok_spi_clamps_probes</b> &mdash; <i>Rail ok spi clamps probes</i></summary>
+
+    * **Objective**: Rail ok spi clamps probes
+    * **Assertions**:
+      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
   </details>
 
 </details>
@@ -11682,7 +11750,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ld2410 (7 tests)</b></summary>
+<summary><b>test_ld2410 (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_basic</b> &mdash; <i>Parse basic</i></summary>
@@ -11784,6 +11852,20 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int ((int)(sizeof(restart)), (int)(ld2410_cmd_restart(f, sizeof(f))))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(restart, f, sizeof(restart));</code>
       * <code>Assert equal int ((int)(0), (int)(ld2410_cmd_config_enable(f, 4)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_stubs_and_parse_guards</b> &mdash; <i>Host build: the UART bind functions fail closed / return null.</i></summary>
+
+    * **Objective**: Host build: the UART bind functions fail closed / return null.
+    * **Assertions**:
+      * <code>Assert false (ld2410_begin(16, 17))</code>
+      * <code>Assert false (ld2410_poll())</code>
+      * <code>Assert null (ld2410_last())</code>
+      * <code>Assert false (ld2410_set_engineering(true))</code>
+      * <code>Assert false (ld2410_restart())</code>
+      * <code>Assert false (ld2410_parse_report(nullptr, 20, &rep))</code>
+      * <code>Assert false (ld2410_parse_report(too_short, sizeof(too_short), &rep))</code>
   </details>
 
 </details>
@@ -16771,7 +16853,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pca9685 (4 tests)</b></summary>
+<summary><b>test_pca9685 (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_prescale</b> &mdash; <i>Prescale</i></summary>
@@ -16822,6 +16904,17 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(want_full, b, 5);</code>
       * <code>Assert equal int (0, (int)pca9685_set_pwm_bytes(b, 4, 0, 0, 0))</code>
       * <code>Assert equal int (0, (int)pca9685_set_pwm_bytes(b, 5, 16, 0, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_prescale_zero_and_host_stubs</b> &mdash; <i>Zero frequency takes the max-prescale early return.</i></summary>
+
+    * **Objective**: Zero frequency takes the max-prescale early return.
+    * **Assertions**:
+      * <code>Assert true (pca9685_prescale(0) &gt; 0)</code>
+      * <code>Assert false (pca9685_begin(0x40, 50))</code>
+      * <code>Assert false (pca9685_set_pwm(0, 0, 2048))</code>
+      * <code>Assert false (pca9685_set_servo_us(0, 1500))</code>
   </details>
 
 </details>
@@ -24465,7 +24558,7 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_statsd (9 tests)</b></summary>
+<summary><b>test_statsd (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_format_types</b> &mdash; <i>Format types</i></summary>
@@ -24554,6 +24647,19 @@ A thorough directory of all **2515 test cases** across **228 suites**. Expand a 
     * **Objective**: Emit noop until begin
     * **Assertions**:
       * <code>Assert equal uint (0, det_udp_captured_len())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rate_clamp_and_stage_overflow</b> &mdash; <i>A rate rounding below one thousandth clamps up to 1; a rate near 1 clamps down to 999.</i></summary>
+
+    * **Objective**: A rate rounding below one thousandth clamps up to 1; a rate near 1 clamps down to 999.
+    * **Assertions**:
+      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.0001f, nullptr) &gt; 0)</code>
+      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.9999f, nullptr) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 2, "metric", "1", STATSD_COUNTER, 1.0f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 4, "m", "1", STATSD_TIMING, 1.0f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 6, "m", "1", STATSD_COUNTER, 0.5f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 7, "m", "1", STATSD_COUNTER, 1.0f, "#tag:x"));</code>
   </details>
 
 </details>
