@@ -140,11 +140,22 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
     return true;
 }
 
-#else // host build - no resolver
+#else // host build - no real resolver; a host test can inject a synthetic answer
 
-bool detws_dns_resolve(const char *, uint32_t *)
+static bool s_dns_test_ok = false;
+static uint32_t s_dns_test_ip = 0;
+void detws_dns_test_set_resolve(bool ok, uint32_t ip)
 {
-    return false;
+    s_dns_test_ok = ok;
+    s_dns_test_ip = ip;
+}
+bool detws_dns_resolve(const char *, uint32_t *out_ip)
+{
+    if (!s_dns_test_ok)
+        return false;
+    if (out_ip)
+        *out_ip = s_dns_test_ip;
+    return true;
 }
 
 #endif // ARDUINO

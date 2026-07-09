@@ -70,5 +70,10 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip);
  */
 bool detws_dns_resolve_verified(const char *host, uint32_t *out_ip);
 
+#if !defined(ARDUINO)
+/** @brief Host test hook: make detws_dns_resolve() return @p ip (host order) when @p ok, else fail. */
+void detws_dns_test_set_resolve(bool ok, uint32_t ip);
+#endif
+
 #endif // DETWS_ENABLE_DNS_RESOLVER
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H

@@ -53,6 +53,23 @@ void test_resolve_is_noop_on_host()
     TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
 }
 
+void test_resolve_verified_paths()
+{
+    uint32_t ip = 0;
+    // resolve fails -> false.
+    detws_dns_test_set_resolve(false, 0);
+    TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
+    // resolve succeeds but the answer is a loopback (DNS-rebinding) -> verify rejects it.
+    detws_dns_test_set_resolve(true, IPV4(127, 0, 0, 1));
+    TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
+    // resolve succeeds and the answer is a plausible public address -> true, out_ip set.
+    detws_dns_test_set_resolve(true, IPV4(8, 8, 8, 8));
+    TEST_ASSERT_TRUE(detws_dns_resolve_verified("example.com", &ip));
+    TEST_ASSERT_EQUAL_UINT32(IPV4(8, 8, 8, 8), ip);
+    TEST_ASSERT_TRUE(detws_dns_resolve_verified("example.com", nullptr)); // null out_ip ok
+    detws_dns_test_set_resolve(false, 0);                                 // reset the hook
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -60,5 +77,6 @@ int main()
     RUN_TEST(test_verify_rejects_suspicious);
     RUN_TEST(test_verify_accepts_plausible);
     RUN_TEST(test_resolve_is_noop_on_host);
+    RUN_TEST(test_resolve_verified_paths);
     return UNITY_END();
 }
