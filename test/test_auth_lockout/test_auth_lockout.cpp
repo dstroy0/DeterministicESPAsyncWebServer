@@ -177,6 +177,26 @@ void test_active_lockout_survives_eviction()
     TEST_ASSERT_TRUE(auth_lockout_remaining_ms(&victim, 1) > 0);
 }
 
+void test_succeed_unspecified_and_table_full_eviction()
+{
+    auth_lockout_reset();
+    DetIp none = {};             // unspecified (family DET_IP_NONE)
+    auth_lockout_succeed(&none); // no-op guard on an unspecified address
+    // Fill every bucket with an active lockout.
+    for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
+    {
+        DetIp ip = v4w(0x0B000000u + (uint32_t)i);
+        uint32_t t = 100000u - (uint32_t)i; // decreasing so a later-indexed bucket is more stale (LRU)
+        for (int f = 0; f < DETWS_AUTH_LOCKOUT_THRESHOLD; f++)
+            auth_lockout_fail(&ip, t);
+    }
+    // A new distinct IP: the table is full of active lockouts, so allocation tracks LRU and evicts.
+    DetIp extra = v4w(0x0C000001u);
+    for (int f = 0; f < DETWS_AUTH_LOCKOUT_THRESHOLD; f++)
+        auth_lockout_fail(&extra, 100000u); // full table -> allocation tracks LRU and evicts the stalest bucket
+    TEST_ASSERT_TRUE(auth_lockout_remaining_ms(&extra, 100000u) > 0);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -191,5 +211,6 @@ int main()
     RUN_TEST(test_zero_ip_never_locked);
     RUN_TEST(test_table_full_tracks_new_address);
     RUN_TEST(test_active_lockout_survives_eviction);
+    RUN_TEST(test_succeed_unspecified_and_table_full_eviction);
     return UNITY_END();
 }
