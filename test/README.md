@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2633 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2634 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22382,7 +22382,7 @@ A thorough directory of all **2633 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_agent (26 tests)</b></summary>
+<summary><b>test_snmp_agent (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_registration_and_rw_edges</b> &mdash; <i>With the rw community cleared, a Set arriving on the ro community is answered</i></summary>
@@ -22652,6 +22652,18 @@ A thorough directory of all **2633 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(not_seq, sizeof(not_seq), resp, sizeof(resp)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(empty_seq, sizeof(empty_seq), resp, sizeof(resp)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(bad_comm, sizeof(bad_comm), resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_snmp_dispatch_varbind_guards</b> &mdash; <i>A response that does not fit the output buffer is re-encoded as tooBig with an empty varbind list.</i></summary>
+
+    * **Objective**: A response that does not fit the output buffer is re-encoded as tooBig with an empty varbind list.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(pdu, n, false, true, resp, sizeof(resp)));</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (snmp_dispatch_pdu(pdu, n, false, true, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (snmp_dispatch_pdu(pdu, n, false, true, tiny, sizeof(tiny)) &gt; 0)</code>
   </details>
 
 </details>
