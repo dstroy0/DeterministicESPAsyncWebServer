@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6a6c6b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a6c6b0a91edc9724ad5a1ec4d5c2c82eaa05165))
 - update test report + coverage [skip ci] ([`ebfce2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebfce2f6d25afde949c5773ecad8cebd0b365fc7))
 - update CHANGELOG.md [skip ci] ([`b64db73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b64db73e3017366f1cb0a594eb82697582030691))
 - update test report + coverage [skip ci] ([`c449c90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c449c90e0a095da38355d7316ce31833552b7a3c))
@@ -255,6 +256,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ffe6f15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe6f159dc41bc5f521cba6a3b527eed40be0274))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`97d7386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97d7386415da66e5fb7ca5e4d17ead3a4533cf83))
 - update ESP32 build footprints [skip ci] ([`642f913`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/642f913fc110d88acf8c969402122a42d4a4db34))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8318f67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8318f6725c0a5331d3c2a39fc0f9f738c2f1fb3a))
@@ -488,6 +490,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover WebSocket/SSE upgrade failure paths ([`f825f5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f825f5ac130306dca07b3db05b9a09a24e0aeffc))
 - cover WebDAV recursive open-failure + source-path 414 ([`4855008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4855008d986a9f158b5dbed9f522942b249ad219))
 - cover WebDAV GET/PUT/COPY method-handler edges ([`ec80412`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec80412fea9074e5d658de0e405f22318829ba39))
 - cover conditional-GET + range-parse edges ([`d4a4eef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a4eefa5f8618ebcf7a24a320a7e506f9291ecf))
