@@ -15,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`cf78c50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf78c50eaa326b5700e8485d3df325611c2e9242))
+- update CHANGELOG.md [skip ci] ([`aab8ea0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aab8ea0d429a9f6750a0e5cb07354fb1625352b4))
 - update test report + coverage [skip ci] ([`2b3b704`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b3b704be3e13abee9743fe15a3100d5c5c21b36))
 - update CHANGELOG.md [skip ci] ([`1d4e7a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d4e7a97d1362481c14b86c945ecd80a189dd660))
 - update test report + coverage [skip ci] ([`4bab46f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bab46f45bf8040fcc36f2b4123984b302dbadf7))
@@ -287,6 +289,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdc17aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdc17aafb333db7ccc3048e9bb2ebb226953b7d0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cad9b42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cad9b42c2150a5f51b68f9221bc3bcb6ade4ec01))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dd0b174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd0b1746f6c24113d03919c5cfcd67967913469d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`24b2473`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b2473beb9a64e95d2e53317398244cea1292bf))
@@ -539,6 +542,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover DisplayName Locale-skip in on_browse (100%) ([`7b2e0b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b2e0b2ce6af03e5d3d0ad4369b99838aee7ea82))
 - cover response scopedPDU overflow guard (100%) ([`53467fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53467fac390bc9e944b95598d5a610fe7d462be5))
 - cover post-verify claim guards via in-test RS256 signing (100%) ([`25bfe9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25bfe9c67cd6ef74882e69e4adde0094f78b04bc))
 - cover header-parse edges, scratch exhaustion, malformed JWK modulus ([`ba1e934`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba1e9349c6481152fb544b7ff73660d80f8703ff))
