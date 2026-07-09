@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`a0b1a4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b1a4bf0273c9bd1477c335afe6a209015f1c56))
+- update CHANGELOG.md [skip ci] ([`5470f91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5470f91a8db1d0ece8c679b36e6f997720a48fdc))
 - update test report + coverage [skip ci] ([`fa40ba9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa40ba98d43824c6bbb71027d95f5980de49eb03))
 - update CHANGELOG.md [skip ci] ([`8e70ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e70ec943616fd00763f448c2607bf998af49c3b))
 - update CHANGELOG.md [skip ci] ([`1ffb314`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ffb314d470ef1ecc6d7b04751bad288c9bf069f))
@@ -294,6 +296,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover the host platform-hook stubs (50->100%) ([`7e6e63c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e6e63caac815f7cbe6ce9d9d37c711e6b23c7cb))
 - cover ATT/GATT codec build + parse guards (83->100%) ([`3ad6787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ad6787ce04ab382e127bba84306b9b8f4d95466))
 - cover PSID/WSMP/1609.2 codec guards (71->100%) ([`8303915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83039157efa13c71f4ecc34a3d1c2ff55baee325))
 - cover ClientHello parse guards + malformed exts + builder caps ([`9f50a04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f50a04b62035559f501c1fafc6d6e5b25fa22bf))
