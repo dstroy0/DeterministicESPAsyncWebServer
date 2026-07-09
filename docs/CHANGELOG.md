@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report [skip ci] ([`174e40c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/174e40c9464b290eb56c972a3b529fcad784f02c))
+- update CHANGELOG.md [skip ci] ([`6ac8484`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ac848410b8cf2cd2a1be72d524dbedb9fcc8bea))
 - update CHANGELOG.md [skip ci] ([`dfdb915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dfdb9152912a1790d2f934293eb6347c5d1353fa))
 - update CHANGELOG.md [skip ci] ([`a685433`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6854331bddb898fa08f0f5a3e19e28e85c300bc))
 - update CHANGELOG.md [skip ci] ([`31163dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31163dd62117bb46486a2995b4129f42832fc6d0))
@@ -133,6 +135,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb2e066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb2e06609d1217f7f4aed9a2615ab32a4ebbfe2d))
+- update ESP32 build footprints [skip ci] ([`7be47c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7be47c8a34b43f27d84758625bccc219591dbb00))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2a3c1ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a3c1edcd85e78a39001a4fee58cd588bf5ea8a4))
 - update ESP32 build footprints [skip ci] ([`efda745`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efda7455d59e6c394b17c709d81e70848791869a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d71d147`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d71d14785d53707de694f7dd4b0e75855321ccac))
@@ -191,6 +195,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- hoist the bounded XML string-builder into a shared primitive (dedup) ([`cc88478`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc88478d88062a2918c4e9c998c96f0c1157932c))
 - hoist the AES S-box into a shared primitive (dedup) ([`be31581`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be31581db93542c9cd6bbd62ee401706cf735f60))
 - pull remaining tunable defaults into ServerConfig.h under their flag guards ([`f6bfc3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6bfc3ac6b462ca5eb5fed4fa757f71f5242ba6f))
 - dedup repeated literals; move OPC UA + provisioning string DEFAULTS to ServerConfig.h under their flag guards ([`199a58b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199a58ba6b99df8cf6d47ef9f9d58108b8c07016))
