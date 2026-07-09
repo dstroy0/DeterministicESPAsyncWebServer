@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2574 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2581 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -21816,7 +21816,7 @@ A thorough directory of all **2574 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_agent (19 tests)</b></summary>
+<summary><b>test_snmp_agent (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_registration_and_rw_edges</b> &mdash; <i>With the rw community cleared, a Set arriving on the ro community is answered</i></summary>
@@ -22020,6 +22020,72 @@ A thorough directory of all **2574 test cases** across **228 suites**. Expand a 
     * **Objective**: V3 message dropped
     * **Assertions**:
       * <code>Assert equal uint (0, n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getbulk_repeaters_and_end</b> &mdash; <i>Pure repeaters (non_rep=0, max_rep=3) walk successive OIDs from the sys prefix.</i></summary>
+
+    * **Objective**: Pure repeaters (non_rep=0, max_rep=3) walk successive OIDs from the sys prefix.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert true (rv.nvb &gt;= 1)</code>
+      * <code>Assert true (snmp_agent_process(req, rl, resp, sizeof(resp)) &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_getbulk_nonrep_clamp_and_v1_reject</b> &mdash; <i>non_rep (5) exceeds the single varbind -> clamped to the varbind count.</i></summary>
+
+    * **Objective**: non_rep (5) exceeds the single varbind -> clamped to the varbind count.
+    * **Assertions**:
+      * <code>Assert true (snmp_agent_process(req, rl, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_too_big_reencodes</b> &mdash; <i>Response too big reencodes</i></summary>
+
+    * **Objective**: Response too big reencodes
+    * **Assertions**:
+      * <code>Assert true (parse_resp(resp, n, &rv))</code>
+      * <code>Assert equal int (SNMP_ERR_TOO_BIG, rv.err_status)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_version_and_community_guards</b> &mdash; <i>v3 with the USM layer not built here -> 0.</i></summary>
+
+    * **Objective**: v3 with the USM layer not built here -> 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_malformed_pdu</b> &mdash; <i>A PDU whose header parses but whose request-id integer is truncated fails closed.</i></summary>
+
+    * **Objective**: A PDU whose header parses but whose request-id integer is truncated fails closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(junk, sizeof(junk), false, true, resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(bare, sizeof(bare), false, true, resp, sizeof(resp)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_udp_handler_via_inject</b> &mdash; <i>The bound handler processed the datagram and sent a reply (captured).</i></summary>
+
+    * **Objective**: The bound handler processed the datagram and sent a reply (captured).
+    * **Assertions**:
+      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_malformed_message_guards</b> &mdash; <i>Malformed message guards</i></summary>
+
+    * **Objective**: Malformed message guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(not_seq, sizeof(not_seq), resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(empty_seq, sizeof(empty_seq), resp, sizeof(resp)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(bad_comm, sizeof(bad_comm), resp, sizeof(resp)));</code>
   </details>
 
 </details>
