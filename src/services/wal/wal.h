@@ -22,8 +22,9 @@
  * image with a corrupted or truncated tail and it recovers to the last good record.
  *
  * The durable store layer - A/B superblock, checkpoint, and mount/recover over a block-device seam - is
- * built on this codec in wal_store.h; binding that seam to a real fs::FS file (SD / LittleFS) is the last
- * step, then an on-device reset-and-remount durability check.
+ * built on this codec in wal_store.h; wal_fs.h binds that seam to a real fs::FS file (SD / LittleFS). The
+ * whole path is hardware-verified on an SD card over SPI (checkpoint recovery, torn-tail drop, byte-level
+ * payload persistence, and survival across a chip reset all pass).
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WAL_H

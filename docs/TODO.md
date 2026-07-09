@@ -59,15 +59,17 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 An on-device data-store stack. The user is attaching an **SD card** and wants an atomic buffer-to-flash
 layer built first, then the store codecs on top. Substrate before stores.
 
-- [~] **Atomic buffer-to-flash layer (the substrate).** A power-loss-safe write path over the FS / SD:
-      a write-ahead log with a CRC per record and an A/B superblock commit marker, so an interrupted
-      write is discarded (never half-applied) on the next mount. Zero-heap, bounded, static buffers.
-      **Done:** `DETWS_ENABLE_WAL` - the pure record codec (`services/wal/wal.h`) plus the durable
-      store (`wal_store.h`: A/B superblock + `wal_store_checkpoint` + mount/tail-replay over a `WalDev`
-      block-device seam), host-tested (13 cases: CRC vector, torn/truncated-tail recovery, checkpoint
-      durability, superblock fallback). **Remaining:** bind the `WalDev` seam to a real `fs::FS` file
-      (SD / LittleFS) and run an on-device reset-and-remount durability check on the COM4 board; measure
-      the write path (see Performance).
+- [x] **Atomic buffer-to-flash layer (the substrate).** _(done)_ A power-loss-safe write path over the
+      FS / SD: a write-ahead log with a CRC per record and an A/B superblock commit marker, so an
+      interrupted write is discarded (never half-applied) on the next mount. Zero-heap, bounded, static
+      buffers. `DETWS_ENABLE_WAL` = the pure record codec (`services/wal/wal.h`) + the durable store
+      (`wal_store.h`: A/B superblock + `wal_store_checkpoint` + mount/tail-replay over a `WalDev`
+      block-device seam) + the `fs::FS` binding (`wal_fs.h`, preallocated file, random-access over
+      `File::seek`/`flush`). Host-tested (13 cases: CRC vector, torn/truncated-tail recovery, checkpoint
+      durability, superblock fallback) **and hardware-verified on an SD card over SPI** (checkpoint
+      recovery, torn-tail drop, byte-level payload persistence, and survival across a chip reset all
+      pass). _Follow-up:_ a ring-wrap (currently a linear log; wrapping needs a per-record epoch to
+      disambiguate stale records); a WAL write-path throughput line in Performance.
 - [ ] **dbm**: a classic on-disk hash key-value store (ndbm / gdbm-style) - a bounded, host-testable
       file-format codec on top of the flash layer.
 - [ ] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
