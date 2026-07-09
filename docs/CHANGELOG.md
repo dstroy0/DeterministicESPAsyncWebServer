@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`551b09a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/551b09a1ab78c9fa42c4b4db173754481ba6d6b6))
 - update CHANGELOG.md [skip ci] ([`a65a940`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a65a940ef956344af4960740e7c80bb8bad256cf))
 - update test report + coverage [skip ci] ([`ffd86c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffd86c1820070344be06dfaad73fbe2a25df30f5))
 - update CHANGELOG.md [skip ci] ([`eeda4a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eeda4a407c66b73c21efe7ac3bff5484c6b5b870))
@@ -279,6 +280,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`24b2473`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b2473beb9a64e95d2e53317398244cea1292bf))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ef3fd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ef3fd45b28a796331421d5403bb2bbcf1f34cb7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`19a634a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a634a9738653fc79fa56a214e5353d3cbedd8a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`062d91f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062d91f7aebab15bdbfbf6cb9a946557c43ac4fa))
@@ -528,6 +530,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- complete malformed-DEFLATE coverage (100%) ([`2843975`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/284397505065b9ce6d59b7dd2f544b62d16f1410))
 - cover empty-distance-code + back-ref length overflow ([`819ff9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/819ff9c016d8446b7992950a01145b8e919f3987))
 - cover dynamic-block code-length + table-construction guards ([`020c649`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/020c64971120eef53cf2fbe64e420a535e00196e))
 - cover fixed-block + stored malformed-DEFLATE guards ([`461a8e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461a8e8e80c35bfa9a0295438cc93152650f6122))
