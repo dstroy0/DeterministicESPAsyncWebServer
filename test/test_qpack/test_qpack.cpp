@@ -19,6 +19,11 @@ struct Sink
     std::vector<std::pair<std::string, std::string>> hdrs;
 };
 
+static bool fail_emit(void *, const char *, size_t, const char *, size_t)
+{
+    return false;
+}
+
 static bool sink_emit(void *ctx, const char *n, size_t nl, const char *v, size_t vl)
 {
     ((Sink *)ctx)->hdrs.push_back({std::string(n, nl), std::string(v, vl)});
@@ -202,6 +207,52 @@ void test_value_string_paths()
     TEST_ASSERT_EQUAL_STRING("aaaaaaaa", s.hdrs[s.hdrs.size() - 1].second.c_str());
 }
 
+void test_qpack_more_encode_decode_paths()
+{
+    uint8_t out[64];
+    Sink s;
+    // A short literal name that does not Huffman-compress takes the raw memcpy path.
+    size_t n = qpack_encode_header(out, sizeof out, "q", 1, "v", 1);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE((out[0] & 0xE0) == 0x20 && !(out[0] & 0x08)); // literal name, H clear
+    // A value that Huffman-compresses exercises encode_str7's H-bit path.
+    TEST_ASSERT_TRUE(qpack_encode_header(out, sizeof out, ":path", 5, "aaaaaaaa", 8) > 0);
+    // Huffman value with too little room fails at the length header / body.
+    for (size_t cap = 1; cap <= 5; cap++)
+        (void)qpack_encode_header(out, cap, ":path", 5, "aaaaaaaa", 8);
+    // cap=0 fails at the name-ref index and at the literal-name index.
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_header(out, 0, ":path", 5, "/x", 2));
+    TEST_ASSERT_EQUAL_INT(0, (int)qpack_encode_header(out, 0, "zzzz", 4, "v", 1));
+    // Decode error paths.
+    const uint8_t bad_ric[1] = {0xFF}; // RIC varint needs a continuation byte
+    TEST_ASSERT_FALSE(decode_all(bad_ric, 1, &s));
+    const uint8_t idx_dyn[3] = {0x00, 0x00, 0x80}; // Indexed Field Line, T=0 (dynamic)
+    TEST_ASSERT_FALSE(decode_all(idx_dyn, 3, &s));
+    const uint8_t nameref_dyn[3] = {0x00, 0x00, 0x40}; // Literal w/ Name Ref, dynamic
+    TEST_ASSERT_FALSE(decode_all(nameref_dyn, 3, &s));
+    const uint8_t litname_trunc[3] = {0x00, 0x00, 0x27}; // literal name, NameLen=7 but no bytes
+    TEST_ASSERT_FALSE(decode_all(litname_trunc, 3, &s));
+    const uint8_t litname_badhuff[5] = {0x00, 0x00, 0x2A, 0xFF, 0xFF}; // literal name, H set, bad Huffman
+    TEST_ASSERT_FALSE(decode_all(litname_badhuff, 5, &s));
+    const uint8_t litname_novalue[4] = {0x00, 0x00, 0x21, 'q'}; // literal name "q", then no value
+    TEST_ASSERT_FALSE(decode_all(litname_novalue, 4, &s));
+    // A value length that is a truncated continuation varint fails the str7 decode.
+    const uint8_t nameref_badvlen[4] = {0x00, 0x00, 0x51, 0xFF}; // :path name-ref, value length varint truncated
+    TEST_ASSERT_FALSE(decode_all(nameref_badvlen, 4, &s));
+    // An emit callback that rejects a header aborts the decode (indexed + literal-name field lines).
+    char sc[128];
+    const uint8_t indexed[3] = {0x00, 0x00, 0xC0 | 17}; // Indexed Field Line, static index 17
+    TEST_ASSERT_FALSE(qpack_decode(indexed, 3, sc, sizeof sc, fail_emit, nullptr));
+    const uint8_t litname[6] = {0x00, 0x00, 0x21, 'q', 0x01, 'v'}; // literal name "q" value "v"
+    TEST_ASSERT_FALSE(qpack_decode(litname, 6, sc, sizeof sc, fail_emit, nullptr));
+    // Literal-name encode running out of room mid-Huffman-name and at the value.
+    for (size_t cap = 2; cap <= 7; cap++)
+    {
+        (void)qpack_encode_header(out, cap, "aaaaaaaa", 8, "v", 1); // Huffman name body overflow
+        (void)qpack_encode_header(out, cap, "q", 1, "value", 5);    // literal name fits, value overflow
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -214,5 +265,6 @@ int main()
     RUN_TEST(test_encode_edges);
     RUN_TEST(test_decode_errors);
     RUN_TEST(test_value_string_paths);
+    RUN_TEST(test_qpack_more_encode_decode_paths);
     return UNITY_END();
 }
