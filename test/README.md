@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2671 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2673 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6816,7 +6816,26 @@ A thorough directory of all **2671 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_exc_decoder (6 tests)</b></summary>
+<summary><b>test_exc_decoder (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_exc_edge_guards</b> &mdash; <i>"PC" on the very first line (strncmp anchor, not the "\nPC" search).</i></summary>
+
+    * **Objective**: "PC" on the very first line (strncmp anchor, not the "\nPC" search).
+    * **Assertions**:
+      * <code>Assert false (detws_exc_parse(nullptr, &info))</code>
+      * <code>Assert false (detws_exc_parse("x", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(nullptr, buf, sizeof(buf))); // null info</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, nullptr, 128));       // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 0));             // zero cap</code>
+      * <code>Assert true (detws_exc_parse("PC      : 0x400dfeed  PS : 0x1\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x400dfeed, info.pc);</code>
+      * <code>Assert true (detws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\\n", &info))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, info.frame_count);</code>
+      * <code>Assert true (detws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\\"Cause\\\\x)</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "Weird\\\\\\"Cause\\\\\\\\x"))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_full</b> &mdash; <i>Parse full</i></summary>
@@ -9223,7 +9242,22 @@ A thorough directory of all **2671 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hpack (14 tests)</b></summary>
+<summary><b>test_hpack (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hpack_prim_edge_guards</b> &mdash; <i>Hpack prim edge guards</i></summary>
+
+    * **Objective**: Hpack prim edge guards
+    * **Assertions**:
+      * <code>Assert equal int (0, (int)hpack_encode_int(b, 1, 7, 0, 20000))</code>
+      * <code>Assert equal int (0, (int)hpack_encode_int(b, 1, 7, 0, 200))</code>
+      * <code>Assert false (hpack_decode_int(b, 0, 5, &c, &v))</code>
+      * <code>Assert equal int (0, (int)hpack_huff_encode(enc, 0, "a", 1))</code>
+      * <code>Assert false (hpack_huff_decode(eos, sizeof eos, out, sizeof out, &ol))</code>
+      * <code>Assert true (el &gt; 0)</code>
+      * <code>Assert false (hpack_huff_decode(enc, el, out, 1, &ol))</code>
+      * <code>Assert false (hpack_huff_decode(pad, 1, out, sizeof out, &ol))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_hpack_more_errors</b> &mdash; <i>Hpack more errors</i></summary>
