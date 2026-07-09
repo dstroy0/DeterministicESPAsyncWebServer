@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 01:34:41
+**Generated:** 2026-07-09 02:07:32
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2616 passed - 565s
+**Result:** ✅ 2616 passed - 595s
 
 ---
 
@@ -10,242 +10,242 @@
 
 | Suite                    | Environment             | Tests | Status |     Duration |
 | :----------------------- | :---------------------- | ----: | :----: | -----------: |
-| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:03.271 |
-| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.719 |
-| `test_det_ip`            | `native_det_ip`         |    10 |   ✅   | 00:00:00.714 |
-| `test_det_arena`         | `native_det_arena`      |    17 |   ✅   | 00:00:00.724 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.792 |
-| `test_crypto_kat`        | `native_crypto_kat`     |     8 |   ✅   | 00:00:02.623 |
-| `test_promisc`           | `native_promisc`        |     8 |   ✅   | 00:00:00.731 |
-| `test_bus_capture`       | `native_bus_capture`    |     5 |   ✅   | 00:00:00.717 |
-| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.718 |
-| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.740 |
-| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.751 |
-| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.720 |
-| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.721 |
-| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.721 |
-| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.719 |
-| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.729 |
-| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.721 |
-| `test_sse`               | `native`                |    37 |   ✅   | 00:00:01.280 |
-| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.655 |
-| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.699 |
-| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.696 |
-| `test_websocket`         | `native`                |    68 |   ✅   | 00:00:00.742 |
-| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.693 |
-| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.871 |
-| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.227 |
-| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.772 |
-| `test_provisioning`      | `native_prov`           |     5 |   ✅   | 00:00:00.741 |
-| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.343 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.724 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.046 |
-| `test_ssh_transport`     | `native_ssh`            |    34 |   ✅   | 00:00:01.743 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.691 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.237 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.933 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.523 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.679 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.680 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.601 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.679 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.683 |
-| `test_json`              | `native_app`            |    23 |   ✅   | 00:00:00.640 |
-| `test_response_headers`  | `native_app`            |    11 |   ✅   | 00:00:00.688 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.686 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.713 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.682 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.655 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.698 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.683 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.708 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.692 |
-| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.697 |
-| `test_application`       | `native_app`            |    59 |   ✅   | 00:00:00.836 |
-| `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.594 |
-| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.517 |
-| `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.800 |
-| `test_snmp_agent`        | `native_snmp`           |    19 |   ✅   | 00:00:00.603 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.602 |
-| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.931 |
-| `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.879 |
-| `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.872 |
-| `test_webdav`            | `native_webdav`         |    19 |   ✅   | 00:00:00.765 |
-| `test_modbus`            | `native_modbus`         |    22 |   ✅   | 00:00:00.747 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.878 |
-| `test_redis_resp`        | `native_redis`          |     8 |   ✅   | 00:00:00.732 |
-| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.740 |
-| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.740 |
-| `test_flow_export`       | `native_flow_export`    |     6 |   ✅   | 00:00:00.723 |
-| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.740 |
-| `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.778 |
-| `test_dma`               | `native_dma`            |    11 |   ✅   | 00:00:00.876 |
-| `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:00.957 |
-| `test_gateway`           | `native_gateway`        |    11 |   ✅   | 00:00:00.877 |
-| `test_lora`              | `native_lora`           |    13 |   ✅   | 00:00:00.728 |
-| `test_nrf24`             | `native_nrf24`          |    10 |   ✅   | 00:00:00.726 |
-| `test_enocean`           | `native_enocean`        |     9 |   ✅   | 00:00:00.724 |
-| `test_pn532`             | `native_pn532`          |    10 |   ✅   | 00:00:00.722 |
-| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.724 |
-| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.717 |
-| `test_zigbee`            | `native_zigbee`         |     9 |   ✅   | 00:00:00.730 |
-| `test_thread`            | `native_thread`         |    13 |   ✅   | 00:00:00.723 |
-| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.779 |
-| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.727 |
-| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.730 |
-| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.723 |
-| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.724 |
-| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.729 |
-| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.724 |
-| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.720 |
-| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.817 |
-| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.724 |
-| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.718 |
-| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.718 |
-| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.720 |
-| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.721 |
-| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.733 |
-| `test_amqp`              | `native_amqp`           |     7 |   ✅   | 00:00:00.724 |
-| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.726 |
-| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.725 |
-| `test_proxy_protocol`    | `native_proxy_protocol` |     8 |   ✅   | 00:00:00.725 |
-| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.758 |
-| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.761 |
-| `test_ota_rollback`      | `native_ota_rollback`   |     5 |   ✅   | 00:00:00.706 |
-| `test_totp`              | `native_totp`           |     4 |   ✅   | 00:00:00.754 |
-| `test_webhook`           | `native_webhook`        |     5 |   ✅   | 00:00:00.724 |
-| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.700 |
-| `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.727 |
-| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.752 |
-| `test_oidc`              | `native_oidc`           |    17 |   ✅   | 00:00:01.011 |
-| `test_vfs`               | `native_vfs`            |    11 |   ✅   | 00:00:00.734 |
-| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.741 |
-| `test_espnow`            | `native_espnow`         |     7 |   ✅   | 00:00:00.729 |
-| `test_oauth2`            | `native_oauth2`         |     8 |   ✅   | 00:00:00.760 |
-| `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.878 |
-| `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.799 |
-| `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.414 |
-| `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.386 |
-| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.756 |
-| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.943 |
-| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.727 |
-| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.728 |
-| `test_rtc`               | `native_rtc`            |     8 |   ✅   | 00:00:00.742 |
-| `test_ld2410`            | `native_ld2410`         |     7 |   ✅   | 00:00:00.739 |
-| `test_mpr121`            | `native_mpr121`         |     5 |   ✅   | 00:00:00.720 |
-| `test_sht3x`             | `native_sht3x`          |     5 |   ✅   | 00:00:00.723 |
-| `test_pca9685`           | `native_pca9685`        |     4 |   ✅   | 00:00:00.727 |
-| `test_ads1115`           | `native_ads1115`        |     3 |   ✅   | 00:00:00.712 |
-| `test_ina219`            | `native_ina219`         |     4 |   ✅   | 00:00:00.722 |
-| `test_hpack`             | `native_hpack`          |    14 |   ✅   | 00:00:00.890 |
-| `test_h2_frame`          | `native_h2frame`        |     6 |   ✅   | 00:00:00.728 |
-| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.123 |
-| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.714 |
-| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.744 |
-| `test_jwt`               | `native_jwt`            |    21 |   ✅   | 00:00:00.811 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.439 |
-| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.749 |
-| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.781 |
-| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.744 |
-| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.794 |
-| `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.760 |
-| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.758 |
-| `test_inflate`           | `native_inflate`        |    12 |   ✅   | 00:00:00.730 |
-| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.780 |
-| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.807 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.315 |
-| `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.346 |
-| `test_time_source`       | `native_time_source`    |     9 |   ✅   | 00:00:00.705 |
-| `test_config_store`      | `native_config_store`   |    14 |   ✅   | 00:00:00.733 |
-| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.758 |
-| `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.763 |
-| `test_csrf`              | `native_csrf`           |     9 |   ✅   | 00:00:00.789 |
-| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.752 |
-| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.742 |
-| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.707 |
-| `test_partition_monitor` | `native_partition`      |     5 |   ✅   | 00:00:00.715 |
-| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.725 |
-| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.752 |
-| `test_gpio_map`          | `native_gpio_map`       |     8 |   ✅   | 00:00:00.736 |
-| `test_udp_telemetry`     | `native_udp_telemetry`  |     7 |   ✅   | 00:00:00.726 |
-| `test_statsd`            | `native_statsd`         |     9 |   ✅   | 00:00:00.766 |
-| `test_guardrails`        | `native_guardrails`     |     6 |   ✅   | 00:00:00.725 |
-| `test_failsafe`          | `native_failsafe`       |     6 |   ✅   | 00:00:00.740 |
-| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.722 |
-| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.731 |
-| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.701 |
-| `test_dshot`             | `native_dshot`          |     7 |   ✅   | 00:00:00.723 |
-| `test_hart`              | `native_hart`           |     6 |   ✅   | 00:00:00.716 |
-| `test_nts`               | `native_nts`            |     4 |   ✅   | 00:00:00.725 |
-| `test_dds`               | `native_dds`            |     4 |   ✅   | 00:00:00.732 |
-| `test_xmpp`              | `native_xmpp`           |     6 |   ✅   | 00:00:00.737 |
-| `test_rawl2`             | `native_rawl2`          |     4 |   ✅   | 00:00:00.731 |
-| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.707 |
-| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.721 |
-| `test_mtconnect`         | `native_mtconnect`      |     4 |   ✅   | 00:00:00.731 |
-| `test_j2735`             | `native_j2735`          |     9 |   ✅   | 00:00:00.727 |
-| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.719 |
-| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.724 |
-| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.730 |
-| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.732 |
-| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.728 |
-| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.721 |
-| `test_openadr`           | `native_openadr`        |     4 |   ✅   | 00:00:00.720 |
-| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.730 |
-| `test_cclink`            | `native_cclink`         |     4 |   ✅   | 00:00:00.721 |
-| `test_powerlink`         | `native_powerlink`      |     3 |   ✅   | 00:00:00.718 |
-| `test_sercos`            | `native_sercos`         |     3 |   ✅   | 00:00:00.718 |
-| `test_profibus`          | `native_profibus`       |     4 |   ✅   | 00:00:00.726 |
-| `test_lonworks`          | `native_lonworks`       |     4 |   ✅   | 00:00:00.723 |
-| `test_mbplus`            | `native_mbplus`         |     5 |   ✅   | 00:00:00.720 |
-| `test_interbus`          | `native_interbus`       |     4 |   ✅   | 00:00:00.725 |
-| `test_iccp`              | `native_iccp`           |     4 |   ✅   | 00:00:00.745 |
-| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.726 |
-| `test_utmc`              | `native_utmc`           |     5 |   ✅   | 00:00:00.714 |
-| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.716 |
-| `test_atc`               | `native_atc`            |     4 |   ✅   | 00:00:00.724 |
-| `test_southbound`        | `native_southbound`     |     5 |   ✅   | 00:00:00.718 |
-| `test_exc_decoder`       | `native_exc_decoder`    |     5 |   ✅   | 00:00:00.733 |
-| `test_http_delivery`     | `native_http_delivery`  |     6 |   ✅   | 00:00:00.717 |
-| `test_hw_health`         | `native_hw_health`      |     5 |   ✅   | 00:00:00.755 |
-| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     4 |   ✅   | 00:00:00.717 |
-| `test_sockpool`          | `native_sockpool`       |     5 |   ✅   | 00:00:00.728 |
-| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.724 |
-| `test_happy_eyeballs`    | `native_happy_eyeballs` |     4 |   ✅   | 00:00:00.756 |
-| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     5 |   ✅   | 00:00:00.722 |
-| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.727 |
-| `test_cc1101`            | `native_cc1101`         |    10 |   ✅   | 00:00:00.723 |
-| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.723 |
-| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.721 |
-| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.702 |
-| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.724 |
-| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.728 |
-| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.722 |
-| `test_wisun`             | `native_wisun`          |     6 |   ✅   | 00:00:00.754 |
-| `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.725 |
-| `test_config_io`         | `native_config_io`      |     4 |   ✅   | 00:00:00.752 |
-| `test_workers`           | `native_workers`        |     3 |   ✅   | 00:00:00.862 |
-| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.705 |
-| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.855 |
-| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.670 |
-| `test_qpack`             | `native_qpack`          |     9 |   ✅   | 00:00:00.861 |
-| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.718 |
-| `test_quic_frame`        | `native_quic_frame`     |     8 |   ✅   | 00:00:00.756 |
-| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.862 |
-| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.802 |
-| `test_quic_tp`           | `native_quic_tp`        |     7 |   ✅   | 00:00:00.755 |
-| `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.878 |
-| `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:01.144 |
-| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.250 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.200 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.225 |
-| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.304 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.023 |
-| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.781 |
+| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:03.927 |
+| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.773 |
+| `test_det_ip`            | `native_det_ip`         |    10 |   ✅   | 00:00:00.768 |
+| `test_det_arena`         | `native_det_arena`      |    17 |   ✅   | 00:00:00.777 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.851 |
+| `test_crypto_kat`        | `native_crypto_kat`     |     8 |   ✅   | 00:00:02.659 |
+| `test_promisc`           | `native_promisc`        |     8 |   ✅   | 00:00:00.778 |
+| `test_bus_capture`       | `native_bus_capture`    |     5 |   ✅   | 00:00:00.787 |
+| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.804 |
+| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.794 |
+| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.811 |
+| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.782 |
+| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.780 |
+| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.771 |
+| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.773 |
+| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.789 |
+| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.782 |
+| `test_sse`               | `native`                |    37 |   ✅   | 00:00:01.362 |
+| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.711 |
+| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.756 |
+| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.754 |
+| `test_websocket`         | `native`                |    68 |   ✅   | 00:00:00.790 |
+| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.740 |
+| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.911 |
+| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.328 |
+| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.844 |
+| `test_provisioning`      | `native_prov`           |     5 |   ✅   | 00:00:00.788 |
+| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.425 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.767 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.093 |
+| `test_ssh_transport`     | `native_ssh`            |    34 |   ✅   | 00:00:01.961 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.755 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.343 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:02.058 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.631 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.737 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.719 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.650 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.731 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.735 |
+| `test_json`              | `native_app`            |    23 |   ✅   | 00:00:00.692 |
+| `test_response_headers`  | `native_app`            |    11 |   ✅   | 00:00:00.752 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.754 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.786 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.733 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.723 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.786 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.758 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.781 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.736 |
+| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.747 |
+| `test_application`       | `native_app`            |    59 |   ✅   | 00:00:00.910 |
+| `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.703 |
+| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.611 |
+| `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.862 |
+| `test_snmp_agent`        | `native_snmp`           |    19 |   ✅   | 00:00:00.658 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.665 |
+| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:01.033 |
+| `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.957 |
+| `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.984 |
+| `test_webdav`            | `native_webdav`         |    19 |   ✅   | 00:00:00.793 |
+| `test_modbus`            | `native_modbus`         |    22 |   ✅   | 00:00:00.794 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.935 |
+| `test_redis_resp`        | `native_redis`          |     8 |   ✅   | 00:00:00.788 |
+| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.798 |
+| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.794 |
+| `test_flow_export`       | `native_flow_export`    |     6 |   ✅   | 00:00:00.818 |
+| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.807 |
+| `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.844 |
+| `test_dma`               | `native_dma`            |    11 |   ✅   | 00:00:00.954 |
+| `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:01.052 |
+| `test_gateway`           | `native_gateway`        |    11 |   ✅   | 00:00:00.940 |
+| `test_lora`              | `native_lora`           |    13 |   ✅   | 00:00:00.783 |
+| `test_nrf24`             | `native_nrf24`          |    10 |   ✅   | 00:00:00.798 |
+| `test_enocean`           | `native_enocean`        |     9 |   ✅   | 00:00:00.793 |
+| `test_pn532`             | `native_pn532`          |    10 |   ✅   | 00:00:00.783 |
+| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.782 |
+| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.797 |
+| `test_zigbee`            | `native_zigbee`         |     9 |   ✅   | 00:00:00.791 |
+| `test_thread`            | `native_thread`         |    13 |   ✅   | 00:00:00.787 |
+| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.838 |
+| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.791 |
+| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.804 |
+| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.788 |
+| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.800 |
+| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.800 |
+| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.795 |
+| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.780 |
+| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.889 |
+| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.784 |
+| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.779 |
+| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.791 |
+| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.797 |
+| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.772 |
+| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.794 |
+| `test_amqp`              | `native_amqp`           |     7 |   ✅   | 00:00:00.785 |
+| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.771 |
+| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.792 |
+| `test_proxy_protocol`    | `native_proxy_protocol` |     8 |   ✅   | 00:00:00.782 |
+| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.833 |
+| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.825 |
+| `test_ota_rollback`      | `native_ota_rollback`   |     5 |   ✅   | 00:00:00.757 |
+| `test_totp`              | `native_totp`           |     4 |   ✅   | 00:00:00.829 |
+| `test_webhook`           | `native_webhook`        |     5 |   ✅   | 00:00:00.796 |
+| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.770 |
+| `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.773 |
+| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.861 |
+| `test_oidc`              | `native_oidc`           |    17 |   ✅   | 00:00:01.080 |
+| `test_vfs`               | `native_vfs`            |    11 |   ✅   | 00:00:00.818 |
+| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.818 |
+| `test_espnow`            | `native_espnow`         |     7 |   ✅   | 00:00:00.776 |
+| `test_oauth2`            | `native_oauth2`         |     8 |   ✅   | 00:00:00.826 |
+| `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.939 |
+| `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.851 |
+| `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.540 |
+| `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.491 |
+| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.818 |
+| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:01.043 |
+| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.773 |
+| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.793 |
+| `test_rtc`               | `native_rtc`            |     8 |   ✅   | 00:00:00.786 |
+| `test_ld2410`            | `native_ld2410`         |     7 |   ✅   | 00:00:00.782 |
+| `test_mpr121`            | `native_mpr121`         |     5 |   ✅   | 00:00:00.786 |
+| `test_sht3x`             | `native_sht3x`          |     5 |   ✅   | 00:00:00.781 |
+| `test_pca9685`           | `native_pca9685`        |     4 |   ✅   | 00:00:00.790 |
+| `test_ads1115`           | `native_ads1115`        |     3 |   ✅   | 00:00:00.764 |
+| `test_ina219`            | `native_ina219`         |     4 |   ✅   | 00:00:00.745 |
+| `test_hpack`             | `native_hpack`          |    14 |   ✅   | 00:00:00.967 |
+| `test_h2_frame`          | `native_h2frame`        |     6 |   ✅   | 00:00:00.803 |
+| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.191 |
+| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.790 |
+| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.807 |
+| `test_jwt`               | `native_jwt`            |    21 |   ✅   | 00:00:00.892 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.545 |
+| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.804 |
+| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.840 |
+| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.797 |
+| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.849 |
+| `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.826 |
+| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.819 |
+| `test_inflate`           | `native_inflate`        |    12 |   ✅   | 00:00:00.788 |
+| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.849 |
+| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.876 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.444 |
+| `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.439 |
+| `test_time_source`       | `native_time_source`    |     9 |   ✅   | 00:00:00.767 |
+| `test_config_store`      | `native_config_store`   |    14 |   ✅   | 00:00:00.790 |
+| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.819 |
+| `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.828 |
+| `test_csrf`              | `native_csrf`           |     9 |   ✅   | 00:00:00.851 |
+| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.806 |
+| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.810 |
+| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.764 |
+| `test_partition_monitor` | `native_partition`      |     5 |   ✅   | 00:00:00.790 |
+| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.793 |
+| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.806 |
+| `test_gpio_map`          | `native_gpio_map`       |     8 |   ✅   | 00:00:00.793 |
+| `test_udp_telemetry`     | `native_udp_telemetry`  |     7 |   ✅   | 00:00:00.778 |
+| `test_statsd`            | `native_statsd`         |     9 |   ✅   | 00:00:00.813 |
+| `test_guardrails`        | `native_guardrails`     |     6 |   ✅   | 00:00:00.791 |
+| `test_failsafe`          | `native_failsafe`       |     6 |   ✅   | 00:00:00.795 |
+| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.763 |
+| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.767 |
+| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.782 |
+| `test_dshot`             | `native_dshot`          |     7 |   ✅   | 00:00:00.784 |
+| `test_hart`              | `native_hart`           |     6 |   ✅   | 00:00:00.786 |
+| `test_nts`               | `native_nts`            |     4 |   ✅   | 00:00:00.803 |
+| `test_dds`               | `native_dds`            |     4 |   ✅   | 00:00:00.787 |
+| `test_xmpp`              | `native_xmpp`           |     6 |   ✅   | 00:00:00.784 |
+| `test_rawl2`             | `native_rawl2`          |     4 |   ✅   | 00:00:00.788 |
+| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.753 |
+| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.778 |
+| `test_mtconnect`         | `native_mtconnect`      |     4 |   ✅   | 00:00:00.808 |
+| `test_j2735`             | `native_j2735`          |     9 |   ✅   | 00:00:00.807 |
+| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.774 |
+| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.788 |
+| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.795 |
+| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.796 |
+| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.771 |
+| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.786 |
+| `test_openadr`           | `native_openadr`        |     4 |   ✅   | 00:00:00.782 |
+| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.774 |
+| `test_cclink`            | `native_cclink`         |     4 |   ✅   | 00:00:00.788 |
+| `test_powerlink`         | `native_powerlink`      |     3 |   ✅   | 00:00:00.793 |
+| `test_sercos`            | `native_sercos`         |     3 |   ✅   | 00:00:00.779 |
+| `test_profibus`          | `native_profibus`       |     4 |   ✅   | 00:00:00.751 |
+| `test_lonworks`          | `native_lonworks`       |     4 |   ✅   | 00:00:00.791 |
+| `test_mbplus`            | `native_mbplus`         |     5 |   ✅   | 00:00:00.790 |
+| `test_interbus`          | `native_interbus`       |     4 |   ✅   | 00:00:00.794 |
+| `test_iccp`              | `native_iccp`           |     4 |   ✅   | 00:00:00.770 |
+| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.789 |
+| `test_utmc`              | `native_utmc`           |     5 |   ✅   | 00:00:00.775 |
+| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.787 |
+| `test_atc`               | `native_atc`            |     4 |   ✅   | 00:00:00.791 |
+| `test_southbound`        | `native_southbound`     |     5 |   ✅   | 00:00:00.775 |
+| `test_exc_decoder`       | `native_exc_decoder`    |     5 |   ✅   | 00:00:00.770 |
+| `test_http_delivery`     | `native_http_delivery`  |     6 |   ✅   | 00:00:00.777 |
+| `test_hw_health`         | `native_hw_health`      |     5 |   ✅   | 00:00:00.774 |
+| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     4 |   ✅   | 00:00:00.772 |
+| `test_sockpool`          | `native_sockpool`       |     5 |   ✅   | 00:00:00.796 |
+| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.785 |
+| `test_happy_eyeballs`    | `native_happy_eyeballs` |     4 |   ✅   | 00:00:00.834 |
+| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     5 |   ✅   | 00:00:00.783 |
+| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.779 |
+| `test_cc1101`            | `native_cc1101`         |    10 |   ✅   | 00:00:00.772 |
+| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.770 |
+| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.782 |
+| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.778 |
+| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.775 |
+| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.775 |
+| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.784 |
+| `test_wisun`             | `native_wisun`          |     6 |   ✅   | 00:00:00.821 |
+| `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.774 |
+| `test_config_io`         | `native_config_io`      |     4 |   ✅   | 00:00:00.837 |
+| `test_workers`           | `native_workers`        |     3 |   ✅   | 00:00:00.932 |
+| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.764 |
+| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.915 |
+| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.380 |
+| `test_qpack`             | `native_qpack`          |     9 |   ✅   | 00:00:00.927 |
+| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.784 |
+| `test_quic_frame`        | `native_quic_frame`     |     8 |   ✅   | 00:00:00.817 |
+| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.947 |
+| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.860 |
+| `test_quic_tp`           | `native_quic_tp`        |     7 |   ✅   | 00:00:00.818 |
+| `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.943 |
+| `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:01.231 |
+| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.341 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.305 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.329 |
+| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.394 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.159 |
+| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.860 |
 
 ---
 
-## test_canopen - ✅ 17 passed
+## test_canopen - native_canopen - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -276,7 +276,7 @@ _Unit tests for the CANopen (CiA 301) message codec (services/canopen): NMT, SYN
 
 ---
 
-## test_det_primitives - ✅ 5 passed
+## test_det_primitives - native_det_primitives - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -295,7 +295,7 @@ _Unit tests for the shared no-stdlib primitives: the base-10 number parsers_
 
 ---
 
-## test_det_ip - ✅ 10 passed
+## test_det_ip - native_det_ip - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -319,7 +319,7 @@ _Unit tests for the DetIp address core (network_drivers/network/det_ip): RFC 429
 
 ---
 
-## test_det_arena - ✅ 17 passed
+## test_det_arena - native_det_arena - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -350,7 +350,7 @@ _Unit tests for the unified double-ended arena (network_drivers/session/det_aren
 
 ---
 
-## test_ssh_ed25519 - ✅ 16 passed
+## test_ssh_ed25519 - native_ssh_ed25519 - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -380,7 +380,7 @@ _Known-answer tests for the modern SSH crypto suite (curve25519-sha256 KEX +_
 
 ---
 
-## test_crypto_kat - ✅ 8 passed
+## test_crypto_kat - native_crypto_kat - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -402,7 +402,7 @@ _Data-driven external known-answer tests (KAT) for the library's crypto_
 
 ---
 
-## test_promisc - ✅ 8 passed
+## test_promisc - native_promisc - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -424,7 +424,7 @@ _Unit tests for the Wi-Fi promiscuous capture helpers (services/promisc): the pu
 
 ---
 
-## test_bus_capture - ✅ 5 passed
+## test_bus_capture - native_bus_capture - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -443,7 +443,7 @@ _Unit tests for the CAN listen-only capture framing (services/bus_capture): can_
 
 ---
 
-## test_j1939 - ✅ 11 passed
+## test_j1939 - native_j1939 - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -468,7 +468,7 @@ _Unit tests for the SAE J1939 codec (services/j1939): 29-bit id encode/decode (P
 
 ---
 
-## test_devicenet - ✅ 11 passed
+## test_devicenet - native_devicenet - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -493,7 +493,7 @@ _Unit tests for the DeviceNet link-adaptation codec (services/devicenet): the 4-
 
 ---
 
-## test_nmea2000 - ✅ 7 passed
+## test_nmea2000 - native_nmea2000 - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -514,7 +514,7 @@ _Unit tests for the NMEA 2000 codec (services/nmea2000): single-frame messages (
 
 ---
 
-## test_mbus - ✅ 12 passed
+## test_mbus - native_mbus - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -540,7 +540,7 @@ _Unit tests for the wired M-Bus codec (services/mbus): the ACK / short / long fr
 
 ---
 
-## test_iec60870 - ✅ 13 passed
+## test_iec60870 - native_iec60870 - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -567,7 +567,7 @@ _Unit tests for the IEC 60870-5-101/-104 codec (services/iec60870): the -104 APC
 
 ---
 
-## test_sdi12 - ✅ 7 passed
+## test_sdi12 - native_sdi12 - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -588,7 +588,7 @@ _Unit tests for the SDI-12 codec (services/sdi12): the command builders, the mea
 
 ---
 
-## test_dmx - ✅ 6 passed
+## test_dmx - native_dmx - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -608,7 +608,7 @@ _Unit tests for the DMX512 + RDM codec (services/dmx): the DMX512 slot packet, a
 
 ---
 
-## test_nmea0183 - ✅ 8 passed
+## test_nmea0183 - native_nmea0183 - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -630,7 +630,7 @@ _Unit tests for the NMEA 0183 codec (services/nmea0183): the XOR checksum, sente
 
 ---
 
-## test_iolink - ✅ 6 passed
+## test_iolink - native_iolink - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -650,7 +650,7 @@ _Unit tests for the IO-Link (SDCI) data-link message codec (services/iolink): th
 
 ---
 
-## test_sse - ✅ 37 passed
+## test_sse - native - ✅ 37 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -701,7 +701,7 @@ _Unit and stress tests for the Server-Sent Events connection pool (sse.h/cpp)._
 
 ---
 
-## test_session - ✅ 19 passed
+## test_session - native - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -734,7 +734,7 @@ _Unit, stress, and race-condition tests for Layer 5 (Session)._
 
 ---
 
-## test_presentation - ✅ 63 passed
+## test_presentation - native - ✅ 63 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -811,7 +811,7 @@ _Unit, stress, and race-condition tests for Layer 6 (Presentation)._
 
 ---
 
-## test_transport - ✅ 44 passed
+## test_transport - native - ✅ 44 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -869,7 +869,7 @@ _Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,_
 
 ---
 
-## test_websocket - ✅ 68 passed
+## test_websocket - native - ✅ 68 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -951,7 +951,7 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 
 ---
 
-## test_http_parser - ✅ 93 passed
+## test_http_parser - native - ✅ 93 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1058,7 +1058,7 @@ _Comprehensive unit tests for the standalone HTTP/1.1 parser._
 
 ---
 
-## test_observability - ✅ 17 passed
+## test_observability - native_observability - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1089,7 +1089,7 @@ _Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event_
 
 ---
 
-## test_accept_gate - ✅ 13 passed
+## test_accept_gate - native_accept_gate - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1116,7 +1116,7 @@ _Unit tests for the accept-time connection gates (network_drivers/transport/list
 
 ---
 
-## test_http_ota - ✅ 3 passed
+## test_http_ota - native_ota - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1133,7 +1133,7 @@ _Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than_
 
 ---
 
-## test_provisioning - ✅ 5 passed
+## test_provisioning - native_prov - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1152,7 +1152,7 @@ _Unit tests for detws_prov_form_field(): the x-www-form-urlencoded field_
 
 ---
 
-## test_ssh_crypto - ✅ 45 passed
+## test_ssh_crypto - native_ssh - ✅ 45 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1211,7 +1211,7 @@ _SSH crypto layer test suite._
 
 ---
 
-## test_ssh_auth - ✅ 19 passed
+## test_ssh_auth - native_ssh - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1244,7 +1244,7 @@ _SSH user-authentication tests (RFC 4252): service request/accept, request_
 
 ---
 
-## test_ssh_server - ✅ 26 passed
+## test_ssh_server - native_ssh - ✅ 26 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1284,7 +1284,7 @@ _End-to-end SSH server dispatcher test: drives a full handshake_
 
 ---
 
-## test_ssh_transport - ✅ 34 passed
+## test_ssh_transport - native_ssh - ✅ 34 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1332,7 +1332,7 @@ _SSH transport handshake tests (RFC 4253): identification-string exchange and_
 
 ---
 
-## test_ssh_channel - ✅ 37 passed
+## test_ssh_channel - native_ssh - ✅ 37 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1383,7 +1383,7 @@ _SSH connection-protocol (channel) tests - RFC 4254, including multiplexing_
 
 ---
 
-## test_ssh_hardening - ✅ 2 passed
+## test_ssh_hardening - native_ssh_hardened - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1399,7 +1399,7 @@ _Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is_
 
 ---
 
-## test_ssh_conn - ✅ 12 passed
+## test_ssh_conn - native_ssh_conn - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1425,7 +1425,7 @@ _SSH transport-glue test: drives a PROTO_SSH connection through the real_
 
 ---
 
-## test_regex - ✅ 13 passed
+## test_regex - native_app - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1452,7 +1452,7 @@ _Unit tests for bounded regex routes (DetWebServer::on_regex())._
 
 ---
 
-## test_template - ✅ 6 passed
+## test_template - native_app - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1472,7 +1472,7 @@ _Unit tests for send_template() {{name}} placeholder substitution._
 
 ---
 
-## test_path_params - ✅ 8 passed
+## test_path_params - native_app - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1494,7 +1494,7 @@ _Unit tests for `:name` path parameters and http_get_param()._
 
 ---
 
-## test_digest_vectors - ✅ 4 passed
+## test_digest_vectors - native_app - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1512,7 +1512,7 @@ _Independent-oracle regression test for the Digest-auth math (RFC 7616,_
 
 ---
 
-## test_form_params - ✅ 5 passed
+## test_form_params - native_app - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1531,7 +1531,7 @@ _Unit tests for http_get_form(): application/x-www-form-urlencoded body_
 
 ---
 
-## test_iface - ✅ 7 passed
+## test_iface - native_app - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1552,7 +1552,7 @@ _Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIfa
 
 ---
 
-## test_json - ✅ 23 passed
+## test_json - native_app - ✅ 23 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1589,7 +1589,7 @@ _Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the_
 
 ---
 
-## test_response_headers - ✅ 11 passed
+## test_response_headers - native_app - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1614,7 +1614,7 @@ _Unit tests for custom response headers and cookies:_
 
 ---
 
-## test_middleware - ✅ 9 passed
+## test_middleware - native_app - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1637,7 +1637,7 @@ _Unit tests for the middleware chain (use()) and the built-in rate limiter_
 
 ---
 
-## test_digest_auth - ✅ 11 passed
+## test_digest_auth - native_app - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1662,7 +1662,7 @@ _Unit tests for HTTP Digest authentication (RFC 7616, SHA-256, qop=auth)._
 
 ---
 
-## test_web_terminal - ✅ 9 passed
+## test_web_terminal - native_app - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1685,7 +1685,7 @@ _Unit tests for the WebSocket web-serial terminal (DETWS_ENABLE_WEB_TERMINAL):_
 
 ---
 
-## test_defer - ✅ 3 passed
+## test_defer - native_app - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1702,7 +1702,7 @@ _Phase 3a: the thread-safe app->worker deferred-callback path. On host there is_
 
 ---
 
-## test_multipart - ✅ 19 passed
+## test_multipart - native_app - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1735,7 +1735,7 @@ _Unit tests for multipart/form-data parser (multipart.cpp)._
 
 ---
 
-## test_auth - ✅ 13 passed
+## test_auth - native_app - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1762,7 +1762,7 @@ _Unit tests for HTTP Basic Authentication (per-route)._
 
 ---
 
-## test_file_serving - ✅ 12 passed
+## test_file_serving - native_app - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1788,7 +1788,7 @@ _Unit tests for serve_file()._
 
 ---
 
-## test_dispatch - ✅ 11 passed
+## test_dispatch - native_app - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1813,7 +1813,7 @@ _Dispatch-level RFC 7231 compliance:_
 
 ---
 
-## test_chunked - ✅ 12 passed
+## test_chunked - native_app - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1839,7 +1839,7 @@ _Unit tests for send_chunked() / ChunkedResponse streaming responses._
 
 ---
 
-## test_application - ✅ 59 passed
+## test_application - native_app - ✅ 59 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1912,7 +1912,7 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 
 ---
 
-## test_webdav_handler - ✅ 20 passed
+## test_webdav_handler - native_webdav_handler - ✅ 20 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1946,7 +1946,7 @@ _Host tests for the WebDAV request handler's recursive filesystem operations_
 
 ---
 
-## test_diag - ✅ 2 passed
+## test_diag - native_diag - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1962,7 +1962,7 @@ _Exercises the runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG):_
 
 ---
 
-## test_snmp_ber - ✅ 16 passed
+## test_snmp_ber - native_snmp - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1992,7 +1992,7 @@ _Unit tests for the SNMP ASN.1 BER codec. Encodings are checked against_
 
 ---
 
-## test_snmp_agent - ✅ 19 passed
+## test_snmp_agent - native_snmp - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2025,7 +2025,7 @@ _Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
 
 ---
 
-## test_snmp_v3 - ✅ 19 passed
+## test_snmp_v3 - native_snmp_v3 - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2058,7 +2058,7 @@ _Unit tests for the SNMPv3 USM layer. The test acts as a full SNMP manager:_
 
 ---
 
-## test_telnet - ✅ 15 passed
+## test_telnet - native_telnet - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2087,7 +2087,7 @@ _Telnet server test: drives a PROTO_TELNET connection through the real_
 
 ---
 
-## test_coap - ✅ 43 passed
+## test_coap - native_coap - ✅ 43 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2144,7 +2144,7 @@ _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
 ---
 
-## test_coap - ✅ 45 passed
+## test_coap - native_coap_observe - ✅ 45 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2203,7 +2203,7 @@ _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
 ---
 
-## test_webdav - ✅ 19 passed
+## test_webdav - native_webdav - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2236,7 +2236,7 @@ _Unit tests for the WebDAV server core (services/webdav): method classification,
 
 ---
 
-## test_modbus - ✅ 22 passed
+## test_modbus - native_modbus - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2272,7 +2272,7 @@ _Unit tests for the Modbus TCP slave core (services/modbus): the data model and_
 
 ---
 
-## test_cloudevents - ✅ 8 passed
+## test_cloudevents - native_cloudevents - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2294,7 +2294,7 @@ _Unit tests for the CloudEvents v1.0 envelope (services/cloudevents): the_
 
 ---
 
-## test_redis_resp - ✅ 8 passed
+## test_redis_resp - native_redis - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2316,7 +2316,7 @@ _Unit tests for the Redis RESP2 codec (services/redis_resp): the command encoder
 
 ---
 
-## test_stomp - ✅ 14 passed
+## test_stomp - native_stomp - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2344,7 +2344,7 @@ _Unit tests for the STOMP 1.2 frame codec (services/stomp): the frame builder, t
 
 ---
 
-## test_mqtt_sn - ✅ 13 passed
+## test_mqtt_sn - native_mqtt_sn - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2371,7 +2371,7 @@ _Unit tests for the MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the message
 
 ---
 
-## test_flow_export - ✅ 6 passed
+## test_flow_export - native_flow_export - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2391,7 +2391,7 @@ _Unit tests for the flow-export codec (services/flow_export): NetFlow v5 fixed r
 
 ---
 
-## test_protobuf - ✅ 13 passed
+## test_protobuf - native_protobuf - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2418,7 +2418,7 @@ _Unit tests for the Protocol Buffers wire codec (services/protobuf): the streami
 
 ---
 
-## test_preempt_queue - ✅ 11 passed
+## test_preempt_queue - native_preempt_queue - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2443,7 +2443,7 @@ _Unit tests for the preempting work queue (services/preempt_queue) host core: th
 
 ---
 
-## test_dma - ✅ 11 passed
+## test_dma - native_dma - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2468,7 +2468,7 @@ _Unit tests for the DMA ingest / egress simulator (services/dma) host core: an i
 
 ---
 
-## test_forward - ✅ 16 passed
+## test_forward - native_forward - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2498,7 +2498,7 @@ _Unit tests for the interface forwarding plane (services/forward): default-deny,
 
 ---
 
-## test_gateway - ✅ 11 passed
+## test_gateway - native_gateway - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2523,7 +2523,7 @@ _Unit tests for the radio / wireless gateway bridge (services/gateway): an uplin
 
 ---
 
-## test_lora - ✅ 13 passed
+## test_lora - native_lora - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2550,7 +2550,7 @@ _Unit tests for the LoRa codec + SX127x driver (services/lora). The codec (Radio
 
 ---
 
-## test_nrf24 - ✅ 10 passed
+## test_nrf24 - native_nrf24 - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2574,7 +2574,7 @@ _Unit tests for the nRF24L01+ driver (services/nrf24) against a mock chip that e
 
 ---
 
-## test_enocean - ✅ 9 passed
+## test_enocean - native_enocean - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2597,7 +2597,7 @@ _Unit tests for the EnOcean ESP3 codec (services/enocean): the CRC-8 (poly 0x07)
 
 ---
 
-## test_pn532 - ✅ 10 passed
+## test_pn532 - native_pn532 - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2621,7 +2621,7 @@ _Unit tests for the PN532 NFC frame codec (services/pn532): the normal-informati
 
 ---
 
-## test_sigfox - ✅ 7 passed
+## test_sigfox - native_sigfox - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2642,7 +2642,7 @@ _Unit tests for the Sigfox AT-command codec (services/sigfox): the AT$SF uplink 
 
 ---
 
-## test_zwave - ✅ 9 passed
+## test_zwave - native_zwave - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2665,7 +2665,7 @@ _Unit tests for the Z-Wave Serial API frame codec (services/zwave): the data-fra
 
 ---
 
-## test_zigbee - ✅ 9 passed
+## test_zigbee - native_zigbee - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2688,7 +2688,7 @@ _Unit tests for the Zigbee EZSP / ASH framing codec (services/zigbee): the CRC-1
 
 ---
 
-## test_thread - ✅ 13 passed
+## test_thread - native_thread - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2715,7 +2715,7 @@ _Unit tests for the Thread spinel / HDLC-lite framing codec (services/thread): t
 
 ---
 
-## test_wamp - ✅ 15 passed
+## test_wamp - native_wamp - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2744,7 +2744,7 @@ _Unit tests for the WAMP codec (services/wamp): the message builders (JSON array
 
 ---
 
-## test_sunspec - ✅ 7 passed
+## test_sunspec - native_sunspec - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2765,7 +2765,7 @@ _Unit tests for the SunSpec Modbus codec (services/sunspec): the map writer, the
 
 ---
 
-## test_c37118 - ✅ 6 passed
+## test_c37118 - native_c37118 - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2785,7 +2785,7 @@ _Unit tests for the IEEE C37.118.2 synchrophasor frame codec (services/c37118): 
 
 ---
 
-## test_dnp3 - ✅ 8 passed
+## test_dnp3 - native_dnp3 - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2807,7 +2807,7 @@ _Unit tests for the DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-
 
 ---
 
-## test_grpcweb - ✅ 9 passed
+## test_grpcweb - native_grpcweb - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2830,7 +2830,7 @@ _Unit tests for the gRPC-Web message framing codec (services/grpcweb): the messa
 
 ---
 
-## test_lwm2m_tlv - ✅ 14 passed
+## test_lwm2m_tlv - native_lwm2m_tlv - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2858,7 +2858,7 @@ _Unit tests for the OMA LwM2M TLV codec (services/lwm2m): the writer (raw + type
 
 ---
 
-## test_fins - ✅ 6 passed
+## test_fins - native_fins - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2878,7 +2878,7 @@ _Unit tests for the Omron FINS frame codec (services/fins): the command builder,
 
 ---
 
-## test_hostlink - ✅ 8 passed
+## test_hostlink - native_hostlink - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2900,7 +2900,7 @@ _Unit tests for the Omron Host Link (C-mode) frame codec (services/hostlink): th
 
 ---
 
-## test_senml - ✅ 9 passed
+## test_senml - native_senml - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2923,7 +2923,7 @@ _Unit tests for the SenML (RFC 8428) pack builders (services/senml): SenML-JSON 
 
 ---
 
-## test_df1 - ✅ 10 passed
+## test_df1 - native_df1 - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2947,7 +2947,7 @@ _Unit tests for the Allen-Bradley DF1 full-duplex frame codec (services/df1): th
 
 ---
 
-## test_cotp - ✅ 7 passed
+## test_cotp - native_cotp - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2968,7 +2968,7 @@ _Unit tests for the TPKT + COTP (X.224 class 0) frame codec (services/cotp): the
 
 ---
 
-## test_s7comm - ✅ 9 passed
+## test_s7comm - native_s7comm - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2991,7 +2991,7 @@ _Unit tests for the Siemens S7comm PDU codec (services/s7comm): the Setup Commun
 
 ---
 
-## test_melsec - ✅ 7 passed
+## test_melsec - native_melsec - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3012,7 +3012,7 @@ _Unit tests for the Mitsubishi MELSEC MC binary 3E codec (services/melsec): the 
 
 ---
 
-## test_bacnet - ✅ 9 passed
+## test_bacnet - native_bacnet - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3035,7 +3035,7 @@ _Unit tests for the BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC enve
 
 ---
 
-## test_enip - ✅ 7 passed
+## test_enip - native_enip - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3056,7 +3056,7 @@ _Unit tests for the EtherNet/IP encapsulation codec (services/enip): the header,
 
 ---
 
-## test_amqp - ✅ 7 passed
+## test_amqp - native_amqp - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3077,7 +3077,7 @@ _Unit tests for the AMQP 0-9-1 frame codec (services/amqp): the protocol header,
 
 ---
 
-## test_cip - ✅ 9 passed
+## test_cip - native_cip - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3100,7 +3100,7 @@ _Unit tests for the CIP message codec (services/cip): the EPATH builder, the req
 
 ---
 
-## test_nats - ✅ 14 passed
+## test_nats - native_nats - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3128,7 +3128,7 @@ _Unit tests for the NATS client protocol codec (services/nats): the CONNECT/PUB/
 
 ---
 
-## test_proxy_protocol - ✅ 8 passed
+## test_proxy_protocol - native_proxy_protocol - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3150,7 +3150,7 @@ _Unit tests for the HAProxy PROXY protocol codec (services/proxy_protocol): the 
 
 ---
 
-## test_sparkplug - ✅ 7 passed
+## test_sparkplug - native_sparkplug - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3171,7 +3171,7 @@ _Unit tests for the Sparkplug B codec (services/sparkplug): the topic builder, t
 
 ---
 
-## test_modbus_master - ✅ 5 passed
+## test_modbus_master - native_modbus_master - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3190,7 +3190,7 @@ _Unit tests for the Modbus master codec (services/modbus/modbus_master): request
 
 ---
 
-## test_ota_rollback - ✅ 5 passed
+## test_ota_rollback - native_ota_rollback - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3209,7 +3209,7 @@ _Unit tests for the OTA rollback decision (services/ota_rollback). The esp_ota_
 
 ---
 
-## test_totp - ✅ 4 passed
+## test_totp - native_totp - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3227,7 +3227,7 @@ _Unit tests for TOTP (services/totp): the RFC 6238 Appendix B test vectors_
 
 ---
 
-## test_webhook - ✅ 5 passed
+## test_webhook - native_webhook - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3246,7 +3246,7 @@ _Unit tests for the webhook builders (services/webhook): IFTTT URL + payload_
 
 ---
 
-## test_radio_power - ✅ 2 passed
+## test_radio_power - native_radio_power - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3262,7 +3262,7 @@ _Unit tests for the radio-power mode names (services/radio_power). Applying the_
 
 ---
 
-## test_dns_resolver - ✅ 4 passed
+## test_dns_resolver - native_dns_resolver - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3280,7 +3280,7 @@ _Unit tests for the DNS answer classifier / verifier (services/dns_resolver)._
 
 ---
 
-## test_audit_log - ✅ 16 passed
+## test_audit_log - native_audit_log - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3310,7 +3310,7 @@ _Unit tests for the hash-chained audit log (services/audit_log). Verify the_
 
 ---
 
-## test_oidc - ✅ 17 passed
+## test_oidc - native_oidc - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3341,7 +3341,7 @@ _Unit tests for the OIDC RS256 ID-token verifier (services/oidc). Vectors are_
 
 ---
 
-## test_vfs - ✅ 11 passed
+## test_vfs - native_vfs - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3366,7 +3366,7 @@ _Unit tests for the unified VFS (services/vfs) exercised through its built-in_
 
 ---
 
-## test_graphql - ✅ 32 passed
+## test_graphql - native_graphql - ✅ 32 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3412,7 +3412,7 @@ _Unit tests for the GraphQL query subset (services/graphql): selection shaping,_
 
 ---
 
-## test_espnow - ✅ 7 passed
+## test_espnow - native_espnow - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3433,7 +3433,7 @@ _Unit tests for the ESP-NOW host-testable core (services/espnow): the typed_
 
 ---
 
-## test_oauth2 - ✅ 8 passed
+## test_oauth2 - native_oauth2 - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3455,7 +3455,7 @@ _Unit tests for the OAuth2 token-endpoint client core (services/oauth2): buildin
 
 ---
 
-## test_opcua - ✅ 38 passed
+## test_opcua - native_opcua - ✅ 38 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3507,7 +3507,7 @@ _Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl._
 
 ---
 
-## test_opcua_client - ✅ 14 passed
+## test_opcua_client - native_opcua_client - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3535,7 +3535,7 @@ _Round-trip tests for the OPC UA client (services/opcua_client): the client buil
 
 ---
 
-## test_keepalive - ✅ 10 passed
+## test_keepalive - native_keepalive - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3559,7 +3559,7 @@ _HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
 
 ---
 
-## test_range - ✅ 13 passed
+## test_range - native_range - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3586,7 +3586,7 @@ _HTTP Range requests / 206 Partial Content (DETWS_ENABLE_RANGE). Each test_
 
 ---
 
-## test_syslog - ✅ 10 passed
+## test_syslog - native_syslog - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3610,7 +3610,7 @@ _Unit tests for the RFC 5424 syslog client (syslog_format formatter + syslog_ini
 
 ---
 
-## test_smtp - ✅ 22 passed
+## test_smtp - native_smtp - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3646,7 +3646,7 @@ _Unit tests for the SMTP client dialogue engine (services/smtp/smtp_run). A scri
 
 ---
 
-## test_ntp_server - ✅ 8 passed
+## test_ntp_server - native_ntp_server - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3668,7 +3668,7 @@ _Unit tests for the NTP server response codec (services/ntp_server_build_respons
 
 ---
 
-## test_dns_server - ✅ 13 passed
+## test_dns_server - native_dns_server - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3695,7 +3695,7 @@ _Unit tests for the authoritative DNS server (services/dns_server): the pure res
 
 ---
 
-## test_rtc - ✅ 8 passed
+## test_rtc - native_rtc - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3717,7 +3717,7 @@ _Unit tests for the DS1307/DS3231 RTC conversions (services/rtc): the BCD time r
 
 ---
 
-## test_ld2410 - ✅ 7 passed
+## test_ld2410 - native_ld2410 - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3738,7 +3738,7 @@ _Unit tests for the LD2410 mmWave radar codec (services/ld2410): decoding a basi
 
 ---
 
-## test_mpr121 - ✅ 5 passed
+## test_mpr121 - native_mpr121 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3757,7 +3757,7 @@ _Unit tests for the MPR121 capacitive-touch codec (services/mpr121): decoding th
 
 ---
 
-## test_sht3x - ✅ 5 passed
+## test_sht3x - native_sht3x - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3776,7 +3776,7 @@ _Unit tests for the Sensirion SHT3x codec (services/sht3x): the CRC-8 against th
 
 ---
 
-## test_pca9685 - ✅ 4 passed
+## test_pca9685 - native_pca9685 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3794,7 +3794,7 @@ _Unit tests for the PCA9685 PWM/servo codec (services/pca9685): the PRESCALE com
 
 ---
 
-## test_ads1115 - ✅ 3 passed
+## test_ads1115 - native_ads1115 - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3811,7 +3811,7 @@ _Unit tests for the ADS1115 ADC codec (services/ads1115): building the 16-bit co
 
 ---
 
-## test_ina219 - ✅ 4 passed
+## test_ina219 - native_ina219 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3829,7 +3829,7 @@ _Unit tests for the INA219 current/power codec (services/ina219): decoding the b
 
 ---
 
-## test_hpack - ✅ 14 passed
+## test_hpack - native_hpack - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3857,7 +3857,7 @@ _Unit tests for the HPACK codec (network_drivers/presentation/http2/hpack) again
 
 ---
 
-## test_h2_frame - ✅ 6 passed
+## test_h2_frame - native_h2frame - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3877,7 +3877,7 @@ _Unit tests for the HTTP/2 frame layer (network_drivers/presentation/http2/h2_fr
 
 ---
 
-## test_h2_conn - ✅ 22 passed
+## test_h2_conn - native_h2conn - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3913,7 +3913,7 @@ _Unit tests for the HTTP/2 connection engine (network_drivers/presentation/http2
 
 ---
 
-## test_quic_varint - ✅ 3 passed
+## test_quic_varint - native_quic_varint - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3930,7 +3930,7 @@ _Unit tests for the QUIC variable-length integer codec (network_drivers/presenta
 
 ---
 
-## test_h3_frame - ✅ 7 passed
+## test_h3_frame - native_h3frame - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3951,7 +3951,7 @@ _Unit tests for the HTTP/3 framing layer (network_drivers/presentation/http3/h3_
 
 ---
 
-## test_jwt - ✅ 21 passed
+## test_jwt - native_jwt - ✅ 21 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3986,7 +3986,7 @@ _Unit tests for the JWT HS256 verifier. The reference token below was produced_
 
 ---
 
-## test_upload - ✅ 3 passed
+## test_upload - native_upload - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4003,7 +4003,7 @@ _Streaming file upload (DETWS_ENABLE_UPLOAD): a POST body is streamed straight_
 
 ---
 
-## test_http_client - ✅ 15 passed
+## test_http_client - native_http_client - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4032,7 +4032,7 @@ _Unit tests for the outbound HTTP client's pure core: URL parsing, request_
 
 ---
 
-## test_compliance - ✅ 15 passed
+## test_compliance - native_compliance - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4061,7 +4061,7 @@ _RFC-compliance suite. Built with production enforcement defaults_
 
 ---
 
-## test_mqtt - ✅ 22 passed
+## test_mqtt - native_mqtt - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4097,7 +4097,7 @@ _Host unit tests for the MQTT 3.1.1 packet codec (env:native_mqtt)._
 
 ---
 
-## test_ws_client - ✅ 16 passed
+## test_ws_client - native_ws_client - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4127,7 +4127,7 @@ _Host unit tests for the outbound WebSocket client codec (env:native_ws_client).
 
 ---
 
-## test_scratch - ✅ 14 passed
+## test_scratch - native_scratch - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4155,7 +4155,7 @@ _Unit tests for the shared per-dispatch scratch arena (session/scratch): bump_
 
 ---
 
-## test_snmp_trap - ✅ 7 passed
+## test_snmp_trap - native_snmp_trap - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4176,7 +4176,7 @@ _Host unit tests for the outbound SNMP notification builder (env:native_snmp_tra
 
 ---
 
-## test_inflate - ✅ 12 passed
+## test_inflate - native_inflate - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4202,7 +4202,7 @@ _Unit tests for the RFC 1951 INFLATE core (network_drivers/presentation/inflate)
 
 ---
 
-## test_deflate - ✅ 10 passed
+## test_deflate - native_deflate - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4226,7 +4226,7 @@ _Unit tests for the RFC 1951 DEFLATE core (network_drivers/presentation/deflate)
 
 ---
 
-## test_ssh_zlib - ✅ 9 passed
+## test_ssh_zlib - native_ssh_zlib - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4249,7 +4249,7 @@ _Unit tests for the SSH server-to-client streaming compressor_
 
 ---
 
-## test_ssh_comp - ✅ 5 passed
+## test_ssh_comp - native_ssh_comp - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4268,7 +4268,7 @@ _Integration test for SSH server-to-client compression WIRING (network_drivers/p
 
 ---
 
-## test_websocket - ✅ 72 passed
+## test_websocket - native_ws_deflate - ✅ 72 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4354,7 +4354,7 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 
 ---
 
-## test_time_source - ✅ 9 passed
+## test_time_source - native_time_source - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4377,7 +4377,7 @@ _Unit tests for the multi-source time fallback matrix (services/time_source):_
 
 ---
 
-## test_config_store - ✅ 14 passed
+## test_config_store - native_config_store - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4405,7 +4405,7 @@ _Unit tests for the typed NVS config store (services/config_store), exercised_
 
 ---
 
-## test_device_id - ✅ 4 passed
+## test_device_id - native_device_id - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4423,7 +4423,7 @@ _Unit tests for the MAC-derived device UUID (services/device_id). The expected_
 
 ---
 
-## test_auth_lockout - ✅ 11 passed
+## test_auth_lockout - native_auth_lockout - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4448,7 +4448,7 @@ _Unit tests for the per-peer brute-force auth lockout (services/auth_lockout)._
 
 ---
 
-## test_csrf - ✅ 9 passed
+## test_csrf - native_csrf - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4471,7 +4471,7 @@ _Unit tests for the stateless HMAC-signed CSRF token (services/csrf). A fixed_
 
 ---
 
-## test_telemetry - ✅ 8 passed
+## test_telemetry - native_telemetry - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4493,7 +4493,7 @@ _Unit tests for the telemetry math helpers (services/telemetry): moving-window_
 
 ---
 
-## test_dashboard - ✅ 15 passed
+## test_dashboard - native_dashboard - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4522,7 +4522,7 @@ _Unit tests for the dashboard widget-table JSON serializers (services/dashboard_
 
 ---
 
-## test_net_egress - ✅ 6 passed
+## test_net_egress - native_net_egress - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4542,7 +4542,7 @@ _Unit tests for egress-interface reporting (network_drivers/physical). The lwIP_
 
 ---
 
-## test_partition_monitor - ✅ 5 passed
+## test_partition_monitor - native_partition - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4561,7 +4561,7 @@ _Unit tests for the partition-map core (services/partition_monitor): the_
 
 ---
 
-## test_cbor - ✅ 21 passed
+## test_cbor - native_cbor - ✅ 21 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4596,7 +4596,7 @@ _Unit tests for the CBOR encoder (network_drivers/presentation/cbor). Expected_
 
 ---
 
-## test_msgpack - ✅ 23 passed
+## test_msgpack - native_msgpack - ✅ 23 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4633,7 +4633,7 @@ _Unit tests for the MessagePack encoder and decoder_
 
 ---
 
-## test_gpio_map - ✅ 8 passed
+## test_gpio_map - native_gpio_map - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4655,7 +4655,7 @@ _Unit tests for the GPIO pin-mapper core (services/gpio_map): the direction_
 
 ---
 
-## test_udp_telemetry - ✅ 7 passed
+## test_udp_telemetry - native_udp_telemetry - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4676,7 +4676,7 @@ _Unit tests for the UDP telemetry line builder (services/udp_telemetry): the_
 
 ---
 
-## test_statsd - ✅ 9 passed
+## test_statsd - native_statsd - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4699,7 +4699,7 @@ _Unit tests for the StatsD client (services/statsd): the pure line formatter_
 
 ---
 
-## test_guardrails - ✅ 6 passed
+## test_guardrails - native_guardrails - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4719,7 +4719,7 @@ _Unit tests for the guardrails core (services/guardrails): the threshold_
 
 ---
 
-## test_failsafe - ✅ 6 passed
+## test_failsafe - native_failsafe - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4739,7 +4739,7 @@ _Host tests for services/failsafe: the software watchdog / deadlock detector. Us
 
 ---
 
-## test_sleep_sched - ✅ 8 passed
+## test_sleep_sched - native_sleep_sched - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4761,7 +4761,7 @@ _Host tests for services/sleep_sched: the dynamic sleep-cycle decision core. Pur
 
 ---
 
-## test_wearlevel - ✅ 5 passed
+## test_wearlevel - native_wearlevel - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4780,7 +4780,7 @@ _Host tests for services/wearlevel: the flash wear-leveling slot selector._
 
 ---
 
-## test_netadapt - ✅ 6 passed
+## test_netadapt - native_netadapt - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4800,7 +4800,7 @@ _Host tests for services/netadapt: TCP window sizing by free RAM + DHCP->static 
 
 ---
 
-## test_dshot - ✅ 7 passed
+## test_dshot - native_dshot - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4821,7 +4821,7 @@ _Host tests for services/dshot: the DShot ESC throttle frame codec (hand-compute
 
 ---
 
-## test_hart - ✅ 6 passed
+## test_hart - native_hart - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4841,7 +4841,7 @@ _Host tests for services/hart: the HART command frame + HART-IP header codec._
 
 ---
 
-## test_nts - ✅ 4 passed
+## test_nts - native_nts - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4859,7 +4859,7 @@ _Host tests for services/nts: the NTS-KE record + NTS NTP extension-field wire c
 
 ---
 
-## test_dds - ✅ 4 passed
+## test_dds - native_dds - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4877,7 +4877,7 @@ _Host tests for services/dds: the RTPS message + submessage framing codec._
 
 ---
 
-## test_xmpp - ✅ 6 passed
+## test_xmpp - native_xmpp - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4897,7 +4897,7 @@ _Host tests for services/xmpp: the XMPP stanza builder + minimal reader._
 
 ---
 
-## test_rawl2 - ✅ 4 passed
+## test_rawl2 - native_rawl2 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4915,7 +4915,7 @@ _Host tests for services/rawl2: the Ethernet II / 802.1Q frame codec + the FCS._
 
 ---
 
-## test_spa_router - ✅ 2 passed
+## test_spa_router - native_spa_router - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4931,7 +4931,7 @@ _Host tests for services/spa_router: the single-page-app routing decision._
 
 ---
 
-## test_goose - ✅ 4 passed
+## test_goose - native_goose - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4949,7 +4949,7 @@ _Host tests for services/goose: the IEC 61850 GOOSE BER PDU + Ethernet frame cod
 
 ---
 
-## test_mtconnect - ✅ 4 passed
+## test_mtconnect - native_mtconnect - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4967,7 +4967,7 @@ _Host tests for services/mtconnect: the MTConnectStreams + MTConnectError docume
 
 ---
 
-## test_j2735 - ✅ 9 passed
+## test_j2735 - native_j2735 - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4990,7 +4990,7 @@ _Host tests for services/j2735: the ASN.1 UPER primitive codec + the BSMcore blo
 
 ---
 
-## test_nema_ts2 - ✅ 4 passed
+## test_nema_ts2 - native_nema_ts2 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5008,7 +5008,7 @@ _Host tests for services/nema_ts2: the TS 2 SDLC frame codec + CRC-16/X-25._
 
 ---
 
-## test_snp - ✅ 5 passed
+## test_snp - native_snp - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5027,7 +5027,7 @@ _Host tests for services/snp: the GE Fanuc SNP serial frame codec._
 
 ---
 
-## test_directnet - ✅ 5 passed
+## test_directnet - native_directnet - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5046,7 +5046,7 @@ _Host tests for services/directnet: the DirectNET serial frame codec._
 
 ---
 
-## test_sep2 - ✅ 5 passed
+## test_sep2 - native_sep2 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5065,7 +5065,7 @@ _Host tests for services/sep2: the IEEE 2030.5 resource document builders._
 
 ---
 
-## test_profinet - ✅ 5 passed
+## test_profinet - native_profinet - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5084,7 +5084,7 @@ _Host tests for services/profinet: the PROFINET DCP frame codec._
 
 ---
 
-## test_ntcip - ✅ 3 passed
+## test_ntcip - native_ntcip - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5101,7 +5101,7 @@ _Host tests for services/ntcip: the NTCIP object OID definitions + the OID build
 
 ---
 
-## test_openadr - ✅ 4 passed
+## test_openadr - native_openadr - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5119,7 +5119,7 @@ _Host tests for services/openadr: the OpenADR 3.0 event / report JSON builders._
 
 ---
 
-## test_mms - ✅ 11 passed
+## test_mms - native_mms - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5144,7 +5144,7 @@ _Host tests for services/mms: the IEC 61850 MMS Read PDU codec._
 
 ---
 
-## test_cclink - ✅ 4 passed
+## test_cclink - native_cclink - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5162,7 +5162,7 @@ _Host tests for services/cclink: the CC-Link cyclic frame codec + process-image 
 
 ---
 
-## test_powerlink - ✅ 3 passed
+## test_powerlink - native_powerlink - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5179,7 +5179,7 @@ _Host tests for services/powerlink: the Ethernet POWERLINK basic frame codec._
 
 ---
 
-## test_sercos - ✅ 3 passed
+## test_sercos - native_sercos - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5196,7 +5196,7 @@ _Host tests for services/sercos: the SERCOS III telegram + IDN codec._
 
 ---
 
-## test_profibus - ✅ 4 passed
+## test_profibus - native_profibus - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5214,7 +5214,7 @@ _Host tests for services/profibus: the PROFIBUS-DP FDL telegram codec._
 
 ---
 
-## test_lonworks - ✅ 4 passed
+## test_lonworks - native_lonworks - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5232,7 +5232,7 @@ _Host tests for services/lonworks: the LonTalk NV PDU + SNVT scalar codec._
 
 ---
 
-## test_mbplus - ✅ 5 passed
+## test_mbplus - native_mbplus - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5251,7 +5251,7 @@ _Host tests for services/mbplus: the Modbus Plus HDLC token-bus frame codec._
 
 ---
 
-## test_interbus - ✅ 4 passed
+## test_interbus - native_interbus - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5269,7 +5269,7 @@ _Host tests for services/interbus: the summation-frame codec._
 
 ---
 
-## test_iccp - ✅ 4 passed
+## test_iccp - native_iccp - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5287,7 +5287,7 @@ _Host tests for services/iccp: the ICCP / TASE.2 Data_Value codec._
 
 ---
 
-## test_wave - ✅ 9 passed
+## test_wave - native_wave - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5310,7 +5310,7 @@ _Host tests for services/wave: the IEEE 1609 WSMP + 1609.2 envelope + PSID codec
 
 ---
 
-## test_utmc - ✅ 5 passed
+## test_utmc - native_utmc - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5329,7 +5329,7 @@ _Host tests for services/utmc: the UTMC common-database request/response codec._
 
 ---
 
-## test_ocit - ✅ 4 passed
+## test_ocit - native_ocit - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5347,7 +5347,7 @@ _Host tests for services/ocit: the OCIT-Outstations message codec._
 
 ---
 
-## test_atc - ✅ 4 passed
+## test_atc - native_atc - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5365,7 +5365,7 @@ _Host tests for services/atc: the ATC field-I/O interop snapshot._
 
 ---
 
-## test_southbound - ✅ 5 passed
+## test_southbound - native_southbound - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5384,7 +5384,7 @@ _Host tests for services/southbound: the driver registry + name-dispatched read/
 
 ---
 
-## test_exc_decoder - ✅ 5 passed
+## test_exc_decoder - native_exc_decoder - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5403,7 +5403,7 @@ _Host tests for services/exc_decoder: parsing a real ESP32 Guru Meditation panic
 
 ---
 
-## test_http_delivery - ✅ 6 passed
+## test_http_delivery - native_http_delivery - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5423,7 +5423,7 @@ _Host tests for services/http_delivery: RFC 5861 stale-while-revalidate, RFC 723
 
 ---
 
-## test_hw_health - ✅ 5 passed
+## test_hw_health - native_hw_health - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5442,7 +5442,7 @@ _Host tests for services/hw_health: rail droop, SPI CRC backoff, GPIO short, cap
 
 ---
 
-## test_mdns_adaptive - ✅ 4 passed
+## test_mdns_adaptive - native_mdns_adaptive - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5460,7 +5460,7 @@ _Host tests for services/mdns_adaptive: RF-aware backoff, TTL refresher, auto-sl
 
 ---
 
-## test_sockpool - ✅ 5 passed
+## test_sockpool - native_sockpool - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5479,7 +5479,7 @@ _Host tests for services/sockpool: the LRU connection-slot recycling pool._
 
 ---
 
-## test_psram_pool - ✅ 5 passed
+## test_psram_pool - native_psram_pool - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5498,7 +5498,7 @@ _Host tests for services/psram_pool: DRAM/PSRAM placement policy + DMA ping-pong
 
 ---
 
-## test_happy_eyeballs - ✅ 4 passed
+## test_happy_eyeballs - native_happy_eyeballs - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5516,7 +5516,7 @@ _Host tests for services/happy_eyeballs: RFC 6724 ordering + RFC 8305 family int
 
 ---
 
-## test_wifi_sniffer - ✅ 5 passed
+## test_wifi_sniffer - native_wifi_sniffer - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5535,7 +5535,7 @@ _Host tests for services/wifi_sniffer: 802.11 header decode, traffic tally, roam
 
 ---
 
-## test_link_manager - ✅ 4 passed
+## test_link_manager - native_link_manager - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5553,7 +5553,7 @@ _Host tests for services/link_manager: egress selection, graceful escalation, fa
 
 ---
 
-## test_cc1101 - ✅ 10 passed
+## test_cc1101 - native_cc1101 - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5577,7 +5577,7 @@ _Unit tests for the CC1101 driver (services/cc1101) against a mock chip emulatin
 
 ---
 
-## test_fdc2214 - ✅ 4 passed
+## test_fdc2214 - native_fdc2214 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5595,7 +5595,7 @@ _Host tests for services/fdc2214: the capacitance-to-digital codec (data combine
 
 ---
 
-## test_ldc1614 - ✅ 4 passed
+## test_ldc1614 - native_ldc1614 - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5613,7 +5613,7 @@ _Host tests for services/ldc1614: the inductance-to-digital codec (data combine,
 
 ---
 
-## test_vl53l0x - ✅ 3 passed
+## test_vl53l0x - native_vl53l0x - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5630,7 +5630,7 @@ _Host tests for services/vl53l0x: the ToF ranging codec (range combine, data-rea
 
 ---
 
-## test_radio_sniff - ✅ 4 passed
+## test_radio_sniff - native_radio_sniff - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5648,7 +5648,7 @@ _Host tests for services/radio_sniff: the int->float32 RSSI encode and the 802.1
 
 ---
 
-## test_ble_gatt - ✅ 7 passed
+## test_ble_gatt - native_ble_gatt - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5669,7 +5669,7 @@ _Host tests for services/ble_gatt: the ATT PDU codec + GATT characteristic JSON.
 
 ---
 
-## test_tls_policy - ✅ 4 passed
+## test_tls_policy - native_tls_policy - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5687,7 +5687,7 @@ _Host tests for services/tls_policy: version negotiation, cipher selection, AEAD
 
 ---
 
-## test_wisun - ✅ 6 passed
+## test_wisun - native_wisun - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5707,7 +5707,7 @@ _Host tests for services/wisun: the CoAP client request builder (RFC 7252) + the
 
 ---
 
-## test_logbuf - ✅ 4 passed
+## test_logbuf - native_logbuf - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5725,7 +5725,7 @@ _Unit tests for the rotating log ring (services/logbuf): append order, the_
 
 ---
 
-## test_config_io - ✅ 4 passed
+## test_config_io - native_config_io - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5743,7 +5743,7 @@ _Unit tests for schema-driven config export/restore (services/config_io) over_
 
 ---
 
-## test_workers - ✅ 3 passed
+## test_workers - native_workers - ✅ 3 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5760,7 +5760,7 @@ _Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker
 
 ---
 
-## test_clock - ✅ 7 passed
+## test_clock - native_clock - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5781,7 +5781,7 @@ _Unit tests for the pluggable monotonic clock (services/det_clock): the platform
 
 ---
 
-## test_concurrency - ✅ 2 passed
+## test_concurrency - native_concurrency - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5797,7 +5797,7 @@ _Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /
 
 ---
 
-## test_concurrency - ✅ 2 passed
+## test_concurrency - native_tsan - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5813,7 +5813,7 @@ _Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /
 
 ---
 
-## test_qpack - ✅ 9 passed
+## test_qpack - native_qpack - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5836,7 +5836,7 @@ _Unit tests for the QPACK codec (network_drivers/presentation/http3/qpack, RFC 9
 
 ---
 
-## test_quic_packet - ✅ 8 passed
+## test_quic_packet - native_quic_packet - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5858,7 +5858,7 @@ _Unit tests for the QUIC packet header + packet-number codec (network_drivers/pr
 
 ---
 
-## test_quic_frame - ✅ 8 passed
+## test_quic_frame - native_quic_frame - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5880,7 +5880,7 @@ _Unit tests for the QUIC frame codec (network_drivers/presentation/http3/quic_fr
 
 ---
 
-## test_quic_crypto - ✅ 7 passed
+## test_quic_crypto - native_quic_crypto - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5901,7 +5901,7 @@ _Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/q
 
 ---
 
-## test_tls13_kdf - ✅ 5 passed
+## test_tls13_kdf - native_tls13_kdf - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5920,7 +5920,7 @@ _Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls
 
 ---
 
-## test_quic_tp - ✅ 7 passed
+## test_quic_tp - native_quic_tp - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5941,7 +5941,7 @@ _Unit tests for the QUIC transport-parameters codec (network_drivers/presentatio
 
 ---
 
-## test_tls13_msg - ✅ 10 passed
+## test_tls13_msg - native_tls13_msg - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5965,7 +5965,7 @@ _Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/htt
 
 ---
 
-## test_quic_tls - ✅ 11 passed
+## test_quic_tls - native_quic_tls - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5990,7 +5990,7 @@ _Unit tests for the TLS 1.3 server handshake state machine (network_drivers/pres
 
 ---
 
-## test_quic_conn - ✅ 16 passed
+## test_quic_conn - native_quic_conn - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6020,7 +6020,7 @@ _Unit tests for the QUIC v1 server connection engine (network_drivers/presentati
 
 ---
 
-## test_h3_conn - ✅ 11 passed
+## test_h3_conn - native_h3_conn - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6045,7 +6045,7 @@ _Unit tests for the HTTP/3 application engine (network_drivers/presentation/http
 
 ---
 
-## test_h3_e2e - ✅ 1 passed
+## test_h3_e2e - native_h3_e2e - ✅ 1 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6060,7 +6060,7 @@ _End-to-end capstone for the whole HTTP/3 stack: a QUIC client (in the test) com
 
 ---
 
-## test_quic_server - ✅ 2 passed
+## test_quic_server - native_quic_server - ✅ 2 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6076,7 +6076,7 @@ _HTTP/3 server-glue test: the same end-to-end flow as test_h3_e2e (a QUIC client
 
 ---
 
-## test_h3_server - ✅ 1 passed
+## test_h3_server - native_h3_server - ✅ 1 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6091,7 +6091,7 @@ _HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DetWebS
 
 ---
 
-## test_ssh_chachapoly - ✅ 4 passed
+## test_ssh_chachapoly - native_ssh_chachapoly - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6108,6324 +6108,3 @@ _Unit tests for the chacha20-poly1305@openssh.com cipher and its primitives:_
 </details>
 
 ---
-
-## Raw Output
-
-<details>
-<summary>Expand full pio output</summary>
-
-```
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_canopen in native_canopen environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_canopen/test_canopen.cpp:384: test_nmt_start_node                                                     [PASSED]
-test/test_canopen/test_canopen.cpp:385: test_sync                                                               [PASSED]
-test/test_canopen/test_canopen.cpp:386: test_heartbeat_roundtrip                                                [PASSED]
-test/test_canopen/test_canopen.cpp:387: test_emcy_roundtrip                                                     [PASSED]
-test/test_canopen/test_canopen.cpp:388: test_pdo_roundtrip                                                      [PASSED]
-test/test_canopen/test_canopen.cpp:389: test_sdo_read_request                                                   [PASSED]
-test/test_canopen/test_canopen.cpp:390: test_sdo_write_expedited                                                [PASSED]
-test/test_canopen/test_canopen.cpp:391: test_sdo_upload_response_expedited                                      [PASSED]
-test/test_canopen/test_canopen.cpp:392: test_sdo_abort_roundtrip                                                [PASSED]
-test/test_canopen/test_canopen.cpp:393: test_sdo_download_ack                                                   [PASSED]
-test/test_canopen/test_canopen.cpp:394: test_parse_classifies                                                   [PASSED]
-test/test_canopen/test_canopen.cpp:395: test_build_arg_validation                                               [PASSED]
-test/test_canopen/test_canopen.cpp:396: test_emcy_build_null_msef                                               [PASSED]
-test/test_canopen/test_canopen.cpp:397: test_parse_all_function_codes                                           [PASSED]
-test/test_canopen/test_canopen.cpp:398: test_parse_emcy_rejections                                              [PASSED]
-test/test_canopen/test_canopen.cpp:399: test_parse_heartbeat_rejections                                         [PASSED]
-test/test_canopen/test_canopen.cpp:400: test_parse_sdo_response_variants                                        [PASSED]
-native_canopen:test_canopen Took 3.27 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_canopen  test_canopen  PASSED    00:00:03.271
-================= 17 test cases: 17 succeeded in 00:00:03.271 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_det_primitives in native_det_primitives environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_det_primitives/test_det_primitives.cpp:94: test_strtol                                                [PASSED]
-test/test_det_primitives/test_det_primitives.cpp:95: test_strtoul                                               [PASSED]
-test/test_det_primitives/test_det_primitives.cpp:96: test_strtof                                                [PASSED]
-test/test_det_primitives/test_det_primitives.cpp:97: test_utf8_valid                                            [PASSED]
-test/test_det_primitives/test_det_primitives.cpp:98: test_utf8_invalid                                          [PASSED]
-native_det_primitives:test_det_primitives Took 0.72 seconds --------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment            Test                 Status    Duration
----------------------  -------------------  --------  ------------
-native_det_primitives  test_det_primitives  PASSED    00:00:00.719
-================== 5 test cases: 5 succeeded in 00:00:00.719 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_det_ip in native_det_ip environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_det_ip/test_det_ip.cpp:220: test_v4_round_trip                                                        [PASSED]
-test/test_det_ip/test_det_ip.cpp:221: test_from_v6_bytes                                                        [PASSED]
-test/test_det_ip/test_det_ip.cpp:222: test_is_unspecified                                                       [PASSED]
-test/test_det_ip/test_det_ip.cpp:223: test_prefix_match                                                         [PASSED]
-test/test_det_ip/test_det_ip.cpp:224: test_v6_canonical_5952                                                    [PASSED]
-test/test_det_ip/test_det_ip.cpp:225: test_v4_mapped                                                            [PASSED]
-test/test_det_ip/test_det_ip.cpp:226: test_classify_v4                                                          [PASSED]
-test/test_det_ip/test_det_ip.cpp:227: test_classify_v6                                                          [PASSED]
-test/test_det_ip/test_det_ip.cpp:228: test_reject_malformed                                                     [PASSED]
-test/test_det_ip/test_det_ip.cpp:229: test_equal_and_from_v4                                                    [PASSED]
-native_det_ip:test_det_ip Took 0.71 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_det_ip  test_det_ip  PASSED    00:00:00.714
-================= 10 test cases: 10 succeeded in 00:00:00.714 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_det_arena in native_det_arena environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_det_arena/test_det_arena.cpp:272: test_persist_basic_alloc                                            [PASSED]
-test/test_det_arena/test_det_arena.cpp:273: test_persist_zeroed                                                 [PASSED]
-test/test_det_arena/test_det_arena.cpp:274: test_persist_first_fit_reuse                                        [PASSED]
-test/test_det_arena/test_det_arena.cpp:275: test_persist_coalesce                                               [PASSED]
-test/test_det_arena/test_det_arena.cpp:276: test_persist_free_shrinks_boundary                                  [PASSED]
-test/test_det_arena/test_det_arena.cpp:277: test_scratch_bump_and_reset                                         [PASSED]
-test/test_det_arena/test_det_arena.cpp:278: test_scratch_mark_release                                           [PASSED]
-test/test_det_arena/test_det_arena.cpp:279: test_persist_and_scratch_no_overlap                                 [PASSED]
-test/test_det_arena/test_det_arena.cpp:280: test_boundary_collision_fail_closed                                 [PASSED]
-test/test_det_arena/test_det_arena.cpp:281: test_scratch_reset_frees_middle_for_persist                         [PASSED]
-test/test_det_arena/test_det_arena.cpp:282: test_alignment_various_sizes                                        [PASSED]
-test/test_det_arena/test_det_arena.cpp:283: test_scratch_alignment_16                                           [PASSED]
-test/test_det_arena/test_det_arena.cpp:284: test_zero_size_and_null_free                                        [PASSED]
-test/test_det_arena/test_det_arena.cpp:285: test_set_add_limits                                                 [PASSED]
-test/test_det_arena/test_det_arena.cpp:286: test_set_persist_overflow_and_prefer                                [PASSED]
-test/test_det_arena/test_det_arena.cpp:287: test_set_persist_free_routes_by_address                             [PASSED]
-test/test_det_arena/test_det_arena.cpp:288: test_set_scratch_overflow_and_unwind                                [PASSED]
-native_det_arena:test_det_arena Took 0.72 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_det_arena  test_det_arena  PASSED    00:00:00.724
-================= 17 test cases: 17 succeeded in 00:00:00.724 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_ed25519 in native_ssh_ed25519 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:280: test_sha512_empty                                               [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:281: test_sha512_abc                                                 [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:282: test_sha512_one_block_boundary                                  [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:283: test_sha512_two_block_boundary                                  [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:284: test_sha512_million_a_streaming                                 [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:285: test_sha512_streaming_matches_oneshot                           [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:286: test_x25519_rfc7748_vector1                                     [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:287: test_x25519_rfc7748_vector2                                     [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:288: test_x25519_iterated_1                                          [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:289: test_x25519_iterated_1000                                       [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:290: test_x25519_dh_agreement                                        [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:291: test_ed25519_vector_empty_msg                                   [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:292: test_ed25519_vector_rfc8032_test2                               [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:293: test_ed25519_vector_zero_seed                                   [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:294: test_ed25519_verify_rejects_tampering                           [PASSED]
-test/test_ssh_ed25519/test_ssh_ed25519.cpp:295: test_ed25519_roundtrip_long                                     [PASSED]
-native_ssh_ed25519:test_ssh_ed25519 Took 4.79 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_ssh_ed25519  test_ssh_ed25519  PASSED    00:00:04.792
-================= 16 test cases: 16 succeeded in 00:00:04.792 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_crypto_kat in native_crypto_kat environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_crypto_kat/test_crypto_kat.cpp:295: test_hmac_sha256                                                  [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:296: test_hmac_sha512                                                  [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:297: test_aes128gcm                                                    [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:298: test_x25519                                                       [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:299: test_ed25519_verify                                               [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:300: test_hkdf_extract                                                 [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:301: test_chacha20_block                                               [PASSED]
-test/test_crypto_kat/test_crypto_kat.cpp:302: test_poly1305                                                     [PASSED]
-native_crypto_kat:test_crypto_kat Took 2.62 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_crypto_kat  test_crypto_kat  PASSED    00:00:02.623
-================== 8 test cases: 8 succeeded in 00:00:02.623 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_promisc in native_promisc environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_promisc/test_promisc.cpp:162: test_beacon_mgmt                                                        [PASSED]
-test/test_promisc/test_promisc.cpp:163: test_data_from_ds                                                       [PASSED]
-test/test_promisc/test_promisc.cpp:164: test_data_to_ds                                                         [PASSED]
-test/test_promisc/test_promisc.cpp:165: test_qos_data_header_len                                                [PASSED]
-test/test_promisc/test_promisc.cpp:166: test_wds_four_address                                                   [PASSED]
-test/test_promisc/test_promisc.cpp:167: test_control_frame                                                      [PASSED]
-test/test_promisc/test_promisc.cpp:168: test_reject_short                                                       [PASSED]
-test/test_promisc/test_promisc.cpp:169: test_pcap_headers                                                       [PASSED]
-native_promisc:test_promisc Took 0.73 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_promisc  test_promisc  PASSED    00:00:00.731
-================== 8 test cases: 8 succeeded in 00:00:00.731 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_bus_capture in native_bus_capture environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_bus_capture/test_bus_capture.cpp:112: test_standard_data_frame                                        [PASSED]
-test/test_bus_capture/test_bus_capture.cpp:113: test_extended_id_sets_eff                                       [PASSED]
-test/test_bus_capture/test_bus_capture.cpp:114: test_rtr_flag_and_no_data                                       [PASSED]
-test/test_bus_capture/test_bus_capture.cpp:115: test_masks_and_bounds                                           [PASSED]
-test/test_bus_capture/test_bus_capture.cpp:116: test_pcap_can_linktype                                          [PASSED]
-native_bus_capture:test_bus_capture Took 0.72 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_bus_capture  test_bus_capture  PASSED    00:00:00.717
-================== 5 test cases: 5 succeeded in 00:00:00.717 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_j1939 in native_j1939 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_j1939/test_j1939.cpp:221: test_id_pdu2_roundtrip                                                      [PASSED]
-test/test_j1939/test_j1939.cpp:222: test_id_pdu1_roundtrip                                                      [PASSED]
-test/test_j1939/test_j1939.cpp:223: test_encode_rejects_bad_args                                                [PASSED]
-test/test_j1939/test_j1939.cpp:224: test_build_single_frame                                                     [PASSED]
-test/test_j1939/test_j1939.cpp:225: test_request_pgn                                                            [PASSED]
-test/test_j1939/test_j1939.cpp:226: test_address_claim_name                                                     [PASSED]
-test/test_j1939/test_j1939.cpp:227: test_tp_num_packets                                                         [PASSED]
-test/test_j1939/test_j1939.cpp:228: test_tp_bam_roundtrip                                                       [PASSED]
-test/test_j1939/test_j1939.cpp:229: test_tp_out_of_sequence_errors                                              [PASSED]
-test/test_j1939/test_j1939.cpp:230: test_build_error_paths                                                      [PASSED]
-test/test_j1939/test_j1939.cpp:231: test_tp_feed_error_paths                                                    [PASSED]
-native_j1939:test_j1939 Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_j1939   test_j1939  PASSED    00:00:00.718
-================= 11 test cases: 11 succeeded in 00:00:00.718 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_devicenet in native_devicenet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_devicenet/test_devicenet.cpp:204: test_id_group1                                                      [PASSED]
-test/test_devicenet/test_devicenet.cpp:205: test_id_group2                                                      [PASSED]
-test/test_devicenet/test_devicenet.cpp:206: test_id_group3_and_4                                                [PASSED]
-test/test_devicenet/test_devicenet.cpp:207: test_header_and_frag_octets                                         [PASSED]
-test/test_devicenet/test_devicenet.cpp:208: test_build_explicit_single_frame                                    [PASSED]
-test/test_devicenet/test_devicenet.cpp:209: test_frag_non_fragmented                                            [PASSED]
-test/test_devicenet/test_devicenet.cpp:210: test_frag_reassembly_roundtrip                                      [PASSED]
-test/test_devicenet/test_devicenet.cpp:211: test_frag_out_of_order_errors                                       [PASSED]
-test/test_devicenet/test_devicenet.cpp:212: test_id_error_paths                                                 [PASSED]
-test/test_devicenet/test_devicenet.cpp:213: test_frag_reject_paths                                              [PASSED]
-test/test_devicenet/test_devicenet.cpp:214: test_frag_overflow                                                  [PASSED]
-native_devicenet:test_devicenet Took 0.74 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_devicenet  test_devicenet  PASSED    00:00:00.740
-================= 11 test cases: 11 succeeded in 00:00:00.740 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nmea2000 in native_nmea2000 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nmea2000/test_nmea2000.cpp:155: test_num_frames                                                       [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:156: test_single_frame                                                     [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:157: test_fastpacket_roundtrip                                             [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:158: test_fastpacket_single_frame_completes                                [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:159: test_fastpacket_interleaved_sequence_ignored                          [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:160: test_fastpacket_out_of_order_errors                                   [PASSED]
-test/test_nmea2000/test_nmea2000.cpp:161: test_nmea2000_error_paths                                             [PASSED]
-native_nmea2000:test_nmea2000 Took 0.75 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_nmea2000  test_nmea2000  PASSED    00:00:00.751
-================== 7 test cases: 7 succeeded in 00:00:00.751 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mbus in native_mbus environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mbus/test_mbus.cpp:256: test_ack                                                                      [PASSED]
-test/test_mbus/test_mbus.cpp:257: test_short_frame_roundtrip                                                    [PASSED]
-test/test_mbus/test_mbus.cpp:258: test_req_ud2_fcb                                                              [PASSED]
-test/test_mbus/test_mbus.cpp:259: test_long_frame_roundtrip                                                     [PASSED]
-test/test_mbus/test_mbus.cpp:260: test_parse_rejects_corruption                                                 [PASSED]
-test/test_mbus/test_mbus.cpp:261: test_dif_data_len                                                             [PASSED]
-test/test_mbus/test_mbus.cpp:262: test_record_walk                                                              [PASSED]
-test/test_mbus/test_mbus.cpp:263: test_record_truncated_fails                                                   [PASSED]
-test/test_mbus/test_mbus.cpp:264: test_build_and_parse_guards                                                   [PASSED]
-test/test_mbus/test_mbus.cpp:265: test_dif_data_len_remaining                                                   [PASSED]
-test/test_mbus/test_mbus.cpp:266: test_record_edges                                                             [PASSED]
-test/test_mbus/test_mbus.cpp:267: test_record_vife_chain                                                        [PASSED]
-native_mbus:test_mbus Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_mbus    test_mbus  PASSED    00:00:00.720
-================= 12 test cases: 12 succeeded in 00:00:00.720 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_iec60870 in native_iec60870 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_iec60870/test_iec60870.cpp:238: test_104_i_format_roundtrip                                           [PASSED]
-test/test_iec60870/test_iec60870.cpp:239: test_104_s_format                                                     [PASSED]
-test/test_iec60870/test_iec60870.cpp:240: test_104_u_format                                                     [PASSED]
-test/test_iec60870/test_iec60870.cpp:241: test_104_sequence_numbers_15bit                                       [PASSED]
-test/test_iec60870/test_iec60870.cpp:242: test_asdu_header_roundtrip                                            [PASSED]
-test/test_iec60870/test_iec60870.cpp:243: test_ioa_roundtrip                                                    [PASSED]
-test/test_iec60870/test_iec60870.cpp:244: test_101_fixed_frame                                                  [PASSED]
-test/test_iec60870/test_iec60870.cpp:245: test_101_variable_frame_roundtrip                                     [PASSED]
-test/test_iec60870/test_iec60870.cpp:246: test_104_build_guards                                                 [PASSED]
-test/test_iec60870/test_iec60870.cpp:247: test_104_parse_rejects                                                [PASSED]
-test/test_iec60870/test_iec60870.cpp:248: test_asdu_ioa_guards                                                  [PASSED]
-test/test_iec60870/test_iec60870.cpp:249: test_101_build_guards                                                 [PASSED]
-test/test_iec60870/test_iec60870.cpp:250: test_101_parse_rejects                                                [PASSED]
-native_iec60870:test_iec60870 Took 0.72 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_iec60870  test_iec60870  PASSED    00:00:00.721
-================= 13 test cases: 13 succeeded in 00:00:00.721 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sdi12 in native_sdi12 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sdi12/test_sdi12.cpp:146: test_command_builders                                                       [PASSED]
-test/test_sdi12/test_sdi12.cpp:147: test_parse_measure_m                                                        [PASSED]
-test/test_sdi12/test_sdi12.cpp:148: test_parse_measure_concurrent_two_digit_count                               [PASSED]
-test/test_sdi12/test_sdi12.cpp:149: test_parse_values                                                           [PASSED]
-test/test_sdi12/test_sdi12.cpp:150: test_crc_roundtrip                                                          [PASSED]
-test/test_sdi12/test_sdi12.cpp:151: test_crc_encode_printable                                                   [PASSED]
-test/test_sdi12/test_sdi12.cpp:152: test_sdi12_error_paths                                                      [PASSED]
-native_sdi12:test_sdi12 Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_sdi12   test_sdi12  PASSED    00:00:00.721
-================== 7 test cases: 7 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dmx in native_dmx environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dmx/test_dmx.cpp:170: test_dmx_build_and_get                                                          [PASSED]
-test/test_dmx/test_dmx.cpp:171: test_rdm_uid                                                                    [PASSED]
-test/test_dmx/test_dmx.cpp:172: test_rdm_get_roundtrip                                                          [PASSED]
-test/test_dmx/test_dmx.cpp:173: test_rdm_set_with_data                                                          [PASSED]
-test/test_dmx/test_dmx.cpp:174: test_rdm_parse_rejects_bad                                                      [PASSED]
-test/test_dmx/test_dmx.cpp:175: test_dmx_rdm_error_paths                                                        [PASSED]
-native_dmx:test_dmx Took 0.72 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_dmx     test_dmx  PASSED    00:00:00.719
-================== 6 test cases: 6 succeeded in 00:00:00.719 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nmea0183 in native_nmea0183 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nmea0183/test_nmea0183.cpp:134: test_checksum_known_vector                                            [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:135: test_build                                                            [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:136: test_parse_gga                                                        [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:137: test_field_helpers                                                    [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:138: test_parse_rejects_bad_checksum                                       [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:139: test_parse_rejects_no_dollar                                          [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:140: test_build_then_parse                                                 [PASSED]
-test/test_nmea0183/test_nmea0183.cpp:141: test_nmea0183_error_paths                                             [PASSED]
-native_nmea0183:test_nmea0183 Took 0.73 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_nmea0183  test_nmea0183  PASSED    00:00:00.729
-================== 8 test cases: 8 succeeded in 00:00:00.729 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_iolink in native_iolink environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_iolink/test_iolink.cpp:90: test_mc_octet                                                              [PASSED]
-test/test_iolink/test_iolink.cpp:91: test_ckt_cks_octets                                                        [PASSED]
-test/test_iolink/test_iolink.cpp:92: test_checksum_known_vector                                                 [PASSED]
-test/test_iolink/test_iolink.cpp:93: test_finalize_preserves_type_and_detects_corruption                        [PASSED]
-test/test_iolink/test_iolink.cpp:94: test_device_reply_cks_roundtrip                                            [PASSED]
-test/test_iolink/test_iolink.cpp:95: test_iol_finalize_verify_guards                                            [PASSED]
-native_iolink:test_iolink Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_iolink  test_iolink  PASSED    00:00:00.721
-================== 6 test cases: 6 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sse in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sse/test_sse.cpp:372: test_sse_pool_size                                                              [PASSED]
-test/test_sse/test_sse.cpp:373: test_sse_ids_match_indices_after_init                                           [PASSED]
-test/test_sse/test_sse.cpp:374: test_sse_all_inactive_after_init                                                [PASSED]
-test/test_sse/test_sse.cpp:375: test_sse_path_empty_after_init                                                  [PASSED]
-test/test_sse/test_sse.cpp:378: test_sse_alloc_returns_non_null                                                 [PASSED]
-test/test_sse/test_sse.cpp:379: test_sse_alloc_sets_active                                                      [PASSED]
-test/test_sse/test_sse.cpp:380: test_sse_alloc_sets_slot_id                                                     [PASSED]
-test/test_sse/test_sse.cpp:381: test_sse_alloc_stores_path                                                      [PASSED]
-test/test_sse/test_sse.cpp:382: test_sse_alloc_stores_different_paths_per_slot                                  [PASSED]
-test/test_sse/test_sse.cpp:383: test_sse_alloc_path_truncated_to_max                                            [PASSED]
-test/test_sse/test_sse.cpp:384: test_sse_alloc_pool_full_returns_null                                           [PASSED]
-test/test_sse/test_sse.cpp:385: test_sse_alloc_sse_id_is_pool_index                                             [PASSED]
-test/test_sse/test_sse.cpp:388: test_sse_find_returns_correct_conn                                              [PASSED]
-test/test_sse/test_sse.cpp:389: test_sse_find_returns_null_when_empty                                           [PASSED]
-test/test_sse/test_sse.cpp:390: test_sse_find_returns_null_for_different_slot                                   [PASSED]
-test/test_sse/test_sse.cpp:391: test_sse_find_after_both_slots_allocated                                        [PASSED]
-test/test_sse/test_sse.cpp:392: test_sse_find_checks_slot_id_not_sse_id                                         [PASSED]
-test/test_sse/test_sse.cpp:395: test_sse_free_deactivates_slot                                                  [PASSED]
-test/test_sse/test_sse.cpp:396: test_sse_free_restores_sse_id                                                   [PASSED]
-test/test_sse/test_sse.cpp:397: test_sse_free_makes_slot_findable_as_null                                       [PASSED]
-test/test_sse/test_sse.cpp:398: test_sse_free_clears_path                                                       [PASSED]
-test/test_sse/test_sse.cpp:399: test_sse_free_nop_on_unallocated                                                [PASSED]
-test/test_sse/test_sse.cpp:400: test_sse_alloc_after_free_succeeds                                              [PASSED]
-test/test_sse/test_sse.cpp:401: test_sse_free_only_frees_matching_slot                                          [PASSED]
-test/test_sse/test_sse.cpp:404: test_sse_write_null_data_returns_false                                          [PASSED]
-test/test_sse/test_sse.cpp:405: test_sse_write_returns_false_when_conn_not_active                               [PASSED]
-test/test_sse/test_sse.cpp:406: test_sse_write_returns_false_when_pcb_null                                      [PASSED]
-test/test_sse/test_sse.cpp:407: test_sse_write_data_only_returns_true                                           [PASSED]
-test/test_sse/test_sse.cpp:408: test_sse_write_with_event_returns_true                                          [PASSED]
-test/test_sse/test_sse.cpp:409: test_sse_write_with_id_returns_true                                             [PASSED]
-test/test_sse/test_sse.cpp:410: test_sse_write_with_all_fields_returns_true                                     [PASSED]
-test/test_sse/test_sse.cpp:411: test_sse_write_does_not_affect_other_slots                                      [PASSED]
-test/test_sse/test_sse.cpp:414: stress_sse_alloc_free_100_cycles                                                [PASSED]
-test/test_sse/test_sse.cpp:415: stress_sse_alloc_free_both_slots_alternating                                    [PASSED]
-test/test_sse/test_sse.cpp:416: stress_sse_write_100_calls                                                      [PASSED]
-test/test_sse/test_sse.cpp:417: stress_sse_find_with_full_pool                                                  [PASSED]
-test/test_sse/test_sse.cpp:418: stress_sse_write_slot_isolation                                                 [PASSED]
-native:test_sse Took 1.28 seconds ----------------------------------------------------------------------------- [PASSED]
-
-Processing test_session in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_session/test_session.cpp:348: test_empty_queue_does_not_crash                                         [PASSED]
-test/test_session/test_session.cpp:349: test_pool_initializes_to_parse_method                                   [PASSED]
-test/test_session/test_session.cpp:350: test_reset_clears_mid_parse_state                                       [PASSED]
-test/test_session/test_session.cpp:351: test_tick_fires_check_timeouts_stale_slot_freed                         [PASSED]
-test/test_session/test_session.cpp:352: test_tick_does_not_free_fresh_connection                                [PASSED]
-test/test_session/test_session.cpp:355: test_fn_tick_timeout_before_event_drain_ordering                        [PASSED]
-test/test_session/test_session.cpp:356: test_fn_tick_only_active_slots_expire                                   [PASSED]
-test/test_session/test_session.cpp:359: stress_1000_idle_ticks_stable                                           [PASSED]
-test/test_session/test_session.cpp:360: stress_timeout_all_slots_10_cycles                                      [PASSED]
-test/test_session/test_session.cpp:361: stress_mixed_fresh_stale_slots_many_ticks                               [PASSED]
-test/test_session/test_session.cpp:364: test_evt_connect_calls_http_reset                                       [PASSED]
-test/test_session/test_session.cpp:365: test_evt_disconnect_calls_http_reset                                    [PASSED]
-test/test_session/test_session.cpp:366: test_evt_error_calls_http_reset                                         [PASSED]
-test/test_session/test_session.cpp:367: test_evt_data_calls_http_parse                                          [PASSED]
-test/test_session/test_session.cpp:368: test_multiple_events_drained_in_one_tick                                [PASSED]
-test/test_session/test_session.cpp:371: race_external_free_between_ticks                                        [PASSED]
-test/test_session/test_session.cpp:372: race_activity_update_saves_slot_from_timeout                            [PASSED]
-test/test_session/test_session.cpp:373: race_all_expire_then_idle_tick                                          [PASSED]
-test/test_session/test_session.cpp:374: race_millis_wraparound_no_spurious_timeout                              [PASSED]
-native:test_session Took 0.65 seconds ------------------------------------------------------------------------- [PASSED]
-
-Processing test_presentation in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_presentation/test_presentation.cpp:844: test_fn_reset_sets_parse_state_to_method                      [PASSED]
-test/test_presentation/test_presentation.cpp:845: test_fn_reset_sets_slot_id                                    [PASSED]
-test/test_presentation/test_presentation.cpp:846: test_fn_reset_clears_method                                   [PASSED]
-test/test_presentation/test_presentation.cpp:847: test_fn_reset_clears_path_and_idx                             [PASSED]
-test/test_presentation/test_presentation.cpp:848: test_fn_reset_clears_query_raw_and_params                     [PASSED]
-test/test_presentation/test_presentation.cpp:849: test_fn_reset_clears_all_header_slots                         [PASSED]
-test/test_presentation/test_presentation.cpp:850: test_fn_reset_clears_body_fields                              [PASSED]
-test/test_presentation/test_presentation.cpp:851: test_fn_reset_out_of_range_is_nop                             [PASSED]
-test/test_presentation/test_presentation.cpp:852: test_fn_reset_is_idempotent                                   [PASSED]
-test/test_presentation/test_presentation.cpp:855: test_fn_get_header_null_when_no_headers                       [PASSED]
-test/test_presentation/test_presentation.cpp:856: test_fn_get_header_finds_single_header                        [PASSED]
-test/test_presentation/test_presentation.cpp:857: test_fn_get_header_finds_first_of_many                        [PASSED]
-test/test_presentation/test_presentation.cpp:858: test_fn_get_header_finds_middle_of_many                       [PASSED]
-test/test_presentation/test_presentation.cpp:859: test_fn_get_header_finds_last_of_many                         [PASSED]
-test/test_presentation/test_presentation.cpp:860: test_fn_get_header_case_insensitive_lowercase                 [PASSED]
-test/test_presentation/test_presentation.cpp:861: test_fn_get_header_case_insensitive_uppercase                 [PASSED]
-test/test_presentation/test_presentation.cpp:862: test_fn_get_header_returns_null_for_absent_key                [PASSED]
-test/test_presentation/test_presentation.cpp:863: test_fn_get_header_does_not_bleed_across_slots                [PASSED]
-test/test_presentation/test_presentation.cpp:866: test_fn_get_query_null_when_no_params                         [PASSED]
-test/test_presentation/test_presentation.cpp:867: test_fn_get_query_finds_single_param                          [PASSED]
-test/test_presentation/test_presentation.cpp:868: test_fn_get_query_finds_first_param                           [PASSED]
-test/test_presentation/test_presentation.cpp:869: test_fn_get_query_finds_middle_param                          [PASSED]
-test/test_presentation/test_presentation.cpp:870: test_fn_get_query_finds_last_param                            [PASSED]
-test/test_presentation/test_presentation.cpp:871: test_fn_get_query_returns_null_for_absent_key                 [PASSED]
-test/test_presentation/test_presentation.cpp:872: test_fn_get_query_empty_value                                 [PASSED]
-test/test_presentation/test_presentation.cpp:873: test_fn_get_query_does_not_bleed_across_slots                 [PASSED]
-test/test_presentation/test_presentation.cpp:876: test_get_parses_complete                                      [PASSED]
-test/test_presentation/test_presentation.cpp:877: test_post_body_stored                                         [PASSED]
-test/test_presentation/test_presentation.cpp:878: test_put_parses_complete                                      [PASSED]
-test/test_presentation/test_presentation.cpp:879: test_delete_parses_complete                                   [PASSED]
-test/test_presentation/test_presentation.cpp:880: test_patch_parses_complete                                    [PASSED]
-test/test_presentation/test_presentation.cpp:881: test_head_parses_complete                                     [PASSED]
-test/test_presentation/test_presentation.cpp:882: test_query_single_param                                       [PASSED]
-test/test_presentation/test_presentation.cpp:883: test_query_multiple_params                                    [PASSED]
-test/test_presentation/test_presentation.cpp:884: test_body_null_terminated                                     [PASSED]
-test/test_presentation/test_presentation.cpp:885: test_body_over_buf_size_is_413                                [PASSED]
-test/test_presentation/test_presentation.cpp:886: test_overflow_method_sets_error                               [PASSED]
-test/test_presentation/test_presentation.cpp:887: test_overflow_path_sets_414                                   [PASSED]
-test/test_presentation/test_presentation.cpp:888: test_bad_lf_after_cr_sets_error                               [PASSED]
-test/test_presentation/test_presentation.cpp:889: test_headers_beyond_max_are_dropped                           [PASSED]
-test/test_presentation/test_presentation.cpp:890: test_query_params_beyond_max_are_dropped                      [PASSED]
-test/test_presentation/test_presentation.cpp:891: test_incremental_two_pushes_completes                         [PASSED]
-test/test_presentation/test_presentation.cpp:892: test_body_starting_with_newline_stored                        [PASSED]
-test/test_presentation/test_presentation.cpp:893: test_put_body_stored                                          [PASSED]
-test/test_presentation/test_presentation.cpp:894: test_content_length_header_stored_in_headers_array            [PASSED]
-test/test_presentation/test_presentation.cpp:897: stress_parse_reset_100_cycles                                 [PASSED]
-test/test_presentation/test_presentation.cpp:898: stress_all_slots_parse_simultaneously                         [PASSED]
-test/test_presentation/test_presentation.cpp:899: stress_method_at_max_7_chars_no_error                         [PASSED]
-test/test_presentation/test_presentation.cpp:900: stress_path_at_exact_limit_no_error                           [PASSED]
-test/test_presentation/test_presentation.cpp:901: stress_body_exactly_buf_size_all_stored                       [PASSED]
-test/test_presentation/test_presentation.cpp:902: stress_exactly_max_headers_all_stored                         [PASSED]
-test/test_presentation/test_presentation.cpp:903: stress_exactly_max_query_params_all_stored                    [PASSED]
-test/test_presentation/test_presentation.cpp:904: stress_incremental_byte_by_byte_no_error                      [PASSED]
-test/test_presentation/test_presentation.cpp:905: stress_sequential_requests_no_state_leak                      [PASSED]
-test/test_presentation/test_presentation.cpp:908: race_interleaved_producer_consumer_ring_buffer                [PASSED]
-test/test_presentation/test_presentation.cpp:909: race_ring_buffer_full_prevents_write                          [PASSED]
-test/test_presentation/test_presentation.cpp:910: race_aba_slot_reuse_fresh_timestamp                           [PASSED]
-test/test_presentation/test_presentation.cpp:911: race_double_free_is_nop                                       [PASSED]
-test/test_presentation/test_presentation.cpp:912: race_concurrent_slot_parse_isolation                          [PASSED]
-test/test_presentation/test_presentation.cpp:913: race_reset_during_parse_header_val                            [PASSED]
-test/test_presentation/test_presentation.cpp:914: race_reset_during_parse_query                                 [PASSED]
-test/test_presentation/test_presentation.cpp:915: race_reset_during_parse_body                                  [PASSED]
-test/test_presentation/test_presentation.cpp:916: race_parse_after_complete_is_nop                              [PASSED]
-native:test_presentation Took 0.70 seconds -------------------------------------------------------------------- [PASSED]
-
-Processing test_transport in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_transport/test_transport.cpp:606: test_pool_capacity_is_four                                          [PASSED]
-test/test_transport/test_transport.cpp:607: test_rx_buffer_size_is_one_kb                                       [PASSED]
-test/test_transport/test_transport.cpp:608: test_timeout_constant_is_5000ms                                     [PASSED]
-test/test_transport/test_transport.cpp:609: test_all_slots_free_after_init                                      [PASSED]
-test/test_transport/test_transport.cpp:610: test_all_pcbs_null_after_init                                       [PASSED]
-test/test_transport/test_transport.cpp:611: test_all_ring_buffers_empty_after_init                              [PASSED]
-test/test_transport/test_transport.cpp:612: test_slot_ids_match_indices                                         [PASSED]
-test/test_transport/test_transport.cpp:613: test_ring_empty_when_head_equals_tail                               [PASSED]
-test/test_transport/test_transport.cpp:614: test_ring_wrap_at_boundary                                          [PASSED]
-test/test_transport/test_transport.cpp:615: test_ring_full_sentinel_one_slot_reserved                           [PASSED]
-test/test_transport/test_transport.cpp:616: test_ring_can_store_size_minus_one_bytes                            [PASSED]
-test/test_transport/test_transport.cpp:617: test_event_types_are_distinct                                       [PASSED]
-test/test_transport/test_transport.cpp:618: test_timeout_does_not_fire_on_free_slot                             [PASSED]
-test/test_transport/test_transport.cpp:619: test_timeout_does_not_fire_before_deadline                          [PASSED]
-test/test_transport/test_transport.cpp:620: test_timeout_fires_at_deadline                                      [PASSED]
-test/test_transport/test_transport.cpp:621: test_timeout_fires_only_on_stale_slots                              [PASSED]
-test/test_transport/test_transport.cpp:622: test_init_succeeds_on_native                                        [PASSED]
-test/test_transport/test_transport.cpp:623: test_all_last_activity_ms_zero_after_init                           [PASSED]
-test/test_transport/test_transport.cpp:624: test_queue_not_null_after_init                                      [PASSED]
-test/test_transport/test_transport.cpp:627: stress_ring_buffer_fill_drain_integrity                             [PASSED]
-test/test_transport/test_transport.cpp:628: stress_ring_buffer_multi_cycle_no_corruption                        [PASSED]
-test/test_transport/test_transport.cpp:629: stress_all_slots_timeout_simultaneously                             [PASSED]
-test/test_transport/test_transport.cpp:630: stress_timeout_arm_recover_cycle                                    [PASSED]
-test/test_transport/test_transport.cpp:631: stress_check_timeouts_high_call_rate                                [PASSED]
-test/test_transport/test_transport.cpp:632: stress_ring_buffer_byte_by_byte_fill_and_drain                      [PASSED]
-test/test_transport/test_transport.cpp:635: test_accept_throttle_blocks_over_budget                             [PASSED]
-test/test_transport/test_transport.cpp:636: test_accept_throttle_window_refills                                 [PASSED]
-test/test_transport/test_transport.cpp:637: test_accept_throttle_handles_rollover                               [PASSED]
-test/test_transport/test_transport.cpp:640: test_per_ip_throttle_blocks_over_budget                             [PASSED]
-test/test_transport/test_transport.cpp:641: test_per_ip_throttle_isolates_addresses                             [PASSED]
-test/test_transport/test_transport.cpp:642: test_per_ip_throttle_window_refills                                 [PASSED]
-test/test_transport/test_transport.cpp:643: test_per_ip_throttle_evicts_when_full                               [PASSED]
-test/test_transport/test_transport.cpp:644: test_per_ip_throttle_zero_ip_always_allowed                         [PASSED]
-test/test_transport/test_transport.cpp:645: test_per_ip_throttle_v6_distinct                                    [PASSED]
-test/test_transport/test_transport.cpp:646: test_per_ip_throttle_handles_rollover                               [PASSED]
-test/test_transport/test_transport.cpp:649: test_ip_allowlist_empty_allows_all                                  [PASSED]
-test/test_transport/test_transport.cpp:650: test_ip_allowlist_host_match                                        [PASSED]
-test/test_transport/test_transport.cpp:651: test_ip_allowlist_cidr_match                                        [PASSED]
-test/test_transport/test_transport.cpp:652: test_ip_allowlist_masks_host_bits                                   [PASSED]
-test/test_transport/test_transport.cpp:653: test_ip_allowlist_multiple_rules                                    [PASSED]
-test/test_transport/test_transport.cpp:654: test_ip_allowlist_zero_prefix_matches_all                           [PASSED]
-test/test_transport/test_transport.cpp:655: test_ip_allowlist_v6_cidr                                           [PASSED]
-test/test_transport/test_transport.cpp:656: test_ip_allowlist_rejects_bad_prefix                                [PASSED]
-test/test_transport/test_transport.cpp:657: test_ip_allowlist_table_full                                        [PASSED]
-native:test_transport Took 0.70 seconds ----------------------------------------------------------------------- [PASSED]
-
-Processing test_websocket in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_websocket/test_websocket.cpp:1068: test_sha1_empty_string                                             [PASSED]
-test/test_websocket/test_websocket.cpp:1069: test_sha1_abc                                                      [PASSED]
-test/test_websocket/test_websocket.cpp:1070: test_sha1_rfc6455_handshake_key                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1071: test_sha1_different_inputs_different_digests                       [PASSED]
-test/test_websocket/test_websocket.cpp:1074: test_base64_encode_one_byte                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1075: test_base64_encode_two_bytes                                       [PASSED]
-test/test_websocket/test_websocket.cpp:1076: test_base64_encode_three_bytes                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1077: test_base64_encode_ws_accept_key                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1078: test_base64_decode_one_byte                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1079: test_base64_decode_two_bytes                                       [PASSED]
-test/test_websocket/test_websocket.cpp:1080: test_base64_decode_three_bytes                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1081: test_base64_decode_ws_accept_key                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1082: test_base64_decode_rejects_misplaced_padding                       [PASSED]
-test/test_websocket/test_websocket.cpp:1083: test_base64_decode_respects_capacity                               [PASSED]
-test/test_websocket/test_websocket.cpp:1084: test_base64_round_trip                                             [PASSED]
-test/test_websocket/test_websocket.cpp:1087: test_ws_pool_size                                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1088: test_ws_ids_match_indices_after_init                               [PASSED]
-test/test_websocket/test_websocket.cpp:1089: test_ws_all_inactive_after_init                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1090: test_ws_alloc_returns_non_null                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1091: test_ws_alloc_sets_active                                          [PASSED]
-test/test_websocket/test_websocket.cpp:1092: test_ws_alloc_sets_slot_id                                         [PASSED]
-test/test_websocket/test_websocket.cpp:1093: test_ws_alloc_sets_parse_state_header1                             [PASSED]
-test/test_websocket/test_websocket.cpp:1094: test_ws_alloc_pool_full_returns_null                               [PASSED]
-test/test_websocket/test_websocket.cpp:1095: test_ws_find_returns_correct_conn                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1096: test_ws_find_returns_null_when_empty                               [PASSED]
-test/test_websocket/test_websocket.cpp:1097: test_ws_find_returns_null_for_different_slot                       [PASSED]
-test/test_websocket/test_websocket.cpp:1098: test_ws_find_after_both_slots_allocated                            [PASSED]
-test/test_websocket/test_websocket.cpp:1099: test_ws_free_deactivates_slot                                      [PASSED]
-test/test_websocket/test_websocket.cpp:1100: test_ws_free_restores_ws_id                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1101: test_ws_free_makes_slot_findable_as_null                           [PASSED]
-test/test_websocket/test_websocket.cpp:1102: test_ws_free_nop_on_unallocated                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1103: test_ws_alloc_after_free_succeeds                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1106: test_ws_parse_text_frame_sets_ready                                [PASSED]
-test/test_websocket/test_websocket.cpp:1107: test_ws_parse_payload_stored_correctly                             [PASSED]
-test/test_websocket/test_websocket.cpp:1108: test_ws_parse_binary_frame_sets_ready                              [PASSED]
-test/test_websocket/test_websocket.cpp:1109: test_ws_parse_zero_length_unmasked_frame                           [PASSED]
-test/test_websocket/test_websocket.cpp:1110: test_ws_parse_zero_length_masked_frame                             [PASSED]
-test/test_websocket/test_websocket.cpp:1111: test_ws_reject_unmasked_data_frame                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1112: test_ws_reject_reserved_opcode                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1113: test_ws_reject_fragmented_control_frame                            [PASSED]
-test/test_websocket/test_websocket.cpp:1114: test_ws_reject_oversized_control_frame                             [PASSED]
-test/test_websocket/test_websocket.cpp:1115: test_ws_parse_16bit_length_frame                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1116: test_ws_parse_rsv1_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1117: test_ws_parse_rsv2_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1118: test_ws_parse_rsv3_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1119: test_ws_parse_64bit_length_closes_too_big                          [PASSED]
-test/test_websocket/test_websocket.cpp:1120: test_ws_parse_oversized_16bit_length_closes_too_big                [PASSED]
-test/test_websocket/test_websocket.cpp:1121: test_ws_fragment_start_waits_for_continuation                      [PASSED]
-test/test_websocket/test_websocket.cpp:1122: test_ws_fragmented_message_reassembled                             [PASSED]
-test/test_websocket/test_websocket.cpp:1123: test_ws_control_frame_interleaved_in_fragments                     [PASSED]
-test/test_websocket/test_websocket.cpp:1124: test_ws_fragment_accumulation_overflow_rejected                    [PASSED]
-test/test_websocket/test_websocket.cpp:1125: test_ws_continuation_without_start_rejected                        [PASSED]
-test/test_websocket/test_websocket.cpp:1126: test_ws_new_data_frame_during_fragmentation_rejected               [PASSED]
-test/test_websocket/test_websocket.cpp:1127: test_ws_parse_ping_auto_pong_resets_frame                          [PASSED]
-test/test_websocket/test_websocket.cpp:1128: test_ws_parse_pong_silently_ignored                                [PASSED]
-test/test_websocket/test_websocket.cpp:1129: test_ws_parse_close_marks_ws_closed                                [PASSED]
-test/test_websocket/test_websocket.cpp:1130: test_ws_parse_stops_at_frame_ready                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1131: test_ws_reset_frame_clears_fields                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1132: test_ws_parse_mask_applied_correctly                               [PASSED]
-test/test_websocket/test_websocket.cpp:1133: test_ws_text_invalid_utf8_rejected                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1134: test_ws_text_valid_utf8_accepted                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1135: test_ws_binary_arbitrary_bytes_accepted                            [PASSED]
-test/test_websocket/test_websocket.cpp:1143: test_ws_outbound_fragmentation                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1146: stress_ws_parse_reset_100_cycles                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1147: stress_ws_alloc_free_pool_cycle                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1148: stress_ws_parse_incremental_byte_by_byte                           [PASSED]
-test/test_websocket/test_websocket.cpp:1149: stress_ws_parse_max_payload                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1150: stress_ws_parse_two_consecutive_frames                             [PASSED]
-native:test_websocket Took 0.74 seconds ----------------------------------------------------------------------- [PASSED]
-
-Processing test_http_parser in native environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_http_parser/test_http_parser.cpp:1013: test_accessor_null_guards                                      [PASSED]
-test/test_http_parser/test_http_parser.cpp:1014: test_cookie_parse_edges                                        [PASSED]
-test/test_http_parser/test_http_parser.cpp:1015: test_forwarded_ip_whitespace_and_invalid                       [PASSED]
-test/test_http_parser/test_http_parser.cpp:1018: test_reset_sets_parse_method_state                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1019: test_reset_preserves_slot_id                                   [PASSED]
-test/test_http_parser/test_http_parser.cpp:1020: test_reset_clears_method                                       [PASSED]
-test/test_http_parser/test_http_parser.cpp:1021: test_reset_clears_path                                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1022: test_reset_clears_header_count                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1023: test_reset_clears_body                                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1024: test_reset_clears_query_count                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1027: test_feed_after_complete_does_not_change_state                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1028: test_feed_after_error_does_not_change_state                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1029: test_feed_after_entity_too_large_does_not_change_state         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1032: test_method_get                                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1033: test_method_post                                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1034: test_method_put                                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1035: test_method_delete                                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1036: test_method_patch                                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1037: test_method_head                                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1038: test_method_options                                            [PASSED]
-test/test_http_parser/test_http_parser.cpp:1039: test_method_overflow_is_error                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1042: test_path_root                                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1043: test_path_segments                                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1044: test_path_without_query                                        [PASSED]
-test/test_http_parser/test_http_parser.cpp:1045: test_path_overflow_is_414                                      [PASSED]
-test/test_http_parser/test_http_parser.cpp:1048: test_single_query_param                                        [PASSED]
-test/test_http_parser/test_http_parser.cpp:1049: test_two_query_params                                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1050: test_query_key_not_found_returns_null                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1051: test_query_empty_value                                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1054: test_single_header_stored                                      [PASSED]
-test/test_http_parser/test_http_parser.cpp:1055: test_header_lookup_case_insensitive                            [PASSED]
-test/test_http_parser/test_http_parser.cpp:1056: test_cookie_basic_and_positions                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1057: test_cookie_missing_and_no_header                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1058: test_cookie_exact_name_not_substring                           [PASSED]
-test/test_http_parser/test_http_parser.cpp:1059: test_cookie_quoted_and_value_with_equals                       [PASSED]
-test/test_http_parser/test_http_parser.cpp:1060: test_forwarded_rfc7239                                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1061: test_forwarded_leftmost_client                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1062: test_forwarded_strips_quotes_and_port                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1063: test_forwarded_ipv6_recovered_unknown_rejected                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1064: test_header_leading_space_stripped                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1065: test_content_length_header_parsed                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1066: test_content_length_in_headers_array                           [PASSED]
-test/test_http_parser/test_http_parser.cpp:1067: test_multiple_headers_stored                                   [PASSED]
-test/test_http_parser/test_http_parser.cpp:1068: test_missing_header_returns_null                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1071: test_get_no_body_completes                                     [PASSED]
-test/test_http_parser/test_http_parser.cpp:1072: test_post_with_body                                            [PASSED]
-test/test_http_parser/test_http_parser.cpp:1073: test_put_with_body                                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1074: test_body_starting_with_newline                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1075: test_post_content_length_zero                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1076: test_body_exactly_at_buffer_limit                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1077: test_body_null_terminated_after_complete                       [PASSED]
-test/test_http_parser/test_http_parser.cpp:1080: test_body_one_over_limit_is_413                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1081: test_body_far_over_limit_is_413                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1082: test_413_no_body_bytes_fed                                     [PASSED]
-test/test_http_parser/test_http_parser.cpp:1083: test_413_header_still_stored                                   [PASSED]
-test/test_http_parser/test_http_parser.cpp:1084: test_body_exactly_at_limit_is_not_413                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1087: test_path_overflow_stops_feeding                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1088: test_414_path_filled_to_capacity                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1091: test_method_nul_byte_is_error                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1092: test_method_control_char_is_error                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1093: test_method_del_byte_is_error                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1094: test_method_non_tchar_symbol_is_error                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1095: test_method_tchar_symbols_accepted                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1098: test_path_nul_byte_is_error                                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1099: test_path_control_char_is_error                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1100: test_path_del_byte_is_error                                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1101: test_query_nul_byte_is_error                                   [PASSED]
-test/test_http_parser/test_http_parser.cpp:1102: test_query_control_char_is_error                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1105: test_header_key_space_is_error                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1106: test_header_key_nul_byte_is_error                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1107: test_header_key_control_char_is_error                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1108: test_header_key_mid_cr_is_error                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1109: test_header_key_colon_at_start_skips_header                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1110: test_long_standard_header_key_accepted                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1111: test_overlong_header_key_truncated_not_error                   [PASSED]
-test/test_http_parser/test_http_parser.cpp:1114: test_header_val_nul_byte_is_error                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1115: test_header_val_control_char_is_error                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1116: test_header_val_del_byte_is_error                              [PASSED]
-test/test_http_parser/test_http_parser.cpp:1117: test_header_val_htab_mid_value_allowed                         [PASSED]
-test/test_http_parser/test_http_parser.cpp:1118: test_header_val_leading_htab_stripped                          [PASSED]
-test/test_http_parser/test_http_parser.cpp:1119: test_header_val_obs_text_allowed                               [PASSED]
-test/test_http_parser/test_http_parser.cpp:1122: test_version_http11_recognized                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1123: test_version_http10_recognized                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1124: test_version_unknown_is_http_unknown                           [PASSED]
-test/test_http_parser/test_http_parser.cpp:1125: test_version_reset_to_unknown                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1128: test_bad_expect_lf_is_error                                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1129: test_blank_line_non_lf_is_error                                [PASSED]
-test/test_http_parser/test_http_parser.cpp:1132: test_slots_are_independent                                     [PASSED]
-test/test_http_parser/test_http_parser.cpp:1135: test_incremental_byte_by_byte                                  [PASSED]
-test/test_http_parser/test_http_parser.cpp:1136: test_incremental_two_chunks                                    [PASSED]
-test/test_http_parser/test_http_parser.cpp:1139: stress_many_requests_same_slot                                 [PASSED]
-test/test_http_parser/test_http_parser.cpp:1140: stress_max_headers                                             [PASSED]
-test/test_http_parser/test_http_parser.cpp:1141: stress_max_query_params                                        [PASSED]
-native:test_http_parser Took 0.69 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test               Status    Duration
--------------  -----------------  --------  ------------
-native         test_sse           PASSED    00:00:01.280
-native         test_session       PASSED    00:00:00.655
-native         test_presentation  PASSED    00:00:00.699
-native         test_transport     PASSED    00:00:00.696
-native         test_websocket     PASSED    00:00:00.742
-native         test_http_parser   PASSED    00:00:00.693
-================ 324 test cases: 324 succeeded in 00:00:04.764 ================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_observability in native_observability environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_observability/test_observability.cpp:294: test_transition_fires_hook_with_args                        [PASSED]
-test/test_observability/test_observability.cpp:295: test_each_reason_bumps_its_counter                          [PASSED]
-test/test_observability/test_observability.cpp:296: test_closing_gauge_is_derived_from_pool                     [PASSED]
-test/test_observability/test_observability.cpp:297: test_reset_clears_cumulative_not_derived_gauge              [PASSED]
-test/test_observability/test_observability.cpp:298: test_no_hook_after_unregister                               [PASSED]
-test/test_observability/test_observability.cpp:299: test_recv_fin_counts_remote_close                           [PASSED]
-test/test_observability/test_observability.cpp:300: test_err_cb_counts_error_close                              [PASSED]
-test/test_observability/test_observability.cpp:301: test_timeout_sweep_counts_timeout                           [PASSED]
-test/test_observability/test_observability.cpp:302: test_local_close_counts_local                               [PASSED]
-test/test_observability/test_observability.cpp:303: test_abort_slot_counts_abort_and_frees                      [PASSED]
-test/test_observability/test_observability.cpp:304: test_abort_slot_noop_on_free_slot                           [PASSED]
-test/test_observability/test_observability.cpp:305: test_backpressure_counts_when_ring_full                     [PASSED]
-test/test_observability/test_observability.cpp:307: test_begin_close_dwells_then_drains_on_ack                  [PASSED]
-test/test_observability/test_observability.cpp:308: test_begin_close_finalizes_immediately_when_already_drained [PASSED]
-test/test_observability/test_observability.cpp:309: test_begin_close_noop_if_not_active                         [PASSED]
-test/test_observability/test_observability.cpp:310: test_closing_timeout_reaps_stuck_slot                       [PASSED]
-test/test_observability/test_observability.cpp:311: test_recv_during_closing_is_drained_not_processed           [PASSED]
-native_observability:test_observability Took 0.87 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_observability  test_observability  PASSED    00:00:00.871
-================= 17 test cases: 17 succeeded in 00:00:00.871 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_accept_gate in native_accept_gate environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_accept_gate/test_accept_gate.cpp:230: test_accept_throttle_window                                     [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:231: test_accept_throttle_rollover                                   [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:232: test_per_ip_independent_budgets                                 [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:233: test_per_ip_v6_distinct_buckets                                 [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:234: test_per_ip_window_rollover                                     [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:235: test_per_ip_unspecified_defers                                  [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:236: test_per_ip_eviction_bounded                                    [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:237: test_ip_allowlist_empty_allows_all                              [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:238: test_ip_allowlist_cidr                                          [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:239: test_ip_allowlist_cidr_string                                   [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:240: test_ip_allowlist_family_isolation                              [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:241: test_ip_allowlist_host_and_zero_prefix                          [PASSED]
-test/test_accept_gate/test_accept_gate.cpp:242: test_ip_allowlist_rejects_bad_and_full                          [PASSED]
-native_accept_gate:test_accept_gate Took 1.23 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_accept_gate  test_accept_gate  PASSED    00:00:01.227
-================= 13 test cases: 13 succeeded in 00:00:01.227 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_http_ota in native_ota environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_http_ota/test_http_ota.cpp:95: test_large_body_streams_to_completion                                  [PASSED]
-test/test_http_ota/test_http_ota.cpp:96: test_no_hooks_large_body_is_413                                        [PASSED]
-test/test_http_ota/test_http_ota.cpp:97: test_nonmatching_path_not_streamed                                     [PASSED]
-native_ota:test_http_ota Took 0.77 seconds -------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test           Status    Duration
--------------  -------------  --------  ------------
-native_ota     test_http_ota  PASSED    00:00:00.772
-================== 3 test cases: 3 succeeded in 00:00:00.772 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_provisioning in native_prov environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_provisioning/test_provisioning.cpp:66: test_plain_fields                                              [PASSED]
-test/test_provisioning/test_provisioning.cpp:67: test_url_decoding                                              [PASSED]
-test/test_provisioning/test_provisioning.cpp:68: test_missing_field                                             [PASSED]
-test/test_provisioning/test_provisioning.cpp:69: test_no_substring_match                                        [PASSED]
-test/test_provisioning/test_provisioning.cpp:70: test_capacity_bound                                            [PASSED]
-native_prov:test_provisioning Took 0.74 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test               Status    Duration
--------------  -----------------  --------  ------------
-native_prov    test_provisioning  PASSED    00:00:00.741
-================== 5 test cases: 5 succeeded in 00:00:00.741 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_crypto in native_ssh environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_crypto/test_ssh_crypto.cpp:1100: test_sha256_empty                                                [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1101: test_sha256_abc                                                  [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1102: test_sha256_448bit                                               [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1103: test_sha256_streaming                                            [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1106: test_hmac_sha256_tc1                                             [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1107: test_hmac_sha256_tc2                                             [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1108: test_hmac_sha256_tc3                                             [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1109: test_hmac_sha256_streaming                                       [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1110: test_hmac_sha512_tc1                                             [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1111: test_hmac_sha512_tc2                                             [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1112: test_hmac_sha512_streaming                                       [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1115: test_aes256ctr_encrypt                                           [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1116: test_aes256ctr_decrypt                                           [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1117: test_aes256ctr_multi_block                                       [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1118: test_aes256ctr_wipe                                              [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1121: test_bn_roundtrip                                                [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1122: test_bn_cmp_equal                                                [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1123: test_bn_cmp_less                                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1124: test_bn_cmp_greater                                              [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1125: test_bn_is_zero                                                  [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1126: test_bn_dh_validate_rejects_zero                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1127: test_bn_dh_validate_rejects_one                                  [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1128: test_bn_dh_validate_accepts_two                                  [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1131: test_expmod_exp1                                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1132: test_expmod_exp2                                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1133: test_expmod_exp3                                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1134: test_expmod_commutative                                          [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1137: test_rsa_pkcs1_pad_structure                                     [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1138: test_rsa_sign_verify_roundtrip                                   [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1139: test_rsa_encode_pubkey                                           [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1140: test_rsa_verify_valid_signature                                  [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1141: test_rsa_verify_rejects_tampered_signature                       [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1142: test_rsa_verify_rejects_wrong_message                            [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1145: test_pkt_send_recv_unencrypted                                   [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1146: test_pkt_padding_alignment                                       [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1147: test_pkt_seq_increments                                          [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1148: test_pkt_disconnect_zeroes_state                                 [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1149: test_pkt_encrypted_roundtrip                                     [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1150: test_pkt_chacha20poly1305_roundtrip                              [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1151: test_pkt_aes_etm_sha256_roundtrip                                [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1152: test_pkt_aes_etm_sha512_roundtrip                                [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1153: test_pkt_encrypted_fragmented                                    [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1154: test_pkt_encrypted_two_packets                                   [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1155: test_ssh_kdf_canonical_mpint_k                                   [PASSED]
-test/test_ssh_crypto/test_ssh_crypto.cpp:1156: test_ssh_kdf_extension_chain                                     [PASSED]
-native_ssh:test_ssh_crypto Took 4.34 seconds ------------------------------------------------------------------ [PASSED]
-
-Processing test_ssh_auth in native_ssh environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_ssh_auth/test_ssh_auth.cpp:645: test_service_request_errors                                           [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:646: test_build_response_guards                                            [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:647: test_parse_request_truncations                                        [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:648: test_pubkey_blob_parse_failures                                       [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:649: test_pubkey_oversized_signed_prefix                                   [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:650: test_handle_request_index_and_parse_guards                            [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:651: test_service_request_accept                                           [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:652: test_service_request_rejects_unknown                                  [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:653: test_parse_password_request                                           [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:654: test_parse_none_request                                               [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:655: test_handle_request_success                                           [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:656: test_handle_request_wrong_password_fails                              [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:657: test_handle_none_request_fails_without_auth                           [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:658: test_handle_request_no_callback_fails                                 [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:659: test_pubkey_probe_returns_pk_ok                                       [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:660: test_pubkey_valid_signature_succeeds                                  [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:661: test_pubkey_ed25519_valid_signature_succeeds                          [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:662: test_pubkey_tampered_signature_fails                                  [PASSED]
-test/test_ssh_auth/test_ssh_auth.cpp:663: test_pubkey_unauthorized_key_fails                                    [PASSED]
-native_ssh:test_ssh_auth Took 0.72 seconds -------------------------------------------------------------------- [PASSED]
-
-Processing test_ssh_server in native_ssh environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_ssh_server/test_ssh_server.cpp:730: test_ssh_dispatch_bad_slot                                        [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:731: test_ssh_kexinit_parse_fail                                       [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:732: test_ssh_kexdh_guards                                             [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:733: test_ssh_service_request_fail                                     [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:734: test_ssh_userauth_guards                                          [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:735: test_ssh_postauth_authed_guard                                    [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:736: test_ssh_postauth_handler_fails                                   [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:737: test_ssh_open_confirm_failure_authed                              [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:738: test_ssh_global_request_reply                                     [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:739: test_ssh_window_adjust_and_eof                                    [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:740: test_ssh_pkt_index_and_cap_guards                                 [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:741: test_ssh_pkt_recv_unencrypted_errors                              [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:742: test_ssh_pkt_seq_overflow_guards                                  [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:743: test_ssh_pkt_encrypted_roundtrip_and_mac_fail                     [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:744: test_full_handshake_to_channel_data                               [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:745: test_extinfo_build_advertises_server_sig_algs                     [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:746: test_extinfo_not_sent_without_ext_info_c                          [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:747: test_inbound_ext_info_ignored                                     [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:748: test_large_client_kexinit_accepted                                [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:749: test_channel_open_before_auth_rejected                            [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:750: test_disconnect_closes                                            [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:751: test_ignore_is_noop                                               [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:752: test_auth_bruteforce_disconnect                                   [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:753: test_auth_success_after_failures                                  [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:754: test_unimplemented_reply_for_unknown_message                      [PASSED]
-test/test_ssh_server/test_ssh_server.cpp:755: test_inbound_close_emits_eof_then_close_separately                [PASSED]
-native_ssh:test_ssh_server Took 1.05 seconds ------------------------------------------------------------------ [PASSED]
-
-Processing test_ssh_transport in native_ssh environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_ssh_transport/test_ssh_transport.cpp:874: test_transport_index_guards                                 [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:875: test_banner_and_build_caps                                  [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:876: test_kexinit_parse_field_and_trunc                          [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:877: test_kexdh_parse_and_handle_errors                          [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:878: test_server_banner_format                                   [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:879: test_recv_banner_complete                                   [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:880: test_recv_banner_bare_lf                                    [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:881: test_recv_banner_split_across_reads                         [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:882: test_recv_banner_skips_preamble_lines                       [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:883: test_kexinit_build_starts_with_msg_and_stores_is            [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:884: test_kexinit_parse_accepts_supported                        [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:885: test_kexinit_parse_accepts_when_ours_listed_among_others    [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:886: test_kexinit_parse_rejects_missing_kex                      [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:887: test_kexinit_parse_rejects_hostkey_we_lack                  [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:888: test_kexinit_parse_steers_to_curve_ed25519                  [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:889: test_kexinit_parse_rejects_missing_cipher                   [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:890: test_kexinit_parse_selects_chacha20poly1305                 [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:891: test_kexinit_parse_selects_etm_mac                          [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:892: test_kexinit_parse_rejects_truncated                        [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:893: test_exchange_hash_matches_independent_assembly             [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:894: test_exchange_hash_changes_with_input                       [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:895: test_kexdh_parse_init_extracts_e_with_padding               [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:896: test_kexdh_parse_init_extracts_small_e                      [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:897: test_kexdh_parse_init_rejects_wrong_type                    [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:898: test_kexdh_parse_init_rejects_oversized_e                   [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:899: test_kexdh_build_reply_structure                            [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:900: test_kexdh_handle_produces_reply_and_installs_keys          [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:901: test_kexdh_handle_rejects_invalid_e                         [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:902: test_kexdh_handle_curve25519_ed25519_end_to_end             [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:903: test_kexdh_handle_curve25519_rejects_low_order              [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:904: test_derive_keys_session_id_affects_output                  [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:905: test_rekey_needed_threshold                                 [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:906: test_rekey_due_volume_and_time                              [PASSED]
-test/test_ssh_transport/test_ssh_transport.cpp:907: test_begin_rekey_preserves_session_and_auth                 [PASSED]
-native_ssh:test_ssh_transport Took 1.74 seconds --------------------------------------------------------------- [PASSED]
-
-Processing test_ssh_channel in native_ssh environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_ssh_channel/test_ssh_channel.cpp:987: test_chan_slot_and_msgtype_guards                               [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:988: test_chan_malformed_payloads                                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:989: test_chan_open_cap_guards                                       [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:990: test_chan_forward_and_channel_guards                            [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:991: test_chan_global_request_reply_caps                             [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:992: test_open_session_confirms                                      [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:993: test_open_unknown_type_fails                                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:994: test_direct_tcpip_no_cb_prohibited                              [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:995: test_direct_tcpip_accept_confirms                               [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:996: test_direct_tcpip_refused_connect_failed                        [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:997: test_forward_data_routes_to_forward_cb                          [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:998: test_shell_request_success_with_reply                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:999: test_unknown_request_failure                                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1000: test_request_no_reply_produces_nothing                         [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1001: test_inbound_data_invokes_callback                             [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1002: test_inbound_data_window_replenish                             [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1003: test_inbound_data_exceeding_window_rejected                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1004: test_outbound_data_frames_and_decrements_window                [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1005: test_outbound_data_exceeding_peer_window_rejected              [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1006: test_window_adjust_grows_peer_window                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1007: test_build_close_emits_eof_and_close                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1008: test_inbound_close_routes_to_channel                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1009: test_multiplex_two_channels_route_independently                [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1010: test_pool_full_open_fails                                      [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1011: test_data_to_unknown_channel_rejected                          [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1012: test_rforward_no_cb_refused                                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1013: test_rforward_accept_specific_port                             [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1014: test_rforward_port0_echoes_allocated                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1015: test_rforward_no_reply_silent                                  [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1016: test_rforward_cancel                                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1017: test_global_unknown_request                                    [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1018: test_global_malformed                                          [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1019: test_forwarded_open_builds_channel                             [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1020: test_forwarded_confirm_opens_channel                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1021: test_forwarded_failure_frees_channel                           [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1022: test_forwarded_confirm_unknown_rejected                        [PASSED]
-test/test_ssh_channel/test_ssh_channel.cpp:1023: test_forwarded_inbound_data_routes_to_forward_cb               [PASSED]
-native_ssh:test_ssh_channel Took 0.69 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test                Status    Duration
--------------  ------------------  --------  ------------
-native_ssh     test_ssh_crypto     PASSED    00:00:04.343
-native_ssh     test_ssh_auth       PASSED    00:00:00.724
-native_ssh     test_ssh_server     PASSED    00:00:01.046
-native_ssh     test_ssh_transport  PASSED    00:00:01.743
-native_ssh     test_ssh_channel    PASSED    00:00:00.691
-================ 161 test cases: 161 succeeded in 00:00:08.548 ================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_hardening in native_ssh_hardened environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_hardening/test_ssh_hardening.cpp:87: test_password_refused_even_with_correct_callback             [PASSED]
-test/test_ssh_hardening/test_ssh_hardening.cpp:88: test_failure_advertises_publickey_only                       [PASSED]
-native_ssh_hardened:test_ssh_hardening Took 1.24 seconds ------------------------------------------------------ [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test                Status    Duration
--------------------  ------------------  --------  ------------
-native_ssh_hardened  test_ssh_hardening  PASSED    00:00:01.237
-================== 2 test cases: 2 succeeded in 00:00:01.237 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_conn in native_ssh_conn environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_conn/test_ssh_conn.cpp:314: test_accept_sends_server_banner                                       [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:315: test_banner_then_kexinit_advances_and_replies                         [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:316: test_poll_triggers_server_rekey                                       [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:317: test_proto_handler_accessor                                           [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:318: test_send_entrypoints_reject                                          [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:319: test_poll_rx_banner_guards                                            [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:320: test_conn_send_close_open_channel                                     [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:321: test_send_channel_reject_paths                                        [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:322: test_accept_no_ssh_capacity                                           [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:323: test_poll_ignores_inactive_conn                                       [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:324: test_rx_disconnect_tears_down                                         [PASSED]
-test/test_ssh_conn/test_ssh_conn.cpp:325: test_rx_overlong_banner_closes                                        [PASSED]
-native_ssh_conn:test_ssh_conn Took 1.93 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_ssh_conn  test_ssh_conn  PASSED    00:00:01.933
-================= 12 test cases: 12 succeeded in 00:00:01.933 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_regex in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-src/dwserver.cpp: In member function ‘void DetWebServer::serve_file_internal(uint8_t, bool, fs::FS&, const char*, const char*, const char*)’:
-src/dwserver.cpp:3163:76: warning: ‘snprintf’ output may be truncated before the last format character [-Wformat-truncation=]
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |                                                                            ^
-src/dwserver.cpp:3163:17: note: ‘snprintf’ output between 18 and 57 bytes into a destination of size 56
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |         ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Testing...
-test/test_regex/test_regex.cpp:201: test_numeric_class_plus                                                     [PASSED]
-test/test_regex/test_regex.cpp:202: test_dot_star_matches_rest                                                  [PASSED]
-test/test_regex/test_regex.cpp:203: test_escaped_dot_extension                                                  [PASSED]
-test/test_regex/test_regex.cpp:204: test_optional_quantifier                                                    [PASSED]
-test/test_regex/test_regex.cpp:205: test_range_class_only                                                       [PASSED]
-test/test_regex/test_regex.cpp:206: test_negated_class                                                          [PASSED]
-test/test_regex/test_regex.cpp:207: test_anchored_full_match                                                    [PASSED]
-test/test_regex/test_regex.cpp:208: test_method_still_enforced                                                  [PASSED]
-test/test_regex/test_regex.cpp:209: test_pathological_pattern_terminates_no_match                               [PASSED]
-test/test_regex/test_regex.cpp:210: test_escape_class_digit                                                     [PASSED]
-test/test_regex/test_regex.cpp:211: test_escape_class_word                                                      [PASSED]
-test/test_regex/test_regex.cpp:212: test_escape_class_space                                                     [PASSED]
-test/test_regex/test_regex.cpp:213: test_class_escaped_members                                                  [PASSED]
-native_app:test_regex Took 1.52 seconds ----------------------------------------------------------------------- [PASSED]
-
-Processing test_template in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_template/test_template.cpp:153: test_basic_substitution                                               [PASSED]
-test/test_template/test_template.cpp:154: test_multiple_placeholders                                            [PASSED]
-test/test_template/test_template.cpp:155: test_unknown_placeholder_is_empty                                     [PASSED]
-test/test_template/test_template.cpp:156: test_unterminated_placeholder_is_literal                              [PASSED]
-test/test_template/test_template.cpp:157: test_null_resolver_empties_all                                        [PASSED]
-test/test_template/test_template.cpp:158: test_head_suppresses_body_keeps_length                                [PASSED]
-native_app:test_template Took 0.68 seconds -------------------------------------------------------------------- [PASSED]
-
-Processing test_path_params in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_path_params/test_path_params.cpp:170: test_single_param_captured                                      [PASSED]
-test/test_path_params/test_path_params.cpp:171: test_multiple_params_captured                                   [PASSED]
-test/test_path_params/test_path_params.cpp:172: test_missing_param_returns_null                                 [PASSED]
-test/test_path_params/test_path_params.cpp:173: test_literal_segment_mismatch_404                               [PASSED]
-test/test_path_params/test_path_params.cpp:174: test_extra_segment_does_not_match                               [PASSED]
-test/test_path_params/test_path_params.cpp:175: test_empty_param_value_does_not_match                           [PASSED]
-test/test_path_params/test_path_params.cpp:176: test_exact_route_still_matches                                  [PASSED]
-test/test_path_params/test_path_params.cpp:177: test_param_route_wrong_method_405                               [PASSED]
-native_app:test_path_params Took 0.68 seconds ----------------------------------------------------------------- [PASSED]
-
-Processing test_digest_vectors in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_digest_vectors/test_digest_vectors.cpp:108: test_sha256_fips_kats                                     [PASSED]
-test/test_digest_vectors/test_digest_vectors.cpp:109: test_ha1_matches_openssl                                  [PASSED]
-test/test_digest_vectors/test_digest_vectors.cpp:110: test_ha2_matches_openssl                                  [PASSED]
-test/test_digest_vectors/test_digest_vectors.cpp:111: test_response_matches_openssl                             [PASSED]
-native_app:test_digest_vectors Took 0.60 seconds -------------------------------------------------------------- [PASSED]
-
-Processing test_form_params in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_form_params/test_form_params.cpp:135: test_form_fields_parsed                                         [PASSED]
-test/test_form_params/test_form_params.cpp:136: test_form_missing_key_returns_false                             [PASSED]
-test/test_form_params/test_form_params.cpp:137: test_form_empty_value                                           [PASSED]
-test/test_form_params/test_form_params.cpp:138: test_form_wrong_content_type_ignored                            [PASSED]
-test/test_form_params/test_form_params.cpp:139: test_form_value_truncated_to_buffer                             [PASSED]
-native_app:test_form_params Took 0.68 seconds ----------------------------------------------------------------- [PASSED]
-
-Processing test_iface in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_iface/test_iface.cpp:163: test_ap_only_matches_on_ap                                                  [PASSED]
-test/test_iface/test_iface.cpp:164: test_ap_only_hidden_on_sta                                                  [PASSED]
-test/test_iface/test_iface.cpp:165: test_sta_only_matches_on_sta                                                [PASSED]
-test/test_iface/test_iface.cpp:166: test_sta_only_hidden_on_ap                                                  [PASSED]
-test/test_iface/test_iface.cpp:167: test_unfiltered_route_matches_any_interface                                 [PASSED]
-test/test_iface/test_iface.cpp:168: test_same_path_two_interfaces_picks_correct                                 [PASSED]
-test/test_iface/test_iface.cpp:169: test_set_ap_ip_updates_global                                               [PASSED]
-native_app:test_iface Took 0.68 seconds ----------------------------------------------------------------------- [PASSED]
-
-Processing test_json in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_json/test_json.cpp:285: test_writer_simple_object                                                     [PASSED]
-test/test_json/test_json.cpp:286: test_writer_nested_and_array                                                  [PASSED]
-test/test_json/test_json.cpp:287: test_writer_value_types                                                       [PASSED]
-test/test_json/test_json.cpp:288: test_writer_escapes_strings                                                   [PASSED]
-test/test_json/test_json.cpp:289: test_writer_control_char_unicode_escape                                       [PASSED]
-test/test_json/test_json.cpp:290: test_writer_overflow_sets_not_ok_and_stays_terminated                         [PASSED]
-test/test_json/test_json.cpp:291: test_writer_depth_overflow_sets_not_ok                                        [PASSED]
-test/test_json/test_json.cpp:292: test_reader_get_string                                                        [PASSED]
-test/test_json/test_json.cpp:293: test_reader_get_int                                                           [PASSED]
-test/test_json/test_json.cpp:294: test_reader_get_bool                                                          [PASSED]
-test/test_json/test_json.cpp:295: test_reader_only_matches_top_level_key                                        [PASSED]
-test/test_json/test_json.cpp:296: test_reader_missing_key                                                       [PASSED]
-test/test_json/test_json.cpp:297: test_reader_type_mismatch                                                     [PASSED]
-test/test_json/test_json.cpp:298: test_reader_unescapes_value                                                   [PASSED]
-test/test_json/test_json.cpp:299: test_reader_unicode_escape_to_byte                                            [PASSED]
-test/test_json/test_json.cpp:300: test_reader_truncates_to_capacity                                             [PASSED]
-test/test_json/test_json.cpp:301: test_reader_negative_int                                                      [PASSED]
-test/test_json/test_json.cpp:302: test_writer_null_and_remaining_escapes                                        [PASSED]
-test/test_json/test_json.cpp:303: test_reader_null_guards                                                       [PASSED]
-test/test_json/test_json.cpp:304: test_reader_all_escapes                                                       [PASSED]
-test/test_json/test_json.cpp:305: test_reader_unicode_hex_case                                                  [PASSED]
-test/test_json/test_json.cpp:306: test_reader_false_bool                                                        [PASSED]
-test/test_json/test_json.cpp:307: test_reader_malformed                                                         [PASSED]
-native_app:test_json Took 0.64 seconds ------------------------------------------------------------------------ [PASSED]
-
-Processing test_response_headers in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_response_headers/test_response_headers.cpp:251: test_date_header_emitted_when_time_set                [PASSED]
-test/test_response_headers/test_response_headers.cpp:252: test_date_header_omitted_when_clockless               [PASSED]
-test/test_response_headers/test_response_headers.cpp:253: test_single_custom_header_present                     [PASSED]
-test/test_response_headers/test_response_headers.cpp:254: test_multiple_custom_headers_present                  [PASSED]
-test/test_response_headers/test_response_headers.cpp:255: test_set_cookie_basic                                 [PASSED]
-test/test_response_headers/test_response_headers.cpp:256: test_set_cookie_with_attrs                            [PASSED]
-test/test_response_headers/test_response_headers.cpp:257: test_custom_header_on_send_empty                      [PASSED]
-test/test_response_headers/test_response_headers.cpp:258: test_custom_header_on_redirect                        [PASSED]
-test/test_response_headers/test_response_headers.cpp:259: test_headers_do_not_leak_across_requests              [PASSED]
-test/test_response_headers/test_response_headers.cpp:260: test_clear_response_headers                           [PASSED]
-test/test_response_headers/test_response_headers.cpp:261: test_oversized_header_dropped_whole                   [PASSED]
-native_app:test_response_headers Took 0.69 seconds ------------------------------------------------------------ [PASSED]
-
-Processing test_middleware in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_middleware/test_middleware.cpp:247: test_middleware_runs_then_handler                                 [PASSED]
-test/test_middleware/test_middleware.cpp:248: test_middleware_runs_for_unmatched_route                          [PASSED]
-test/test_middleware/test_middleware.cpp:249: test_middleware_can_inject_response_header                        [PASSED]
-test/test_middleware/test_middleware.cpp:250: test_middleware_halt_short_circuits_handler                       [PASSED]
-test/test_middleware/test_middleware.cpp:251: test_middleware_runs_in_registration_order                        [PASSED]
-test/test_middleware/test_middleware.cpp:252: test_use_respects_capacity_cap                                    [PASSED]
-test/test_middleware/test_middleware.cpp:253: test_rate_limit_allows_then_rejects                               [PASSED]
-test/test_middleware/test_middleware.cpp:254: test_rate_limit_window_resets                                     [PASSED]
-test/test_middleware/test_middleware.cpp:255: test_rate_limit_disabled_by_default                               [PASSED]
-native_app:test_middleware Took 0.69 seconds ------------------------------------------------------------------ [PASSED]
-
-Processing test_digest_auth in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_digest_auth/test_digest_auth.cpp:396: test_challenge_is_digest_sha256                                 [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:397: test_valid_digest_authenticates                                 [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:398: test_wrong_password_rejected                                    [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:399: test_bad_nonce_rejected                                         [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:400: test_wrong_username_rejected                                    [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:401: test_wrong_qop_rejected                                         [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:402: test_missing_response_field_rejected                            [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:403: test_basic_scheme_on_digest_route_rejected                      [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:404: test_uri_mismatch_rejected                                      [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:405: test_nonce_is_stateless_timestamped                             [PASSED]
-test/test_digest_auth/test_digest_auth.cpp:406: test_stale_nonce_triggers_transparent_retry                     [PASSED]
-native_app:test_digest_auth Took 0.71 seconds ----------------------------------------------------------------- [PASSED]
-
-Processing test_web_terminal in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_web_terminal/test_web_terminal.cpp:204: test_serves_terminal_page                                     [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:205: test_ws_upgrade_tracks_client                                 [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:206: test_ws_upgrade_requires_connection_token                     [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:207: test_ws_upgrade_rejects_bad_key_length                        [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:208: test_command_delivered_to_callback                            [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:209: test_broadcast_reaches_client                                 [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:210: test_printf_broadcast                                         [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:211: test_no_broadcast_without_clients                             [PASSED]
-test/test_web_terminal/test_web_terminal.cpp:212: test_close_clears_client                                      [PASSED]
-native_app:test_web_terminal Took 0.68 seconds ---------------------------------------------------------------- [PASSED]
-
-Processing test_defer in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_defer/test_defer.cpp:56: test_defer_runs_inline_on_host                                               [PASSED]
-test/test_defer/test_defer.cpp:57: test_server_defer_routes_by_owner                                            [PASSED]
-test/test_defer/test_defer.cpp:58: test_defer_null_fn_fails                                                     [PASSED]
-native_app:test_defer Took 0.66 seconds ----------------------------------------------------------------------- [PASSED]
-
-Processing test_multipart in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_multipart/test_multipart.cpp:495: test_no_content_type_returns_false                                  [PASSED]
-test/test_multipart/test_multipart.cpp:496: test_no_boundary_in_content_type_returns_false                      [PASSED]
-test/test_multipart/test_multipart.cpp:497: test_body_missing_delimiter_returns_false                           [PASSED]
-test/test_multipart/test_multipart.cpp:498: test_single_text_field_parsed                                       [PASSED]
-test/test_multipart/test_multipart.cpp:499: test_two_text_fields_parsed                                         [PASSED]
-test/test_multipart/test_multipart.cpp:500: test_three_text_fields_parsed                                       [PASSED]
-test/test_multipart/test_multipart.cpp:501: test_file_upload_part                                               [PASSED]
-test/test_multipart/test_multipart.cpp:502: test_file_upload_with_text_field                                    [PASSED]
-test/test_multipart/test_multipart.cpp:503: test_get_field_found                                                [PASSED]
-test/test_multipart/test_multipart.cpp:504: test_get_field_not_found_returns_null                               [PASSED]
-test/test_multipart/test_multipart.cpp:505: test_get_field_multiple_fields                                      [PASSED]
-test/test_multipart/test_multipart.cpp:506: test_data_len_is_correct                                            [PASSED]
-test/test_multipart/test_multipart.cpp:507: test_max_parts_captured                                             [PASSED]
-test/test_multipart/test_multipart.cpp:508: test_empty_field_value                                              [PASSED]
-test/test_multipart/test_multipart.cpp:509: test_part_without_filename_has_null_filename                        [PASSED]
-test/test_multipart/test_multipart.cpp:510: test_part_without_content_type_has_null_type                        [PASSED]
-test/test_multipart/test_multipart.cpp:511: test_long_boundary_string                                           [PASSED]
-test/test_multipart/test_multipart.cpp:512: stress_parse_100_requests                                           [PASSED]
-test/test_multipart/test_multipart.cpp:513: stress_get_field_100_lookups                                        [PASSED]
-native_app:test_multipart Took 0.70 seconds ------------------------------------------------------------------- [PASSED]
-
-Processing test_auth in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_auth/test_auth.cpp:255: test_unprotected_route_fires_handler                                          [PASSED]
-test/test_auth/test_auth.cpp:256: test_protected_route_no_header_returns_401                                    [PASSED]
-test/test_auth/test_auth.cpp:257: test_protected_route_wrong_password_returns_401                               [PASSED]
-test/test_auth/test_auth.cpp:258: test_protected_route_wrong_username_returns_401                               [PASSED]
-test/test_auth/test_auth.cpp:259: test_protected_route_valid_credentials_fires_handler                          [PASSED]
-test/test_auth/test_auth.cpp:260: test_401_includes_www_authenticate_header                                     [PASSED]
-test/test_auth/test_auth.cpp:261: test_non_basic_scheme_returns_401                                             [PASSED]
-test/test_auth/test_auth.cpp:262: test_credentials_without_colon_returns_401                                    [PASSED]
-test/test_auth/test_auth.cpp:263: test_protected_and_unprotected_routes_coexist                                 [PASSED]
-test/test_auth/test_auth.cpp:264: test_auth_route_returns_404_for_wrong_path                                    [PASSED]
-test/test_auth/test_auth.cpp:265: test_auth_checked_per_method                                                  [PASSED]
-test/test_auth/test_auth.cpp:267: stress_auth_50_valid_requests                                                 [PASSED]
-test/test_auth/test_auth.cpp:268: stress_auth_50_invalid_requests                                               [PASSED]
-native_app:test_auth Took 0.68 seconds ------------------------------------------------------------------------ [PASSED]
-
-Processing test_file_serving in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_file_serving/test_file_serving.cpp:342: test_missing_file_returns_404                                 [PASSED]
-test/test_file_serving/test_file_serving.cpp:343: test_existing_file_returns_200                                [PASSED]
-test/test_file_serving/test_file_serving.cpp:344: test_response_includes_content_type_html                      [PASSED]
-test/test_file_serving/test_file_serving.cpp:345: test_response_includes_content_type_js                        [PASSED]
-test/test_file_serving/test_file_serving.cpp:346: test_content_length_matches_file_size                         [PASSED]
-test/test_file_serving/test_file_serving.cpp:347: test_file_body_is_sent                                        [PASSED]
-test/test_file_serving/test_file_serving.cpp:348: test_empty_file_returns_200_with_zero_length                  [PASSED]
-test/test_file_serving/test_file_serving.cpp:349: test_large_file_body_fully_sent                               [PASSED]
-test/test_file_serving/test_file_serving.cpp:350: test_serve_file_does_not_affect_other_routes                  [PASSED]
-test/test_file_serving/test_file_serving.cpp:351: test_multiple_content_types                                   [PASSED]
-test/test_file_serving/test_file_serving.cpp:352: stress_serve_file_50_requests                                 [PASSED]
-test/test_file_serving/test_file_serving.cpp:353: stress_alternate_missing_and_found                            [PASSED]
-native_app:test_file_serving Took 0.71 seconds ---------------------------------------------------------------- [PASSED]
-
-Processing test_dispatch in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_dispatch/test_dispatch.cpp:193: test_method_mismatch_returns_405                                      [PASSED]
-test/test_dispatch/test_dispatch.cpp:194: test_405_includes_allow_header                                        [PASSED]
-test/test_dispatch/test_dispatch.cpp:195: test_405_allow_lists_all_methods_for_path                             [PASSED]
-test/test_dispatch/test_dispatch.cpp:196: test_unknown_path_still_404_not_405                                   [PASSED]
-test/test_dispatch/test_dispatch.cpp:197: test_unknown_method_returns_501                                       [PASSED]
-test/test_dispatch/test_dispatch.cpp:198: test_unknown_method_not_treated_as_get                                [PASSED]
-test/test_dispatch/test_dispatch.cpp:199: test_head_runs_get_handler_without_body                               [PASSED]
-test/test_dispatch/test_dispatch.cpp:200: test_get_route_advertises_head_in_allow                               [PASSED]
-test/test_dispatch/test_dispatch.cpp:201: test_head_on_post_only_route_405                                      [PASSED]
-test/test_dispatch/test_dispatch.cpp:203: test_http_parse_skips_ws_upgraded_slot                                [PASSED]
-test/test_dispatch/test_dispatch.cpp:205: test_correct_method_still_dispatches                                  [PASSED]
-native_app:test_dispatch Took 0.69 seconds -------------------------------------------------------------------- [PASSED]
-
-Processing test_chunked in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_chunked/test_chunked.cpp:337: test_headers_announce_chunked_no_content_length                         [PASSED]
-test/test_chunked/test_chunked.cpp:338: test_single_chunk_framing                                               [PASSED]
-test/test_chunked/test_chunked.cpp:339: test_multiple_chunks_in_order                                           [PASSED]
-test/test_chunked/test_chunked.cpp:340: test_printf_chunk                                                       [PASSED]
-test/test_chunked/test_chunked.cpp:341: test_single_piece_then_terminator                                       [PASSED]
-test/test_chunked/test_chunked.cpp:342: test_empty_body_is_just_terminator                                      [PASSED]
-test/test_chunked/test_chunked.cpp:343: test_large_chunked_body_not_truncated                                   [PASSED]
-test/test_chunked/test_chunked.cpp:344: test_head_sends_headers_only                                            [PASSED]
-test/test_chunked/test_chunked.cpp:345: test_custom_header_injected_into_chunked                                [PASSED]
-test/test_chunked/test_chunked.cpp:346: test_log_hook_reports_total_body_length                                 [PASSED]
-test/test_chunked/test_chunked.cpp:347: test_http10_falls_back_to_close_delimited                               [PASSED]
-test/test_chunked/test_chunked.cpp:348: test_http10_large_body_not_truncated                                    [PASSED]
-native_app:test_chunked Took 0.70 seconds --------------------------------------------------------------------- [PASSED]
-
-Processing test_application in native_app environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_application/test_application.cpp:1274: test_handler_reads_body                                        [PASSED]
-test/test_application/test_application.cpp:1275: test_handler_reads_query_param                                 [PASSED]
-test/test_application/test_application.cpp:1276: test_handler_reads_header                                      [PASSED]
-test/test_application/test_application.cpp:1277: test_wildcard_before_exact_wildcard_wins                       [PASSED]
-test/test_application/test_application.cpp:1280: test_fn_on_registers_and_dispatches                            [PASSED]
-test/test_application/test_application.cpp:1281: test_fn_on_path_copied_null_terminated                         [PASSED]
-test/test_application/test_application.cpp:1282: test_fn_on_table_full_extra_routes_dropped                     [PASSED]
-test/test_application/test_application.cpp:1283: test_fn_on_same_path_different_methods_are_distinct            [PASSED]
-test/test_application/test_application.cpp:1286: test_fn_on_not_found_called_when_no_match                      [PASSED]
-test/test_application/test_application.cpp:1287: test_fn_on_not_found_not_called_when_match_exists              [PASSED]
-test/test_application/test_application.cpp:1290: test_fn_set_cors_options_preflight_clears_slot                 [PASSED]
-test/test_application/test_application.cpp:1291: test_fn_set_cors_empty_string_disables                         [PASSED]
-test/test_application/test_application.cpp:1294: test_wrong_method_does_not_match                               [PASSED]
-test/test_application/test_application.cpp:1295: test_wrong_path_does_not_match                                 [PASSED]
-test/test_application/test_application.cpp:1296: test_all_http_methods_dispatched                               [PASSED]
-test/test_application/test_application.cpp:1297: test_root_path_matches_exactly                                 [PASSED]
-test/test_application/test_application.cpp:1298: test_root_path_does_not_match_subpath                          [PASSED]
-test/test_application/test_application.cpp:1299: test_wildcard_matches_any_suffix                               [PASSED]
-test/test_application/test_application.cpp:1300: test_wildcard_does_not_match_unrelated_prefix                  [PASSED]
-test/test_application/test_application.cpp:1301: test_exact_route_wins_when_registered_first                    [PASSED]
-test/test_application/test_application.cpp:1302: test_slot_not_stuck_in_complete_after_handle                   [PASSED]
-test/test_application/test_application.cpp:1303: test_parse_error_slot_auto_reset                               [PASSED]
-test/test_application/test_application.cpp:1306: stress_last_route_dispatched_in_full_table                     [PASSED]
-test/test_application/test_application.cpp:1307: stress_sequential_requests_no_state_leak                       [PASSED]
-test/test_application/test_application.cpp:1308: stress_all_slots_dispatched_simultaneously                     [PASSED]
-test/test_application/test_application.cpp:1309: stress_wildcard_matches_many_paths                             [PASSED]
-test/test_application/test_application.cpp:1310: stress_handle_with_no_complete_slots_is_nop                    [PASSED]
-test/test_application/test_application.cpp:1313: race_slot_complete_between_handle_calls                        [PASSED]
-test/test_application/test_application.cpp:1314: race_conn_freed_after_parse_complete                           [PASSED]
-test/test_application/test_application.cpp:1315: race_double_handle_no_double_dispatch                          [PASSED]
-test/test_application/test_application.cpp:1316: race_error_and_valid_slot_in_same_handle                       [PASSED]
-test/test_application/test_application.cpp:1317: race_callback_manually_resets_slot                             [PASSED]
-test/test_application/test_application.cpp:1320: test_uri_too_long_auto_resets_slot                             [PASSED]
-test/test_application/test_application.cpp:1323: test_transfer_encoding_chunked_is_501                          [PASSED]
-test/test_application/test_application.cpp:1324: test_transfer_encoding_identity_is_501                         [PASSED]
-test/test_application/test_application.cpp:1326: test_redirect_emits_location_and_status                        [PASSED]
-test/test_application/test_application.cpp:1327: test_redirect_invalid_code_defaults_to_302                     [PASSED]
-test/test_application/test_application.cpp:1328: test_mime_type_detection                                       [PASSED]
-test/test_application/test_application.cpp:1330: test_serve_static_file_and_mime                                [PASSED]
-test/test_application/test_application.cpp:1331: test_serve_static_index_fallback                               [PASSED]
-test/test_application/test_application.cpp:1332: test_serve_static_gzip_when_accepted                           [PASSED]
-test/test_application/test_application.cpp:1333: test_serve_static_no_gzip_when_not_accepted                    [PASSED]
-test/test_application/test_application.cpp:1334: test_serve_static_traversal_not_leaked                         [PASSED]
-test/test_application/test_application.cpp:1335: test_serve_static_missing_is_404                               [PASSED]
-test/test_application/test_application.cpp:1336: test_serve_static_etag_conditional_get                         [PASSED]
-test/test_application/test_application.cpp:1337: test_serve_static_inm_star_list_weak                           [PASSED]
-test/test_application/test_application.cpp:1338: test_serve_static_last_modified_conditional_get                [PASSED]
-test/test_application/test_application.cpp:1339: test_serve_static_if_modified_since_malformed                  [PASSED]
-test/test_application/test_application.cpp:1340: test_serve_static_cache_control                                [PASSED]
-test/test_application/test_application.cpp:1342: test_request_log_hook_fires                                    [PASSED]
-test/test_application/test_application.cpp:1343: test_stats_endpoint_emits_json                                 [PASSED]
-test/test_application/test_application.cpp:1344: test_status_text_reason_phrases                                [PASSED]
-test/test_application/test_application.cpp:1345: test_allow_header_lists_methods                                [PASSED]
-test/test_application/test_application.cpp:1346: test_listen_and_begin                                          [PASSED]
-test/test_application/test_application.cpp:1347: test_begin_port_convenience                                    [PASSED]
-test/test_application/test_application.cpp:1350: test_ws_send_api                                               [PASSED]
-test/test_application/test_application.cpp:1353: test_sse_broadcast_after_upgrade_matches_path                  [PASSED]
-test/test_application/test_application.cpp:1354: test_sse_send_api                                              [PASSED]
-test/test_application/test_application.cpp:1357: test_metrics_emits_prometheus                                  [PASSED]
-native_app:test_application Took 0.84 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test                   Status    Duration
--------------  ---------------------  --------  ------------
-native_app     test_regex             PASSED    00:00:01.523
-native_app     test_template          PASSED    00:00:00.679
-native_app     test_path_params       PASSED    00:00:00.680
-native_app     test_digest_vectors    PASSED    00:00:00.601
-native_app     test_form_params       PASSED    00:00:00.679
-native_app     test_iface             PASSED    00:00:00.683
-native_app     test_json              PASSED    00:00:00.640
-native_app     test_response_headers  PASSED    00:00:00.688
-native_app     test_middleware        PASSED    00:00:00.686
-native_app     test_digest_auth       PASSED    00:00:00.713
-native_app     test_web_terminal      PASSED    00:00:00.682
-native_app     test_defer             PASSED    00:00:00.655
-native_app     test_multipart         PASSED    00:00:00.698
-native_app     test_auth              PASSED    00:00:00.683
-native_app     test_file_serving      PASSED    00:00:00.708
-native_app     test_dispatch          PASSED    00:00:00.692
-native_app     test_chunked           PASSED    00:00:00.697
-native_app     test_application       PASSED    00:00:00.836
-================ 235 test cases: 235 succeeded in 00:00:13.221 ================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_webdav_handler in native_webdav_handler environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_webdav_handler/test_webdav_handler.cpp:390: test_copy_collection_recursive                            [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:391: test_copy_collection_depth0_shallow                       [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:392: test_copy_overwrite_semantics                             [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:393: test_move_collection_recursive                            [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:394: test_delete_collection_recursive                          [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:395: test_propfind_depth0_collection_only                      [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:396: test_propfind_depth1_lists_members                        [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:397: test_mkcol_create_and_conflict                            [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:398: test_delete_single_file                                   [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:399: test_options_advertises_dav                               [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:400: test_get_file_through_mount                               [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:401: test_put_stream_create                                    [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:402: test_put_stream_overwrite                                 [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:403: test_put_empty_buffered                                   [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:404: test_put_stream_write_fails_507                           [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:405: test_put_stream_open_fails_409                            [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:406: test_put_stream_traversal_403                             [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:407: test_put_stream_begin_declines                            [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:408: test_put_stream_abort                                     [PASSED]
-test/test_webdav_handler/test_webdav_handler.cpp:409: test_lock_unlock_advisory                                 [PASSED]
-native_webdav_handler:test_webdav_handler Took 1.59 seconds --------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment            Test                 Status    Duration
----------------------  -------------------  --------  ------------
-native_webdav_handler  test_webdav_handler  PASSED    00:00:01.594
-================= 20 test cases: 20 succeeded in 00:00:01.594 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_diag in native_diag environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-src/dwserver.cpp: In member function ‘void DetWebServer::serve_file_internal(uint8_t, bool, fs::FS&, const char*, const char*, const char*)’:
-src/dwserver.cpp:3163:76: warning: ‘snprintf’ output may be truncated before the last format character [-Wformat-truncation=]
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |                                                                            ^
-src/dwserver.cpp:3163:17: note: ‘snprintf’ output between 18 and 57 bytes into a destination of size 56
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |         ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Testing...
-test/test_diag/test_diag.cpp:92: test_diag_serves_build_info_json                                               [PASSED]
-test/test_diag/test_diag.cpp:93: test_diag_json_braces_balanced                                                 [PASSED]
-native_diag:test_diag Took 1.52 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_diag    test_diag  PASSED    00:00:01.517
-================== 2 test cases: 2 succeeded in 00:00:01.517 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_snmp_ber in native_snmp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_snmp_ber/test_snmp_ber.cpp:298: test_integer_vectors                                                  [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:299: test_oid_vector                                                       [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:300: test_octet_string_and_null                                            [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:301: test_counter32_keeps_unsigned                                         [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:302: test_sequence_roundtrip                                               [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:303: test_oid_roundtrip                                                    [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:304: test_large_arc_roundtrip                                              [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:305: test_oid_large_first_subidentifier_roundtrip                          [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:306: test_encoder_overflow_sets_not_ok                                     [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:307: test_decoder_truncated_length_fails                                   [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:308: test_decoder_longform_length_count_past_buffer_fails                  [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:309: test_decoder_longform_length_too_wide_fails                           [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:310: test_decoder_longform_length_content_past_buffer_fails                [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:311: test_decoder_longform_length_max_uint32_fails                         [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:312: test_decoder_indefinite_length_fails                                  [PASSED]
-test/test_snmp_ber/test_snmp_ber.cpp:313: test_decoder_oversized_integer_fails                                  [PASSED]
-native_snmp:test_snmp_ber Took 0.80 seconds ------------------------------------------------------------------- [PASSED]
-
-Processing test_snmp_agent in native_snmp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Testing...
-test/test_snmp_agent/test_snmp_agent.cpp:518: test_registration_and_rw_edges                                    [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:519: test_ipaddress_value_encodes                                      [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:520: test_set_wrong_type_and_unknown                                   [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:521: test_getbulk_variants                                             [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:522: test_dispatch_value_types_and_malformed                           [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:523: test_get_string_v2c                                               [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:524: test_get_unknown_v2c_exception                                    [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:525: test_get_bad_instance_v2c_nosuchinstance                          [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:526: test_get_unknown_v1_error                                         [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:527: test_getnext_walks_to_first                                       [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:528: test_getnext_past_end_endofmibview                                [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:529: test_set_without_rw_community_denied                              [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:530: test_set_with_rw_community_invokes_setter                         [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:531: test_set_readonly_not_writable                                    [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:532: test_getbulk_returns_multiple                                     [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:533: test_dynamic_counter_value                                        [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:534: test_uptime_is_timeticks                                          [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:535: test_unknown_community_no_response                                [PASSED]
-test/test_snmp_agent/test_snmp_agent.cpp:536: test_v3_message_dropped                                           [PASSED]
-native_snmp:test_snmp_agent Took 0.60 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test             Status    Duration
--------------  ---------------  --------  ------------
-native_snmp    test_snmp_ber    PASSED    00:00:00.800
-native_snmp    test_snmp_agent  PASSED    00:00:00.603
-================= 35 test cases: 35 succeeded in 00:00:01.403 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_snmp_v3 in native_snmp_v3 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_snmp_v3/test_snmp_v3.cpp:827: test_v3_field_tag_corruption                                            [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:828: test_v3_scoped_parse_rejections                                         [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:829: test_v3_discovery_malformed_scoped                                      [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:830: test_v3_auth_edge_rejections                                            [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:831: test_v3_message_structure_rejections                                    [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:832: test_v3_init_and_boots_accessors                                        [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:833: test_v3_discovery_variants                                              [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:834: test_v3_priv_not_configured                                             [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:835: test_v3_notify_paths                                                    [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:836: test_localize_key_sha256_vector                                         [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:837: test_aes128_fips197_vector                                              [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:838: test_aes_cfb_roundtrip_partial_block                                    [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:839: test_discovery_reports_engine_id                                        [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:840: test_authnopriv_get                                                     [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:841: test_authpriv_get                                                       [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:842: test_wrong_auth_password_reports_wrong_digest                           [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:843: test_unknown_user_reports                                               [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:844: test_not_in_time_window_reports                                         [PASSED]
-test/test_snmp_v3/test_snmp_v3.cpp:845: test_inform_v3_builds_informrequest                                     [PASSED]
-native_snmp_v3:test_snmp_v3 Took 2.60 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_snmp_v3  test_snmp_v3  PASSED    00:00:02.602
-================= 19 test cases: 19 succeeded in 00:00:02.602 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_telnet in native_telnet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_telnet/test_telnet.cpp:253: test_accept_negotiates_echo_and_sga                                       [PASSED]
-test/test_telnet/test_telnet.cpp:254: test_line_echoed_and_dispatched                                           [PASSED]
-test/test_telnet/test_telnet.cpp:255: test_backspace_first_line                                                 [PASSED]
-test/test_telnet/test_telnet.cpp:256: test_iac_will_gets_dont                                                   [PASSED]
-test/test_telnet/test_telnet.cpp:257: test_iac_do_unsupported_gets_wont                                         [PASSED]
-test/test_telnet/test_telnet.cpp:258: test_iac_do_echo_is_silent                                                [PASSED]
-test/test_telnet/test_telnet.cpp:259: test_iac_stripped_from_data                                               [PASSED]
-test/test_telnet/test_telnet.cpp:260: test_print_broadcast                                                      [PASSED]
-test/test_telnet/test_telnet.cpp:261: test_unknown_slot_is_noop                                                 [PASSED]
-test/test_telnet/test_telnet.cpp:262: test_cr_and_control_ignored                                               [PASSED]
-test/test_telnet/test_telnet.cpp:263: test_iac_escaped_literal                                                  [PASSED]
-test/test_telnet/test_telnet.cpp:264: test_subnegotiation_consumed                                              [PASSED]
-test/test_telnet/test_telnet.cpp:265: test_accept_no_capacity                                                   [PASSED]
-test/test_telnet/test_telnet.cpp:266: test_output_escaping_and_printf                                           [PASSED]
-test/test_telnet/test_telnet.cpp:267: test_inactive_conn_sends_nothing                                          [PASSED]
-native_telnet:test_telnet Took 0.93 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_telnet  test_telnet  PASSED    00:00:00.931
-================= 15 test cases: 15 succeeded in 00:00:00.931 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_coap in native_coap environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_coap/test_coap.cpp:1167: test_response_option_capacity_stop                                           [PASSED]
-test/test_coap/test_coap.cpp:1168: test_coap_udp_handler_basic                                                  [PASSED]
-test/test_coap/test_coap.cpp:1173: test_add_resource_limits                                                     [PASSED]
-test/test_coap/test_coap.cpp:1174: test_short_and_truncated_token                                               [PASSED]
-test/test_coap/test_coap.cpp:1175: test_malformed_options_bad_request                                           [PASSED]
-test/test_coap/test_coap.cpp:1176: test_extended_delta_and_length_ignored                                       [PASSED]
-test/test_coap/test_coap.cpp:1177: test_oversized_path_and_query                                                [PASSED]
-test/test_coap/test_coap.cpp:1178: test_block_option_too_wide                                                   [PASSED]
-test/test_coap/test_coap.cpp:1179: test_block1_reserved_szx                                                     [PASSED]
-test/test_coap/test_coap.cpp:1180: test_block1_continue_no_space                                                [PASSED]
-test/test_coap/test_coap.cpp:1181: test_response_payload_clamped                                                [PASSED]
-test/test_coap/test_coap.cpp:1182: test_response_buffer_too_small                                               [PASSED]
-test/test_coap/test_coap.cpp:1183: test_well_known_core_truncates                                               [PASSED]
-test/test_coap/test_coap.cpp:1184: test_observe_large_seq_encoding                                              [PASSED]
-test/test_coap/test_coap.cpp:1185: test_block2_explicit_paging                                                  [PASSED]
-test/test_coap/test_coap.cpp:1186: test_block2_auto_when_large                                                  [PASSED]
-test/test_coap/test_coap.cpp:1187: test_block2_szx_clamped                                                      [PASSED]
-test/test_coap/test_coap.cpp:1188: test_block2_absent_for_small                                                 [PASSED]
-test/test_coap/test_coap.cpp:1189: test_block2_out_of_range                                                     [PASSED]
-test/test_coap/test_coap.cpp:1190: test_block2_reserved_szx                                                     [PASSED]
-test/test_coap/test_coap.cpp:1191: test_block1_upload_two_blocks                                                [PASSED]
-test/test_coap/test_coap.cpp:1192: test_block1_out_of_order                                                     [PASSED]
-test/test_coap/test_coap.cpp:1193: test_block1_too_large                                                        [PASSED]
-test/test_coap/test_coap.cpp:1194: test_observe_option_in_response                                              [PASSED]
-test/test_coap/test_coap.cpp:1195: test_no_observe_option_when_seq_negative                                     [PASSED]
-test/test_coap/test_coap.cpp:1196: test_get_content                                                             [PASSED]
-test/test_coap/test_coap.cpp:1197: test_not_found                                                               [PASSED]
-test/test_coap/test_coap.cpp:1198: test_method_not_allowed                                                      [PASSED]
-test/test_coap/test_coap.cpp:1199: test_non_request_type                                                        [PASSED]
-test/test_coap/test_coap.cpp:1200: test_put_with_payload                                                        [PASSED]
-test/test_coap/test_coap.cpp:1201: test_multi_segment_path                                                      [PASSED]
-test/test_coap/test_coap.cpp:1202: test_uri_query                                                               [PASSED]
-test/test_coap/test_coap.cpp:1203: test_empty_con_ping_rst                                                      [PASSED]
-test/test_coap/test_coap.cpp:1204: test_bad_version_rst                                                         [PASSED]
-test/test_coap/test_coap.cpp:1205: test_delete                                                                  [PASSED]
-test/test_coap/test_coap.cpp:1206: test_token_8_bytes                                                           [PASSED]
-test/test_coap/test_coap.cpp:1207: test_extended_option_length                                                  [PASSED]
-test/test_coap/test_coap.cpp:1208: test_ack_ignored                                                             [PASSED]
-test/test_coap/test_coap.cpp:1209: test_root_path                                                               [PASSED]
-test/test_coap/test_coap.cpp:1210: test_unknown_method_not_allowed                                              [PASSED]
-test/test_coap/test_coap.cpp:1211: test_unknown_critical_option_bad_option                                      [PASSED]
-test/test_coap/test_coap.cpp:1212: test_well_known_core_discovery                                               [PASSED]
-test/test_coap/test_coap.cpp:1213: test_well_known_core_rejects_post                                            [PASSED]
-native_coap:test_coap Took 0.88 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_coap    test_coap  PASSED    00:00:00.879
-================= 43 test cases: 43 succeeded in 00:00:00.879 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_coap in native_coap_observe environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_coap/test_coap.cpp:1167: test_response_option_capacity_stop                                           [PASSED]
-test/test_coap/test_coap.cpp:1168: test_coap_udp_handler_basic                                                  [PASSED]
-test/test_coap/test_coap.cpp:1170: test_coap_observe_over_udp                                                   [PASSED]
-test/test_coap/test_coap.cpp:1171: test_coap_observe_registry_full                                              [PASSED]
-test/test_coap/test_coap.cpp:1173: test_add_resource_limits                                                     [PASSED]
-test/test_coap/test_coap.cpp:1174: test_short_and_truncated_token                                               [PASSED]
-test/test_coap/test_coap.cpp:1175: test_malformed_options_bad_request                                           [PASSED]
-test/test_coap/test_coap.cpp:1176: test_extended_delta_and_length_ignored                                       [PASSED]
-test/test_coap/test_coap.cpp:1177: test_oversized_path_and_query                                                [PASSED]
-test/test_coap/test_coap.cpp:1178: test_block_option_too_wide                                                   [PASSED]
-test/test_coap/test_coap.cpp:1179: test_block1_reserved_szx                                                     [PASSED]
-test/test_coap/test_coap.cpp:1180: test_block1_continue_no_space                                                [PASSED]
-test/test_coap/test_coap.cpp:1181: test_response_payload_clamped                                                [PASSED]
-test/test_coap/test_coap.cpp:1182: test_response_buffer_too_small                                               [PASSED]
-test/test_coap/test_coap.cpp:1183: test_well_known_core_truncates                                               [PASSED]
-test/test_coap/test_coap.cpp:1184: test_observe_large_seq_encoding                                              [PASSED]
-test/test_coap/test_coap.cpp:1185: test_block2_explicit_paging                                                  [PASSED]
-test/test_coap/test_coap.cpp:1186: test_block2_auto_when_large                                                  [PASSED]
-test/test_coap/test_coap.cpp:1187: test_block2_szx_clamped                                                      [PASSED]
-test/test_coap/test_coap.cpp:1188: test_block2_absent_for_small                                                 [PASSED]
-test/test_coap/test_coap.cpp:1189: test_block2_out_of_range                                                     [PASSED]
-test/test_coap/test_coap.cpp:1190: test_block2_reserved_szx                                                     [PASSED]
-test/test_coap/test_coap.cpp:1191: test_block1_upload_two_blocks                                                [PASSED]
-test/test_coap/test_coap.cpp:1192: test_block1_out_of_order                                                     [PASSED]
-test/test_coap/test_coap.cpp:1193: test_block1_too_large                                                        [PASSED]
-test/test_coap/test_coap.cpp:1194: test_observe_option_in_response                                              [PASSED]
-test/test_coap/test_coap.cpp:1195: test_no_observe_option_when_seq_negative                                     [PASSED]
-test/test_coap/test_coap.cpp:1196: test_get_content                                                             [PASSED]
-test/test_coap/test_coap.cpp:1197: test_not_found                                                               [PASSED]
-test/test_coap/test_coap.cpp:1198: test_method_not_allowed                                                      [PASSED]
-test/test_coap/test_coap.cpp:1199: test_non_request_type                                                        [PASSED]
-test/test_coap/test_coap.cpp:1200: test_put_with_payload                                                        [PASSED]
-test/test_coap/test_coap.cpp:1201: test_multi_segment_path                                                      [PASSED]
-test/test_coap/test_coap.cpp:1202: test_uri_query                                                               [PASSED]
-test/test_coap/test_coap.cpp:1203: test_empty_con_ping_rst                                                      [PASSED]
-test/test_coap/test_coap.cpp:1204: test_bad_version_rst                                                         [PASSED]
-test/test_coap/test_coap.cpp:1205: test_delete                                                                  [PASSED]
-test/test_coap/test_coap.cpp:1206: test_token_8_bytes                                                           [PASSED]
-test/test_coap/test_coap.cpp:1207: test_extended_option_length                                                  [PASSED]
-test/test_coap/test_coap.cpp:1208: test_ack_ignored                                                             [PASSED]
-test/test_coap/test_coap.cpp:1209: test_root_path                                                               [PASSED]
-test/test_coap/test_coap.cpp:1210: test_unknown_method_not_allowed                                              [PASSED]
-test/test_coap/test_coap.cpp:1211: test_unknown_critical_option_bad_option                                      [PASSED]
-test/test_coap/test_coap.cpp:1212: test_well_known_core_discovery                                               [PASSED]
-test/test_coap/test_coap.cpp:1213: test_well_known_core_rejects_post                                            [PASSED]
-native_coap_observe:test_coap Took 0.87 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test       Status    Duration
--------------------  ---------  --------  ------------
-native_coap_observe  test_coap  PASSED    00:00:00.872
-================= 45 test cases: 45 succeeded in 00:00:00.872 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_webdav in native_webdav environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_webdav/test_webdav.cpp:291: test_method_classification                                                [PASSED]
-test/test_webdav/test_webdav.cpp:292: test_depth_parsing                                                        [PASSED]
-test/test_webdav/test_webdav.cpp:293: test_xml_escape                                                           [PASSED]
-test/test_webdav/test_webdav.cpp:294: test_xml_escape_truncates_safely                                          [PASSED]
-test/test_webdav/test_webdav.cpp:295: test_dest_absolute_uri                                                    [PASSED]
-test/test_webdav/test_webdav.cpp:296: test_dest_percent_decoded                                                 [PASSED]
-test/test_webdav/test_webdav.cpp:297: test_dest_abs_path                                                        [PASSED]
-test/test_webdav/test_webdav.cpp:298: test_dest_rejects_malformed                                               [PASSED]
-test/test_webdav/test_webdav.cpp:299: test_multistatus_file_and_collection                                      [PASSED]
-test/test_webdav/test_webdav.cpp:300: test_multistatus_escapes_href                                             [PASSED]
-test/test_webdav/test_webdav.cpp:301: test_multistatus_entry_stops_when_full                                    [PASSED]
-test/test_webdav/test_webdav.cpp:302: test_proppatch_windows_timestamp                                          [PASSED]
-test/test_webdav/test_webdav.cpp:303: test_proppatch_multiple_and_self_closed                                   [PASSED]
-test/test_webdav/test_webdav.cpp:304: test_proppatch_remove_block                                               [PASSED]
-test/test_webdav/test_webdav.cpp:305: test_proppatch_escapes_href                                               [PASSED]
-test/test_webdav/test_webdav.cpp:306: test_proppatch_empty_body_is_valid                                        [PASSED]
-test/test_webdav/test_webdav.cpp:307: test_proppatch_rejects_injection                                          [PASSED]
-test/test_webdav/test_webdav.cpp:308: test_proppatch_fuzz_bounded                                               [PASSED]
-test/test_webdav/test_webdav.cpp:309: test_proppatch_stops_when_full                                            [PASSED]
-native_webdav:test_webdav Took 0.76 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_webdav  test_webdav  PASSED    00:00:00.765
-================= 19 test cases: 19 succeeded in 00:00:00.765 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_modbus in native_modbus environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_modbus/test_modbus.cpp:424: test_read_holding_registers                                               [PASSED]
-test/test_modbus/test_modbus.cpp:425: test_read_input_registers                                                 [PASSED]
-test/test_modbus/test_modbus.cpp:426: test_read_coils_packs_bits                                                [PASSED]
-test/test_modbus/test_modbus.cpp:427: test_write_single_coil                                                    [PASSED]
-test/test_modbus/test_modbus.cpp:428: test_write_single_register                                                [PASSED]
-test/test_modbus/test_modbus.cpp:429: test_write_multiple_registers                                             [PASSED]
-test/test_modbus/test_modbus.cpp:430: test_write_multiple_coils                                                 [PASSED]
-test/test_modbus/test_modbus.cpp:431: test_exception_illegal_function                                           [PASSED]
-test/test_modbus/test_modbus.cpp:432: test_exception_illegal_address                                            [PASSED]
-test/test_modbus/test_modbus.cpp:433: test_exception_illegal_value                                              [PASSED]
-test/test_modbus/test_modbus.cpp:434: test_write_single_coil_bad_value                                          [PASSED]
-test/test_modbus/test_modbus.cpp:435: test_non_modbus_protocol_id_ignored                                       [PASSED]
-test/test_modbus/test_modbus.cpp:436: test_truncated_frame_ignored                                              [PASSED]
-test/test_modbus/test_modbus.cpp:437: test_discrete_and_input_accessors                                         [PASSED]
-test/test_modbus/test_modbus.cpp:438: test_exceptions_per_function                                              [PASSED]
-test/test_modbus/test_modbus.cpp:439: test_small_response_buffer                                                [PASSED]
-test/test_modbus/test_modbus.cpp:441: test_rtu_crc16_known_vector                                               [PASSED]
-test/test_modbus/test_modbus.cpp:442: test_rtu_read_holding_roundtrip                                           [PASSED]
-test/test_modbus/test_modbus.cpp:443: test_rtu_bad_crc_dropped                                                  [PASSED]
-test/test_modbus/test_modbus.cpp:444: test_rtu_wrong_address_dropped                                            [PASSED]
-test/test_modbus/test_modbus.cpp:445: test_rtu_broadcast_executes_without_reply                                 [PASSED]
-test/test_modbus/test_modbus.cpp:446: test_rtu_edge_cases                                                       [PASSED]
-native_modbus:test_modbus Took 0.75 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_modbus  test_modbus  PASSED    00:00:00.747
-================= 22 test cases: 22 succeeded in 00:00:00.747 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cloudevents in native_cloudevents environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cloudevents/test_cloudevents.cpp:154: test_build_minimal                                              [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:155: test_build_requires_id_source_type                              [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:156: test_build_with_json_data                                       [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:157: test_build_with_string_data                                     [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:158: test_build_overflow_fails_closed                                [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:159: test_from_headers_binary_mode                                   [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:160: test_from_headers_missing_required                              [PASSED]
-test/test_cloudevents/test_cloudevents.cpp:161: test_guards_and_datacontenttype_only                            [PASSED]
-native_cloudevents:test_cloudevents Took 0.88 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_cloudevents  test_cloudevents  PASSED    00:00:00.878
-================== 8 test cases: 8 succeeded in 00:00:00.878 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_redis_resp in native_redis environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_redis_resp/test_redis_resp.cpp:127: test_encode_command                                               [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:128: test_encode_binary_safe                                           [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:129: test_encode_overflow_fails_closed                                 [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:130: test_parse_simple_and_error                                       [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:131: test_parse_integer                                                [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:132: test_parse_bulk_and_nil                                           [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:133: test_parse_array_cursor                                           [PASSED]
-test/test_redis_resp/test_redis_resp.cpp:134: test_parse_incomplete_and_malformed                               [PASSED]
-native_redis:test_redis_resp Took 0.73 seconds ---------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test             Status    Duration
--------------  ---------------  --------  ------------
-native_redis   test_redis_resp  PASSED    00:00:00.732
-================== 8 test cases: 8 succeeded in 00:00:00.732 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_stomp in native_stomp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_stomp/test_stomp.cpp:214: test_build_send                                                             [PASSED]
-test/test_stomp/test_stomp.cpp:215: test_build_cr_escape_and_guards                                             [PASSED]
-test/test_stomp/test_stomp.cpp:216: test_parse_more_edges                                                       [PASSED]
-test/test_stomp/test_stomp.cpp:217: test_header_and_unescape_null                                               [PASSED]
-test/test_stomp/test_stomp.cpp:218: test_build_no_headers_no_body                                               [PASSED]
-test/test_stomp/test_stomp.cpp:219: test_build_escapes_header                                                   [PASSED]
-test/test_stomp/test_stomp.cpp:220: test_build_overflow_fails_closed                                            [PASSED]
-test/test_stomp/test_stomp.cpp:221: test_round_trip                                                             [PASSED]
-test/test_stomp/test_stomp.cpp:222: test_parse_message_crlf                                                     [PASSED]
-test/test_stomp/test_stomp.cpp:223: test_parse_content_length_body_with_nul                                     [PASSED]
-test/test_stomp/test_stomp.cpp:224: test_parse_skips_leading_heartbeats                                         [PASSED]
-test/test_stomp/test_stomp.cpp:225: test_parse_incomplete_and_malformed                                         [PASSED]
-test/test_stomp/test_stomp.cpp:226: test_unescape                                                               [PASSED]
-test/test_stomp/test_stomp.cpp:227: test_unescape_rejects_bad                                                   [PASSED]
-native_stomp:test_stomp Took 0.74 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_stomp   test_stomp  PASSED    00:00:00.740
-================= 14 test cases: 14 succeeded in 00:00:00.740 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mqtt_sn in native_mqtt_sn environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mqtt_sn/test_mqtt_sn.cpp:288: test_make_flags                                                         [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:289: test_build_connect_bytes                                                [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:290: test_build_publish_bytes                                                [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:291: test_register_round_trip                                                [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:292: test_parse_connack_regack_suback_publish                                [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:293: test_three_octet_length                                                 [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:294: test_optional_fields                                                    [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:295: test_overflow_and_malformed                                             [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:296: test_build_regack_puback                                                [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:297: test_build_subscribe_variants                                           [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:298: test_pingreq_with_client_id                                             [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:299: test_build_guards                                                       [PASSED]
-test/test_mqtt_sn/test_mqtt_sn.cpp:300: test_parse_typed_rejections                                             [PASSED]
-native_mqtt_sn:test_mqtt_sn Took 0.74 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_mqtt_sn  test_mqtt_sn  PASSED    00:00:00.740
-================= 13 test cases: 13 succeeded in 00:00:00.740 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_flow_export in native_flow_export environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_flow_export/test_flow_export.cpp:158: test_v5_header_bytes                                            [PASSED]
-test/test_flow_export/test_flow_export.cpp:159: test_v5_record_bytes                                            [PASSED]
-test/test_flow_export/test_flow_export.cpp:160: test_v5_overflow_fails_closed                                   [PASSED]
-test/test_flow_export/test_flow_export.cpp:161: test_ipfix_message_bytes                                        [PASSED]
-test/test_flow_export/test_flow_export.cpp:162: test_v9_count_and_padding                                       [PASSED]
-test/test_flow_export/test_flow_export.cpp:163: test_finish_overflow_fails_closed                               [PASSED]
-native_flow_export:test_flow_export Took 0.72 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_flow_export  test_flow_export  PASSED    00:00:00.723
-================== 6 test cases: 6 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_protobuf in native_protobuf environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_protobuf/test_protobuf.cpp:285: test_writer_error_paths                                               [PASSED]
-test/test_protobuf/test_protobuf.cpp:286: test_reader_error_paths                                               [PASSED]
-test/test_protobuf/test_protobuf.cpp:287: test_float_bits_helper                                                [PASSED]
-test/test_protobuf/test_protobuf.cpp:288: test_vector_field1_150                                                [PASSED]
-test/test_protobuf/test_protobuf.cpp:289: test_vector_string_testing                                            [PASSED]
-test/test_protobuf/test_protobuf.cpp:290: test_zigzag_mapping                                                   [PASSED]
-test/test_protobuf/test_protobuf.cpp:291: test_fixed_and_float_bytes                                            [PASSED]
-test/test_protobuf/test_protobuf.cpp:292: test_round_trip_reader                                                [PASSED]
-test/test_protobuf/test_protobuf.cpp:293: test_int64_negative                                                   [PASSED]
-test/test_protobuf/test_protobuf.cpp:294: test_varint_and_overflow                                              [PASSED]
-test/test_protobuf/test_protobuf.cpp:295: test_malformed_reads                                                  [PASSED]
-test/test_protobuf/test_protobuf.cpp:296: test_varint_width_boundary                                            [PASSED]
-test/test_protobuf/test_protobuf.cpp:297: test_empty_length_field                                               [PASSED]
-native_protobuf:test_protobuf Took 0.74 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_protobuf  test_protobuf  PASSED    00:00:00.740
-================= 13 test cases: 13 succeeded in 00:00:00.740 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_preempt_queue in native_preempt_queue environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_preempt_queue/test_preempt_queue.cpp:213: test_start_validates_and_runs                               [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:214: test_fifo_order                                             [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:215: test_urgent_goes_to_front                                   [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:216: test_fail_closed_when_full                                  [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:217: test_high_water_tracks_peak                                 [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:218: test_from_isr_enqueues                                      [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:219: test_drain_empties_and_reuses                               [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:220: test_internal_lanes_outrank_user                            [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:221: test_lanes_are_isolated                                     [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:222: test_lane_start_stop_running_independent                    [PASSED]
-test/test_preempt_queue/test_preempt_queue.cpp:223: test_lane_high_water_is_per_lane                            [PASSED]
-native_preempt_queue:test_preempt_queue Took 0.78 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_preempt_queue  test_preempt_queue  PASSED    00:00:00.778
-================= 11 test cases: 11 succeeded in 00:00:00.778 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dma in native_dma environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dma/test_dma.cpp:251: test_open_validates                                                             [PASSED]
-test/test_dma/test_dma.cpp:252: test_ingress_emits_rx_event                                                     [PASSED]
-test/test_dma/test_dma.cpp:253: test_buffer_fills_then_partial_flush                                            [PASSED]
-test/test_dma/test_dma.cpp:254: test_ping_pong_flips_buffer                                                     [PASSED]
-test/test_dma/test_dma.cpp:255: test_egress_captures_tx                                                         [PASSED]
-test/test_dma/test_dma.cpp:256: test_tx_one_in_flight_fail_closed                                               [PASSED]
-test/test_dma/test_dma.cpp:257: test_tx_rejects_bad_len                                                         [PASSED]
-test/test_dma/test_dma.cpp:258: test_loopback_round_trip                                                        [PASSED]
-test/test_dma/test_dma.cpp:259: test_feed_fail_closed_when_full                                                 [PASSED]
-test/test_dma/test_dma.cpp:260: test_closed_channel_is_inert                                                    [PASSED]
-test/test_dma/test_dma.cpp:261: test_two_channels_independent                                                   [PASSED]
-native_dma:test_dma Took 0.88 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_dma     test_dma  PASSED    00:00:00.876
-================= 11 test cases: 11 succeeded in 00:00:00.876 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_forward in native_forward environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_forward/test_forward.cpp:256: test_default_deny                                                       [PASSED]
-test/test_forward/test_forward.cpp:257: test_allow_forwards                                                     [PASSED]
-test/test_forward/test_forward.cpp:258: test_no_self_forward                                                    [PASSED]
-test/test_forward/test_forward.cpp:259: test_deny_wins_over_allow                                               [PASSED]
-test/test_forward/test_forward.cpp:260: test_multi_destination_fanout                                           [PASSED]
-test/test_forward/test_forward.cpp:261: test_rate_cap_drops_then_reopens                                        [PASSED]
-test/test_forward/test_forward.cpp:262: test_send_failure_counted                                               [PASSED]
-test/test_forward/test_forward.cpp:263: test_add_if_validation_and_table_full                                   [PASSED]
-test/test_forward/test_forward.cpp:264: test_add_rule_table_full                                                [PASSED]
-test/test_forward/test_forward.cpp:265: test_unregistered_destination_is_inert                                  [PASSED]
-test/test_forward/test_forward.cpp:266: test_acl_deny_by_byte_pattern                                           [PASSED]
-test/test_forward/test_forward.cpp:267: test_acl_allowlist_default_deny                                         [PASSED]
-test/test_forward/test_forward.cpp:268: test_acl_first_match_wins                                               [PASSED]
-test/test_forward/test_forward.cpp:269: test_acl_src_any_content_wildcard                                       [PASSED]
-test/test_forward/test_forward.cpp:270: test_acl_short_frame_skips_entry                                        [PASSED]
-test/test_forward/test_forward.cpp:271: test_acl_add_validation_and_table_full                                  [PASSED]
-native_forward:test_forward Took 0.96 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_forward  test_forward  PASSED    00:00:00.957
-================= 16 test cases: 16 succeeded in 00:00:00.957 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_gateway in native_gateway environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_gateway/test_gateway.cpp:234: test_uplink_envelopes_and_publishes                                     [PASSED]
-test/test_gateway/test_gateway.cpp:235: test_uplink_no_sink_drops                                               [PASSED]
-test/test_gateway/test_gateway.cpp:236: test_uplink_unknown_port_drops                                          [PASSED]
-test/test_gateway/test_gateway.cpp:237: test_uplink_rate_cap                                                    [PASSED]
-test/test_gateway/test_gateway.cpp:238: test_uplink_sink_refusal_counted                                        [PASSED]
-test/test_gateway/test_gateway.cpp:239: test_downlink_transmits                                                 [PASSED]
-test/test_gateway/test_gateway.cpp:240: test_downlink_no_tx_or_unknown_port_drops                               [PASSED]
-test/test_gateway/test_gateway.cpp:241: test_downlink_tx_refusal_counted                                        [PASSED]
-test/test_gateway/test_gateway.cpp:242: test_topic_format                                                       [PASSED]
-test/test_gateway/test_gateway.cpp:243: test_add_port_validation_and_table_full                                 [PASSED]
-test/test_gateway/test_gateway.cpp:244: test_seq_increments_per_uplink                                          [PASSED]
-native_gateway:test_gateway Took 0.88 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_gateway  test_gateway  PASSED    00:00:00.877
-================= 11 test cases: 11 succeeded in 00:00:00.877 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_lora in native_lora environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_lora/test_lora.cpp:210: test_frame_build_then_parse                                                   [PASSED]
-test/test_lora/test_lora.cpp:211: test_frame_parse_rejects_short                                                [PASSED]
-test/test_lora/test_lora.cpp:212: test_frame_build_bounds                                                       [PASSED]
-test/test_lora/test_lora.cpp:213: test_init_verifies_chip_and_lands_in_standby                                  [PASSED]
-test/test_lora/test_lora.cpp:214: test_init_fails_on_wrong_version                                              [PASSED]
-test/test_lora/test_lora.cpp:215: test_init_programs_frequency                                                  [PASSED]
-test/test_lora/test_lora.cpp:216: test_send_loads_fifo_and_starts_tx                                            [PASSED]
-test/test_lora/test_lora.cpp:217: test_tx_done_flag                                                             [PASSED]
-test/test_lora/test_lora.cpp:218: test_set_rx_enters_continuous                                                 [PASSED]
-test/test_lora/test_lora.cpp:219: test_recv_reads_frame_and_rssi                                                [PASSED]
-test/test_lora/test_lora.cpp:220: test_recv_no_packet                                                           [PASSED]
-test/test_lora/test_lora.cpp:221: test_recv_crc_error_dropped                                                   [PASSED]
-test/test_lora/test_lora.cpp:222: test_recv_truncates_to_cap                                                    [PASSED]
-native_lora:test_lora Took 0.73 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_lora    test_lora  PASSED    00:00:00.728
-================= 13 test cases: 13 succeeded in 00:00:00.728 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nrf24 in native_nrf24 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nrf24/test_nrf24.cpp:188: test_init_configures_and_powers_up                                          [PASSED]
-test/test_nrf24/test_nrf24.cpp:189: test_init_fails_when_absent                                                 [PASSED]
-test/test_nrf24/test_nrf24.cpp:190: test_send_pads_to_width_and_keys_tx                                         [PASSED]
-test/test_nrf24/test_nrf24.cpp:191: test_send_rejects_oversize                                                  [PASSED]
-test/test_nrf24/test_nrf24.cpp:192: test_tx_done_flag                                                           [PASSED]
-test/test_nrf24/test_nrf24.cpp:193: test_set_rx_enters_prx                                                      [PASSED]
-test/test_nrf24/test_nrf24.cpp:194: test_recv_reads_payload_and_pipe                                            [PASSED]
-test/test_nrf24/test_nrf24.cpp:195: test_recv_no_packet                                                         [PASSED]
-test/test_nrf24/test_nrf24.cpp:196: test_recv_fifo_empty_pipe                                                   [PASSED]
-test/test_nrf24/test_nrf24.cpp:197: test_recv_truncates_to_cap                                                  [PASSED]
-native_nrf24:test_nrf24 Took 0.73 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_nrf24   test_nrf24  PASSED    00:00:00.726
-================= 10 test cases: 10 succeeded in 00:00:00.726 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_enocean in native_enocean environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_enocean/test_enocean.cpp:120: test_crc8_known_answers                                                 [PASSED]
-test/test_enocean/test_enocean.cpp:121: test_build_then_parse_round_trip                                        [PASSED]
-test/test_enocean/test_enocean.cpp:122: test_parse_rejects_bad_sync                                             [PASSED]
-test/test_enocean/test_enocean.cpp:123: test_parse_rejects_bad_header_crc                                       [PASSED]
-test/test_enocean/test_enocean.cpp:124: test_parse_rejects_bad_data_crc                                         [PASSED]
-test/test_enocean/test_enocean.cpp:125: test_parse_needs_more_bytes                                             [PASSED]
-test/test_enocean/test_enocean.cpp:126: test_parse_rejects_over_length                                          [PASSED]
-test/test_enocean/test_enocean.cpp:127: test_parse_resynchronises_after_junk                                    [PASSED]
-test/test_enocean/test_enocean.cpp:128: test_build_bounds                                                       [PASSED]
-native_enocean:test_enocean Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_enocean  test_enocean  PASSED    00:00:00.724
-================== 9 test cases: 9 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_pn532 in native_pn532 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_pn532/test_pn532.cpp:139: test_build_getfirmwareversion_kat                                           [PASSED]
-test/test_pn532/test_pn532.cpp:140: test_parse_getfirmwareversion_response_kat                                  [PASSED]
-test/test_pn532/test_pn532.cpp:141: test_build_then_parse_round_trip                                            [PASSED]
-test/test_pn532/test_pn532.cpp:142: test_parse_rejects_bad_preamble_and_start                                   [PASSED]
-test/test_pn532/test_pn532.cpp:143: test_parse_rejects_bad_lcs                                                  [PASSED]
-test/test_pn532/test_pn532.cpp:144: test_parse_rejects_bad_dcs                                                  [PASSED]
-test/test_pn532/test_pn532.cpp:145: test_parse_needs_more_bytes                                                 [PASSED]
-test/test_pn532/test_pn532.cpp:146: test_parse_rejects_over_length                                              [PASSED]
-test/test_pn532/test_pn532.cpp:147: test_ack_frame                                                              [PASSED]
-test/test_pn532/test_pn532.cpp:148: test_build_bounds                                                           [PASSED]
-native_pn532:test_pn532 Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_pn532   test_pn532  PASSED    00:00:00.722
-================= 10 test cases: 10 succeeded in 00:00:00.722 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sigfox in native_sigfox environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sigfox/test_sigfox.cpp:74: test_build_uplink_hex_encode                                               [PASSED]
-test/test_sigfox/test_sigfox.cpp:75: test_build_uplink_single_byte                                              [PASSED]
-test/test_sigfox/test_sigfox.cpp:76: test_build_uplink_bounds                                                   [PASSED]
-test/test_sigfox/test_sigfox.cpp:77: test_parse_response_ok                                                     [PASSED]
-test/test_sigfox/test_sigfox.cpp:78: test_parse_response_error                                                  [PASSED]
-test/test_sigfox/test_sigfox.cpp:79: test_parse_response_pending                                                [PASSED]
-test/test_sigfox/test_sigfox.cpp:80: test_parse_response_error_wins                                             [PASSED]
-native_sigfox:test_sigfox Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_sigfox  test_sigfox  PASSED    00:00:00.724
-================== 7 test cases: 7 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_zwave in native_zwave environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_zwave/test_zwave.cpp:109: test_build_getversion_kat                                                   [PASSED]
-test/test_zwave/test_zwave.cpp:110: test_build_then_parse_round_trip                                            [PASSED]
-test/test_zwave/test_zwave.cpp:111: test_parse_getversion_kat                                                   [PASSED]
-test/test_zwave/test_zwave.cpp:112: test_parse_rejects_bad_sof                                                  [PASSED]
-test/test_zwave/test_zwave.cpp:113: test_parse_rejects_bad_checksum                                             [PASSED]
-test/test_zwave/test_zwave.cpp:114: test_parse_needs_more_bytes                                                 [PASSED]
-test/test_zwave/test_zwave.cpp:115: test_parse_rejects_over_length                                              [PASSED]
-test/test_zwave/test_zwave.cpp:116: test_control_bytes                                                          [PASSED]
-test/test_zwave/test_zwave.cpp:117: test_build_bounds                                                           [PASSED]
-native_zwave:test_zwave Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_zwave   test_zwave  PASSED    00:00:00.717
-================== 9 test cases: 9 succeeded in 00:00:00.717 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_zigbee in native_zigbee environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_zigbee/test_zigbee.cpp:125: test_crc16_rst_kat                                                        [PASSED]
-test/test_zigbee/test_zigbee.cpp:126: test_encode_rst_frame_kat                                                 [PASSED]
-test/test_zigbee/test_zigbee.cpp:127: test_encode_decode_round_trip                                             [PASSED]
-test/test_zigbee/test_zigbee.cpp:128: test_byte_stuffing_round_trip                                             [PASSED]
-test/test_zigbee/test_zigbee.cpp:129: test_decode_needs_more_without_flag                                       [PASSED]
-test/test_zigbee/test_zigbee.cpp:130: test_decode_rejects_bad_crc                                               [PASSED]
-test/test_zigbee/test_zigbee.cpp:131: test_decode_rejects_dangling_escape                                       [PASSED]
-test/test_zigbee/test_zigbee.cpp:132: test_decode_rejects_small_payload_buffer                                  [PASSED]
-test/test_zigbee/test_zigbee.cpp:133: test_encode_bounds                                                        [PASSED]
-native_zigbee:test_zigbee Took 0.73 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_zigbee  test_zigbee  PASSED    00:00:00.730
-================== 9 test cases: 9 succeeded in 00:00:00.730 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_thread in native_thread environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_thread/test_thread.cpp:199: test_fcs_x25_check_value                                                  [PASSED]
-test/test_thread/test_thread.cpp:200: test_encode_decode_round_trip                                             [PASSED]
-test/test_thread/test_thread.cpp:201: test_byte_stuffing_round_trip                                             [PASSED]
-test/test_thread/test_thread.cpp:202: test_decode_needs_more_without_flag                                       [PASSED]
-test/test_thread/test_thread.cpp:203: test_decode_rejects_bad_fcs                                               [PASSED]
-test/test_thread/test_thread.cpp:204: test_decode_rejects_dangling_escape                                       [PASSED]
-test/test_thread/test_thread.cpp:205: test_decode_rejects_small_payload_buffer                                  [PASSED]
-test/test_thread/test_thread.cpp:206: test_encode_bounds                                                        [PASSED]
-test/test_thread/test_thread.cpp:207: test_spinel_pack_uint_kats                                                [PASSED]
-test/test_thread/test_thread.cpp:208: test_spinel_pack_unpack_round_trip                                        [PASSED]
-test/test_thread/test_thread.cpp:209: test_spinel_unpack_needs_more_and_overflow                                [PASSED]
-test/test_thread/test_thread.cpp:210: test_spinel_command_build_parse_round_trip                                [PASSED]
-test/test_thread/test_thread.cpp:211: test_spinel_command_through_hdlc                                          [PASSED]
-native_thread:test_thread Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_thread  test_thread  PASSED    00:00:00.723
-================= 13 test cases: 13 succeeded in 00:00:00.723 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_wamp in native_wamp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_wamp/test_wamp.cpp:222: test_build_hello                                                              [PASSED]
-test/test_wamp/test_wamp.cpp:223: test_build_subscribe_default_options                                          [PASSED]
-test/test_wamp/test_wamp.cpp:224: test_build_publish_with_args                                                  [PASSED]
-test/test_wamp/test_wamp.cpp:225: test_build_publish_kwargs_only                                                [PASSED]
-test/test_wamp/test_wamp.cpp:226: test_build_call_and_register_and_yield                                        [PASSED]
-test/test_wamp/test_wamp.cpp:227: test_build_unsubscribe_and_goodbye                                            [PASSED]
-test/test_wamp/test_wamp.cpp:228: test_build_overflow_fails_closed                                              [PASSED]
-test/test_wamp/test_wamp.cpp:229: test_parse_type_and_id                                                        [PASSED]
-test/test_wamp/test_wamp.cpp:230: test_parse_event_positions                                                    [PASSED]
-test/test_wamp/test_wamp.cpp:231: test_parse_get_uri_and_nesting                                                [PASSED]
-test/test_wamp/test_wamp.cpp:232: test_parse_malformed                                                          [PASSED]
-test/test_wamp/test_wamp.cpp:233: test_get_uri_dest_bounds                                                      [PASSED]
-test/test_wamp/test_wamp.cpp:234: test_builder_null_guards                                                      [PASSED]
-test/test_wamp/test_wamp.cpp:235: test_emit_uint_zero_and_no_args                                               [PASSED]
-test/test_wamp/test_wamp.cpp:236: test_parser_error_paths                                                       [PASSED]
-native_wamp:test_wamp Took 0.78 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_wamp    test_wamp  PASSED    00:00:00.779
-================= 15 test cases: 15 succeeded in 00:00:00.779 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sunspec in native_sunspec environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sunspec/test_sunspec.cpp:183: test_build_and_walk                                                     [PASSED]
-test/test_sunspec/test_sunspec.cpp:184: test_two_models                                                         [PASSED]
-test/test_sunspec/test_sunspec.cpp:185: test_string_point                                                       [PASSED]
-test/test_sunspec/test_sunspec.cpp:186: test_marker_and_truncation                                              [PASSED]
-test/test_sunspec/test_sunspec.cpp:187: test_writer_overflow_fails_closed                                       [PASSED]
-test/test_sunspec/test_sunspec.cpp:188: test_reader_guards_and_i32                                              [PASSED]
-test/test_sunspec/test_sunspec.cpp:189: test_writer_error_and_string_paths                                      [PASSED]
-native_sunspec:test_sunspec Took 0.73 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_sunspec  test_sunspec  PASSED    00:00:00.727
-================== 7 test cases: 7 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_c37118 in native_c37118 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_c37118/test_c37118.cpp:117: test_crc_check_value                                                      [PASSED]
-test/test_c37118/test_c37118.cpp:118: test_build_command_bytes                                                  [PASSED]
-test/test_c37118/test_c37118.cpp:119: test_command_round_trip                                                   [PASSED]
-test/test_c37118/test_c37118.cpp:120: test_data_frame_payload                                                   [PASSED]
-test/test_c37118/test_c37118.cpp:121: test_parse_rejects_bad                                                    [PASSED]
-test/test_c37118/test_c37118.cpp:122: test_build_overflow_fails_closed                                          [PASSED]
-native_c37118:test_c37118 Took 0.73 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_c37118  test_c37118  PASSED    00:00:00.730
-================== 6 test cases: 6 succeeded in 00:00:00.730 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dnp3 in native_dnp3 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dnp3/test_dnp3.cpp:157: test_dnp3_parse_guards                                                        [PASSED]
-test/test_dnp3/test_dnp3.cpp:158: test_crc_check_value                                                          [PASSED]
-test/test_dnp3/test_dnp3.cpp:159: test_build_header_bytes                                                       [PASSED]
-test/test_dnp3/test_dnp3.cpp:160: test_round_trip_single_block                                                  [PASSED]
-test/test_dnp3/test_dnp3.cpp:161: test_round_trip_multi_block                                                   [PASSED]
-test/test_dnp3/test_dnp3.cpp:162: test_header_only_frame                                                        [PASSED]
-test/test_dnp3/test_dnp3.cpp:163: test_parse_rejects_bad                                                        [PASSED]
-test/test_dnp3/test_dnp3.cpp:164: test_build_overflow_fails_closed                                              [PASSED]
-native_dnp3:test_dnp3 Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_dnp3    test_dnp3  PASSED    00:00:00.723
-================== 8 test cases: 8 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_grpcweb in native_grpcweb environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_grpcweb/test_grpcweb.cpp:143: test_frame_message_bytes                                                [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:144: test_compressed_flag                                                    [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:145: test_trailer_frame                                                      [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:146: test_trailer_status_only                                                [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:147: test_parse_stream                                                       [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:148: test_parse_incomplete                                                   [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:149: test_frame_overflow_fails_closed                                        [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:150: test_frame_and_trailer_guards                                           [PASSED]
-test/test_grpcweb/test_grpcweb.cpp:151: test_trailer_status_parse_paths                                         [PASSED]
-native_grpcweb:test_grpcweb Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_grpcweb  test_grpcweb  PASSED    00:00:00.724
-================== 9 test cases: 9 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_lwm2m_tlv in native_lwm2m_tlv environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:334: test_write_int_1byte                                                [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:335: test_write_int_2byte                                                [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:336: test_write_string_8bit_length                                       [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:337: test_write_16bit_id                                                 [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:338: test_round_trip_and_value_int                                       [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:339: test_object_instance_nested                                         [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:340: test_write_16bit_length                                             [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:341: test_read_24bit_length                                              [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:342: test_value_int_4_and_8_byte                                         [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:343: test_zero_length_value                                              [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:344: test_overflow_and_malformed                                         [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:345: test_write_error_paths                                              [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:346: test_write_float_roundtrip                                          [PASSED]
-test/test_lwm2m_tlv/test_lwm2m_tlv.cpp:347: test_read_id16_and_truncation                                       [PASSED]
-native_lwm2m_tlv:test_lwm2m_tlv Took 0.73 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_lwm2m_tlv  test_lwm2m_tlv  PASSED    00:00:00.729
-================= 14 test cases: 14 succeeded in 00:00:00.729 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_fins in native_fins environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_fins/test_fins.cpp:140: test_build_command_bytes                                                      [PASSED]
-test/test_fins/test_fins.cpp:141: test_memory_area_read                                                         [PASSED]
-test/test_fins/test_fins.cpp:142: test_parse_command                                                            [PASSED]
-test/test_fins/test_fins.cpp:143: test_parse_response_ok                                                        [PASSED]
-test/test_fins/test_fins.cpp:144: test_parse_response_error                                                     [PASSED]
-test/test_fins/test_fins.cpp:145: test_overflow_and_truncation                                                  [PASSED]
-native_fins:test_fins Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_fins    test_fins  PASSED    00:00:00.724
-================== 6 test cases: 6 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_hostlink in native_hostlink environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_hostlink/test_hostlink.cpp:147: test_fcs_vector                                                       [PASSED]
-test/test_hostlink/test_hostlink.cpp:148: test_build_dm_read                                                    [PASSED]
-test/test_hostlink/test_hostlink.cpp:149: test_build_node_digits                                                [PASSED]
-test/test_hostlink/test_hostlink.cpp:150: test_round_trip                                                       [PASSED]
-test/test_hostlink/test_hostlink.cpp:151: test_parse_response_end_code                                          [PASSED]
-test/test_hostlink/test_hostlink.cpp:152: test_parse_rejects_bad                                                [PASSED]
-test/test_hostlink/test_hostlink.cpp:153: test_build_overflow_fails_closed                                      [PASSED]
-test/test_hostlink/test_hostlink.cpp:154: test_guards_and_hex                                                   [PASSED]
-native_hostlink:test_hostlink Took 0.72 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_hostlink  test_hostlink  PASSED    00:00:00.720
-================== 8 test cases: 8 succeeded in 00:00:00.720 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_senml in native_senml environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_senml/test_senml.cpp:239: test_json_canonical                                                         [PASSED]
-test/test_senml/test_senml.cpp:240: test_json_base_time_and_none                                                [PASSED]
-test/test_senml/test_senml.cpp:241: test_cbor_all_kinds                                                         [PASSED]
-test/test_senml/test_senml.cpp:242: test_senml_null_args                                                        [PASSED]
-test/test_senml/test_senml.cpp:243: test_json_multi_record                                                      [PASSED]
-test/test_senml/test_senml.cpp:244: test_json_string_bool_time                                                  [PASSED]
-test/test_senml/test_senml.cpp:245: test_cbor_round_trip                                                        [PASSED]
-test/test_senml/test_senml.cpp:246: test_cbor_base_name_key                                                     [PASSED]
-test/test_senml/test_senml.cpp:247: test_overflow_fails_closed                                                  [PASSED]
-native_senml:test_senml Took 0.82 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_senml   test_senml  PASSED    00:00:00.817
-================== 9 test cases: 9 succeeded in 00:00:00.817 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_df1 in native_df1 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_df1/test_df1.cpp:181: test_bcc_vector                                                                 [PASSED]
-test/test_df1/test_df1.cpp:182: test_crc_vector                                                                 [PASSED]
-test/test_df1/test_df1.cpp:183: test_build_bcc_frame                                                            [PASSED]
-test/test_df1/test_df1.cpp:184: test_build_dle_stuffing                                                         [PASSED]
-test/test_df1/test_df1.cpp:185: test_round_trip_bcc                                                             [PASSED]
-test/test_df1/test_df1.cpp:186: test_round_trip_crc                                                             [PASSED]
-test/test_df1/test_df1.cpp:187: test_empty_data_frame                                                           [PASSED]
-test/test_df1/test_df1.cpp:188: test_parse_rejects_bad                                                          [PASSED]
-test/test_df1/test_df1.cpp:189: test_build_overflow_fails_closed                                                [PASSED]
-test/test_df1/test_df1.cpp:190: test_parse_edges_and_guards                                                     [PASSED]
-native_df1:test_df1 Took 0.72 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_df1     test_df1  PASSED    00:00:00.724
-================= 10 test cases: 10 succeeded in 00:00:00.724 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cotp in native_cotp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cotp/test_cotp.cpp:156: test_tpkt_bytes                                                               [PASSED]
-test/test_cotp/test_cotp.cpp:157: test_cotp_dt_bytes                                                            [PASSED]
-test/test_cotp/test_cotp.cpp:158: test_cotp_cr_bytes                                                            [PASSED]
-test/test_cotp/test_cotp.cpp:159: test_cotp_cr_with_tsaps                                                       [PASSED]
-test/test_cotp/test_cotp.cpp:160: test_full_stack                                                               [PASSED]
-test/test_cotp/test_cotp.cpp:161: test_parse_rejects_bad                                                        [PASSED]
-test/test_cotp/test_cotp.cpp:162: test_guards_and_types                                                         [PASSED]
-native_cotp:test_cotp Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_cotp    test_cotp  PASSED    00:00:00.718
-================== 7 test cases: 7 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_s7comm in native_s7comm environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_s7comm/test_s7comm.cpp:183: test_build_setup                                                          [PASSED]
-test/test_s7comm/test_s7comm.cpp:184: test_build_read_request                                                   [PASSED]
-test/test_s7comm/test_s7comm.cpp:185: test_read_request_bit_address                                             [PASSED]
-test/test_s7comm/test_s7comm.cpp:186: test_parse_response_single                                                [PASSED]
-test/test_s7comm/test_s7comm.cpp:187: test_parse_response_padding                                               [PASSED]
-test/test_s7comm/test_s7comm.cpp:188: test_parse_octet_and_error                                                [PASSED]
-test/test_s7comm/test_s7comm.cpp:189: test_parse_rejects_bad                                                    [PASSED]
-test/test_s7comm/test_s7comm.cpp:190: test_build_overflow_fails_closed                                          [PASSED]
-test/test_s7comm/test_s7comm.cpp:191: test_null_and_short_guards                                                [PASSED]
-native_s7comm:test_s7comm Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_s7comm  test_s7comm  PASSED    00:00:00.718
-================== 9 test cases: 9 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_melsec in native_melsec environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_melsec/test_melsec.cpp:114: test_build_read_bytes                                                     [PASSED]
-test/test_melsec/test_melsec.cpp:115: test_head_device_24bit                                                    [PASSED]
-test/test_melsec/test_melsec.cpp:116: test_parse_response_ok                                                    [PASSED]
-test/test_melsec/test_melsec.cpp:117: test_parse_response_error                                                 [PASSED]
-test/test_melsec/test_melsec.cpp:118: test_parse_rejects_bad                                                    [PASSED]
-test/test_melsec/test_melsec.cpp:119: test_build_overflow_fails_closed                                          [PASSED]
-test/test_melsec/test_melsec.cpp:120: test_parse_guards                                                         [PASSED]
-native_melsec:test_melsec Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_melsec  test_melsec  PASSED    00:00:00.720
-================== 7 test cases: 7 succeeded in 00:00:00.720 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_bacnet in native_bacnet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_bacnet/test_bacnet.cpp:180: test_bacnet_guards_and_truncations                                        [PASSED]
-test/test_bacnet/test_bacnet.cpp:181: test_bvlc_bytes                                                           [PASSED]
-test/test_bacnet/test_bacnet.cpp:182: test_npdu_local                                                           [PASSED]
-test/test_bacnet/test_bacnet.cpp:183: test_npdu_dest                                                            [PASSED]
-test/test_bacnet/test_bacnet.cpp:184: test_npdu_broadcast                                                       [PASSED]
-test/test_bacnet/test_bacnet.cpp:185: test_npdu_parse_with_source                                               [PASSED]
-test/test_bacnet/test_bacnet.cpp:186: test_full_stack                                                           [PASSED]
-test/test_bacnet/test_bacnet.cpp:187: test_parse_rejects_bad                                                    [PASSED]
-test/test_bacnet/test_bacnet.cpp:188: test_overflow_fails_closed                                                [PASSED]
-native_bacnet:test_bacnet Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_bacnet  test_bacnet  PASSED    00:00:00.721
-================== 9 test cases: 9 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_enip in native_enip environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_enip/test_enip.cpp:171: test_header_round_trip                                                        [PASSED]
-test/test_enip/test_enip.cpp:172: test_register_session                                                         [PASSED]
-test/test_enip/test_enip.cpp:173: test_send_rr_data_bytes                                                       [PASSED]
-test/test_enip/test_enip.cpp:174: test_send_rr_data_round_trip                                                  [PASSED]
-test/test_enip/test_enip.cpp:175: test_parse_rejects_bad                                                        [PASSED]
-test/test_enip/test_enip.cpp:176: test_build_overflow_fails_closed                                              [PASSED]
-test/test_enip/test_enip.cpp:177: test_build_and_parse_guards                                                   [PASSED]
-native_enip:test_enip Took 0.73 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_enip    test_enip  PASSED    00:00:00.733
-================== 7 test cases: 7 succeeded in 00:00:00.733 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_amqp in native_amqp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_amqp/test_amqp.cpp:134: test_protocol_header                                                          [PASSED]
-test/test_amqp/test_amqp.cpp:135: test_build_method_bytes                                                       [PASSED]
-test/test_amqp/test_amqp.cpp:136: test_method_round_trip                                                        [PASSED]
-test/test_amqp/test_amqp.cpp:137: test_heartbeat                                                                [PASSED]
-test/test_amqp/test_amqp.cpp:138: test_parse_stream                                                             [PASSED]
-test/test_amqp/test_amqp.cpp:139: test_parse_rejects_bad                                                        [PASSED]
-test/test_amqp/test_amqp.cpp:140: test_build_overflow_fails_closed                                              [PASSED]
-native_amqp:test_amqp Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_amqp    test_amqp  PASSED    00:00:00.724
-================== 7 test cases: 7 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cip in native_cip environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cip/test_cip.cpp:128: test_cip_build_guards                                                           [PASSED]
-test/test_cip/test_cip.cpp:129: test_epath_8bit                                                                 [PASSED]
-test/test_cip/test_cip.cpp:130: test_epath_16bit                                                                [PASSED]
-test/test_cip/test_cip.cpp:131: test_get_attr_single                                                            [PASSED]
-test/test_cip/test_cip.cpp:132: test_build_request_with_data                                                    [PASSED]
-test/test_cip/test_cip.cpp:133: test_parse_response_ok                                                          [PASSED]
-test/test_cip/test_cip.cpp:134: test_parse_response_additional_status                                           [PASSED]
-test/test_cip/test_cip.cpp:135: test_parse_response_error                                                       [PASSED]
-test/test_cip/test_cip.cpp:136: test_rejects_bad                                                                [PASSED]
-native_cip:test_cip Took 0.73 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_cip     test_cip  PASSED    00:00:00.726
-================== 9 test cases: 9 succeeded in 00:00:00.726 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nats in native_nats environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nats/test_nats.cpp:186: test_build_connect                                                            [PASSED]
-test/test_nats/test_nats.cpp:187: test_build_ping_pong                                                          [PASSED]
-test/test_nats/test_nats.cpp:188: test_build_null_args                                                          [PASSED]
-test/test_nats/test_nats.cpp:189: test_build_overflow_put_ch                                                    [PASSED]
-test/test_nats/test_nats.cpp:190: test_parse_edges                                                              [PASSED]
-test/test_nats/test_nats.cpp:191: test_build_pub                                                                [PASSED]
-test/test_nats/test_nats.cpp:192: test_build_pub_with_reply                                                     [PASSED]
-test/test_nats/test_nats.cpp:193: test_build_pub_empty_payload                                                  [PASSED]
-test/test_nats/test_nats.cpp:194: test_build_sub_and_unsub                                                      [PASSED]
-test/test_nats/test_nats.cpp:195: test_parse_msg                                                                [PASSED]
-test/test_nats/test_nats.cpp:196: test_parse_msg_with_reply                                                     [PASSED]
-test/test_nats/test_nats.cpp:197: test_parse_control_lines                                                      [PASSED]
-test/test_nats/test_nats.cpp:198: test_parse_incomplete                                                         [PASSED]
-test/test_nats/test_nats.cpp:199: test_build_overflow_fails_closed                                              [PASSED]
-native_nats:test_nats Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_nats    test_nats  PASSED    00:00:00.725
-================= 14 test cases: 14 succeeded in 00:00:00.725 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_proxy_protocol in native_proxy_protocol environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_proxy_protocol/test_proxy_protocol.cpp:120: test_v1_build                                             [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:121: test_v1_round_trip                                        [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:122: test_v2_build_bytes                                       [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:123: test_v2_round_trip                                        [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:124: test_v1_unknown                                           [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:125: test_not_a_proxy_header                                   [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:126: test_incomplete                                           [PASSED]
-test/test_proxy_protocol/test_proxy_protocol.cpp:127: test_build_overflow_fails_closed                          [PASSED]
-native_proxy_protocol:test_proxy_protocol Took 0.73 seconds --------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment            Test                 Status    Duration
----------------------  -------------------  --------  ------------
-native_proxy_protocol  test_proxy_protocol  PASSED    00:00:00.725
-================== 8 test cases: 8 succeeded in 00:00:00.725 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sparkplug in native_sparkplug environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sparkplug/test_sparkplug.cpp:201: test_spb_error_and_kind_paths                                       [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:202: test_topic                                                          [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:203: test_metric_bytes                                                   [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:204: test_payload_round_trip                                             [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:205: test_metric_int_and_string                                          [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:206: test_metric_alias                                                   [PASSED]
-test/test_sparkplug/test_sparkplug.cpp:207: test_overflow_fails_closed                                          [PASSED]
-native_sparkplug:test_sparkplug Took 0.76 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_sparkplug  test_sparkplug  PASSED    00:00:00.758
-================== 7 test cases: 7 succeeded in 00:00:00.758 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_modbus_master in native_modbus_master environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_modbus_master/test_modbus_master.cpp:85: test_build_read_bytes                                        [PASSED]
-test/test_modbus_master/test_modbus_master.cpp:86: test_build_rejects_bad_args                                  [PASSED]
-test/test_modbus_master/test_modbus_master.cpp:87: test_round_trip_holding_regs                                 [PASSED]
-test/test_modbus_master/test_modbus_master.cpp:88: test_round_trip_exception                                    [PASSED]
-test/test_modbus_master/test_modbus_master.cpp:89: test_parse_short_frame_fails                                 [PASSED]
-native_modbus_master:test_modbus_master Took 0.76 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_modbus_master  test_modbus_master  PASSED    00:00:00.761
-================== 5 test cases: 5 succeeded in 00:00:00.761 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ota_rollback in native_ota_rollback environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ota_rollback/test_ota_rollback.cpp:49: test_not_pending_waits                                         [PASSED]
-test/test_ota_rollback/test_ota_rollback.cpp:50: test_pending_self_test_ok_commits                              [PASSED]
-test/test_ota_rollback/test_ota_rollback.cpp:51: test_pending_within_window_waits                               [PASSED]
-test/test_ota_rollback/test_ota_rollback.cpp:52: test_pending_window_elapsed_rolls_back                         [PASSED]
-test/test_ota_rollback/test_ota_rollback.cpp:53: test_self_test_ok_beats_window                                 [PASSED]
-native_ota_rollback:test_ota_rollback Took 0.71 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_ota_rollback  test_ota_rollback  PASSED    00:00:00.706
-================== 5 test cases: 5 succeeded in 00:00:00.706 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_totp in native_totp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_totp/test_totp.cpp:68: test_rfc6238_vectors                                                           [PASSED]
-test/test_totp/test_totp.cpp:69: test_verify_window                                                             [PASSED]
-test/test_totp/test_totp.cpp:70: test_base32_decode                                                             [PASSED]
-test/test_totp/test_totp.cpp:71: test_base32_rejects_invalid                                                    [PASSED]
-native_totp:test_totp Took 0.75 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_totp    test_totp  PASSED    00:00:00.754
-================== 4 test cases: 4 succeeded in 00:00:00.754 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_webhook in native_webhook environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_webhook/test_webhook.cpp:65: test_ifttt_url                                                           [PASSED]
-test/test_webhook/test_webhook.cpp:66: test_payload_three_values                                                [PASSED]
-test/test_webhook/test_webhook.cpp:67: test_payload_omits_nulls                                                 [PASSED]
-test/test_webhook/test_webhook.cpp:68: test_payload_escapes_json                                                [PASSED]
-test/test_webhook/test_webhook.cpp:69: test_overflow_fails_closed                                               [PASSED]
-native_webhook:test_webhook Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_webhook  test_webhook  PASSED    00:00:00.724
-================== 5 test cases: 5 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_radio_power in native_radio_power environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_radio_power/test_radio_power.cpp:34: test_ps_names                                                    [PASSED]
-test/test_radio_power/test_radio_power.cpp:35: test_apply_is_noop_on_host                                       [PASSED]
-native_radio_power:test_radio_power Took 0.70 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_radio_power  test_radio_power  PASSED    00:00:00.700
-================== 2 test cases: 2 succeeded in 00:00:00.700 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dns_resolver in native_dns_resolver environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dns_resolver/test_dns_resolver.cpp:59: test_classify                                                  [PASSED]
-test/test_dns_resolver/test_dns_resolver.cpp:60: test_verify_rejects_suspicious                                 [PASSED]
-test/test_dns_resolver/test_dns_resolver.cpp:61: test_verify_accepts_plausible                                  [PASSED]
-test/test_dns_resolver/test_dns_resolver.cpp:62: test_resolve_is_noop_on_host                                   [PASSED]
-native_dns_resolver:test_dns_resolver Took 0.73 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_dns_resolver  test_dns_resolver  PASSED    00:00:00.727
-================== 4 test cases: 4 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_audit_log in native_audit_log environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_audit_log/test_audit_log.cpp:246: test_append_assigns_monotonic_seq                                   [PASSED]
-test/test_audit_log/test_audit_log.cpp:247: test_chain_verifies_when_untouched                                  [PASSED]
-test/test_audit_log/test_audit_log.cpp:248: test_tampered_message_breaks_chain                                  [PASSED]
-test/test_audit_log/test_audit_log.cpp:249: test_tampered_hash_breaks_chain                                     [PASSED]
-test/test_audit_log/test_audit_log.cpp:250: test_tampered_category_breaks_chain                                 [PASSED]
-test/test_audit_log/test_audit_log.cpp:251: test_ring_evicts_oldest_and_still_verifies                          [PASSED]
-test/test_audit_log/test_audit_log.cpp:252: test_tamper_after_wrap_detected_at_oldest                           [PASSED]
-test/test_audit_log/test_audit_log.cpp:253: test_reset_clears_everything                                        [PASSED]
-test/test_audit_log/test_audit_log.cpp:254: test_sink_receives_each_record                                      [PASSED]
-test/test_audit_log/test_audit_log.cpp:255: test_format_and_dump_json                                           [PASSED]
-test/test_audit_log/test_audit_log.cpp:256: test_dump_json_reports_broken_chain                                 [PASSED]
-test/test_audit_log/test_audit_log.cpp:257: test_format_fails_closed_on_small_buffer                            [PASSED]
-test/test_audit_log/test_audit_log.cpp:258: test_null_msg_and_categories                                        [PASSED]
-test/test_audit_log/test_audit_log.cpp:259: test_json_escape_all_chars                                          [PASSED]
-test/test_audit_log/test_audit_log.cpp:260: test_format_fails_closed_all_stages                                 [PASSED]
-test/test_audit_log/test_audit_log.cpp:261: test_dump_fails_closed_all_stages                                   [PASSED]
-native_audit_log:test_audit_log Took 0.75 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_audit_log  test_audit_log  PASSED    00:00:00.752
-================= 16 test cases: 16 succeeded in 00:00:00.752 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_oidc in native_oidc environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_oidc/test_oidc.cpp:252: test_jwks_malformed_keys                                                      [PASSED]
-test/test_oidc/test_oidc.cpp:253: test_token_kid_guards                                                         [PASSED]
-test/test_oidc/test_oidc.cpp:254: test_jwks_find_guards                                                         [PASSED]
-test/test_oidc/test_oidc.cpp:255: test_verify_guards_and_malformed                                              [PASSED]
-test/test_oidc/test_oidc.cpp:256: test_token_kid                                                                [PASSED]
-test/test_oidc/test_oidc.cpp:257: test_jwks_find                                                                [PASSED]
-test/test_oidc/test_oidc.cpp:258: test_jwks_find_missing_kid_fails                                              [PASSED]
-test/test_oidc/test_oidc.cpp:259: test_verify_valid_token_and_claims                                            [PASSED]
-test/test_oidc/test_oidc.cpp:260: test_verify_aud_array                                                         [PASSED]
-test/test_oidc/test_oidc.cpp:261: test_reject_expired                                                           [PASSED]
-test/test_oidc/test_oidc.cpp:262: test_reject_wrong_issuer                                                      [PASSED]
-test/test_oidc/test_oidc.cpp:263: test_reject_wrong_audience                                                    [PASSED]
-test/test_oidc/test_oidc.cpp:264: test_reject_non_rs256_header                                                  [PASSED]
-test/test_oidc/test_oidc.cpp:265: test_reject_tampered_payload                                                  [PASSED]
-test/test_oidc/test_oidc.cpp:266: test_reject_tampered_signature                                                [PASSED]
-test/test_oidc/test_oidc.cpp:267: test_reject_unknown_key                                                       [PASSED]
-test/test_oidc/test_oidc.cpp:268: test_reject_malformed                                                         [PASSED]
-native_oidc:test_oidc Took 1.01 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_oidc    test_oidc  PASSED    00:00:01.011
-================= 17 test cases: 17 succeeded in 00:00:01.011 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_vfs in native_vfs environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_vfs/test_vfs.cpp:174: test_write_then_read_file                                                       [PASSED]
-test/test_vfs/test_vfs.cpp:175: test_streamed_write_and_read                                                    [PASSED]
-test/test_vfs/test_vfs.cpp:176: test_write_mode_truncates                                                       [PASSED]
-test/test_vfs/test_vfs.cpp:177: test_append_extends                                                             [PASSED]
-test/test_vfs/test_vfs.cpp:178: test_remove_and_rename                                                          [PASSED]
-test/test_vfs/test_vfs.cpp:179: test_missing_file_fails_closed                                                  [PASSED]
-test/test_vfs/test_vfs.cpp:180: test_read_buffer_too_small_fails_closed                                         [PASSED]
-test/test_vfs/test_vfs.cpp:181: test_file_full_is_bounded                                                       [PASSED]
-test/test_vfs/test_vfs.cpp:182: test_file_pool_exhaustion                                                       [PASSED]
-test/test_vfs/test_vfs.cpp:183: test_handle_pool_exhaustion                                                     [PASSED]
-test/test_vfs/test_vfs.cpp:184: test_unmounted_fails_closed                                                     [PASSED]
-native_vfs:test_vfs Took 0.73 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_vfs     test_vfs  PASSED    00:00:00.734
-================= 11 test cases: 11 succeeded in 00:00:00.734 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_graphql in native_graphql environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_graphql/test_graphql.cpp:396: test_malformed_tokens_fail                                              [PASSED]
-test/test_graphql/test_graphql.cpp:397: test_query_keyword_forms_fail                                           [PASSED]
-test/test_graphql/test_graphql.cpp:398: test_pool_limits                                                        [PASSED]
-test/test_graphql/test_graphql.cpp:399: test_string_pool_exhaustion                                             [PASSED]
-test/test_graphql/test_graphql.cpp:400: test_resolver_null_typed_value                                          [PASSED]
-test/test_graphql/test_graphql.cpp:401: test_resolver_path_overflow                                             [PASSED]
-test/test_graphql/test_graphql.cpp:402: test_arg_accessors_edges                                                [PASSED]
-test/test_graphql/test_graphql.cpp:403: test_flat_selection                                                     [PASSED]
-test/test_graphql/test_graphql.cpp:404: test_string_escapes_decoded                                             [PASSED]
-test/test_graphql/test_graphql.cpp:405: test_number_arg_variants_parse                                          [PASSED]
-test/test_graphql/test_graphql.cpp:406: test_bool_args                                                          [PASSED]
-test/test_graphql/test_graphql.cpp:407: test_null_arg_value                                                     [PASSED]
-test/test_graphql/test_graphql.cpp:408: test_control_char_is_unicode_escaped                                    [PASSED]
-test/test_graphql/test_graphql.cpp:409: test_unterminated_string_arg_fails                                      [PASSED]
-test/test_graphql/test_graphql.cpp:410: test_arg_missing_colon_fails                                            [PASSED]
-test/test_graphql/test_graphql.cpp:411: test_bad_arg_value_fails                                                [PASSED]
-test/test_graphql/test_graphql.cpp:412: test_trailing_junk_fails                                                [PASSED]
-test/test_graphql/test_graphql.cpp:413: test_long_field_name_hits_limit                                         [PASSED]
-test/test_graphql/test_graphql.cpp:414: test_null_inputs_fail_closed                                            [PASSED]
-test/test_graphql/test_graphql.cpp:415: test_unknown_operation_keyword_fails                                    [PASSED]
-test/test_graphql/test_graphql.cpp:416: test_selection_is_honored                                               [PASSED]
-test/test_graphql/test_graphql.cpp:417: test_nested_object                                                      [PASSED]
-test/test_graphql/test_graphql.cpp:418: test_args_collected_along_path                                          [PASSED]
-test/test_graphql/test_graphql.cpp:419: test_scalar_types                                                       [PASSED]
-test/test_graphql/test_graphql.cpp:420: test_string_arg_and_escaping                                            [PASSED]
-test/test_graphql/test_graphql.cpp:421: test_unresolved_field_is_null                                           [PASSED]
-test/test_graphql/test_graphql.cpp:422: test_query_keyword_and_name                                             [PASSED]
-test/test_graphql/test_graphql.cpp:423: test_comments_and_commas                                                [PASSED]
-test/test_graphql/test_graphql.cpp:424: test_parse_error_reports_errors                                         [PASSED]
-test/test_graphql/test_graphql.cpp:425: test_mutation_rejected                                                  [PASSED]
-test/test_graphql/test_graphql.cpp:426: test_depth_limit                                                        [PASSED]
-test/test_graphql/test_graphql.cpp:427: test_overflow_fails_closed                                              [PASSED]
-native_graphql:test_graphql Took 0.74 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_graphql  test_graphql  PASSED    00:00:00.741
-================= 32 test cases: 32 succeeded in 00:00:00.741 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_espnow in native_espnow environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_espnow/test_espnow.cpp:121: test_encode_decode_roundtrip                                              [PASSED]
-test/test_espnow/test_espnow.cpp:122: test_encode_zero_length                                                   [PASSED]
-test/test_espnow/test_espnow.cpp:123: test_encode_rejects_oversize_and_small_buffer                             [PASSED]
-test/test_espnow/test_espnow.cpp:124: test_decode_rejects_corrupt                                               [PASSED]
-test/test_espnow/test_espnow.cpp:125: test_peer_registry                                                        [PASSED]
-test/test_espnow/test_espnow.cpp:126: test_peer_table_full_fails_closed                                         [PASSED]
-test/test_espnow/test_espnow.cpp:127: test_broadcast_address                                                    [PASSED]
-native_espnow:test_espnow Took 0.73 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_espnow  test_espnow  PASSED    00:00:00.729
-================== 7 test cases: 7 succeeded in 00:00:00.729 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_oauth2 in native_oauth2 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_oauth2/test_oauth2.cpp:99: test_build_code_request_minimal                                            [PASSED]
-test/test_oauth2/test_oauth2.cpp:100: test_build_code_request_with_secret_encodes_specials                      [PASSED]
-test/test_oauth2/test_oauth2.cpp:101: test_build_code_request_pkce                                              [PASSED]
-test/test_oauth2/test_oauth2.cpp:102: test_build_refresh_request                                                [PASSED]
-test/test_oauth2/test_oauth2.cpp:103: test_build_overflows_fail_closed                                          [PASSED]
-test/test_oauth2/test_oauth2.cpp:104: test_parse_token_response                                                 [PASSED]
-test/test_oauth2/test_oauth2.cpp:105: test_parse_minimal_response                                               [PASSED]
-test/test_oauth2/test_oauth2.cpp:106: test_parse_error_response_fails                                           [PASSED]
-native_oauth2:test_oauth2 Took 0.76 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_oauth2  test_oauth2  PASSED    00:00:00.760
-================== 8 test cases: 8 succeeded in 00:00:00.760 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_opcua in native_opcua environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_opcua/test_opcua.cpp:1365: test_parse_read_optional_fields                                            [PASSED]
-test/test_opcua/test_opcua.cpp:1366: test_parse_rejections                                                      [PASSED]
-test/test_opcua/test_opcua.cpp:1367: test_build_guards_and_overflow                                             [PASSED]
-test/test_opcua/test_opcua.cpp:1368: test_setters_and_endpoint_url                                              [PASSED]
-test/test_opcua/test_opcua.cpp:1369: test_variant_scalar_types                                                  [PASSED]
-test/test_opcua/test_opcua.cpp:1370: test_variant_errors                                                        [PASSED]
-test/test_opcua/test_opcua.cpp:1371: test_datavalue_all_masks                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1372: test_nodeid_encodings                                                      [PASSED]
-test/test_opcua/test_opcua.cpp:1373: test_reader_underruns                                                      [PASSED]
-test/test_opcua/test_opcua.cpp:1374: test_codec_roundtrip                                                       [PASSED]
-test/test_opcua/test_opcua.cpp:1375: test_string_null_roundtrip                                                 [PASSED]
-test/test_opcua/test_opcua.cpp:1376: test_reader_underrun_latches                                               [PASSED]
-test/test_opcua/test_opcua.cpp:1377: test_writer_overflow_fails_closed                                          [PASSED]
-test/test_opcua/test_opcua.cpp:1378: test_parse_header                                                          [PASSED]
-test/test_opcua/test_opcua.cpp:1379: test_parse_hello                                                           [PASSED]
-test/test_opcua/test_opcua.cpp:1380: test_parse_hello_rejects_short                                             [PASSED]
-test/test_opcua/test_opcua.cpp:1381: test_build_ack_negotiates                                                  [PASSED]
-test/test_opcua/test_opcua.cpp:1382: test_nodeid_roundtrip                                                      [PASSED]
-test/test_opcua/test_opcua.cpp:1383: test_filetime_from_unix                                                    [PASSED]
-test/test_opcua/test_opcua.cpp:1384: test_parse_open                                                            [PASSED]
-test/test_opcua/test_opcua.cpp:1385: test_parse_open_rejects_wrong_type                                         [PASSED]
-test/test_opcua/test_opcua.cpp:1386: test_build_open_response                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1387: test_parse_msg                                                             [PASSED]
-test/test_opcua/test_opcua.cpp:1388: test_parse_msg_rejects_non_msg                                             [PASSED]
-test/test_opcua/test_opcua.cpp:1389: test_build_create_session_response                                         [PASSED]
-test/test_opcua/test_opcua.cpp:1390: test_build_activate_session_response                                       [PASSED]
-test/test_opcua/test_opcua.cpp:1391: test_datavalue_good_int32                                                  [PASSED]
-test/test_opcua/test_opcua.cpp:1392: test_datavalue_bad_status                                                  [PASSED]
-test/test_opcua/test_opcua.cpp:1393: test_parse_read                                                            [PASSED]
-test/test_opcua/test_opcua.cpp:1394: test_build_read_response                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1395: test_parse_browse                                                          [PASSED]
-test/test_opcua/test_opcua.cpp:1396: test_build_browse_response                                                 [PASSED]
-test/test_opcua/test_opcua.cpp:1397: test_build_browse_response_unknown                                         [PASSED]
-test/test_opcua/test_opcua.cpp:1398: test_build_close_session_response                                          [PASSED]
-test/test_opcua/test_opcua.cpp:1399: test_build_get_endpoints                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1400: test_build_service_fault                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1401: test_datavalue_roundtrip                                                   [PASSED]
-test/test_opcua/test_opcua.cpp:1402: test_parse_and_build_write                                                 [PASSED]
-native_opcua:test_opcua Took 0.88 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_opcua   test_opcua  PASSED    00:00:00.878
-================= 38 test cases: 38 succeeded in 00:00:00.878 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_opcua_client in native_opcua_client environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_opcua_client/test_opcua_client.cpp:413: test_on_read_all_variant_types                                [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:414: test_client_parsers_reject_fault                              [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:415: test_client_parsers_reject_malformed                          [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:416: test_hello_ack_roundtrip                                      [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:417: test_open_roundtrip                                           [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:418: test_session_roundtrip                                        [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:419: test_get_endpoints_roundtrip                                  [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:420: test_service_fault_rejected_by_parsers                        [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:421: test_read_roundtrip                                           [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:422: test_browse_roundtrip                                         [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:423: test_write_roundtrip                                          [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:424: test_close_session_roundtrip                                  [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:425: test_close_channel_is_clo                                     [PASSED]
-test/test_opcua_client/test_opcua_client.cpp:426: test_seq_and_request_id_increment                             [PASSED]
-native_opcua_client:test_opcua_client Took 0.80 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_opcua_client  test_opcua_client  PASSED    00:00:00.799
-================= 14 test cases: 14 succeeded in 00:00:00.799 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_keepalive in native_keepalive environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_keepalive/test_keepalive.cpp:194: test_http11_default_keeps_alive                                     [PASSED]
-test/test_keepalive/test_keepalive.cpp:195: test_http11_explicit_close                                          [PASSED]
-test/test_keepalive/test_keepalive.cpp:196: test_http10_default_closes                                          [PASSED]
-test/test_keepalive/test_keepalive.cpp:197: test_http10_explicit_keepalive                                      [PASSED]
-test/test_keepalive/test_keepalive.cpp:198: test_connection_token_list_close                                    [PASSED]
-test/test_keepalive/test_keepalive.cpp:199: test_two_sequential_requests_same_slot                              [PASSED]
-test/test_keepalive/test_keepalive.cpp:200: test_pipelined_requests                                             [PASSED]
-test/test_keepalive/test_keepalive.cpp:201: test_404_still_keeps_alive                                          [PASSED]
-test/test_keepalive/test_keepalive.cpp:202: test_max_requests_cap_closes                                        [PASSED]
-test/test_keepalive/test_keepalive.cpp:203: test_fresh_connection_resets_count                                  [PASSED]
-native_keepalive:test_keepalive Took 1.41 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_keepalive  test_keepalive  PASSED    00:00:01.414
-================= 10 test cases: 10 succeeded in 00:00:01.414 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_range in native_range environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_range/test_range.cpp:219: test_no_range_full_200                                                      [PASSED]
-test/test_range/test_range.cpp:220: test_range_prefix                                                           [PASSED]
-test/test_range/test_range.cpp:221: test_range_open_ended                                                       [PASSED]
-test/test_range/test_range.cpp:222: test_range_suffix                                                           [PASSED]
-test/test_range/test_range.cpp:223: test_range_single_byte                                                      [PASSED]
-test/test_range/test_range.cpp:224: test_range_clamped_to_eof                                                   [PASSED]
-test/test_range/test_range.cpp:225: test_range_unsatisfiable_416                                                [PASSED]
-test/test_range/test_range.cpp:226: test_malformed_range_ignored                                                [PASSED]
-test/test_range/test_range.cpp:227: test_range_overflow_start_unsatisfiable                                     [PASSED]
-test/test_range/test_range.cpp:228: test_range_overflow_end_clamps                                              [PASSED]
-test/test_range/test_range.cpp:229: test_range_suffix_zero_unsatisfiable                                        [PASSED]
-test/test_range/test_range.cpp:230: test_multirange_falls_back_to_200                                           [PASSED]
-test/test_range/test_range.cpp:231: test_head_with_range_no_body                                                [PASSED]
-native_range:test_range Took 1.39 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_range   test_range  PASSED    00:00:01.386
-================= 13 test cases: 13 succeeded in 00:00:01.386 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_syslog in native_syslog environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_syslog/test_syslog.cpp:125: test_pri_local0_info                                                      [PASSED]
-test/test_syslog/test_syslog.cpp:126: test_pri_computation_varies                                               [PASSED]
-test/test_syslog/test_syslog.cpp:127: test_nilvalue_for_empty_fields                                            [PASSED]
-test/test_syslog/test_syslog.cpp:128: test_empty_message_ok                                                     [PASSED]
-test/test_syslog/test_syslog.cpp:129: test_overflow_returns_zero                                                [PASSED]
-test/test_syslog/test_syslog.cpp:130: test_length_matches_strlen                                                [PASSED]
-test/test_syslog/test_syslog.cpp:131: test_init_and_log_captured                                                [PASSED]
-test/test_syslog/test_syslog.cpp:132: test_log_not_ready_when_no_server                                         [PASSED]
-test/test_syslog/test_syslog.cpp:133: test_format_null_and_pri_clamp                                            [PASSED]
-test/test_syslog/test_syslog.cpp:134: test_init_truncates_long_fields                                           [PASSED]
-native_syslog:test_syslog Took 0.76 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_syslog  test_syslog  PASSED    00:00:00.756
-================= 10 test cases: 10 succeeded in 00:00:00.756 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_smtp in native_smtp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_smtp/test_smtp.cpp:401: test_happy_path_no_auth                                                       [PASSED]
-test/test_smtp/test_smtp.cpp:402: test_auth_login                                                               [PASSED]
-test/test_smtp/test_smtp.cpp:403: test_auth_rejected                                                            [PASSED]
-test/test_smtp/test_smtp.cpp:404: test_greeting_not_ready                                                       [PASSED]
-test/test_smtp/test_smtp.cpp:405: test_rcpt_rejected                                                            [PASSED]
-test/test_smtp/test_smtp.cpp:406: test_data_refused                                                             [PASSED]
-test/test_smtp/test_smtp.cpp:407: test_dot_stuffing                                                             [PASSED]
-test/test_smtp/test_smtp.cpp:408: test_multiline_reply_and_lf_body                                              [PASSED]
-test/test_smtp/test_smtp.cpp:409: test_partial_reads_dribble                                                    [PASSED]
-test/test_smtp/test_smtp.cpp:410: test_missing_required_arg                                                     [PASSED]
-test/test_smtp/test_smtp.cpp:411: test_io_error_when_server_hangs                                               [PASSED]
-test/test_smtp/test_smtp.cpp:412: test_reply_buffer_overflow                                                    [PASSED]
-test/test_smtp/test_smtp.cpp:413: test_command_send_fails                                                       [PASSED]
-test/test_smtp/test_smtp.cpp:414: test_body_send_fails                                                          [PASSED]
-test/test_smtp/test_smtp.cpp:415: test_auth_secret_too_long                                                     [PASSED]
-test/test_smtp/test_smtp.cpp:416: test_io_error_at_each_step                                                    [PASSED]
-test/test_smtp/test_smtp.cpp:417: test_protocol_error_at_each_step                                              [PASSED]
-test/test_smtp/test_smtp.cpp:418: test_command_line_overflows                                                   [PASSED]
-test/test_smtp/test_smtp.cpp:419: test_message_header_overflow                                                  [PASSED]
-test/test_smtp/test_smtp.cpp:420: test_cr_in_body_dropped                                                       [PASSED]
-test/test_smtp/test_smtp.cpp:421: test_build_message_boundary_overflows                                         [PASSED]
-test/test_smtp/test_smtp.cpp:422: test_host_smtp_send_stub                                                      [PASSED]
-native_smtp:test_smtp Took 0.94 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_smtp    test_smtp  PASSED    00:00:00.943
-================= 22 test cases: 22 succeeded in 00:00:00.943 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ntp_server in native_ntp_server environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ntp_server/test_ntp_server.cpp:141: test_happy_path_fields                                            [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:142: test_origin_is_client_transmit                                    [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:143: test_version_echo                                                 [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:144: test_poll_echo_and_default                                        [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:145: test_stratum_passthrough                                          [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:146: test_big_endian_encoding                                          [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:147: test_length_guards                                                [PASSED]
-test/test_ntp_server/test_ntp_server.cpp:148: test_root_dispersion_advertised                                   [PASSED]
-native_ntp_server:test_ntp_server Took 0.73 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_ntp_server  test_ntp_server  PASSED    00:00:00.727
-================== 8 test cases: 8 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dns_server in native_dns_server environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dns_server/test_dns_server.cpp:271: test_a_record_answer                                              [PASSED]
-test/test_dns_server/test_dns_server.cpp:272: test_nxdomain                                                     [PASSED]
-test/test_dns_server/test_dns_server.cpp:273: test_non_a_query_no_error                                         [PASSED]
-test/test_dns_server/test_dns_server.cpp:274: test_multilabel_name_reaches_resolver                             [PASSED]
-test/test_dns_server/test_dns_server.cpp:275: test_malformed_guards                                             [PASSED]
-test/test_dns_server/test_dns_server.cpp:276: test_table_add_lookup_case_insensitive                            [PASSED]
-test/test_dns_server/test_dns_server.cpp:277: test_end_to_end_with_table                                        [PASSED]
-test/test_dns_server/test_dns_server.cpp:278: test_dns_opcode_notimp                                            [PASSED]
-test/test_dns_server/test_dns_server.cpp:279: test_dns_truncated_questions                                      [PASSED]
-test/test_dns_server/test_dns_server.cpp:280: test_dns_oversized_name                                           [PASSED]
-test/test_dns_server/test_dns_server.cpp:281: test_dns_question_exceeds_out_cap                                 [PASSED]
-test/test_dns_server/test_dns_server.cpp:282: test_dns_add_and_lookup_guards                                    [PASSED]
-test/test_dns_server/test_dns_server.cpp:283: test_dns_begin_host_stub                                          [PASSED]
-native_dns_server:test_dns_server Took 0.73 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_dns_server  test_dns_server  PASSED    00:00:00.728
-================= 13 test cases: 13 succeeded in 00:00:00.728 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_rtc in native_rtc environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_rtc/test_rtc.cpp:124: test_known_epoch_2000                                                           [PASSED]
-test/test_rtc/test_rtc.cpp:125: test_decode_datetime                                                            [PASSED]
-test/test_rtc/test_rtc.cpp:126: test_12hour_mode_equivalence                                                    [PASSED]
-test/test_rtc/test_rtc.cpp:127: test_12hour_midnight_and_noon                                                   [PASSED]
-test/test_rtc/test_rtc.cpp:128: test_roundtrip_over_range                                                       [PASSED]
-test/test_rtc/test_rtc.cpp:129: test_leap_day                                                                   [PASSED]
-test/test_rtc/test_rtc.cpp:130: test_masks_ch_and_century                                                       [PASSED]
-test/test_rtc/test_rtc.cpp:131: test_invalid_guards                                                             [PASSED]
-native_rtc:test_rtc Took 0.74 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_rtc     test_rtc  PASSED    00:00:00.742
-================== 8 test cases: 8 succeeded in 00:00:00.742 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ld2410 in native_ld2410 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ld2410/test_ld2410.cpp:204: test_parse_basic                                                          [PASSED]
-test/test_ld2410/test_ld2410.cpp:205: test_parse_engineering                                                    [PASSED]
-test/test_ld2410/test_ld2410.cpp:206: test_reject_malformed                                                     [PASSED]
-test/test_ld2410/test_ld2410.cpp:207: test_stream_resync_and_split                                              [PASSED]
-test/test_ld2410/test_ld2410.cpp:208: test_stream_absurd_length_drops                                           [PASSED]
-test/test_ld2410/test_ld2410.cpp:209: test_helpers                                                              [PASSED]
-test/test_ld2410/test_ld2410.cpp:210: test_command_encoders                                                     [PASSED]
-native_ld2410:test_ld2410 Took 0.74 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_ld2410  test_ld2410  PASSED    00:00:00.739
-================== 7 test cases: 7 succeeded in 00:00:00.739 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mpr121 in native_mpr121 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mpr121/test_mpr121.cpp:101: test_touched_decode                                                       [PASSED]
-test/test_mpr121/test_mpr121.cpp:102: test_prox_and_overcurrent_masked                                          [PASSED]
-test/test_mpr121/test_mpr121.cpp:103: test_word10                                                               [PASSED]
-test/test_mpr121/test_mpr121.cpp:104: test_build_init_bytes                                                     [PASSED]
-test/test_mpr121/test_mpr121.cpp:105: test_build_init_guards                                                    [PASSED]
-native_mpr121:test_mpr121 Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_mpr121  test_mpr121  PASSED    00:00:00.720
-================== 5 test cases: 5 succeeded in 00:00:00.720 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sht3x in native_sht3x environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sht3x/test_sht3x.cpp:83: test_crc8_datasheet_vector                                                   [PASSED]
-test/test_sht3x/test_sht3x.cpp:84: test_conversion                                                              [PASSED]
-test/test_sht3x/test_sht3x.cpp:85: test_parse_valid                                                             [PASSED]
-test/test_sht3x/test_sht3x.cpp:86: test_parse_bad_crc                                                           [PASSED]
-test/test_sht3x/test_sht3x.cpp:87: test_parse_null_out                                                          [PASSED]
-native_sht3x:test_sht3x Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_sht3x   test_sht3x  PASSED    00:00:00.723
-================== 5 test cases: 5 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_pca9685 in native_pca9685 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_pca9685/test_pca9685.cpp:73: test_prescale                                                            [PASSED]
-test/test_pca9685/test_pca9685.cpp:74: test_channel_reg                                                         [PASSED]
-test/test_pca9685/test_pca9685.cpp:75: test_us_to_count                                                         [PASSED]
-test/test_pca9685/test_pca9685.cpp:76: test_set_pwm_bytes                                                       [PASSED]
-native_pca9685:test_pca9685 Took 0.73 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_pca9685  test_pca9685  PASSED    00:00:00.727
-================== 4 test cases: 4 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ads1115 in native_ads1115 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ads1115/test_ads1115.cpp:51: test_config_word                                                         [PASSED]
-test/test_ads1115/test_ads1115.cpp:52: test_config_fallbacks                                                    [PASSED]
-test/test_ads1115/test_ads1115.cpp:53: test_raw_to_uv                                                           [PASSED]
-native_ads1115:test_ads1115 Took 0.71 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_ads1115  test_ads1115  PASSED    00:00:00.712
-================== 3 test cases: 3 succeeded in 00:00:00.712 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ina219 in native_ina219 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ina219/test_ina219.cpp:55: test_bus_mv                                                                [PASSED]
-test/test_ina219/test_ina219.cpp:56: test_shunt_uv                                                              [PASSED]
-test/test_ina219/test_ina219.cpp:57: test_calibration                                                           [PASSED]
-test/test_ina219/test_ina219.cpp:58: test_current_and_power                                                     [PASSED]
-native_ina219:test_ina219 Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_ina219  test_ina219  PASSED    00:00:00.722
-================== 4 test cases: 4 succeeded in 00:00:00.722 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_hpack in native_hpack environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_hpack/test_hpack.cpp:331: test_hpack_more_errors                                                      [PASSED]
-test/test_hpack/test_hpack.cpp:332: test_dyn_size_update                                                        [PASSED]
-test/test_hpack/test_hpack.cpp:333: test_oversize_entry_clears                                                  [PASSED]
-test/test_hpack/test_hpack.cpp:334: test_dynamic_name_and_index                                                 [PASSED]
-test/test_hpack/test_hpack.cpp:335: test_hpack_decode_errors                                                    [PASSED]
-test/test_hpack/test_hpack.cpp:336: test_hpack_buffer_bounds                                                    [PASSED]
-test/test_hpack/test_hpack.cpp:337: test_hpack_encode_paths                                                     [PASSED]
-test/test_hpack/test_hpack.cpp:338: test_int_coding                                                             [PASSED]
-test/test_hpack/test_hpack.cpp:339: test_huffman                                                                [PASSED]
-test/test_hpack/test_hpack.cpp:340: test_decode_c31_and_index                                                   [PASSED]
-test/test_hpack/test_hpack.cpp:341: test_dynamic_eviction                                                       [PASSED]
-test/test_hpack/test_hpack.cpp:342: test_encode_static                                                          [PASSED]
-test/test_hpack/test_hpack.cpp:343: test_encode_decode_roundtrip                                                [PASSED]
-test/test_hpack/test_hpack.cpp:344: test_reject_malformed                                                       [PASSED]
-native_hpack:test_hpack Took 0.89 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_hpack   test_hpack  PASSED    00:00:00.890
-================= 14 test cases: 14 succeeded in 00:00:00.890 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h2_frame in native_h2frame environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_h2_frame/test_h2_frame.cpp:131: test_header_roundtrip                                                 [PASSED]
-test/test_h2_frame/test_h2_frame.cpp:132: test_settings_build_parse                                             [PASSED]
-test/test_h2_frame/test_h2_frame.cpp:133: test_settings_validation                                              [PASSED]
-test/test_h2_frame/test_h2_frame.cpp:134: test_control_frames                                                   [PASSED]
-test/test_h2_frame/test_h2_frame.cpp:135: test_headers_and_data                                                 [PASSED]
-test/test_h2_frame/test_h2_frame.cpp:136: test_preface                                                          [PASSED]
-native_h2frame:test_h2_frame Took 0.73 seconds ---------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test           Status    Duration
---------------  -------------  --------  ------------
-native_h2frame  test_h2_frame  PASSED    00:00:00.728
-================== 6 test cases: 6 succeeded in 00:00:00.728 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h2_conn in native_h2conn environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_h2_conn/test_h2_conn.cpp:623: test_init_and_request                                                   [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:624: test_respond_roundtrip                                                  [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:625: test_ping_and_split_recv                                                [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:626: test_bad_preface                                                        [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:627: test_h2_headers_padded_priority                                         [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:628: test_h2_headers_pad_overflow                                            [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:629: test_h2_stream_id_must_increase                                         [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:630: test_h2_headers_bad_stream_id                                           [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:631: test_h2_stream_table_full_rst                                           [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:632: test_h2_continuation                                                    [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:633: test_h2_continuation_guards                                             [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:634: test_h2_data                                                            [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:635: test_h2_window_update                                                   [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:636: test_h2_rst_priority_push                                               [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:637: test_h2_goaway_then_ignore                                              [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:638: test_h2_settings_ack_and_bad                                            [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:639: test_h2_ping_bad                                                        [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:640: test_h2_frame_too_big                                                   [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:641: test_h2_respond_paths_and_goaway                                        [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:642: test_h2_more_guards                                                     [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:643: test_h2_continuation_more                                               [PASSED]
-test/test_h2_conn/test_h2_conn.cpp:644: test_h2_respond_content_type_too_big                                    [PASSED]
-native_h2conn:test_h2_conn Took 1.12 seconds ------------------------------------------------------------------ [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test          Status    Duration
--------------  ------------  --------  ------------
-native_h2conn  test_h2_conn  PASSED    00:00:01.123
-================= 22 test cases: 22 succeeded in 00:00:01.123 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_varint in native_quic_varint environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_varint/test_quic_varint.cpp:82: test_rfc_examples                                                [PASSED]
-test/test_quic_varint/test_quic_varint.cpp:83: test_non_minimal_decode                                          [PASSED]
-test/test_quic_varint/test_quic_varint.cpp:84: test_boundaries_and_guards                                       [PASSED]
-native_quic_varint:test_quic_varint Took 0.71 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_quic_varint  test_quic_varint  PASSED    00:00:00.714
-================== 3 test cases: 3 succeeded in 00:00:00.714 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h3_frame in native_h3frame environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_h3_frame/test_h3_frame.cpp:140: test_header_roundtrip                                                 [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:141: test_build_data_and_goaway                                            [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:142: test_settings_roundtrip                                               [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:143: test_reserved                                                         [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:144: test_build_headers                                                    [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:145: test_builder_overflow                                                 [PASSED]
-test/test_h3_frame/test_h3_frame.cpp:146: test_parse_errors                                                     [PASSED]
-native_h3frame:test_h3_frame Took 0.74 seconds ---------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test           Status    Duration
---------------  -------------  --------  ------------
-native_h3frame  test_h3_frame  PASSED    00:00:00.744
-================== 7 test cases: 7 succeeded in 00:00:00.744 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_jwt in native_jwt environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_jwt/test_jwt.cpp:335: test_base64url_strict_alphabet                                                  [PASSED]
-test/test_jwt/test_jwt.cpp:336: test_verify_malformed_headers                                                   [PASSED]
-test/test_jwt/test_jwt.cpp:337: test_bearer_extra_spaces                                                        [PASSED]
-test/test_jwt/test_jwt.cpp:338: test_claim_int_edges                                                            [PASSED]
-test/test_jwt/test_jwt.cpp:339: test_claim_str_edges                                                            [PASSED]
-test/test_jwt/test_jwt.cpp:340: test_valid_token_accepts                                                        [PASSED]
-test/test_jwt/test_jwt.cpp:341: test_wrong_secret_rejects                                                       [PASSED]
-test/test_jwt/test_jwt.cpp:342: test_tampered_payload_rejects                                                   [PASSED]
-test/test_jwt/test_jwt.cpp:343: test_tampered_signature_rejects                                                 [PASSED]
-test/test_jwt/test_jwt.cpp:344: test_malformed_rejected                                                         [PASSED]
-test/test_jwt/test_jwt.cpp:345: test_alg_not_hs256_rejected                                                     [PASSED]
-test/test_jwt/test_jwt.cpp:346: test_bearer_header                                                              [PASSED]
-test/test_jwt/test_jwt.cpp:347: test_claim_int                                                                  [PASSED]
-test/test_jwt/test_jwt.cpp:348: test_claim_missing                                                              [PASSED]
-test/test_jwt/test_jwt.cpp:349: test_claim_str                                                                  [PASSED]
-test/test_jwt/test_jwt.cpp:350: test_scope_allows                                                               [PASSED]
-test/test_jwt/test_jwt.cpp:351: test_time_no_clock_skips_claims                                                 [PASSED]
-test/test_jwt/test_jwt.cpp:352: test_time_exp_enforced                                                          [PASSED]
-test/test_jwt/test_jwt.cpp:353: test_time_nbf_enforced                                                          [PASSED]
-test/test_jwt/test_jwt.cpp:354: test_time_no_claims_valid                                                       [PASSED]
-test/test_jwt/test_jwt.cpp:355: test_bearer_valid_at                                                            [PASSED]
-native_jwt:test_jwt Took 0.81 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_jwt     test_jwt  PASSED    00:00:00.811
-================= 21 test cases: 21 succeeded in 00:00:00.811 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_upload in native_upload environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_upload/test_upload.cpp:111: test_upload_streams_body_to_file                                          [PASSED]
-test/test_upload/test_upload.cpp:112: test_small_body_single_chunk                                              [PASSED]
-test/test_upload/test_upload.cpp:113: test_empty_body_not_streamed                                              [PASSED]
-native_upload:test_upload Took 1.44 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_upload  test_upload  PASSED    00:00:01.439
-================== 3 test cases: 3 succeeded in 00:00:01.439 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_http_client in native_http_client environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_http_client/test_http_client.cpp:228: test_url_edge_rejections                                        [PASSED]
-test/test_http_client/test_http_client.cpp:229: test_build_edge_rejections                                      [PASSED]
-test/test_http_client/test_http_client.cpp:230: test_response_edge_rejections                                   [PASSED]
-test/test_http_client/test_http_client.cpp:231: test_host_transport_stubs                                       [PASSED]
-test/test_http_client/test_http_client.cpp:232: test_url_http_default                                           [PASSED]
-test/test_http_client/test_http_client.cpp:233: test_url_https_port_nopath                                      [PASSED]
-test/test_http_client/test_http_client.cpp:234: test_url_bad_scheme                                             [PASSED]
-test/test_http_client/test_http_client.cpp:235: test_build_get                                                  [PASSED]
-test/test_http_client/test_http_client.cpp:236: test_build_post_with_body_and_port                              [PASSED]
-test/test_http_client/test_http_client.cpp:237: test_parse_content_length                                       [PASSED]
-test/test_http_client/test_http_client.cpp:238: test_parse_status_404                                           [PASSED]
-test/test_http_client/test_http_client.cpp:239: test_parse_chunked                                              [PASSED]
-test/test_http_client/test_http_client.cpp:240: test_parse_chunked_oversize_size_clamped                        [PASSED]
-test/test_http_client/test_http_client.cpp:241: test_parse_connection_close_body                                [PASSED]
-test/test_http_client/test_http_client.cpp:242: test_parse_malformed                                            [PASSED]
-native_http_client:test_http_client Took 0.75 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_http_client  test_http_client  PASSED    00:00:00.749
-================= 15 test cases: 15 succeeded in 00:00:00.749 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_compliance in native_compliance environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_compliance/test_compliance.cpp:168: test_http11_missing_host_rejected                                 [PASSED]
-test/test_compliance/test_compliance.cpp:169: test_http11_with_host_ok                                          [PASSED]
-test/test_compliance/test_compliance.cpp:170: test_http10_missing_host_ok                                       [PASSED]
-test/test_compliance/test_compliance.cpp:171: test_duplicate_host_rejected                                      [PASSED]
-test/test_compliance/test_compliance.cpp:172: test_duplicate_host_rejected_http10                               [PASSED]
-test/test_compliance/test_compliance.cpp:173: test_host_beyond_max_headers_still_counted                        [PASSED]
-test/test_compliance/test_compliance.cpp:174: test_duplicate_host_with_one_beyond_cap_rejected                  [PASSED]
-test/test_compliance/test_compliance.cpp:176: test_content_length_non_digit_rejected                            [PASSED]
-test/test_compliance/test_compliance.cpp:177: test_content_length_empty_rejected                                [PASSED]
-test/test_compliance/test_compliance.cpp:178: test_content_length_conflicting_duplicate_rejected                [PASSED]
-test/test_compliance/test_compliance.cpp:179: test_content_length_matching_duplicate_ok                         [PASSED]
-test/test_compliance/test_compliance.cpp:180: test_content_length_valid_body                                    [PASSED]
-test/test_compliance/test_compliance.cpp:182: test_transfer_encoding_chunked_rejected                           [PASSED]
-test/test_compliance/test_compliance.cpp:183: test_transfer_encoding_with_content_length_rejected               [PASSED]
-test/test_compliance/test_compliance.cpp:184: test_transfer_encoding_case_insensitive_rejected                  [PASSED]
-native_compliance:test_compliance Took 0.78 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_compliance  test_compliance  PASSED    00:00:00.781
-================= 15 test cases: 15 succeeded in 00:00:00.781 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mqtt in native_mqtt environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mqtt/test_mqtt.cpp:410: test_build_guards_and_overflow                                                [PASSED]
-test/test_mqtt/test_mqtt.cpp:411: test_parse_guards                                                             [PASSED]
-test/test_mqtt/test_mqtt.cpp:412: test_host_transport_stubs                                                     [PASSED]
-test/test_mqtt/test_mqtt.cpp:413: test_remlen_boundaries                                                        [PASSED]
-test/test_mqtt/test_mqtt.cpp:414: test_remlen_too_big                                                           [PASSED]
-test/test_mqtt/test_mqtt.cpp:415: test_remlen_decode_incomplete                                                 [PASSED]
-test/test_mqtt/test_mqtt.cpp:416: test_remlen_decode_malformed                                                  [PASSED]
-test/test_mqtt/test_mqtt.cpp:417: test_connect_minimal                                                          [PASSED]
-test/test_mqtt/test_mqtt.cpp:418: test_connect_full                                                             [PASSED]
-test/test_mqtt/test_mqtt.cpp:419: test_publish_qos0_roundtrip                                                   [PASSED]
-test/test_mqtt/test_mqtt.cpp:420: test_publish_qos1_flags_and_id                                                [PASSED]
-test/test_mqtt/test_mqtt.cpp:421: test_publish_topic_overflow_rejected                                          [PASSED]
-test/test_mqtt/test_mqtt.cpp:422: test_publish_qos3_rejected                                                    [PASSED]
-test/test_mqtt/test_mqtt.cpp:423: test_publish_wildcard_topic_rejected                                          [PASSED]
-test/test_mqtt/test_mqtt.cpp:424: test_publish_topic_nul_or_bad_utf8_rejected                                   [PASSED]
-test/test_mqtt/test_mqtt.cpp:425: test_subscribe                                                                [PASSED]
-test/test_mqtt/test_mqtt.cpp:426: test_unsubscribe                                                              [PASSED]
-test/test_mqtt/test_mqtt.cpp:427: test_ack_packets                                                              [PASSED]
-test/test_mqtt/test_mqtt.cpp:428: test_connack                                                                  [PASSED]
-test/test_mqtt/test_mqtt.cpp:429: test_suback                                                                   [PASSED]
-test/test_mqtt/test_mqtt.cpp:430: test_ping_disconnect                                                          [PASSED]
-test/test_mqtt/test_mqtt.cpp:431: test_fixed_header_multibyte_remlen                                            [PASSED]
-native_mqtt:test_mqtt Took 0.74 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_mqtt    test_mqtt  PASSED    00:00:00.744
-================= 22 test cases: 22 succeeded in 00:00:00.744 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ws_client in native_ws_client environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ws_client/test_ws_client.cpp:246: test_accept_for_key_guards                                          [PASSED]
-test/test_ws_client/test_ws_client.cpp:247: test_build_handshake_guards                                         [PASSED]
-test/test_ws_client/test_ws_client.cpp:248: test_check_response_guards                                          [PASSED]
-test/test_ws_client/test_ws_client.cpp:249: test_build_frame_guards_and_64bit                                   [PASSED]
-test/test_ws_client/test_ws_client.cpp:250: test_parse_frame_edges                                              [PASSED]
-test/test_ws_client/test_ws_client.cpp:251: test_host_transport_stubs                                           [PASSED]
-test/test_ws_client/test_ws_client.cpp:252: test_accept_rfc_example                                             [PASSED]
-test/test_ws_client/test_ws_client.cpp:253: test_build_handshake                                                [PASSED]
-test/test_ws_client/test_ws_client.cpp:254: test_check_response_ok                                              [PASSED]
-test/test_ws_client/test_ws_client.cpp:255: test_check_response_bad_accept                                      [PASSED]
-test/test_ws_client/test_ws_client.cpp:256: test_check_response_not_101                                         [PASSED]
-test/test_ws_client/test_ws_client.cpp:257: test_build_frame_masked                                             [PASSED]
-test/test_ws_client/test_ws_client.cpp:258: test_build_frame_extended_len                                       [PASSED]
-test/test_ws_client/test_ws_client.cpp:259: test_parse_frame_server_text                                        [PASSED]
-test/test_ws_client/test_ws_client.cpp:260: test_parse_frame_incomplete                                         [PASSED]
-test/test_ws_client/test_ws_client.cpp:261: test_parse_frame_extended_len                                       [PASSED]
-native_ws_client:test_ws_client Took 0.79 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_ws_client  test_ws_client  PASSED    00:00:00.794
-================= 16 test cases: 16 succeeded in 00:00:00.794 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_scratch in native_scratch environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_scratch/test_scratch.cpp:160: test_alloc_returns_nonnull_and_advances_used                            [PASSED]
-test/test_scratch/test_scratch.cpp:161: test_sequential_allocs_are_distinct_and_ordered                         [PASSED]
-test/test_scratch/test_scratch.cpp:162: test_reset_frees_all_and_reuses_base                                    [PASSED]
-test/test_scratch/test_scratch.cpp:163: test_alignment_is_honored                                               [PASSED]
-test/test_scratch/test_scratch.cpp:164: test_exhaustion_returns_null_without_corrupting_arena                   [PASSED]
-test/test_scratch/test_scratch.cpp:165: test_alloc_larger_than_capacity_returns_null                            [PASSED]
-test/test_scratch/test_scratch.cpp:166: test_alignment_padding_cannot_overflow_arena                            [PASSED]
-test/test_scratch/test_scratch.cpp:167: test_high_water_bounds                                                  [PASSED]
-test/test_scratch/test_scratch.cpp:168: test_zero_size_alloc_returns_nonnull_when_space                         [PASSED]
-test/test_scratch/test_scratch.cpp:169: test_mark_release_reclaims                                              [PASSED]
-test/test_scratch/test_scratch.cpp:170: test_release_allows_reuse_of_same_region                                [PASSED]
-test/test_scratch/test_scratch.cpp:171: test_scratch_scope_releases_on_scope_exit                               [PASSED]
-test/test_scratch/test_scratch.cpp:172: test_nested_scopes_reclaim_lifo                                         [PASSED]
-test/test_scratch/test_scratch.cpp:173: test_sequential_scopes_do_not_accumulate                                [PASSED]
-native_scratch:test_scratch Took 0.76 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_scratch  test_scratch  PASSED    00:00:00.760
-================= 14 test cases: 14 succeeded in 00:00:00.760 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_snmp_trap in native_snmp_trap environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_snmp_trap/test_snmp_trap.cpp:226: test_trap_v2c_structure                                             [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:227: test_all_varbind_types                                              [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:228: test_invalid_varbind_type                                           [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:229: test_build_v2c_null_args                                            [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:230: test_host_transport_stubs                                           [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:231: test_inform_tag                                                     [PASSED]
-test/test_snmp_trap/test_snmp_trap.cpp:232: test_buffer_too_small                                               [PASSED]
-native_snmp_trap:test_snmp_trap Took 0.76 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_snmp_trap  test_snmp_trap  PASSED    00:00:00.758
-================== 7 test cases: 7 succeeded in 00:00:00.758 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_inflate in native_inflate environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_inflate/test_inflate.cpp:169: test_fixed_huffman                                                      [PASSED]
-test/test_inflate/test_inflate.cpp:170: test_back_references                                                    [PASSED]
-test/test_inflate/test_inflate.cpp:171: test_stored_block                                                       [PASSED]
-test/test_inflate/test_inflate.cpp:172: test_dynamic_huffman                                                    [PASSED]
-test/test_inflate/test_inflate.cpp:173: test_empty_message                                                      [PASSED]
-test/test_inflate/test_inflate.cpp:174: test_permessage_deflate_marker                                          [PASSED]
-test/test_inflate/test_inflate.cpp:175: test_permessage_deflate_back_references                                 [PASSED]
-test/test_inflate/test_inflate.cpp:176: test_output_overflow_fails_closed                                       [PASSED]
-test/test_inflate/test_inflate.cpp:177: test_scratch_too_small_fails_closed                                     [PASSED]
-test/test_inflate/test_inflate.cpp:178: test_truncated_input_is_malformed                                       [PASSED]
-test/test_inflate/test_inflate.cpp:179: test_reserved_block_type_is_malformed                                   [PASSED]
-test/test_inflate/test_inflate.cpp:180: test_corrupt_stored_nlen_is_malformed                                   [PASSED]
-native_inflate:test_inflate Took 0.73 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_inflate  test_inflate  PASSED    00:00:00.730
-================= 12 test cases: 12 succeeded in 00:00:00.730 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_deflate in native_deflate environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_deflate/test_deflate.cpp:161: test_roundtrip_text                                                     [PASSED]
-test/test_deflate/test_deflate.cpp:162: test_roundtrip_empty                                                    [PASSED]
-test/test_deflate/test_deflate.cpp:163: test_roundtrip_single_byte                                              [PASSED]
-test/test_deflate/test_deflate.cpp:164: test_roundtrip_all_byte_values                                          [PASSED]
-test/test_deflate/test_deflate.cpp:165: test_compresses_repetitive                                              [PASSED]
-test/test_deflate/test_deflate.cpp:166: test_compresses_json                                                    [PASSED]
-test/test_deflate/test_deflate.cpp:167: test_fuzz_roundtrip                                                     [PASSED]
-test/test_deflate/test_deflate.cpp:168: test_fuzz_low_entropy_roundtrip                                         [PASSED]
-test/test_deflate/test_deflate.cpp:169: test_output_overflow_fails_closed                                       [PASSED]
-test/test_deflate/test_deflate.cpp:170: test_scratch_too_small_fails_closed                                     [PASSED]
-native_deflate:test_deflate Took 0.78 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_deflate  test_deflate  PASSED    00:00:00.780
-================= 10 test cases: 10 succeeded in 00:00:00.780 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_zlib in native_ssh_zlib environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_zlib/test_ssh_zlib.cpp:210: test_session_roundtrip_and_context_takeover                           [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:211: test_empty_payloads                                                   [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:212: test_all_byte_values                                                  [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:213: test_window_slide_long_session                                        [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:214: test_max_input_payload                                                [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:215: test_fuzz_stream_roundtrip                                            [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:216: test_fuzz_low_entropy_stream                                          [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:217: test_oversize_input_rejected                                          [PASSED]
-test/test_ssh_zlib/test_ssh_zlib.cpp:218: test_output_overflow_fails_closed                                     [PASSED]
-native_ssh_zlib:test_ssh_zlib Took 0.81 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_ssh_zlib  test_ssh_zlib  PASSED    00:00:00.807
-================== 9 test cases: 9 succeeded in 00:00:00.807 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_comp in native_ssh_comp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_comp/test_ssh_comp.cpp:138: test_delayed_activation                                               [PASSED]
-test/test_ssh_comp/test_ssh_comp.cpp:139: test_immediate_activation                                             [PASSED]
-test/test_ssh_comp/test_ssh_comp.cpp:140: test_none_never_activates                                             [PASSED]
-test/test_ssh_comp/test_ssh_comp.cpp:141: test_packet_layer_stream_roundtrip                                    [PASSED]
-test/test_ssh_comp/test_ssh_comp.cpp:142: test_packet_layer_window_slide                                        [PASSED]
-native_ssh_comp:test_ssh_comp Took 1.32 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_ssh_comp  test_ssh_comp  PASSED    00:00:01.315
-================== 5 test cases: 5 succeeded in 00:00:01.315 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_websocket in native_ws_deflate environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_websocket/test_websocket.cpp:1068: test_sha1_empty_string                                             [PASSED]
-test/test_websocket/test_websocket.cpp:1069: test_sha1_abc                                                      [PASSED]
-test/test_websocket/test_websocket.cpp:1070: test_sha1_rfc6455_handshake_key                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1071: test_sha1_different_inputs_different_digests                       [PASSED]
-test/test_websocket/test_websocket.cpp:1074: test_base64_encode_one_byte                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1075: test_base64_encode_two_bytes                                       [PASSED]
-test/test_websocket/test_websocket.cpp:1076: test_base64_encode_three_bytes                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1077: test_base64_encode_ws_accept_key                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1078: test_base64_decode_one_byte                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1079: test_base64_decode_two_bytes                                       [PASSED]
-test/test_websocket/test_websocket.cpp:1080: test_base64_decode_three_bytes                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1081: test_base64_decode_ws_accept_key                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1082: test_base64_decode_rejects_misplaced_padding                       [PASSED]
-test/test_websocket/test_websocket.cpp:1083: test_base64_decode_respects_capacity                               [PASSED]
-test/test_websocket/test_websocket.cpp:1084: test_base64_round_trip                                             [PASSED]
-test/test_websocket/test_websocket.cpp:1087: test_ws_pool_size                                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1088: test_ws_ids_match_indices_after_init                               [PASSED]
-test/test_websocket/test_websocket.cpp:1089: test_ws_all_inactive_after_init                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1090: test_ws_alloc_returns_non_null                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1091: test_ws_alloc_sets_active                                          [PASSED]
-test/test_websocket/test_websocket.cpp:1092: test_ws_alloc_sets_slot_id                                         [PASSED]
-test/test_websocket/test_websocket.cpp:1093: test_ws_alloc_sets_parse_state_header1                             [PASSED]
-test/test_websocket/test_websocket.cpp:1094: test_ws_alloc_pool_full_returns_null                               [PASSED]
-test/test_websocket/test_websocket.cpp:1095: test_ws_find_returns_correct_conn                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1096: test_ws_find_returns_null_when_empty                               [PASSED]
-test/test_websocket/test_websocket.cpp:1097: test_ws_find_returns_null_for_different_slot                       [PASSED]
-test/test_websocket/test_websocket.cpp:1098: test_ws_find_after_both_slots_allocated                            [PASSED]
-test/test_websocket/test_websocket.cpp:1099: test_ws_free_deactivates_slot                                      [PASSED]
-test/test_websocket/test_websocket.cpp:1100: test_ws_free_restores_ws_id                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1101: test_ws_free_makes_slot_findable_as_null                           [PASSED]
-test/test_websocket/test_websocket.cpp:1102: test_ws_free_nop_on_unallocated                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1103: test_ws_alloc_after_free_succeeds                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1106: test_ws_parse_text_frame_sets_ready                                [PASSED]
-test/test_websocket/test_websocket.cpp:1107: test_ws_parse_payload_stored_correctly                             [PASSED]
-test/test_websocket/test_websocket.cpp:1108: test_ws_parse_binary_frame_sets_ready                              [PASSED]
-test/test_websocket/test_websocket.cpp:1109: test_ws_parse_zero_length_unmasked_frame                           [PASSED]
-test/test_websocket/test_websocket.cpp:1110: test_ws_parse_zero_length_masked_frame                             [PASSED]
-test/test_websocket/test_websocket.cpp:1111: test_ws_reject_unmasked_data_frame                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1112: test_ws_reject_reserved_opcode                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1113: test_ws_reject_fragmented_control_frame                            [PASSED]
-test/test_websocket/test_websocket.cpp:1114: test_ws_reject_oversized_control_frame                             [PASSED]
-test/test_websocket/test_websocket.cpp:1115: test_ws_parse_16bit_length_frame                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1116: test_ws_parse_rsv1_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1117: test_ws_parse_rsv2_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1118: test_ws_parse_rsv3_set_closes_protocol                             [PASSED]
-test/test_websocket/test_websocket.cpp:1119: test_ws_parse_64bit_length_closes_too_big                          [PASSED]
-test/test_websocket/test_websocket.cpp:1120: test_ws_parse_oversized_16bit_length_closes_too_big                [PASSED]
-test/test_websocket/test_websocket.cpp:1121: test_ws_fragment_start_waits_for_continuation                      [PASSED]
-test/test_websocket/test_websocket.cpp:1122: test_ws_fragmented_message_reassembled                             [PASSED]
-test/test_websocket/test_websocket.cpp:1123: test_ws_control_frame_interleaved_in_fragments                     [PASSED]
-test/test_websocket/test_websocket.cpp:1124: test_ws_fragment_accumulation_overflow_rejected                    [PASSED]
-test/test_websocket/test_websocket.cpp:1125: test_ws_continuation_without_start_rejected                        [PASSED]
-test/test_websocket/test_websocket.cpp:1126: test_ws_new_data_frame_during_fragmentation_rejected               [PASSED]
-test/test_websocket/test_websocket.cpp:1127: test_ws_parse_ping_auto_pong_resets_frame                          [PASSED]
-test/test_websocket/test_websocket.cpp:1128: test_ws_parse_pong_silently_ignored                                [PASSED]
-test/test_websocket/test_websocket.cpp:1129: test_ws_parse_close_marks_ws_closed                                [PASSED]
-test/test_websocket/test_websocket.cpp:1130: test_ws_parse_stops_at_frame_ready                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1131: test_ws_reset_frame_clears_fields                                  [PASSED]
-test/test_websocket/test_websocket.cpp:1132: test_ws_parse_mask_applied_correctly                               [PASSED]
-test/test_websocket/test_websocket.cpp:1133: test_ws_text_invalid_utf8_rejected                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1134: test_ws_text_valid_utf8_accepted                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1135: test_ws_binary_arbitrary_bytes_accepted                            [PASSED]
-test/test_websocket/test_websocket.cpp:1137: test_ws_permessage_deflate_inbound                                 [PASSED]
-test/test_websocket/test_websocket.cpp:1138: test_ws_rsv1_without_negotiation_closes                            [PASSED]
-test/test_websocket/test_websocket.cpp:1139: test_ws_permessage_deflate_outbound                                [PASSED]
-test/test_websocket/test_websocket.cpp:1140: test_ws_outbound_incompressible_not_flagged                        [PASSED]
-test/test_websocket/test_websocket.cpp:1143: test_ws_outbound_fragmentation                                     [PASSED]
-test/test_websocket/test_websocket.cpp:1146: stress_ws_parse_reset_100_cycles                                   [PASSED]
-test/test_websocket/test_websocket.cpp:1147: stress_ws_alloc_free_pool_cycle                                    [PASSED]
-test/test_websocket/test_websocket.cpp:1148: stress_ws_parse_incremental_byte_by_byte                           [PASSED]
-test/test_websocket/test_websocket.cpp:1149: stress_ws_parse_max_payload                                        [PASSED]
-test/test_websocket/test_websocket.cpp:1150: stress_ws_parse_two_consecutive_frames                             [PASSED]
-native_ws_deflate:test_websocket Took 1.35 seconds ------------------------------------------------------------ [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test            Status    Duration
------------------  --------------  --------  ------------
-native_ws_deflate  test_websocket  PASSED    00:00:01.346
-================= 72 test cases: 72 succeeded in 00:00:01.346 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_time_source in native_time_source environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_time_source/test_time_source.cpp:129: test_single_source                                              [PASSED]
-test/test_time_source/test_time_source.cpp:130: test_priority_order_lowest_value_wins                           [PASSED]
-test/test_time_source/test_time_source.cpp:131: test_falls_back_when_primary_unavailable                        [PASSED]
-test/test_time_source/test_time_source.cpp:132: test_all_unavailable_returns_zero                               [PASSED]
-test/test_time_source/test_time_source.cpp:133: test_first_valid_short_circuits                                 [PASSED]
-test/test_time_source/test_time_source.cpp:134: test_fallback_queries_in_priority_order                         [PASSED]
-test/test_time_source/test_time_source.cpp:135: test_table_full_rejects                                         [PASSED]
-test/test_time_source/test_time_source.cpp:136: test_null_fn_rejected                                           [PASSED]
-test/test_time_source/test_time_source.cpp:137: test_reset_clears_sources                                       [PASSED]
-native_time_source:test_time_source Took 0.71 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_time_source  test_time_source  PASSED    00:00:00.705
-================== 9 test cases: 9 succeeded in 00:00:00.705 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_config_store in native_config_store environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_config_store/test_config_store.cpp:149: test_str_round_trip                                           [PASSED]
-test/test_config_store/test_config_store.cpp:150: test_str_default_when_missing                                 [PASSED]
-test/test_config_store/test_config_store.cpp:151: test_str_overwrite                                            [PASSED]
-test/test_config_store/test_config_store.cpp:152: test_str_truncates_to_capacity                                [PASSED]
-test/test_config_store/test_config_store.cpp:153: test_u32_round_trip                                           [PASSED]
-test/test_config_store/test_config_store.cpp:154: test_u32_default_when_missing                                 [PASSED]
-test/test_config_store/test_config_store.cpp:155: test_blob_round_trip                                          [PASSED]
-test/test_config_store/test_config_store.cpp:156: test_blob_bounded_by_capacity                                 [PASSED]
-test/test_config_store/test_config_store.cpp:157: test_blob_missing_returns_zero                                [PASSED]
-test/test_config_store/test_config_store.cpp:158: test_erase_removes_key                                        [PASSED]
-test/test_config_store/test_config_store.cpp:159: test_clear_wipes_namespace                                    [PASSED]
-test/test_config_store/test_config_store.cpp:160: test_table_full_rejects_new_key                               [PASSED]
-test/test_config_store/test_config_store.cpp:161: test_existing_key_overwrites_even_when_full                   [PASSED]
-test/test_config_store/test_config_store.cpp:162: test_key_too_long_rejected                                    [PASSED]
-native_config_store:test_config_store Took 0.73 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_config_store  test_config_store  PASSED    00:00:00.733
-================= 14 test cases: 14 succeeded in 00:00:00.733 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_device_id in native_device_id environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_device_id/test_device_id.cpp:58: test_uuid_matches_reference_aabbccddeeff                             [PASSED]
-test/test_device_id/test_device_id.cpp:59: test_uuid_matches_reference_001122334455                             [PASSED]
-test/test_device_id/test_device_id.cpp:60: test_uuid_is_deterministic                                           [PASSED]
-test/test_device_id/test_device_id.cpp:61: test_uuid_version_and_variant_bits                                   [PASSED]
-native_device_id:test_device_id Took 0.76 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_device_id  test_device_id  PASSED    00:00:00.758
-================== 4 test cases: 4 succeeded in 00:00:00.758 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_auth_lockout in native_auth_lockout environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_auth_lockout/test_auth_lockout.cpp:183: test_below_threshold_not_locked                               [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:184: test_locks_at_threshold                                       [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:185: test_exponential_backoff                                      [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:186: test_caps_at_max                                              [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:187: test_expires_after_window                                     [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:188: test_success_clears                                           [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:189: test_isolates_addresses                                       [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:190: test_v6_distinct_from_v4_and_each_other                       [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:191: test_zero_ip_never_locked                                     [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:192: test_table_full_tracks_new_address                            [PASSED]
-test/test_auth_lockout/test_auth_lockout.cpp:193: test_active_lockout_survives_eviction                         [PASSED]
-native_auth_lockout:test_auth_lockout Took 0.76 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_auth_lockout  test_auth_lockout  PASSED    00:00:00.763
-================= 11 test cases: 11 succeeded in 00:00:00.763 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_csrf in native_csrf environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_csrf/test_csrf.cpp:114: test_issue_verify_roundtrip                                                   [PASSED]
-test/test_csrf/test_csrf.cpp:115: test_token_format_and_length                                                  [PASSED]
-test/test_csrf/test_csrf.cpp:116: test_verify_rejects_tampered_sig                                              [PASSED]
-test/test_csrf/test_csrf.cpp:117: test_verify_rejects_tampered_nonce                                            [PASSED]
-test/test_csrf/test_csrf.cpp:118: test_verify_rejects_garbage                                                   [PASSED]
-test/test_csrf/test_csrf.cpp:119: test_different_secret_rejects                                                 [PASSED]
-test/test_csrf/test_csrf.cpp:120: test_no_secret_fails_closed                                                   [PASSED]
-test/test_csrf/test_csrf.cpp:121: test_issue_unique                                                             [PASSED]
-test/test_csrf/test_csrf.cpp:122: test_issue_rejects_small_buffer                                               [PASSED]
-native_csrf:test_csrf Took 0.79 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_csrf    test_csrf  PASSED    00:00:00.789
-================== 9 test cases: 9 succeeded in 00:00:00.789 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_telemetry in native_telemetry environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_telemetry/test_telemetry.cpp:121: test_window_classic_stats                                           [PASSED]
-test/test_telemetry/test_telemetry.cpp:122: test_window_empty                                                   [PASSED]
-test/test_telemetry/test_telemetry.cpp:123: test_window_single_sample                                           [PASSED]
-test/test_telemetry/test_telemetry.cpp:124: test_window_eviction                                                [PASSED]
-test/test_telemetry/test_telemetry.cpp:125: test_rate_basic                                                     [PASSED]
-test/test_telemetry/test_telemetry.cpp:126: test_rate_zero_dt                                                   [PASSED]
-test/test_telemetry/test_telemetry.cpp:127: test_totalizer_constant_rate                                        [PASSED]
-test/test_telemetry/test_telemetry.cpp:128: test_totalizer_trapezoid_and_reset                                  [PASSED]
-native_telemetry:test_telemetry Took 0.75 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_telemetry  test_telemetry  PASSED    00:00:00.752
-================== 8 test cases: 8 succeeded in 00:00:00.752 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dashboard in native_dashboard environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dashboard/test_dashboard.cpp:220: test_layout_bar_sparkline_types                                     [PASSED]
-test/test_dashboard/test_dashboard.cpp:221: test_null_widget_table_guards                                       [PASSED]
-test/test_dashboard/test_dashboard.cpp:222: test_json_overflow_paths                                            [PASSED]
-test/test_dashboard/test_dashboard.cpp:223: test_parse_control_edges                                            [PASSED]
-test/test_dashboard/test_dashboard.cpp:224: test_layout_json                                                    [PASSED]
-test/test_dashboard/test_dashboard.cpp:225: test_values_json_initial_zero                                       [PASSED]
-test/test_dashboard/test_dashboard.cpp:226: test_set_and_values                                                 [PASSED]
-test/test_dashboard/test_dashboard.cpp:227: test_set_unknown_key                                                [PASSED]
-test/test_dashboard/test_dashboard.cpp:228: test_configure_resets_values                                        [PASSED]
-test/test_dashboard/test_dashboard.cpp:229: test_small_buffer_fails_closed                                      [PASSED]
-test/test_dashboard/test_dashboard.cpp:230: test_parse_control_ok                                               [PASSED]
-test/test_dashboard/test_dashboard.cpp:231: test_parse_control_float                                            [PASSED]
-test/test_dashboard/test_dashboard.cpp:232: test_parse_control_rejects_malformed                                [PASSED]
-test/test_dashboard/test_dashboard.cpp:233: test_dispatch_control_invokes_cb                                    [PASSED]
-test/test_dashboard/test_dashboard.cpp:234: test_layout_control_types                                           [PASSED]
-native_dashboard:test_dashboard Took 0.74 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_dashboard  test_dashboard  PASSED    00:00:00.742
-================= 15 test cases: 15 succeeded in 00:00:00.742 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_net_egress in native_net_egress environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_net_egress/test_net_egress.cpp:60: test_classify_sta                                                  [PASSED]
-test/test_net_egress/test_net_egress.cpp:61: test_classify_ap                                                   [PASSED]
-test/test_net_egress/test_net_egress.cpp:62: test_classify_eth                                                  [PASSED]
-test/test_net_egress/test_net_egress.cpp:63: test_classify_none                                                 [PASSED]
-test/test_net_egress/test_net_egress.cpp:64: test_egress_host_stub                                              [PASSED]
-test/test_net_egress/test_net_egress.cpp:65: test_eth_host_stub                                                 [PASSED]
-native_net_egress:test_net_egress Took 0.71 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_net_egress  test_net_egress  PASSED    00:00:00.707
-================== 6 test cases: 6 succeeded in 00:00:00.707 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_partition_monitor in native_partition environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_partition_monitor/test_partition_monitor.cpp:71: test_kind_app                                        [PASSED]
-test/test_partition_monitor/test_partition_monitor.cpp:72: test_kind_data                                       [PASSED]
-test/test_partition_monitor/test_partition_monitor.cpp:73: test_json                                            [PASSED]
-test/test_partition_monitor/test_partition_monitor.cpp:74: test_json_small_buffer_fails_closed                  [PASSED]
-test/test_partition_monitor/test_partition_monitor.cpp:75: test_collect_host_stub                               [PASSED]
-native_partition:test_partition_monitor Took 0.71 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test                    Status    Duration
-----------------  ----------------------  --------  ------------
-native_partition  test_partition_monitor  PASSED    00:00:00.715
-================== 5 test cases: 5 succeeded in 00:00:00.715 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cbor in native_cbor environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cbor/test_cbor.cpp:481: test_cbor_decode_more_types                                                   [PASSED]
-test/test_cbor/test_cbor.cpp:482: test_cbor_head_reserved_and_trunc                                             [PASSED]
-test/test_cbor/test_cbor.cpp:483: test_cbor_read_empty                                                          [PASSED]
-test/test_cbor/test_cbor.cpp:484: test_uint                                                                     [PASSED]
-test/test_cbor/test_cbor.cpp:485: test_peek_each_type                                                           [PASSED]
-test/test_cbor/test_cbor.cpp:486: test_uint_8byte                                                               [PASSED]
-test/test_cbor/test_cbor.cpp:487: test_read_double_encoded_float                                                [PASSED]
-test/test_cbor/test_cbor.cpp:488: test_read_map_type_mismatch                                                   [PASSED]
-test/test_cbor/test_cbor.cpp:489: test_int                                                                      [PASSED]
-test/test_cbor/test_cbor.cpp:490: test_text                                                                     [PASSED]
-test/test_cbor/test_cbor.cpp:491: test_bytes                                                                    [PASSED]
-test/test_cbor/test_cbor.cpp:492: test_simple                                                                   [PASSED]
-test/test_cbor/test_cbor.cpp:493: test_float                                                                    [PASSED]
-test/test_cbor/test_cbor.cpp:494: test_array_and_map                                                            [PASSED]
-test/test_cbor/test_cbor.cpp:495: test_overflow_fails_closed                                                    [PASSED]
-test/test_cbor/test_cbor.cpp:496: test_decode_uint                                                              [PASSED]
-test/test_cbor/test_cbor.cpp:497: test_decode_int                                                               [PASSED]
-test/test_cbor/test_cbor.cpp:498: test_decode_float_roundtrip                                                   [PASSED]
-test/test_cbor/test_cbor.cpp:499: test_decode_roundtrip_map                                                     [PASSED]
-test/test_cbor/test_cbor.cpp:500: test_decode_truncated                                                         [PASSED]
-test/test_cbor/test_cbor.cpp:501: test_decode_type_mismatch                                                     [PASSED]
-native_cbor:test_cbor Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_cbor    test_cbor  PASSED    00:00:00.725
-================= 21 test cases: 21 succeeded in 00:00:00.725 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_msgpack in native_msgpack environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_msgpack/test_msgpack.cpp:701: test_encode_wide32                                                      [PASSED]
-test/test_msgpack/test_msgpack.cpp:702: test_peek_wide_types                                                    [PASSED]
-test/test_msgpack/test_msgpack.cpp:703: test_read_int_all_widths                                                [PASSED]
-test/test_msgpack/test_msgpack.cpp:704: test_read_on_empty_reader                                               [PASSED]
-test/test_msgpack/test_msgpack.cpp:705: test_read_wrong_type_byte                                               [PASSED]
-test/test_msgpack/test_msgpack.cpp:706: test_read_truncated_widths                                              [PASSED]
-test/test_msgpack/test_msgpack.cpp:707: test_uint                                                               [PASSED]
-test/test_msgpack/test_msgpack.cpp:708: test_wide_roundtrip                                                     [PASSED]
-test/test_msgpack/test_msgpack.cpp:709: test_decode_wide_fails_closed                                           [PASSED]
-test/test_msgpack/test_msgpack.cpp:710: test_int                                                                [PASSED]
-test/test_msgpack/test_msgpack.cpp:711: test_str                                                                [PASSED]
-test/test_msgpack/test_msgpack.cpp:712: test_bytes                                                              [PASSED]
-test/test_msgpack/test_msgpack.cpp:713: test_simple                                                             [PASSED]
-test/test_msgpack/test_msgpack.cpp:714: test_float                                                              [PASSED]
-test/test_msgpack/test_msgpack.cpp:715: test_array_and_map                                                      [PASSED]
-test/test_msgpack/test_msgpack.cpp:716: test_overflow_fails_closed                                              [PASSED]
-test/test_msgpack/test_msgpack.cpp:717: test_decode_uint                                                        [PASSED]
-test/test_msgpack/test_msgpack.cpp:718: test_decode_int                                                         [PASSED]
-test/test_msgpack/test_msgpack.cpp:719: test_decode_str_and_bytes                                               [PASSED]
-test/test_msgpack/test_msgpack.cpp:720: test_decode_simple_and_float                                            [PASSED]
-test/test_msgpack/test_msgpack.cpp:721: test_decode_array_and_map                                               [PASSED]
-test/test_msgpack/test_msgpack.cpp:722: test_decode_roundtrip                                                   [PASSED]
-test/test_msgpack/test_msgpack.cpp:723: test_decode_fails_closed                                                [PASSED]
-native_msgpack:test_msgpack Took 0.75 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_msgpack  test_msgpack  PASSED    00:00:00.752
-================= 23 test cases: 23 succeeded in 00:00:00.752 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_gpio_map in native_gpio_map environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_gpio_map/test_gpio_map.cpp:107: test_dir_name                                                         [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:108: test_json                                                             [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:109: test_json_empty                                                       [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:110: test_json_small_buffer_fails_closed                                   [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:111: test_parse_set                                                        [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:112: test_parse_set_rejects_partial                                        [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:113: test_parse_set_no_prefix_match                                        [PASSED]
-test/test_gpio_map/test_gpio_map.cpp:114: test_is_output                                                        [PASSED]
-native_gpio_map:test_gpio_map Took 0.74 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_gpio_map  test_gpio_map  PASSED    00:00:00.736
-================== 8 test cases: 8 succeeded in 00:00:00.736 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_udp_telemetry in native_udp_telemetry environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_udp_telemetry/test_udp_telemetry.cpp:101: test_int_and_uint_fields                                    [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:102: test_float_field                                            [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:103: test_no_fields_not_ok                                       [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:104: test_overflow_fails_closed                                  [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:105: test_tags_and_timestamp                                     [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:106: test_tag_escaping                                           [PASSED]
-test/test_udp_telemetry/test_udp_telemetry.cpp:107: test_tag_after_field_fails_closed                           [PASSED]
-native_udp_telemetry:test_udp_telemetry Took 0.73 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_udp_telemetry  test_udp_telemetry  PASSED    00:00:00.726
-================== 7 test cases: 7 succeeded in 00:00:00.726 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_statsd in native_statsd environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_statsd/test_statsd.cpp:132: test_format_types                                                         [PASSED]
-test/test_statsd/test_statsd.cpp:133: test_format_sample_rate                                                   [PASSED]
-test/test_statsd/test_statsd.cpp:134: test_format_tags_and_both                                                 [PASSED]
-test/test_statsd/test_statsd.cpp:135: test_format_guards                                                        [PASSED]
-test/test_statsd/test_statsd.cpp:136: test_emit_counter_and_negative                                            [PASSED]
-test/test_statsd/test_statsd.cpp:137: test_emit_gauge_and_delta                                                 [PASSED]
-test/test_statsd/test_statsd.cpp:138: test_emit_timing_set_sampled                                              [PASSED]
-test/test_statsd/test_statsd.cpp:139: test_emit_global_tags                                                     [PASSED]
-test/test_statsd/test_statsd.cpp:140: test_emit_noop_until_begin                                                [PASSED]
-native_statsd:test_statsd Took 0.77 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_statsd  test_statsd  PASSED    00:00:00.766
-================== 9 test cases: 9 succeeded in 00:00:00.766 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_guardrails in native_guardrails environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_guardrails/test_guardrails.cpp:63: test_eval_all_clear                                                [PASSED]
-test/test_guardrails/test_guardrails.cpp:64: test_eval_heap_breach                                              [PASSED]
-test/test_guardrails/test_guardrails.cpp:65: test_eval_frag_and_stack                                           [PASSED]
-test/test_guardrails/test_guardrails.cpp:66: test_eval_all_breached                                             [PASSED]
-test/test_guardrails/test_guardrails.cpp:67: test_json                                                          [PASSED]
-test/test_guardrails/test_guardrails.cpp:68: test_json_small_buffer_fails_closed                                [PASSED]
-native_guardrails:test_guardrails Took 0.72 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_guardrails  test_guardrails  PASSED    00:00:00.725
-================== 6 test cases: 6 succeeded in 00:00:00.725 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_failsafe in native_failsafe environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_failsafe/test_failsafe.cpp:114: test_overdue_predicate                                                [PASSED]
-test/test_failsafe/test_failsafe.cpp:115: test_register_and_not_overdue_when_fresh                              [PASSED]
-test/test_failsafe/test_failsafe.cpp:116: test_breach_fires_once_then_clears_on_feed                            [PASSED]
-test/test_failsafe/test_failsafe.cpp:117: test_registry_full                                                    [PASSED]
-test/test_failsafe/test_failsafe.cpp:118: test_feed_bad_id                                                      [PASSED]
-test/test_failsafe/test_failsafe.cpp:119: test_json                                                             [PASSED]
-native_failsafe:test_failsafe Took 0.74 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_failsafe  test_failsafe  PASSED    00:00:00.740
-================== 6 test cases: 6 succeeded in 00:00:00.740 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sleep_sched in native_sleep_sched environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sleep_sched/test_sleep_sched.cpp:79: test_awake_when_recent                                           [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:80: test_min_window_at_threshold                                     [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:81: test_ramp_doubles                                                [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:82: test_clamps_to_ceiling                                           [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:83: test_no_ramp_jumps_to_ceiling                                    [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:84: test_degenerate_max_below_min                                    [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:85: test_wrap_safe                                                   [PASSED]
-test/test_sleep_sched/test_sleep_sched.cpp:86: test_null_cfg                                                    [PASSED]
-native_sleep_sched:test_sleep_sched Took 0.72 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_sleep_sched  test_sleep_sched  PASSED    00:00:00.722
-================== 8 test cases: 8 succeeded in 00:00:00.722 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_wearlevel in native_wearlevel environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_wearlevel/test_wearlevel.cpp:68: test_pick_least_worn_ties_lowest_index                               [PASSED]
-test/test_wearlevel/test_wearlevel.cpp:69: test_pick_edge                                                       [PASSED]
-test/test_wearlevel/test_wearlevel.cpp:70: test_pick_plus_mark_levels_the_region                                [PASSED]
-test/test_wearlevel/test_wearlevel.cpp:71: test_mark_saturates_and_bounds                                       [PASSED]
-test/test_wearlevel/test_wearlevel.cpp:72: test_spread                                                          [PASSED]
-native_wearlevel:test_wearlevel Took 0.73 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_wearlevel  test_wearlevel  PASSED    00:00:00.731
-================== 5 test cases: 5 succeeded in 00:00:00.731 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_netadapt in native_netadapt environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_netadapt/test_netadapt.cpp:59: test_window_floor_when_low_heap                                        [PASSED]
-test/test_netadapt/test_netadapt.cpp:60: test_window_scales_with_heap                                           [PASSED]
-test/test_netadapt/test_netadapt.cpp:61: test_window_clamps_to_ceiling                                          [PASSED]
-test/test_netadapt/test_netadapt.cpp:62: test_window_degenerate_max_below_min                                   [PASSED]
-test/test_netadapt/test_netadapt.cpp:63: test_dhcp_fallback_on_timeout                                          [PASSED]
-test/test_netadapt/test_netadapt.cpp:64: test_dhcp_fallback_on_attempts                                         [PASSED]
-native_netadapt:test_netadapt Took 0.70 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_netadapt  test_netadapt  PASSED    00:00:00.701
-================== 6 test cases: 6 succeeded in 00:00:00.701 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dshot in native_dshot environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dshot/test_dshot.cpp:92: test_encode_known_vector                                                     [PASSED]
-test/test_dshot/test_dshot.cpp:93: test_encode_telemetry_bit                                                    [PASSED]
-test/test_dshot/test_dshot.cpp:94: test_encode_bidirectional_inverts_crc                                        [PASSED]
-test/test_dshot/test_dshot.cpp:95: test_value_masked_to_11_bits                                                 [PASSED]
-test/test_dshot/test_dshot.cpp:96: test_decode_roundtrip_and_crc                                                [PASSED]
-test/test_dshot/test_dshot.cpp:97: test_bit_timing                                                              [PASSED]
-test/test_dshot/test_dshot.cpp:98: test_esc_pwm_mapping                                                         [PASSED]
-native_dshot:test_dshot Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_dshot   test_dshot  PASSED    00:00:00.723
-================== 7 test cases: 7 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_hart in native_hart environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_hart/test_hart.cpp:92: test_checksum                                                                  [PASSED]
-test/test_hart/test_hart.cpp:93: test_build_command0_short                                                      [PASSED]
-test/test_hart/test_hart.cpp:94: test_build_with_data                                                           [PASSED]
-test/test_hart/test_hart.cpp:95: test_build_long_address                                                        [PASSED]
-test/test_hart/test_hart.cpp:96: test_parse_roundtrip_and_bad_checksum                                          [PASSED]
-test/test_hart/test_hart.cpp:97: test_hartip_header                                                             [PASSED]
-native_hart:test_hart Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_hart    test_hart  PASSED    00:00:00.716
-================== 6 test cases: 6 succeeded in 00:00:00.716 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nts in native_nts environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nts/test_nts.cpp:102: test_ke_record                                                                  [PASSED]
-test/test_nts/test_nts.cpp:103: test_ke_request                                                                 [PASSED]
-test/test_nts/test_nts.cpp:104: test_ke_parse                                                                   [PASSED]
-test/test_nts/test_nts.cpp:105: test_extension_field_padding                                                    [PASSED]
-native_nts:test_nts Took 0.72 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_nts     test_nts  PASSED    00:00:00.725
-================== 4 test cases: 4 succeeded in 00:00:00.725 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_dds in native_dds environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_dds/test_dds.cpp:101: test_header                                                                     [PASSED]
-test/test_dds/test_dds.cpp:102: test_submessage_endianness                                                      [PASSED]
-test/test_dds/test_dds.cpp:103: test_parse_message                                                              [PASSED]
-test/test_dds/test_dds.cpp:104: test_parse_rejects                                                              [PASSED]
-native_dds:test_dds Took 0.73 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_dds     test_dds  PASSED    00:00:00.732
-================== 4 test cases: 4 succeeded in 00:00:00.732 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_xmpp in native_xmpp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_xmpp/test_xmpp.cpp:81: test_escape                                                                    [PASSED]
-test/test_xmpp/test_xmpp.cpp:82: test_message                                                                   [PASSED]
-test/test_xmpp/test_xmpp.cpp:83: test_presence                                                                  [PASSED]
-test/test_xmpp/test_xmpp.cpp:84: test_iq                                                                        [PASSED]
-test/test_xmpp/test_xmpp.cpp:85: test_stanza_name                                                               [PASSED]
-test/test_xmpp/test_xmpp.cpp:86: test_attr                                                                      [PASSED]
-native_xmpp:test_xmpp Took 0.74 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_xmpp    test_xmpp  PASSED    00:00:00.737
-================== 6 test cases: 6 succeeded in 00:00:00.737 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_rawl2 in native_rawl2 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_rawl2/test_rawl2.cpp:81: test_build_ethernet_ii                                                       [PASSED]
-test/test_rawl2/test_rawl2.cpp:82: test_build_vlan                                                              [PASSED]
-test/test_rawl2/test_rawl2.cpp:83: test_parse                                                                   [PASSED]
-test/test_rawl2/test_rawl2.cpp:84: test_fcs_check_vector                                                        [PASSED]
-native_rawl2:test_rawl2 Took 0.73 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_rawl2   test_rawl2  PASSED    00:00:00.731
-================== 4 test cases: 4 succeeded in 00:00:00.731 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_spa_router in native_spa_router environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_spa_router/test_spa_router.cpp:47: test_has_extension                                                 [PASSED]
-test/test_spa_router/test_spa_router.cpp:48: test_route                                                         [PASSED]
-native_spa_router:test_spa_router Took 0.71 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_spa_router  test_spa_router  PASSED    00:00:00.707
-================== 2 test cases: 2 succeeded in 00:00:00.707 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_goose in native_goose environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_goose/test_goose.cpp:136: test_pdu_structure                                                          [PASSED]
-test/test_goose/test_goose.cpp:137: test_integer_leading_zero                                                   [PASSED]
-test/test_goose/test_goose.cpp:138: test_frame                                                                  [PASSED]
-test/test_goose/test_goose.cpp:139: test_goose_error_and_longform                                               [PASSED]
-native_goose:test_goose Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_goose   test_goose  PASSED    00:00:00.721
-================== 4 test cases: 4 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mtconnect in native_mtconnect environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mtconnect/test_mtconnect.cpp:79: test_streams_document                                                [PASSED]
-test/test_mtconnect/test_mtconnect.cpp:80: test_streams_escapes_value                                           [PASSED]
-test/test_mtconnect/test_mtconnect.cpp:81: test_error_document                                                  [PASSED]
-test/test_mtconnect/test_mtconnect.cpp:82: test_overflow_returns_zero                                           [PASSED]
-native_mtconnect:test_mtconnect Took 0.73 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_mtconnect  test_mtconnect  PASSED    00:00:00.731
-================== 4 test cases: 4 succeeded in 00:00:00.731 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_j2735 in native_j2735 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_j2735/test_j2735.cpp:168: test_cint_bits                                                              [PASSED]
-test/test_j2735/test_j2735.cpp:169: test_bit_writer_pattern                                                     [PASSED]
-test/test_j2735/test_j2735.cpp:170: test_writer_null_and_zero                                                   [PASSED]
-test/test_j2735/test_j2735.cpp:171: test_cint_roundtrip                                                         [PASSED]
-test/test_j2735/test_j2735.cpp:172: test_bsm_core_roundtrip                                                     [PASSED]
-test/test_j2735/test_j2735.cpp:173: test_bsm_core_bit_length                                                    [PASSED]
-test/test_j2735/test_j2735.cpp:174: test_spat_roundtrip                                                         [PASSED]
-test/test_j2735/test_j2735.cpp:175: test_spat_decode_too_many                                                   [PASSED]
-test/test_j2735/test_j2735.cpp:176: test_map_roundtrip                                                          [PASSED]
-native_j2735:test_j2735 Took 0.73 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_j2735   test_j2735  PASSED    00:00:00.727
-================== 9 test cases: 9 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_nema_ts2 in native_nema_ts2 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_nema_ts2/test_nema_ts2.cpp:68: test_crc_check_vector                                                  [PASSED]
-test/test_nema_ts2/test_nema_ts2.cpp:69: test_build_and_parse                                                   [PASSED]
-test/test_nema_ts2/test_nema_ts2.cpp:70: test_no_data_frame                                                     [PASSED]
-test/test_nema_ts2/test_nema_ts2.cpp:71: test_parse_rejects_bad_crc_and_short                                   [PASSED]
-native_nema_ts2:test_nema_ts2 Took 0.72 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_nema_ts2  test_nema_ts2  PASSED    00:00:00.719
-================== 4 test cases: 4 succeeded in 00:00:00.719 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_snp in native_snp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_snp/test_snp.cpp:83: test_bcc                                                                         [PASSED]
-test/test_snp/test_snp.cpp:84: test_build_and_parse                                                             [PASSED]
-test/test_snp/test_snp.cpp:85: test_empty_data                                                                  [PASSED]
-test/test_snp/test_snp.cpp:86: test_parse_rejects                                                               [PASSED]
-test/test_snp/test_snp.cpp:87: test_snp_build_guards                                                            [PASSED]
-native_snp:test_snp Took 0.72 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_snp     test_snp  PASSED    00:00:00.724
-================== 5 test cases: 5 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_directnet in native_directnet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_directnet/test_directnet.cpp:93: test_lrc                                                             [PASSED]
-test/test_directnet/test_directnet.cpp:94: test_header_frame                                                    [PASSED]
-test/test_directnet/test_directnet.cpp:95: test_data_frame_roundtrip                                            [PASSED]
-test/test_directnet/test_directnet.cpp:96: test_data_parse_rejects                                              [PASSED]
-test/test_directnet/test_directnet.cpp:97: test_guards                                                          [PASSED]
-native_directnet:test_directnet Took 0.73 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_directnet  test_directnet  PASSED    00:00:00.730
-================== 5 test cases: 5 succeeded in 00:00:00.730 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sep2 in native_sep2 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sep2/test_sep2.cpp:69: test_device_capability                                                         [PASSED]
-test/test_sep2/test_sep2.cpp:70: test_end_device                                                                [PASSED]
-test/test_sep2/test_sep2.cpp:71: test_der_control_negative_setpoint                                             [PASSED]
-test/test_sep2/test_sep2.cpp:72: test_xml_escape_in_href                                                        [PASSED]
-test/test_sep2/test_sep2.cpp:73: test_overflow                                                                  [PASSED]
-native_sep2:test_sep2 Took 0.73 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_sep2    test_sep2  PASSED    00:00:00.732
-================== 5 test cases: 5 succeeded in 00:00:00.732 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_profinet in native_profinet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_profinet/test_profinet.cpp:112: test_header_roundtrip                                                 [PASSED]
-test/test_profinet/test_profinet.cpp:113: test_block_even_padding                                               [PASSED]
-test/test_profinet/test_profinet.cpp:114: test_walk_blocks                                                      [PASSED]
-test/test_profinet/test_profinet.cpp:115: test_walk_rejects_truncated                                           [PASSED]
-test/test_profinet/test_profinet.cpp:116: test_pn_guards                                                        [PASSED]
-native_profinet:test_profinet Took 0.73 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_profinet  test_profinet  PASSED    00:00:00.728
-================== 5 test cases: 5 succeeded in 00:00:00.728 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ntcip in native_ntcip environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ntcip/test_ntcip.cpp:63: test_roots_under_nema                                                        [PASSED]
-test/test_ntcip/test_ntcip.cpp:64: test_oid_builder_scalar_and_index                                            [PASSED]
-test/test_ntcip/test_ntcip.cpp:65: test_oid_builder_overflow                                                    [PASSED]
-native_ntcip:test_ntcip Took 0.72 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_ntcip   test_ntcip  PASSED    00:00:00.721
-================== 3 test cases: 3 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_openadr in native_openadr environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_openadr/test_openadr.cpp:70: test_event                                                               [PASSED]
-test/test_openadr/test_openadr.cpp:71: test_report_negative_value                                               [PASSED]
-test/test_openadr/test_openadr.cpp:72: test_json_escape                                                         [PASSED]
-test/test_openadr/test_openadr.cpp:73: test_overflow                                                            [PASSED]
-native_openadr:test_openadr Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_openadr  test_openadr  PASSED    00:00:00.720
-================== 4 test cases: 4 succeeded in 00:00:00.720 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mms in native_mms environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mms/test_mms.cpp:197: test_read_request_structure                                                     [PASSED]
-test/test_mms/test_mms.cpp:198: test_read_request_parse                                                         [PASSED]
-test/test_mms/test_mms.cpp:199: test_read_response_roundtrip                                                    [PASSED]
-test/test_mms/test_mms.cpp:200: test_parse_rejects_bad_tag                                                      [PASSED]
-test/test_mms/test_mms.cpp:201: test_invoke_id_zero_and_msb                                                     [PASSED]
-test/test_mms/test_mms.cpp:202: test_read_request_bad_args                                                      [PASSED]
-test/test_mms/test_mms.cpp:203: test_read_request_long_name_long_form                                           [PASSED]
-test/test_mms/test_mms.cpp:204: test_read_response_bad_args_and_overflow                                        [PASSED]
-test/test_mms/test_mms.cpp:205: test_parse_null_and_short                                                       [PASSED]
-test/test_mms/test_mms.cpp:206: test_parse_malformed                                                            [PASSED]
-test/test_mms/test_mms.cpp:207: test_parse_no_service                                                           [PASSED]
-native_mms:test_mms Took 0.73 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_mms     test_mms  PASSED    00:00:00.730
-================= 11 test cases: 11 succeeded in 00:00:00.730 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cclink in native_cclink environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cclink/test_cclink.cpp:74: test_sum                                                                   [PASSED]
-test/test_cclink/test_cclink.cpp:75: test_build_and_parse                                                       [PASSED]
-test/test_cclink/test_cclink.cpp:76: test_bit_accessors                                                         [PASSED]
-test/test_cclink/test_cclink.cpp:77: test_parse_rejects                                                         [PASSED]
-native_cclink:test_cclink Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_cclink  test_cclink  PASSED    00:00:00.721
-================== 4 test cases: 4 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_powerlink in native_powerlink environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_powerlink/test_powerlink.cpp:62: test_soc                                                             [PASSED]
-test/test_powerlink/test_powerlink.cpp:63: test_preq_pres_roundtrip                                             [PASSED]
-test/test_powerlink/test_powerlink.cpp:64: test_parse_rejects                                                   [PASSED]
-native_powerlink:test_powerlink Took 0.72 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_powerlink  test_powerlink  PASSED    00:00:00.718
-================== 3 test cases: 3 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sercos in native_sercos environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sercos/test_sercos.cpp:76: test_idn_roundtrip                                                         [PASSED]
-test/test_sercos/test_sercos.cpp:77: test_telegram_roundtrip                                                    [PASSED]
-test/test_sercos/test_sercos.cpp:78: test_at_telegram_and_rejects                                               [PASSED]
-native_sercos:test_sercos Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_sercos  test_sercos  PASSED    00:00:00.718
-================== 3 test cases: 3 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_profibus in native_profibus environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_profibus/test_profibus.cpp:81: test_fcs                                                               [PASSED]
-test/test_profibus/test_profibus.cpp:82: test_sd1                                                               [PASSED]
-test/test_profibus/test_profibus.cpp:83: test_sd2_roundtrip                                                     [PASSED]
-test/test_profibus/test_profibus.cpp:84: test_parse_rejects                                                     [PASSED]
-native_profibus:test_profibus Took 0.73 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_profibus  test_profibus  PASSED    00:00:00.726
-================== 4 test cases: 4 succeeded in 00:00:00.726 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_lonworks in native_lonworks environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_lonworks/test_lonworks.cpp:85: test_nv_pdu_roundtrip                                                  [PASSED]
-test/test_lonworks/test_lonworks.cpp:86: test_nv_selector_masked_to_14_bits                                     [PASSED]
-test/test_lonworks/test_lonworks.cpp:87: test_snvt_temp                                                         [PASSED]
-test/test_lonworks/test_lonworks.cpp:88: test_snvt_switch                                                       [PASSED]
-native_lonworks:test_lonworks Took 0.72 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_lonworks  test_lonworks  PASSED    00:00:00.723
-================== 4 test cases: 4 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mbplus in native_mbplus environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mbplus/test_mbplus.cpp:82: test_crc_check_vector                                                      [PASSED]
-test/test_mbplus/test_mbplus.cpp:83: test_build_and_parse                                                       [PASSED]
-test/test_mbplus/test_mbplus.cpp:84: test_token_frame_no_payload                                                [PASSED]
-test/test_mbplus/test_mbplus.cpp:85: test_next_token_ring                                                       [PASSED]
-test/test_mbplus/test_mbplus.cpp:86: test_parse_rejects                                                         [PASSED]
-native_mbplus:test_mbplus Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_mbplus  test_mbplus  PASSED    00:00:00.720
-================== 5 test cases: 5 succeeded in 00:00:00.720 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_interbus in native_interbus environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_interbus/test_interbus.cpp:79: test_fcs_check_vector                                                  [PASSED]
-test/test_interbus/test_interbus.cpp:80: test_build_and_parse                                                   [PASSED]
-test/test_interbus/test_interbus.cpp:81: test_empty_frame                                                       [PASSED]
-test/test_interbus/test_interbus.cpp:82: test_parse_rejects                                                     [PASSED]
-native_interbus:test_interbus Took 0.72 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_interbus  test_interbus  PASSED    00:00:00.725
-================== 4 test cases: 4 succeeded in 00:00:00.725 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_iccp in native_iccp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_iccp/test_iccp.cpp:80: test_state_q_no_time                                                           [PASSED]
-test/test_iccp/test_iccp.cpp:81: test_state_q_with_time                                                         [PASSED]
-test/test_iccp/test_iccp.cpp:82: test_real_q                                                                    [PASSED]
-test/test_iccp/test_iccp.cpp:83: test_real_q_negative                                                           [PASSED]
-native_iccp:test_iccp Took 0.74 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_iccp    test_iccp  PASSED    00:00:00.745
-================== 4 test cases: 4 succeeded in 00:00:00.745 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_wave in native_wave environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_wave/test_wave.cpp:150: test_psid_p_encoding                                                          [PASSED]
-test/test_wave/test_wave.cpp:151: test_psid_four_octet_and_caps                                                 [PASSED]
-test/test_wave/test_wave.cpp:152: test_psid_decode_guards                                                       [PASSED]
-test/test_wave/test_wave.cpp:153: test_wsmp_build_guards                                                        [PASSED]
-test/test_wave/test_wave.cpp:154: test_wsmp_parse_more_guards                                                   [PASSED]
-test/test_wave/test_wave.cpp:155: test_1609dot2_wrap_guards                                                     [PASSED]
-test/test_wave/test_wave.cpp:156: test_wsmp_roundtrip                                                           [PASSED]
-test/test_wave/test_wave.cpp:157: test_1609dot2_wrap                                                            [PASSED]
-test/test_wave/test_wave.cpp:158: test_wsmp_parse_rejects                                                       [PASSED]
-native_wave:test_wave Took 0.73 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_wave    test_wave  PASSED    00:00:00.726
-================== 9 test cases: 9 succeeded in 00:00:00.726 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_utmc in native_utmc environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_utmc/test_utmc.cpp:70: test_request                                                                   [PASSED]
-test/test_utmc/test_utmc.cpp:71: test_response                                                                  [PASSED]
-test/test_utmc/test_utmc.cpp:72: test_response_escapes                                                          [PASSED]
-test/test_utmc/test_utmc.cpp:73: test_parse_request                                                             [PASSED]
-test/test_utmc/test_utmc.cpp:74: test_overflow                                                                  [PASSED]
-native_utmc:test_utmc Took 0.71 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_utmc    test_utmc  PASSED    00:00:00.714
-================== 5 test cases: 5 succeeded in 00:00:00.714 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ocit in native_ocit environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ocit/test_ocit.cpp:71: test_build_and_parse                                                           [PASSED]
-test/test_ocit/test_ocit.cpp:72: test_set_u16_helper                                                            [PASSED]
-test/test_ocit/test_ocit.cpp:73: test_get_no_value                                                              [PASSED]
-test/test_ocit/test_ocit.cpp:74: test_parse_rejects_short                                                       [PASSED]
-native_ocit:test_ocit Took 0.72 seconds ----------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test       Status    Duration
--------------  ---------  --------  ------------
-native_ocit    test_ocit  PASSED    00:00:00.716
-================== 4 test cases: 4 succeeded in 00:00:00.716 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_atc in native_atc environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_atc/test_atc.cpp:75: test_snapshot_json                                                               [PASSED]
-test/test_atc/test_atc.cpp:76: test_set_output                                                                  [PASSED]
-test/test_atc/test_atc.cpp:77: test_get                                                                         [PASSED]
-test/test_atc/test_atc.cpp:78: test_empty_and_overflow                                                          [PASSED]
-native_atc:test_atc Took 0.72 seconds ------------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test      Status    Duration
--------------  --------  --------  ------------
-native_atc     test_atc  PASSED    00:00:00.724
-================== 4 test cases: 4 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_southbound in native_southbound environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_southbound/test_southbound.cpp:161: test_register_and_find                                            [PASSED]
-test/test_southbound/test_southbound.cpp:162: test_read_write_dispatch                                          [PASSED]
-test/test_southbound/test_southbound.cpp:163: test_block_atomic                                                 [PASSED]
-test/test_southbound/test_southbound.cpp:164: test_unsupported_capability                                       [PASSED]
-test/test_southbound/test_southbound.cpp:165: test_registry_full                                                [PASSED]
-native_southbound:test_southbound Took 0.72 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_southbound  test_southbound  PASSED    00:00:00.718
-================== 5 test cases: 5 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_exc_decoder in native_exc_decoder environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_exc_decoder/test_exc_decoder.cpp:94: test_parse_full                                                  [PASSED]
-test/test_exc_decoder/test_exc_decoder.cpp:95: test_json                                                        [PASSED]
-test/test_exc_decoder/test_exc_decoder.cpp:96: test_backtrace_only_and_corrupted                                [PASSED]
-test/test_exc_decoder/test_exc_decoder.cpp:97: test_garbage_returns_false                                       [PASSED]
-test/test_exc_decoder/test_exc_decoder.cpp:98: test_json_omits_core_when_absent_and_overflow                    [PASSED]
-native_exc_decoder:test_exc_decoder Took 0.73 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_exc_decoder  test_exc_decoder  PASSED    00:00:00.733
-================== 5 test cases: 5 succeeded in 00:00:00.733 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_http_delivery in native_http_delivery environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_http_delivery/test_http_delivery.cpp:111: test_swr_decision                                           [PASSED]
-test/test_http_delivery/test_http_delivery.cpp:112: test_cache_control                                          [PASSED]
-test/test_http_delivery/test_http_delivery.cpp:113: test_range_forms                                            [PASSED]
-test/test_http_delivery/test_http_delivery.cpp:114: test_range_rejects                                          [PASSED]
-test/test_http_delivery/test_http_delivery.cpp:115: test_content_range                                          [PASSED]
-test/test_http_delivery/test_http_delivery.cpp:116: test_sw_manifest                                            [PASSED]
-native_http_delivery:test_http_delivery Took 0.72 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_http_delivery  test_http_delivery  PASSED    00:00:00.717
-================== 6 test cases: 6 succeeded in 00:00:00.717 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_hw_health in native_hw_health environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_hw_health/test_hw_health.cpp:98: test_rail_monitor                                                    [PASSED]
-test/test_hw_health/test_hw_health.cpp:99: test_spi_backoff                                                     [PASSED]
-test/test_hw_health/test_hw_health.cpp:100: test_spi_backoff_clamps                                             [PASSED]
-test/test_hw_health/test_hw_health.cpp:101: test_gpio_short                                                     [PASSED]
-test/test_hw_health/test_hw_health.cpp:102: test_cap_leak                                                       [PASSED]
-native_hw_health:test_hw_health Took 0.75 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_hw_health  test_hw_health  PASSED    00:00:00.755
-================== 5 test cases: 5 succeeded in 00:00:00.755 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_mdns_adaptive in native_mdns_adaptive environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_mdns_adaptive/test_mdns_adaptive.cpp:66: test_refresh_interval                                        [PASSED]
-test/test_mdns_adaptive/test_mdns_adaptive.cpp:67: test_backoff_and_recover                                     [PASSED]
-test/test_mdns_adaptive/test_mdns_adaptive.cpp:68: test_due                                                     [PASSED]
-test/test_mdns_adaptive/test_mdns_adaptive.cpp:69: test_presleep                                                [PASSED]
-native_mdns_adaptive:test_mdns_adaptive Took 0.72 seconds ----------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment           Test                Status    Duration
---------------------  ------------------  --------  ------------
-native_mdns_adaptive  test_mdns_adaptive  PASSED    00:00:00.717
-================== 4 test cases: 4 succeeded in 00:00:00.717 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_sockpool in native_sockpool environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_sockpool/test_sockpool.cpp:90: test_acquire_free                                                      [PASSED]
-test/test_sockpool/test_sockpool.cpp:91: test_lru_recycle                                                       [PASSED]
-test/test_sockpool/test_sockpool.cpp:92: test_touch_changes_lru                                                 [PASSED]
-test/test_sockpool/test_sockpool.cpp:93: test_release_reopens_free                                              [PASSED]
-test/test_sockpool/test_sockpool.cpp:94: test_empty_pool_fails                                                  [PASSED]
-native_sockpool:test_sockpool Took 0.73 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_sockpool  test_sockpool  PASSED    00:00:00.728
-================== 5 test cases: 5 succeeded in 00:00:00.728 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_psram_pool in native_psram_pool environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_psram_pool/test_psram_pool.cpp:69: test_place_large_prefers_psram                                     [PASSED]
-test/test_psram_pool/test_psram_pool.cpp:70: test_place_small_prefers_dram                                      [PASSED]
-test/test_psram_pool/test_psram_pool.cpp:71: test_place_dma_forces_dram                                         [PASSED]
-test/test_psram_pool/test_psram_pool.cpp:72: test_place_edges                                                   [PASSED]
-test/test_psram_pool/test_psram_pool.cpp:73: test_pingpong                                                      [PASSED]
-native_psram_pool:test_psram_pool Took 0.72 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_psram_pool  test_psram_pool  PASSED    00:00:00.724
-================== 5 test cases: 5 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_happy_eyeballs in native_happy_eyeballs environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_happy_eyeballs/test_happy_eyeballs.cpp:71: test_pref_order                                            [PASSED]
-test/test_happy_eyeballs/test_happy_eyeballs.cpp:72: test_order_and_interleave                                  [PASSED]
-test/test_happy_eyeballs/test_happy_eyeballs.cpp:73: test_order_single_family                                   [PASSED]
-test/test_happy_eyeballs/test_happy_eyeballs.cpp:74: test_attempt_due                                           [PASSED]
-native_happy_eyeballs:test_happy_eyeballs Took 0.76 seconds --------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment            Test                 Status    Duration
----------------------  -------------------  --------  ------------
-native_happy_eyeballs  test_happy_eyeballs  PASSED    00:00:00.756
-================== 4 test cases: 4 succeeded in 00:00:00.756 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_wifi_sniffer in native_wifi_sniffer environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_wifi_sniffer/test_wifi_sniffer.cpp:98: test_parse_data                                                [PASSED]
-test/test_wifi_sniffer/test_wifi_sniffer.cpp:99: test_parse_beacon                                              [PASSED]
-test/test_wifi_sniffer/test_wifi_sniffer.cpp:100: test_parse_ctrl_short                                         [PASSED]
-test/test_wifi_sniffer/test_wifi_sniffer.cpp:101: test_stats                                                    [PASSED]
-test/test_wifi_sniffer/test_wifi_sniffer.cpp:102: test_roam                                                     [PASSED]
-native_wifi_sniffer:test_wifi_sniffer Took 0.72 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_wifi_sniffer  test_wifi_sniffer  PASSED    00:00:00.722
-================== 5 test cases: 5 succeeded in 00:00:00.722 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_link_manager in native_link_manager environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_link_manager/test_link_manager.cpp:76: test_init_none_up                                              [PASSED]
-test/test_link_manager/test_link_manager.cpp:77: test_escalation_and_failover                                   [PASSED]
-test/test_link_manager/test_link_manager.cpp:78: test_tie_break_lower_index                                     [PASSED]
-test/test_link_manager/test_link_manager.cpp:79: test_out_of_range_no_change                                    [PASSED]
-native_link_manager:test_link_manager Took 0.73 seconds ------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment          Test               Status    Duration
--------------------  -----------------  --------  ------------
-native_link_manager  test_link_manager  PASSED    00:00:00.727
-================== 4 test cases: 4 succeeded in 00:00:00.727 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_cc1101 in native_cc1101 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_cc1101/test_cc1101.cpp:215: test_init_configures_and_detects                                          [PASSED]
-test/test_cc1101/test_cc1101.cpp:216: test_init_fails_when_absent                                               [PASSED]
-test/test_cc1101/test_cc1101.cpp:217: test_send_writes_fifo_and_strobes_tx                                      [PASSED]
-test/test_cc1101/test_cc1101.cpp:218: test_send_rejects_bad_len                                                 [PASSED]
-test/test_cc1101/test_cc1101.cpp:219: test_tx_done                                                              [PASSED]
-test/test_cc1101/test_cc1101.cpp:220: test_set_rx                                                               [PASSED]
-test/test_cc1101/test_cc1101.cpp:221: test_recv_reads_packet_and_rssi                                           [PASSED]
-test/test_cc1101/test_cc1101.cpp:222: test_recv_empty                                                           [PASSED]
-test/test_cc1101/test_cc1101.cpp:223: test_recv_truncates                                                       [PASSED]
-test/test_cc1101/test_cc1101.cpp:224: test_rssi_decode                                                          [PASSED]
-native_cc1101:test_cc1101 Took 0.72 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_cc1101  test_cc1101  PASSED    00:00:00.723
-================= 10 test cases: 10 succeeded in 00:00:00.723 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_fdc2214 in native_fdc2214 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_fdc2214/test_fdc2214.cpp:62: test_data_combine                                                        [PASSED]
-test/test_fdc2214/test_fdc2214.cpp:63: test_freq_scale                                                          [PASSED]
-test/test_fdc2214/test_fdc2214.cpp:64: test_build_config                                                        [PASSED]
-test/test_fdc2214/test_fdc2214.cpp:65: test_build_config_too_small                                              [PASSED]
-native_fdc2214:test_fdc2214 Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_fdc2214  test_fdc2214  PASSED    00:00:00.723
-================== 4 test cases: 4 succeeded in 00:00:00.723 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ldc1614 in native_ldc1614 environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ldc1614/test_ldc1614.cpp:54: test_data_combine                                                        [PASSED]
-test/test_ldc1614/test_ldc1614.cpp:55: test_freq_scale                                                          [PASSED]
-test/test_ldc1614/test_ldc1614.cpp:56: test_build_config                                                        [PASSED]
-test/test_ldc1614/test_ldc1614.cpp:57: test_build_config_too_small                                              [PASSED]
-native_ldc1614:test_ldc1614 Took 0.72 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_ldc1614  test_ldc1614  PASSED    00:00:00.721
-================== 4 test cases: 4 succeeded in 00:00:00.721 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_vl53l0x in native_vl53l0x environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_vl53l0x/test_vl53l0x.cpp:45: test_range_mm                                                            [PASSED]
-test/test_vl53l0x/test_vl53l0x.cpp:46: test_data_ready                                                          [PASSED]
-test/test_vl53l0x/test_vl53l0x.cpp:47: test_range_status                                                        [PASSED]
-native_vl53l0x:test_vl53l0x Took 0.70 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_vl53l0x  test_vl53l0x  PASSED    00:00:00.702
-================== 3 test cases: 3 succeeded in 00:00:00.702 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_radio_sniff in native_radio_sniff environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_radio_sniff/test_radio_sniff.cpp:81: test_i2f32                                                       [PASSED]
-test/test_radio_sniff/test_radio_sniff.cpp:82: test_global_header                                               [PASSED]
-test/test_radio_sniff/test_radio_sniff.cpp:83: test_tap_record                                                  [PASSED]
-test/test_radio_sniff/test_radio_sniff.cpp:84: test_tap_record_overflow                                         [PASSED]
-native_radio_sniff:test_radio_sniff Took 0.72 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_radio_sniff  test_radio_sniff  PASSED    00:00:00.724
-================== 4 test cases: 4 succeeded in 00:00:00.724 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ble_gatt in native_ble_gatt environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ble_gatt/test_ble_gatt.cpp:142: test_build_pdus                                                       [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:143: test_read_rsp_and_build_guards                                        [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:144: test_parse_guards_and_opcodes                                         [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:145: test_char_json_guards                                                 [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:146: test_build_overflow                                                   [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:147: test_parse                                                            [PASSED]
-test/test_ble_gatt/test_ble_gatt.cpp:148: test_char_json                                                        [PASSED]
-native_ble_gatt:test_ble_gatt Took 0.73 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_ble_gatt  test_ble_gatt  PASSED    00:00:00.728
-================== 7 test cases: 7 succeeded in 00:00:00.728 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_tls_policy in native_tls_policy environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_tls_policy/test_tls_policy.cpp:68: test_negotiate_version                                             [PASSED]
-test/test_tls_policy/test_tls_policy.cpp:69: test_version_name                                                  [PASSED]
-test/test_tls_policy/test_tls_policy.cpp:70: test_select_cipher                                                 [PASSED]
-test/test_tls_policy/test_tls_policy.cpp:71: test_is_aead                                                       [PASSED]
-native_tls_policy:test_tls_policy Took 0.72 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_tls_policy  test_tls_policy  PASSED    00:00:00.722
-================== 4 test cases: 4 succeeded in 00:00:00.722 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_wisun in native_wisun environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_wisun/test_wisun.cpp:140: test_build_coap_get                                                         [PASSED]
-test/test_wisun/test_wisun.cpp:141: test_build_coap_put_with_token_and_payload                                  [PASSED]
-test/test_wisun/test_wisun.cpp:142: test_build_coap_long_segment_extended_length                                [PASSED]
-test/test_wisun/test_wisun.cpp:143: test_build_coap_rejects_bad_args                                            [PASSED]
-test/test_wisun/test_wisun.cpp:144: test_node_registry                                                          [PASSED]
-test/test_wisun/test_wisun.cpp:145: test_registry_full_and_misses                                               [PASSED]
-native_wisun:test_wisun Took 0.75 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_wisun   test_wisun  PASSED    00:00:00.754
-================== 6 test cases: 6 succeeded in 00:00:00.754 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_logbuf in native_logbuf environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_logbuf/test_logbuf.cpp:81: test_append_and_order                                                      [PASSED]
-test/test_logbuf/test_logbuf.cpp:82: test_dump                                                                  [PASSED]
-test/test_logbuf/test_logbuf.cpp:83: test_rotation_drops_oldest                                                 [PASSED]
-test/test_logbuf/test_logbuf.cpp:84: test_trap_threshold                                                        [PASSED]
-native_logbuf:test_logbuf Took 0.73 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_logbuf  test_logbuf  PASSED    00:00:00.725
-================== 4 test cases: 4 succeeded in 00:00:00.725 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_config_io in native_config_io environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_config_io/test_config_io.cpp:81: test_export_format                                                   [PASSED]
-test/test_config_io/test_config_io.cpp:82: test_round_trip                                                      [PASSED]
-test/test_config_io/test_config_io.cpp:83: test_import_skips_unknown_keys                                       [PASSED]
-test/test_config_io/test_config_io.cpp:84: test_export_overflow_fails_closed                                    [PASSED]
-native_config_io:test_config_io Took 0.75 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_config_io  test_config_io  PASSED    00:00:00.752
-================== 4 test cases: 4 succeeded in 00:00:00.752 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_workers in native_workers environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_workers/test_workers.cpp:62: test_worker_count_is_two                                                 [PASSED]
-test/test_workers/test_workers.cpp:63: test_check_timeouts_reaps_only_owned_slots                               [PASSED]
-test/test_workers/test_workers.cpp:64: test_pool_init_defaults_owner_zero                                       [PASSED]
-native_workers:test_workers Took 0.86 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_workers  test_workers  PASSED    00:00:00.862
-================== 3 test cases: 3 succeeded in 00:00:00.862 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_clock in native_clock environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_clock/test_clock.cpp:126: test_default_is_platform_millis                                             [PASSED]
-test/test_clock/test_clock.cpp:127: test_custom_clock_divides_to_1000hz                                         [PASSED]
-test/test_clock/test_clock.cpp:128: test_sub_khz_source_not_divided                                             [PASSED]
-test/test_clock/test_clock.cpp:129: test_revert_to_default                                                      [PASSED]
-test/test_clock/test_clock.cpp:130: test_micros_custom_divides_to_1mhz                                          [PASSED]
-test/test_clock/test_clock.cpp:131: test_latency_stat_records_and_budgets                                       [PASSED]
-test/test_clock/test_clock.cpp:132: test_latency_budget_zero_disables                                           [PASSED]
-native_clock:test_clock Took 0.70 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_clock   test_clock  PASSED    00:00:00.705
-================== 7 test cases: 7 succeeded in 00:00:00.705 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_concurrency in native_concurrency environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_concurrency/test_concurrency.cpp:109: test_spsc_ring_no_race                                          [PASSED]
-test/test_concurrency/test_concurrency.cpp:110: test_state_handoff_no_race                                      [PASSED]
-native_concurrency:test_concurrency Took 0.85 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_concurrency  test_concurrency  PASSED    00:00:00.855
-================== 2 test cases: 2 succeeded in 00:00:00.855 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_concurrency in native_tsan environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_concurrency/test_concurrency.cpp:109: test_spsc_ring_no_race                                          [PASSED]
-test/test_concurrency/test_concurrency.cpp:110: test_state_handoff_no_race                                      [PASSED]
-native_tsan:test_concurrency Took 1.67 seconds ---------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test              Status    Duration
--------------  ----------------  --------  ------------
-native_tsan    test_concurrency  PASSED    00:00:01.670
-================== 2 test cases: 2 succeeded in 00:00:01.670 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_qpack in native_qpack environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_qpack/test_qpack.cpp:208: test_appendix_b1_decode                                                     [PASSED]
-test/test_qpack/test_qpack.cpp:209: test_encode_indexed                                                         [PASSED]
-test/test_qpack/test_qpack.cpp:210: test_encode_nameref_roundtrip                                               [PASSED]
-test/test_qpack/test_qpack.cpp:211: test_literal_name                                                           [PASSED]
-test/test_qpack/test_qpack.cpp:212: test_full_section                                                           [PASSED]
-test/test_qpack/test_qpack.cpp:213: test_reject_dynamic                                                         [PASSED]
-test/test_qpack/test_qpack.cpp:214: test_encode_edges                                                           [PASSED]
-test/test_qpack/test_qpack.cpp:215: test_decode_errors                                                          [PASSED]
-test/test_qpack/test_qpack.cpp:216: test_value_string_paths                                                     [PASSED]
-native_qpack:test_qpack Took 0.86 seconds --------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test        Status    Duration
--------------  ----------  --------  ------------
-native_qpack   test_qpack  PASSED    00:00:00.861
-================== 9 test cases: 9 succeeded in 00:00:00.861 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_packet in native_quic_packet environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_packet/test_quic_packet.cpp:162: test_long_header_roundtrip                                      [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:163: test_version_negotiation                                        [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:164: test_short_header_parse                                         [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:165: test_pn_encode                                                  [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:166: test_pn_decode                                                  [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:167: test_reject                                                     [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:168: test_build_guards                                               [PASSED]
-test/test_quic_packet/test_quic_packet.cpp:169: test_short_header_guards                                        [PASSED]
-native_quic_packet:test_quic_packet Took 0.72 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_quic_packet  test_quic_packet  PASSED    00:00:00.718
-================== 8 test cases: 8 succeeded in 00:00:00.718 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_frame in native_quic_frame environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_frame/test_quic_frame.cpp:201: test_simple_frames                                                [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:202: test_ack                                                          [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:203: test_crypto                                                       [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:204: test_stream                                                       [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:205: test_max_data_and_close                                           [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:206: test_sequence_and_truncation                                      [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:207: test_builder_overflow                                             [PASSED]
-test/test_quic_frame/test_quic_frame.cpp:208: test_parse_errors                                                 [PASSED]
-native_quic_frame:test_quic_frame Took 0.76 seconds ----------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment        Test             Status    Duration
------------------  ---------------  --------  ------------
-native_quic_frame  test_quic_frame  PASSED    00:00:00.756
-================== 8 test cases: 8 succeeded in 00:00:00.756 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_crypto in native_quic_crypto environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_crypto/test_quic_crypto.cpp:262: test_aes128_block_fips197                                       [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:263: test_aes128_gcm_testcase4                                       [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:264: test_initial_secrets_appendix_a1                                [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:265: test_server_initial_a3                                          [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:266: test_client_initial_a2                                          [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:267: test_retry_integrity_a4                                         [PASSED]
-test/test_quic_crypto/test_quic_crypto.cpp:268: test_gcm_open_rejects_short                                     [PASSED]
-native_quic_crypto:test_quic_crypto Took 0.86 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_quic_crypto  test_quic_crypto  PASSED    00:00:00.862
-================== 7 test cases: 7 succeeded in 00:00:00.862 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_tls13_kdf in native_tls13_kdf environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_tls13_kdf/test_tls13_kdf.cpp:205: test_early_secret                                                   [PASSED]
-test/test_tls13_kdf/test_tls13_kdf.cpp:206: test_handshake_secrets                                              [PASSED]
-test/test_tls13_kdf/test_tls13_kdf.cpp:207: test_master_secrets                                                 [PASSED]
-test/test_tls13_kdf/test_tls13_kdf.cpp:208: test_server_hs_write_keys                                           [PASSED]
-test/test_tls13_kdf/test_tls13_kdf.cpp:209: test_server_finished                                                [PASSED]
-native_tls13_kdf:test_tls13_kdf Took 0.80 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_tls13_kdf  test_tls13_kdf  PASSED    00:00:00.802
-================== 5 test cases: 5 succeeded in 00:00:00.802 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_tp in native_quic_tp environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_tp/test_quic_tp.cpp:155: test_defaults                                                           [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:156: test_roundtrip                                                          [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:157: test_parse_bytes                                                        [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:158: test_skip_unknown                                                       [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:159: test_reject_duplicate                                                   [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:160: test_reject_oversized_cid                                               [PASSED]
-test/test_quic_tp/test_quic_tp.cpp:161: test_reject_bad_values                                                  [PASSED]
-native_quic_tp:test_quic_tp Took 0.76 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_quic_tp  test_quic_tp  PASSED    00:00:00.755
-================== 7 test cases: 7 succeeded in 00:00:00.755 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_tls13_msg in native_tls13_msg environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_tls13_msg/test_tls13_msg.cpp:326: test_tls13_malformed_extensions                                     [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:327: test_tls13_parse_guards                                             [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:328: test_tls13_builder_cap_guards                                       [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:329: test_parse_client_hello                                             [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:330: test_build_server_hello                                             [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:331: test_build_certificate                                              [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:332: test_build_finished                                                 [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:333: test_encrypted_extensions                                           [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:334: test_cert_verify_content                                            [PASSED]
-test/test_tls13_msg/test_tls13_msg.cpp:335: test_cert_verify_sign_roundtrip                                     [PASSED]
-native_tls13_msg:test_tls13_msg Took 0.88 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_tls13_msg  test_tls13_msg  PASSED    00:00:00.878
-================= 10 test cases: 10 succeeded in 00:00:00.878 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_tls in native_quic_tls environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_tls/test_quic_tls.cpp:406: test_full_handshake_roundtrip                                         [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:407: test_reject_bad_client_finished                                       [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:408: test_reject_no_h3_alpn                                                [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:409: test_partial_client_hello                                             [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:410: test_reject_no_tls13                                                  [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:411: test_reject_no_key_share                                              [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:412: test_reject_no_x25519_group                                           [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:413: test_reject_no_ed25519                                                [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:414: test_reject_no_transport_params                                       [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:415: test_reject_bad_transport_params                                      [PASSED]
-test/test_quic_tls/test_quic_tls.cpp:416: test_reject_malformed_client_hello                                    [PASSED]
-native_quic_tls:test_quic_tls Took 1.14 seconds --------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment      Test           Status    Duration
----------------  -------------  --------  ------------
-native_quic_tls  test_quic_tls  PASSED    00:00:01.144
-================= 11 test cases: 11 succeeded in 00:00:01.144 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_conn in native_quic_conn environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_conn/test_quic_conn.cpp:885: test_full_handshake_and_stream                                      [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:886: test_pto_retransmits_flight                                         [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:887: test_connection_close_api                                           [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:888: test_connection_close_on_malformed_frame                            [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:889: test_quic_send_amplification_limited                                [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:890: test_quic_crypto_out_of_order_and_dup                               [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:891: test_quic_timeout_when_closed                                       [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:892: test_quic_stream_send_table_full                                    [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:893: test_quic_recv_connection_close                                     [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:894: test_quic_recv_ping_and_max_data                                    [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:895: test_quic_recv_bad_version                                          [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:896: test_quic_recv_unsupported_long_type                                [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:897: test_quic_recv_short_before_app_keys                                [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:898: test_quic_recv_short_too_short                                      [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:899: test_quic_recv_unprotect_failure                                    [PASSED]
-test/test_quic_conn/test_quic_conn.cpp:900: test_quic_recv_truncated_long_header                                [PASSED]
-native_quic_conn:test_quic_conn Took 1.25 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_quic_conn  test_quic_conn  PASSED    00:00:01.250
-================= 16 test cases: 16 succeeded in 00:00:01.250 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h3_conn in native_h3_conn environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_h3_conn/test_h3_conn.cpp:354: test_request_dispatch_and_response                                      [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:355: test_post_with_body                                                     [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:356: test_control_stream_settings_sent                                       [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:357: test_client_control_stream_settings                                     [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:358: test_client_uni_stream_types                                            [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:359: test_handshake_done_idempotent                                          [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:360: test_malformed_request_frame                                            [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:361: test_respond_body_too_large                                             [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:362: test_stream_pool_full                                                   [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:363: test_uni_stream_partial_type                                            [PASSED]
-test/test_h3_conn/test_h3_conn.cpp:364: test_overlong_field_truncated                                           [PASSED]
-native_h3_conn:test_h3_conn Took 1.20 seconds ----------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment     Test          Status    Duration
---------------  ------------  --------  ------------
-native_h3_conn  test_h3_conn  PASSED    00:00:01.200
-================= 11 test cases: 11 succeeded in 00:00:01.200 =================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h3_e2e in native_h3_e2e environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_h3_e2e/test_h3_e2e.cpp:402: test_http3_get_end_to_end                                                 [PASSED]
-native_h3_e2e:test_h3_e2e Took 1.23 seconds ------------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment    Test         Status    Duration
--------------  -----------  --------  ------------
-native_h3_e2e  test_h3_e2e  PASSED    00:00:01.225
-================== 1 test cases: 1 succeeded in 00:00:01.225 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_quic_server in native_quic_server environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_quic_server/test_quic_server.cpp:476: test_quic_server_http3_get                                      [PASSED]
-test/test_quic_server/test_quic_server.cpp:477: test_idle_connection_reaped                                     [PASSED]
-native_quic_server:test_quic_server Took 1.30 seconds --------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment         Test              Status    Duration
-------------------  ----------------  --------  ------------
-native_quic_server  test_quic_server  PASSED    00:00:01.304
-================== 2 test cases: 2 succeeded in 00:00:01.304 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_h3_server in native_h3_server environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-src/dwserver.cpp: In member function ‘void DetWebServer::serve_file_internal(uint8_t, bool, fs::FS&, const char*, const char*, const char*)’:
-src/dwserver.cpp:3163:76: warning: ‘snprintf’ output may be truncated before the last format character [-Wformat-truncation=]
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |                                                                            ^
-src/dwserver.cpp:3163:17: note: ‘snprintf’ output between 18 and 57 bytes into a destination of size 56
- 3163 |         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
-      |         ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Testing...
-test/test_h3_server/test_h3_server.cpp:417: test_h3_request_served_by_route                                     [PASSED]
-native_h3_server:test_h3_server Took 2.02 seconds ------------------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment       Test            Status    Duration
-----------------  --------------  --------  ------------
-native_h3_server  test_h3_server  PASSED    00:00:02.023
-================== 1 test cases: 1 succeeded in 00:00:02.023 ==================
-Verbosity level can be increased via `-v, -vv, or -vvv` option
-Collected 230 tests
-
-Processing test_ssh_chachapoly in native_ssh_chachapoly environment
-------------------------------------------------------------------------------------------------------------------------
-Building...
-Library Manager: Installing throwtheswitch/Unity @ ^2.6.1
-Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
-Library Manager: Unity@2.6.1 has been installed!
-Testing...
-test/test_ssh_chachapoly/test_ssh_chachapoly.cpp:128: test_chacha20_block_rfc8439                               [PASSED]
-test/test_ssh_chachapoly/test_ssh_chachapoly.cpp:129: test_poly1305_rfc8439                                     [PASSED]
-test/test_ssh_chachapoly/test_ssh_chachapoly.cpp:130: test_chachapoly_roundtrip                                 [PASSED]
-test/test_ssh_chachapoly/test_ssh_chachapoly.cpp:131: test_chachapoly_tamper_rejected                           [PASSED]
-native_ssh_chachapoly:test_ssh_chachapoly Took 0.78 seconds --------------------------------------------------- [PASSED]
-
-=================================== SUMMARY ===================================
-Environment            Test                 Status    Duration
----------------------  -------------------  --------  ------------
-native_ssh_chachapoly  test_ssh_chachapoly  PASSED    00:00:00.781
-================== 4 test cases: 4 succeeded in 00:00:00.781 ==================
-```
-
-</details>
