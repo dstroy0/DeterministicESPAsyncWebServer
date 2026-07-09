@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2682 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2683 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16192,7 +16192,7 @@ A thorough directory of all **2682 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_oidc (18 tests)</b></summary>
+<summary><b>test_oidc (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_oidc_parse_edge_guards</b> &mdash; <i>Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:</i></summary>
@@ -16205,6 +16205,11 @@ A thorough directory of all **2682 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
       * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (detws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (detws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
       * <code>Assert equal string ("test-key-1", kid)</code>
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
@@ -16253,6 +16258,18 @@ A thorough directory of all **2682 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
       * <code>Assert true (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_oidc_signed_claim_guards</b> &mdash; <i>No `aud` member at all -> aud_contains find_field fails -> ERR_AUD.</i></summary>
+
+    * **Objective**: No `aud` member at all -> aud_contains find_field fails -> ERR_AUD.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
