@@ -235,8 +235,11 @@ int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
     int ncode = bits(s, 4) + 4;
     if (s->err)
         return INFLATE_ERR_MALFORMED;
+    // GCOVR_EXCL_LINE HLIT/HDIST are 5-bit, so nlen<=288==MAXLCODES and ndist<=32==MAXDCODES; the bound can never
+    // exceed
     if (nlen > MAXLCODES || ndist > MAXDCODES)
-        return INFLATE_ERR_MALFORMED;
+        return INFLATE_ERR_MALFORMED; // GCOVR_EXCL_LINE unreachable: nlen/ndist bounded to the maxes by the 5-bit
+                                      // fields
 
     // Code-length code lengths, in the permuted order.
     int index;

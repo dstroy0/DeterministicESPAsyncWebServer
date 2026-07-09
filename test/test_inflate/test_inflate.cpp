@@ -57,7 +57,17 @@ static const uint8_t k_trunc_len_extra[] = {115, 68, 2};             // length c
 static const uint8_t k_trunc_dist_extra[] = {115, 4, 18};            // distance code needs extra bits, stream ends
 static const uint8_t k_stored_len_over[] = {1, 10, 0, 245, 255, 65}; // stored LEN exceeds the input
 static const uint8_t k_dyn_hdr_trunc[] = {5};                        // dynamic header truncated mid HLIT/HDIST/HCLEN
-static const uint8_t k_dyn_hlit_big[] = {253, 0, 0};                 // HLIT too large (nlen 288 > 286)
+static const uint8_t k_dyn_hlit_big[] = {253, 0, 0};                 // oversized dynamic header
+
+// Dynamic-block code-length / table-construction guards (scratchpad/gen_inflate_dyn.py).
+static const uint8_t k_dyn_repeat16_at0[] = {5, 224, 3, 4, 0, 0, 0, 0, 0, 4}; // repeat-16 with no previous length
+static const uint8_t k_dyn_repeat_past_end[] = {5, 224, 129, 4,   0, 0,
+                                                0, 0,   0,   252, 3};               // repeat runs past the code count
+static const uint8_t k_dyn_cl_incomplete[] = {5, 224, 1, 4, 0, 0, 0, 0, 0, 0};      // code-length code is incomplete
+static const uint8_t k_dyn_cl_oversub[] = {5, 224, 1, 4, 0, 0, 0, 64, 16, 0};       // code-length code over-subscribed
+static const uint8_t k_dyn_no_eob[] = {5, 224, 129, 4, 0, 0, 0, 0, 0, 252, 111, 3}; // no end-of-block code
+static const uint8_t k_dyn_cl_decode_trunc[] = {5, 224, 21, 8, 0,
+                                                0, 0,   0,  0, 0}; // truncated before any code-length symbol
 
 // ---------------------------------------------------------------------------
 
@@ -217,6 +227,12 @@ void test_malformed_deflate_blocks()
     BAD(k_stored_len_over);
     BAD(k_dyn_hdr_trunc);
     BAD(k_dyn_hlit_big);
+    BAD(k_dyn_repeat16_at0);
+    BAD(k_dyn_repeat_past_end);
+    BAD(k_dyn_cl_incomplete);
+    BAD(k_dyn_cl_oversub);
+    BAD(k_dyn_no_eob);
+    BAD(k_dyn_cl_decode_trunc);
 #undef BAD
 }
 
