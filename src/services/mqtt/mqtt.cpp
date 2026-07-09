@@ -88,9 +88,12 @@ bool mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, size_
 static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *body, size_t blen)
 {
     uint8_t rl[4];
+    // Every caller pre-builds body in body[DETWS_MQTT_BUF_SIZE] (1024), so blen is bounded far below
+    // the 2^28 remaining-length limit and mqtt_encode_remlen never rejects here; the len > 256MB reject
+    // is covered directly on the public mqtt_encode_remlen.
     size_t rln = mqtt_encode_remlen(rl, (uint32_t)blen);
     if (rln == 0)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  unreachable: blen <= DETWS_MQTT_BUF_SIZE << 2^28 via compose's bounded callers
     size_t total = 1 + rln + blen;
     if (total > cap)
         return 0;
