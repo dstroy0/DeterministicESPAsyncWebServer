@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 06:32:10
+**Generated:** 2026-07-09 06:47:07
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2643 passed - 215s
+**Result:** ✅ 2653 passed - 220s
 
 ---
 
@@ -81,11 +81,11 @@
 | `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.634 |
 | `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:01.091 |
 | `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:01.073 |
-| `test_gateway`           | `native_gateway`        |    11 |   ✅   | 00:00:00.730 |
+| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:01.444 |
 | `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.785 |
 | `test_nrf24`             | `native_nrf24`          |    10 |   ✅   | 00:00:00.688 |
-| `test_enocean`           | `native_enocean`        |     9 |   ✅   | 00:00:00.592 |
-| `test_pn532`             | `native_pn532`          |    10 |   ✅   | 00:00:00.670 |
+| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.597 |
+| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.596 |
 | `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.581 |
 | `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.584 |
 | `test_zigbee`            | `native_zigbee`         |     9 |   ✅   | 00:00:00.596 |
@@ -121,7 +121,7 @@
 | `test_vfs`               | `native_vfs`            |    11 |   ✅   | 00:00:00.592 |
 | `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.708 |
 | `test_espnow`            | `native_espnow`         |     7 |   ✅   | 00:00:00.596 |
-| `test_oauth2`            | `native_oauth2`         |     8 |   ✅   | 00:00:00.614 |
+| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.605 |
 | `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.731 |
 | `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.673 |
 | `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.124 |
@@ -142,7 +142,7 @@
 | `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:00.881 |
 | `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.591 |
 | `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.607 |
-| `test_jwt`               | `native_jwt`            |    21 |   ✅   | 00:00:00.661 |
+| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.660 |
 | `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.133 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.610 |
 | `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.661 |
@@ -156,7 +156,7 @@
 | `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.043 |
 | `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.178 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.597 |
-| `test_config_store`      | `native_config_store`   |    14 |   ✅   | 00:00:00.592 |
+| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.884 |
 | `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.607 |
 | `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.658 |
 | `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:10.876 |
@@ -193,15 +193,15 @@
 | `test_openadr`           | `native_openadr`        |     4 |   ✅   | 00:00:00.657 |
 | `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.592 |
 | `test_cclink`            | `native_cclink`         |     4 |   ✅   | 00:00:00.597 |
-| `test_powerlink`         | `native_powerlink`      |     3 |   ✅   | 00:00:00.861 |
-| `test_sercos`            | `native_sercos`         |     3 |   ✅   | 00:00:00.604 |
+| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.584 |
+| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.601 |
 | `test_profibus`          | `native_profibus`       |     4 |   ✅   | 00:00:00.597 |
 | `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.752 |
 | `test_mbplus`            | `native_mbplus`         |     5 |   ✅   | 00:00:00.719 |
 | `test_interbus`          | `native_interbus`       |     4 |   ✅   | 00:00:00.596 |
 | `test_iccp`              | `native_iccp`           |     4 |   ✅   | 00:00:00.606 |
 | `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.594 |
-| `test_utmc`              | `native_utmc`           |     5 |   ✅   | 00:00:00.598 |
+| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.584 |
 | `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.588 |
 | `test_atc`               | `native_atc`            |     4 |   ✅   | 00:00:00.595 |
 | `test_southbound`        | `native_southbound`     |     5 |   ✅   | 00:00:00.592 |
@@ -223,7 +223,7 @@
 | `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.631 |
 | `test_wisun`             | `native_wisun`          |     6 |   ✅   | 00:00:00.707 |
 | `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.612 |
-| `test_config_io`         | `native_config_io`      |     4 |   ✅   | 00:00:00.616 |
+| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:04.972 |
 | `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.709 |
 | `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.624 |
 | `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.951 |
@@ -2509,7 +2509,7 @@ _Unit tests for the interface forwarding plane (services/forward): default-deny,
 
 ---
 
-## test_gateway - native_gateway - ✅ 11 passed
+## test_gateway - native_gateway - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2529,6 +2529,7 @@ _Unit tests for the radio / wireless gateway bridge (services/gateway): an uplin
 |   9 | `test_topic_format`                         |   ✅   | Topic format                         |
 |  10 | `test_add_port_validation_and_table_full`   |   ✅   | Add port validation and table full   |
 |  11 | `test_seq_increments_per_uplink`            |   ✅   | Seq increments per uplink            |
+|  12 | `test_topic_zero_and_overflow_steps`        |   ✅   | Topic zero and overflow steps        |
 
 </details>
 
@@ -2586,7 +2587,7 @@ _Unit tests for the nRF24L01+ driver (services/nrf24) against a mock chip that e
 
 ---
 
-## test_enocean - native_enocean - ✅ 9 passed
+## test_enocean - native_enocean - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2604,12 +2605,13 @@ _Unit tests for the EnOcean ESP3 codec (services/enocean): the CRC-8 (poly 0x07)
 |   7 | `test_parse_rejects_over_length`       |   ✅   | A header claiming data_len 100 (> DETWS_ENOCEAN_MAX_DATA = 16) is rejected early. |
 |   8 | `test_parse_resynchronises_after_junk` |   ✅   | Parse resynchronises after junk                                                   |
 |   9 | `test_build_bounds`                    |   ✅   | Build bounds                                                                      |
+|  10 | `test_esp3_parse_null_guard`           |   ✅   | Esp3 parse null guard                                                             |
 
 </details>
 
 ---
 
-## test_pn532 - native_pn532 - ✅ 10 passed
+## test_pn532 - native_pn532 - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2628,6 +2630,7 @@ _Unit tests for the PN532 NFC frame codec (services/pn532): the normal-informati
 |   8 | `test_parse_rejects_over_length`             |   ✅   | frame_len 20 (> DETWS_PN532_MAX_DATA + 1 = 9) is rejected early.         |
 |   9 | `test_ack_frame`                             |   ✅   | Ack frame                                                                |
 |  10 | `test_build_bounds`                          |   ✅   | Build bounds                                                             |
+|  11 | `test_frame_parse_and_ack_guards`            |   ✅   | Frame parse and ack guards                                               |
 
 </details>
 
@@ -3447,7 +3450,7 @@ _Unit tests for the ESP-NOW host-testable core (services/espnow): the typed_
 
 ---
 
-## test_oauth2 - native_oauth2 - ✅ 8 passed
+## test_oauth2 - native_oauth2 - ✅ 9 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3464,6 +3467,7 @@ _Unit tests for the OAuth2 token-endpoint client core (services/oauth2): buildin
 |   6 | `test_parse_token_response`                            |   ✅   | Parse token response                                                  |
 |   7 | `test_parse_minimal_response`                          |   ✅   | Only access_token present: still valid; optional fields stay empty/0. |
 |   8 | `test_parse_error_response_fails`                      |   ✅   | Parse error response fails                                            |
+|   9 | `test_oauth2_build_parse_guards`                       |   ✅   | Oauth2 build parse guards                                             |
 
 </details>
 
@@ -3968,7 +3972,7 @@ _Unit tests for the HTTP/3 framing layer (network_drivers/presentation/http3/h3_
 
 ---
 
-## test_jwt - native_jwt - ✅ 21 passed
+## test_jwt - native_jwt - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3998,6 +4002,7 @@ _Unit tests for the JWT HS256 verifier. The reference token below was produced_
 |  19 | `test_time_nbf_enforced`          |   ✅   | Time nbf enforced                     |
 |  20 | `test_time_no_claims_valid`       |   ✅   | Time no claims valid                  |
 |  21 | `test_bearer_valid_at`            |   ✅   | Bearer valid at                       |
+|  22 | `test_bearer_header_guards`       |   ✅   | Bearer header guards                  |
 
 </details>
 
@@ -4395,7 +4400,7 @@ _Unit tests for the multi-source time fallback matrix (services/time_source):_
 
 ---
 
-## test_config_store - native_config_store - ✅ 14 passed
+## test_config_store - native_config_store - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4418,6 +4423,7 @@ _Unit tests for the typed NVS config store (services/config_store), exercised_
 |  12 | `test_table_full_rejects_new_key`             |   ✅   | Table full rejects new key             |
 |  13 | `test_existing_key_overwrites_even_when_full` |   ✅   | Existing key overwrites even when full |
 |  14 | `test_key_too_long_rejected`                  |   ✅   | Key too long rejected                  |
+|  15 | `test_setter_getter_null_guards`              |   ✅   | Setter getter null guards              |
 
 </details>
 
@@ -5183,7 +5189,7 @@ _Host tests for services/cclink: the CC-Link cyclic frame codec + process-image 
 
 ---
 
-## test_powerlink - native_powerlink - ✅ 3 passed
+## test_powerlink - native_powerlink - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5195,12 +5201,13 @@ _Host tests for services/powerlink: the Ethernet POWERLINK basic frame codec._
 |   1 | `test_soc`                 |   ✅   | Soc                                          |
 |   2 | `test_preq_pres_roundtrip` |   ✅   | PReq: MN (240) -> CN 5, carrying output PDO. |
 |   3 | `test_parse_rejects`       |   ✅   | Parse rejects                                |
+|   4 | `test_epl_build_guards`    |   ✅   | Epl build guards                             |
 
 </details>
 
 ---
 
-## test_sercos - native_sercos - ✅ 3 passed
+## test_sercos - native_sercos - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5212,6 +5219,7 @@ _Host tests for services/sercos: the SERCOS III telegram + IDN codec._
 |   1 | `test_idn_roundtrip`           |   ✅   | S-0-0100 (velocity loop): S-parameter, set 0, block 100. |
 |   2 | `test_telegram_roundtrip`      |   ✅   | Telegram roundtrip                                       |
 |   3 | `test_at_telegram_and_rejects` |   ✅   | At telegram and rejects                                  |
+|   4 | `test_sercos_build_guards`     |   ✅   | Sercos build guards                                      |
 
 </details>
 
@@ -5332,20 +5340,21 @@ _Host tests for services/wave: the IEEE 1609 WSMP + 1609.2 envelope + PSID codec
 
 ---
 
-## test_utmc - native_utmc - ✅ 5 passed
+## test_utmc - native_utmc - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/utmc: the UTMC common-database request/response codec._
 
-|   # | Test                    | Status | Description      |
-| --: | :---------------------- | :----: | :--------------- |
-|   1 | `test_request`          |   ✅   | Request          |
-|   2 | `test_response`         |   ✅   | Response         |
-|   3 | `test_response_escapes` |   ✅   | Response escapes |
-|   4 | `test_parse_request`    |   ✅   | Parse request    |
-|   5 | `test_overflow`         |   ✅   | Overflow         |
+|   # | Test                        | Status | Description          |
+| --: | :-------------------------- | :----: | :------------------- |
+|   1 | `test_request`              |   ✅   | Request              |
+|   2 | `test_response`             |   ✅   | Response             |
+|   3 | `test_response_escapes`     |   ✅   | Response escapes     |
+|   4 | `test_parse_request`        |   ✅   | Parse request        |
+|   5 | `test_overflow`             |   ✅   | Overflow             |
+|   6 | `test_parse_request_guards` |   ✅   | Parse request guards |
 
 </details>
 
@@ -5749,7 +5758,7 @@ _Unit tests for the rotating log ring (services/logbuf): append order, the_
 
 ---
 
-## test_config_io - native_config_io - ✅ 4 passed
+## test_config_io - native_config_io - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5762,6 +5771,7 @@ _Unit tests for schema-driven config export/restore (services/config_io) over_
 |   2 | `test_round_trip`                   |   ✅   | Round trip                   |
 |   3 | `test_import_skips_unknown_keys`    |   ✅   | Import skips unknown keys    |
 |   4 | `test_export_overflow_fails_closed` |   ✅   | Export overflow fails closed |
+|   5 | `test_export_import_null_guards`    |   ✅   | Export import null guards    |
 
 </details>
 
