@@ -182,6 +182,16 @@ void test_recv_truncates_to_cap()
     TEST_ASSERT_EQUAL_MEMORY(g.rx_payload, buf, 4);
 }
 
+void test_data_rate_variants()
+{
+    nrf_config c = default_cfg();
+    c.data_rate = 1; // 2 Mbps
+    TEST_ASSERT_TRUE(nrf24_init(&g_bus, &c));
+    nrf_config c2 = default_cfg();
+    c2.data_rate = 2; // 250 kbps
+    TEST_ASSERT_TRUE(nrf24_init(&g_bus, &c2));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -195,5 +205,6 @@ int main()
     RUN_TEST(test_recv_no_packet);
     RUN_TEST(test_recv_fifo_empty_pipe);
     RUN_TEST(test_recv_truncates_to_cap);
+    RUN_TEST(test_data_rate_variants);
     return UNITY_END();
 }

@@ -119,6 +119,18 @@ void test_encode_bounds()
     TEST_ASSERT_EQUAL_UINT16(0, ash_frame_encode(0x00, data, 8, small, sizeof(small))); // will not fit
 }
 
+void test_encode_decode_guards()
+{
+    uint8_t out[64];
+    uint8_t payload[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_UINT16(0, ash_frame_encode(0x00, payload, sizeof(payload), out, 2)); // overflow
+    uint8_t control = 0;
+    uint8_t pay[64];
+    uint16_t pay_len = 0;
+    uint8_t short_raw[3] = {0x7E, 0x00, 0x7E}; // destuffs to < control+CRC
+    TEST_ASSERT_EQUAL_INT(-1, ash_frame_decode(short_raw, sizeof(short_raw), &control, pay, sizeof(pay), &pay_len));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -131,5 +143,6 @@ int main()
     RUN_TEST(test_decode_rejects_dangling_escape);
     RUN_TEST(test_decode_rejects_small_payload_buffer);
     RUN_TEST(test_encode_bounds);
+    RUN_TEST(test_encode_decode_guards);
     return UNITY_END();
 }

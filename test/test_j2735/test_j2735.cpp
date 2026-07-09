@@ -162,6 +162,18 @@ void test_map_roundtrip(void)
     TEST_ASSERT_EQUAL_INT16(-2048, out[1].node_y);
 }
 
+void test_uper_overflow_and_bsm_guard()
+{
+    uint8_t buf[4];
+    UperWriter w;
+    uper_writer_init(&w, buf, sizeof(buf));
+    uper_put_bits(&w, 0xFFFFFFFFu, 32);
+    uper_put_bits(&w, 0xFFFFFFFFu, 32); // past the 4-byte buffer -> not ok
+    TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));
+    J2735BsmCore c = {};
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -174,5 +186,6 @@ int main(void)
     RUN_TEST(test_spat_roundtrip);
     RUN_TEST(test_spat_decode_too_many);
     RUN_TEST(test_map_roundtrip);
+    RUN_TEST(test_uper_overflow_and_bsm_guard);
     return UNITY_END();
 }

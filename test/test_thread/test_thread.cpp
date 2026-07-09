@@ -193,6 +193,21 @@ void test_spinel_command_through_hdlc()
     TEST_ASSERT_EQUAL_UINT16(0, vlen);
 }
 
+void test_spinel_guards()
+{
+    uint8_t out[8];
+    TEST_ASSERT_EQUAL_UINT8(0, spinel_pack_uint(0x12345, out, 0)); // zero cap
+    uint8_t trunc[1] = {0x81};                                     // continuation bit set, truncated
+    uint32_t v = 0;
+    TEST_ASSERT_TRUE(spinel_unpack_uint(trunc, sizeof(trunc), &v) <= 0); // truncated -> non-positive
+    uint8_t pay[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(pay, sizeof(pay), out, 2)); // overflow
+    uint8_t fpay[8];
+    uint16_t fl = 0;
+    uint8_t short_frame[2] = {0x7E, 0x7E};
+    TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(short_frame, sizeof(short_frame), fpay, sizeof(fpay), &fl));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -209,5 +224,6 @@ int main()
     RUN_TEST(test_spinel_unpack_needs_more_and_overflow);
     RUN_TEST(test_spinel_command_build_parse_round_trip);
     RUN_TEST(test_spinel_command_through_hdlc);
+    RUN_TEST(test_spinel_guards);
     return UNITY_END();
 }

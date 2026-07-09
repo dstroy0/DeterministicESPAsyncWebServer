@@ -152,6 +152,15 @@ void test_finish_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));
 }
 
+void test_v5_write_overflow()
+{
+    uint8_t buf[4]; // smaller than a v5 header or record
+    FlowV5Header h = {};
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_header(buf, sizeof(buf), &h));
+    FlowV5Record r = {};
+    TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(buf, sizeof(buf), &r));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -161,5 +170,6 @@ int main()
     RUN_TEST(test_ipfix_message_bytes);
     RUN_TEST(test_v9_count_and_padding);
     RUN_TEST(test_finish_overflow_fails_closed);
+    RUN_TEST(test_v5_write_overflow);
     return UNITY_END();
 }

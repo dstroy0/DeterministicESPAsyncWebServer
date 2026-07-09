@@ -105,6 +105,22 @@ void test_sw_manifest(void)
     TEST_ASSERT_EQUAL_STRING("{\"version\":\"v1\",\"precache\":[]}", buf);
 }
 
+void test_delivery_guards_and_escape()
+{
+    char buf[256];
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, buf, 0));               // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap
+    uint32_t start = 0, end = 0;
+    TEST_ASSERT_EQUAL_INT(0, detws_delivery_range("garbage", 100, &start, &end)); // no valid range -> ignore
+    (void)detws_delivery_range("bytes=500-600", 100, &start, &end);               // exercise the unsatisfiable path
+    const char *paths[1] = {"a\"b\\c"};                                           // quote + backslash
+    size_t n = detws_delivery_sw_manifest(paths, 1, "1.0", buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\\\""));                                        // escaped quote present
+    TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -114,5 +130,6 @@ int main(void)
     RUN_TEST(test_range_rejects);
     RUN_TEST(test_content_range);
     RUN_TEST(test_sw_manifest);
+    RUN_TEST(test_delivery_guards_and_escape);
     return UNITY_END();
 }

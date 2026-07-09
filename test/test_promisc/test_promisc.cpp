@@ -156,6 +156,16 @@ void test_pcap_headers()
     TEST_ASSERT_EQUAL_HEX8(120, r[12]); // origlen
 }
 
+void test_host_stubs_and_short_frame()
+{
+    TEST_ASSERT_FALSE(promisc_begin(6, nullptr)); // host: esp_wifi unavailable
+    promisc_set_channel(11);
+    promisc_end();
+    WifiFrameInfo info;
+    uint8_t too_short[2] = {0x08, 0x00};
+    TEST_ASSERT_FALSE(wifi_frame_parse(too_short, sizeof(too_short), &info));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -167,5 +177,6 @@ int main()
     RUN_TEST(test_control_frame);
     RUN_TEST(test_reject_short);
     RUN_TEST(test_pcap_headers);
+    RUN_TEST(test_host_stubs_and_short_frame);
     return UNITY_END();
 }

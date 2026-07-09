@@ -209,6 +209,16 @@ void test_rssi_decode(void)
     TEST_ASSERT_EQUAL_INT16(-138, cc1101_rssi_dbm(0x80)); // (128-256)/2-74 = -64-74
 }
 
+void test_send_guard_subconditions()
+{
+    uint8_t data[8] = {0};
+    TEST_ASSERT_FALSE(cc1101_send(nullptr, data, 8));   // null bus
+    TEST_ASSERT_FALSE(cc1101_send(&g_bus, nullptr, 8)); // null data
+    TEST_ASSERT_FALSE(cc1101_send(&g_bus, data, 0));    // zero len
+    TEST_ASSERT_FALSE(cc1101_send(&g_bus, data, 64));   // len > 63
+    TEST_ASSERT_TRUE(cc1101_send(&g_bus, data, 8));     // valid FIFO burst
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -222,5 +232,6 @@ int main()
     RUN_TEST(test_recv_empty);
     RUN_TEST(test_recv_truncates);
     RUN_TEST(test_rssi_decode);
+    RUN_TEST(test_send_guard_subconditions);
     return UNITY_END();
 }

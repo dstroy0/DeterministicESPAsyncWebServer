@@ -73,6 +73,25 @@ void test_overflow_returns_zero(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s)); // did not fit
 }
 
+void test_escape_gt_quote_and_overflow()
+{
+    char buf[512];
+    DetwsMtcStreams s;
+    detws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "d");
+    detws_mtc_streams_add(&s, DETWS_MTC_EVENT, "Message", "msg", 1, "T", "a>b\"c");
+    detws_mtc_streams_end(&s);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "&gt;"));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "&quot;"));
+    // Stream overflow closes at end(); error document overflow fails closed.
+    char tiny[64];
+    DetwsMtcStreams s2;
+    detws_mtc_streams_begin(&s2, tiny, sizeof(tiny), 1, 1, "device-with-a-very-long-name");
+    detws_mtc_streams_add(&s2, DETWS_MTC_SAMPLE, "Position", "xpos", 1, "2026-07-06T00:00:01Z", "12.5");
+    TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s2));
+    char t2[8];
+    TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -80,5 +99,6 @@ int main(void)
     RUN_TEST(test_streams_escapes_value);
     RUN_TEST(test_error_document);
     RUN_TEST(test_overflow_returns_zero);
+    RUN_TEST(test_escape_gt_quote_and_overflow);
     return UNITY_END();
 }
