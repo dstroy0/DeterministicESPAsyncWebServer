@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`eaefd9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eaefd9ad5039386c59b30dccb73ca1f7bdd46736))
 - update CHANGELOG.md [skip ci] ([`af9994a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af9994a77653cac8b456296ce9c95efd8775c470))
 - update test report + coverage [skip ci] ([`160b87f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/160b87fe37d4027262b22b2bf0d7fb7668dae554))
 - update CHANGELOG.md [skip ci] ([`61611e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61611e813a159691ce2f3e5313f4e697a21a9a28))
@@ -216,6 +217,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6c4c63f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c4c63fcef2fd797bd1b7ddee2c04cee06ad4e49))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ed3a30b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed3a30b2dd0c74eb11a28f83944763cec6dfb9f3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3fc174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3fc174db44c685dc25961a7436eb577fd103561))
 - update ESP32 build footprints [skip ci] ([`f5114b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5114b3a8d259d205115e5df2d74e3e5624efac5))
@@ -419,6 +421,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover persist split, max-align clamp, set exhaustion + free_bytes (->100%) ([`b436f1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b436f1f04c28df462a6c6af04a82ead80f66346e))
 - cover v9/IPFIX cursor guards + overflow/error paths (->100%) ([`433e9b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/433e9b6410cd9b831e1d0f054fbad194a44ed6b1))
 - cover classify/equal/CIDR + parse/format/to_v4 guards (96->100%) ([`f51cd90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f51cd9036e0351cb19a1b57c13f2e94cac636656))
 - cover reserved block-type + stored-block error paths ([`e0097a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0097a73270ac8f59d0acc99ed74c22964cb8efc))
