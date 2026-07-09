@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f6f1598`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6f15987536da62d126eaf26ddc86425396ad010))
 - update test report + coverage [skip ci] ([`3654bc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3654bc64bbe73f72cdd1fcf94ccc3901263389f7))
 - update CHANGELOG.md [skip ci] ([`82c749e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82c749e0bda53a18a075d3391561878ae51afa05))
 - update test report + coverage [skip ci] ([`01e1018`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01e10185ea22d1cd49c4221f30b095abeadce987))
@@ -232,6 +233,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1b03f51`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b03f517a9493ec323e9a264cffca7a0bc11c52c))
 - update ESP32 build footprints [skip ci] ([`f28a62b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f28a62b7d5cd210089c28bfb330c1e06fb4a4ccb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`464178c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/464178cd77a3c041a18cc59695901d28f4b5eade))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`30310f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30310f2d2906190981948d2af4ab2a61032c7f60))
@@ -447,6 +449,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover oid_cmp an<bn (request extends a registered OID) (->100%) ([`9c8a34c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c8a34c400340294b82b54878d4f7694c5cdb386))
 - cover varbind-list guards (bad vbl/vb tag, too-many, bad oid/value, oid-value) + tooBig re-encode; EXCL dead post-loop guard (97->99.7%) ([`a0efc44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0efc44016d55e96d390d1f63858c756d0665fbe))
 - cover 1-RTT stream-idle skip, short-header tiny-cap, close-level fallback via a full-handshake helper; EXCL dead protect-fail (->100% reachable) ([`d3bf31a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3bf31a78990e6694056b5f203a64084299bc313))
 - cover malformed-initial headers, HANDSHAKE_DONE, stream guards, crypto-window clamp, CRYPTO_ERROR close, no-keys build, PTO-not-yet, tiny-cap overflows (92->98%); EXCL 2 buffer-invariant lines ([`74eb86b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74eb86bece82f098dcbc1db9d2b254d0ed940aa9))
