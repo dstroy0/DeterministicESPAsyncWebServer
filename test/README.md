@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2505 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2512 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7410,7 +7410,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_gpio_map (8 tests)</b></summary>
+<summary><b>test_gpio_map (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_dir_name</b> &mdash; <i>Dir name</i></summary>
@@ -7490,6 +7490,12 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
       * <code>Assert true (detws_gpio_is_output(pins, 2, 2))</code>
       * <code>Assert false (detws_gpio_is_output(pins, 2, 0))</code>
       * <code>Assert false (detws_gpio_is_output(pins, 2, 99))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_gpio_stubs</b> &mdash; <i>Host build: the GPIO bind functions are no-ops (no digitalRead/Write).</i></summary>
+
+    * **Objective**: Host build: the GPIO bind functions are no-ops (no digitalRead/Write).
   </details>
 
 </details>
@@ -10216,7 +10222,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_iccp (4 tests)</b></summary>
+<summary><b>test_iccp (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_state_q_no_time</b> &mdash; <i>A2 { 85 01 <sq> } ; sq = (ON=2)<<6 \| valid(0) = 0x80. -> A2 03 85 01 80</i></summary>
@@ -10254,6 +10260,17 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (find(out, n, iv, 3) &gt;= 0)</code>
       * <code>Assert true (find(out, n, iv2, 4) &gt;= 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_and_real_q_guards</b> &mdash; <i>State and real q guards</i></summary>
+
+    * **Objective**: State and real q guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, out, 2));               // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_real_q(100, 0, t, out, 2));              // overflow</code>
+      * <code>Assert true (detws_iccp_state_q(1, 0x40, t, out, sizeof(out)) &gt; 0);         // valid (time-field tlv)</code>
   </details>
 
 </details>
@@ -15074,7 +15091,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nts (4 tests)</b></summary>
+<summary><b>test_nts (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ke_record</b> &mdash; <i>Ke record</i></summary>
@@ -15122,6 +15139,17 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(12, (uint16_t)((out[2] &lt;&lt; 8) | out[3]));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[9]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[11]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ef_wrappers_and_guards</b> &mdash; <i>Ef wrappers and guards</i></summary>
+
+    * **Objective**: Ef wrappers and guards
+    * **Assertions**:
+      * <code>Assert true (detws_nts_ef_cookie(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (detws_nts_ef_unique_id(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow</code>
   </details>
 
 </details>
@@ -16600,7 +16628,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_partition_monitor (5 tests)</b></summary>
+<summary><b>test_partition_monitor (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_kind_app</b> &mdash; <i>Kind app</i></summary>
@@ -16651,6 +16679,15 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
     * **Objective**: Collect host stub
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_partition_collect(p, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_partition_kind_data_subtypes</b> &mdash; <i>Partition kind data subtypes</i></summary>
+
+    * **Objective**: Partition kind data subtypes
+    * **Assertions**:
+      * <code>Assert equal string ("nvs_keys", detws_partition_kind(0x01, 0x04))</code>
+      * <code>Assert equal string ("fat", detws_partition_kind(0x01, 0x81))</code>
   </details>
 
 </details>
@@ -20061,7 +20098,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_rtc (8 tests)</b></summary>
+<summary><b>test_rtc (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_known_epoch_2000</b> &mdash; <i>Known epoch 2000</i></summary>
@@ -20143,6 +20180,17 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
       * <code>Assert false (rtc_regs_to_epoch(bad_date, &e))</code>
       * <code>Assert false (rtc_regs_to_epoch(bad_hour, &e))</code>
       * <code>Assert false (rtc_regs_to_epoch(bad_sec, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_i2c_stubs</b> &mdash; <i>Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0.</i></summary>
+
+    * **Objective**: Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0.
+    * **Assertions**:
+      * <code>Assert true (rtc_begin())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, rtc_read_epoch());</code>
+      * <code>Assert false (rtc_set_epoch(1730882977u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, rtc_time_source());</code>
   </details>
 
 </details>
@@ -26057,7 +26105,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_udp_telemetry (7 tests)</b></summary>
+<summary><b>test_udp_telemetry (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_int_and_uint_fields</b> &mdash; <i>Int and uint fields</i></summary>
@@ -26119,6 +26167,14 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
     * **Objective**: Tag after field fails closed
     * **Assertions**:
       * <code>Assert false (detws_line_ok(&l))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_stubs_and_line_overflow</b> &mdash; <i>Host stubs and line overflow</i></summary>
+
+    * **Objective**: Host stubs and line overflow
+    * **Assertions**:
+      * <code>Assert true (l.overflow)</code>
   </details>
 
 </details>
@@ -27221,7 +27277,7 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webhook (5 tests)</b></summary>
+<summary><b>test_webhook (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ifttt_url</b> &mdash; <i>Ifttt url</i></summary>
@@ -27266,6 +27322,15 @@ A thorough directory of all **2505 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, detws_ifttt_url("event", "key", buf, sizeof(buf)))</code>
       * <code>Assert equal int (0, detws_ifttt_payload("aaaa", "bbbb", "cccc", buf, sizeof(buf)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ifttt_trigger_and_post_stub</b> &mdash; <i>Host build (no HTTP client): webhook_post is a -1 stub; ifttt_trigger builds url+payload then posts.</i></summary>
+
+    * **Objective**: Host build (no HTTP client): webhook_post is a -1 stub; ifttt_trigger builds url+payload then posts.
+    * **Assertions**:
+      * <code>Assert equal int (-1, detws_webhook_post("http://x/y", "{}"))</code>
+      * <code>Assert equal int (-1, detws_ifttt_trigger("evt", "key", "1", "2", "3"))</code>
   </details>
 
 </details>
