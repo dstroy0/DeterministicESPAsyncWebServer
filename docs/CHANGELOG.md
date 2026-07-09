@@ -6,11 +6,33 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`832b349`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/832b349ce2aa8eb507fe5ad6432e405ac733ee7e))
+- update CHANGELOG.md [skip ci] ([`74e71f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74e71f576f8e50d699a80c24c671ce7eba5d9d73))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a766fc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a766fc17fa157f24fd1907da77c8d487a33c5486))
+
+### Features
+
+- durable A/B superblock + checkpoint store over a block-device seam ([`a748bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a748bd51b1db0bbccb2a131fb058358cf894fe27))
+
+## [5.65.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.65.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`3e874c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e874c5777a7d1b73a3698c76457f7a045714a39))
 - update CHANGELOG.md [skip ci] ([`d3b8d80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3b8d80a428f204b15217ace7588f5a85d386b49))
 - update test report + coverage [skip ci] ([`48148aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48148aafd40e8e3aa7a01b8046b494148099e0d7))
 - update CHANGELOG.md [skip ci] ([`0aefdb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0aefdb6656aff4b1d5ab55ad753d245452dd6d2e))
 - update CHANGELOG.md [skip ci] ([`77d21be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77d21be50faf8c3f92affa872f3417ef4a7a2f7d))
+
+### Changes
+
+- Bump version: 5.64.0 → 5.65.0 ([`b7a846a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7a846abaccb1e73e7ae9c2d3730b33121da4786))
 
 ### Documentation
 
@@ -22,6 +44,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - write-ahead journal atomicity core (record framing + crash recovery) ([`636d864`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/636d86470bcc2826388106131beb9a58dc75cf81))
+
+</details>
 
 ## [5.64.0] - 2026-07-09
 
