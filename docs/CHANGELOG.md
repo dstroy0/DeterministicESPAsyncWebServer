@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e5c8eaa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5c8eaa11a227abd7091cf2138ecfbc65d5bdee8))
+- update test report + coverage [skip ci] ([`33064a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33064a6eb614eff58a25b05f4d654d162b05bc40))
 - update CHANGELOG.md [skip ci] ([`5d24fab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d24fab6d9678769a7b0493e6717769527450e99))
 - update test report + coverage [skip ci] ([`9926549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9926549388e8839c458ac6fe1cf29233bdf836cf))
 - update CHANGELOG.md [skip ci] ([`ab7f17f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7f17fc7eb3e0dac2601bb8513ef5274e820c2a))
@@ -170,6 +172,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ba5b577`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba5b577ddc0c3610e655aa1dd0ff5229f27ec397))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a130004`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a13000491c82dbcd77f164596f8eb9deeb4a3d96))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c521b7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c521b7a6c17e4ad6cb3c8db2f78b4600693d729d))
 - update ESP32 build footprints [skip ci] ([`f4ecfa4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4ecfa4c88912b60a9bfc197b2b2cf70ebd0778d))
@@ -344,6 +347,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover encode/parse guard sub-conditions + int/bulk/nil edges (branch 70->88%) ([`b4d02e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4d02e29d37673a03352fbabe6a855915bf87f8d))
 - cover non-object/bad-member find, int string/non-digit rejects, invalid \u (branch 76->80%) ([`47c781b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c781b91b6ee6f88e71110535ff2b7641c6a60b))
 - cover send-family guards + 405/WS-400/WS-426 paths (dwserver batch) ([`941535d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/941535d0cfdfb1577b962abc866e586db98b8c72))
 - cover route-registration variant table-full guards (dwserver 867-934) ([`e24dbf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e24dbf218418189d4875206582928dd735070fee))
