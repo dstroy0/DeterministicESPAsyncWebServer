@@ -23,8 +23,9 @@ import re
 import sys
 from collections import OrderedDict
 
-ROW_RE = re.compile(r"^\|\s*`(test_[^`]+)`\s*\|\s*`(native_[^`]+)`\s*\|")
-SEC_RE = re.compile(r"^##\s+(test_\S+)\s+-\s+(native_\S+)\s+-\s")
+# The env column can be the bare `native` core-engine env as well as `native_<feature>`.
+ROW_RE = re.compile(r"^\|\s*`(test_[^`]+)`\s*\|\s*`(native[^`]*)`\s*\|")
+SEC_RE = re.compile(r"^##\s+(test_\S+)\s+-\s+(native\S*)\s+-\s")
 CNT_RE = re.compile(r"(\d+)\s+passed(?:,\s+(\d+)\s+failed)?")
 DUR_RE = re.compile(r"(\d+):(\d+):(\d+(?:\.\d+)?)\s*\|?\s*$")
 

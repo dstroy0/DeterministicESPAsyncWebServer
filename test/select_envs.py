@@ -94,7 +94,7 @@ def parse_envs(ini_path):
     with open(ini_path, encoding="utf-8") as fh:
         for raw in fh:
             line = raw.rstrip("\n")
-            m = re.match(r"^\[env:(native_[A-Za-z0-9_]+)\]\s*$", line)
+            m = re.match(r"^\[env:(native[A-Za-z0-9_]*)\]\s*$", line)
             if m:
                 cur = m.group(1)
                 envs[cur] = {"src": [], "tests": []}
