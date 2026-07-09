@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2670 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2671 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -10601,7 +10601,21 @@ A thorough directory of all **2670 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hw_health (6 tests)</b></summary>
+<summary><b>test_hw_health (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hwhealth_null_guards_and_init_clamps</b> &mdash; <i>init clamps the start clock into [min_hz, max_hz]; read it back via a non-tripping</i></summary>
+
+    * **Objective**: init clamps the start clock into [min_hz, max_hz]; read it back via a non-tripping
+    * **Assertions**:
+      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(nullptr, 1000))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(nullptr, buf, sizeof(buf))); // null monitor</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, buf, 0));               // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_hwhealth_spi_result(nullptr, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, detws_hwhealth_spi_result(&below, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&above, false));</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_rail_monitor</b> &mdash; <i>Overflow path returns 0.</i></summary>
