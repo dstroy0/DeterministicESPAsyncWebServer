@@ -31,6 +31,16 @@ static void serve_data(uint8_t slot_id, HttpReq *req)
     server.serve_file(slot_id, fs, "/data.bin", "application/octet-stream");
 }
 
+// Nulls the slot's pcb before serving, simulating a peer that vanished between accept
+// and the handler running: serve_file must bail without sending.
+static void serve_data_conn_gone(uint8_t slot_id, HttpReq *req)
+{
+    (void)req;
+    conn_pool[slot_id].pcb = nullptr;
+    fs::FS fs;
+    server.serve_file(slot_id, fs, "/data.bin", "application/octet-stream");
+}
+
 void setUp()
 {
     server = DetWebServer();
@@ -269,12 +279,60 @@ void test_file_send_short_read_stops()
     TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 8);
 }
 
+// A Range header with a valid spec followed by trailing garbage is ignored (full 200),
+// not misparsed: the parser skips trailing spaces then rejects any leftover byte.
+void test_range_trailing_garbage_ignored()
+{
+    request("bytes=0-3 x"); // valid spec, then a stray token past a space
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "200 OK")); // header ignored -> full response
+    TEST_ASSERT_NULL(strstr(r, "206"));
+    TEST_ASSERT_EQUAL_UINT(20, body_len());
+}
+
+// A reversed range (start > end, both in bounds) is unsatisfiable -> 416.
+void test_range_start_after_end_unsatisfiable()
+{
+    request("bytes=5-2");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "416 Range Not Satisfiable"));
+    TEST_ASSERT_NULL(strstr(r, "206"));
+}
+
+// A suffix range against a zero-length file is unsatisfiable -> 416 (never a wrapped
+// window from size - end underflow).
+void test_range_suffix_on_empty_file()
+{
+    fs::mock_fs_clear();
+    fs::mock_fs_set(""); // 0-byte file at any path
+    request("bytes=-4");
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "416 Range Not Satisfiable"));
+    TEST_ASSERT_NULL(strstr(r, "206"));
+}
+
+// The connection dropped after the file opened: serve_file resets the slot and sends
+// nothing (no partial/garbage response to a gone peer).
+void test_serve_file_connection_gone()
+{
+    server.on("/gone", HTTP_GET, serve_data_conn_gone);
+    push_str(0, "GET /gone HTTP/1.1\r\n\r\n");
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_EQUAL_UINT(0, tcp_captured_len()); // nothing queued
+    TEST_ASSERT_NULL(strstr(tcp_captured(), "200 OK"));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_file_send_backpressure_resumes_across_polls);
     RUN_TEST(test_file_send_write_fails_then_retries);
     RUN_TEST(test_file_send_short_read_stops);
+    RUN_TEST(test_range_trailing_garbage_ignored);
+    RUN_TEST(test_range_start_after_end_unsatisfiable);
+    RUN_TEST(test_range_suffix_on_empty_file);
+    RUN_TEST(test_serve_file_connection_gone);
     RUN_TEST(test_no_range_full_200);
     RUN_TEST(test_range_prefix);
     RUN_TEST(test_range_open_ended);

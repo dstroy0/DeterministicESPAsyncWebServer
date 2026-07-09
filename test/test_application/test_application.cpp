@@ -918,6 +918,15 @@ void test_serve_static_inm_star_list_weak()
     g_server->handle();
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "HTTP/1.1 200 OK"));
     tcp_capture_disable();
+
+    // (e) a non-matching tag followed by a trailing comma+space: the scan reaches end
+    // of string after the separator and stops -> 200 (exercises the empty-remainder break).
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"nope\", \r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "HTTP/1.1 200 OK"));
+    tcp_capture_disable();
 }
 
 // A served file carries Last-Modified; If-Modified-Since drives a conditional GET
@@ -975,6 +984,76 @@ void test_serve_static_last_modified_conditional_get()
     snprintf(req, sizeof(req),
              "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-None-Match: \"deadbeef\"\r\nIf-Modified-Since: %s\r\n\r\n", LM);
     arm_slot(0, req);
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>"));
+}
+
+// http_not_modified_since compares fields most-significant first and returns as soon as
+// one differs. mtime 1000 == Thu, 01 Jan 1970 00:16:40 GMT; each If-Modified-Since below
+// differs in exactly one field (year/month/hour/minute) and is later than the file, so
+// each drives the corresponding early return -> 304. (Day and second are covered by the
+// preceding test's cases 4 and 3.)
+void test_serve_static_ims_field_comparisons()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1000);
+    g_server->serve_static("/", g_static_fs, "/www");
+    const char *ims[] = {
+        "Fri, 01 Jan 1971 00:16:40 GMT", // year differs (file older) -> 304
+        "Sun, 01 Feb 1970 00:16:40 GMT", // month differs -> 304
+        "Thu, 01 Jan 1970 01:16:40 GMT", // hour differs -> 304
+        "Thu, 01 Jan 1970 00:17:40 GMT", // minute differs -> 304
+    };
+    char req[200];
+    for (size_t i = 0; i < sizeof(ims) / sizeof(ims[0]); i++)
+    {
+        snprintf(req, sizeof(req), "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: %s\r\n\r\n", ims[i]);
+        arm_slot(0, req);
+        conn_pool[0].pcb = &_mock_pcb;
+        tcp_capture_reset();
+        g_server->handle();
+        const char *o = tcp_captured();
+        tcp_capture_disable();
+        TEST_ASSERT_NOT_NULL(strstr(o, "304 Not Modified"));
+        TEST_ASSERT_NULL(strstr(o, "<html>hi</html>"));
+    }
+    // The year-younger direction takes the other branch of the same compare -> 200.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: Wed, 01 Jan 1969 00:16:40 GMT\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK")); // file is newer than 1969 -> full body
+    TEST_ASSERT_NOT_NULL(strstr(o, "<html>hi</html>"));
+}
+
+// A stat timestamp that gmtime_r() cannot represent (garbage/overflowing clock value):
+// the server must omit Last-Modified and treat the resource as always-modified - never
+// a stale 304 - and still serve the body.
+void test_serve_static_unrepresentable_mtime()
+{
+    fs::mock_fs_reset();
+    fs::mock_fs_add("/www/page.html", "<html>hi</html>", (time_t)1 << 60); // year far past what tm_year holds
+    g_server->serve_static("/", g_static_fs, "/www");
+
+    // (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *o = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(o, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NULL(strstr(o, "Last-Modified:")); // date omitted
+
+    // (b) If-Modified-Since: gmtime_r on the file mtime fails -> not-modified false -> 200 + body.
+    arm_slot(0, "GET /page.html HTTP/1.1\r\nHost: x\r\nIf-Modified-Since: Thu, 01 Jan 2099 00:00:00 GMT\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->handle();
@@ -1513,6 +1592,8 @@ int main()
     RUN_TEST(test_serve_static_etag_conditional_get);
     RUN_TEST(test_serve_static_inm_star_list_weak);
     RUN_TEST(test_serve_static_last_modified_conditional_get);
+    RUN_TEST(test_serve_static_ims_field_comparisons);
+    RUN_TEST(test_serve_static_unrepresentable_mtime);
     RUN_TEST(test_serve_static_if_modified_since_malformed);
     RUN_TEST(test_serve_static_cache_control);
 

@@ -3103,7 +3103,7 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
 static bool inm_matches(const char *inm, const char *etag)
 {
     while (*inm == ' ' || *inm == '\t')
-        inm++;
+        inm++; // GCOVR_EXCL_LINE http_parser strips leading OWS from header values, so inm never starts with WS
     if (inm[0] == '*')
         return true; // "*" matches the existing representation
     size_t etlen = strlen(etag);
