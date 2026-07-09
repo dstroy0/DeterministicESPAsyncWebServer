@@ -423,10 +423,32 @@ void test_webdav_error_paths()
     TEST_ASSERT_TRUE(resp_status(403));
 }
 
+// A tree deeper than the recursion bound (8) is refused by both the recursive delete and copy,
+// which fail closed (nothing removed) rather than overflow the stack.
+void test_webdav_deep_tree_rejected()
+{
+    char p[300];
+    int off = snprintf(p, sizeof p, "/dav/deep");
+    tree_mkdir(p);
+    for (int i = 0; i < 10; i++)
+    {
+        off += snprintf(p + off, sizeof(p) - off, "/l%d", i);
+        tree_mkdir(p);
+    }
+    feed_and_handle(0, "DELETE /dav/deep HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(403));      // dav_rm_recursive refuses past depth 8
+    TEST_ASSERT_TRUE(tree_has("/dav/deep")); // nothing was removed
+
+    rearm();
+    feed_and_handle(0, "COPY /dav/deep HTTP/1.1\r\nHost: x\r\nDestination: /dav/dcopy\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(409)); // dav_copy_recursive refuses past depth 8
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_webdav_error_paths);
+    RUN_TEST(test_webdav_deep_tree_rejected);
     RUN_TEST(test_copy_collection_recursive);
     RUN_TEST(test_copy_collection_depth0_shallow);
     RUN_TEST(test_copy_overwrite_semantics);
