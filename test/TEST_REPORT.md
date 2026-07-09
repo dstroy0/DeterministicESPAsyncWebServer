@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 04:22:14
+**Generated:** 2026-07-09 04:41:13
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2624 passed - 176s
+**Result:** ✅ 2626 passed - 187s
 
 ---
 
@@ -36,7 +36,7 @@
 | `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.722 |
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.030 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.701 |
-| `test_provisioning`      | `native_prov`           |     5 |   ✅   | 00:00:00.674 |
+| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:12.127 |
 | `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.156 |
 | `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.609 |
 | `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:00.972 |
@@ -1133,20 +1133,22 @@ _Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than_
 
 ---
 
-## test_provisioning - native_prov - ✅ 5 passed
+## test_provisioning - native_prov - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for detws_prov_form_field(): the x-www-form-urlencoded field_
 
-|   # | Test                      | Status | Description        |
-| --: | :------------------------ | :----: | :----------------- |
-|   1 | `test_plain_fields`       |   ✅   | Plain fields       |
-|   2 | `test_url_decoding`       |   ✅   | Url decoding       |
-|   3 | `test_missing_field`      |   ✅   | Missing field      |
-|   4 | `test_no_substring_match` |   ✅   | No substring match |
-|   5 | `test_capacity_bound`     |   ✅   | Capacity bound     |
+|   # | Test                           | Status | Description                                                                                      |
+| --: | :----------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
+|   1 | `test_plain_fields`            |   ✅   | Plain fields                                                                                     |
+|   2 | `test_url_decoding`            |   ✅   | Url decoding                                                                                     |
+|   3 | `test_missing_field`           |   ✅   | Missing field                                                                                    |
+|   4 | `test_no_substring_match`      |   ✅   | No substring match                                                                               |
+|   5 | `test_capacity_bound`          |   ✅   | Capacity bound                                                                                   |
+|   6 | `test_form_field_null_guards`  |   ✅   | Any null argument (or zero cap) fails closed and leaves a writable out empty.                    |
+|   7 | `test_host_provisioning_stubs` |   ✅   | On host there is no NVS/WiFi: load reports no stored creds and clears the buffers; clear no-ops. |
 
 </details>
 
