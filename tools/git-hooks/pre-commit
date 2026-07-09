@@ -5,6 +5,8 @@
 #   2. prettier --write on staged .md/.json/.yml/.yaml  (CI: prettier --check "**/*.md")
 #   3. auto-add any unknown cspell words from the scanned set (README.md + docs/**/*.md) to
 #      cspell.json  (CI: cspell config cspell.json over README.md + docs/**/*.md)
+#   4. regenerate the test-matrix-derived files (platformio.ini + test/README.md) when
+#      test/test_matrix.json is staged  (CI: python3 test/gen_test_envs.py --check)
 # then re-stages whatever it changed.
 #
 # Install once per clone:   git config core.hooksPath tools/git-hooks
@@ -52,6 +54,18 @@ if [ "${#MD[@]}" -gt 0 ] && [ -f cspell.json ]; then
             npx --no-install prettier --write --end-of-line auto cspell.json >/dev/null 2>&1
             git add -- cspell.json
         fi
+    fi
+fi
+
+# 5) test matrix -> regenerate the derived files. platformio.ini + test/README.md are
+# generated from test/test_matrix.json (the single source of truth for the native test
+# envs); CI hard-fails if platformio.ini drifts (python3 test/gen_test_envs.py --check).
+# Regenerate + re-stage both so a matrix edit never leaves the derived files behind.
+if staged 'test/test_matrix.json' | grep -q .; then
+    PYBIN=$(command -v python 2>/dev/null || command -v python3 2>/dev/null)
+    if [ -n "$PYBIN" ]; then
+        "$PYBIN" test/gen_test_envs.py >/dev/null 2>&1 && git add -- platformio.ini
+        "$PYBIN" test/gen_test_readme.py >/dev/null 2>&1 && git add -- test/README.md
     fi
 fi
 
