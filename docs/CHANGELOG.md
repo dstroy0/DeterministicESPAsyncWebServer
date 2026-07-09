@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f8b11a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8b11a92f9c287df58dc92d93175c89d19b2ad5b))
+- update CHANGELOG.md [skip ci] ([`1c98948`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c98948a52aa29507bffb1457cc8dd5c889c462a))
 - update test report + coverage [skip ci] ([`a95c269`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a95c26990d86211f510627df45377f7d93dad5c6))
 - update CHANGELOG.md [skip ci] ([`900cb77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/900cb776d8f23f7b286bbcc90d12fcc93de27f2e))
 - update test report + coverage [skip ci] ([`735d3dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/735d3dc08f2f7a8b0c992728864fd3c38fac7f11))
@@ -151,6 +153,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8c05f08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c05f08e891dd19971ee6ec8939ed9612ddf9670))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`47a6848`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47a6848c9ce351e38746431fa4ab069e16bf54ea))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`27a049b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27a049bf6bc16ae17a303dfb664f84c19231334e))
 - consolidate test docs into a generated test/README.md ([`3536ecb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3536ecb5fcb98d8af75cff1a5a4782bd8cf97a61))
@@ -214,6 +217,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - backfill 54 feature entries missing from the grid + add coverage guard ([`48d3be7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48d3be78935ef6a569dfd1a6be98943c553a10c4))
 - close the multi-MCU portability item as a won't-do (per user request) ([`bcef60e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bcef60e0ec60ea08fc9854c37b1796ba604238df))
 - fix broken SonarCloud badge (sonarcloud.yml -> test-report.yml) ([`450c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/450c617280017a813c1519d0945673061b09679b))
+
+### Features
+
+- emit the Date header from any enabled time source (NTP/GPS/RTC), not just NTP ([`0ebafd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ebafd26cf4c1de8be2be7ad0ef746d213876964))
 
 ### Refactor
 
