@@ -127,6 +127,20 @@ static size_t src_big(uint8_t *buf, size_t cap, void *ctx)
     return n;
 }
 
+// Misbehaving source: writes exactly cap bytes but over-reports the count. The pump
+// must clamp to cap (never frame or advance past the window it granted) so a buggy
+// generator cannot overrun the send buffer.
+static size_t src_overreport(uint8_t *buf, size_t cap, void *ctx)
+{
+    (void)ctx;
+    if (g_step++ == 0)
+    {
+        memset(buf, 'Z', cap);
+        return cap + 100; // lie: claim 100 more than actually written
+    }
+    return 0;
+}
+
 // ---- Handlers --------------------------------------------------------------
 
 static void h_hello(uint8_t s, HttpReq *r)
@@ -163,6 +177,11 @@ static void h_big(uint8_t s, HttpReq *r)
 {
     (void)r;
     server.send_chunked(s, 200, "application/octet-stream", src_big);
+}
+static void h_overreport(uint8_t s, HttpReq *r)
+{
+    (void)r;
+    server.send_chunked(s, 200, "application/octet-stream", src_overreport);
 }
 static void h_with_hdr(uint8_t s, HttpReq *r)
 {
@@ -354,9 +373,25 @@ void test_chunked_backpressure_resumes_across_polls()
     TEST_ASSERT_NOT_NULL(strstr(r, "5\r\nhello\r\n5\r\nworld\r\n0\r\n\r\n")); // full body + terminator
 }
 
+// A source that over-reports its byte count must not make the pump frame or send more
+// than the window cap it was given: the returned length is clamped to cap, so exactly
+// CHUNK_BUF_SIZE bytes are framed and the logged body length is the clamped value.
+void test_chunked_source_overreport_clamped()
+{
+    server.on_request_log(log_cb);
+    server.on("/c", HTTP_GET, h_overreport);
+    feed_and_handle(0, "GET /c HTTP/1.1\r\n\r\n"); // default window: cap == CHUNK_BUF_SIZE
+    const char *r = tcp_captured();
+    // 256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.
+    TEST_ASSERT_NOT_NULL(strstr(r, "100\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "0\r\n\r\n"));
+    TEST_ASSERT_EQUAL_INT(CHUNK_BUF_SIZE, g_log_len); // body length is the clamped count, not 356
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_chunked_source_overreport_clamped);
     RUN_TEST(test_chunked_backpressure_resumes_across_polls);
     RUN_TEST(test_headers_announce_chunked_no_content_length);
     RUN_TEST(test_single_chunk_framing);

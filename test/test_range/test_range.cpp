@@ -236,10 +236,45 @@ void test_file_send_backpressure_resumes_across_polls()
     TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 20); // full body, no truncation
 }
 
+// The first body write fails (send buffer full): file_send_pump seeks back to un-read
+// those bytes, flushes, and returns with the response still active. A later worker poll
+// retries and, with the send buffer recovered, pages the whole body out - exactly the
+// file bytes, none lost or duplicated by the seek-back.
+void test_file_send_write_fails_then_retries()
+{
+    mock_send_fail_after() = 1; // header write succeeds; the next (first body) write fails
+    request(nullptr);
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "Content-Length: 20")); // header queued
+    TEST_ASSERT_EQUAL_UINT(0, body_len());                 // body write failed: nothing after the header
+
+    mock_send_fail_after() = -1; // send buffer recovers
+    server.handle();             // worker poll retries the in-flight file response
+    TEST_ASSERT_EQUAL_UINT(20, body_len());
+    TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 20); // exactly the file, no dup/loss
+}
+
+// A file that stats as 20 bytes but reads short (truncated / I/O error mid-body):
+// read() returns 0 while bytes remain, so the pump stops with whatever paged out and
+// finishes the response - it must not spin on the zero-length read.
+void test_file_send_short_read_stops()
+{
+    fs::_mock_read_limit() = 8; // the underlying file yields only 8 of its 20 bytes
+    request(nullptr);
+    const char *r = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(r, "Content-Length: 20")); // header still advertises the stat size
+    TEST_ASSERT_EQUAL_UINT(8, body_len());                 // only the bytes that actually read out
+    TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 8);
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_file_send_backpressure_resumes_across_polls);
+    RUN_TEST(test_file_send_write_fails_then_retries);
+    RUN_TEST(test_file_send_short_read_stops);
     RUN_TEST(test_no_range_full_200);
     RUN_TEST(test_range_prefix);
     RUN_TEST(test_range_open_ended);

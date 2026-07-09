@@ -127,6 +127,15 @@ inline void mock_fs_clear()
     _mock_valid() = false;
 }
 
+// Test hook: cap the total bytes File::read() will yield, regardless of file size -
+// models a truncated file / mid-body I/O error so the read returns 0 while bytes
+// remain. SIZE_MAX (default) reads normally.
+inline size_t &_mock_read_limit()
+{
+    static size_t v = (size_t)-1;
+    return v;
+}
+
 // ---------------------------------------------------------------------------
 // Write capture (for streaming-upload tests): File::write() appends here when a
 // file is opened in "w"/"a" mode.
@@ -224,8 +233,13 @@ class File
     {
         if (!_open || _pos >= _size)
             return 0;
+        size_t cap = _mock_read_limit();
+        if (_pos >= cap)
+            return 0; // truncated/short-reading file: 0 with bytes still remaining
         size_t avail = _size - _pos;
         size_t n = (sz < avail) ? sz : avail;
+        if (_pos + n > cap)
+            n = cap - _pos; // clamp this read to the truncation point
         memcpy(dst, _data + _pos, n);
         _pos += n;
         return n;
@@ -332,6 +346,7 @@ inline void mock_fs_reset()
 {
     _mock_entry_count() = 0;
     mock_fs_clear();
+    _mock_read_limit() = (size_t)-1; // clear a short-read cap a prior test may have set
 }
 inline const MockFsEntry *_mock_find(const char *path)
 {

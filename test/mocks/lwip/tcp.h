@@ -93,11 +93,21 @@ inline TcpCapture &_tcp_capture()
     return c;
 }
 
+// Test hook: after this many successful writes, tcp_write fails (ERR_MEM, nothing
+// queued) - models a full/transient TCP send buffer so det_conn_send() returns false
+// and a send pump takes its un-read-and-retry path. -1 (default) never fails.
+inline int &mock_send_fail_after()
+{
+    static int v = -1;
+    return v;
+}
+
 inline void tcp_capture_reset()
 {
     _tcp_capture().len = 0;
     _tcp_capture().buf[0] = '\0';
     _tcp_capture_active() = true;
+    mock_send_fail_after() = -1; // clear a send-failure a prior test may have armed
 }
 
 inline void tcp_capture_disable()
@@ -116,6 +126,11 @@ inline size_t tcp_captured_len()
 
 inline err_t tcp_write(struct tcp_pcb *, const void *data, uint16_t len, uint8_t)
 {
+    int &fa = mock_send_fail_after();
+    if (fa == 0)
+        return ERR_MEM; // send buffer full: nothing queued, det_conn_send() -> false
+    if (fa > 0)
+        fa--; // count down the writes allowed before the failure
     if (_tcp_capture_active())
     {
         TcpCapture &c = _tcp_capture();
