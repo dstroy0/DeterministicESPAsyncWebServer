@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2602 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2603 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19139,7 +19139,7 @@ A thorough directory of all **2602 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_qpack (9 tests)</b></summary>
+<summary><b>test_qpack (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_appendix_b1_decode</b> &mdash; <i>Appendix b1 decode</i></summary>
@@ -19258,6 +19258,27 @@ A thorough directory of all **2602 test cases** across **228 suites**. Expand a 
       * <code>Assert false (qpack_decode(val_over, 9, scratch, sizeof scratch, sink_emit, &s))</code>
       * <code>Assert true (decode_all(blk, n + 2, &s))</code>
       * <code>Assert equal string ("aaaaaaaa", s.hdrs[s.hdrs.size() - 1].second.c_str())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_qpack_more_encode_decode_paths</b> &mdash; <i>A short literal name that does not Huffman-compress takes the raw memcpy path.</i></summary>
+
+    * **Objective**: A short literal name that does not Huffman-compress takes the raw memcpy path.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true ((out[0] & 0xE0) == 0x20 && !(out[0] & 0x08))</code>
+      * <code>Assert true (qpack_encode_header(out, sizeof out, ":path", 5, "aaaaaaaa", 8) &gt; 0)</code>
+      * <code>Assert equal int (0, (int)qpack_encode_header(out, 0, ":path", 5, "/x", 2))</code>
+      * <code>Assert equal int (0, (int)qpack_encode_header(out, 0, "zzzz", 4, "v", 1))</code>
+      * <code>Assert false (decode_all(bad_ric, 1, &s))</code>
+      * <code>Assert false (decode_all(idx_dyn, 3, &s))</code>
+      * <code>Assert false (decode_all(nameref_dyn, 3, &s))</code>
+      * <code>Assert false (decode_all(litname_trunc, 3, &s))</code>
+      * <code>Assert false (decode_all(litname_badhuff, 5, &s))</code>
+      * <code>Assert false (decode_all(litname_novalue, 4, &s))</code>
+      * <code>Assert false (decode_all(nameref_badvlen, 4, &s))</code>
+      * <code>Assert false (qpack_decode(indexed, 3, sc, sizeof sc, fail_emit, nullptr))</code>
+      * <code>Assert false (qpack_decode(litname, 6, sc, sizeof sc, fail_emit, nullptr))</code>
   </details>
 
 </details>
