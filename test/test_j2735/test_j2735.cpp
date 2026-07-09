@@ -174,6 +174,57 @@ void test_uper_overflow_and_bsm_guard()
     TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed
 }
 
+void test_j2735_guards_and_truncation()
+{
+    uint8_t buf[64];
+
+    // uper_put_cint / uper_get_cint with a single-value (zero-bit) range: nothing on the wire.
+    UperWriter w;
+    uper_writer_init(&w, buf, sizeof(buf));
+    uper_put_cint(&w, 5, 5, 5); // hi <= lo -> 0 bits
+    TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));
+    UperReader r;
+    uper_reader_init(&r, buf, sizeof(buf) * 8);
+    TEST_ASSERT_TRUE(uper_get_cint(&r, 5, 5) == 5); // 0 bits -> returns lo
+    // uper_get_bits: nbits == 0, and a not-ok reader (null buffer), both return 0.
+    TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&r, 0));
+    UperReader rn;
+    uper_reader_init(&rn, nullptr, 0);
+    TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&rn, 4));
+
+    // encode/decode null-argument guards.
+    J2735BsmCore c = {};
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));
+    TEST_ASSERT_FALSE(detws_j2735_bsm_core_decode(nullptr, 16, &c));
+    TEST_ASSERT_FALSE(detws_j2735_bsm_core_decode(buf, 16, nullptr));
+
+    J2735MovementState st[2] = {{1, 6, 0, 0}, {2, 3, 0, 0}};
+    J2735MovementState sout[4];
+    size_t count = 0;
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 2, nullptr, 16));       // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count > 31
+    TEST_ASSERT_FALSE(detws_j2735_spat_decode(nullptr, 16, sout, 4, &count));       // null in
+
+    J2735MapIntersection isect = {1, 2, 3};
+    J2735Lane lanes[2] = {{1, true, 0, 0}, {2, false, 0, 0}};
+    J2735Lane lout[4];
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect
+    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count > 31
+    TEST_ASSERT_FALSE(detws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count));          // null in
+
+    // Truncated SPAT: the count reads, but the per-state fields underrun (post-loop r.ok guard).
+    size_t sn = detws_j2735_spat_encode(st, 2, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(sn > 1);
+    TEST_ASSERT_FALSE(detws_j2735_spat_decode(buf, 1, sout, 4, &count));
+
+    // MAP decode: count exceeds the caller's lane buffer, then a truncated buffer underruns.
+    size_t mn = detws_j2735_map_encode(&isect, lanes, 2, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(mn > 7);
+    TEST_ASSERT_FALSE(detws_j2735_map_decode(buf, mn, &isect, lout, 1, &count)); // count 2 > max 1
+    TEST_ASSERT_FALSE(detws_j2735_map_decode(buf, 7, &isect, lout, 4, &count));  // header ok, lanes underrun
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -187,5 +238,6 @@ int main(void)
     RUN_TEST(test_spat_decode_too_many);
     RUN_TEST(test_map_roundtrip);
     RUN_TEST(test_uper_overflow_and_bsm_guard);
+    RUN_TEST(test_j2735_guards_and_truncation);
     return UNITY_END();
 }
