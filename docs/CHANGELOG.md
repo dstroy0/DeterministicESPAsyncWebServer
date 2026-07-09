@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`160b87f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/160b87fe37d4027262b22b2bf0d7fb7668dae554))
+- update CHANGELOG.md [skip ci] ([`61611e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61611e813a159691ce2f3e5313f4e697a21a9a28))
 - update CHANGELOG.md [skip ci] ([`7ac6891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ac68910fe1f36e8e6e1be8c9d48359f93e9069e))
 - update test report + coverage [skip ci] ([`5fb2ac0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5fb2ac092511bdfe151bed3d3348f20a9936f93b))
 - update CHANGELOG.md [skip ci] ([`3581d42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3581d42f68e1bcc5f5c77cefe130a938d194ef16))
@@ -213,6 +215,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3fc174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3fc174db44c685dc25961a7436eb577fd103561))
 - update ESP32 build footprints [skip ci] ([`f5114b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5114b3a8d259d205115e5df2d74e3e5624efac5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5e2b592`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e2b592666721e37e35c8cbcf52121a6e83701dd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`55e0d1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55e0d1f8c5b7a9dff6747d14dad481043d42a761))
@@ -414,6 +417,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover classify/equal/CIDR + parse/format/to_v4 guards (96->100%) ([`f51cd90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f51cd9036e0351cb19a1b57c13f2e94cac636656))
 - cover reserved block-type + stored-block error paths ([`e0097a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0097a73270ac8f59d0acc99ed74c22964cb8efc))
 - cover literal-name/Huffman encode edges + decode error paths (->98%) ([`3c9c398`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c9c398a8b10571e262e5e9f6afaaf0a0b189d31))
 - cover send-path headers + parse/deflate guards (92->95%) ([`953d08e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/953d08e744f13a4ea4584996fb8159b33f20c58d))
