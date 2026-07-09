@@ -184,9 +184,10 @@ native Unity tests before moving on. Each must keep the "no heap after
       must outlive the response). HEAD sends headers only;
       [`on_request_log()`](@ref DetWebServer::on_request_log) reports the total body
       length. Tested by `test_chunked` (10 cases, incl. a 16 KB body).
-      _Follow-up:_ no `tcp_sndbuf()` backpressure check (mirrors `serve_file()`)
-      - for very large streams add a per-chunk `tcp_output()` / send-window
-      check before relying on it under load.
+      _Follow-up (done):_ `chunk_send_pump` sizes each chunk to `det_conn_sndbuf()`
+      (reserving the frame overhead), flushes and resumes on the next loop when the
+      window is full, and clamps a misbehaving source to the window - the same
+      per-loop send-window backpressure `file_send_pump()` uses.
 
 - [x] **8. Stretch / lower priority.** _(resolved: the sub-items are shipped, except multi-MCU
       portability which is a closed won't-do per the user's standing request.)_
