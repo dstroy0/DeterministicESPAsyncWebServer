@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 13:45:56
+**Generated:** 2026-07-09 14:03:58
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2785 passed - 419s
+**Result:** ✅ 2787 passed - 425s
 
 ---
 
@@ -44,24 +44,24 @@
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.876 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:04.708 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.703 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.698 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.636 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.707 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.709 |
-| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.664 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.736 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.709 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.743 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.709 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.678 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.728 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.719 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.741 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.705 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.723 |
-| `test_application`       | `native_app`            |    68 |   ✅   | 00:00:00.890 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:11.120 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.720 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.708 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.626 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.700 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.698 |
+| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.667 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.726 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.711 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.747 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.727 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.705 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.772 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.750 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.750 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.725 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.757 |
+| `test_application`       | `native_app`            |    70 |   ✅   | 00:00:00.924 |
 | `test_webdav_handler`    | `native_webdav_handler` |    26 |   ✅   | 00:00:01.651 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
@@ -1856,83 +1856,85 @@ _Unit tests for send_chunked() / ChunkedResponse streaming responses._
 
 ---
 
-## test_application - native_app - ✅ 68 passed
+## test_application - native_app - ✅ 70 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit, stress, and race-condition tests for Layer 7 (Application)._
 
-|   # | Test                                                  | Status | Description                                                                         |
-| --: | :---------------------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
-|   1 | `test_restart_and_stop`                               |   ✅   | Before any listener, restart() forwards the no-listeners error (no stop()/begin()). |
-|   2 | `test_route_registration_variants_table_full`         |   ✅   | Route registration variants table full                                              |
-|   3 | `test_send_family_slot_and_conn_gone_guards`          |   ✅   | Send family slot and conn gone guards                                               |
-|   4 | `test_redirect_response_and_code_normalization`       |   ✅   | Redirect response and code normalization                                            |
-|   5 | `test_request_error_paths_te_method_ws`               |   ✅   | Wrong method to a GET-only route -> 405 with an Allow header.                       |
-|   6 | `test_handler_reads_body`                             |   ✅   | Handler reads body                                                                  |
-|   7 | `test_handler_reads_query_param`                      |   ✅   | Handler reads query param                                                           |
-|   8 | `test_handler_reads_header`                           |   ✅   | Handler reads header                                                                |
-|   9 | `test_wildcard_before_exact_wildcard_wins`            |   ✅   | Wildcard before exact wildcard wins                                                 |
-|  10 | `test_fn_on_registers_and_dispatches`                 |   ✅   | Fn on registers and dispatches                                                      |
-|  11 | `test_fn_on_path_copied_null_terminated`              |   ✅   | A path of exactly MAX_PATH_LEN-1 chars must not overflow the route buffer.          |
-|  12 | `test_fn_on_table_full_extra_routes_dropped`          |   ✅   | Fill the table; on() beyond MAX_ROUTES must silently drop                           |
-|  13 | `test_fn_on_same_path_different_methods_are_distinct` |   ✅   | Fn on same path different methods are distinct                                      |
-|  14 | `test_fn_on_not_found_called_when_no_match`           |   ✅   | Fn on not found called when no match                                                |
-|  15 | `test_fn_on_not_found_not_called_when_match_exists`   |   ✅   | Fn on not found not called when match exists                                        |
-|  16 | `test_fn_set_cors_options_preflight_clears_slot`      |   ✅   | Fn set cors options preflight clears slot                                           |
-|  17 | `test_fn_set_cors_empty_string_disables`              |   ✅   | Fn set cors empty string disables                                                   |
-|  18 | `test_wrong_method_does_not_match`                    |   ✅   | Wrong method does not match                                                         |
-|  19 | `test_wrong_path_does_not_match`                      |   ✅   | Wrong path does not match                                                           |
-|  20 | `test_all_http_methods_dispatched`                    |   ✅   | All http methods dispatched                                                         |
-|  21 | `test_root_path_matches_exactly`                      |   ✅   | Root path matches exactly                                                           |
-|  22 | `test_root_path_does_not_match_subpath`               |   ✅   | Root path does not match subpath                                                    |
-|  23 | `test_wildcard_matches_any_suffix`                    |   ✅   | Wildcard matches any suffix                                                         |
-|  24 | `test_wildcard_does_not_match_unrelated_prefix`       |   ✅   | Wildcard does not match unrelated prefix                                            |
-|  25 | `test_exact_route_wins_when_registered_first`         |   ✅   | Exact route wins when registered first                                              |
-|  26 | `test_slot_not_stuck_in_complete_after_handle`        |   ✅   | Slot not stuck in complete after handle                                             |
-|  27 | `test_parse_error_slot_auto_reset`                    |   ✅   | Parse error slot auto reset                                                         |
-|  28 | `stress_last_route_dispatched_in_full_table`          |   ✅   | Stress - Last route dispatched in full table                                        |
-|  29 | `stress_sequential_requests_no_state_leak`            |   ✅   | Stress - Sequential requests no state leak                                          |
-|  30 | `stress_all_slots_dispatched_simultaneously`          |   ✅   | Stress - All slots dispatched simultaneously                                        |
-|  31 | `stress_wildcard_matches_many_paths`                  |   ✅   | Stress - Wildcard matches many paths                                                |
-|  32 | `stress_handle_with_no_complete_slots_is_nop`         |   ✅   | All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch                 |
-|  33 | `race_slot_complete_between_handle_calls`             |   ✅   | Race - Slot complete between handle calls                                           |
-|  34 | `race_conn_freed_after_parse_complete`                |   ✅   | Race - Conn freed after parse complete                                              |
-|  35 | `race_double_handle_no_double_dispatch`               |   ✅   | Race - Double handle no double dispatch                                             |
-|  36 | `race_error_and_valid_slot_in_same_handle`            |   ✅   | Slot 0: inject a parse error                                                        |
-|  37 | `race_callback_manually_resets_slot`                  |   ✅   | Race - Callback manually resets slot                                                |
-|  38 | `test_uri_too_long_auto_resets_slot`                  |   ✅   | Overflow the path buffer - handle() should send 414 and free the slot               |
-|  39 | `test_transfer_encoding_chunked_is_501`               |   ✅   | A request advertising Transfer-Encoding must be rejected with 501                   |
-|  40 | `test_transfer_encoding_identity_is_501`              |   ✅   | Even "identity" is rejected - we advertise no TE support at all                     |
-|  41 | `test_redirect_emits_location_and_status`             |   ✅   | Redirect emits location and status                                                  |
-|  42 | `test_redirect_invalid_code_defaults_to_302`          |   ✅   | Redirect invalid code defaults to 302                                               |
-|  43 | `test_mime_type_detection`                            |   ✅   | Mime type detection                                                                 |
-|  44 | `test_serve_static_file_and_mime`                     |   ✅   | Serve static file and mime                                                          |
-|  45 | `test_serve_static_wildcard_and_route_full`           |   ✅   | Serve static wildcard and route full                                                |
-|  46 | `test_response_header_cookie_guards`                  |   ✅   | Response header cookie guards                                                       |
-|  47 | `test_serve_static_index_fallback`                    |   ✅   | Serve static index fallback                                                         |
-|  48 | `test_serve_static_gzip_when_accepted`                |   ✅   | Serve static gzip when accepted                                                     |
-|  49 | `test_serve_static_no_gzip_when_not_accepted`         |   ✅   | Serve static no gzip when not accepted                                              |
-|  50 | `test_serve_static_traversal_not_leaked`              |   ✅   | Serve static traversal not leaked                                                   |
-|  51 | `test_serve_static_missing_is_404`                    |   ✅   | Serve static missing is 404                                                         |
-|  52 | `test_serve_static_etag_conditional_get`              |   ✅   | First GET: 200 with an ETag header.                                                 |
-|  53 | `test_serve_static_inm_star_list_weak`                |   ✅   | First GET to capture the strong ETag (with quotes).                                 |
-|  54 | `test_serve_static_last_modified_conditional_get`     |   ✅   | (1) plain GET: 200 carries the Last-Modified header.                                |
-|  55 | `test_serve_static_ims_field_comparisons`             |   ✅   | Serve static ims field comparisons                                                  |
-|  56 | `test_serve_static_unrepresentable_mtime`             |   ✅   | (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).                |
-|  57 | `test_serve_static_if_modified_since_malformed`       |   ✅   | Serve static if modified since malformed                                            |
-|  58 | `test_serve_static_cache_control`                     |   ✅   | Serve static cache control                                                          |
-|  59 | `test_request_log_hook_fires`                         |   ✅   | Request log hook fires                                                              |
-|  60 | `test_stats_endpoint_emits_json`                      |   ✅   | Stats endpoint emits json                                                           |
-|  61 | `test_status_text_reason_phrases`                     |   ✅   | Status text reason phrases                                                          |
-|  62 | `test_allow_header_lists_methods`                     |   ✅   | Allow header lists methods                                                          |
-|  63 | `test_listen_and_begin`                               |   ✅   | begin() before any listen() -> no-listeners error, no side effects.                 |
-|  64 | `test_begin_port_convenience`                         |   ✅   | Begin port convenience                                                              |
-|  65 | `test_ws_send_api`                                    |   ✅   | Ws send api                                                                         |
-|  66 | `test_sse_broadcast_after_upgrade_matches_path`       |   ✅   | Sse broadcast after upgrade matches path                                            |
-|  67 | `test_sse_send_api`                                   |   ✅   | Sse send api                                                                        |
-|  68 | `test_metrics_emits_prometheus`                       |   ✅   | Metrics emits prometheus                                                            |
+|   # | Test                                                  | Status | Description                                                                                      |
+| --: | :---------------------------------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
+|   1 | `test_restart_and_stop`                               |   ✅   | Before any listener, restart() forwards the no-listeners error (no stop()/begin()).              |
+|   2 | `test_route_registration_variants_table_full`         |   ✅   | Route registration variants table full                                                           |
+|   3 | `test_send_family_slot_and_conn_gone_guards`          |   ✅   | Send family slot and conn gone guards                                                            |
+|   4 | `test_redirect_response_and_code_normalization`       |   ✅   | Redirect response and code normalization                                                         |
+|   5 | `test_request_error_paths_te_method_ws`               |   ✅   | Wrong method to a GET-only route -> 405 with an Allow header.                                    |
+|   6 | `test_ws_sse_upgrade_failure_paths`                   |   ✅   | (a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400. |
+|   7 | `test_sse_upgrade_pool_exhausted`                     |   ✅   | Sse upgrade pool exhausted                                                                       |
+|   8 | `test_handler_reads_body`                             |   ✅   | Handler reads body                                                                               |
+|   9 | `test_handler_reads_query_param`                      |   ✅   | Handler reads query param                                                                        |
+|  10 | `test_handler_reads_header`                           |   ✅   | Handler reads header                                                                             |
+|  11 | `test_wildcard_before_exact_wildcard_wins`            |   ✅   | Wildcard before exact wildcard wins                                                              |
+|  12 | `test_fn_on_registers_and_dispatches`                 |   ✅   | Fn on registers and dispatches                                                                   |
+|  13 | `test_fn_on_path_copied_null_terminated`              |   ✅   | A path of exactly MAX_PATH_LEN-1 chars must not overflow the route buffer.                       |
+|  14 | `test_fn_on_table_full_extra_routes_dropped`          |   ✅   | Fill the table; on() beyond MAX_ROUTES must silently drop                                        |
+|  15 | `test_fn_on_same_path_different_methods_are_distinct` |   ✅   | Fn on same path different methods are distinct                                                   |
+|  16 | `test_fn_on_not_found_called_when_no_match`           |   ✅   | Fn on not found called when no match                                                             |
+|  17 | `test_fn_on_not_found_not_called_when_match_exists`   |   ✅   | Fn on not found not called when match exists                                                     |
+|  18 | `test_fn_set_cors_options_preflight_clears_slot`      |   ✅   | Fn set cors options preflight clears slot                                                        |
+|  19 | `test_fn_set_cors_empty_string_disables`              |   ✅   | Fn set cors empty string disables                                                                |
+|  20 | `test_wrong_method_does_not_match`                    |   ✅   | Wrong method does not match                                                                      |
+|  21 | `test_wrong_path_does_not_match`                      |   ✅   | Wrong path does not match                                                                        |
+|  22 | `test_all_http_methods_dispatched`                    |   ✅   | All http methods dispatched                                                                      |
+|  23 | `test_root_path_matches_exactly`                      |   ✅   | Root path matches exactly                                                                        |
+|  24 | `test_root_path_does_not_match_subpath`               |   ✅   | Root path does not match subpath                                                                 |
+|  25 | `test_wildcard_matches_any_suffix`                    |   ✅   | Wildcard matches any suffix                                                                      |
+|  26 | `test_wildcard_does_not_match_unrelated_prefix`       |   ✅   | Wildcard does not match unrelated prefix                                                         |
+|  27 | `test_exact_route_wins_when_registered_first`         |   ✅   | Exact route wins when registered first                                                           |
+|  28 | `test_slot_not_stuck_in_complete_after_handle`        |   ✅   | Slot not stuck in complete after handle                                                          |
+|  29 | `test_parse_error_slot_auto_reset`                    |   ✅   | Parse error slot auto reset                                                                      |
+|  30 | `stress_last_route_dispatched_in_full_table`          |   ✅   | Stress - Last route dispatched in full table                                                     |
+|  31 | `stress_sequential_requests_no_state_leak`            |   ✅   | Stress - Sequential requests no state leak                                                       |
+|  32 | `stress_all_slots_dispatched_simultaneously`          |   ✅   | Stress - All slots dispatched simultaneously                                                     |
+|  33 | `stress_wildcard_matches_many_paths`                  |   ✅   | Stress - Wildcard matches many paths                                                             |
+|  34 | `stress_handle_with_no_complete_slots_is_nop`         |   ✅   | All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch                              |
+|  35 | `race_slot_complete_between_handle_calls`             |   ✅   | Race - Slot complete between handle calls                                                        |
+|  36 | `race_conn_freed_after_parse_complete`                |   ✅   | Race - Conn freed after parse complete                                                           |
+|  37 | `race_double_handle_no_double_dispatch`               |   ✅   | Race - Double handle no double dispatch                                                          |
+|  38 | `race_error_and_valid_slot_in_same_handle`            |   ✅   | Slot 0: inject a parse error                                                                     |
+|  39 | `race_callback_manually_resets_slot`                  |   ✅   | Race - Callback manually resets slot                                                             |
+|  40 | `test_uri_too_long_auto_resets_slot`                  |   ✅   | Overflow the path buffer - handle() should send 414 and free the slot                            |
+|  41 | `test_transfer_encoding_chunked_is_501`               |   ✅   | A request advertising Transfer-Encoding must be rejected with 501                                |
+|  42 | `test_transfer_encoding_identity_is_501`              |   ✅   | Even "identity" is rejected - we advertise no TE support at all                                  |
+|  43 | `test_redirect_emits_location_and_status`             |   ✅   | Redirect emits location and status                                                               |
+|  44 | `test_redirect_invalid_code_defaults_to_302`          |   ✅   | Redirect invalid code defaults to 302                                                            |
+|  45 | `test_mime_type_detection`                            |   ✅   | Mime type detection                                                                              |
+|  46 | `test_serve_static_file_and_mime`                     |   ✅   | Serve static file and mime                                                                       |
+|  47 | `test_serve_static_wildcard_and_route_full`           |   ✅   | Serve static wildcard and route full                                                             |
+|  48 | `test_response_header_cookie_guards`                  |   ✅   | Response header cookie guards                                                                    |
+|  49 | `test_serve_static_index_fallback`                    |   ✅   | Serve static index fallback                                                                      |
+|  50 | `test_serve_static_gzip_when_accepted`                |   ✅   | Serve static gzip when accepted                                                                  |
+|  51 | `test_serve_static_no_gzip_when_not_accepted`         |   ✅   | Serve static no gzip when not accepted                                                           |
+|  52 | `test_serve_static_traversal_not_leaked`              |   ✅   | Serve static traversal not leaked                                                                |
+|  53 | `test_serve_static_missing_is_404`                    |   ✅   | Serve static missing is 404                                                                      |
+|  54 | `test_serve_static_etag_conditional_get`              |   ✅   | First GET: 200 with an ETag header.                                                              |
+|  55 | `test_serve_static_inm_star_list_weak`                |   ✅   | First GET to capture the strong ETag (with quotes).                                              |
+|  56 | `test_serve_static_last_modified_conditional_get`     |   ✅   | (1) plain GET: 200 carries the Last-Modified header.                                             |
+|  57 | `test_serve_static_ims_field_comparisons`             |   ✅   | Serve static ims field comparisons                                                               |
+|  58 | `test_serve_static_unrepresentable_mtime`             |   ✅   | (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).                             |
+|  59 | `test_serve_static_if_modified_since_malformed`       |   ✅   | Serve static if modified since malformed                                                         |
+|  60 | `test_serve_static_cache_control`                     |   ✅   | Serve static cache control                                                                       |
+|  61 | `test_request_log_hook_fires`                         |   ✅   | Request log hook fires                                                                           |
+|  62 | `test_stats_endpoint_emits_json`                      |   ✅   | Stats endpoint emits json                                                                        |
+|  63 | `test_status_text_reason_phrases`                     |   ✅   | Status text reason phrases                                                                       |
+|  64 | `test_allow_header_lists_methods`                     |   ✅   | Allow header lists methods                                                                       |
+|  65 | `test_listen_and_begin`                               |   ✅   | begin() before any listen() -> no-listeners error, no side effects.                              |
+|  66 | `test_begin_port_convenience`                         |   ✅   | Begin port convenience                                                                           |
+|  67 | `test_ws_send_api`                                    |   ✅   | Ws send api                                                                                      |
+|  68 | `test_sse_broadcast_after_upgrade_matches_path`       |   ✅   | Sse broadcast after upgrade matches path                                                         |
+|  69 | `test_sse_send_api`                                   |   ✅   | Sse send api                                                                                     |
+|  70 | `test_metrics_emits_prometheus`                       |   ✅   | Metrics emits prometheus                                                                         |
 
 </details>
 
