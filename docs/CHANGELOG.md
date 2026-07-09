@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`c1a1f6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c1a1f6f8ce0002fcb95c038a3c9fb9d06dfbcd26))
+- update CHANGELOG.md [skip ci] ([`c8c2951`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c29514cbe42614b27cb9ff68c08f16dcb67051))
 - update test report + coverage [skip ci] ([`21dad57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21dad5771afb3083342a49fda743ea10a3cd88cf))
 - update CHANGELOG.md [skip ci] ([`3e8c075`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e8c0759ae2d84ce40f64990b911fc220e030d32))
 - update CHANGELOG.md [skip ci] ([`c2da93a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2da93af91553bcb46daa2279fd3b0664811ef0b))
@@ -224,6 +226,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`42f315f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42f315fa73d5235b9eed1a03c563ca4a98f96f3e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fcb7cc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcb7cc63a70273681fcc870971737faeb69484c6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c991308`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c991308c7f9b6f76f86d57dfecba31dac2adb174))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f27b3dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f27b3dc18fafce95fb90d2e3f1f0ced8ddd17f06))
@@ -433,6 +436,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover begin/poll/ingest/respond/route guards + ring-full + pool-full; EXCL 2 unreachable lines (->100% reachable) ([`ea03b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea03b47922d9724b4386aae2e4bf56a3af2ab29c))
 - cover finished/unexpected/drain/flight/keys guards + cert-overflow emit-fails; EXCL 2 buffer-invariant-dead emit returns (->100% reachable) ([`ed27359`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed27359eb913df4f520315d3e0286236549d3c07))
 - cover encode overflow/62-bit-varint fail, retry_scid roundtrip, per-param value_varint rejects + valid ack-delay arms (->100%) ([`8b0a41a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b0a41a1197c95e4ff161fddcf30b0506754ca71))
 - cover name-ref emit-fail + literal-name NameLen-past-buffer (non-escape len) (->100%) ([`5602c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5602c303dca04c915e6972c25512213bcddcf9b9))
