@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2500 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2505 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11041,7 +11041,39 @@ A thorough directory of all **2500 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_json (23 tests)</b></summary>
+<summary><b>test_json (26 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reader_non_object_and_bad_member</b> &mdash; <i>Reader non object and bad member</i></summary>
+
+    * **Objective**: Reader non object and bad member
+    * **Assertions**:
+      * <code>Assert false (json_get_str("[1,2,3]", "k", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_str("{}", "k", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_str("{42:1}", "k", out, sizeof(out)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reader_int_rejects_string_and_nondigits</b> &mdash; <i>Reader int rejects string and nondigits</i></summary>
+
+    * **Objective**: Reader int rejects string and nondigits
+    * **Assertions**:
+      * <code>Assert false (json_get_int("{\\"n\\":\\"42\\"}", "n", &v))</code>
+      * <code>Assert false (json_get_int("{\\"n\\":xyz}", "n", &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reader_unicode_escape_invalid_and_wide</b> &mdash; <i>Invalid / short \u emits '?' without consuming the bad chars, so they trail as literals.</i></summary>
+
+    * **Objective**: Invalid / short \u emits '?' without consuming the bad chars, so they trail as literals.
+    * **Assertions**:
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u01F6\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?", out); // valid hex, codepoint &gt; 0xFF -&gt; '?' (digits consumed)</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uZZZZ\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?ZZZZ", out)</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u0A\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?0A", out)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_writer_simple_object</b> &mdash; <i>Writer simple object</i></summary>
@@ -11255,13 +11287,24 @@ A thorough directory of all **2500 test cases** across **228 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_reader_malformed</b> &mdash; <i>Reader malformed</i></summary>
+    <summary><b>test_reader_malformed</b> &mdash; <i>A non-object top level, an empty object, and a non-string member name each yield no match.</i></summary>
 
-    * **Objective**: Reader malformed
+    * **Objective**: A non-object top level, an empty object, and a non-string member name each yield no match.
     * **Assertions**:
       * <code>Assert false (json_get_str("{\\"name", "x", out, sizeof(out)))</code>
       * <code>Assert false (json_get_int("{\\"a\\":{\\"b\\":1", "z", &v))</code>
       * <code>Assert false (json_get_str("{\\"a\\" 5}", "a", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_str("[1,2,3]", "k", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_str("{}", "k", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_str("{42:1}", "k", out, sizeof(out)))</code>
+      * <code>Assert false (json_get_int("{\\"n\\":\\"42\\"}", "n", &v))</code>
+      * <code>Assert false (json_get_int("{\\"n\\":xyz}", "n", &v))</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u01F6\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?", out); // valid hex, codepoint &gt; 0xFF -&gt; '?' (digits consumed)</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\uZZZZ\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?ZZZZ", out)</code>
+      * <code>Assert true (json_get_str("{\\"u\\":\\"\\\\u0A\\"}", "u", out, sizeof(out)))</code>
+      * <code>Assert equal string ("?0A", out)</code>
   </details>
 
 </details>
@@ -19628,7 +19671,7 @@ A thorough directory of all **2500 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_redis_resp (8 tests)</b></summary>
+<summary><b>test_redis_resp (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_encode_command</b> &mdash; <i>Encode command</i></summary>
@@ -19724,6 +19767,35 @@ A thorough directory of all **2500 test cases** across **228 suites**. Expand a 
       * <code>Assert false (resp_parse((const uint8_t *)"?bad\\r\\n", 6, &r, &c))</code>
       * <code>Assert false (resp_parse((const uint8_t *)":notanum\\r\\n", 10, &r, &c))</code>
       * <code>Assert false (resp_parse((const uint8_t *)"$999999999999\\r\\nhi\\r\\n", 19, &r, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_guard_subconditions</b> &mdash; <i>Encode guard subconditions</i></summary>
+
+    * **Objective**: Encode guard subconditions
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(nullptr, sizeof(buf), argv, alen, 2)); // null buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, 0, argv, alen, 2));               // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), nullptr, alen, 2));  // null args</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), argv, alen, 0));     // zero argc</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, sizeof(buf), withnull, nullptr, 2)); // null arg elem</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, resp_encode_command(buf, 8, argv, alen, 2)); // header fits, arg overflows</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_guard_subconditions_and_edges</b> &mdash; <i>Parse guard subconditions and edges</i></summary>
+
+    * **Objective**: Parse guard subconditions and edges
+    * **Assertions**:
+      * <code>Assert false (resp_parse(nullptr, 5, &r, &c))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)"+\\r", 2, &r, &c))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)"+OK\\r\\n", 5, nullptr, &c))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)"+OK\\r\\n", 5, &r, nullptr))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)":\\r\\n", 3, &r, &c))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)":-\\r\\n", 4, &r, &c))</code>
+      * <code>Assert false (resp_parse((const uint8_t *)"$5\\r\\nhelloAB", 11, &r, &c))</code>
+      * <code>Assert true (resp_parse((const uint8_t *)"*-1\\r\\n", 5, &r, &c))</code>
+      * <code>Assert equal int (RESP_NIL, r.type)</code>
   </details>
 
 </details>
