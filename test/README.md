@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2605 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2606 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7118,7 +7118,7 @@ A thorough directory of all **2605 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_flow_export (7 tests)</b></summary>
+<summary><b>test_flow_export (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v5_header_bytes</b> &mdash; <i>V5 header bytes</i></summary>
@@ -7201,6 +7201,49 @@ A thorough directory of all **2605 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_header(buf, sizeof(buf), &h));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(buf, sizeof(buf), &r));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_flow_guards_and_overflows</b> &mdash; <i>begin null-arg guards + finish(null).</i></summary>
+
+    * **Objective**: begin null-arg guards + finish(null).
+    * **Assertions**:
+      * <code>Assert false (flow_ipfix_begin(nullptr, buf, sizeof(buf), 0, 0, 0))</code>
+      * <code>Assert false (flow_ipfix_begin(&w, nullptr, sizeof(buf), 0, 0, 0))</code>
+      * <code>Assert false (flow_v9_begin(nullptr, buf, sizeof(buf), 0, 0, 0, 0))</code>
+      * <code>Assert false (flow_v9_begin(&w, nullptr, sizeof(buf), 0, 0, 0, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(nullptr));</code>
+      * <code>Assert false (flow_ipfix_begin(&w, b3, sizeof(b3), 0, 0, 0))</code>
+      * <code>Assert true (flow_ipfix_begin(&w, buf, sizeof(buf), 1, 2, 3))</code>
+      * <code>Assert false (flow_export_template(nullptr, 256, &f, 1))</code>
+      * <code>Assert false (flow_export_template(&w, 256, nullptr, 1))</code>
+      * <code>Assert false (flow_export_template(&w, 256, &f, 0))</code>
+      * <code>Assert false (flow_export_data_begin(nullptr, 256))</code>
+      * <code>Assert false (flow_export_data_begin(&w, 255))</code>
+      * <code>Assert false (flow_export_data_record(nullptr, rec, 4))</code>
+      * <code>Assert false (flow_export_data_record(&w, rec, 4))</code>
+      * <code>Assert false (flow_export_data_record(&w, nullptr, 4))</code>
+      * <code>Assert false (flow_export_data_end(nullptr))</code>
+      * <code>Assert false (flow_export_data_end(&w))</code>
+      * <code>Assert true (flow_v9_begin(&w, buf, sizeof(buf), 0, 0, 0, 0))</code>
+      * <code>Assert true (flow_export_template(&w, 256, &f, 1))</code>
+      * <code>Assert true (flow_export_data_begin(&w, 256))</code>
+      * <code>Assert true (flow_export_data_record(&w, rec, 4))</code>
+      * <code>Assert true (flow_export_data_begin(&w, 257))</code>
+      * <code>Assert true (flow_export_data_record(&w, rec, 4))</code>
+      * <code>Assert true (flow_export_template(&w, 258, &f, 1))</code>
+      * <code>Assert true (flow_export_finish(&w) &gt; 0)</code>
+      * <code>Assert true (flow_v9_begin(&w, b26, sizeof(b26), 0, 0, 0, 0))</code>
+      * <code>Assert true (flow_export_data_begin(&w, 256))</code>
+      * <code>Assert false (flow_export_data_record(&w, rec6, 6))</code>
+      * <code>Assert false (flow_export_data_record(&w, rec6, 6))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));     // w_zero sticky-error</code>
+      * <code>Assert true (flow_v9_begin(&w, b25, sizeof(b25), 0, 0, 0, 0))</code>
+      * <code>Assert true (flow_export_data_begin(&w, 256))</code>
+      * <code>Assert true (flow_export_data_record(&w, r1, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));  // pad 3 overflows</code>
+      * <code>Assert true (flow_ipfix_begin(&w, buf, sizeof(buf), 0, 0, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));</code>
   </details>
 
 </details>
