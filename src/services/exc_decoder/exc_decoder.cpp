@@ -99,7 +99,8 @@ void put_int(DetSb *b, int v)
     char o[13];
     int k = 0;
     if (neg)
-        o[k++] = '-';
+        o[k++] =
+            '-'; // GCOVR_EXCL_LINE detws_exc_json's only put_int call is guarded by core >= 0, so v is never negative
     for (int i = 0; i < n; i++)
         o[k++] = t[n - 1 - i];
     o[k] = '\0';

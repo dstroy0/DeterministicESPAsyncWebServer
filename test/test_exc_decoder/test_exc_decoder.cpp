@@ -102,9 +102,42 @@ void test_upper_hex_and_json_overflow()
     TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 8)); // tiny cap fails closed
 }
 
+// Null-pointer guards on parse + json; a register dump whose "PC" is the very first line
+// (no leading newline anchor); a backtrace whose stack-pointer field is malformed (the
+// frame is rejected and parsing stops); and JSON escaping of a cause containing a quote
+// and a backslash.
+void test_exc_edge_guards(void)
+{
+    ExcInfo info;
+    TEST_ASSERT_FALSE(detws_exc_parse(nullptr, &info)); // null text
+    TEST_ASSERT_FALSE(detws_exc_parse("x", nullptr));   // null out
+    char buf[128];
+    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(nullptr, buf, sizeof(buf))); // null info
+    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, nullptr, 128));       // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 0));             // zero cap
+
+    // "PC" on the very first line (strncmp anchor, not the "\nPC" search).
+    TEST_ASSERT_TRUE(detws_exc_parse("PC      : 0x400dfeed  PS : 0x1\n", &info));
+    TEST_ASSERT_EQUAL_HEX32(0x400dfeed, info.pc);
+
+    // Backtrace with a malformed stack pointer ("0xZZ" has no hex digits): the frame is
+    // rejected, parsing stops, and no frames are recorded.
+    TEST_ASSERT_TRUE(detws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\n", &info));
+    TEST_ASSERT_EQUAL_size_t(0, info.frame_count);
+
+    // A cause containing a quote and a backslash is JSON-escaped.
+    TEST_ASSERT_TRUE(detws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\"Cause\\x).\n"
+                                     "Backtrace: 0x400d1234:0x3ffb0000\n",
+                                     &info));
+    size_t n = detws_exc_json(&info, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "Weird\\\"Cause\\\\x")); // escaped quote + backslash
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_exc_edge_guards);
     RUN_TEST(test_parse_full);
     RUN_TEST(test_json);
     RUN_TEST(test_backtrace_only_and_corrupted);
