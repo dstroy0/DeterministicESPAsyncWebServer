@@ -4017,8 +4017,8 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                     break;
                 if (count >= DETWS_WEBDAV_MAX_ENTRIES)
                 {
-                    c.close();
-                    break;
+                    c.close(); // GCOVR_EXCL_LINE  a 2048B DETWS_WEBDAV_BUF_SIZE fills at ~8 entries, well before
+                    break;     // GCOVR_EXCL_LINE  MAX_ENTRIES(32), so the buffer-full break preempts this cap
                 }
                 const char *base = dav_basename(c.name());
                 bool cdir = c.isDirectory();

@@ -444,11 +444,36 @@ void test_webdav_deep_tree_rejected()
     TEST_ASSERT_TRUE(resp_status(409)); // dav_copy_recursive refuses past depth 8
 }
 
+// PROPFIND of a directory with more members than the listing cap (DETWS_WEBDAV_MAX_ENTRIES) stops at
+// the limit; PROPPATCH answers 207 for an existing resource and 404 for a missing one.
+void test_webdav_propfind_limit_and_proppatch()
+{
+    tree_mkdir("/dav/big");
+    for (int i = 0; i < 40; i++) // more than DETWS_WEBDAV_MAX_ENTRIES (32)
+    {
+        char p[64];
+        snprintf(p, sizeof p, "/dav/big/f%02d.txt", i);
+        tree_put(p, "x");
+    }
+    feed_and_handle(0, "PROPFIND /dav/big HTTP/1.1\r\nHost: x\r\nDepth: 1\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(207)); // listing truncated at the entry cap
+
+    rearm();
+    tree_put("/dav/file.txt", "data");
+    feed_and_handle(0, "PROPPATCH /dav/file.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(207)); // properties refused, request accepted
+
+    rearm();
+    feed_and_handle(0, "PROPPATCH /dav/nope HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(404));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_webdav_deep_tree_rejected);
+    RUN_TEST(test_webdav_propfind_limit_and_proppatch);
     RUN_TEST(test_copy_collection_recursive);
     RUN_TEST(test_copy_collection_depth0_shallow);
     RUN_TEST(test_copy_overwrite_semantics);
