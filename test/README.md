@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2555 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2574 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -3946,7 +3946,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_config_io (4 tests)</b></summary>
+<summary><b>test_config_io (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_export_format</b> &mdash; <i>Export format</i></summary>
@@ -3985,10 +3985,21 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (0, detws_config_export("t", SCHEMA, N, buf, sizeof(buf)))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_export_import_null_guards</b> &mdash; <i>Export import null guards</i></summary>
+
+    * **Objective**: Export import null guards
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_config_export("ns", fields, 1, nullptr, sizeof(out)))</code>
+      * <code>Assert equal int (0, detws_config_export("ns", nullptr, 1, out, sizeof(out)))</code>
+      * <code>Assert equal int (0, detws_config_import("ns", nullptr, 1, "text", 4))</code>
+      * <code>Assert equal int (0, detws_config_import("ns", fields, 1, nullptr, 0))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_config_store (14 tests)</b></summary>
+<summary><b>test_config_store (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_str_round_trip</b> &mdash; <i>Str round trip</i></summary>
@@ -4113,6 +4124,16 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Objective**: Key too long rejected
     * **Assertions**:
       * <code>Assert false (detws_config_set_str(longkey, "v"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_setter_getter_null_guards</b> &mdash; <i>Setter getter null guards</i></summary>
+
+    * **Objective**: Setter getter null guards
+    * **Assertions**:
+      * <code>Assert false (detws_config_set_str("k", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_config_get_str("k", nullptr, 0, "def")); // null out</code>
+      * <code>Assert false (detws_config_set_blob("k", nullptr, 4))</code>
   </details>
 
 </details>
@@ -6439,7 +6460,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_enocean (9 tests)</b></summary>
+<summary><b>test_enocean (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc8_known_answers</b> &mdash; <i>CRC-8 (poly 0x07, init 0, no reflection) check value for "123456789" is 0xF4.</i></summary>
@@ -6523,6 +6544,15 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, esp3_build(ESP3_RADIO_ERP1, data, 8, nullptr, 0, small, sizeof(small))); // 15 &gt; 10</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, esp3_build(ESP3_RADIO_ERP1, big, 17, nullptr, 0, big, sizeof(big))); // 17 &gt; MAX_DATA 16</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_esp3_parse_null_guard</b> &mdash; <i>Esp3 parse null guard</i></summary>
+
+    * **Objective**: Esp3 parse null guard
+    * **Assertions**:
+      * <code>Assert equal int (0, esp3_parse(nullptr, 10, &pkt))</code>
+      * <code>Assert equal int (0, esp3_parse(tiny, 0, &pkt))</code>
   </details>
 
 </details>
@@ -7348,7 +7378,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_gateway (11 tests)</b></summary>
+<summary><b>test_gateway (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_uplink_envelopes_and_publishes</b> &mdash; <i>Uplink envelopes and publishes</i></summary>
@@ -7477,6 +7507,17 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(2, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, g_up[0].seq);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, g_up[1].seq);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_topic_zero_and_overflow_steps</b> &mdash; <i>Topic zero and overflow steps</i></summary>
+
+    * **Objective**: Topic zero and overflow steps
+    * **Assertions**:
+      * <code>Assert true (det_gw_topic(&m, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(nullptr, buf, sizeof(buf))); // null msg</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, 0));                // zero buflen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, cap));</code>
   </details>
 
 </details>
@@ -11520,7 +11561,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_jwt (21 tests)</b></summary>
+<summary><b>test_jwt (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_base64url_strict_alphabet</b> &mdash; <i>URL-safe characters decode.</i></summary>
@@ -11603,6 +11644,9 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>Assert true (jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0))</code>
       * <code>Assert false (jwt_bearer_valid_at(hdr, sec(), seclen(), 1700000100, 0))</code>
       * <code>Assert false (jwt_bearer_valid_at(hdr, (const uint8_t *)"wrong", 5, 1699999000, 0))</code>
+      * <code>Assert false (jwt_bearer_valid(nullptr, secret, sizeof(secret)))</code>
+      * <code>Assert false (jwt_bearer_valid("Basic abc", secret, sizeof(secret)))</code>
+      * <code>Assert false (jwt_bearer_valid("Bearer    not.a.jwt", secret, sizeof(secret)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11761,6 +11805,16 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>Assert true (jwt_bearer_valid_at(hdr, sec(), seclen(), 1699999000, 0))</code>
       * <code>Assert false (jwt_bearer_valid_at(hdr, sec(), seclen(), 1700000100, 0))</code>
       * <code>Assert false (jwt_bearer_valid_at(hdr, (const uint8_t *)"wrong", 5, 1699999000, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bearer_header_guards</b> &mdash; <i>Bearer header guards</i></summary>
+
+    * **Objective**: Bearer header guards
+    * **Assertions**:
+      * <code>Assert false (jwt_bearer_valid(nullptr, secret, sizeof(secret)))</code>
+      * <code>Assert false (jwt_bearer_valid("Basic abc", secret, sizeof(secret)))</code>
+      * <code>Assert false (jwt_bearer_valid("Bearer    not.a.jwt", secret, sizeof(secret)))</code>
   </details>
 
 </details>
@@ -15437,7 +15491,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_oauth2 (8 tests)</b></summary>
+<summary><b>test_oauth2 (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_code_request_minimal</b> &mdash; <i>Build code request minimal</i></summary>
@@ -15513,6 +15567,17 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Objective**: Parse error response fails
     * **Assertions**:
       * <code>Assert false (detws_oauth2_parse_token_response(err, &t))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_oauth2_build_parse_guards</b> &mdash; <i>A value needing percent-encoding into a tiny buffer overflows (b.ok=false).</i></summary>
+
+    * **Objective**: A value needing percent-encoding into a tiny buffer overflows (b.ok=false).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(0,</code>
+      * <code>Assert false (detws_oauth2_parse_token_response(nullptr, &tok))</code>
+      * <code>Assert equal int (0, detws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8))</code>
   </details>
 
 </details>
@@ -17328,7 +17393,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pn532 (10 tests)</b></summary>
+<summary><b>test_pn532 (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_getfirmwareversion_kat</b> &mdash; <i>Host -> PN532 GetFirmwareVersion (command 0x02): the documented frame is</i></summary>
@@ -17425,10 +17490,20 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(0, pn532_build_frame(PN532_TFI_HOST, big, 9, big, sizeof(big))); // 9 &gt; MAX_DATA 8</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_parse_and_ack_guards</b> &mdash; <i>Frame parse and ack guards</i></summary>
+
+    * **Objective**: Frame parse and ack guards
+    * **Assertions**:
+      * <code>Assert equal int (0, pn532_parse_frame(nullptr, 10, &tfi, &pdata, &pdata_len))</code>
+      * <code>Assert false (pn532_is_ack(tiny, sizeof(tiny)))</code>
+      * <code>Assert false (pn532_is_ack(nullptr, 6))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_powerlink (3 tests)</b></summary>
+<summary><b>test_powerlink (4 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_soc</b> &mdash; <i>Soc</i></summary>
@@ -17464,6 +17539,15 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_epl_parse(tooshort, 2, &f))</code>
       * <code>Assert false (detws_epl_parse(bad, 3, &f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_epl_build_guards</b> &mdash; <i>Epl build guards</i></summary>
+
+    * **Objective**: Epl build guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, nullptr, 4, out, sizeof(out))); // null payload with len</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, pdo, sizeof(pdo), out, 2));     // cap too small</code>
   </details>
 
 </details>
@@ -21087,7 +21171,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sercos (3 tests)</b></summary>
+<summary><b>test_sercos (4 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_idn_roundtrip</b> &mdash; <i>S-0-0100 (velocity loop): S-parameter, set 0, block 100.</i></summary>
@@ -21131,6 +21215,16 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0x05, 0, 0, nullptr, 0, out, sizeof(out)));</code>
       * <code>Assert false (detws_sercos_parse(out, 3, &t))</code>
       * <code>Assert false (detws_sercos_parse(bad, 4, &t))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sercos_build_guards</b> &mdash; <i>Sercos build guards</i></summary>
+
+    * **Objective**: Sercos build guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0xEE, 0, 0, data, sizeof(data), out, sizeof(out))); // bad type</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, data, sizeof(data), out, 2)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, nullptr, 4, out, sizeof(out))); // null data</code>
   </details>
 
 </details>
@@ -26629,7 +26723,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_utmc (5 tests)</b></summary>
+<summary><b>test_utmc (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_request</b> &mdash; <i>Request</i></summary>
@@ -26677,6 +26771,16 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Objective**: Overflow
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_request_guards</b> &mdash; <i>Parse request guards</i></summary>
+
+    * **Objective**: Parse request guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated</code>
   </details>
 
 </details>
@@ -27304,7 +27408,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav (19 tests)</b></summary>
+<summary><b>test_webdav (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_method_classification</b> &mdash; <i>Method classification</i></summary>
@@ -27495,6 +27599,61 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, len);            // signals "did not fit"</code>
       * <code>Assert true (strlen(buf) &lt; sizeof(buf))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_method_all_including_head</b> &mdash; <i>Method all including head</i></summary>
+
+    * **Objective**: Method all including head
+    * **Assertions**:
+      * <code>Assert equal int (DAV_M_HEAD, webdav_method("HEAD"))</code>
+      * <code>Assert equal int (DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (DAV_M_MKCOL, webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (DAV_M_COPY, webdav_method("COPY"))</code>
+      * <code>Assert equal int (DAV_M_MOVE, webdav_method("MOVE"))</code>
+      * <code>Assert equal int (DAV_M_LOCK, webdav_method("LOCK"))</code>
+      * <code>Assert equal int (DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method("BOGUS"))</code>
+      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_depth_and_dest_path_guards</b> &mdash; <i>Malformed %-escape in the destination path fails closed.</i></summary>
+
+    * **Objective**: Malformed %-escape in the destination path fails closed.
+    * **Assertions**:
+      * <code>Assert equal int (7, webdav_depth(nullptr, 7))</code>
+      * <code>Assert equal int (7, webdav_depth("", 7))</code>
+      * <code>Assert equal int (0, webdav_depth("0", 7))</code>
+      * <code>Assert equal int (1, webdav_depth("1", 7))</code>
+      * <code>Assert false (webdav_dest_path("http://host/a%zzb", out, sizeof(out)))</code>
+      * <code>Assert false (webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ms_entry_content_type_overflow</b> &mdash; <i>An oversized content-type overflows the internal element buffer -> len unchanged (atomic no-op).</i></summary>
+
+    * **Objective**: An oversized content-type overflows the internal element buffer -> len unchanged (atomic no-op).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(len, r);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ms_entry_mtime_and_tiny_buf</b> &mdash; <i>Oversized mtime overflows the element buffer -> len unchanged.</i></summary>
+
+    * **Objective**: Oversized mtime overflows the element buffer -> len unchanged.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_proppatch_ms_echo</b> &mdash; <i>A self-closed property with trailing whitespace exercises the open-tag trim.</i></summary>
+
+    * **Objective**: A self-closed property with trailing whitespace exercises the open-tag trim.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));</code>
   </details>
 
 </details>
@@ -28518,7 +28677,7 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wisun (6 tests)</b></summary>
+<summary><b>test_wisun (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_coap_get</b> &mdash; <i>CON GET "sensors/temp", msg id 0x1234, no token.</i></summary>
@@ -28602,6 +28761,47 @@ A thorough directory of all **2555 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(2, wisun_joined_count(&fan));</code>
       * <code>Assert equal int (-1, wisun_node_register(&fan, &a, 1))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_length_ext</b> &mdash; <i>A Uri-Path segment >= 269 bytes drives the 2-byte length-extension encoding.</i></summary>
+
+    * **Objective**: A Uri-Path segment >= 269 bytes drives the 2-byte length-extension encoding.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 269)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_overflow_and_emit_fail</b> &mdash; <i>Header fits (cap == 4) but no room for even the first option header -> emit fails -> build 0.</i></summary>
+
+    * **Objective**: Header fits (cap == 4) but no room for even the first option header -> emit fails -> build 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, nullptr, pl, sizeof(pl), out, 10));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/abcde", nullptr, 0, out, 6));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_coap_arg_guards</b> &mdash; <i>Coap arg guards</i></summary>
+
+    * **Objective**: Coap arg guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 9, "/a", nullptr, 0, out, sizeof(out)));  // tkl &gt; 8</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 3)); // cap &lt; 4+tkl</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wisun_null_guards</b> &mdash; <i>Wisun null guards</i></summary>
+
+    * **Objective**: Wisun null guards
+    * **Assertions**:
+      * <code>Assert false (wisun_node_find(nullptr, nullptr, &idx))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_joined_count(nullptr));   // null fan</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(nullptr, buf, sizeof(buf))); // null fan</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(&fan, buf, 0));              // zero cap</code>
   </details>
 
 </details>
