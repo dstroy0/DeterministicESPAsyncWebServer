@@ -1323,6 +1323,72 @@ static void test_pkt_scratch_exhausted(void)
     ssh_keymat_wipe(0);
 }
 
+// Forge an aes256-ctr encrypt-AND-MAC packet (the length is encrypted too) at a given seq with a
+// chosen packet_length + padding byte; MAC over the plaintext. Uses km->c2s_ctx (reset by the caller).
+static size_t forge_eam(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_t pad_byte, uint8_t *out)
+{
+    size_t enc_len = 4 + pkt_len;
+    out[0] = (uint8_t)(pkt_len >> 24);
+    out[1] = (uint8_t)(pkt_len >> 16);
+    out[2] = (uint8_t)(pkt_len >> 8);
+    out[3] = (uint8_t)pkt_len;
+    memset(out + 4, 0, pkt_len);
+    if (pkt_len >= 1)
+        out[4] = pad_byte;
+    if (pkt_len >= 2)
+        out[5] = SSH_MSG_IGNORE;
+    uint8_t seq_be[4] = {(uint8_t)(seq >> 24), (uint8_t)(seq >> 16), (uint8_t)(seq >> 8), (uint8_t)seq};
+    SshHmacCtx hctx;
+    ssh_hmac_sha256_init(&hctx, km->mac_key_c2s, 32);
+    ssh_hmac_sha256_update(&hctx, seq_be, 4);
+    ssh_hmac_sha256_update(&hctx, out, enc_len);
+    ssh_hmac_sha256_final(&hctx, out + enc_len);
+    ssh_aes256ctr_crypt(&km->c2s_ctx, out, out, enc_len);
+    return enc_len + SSH_HMAC_SHA256_LEN;
+}
+
+// aes256-ctr encrypt-and-MAC error guards: a bad (non-block) length, a bad padding length, arrival at
+// the sequence threshold, and an exhausted scratch arena are each rejected.
+static void test_pkt_eam_forged_rejects(void)
+{
+    SshKeyMat *km = &ssh_keys[0];
+    uint8_t wire[256];
+
+    setup_encrypted_keys(); // non-block length (4 + 17 = 21) - caught at the length peek
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    size_t wlen = forge_eam(km, 0, 17, 4, wire);
+    setup_encrypted_keys();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    setup_encrypted_keys(); // bad padding length (< 4); 4 + 12 = 16 is a valid block length
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    wlen = forge_eam(km, 0, 12, 2, wire);
+    setup_encrypted_keys();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    setup_encrypted_keys(); // sequence at the close threshold
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    ssh_pkt[0].seq_no_recv = SSH_SEQ_CLOSE_THRESHOLD;
+    wlen = forge_eam(km, SSH_SEQ_CLOSE_THRESHOLD, 12, 4, wire);
+    setup_encrypted_keys();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    setup_encrypted_keys(); // exhausted scratch arena on an otherwise-valid packet
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    wlen = forge_eam(km, 0, 12, 4, wire);
+    setup_encrypted_keys();
+    scratch_reset();
+    while (scratch_alloc(8, 1))
+        ;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    scratch_reset();
+    ssh_keymat_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1393,6 +1459,7 @@ int main(void)
     RUN_TEST(test_pkt_etm_bad_length);
     RUN_TEST(test_pkt_etm_forged_rejects);
     RUN_TEST(test_pkt_scratch_exhausted);
+    RUN_TEST(test_pkt_eam_forged_rejects);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
 
