@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2587 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2590 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16009,7 +16009,7 @@ A thorough directory of all **2587 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (40 tests)</b></summary>
+<summary><b>test_opcua (42 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -16683,10 +16683,28 @@ A thorough directory of all **2587 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(42, oc.request_handle);</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_read_truncated_item_rejected</b> &mdash; <i>A NodesToRead count larger than the items actually present makes the per-item NodeId read</i></summary>
+
+    * **Objective**: A NodesToRead count larger than the items actually present makes the per-item NodeId read
+    * **Assertions**:
+      * <code>Assert true (nid &gt;= 4)</code>
+      * <code>Assert false (opcua_parse_read(buf, n, &rr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_browse_truncated_item_rejected</b> &mdash; <i>Parse browse truncated item rejected</i></summary>
+
+    * **Objective**: Parse browse truncated item rejected
+    * **Assertions**:
+      * <code>Assert true (nid &gt;= 4)</code>
+      * <code>Assert false (opcua_parse_browse(buf, n, &br))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_opcua_client (18 tests)</b></summary>
+<summary><b>test_opcua_client (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_on_read_all_variant_types</b> &mdash; <i>On read all variant types</i></summary>
@@ -16923,6 +16941,14 @@ A thorough directory of all **2587 test cases** across **228 suites**. Expand a 
       * <code>Assert false (opcua_client_on_open(&c, buf, n))</code>
       * <code>Assert false (opcua_client_on_open(&c, buf, n))</code>
       * <code>Assert false (opcua_client_on_open(&c, ovf, w.n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_header_string_table_skip</b> &mdash; <i>A ResponseHeader carrying a non-empty StringTable makes cr_skip_string_array iterate; the</i></summary>
+
+    * **Objective**: A ResponseHeader carrying a non-empty StringTable makes cr_skip_string_array iterate; the
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(0, opcua_client_on_read(resp, n, v, s, 1));</code>
   </details>
 
 </details>
