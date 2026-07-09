@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2620 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2622 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19954,7 +19954,7 @@ A thorough directory of all **2620 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_server (2 tests)</b></summary>
+<summary><b>test_quic_server (4 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_quic_server_http3_get</b> &mdash; <i>Start the server: it owns the QuicConn + H3Conn pool and routes by connection ID.</i></summary>
@@ -19982,6 +19982,34 @@ A thorough directory of all **2620 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_server_input_guards</b> &mdash; <i>begin() rejects a null config and a null RNG.</i></summary>
+
+    * **Objective**: begin() rejects a null config and a null RNG.
+    * **Assertions**:
+      * <code>Assert false (quic_server_begin(443, nullptr, app_request, nullptr))</code>
+      * <code>Assert false (quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert false (quic_server_ingest(one, 0, "192.0.2.1", 1))</code>
+      * <code>Assert false (quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1))</code>
+      * <code>Assert false (quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0))</code>
+      * <code>Assert true (quic_server_ingest(bad_long, 1, "192.0.2.1", 1))</code>
+      * <code>Assert true (quic_server_ingest(short_tiny, 2, "192.0.2.1", 1))</code>
+      * <code>Assert true (quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());</code>
+      * <code>Assert equal int (DETWS_QUIC_INGEST_RING - 1, pushed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_server_pool_full</b> &mdash; <i>One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.</i></summary>
+
+    * **Objective**: One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.
+    * **Assertions**:
+      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, quic_server_active_conns()); // capped at the pool size</code>
   </details>
 
 </details>
