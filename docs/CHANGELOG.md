@@ -13,6 +13,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- fix Sonar coverage-xml parse failure from rebase conflicts ([`816d9aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/816d9aaa1c384e3b26ecad2b655733ae0e4c9dad))
+- update test report + coverage [skip ci] ([`3a14857`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a14857a42abaa975cb8c89b7b45daeb06768c86))
+- update CHANGELOG.md [skip ci] ([`04e3530`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04e353071fdf04ffc3bea7299bb4b832b53e6e55))
 - update test report + coverage [skip ci] ([`ff68ba7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff68ba7f2e3059b2de2eded5a0d589c516d4cb4c))
 - update CHANGELOG.md [skip ci] ([`2ab305d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ab305daa794d1ed434acf8d49fd967f400799be))
 - update test report + coverage [skip ci] ([`497fb9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/497fb9ff96f4cb5754cd6d916d1b064ec1af5168))
@@ -183,6 +186,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a3244b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3244b35f40932ad6423b9e9123201706a6feda5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f76335`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f763357e418ec562c88ff60ffb62b796d705cd0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0e6f89a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e6f89ade5edd0603fdbd09e66a897a2a14001e2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`05720da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05720da99cfe2faa251c340409d2cc8969147773))
