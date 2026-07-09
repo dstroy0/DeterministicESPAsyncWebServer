@@ -65,6 +65,14 @@ Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and 
 - [ ] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share.
 - [ ] MTConnect follow-ups: add the `probe` (device model) and `asset` documents plus a streaming `sample` sequence cursor to round out the already-shipped `current` / `sample` agent.
 
+### Routing / forwarding / inspection
+
+Building on the existing forwarder (`native_forward` / `native_gateway` / `native_southbound`) toward the v5 "interface forwarding" milestone.
+
+- [ ] Route-by-tag to interface: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder.
+- [ ] Port forwarding: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it.
+- [ ] Optional packet inspection: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle.
+
 ### Pentesting
 
 - [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server.

@@ -199,6 +199,7 @@
     "DIRECTNET",
     "DLEN",
     "DMAX",
+    "DNAT",
     "DNET",
     "DogStatsD",
     "donna",
