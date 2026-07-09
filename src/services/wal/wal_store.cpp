@@ -225,4 +225,41 @@ bool wal_store_checkpoint(WalStore *s)
     return true;
 }
 
+size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len)
+{
+    if (scratch_len < WAL_RECORD_HEADER)
+        return 0;
+    size_t count = 0;
+    uint64_t off = 0;
+    while (off + WAL_RECORD_HEADER <= s->head)
+    {
+        if (!dev_read(s->dev, s->data_off + off, scratch, WAL_RECORD_HEADER))
+            break;
+        if (get_u32(scratch) != WAL_MAGIC)
+            break;
+        uint32_t plen = get_u32(scratch + 12);
+        size_t total = (size_t)WAL_RECORD_HEADER + plen;
+        if (off + total > s->head || total > scratch_len)
+            break; // truncated within the log, or a record too large for the caller's scratch
+        if (!dev_read(s->dev, s->data_off + off, scratch, total))
+            break;
+        uint32_t crc = wal_crc32_update(wal_crc32_init(), scratch, 16);
+        crc = wal_crc32_update(crc, scratch + WAL_RECORD_HEADER, plen);
+        if (wal_crc32_final(crc) != get_u32(scratch + 16))
+            break;
+        if (cb)
+            cb(get_u64(scratch + 4), off, scratch + WAL_RECORD_HEADER, plen, ctx);
+        count++;
+        off += total;
+    }
+    return count;
+}
+
+bool wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len)
+{
+    if (off + len > s->data_cap)
+        return false;
+    return dev_read(s->dev, s->data_off + off, buf, len);
+}
+
 #endif // DETWS_ENABLE_WAL

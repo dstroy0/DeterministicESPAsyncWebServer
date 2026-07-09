@@ -70,8 +70,13 @@ layer built first, then the store codecs on top. Substrate before stores.
       recovery, torn-tail drop, byte-level payload persistence, and survival across a chip reset all
       pass). _Follow-up:_ a ring-wrap (currently a linear log; wrapping needs a per-record epoch to
       disambiguate stale records); a WAL write-path throughput line in Performance.
-- [ ] **dbm**: a classic on-disk hash key-value store (ndbm / gdbm-style) - a bounded, host-testable
-      file-format codec on top of the flash layer.
+- [x] **dbm**: a hash key-value store on the flash layer. _(done)_ `DETWS_ENABLE_DBM` - a Bitcask-style
+      log-structured store: put/delete append one WAL record (fast sequential writes), an in-RAM
+      open-addressed hash index (fixed BSS, no heap) maps each live key to its value in the log, and
+      open rebuilds the index by replaying the log. Host-tested over a RAM device (9 cases: overwrite,
+      tombstone resurrection, persistence across remount with/without checkpoint, collisions, index-full
+      fail-closed, bounds, max-value round-trip). _Follow-up:_ log compaction to reclaim space from
+      overwritten/deleted keys (the log currently only grows).
 - [ ] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
       incompatible with the no-stdlib zero-heap model).

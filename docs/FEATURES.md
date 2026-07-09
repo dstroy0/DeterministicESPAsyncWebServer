@@ -166,6 +166,12 @@ Opt-in CSRF protection for state-changing HTTP requests. Default off (zero cost 
 
 Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-contained, hand-rolled SVG dashboard page whose widgets are declared in a fixed compile-time DetwsWidget table (zero-heap, deterministic). The page fetches the widget layout as JSON and subscribes to an SSE stream of live values; detws_dashboard_set() + detws_dashboard_publish() push the current readings. The widget-table -> JSON serializers are host-testable; WebSocket controls are a follow-up.
 
+## DBM Key-Value Store
+
+`DETWS_ENABLE_DBM`
+
+Opt-in log-structured hash key-value store on the write-ahead log (services/dbm; requires WAL). Default off. A Bitcask-style store: each put/delete appends one WAL record (so every write is one of the WAL's fast sequential appends, never a slow durable random write), and an in-RAM open-addressed hash index - a fixed BSS array of DETWS_DBM_SLOTS slots, no heap - maps each live key to where its value sits in the log. get re-reads the value straight from the log; open rebuilds the index by scanning the WAL and replaying puts and deletes in order, so the live key set is exactly what survived the last mount. Keys are bounded by DETWS_DBM_KEY_MAX, values by DETWS_DBM_VAL_MAX; writes are batched and made durable by a checkpoint (detws_dbm_sync). Pure and host-tested over a RAM-backed device (overwrite, tombstone resurrection, persistence across a remount with and without checkpoint, collisions, index-full fail-closed, bounds, max-value round-trip).
+
 ## DDS-RTPS
 
 `DETWS_ENABLE_DDS`

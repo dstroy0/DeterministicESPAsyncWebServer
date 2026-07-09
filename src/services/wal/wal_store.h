@@ -103,6 +103,25 @@ bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len);
  */
 bool wal_store_checkpoint(WalStore *s);
 
+/** @brief Per-record callback for ::wal_store_scan - like ::WalRecordCb but also gives the record's
+ * data-region byte offset (so an index can record where to re-read the payload later). */
+typedef void (*WalStoreRecordCb)(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t len, void *ctx);
+
+/**
+ * @brief Walk every valid record currently in the store (offsets [0, head)) in order, invoking @p cb for each.
+ *
+ * Reads each record into @p scratch (which must be at least ::WAL_RECORD_HEADER plus the largest record
+ * payload) and re-validates it with the codec, stopping at the first bad record. The point is to rebuild an
+ * in-RAM index after mount (e.g. the dbm hash table replays puts/deletes this way). @return the record count.
+ */
+size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scratch, size_t scratch_len);
+
+/**
+ * @brief Read @p len bytes from data-region offset @p off (as reported to ::WalStoreRecordCb) into @p buf.
+ * @return true on success. Lets an index re-read a value straight from the log without buffering it.
+ */
+bool wal_store_pread(WalStore *s, uint64_t off, uint8_t *buf, size_t len);
+
 /** @brief Bytes used in the data region (including appends not yet checkpointed). */
 static inline uint64_t wal_store_used(const WalStore *s)
 {

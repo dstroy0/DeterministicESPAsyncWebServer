@@ -7,6 +7,12 @@
       "src": ["+<services/canopen/canopen.cpp>"],
       "tests": ["test_canopen"]
     },
+    "native_dbm": {
+      "desc": "Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an\nin-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by\nreplaying the log on open. Pure host tests over a RAM-backed WalDev, incl. overwrite, tombstone\nresurrection, persistence across a remount (with and without checkpoint), collisions, index-full\nfail-closed, key/value bounds, and a max-size value round-trip.",
+      "flags": ["-DDETWS_ENABLE_WAL=1", "-DDETWS_ENABLE_DBM=1"],
+      "src": ["+<services/wal/wal.cpp>", "+<services/wal/wal_store.cpp>", "+<services/dbm/dbm.cpp>"],
+      "tests": ["test_dbm"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

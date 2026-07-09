@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **208 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **209 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -105,6 +105,7 @@ The native test matrix has **208 environments**, one per feature, generated from
 | `native_crypto_kat` | `ETWS_ENABLE_HTTP3=1` | `test_crypto_kat` | Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM, X25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases), plus HKDF-SHA256 Extract (... |
 | `native_csrf` | `ETWS_ENABLE_CSRF=1` | `test_csrf` | Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed secret unit-tests on the host (DETWS_ENABLE_CSRF set). |
 | `native_dashboard` | `ETWS_ENABLE_DASHBOARD=1` | `test_dashboard` | Dashboard widget-table JSON serializers (services/dashboard core). |
+| `native_dbm` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1` | `test_dbm` | Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an in-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by replaying the lo... |
 | `native_dds` | `ETWS_ENABLE_DDS=1` | `test_dds` | DDS / RTPS framing codec (services/dds): the 20-octet RTPS header (magic/version/vendor/ guidPrefix) and the submessage TLV (id/flags/octetsToNextHeader, endianness flag), build + parse. |
 | `native_deflate` | `ETWS_ENABLE_WS_DEFLATE=1` | `test_deflate` | RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). |
 | `native_det_arena` | default | `test_det_arena` | Unified double-ended server arena (network_drivers/session/det_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
@@ -498,7 +499,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2708 test cases** across **230 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2717 test cases** across **231 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4602,6 +4603,129 @@ A thorough directory of all **2708 test cases** across **230 suites**. Expand a 
       * <code>Assert not null (strstr(buf, "\\"type\\":\\"button\\""))</code>
       * <code>Assert not null (strstr(buf, "\\"type\\":\\"toggle\\""))</code>
       * <code>Assert not null (strstr(buf, "\\"type\\":\\"slider\\""))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dbm (9 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_get_overwrite</b> &mdash; <i>Put get overwrite</i></summary>
+
+    * **Objective**: Put get overwrite
+    * **Assertions**:
+      * <code>Assert true (put_s("alpha", "one"))</code>
+      * <code>Assert true (put_s("beta", "two"))</code>
+      * <code>Assert true (get_eq("alpha", "one"))</code>
+      * <code>Assert true (get_eq("beta", "two"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (put_s("alpha", "ONE-UPDATED"))</code>
+      * <code>Assert true (get_eq("alpha", "ONE-UPDATED"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db)); // still 2 live keys</code>
+      * <code>Assert equal int (-1, detws_dbm_get(&g_db, "missing", 7, b, sizeof(b)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delete_and_contains</b> &mdash; <i>A tombstoned key can be re-inserted (resurrect through the tombstone slot).</i></summary>
+
+    * **Objective**: A tombstoned key can be re-inserted (resurrect through the tombstone slot).
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_contains(&g_db, "k1", 2))</code>
+      * <code>Assert true (detws_dbm_del(&g_db, "k1", 2))</code>
+      * <code>Assert false (detws_dbm_contains(&g_db, "k1", 2))</code>
+      * <code>Assert false (detws_dbm_del(&g_db, "k1", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (put_s("k1", "again"))</code>
+      * <code>Assert true (get_eq("k1", "again"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_across_reboot_with_checkpoint</b> &mdash; <i>Persist across reboot with checkpoint</i></summary>
+
+    * **Objective**: Persist across reboot with checkpoint
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (get_eq("name", "detws2"))</code>
+      * <code>Assert true (get_eq("role", "server"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_across_reboot_without_checkpoint</b> &mdash; <i>no sync/checkpoint</i></summary>
+
+    * **Objective**: no sync/checkpoint
+    * **Assertions**:
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (get_eq("a", "1"))</code>
+      * <code>Assert true (get_eq("b", "2"))</code>
+      * <code>Assert true (get_eq("c", "3"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delete_persists_across_reboot</b> &mdash; <i>Delete persists across reboot</i></summary>
+
+    * **Objective**: Delete persists across reboot
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_del(&g_db, "drop", 4))</code>
+      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (detws_dbm_contains(&g_db, "keep", 4))</code>
+      * <code>Assert false (detws_dbm_contains(&g_db, "drop", 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_many_keys_and_collisions</b> &mdash; <i>Many keys and collisions</i></summary>
+
+    * **Objective**: Many keys and collisions
+    * **Assertions**:
+      * <code>Assert true (put_s(k, v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (get_eq(k, v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, detws_dbm_count(&g_db));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_index_full_fails_closed</b> &mdash; <i>Fill every slot with a distinct live key.</i></summary>
+
+    * **Objective**: Fill every slot with a distinct live key.
+    * **Assertions**:
+      * <code>Assert true (put_s(k, "x"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)DETWS_DBM_SLOTS, detws_dbm_count(&g_db));</code>
+      * <code>Assert false (put_s("overflow-key", "x"))</code>
+      * <code>Assert true (put_s("s00000", "updated"))</code>
+      * <code>Assert true (get_eq("s00000", "updated"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bounds_and_empty_value</b> &mdash; <i>Empty value is valid: get returns 0, key is present.</i></summary>
+
+    * **Objective**: Empty value is valid: get returns 0, key is present.
+    * **Assertions**:
+      * <code>Assert false (detws_dbm_put(&g_db, bigk, DETWS_DBM_KEY_MAX + 1, (const uint8_t *)"v", 1))</code>
+      * <code>Assert false (detws_dbm_put(&g_db, "k", 1, bigv, DETWS_DBM_VAL_MAX + 1))</code>
+      * <code>Assert true (detws_dbm_put(&g_db, "empty", 5, nullptr, 0))</code>
+      * <code>Assert equal int (0, detws_dbm_get(&g_db, "empty", 5, b, sizeof(b)))</code>
+      * <code>Assert true (detws_dbm_contains(&g_db, "empty", 5))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_max_value_roundtrip</b> &mdash; <i>A too-small buffer fails rather than truncating.</i></summary>
+
+    * **Objective**: A too-small buffer fails rather than truncating.
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_put(&g_db, "big", 3, val, DETWS_DBM_VAL_MAX))</code>
+      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert equal int (DETWS_DBM_VAL_MAX, detws_dbm_get(&g_db, "big", 3, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, DETWS_DBM_VAL_MAX);</code>
+      * <code>Assert equal int (-1, detws_dbm_get(&g_db, "big", 3, small, sizeof(small)))</code>
   </details>
 
 </details>

@@ -2808,14 +2808,14 @@
 #endif
 
 /**
- * @brief Opt-in write-ahead journal for atomic buffer-to-flash storage (DETWS_ENABLE_WAL).
+ * @brief Opt-in write-ahead store for atomic buffer-to-flash storage (DETWS_ENABLE_WAL).
  *
  * services/wal is a power-loss-safe write-ahead log over any fs::FS backend (SD card, LittleFS): records
- * are CRC32-framed, and a recovery scan on mount replays valid records and stops at the first bad CRC (the
- * torn tail), bounding the loss window; once the page/superblock layer lands, each checkpoint is atomic
- * via an A/B superblock. Sized from the measured SD envelope (docs/FEATURE_PERFORMANCE.md): append
- * sequentially in ~32 KiB pages, checkpoint every ~128-256 KiB (never scatter small durable writes). The
- * substrate for on-device data stores (dbm / sqlite / nosql). Zero heap. Default off.
+ * are CRC32-framed, a checkpoint is atomic via an A/B superblock, and a recovery scan on mount replays
+ * past the last checkpoint and stops at the first bad CRC (the torn tail), bounding the loss window. Sized
+ * from the measured SD envelope (docs/FEATURE_PERFORMANCE.md): append sequentially in ~32 KiB pages,
+ * checkpoint every ~128-256 KiB (never scatter small durable writes). The substrate for on-device data
+ * stores (dbm / sqlite / nosql). Zero heap. Default off.
  */
 #ifndef DETWS_ENABLE_WAL
 #define DETWS_ENABLE_WAL 0
@@ -2825,6 +2825,28 @@
 #endif
 #ifndef DETWS_WAL_MAX_RECORD
 #define DETWS_WAL_MAX_RECORD 4096 // largest single record payload
+#endif
+
+/**
+ * @brief Opt-in dbm: a log-structured hash key-value store on the WAL (DETWS_ENABLE_DBM, requires WAL).
+ *
+ * services/dbm is a Bitcask-style key-value store: each put/delete appends one WAL record (so writes are
+ * the WAL's fast sequential appends, not slow durable random writes), and an in-RAM open-addressed hash
+ * index (fixed BSS, no heap) maps each live key to where its value sits in the log. Mount rebuilds the
+ * index by scanning the WAL. Keys are bounded by DETWS_DBM_KEY_MAX, values by DETWS_DBM_VAL_MAX, and the
+ * index holds up to DETWS_DBM_SLOTS live keys. Default off.
+ */
+#ifndef DETWS_ENABLE_DBM
+#define DETWS_ENABLE_DBM 0
+#endif
+#ifndef DETWS_DBM_SLOTS
+#define DETWS_DBM_SLOTS 256 // max live keys (in-RAM index capacity; open-addressed, keep load < ~0.7)
+#endif
+#ifndef DETWS_DBM_KEY_MAX
+#define DETWS_DBM_KEY_MAX 32 // largest key in bytes
+#endif
+#ifndef DETWS_DBM_VAL_MAX
+#define DETWS_DBM_VAL_MAX 256 // largest value in bytes
 #endif
 
 /**
