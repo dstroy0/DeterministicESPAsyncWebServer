@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2622 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2630 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19449,7 +19449,7 @@ A thorough directory of all **2622 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_conn (16 tests)</b></summary>
+<summary><b>test_quic_conn (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_and_stream</b> &mdash; <i>Client Initial keys from the same DCID the server used.</i></summary>
@@ -19627,6 +19627,79 @@ A thorough directory of all **2622 test cases** across **228 suites**. Expand a 
     * **Objective**: Quic recv truncated long header
     * **Assertions**:
       * <code>Assert false (quic_conn_recv(&qc, dg, sizeof(dg)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_recv_malformed_initial_headers</b> &mdash; <i>269: a truncated token-length varint (0xC0 announces 8 octets, none follow).</i></summary>
+
+    * **Objective**: 269: a truncated token-length varint (0xC0 announces 8 octets, none follow).
+    * **Assertions**:
+      * <code>Assert false (quic_conn_recv(&qc, dg, hn + 1))</code>
+      * <code>Assert false (quic_conn_recv(&qc, dg, hn + 2))</code>
+      * <code>Assert false (quic_conn_recv(&qc, dg, hn + 2))</code>
+      * <code>Assert false (quic_conn_recv(&qc, dg, hn + 8))</code>
+      * <code>Assert false (quic_conn_recv(&qc, dg, 1450))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_recv_handshake_done_frame</b> &mdash; <i>Quic recv handshake done frame</i></summary>
+
+    * **Objective**: Quic recv handshake done frame
+    * **Assertions**:
+      * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_frames</b> &mdash; <i>(a) Out-of-order STREAM (offset beyond the rx window) is held, not delivered.</i></summary>
+
+    * **Objective**: (a) Out-of-order STREAM (offset beyond the rx window) is held, not delivered.
+    * **Assertions**:
+      * <code>Assert equal uint (0, g_stream_len)</code>
+      * <code>Assert true (g_stream_fin)</code>
+      * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_crypto_window_clamp</b> &mdash; <i>Quic conn crypto window clamp</i></summary>
+
+    * **Objective**: Quic conn crypto window clamp
+    * **Assertions**:
+      * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_crypto_error_close</b> &mdash; <i>A second close request is now a no-op (a close is already queued).</i></summary>
+
+    * **Objective**: A second close request is now a no-op (a close is already queued).
+    * **Assertions**:
+      * <code>Assert true (quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_no_keys_build</b> &mdash; <i>Initial builds the ACK; Handshake and 1-RTT have no keys -> build_packet returns 0 for them.</i></summary>
+
+    * **Objective**: Initial builds the ACK; Handshake and 1-RTT have no keys -> build_packet returns 0 for them.
+    * **Assertions**:
+      * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_pto_not_yet</b> &mdash; <i>Quic conn pto not yet</i></summary>
+
+    * **Objective**: Quic conn pto not yet
+    * **Assertions**:
+      * <code>Assert true (quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_send_tiny_cap</b> &mdash; <i>Quic conn send tiny cap</i></summary>
+
+    * **Objective**: Quic conn send tiny cap
   </details>
 
 </details>
