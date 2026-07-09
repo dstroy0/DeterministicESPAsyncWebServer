@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`3e874c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e874c5777a7d1b73a3698c76457f7a045714a39))
 - update CHANGELOG.md [skip ci] ([`d3b8d80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3b8d80a428f204b15217ace7588f5a85d386b49))
 - update test report + coverage [skip ci] ([`48148aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48148aafd40e8e3aa7a01b8046b494148099e0d7))
 - update CHANGELOG.md [skip ci] ([`0aefdb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0aefdb6656aff4b1d5ab55ad753d245452dd6d2e))
@@ -17,6 +18,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - SD-over-SPI storage characterization (real ESP32-S3 numbers) ([`209f2c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/209f2c7804228c79f46d7600391ba135441f8fb5))
 - start feature performance measurement + capture DB/storage roadmap ([`d911d06`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d911d06eb13070150c8cd8c3309fc42a3344a76e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ae277b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae277b5727b170a9645bb50395f92204f47f5d02))
+
+### Features
+
+- write-ahead journal atomicity core (record framing + crash recovery) ([`636d864`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/636d86470bcc2826388106131beb9a58dc75cf81))
 
 ## [5.64.0] - 2026-07-09
 
