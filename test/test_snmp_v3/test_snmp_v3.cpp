@@ -853,9 +853,56 @@ void test_v3_notify_overflow_guards()
     }
 }
 
+// A GET whose value is large enough that the *response* PDU still fits the inner buffer but
+// wrapping it into the response scopedPDU (our engineID + contextName + response PDU) overruns
+// v3_c[SNMP_MSG_BUF_SIZE] exercises snmp_v3_process's response-scopedPDU overflow guard. The
+// value length is served by a dynamic getter so the test controls it exactly; sweeping across
+// the 1472-byte boundary hits the wrapper-overflow branch (return 0) regardless of the precise
+// BER overhead: below the window the whole response fits, above it the inner PDU itself overruns,
+// and in between the response fits but its scopedPDU wrapper does not.
+static size_t g_big_len = 0;
+static uint8_t g_big[1600];
+static bool big_getter(SnmpValue *out)
+{
+    out->type = BER_OCTET_STRING;
+    out->str = (const char *)g_big;
+    out->str_len = g_big_len;
+    return true;
+}
+
+void test_v3_response_scopedpdu_overflow()
+{
+    memset(g_big, 0x42, sizeof(g_big));
+    static const uint32_t big_oid[] = {1, 3, 6, 1, 4, 1, 49374, 7, 0};
+    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(big_oid, 9, BER_OCTET_STRING, big_getter));
+
+    V3View disc;
+    discover(&disc);
+    uint8_t authkey[SNMP_USM_KEY_LEN];
+    snmp_usm_localize_key("authpass12", disc.engine_id, disc.engine_id_len, authkey);
+
+    uint8_t req[300], resp[2048];
+    bool saw_overflow = false, saw_ok = false;
+    for (size_t vlen = 1400; vlen <= 1472; vlen++) // crosses the fit/overflow boundary for both inner buffers
+    {
+        g_big_len = vlen;
+        size_t rl = build_get(req, sizeof(req), true, false, disc.engine_id, disc.engine_id_len, disc.boots, disc.time,
+                              "myuser", authkey, nullptr, 500, 88, big_oid, 9);
+        TEST_ASSERT_TRUE(rl > 0);
+        size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+        if (n == 0)
+            saw_overflow = true; // response fits v3_b but its scopedPDU wrapper overruns v3_c -> guarded return 0
+        else
+            saw_ok = true; // a smaller value still yields a valid authenticated response
+    }
+    TEST_ASSERT_TRUE(saw_overflow);
+    TEST_ASSERT_TRUE(saw_ok);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_v3_response_scopedpdu_overflow);
     RUN_TEST(test_v3_field_tag_corruption);
     RUN_TEST(test_v3_scoped_parse_rejections);
     RUN_TEST(test_v3_discovery_malformed_scoped);
