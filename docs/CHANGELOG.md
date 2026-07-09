@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1657f3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1657f3cf706cb38d897707b6edbe32772f93c22e))
 - update CHANGELOG.md [skip ci] ([`b18efa7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b18efa79a20d9ec6106eedc40fc34e94159223c3))
 - update CHANGELOG.md [skip ci] ([`4615f3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4615f3c3045be2ef791525ade1a75f218357e537))
 - update test report + coverage [skip ci] ([`830f622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/830f6220fa55a33cddd5eb47f3ec679e778797c6))
@@ -164,6 +165,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f4ecfa4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4ecfa4c88912b60a9bfc197b2b2cf70ebd0778d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`02f9b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02f9b1bdbd937c52d2623bcfbb593d1e51955c47))
 - capture the working-thread thought-stream (discussion #15) ([`7be47ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7be47ab40817b05b4bde9f412c829b36b3cc570d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bdf7953`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdf79536afe62adc9d70c9ee1282c69bf1cfa19d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1271fc7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1271fc76cdc5eee713cf5675aec618333a17f89c))
@@ -334,6 +337,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover DetWebServer::restart + stop teardown (dwserver 801-825) ([`bbb4a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbb4a96a5785c5df98ab18238a8f0d9118ba475d))
 - cover overflow / null / parser-edge branches (branch 59->81%) ([`1448399`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/144839951239ef5bad29ac5d626ce261b15062c2))
 - cover the host TWAI stubs fail-closed (77->100%) ([`c37827d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c37827d5607b671154358106520fcbe593277376))
 - cover form-field null guards + host load/clear stubs (72->95%) ([`04118db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04118dbdc6b72e05178c22fb29c4faa28cdd5923))
