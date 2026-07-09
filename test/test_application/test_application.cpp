@@ -720,6 +720,26 @@ void test_serve_static_gzip_when_accepted()
     TEST_ASSERT_NOT_NULL(strstr(out, "Content-Encoding: gzip"));
 }
 
+// serve_static with a prefix already ending in '*' is stored as-is (no second wildcard); once the
+// route table is full, further serve_static() calls are dropped (fail closed).
+void test_serve_static_wildcard_and_route_full()
+{
+    fs::mock_fs_reset();
+    static const char js[] = "x=1;";
+    fs::mock_fs_add("/www/app.js", js);
+    g_server->serve_static("/assets*", g_static_fs, "/www");
+    arm_slot(0, "GET /assets/app.js HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    const char *out = tcp_captured();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK")); // wildcard route served the file
+
+    for (int i = 0; i < MAX_ROUTES + 3; i++) // fill + overflow the route table
+        g_server->serve_static("/s", g_static_fs, "/www");
+}
+
 void test_serve_static_no_gzip_when_not_accepted()
 {
     fs::mock_fs_reset();
@@ -1452,6 +1472,7 @@ int main()
     RUN_TEST(test_mime_type_detection);
 
     RUN_TEST(test_serve_static_file_and_mime);
+    RUN_TEST(test_serve_static_wildcard_and_route_full);
     RUN_TEST(test_serve_static_index_fallback);
     RUN_TEST(test_serve_static_gzip_when_accepted);
     RUN_TEST(test_serve_static_no_gzip_when_not_accepted);
