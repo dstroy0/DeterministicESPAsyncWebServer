@@ -78,10 +78,81 @@ void test_wsmp_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_wsmp_parse(truncated, 4, &f));
 }
 
+// 4-octet PSID (>= 0x200000) round-trips; every encode length class rejects a too-small buffer.
+void test_psid_four_octet_and_caps(void)
+{
+    uint8_t out[4];
+    uint32_t psid = 0;
+    TEST_ASSERT_EQUAL_size_t(4, detws_wave_encode_psid(0x00654321, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xE0, out[0] & 0xF0);
+    TEST_ASSERT_EQUAL_size_t(4, detws_wave_decode_psid(out, 4, &psid));
+    TEST_ASSERT_EQUAL_UINT32(0x00654321, psid);
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x20, out, 0));       // 1-octet, cap 0
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x0100, out, 1));     // 2-octet, cap 1
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x8002, out, 2));     // 3-octet, cap 2
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x00654321, out, 3)); // 4-octet, cap 3
+}
+
+// decode_psid guards: null/short inputs, truncated multi-octet forms, an invalid first byte.
+void test_psid_decode_guards(void)
+{
+    uint32_t psid = 0;
+    uint8_t x = 0x20;
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(nullptr, 4, &psid));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&x, 0, &psid));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&x, 4, nullptr));
+    uint8_t two = 0x81, three = 0xC1, four = 0xE1, invalid = 0xF8;
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&two, 1, &psid));     // 2-octet, len < 2
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&three, 1, &psid));   // 3-octet, len < 3
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&four, 1, &psid));    // 4-octet, len < 4
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&invalid, 4, &psid)); // no valid length prefix
+}
+
+// wsmp_build rejects bad args, an over-long payload, and buffers too small for the PSID or payload.
+void test_wsmp_build_guards(void)
+{
+    uint8_t out[16];
+    uint8_t pl[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, nullptr, sizeof(out)));  // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, nullptr, 4, out, sizeof(out))); // len but null payload
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 256, out, sizeof(out)));    // payload > 255
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, out, 0));                // cap 0
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x00654321, pl, 0, out, 2));          // PSID encode doesn't fit
+    TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, out, 4));                // payload doesn't fit
+}
+
+// wsmp_parse rejects short/null frames, an undecodable PSID, and a missing WSM length byte.
+void test_wsmp_parse_more_guards(void)
+{
+    WsmpFrame f;
+    uint8_t two[2] = {WSMP_VERSION, 0x20};
+    TEST_ASSERT_FALSE(detws_wsmp_parse(two, 2, &f));     // len < 3
+    TEST_ASSERT_FALSE(detws_wsmp_parse(nullptr, 3, &f)); // null frame
+    uint8_t bad_psid[3] = {WSMP_VERSION, 0xC1, 0x00};    // 3-octet PSID prefix, only 2 bytes present
+    TEST_ASSERT_FALSE(detws_wsmp_parse(bad_psid, 3, &f));
+    uint8_t no_wlen[3] = {WSMP_VERSION, 0x81, 0x00}; // valid 2-octet PSID, no room for the length byte
+    TEST_ASSERT_FALSE(detws_wsmp_parse(no_wlen, 3, &f));
+}
+
+// 1609.2 wrap rejects a null output, a null payload with a length, and a too-small buffer.
+void test_1609dot2_wrap_guards(void)
+{
+    uint8_t out[8];
+    uint8_t pl[3] = {1, 2, 3};
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_psid_p_encoding);
+    RUN_TEST(test_psid_four_octet_and_caps);
+    RUN_TEST(test_psid_decode_guards);
+    RUN_TEST(test_wsmp_build_guards);
+    RUN_TEST(test_wsmp_parse_more_guards);
+    RUN_TEST(test_1609dot2_wrap_guards);
     RUN_TEST(test_wsmp_roundtrip);
     RUN_TEST(test_1609dot2_wrap);
     RUN_TEST(test_wsmp_parse_rejects);
