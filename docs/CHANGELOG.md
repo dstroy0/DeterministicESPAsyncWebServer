@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`97581d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97581d290fe222fb4384ad71cc340c6f998d1b9f))
+- update CHANGELOG.md [skip ci] ([`636a123`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/636a12330dec211e294632e140324085eaf5f1d1))
 - update test report + coverage [skip ci] ([`a74992a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a74992aa45785aafbbbaeeb1189b3ed60b41faf7))
 - update CHANGELOG.md [skip ci] ([`98b529d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/98b529de5cf260ad9192c9b3c5831225f180e96b))
 - update test report + coverage [skip ci] ([`6cf4d8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cf4d8e11e8c0a31fc3a85040d3b8eef4a573793))
@@ -195,6 +197,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7c48e22`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c48e222a7fe9d3aa25b3c92486799c684ac9b61))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3fa3465`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3fa3465ae29ea9aa7ace2f8dfbb6e32121a961c5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1d36aee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d36aee3c42909c4f395e390dc8783c597a922ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a3244b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3244b35f40932ad6423b9e9123201706a6feda5))
@@ -381,6 +384,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- reject negative array counts in read/write/browse (97->98%) ([`7186bdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7186bdc37b07d7bdcf2043f104d062f50539a65b))
 - reject unsupported Variant type in read response (96->97%) ([`70efc23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70efc239fc6eec40ea2b2bebb8e921326f27e2c5))
 - cover builder-overflow guard (cw_patch fail-closed) ([`2935b3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2935b3a1804d76a49f54d5bef29f1ff48bd9a888))
 - cover ByteString-skip paths + rx/proto_handler (97->98%) ([`56ca2b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56ca2b4d0cfdf1206540d9c3177939df6fda902c))
