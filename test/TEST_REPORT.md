@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 11:59:05
+**Generated:** 2026-07-09 12:22:28
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2765 passed - 415s
+**Result:** ✅ 2767 passed - 426s
 
 ---
 
@@ -62,7 +62,7 @@
 | `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.689 |
 | `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.705 |
 | `test_application`       | `native_app`            |    64 |   ✅   | 00:00:00.859 |
-| `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.607 |
+| `test_webdav_handler`    | `native_webdav_handler` |    22 |   ✅   | 00:00:13.199 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
@@ -1932,7 +1932,7 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 
 ---
 
-## test_webdav_handler - native_webdav_handler - ✅ 20 passed
+## test_webdav_handler - native_webdav_handler - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1941,26 +1941,28 @@ _Host tests for the WebDAV request handler's recursive filesystem operations_
 
 |   # | Test                                   | Status | Description                                                          |
 | --: | :------------------------------------- | :----: | :------------------------------------------------------------------- |
-|   1 | `test_copy_collection_recursive`       |   ✅   | Copy collection recursive                                            |
-|   2 | `test_copy_collection_depth0_shallow`  |   ✅   | Copy collection depth0 shallow                                       |
-|   3 | `test_copy_overwrite_semantics`        |   ✅   | Copy overwrite semantics                                             |
-|   4 | `test_move_collection_recursive`       |   ✅   | Move collection recursive                                            |
-|   5 | `test_delete_collection_recursive`     |   ✅   | Delete collection recursive                                          |
-|   6 | `test_propfind_depth0_collection_only` |   ✅   | Propfind depth0 collection only                                      |
-|   7 | `test_propfind_depth1_lists_members`   |   ✅   | Propfind depth1 lists members                                        |
-|   8 | `test_mkcol_create_and_conflict`       |   ✅   | Mkcol create and conflict                                            |
-|   9 | `test_delete_single_file`              |   ✅   | Delete single file                                                   |
-|  10 | `test_options_advertises_dav`          |   ✅   | Options advertises dav                                               |
-|  11 | `test_get_file_through_mount`          |   ✅   | Get file through mount                                               |
-|  12 | `test_put_stream_create`               |   ✅   | Put stream create                                                    |
-|  13 | `test_put_stream_overwrite`            |   ✅   | Put stream overwrite                                                 |
-|  14 | `test_put_empty_buffered`              |   ✅   | Put empty buffered                                                   |
-|  15 | `test_put_stream_write_fails_507`      |   ✅   | Put stream write fails 507                                           |
-|  16 | `test_put_stream_open_fails_409`       |   ✅   | Put stream open fails 409                                            |
-|  17 | `test_put_stream_traversal_403`        |   ✅   | Put stream traversal 403                                             |
-|  18 | `test_put_stream_begin_declines`       |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.          |
-|  19 | `test_put_stream_abort`                |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive. |
-|  20 | `test_lock_unlock_advisory`            |   ✅   | Lock unlock advisory                                                 |
+|   1 | `test_webdav_error_paths`              |   ✅   | Webdav error paths                                                   |
+|   2 | `test_webdav_deep_tree_rejected`       |   ✅   | Webdav deep tree rejected                                            |
+|   3 | `test_copy_collection_recursive`       |   ✅   | Copy collection recursive                                            |
+|   4 | `test_copy_collection_depth0_shallow`  |   ✅   | Copy collection depth0 shallow                                       |
+|   5 | `test_copy_overwrite_semantics`        |   ✅   | Copy overwrite semantics                                             |
+|   6 | `test_move_collection_recursive`       |   ✅   | Move collection recursive                                            |
+|   7 | `test_delete_collection_recursive`     |   ✅   | Delete collection recursive                                          |
+|   8 | `test_propfind_depth0_collection_only` |   ✅   | Propfind depth0 collection only                                      |
+|   9 | `test_propfind_depth1_lists_members`   |   ✅   | Propfind depth1 lists members                                        |
+|  10 | `test_mkcol_create_and_conflict`       |   ✅   | Mkcol create and conflict                                            |
+|  11 | `test_delete_single_file`              |   ✅   | Delete single file                                                   |
+|  12 | `test_options_advertises_dav`          |   ✅   | Options advertises dav                                               |
+|  13 | `test_get_file_through_mount`          |   ✅   | Get file through mount                                               |
+|  14 | `test_put_stream_create`               |   ✅   | Put stream create                                                    |
+|  15 | `test_put_stream_overwrite`            |   ✅   | Put stream overwrite                                                 |
+|  16 | `test_put_empty_buffered`              |   ✅   | Put empty buffered                                                   |
+|  17 | `test_put_stream_write_fails_507`      |   ✅   | Put stream write fails 507                                           |
+|  18 | `test_put_stream_open_fails_409`       |   ✅   | Put stream open fails 409                                            |
+|  19 | `test_put_stream_traversal_403`        |   ✅   | Put stream traversal 403                                             |
+|  20 | `test_put_stream_begin_declines`       |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.          |
+|  21 | `test_put_stream_abort`                |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive. |
+|  22 | `test_lock_unlock_advisory`            |   ✅   | Lock unlock advisory                                                 |
 
 </details>
 
