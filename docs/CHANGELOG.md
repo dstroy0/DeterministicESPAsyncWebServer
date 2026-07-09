@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bc91b79`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc91b798ce5f741274a61ddcd9f025abf45c0122))
 - update CHANGELOG.md [skip ci] ([`f55b048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f55b048d03dc9ec3bbd961d629f3864848dd88d8))
 - update test report + coverage [skip ci] ([`1c5e3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c5e3cd1f3a6bc7793a671e6d3d4dac6190b19a6))
 - update CHANGELOG.md [skip ci] ([`fdc57da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdc57da1d06591a6b0be313ae235270509a49fcd))
@@ -460,6 +461,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover chacha/aes-etm scratch-arena-exhaustion fail-closed (94.4->96.5%) ([`4cd8986`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cd898696d1da763ef7dcebcd8901967e346ad76))
 - forge aes-etm packets (bad padding, seq-threshold) via ETM MAC replication (93.4->94.4%) ([`c88b567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c88b5675f7744e744a1f4b34078f4c82e4f2b341))
 - forge chacha packets (bad length/padding, seq-threshold) + aes-etm clear bad-length (90.6->93.4%) ([`946d0d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/946d0d70d21ad34bc00896134b344ef7f95bb2b6))
 - cover chacha/etm send-padding (pad<4) + incomplete-packet hold; EXCL dead rx_len<4 re-check ([`f4b4705`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4b47054fb21951526a78bc42307dc3541478b35))
