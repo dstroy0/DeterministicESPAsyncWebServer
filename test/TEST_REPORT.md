@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 02:51:37
+**Generated:** 2026-07-09 02:57:24
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2617 passed - 201s
+**Result:** ✅ 2620 passed - 211s
 
 ---
 
@@ -224,7 +224,7 @@
 | `test_wisun`             | `native_wisun`          |     6 |   ✅   | 00:00:00.711 |
 | `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.677 |
 | `test_config_io`         | `native_config_io`      |     4 |   ✅   | 00:00:00.715 |
-| `test_workers`           | `native_workers`        |     3 |   ✅   | 00:00:00.812 |
+| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:10.857 |
 | `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.663 |
 | `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.803 |
 | `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.456 |
@@ -5744,18 +5744,21 @@ _Unit tests for schema-driven config export/restore (services/config_io) over_
 
 ---
 
-## test_workers - native_workers - ✅ 3 passed
+## test_workers - native_workers - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker_
 
-|   # | Test                                         | Status | Description                           |
-| --: | :------------------------------------------- | :----: | :------------------------------------ |
-|   1 | `test_worker_count_is_two`                   |   ✅   | Worker count is two                   |
-|   2 | `test_check_timeouts_reaps_only_owned_slots` |   ✅   | Check timeouts reaps only owned slots |
-|   3 | `test_pool_init_defaults_owner_zero`         |   ✅   | Pool init defaults owner zero         |
+|   # | Test                                           | Status | Description                                                                                   |
+| --: | :--------------------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
+|   1 | `test_worker_count_is_two`                     |   ✅   | Worker count is two                                                                           |
+|   2 | `test_check_timeouts_reaps_only_owned_slots`   |   ✅   | Check timeouts reaps only owned slots                                                         |
+|   3 | `test_pool_init_defaults_owner_zero`           |   ✅   | Pool init defaults owner zero                                                                 |
+|   4 | `test_worker_self_id_roundtrip`                |   ✅   | detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back. |
+|   5 | `test_host_worker_lifecycle_is_noops`          |   ✅   | On host there is no worker task: start/stop/wake are no-ops and running() stays false.        |
+|   6 | `test_host_defer_runs_inline_and_rejects_null` |   ✅   | On host the caller and pipeline are the same thread, so detws_defer runs the callback inline  |
 
 </details>
 
