@@ -142,19 +142,30 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
 
 #else // host build - no real resolver; a host test can inject a synthetic answer
 
-static bool s_dns_test_ok = false;
-static uint32_t s_dns_test_ip = 0;
+namespace
+{
+// The injected synthetic answer, owned by one instance (internal linkage): a host test sets
+// it via detws_dns_test_set_resolve() and detws_dns_resolve() returns it, grouped so it is one
+// named owner rather than loose file-scope mutables.
+struct DnsTestCtx
+{
+    bool ok = false;
+    uint32_t ip = 0;
+};
+DnsTestCtx s_dns_test;
+} // namespace
+
 void detws_dns_test_set_resolve(bool ok, uint32_t ip)
 {
-    s_dns_test_ok = ok;
-    s_dns_test_ip = ip;
+    s_dns_test.ok = ok;
+    s_dns_test.ip = ip;
 }
 bool detws_dns_resolve(const char *, uint32_t *out_ip)
 {
-    if (!s_dns_test_ok)
+    if (!s_dns_test.ok)
         return false;
     if (out_ip)
-        *out_ip = s_dns_test_ip;
+        *out_ip = s_dns_test.ip;
     return true;
 }
 
