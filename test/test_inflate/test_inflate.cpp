@@ -61,8 +61,8 @@ static const uint8_t k_dyn_hlit_big[] = {253, 0, 0};                 // oversize
 
 // Dynamic-block code-length / table-construction guards (scratchpad/gen_inflate_dyn.py).
 static const uint8_t k_dyn_repeat16_at0[] = {5, 224, 3, 4, 0, 0, 0, 0, 0, 4}; // repeat-16 with no previous length
-static const uint8_t k_dyn_repeat_past_end[] = {5, 224, 129, 4,   0, 0,
-                                                0, 0,   0,   252, 3};               // repeat runs past the code count
+static const uint8_t k_dyn_repeat_past_end[] = {5, 224, 129, 4,   0,   0,
+                                                0, 0,   0,   252, 255, 3};          // repeat runs past the code count
 static const uint8_t k_dyn_cl_incomplete[] = {5, 224, 1, 4, 0, 0, 0, 0, 0, 0};      // code-length code is incomplete
 static const uint8_t k_dyn_cl_oversub[] = {5, 224, 1, 4, 0, 0, 0, 64, 16, 0};       // code-length code over-subscribed
 static const uint8_t k_dyn_no_eob[] = {5, 224, 129, 4, 0, 0, 0, 0, 0, 252, 111, 3}; // no end-of-block code
@@ -70,6 +70,15 @@ static const uint8_t k_dyn_cl_decode_trunc[] = {5, 224, 21, 8, 0,
                                                 0, 0,   0,  0, 0}; // truncated before any code-length symbol
 static const uint8_t k_dyn_empty_dist[] = {253, 224, 129, 0,   0,   0,   0,
                                            0,   16,  180, 249, 159, 178, 2}; // literals-only: empty distance code
+static const uint8_t k_dyn_litlen_incomplete[] = {253, 224, 1,   1,   0,  0,  0, 128,
+                                                  16,  108, 235, 255, 41, 87, 0}; // incomplete literal/length code
+static const uint8_t k_dyn_dist_incomplete[] = {253, 225, 1,   9,   0,  0,   0, 128,
+                                                32,  108, 243, 255, 41, 167, 4};    // incomplete distance code
+static const uint8_t k_len_extra_aligned[] = {59, 113, 226, 196, 137, 19, 39, 144}; // length extra bits past end
+static const uint8_t k_dist_extra_aligned[] = {59, 1, 36};                          // distance extra bits past end
+static const uint8_t k_header_leftover_bits[] = {58, 113, 226, 196, 137, 19, 0};    // next block header needs a byte
+static const uint8_t k_dyn_decode_hole[] = {5, 224, 1, 5, 0, 0, 0, 0, 32, 252, 127, 157, 255, 63}; // code past MAXBITS
+static const uint8_t k_dyn_literal_len[] = {5, 224, 1, 4, 0, 0, 0, 0, 16, 4}; // literal code length then truncated
 
 // ---------------------------------------------------------------------------
 
@@ -236,6 +245,13 @@ void test_malformed_deflate_blocks()
     BAD(k_dyn_no_eob);
     BAD(k_dyn_cl_decode_trunc);
     BAD(k_dyn_empty_dist); // 120 (empty dist code) hit during construction; the truncated data then fails
+    BAD(k_dyn_litlen_incomplete);
+    BAD(k_dyn_dist_incomplete);
+    BAD(k_len_extra_aligned);
+    BAD(k_dist_extra_aligned);
+    BAD(k_header_leftover_bits);
+    BAD(k_dyn_decode_hole);
+    BAD(k_dyn_literal_len);
 #undef BAD
     // A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.
     TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in), out, 4, &out_len,
