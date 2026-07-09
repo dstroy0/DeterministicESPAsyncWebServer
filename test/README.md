@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2674 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2678 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24903,7 +24903,33 @@ A thorough directory of all **2674 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_conn (12 tests)</b></summary>
+<summary><b>test_ssh_conn (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_outbound_arena_exhausted</b> &mdash; <i>Conn outbound arena exhausted</i></summary>
+
+    * **Objective**: Conn outbound arena exhausted
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_outbound_pkt_send_fails</b> &mdash; <i>Conn outbound pkt send fails</i></summary>
+
+    * **Objective**: Conn outbound pkt send fails
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_poll_rekey_emit_fails</b> &mdash; <i>Poll rekey emit fails</i></summary>
+
+    * **Objective**: Poll rekey emit fails
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_accept_sends_server_banner</b> &mdash; <i>Accept sends server banner</i></summary>
@@ -27008,7 +27034,19 @@ A thorough directory of all **2674 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_tls13_msg (10 tests)</b></summary>
+<summary><b>test_tls13_msg (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tls13_extension_and_truncation_coverage</b> &mdash; <i>Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.</i></summary>
+
+    * **Objective**: Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.
+    * **Assertions**:
+      * <code>Assert false (tls13_parse_client_hello(ct, sizeof(ct), &ch))</code>
+      * <code>Assert true (tls13_parse_client_hello(msg, n, &ch))</code>
+      * <code>Assert true (ch.offers_h3_alpn)</code>
+      * <code>Assert not null (ch.quic_tp)</code>
+      * <code>Assert equal uint (3, (unsigned)ch.quic_tp_len)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_tls13_malformed_extensions</b> &mdash; <i>Tls13 malformed extensions</i></summary>
