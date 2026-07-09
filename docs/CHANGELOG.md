@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`1a8c440`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a8c440c39d1d1dbaad5c3770519fba3f585bcf1))
+- update CHANGELOG.md [skip ci] ([`e22561f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e22561f02d36d4ede41785b54c2befff9128312b))
 - update CHANGELOG.md [skip ci] ([`428dbf3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/428dbf3dfa1d7ab669a19e62e8ee1fa68ccaea00))
 - update test report + coverage [skip ci] ([`93449ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93449ad5b493b41376b35ae475f5d2872f2cbe49))
 - update CHANGELOG.md [skip ci] ([`c934cdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c934cdc31a522b71690495499d83213b2046753d))
@@ -246,6 +248,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b74c485`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b74c485e897a963093c5b19ade5d39ffd05618bb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4e74129`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e74129a2e751d6b52831ec4dcf7eb0aa5204610))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f8d141f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8d141f57f87ae2aa05ee8030d13aab2f677365c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`49c3005`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49c3005c4907c9b0c916dcf834872cd6cabb044c))
@@ -471,6 +474,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover PROPPATCH 207/404 + PROPFIND entry-limit; EXCL buffer-preempted entry-cap break ([`7f2c52e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f2c52ed5a0d0792e03927769fa20ee547655e49))
 - cover WebDAV recursive rm/copy depth-bound + child-failure propagation (deep tree) ([`f172ea1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f172ea12cb065ffe3f923245879c34856f33f182))
 - cover WebDAV method error paths (DELETE 404, COPY 400/502/403/404, MOVE-replace, PROPFIND 404/finite-depth) ([`d959354`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d959354d6e0ae3222ca188e0dd67007fe2049a05))
 - cover scratch_alloc align==0 default-alignment branch (->100%) ([`55825dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55825ddf30394f6ccbd6425a3e91d75135195b4c))
