@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 15:04:09
+**Generated:** 2026-07-09 15:13:01
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2796 passed - 462s
+**Result:** ✅ 2802 passed - 467s
 
 ---
 
@@ -37,11 +37,11 @@
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.233 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.784 |
 | `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.760 |
-| `test_ssh_crypto`        | `native_ssh`            |    47 |   ✅   | 00:00:08.363 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.603 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:00.909 |
-| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:02.638 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
+| `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   | 00:00:13.752 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.747 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.104 |
+| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:01.844 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.725 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:05.411 |
 | `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:11.120 |
@@ -1158,7 +1158,7 @@ _Unit tests for detws_prov_form_field(): the x-www-form-urlencoded field_
 
 ---
 
-## test_ssh_crypto - native_ssh - ✅ 47 passed
+## test_ssh_crypto - native_ssh - ✅ 53 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1197,23 +1197,29 @@ _SSH crypto layer test suite._
 |  28 | `test_rsa_pkcs1_pad_structure`               |   ✅   | With d=1, sign(msg) = m^1 mod n = m (the padded message itself).                         |
 |  29 | `test_rsa_sign_verify_roundtrip`             |   ✅   | Install the real keypair into the native sign fixture.                                   |
 |  30 | `test_rsa_encode_pubkey`                     |   ✅   | Rsa encode pubkey                                                                        |
-|  31 | `test_rsa_verify_valid_signature`            |   ✅   | Rsa verify valid signature                                                               |
-|  32 | `test_rsa_verify_rejects_tampered_signature` |   ✅   | Rsa verify rejects tampered signature                                                    |
-|  33 | `test_rsa_verify_rejects_wrong_message`      |   ✅   | Rsa verify rejects wrong message                                                         |
-|  34 | `test_pkt_send_recv_unencrypted`             |   ✅   | Pkt send recv unencrypted                                                                |
-|  35 | `test_pkt_padding_alignment`                 |   ✅   | Packet length + padding must be multiple of 16.                                          |
-|  36 | `test_pkt_seq_increments`                    |   ✅   | Pkt seq increments                                                                       |
-|  37 | `test_pkt_disconnect_zeroes_state`           |   ✅   | Pkt disconnect zeroes state                                                              |
-|  38 | `test_pkt_encrypted_roundtrip`               |   ✅   | Pkt encrypted roundtrip                                                                  |
-|  39 | `test_pkt_chacha20poly1305_roundtrip`        |   ✅   | Install a chacha20-poly1305 session with the same key both directions, so ssh_pkt_send() |
-|  40 | `test_pkt_aes_etm_sha256_roundtrip`          |   ✅   | Pkt aes etm sha256 roundtrip                                                             |
-|  41 | `test_pkt_aes_etm_sha512_roundtrip`          |   ✅   | Pkt aes etm sha512 roundtrip                                                             |
-|  42 | `test_pkt_encrypted_fragmented`              |   ✅   | Pkt encrypted fragmented                                                                 |
-|  43 | `test_pkt_encrypted_two_packets`             |   ✅   | Pkt encrypted two packets                                                                |
-|  44 | `test_pkt_chacha_padding_and_incomplete`     |   ✅   | Pkt chacha padding and incomplete                                                        |
-|  45 | `test_pkt_etm_padding_and_incomplete`        |   ✅   | Pkt etm padding and incomplete                                                           |
-|  46 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                |
-|  47 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                  |
+|  31 | `test_rsa_verify_and_encode_guards`          |   ✅   | Rsa verify and encode guards                                                             |
+|  32 | `test_rsa_verify_valid_signature`            |   ✅   | Rsa verify valid signature                                                               |
+|  33 | `test_rsa_verify_rejects_tampered_signature` |   ✅   | Rsa verify rejects tampered signature                                                    |
+|  34 | `test_rsa_verify_rejects_wrong_message`      |   ✅   | Rsa verify rejects wrong message                                                         |
+|  35 | `test_pkt_send_recv_unencrypted`             |   ✅   | Pkt send recv unencrypted                                                                |
+|  36 | `test_pkt_padding_alignment`                 |   ✅   | Packet length + padding must be multiple of 16.                                          |
+|  37 | `test_pkt_seq_increments`                    |   ✅   | Pkt seq increments                                                                       |
+|  38 | `test_pkt_disconnect_zeroes_state`           |   ✅   | Pkt disconnect zeroes state                                                              |
+|  39 | `test_pkt_encrypted_roundtrip`               |   ✅   | Pkt encrypted roundtrip                                                                  |
+|  40 | `test_pkt_chacha20poly1305_roundtrip`        |   ✅   | Install a chacha20-poly1305 session with the same key both directions, so ssh_pkt_send() |
+|  41 | `test_pkt_aes_etm_sha256_roundtrip`          |   ✅   | Pkt aes etm sha256 roundtrip                                                             |
+|  42 | `test_pkt_aes_etm_sha512_roundtrip`          |   ✅   | Pkt aes etm sha512 roundtrip                                                             |
+|  43 | `test_pkt_encrypted_fragmented`              |   ✅   | Pkt encrypted fragmented                                                                 |
+|  44 | `test_pkt_encrypted_two_packets`             |   ✅   | Pkt encrypted two packets                                                                |
+|  45 | `test_pkt_chacha_padding_and_incomplete`     |   ✅   | Pkt chacha padding and incomplete                                                        |
+|  46 | `test_pkt_etm_padding_and_incomplete`        |   ✅   | Pkt etm padding and incomplete                                                           |
+|  47 | `test_pkt_chacha_forged_rejects`             |   ✅   | Pkt chacha forged rejects                                                                |
+|  48 | `test_pkt_etm_bad_length`                    |   ✅   | Pkt etm bad length                                                                       |
+|  49 | `test_pkt_etm_forged_rejects`                |   ✅   | Pkt etm forged rejects                                                                   |
+|  50 | `test_pkt_scratch_exhausted`                 |   ✅   | Pkt scratch exhausted                                                                    |
+|  51 | `test_pkt_eam_forged_rejects`                |   ✅   | Pkt eam forged rejects                                                                   |
+|  52 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                |
+|  53 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                  |
 
 </details>
 
