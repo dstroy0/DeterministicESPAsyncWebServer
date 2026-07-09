@@ -416,8 +416,8 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
             return 0;
         nvb++;
     }
-    if (!d.ok)
-        return 0;
+    if (!d.ok)    // GCOVR_EXCL_LINE  every failing read in the loop already returns 0 via its own guard,
+        return 0; // GCOVR_EXCL_LINE  so d.ok is always true here (defense in depth)
 
     long err_status = SNMP_ERR_NO_ERROR;
     long err_index = 0;

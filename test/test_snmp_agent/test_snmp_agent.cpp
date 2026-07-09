@@ -95,6 +95,91 @@ static size_t build_req(uint8_t *buf, size_t cap, long version, const char *comm
     return e.ok ? e.len : 0;
 }
 
+// Build a bare PDU (tag + request-id + 2 fields + a varbind list) for direct snmp_dispatch_pdu tests.
+// knob selects a malformation of the varbind list (or an OID-typed value).
+enum
+{
+    VB_BAD_VBL_TAG,
+    VB_TOO_MANY,
+    VB_BAD_VB_TAG,
+    VB_BAD_OID,
+    VB_BAD_VALUE,
+    VB_OID_VALUE,
+    VB_BAD_OID_VALUE,
+    VB_VALID
+};
+static size_t build_pdu(uint8_t *buf, size_t cap, int knob)
+{
+    BerEnc e;
+    ber_enc_init(&e, buf, cap);
+    size_t pdus = ber_seq_begin(&e, SNMP_PDU_GET);
+    ber_put_integer(&e, 42); // request-id
+    ber_put_integer(&e, 0);
+    ber_put_integer(&e, 0);
+    if (knob == VB_BAD_VBL_TAG)
+    {
+        ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"x", 1); // varbind list not a SEQUENCE
+    }
+    else
+    {
+        size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
+        if (knob == VB_TOO_MANY)
+        {
+            for (int i = 0; i <= SNMP_MAX_VARBINDS; i++) // one more than the table holds
+            {
+                size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+                ber_put_oid(&e, OID_SYSDESCR, 9);
+                ber_put_null(&e);
+                ber_seq_end(&e, vb);
+            }
+        }
+        else if (knob == VB_BAD_VB_TAG)
+        {
+            ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"x", 1); // a varbind that is not a SEQUENCE
+        }
+        else if (knob == VB_BAD_OID)
+        {
+            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            ber_put_integer(&e, 5); // first field is not an OID
+            ber_put_null(&e);
+            ber_seq_end(&e, vb);
+        }
+        else if (knob == VB_BAD_VALUE)
+        {
+            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            ber_put_oid(&e, OID_SYSDESCR, 9);
+            uint8_t badv[2] = {BER_OCTET_STRING, 0x7F}; // declares 127 value octets that are not present
+            ber_put_raw(&e, badv, sizeof(badv));
+            ber_seq_end(&e, vb);
+        }
+        else if (knob == VB_OID_VALUE) // a varbind whose value is a valid OID (dec_value BER_OID success)
+        {
+            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            ber_put_oid(&e, OID_SYSDESCR, 9);
+            ber_put_oid(&e, OID_SYSUPTIME, 9);
+            ber_seq_end(&e, vb);
+        }
+        else if (knob == VB_BAD_OID_VALUE) // an OID-typed value that fails to decode (empty OID)
+        {
+            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            ber_put_oid(&e, OID_SYSDESCR, 9);
+            uint8_t empty_oid[2] = {BER_OID, 0x00}; // OID tag, zero length -> ber_read_oid rejects
+            ber_put_raw(&e, empty_oid, sizeof(empty_oid));
+            ber_seq_end(&e, vb);
+        }
+        else // VB_VALID: a well-formed GET varbind (name + NULL value)
+        {
+            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            ber_put_oid(&e, OID_SYSDESCR, 9);
+            ber_put_null(&e);
+            ber_seq_end(&e, vb);
+        }
+        ber_seq_end(&e, vbl);
+    }
+    ber_seq_end(&e, pdus);
+    return e.ok ? e.len : 0;
+}
+
 struct RespView
 {
     long version;
@@ -602,6 +687,27 @@ void test_malformed_message_guards()
     TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(bad_comm, sizeof(bad_comm), resp, sizeof(resp)));
 }
 
+// Each malformed varbind list is rejected by the dispatcher's per-varbind guards; an OID-typed value
+// is decoded (dec_value's BER_OID branch) then handled as a normal GET.
+void test_snmp_dispatch_varbind_guards()
+{
+    uint8_t pdu[512], resp[256];
+    int reject[] = {VB_BAD_VBL_TAG, VB_TOO_MANY, VB_BAD_VB_TAG, VB_BAD_OID, VB_BAD_VALUE, VB_BAD_OID_VALUE};
+    for (unsigned i = 0; i < sizeof(reject) / sizeof(reject[0]); i++)
+    {
+        size_t n = build_pdu(pdu, sizeof(pdu), reject[i]);
+        TEST_ASSERT_TRUE(n > 0);
+        TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(pdu, n, false, true, resp, sizeof(resp)));
+    }
+    size_t n = build_pdu(pdu, sizeof(pdu), VB_OID_VALUE);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, n, false, true, resp, sizeof(resp)) > 0); // GET with an OID value
+    // A response that does not fit the output buffer is re-encoded as tooBig with an empty varbind list.
+    n = build_pdu(pdu, sizeof(pdu), VB_VALID);
+    uint8_t tiny[24]; // fits the empty tooBig PDU but not the full sysDescr response
+    TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, n, false, true, tiny, sizeof(tiny)) > 0);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -631,5 +737,6 @@ int main()
     RUN_TEST(test_dispatch_malformed_pdu);
     RUN_TEST(test_udp_handler_via_inject);
     RUN_TEST(test_malformed_message_guards);
+    RUN_TEST(test_snmp_dispatch_varbind_guards);
     return UNITY_END();
 }
