@@ -729,6 +729,7 @@ src/
 │   ├── southbound/  (southbound.h, southbound.cpp)
 │   ├── spa_router/  (spa_router.h, spa_router.cpp)
 │   ├── sparkplug/  (sparkplug.h, sparkplug.cpp)
+│   ├── sqlite/  (sqlite_format.h, sqlite_format.cpp)
 │   ├── statsd/  (statsd.h, statsd.cpp)
 │   ├── sunspec/  (sunspec.h, sunspec.cpp)
 │   ├── syslog/  (syslog.h, syslog.cpp)
@@ -867,7 +868,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 751,037 | 66,352 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 751,081 | 66,352 |
 | `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 751,205 | 66,352 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 751,241 | 66,352 |
 | `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 751,321 | 66,352 |
 | `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,385 | 66,800 |
 | `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,417 | 66,392 |
@@ -890,6 +890,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/33.Csrf` | 752,437 | 66,400 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 752,525 | 69,480 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,645 | 66,352 |
+| `DIAG` | `Foundation/05.Configuration` | 752,733 | 63,104 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 752,809 | 66,632 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 752,845 | 66,392 |
 | `STATS` | `L7-Application/22.Stats` | 752,897 | 66,448 |
@@ -1165,6 +1166,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_SOUTHBOUND` | `0` | Opt-in southbound protocol-driver framework. |
 | `DETWS_ENABLE_SPARKPLUG` | `0` | Sparkplug B payload + topic codec (`services/sparkplug`). |
 | `DETWS_ENABLE_SPA_ROUTER` | `0` | Opt-in single-page-app micro-routing decision. |
+| `DETWS_ENABLE_SQLITE` | `0` | Opt-in SQLite3 on-disk file-format reader. |
 | `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
 | `DETWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
 | `DETWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
