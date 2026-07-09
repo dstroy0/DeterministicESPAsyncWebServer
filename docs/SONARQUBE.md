@@ -107,3 +107,22 @@ params) is partly real const-correctness; `cpp:S134`/`cpp:S3776` (deep nesting /
 cognitive complexity) flag the protocol-dispatch parsers, where a flat switch is
 the clearest structure. The lone blocker-level smell (`cpp:S912`, a side effect
 inside an `&&`) was fixed.
+
+### Triage on the free plan
+
+The free/public SonarCloud plan cannot assign a custom quality profile to the
+project, so the design-conflict rules cannot simply be disabled - each open issue
+is marked individually instead. [`tools/sonar/accept_style_conflicts.py`](../tools/sonar/accept_style_conflicts.py)
+automates that: it transitions the design-conflict style rules to **Accepted**
+(won't fix) and a few provable non-issues (e.g. `strncpy` that is always followed
+by an explicit NUL terminator, protocol field-annotation comments) to **False
+Positive**, each with a justification. Genuine reviewer signals - `cpp:S134`,
+`cpp:S3776`, `cpp:S107` and `cpp:S5813` - are left open on purpose. New code
+re-flags the same style rules, so re-run it after a scan:
+
+```sh
+SONAR_TOKEN=<token> python tools/sonar/accept_style_conflicts.py --dry-run  # preview
+SONAR_TOKEN=<token> python tools/sonar/accept_style_conflicts.py            # apply
+```
+
+Real `BUG` / `VULNERABILITY` findings are always fixed at source, never marked.
