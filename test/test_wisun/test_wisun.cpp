@@ -134,6 +134,61 @@ void test_registry_full_and_misses(void)
                                               sizeof(buf))); // null out
 }
 
+void test_coap_length_ext()
+{
+    // A Uri-Path segment >= 269 bytes drives the 2-byte length-extension encoding.
+    char path[302];
+    path[0] = '/';
+    for (int i = 1; i < 301; i++)
+        path[i] = 'A';
+    path[301] = '\0';
+    uint8_t out[512];
+    size_t n = wisun_build_coap(0, 1, 1, nullptr, 0, path, nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 269);
+}
+
+void test_coap_overflow_and_emit_fail()
+{
+    uint8_t out[64];
+    // Header fits (cap == 4) but no room for even the first option header -> emit fails -> build 0.
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 4));
+    // Header + no options, but the payload marker + payload overflow the buffer.
+    uint8_t pl[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, nullptr, pl, sizeof(pl), out, 10));
+    // Option header byte fits but the value does not -> emit_option second cap check.
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/abcde", nullptr, 0, out, 6));
+}
+
+void test_coap_arg_guards()
+{
+    uint8_t out[64];
+    uint8_t tok[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(0,
+                             wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 9, "/a", nullptr, 0, out, sizeof(out)));  // tkl > 8
+    TEST_ASSERT_EQUAL_size_t(
+        0, wisun_build_coap(0, 1, 1, nullptr, 2, "/a", nullptr, 0, out, sizeof(out))); // tkl w/ null token
+    uint8_t pl[2] = {1, 2};
+    TEST_ASSERT_EQUAL_size_t(
+        0, wisun_build_coap(0, 1, 1, tok, 2, "/a", nullptr, 2, out, sizeof(out))); // plen w/ null payload
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(0, 1, 1, nullptr, 0, "/a", nullptr, 0, out, 3)); // cap < 4+tkl
+    (void)pl;
+}
+
+void test_wisun_null_guards()
+{
+    wisun_init(nullptr, nullptr, nullptr, 0); // null fan -> no-op
+    WisunFan fan;
+    WisunNode storage[4];
+    wisun_init(&fan, nullptr, storage, 4); // null border_router -> zeroed
+    size_t idx = 0;
+    TEST_ASSERT_FALSE(wisun_node_find(nullptr, nullptr, &idx)); // null fan
+    TEST_ASSERT_EQUAL_size_t(0, wisun_joined_count(nullptr));   // null fan
+    char buf[64];
+    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(nullptr, buf, sizeof(buf))); // null fan
+    TEST_ASSERT_EQUAL_size_t(0, wisun_nodes_json(&fan, buf, 0));              // zero cap
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -143,5 +198,9 @@ int main(void)
     RUN_TEST(test_build_coap_rejects_bad_args);
     RUN_TEST(test_node_registry);
     RUN_TEST(test_registry_full_and_misses);
+    RUN_TEST(test_coap_length_ext);
+    RUN_TEST(test_coap_overflow_and_emit_fail);
+    RUN_TEST(test_coap_arg_guards);
+    RUN_TEST(test_wisun_null_guards);
     return UNITY_END();
 }

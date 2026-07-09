@@ -285,6 +285,70 @@ void test_proppatch_stops_when_full()
     TEST_ASSERT_TRUE(strlen(buf) < sizeof(buf)); // no overrun
 }
 
+void test_method_all_including_head()
+{
+    TEST_ASSERT_EQUAL_INT(DAV_M_HEAD, webdav_method("HEAD"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_OPTIONS, webdav_method("OPTIONS"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_MKCOL, webdav_method("MKCOL"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_COPY, webdav_method("COPY"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_MOVE, webdav_method("MOVE"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_LOCK, webdav_method("LOCK"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_UNLOCK, webdav_method("UNLOCK"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method("BOGUS"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method(nullptr));
+}
+
+void test_depth_and_dest_path_guards()
+{
+    TEST_ASSERT_EQUAL_INT(7, webdav_depth(nullptr, 7)); // null -> default
+    TEST_ASSERT_EQUAL_INT(7, webdav_depth("", 7));      // empty -> default
+    TEST_ASSERT_EQUAL_INT(0, webdav_depth("0", 7));
+    TEST_ASSERT_EQUAL_INT(1, webdav_depth("1", 7));
+    char out[64];
+    // Malformed %-escape in the destination path fails closed.
+    TEST_ASSERT_FALSE(webdav_dest_path("http://host/a%zzb", out, sizeof(out)));
+    // A path that overflows the output buffer fails closed.
+    TEST_ASSERT_FALSE(webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8));
+}
+
+void test_ms_entry_content_type_overflow()
+{
+    char buf[1024];
+    size_t len = 0;
+    char ct[420];
+    for (int i = 0; i < 419; i++)
+        ct[i] = 'x';
+    ct[419] = '\0';
+    // An oversized content-type overflows the internal element buffer -> len unchanged (atomic no-op).
+    size_t r = webdav_ms_entry(buf, sizeof(buf), len, "/f.txt", false, 100, "Mon, 01 Jan 2026 00:00:00 GMT", ct);
+    TEST_ASSERT_EQUAL_size_t(len, r);
+}
+
+void test_ms_entry_mtime_and_tiny_buf()
+{
+    char buf[1024];
+    char mtime[460];
+    for (int i = 0; i < 459; i++)
+        mtime[i] = 'm';
+    mtime[459] = '\0';
+    // Oversized mtime overflows the element buffer -> len unchanged.
+    TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));
+    // A well-formed entry that does not fit the OUTPUT buffer leaves len unchanged (atomic commit fails).
+    char tiny[40];
+    TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));
+}
+
+void test_proppatch_ms_echo()
+{
+    char buf[512];
+    // A self-closed property with trailing whitespace exercises the open-tag trim.
+    const char *body = "<D:propertyupdate><D:set><D:prop><D:author  /></D:prop></D:set></D:propertyupdate>";
+    size_t n = webdav_proppatch_ms(buf, sizeof(buf), "/file.txt", body, strlen(body));
+    TEST_ASSERT_TRUE(n > 0);
+    // A tiny buffer makes the leading append fail -> 0.
+    TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -307,5 +371,10 @@ int main()
     RUN_TEST(test_proppatch_rejects_injection);
     RUN_TEST(test_proppatch_fuzz_bounded);
     RUN_TEST(test_proppatch_stops_when_full);
+    RUN_TEST(test_method_all_including_head);
+    RUN_TEST(test_depth_and_dest_path_guards);
+    RUN_TEST(test_ms_entry_content_type_overflow);
+    RUN_TEST(test_ms_entry_mtime_and_tiny_buf);
+    RUN_TEST(test_proppatch_ms_echo);
     return UNITY_END();
 }
