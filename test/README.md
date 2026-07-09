@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2535 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2555 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -2088,7 +2088,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bus_capture (6 tests)</b></summary>
+<summary><b>test_bus_capture (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_standard_data_frame</b> &mdash; <i>can_id 0x00000123, big-endian, no flags.</i></summary>
@@ -2159,6 +2159,14 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Objective**: On host there is no TWAI controller: begin fails closed and poll/end are safe no-ops.
     * **Assertions**:
       * <code>Assert false (bus_capture_begin(5, 4, 500000, bus_sink_noop))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_can_stubs</b> &mdash; <i>Host build: no TWAI/CAN peripheral. begin() fails; poll/end are no-ops.</i></summary>
+
+    * **Objective**: Host build: no TWAI/CAN peripheral. begin() fails; poll/end are no-ops.
+    * **Assertions**:
+      * <code>Assert false (bus_capture_begin(4, 5, 500000, nullptr))</code>
   </details>
 
 </details>
@@ -2857,7 +2865,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cclink (4 tests)</b></summary>
+<summary><b>test_cclink (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sum</b> &mdash; <i>Sum</i></summary>
@@ -2906,6 +2914,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_cclink_parse(buf, n, &f))</code>
       * <code>Assert false (detws_cclink_parse(buf, 2, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(64, CCLINK_CMD_POLL, nullptr, 0, nullptr, 0, buf, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_and_accessor_guards</b> &mdash; <i>Build and accessor guards</i></summary>
+
+    * **Objective**: Build and accessor guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(1, 0, bits, 16, words, 2, out, 2)); // cap too small</code>
+      * <code>Assert false (detws_cclink_get_bit(bits, 16, 999))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, detws_cclink_get_word(words, 2, 999));                 // out of range -&gt; 0</code>
   </details>
 
 </details>
@@ -4202,7 +4220,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_csrf (9 tests)</b></summary>
+<summary><b>test_csrf (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_issue_verify_roundtrip</b> &mdash; <i>Issue verify roundtrip</i></summary>
@@ -4283,6 +4301,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Objective**: Issue rejects small buffer
     * **Assertions**:
       * <code>Assert equal int (0, csrf_issue(small, sizeof(small)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reset_and_verify_guards</b> &mdash; <i>Reset and verify guards</i></summary>
+
+    * **Objective**: Reset and verify guards
+    * **Assertions**:
+      * <code>Assert false (csrf_verify("anything"))</code>
+      * <code>Assert false (csrf_verify("not-a-valid-token"))</code>
+      * <code>Assert false (csrf_verify(nullptr))</code>
   </details>
 
 </details>
@@ -4452,7 +4480,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dds (4 tests)</b></summary>
+<summary><b>test_dds (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_header</b> &mdash; <i>Too small a buffer -> 0.</i></summary>
@@ -4496,6 +4524,15 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_rtps_parse(msg, 20, nullptr, nullptr))</code>
       * <code>Assert false (detws_rtps_parse(msg, 20, nullptr, nullptr))</code>
       * <code>Assert false (detws_rtps_parse(msg, 10, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rtps_build_guards</b> &mdash; <i>Rtps build guards</i></summary>
+
+    * **Objective**: Rtps build guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_rtps_header(guid, vendor, out, 4)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small</code>
   </details>
 
 </details>
@@ -5656,7 +5693,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dma (11 tests)</b></summary>
+<summary><b>test_dma (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_validates</b> &mdash; <i>Open validates</i></summary>
@@ -5798,6 +5835,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert equal memory (b, g_ev[i].data.data(), sizeof(b))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, ch0);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, ch1);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_channel_guard_subconditions</b> &mdash; <i>Channel guard subconditions</i></summary>
+
+    * **Objective**: Channel guard subconditions
+    * **Assertions**:
+      * <code>Assert false (det_dma_sim_feed(0, b, sizeof(b)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(0, b, 4));   // channel not open</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(255, b, 4)); // bad channel</code>
   </details>
 
 </details>
@@ -8730,7 +8777,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_hart (6 tests)</b></summary>
+<summary><b>test_hart (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_checksum</b> &mdash; <i>XOR longitudinal parity.</i></summary>
@@ -8790,6 +8837,18 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 8);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hartip_build_header(0, 0, 0, 0, 0, out, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_and_parse_guards</b> &mdash; <i>Build and parse guards</i></summary>
+
+    * **Objective**: Build and parse guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small</code>
+      * <code>Assert false (detws_hart_parse(nullptr, 10, &hf))</code>
+      * <code>Assert false (detws_hart_parse(tiny, sizeof(tiny), &hf))</code>
   </details>
 
 </details>
@@ -10786,7 +10845,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_interbus (4 tests)</b></summary>
+<summary><b>test_interbus (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_check_vector</b> &mdash; <i>CRC-16/CCITT-FALSE check value: CRC of "123456789" = 0x29B1.</i></summary>
@@ -10831,6 +10890,17 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_interbus_parse(buf, n, out, 4, &count))</code>
       * <code>Assert false (detws_interbus_parse(buf, n, out, 4, &count))</code>
       * <code>Assert false (detws_interbus_parse(buf, n, out, 1, &count))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_parse_guards</b> &mdash; <i>Build parse guards</i></summary>
+
+    * **Objective**: Build parse guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(nullptr, 2, out, sizeof(out))); // null words</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(words, 2, out, 2));             // cap too small</code>
+      * <code>Assert false (detws_interbus_parse(nullptr, 10, ow, 4, &oc))</code>
+      * <code>Assert false (detws_interbus_parse(tiny, sizeof(tiny), ow, 4, &oc))</code>
   </details>
 
 </details>
@@ -12070,7 +12140,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_lonworks (4 tests)</b></summary>
+<summary><b>test_lonworks (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_nv_pdu_roundtrip</b> &mdash; <i>selector 0x1234 is 14-bit -> stored 0x12 0x34.</i></summary>
@@ -12117,10 +12187,19 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(201, enc[0]); // 100.5 * 2</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_snvt_clamps_and_guards</b> &mdash; <i>Snvt clamps and guards</i></summary>
+
+    * **Objective**: Snvt clamps and guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small</code>
+      * <code>Assert false (detws_lon_parse_nv(tiny, sizeof(tiny), &nv))</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_lora (13 tests)</b></summary>
+<summary><b>test_lora (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_frame_build_then_parse</b> &mdash; <i>Frame build then parse</i></summary>
@@ -12242,6 +12321,15 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (4, n)</code>
       * <code>Assert equal memory (frame, buf, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_parse_build_guards</b> &mdash; <i>Frame parse build guards</i></summary>
+
+    * **Objective**: Frame parse build guards
+    * **Assertions**:
+      * <code>Assert false (lora_frame_parse(too_short, sizeof(too_short), &hdr, &payload, &payload_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, lora_frame_build(&hdr, pay, sizeof(pay), out, 2)); // cap too small</code>
   </details>
 
 </details>
@@ -12443,7 +12531,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mbplus (5 tests)</b></summary>
+<summary><b>test_mbplus (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc_check_vector</b> &mdash; <i>CRC-16/X-25 check value: CRC of "123456789" = 0x906E.</i></summary>
@@ -12500,6 +12588,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_mbplus_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(0, MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(65, MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_parse_and_token_wrap</b> &mdash; <i>Build parse and token wrap</i></summary>
+
+    * **Objective**: Build parse and token wrap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(1, 0, payload, sizeof(payload), out, 2)); // cap too small</code>
+      * <code>Assert false (detws_mbplus_parse(tiny, sizeof(tiny), &fr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_mbplus_next_token(8, 8));      // current == max -&gt; wrap to 1</code>
   </details>
 
 </details>
@@ -12685,7 +12783,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mdns_adaptive (4 tests)</b></summary>
+<summary><b>test_mdns_adaptive (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_refresh_interval</b> &mdash; <i>Refresh interval</i></summary>
@@ -12731,6 +12829,14 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_mdns_beacon_presleep_due(&b, 0, 10000, 40000))</code>
       * <code>Assert true (detws_mdns_beacon_presleep_due(&b, 0, 10000, 60000))</code>
       * <code>Assert true (detws_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_refresh_interval_and_beacon</b> &mdash; <i>Refresh interval and beacon</i></summary>
+
+    * **Objective**: Refresh interval and beacon
+    * **Assertions**:
+      * <code>Assert false (detws_mdns_beacon_due(&b, 1000, 1000))</code>
   </details>
 
 </details>
@@ -13036,7 +13142,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_modbus (22 tests)</b></summary>
+<summary><b>test_modbus (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_read_holding_registers</b> &mdash; <i>Read holding registers</i></summary>
@@ -13275,6 +13381,15 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, 4, 0x11)); // out_cap tiny</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_server_init_bounds_and_handler</b> &mdash; <i>Server init bounds and handler</i></summary>
+
+    * **Objective**: Server init bounds and handler
+    * **Assertions**:
+      * <code>Assert false (modbus_get_coil(0xFFFF))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, modbus_get_holding_reg(0xFFFF)); // out of range -&gt; 0</code>
+  </details>
+
 </details>
 
 <details>
@@ -13334,7 +13449,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mpr121 (5 tests)</b></summary>
+<summary><b>test_mpr121 (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_touched_decode</b> &mdash; <i>low byte -> electrodes 0..7; here electrodes 0 and 2.</i></summary>
@@ -13407,6 +13522,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (0, (int)mpr121_build_init(seq, 10, 12, 12, 6))</code>
       * <code>Assert equal int (0, (int)mpr121_build_init(seq, sizeof(seq), 0, 12, 6))</code>
       * <code>Assert equal int (0, (int)mpr121_build_init(seq, sizeof(seq), 13, 12, 6))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_i2c_stubs</b> &mdash; <i>Host build: no I2C bus. begin() fails, register reads return 0.</i></summary>
+
+    * **Objective**: Host build: no I2C bus. begin() fails, register reads return 0.
+    * **Assertions**:
+      * <code>Assert false (mpr121_begin(0x5A))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_touched());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, mpr121_read_filtered(0));</code>
   </details>
 
 </details>
@@ -16678,7 +16803,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_openadr (4 tests)</b></summary>
+<summary><b>test_openadr (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_event</b> &mdash; <i>Event</i></summary>
@@ -16723,6 +16848,19 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Objective**: Overflow
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", &iv, 1, buf, sizeof(buf)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_openadr_escape_and_overflow</b> &mdash; <i>Openadr escape and overflow</i></summary>
+
+    * **Objective**: Openadr escape and overflow
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(out, "\\\\n"))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", nullptr, 0, nullptr, sizeof(out)));   // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "eventNameTooLong", nullptr, 0, out, 8));  // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "r", 1.0, 0, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "res", 1.0, 0, out, 8));             // overflow</code>
   </details>
 
 </details>
@@ -19855,7 +19993,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_rawl2 (4 tests)</b></summary>
+<summary><b>test_rawl2 (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_ethernet_ii</b> &mdash; <i>Build ethernet ii</i></summary>
@@ -19905,6 +20043,18 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Objective**: The canonical CRC-32 check value: CRC of "123456789" = 0xCBF43926.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX32(0xCBF43926, detws_eth_fcs(msg, sizeof(msg)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_eth_build_parse_guards</b> &mdash; <i>Eth build parse guards</i></summary>
+
+    * **Objective**: Eth build parse guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(nullptr, mac, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null dst</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(mac, mac, 0x0800, pay, sizeof(pay), out, 8)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, 8)); // cap</code>
+      * <code>Assert false (detws_eth_parse(vlanish, sizeof(vlanish), &ef))</code>
   </details>
 
 </details>
@@ -21158,7 +21308,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sht3x (5 tests)</b></summary>
+<summary><b>test_sht3x (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc8_datasheet_vector</b> &mdash; <i>Crc8 datasheet vector</i></summary>
@@ -21206,6 +21356,15 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Objective**: Parse null out
     * **Assertions**:
       * <code>Assert true (sht3x_parse(r, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_i2c_stubs</b> &mdash; <i>Host build: no I2C. begin() fails and read() reports failure.</i></summary>
+
+    * **Objective**: Host build: no I2C. begin() fails and read() reports failure.
+    * **Assertions**:
+      * <code>Assert false (sht3x_begin(0x44))</code>
+      * <code>Assert false (sht3x_read(&t, &h))</code>
   </details>
 
 </details>
@@ -22301,7 +22460,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sockpool (5 tests)</b></summary>
+<summary><b>test_sockpool (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_acquire_free</b> &mdash; <i>Find.</i></summary>
@@ -22360,10 +22519,19 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (SOCK_ACQ_FAIL, detws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_guard_subconditions</b> &mdash; <i>Null guard subconditions</i></summary>
+
+    * **Objective**: Null guard subconditions
+    * **Assertions**:
+      * <code>Assert false (detws_sockpool_find(nullptr, 1, &idx))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sockpool_in_use(nullptr)); // null pool -&gt; 0</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_southbound (5 tests)</b></summary>
+<summary><b>test_southbound (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_register_and_find</b> &mdash; <i>Duplicate name rejected.</i></summary>
@@ -22428,6 +22596,16 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (SB_ERR_FULL, detws_southbound_register(&drv[i]))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, detws_southbound_count());</code>
       * <code>Assert equal int (8, registered)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dispatch_not_found_guards</b> &mdash; <i>Dispatch not found guards</i></summary>
+
+    * **Objective**: Dispatch not found guards
+    * **Assertions**:
+      * <code>Assert null (detws_southbound_find("nope"))</code>
+      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_read("nope", 0, &v))</code>
+      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_write("nope", 0, 42))</code>
   </details>
 
 </details>
@@ -25873,7 +26051,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_totp (4 tests)</b></summary>
+<summary><b>test_totp (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_rfc6238_vectors</b> &mdash; <i>RFC 6238 Appendix B (SHA-1, T0=0, step=30, digits=8).</i></summary>
@@ -25916,6 +26094,15 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (-1, detws_base32_decode("MZXW6!!!", out, sizeof(out)))</code>
       * <code>Assert equal int (-1, detws_base32_decode("MZXW6MZXW6", out, 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_long_key_default_period_and_base32</b> &mdash; <i>Long key default period and base32</i></summary>
+
+    * **Objective**: Long key default period and base32
+    * **Assertions**:
+      * <code>Assert true (detws_base32_decode("MFRGG===", out, sizeof(out)) &gt;= 0)</code>
+      * <code>Assert equal int (-1, detws_base32_decode("MFRG!", out, sizeof(out)))</code>
   </details>
 
 </details>
@@ -28259,7 +28446,7 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wifi_sniffer (5 tests)</b></summary>
+<summary><b>test_wifi_sniffer (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_data</b> &mdash; <i>Parse data</i></summary>
@@ -28318,6 +28505,14 @@ A thorough directory of all **2535 test cases** across **228 suites**. Expand a 
       * <code>Assert true (detws_wifi_should_roam(-80, -70, 8))</code>
       * <code>Assert false (detws_wifi_should_roam(-80, -75, 8))</code>
       * <code>Assert false (detws_wifi_should_roam(-60, -75, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stats_add_null_and_default_type</b> &mdash; <i>Stats add null and default type</i></summary>
+
+    * **Objective**: Stats add null and default type
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, st.other);</code>
   </details>
 
 </details>
