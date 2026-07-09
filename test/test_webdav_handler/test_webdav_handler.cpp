@@ -489,9 +489,68 @@ void test_webdav_copy_fs_table_full()
     TEST_ASSERT_TRUE(resp_status(409));
 }
 
+// WebDAV method-handler edges: GET/HEAD on a missing resource (404) and on a collection
+// (405, not a download); a COPY Destination with a trailing slash (the joined path's
+// trailing '/' is stripped); and a buffered (empty-body) PUT whose file cannot be created
+// because the FS node table is exhausted (409).
+void test_webdav_get_put_dest_edges()
+{
+    feed_and_handle(0, "GET /dav/missing.txt HTTP/1.1\r\nHost: x\r\n\r\n"); // no such resource
+    TEST_ASSERT_TRUE(resp_status(404));
+
+    rearm();
+    feed_and_handle(0, "HEAD /dav/missing.txt HTTP/1.1\r\nHost: x\r\n\r\n"); // same open-fail guard
+    TEST_ASSERT_TRUE(resp_status(404));
+
+    rearm();
+    tree_mkdir("/dav/adir");
+    feed_and_handle(0, "GET /dav/adir HTTP/1.1\r\nHost: x\r\n\r\n"); // GET on a collection
+    TEST_ASSERT_TRUE(resp_status(405));
+
+    rearm();
+    tree_put("/dav/f.txt", "hi");
+    feed_and_handle(0, "COPY /dav/f.txt HTTP/1.1\r\nHost: x\r\nDestination: /dav/g.txt/\r\n\r\n"); // trailing slash
+    TEST_ASSERT_TRUE(resp_status(201));       // created at the slash-stripped path
+    TEST_ASSERT_TRUE(tree_has("/dav/g.txt")); // no trailing-slash node
+
+    rearm();
+    char p[32];
+    for (int i = 0; i < 100; i++) // exhaust the node table
+    {
+        snprintf(p, sizeof p, "/dav/q%03d", i);
+        if (!fs::_tree_add(p, false))
+            break;
+    }
+    feed_and_handle(0, "PUT /dav/newfile.txt HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n"); // open("w") fails
+    TEST_ASSERT_TRUE(resp_status(409));
+}
+
+// COPY whose destination filesystem path would overflow the 256-byte path buffer: a deep
+// fs root plus a destination name exceeds it, so the destination dav_join fails -> 414. The
+// destination join runs before the source-exists check, and the short source path under the
+// same deep root still resolves, so the request reaches the COPY case (not a top-level 404).
+void test_webdav_copy_dest_path_too_long_414()
+{
+    // 240-char fs root: a short source ("/s") still joins under 256, but root + any
+    // real destination sub-path overflows the 256-byte join buffer.
+    static char longroot[241];
+    memset(longroot, 'r', sizeof(longroot) - 1);
+    longroot[0] = '/';
+    longroot[sizeof(longroot) - 1] = '\0';
+    server.dav("/d2", davfs, longroot);
+
+    char req[128];
+    // dest sub-path "/destination_file_name.txt" (26 chars) + the 240-char root overflows 256.
+    snprintf(req, sizeof(req), "COPY /d2/s HTTP/1.1\r\nHost: x\r\nDestination: /d2/destination_file_name.txt\r\n\r\n");
+    feed_and_handle(0, req);
+    TEST_ASSERT_TRUE(resp_status(414));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_webdav_get_put_dest_edges);
+    RUN_TEST(test_webdav_copy_dest_path_too_long_414);
     RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_webdav_deep_tree_rejected);
     RUN_TEST(test_webdav_propfind_limit_and_proppatch);

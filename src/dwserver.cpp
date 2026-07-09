@@ -3831,8 +3831,11 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 409, ""); // parent missing / not writable
             return;
         }
+        // Only an empty CL:0 PUT reaches this buffered path (a bodied PUT to a DAV route streams, or
+        // bails before this switch since stream_begin's decline reasons also fail the top-level
+        // resolve), so body_len is always 0 here and the write never runs.
         if (req->body_len)
-            f.write(req->body, req->body_len);
+            f.write(req->body, req->body_len); // GCOVR_EXCL_LINE unreachable: body_len always 0 (see above)
         f.close();
         dav_send_status(slot_id, existed ? 204 : 201, "");
         return;
