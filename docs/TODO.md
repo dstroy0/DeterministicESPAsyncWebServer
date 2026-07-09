@@ -54,6 +54,34 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
 - [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
 
+### Embedded data stores (SD card)
+
+An on-device data-store stack. The user is attaching an **SD card** and wants an atomic buffer-to-flash
+layer built first, then the store codecs on top. Substrate before stores.
+
+- [ ] **Atomic buffer-to-flash layer (the substrate).** A power-loss-safe write path over the FS / SD:
+      a write-ahead journal or an A/B page double-buffer with a checksum + commit marker, so an
+      interrupted write is rolled back (never half-applied) on the next mount. Zero-heap, bounded
+      journal, static buffers. Co-designed with the user once the card is attached. Measure the write
+      path (see Performance).
+- [ ] **dbm**: a classic on-disk hash key-value store (ndbm / gdbm-style) - a bounded, host-testable
+      file-format codec on top of the flash layer.
+- [ ] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
+      encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
+      incompatible with the no-stdlib zero-heap model).
+- [ ] **nosql**: a NoSQL store - target TBD (a Redis RESP or MongoDB OP_MSG/BSON **wire client**, or a
+      local on-flash document / KV store). Scope with the user before building.
+
+### Performance
+
+- [ ] **Feature performance measurement -> `docs/FEATURE_PERFORMANCE.md`.** Benchmark each feature's hot
+      operation(s) to judge real-world viability: a host **ns/op** deterministic baseline plus the
+      on-device **ESP32-S3 us/op @ 240 MHz** and throughput (the number that actually matters). A
+      reusable bench harness (a shared timing header; a native runner on the RPi + an on-device example
+      that prints a table over serial). Living table: feature, operation, host ns/op, ESP32 us/op,
+      throughput, notes. Measure whole paths (HTTP parse, TLS handshake, JSON render), not just
+      micro-codecs.
+
 ### CNC / machine-tool connectivity
 
 Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and modern **Ethernet** (vendor APIs, file transfer, open telemetry). The read/telemetry side already ships as `services/mtconnect` (an ANSI/MTC1.4 agent over the existing HTTP stack); the rest below is open.
