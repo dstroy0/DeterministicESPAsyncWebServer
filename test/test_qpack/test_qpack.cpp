@@ -253,6 +253,18 @@ void test_qpack_more_encode_decode_paths()
     }
 }
 
+void test_qpack_emit_fail_and_namelen_past()
+{
+    char sc[128];
+    // Literal Field Line with Name Reference + a valid value, but the emit callback rejects it.
+    const uint8_t nameref[5] = {0x00, 0x00, 0x51, 0x01, 'v'}; // :path name-ref, value "v"
+    TEST_ASSERT_FALSE(qpack_decode(nameref, 5, sc, sizeof sc, fail_emit, nullptr));
+    // Literal Field Line with Literal Name whose NameLen (6, not the 3-bit escape 7) runs past the block.
+    Sink s;
+    const uint8_t namelen_past[3] = {0x00, 0x00, 0x26}; // NameLen 6, no name octets follow
+    TEST_ASSERT_FALSE(decode_all(namelen_past, 3, &s));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -266,5 +278,6 @@ int main()
     RUN_TEST(test_decode_errors);
     RUN_TEST(test_value_string_paths);
     RUN_TEST(test_qpack_more_encode_decode_paths);
+    RUN_TEST(test_qpack_emit_fail_and_namelen_past);
     return UNITY_END();
 }
