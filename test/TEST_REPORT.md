@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 10:29:55
+**Generated:** 2026-07-09 10:36:36
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2740 passed - 345s
+**Result:** ✅ 2742 passed - 349s
 
 ---
 
@@ -239,8 +239,8 @@
 | `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.283 |
 | `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:11.206 |
 | `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.305 |
-| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.354 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.098 |
+| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.110 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:06.555 |
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.833 |
 
 ---
@@ -6184,17 +6184,19 @@ _End-to-end capstone for the whole HTTP/3 stack: a QUIC client (in the test) com
 
 ---
 
-## test_quic_server - native_quic_server - ✅ 2 passed
+## test_quic_server - native_quic_server - ✅ 4 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _HTTP/3 server-glue test: the same end-to-end flow as test_h3_e2e (a QUIC client completes the_
 
-|   # | Test                          | Status | Description            |
-| --: | :---------------------------- | :----: | :--------------------- |
-|   1 | `test_quic_server_http3_get`  |   ✅   | Quic server http3 get  |
-|   2 | `test_idle_connection_reaped` |   ✅   | Idle connection reaped |
+|   # | Test                            | Status | Description              |
+| --: | :------------------------------ | :----: | :----------------------- |
+|   1 | `test_quic_server_http3_get`    |   ✅   | Quic server http3 get    |
+|   2 | `test_idle_connection_reaped`   |   ✅   | Idle connection reaped   |
+|   3 | `test_quic_server_input_guards` |   ✅   | Quic server input guards |
+|   4 | `test_quic_server_pool_full`    |   ✅   | Quic server pool full    |
 
 </details>
 
