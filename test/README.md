@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2618 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2620 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19987,7 +19987,7 @@ A thorough directory of all **2618 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_tls (11 tests)</b></summary>
+<summary><b>test_quic_tls (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_roundtrip</b> &mdash; <i>Client transport params.</i></summary>
@@ -20100,6 +20100,40 @@ A thorough directory of all **2618 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_tls_more_guards</b> &mdash; <i>A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished.</i></summary>
+
+    * **Objective**: A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message</code>
+      * <code>Assert equal uint (sizeof(more), quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, more, sizeof(more)))</code>
+      * <code>Assert null (quic_tls_flight(&qt, QUIC_ENC_APP, &l))</code>
+      * <code>Assert equal uint (0, l)</code>
+      * <code>Assert null (quic_tls_keys(&fresh, QUIC_ENC_HANDSHAKE, true))</code>
+      * <code>Assert null (quic_tls_keys(&fresh, QUIC_ENC_APP, false))</code>
+      * <code>Assert null (quic_tls_keys(&fresh, 999, true))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_tls_cert_size_boundary_emit_fails</b> &mdash; <i>(a) Certificate fits but leaves fewer than cv bytes -> CertificateVerify emit fails.</i></summary>
+
+    * **Objective**: (a) Certificate fits but leaves fewer than cv bytes -> CertificateVerify emit fails.
+    * **Assertions**:
+      * <code>Assert true (ee &gt; 0 && cert_overhead &gt; 0 && cv &gt; 4 && fin &gt; 4)</code>
+      * <code>Assert true (buf &gt; ee + cert_overhead + leave_a)</code>
+      * <code>Assert true (cfg.cert_len &lt; sizeof(big_cert))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));</code>
+      * <code>Assert true (buf &gt; ee + cert_overhead + leave_b)</code>
+      * <code>Assert true (cfg.cert_len &lt; sizeof(big_cert))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));</code>
   </details>
 
 </details>
