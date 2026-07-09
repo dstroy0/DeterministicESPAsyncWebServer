@@ -175,7 +175,7 @@ QuicSlot *alloc_slot()
             s->used = true;
             s->id = s_quic.next_id++;
             if (s_quic.next_id == 0)
-                s_quic.next_id = 1; // never hand out 0
+                s_quic.next_id = 1; // GCOVR_EXCL_LINE  never hand out 0; next_id wraps only after 2^32 allocations
             return s;
         }
     return nullptr;
@@ -233,7 +233,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
 {
     *is_initial = false;
     if (len < 1)
-        return nullptr;
+        return nullptr; // GCOVR_EXCL_LINE  poll only routes ring entries; ring_push rejects len==0, so len>=1 here
     if (quic_is_long_header(dg[0]))
     {
         if (!quic_parse_long_header(dg, len, lh_out))

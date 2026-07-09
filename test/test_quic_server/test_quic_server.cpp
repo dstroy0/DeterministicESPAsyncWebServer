@@ -470,10 +470,107 @@ void test_idle_connection_reaped()
     quic_server_stop();
 }
 
+// An RNG safe for any length / call count (test_rng only sources one handshake's fixed material).
+static void bulk_rng(uint8_t *out, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+        out[i] = (uint8_t)(i * 7 + 1);
+}
+
+// A minimal Initial (a single ACK frame) with the given DCID - enough for the router to mark it an
+// unmatched Initial and for the engine to allocate a slot; no full handshake is needed.
+static size_t make_min_initial(uint8_t *dg, size_t cap, const uint8_t *dcid, uint8_t dcl)
+{
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(dcid, dcl, &init);
+    uint8_t frames[64];
+    size_t fl = quic_build_ack(frames, sizeof(frames), 0, 0, 0);
+    return build_long(dg, cap, QUIC_LP_INITIAL, dcid, dcl, CLIENT_SCID, sizeof(CLIENT_SCID), 0, &init.client, frames,
+                      fl);
+}
+
+void test_quic_server_input_guards()
+{
+    fill();
+    // begin() rejects a null config and a null RNG.
+    TEST_ASSERT_FALSE(quic_server_begin(443, nullptr, app_request, nullptr));
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = nullptr;
+    TEST_ASSERT_FALSE(quic_server_begin(443, &scfg, app_request, nullptr));
+
+    // poll() before a successful begin is a no-op (running == false).
+    quic_server_stop();
+    quic_server_poll(0);
+
+    scfg.rng = test_rng;
+    quic_server_set_out_sink(out_sink, nullptr);
+    TEST_ASSERT_TRUE(quic_server_begin(443, &scfg, app_request, nullptr));
+
+    // ingest() rejects an empty or oversized datagram.
+    uint8_t one[1] = {0x40};
+    TEST_ASSERT_FALSE(quic_server_ingest(one, 0, "192.0.2.1", 1));
+    static uint8_t huge[DETWS_QUIC_MAX_DATAGRAM + 1];
+    TEST_ASSERT_FALSE(quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1));
+
+    // respond() with an unknown connection id fails.
+    TEST_ASSERT_FALSE(quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0));
+
+    // Route guards via poll: a malformed long header, a too-short short header, and a short header
+    // with an unknown DCID each route to nothing and are dropped.
+    uint8_t bad_long[1] = {0xC0}; // long-header bit set but truncated -> parse fails
+    TEST_ASSERT_TRUE(quic_server_ingest(bad_long, 1, "192.0.2.1", 1));
+    uint8_t short_tiny[2] = {0x40, 0x00}; // short header shorter than 1 + SCID_LEN
+    TEST_ASSERT_TRUE(quic_server_ingest(short_tiny, 2, "192.0.2.1", 1));
+    uint8_t short_unknown[1 + DETWS_QUIC_SCID_LEN] = {0x40, 9, 9, 9, 9, 9, 9, 9, 9}; // no matching conn
+    TEST_ASSERT_TRUE(quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1));
+    quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());
+
+    // Ring full: without polling, the ring holds DETWS_QUIC_INGEST_RING-1 entries, then drops.
+    quic_server_begin(443, &scfg, app_request, nullptr); // reset the ring cursors
+    int pushed = 0;
+    for (int i = 0; i < DETWS_QUIC_INGEST_RING + 4; i++)
+        if (quic_server_ingest(one, 1, "192.0.2.1", 1))
+            pushed++;
+    TEST_ASSERT_EQUAL_INT(DETWS_QUIC_INGEST_RING - 1, pushed);
+    quic_server_stop();
+}
+
+void test_quic_server_pool_full()
+{
+    fill();
+    QuicServerConfig scfg;
+    memset(&scfg, 0, sizeof(scfg));
+    scfg.cert_der = CERT;
+    scfg.cert_len = sizeof(CERT);
+    memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
+    scfg.rng = bulk_rng; // several connections are opened, so the RNG must serve any call count
+    quic_server_set_out_sink(out_sink, nullptr);
+    TEST_ASSERT_TRUE(quic_server_begin(443, &scfg, app_request, nullptr));
+
+    // One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.
+    for (int i = 0; i <= DETWS_QUIC_MAX_CONNS; i++)
+    {
+        uint8_t dcid[8] = {0xA0, (uint8_t)i, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5};
+        uint8_t dg[256];
+        size_t dl = make_min_initial(dg, sizeof(dg), dcid, sizeof(dcid));
+        TEST_ASSERT_TRUE(quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+    }
+    quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, quic_server_active_conns()); // capped at the pool size
+    quic_server_stop();
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_quic_server_http3_get);
     RUN_TEST(test_idle_connection_reaped);
+    RUN_TEST(test_quic_server_input_guards);
+    RUN_TEST(test_quic_server_pool_full);
     return UNITY_END();
 }
