@@ -30,6 +30,8 @@ struct PqCtx
 };
 PqCtx s_pq;
 
+// GCOVR_EXCL_START  ESP32-only: only used to name the FreeRTOS task in the ARDUINO detws_pq_start_lane;
+// the coverage host never starts tasks, and this is internal-linkage (anon namespace) so not callable.
 const char *lane_name(detws_pq_lane lane)
 {
     switch (lane)
@@ -44,6 +46,7 @@ const char *lane_name(detws_pq_lane lane)
         return "detws_pq_user";
     }
 }
+// GCOVR_EXCL_STOP
 
 bool lane_ok(detws_pq_lane lane)
 {

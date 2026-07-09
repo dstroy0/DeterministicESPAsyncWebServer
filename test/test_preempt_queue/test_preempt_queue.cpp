@@ -207,6 +207,26 @@ void test_lane_high_water_is_per_lane()
     TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(DETWS_PQ_LANE_DEVICE)); // untouched lane
 }
 
+void test_lane_api_urgent_and_drain()
+{
+    stop_all_lanes();
+    DetwsPqConfig cfg = {};
+    cfg.handler = on_item_dma;
+    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &cfg));
+    uint32_t a = 10, b = 20;
+    TEST_ASSERT_TRUE(detws_pq_post_lane(DETWS_PQ_LANE_DMA, &a, 0));
+    TEST_ASSERT_TRUE(detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, &b, 0)); // urgent -> jumps the queue
+    detws_pq_drain_lane(DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)g_seen_dma.size());
+    TEST_ASSERT_EQUAL_UINT32(20u, g_seen_dma[0]); // urgent item first
+    TEST_ASSERT_EQUAL_UINT32(10u, g_seen_dma[1]);
+    // Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.
+    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent((detws_pq_lane)DETWS_PQ_LANE_COUNT, &a, 0));
+    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, nullptr, 0));
+    detws_pq_drain_lane((detws_pq_lane)DETWS_PQ_LANE_COUNT);
+    detws_pq_stop_lane(DETWS_PQ_LANE_DMA);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -221,5 +241,6 @@ int main()
     RUN_TEST(test_lanes_are_isolated);
     RUN_TEST(test_lane_start_stop_running_independent);
     RUN_TEST(test_lane_high_water_is_per_lane);
+    RUN_TEST(test_lane_api_urgent_and_drain);
     return UNITY_END();
 }
