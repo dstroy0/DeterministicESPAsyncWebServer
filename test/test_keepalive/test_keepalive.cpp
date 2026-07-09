@@ -188,9 +188,23 @@ void test_fresh_connection_resets_count()
     TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
 }
 
+// Connection-header token edge cases: whitespace trimmed before the comma, and a bare keep-alive
+// token (no "close") leaves a 1.1 connection persistent.
+void test_conn_token_ws_and_bare_keepalive()
+{
+    feed_and_handle(0, "GET /res HTTP/1.1\r\nConnection: keep-alive , close\r\n\r\n"); // trailing WS before comma
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: close"));
+
+    tcp_capture_reset();
+    feed_and_handle(1, "GET /res HTTP/1.1\r\nConnection: keep-alive\r\n\r\n"); // only token is keep-alive
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
+    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[1].state);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_conn_token_ws_and_bare_keepalive);
     RUN_TEST(test_http11_default_keeps_alive);
     RUN_TEST(test_http11_explicit_close);
     RUN_TEST(test_http10_default_closes);
