@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 10:04:13
+**Generated:** 2026-07-09 10:18:26
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2737 passed - 330s
+**Result:** ✅ 2738 passed - 335s
 
 ---
 
@@ -233,7 +233,7 @@
 | `test_quic_frame`        | `native_quic_frame`     |     8 |   ✅   | 00:00:00.796 |
 | `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.912 |
 | `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.832 |
-| `test_quic_tp`           | `native_quic_tp`        |     7 |   ✅   | 00:00:00.802 |
+| `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:05.230 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
 | `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:01.210 |
 | `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.308 |
@@ -6041,22 +6041,23 @@ _Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls
 
 ---
 
-## test_quic_tp - native_quic_tp - ✅ 7 passed
+## test_quic_tp - native_quic_tp - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the QUIC transport-parameters codec (network_drivers/presentation/http3/quic_tp;_
 
-|   # | Test                        | Status | Description                                                                             |
-| --: | :-------------------------- | :----: | :-------------------------------------------------------------------------------------- |
-|   1 | `test_defaults`             |   ✅   | Defaults                                                                                |
-|   2 | `test_roundtrip`            |   ✅   | Roundtrip                                                                               |
-|   3 | `test_parse_bytes`          |   ✅   | Parse bytes                                                                             |
-|   4 | `test_skip_unknown`         |   ✅   | id 0x1a (unknown), len 3, value 01 02 03; then 04 01 20 (initial_max_data = 0x20 = 32). |
-|   5 | `test_reject_duplicate`     |   ✅   | initial_max_data twice.                                                                 |
-|   6 | `test_reject_oversized_cid` |   ✅   | original_destination_connection_id with a 21-byte value (max is 20).                    |
-|   7 | `test_reject_bad_values`    |   ✅   | active_connection_id_limit = 1 (must be >= 2).                                          |
+|   # | Test                        | Status | Description                                                                                  |
+| --: | :-------------------------- | :----: | :------------------------------------------------------------------------------------------- |
+|   1 | `test_defaults`             |   ✅   | Defaults                                                                                     |
+|   2 | `test_roundtrip`            |   ✅   | Roundtrip                                                                                    |
+|   3 | `test_parse_bytes`          |   ✅   | Parse bytes                                                                                  |
+|   4 | `test_skip_unknown`         |   ✅   | id 0x1a (unknown), len 3, value 01 02 03; then 04 01 20 (initial_max_data = 0x20 = 32).      |
+|   5 | `test_reject_duplicate`     |   ✅   | initial_max_data twice.                                                                      |
+|   6 | `test_reject_oversized_cid` |   ✅   | original_destination_connection_id with a 21-byte value (max is 20).                         |
+|   7 | `test_reject_bad_values`    |   ✅   | active_connection_id_limit = 1 (must be >= 2).                                               |
+|   8 | `test_quic_tp_more_paths`   |   ✅   | Encode overflow: a CID param's ID varint, length varint, and value each fail at a tight cap. |
 
 </details>
 
