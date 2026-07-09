@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 15:50:27
+**Generated:** 2026-07-09 15:58:12
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2805 passed - 481s
+**Result:** ✅ 2806 passed - 494s
 
 ---
 
@@ -117,7 +117,7 @@
 | `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.720 |
 | `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.735 |
 | `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.786 |
-| `test_oidc`              | `native_oidc`           |    17 |   ✅   | 00:00:01.034 |
+| `test_oidc`              | `native_oidc`           |    18 |   ✅   | 00:00:13.388 |
 | `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.723 |
 | `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.778 |
 | `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.736 |
@@ -3397,7 +3397,7 @@ _Unit tests for the hash-chained audit log (services/audit_log). Verify the_
 
 ---
 
-## test_oidc - native_oidc - ✅ 17 passed
+## test_oidc - native_oidc - ✅ 18 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3406,23 +3406,24 @@ _Unit tests for the OIDC RS256 ID-token verifier (services/oidc). Vectors are_
 
 |   # | Test                                 | Status | Description                                                               |
 | --: | :----------------------------------- | :----: | :------------------------------------------------------------------------ |
-|   1 | `test_jwks_malformed_keys`           |   ✅   | Jwks malformed keys                                                       |
-|   2 | `test_token_kid_guards`              |   ✅   | Token kid guards                                                          |
-|   3 | `test_jwks_find_guards`              |   ✅   | Jwks find guards                                                          |
-|   4 | `test_verify_guards_and_malformed`   |   ✅   | Verify guards and malformed                                               |
-|   5 | `test_token_kid`                     |   ✅   | Token kid                                                                 |
-|   6 | `test_jwks_find`                     |   ✅   | Jwks find                                                                 |
-|   7 | `test_jwks_find_missing_kid_fails`   |   ✅   | Jwks find missing kid fails                                               |
-|   8 | `test_verify_valid_token_and_claims` |   ✅   | Verify valid token and claims                                             |
-|   9 | `test_verify_aud_array`              |   ✅   | Verify aud array                                                          |
-|  10 | `test_reject_expired`                |   ✅   | Reject expired                                                            |
-|  11 | `test_reject_wrong_issuer`           |   ✅   | Reject wrong issuer                                                       |
-|  12 | `test_reject_wrong_audience`         |   ✅   | Reject wrong audience                                                     |
-|  13 | `test_reject_non_rs256_header`       |   ✅   | Reject non rs256 header                                                   |
-|  14 | `test_reject_tampered_payload`       |   ✅   | Reject tampered payload                                                   |
-|  15 | `test_reject_tampered_signature`     |   ✅   | Reject tampered signature                                                 |
-|  16 | `test_reject_unknown_key`            |   ✅   | JWKS whose only key has a different kid than the token's.                 |
-|  17 | `test_reject_malformed`              |   ✅   | No kid extractable -> the sole JWKS key is selected, then the token shape |
+|   1 | `test_oidc_parse_edge_guards`        |   ✅   | Oidc parse edge guards                                                    |
+|   2 | `test_jwks_malformed_keys`           |   ✅   | Jwks malformed keys                                                       |
+|   3 | `test_token_kid_guards`              |   ✅   | Token kid guards                                                          |
+|   4 | `test_jwks_find_guards`              |   ✅   | Jwks find guards                                                          |
+|   5 | `test_verify_guards_and_malformed`   |   ✅   | Verify guards and malformed                                               |
+|   6 | `test_token_kid`                     |   ✅   | Token kid                                                                 |
+|   7 | `test_jwks_find`                     |   ✅   | Jwks find                                                                 |
+|   8 | `test_jwks_find_missing_kid_fails`   |   ✅   | Jwks find missing kid fails                                               |
+|   9 | `test_verify_valid_token_and_claims` |   ✅   | Verify valid token and claims                                             |
+|  10 | `test_verify_aud_array`              |   ✅   | Verify aud array                                                          |
+|  11 | `test_reject_expired`                |   ✅   | Reject expired                                                            |
+|  12 | `test_reject_wrong_issuer`           |   ✅   | Reject wrong issuer                                                       |
+|  13 | `test_reject_wrong_audience`         |   ✅   | Reject wrong audience                                                     |
+|  14 | `test_reject_non_rs256_header`       |   ✅   | Reject non rs256 header                                                   |
+|  15 | `test_reject_tampered_payload`       |   ✅   | Reject tampered payload                                                   |
+|  16 | `test_reject_tampered_signature`     |   ✅   | Reject tampered signature                                                 |
+|  17 | `test_reject_unknown_key`            |   ✅   | JWKS whose only key has a different kid than the token's.                 |
+|  18 | `test_reject_malformed`              |   ✅   | No kid extractable -> the sole JWKS key is selected, then the token shape |
 
 </details>
 
