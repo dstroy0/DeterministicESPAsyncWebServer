@@ -618,6 +618,42 @@ static void test_rsa_encode_pubkey(void)
     TEST_ASSERT_EQUAL_MEMORY("ssh-rsa", blob + 4, 7);
 }
 
+// ssh_rsa_verify / ssh_rsa_encode_pubkey fail-closed guards, plus the modexp exp==0 fast path.
+static void test_rsa_verify_and_encode_guards(void)
+{
+    uint8_t n[256];
+    uint8_t e[4] = {0x00, 0x01, 0x00, 0x01};
+    hex_to_bytes(n, RT_N, 256);
+    uint8_t sig[256];
+
+    memset(sig, 0, sizeof(sig));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 255)); // sig length mismatch
+    memset(sig, 0xFF, sizeof(sig));                                                     // all-ones is >= any modulus
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 256)); // signature not reduced mod n
+
+    setup_test_rsa_key();
+    ssh_rsa_load_pubkey();
+    uint8_t blob[SSH_RSA_PUBKEY_BLOB_MAX];
+    size_t blob_len = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_encode_pubkey(blob, &blob_len, SSH_RSA_PUBKEY_BLOB_MAX - 1)); // out_cap too small
+    ssh_host_pubkey.loaded = false;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_encode_pubkey(blob, &blob_len, sizeof(blob))); // no key loaded
+
+    // A zero private exponent takes the modexp exp==0 fast path (result 1), so signing succeeds
+    // and yields s == 1 (0x00..01). Degenerate, but it exercises the guard.
+    setup_test_rsa_key();
+    memset(_test_rsa_d, 0, 256);
+    ssh_rsa_load_pubkey();
+    uint8_t sig0[256];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)"x", 1, sig0));
+    for (int i = 0; i < 255; i++)
+        TEST_ASSERT_EQUAL_UINT8(0, sig0[i]);
+    TEST_ASSERT_EQUAL_UINT8(1, sig0[255]);
+
+    setup_test_rsa_key(); // restore the fixture for any later test
+    ssh_rsa_load_pubkey();
+}
+
 // Real RSA-2048 PKCS#1 v1.5 SHA-256 signature over "hello ssh", produced with
 // `openssl dgst -sha256 -sign` (a genuine known-answer vector).
 static const char *RSA_KAT_N =
@@ -1438,6 +1474,7 @@ int main(void)
     RUN_TEST(test_rsa_pkcs1_pad_structure);
     RUN_TEST(test_rsa_sign_verify_roundtrip);
     RUN_TEST(test_rsa_encode_pubkey);
+    RUN_TEST(test_rsa_verify_and_encode_guards);
     RUN_TEST(test_rsa_verify_valid_signature);
     RUN_TEST(test_rsa_verify_rejects_tampered_signature);
     RUN_TEST(test_rsa_verify_rejects_wrong_message);
