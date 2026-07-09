@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`c449c90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c449c90e0a095da38355d7316ce31833552b7a3c))
+- update CHANGELOG.md [skip ci] ([`0a3d4d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a3d4d5b9f298a38eadabc401eb14639c16b4196))
 - update CHANGELOG.md [skip ci] ([`93c7ff7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ff72e2291d84c5bce2270f06ad1214995e04))
 - update CHANGELOG.md [skip ci] ([`d78ed0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d78ed0bf09a28084fed078592e3ad7139afe1e05))
 - update CHANGELOG.md [skip ci] ([`3e31dd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e31dd58bc5c7e3e37673fb6505934db202ac180))
@@ -251,6 +253,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`642f913`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/642f913fc110d88acf8c969402122a42d4a4db34))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8318f67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8318f6725c0a5331d3c2a39fc0f9f738c2f1fb3a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0b80af1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b80af1a59385ada547de2cb5bab77513e8cf954))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7109290`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71092905549587f74257a6941fe251586fd6df92))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e2ca271`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2ca271902340fdf2ed419eabe91d6684d4272c1))
@@ -481,6 +485,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover WebDAV GET/PUT/COPY method-handler edges ([`ec80412`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec80412fea9074e5d658de0e405f22318829ba39))
 - cover conditional-GET + range-parse edges ([`d4a4eef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a4eefa5f8618ebcf7a24a320a7e506f9291ecf))
 - cover send-pump write-fail retry, short-read stop, over-report clamp ([`bd21eb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd21eb640621c164c2f84193387d8e241672ba02))
 - cover file/chunk send-pump backpressure + cross-poll resume ([`fb339a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb339a607994edd31298f02d57b8b8d875f8d946))
