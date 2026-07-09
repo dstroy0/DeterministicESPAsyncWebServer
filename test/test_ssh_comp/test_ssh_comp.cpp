@@ -11,6 +11,7 @@
 #include "network_drivers/presentation/inflate/inflate.h"
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/session/scratch.h"
 #include <string.h>
 #include <unity.h>
 
@@ -132,6 +133,23 @@ void test_packet_layer_window_slide()
     verify();
 }
 
+// With s2c compression active, an exhausted scratch arena fails the compress-buffer alloc, so the
+// send fails closed rather than emitting an uncompressed (desynced) packet.
+void test_packet_compress_scratch_exhausted()
+{
+    ssh_comp_set_s2c(0, SSH_COMP_ZLIB);
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    scratch_reset();
+    while (scratch_alloc(8, 1))
+        ; // drain the arena
+    uint8_t payload[8] = {SSH_MSG_IGNORE, 1, 2, 3, 4, 5, 6, 7};
+    uint8_t wire[SSH_WIRE_CAP];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    scratch_reset();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -140,5 +158,6 @@ int main()
     RUN_TEST(test_none_never_activates);
     RUN_TEST(test_packet_layer_stream_roundtrip);
     RUN_TEST(test_packet_layer_window_slide);
+    RUN_TEST(test_packet_compress_scratch_exhausted);
     return UNITY_END();
 }
