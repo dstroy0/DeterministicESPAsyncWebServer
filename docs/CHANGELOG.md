@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- group host-build test hooks into an owned DnsTestCtx ([`2e854c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e854c5ac29e9ac7d0df1a7469e24a301cd8a41a))
 - make merged coverage.xml always Sonar-parseable ([`0ab50d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ab50d767f751162479ed350b68058e046804100))
 - handle the bare 'native' core-engine env in the report merge + env selector ([`c69b1c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c69b1c9da94da26b1e2b8797bac7630db6f6aeee))
 - split hot flag/handles from cold buffers so client builds gc-drop server/worker state ([`73ced5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73ced5df6365c1278799d7a1729d784696e17877))
@@ -14,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`2b3b704`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b3b704be3e13abee9743fe15a3100d5c5c21b36))
+- update CHANGELOG.md [skip ci] ([`1d4e7a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d4e7a97d1362481c14b86c945ecd80a189dd660))
 - update test report + coverage [skip ci] ([`4bab46f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bab46f45bf8040fcc36f2b4123984b302dbadf7))
 - update CHANGELOG.md [skip ci] ([`d761078`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d761078e0100d627a6abdeafdaa50b326d3706fa))
 - update test report + coverage [skip ci] ([`035f0d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/035f0d2971e0c4fc6d05f0de7368120436587df8))
@@ -284,6 +287,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cad9b42`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cad9b42c2150a5f51b68f9221bc3bcb6ade4ec01))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dd0b174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd0b1746f6c24113d03919c5cfcd67967913469d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`24b2473`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b2473beb9a64e95d2e53317398244cea1292bf))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ef3fd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ef3fd45b28a796331421d5403bb2bbcf1f34cb7))
@@ -535,6 +539,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover response scopedPDU overflow guard (100%) ([`53467fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53467fac390bc9e944b95598d5a610fe7d462be5))
 - cover post-verify claim guards via in-test RS256 signing (100%) ([`25bfe9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25bfe9c67cd6ef74882e69e4adde0094f78b04bc))
 - cover header-parse edges, scratch exhaustion, malformed JWK modulus ([`ba1e934`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba1e9349c6481152fb544b7ff73660d80f8703ff))
 - complete malformed-DEFLATE coverage (100%) ([`2843975`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/284397505065b9ce6d59b7dd2f544b62d16f1410))
