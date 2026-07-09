@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 08:12:22
+**Generated:** 2026-07-09 08:24:18
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2727 passed - 232s
+**Result:** ✅ 2730 passed - 250s
 
 ---
 
@@ -123,7 +123,7 @@
 | `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.736 |
 | `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.778 |
 | `test_opcua`             | `native_opcua`          |    40 |   ✅   | 00:00:12.323 |
-| `test_opcua_client`      | `native_opcua_client`   |    16 |   ✅   | 00:00:08.302 |
+| `test_opcua_client`      | `native_opcua_client`   |    19 |   ✅   | 00:00:25.656 |
 | `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.444 |
 | `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.437 |
 | `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.779 |
@@ -3556,31 +3556,34 @@ _Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl._
 
 ---
 
-## test_opcua_client - native_opcua_client - ✅ 16 passed
+## test_opcua_client - native_opcua_client - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Round-trip tests for the OPC UA client (services/opcua_client): the client builds_
 
-|   # | Test                                     | Status | Description                                                                               |
-| --: | :--------------------------------------- | :----: | :---------------------------------------------------------------------------------------- |
-|   1 | `test_on_read_all_variant_types`         |   ✅   | On read all variant types                                                                 |
-|   2 | `test_client_parsers_reject_fault`       |   ✅   | Client parsers reject fault                                                               |
-|   3 | `test_client_parsers_reject_malformed`   |   ✅   | Client parsers reject malformed                                                           |
-|   4 | `test_hello_ack_roundtrip`               |   ✅   | Hello ack roundtrip                                                                       |
-|   5 | `test_open_roundtrip`                    |   ✅   | Open roundtrip                                                                            |
-|   6 | `test_session_roundtrip`                 |   ✅   | Session roundtrip                                                                         |
-|   7 | `test_get_endpoints_roundtrip`           |   ✅   | Get endpoints roundtrip                                                                   |
-|   8 | `test_service_fault_rejected_by_parsers` |   ✅   | An unknown service draws a ServiceFault; a typed parser must reject it (wrong TypeId).    |
-|   9 | `test_read_roundtrip`                    |   ✅   | Read roundtrip                                                                            |
-|  10 | `test_browse_roundtrip`                  |   ✅   | Browse roundtrip                                                                          |
-|  11 | `test_write_roundtrip`                   |   ✅   | Write roundtrip                                                                           |
-|  12 | `test_close_session_roundtrip`           |   ✅   | Close session roundtrip                                                                   |
-|  13 | `test_close_channel_is_clo`              |   ✅   | Close channel is clo                                                                      |
-|  14 | `test_seq_and_request_id_increment`      |   ✅   | Seq and request id increment                                                              |
-|  15 | `test_builder_overflow_guard`            |   ✅   | A capacity too small for even the frame header overflows the writer; cw_patch returns 0.  |
-|  16 | `test_on_read_unknown_variant_rejected`  |   ✅   | A server sending a DataValue whose Variant type byte is unsupported must be rejected, not |
+|   # | Test                                          | Status | Description                                                                               |
+| --: | :-------------------------------------------- | :----: | :---------------------------------------------------------------------------------------- |
+|   1 | `test_on_read_all_variant_types`              |   ✅   | On read all variant types                                                                 |
+|   2 | `test_client_parsers_reject_fault`            |   ✅   | Client parsers reject fault                                                               |
+|   3 | `test_client_parsers_reject_malformed`        |   ✅   | Client parsers reject malformed                                                           |
+|   4 | `test_hello_ack_roundtrip`                    |   ✅   | Hello ack roundtrip                                                                       |
+|   5 | `test_open_roundtrip`                         |   ✅   | Open roundtrip                                                                            |
+|   6 | `test_session_roundtrip`                      |   ✅   | Session roundtrip                                                                         |
+|   7 | `test_get_endpoints_roundtrip`                |   ✅   | Get endpoints roundtrip                                                                   |
+|   8 | `test_service_fault_rejected_by_parsers`      |   ✅   | An unknown service draws a ServiceFault; a typed parser must reject it (wrong TypeId).    |
+|   9 | `test_read_roundtrip`                         |   ✅   | Read roundtrip                                                                            |
+|  10 | `test_browse_roundtrip`                       |   ✅   | Browse roundtrip                                                                          |
+|  11 | `test_write_roundtrip`                        |   ✅   | Write roundtrip                                                                           |
+|  12 | `test_close_session_roundtrip`                |   ✅   | Close session roundtrip                                                                   |
+|  13 | `test_close_channel_is_clo`                   |   ✅   | Close channel is clo                                                                      |
+|  14 | `test_seq_and_request_id_increment`           |   ✅   | Seq and request id increment                                                              |
+|  15 | `test_builder_overflow_guard`                 |   ✅   | A capacity too small for even the frame header overflows the writer; cw_patch returns 0.  |
+|  16 | `test_on_read_unknown_variant_rejected`       |   ✅   | A server sending a DataValue whose Variant type byte is unsupported must be rejected, not |
+|  17 | `test_response_parsers_reject_negative_count` |   ✅   | Response parsers reject negative count                                                    |
+|  18 | `test_on_open_guards`                         |   ✅   | On open guards                                                                            |
+|  19 | `test_response_header_string_table_skip`      |   ✅   | A ResponseHeader carrying a non-empty StringTable makes cr_skip_string_array iterate; the |
 
 </details>
 
