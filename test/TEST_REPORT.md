@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 08:48:47
+**Generated:** 2026-07-09 09:14:12
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2731 passed - 277s
+**Result:** ✅ 2732 passed - 306s
 
 ---
 
@@ -78,7 +78,7 @@
 | `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.756 |
 | `test_flow_export`       | `native_flow_export`    |     7 |   ✅   | 00:00:00.741 |
 | `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.742 |
-| `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.770 |
+| `test_preempt_queue`     | `native_preempt_queue`  |    12 |   ✅   | 00:00:30.212 |
 | `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:00.894 |
 | `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:00.986 |
 | `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:00.887 |
@@ -2449,7 +2449,7 @@ _Unit tests for the Protocol Buffers wire codec (services/protobuf): the streami
 
 ---
 
-## test_preempt_queue - native_preempt_queue - ✅ 11 passed
+## test_preempt_queue - native_preempt_queue - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2469,6 +2469,7 @@ _Unit tests for the preempting work queue (services/preempt_queue) host core: th
 |   9 | `test_lanes_are_isolated`                  |   ✅   | The USER lane is already started by setUp; start the internal DMA lane too. |
 |  10 | `test_lane_start_stop_running_independent` |   ✅   | Lane start stop running independent                                         |
 |  11 | `test_lane_high_water_is_per_lane`         |   ✅   | Lane high water is per lane                                                 |
+|  12 | `test_lane_api_urgent_and_drain`           |   ✅   | Lane api urgent and drain                                                   |
 
 </details>
 
