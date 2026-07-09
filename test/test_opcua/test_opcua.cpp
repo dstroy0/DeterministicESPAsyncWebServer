@@ -1487,7 +1487,7 @@ static size_t build_write(uint8_t *out, size_t cap, int32_t count_field, int32_t
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
     v.type = OPCUA_VAR_INT32;
-    v.i32 = -1234;
+    v.i32 = 0x11223344; // distinctive marker for the malformed-DataValue test
     ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
     out[4] = (uint8_t)w.n;
     out[5] = (uint8_t)(w.n >> 8);
@@ -1521,6 +1521,59 @@ void test_parse_open_wrong_body_typeid()
         }
     OpcUaOpenChannel oc;
     TEST_ASSERT_FALSE(opcua_parse_open(buf, n, &oc));
+}
+
+void test_parse_write_malformed_datavalue_rejected()
+{
+    uint8_t buf[160];
+    size_t n = build_write(buf, sizeof(buf), 1, 0);
+    // The item's DataValue is INT32 0x11223344; corrupt its Variant type byte to an unsupported value.
+    int vpos = -1;
+    for (size_t i = 1; i + 3 < n; i++)
+        if (buf[i] == 0x44 && buf[i + 1] == 0x33 && buf[i + 2] == 0x22 && buf[i + 3] == 0x11)
+        {
+            vpos = (int)i;
+            break;
+        }
+    TEST_ASSERT_TRUE(vpos > 0);
+    buf[vpos - 1] = 200; // unsupported Variant type byte
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, n, &wr));
+}
+
+// A request built valid up to TimeoutHint but truncated before the AdditionalHeader ExtensionObject.
+static size_t build_req_trunc_at_addhdr(uint8_t *out, size_t cap, uint32_t type_id)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 7);
+    ua_w_u32(&w, 5);
+    ua_w_u32(&w, 700);
+    ua_w_nodeid_numeric(&w, 0, type_id);
+    ua_w_nodeid_numeric(&w, 0, 0); // AuthenticationToken
+    ua_w_u64(&w, 0);               // Timestamp
+    ua_w_u32(&w, 0);               // RequestHandle
+    ua_w_u32(&w, 0);               // ReturnDiagnostics
+    ua_w_string(&w, nullptr, -1);  // AuditEntryId
+    ua_w_u32(&w, 0);               // TimeoutHint
+    // AdditionalHeader omitted -> r_ext_object_skip's NodeId read underruns
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_request_header_truncated_addhdr()
+{
+    uint8_t buf[64];
+    size_t n = build_req_trunc_at_addhdr(buf, sizeof(buf), OPCUA_ID_WRITE_REQ);
+    OpcUaWriteRequest wr;
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, n, &wr)); // AdditionalHeader ExtensionObject underruns
 }
 
 int main()
@@ -1570,5 +1623,7 @@ int main()
     RUN_TEST(test_parse_browse_truncated_item_rejected);
     RUN_TEST(test_parse_write_truncated_item_and_indexrange);
     RUN_TEST(test_parse_open_wrong_body_typeid);
+    RUN_TEST(test_parse_write_malformed_datavalue_rejected);
+    RUN_TEST(test_parse_request_header_truncated_addhdr);
     return UNITY_END();
 }
