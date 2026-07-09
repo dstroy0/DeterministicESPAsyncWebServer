@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a685433`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6854331bddb898fa08f0f5a3e19e28e85c300bc))
 - update CHANGELOG.md [skip ci] ([`31163dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31163dd62117bb46486a2995b4129f42832fc6d0))
 - update test report [skip ci] ([`1696f67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1696f67bda34d0788f58c3c855332f0e1adac7e8))
 - update CHANGELOG.md [skip ci] ([`e59721a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e59721a84a86431dba82b26806fdf4eb743076c5))
@@ -125,11 +126,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- one assignment/declaration per line (Sonar S1121/S1659) ([`fcf0049`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcf0049682e20f031815c46d0a32796244725437))
 - annotate provably-dead guards in stomp + nats parsers (GCOVR_EXCL) ([`af7b6a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af7b6a6284c893e7c028bb9140d755fb07d5b618))
 - clang-format client.cpp include-comment alignment ([`96a8e81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96a8e810d52e26f6385693b0285606a67c30bcce))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`efda745`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efda7455d59e6c394b17c709d81e70848791869a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d71d147`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d71d14785d53707de694f7dd4b0e75855321ccac))
 - update ESP32 build footprints [skip ci] ([`167f73e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/167f73ee85d64afd92986a2dd3ee09731bd2c5df))
 - reformat AUDIT.md table columns (prettier) ([`e95a6cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e95a6cce499f7f0d072292a3860a3812b4a6cc64))
@@ -267,6 +270,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover ATT/GATT codec build + parse guards (83->100%) ([`3ad6787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ad6787ce04ab382e127bba84306b9b8f4d95466))
 - cover PSID/WSMP/1609.2 codec guards (71->100%) ([`8303915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83039157efa13c71f4ecc34a3d1c2ff55baee325))
 - cover ClientHello parse guards + malformed exts + builder caps ([`9f50a04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f50a04b62035559f501c1fafc6d6e5b25fa22bf))
 - cover ssh_channel guard/error branches (91->100%) ([`71ea672`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71ea67206e5ddd88906e529cb0bf31afbd72c20a))
