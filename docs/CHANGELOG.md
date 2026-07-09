@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`77d21be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77d21be50faf8c3f92affa872f3417ef4a7a2f7d))
+
+### Documentation
+
+- start feature performance measurement + capture DB/storage roadmap ([`d911d06`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d911d06eb13070150c8cd8c3309fc42a3344a76e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ae277b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae277b5727b170a9645bb50395f92204f47f5d02))
+
 ## [5.64.0] - 2026-07-09
 
 <details>
