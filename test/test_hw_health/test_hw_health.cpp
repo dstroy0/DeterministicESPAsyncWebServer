@@ -108,9 +108,37 @@ void test_rail_ok_spi_clamps_probes()
     TEST_PASS();
 }
 
+// Null-pointer guards on every entry point (no crash; safe defaults), and the SPI init
+// start-clock clamps (below the floor -> min_hz, above the ceiling -> max_hz).
+void test_hwhealth_null_guards_and_init_clamps(void)
+{
+    char buf[64];
+    detws_hwhealth_rail_init(nullptr, 3300, 3100, 2900); // no-op, no crash
+    TEST_ASSERT_EQUAL_INT(HW_RAIL_OK, detws_hwhealth_rail_sample(nullptr, 1000));
+    TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(nullptr, buf, sizeof(buf))); // null monitor
+
+    HwRailMonitor m;
+    detws_hwhealth_rail_init(&m, 3300, 3100, 2900);
+    TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, nullptr, sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, buf, 0));               // zero cap
+
+    detws_hwhealth_spi_init(nullptr, 1, 1, 1, 1, 1); // no-op, no crash
+    TEST_ASSERT_EQUAL_UINT32(0, detws_hwhealth_spi_result(nullptr, true));
+
+    // init clamps the start clock into [min_hz, max_hz]; read it back via a non-tripping
+    // result (fail_trip=2, so one failure leaves hz unchanged).
+    HwSpiBackoff below;
+    detws_hwhealth_spi_init(&below, 500000, 1000000, 8000000, 2, 2); // start < min_hz
+    TEST_ASSERT_EQUAL_UINT32(1000000, detws_hwhealth_spi_result(&below, false));
+    HwSpiBackoff above;
+    detws_hwhealth_spi_init(&above, 20000000, 1000000, 8000000, 2, 2); // start > max_hz
+    TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&above, false));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_hwhealth_null_guards_and_init_clamps);
     RUN_TEST(test_rail_monitor);
     RUN_TEST(test_spi_backoff);
     RUN_TEST(test_spi_backoff_clamps);
