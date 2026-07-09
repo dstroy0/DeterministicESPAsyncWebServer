@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2600 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2602 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28184,7 +28184,7 @@ A thorough directory of all **2600 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_websocket (72 tests)</b></summary>
+<summary><b>test_websocket (74 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sha1_empty_string</b> &mdash; <i>Sha1 empty string</i></summary>
@@ -28773,6 +28773,15 @@ A thorough directory of all **2600 test cases** across **228 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_ws_deflate_inflate_error_closes</b> &mdash; <i>Ws deflate inflate error closes</i></summary>
+
+    * **Objective**: Ws deflate inflate error closes
+    * **Assertions**:
+      * <code>Assert not null (ws)</code>
+      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_ws_outbound_incompressible_not_flagged</b> &mdash; <i>A PONG control frame is never compressed, even with data-like content.</i></summary>
 
     * **Objective**: A PONG control frame is never compressed, even with data-like content.
@@ -28864,6 +28873,20 @@ A thorough directory of all **2600 test cases** across **228 suites**. Expand a 
       * <code>Assert equal string (t1, (const char *)ws-&gt;buf)</code>
       * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal string (t2, (const char *)ws-&gt;buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ws_send_frame_paths_and_parse_guard</b> &mdash; <i>Medium frame (len >= 126) uses the extended 16-bit length header.</i></summary>
+
+    * **Objective**: Medium frame (len >= 126) uses the extended 16-bit length header.
+    * **Assertions**:
+      * <code>Assert true (ws_send_frame(ws, WS_OP_BINARY, payload, 200))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(126, sent[1]); // 16-bit extended-length marker (server-&gt;client unmasked)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, sent[2]);   // length high byte</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(200, sent[3]); // length low byte</code>
+      * <code>Assert true (ws_send_frame(ws, WS_OP_TEXT, payload, 200))</code>
+      * <code>Assert true (tcp_captured_len() &gt; 200)</code>
+      * <code>Assert false (ws_send_frame(ws, WS_OP_TEXT, payload, 10))</code>
   </details>
 
 </details>
