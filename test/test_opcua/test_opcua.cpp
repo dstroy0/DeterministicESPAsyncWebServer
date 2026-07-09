@@ -1359,6 +1359,57 @@ void test_setters_and_endpoint_url()
     opcua_set_endpoint_url(nullptr); // restore the default
 }
 
+void test_rx_and_proto_handler_host_stubs()
+{
+    opcua_rx(0);                             // host build: rx is a no-op
+    opcua_rx(255);                           // out-of-range slot is still a safe no-op
+    TEST_ASSERT_NULL(opcua_proto_handler()); // host has no instance-bound handler
+}
+
+void test_parse_open_with_cert_and_nonce()
+{
+    // An OPEN carrying non-empty SenderCertificate + ReceiverCertificateThumbprint + ClientNonce
+    // exercises the ByteString-skip paths in opcua_parse_open that a null-field OPEN never reaches.
+    uint8_t buf[256];
+    UaWriter w = {buf, sizeof(buf), 0, true};
+    ua_w_u8(&w, 'O');
+    ua_w_u8(&w, 'P');
+    ua_w_u8(&w, 'N');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+    ua_w_u32(&w, 7); // channel
+    const char *pol = OPCUA_POLICY_NONE_URI;
+    ua_w_string(&w, pol, (int32_t)strlen(pol));
+    uint8_t cert[3] = {1, 2, 3};
+    ua_w_string(&w, (const char *)cert, 3); // SenderCertificate (non-empty)
+    uint8_t thumb[2] = {9, 8};
+    ua_w_string(&w, (const char *)thumb, 2); // ReceiverCertificateThumbprint (non-empty)
+    ua_w_u32(&w, 5);                         // seq
+    ua_w_u32(&w, 55);                        // req_id
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_OPEN_REQ);
+    ua_w_nodeid_numeric(&w, 0, 0); // AuthenticationToken
+    ua_w_u64(&w, 0);               // Timestamp
+    ua_w_u32(&w, 42);              // RequestHandle
+    ua_w_u32(&w, 0);               // ReturnDiagnostics
+    ua_w_string(&w, nullptr, -1);  // AuditEntryId
+    ua_w_u32(&w, 0);               // TimeoutHint
+    ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader NodeId
+    ua_w_u8(&w, 0x00);             // ... no body
+    ua_w_u32(&w, 0);               // ClientProtocolVersion
+    ua_w_u32(&w, 0);               // RequestType
+    ua_w_u32(&w, 1);               // MessageSecurityMode
+    uint8_t nonce[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+    ua_w_string(&w, (const char *)nonce, 4); // ClientNonce (non-empty)
+    ua_w_u32(&w, 3600000);
+    buf[4] = (uint8_t)w.n;
+    buf[5] = (uint8_t)(w.n >> 8);
+    buf[6] = buf[7] = 0;
+    OpcUaOpenChannel oc;
+    TEST_ASSERT_TRUE(opcua_parse_open(buf, w.n, &oc));
+    TEST_ASSERT_EQUAL_UINT32(7, oc.secure_channel_id);
+    TEST_ASSERT_EQUAL_UINT32(42, oc.request_handle);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1400,5 +1451,7 @@ int main()
     RUN_TEST(test_build_service_fault);
     RUN_TEST(test_datavalue_roundtrip);
     RUN_TEST(test_parse_and_build_write);
+    RUN_TEST(test_rx_and_proto_handler_host_stubs);
+    RUN_TEST(test_parse_open_with_cert_and_nonce);
     return UNITY_END();
 }
