@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 03:21:10
+**Generated:** 2026-07-09 04:22:14
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2622 passed - 425s
+**Result:** ✅ 2624 passed - 176s
 
 ---
 
@@ -135,7 +135,7 @@
 | `test_mpr121`            | `native_mpr121`         |     5 |   ✅   | 00:00:00.606 |
 | `test_sht3x`             | `native_sht3x`          |     5 |   ✅   | 00:00:00.634 |
 | `test_pca9685`           | `native_pca9685`        |     4 |   ✅   | 00:00:00.620 |
-| `test_ads1115`           | `native_ads1115`        |     3 |   ✅   | 00:00:00.635 |
+| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:03.095 |
 | `test_ina219`            | `native_ina219`         |     4 |   ✅   | 00:00:00.571 |
 | `test_hpack`             | `native_hpack`          |    14 |   ✅   | 00:00:00.759 |
 | `test_h2_frame`          | `native_h2frame`        |     6 |   ✅   | 00:00:00.629 |
@@ -3796,18 +3796,20 @@ _Unit tests for the PCA9685 PWM/servo codec (services/pca9685): the PRESCALE com
 
 ---
 
-## test_ads1115 - native_ads1115 - ✅ 3 passed
+## test_ads1115 - native_ads1115 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the ADS1115 ADC codec (services/ads1115): building the 16-bit config word for a_
 
-|   # | Test                    | Status | Description                                                                   |
-| --: | :---------------------- | :----: | :---------------------------------------------------------------------------- |
-|   1 | `test_config_word`      |   ✅   | ch0, +/-4.096V, 128 SPS: OS                                                   | MUX_AIN0 | PGA1 | MODE_SINGLE | DR128 | COMP_DISABLE. |
-|   2 | `test_config_fallbacks` |   ✅   | Out-of-range channel/gain/dr fall back to ch0 / +/-2.048V / 128 SPS = 0xC583. |
-|   3 | `test_raw_to_uv`        |   ✅   | gain 1 (+/-4.096 V) -> 125 uV/LSB.                                            |
+|   # | Test                              | Status | Description                                                                                    |
+| --: | :-------------------------------- | :----: | :--------------------------------------------------------------------------------------------- |
+|   1 | `test_config_word`                |   ✅   | ch0, +/-4.096V, 128 SPS: OS                                                                    | MUX_AIN0 | PGA1 | MODE_SINGLE | DR128 | COMP_DISABLE. |
+|   2 | `test_config_fallbacks`           |   ✅   | Out-of-range channel/gain/dr fall back to ch0 / +/-2.048V / 128 SPS = 0xC583.                  |
+|   3 | `test_raw_to_uv`                  |   ✅   | gain 1 (+/-4.096 V) -> 125 uV/LSB.                                                             |
+|   4 | `test_raw_to_uv_gain_clamp`       |   ✅   | An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the |
+|   5 | `test_host_i2c_stubs_fail_closed` |   ✅   | On a host build there is no I2C: begin and both reads fail closed (false).                     |
 
 </details>
 
