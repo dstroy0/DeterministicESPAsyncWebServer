@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`797dffe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/797dffe5d88b73cc3d802f72d95a760c16aaaee5))
+- update CHANGELOG.md [skip ci] ([`c950ddf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c950ddf36db8f987124d5a0a88cf02436d4d4d0c))
 - update CHANGELOG.md [skip ci] ([`6a6c6b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a6c6b0a91edc9724ad5a1ec4d5c2c82eaa05165))
 - update test report + coverage [skip ci] ([`ebfce2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebfce2f6d25afde949c5773ecad8cebd0b365fc7))
 - update CHANGELOG.md [skip ci] ([`b64db73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b64db73e3017366f1cb0a594eb82697582030691))
@@ -256,6 +258,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`47aa3a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47aa3a8150808b67a9775436159de7bc7edcaaa5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`db5898a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db5898a51ffb0486c008b24b6f085ac790b72bcd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ffe6f15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe6f159dc41bc5f521cba6a3b527eed40be0274))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`97d7386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97d7386415da66e5fb7ca5e4d17ead3a4533cf83))
 - update ESP32 build footprints [skip ci] ([`642f913`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/642f913fc110d88acf8c969402122a42d4a4db34))
@@ -490,6 +494,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover append_resp_trailer in-bounds clamps ([`23ae7a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23ae7a1b357e47d3adc0f369ef2ba62dd9944d22))
 - cover WebSocket/SSE upgrade failure paths ([`f825f5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f825f5ac130306dca07b3db05b9a09a24e0aeffc))
 - cover WebDAV recursive open-failure + source-path 414 ([`4855008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4855008d986a9f158b5dbed9f522942b249ad219))
 - cover WebDAV GET/PUT/COPY method-handler edges ([`ec80412`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec80412fea9074e5d658de0e405f22318829ba39))
