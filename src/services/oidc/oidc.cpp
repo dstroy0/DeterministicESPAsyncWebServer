@@ -45,8 +45,10 @@ bool find_field(const char *s, const char *e, const char *name, const char **vst
 {
     char needle[96];
     int nn = snprintf(needle, sizeof(needle), "\"%s\"", name);
+    // GCOVR_EXCL_LINE every internal caller passes a short fixed field name (alg/iss/aud/exp/nbf/sub/email/n/e/kid), so
+    // the 96-byte needle never overflows
     if (nn <= 0 || nn >= (int)sizeof(needle))
-        return false;
+        return false; // GCOVR_EXCL_LINE unreachable: field names are short literals (see above)
     const char *p = mem_find(s, e, needle);
     if (!p)
         return false;

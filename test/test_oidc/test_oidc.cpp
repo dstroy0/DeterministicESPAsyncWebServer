@@ -7,6 +7,7 @@
 // extraction, aud-as-array, and every rejection (alg, signature, iss, aud, exp,
 // missing key, malformed).
 
+#include "network_drivers/session/scratch.h"
 #include "services/oidc/oidc.h"
 #include <stdio.h>
 #include <string.h>
@@ -52,6 +53,42 @@ void setUp()
 }
 void tearDown()
 {
+}
+
+// JSON-parse edge guards reachable before signature verify (header parse), plus the
+// scratch-exhaustion fail-closed and a JWK whose modulus decodes to nothing.
+void test_oidc_parse_edge_guards()
+{
+    DetwsOidcKey key;
+    key.loaded = false;
+    TEST_ASSERT_TRUE(detws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
+
+    // Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:
+    // a value missing after ':', an unterminated array value, and a numeric value.
+    const char *hdr_colon = "eyJhbGciOg.b.c";      // {"alg":
+    const char *hdr_array = "eyJhbGciOlthYmM.b.c"; // {"alg":[abc
+    const char *hdr_negnum = "eyJhbGciOi01fQ.b.c"; // {"alg":-5}
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+                          detws_oidc_verify_with_key(hdr_colon, strlen(hdr_colon), &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+                          detws_oidc_verify_with_key(hdr_array, strlen(hdr_array), &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+                          detws_oidc_verify_with_key(hdr_negnum, strlen(hdr_negnum), &key, ISS, AUD, NOW, nullptr));
+
+    // Scratch arena exhausted before the decode buffers can be borrowed -> fail closed.
+    scratch_reset();
+    while (scratch_alloc(256, 1))
+    {
+    }
+    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
+    scratch_reset();
+
+    // A JWK whose modulus base64url-decodes to nothing -> parse_rsa_jwk fails.
+    static const char *K_JWKS_BADN = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"bad\",\"n\":\"\",\"e\":\"AQAB\"}]}";
+    DetwsOidcKey bad;
+    bad.loaded = false;
+    TEST_ASSERT_FALSE(detws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad));
 }
 
 void test_token_kid()
@@ -249,6 +286,7 @@ void test_jwks_malformed_keys()
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_oidc_parse_edge_guards);
     RUN_TEST(test_jwks_malformed_keys);
     RUN_TEST(test_token_kid_guards);
     RUN_TEST(test_jwks_find_guards);
