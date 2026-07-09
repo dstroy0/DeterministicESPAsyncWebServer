@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`78e5994`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78e59943a65eaad0fe4adcafc86eeaa310bc4536))
+- update CHANGELOG.md [skip ci] ([`dc0705a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc0705ac7a5ea6caca2e10000d7ac193e58c93af))
 - update test report + coverage [skip ci] ([`fa86c9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa86c9e85f12929245b8d032d6b2a42f6c36b27a))
 - update CHANGELOG.md [skip ci] ([`280e256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/280e25672d2915e5e99a2945d72b770bc02c32e3))
 - update test report + coverage [skip ci] ([`840b343`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/840b343092b26b8cd23508b79b20897bc54c7872))
@@ -274,6 +276,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`19a634a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a634a9738653fc79fa56a214e5353d3cbedd8a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`062d91f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/062d91f7aebab15bdbfbf6cb9a946557c43ac4fa))
 - update ESP32 build footprints [skip ci] ([`5c3dc9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c3dc9d979450654e0ea4fabc5d72bc24b383946))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8709aad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8709aadae3f44fd1764ef5f7af2d8b5518a3d5bb))
@@ -521,6 +524,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover fixed-block + stored malformed-DEFLATE guards ([`461a8e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461a8e8e80c35bfa9a0295438cc93152650f6122))
 - cover append_opt response-buffer overflow guard ([`2adb491`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2adb491443c3e94b0e02988a2f2754302e04f3ed))
 - cover verify/encode guards + modexp exp==0 fast path ([`4121acb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4121acbc5f808d350b3d205c6c9469f28d7eb822))
 - cover method GET/DELETE + builder fail-closed guards ([`6c5d7fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c5d7fe269e2032107df9fe4db76ce389eb85373))
