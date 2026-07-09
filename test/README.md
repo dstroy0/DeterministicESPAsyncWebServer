@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2488 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2489 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23823,7 +23823,7 @@ A thorough directory of all **2488 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (34 tests)</b></summary>
+<summary><b>test_ssh_transport (35 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -24186,6 +24186,16 @@ A thorough directory of all **2488 test cases** across **228 suites**. Expand a 
       * <code>Assert true (ssh_sess[0].have_session_id)</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kdf_edge_paths_and_slot_guards</b> &mdash; <i>A K of all zeros exercises the empty-mpint (K == 0) branch of the KDF's mpint(K) hashing, and an</i></summary>
+
+    * **Objective**: A K of all zeros exercises the empty-mpint (K == 0) branch of the KDF's mpint(K) hashing, and an
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_dh_generate(MAX_SSH_CONNS))</code>
+      * <code>Assert true (ssh_keys[0].active)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_CHACHA20POLY1305, ssh_keys[0].cipher_mode);</code>
   </details>
 
 </details>
