@@ -601,6 +601,7 @@ src/
 │   │   ├── dashboard.cpp
 │   │   ├── dashboard.h
 │   │   └── dashboard_routes.cpp
+│   ├── dbm/  (dbm.h, dbm.cpp)
 │   ├── dds/  (dds.h, dds.cpp)
 │   ├── device_id/  (device_id.h, device_id.cpp)
 │   ├── devicenet/  (devicenet.h, devicenet.cpp)
@@ -1032,6 +1033,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_COTP` | `0` | TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`). |
 | `DETWS_ENABLE_CSRF` | `0` | Opt-in CSRF protection for state-changing HTTP requests. |
 | `DETWS_ENABLE_DASHBOARD` | `0` | Real-time SVG dashboard (DETWS_ENABLE_DASHBOARD; requires DETWS_ENABLE_SSE). |
+| `DETWS_ENABLE_DBM` | `0` | Opt-in dbm: a log-structured hash key-value store on the WAL (DETWS_ENABLE_DBM, requires WAL). |
 | `DETWS_ENABLE_DDS` | `0` | Opt-in DDS / RTPS wire-protocol codec. |
 | `DETWS_ENABLE_DEVICENET` | `0` | DeviceNet link-adaptation codec (`services/devicenet`). |
 | `DETWS_ENABLE_DEVICE_ID` | `0` | Stable device UUID derived from the chip MAC (RFC 4122 v5). |
@@ -1184,7 +1186,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
 | `DETWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
 | `DETWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
-| `DETWS_ENABLE_WAL` | `0` | Opt-in write-ahead journal for atomic buffer-to-flash storage. |
+| `DETWS_ENABLE_WAL` | `0` | Opt-in write-ahead store for atomic buffer-to-flash storage. |
 | `DETWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
 | `DETWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
 | `DETWS_ENABLE_WEARLEVEL` | `0` | Opt-in flash wear-leveling slot selector. |
