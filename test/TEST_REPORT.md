@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 14:36:01
+**Generated:** 2026-07-09 14:50:11
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2791 passed - 441s
+**Result:** ✅ 2794 passed - 444s
 
 ---
 
@@ -43,7 +43,7 @@
 | `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:02.638 |
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.876 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:05.411 |
 | `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:11.120 |
 | `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.720 |
 | `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.708 |
@@ -1410,7 +1410,7 @@ _Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is_
 
 ---
 
-## test_ssh_conn - native_ssh_conn - ✅ 12 passed
+## test_ssh_conn - native_ssh_conn - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1419,18 +1419,21 @@ _SSH transport-glue test: drives a PROTO_SSH connection through the real_
 
 |   # | Test                                            | Status | Description                              |
 | --: | :---------------------------------------------- | :----: | :--------------------------------------- |
-|   1 | `test_accept_sends_server_banner`               |   ✅   | Accept sends server banner               |
-|   2 | `test_banner_then_kexinit_advances_and_replies` |   ✅   | Banner then kexinit advances and replies |
-|   3 | `test_poll_triggers_server_rekey`               |   ✅   | Poll triggers server rekey               |
-|   4 | `test_proto_handler_accessor`                   |   ✅   | Proto handler accessor                   |
-|   5 | `test_send_entrypoints_reject`                  |   ✅   | Send entrypoints reject                  |
-|   6 | `test_poll_rx_banner_guards`                    |   ✅   | Poll rx banner guards                    |
-|   7 | `test_conn_send_close_open_channel`             |   ✅   | Conn send close open channel             |
-|   8 | `test_send_channel_reject_paths`                |   ✅   | Send channel reject paths                |
-|   9 | `test_accept_no_ssh_capacity`                   |   ✅   | Accept no ssh capacity                   |
-|  10 | `test_poll_ignores_inactive_conn`               |   ✅   | Poll ignores inactive conn               |
-|  11 | `test_rx_disconnect_tears_down`                 |   ✅   | Rx disconnect tears down                 |
-|  12 | `test_rx_overlong_banner_closes`                |   ✅   | Rx overlong banner closes                |
+|   1 | `test_conn_outbound_arena_exhausted`            |   ✅   | Conn outbound arena exhausted            |
+|   2 | `test_conn_outbound_pkt_send_fails`             |   ✅   | Conn outbound pkt send fails             |
+|   3 | `test_poll_rekey_emit_fails`                    |   ✅   | Poll rekey emit fails                    |
+|   4 | `test_accept_sends_server_banner`               |   ✅   | Accept sends server banner               |
+|   5 | `test_banner_then_kexinit_advances_and_replies` |   ✅   | Banner then kexinit advances and replies |
+|   6 | `test_poll_triggers_server_rekey`               |   ✅   | Poll triggers server rekey               |
+|   7 | `test_proto_handler_accessor`                   |   ✅   | Proto handler accessor                   |
+|   8 | `test_send_entrypoints_reject`                  |   ✅   | Send entrypoints reject                  |
+|   9 | `test_poll_rx_banner_guards`                    |   ✅   | Poll rx banner guards                    |
+|  10 | `test_conn_send_close_open_channel`             |   ✅   | Conn send close open channel             |
+|  11 | `test_send_channel_reject_paths`                |   ✅   | Send channel reject paths                |
+|  12 | `test_accept_no_ssh_capacity`                   |   ✅   | Accept no ssh capacity                   |
+|  13 | `test_poll_ignores_inactive_conn`               |   ✅   | Poll ignores inactive conn               |
+|  14 | `test_rx_disconnect_tears_down`                 |   ✅   | Rx disconnect tears down                 |
+|  15 | `test_rx_overlong_banner_closes`                |   ✅   | Rx overlong banner closes                |
 
 </details>
 
