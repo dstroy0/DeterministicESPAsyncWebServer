@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2616 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2617 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19295,7 +19295,7 @@ A thorough directory of all **2616 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_qpack (10 tests)</b></summary>
+<summary><b>test_qpack (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_appendix_b1_decode</b> &mdash; <i>Appendix b1 decode</i></summary>
@@ -19435,6 +19435,15 @@ A thorough directory of all **2616 test cases** across **228 suites**. Expand a 
       * <code>Assert false (decode_all(nameref_badvlen, 4, &s))</code>
       * <code>Assert false (qpack_decode(indexed, 3, sc, sizeof sc, fail_emit, nullptr))</code>
       * <code>Assert false (qpack_decode(litname, 6, sc, sizeof sc, fail_emit, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_qpack_emit_fail_and_namelen_past</b> &mdash; <i>Literal Field Line with Name Reference + a valid value, but the emit callback rejects it.</i></summary>
+
+    * **Objective**: Literal Field Line with Name Reference + a valid value, but the emit callback rejects it.
+    * **Assertions**:
+      * <code>Assert false (qpack_decode(nameref, 5, sc, sizeof sc, fail_emit, nullptr))</code>
+      * <code>Assert false (decode_all(namelen_past, 3, &s))</code>
   </details>
 
 </details>
