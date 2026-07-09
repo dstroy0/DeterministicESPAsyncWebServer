@@ -370,8 +370,11 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <tr>
   <td align="center"><a href="FEATURES.md#webdav" title="WebDAV server (RFC 4918, class 1 + advisory locks) over the file system. Default off. When set (requires FILE_SERVING), dav() mounts an FS subtree that answers the WebDAV methods - OPTIONS, PROPFIND (Depth 0/1), PROPPATCH, GET, HEAD, PUT, DELETE, MKCOL, COPY, MOVE, and advisory LOCK/UNLOCK - so a client (rclone, cadaver, curl, or a mounted network drive) can browse and edit files. PROPFIND returns a 207 Multi-Status document built into a fixed buffer (DETWS_WEBDAV_BUF_SIZE); a Depth-1 listing is capped at DETWS_WEBDAV_MAX_ENTRIES children. PROPPATCH returns a 207 with each requested property refused 403 Forbidden (read-only live properties, no dead-property store) so Explorer/Finder - which PROPPATCH a timestamp right after a PUT - do not error on a 405. PUT streams the request body straight to the file (via the shared streaming-body sink), so an upload is not bounded by BODY_BUF_SIZE. Locks are advisory (a synthetic token is issued but not enforced). See docs/SECURITY.md before exposing it.">WebDAV</a></td>
   <td align="center"><a href="FEATURES.md#webhook" title="Opt-in outbound webhooks / IFTTT. Default off. Requires HTTP_CLIENT. services/webhook builds an IFTTT Maker URL and a value1/value2/value3 JSON payload (pure, host-tested) and fires them - or any JSON to any URL - via the outbound http_client (POST). Use it to push an event from the device to IFTTT, a Slack/Discord hook, or your own API.">Webhook</a></td>
+  <td align="center"><a href="FEATURES.md#write-ahead-log" title="Opt-in write-ahead journal for atomic buffer-to-flash storage, the substrate for on-device data stores (dbm / sqlite / nosql). services/wal frames each record with a CRC-32 (wal_record_encode), and wal_replay walks a journal image on mount and stops at the first record with a bad magic, a failed CRC, or a truncated tail - the torn write a power loss leaves - so a crash costs at most the last un-checkpointed record. Built to the SD-over-SPI envelope measured in docs/FEATURE_PERFORMANCE.md (append sequentially in ~32 KiB pages, checkpoint every ~128-256 KiB; never scatter small durable writes). The atomicity core is pure and host-tested (CRC-32 check vector + torn/truncated-tail recovery); the fs::FS page ring + A/B superblock layer builds on top. Zero heap. Default off.">Write-Ahead Log</a></td>
   <td align="center"><a href="FEATURES.md#ws-client" title="Outbound WebSocket client (RFC 6455 over raw lwIP, optional wss:// TLS). Default off. When set, src/services/ws_client/ws_client.h connects to a remote WebSocket endpoint (ws://, or wss:// over client-side mbedTLS), performs the RFC 6455 client handshake (Sec-WebSocket-Key/Accept), and sends masked text / binary frames + receives server frames via a callback - for streaming to cloud dashboards or bidirectional control. The frame/handshake codec is host-testable.">WS Client</a></td>
   <td align="center"><a href="FEATURES.md#ws-client-tls" title="wss://: run the WebSocket client over client-side TLS (needs TLS).">WS Client TLS</a></td>
+</tr>
+<tr>
   <td align="center"><a href="FEATURES.md#xmpp" title="Opt-in XMPP (RFC 6120) stanza codec. When set, services/xmpp builds correctly XML-escaped `&lt;stream:stream&gt;` / `&lt;message&gt;` / `&lt;presence&gt;` / `&lt;iq&gt;` stanzas into a caller buffer and reads the stanza element name + an attribute value out of a received stanza, so a device is an IoT XMPP client. Pure text framing (TLS/SASL ride the client TLS path; the IoT XEPs layer inside `&lt;iq&gt;`). Default off.">XMPP</a></td>
 </tr>
 </tbody>
@@ -735,6 +738,7 @@ src/
 │   ├── utmc/  (utmc.h, utmc.cpp)
 │   ├── vfs/  (vfs.h, vfs.cpp)
 │   ├── vl53l0x/  (vl53l0x.h, vl53l0x.cpp)
+│   ├── wal/  (wal.h, wal.cpp)
 │   ├── wamp/  (wamp.h, wamp.cpp)
 │   ├── wave/  (wave.h, wave.cpp)
 │   ├── wearlevel/  (wearlevel.h, wearlevel.cpp)
@@ -789,6 +793,8 @@ src/
 │   │   └── DETWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1174,6 +1180,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
 | `DETWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
 | `DETWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
+| `DETWS_ENABLE_WAL` | `0` | Opt-in write-ahead journal for atomic buffer-to-flash storage. |
 | `DETWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
 | `DETWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
 | `DETWS_ENABLE_WEARLEVEL` | `0` | Opt-in flash wear-leveling slot selector. |

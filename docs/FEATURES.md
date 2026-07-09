@@ -1146,6 +1146,12 @@ Opt-in 802.11 sniffer / traffic analyzer. The decode + decision layer for a prom
 
 Opt-in Wi-SUN FAN border-router connector. Wi-SUN FAN is an IPv6/UDP/CoAP mesh terminated by a border router, so the connector rides the existing IP stack rather than driving a radio: services/wisun keeps a table of FAN nodes (their DetIp addresses + join state) behind the border router and builds the CoAP client requests to their resources (wisun_build_coap frames an RFC 7252 header + Uri-Path options + payload; the CoAP service ships only a server). wisun_nodes_json exposes the mesh to the web. The app sends the built PDU over det_udp; the chosen devboard only sets which border router you point at. Pure, no heap/stdlib. Default off.
 
+## Write-Ahead Log
+
+`DETWS_ENABLE_WAL`
+
+Opt-in write-ahead journal for atomic buffer-to-flash storage, the substrate for on-device data stores (dbm / sqlite / nosql). services/wal frames each record with a CRC-32 (wal_record_encode), and wal_replay walks a journal image on mount and stops at the first record with a bad magic, a failed CRC, or a truncated tail - the torn write a power loss leaves - so a crash costs at most the last un-checkpointed record. Built to the SD-over-SPI envelope measured in docs/FEATURE_PERFORMANCE.md (append sequentially in ~32 KiB pages, checkpoint every ~128-256 KiB; never scatter small durable writes). The atomicity core is pure and host-tested (CRC-32 check vector + torn/truncated-tail recovery); the fs::FS page ring + A/B superblock layer builds on top. Zero heap. Default off.
+
 ## WS Client
 
 `DETWS_ENABLE_WS_CLIENT`

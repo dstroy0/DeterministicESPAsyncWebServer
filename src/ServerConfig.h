@@ -2808,6 +2808,26 @@
 #endif
 
 /**
+ * @brief Opt-in write-ahead journal for atomic buffer-to-flash storage (DETWS_ENABLE_WAL).
+ *
+ * services/wal is a power-loss-safe write-ahead log over any fs::FS backend (SD card, LittleFS): records
+ * are CRC32-framed, and a recovery scan on mount replays valid records and stops at the first bad CRC (the
+ * torn tail), bounding the loss window; once the page/superblock layer lands, each checkpoint is atomic
+ * via an A/B superblock. Sized from the measured SD envelope (docs/FEATURE_PERFORMANCE.md): append
+ * sequentially in ~32 KiB pages, checkpoint every ~128-256 KiB (never scatter small durable writes). The
+ * substrate for on-device data stores (dbm / sqlite / nosql). Zero heap. Default off.
+ */
+#ifndef DETWS_ENABLE_WAL
+#define DETWS_ENABLE_WAL 0
+#endif
+#ifndef DETWS_WAL_PAGE_SIZE
+#define DETWS_WAL_PAGE_SIZE 32768 // sequential write unit (the measured durable-throughput knee)
+#endif
+#ifndef DETWS_WAL_MAX_RECORD
+#define DETWS_WAL_MAX_RECORD 4096 // largest single record payload
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **207 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **208 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -268,6 +268,7 @@ The native test matrix has **207 environments**, one per feature, generated from
 | `native_utmc` | `ETWS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
 | `native_vfs` | `ETWS_ENABLE_VFS=1` | `test_vfs` | Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM backend (the Arduino FS backend is ESP32-only and HW-verified). |
 | `native_vl53l0x` | `ETWS_ENABLE_VL53L0X=1` | `test_vl53l0x` | VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to millimeters, the interrupt-status data-ready decode, and the device range-status validity check. |
+| `native_wal` | `ETWS_ENABLE_WAL=1` | `test_wal` | Write-ahead journal for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core). |
 | `native_wamp` | `ETWS_ENABLE_WAMP=1` | `test_wamp` | WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional array parser (type / ids / URIs... |
 | `native_wave` | `ETWS_ENABLE_WAVE=1` | `test_wave` | IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID + length) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. |
 | `native_wearlevel` | `ETWS_ENABLE_WEARLEVEL=1` | `test_wearlevel` | Flash wear-leveling slot selector (services/wearlevel): least-worn pick (ties -> lowest index), saturating mark, and the wear-imbalance spread metric. |
@@ -497,7 +498,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2695 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2701 test cases** across **229 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28297,6 +28298,79 @@ A thorough directory of all **2695 test cases** across **228 suites**. Expand a 
       * <code>Assert true (vl53l0x_range_valid(0x58))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, vl53l0x_range_status(4 &lt;&lt; 3));</code>
       * <code>Assert false (vl53l0x_range_valid(4 &lt;&lt; 3))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_wal (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_crc32_known_vector</b> &mdash; <i>The canonical CRC-32/ISO-HDLC check value for "123456789".</i></summary>
+
+    * **Objective**: The canonical CRC-32/ISO-HDLC check value for "123456789".
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xCBF43926u, wal_crc32((const uint8_t *)"123456789", 9));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000000u, wal_crc32((const uint8_t *)"", 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_replay_roundtrip</b> &mdash; <i>Encode replay roundtrip</i></summary>
+
+    * **Objective**: Encode replay roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t((size_t)(WAL_RECORD_HEADER * 3 + 5 + 13 + 1), off);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(off, durable); // all records good -&gt; full length</code>
+      * <code>Assert equal int (3, c.n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(10, c.seq[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(12, c.seq[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(13, c.len[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8('a', c.first[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8('b', c.first[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_recovers_to_last_good_on_corrupt_tail</b> &mdash; <i>Corrupt a payload byte of the third record -> its CRC now fails.</i></summary>
+
+    * **Objective**: Corrupt a payload byte of the third record -> its CRC now fails.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(r0 + r1, durable); // recovered up to the end of record 2</code>
+      * <code>Assert equal int (2, c.n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(2, c.seq[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_stops_on_truncated_tail</b> &mdash; <i>Simulate a power loss mid-write of record 2: only part of it made it to media.</i></summary>
+
+    * **Objective**: Simulate a power loss mid-write of record 2: only part of it made it to media.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(r0, durable);                    // only record 1 is durable</code>
+      * <code>Assert equal int (1, c.n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, c.seq[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_capacity_and_empty_payload</b> &mdash; <i>Exactly fits a 3-byte payload.</i></summary>
+
+    * **Objective**: Exactly fits a 3-byte payload.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t((size_t)WAL_RECORD_HEADER + 3,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wal_record_encode(small, sizeof(small), 1, (const uint8_t *)"abcd", 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t((size_t)WAL_RECORD_HEADER, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, wal_replay(log, n, collect, &c));</code>
+      * <code>Assert equal int (1, c.n)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(99, c.seq[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, c.len[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_empty_and_garbage</b> &mdash; <i>Replay empty and garbage</i></summary>
+
+    * **Objective**: Replay empty and garbage
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wal_replay(nullptr, 0, collect, &c));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wal_replay(junk, sizeof(junk), collect, &c));</code>
+      * <code>Assert equal int (0, c.n)</code>
   </details>
 
 </details>
