@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2684 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2685 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -17197,7 +17197,19 @@ A thorough directory of all **2684 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (19 tests)</b></summary>
+<summary><b>test_opcua_client (20 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_browse_display_name_locale</b> &mdash; <i>Browse display name locale</i></summary>
+
+    * **Objective**: Browse display name locale
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1, got);</code>
+      * <code>Assert equal string ("Node7", refs[0].browse_name)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, refs[0].target_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, refs[0].target_ns);</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_on_read_all_variant_types</b> &mdash; <i>On read all variant types</i></summary>
