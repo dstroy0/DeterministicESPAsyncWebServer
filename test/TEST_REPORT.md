@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 19:57:42
+**Generated:** 2026-07-09 20:30:41
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2838 passed - 552s
+**Result:** ✅ 2840 passed - 226s
 
 ---
 
@@ -44,25 +44,25 @@
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.718 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.252 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:02.120 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.574 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.705 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.701 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.629 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.722 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.732 |
-| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.683 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.798 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.749 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.744 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.710 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.677 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.729 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.713 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.730 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.710 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.738 |
-| `test_application`       | `native_app`            |    71 |   ✅   | 00:00:00.903 |
-| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.613 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:05.111 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.691 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.714 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.615 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.692 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.712 |
+| `test_json`              | `native_app`            |    28 |   ✅   | 00:00:00.678 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.714 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.710 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.739 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.729 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.683 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.722 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.729 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.738 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.713 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.726 |
+| `test_application`       | `native_app`            |    71 |   ✅   | 00:00:00.899 |
+| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.653 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.508 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:00.830 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.651 |
@@ -72,7 +72,7 @@
 | `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.915 |
 | `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:00.769 |
 | `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.770 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.911 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.905 |
 | `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:00.752 |
 | `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.759 |
 | `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.776 |
@@ -90,7 +90,7 @@
 | `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.759 |
 | `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.772 |
 | `test_thread`            | `native_thread`         |    15 |   ✅   | 00:00:00.760 |
-| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.806 |
+| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.788 |
 | `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.766 |
 | `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.757 |
 | `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.765 |
@@ -98,7 +98,7 @@
 | `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.760 |
 | `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.758 |
 | `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.752 |
-| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.859 |
+| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.839 |
 | `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.758 |
 | `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.850 |
 | `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.763 |
@@ -121,7 +121,7 @@
 | `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.770 |
 | `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.775 |
 | `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.747 |
-| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.786 |
+| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.803 |
 | `test_opcua`             | `native_opcua`          |    47 |   ✅   | 00:00:00.908 |
 | `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   | 00:00:00.823 |
 | `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.455 |
@@ -1575,7 +1575,7 @@ _Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIfa
 
 ---
 
-## test_json - native_app - ✅ 26 passed
+## test_json - native_app - ✅ 28 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1608,8 +1608,10 @@ _Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the_
 |  22 | `test_reader_null_guards`                               |   ✅   | Reader null guards                                                   |
 |  23 | `test_reader_all_escapes`                               |   ✅   | Reader all escapes                                                   |
 |  24 | `test_reader_unicode_hex_case`                          |   ✅   | Reader unicode hex case                                              |
-|  25 | `test_reader_false_bool`                                |   ✅   | Reader false bool                                                    |
-|  26 | `test_reader_malformed`                                 |   ✅   | Reader malformed                                                     |
+|  25 | `test_reader_unicode_utf8_multibyte`                    |   ✅   | U+20AC EURO SIGN -> 3-byte UTF-8 E2 82 AC.                           |
+|  26 | `test_reader_unicode_surrogate_edges`                   |   ✅   | Reader unicode surrogate edges                                       |
+|  27 | `test_reader_false_bool`                                |   ✅   | Reader false bool                                                    |
+|  28 | `test_reader_malformed`                                 |   ✅   | Reader malformed                                                     |
 
 </details>
 
