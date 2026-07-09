@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bf522fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf522fbbee230bb119d1533c80ddcfa072870132))
 - update test report [skip ci] ([`174e40c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/174e40c9464b290eb56c972a3b529fcad784f02c))
 - update CHANGELOG.md [skip ci] ([`6ac8484`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ac848410b8cf2cd2a1be72d524dbedb9fcc8bea))
 - update CHANGELOG.md [skip ci] ([`dfdb915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dfdb9152912a1790d2f934293eb6347c5d1353fa))
@@ -135,6 +136,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`27ff2c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27ff2c7c5ae8214b13a3b6a73cb14310a38d8b28))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb2e066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb2e06609d1217f7f4aed9a2615ab32a4ebbfe2d))
 - update ESP32 build footprints [skip ci] ([`7be47c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7be47c8a34b43f27d84758625bccc219591dbb00))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2a3c1ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a3c1edcd85e78a39001a4fee58cd588bf5ea8a4))
@@ -195,6 +197,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- extract the duplicated MSG-envelope preamble into r_msg_preamble ([`2115d33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2115d3342b2f503ffaa3cc5443f55cdbe3db05b0))
 - hoist the bounded XML string-builder into a shared primitive (dedup) ([`cc88478`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc88478d88062a2918c4e9c998c96f0c1157932c))
 - hoist the AES S-box into a shared primitive (dedup) ([`be31581`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be31581db93542c9cd6bbd62ee401706cf735f60))
 - pull remaining tunable defaults into ServerConfig.h under their flag guards ([`f6bfc3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6bfc3ac6b462ca5eb5fed4fa757f71f5242ba6f))
