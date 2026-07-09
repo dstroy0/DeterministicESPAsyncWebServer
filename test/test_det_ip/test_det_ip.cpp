@@ -214,6 +214,55 @@ void test_prefix_match()
     TEST_ASSERT_FALSE(det_ip_prefix_match(&v6in, &v6net, 129)); // prefix > 128 for v6
 }
 
+void test_ip_classify_equal_cidr_and_parse_edges()
+{
+    // classify: null and a DET_IP_NONE address are UNSPECIFIED.
+    TEST_ASSERT_EQUAL_INT(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr));
+    DetIp none = {};
+    DetIp none2 = {};
+    TEST_ASSERT_EQUAL_INT(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none));
+    // equal: two DET_IP_NONE addresses compare equal (same non-address family).
+    TEST_ASSERT_TRUE(det_ip_equal(&none, &none2));
+    // CIDR with a non-byte-aligned prefix: the partial high bits of the boundary byte must match.
+    DetIp net = det_ip_from_v4_octets(192, 168, 0, 0);
+    DetIp in = det_ip_from_v4_octets(192, 168, 15, 255); // 3rd byte 0x0F, high nibble 0 -> in /20
+    DetIp out = det_ip_from_v4_octets(192, 168, 16, 0);  // 3rd byte 0x10, high nibble 1 -> out of /20
+    TEST_ASSERT_TRUE(det_ip_prefix_match(&in, &net, 20));
+    TEST_ASSERT_FALSE(det_ip_prefix_match(&out, &net, 20));
+    // Parse edges: a lone leading ':' and an over-long string are rejected.
+    DetIp p;
+    TEST_ASSERT_FALSE(det_ip_parse(":1", &p));
+    char toolong[80];
+    for (int i = 0; i < 79; i++)
+        toolong[i] = '1';
+    toolong[79] = '\0';
+    TEST_ASSERT_FALSE(det_ip_parse(toolong, &p));
+    TEST_ASSERT_FALSE(det_ip_parse("1.2.3", &p));             // too few octets
+    TEST_ASSERT_FALSE(det_ip_parse("1.2.3.4.5", &p));         // too many octets
+    TEST_ASSERT_FALSE(det_ip_parse("256.0.0.1", &p));         // octet out of range
+    TEST_ASSERT_FALSE(det_ip_parse("gg::1", &p));             // invalid hex
+    TEST_ASSERT_FALSE(det_ip_parse("1:2:3:4:5:6:7:8:9", &p)); // too many v6 groups
+    TEST_ASSERT_FALSE(det_ip_parse(nullptr, &p));             // null string
+    TEST_ASSERT_FALSE(det_ip_parse("1.2.3.4", nullptr));      // null out
+    TEST_ASSERT_FALSE(det_ip_parse("1234.5.6.7", &p));        // octet has 4 digits
+    TEST_ASSERT_FALSE(det_ip_parse("1.2.3.z", &p));           // invalid char in v4
+    // format guards: null ptr, non-v6/v4 family, and buffers too small for v4/v6/mapped.
+    char buf[64];
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(nullptr, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&none, buf, sizeof(buf))); // DET_IP_NONE family
+    DetIp v4 = det_ip_from_v4_octets(255, 255, 255, 255);
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&v4, buf, 4)); // "255.255.255.255" needs 16
+    DetIp v6;
+    TEST_ASSERT_TRUE(det_ip_parse("2001:db8::1", &v6));
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&v6, buf, 4)); // v6 text needs more than 4
+    DetIp mapped;
+    TEST_ASSERT_TRUE(det_ip_parse("::ffff:1.2.3.4", &mapped));
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&mapped, buf, 5)); // "::ffff:1.2.3.4" tail overflows
+    // to_v4_be guards: null and a pure (non-mapped) v6 both yield 0.
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_to_v4_be(nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_to_v4_be(&v6));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -227,5 +276,6 @@ int main()
     RUN_TEST(test_classify_v6);
     RUN_TEST(test_reject_malformed);
     RUN_TEST(test_equal_and_from_v4);
+    RUN_TEST(test_ip_classify_equal_cidr_and_parse_edges);
     return UNITY_END();
 }
