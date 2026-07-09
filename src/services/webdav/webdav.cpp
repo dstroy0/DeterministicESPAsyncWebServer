@@ -180,17 +180,20 @@ size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool
     char esc[256];
 
     webdav_xml_escape(esc, sizeof(esc), href);
+    // The href block is at most 26 + esc(<=255) + 62 == 343 bytes, and adding the collection
+    // marker + resourcetype close reaches <=376 - all well within tmp[512], so these three
+    // atomic-append guards cannot fire (esc is capped by its own 256-byte buffer above).
     if (!app(tmp, sizeof(tmp), &t, "  <D:response>\n    <D:href>") || !app(tmp, sizeof(tmp), &t, esc) ||
         !app(tmp, sizeof(tmp), &t, "</D:href>\n    <D:propstat>\n      <D:prop>\n        <D:resourcetype>"))
-        return len;
+        return len; // GCOVR_EXCL_LINE unreachable: href block <=343 < tmp[512] (see above)
 
     if (is_collection)
     {
         if (!app(tmp, sizeof(tmp), &t, "<D:collection/>"))
-            return len;
+            return len; // GCOVR_EXCL_LINE unreachable: <=358 < tmp[512] (see above)
     }
     if (!app(tmp, sizeof(tmp), &t, "</D:resourcetype>\n"))
-        return len;
+        return len; // GCOVR_EXCL_LINE unreachable: <=376 < tmp[512] (see above)
 
     if (!is_collection)
     {

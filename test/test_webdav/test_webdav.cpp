@@ -35,8 +35,39 @@ void test_method_classification()
     TEST_ASSERT_EQUAL_INT(DAV_M_LOCK, webdav_method("LOCK"));
     TEST_ASSERT_EQUAL_INT(DAV_M_UNLOCK, webdav_method("UNLOCK"));
     TEST_ASSERT_EQUAL_INT(DAV_M_PUT, webdav_method("PUT"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_GET, webdav_method("GET"));
+    TEST_ASSERT_EQUAL_INT(DAV_M_DELETE, webdav_method("DELETE"));
     TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method("BREW"));
     TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method(nullptr));
+}
+
+// Fail-closed guards on the pure builders: xml_escape zero-cap + plain-char truncation,
+// dest_path null arguments, and the multi-status / proppatch builders returning the input
+// length unchanged (ms_entry) or 0 (proppatch) when the output buffer can't hold the element.
+void test_webdav_builder_guards()
+{
+    char out[256];
+    TEST_ASSERT_EQUAL_size_t(0, webdav_xml_escape(out, 0, "x")); // zero cap
+    // A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.
+    char tiny[4];
+    webdav_xml_escape(tiny, sizeof(tiny), "abcdefgh");
+    TEST_ASSERT_TRUE(strlen(tiny) < sizeof(tiny));
+
+    TEST_ASSERT_FALSE(webdav_dest_path(nullptr, out, sizeof(out)));  // null destination
+    TEST_ASSERT_FALSE(webdav_dest_path("/x", nullptr, sizeof(out))); // null out
+    TEST_ASSERT_FALSE(webdav_dest_path("/x", out, 0));               // zero cap
+
+    // ms_entry: an href whose escaped form + fixed markup overruns the internal 512-byte
+    // element scratch returns the input length unchanged (atomic: nothing committed).
+    char href[256];
+    memset(href, 'a', 255);
+    href[255] = '\0';
+    char buf[4096];
+    TEST_ASSERT_EQUAL_size_t(7, webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));
+
+    // proppatch: a cap that holds the preamble but not the closing envelope -> 0.
+    char small[200];
+    TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -353,6 +384,7 @@ int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_method_classification);
+    RUN_TEST(test_webdav_builder_guards);
     RUN_TEST(test_depth_parsing);
     RUN_TEST(test_xml_escape);
     RUN_TEST(test_xml_escape_truncates_safely);
