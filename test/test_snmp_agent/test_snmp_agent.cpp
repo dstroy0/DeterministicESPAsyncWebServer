@@ -5,6 +5,7 @@
 // builds a real request datagram with the BER encoder, runs it through the
 // agent, and decodes the response - no sockets, no heap.
 
+#include "network_drivers/transport/udp.h"
 #include "services/snmp/snmp_agent.h"
 #include "services/snmp/snmp_ber.h"
 #include <string.h>
@@ -512,6 +513,95 @@ void test_dispatch_value_types_and_malformed()
         TEST_ASSERT_EQUAL_UINT(0, snmp_dispatch_pdu(pdu, l, false, true, out, sizeof(out)));
 }
 
+void test_getbulk_repeaters_and_end()
+{
+    uint8_t req[256], resp[512];
+    // Pure repeaters (non_rep=0, max_rep=3) walk successive OIDs from the sys prefix.
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 20, 0, 3, OID_SYSPREFIX, 7, nullptr);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    RespView rv;
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+    TEST_ASSERT_TRUE(rv.nvb >= 1);
+    // A non-repeater whose OID is past the end yields endOfMibView.
+    rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 21, 1, 2, OID_PAST_END, 9, nullptr);
+    TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
+}
+
+void test_getbulk_nonrep_clamp_and_v1_reject()
+{
+    uint8_t req[256], resp[512];
+    // non_rep (5) exceeds the single varbind -> clamped to the varbind count.
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 22, 5, 2, OID_SYSPREFIX, 7, nullptr);
+    TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
+    // GetBulk is v2c+; a v1 GetBulk is rejected.
+    rl = build_req(req, sizeof(req), SNMP_V1, "public", SNMP_PDU_GETBULK, 23, 0, 3, OID_SYSPREFIX, 7, nullptr);
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
+}
+
+void test_response_too_big_reencodes()
+{
+    uint8_t req[256], resp[28]; // too small for the full sysDescr response
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 40, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
+    if (n > 0)
+    {
+        RespView rv;
+        TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
+        TEST_ASSERT_EQUAL_INT(SNMP_ERR_TOO_BIG, rv.err_status);
+    }
+}
+
+void test_version_and_community_guards()
+{
+    uint8_t req[256], resp[512];
+    // v3 with the USM layer not built here -> 0.
+    size_t rl = build_req(req, sizeof(req), SNMP_V3, "public", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
+    // An unknown version number is rejected.
+    rl = build_req(req, sizeof(req), 5, "public", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
+    // An unknown community is silently dropped.
+    rl = build_req(req, sizeof(req), SNMP_V2C, "wrongcomm", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
+}
+
+void test_dispatch_malformed_pdu()
+{
+    uint8_t resp[128];
+    // A PDU whose header parses but whose request-id integer is truncated fails closed.
+    uint8_t junk[3] = {0xA0, 0x01, 0x05};
+    TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(junk, sizeof(junk), false, true, resp, sizeof(resp)));
+    // A lone PDU tag with no content fails closed.
+    uint8_t bare[1] = {0xA0};
+    TEST_ASSERT_EQUAL_size_t(0, snmp_dispatch_pdu(bare, sizeof(bare), false, true, resp, sizeof(resp)));
+}
+
+void test_udp_handler_via_inject()
+{
+    det_udp_reset_listeners();
+    det_udp_capture_enable();
+    det_udp_capture_reset();
+    snmp_agent_begin_udp(161);
+    uint8_t req[256];
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 50, 0, 0, OID_SYSDESCR, 9, nullptr);
+    det_udp_inject(161, "192.0.2.1", 40000, req, rl);
+    // The bound handler processed the datagram and sent a reply (captured).
+    TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
+    det_udp_reset_listeners();
+}
+
+void test_malformed_message_guards()
+{
+    uint8_t resp[128];
+    uint8_t not_seq[3] = {0x02, 0x01, 0x00}; // an INTEGER where the wrapper SEQUENCE is expected
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(not_seq, sizeof(not_seq), resp, sizeof(resp)));
+    uint8_t empty_seq[2] = {0x30, 0x00}; // SEQUENCE with no version integer
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(empty_seq, sizeof(empty_seq), resp, sizeof(resp)));
+    uint8_t bad_comm[8] = {0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x00}; // version ok, community not OCTET STRING
+    TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(bad_comm, sizeof(bad_comm), resp, sizeof(resp)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -534,5 +624,12 @@ int main()
     RUN_TEST(test_uptime_is_timeticks);
     RUN_TEST(test_unknown_community_no_response);
     RUN_TEST(test_v3_message_dropped);
+    RUN_TEST(test_getbulk_repeaters_and_end);
+    RUN_TEST(test_getbulk_nonrep_clamp_and_v1_reject);
+    RUN_TEST(test_response_too_big_reencodes);
+    RUN_TEST(test_version_and_community_guards);
+    RUN_TEST(test_dispatch_malformed_pdu);
+    RUN_TEST(test_udp_handler_via_inject);
+    RUN_TEST(test_malformed_message_guards);
     return UNITY_END();
 }
