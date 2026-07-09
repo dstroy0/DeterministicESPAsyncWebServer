@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 08:24:18
+**Generated:** 2026-07-09 08:48:47
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2730 passed - 250s
+**Result:** ✅ 2731 passed - 277s
 
 ---
 
@@ -222,7 +222,7 @@
 | `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.764 |
 | `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.770 |
 | `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.804 |
-| `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.758 |
+| `test_logbuf`            | `native_logbuf`         |     5 |   ✅   | 00:00:27.916 |
 | `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.806 |
 | `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.922 |
 | `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.738 |
@@ -5817,7 +5817,7 @@ _Host tests for services/wisun: the CoAP client request builder (RFC 7252) + the
 
 ---
 
-## test_logbuf - native_logbuf - ✅ 4 passed
+## test_logbuf - native_logbuf - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5830,6 +5830,7 @@ _Unit tests for the rotating log ring (services/logbuf): append order, the_
 |   2 | `test_dump`                  |   ✅   | Dump                  |
 |   3 | `test_rotation_drops_oldest` |   ✅   | Rotation drops oldest |
 |   4 | `test_trap_threshold`        |   ✅   | Trap threshold        |
+|   5 | `test_dump_guards`           |   ✅   | Dump guards           |
 
 </details>
 
