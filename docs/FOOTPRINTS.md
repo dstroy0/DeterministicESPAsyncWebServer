@@ -21,7 +21,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.8 KB (20.3%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.2 KB (20.4%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.8 KB (20.3%)  |
-| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 61.6 KB (19.3%)  |
+| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.8 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.1 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
@@ -56,8 +56,8 @@ from each example's `pio ci` size report and aggregated into
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`    | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
 | `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 745.6 KB (58.3%) | 87.1 KB (27.2%)  |
 | `OIDC`                                   | L7-Application/50.OidcAuth              | 746.6 KB (58.3%) | 77.6 KB (24.3%)  |
-| `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.4 KB (57.9%) | 74.8 KB (23.4%)  |
-| `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.8 KB (59.7%) | 78.6 KB (24.6%)  |
+| `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.2 KB (57.9%) | 74.8 KB (23.4%)  |
+| `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.6 KB (59.7%) | 78.6 KB (24.6%)  |
 | `OTA`                                    | L7-Application/16.OTA                   | 738.5 KB (57.7%) | 100.1 KB (31.3%) |
 | `OTA_ROLLBACK`                           | L7-Application/44.OtaRollback           | 734.4 KB (57.4%) | 64.8 KB (20.3%)  |
 | `PARTITION_MONITOR`                      | L7-Application/37.PartitionMonitor      | 734.1 KB (57.4%) | 64.8 KB (20.2%)  |
