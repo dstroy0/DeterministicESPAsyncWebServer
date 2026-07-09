@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2665 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2666 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28614,7 +28614,7 @@ A thorough directory of all **2665 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (28 tests)</b></summary>
+<summary><b>test_webdav_handler (29 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_webdav_get_put_dest_edges</b> &mdash; <i>Webdav get put dest edges</i></summary>
@@ -28653,6 +28653,15 @@ A thorough directory of all **2665 test cases** across **228 suites**. Expand a 
     * **Objective**: Webdav source path too long 414
     * **Assertions**:
       * <code>Assert true (resp_status(414))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_dav_wildcard_and_route_full</b> &mdash; <i>(a) A wildcard-terminated prefix is stored as-is; a request under it still routes.</i></summary>
+
+    * **Objective**: (a) A wildcard-terminated prefix is stored as-is; a request under it still routes.
+    * **Assertions**:
+      * <code>Assert true (resp_status(200))</code>
+      * <code>Assert true (resp_status(404))</code>
   </details>
 
   <details style="margin-left: 20px;">
