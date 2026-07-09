@@ -455,7 +455,7 @@ void test_on_read_unknown_variant_rejected()
 
 // Build a minimal valid MSG response (header + security/sequence + TypeId + ResponseHeader) whose
 // service body starts with a single i32 - used to feed the array-count guards an out-of-range value.
-static size_t build_min_response(uint8_t *out, size_t cap, uint32_t type_id, int32_t count_field)
+static size_t build_min_response(uint8_t *out, size_t cap, uint32_t type_id, int32_t count_field, int32_t str_table = 0)
 {
     UaWriter w = {out, cap, 0, true};
     ua_w_u8(&w, 'M');
@@ -472,10 +472,12 @@ static size_t build_min_response(uint8_t *out, size_t cap, uint32_t type_id, int
     ua_w_u32(&w, 0);                 // RequestHandle
     ua_w_u32(&w, OPCUA_STATUS_GOOD); // ServiceResult
     ua_w_u8(&w, 0);                  // ServiceDiagnostics
-    ua_w_i32(&w, 0);                 // StringTable count = 0
-    ua_w_nodeid_numeric(&w, 0, 0);   // AdditionalHeader NodeId (null)
-    ua_w_u8(&w, 0);                  // AdditionalHeader ExtensionObject (no body)
-    ua_w_i32(&w, count_field);       // service body: Results/Endpoints count
+    ua_w_i32(&w, str_table);         // StringTable count
+    for (int32_t i = 0; i < str_table; i++)
+        ua_w_i32(&w, -1);          // one (null) StringTable entry each
+    ua_w_nodeid_numeric(&w, 0, 0); // AdditionalHeader NodeId (null)
+    ua_w_u8(&w, 0);                // AdditionalHeader ExtensionObject (no body)
+    ua_w_i32(&w, count_field);     // service body: Results/Endpoints count
     out[4] = (uint8_t)w.n;
     out[5] = (uint8_t)(w.n >> 8);
     out[6] = (uint8_t)(w.n >> 16);
@@ -562,6 +564,17 @@ void test_on_open_guards()
     TEST_ASSERT_FALSE(opcua_client_on_open(&c, ovf, w.n));
 }
 
+void test_response_header_string_table_skip()
+{
+    // A ResponseHeader carrying a non-empty StringTable makes cr_skip_string_array iterate; the
+    // response is otherwise valid (0 results) so on_read succeeds.
+    uint8_t resp[128];
+    size_t n = build_min_response(resp, sizeof(resp), OPCUA_ID_READ_RESP, 0, 1);
+    OpcUaVariant v[1];
+    uint32_t s[1];
+    TEST_ASSERT_EQUAL_INT32(0, opcua_client_on_read(resp, n, v, s, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -583,5 +596,6 @@ int main()
     RUN_TEST(test_on_read_unknown_variant_rejected);
     RUN_TEST(test_response_parsers_reject_negative_count);
     RUN_TEST(test_on_open_guards);
+    RUN_TEST(test_response_header_string_table_skip);
     return UNITY_END();
 }
