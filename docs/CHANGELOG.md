@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.63.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.63.0 - 2026-07-09</b></summary>
 
 ### Bug Fixes
 
@@ -16,6 +19,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- drop stale docs/README.md entry from bumpversion config ([`e365631`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e365631dd99caccb686f52006a5cec7fe0482902))
+- update CHANGELOG.md [skip ci] ([`eec990f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eec990f350648c714cc97feade5acfbff7235d9f))
 - update CHANGELOG.md [skip ci] ([`76e63fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76e63fc42a0c30230e313fcae1290afd05bdbaff))
 - update CHANGELOG.md [skip ci] ([`1f5e030`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f5e0306c9eb4b66faa40e5dcebe78d102986ff7))
 - update test report + coverage [skip ci] ([`1f8ab1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f8ab1dcf5be8cf5f9e44a24bb29c2daa9beff87))
@@ -296,6 +301,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.62.0 → 5.63.0 ([`3c0dbd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c0dbd2e4dec231187c4ca61a6c07cbfd2ac32c2))
 - add reusable style-conflict triage script + document it ([`aee659f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aee659f32690ea5651c372d444c8c8834cea09b6))
 - one assignment/declaration per line (Sonar S1121/S1659) ([`fcf0049`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcf0049682e20f031815c46d0a32796244725437))
 - annotate provably-dead guards in stomp + nats parsers (GCOVR_EXCL) ([`af7b6a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af7b6a6284c893e7c028bb9140d755fb07d5b618))
@@ -303,6 +309,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0c1321c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c1321c576b231c931098f21c7457688b9bbf0e0))
+- update ESP32 build footprints [skip ci] ([`bad66e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad66e4cd34f1d4b7edcec8a33ddd3258e58938b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ac314d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac314d4ab7fe5e88ddab0e6764056f2460cbb1ab))
 - update ESP32 build footprints [skip ci] ([`70228ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70228ad520bfc3317f0373e4fdb845f860e395d8))
 - correct stale chunked-response backpressure limitation ([`f92ef39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f92ef395e4b34063f52c38ab87c24e2b601f39be))
@@ -712,6 +720,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - per-run throwaway SSH keys + a fixed baseline set, a host-key generator, and a provisioning example ([`0c36935`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c3693547db01d2baccefca217a9e16b2a5c57e5))
 - data-driven external KAT env + fix Ed25519 signature malleability ([`804b66e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804b66eb349af9b434e58ea03285d8f2429b8f12))
 - homogenize output to 120 cols, right-justify the status ([`bf1a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf1a6d656c5998fcdad4891ce72bb859b8632f8d))
+
+</details>
 
 ## [5.62.0] - 2026-07-06
 
