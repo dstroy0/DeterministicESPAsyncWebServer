@@ -49,6 +49,18 @@ void test_current_and_power()
     TEST_ASSERT_EQUAL_INT32(1000000, ina219_power_uw(500, 100));   // 1 W
 }
 
+void test_host_i2c_stubs_fail_closed()
+{
+    // On a host build there is no I2C: begin and every read fail closed (return false), so a caller
+    // never mistakes an unavailable sensor for a zero reading.
+    TEST_ASSERT_FALSE(ina219_begin(0x40, 100, 100));
+    int32_t v = 123;
+    TEST_ASSERT_FALSE(ina219_read_bus_mv(&v));
+    TEST_ASSERT_FALSE(ina219_read_shunt_uv(&v));
+    TEST_ASSERT_FALSE(ina219_read_current_ua(&v));
+    TEST_ASSERT_FALSE(ina219_read_power_uw(&v));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -56,5 +68,6 @@ int main()
     RUN_TEST(test_shunt_uv);
     RUN_TEST(test_calibration);
     RUN_TEST(test_current_and_power);
+    RUN_TEST(test_host_i2c_stubs_fail_closed);
     return UNITY_END();
 }
