@@ -1219,6 +1219,7 @@ guards at compile time.
 | `CORS_HDR_BUF_SIZE` | `192` | Size of the pre-built CORS header block stored in DetWebServer. |
 | `DETWS_ACCEPT_THROTTLE_MAX` | `20` | Max accepted connections per throttle window (see DETWS_ENABLE_ACCEPT_THROTTLE). |
 | `DETWS_ACCEPT_THROTTLE_WINDOW_MS` | `1000` | Throttle window length in milliseconds (see DETWS_ENABLE_ACCEPT_THROTTLE). |
+| `DETWS_ADS1115_DIFFERENTIAL` | `0` | ADS1115 input mode: 0 = single-ended (AINx vs GND), 1 = differential. |
 | `DETWS_ADS1115_I2C_ADDR` | `0x48` | I2C address of the ADS1115 (0x48 with ADDR to GND; 0x49/0x4A/0x4B for VDD/SDA/SCL). |
 | `DETWS_AUTH_LOCKOUT_BASE_MS` | `1000` | First lockout duration in ms; doubles on each further failure. |
 | `DETWS_AUTH_LOCKOUT_MAX_MS` | `300000` | Maximum lockout duration in ms (the exponential backoff cap). |
@@ -1274,7 +1275,9 @@ guards at compile time.
 | `DETWS_HTTP_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for the https:// client, bytes. |
 | `DETWS_HTTP_CLIENT_TIMEOUT_MS` | `8000` | Outbound HTTP client connect/response timeout in milliseconds. |
 | `DETWS_HTTP_EMIT_DATE` | `0` | Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock time is available. |
+| `DETWS_INA219_CURRENT_LSB_UA` | `100` | Default INA219 current LSB in microamps per bit (calibration input). |
 | `DETWS_INA219_I2C_ADDR` | `0x40` | I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). |
+| `DETWS_INA219_SHUNT_MOHM` | `100` | Default INA219 shunt resistance in milliohms (calibration input). |
 | `DETWS_IP_ALLOWLIST_SLOTS` | `8` | Number of CIDR rules the source-IP allowlist can hold (BSS table). |
 | `DETWS_JWT_MAX_LEN` | `512` | Maximum accepted JWT length in bytes (header.payload.signature). |
 | `DETWS_KEEPALIVE_MAX_REQUESTS` | `100` | Maximum requests served on one keep-alive connection before it is closed. |
