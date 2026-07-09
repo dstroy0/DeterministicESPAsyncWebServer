@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2479 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2480 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19742,8 +19742,10 @@ A thorough directory of all **2479 test cases** across **228 suites**. Expand a 
       * <code>Assert false (detws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"))</code>
       * <code>Assert false (detws_ntp_synced())</code>
       * <code>Assert equal int (0, (long)detws_ntp_epoch())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, ntp_time_source()); // registry adapter: 0 when unsynced</code>
       * <code>Assert true (detws_ntp_synced())</code>
       * <code>Assert equal int (784111777, (long)detws_ntp_epoch())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(784111777, ntp_time_source()); // registry adapter mirrors the epoch</code>
       * <code>Assert equal uint (0, detws_ntp_http_date(nullptr, sizeof(buf)))</code>
       * <code>Assert equal uint (0, detws_ntp_http_date(buf, 0))</code>
       * <code>Assert true (detws_ntp_http_date(buf, sizeof(buf)) &gt; 0)</code>
@@ -25055,7 +25057,7 @@ A thorough directory of all **2479 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_time_source (9 tests)</b></summary>
+<summary><b>test_time_source (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_single_source</b> &mdash; <i>Single source</i></summary>
@@ -25141,6 +25143,18 @@ A thorough directory of all **2479 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(5, detws_time_now());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_time_now());</code>
       * <code>Assert null (detws_time_source_active())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_http_date_from_active_source</b> &mdash; <i>The HTTP Date header draws from the registry: no valid source -> nothing; a source with a</i></summary>
+
+    * **Objective**: The HTTP Date header draws from the registry: no valid source -> nothing; a source with a
+    * **Assertions**:
+      * <code>Assert equal uint (0, detws_time_http_date(buf, sizeof(buf)))</code>
+      * <code>Assert true (detws_time_http_date(buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("Sun, 06 Nov 1994 08:49:37 GMT", buf)</code>
+      * <code>Assert equal uint (0, detws_time_http_date(nullptr, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, detws_time_http_date(buf, 0))</code>
   </details>
 
 </details>
