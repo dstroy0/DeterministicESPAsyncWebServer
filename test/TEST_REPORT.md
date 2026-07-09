@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 16:07:25
+**Generated:** 2026-07-09 16:22:47
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2807 passed - 498s
+**Result:** ✅ 2810 passed - 501s
 
 ---
 
@@ -66,7 +66,7 @@
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.656 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    21 |   ✅   | 00:00:02.612 |
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
 | `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:20.919 |
 | `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.937 |
@@ -115,7 +115,7 @@
 | `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.768 |
 | `test_webhook`           | `native_webhook`        |     6 |   ✅   | 00:00:00.758 |
 | `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.720 |
-| `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.735 |
+| `test_dns_resolver`      | `native_dns_resolver`   |     5 |   ✅   | 00:00:03.088 |
 | `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.786 |
 | `test_oidc`              | `native_oidc`           |    19 |   ✅   | 00:00:18.033 |
 | `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.723 |
@@ -2085,7 +2085,7 @@ _Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
 
 ---
 
-## test_snmp_v3 - native_snmp_v3 - ✅ 19 passed
+## test_snmp_v3 - native_snmp_v3 - ✅ 21 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2094,25 +2094,27 @@ _Unit tests for the SNMPv3 USM layer. The test acts as a full SNMP manager:_
 
 |   # | Test                                            | Status | Description                                                                     |
 | --: | :---------------------------------------------- | :----: | :------------------------------------------------------------------------------ |
-|   1 | `test_v3_field_tag_corruption`                  |   ✅   | V3 field tag corruption                                                         |
-|   2 | `test_v3_scoped_parse_rejections`               |   ✅   | V3 scoped parse rejections                                                      |
-|   3 | `test_v3_discovery_malformed_scoped`            |   ✅   | V3 discovery malformed scoped                                                   |
-|   4 | `test_v3_auth_edge_rejections`                  |   ✅   | V3 auth edge rejections                                                         |
-|   5 | `test_v3_message_structure_rejections`          |   ✅   | V3 message structure rejections                                                 |
-|   6 | `test_v3_init_and_boots_accessors`              |   ✅   | V3 init and boots accessors                                                     |
-|   7 | `test_v3_discovery_variants`                    |   ✅   | V3 discovery variants                                                           |
-|   8 | `test_v3_priv_not_configured`                   |   ✅   | V3 priv not configured                                                          |
-|   9 | `test_v3_notify_paths`                          |   ✅   | V3 notify paths                                                                 |
-|  10 | `test_localize_key_sha256_vector`               |   ✅   | password "maplesyrup", engineID 80 00 C0 DE 05 01 02 03 04 (the agent default). |
-|  11 | `test_aes128_fips197_vector`                    |   ✅   | FIPS-197 C.1. CFB with IV = plaintext and zero input yields E_key(plaintext).   |
-|  12 | `test_aes_cfb_roundtrip_partial_block`          |   ✅   | Aes cfb roundtrip partial block                                                 |
-|  13 | `test_discovery_reports_engine_id`              |   ✅   | Discovery reports engine id                                                     |
-|  14 | `test_authnopriv_get`                           |   ✅   | Authnopriv get                                                                  |
-|  15 | `test_authpriv_get`                             |   ✅   | Authpriv get                                                                    |
-|  16 | `test_wrong_auth_password_reports_wrong_digest` |   ✅   | Wrong auth password reports wrong digest                                        |
-|  17 | `test_unknown_user_reports`                     |   ✅   | Unknown user reports                                                            |
-|  18 | `test_not_in_time_window_reports`               |   ✅   | Not in time window reports                                                      |
-|  19 | `test_inform_v3_builds_informrequest`           |   ✅   | Inform v3 builds informrequest                                                  |
+|   1 | `test_v3_response_scopedpdu_overflow`           |   ✅   | V3 response scopedpdu overflow                                                  |
+|   2 | `test_v3_field_tag_corruption`                  |   ✅   | V3 field tag corruption                                                         |
+|   3 | `test_v3_scoped_parse_rejections`               |   ✅   | V3 scoped parse rejections                                                      |
+|   4 | `test_v3_discovery_malformed_scoped`            |   ✅   | V3 discovery malformed scoped                                                   |
+|   5 | `test_v3_auth_edge_rejections`                  |   ✅   | V3 auth edge rejections                                                         |
+|   6 | `test_v3_message_structure_rejections`          |   ✅   | V3 message structure rejections                                                 |
+|   7 | `test_v3_init_and_boots_accessors`              |   ✅   | V3 init and boots accessors                                                     |
+|   8 | `test_v3_discovery_variants`                    |   ✅   | V3 discovery variants                                                           |
+|   9 | `test_v3_priv_not_configured`                   |   ✅   | V3 priv not configured                                                          |
+|  10 | `test_v3_notify_paths`                          |   ✅   | V3 notify paths                                                                 |
+|  11 | `test_v3_notify_overflow_guards`                |   ✅   | V3 notify overflow guards                                                       |
+|  12 | `test_localize_key_sha256_vector`               |   ✅   | password "maplesyrup", engineID 80 00 C0 DE 05 01 02 03 04 (the agent default). |
+|  13 | `test_aes128_fips197_vector`                    |   ✅   | FIPS-197 C.1. CFB with IV = plaintext and zero input yields E_key(plaintext).   |
+|  14 | `test_aes_cfb_roundtrip_partial_block`          |   ✅   | Aes cfb roundtrip partial block                                                 |
+|  15 | `test_discovery_reports_engine_id`              |   ✅   | Discovery reports engine id                                                     |
+|  16 | `test_authnopriv_get`                           |   ✅   | Authnopriv get                                                                  |
+|  17 | `test_authpriv_get`                             |   ✅   | Authpriv get                                                                    |
+|  18 | `test_wrong_auth_password_reports_wrong_digest` |   ✅   | Wrong auth password reports wrong digest                                        |
+|  19 | `test_unknown_user_reports`                     |   ✅   | Unknown user reports                                                            |
+|  20 | `test_not_in_time_window_reports`               |   ✅   | Not in time window reports                                                      |
+|  21 | `test_inform_v3_builds_informrequest`           |   ✅   | Inform v3 builds informrequest                                                  |
 
 </details>
 
@@ -3349,7 +3351,7 @@ _Unit tests for the radio-power mode names (services/radio_power). Applying the_
 
 ---
 
-## test_dns_resolver - native_dns_resolver - ✅ 4 passed
+## test_dns_resolver - native_dns_resolver - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3362,6 +3364,7 @@ _Unit tests for the DNS answer classifier / verifier (services/dns_resolver)._
 |   2 | `test_verify_rejects_suspicious` |   ✅   | Verify rejects suspicious |
 |   3 | `test_verify_accepts_plausible`  |   ✅   | Verify accepts plausible  |
 |   4 | `test_resolve_is_noop_on_host`   |   ✅   | Resolve is noop on host   |
+|   5 | `test_resolve_verified_paths`    |   ✅   | resolve fails -> false.   |
 
 </details>
 
