@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2630 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2633 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19449,7 +19449,7 @@ A thorough directory of all **2630 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_conn (24 tests)</b></summary>
+<summary><b>test_quic_conn (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_and_stream</b> &mdash; <i>Client Initial keys from the same DCID the server used.</i></summary>
@@ -19700,6 +19700,33 @@ A thorough directory of all **2630 test cases** across **228 suites**. Expand a 
     <summary><b>test_quic_conn_send_tiny_cap</b> &mdash; <i>Quic conn send tiny cap</i></summary>
 
     * **Objective**: Quic conn send tiny cap
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_stream_nothing_to_send</b> &mdash; <i>Quic conn stream nothing to send</i></summary>
+
+    * **Objective**: Quic conn stream nothing to send
+    * **Assertions**:
+      * <code>Assert equal uint (2, quic_conn_stream_send(&qc, 0, (const uint8_t *)"OK", 2, true))</code>
+      * <code>Assert true (quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_short_header_tiny_cap</b> &mdash; <i>Quic conn short header tiny cap</i></summary>
+
+    * **Objective**: Quic conn short header tiny cap
+    * **Assertions**:
+      * <code>Assert false (quic_conn_is_closed(&qc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quic_conn_close_level_fallback</b> &mdash; <i>A malformed frame in an Initial packet (Initial is discarded post-handshake) queues a close at</i></summary>
+
+    * **Objective**: A malformed frame in an Initial packet (Initial is discarded post-handshake) queues a close at
+    * **Assertions**:
+      * <code>Assert true (quic_conn_send(&qc, out, sizeof out) &gt; 0)</code>
+      * <code>Assert true (quic_conn_is_closed(&qc))</code>
   </details>
 
 </details>
