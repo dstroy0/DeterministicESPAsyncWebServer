@@ -161,6 +161,72 @@ void test_v5_write_overflow()
     TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(buf, sizeof(buf), &r));
 }
 
+void test_flow_guards_and_overflows()
+{
+    uint8_t buf[128];
+    FlowWriter w;
+    FlowField f = {8, 4};
+
+    // begin null-arg guards + finish(null).
+    TEST_ASSERT_FALSE(flow_ipfix_begin(nullptr, buf, sizeof(buf), 0, 0, 0));
+    TEST_ASSERT_FALSE(flow_ipfix_begin(&w, nullptr, sizeof(buf), 0, 0, 0));
+    TEST_ASSERT_FALSE(flow_v9_begin(nullptr, buf, sizeof(buf), 0, 0, 0, 0));
+    TEST_ASSERT_FALSE(flow_v9_begin(&w, nullptr, sizeof(buf), 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(nullptr));
+
+    // w_u16 overflow: a 3-octet buffer can't fit even version+length.
+    uint8_t b3[3];
+    TEST_ASSERT_FALSE(flow_ipfix_begin(&w, b3, sizeof(b3), 0, 0, 0));
+
+    // misuse guards on a valid writer.
+    TEST_ASSERT_TRUE(flow_ipfix_begin(&w, buf, sizeof(buf), 1, 2, 3));
+    TEST_ASSERT_FALSE(flow_export_template(nullptr, 256, &f, 1));
+    TEST_ASSERT_FALSE(flow_export_template(&w, 256, nullptr, 1));
+    TEST_ASSERT_FALSE(flow_export_template(&w, 256, &f, 0));
+    TEST_ASSERT_FALSE(flow_export_data_begin(nullptr, 256));
+    TEST_ASSERT_FALSE(flow_export_data_begin(&w, 255)); // id < 256
+    uint8_t rec[4] = {1, 2, 3, 4};
+    TEST_ASSERT_FALSE(flow_export_data_record(nullptr, rec, 4));
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, rec, 4)); // no set open
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, nullptr, 4));
+    TEST_ASSERT_FALSE(flow_export_data_end(nullptr));
+    TEST_ASSERT_FALSE(flow_export_data_end(&w)); // no set open
+
+    // Auto-close: opening a data/template set while another is open closes the first.
+    TEST_ASSERT_TRUE(flow_v9_begin(&w, buf, sizeof(buf), 0, 0, 0, 0));
+    TEST_ASSERT_TRUE(flow_export_template(&w, 256, &f, 1));
+    TEST_ASSERT_TRUE(flow_export_data_begin(&w, 256));
+    TEST_ASSERT_TRUE(flow_export_data_record(&w, rec, 4));
+    TEST_ASSERT_TRUE(flow_export_data_begin(&w, 257)); // set open -> data_end
+    TEST_ASSERT_TRUE(flow_export_data_record(&w, rec, 4));
+    TEST_ASSERT_TRUE(flow_export_template(&w, 258, &f, 1)); // set open -> data_end
+    TEST_ASSERT_TRUE(flow_export_finish(&w) > 0);
+
+    // w_bytes overflow + sticky-error early return: header(20)+set(4)=24, cap 26, so a
+    // 6-octet record overruns; the next record then hits the sticky-error early return, and
+    // finish's auto data_end hits w_zero's sticky-error early return.
+    uint8_t b26[26];
+    TEST_ASSERT_TRUE(flow_v9_begin(&w, b26, sizeof(b26), 0, 0, 0, 0));
+    TEST_ASSERT_TRUE(flow_export_data_begin(&w, 256));
+    uint8_t rec6[6] = {1, 2, 3, 4, 5, 6};
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, rec6, 6)); // w_bytes overflow
+    TEST_ASSERT_FALSE(flow_export_data_record(&w, rec6, 6)); // w_bytes sticky-error
+    TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));     // w_zero sticky-error
+
+    // w_zero overflow: a v9 set with a 1-octet record needs 3 pad octets that don't fit.
+    uint8_t b25[25];
+    TEST_ASSERT_TRUE(flow_v9_begin(&w, b25, sizeof(b25), 0, 0, 0, 0)); // pos 20
+    TEST_ASSERT_TRUE(flow_export_data_begin(&w, 256));                 // pos 24
+    uint8_t r1[1] = {7};
+    TEST_ASSERT_TRUE(flow_export_data_record(&w, r1, 1)); // pos 25 == cap
+    TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));  // pad 3 overflows
+
+    // IPFIX 16-bit length overflow: a message past 0xFFFF octets fails closed.
+    TEST_ASSERT_TRUE(flow_ipfix_begin(&w, buf, sizeof(buf), 0, 0, 0));
+    w.pos = 0x10000; // force past the IPFIX length field's range
+    TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -171,5 +237,6 @@ int main()
     RUN_TEST(test_v9_count_and_padding);
     RUN_TEST(test_finish_overflow_fails_closed);
     RUN_TEST(test_v5_write_overflow);
+    RUN_TEST(test_flow_guards_and_overflows);
     return UNITY_END();
 }
