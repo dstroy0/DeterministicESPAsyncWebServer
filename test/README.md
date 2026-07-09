@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2685 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2686 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23367,7 +23367,7 @@ A thorough directory of all **2685 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_v3 (21 tests)</b></summary>
+<summary><b>test_snmp_v3 (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v3_response_scopedpdu_overflow</b> &mdash; <i>V3 response scopedpdu overflow</i></summary>
@@ -23484,6 +23484,15 @@ A thorough directory of all **2685 test cases** across **228 suites**. Expand a 
     * **Objective**: password "maplesyrup", engineID 80 00 C0 DE 05 01 02 03 04 (the agent default).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, key, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_localize_key_empty_password</b> &mdash; <i>Localize key empty password</i></summary>
+
+    * **Objective**: Localize key empty password
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);</code>
   </details>
 
   <details style="margin-left: 20px;">
