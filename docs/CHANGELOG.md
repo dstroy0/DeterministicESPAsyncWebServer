@@ -6,8 +6,29 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`302b583`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/302b583912de2c569be5f9fb9acb4182f59cf571))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6859672`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68596723d890a05e46c0bab881916b678370a73f))
+
+### Features
+
+- read rows - cell parser, record cursor, typed columns ([`e7c9355`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7c93559409e6dd5f9dd90e993c5dfc29f9af431))
+
+## [5.69.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.69.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`4cae75b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cae75b1558819d7a4cbd30bc48520e7e8a590b4))
 - update CHANGELOG.md [skip ci] ([`2fe7f30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fe7f30984e9bb5765150740a8e82759d45d3a25))
+
+### Changes
+
+- Bump version: 5.68.0 → 5.69.0 ([`71938de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71938dedc5a70dac995b12b9e898b169bb740dbc))
 
 ### Documentation
 
@@ -17,6 +38,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - SQLite3 on-disk file-format reader (parsing foundation) ([`b20de39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b20de39781d9d5a1eae9d1f1b300059316262601))
+
+</details>
 
 ## [5.68.0] - 2026-07-09
 
