@@ -523,8 +523,8 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     memcpy(out + p, frames, frame_len);
 
     size_t total = quic_packet_protect(out, cap, pn_offset, pn_len, pn, frame_len, keys, is_long);
-    if (!total)
-        return 0;
+    if (!total)   // GCOVR_EXCL_LINE  the pn_offset bound above already guarantees protect has room, and with
+        return 0; // GCOVR_EXCL_LINE  valid keys the AEAD seal cannot otherwise fail
     if (ae)
         s->last_ae_pn = (int64_t)pn; // this space now has ack-eliciting data outstanding
     s->next_pn++;

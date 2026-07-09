@@ -1087,6 +1087,140 @@ void test_quic_conn_send_tiny_cap()
     }
 }
 
+// Drive a server QuicConn through a complete handshake; leaves it established (1-RTT ready) with the
+// Initial space discarded, and returns the client's Initial secrets + the 1-RTT keys.
+static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialSecrets *init, QuicPacketKeys *ap_client,
+                               QuicPacketKeys *ap_server)
+{
+    QuicTlsConfig cfg;
+    make_cfg(&cfg);
+    quic_conn_init(qc, &cfg, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), SERVER_SCID, sizeof(SERVER_SCID),
+                   cb);
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), init);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    ctp.initial_max_data = 524288;
+    ctp.initial_max_sd_bidi_local = 131072;
+    uint8_t ctp_enc[128];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    uint8_t frames[1200];
+    size_t fl = quic_build_crypto(frames, sizeof(frames), 0, ch, ch_len);
+    memset(frames + fl, 0, 1100 - fl);
+    fl = 1100;
+    uint8_t dg[1500];
+    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init->client, frames, fl);
+    quic_conn_recv(qc, dg, dl);
+
+    uint8_t sdg[1500];
+    size_t sl = quic_conn_send(qc, sdg, sizeof(sdg));
+    uint8_t plain[2048], sh[512], hsflight[1024];
+    size_t wire = 0;
+    uint8_t type = 0;
+    size_t pt = open_long(sdg, sl, &init->server, plain, &wire, &type);
+    size_t sh_len = extract_crypto(plain, pt, sh);
+
+    uint8_t server_pub[32], ecdhe[32];
+    ssh_x25519_base(server_pub, SERVER_PRIV);
+    ssh_x25519(ecdhe, CLIENT_PRIV, server_pub);
+    SshSha256Ctx t;
+    uint8_t ch_sh[32], ch_sf[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, sh, sh_len);
+    {
+        SshSha256Ctx tmp = t;
+        ssh_sha256_final(&tmp, ch_sh);
+    }
+    Tls13KeySchedule cks;
+    tls13_ks_early(&cks);
+    tls13_ks_handshake(&cks, ecdhe, ch_sh);
+    QuicPacketKeys hs_server_keys, hs_client_keys;
+    quic_keys_from_secret(cks.server_hs_traffic, &hs_server_keys);
+    quic_keys_from_secret(cks.client_hs_traffic, &hs_client_keys);
+    size_t hswire = 0;
+    uint8_t hstype = 0;
+    size_t hpt = open_long(sdg + wire, sl - wire, &hs_server_keys, plain, &hswire, &hstype);
+    size_t hsflen = extract_crypto(plain, hpt, hsflight);
+    ssh_sha256_update(&t, hsflight, hsflen);
+    ssh_sha256_final(&t, ch_sf);
+    tls13_ks_master(&cks, ch_sf);
+    quic_keys_from_secret(cks.client_ap_traffic, ap_client);
+    quic_keys_from_secret(cks.server_ap_traffic, ap_server);
+
+    uint8_t ifr[64];
+    size_t ifl = quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
+    uint8_t idg[256];
+    size_t idl = build_long(idg, sizeof(idg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
+                            1, &init->client, ifr, ifl);
+    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    uint8_t hfr[64];
+    size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
+    hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
+    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 0, &hs_client_keys, hfr, hfl);
+    quic_conn_recv(qc, idg, idl + hdl);
+    quic_conn_send(qc, sdg, sizeof(sdg)); // drain HANDSHAKE_DONE so the 1-RTT send queue is clear
+}
+
+// build_frames' 1-RTT stream loop skips a stream with nothing left to send.
+void test_quic_conn_stream_nothing_to_send()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    uint8_t out[512];
+    TEST_ASSERT_EQUAL_UINT(2, quic_conn_stream_send(&qc, 0, (const uint8_t *)"OK", 2, true));
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, out, sizeof out) > 0); // drains the stream
+    quic_conn_send(&qc, out, sizeof out);                       // now nothing to send -> the skip
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// A short-header packet whose DCID does not fit the output cap fails closed.
+void test_quic_conn_short_header_tiny_cap()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    quic_conn_stream_send(&qc, 0, (const uint8_t *)"DATA", 4, false);
+    uint8_t out[8];
+    (void)quic_conn_send(&qc, out, 4); // 1 + dcid_len(4) > cap(4) at the 1-RTT short header
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// A CONNECTION_CLOSE queued at the (now discarded) Initial level falls back to the highest live level.
+void test_quic_conn_close_level_fallback()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    QuicPacketKeys apc, aps;
+    complete_handshake(&qc, &cb, &init, &apc, &aps);
+    // A malformed frame in an Initial packet (Initial is discarded post-handshake) queues a close at
+    // the Initial level; the send path must then fall back to a level whose keys are still live.
+    uint8_t bad[20] = {0x06, 0x00, 0x44, 0x00}; // CRYPTO frame declaring 1024 octets that are not present
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 5,
+                           &init.client, bad, sizeof bad);
+    quic_conn_recv(&qc, dg, dl);
+    uint8_t out[256];
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, out, sizeof out) > 0); // close emitted at the fallback level
+    TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -1114,5 +1248,8 @@ int main(int, char **)
     RUN_TEST(test_quic_conn_no_keys_build);
     RUN_TEST(test_quic_conn_pto_not_yet);
     RUN_TEST(test_quic_conn_send_tiny_cap);
+    RUN_TEST(test_quic_conn_stream_nothing_to_send);
+    RUN_TEST(test_quic_conn_short_header_tiny_cap);
+    RUN_TEST(test_quic_conn_close_level_fallback);
     return UNITY_END();
 }
