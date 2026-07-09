@@ -583,6 +583,30 @@ void test_webdav_source_path_too_long_414()
     TEST_ASSERT_TRUE(resp_status(414));
 }
 
+// dav() route registration edges: a prefix already ending in '*' is stored verbatim (no
+// second wildcard appended), and once the route table is full a further dav() mount is
+// dropped (fails closed) so a request to it is not served.
+void test_webdav_dav_wildcard_and_route_full()
+{
+    // (a) A wildcard-terminated prefix is stored as-is; a request under it still routes.
+    server.dav("/w*", davfs, "/w");
+    tree_put("/w/f.txt", "hi");
+    feed_and_handle(0, "GET /w/f.txt HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(200));
+
+    // (b) Fill the route table, then a further dav() mount is dropped -> its path 404s.
+    rearm();
+    for (int i = 0; i < MAX_ROUTES; i++)
+    {
+        char p[16];
+        snprintf(p, sizeof p, "/r%d", i);
+        server.dav(p, davfs, "/r");
+    }
+    server.dav("/dropped", davfs, "/d"); // table full -> dropped
+    feed_and_handle(0, "GET /dropped/x HTTP/1.1\r\nHost: x\r\n\r\n");
+    TEST_ASSERT_TRUE(resp_status(404)); // never registered
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -590,6 +614,7 @@ int main()
     RUN_TEST(test_webdav_copy_dest_path_too_long_414);
     RUN_TEST(test_webdav_recursive_open_failure);
     RUN_TEST(test_webdav_source_path_too_long_414);
+    RUN_TEST(test_webdav_dav_wildcard_and_route_full);
     RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_webdav_deep_tree_rejected);
     RUN_TEST(test_webdav_propfind_limit_and_proppatch);
