@@ -54,7 +54,7 @@ from each example's `pio ci` size report and aggregated into
 | `NTP`                                    | L7-Application/18.SNTP                  | 758.5 KB (59.3%) | 67.3 KB (21.0%)  |
 | `NTP+TIME_SOURCE`                        | L7-Application/31.TimeSourceFallback    | 754.1 KB (58.9%) | 66.4 KB (20.7%)  |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`    | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
-| `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 745.6 KB (58.3%) | 87.1 KB (27.2%)  |
+| `OAUTH2+HTTP_CLIENT`                     | L7-Application/54.OAuth2                | 746.0 KB (58.3%) | 87.1 KB (27.2%)  |
 | `OIDC`                                   | L7-Application/50.OidcAuth              | 746.6 KB (58.3%) | 77.6 KB (24.3%)  |
 | `OPCUA`                                  | L7-Application/55.OpcUa                 | 741.2 KB (57.9%) | 74.8 KB (23.4%)  |
 | `OPCUA+OPCUA_CLIENT`                     | L7-Application/56.OpcUaClient           | 763.6 KB (59.7%) | 78.6 KB (24.6%)  |

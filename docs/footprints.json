@@ -325,7 +325,7 @@
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 763505,
+    "flash_bytes": 763865,
     "ram_bytes": 89176
   },
   "OIDC": {
