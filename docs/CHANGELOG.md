@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`defd207`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/defd20746fea4e984de7b3f450524c3056f7b529))
+- update CHANGELOG.md [skip ci] ([`86d339a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86d339a5eecce99b0db54c238411d86d4e873a5d))
 - update test report + coverage [skip ci] ([`c1a1f6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c1a1f6f8ce0002fcb95c038a3c9fb9d06dfbcd26))
 - update CHANGELOG.md [skip ci] ([`c8c2951`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c8c29514cbe42614b27cb9ff68c08f16dcb67051))
 - update test report + coverage [skip ci] ([`21dad57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21dad5771afb3083342a49fda743ea10a3cd88cf))
@@ -226,6 +228,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f807505`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8075053145a36c3d696611df093294b1337c714))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7df21ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7df21ed130862cbbc2cc9dd26df2cae0b19cf851))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`42f315f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42f315fa73d5235b9eed1a03c563ca4a98f96f3e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fcb7cc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcb7cc63a70273681fcc870971737faeb69484c6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c991308`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c991308c7f9b6f76f86d57dfecba31dac2adb174))
@@ -436,6 +440,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover malformed-initial headers, HANDSHAKE_DONE, stream guards, crypto-window clamp, CRYPTO_ERROR close, no-keys build, PTO-not-yet, tiny-cap overflows (92->98%); EXCL 2 buffer-invariant lines ([`74eb86b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74eb86bece82f098dcbc1db9d2b254d0ed940aa9))
 - cover begin/poll/ingest/respond/route guards + ring-full + pool-full; EXCL 2 unreachable lines (->100% reachable) ([`ea03b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea03b47922d9724b4386aae2e4bf56a3af2ab29c))
 - cover finished/unexpected/drain/flight/keys guards + cert-overflow emit-fails; EXCL 2 buffer-invariant-dead emit returns (->100% reachable) ([`ed27359`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed27359eb913df4f520315d3e0286236549d3c07))
 - cover encode overflow/62-bit-varint fail, retry_scid roundtrip, per-param value_varint rejects + valid ack-delay arms (->100%) ([`8b0a41a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8b0a41a1197c95e4ff161fddcf30b0506754ca71))
