@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2660 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2662 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28587,7 +28587,7 @@ A thorough directory of all **2660 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (26 tests)</b></summary>
+<summary><b>test_webdav_handler (28 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_webdav_get_put_dest_edges</b> &mdash; <i>Webdav get put dest edges</i></summary>
@@ -28606,6 +28606,24 @@ A thorough directory of all **2660 test cases** across **228 suites**. Expand a 
     <summary><b>test_webdav_copy_dest_path_too_long_414</b> &mdash; <i>240-char fs root: a short source ("/s") still joins under 256, but root + any</i></summary>
 
     * **Objective**: 240-char fs root: a short source ("/s") still joins under 256, but root + any
+    * **Assertions**:
+      * <code>Assert true (resp_status(414))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_recursive_open_failure</b> &mdash; <i>DELETE: the resource exists but its open() fails -> dav_rm_recursive bails -> 403.</i></summary>
+
+    * **Objective**: DELETE: the resource exists but its open() fails -> dav_rm_recursive bails -> 403.
+    * **Assertions**:
+      * <code>Assert true (resp_status(403))</code>
+      * <code>Assert true (tree_has("/dav/locked.txt"))</code>
+      * <code>Assert true (resp_status(409))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_source_path_too_long_414</b> &mdash; <i>Webdav source path too long 414</i></summary>
+
+    * **Objective**: Webdav source path too long 414
     * **Assertions**:
       * <code>Assert true (resp_status(414))</code>
   </details>
