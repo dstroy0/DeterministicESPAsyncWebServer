@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 09:28:31
+**Generated:** 2026-07-09 09:41:10
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2735 passed - 317s
+**Result:** ✅ 2736 passed - 325s
 
 ---
 
@@ -150,7 +150,7 @@
 | `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.818 |
 | `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.784 |
 | `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.777 |
-| `test_inflate`           | `native_inflate`        |    12 |   ✅   | 00:00:00.733 |
+| `test_inflate`           | `native_inflate`        |    13 |   ✅   | 00:00:08.679 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
 | `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.332 |
@@ -4241,7 +4241,7 @@ _Host unit tests for the outbound SNMP notification builder (env:native_snmp_tra
 
 ---
 
-## test_inflate - native_inflate - ✅ 12 passed
+## test_inflate - native_inflate - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4262,6 +4262,7 @@ _Unit tests for the RFC 1951 INFLATE core (network_drivers/presentation/inflate)
 |  10 | `test_truncated_input_is_malformed`       |   ✅   | Half of the fixed-Huffman stream: decode runs out of input mid-symbol. |
 |  11 | `test_reserved_block_type_is_malformed`   |   ✅   | Reserved block type is malformed                                       |
 |  12 | `test_corrupt_stored_nlen_is_malformed`   |   ✅   | Corrupt stored nlen is malformed                                       |
+|  13 | `test_inflate_error_paths`                |   ✅   | OVERFLOW: a valid stream decompressed into a buffer that is too small. |
 
 </details>
 
