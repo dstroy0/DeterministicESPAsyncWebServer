@@ -1266,9 +1266,30 @@ void test_begin_port_convenience()
     TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
 }
 
+// restart() = stop() + begin(): it forwards the no-listeners error before any listen(), and
+// otherwise cycles the listeners back up. stop() must be an idempotent teardown.
+void test_restart_and_stop()
+{
+    DetWebServer srv;
+    // Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
+    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.restart());
+
+    // Bring a listener up, then restart() tears down and re-binds it.
+    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)9500));
+    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());
+
+    // stop() tears everything down; a second stop() with nothing active is a safe no-op.
+    srv.stop();
+    srv.stop();
+    listener_stop_all();
+}
+
 int main()
 {
     UNITY_BEGIN();
+
+    RUN_TEST(test_restart_and_stop);
 
     // Function I/O: handler API access
     RUN_TEST(test_handler_reads_body);
