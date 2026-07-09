@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`1c5e3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c5e3cd1f3a6bc7793a671e6d3d4dac6190b19a6))
+- update CHANGELOG.md [skip ci] ([`fdc57da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdc57da1d06591a6b0be313ae235270509a49fcd))
 - update test report + coverage [skip ci] ([`f13f046`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f13f04677411de47d0db26d49f0733120d0b24ac))
 - update CHANGELOG.md [skip ci] ([`f65dc62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f65dc6250cf7a901285a944a53a42d9b0e2fbf69))
 - update test report + coverage [skip ci] ([`dfd023f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dfd023f92a4eaf7039611b94727f4571711abb89))
@@ -237,6 +239,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ac084c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac084c2b9418fd55aeb35204547d28d375e3b37f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`036c401`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/036c4019d6b40144e62b490889d710262940ffe9))
 - update ESP32 build footprints [skip ci] ([`639582e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/639582e00721cb7bf71c5abd0580b8f76f35a1b2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5b9f2a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b9f2a0f3091ef7489dddc7694094b547a3370b3))
@@ -456,6 +459,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- forge chacha packets (bad length/padding, seq-threshold) + aes-etm clear bad-length (90.6->93.4%) ([`946d0d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/946d0d70d21ad34bc00896134b344ef7f95bb2b6))
 - cover chacha/etm send-padding (pad<4) + incomplete-packet hold; EXCL dead rx_len<4 re-check ([`f4b4705`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4b47054fb21951526a78bc42307dc3541478b35))
 - cover prefer_rsa accessor/build, KEXINIT truncation points, malformed ECDH_INIT, slot guards; EXCL 9 crypto/buffer-invariant-dead lines (95->100% reachable) ([`b039dc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b039dc8b14fab6c008112179a2b72f599f484462))
 - cover oid_cmp an<bn (request extends a registered OID) (->100%) ([`9c8a34c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9c8a34c400340294b82b54878d4f7694c5cdb386))
