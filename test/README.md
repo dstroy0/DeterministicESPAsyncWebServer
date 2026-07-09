@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2490 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2495 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28232,7 +28232,7 @@ A thorough directory of all **2490 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_xmpp (6 tests)</b></summary>
+<summary><b>test_xmpp (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_escape</b> &mdash; <i>Overflow -> 0.</i></summary>
@@ -28290,6 +28290,78 @@ A thorough directory of all **2490 test cases** across **228 suites**. Expand a 
       * <code>Assert equal string ("c@d", val)</code>
       * <code>Assert equal string ("chat", val)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr(m, strlen(m), "id", val, sizeof(val)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_escape_all_entities_and_overflow</b> &mdash; <i>Every escapable character plus a normal one exercises each switch case in put_escaped.</i></summary>
+
+    * **Objective**: Every escapable character plus a normal one exercises each switch case in put_escaped.
+    * **Assertions**:
+      * <code>Assert true (detws_xmpp_escape("a&&lt;&gt;'\\"b", 7, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("a&amp;&lt;&gt;&apos;&quot;b", buf)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape(nullptr, 3, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("x", 1, nullptr, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("&", 1, buf, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("abcd", 4, buf, 3));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_overflow_fail_closed</b> &mdash; <i>Header fits but the body/child does not (the optional-block put fails).</i></summary>
+
+    * **Objective**: Header fits but the body/child does not (the optional-block put fails).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stream_open("a", "b", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_message("to", "from", "chat", "hi", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_presence("available", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_iq("get", "id1", "&lt;query/&gt;", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_message("t", nullptr, nullptr, "aBodyThatWillNotFit", mid, sizeof(mid)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_iq("t", nullptr, "&lt;aChildThatWillNotFit/&gt;", mid, sizeof(mid)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builders_omit_optional_and_null_attrs</b> &mdash; <i>body/child null skip the optional block; null attr values skip put_attr (its `!value` true side).</i></summary>
+
+    * **Objective**: body/child null skip the optional block; null attr values skip put_attr (its `!value` true side).
+    * **Assertions**:
+      * <code>Assert true (detws_xmpp_message("to", nullptr, nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "&lt;message"))</code>
+      * <code>Assert null (strstr(buf, "&lt;body&gt;"))</code>
+      * <code>Assert true (detws_xmpp_iq("set", nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert null (strstr(buf, "&lt;child"))</code>
+      * <code>Assert true (detws_xmpp_presence(nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (detws_xmpp_stream_open(nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stanza_name_edges</b> &mdash; <i>Each terminator: '>', '/', space, tab, newline.</i></summary>
+
+    * **Objective**: Each terminator: '>', '/', space, tab, newline.
+    * **Assertions**:
+      * <code>Assert true (detws_xmpp_stanza_name("&lt;iq&gt;", 4, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert equal string ("iq", out)</code>
+      * <code>Assert true (detws_xmpp_stanza_name("&lt;presence/&gt;", 11, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert equal string ("presence", out)</code>
+      * <code>Assert true (detws_xmpp_stanza_name("&lt;message x&gt;", 11, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert equal string ("message", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;?xml?&gt;", 7, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;!--c--&gt;", 8, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;/close&gt;", 8, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("no tag", 6, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name(nullptr, 5, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;message&gt;", 9, out, 3)); // cap too small</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_attr_edges</b> &mdash; <i>Single-quoted value + the leading-space substring guard (must not match 'to' inside 'xto').</i></summary>
+
+    * **Objective**: Single-quoted value + the leading-space substring guard (must not match 'to' inside 'xto').
+    * **Assertions**:
+      * <code>Assert true (detws_xmpp_attr("&lt;m xto='no' to='yes'&gt;", 21, "to", out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert equal string ("yes", out)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to=x&gt;", 8, "to", out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr(nullptr, 5, "to", out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to='x'&gt;", 10, nullptr, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to='alice'&gt;", 14, "to", out, 3)); // cap too small</code>
   </details>
 
 </details>
