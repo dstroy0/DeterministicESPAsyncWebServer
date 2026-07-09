@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`0fa68a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fa68a673161af9a7f211ac4f17f79b6c8607cd2))
+- update CHANGELOG.md [skip ci] ([`7da63b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7da63b9b7803fef307da65f8e96eb8cd6d7ebeca))
 - update CHANGELOG.md [skip ci] ([`08bfddc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/08bfddc284e7fc7288d9bdbf1e992e4293bfdb01))
 - update CHANGELOG.md [skip ci] ([`241f6f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/241f6f97f8113493de5a19795794fdad326f30fe))
 - update test report + coverage [skip ci] ([`fd17fbf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd17fbfa0676d41ecad5bd95b383b0e2333bf67b))
@@ -207,6 +209,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6979872`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6979872efb8dc5806f30ee57b97f2cb1239a61e5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`19aa86b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19aa86bbae603da23d4f7bb43503aea7788b3fd8))
 - update ESP32 build footprints [skip ci] ([`521d29a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/521d29aedf0387fbd1bb1bc8bee503aa11e49a54))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b1161aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1161aa94e6a11f2109258a5877c8193e7b0503b))
@@ -403,6 +406,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover all SETTINGS ids, upper-bound guards + builder caps (83->100%) ([`e52410e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e52410ec2003969c8910d0138378048a4e26b619))
 - cover lane-API guards + annotate ESP32-only lane_name (100%) ([`3e8dc1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e8dc1bf90b369848629ae2288d9b358a78db908))
 - host seam to cover resolve_verified SSRF check (100%) ([`99ad8a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99ad8a3e5e91a185154d1fb5a0d1f8dc348db998))
 - cover LRU eviction + unspecified-succeed guard (100%) ([`eb7ab2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb7ab2c78e15ec7a26f2905bbb8ccb8abfee5922))
