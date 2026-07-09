@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`5d24fab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d24fab6d9678769a7b0493e6717769527450e99))
 - update test report + coverage [skip ci] ([`9926549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9926549388e8839c458ac6fe1cf29233bdf836cf))
 - update CHANGELOG.md [skip ci] ([`ab7f17f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7f17fc7eb3e0dac2601bb8513ef5274e820c2a))
 - update test report + coverage [skip ci] ([`99d6078`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99d60782221e0d03ea6f8f041fb1b5ec0fe1d185))
@@ -343,6 +344,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover non-object/bad-member find, int string/non-digit rejects, invalid \u (branch 76->80%) ([`47c781b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c781b91b6ee6f88e71110535ff2b7641c6a60b))
 - cover send-family guards + 405/WS-400/WS-426 paths (dwserver batch) ([`941535d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/941535d0cfdfb1577b962abc866e586db98b8c72))
 - cover route-registration variant table-full guards (dwserver 867-934) ([`e24dbf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e24dbf218418189d4875206582928dd735070fee))
 - cover DetWebServer::restart + stop teardown (dwserver 801-825) ([`bbb4a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbb4a96a5785c5df98ab18238a8f0d9118ba475d))
