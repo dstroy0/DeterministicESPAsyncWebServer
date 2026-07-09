@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2640 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2642 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28444,7 +28444,32 @@ A thorough directory of all **2640 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (20 tests)</b></summary>
+<summary><b>test_webdav_handler (22 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_error_paths</b> &mdash; <i>Webdav error paths</i></summary>
+
+    * **Objective**: Webdav error paths
+    * **Assertions**:
+      * <code>Assert true (resp_status(404))</code>
+      * <code>Assert true (resp_status(400))</code>
+      * <code>Assert true (resp_status(502))</code>
+      * <code>Assert true (resp_status(403))</code>
+      * <code>Assert true (resp_status(404))</code>
+      * <code>Assert true (resp_status(204))</code>
+      * <code>Assert true (resp_status(404))</code>
+      * <code>Assert true (resp_status(403))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_deep_tree_rejected</b> &mdash; <i>Webdav deep tree rejected</i></summary>
+
+    * **Objective**: Webdav deep tree rejected
+    * **Assertions**:
+      * <code>Assert true (resp_status(403))</code>
+      * <code>Assert true (tree_has("/dav/deep"))</code>
+      * <code>Assert true (resp_status(409))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_copy_collection_recursive</b> &mdash; <i>The source is left intact (COPY, not MOVE).</i></summary>
