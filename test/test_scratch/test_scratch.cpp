@@ -154,9 +154,19 @@ void test_sequential_scopes_do_not_accumulate()
     TEST_ASSERT_EQUAL_size_t(0, scratch_used());
 }
 
+// align == 0 falls back to the default alignment.
+void test_zero_align_uses_default()
+{
+    scratch_reset();
+    void *p = scratch_alloc(16, 0);
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_EQUAL_size_t(0, (uintptr_t)p % 8); // default alignment is at least 8
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_zero_align_uses_default);
     RUN_TEST(test_alloc_returns_nonnull_and_advances_used);
     RUN_TEST(test_sequential_allocs_are_distinct_and_ordered);
     RUN_TEST(test_reset_frees_all_and_reuses_base);
