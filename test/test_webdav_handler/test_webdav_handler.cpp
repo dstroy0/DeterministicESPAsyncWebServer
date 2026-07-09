@@ -384,9 +384,49 @@ void test_lock_unlock_advisory()
     TEST_ASSERT_TRUE(resp_status(204));
 }
 
+// The WebDAV method error paths: bad/foreign/traversal destinations, missing sources, and a
+// Depth: infinity PROPFIND rejection.
+void test_webdav_error_paths()
+{
+    feed_and_handle(0, "DELETE /dav/nope HTTP/1.1\r\nHost: x\r\n\r\n"); // no such resource
+    TEST_ASSERT_TRUE(resp_status(404));
+
+    rearm();
+    populate_src();
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\n\r\n"); // no Destination
+    TEST_ASSERT_TRUE(resp_status(400));
+
+    rearm();
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /other/x\r\n\r\n"); // foreign mount
+    TEST_ASSERT_TRUE(resp_status(502));
+
+    rearm();
+    feed_and_handle(0, "COPY /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/../x\r\n\r\n"); // traversal
+    TEST_ASSERT_TRUE(resp_status(403));
+
+    rearm();
+    feed_and_handle(0, "COPY /dav/gone HTTP/1.1\r\nHost: x\r\nDestination: /dav/x\r\n\r\n"); // no such source
+    TEST_ASSERT_TRUE(resp_status(404));
+
+    rearm();
+    tree_mkdir("/dav/mvdst");
+    feed_and_handle(0, "MOVE /dav/src HTTP/1.1\r\nHost: x\r\nDestination: /dav/mvdst\r\n\r\n"); // replace existing
+    TEST_ASSERT_TRUE(resp_status(204));
+
+    rearm();
+    feed_and_handle(0, "PROPFIND /dav/nope HTTP/1.1\r\nHost: x\r\nDepth: 0\r\n\r\n"); // no such resource
+    TEST_ASSERT_TRUE(resp_status(404));
+
+    rearm();
+    populate_src();
+    feed_and_handle(0, "PROPFIND /dav/src HTTP/1.1\r\nHost: x\r\nDepth: infinity\r\n\r\n"); // finite-depth only
+    TEST_ASSERT_TRUE(resp_status(403));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_copy_collection_recursive);
     RUN_TEST(test_copy_collection_depth0_shallow);
     RUN_TEST(test_copy_overwrite_semantics);
