@@ -344,8 +344,8 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
         return -1;
 
     // Retain a copy as I_S for the exchange hash.
-    if (w.len > SSH_KEXINIT_S_MAX)
-        return -1;
+    if (w.len > SSH_KEXINIT_S_MAX) // GCOVR_EXCL_LINE  the server's fixed algorithm lists never exceed SSH_KEXINIT_S_MAX
+        return -1;                 // GCOVR_EXCL_LINE
     memcpy(s->i_s, payload, w.len);
     s->i_s_len = (uint16_t)w.len;
 
@@ -664,8 +664,8 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
         Writer w = {ks, cap, 0, true};
         w_string(w, (const uint8_t *)HOSTKEY_ED, strlen(HOSTKEY_ED));
         w_string(w, s_sshtr.ed_pub, 32);
-        if (!w.ok)
-            return -1;
+        if (!w.ok)     // GCOVR_EXCL_LINE  the ed25519 blob (~51B) always fits the RSA-sized ks buffer
+            return -1; // GCOVR_EXCL_LINE
         *ks_len = w.len;
         return 0;
     }
@@ -679,15 +679,16 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
 {
     if (ssh_sess[i].hostkey_alg == SSH_HOSTKEY_ED25519)
     {
-        if (sig_cap < 64)
-            return -1;
+        if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is SSH_RSA_SIG_BYTES (256) >= 64
+            return -1;    // GCOVR_EXCL_LINE
         ssh_ed25519_sign(sig, H, SSH_SHA256_DIGEST_LEN, s_sshtr.ed_seed);
         *sig_len = 64;
         *sig_name = HOSTKEY_ED; // "ssh-ed25519"
         return 0;
     }
-    if (sig_cap < SSH_RSA_SIG_BYTES || ssh_rsa_sign(H, SSH_SHA256_DIGEST_LEN, sig) != 0)
-        return -1;
+    if (sig_cap < SSH_RSA_SIG_BYTES ||
+        ssh_rsa_sign(H, SSH_SHA256_DIGEST_LEN, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
+        return -1; // GCOVR_EXCL_LINE  RSA key is loaded (available), so neither the size nor the sign can fail
     *sig_len = SSH_RSA_SIG_BYTES;
     *sig_name = HOSTKEY_RSA; // "rsa-sha2-256"
     return 0;
@@ -788,10 +789,10 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     // 2. Host-key blob K_S (per negotiated host-key algorithm).
     uint8_t ks[SSH_RSA_PUBKEY_BLOB_MAX];
     size_t ks_len = 0;
-    if (encode_hostkey(i, ks, &ks_len, sizeof(ks)) != 0)
-    {
-        ssh_wipe(k_be, sizeof(k_be));
-        return -1;
+    if (encode_hostkey(i, ks, &ks_len, sizeof(ks)) != 0) // GCOVR_EXCL_LINE  encode_hostkey cannot fail: ks is
+    {                                 // GCOVR_EXCL_LINE  SSH_RSA_PUBKEY_BLOB_MAX, sized for either blob
+        ssh_wipe(k_be, sizeof(k_be)); // GCOVR_EXCL_LINE
+        return -1;                    // GCOVR_EXCL_LINE
     }
 
     // 3. Exchange hash H; capture the session id on the first KEX.
@@ -807,10 +808,10 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     uint8_t sig[SSH_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
     size_t sig_len = 0;
     const char *sig_name = nullptr;
-    if (sign_hash(i, H, sig, &sig_len, sizeof(sig), &sig_name) != 0)
-    {
-        ssh_wipe(k_be, sizeof(k_be));
-        return -1;
+    if (sign_hash(i, H, sig, &sig_len, sizeof(sig), &sig_name) != 0) // GCOVR_EXCL_LINE  sign_hash cannot fail here:
+    {                                                                // GCOVR_EXCL_LINE  256B sig buffer + a loaded key
+        ssh_wipe(k_be, sizeof(k_be));                                // GCOVR_EXCL_LINE
+        return -1;                                                   // GCOVR_EXCL_LINE
     }
 
     // 5. Assemble the reply, then derive the six session keys (id fixed at first KEX's H).
@@ -879,8 +880,8 @@ int ssh_transport_begin_rekey(uint8_t i, uint8_t *out, size_t *out_len, size_t c
         return -1;
     // New ephemeral for forward secrecy across the re-key (re-generated for the finally
     // negotiated method once the peer's KEXINIT arrives; see the KEXINIT dispatch).
-    if (ssh_kex_generate(i) != 0)
-        return -1;
+    if (ssh_kex_generate(i) != 0) // GCOVR_EXCL_LINE  i < MAX_SSH_CONNS is checked above and ssh_kex_generate only
+        return -1;                // GCOVR_EXCL_LINE  fails for i >= MAX_SSH_CONNS
     ssh_sess[i].phase = SSH_PHASE_KEXINIT;
     return 0;
 }

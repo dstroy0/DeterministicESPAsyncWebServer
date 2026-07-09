@@ -71,6 +71,28 @@ static size_t build_client_kexinit(uint8_t *out, const char *kex, const char *ho
     return o;
 }
 
+// Build a KEXINIT (msg + cookie) with only the first @p nlists name-lists present, so parsing fails
+// on the read of the next one. The lists that ARE present carry algorithms that negotiate cleanly.
+static size_t build_partial_kexinit(uint8_t *out, int nlists)
+{
+    static const char *L[] = {
+        "curve25519-sha256,diffie-hellman-group14-sha256", // kex
+        "rsa-sha2-256,ssh-ed25519",                        // host key
+        "aes256-ctr",                                      // cipher c2s
+        "aes256-ctr",                                      // cipher s2c
+        "hmac-sha2-256",                                   // mac c2s
+        "hmac-sha2-256",                                   // mac s2c
+        "none",                                            // comp c2s
+    };
+    size_t o = 0;
+    out[o++] = SSH_MSG_KEXINIT;
+    for (int j = 0; j < 16; j++)
+        out[o++] = (uint8_t)j; // cookie
+    for (int i = 0; i < nlists && i < (int)(sizeof(L) / sizeof(L[0])); i++)
+        o += put_namelist(out + o, L[i]);
+    return o;
+}
+
 // ---- banner ---------------------------------------------------------------
 
 void test_server_banner_format()
@@ -891,6 +913,46 @@ void test_kdf_edge_paths_and_slot_guards()
     TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_CHACHA20POLY1305, ssh_keys[0].cipher_mode);
 }
 
+// KEXINIT truncated after each name-list boundary is rejected at the corresponding read.
+void test_kexinit_parse_truncation_points()
+{
+    uint8_t buf[256];
+    int cuts[] = {0, 2, 3, 4, 5, 7}; // kex / cipher-c2s / cipher-s2c / mac-c2s / mac-s2c / comp-s2c reads
+    for (unsigned i = 0; i < sizeof(cuts) / sizeof(cuts[0]); i++)
+    {
+        size_t n = build_partial_kexinit(buf, cuts[i]);
+        TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
+    }
+}
+
+// prefer-RSA accessor + the non-RSA build ordering, slot guards, and a malformed ECDH_INIT.
+void test_ssh_transport_more_guards()
+{
+    ssh_kex_set_prefer_rsa(true);
+    TEST_ASSERT_TRUE(ssh_kex_prefer_rsa());
+    ssh_kex_set_prefer_rsa(false);
+    TEST_ASSERT_FALSE(ssh_kex_prefer_rsa());
+    uint8_t kbuf[512];
+    size_t kn = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_build(0, kbuf, &kn, sizeof(kbuf))); // build_kex_list non-RSA branch
+    ssh_kex_set_prefer_rsa(true);                                            // restore the setUp default
+
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kex_generate(200)); // out-of-range slot
+    ssh_newkeys_sent(200);                            // out-of-range slot: no-op, no crash
+
+    // Negotiate curve25519 so ssh_kexdh_handle takes the ECDH branch, then feed a malformed ECDH_INIT.
+    uint8_t buf[256];
+    size_t n = build_client_kexinit(buf, "curve25519-sha256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+    uint8_t reply[1024];
+    size_t rlen = 0;
+    uint8_t too_short[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0}; // no room for the Q_C length field
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, too_short, sizeof(too_short), reply, &rlen, sizeof(reply)));
+    uint8_t wrong_len[21] = {SSH_MSG_KEXDH_INIT, 0, 0, 0, 16}; // Q_C declared 16 octets, must be 32
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -929,5 +991,7 @@ int main()
     RUN_TEST(test_rekey_due_volume_and_time);
     RUN_TEST(test_begin_rekey_preserves_session_and_auth);
     RUN_TEST(test_kdf_edge_paths_and_slot_guards);
+    RUN_TEST(test_kexinit_parse_truncation_points);
+    RUN_TEST(test_ssh_transport_more_guards);
     return UNITY_END();
 }
