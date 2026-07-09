@@ -468,6 +468,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- add the probe (MTConnectDevices) device-model document ([`ce6e3e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce6e3e45885f05c3aed4d5ec3f72b5c2c62c5390))
 - decode \uXXXX to UTF-8 with surrogate-pair joining ([`7416efa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7416efa720486657126359661464509de37183bc))
 - emit the Date header from any enabled time source (NTP/GPS/RTC), not just NTP ([`0ebafd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ebafd26cf4c1de8be2be7ad0ef746d213876964))
 
