@@ -468,12 +468,34 @@ void test_webdav_propfind_limit_and_proppatch()
     TEST_ASSERT_TRUE(resp_status(404));
 }
 
+// COPY when the FS node table is exhausted: the destination file / collection cannot be created, so
+// the recursive copy fails closed (409) rather than emitting a partial tree.
+void test_webdav_copy_fs_table_full()
+{
+    tree_put("/dav/f.txt", "data");
+    tree_mkdir("/dav/d");
+    char p[32];
+    for (int i = 0; i < 100; i++) // fill every remaining node slot
+    {
+        snprintf(p, sizeof p, "/dav/p%03d", i);
+        if (!fs::_tree_add(p, false))
+            break;
+    }
+    feed_and_handle(0, "COPY /dav/f.txt HTTP/1.1\r\nHost: x\r\nDestination: /dav/fc\r\n\r\n"); // dst open("w") fails
+    TEST_ASSERT_TRUE(resp_status(409));
+
+    rearm();
+    feed_and_handle(0, "COPY /dav/d HTTP/1.1\r\nHost: x\r\nDestination: /dav/dc\r\n\r\n"); // mkdir(dst) fails
+    TEST_ASSERT_TRUE(resp_status(409));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_webdav_error_paths);
     RUN_TEST(test_webdav_deep_tree_rejected);
     RUN_TEST(test_webdav_propfind_limit_and_proppatch);
+    RUN_TEST(test_webdav_copy_fs_table_full);
     RUN_TEST(test_copy_collection_recursive);
     RUN_TEST(test_copy_collection_depth0_shallow);
     RUN_TEST(test_copy_overwrite_semantics);
