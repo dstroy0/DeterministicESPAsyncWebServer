@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`470e394`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/470e39451edb8e7d0f37d35c8e40ee26d155e232))
 - update test report + coverage [skip ci] ([`668fbe3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/668fbe3842124b90030d41d1d86f0001d4a12734))
 - update CHANGELOG.md [skip ci] ([`f6d136b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f6d136bc288579dc12608ff2c90f587151208897))
 - update CHANGELOG.md [skip ci] ([`d16e058`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d16e0582e13c7b9fbabfd3bb585ebeb86d96edaf))
@@ -261,6 +262,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`afdf125`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afdf125c908bb210aa5542fe15b8e9a7a2dd2db1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f447137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4471379541460bf9b9e75db008631216010168f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c4eb5e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4eb5e085b584d78ac0ec814505f80d9ce884364))
 - update ESP32 build footprints [skip ci] ([`47aa3a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47aa3a8150808b67a9775436159de7bc7edcaaa5))
@@ -499,6 +501,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover range-parse + builder edge guards ([`d156c09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d156c0935c108907bd35b2e17139e8a80ff8bd23))
 - cover builder arg guards, escape overflow, trigger build failures ([`e235773`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e235773d971edad5f206ae13baaf9d220898c8f4))
 - cover dav() wildcard prefix + route-table-full drop ([`3f54519`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f54519248e344c94c2aff31bf8138b67dc7cd16))
 - cover append_resp_trailer in-bounds clamps ([`23ae7a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23ae7a1b357e47d3adc0f369ef2ba62dd9944d22))
