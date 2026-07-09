@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2603 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2604 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -10842,7 +10842,7 @@ A thorough directory of all **2603 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_inflate (12 tests)</b></summary>
+<summary><b>test_inflate (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fixed_huffman</b> &mdash; <i>Fixed huffman</i></summary>
@@ -10924,6 +10924,19 @@ A thorough directory of all **2603 test cases** across **228 suites**. Expand a 
     * **Objective**: Corrupt stored nlen is malformed
     * **Assertions**:
       * <code>Assert equal int (INFLATE_ERR_MALFORMED, rc)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inflate_error_paths</b> &mdash; <i>OVERFLOW: a valid stream decompressed into a buffer that is too small.</i></summary>
+
+    * **Objective**: OVERFLOW: a valid stream decompressed into a buffer that is too small.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW,</code>
+      * <code>Assert equal int (INFLATE_ERR_OVERFLOW, inflate_raw(k_stored_in, sizeof(k_stored_in)</code>
+      * <code>Assert equal int (INFLATE_ERR_MALFORMED, inflate_raw(bad_btype, sizeof(bad_btype), out, sizeof(out)</code>
+      * <code>Assert equal int (INFLATE_ERR_MALFORMED, inflate_raw(bad_stored, sizeof(bad_stored), out, sizeof(out)</code>
+      * <code>Assert true (inflate_raw(trunc_stored, 1, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch))</code>
+      * <code>Assert true (inflate_raw(k_hello_in, 3, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch))</code>
   </details>
 
 </details>
