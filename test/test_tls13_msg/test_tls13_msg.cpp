@@ -320,9 +320,47 @@ void test_tls13_builder_cap_guards()
     TEST_ASSERT_EQUAL_UINT(0, tls13_cert_verify_content(out, 10, thash, true)); // total > cap
 }
 
+// Remaining ClientHello parse coverage: the r_u8 compression-length truncation, the
+// list16_contains odd-length guard, per-extension short-body guards, a key_share entry
+// whose key length overruns, a valid "h3" ALPN, and the quic_transport_parameters extension.
+void test_tls13_extension_and_truncation_coverage()
+{
+    Tls13ClientHello ch;
+
+    // Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.
+    uint8_t ct[43] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x27, 0x03, 0x03};
+    ct[38] = 0x00; // session_id length 0
+    ct[39] = 0x00;
+    ct[40] = 0x02;
+    ct[41] = 0x13;
+    ct[42] = 0x01; // cipher_suites, then no compression_methods byte
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(ct, sizeof(ct), &ch));
+
+    // One ClientHello carrying malformed and valid extensions. Malformed bodies return
+    // from parse_extension without failing the overall parse; the valid ALPN + quic_tp set
+    // their flags.
+    static const uint8_t ex[] = {
+        0x00, 0x2b, 0x00, 0x00,                                     // supported_versions body < 1
+        0x00, 0x2b, 0x00, 0x04, 0x03, 0x03, 0x04, 0x00,             // supported_versions odd list length (3)
+        0x00, 0x0d, 0x00, 0x01, 0x00,                               // signature_algorithms body < 2
+        0x00, 0x33, 0x00, 0x01, 0x00,                               // key_share body < 2
+        0x00, 0x33, 0x00, 0x06, 0x00, 0x04, 0x00, 0x1d, 0x00, 0x20, // key_share entry key length overruns
+        0x00, 0x10, 0x00, 0x01, 0x00,                               // ALPN body < 2
+        0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h',  '3',        // ALPN offering "h3"
+        0x00, 0x39, 0x00, 0x03, 0x04, 0x01, 0x20,                   // quic_transport_parameters
+    };
+    uint8_t msg[256];
+    size_t n = build_ch(msg, ex, sizeof(ex));
+    TEST_ASSERT_TRUE(tls13_parse_client_hello(msg, n, &ch));
+    TEST_ASSERT_TRUE(ch.offers_h3_alpn);
+    TEST_ASSERT_NOT_NULL(ch.quic_tp);
+    TEST_ASSERT_EQUAL_UINT(3, (unsigned)ch.quic_tp_len);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_tls13_extension_and_truncation_coverage);
     RUN_TEST(test_tls13_malformed_extensions);
     RUN_TEST(test_tls13_parse_guards);
     RUN_TEST(test_tls13_builder_cap_guards);
