@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2590 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2592 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16009,7 +16009,7 @@ A thorough directory of all **2590 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (42 tests)</b></summary>
+<summary><b>test_opcua (44 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -16699,6 +16699,24 @@ A thorough directory of all **2590 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (nid &gt;= 4)</code>
       * <code>Assert false (opcua_parse_browse(buf, n, &br))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_write_truncated_item_and_indexrange</b> &mdash; <i>Count claims two items but only one is present -> the second NodeId read underruns -> reject.</i></summary>
+
+    * **Objective**: Count claims two items but only one is present -> the second NodeId read underruns -> reject.
+    * **Assertions**:
+      * <code>Assert false (opcua_parse_write(buf, n, &wr))</code>
+      * <code>Assert true (opcua_parse_write(buf, n, &wr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, wr.count);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_open_wrong_body_typeid</b> &mdash; <i>Body TypeId is OPEN_REQ (446 -> FourByte bytes 01 00 BE 01); corrupt the id so it no longer matches.</i></summary>
+
+    * **Objective**: Body TypeId is OPEN_REQ (446 -> FourByte bytes 01 00 BE 01); corrupt the id so it no longer matches.
+    * **Assertions**:
+      * <code>Assert false (opcua_parse_open(buf, n, &oc))</code>
   </details>
 
 </details>
