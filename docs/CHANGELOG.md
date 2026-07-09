@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6df7225`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6df72259ad1b407f21b836bd3c69bad834b3392a))
+- update test report + coverage [skip ci] ([`8e3c27c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e3c27ce56da4f16fc2df2fb134ba758e498e164))
 - update CHANGELOG.md [skip ci] ([`014d4a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/014d4a145371e9807f2c0d260ef4bd6bc1ce848e))
 - update CHANGELOG.md [skip ci] ([`cefb27a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cefb27ac48e8e95a4ff525dae830e7fff41dbe45))
 - update CHANGELOG.md [skip ci] ([`470e394`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/470e39451edb8e7d0f37d35c8e40ee26d155e232))
@@ -264,6 +266,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1cb0048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cb00486d81f0ea2e581e65e6afce335a74e8401))
 - update ESP32 build footprints [skip ci] ([`dd62df8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd62df806d498af8133a7ce2370a6c3a8d9abb69))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7c62210`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c622101a7bd953a3478c385c6cae013aa7a5331))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5c1794c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5c1794c467bb156dd0fce6c4e92f37175bbb194b))
@@ -506,6 +509,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover per-field truncations + builder mid-write overflows ([`c86a6fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c86a6fd1e1267d9dcd722e2691537672ef116ad7))
 - cover integer/Huffman primitive edge guards ([`d8dc126`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d8dc1261db1fbce4403474b079bf2c85d6ff9eed))
 - cover parse/json guards, PC-first-line, bad backtrace SP, escaping ([`7a1d511`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a1d511be4aaa54791c4e9feb211a3ffb0c8ebfb))
 - cover null guards + SPI init start-clock clamps ([`a46c173`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a46c17395f3d3ccccd01efded8f56ac1131730a6))
