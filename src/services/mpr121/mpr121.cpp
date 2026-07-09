@@ -127,7 +127,8 @@ bool mpr121_begin(uint8_t addr)
     s_mpr.addr = addr ? addr : (uint8_t)DETWS_MPR121_I2C_ADDR;
     detws_i2c_begin();
     uint8_t seq[MPR121_INIT_MAX];
-    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, 12, 6);
+    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, DETWS_MPR121_TOUCH_THRESHOLD,
+                                 DETWS_MPR121_RELEASE_THRESHOLD);
     if (n == 0)
         return false;
     if (!wr(seq[0], seq[1])) // soft reset first; then let the chip settle

@@ -2278,6 +2278,17 @@
 #define DETWS_MPR121_I2C_ADDR 0x5A
 #endif
 
+/** @brief MPR121 per-electrode touch threshold (delta counts from baseline; NXP AN3944 suggests ~4..12).
+ *         Higher = less sensitive. Keep the release threshold below it for hysteresis. */
+#ifndef DETWS_MPR121_TOUCH_THRESHOLD
+#define DETWS_MPR121_TOUCH_THRESHOLD 12
+#endif
+
+/** @brief MPR121 per-electrode release threshold (delta counts; should be below the touch threshold). */
+#ifndef DETWS_MPR121_RELEASE_THRESHOLD
+#define DETWS_MPR121_RELEASE_THRESHOLD 6
+#endif
+
 /**
  * @brief Sensirion SHT3x temperature / humidity sensor (I2C).
  *
