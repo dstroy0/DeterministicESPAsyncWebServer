@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2680 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2681 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11102,7 +11102,15 @@ A thorough directory of all **2680 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_inflate (13 tests)</b></summary>
+<summary><b>test_inflate (14 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_malformed_deflate_blocks</b> &mdash; <i>Malformed deflate blocks</i></summary>
+
+    * **Objective**: Malformed deflate blocks
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED,                                                                       \\</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fixed_huffman</b> &mdash; <i>Fixed huffman</i></summary>
