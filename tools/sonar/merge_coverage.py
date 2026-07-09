@@ -53,7 +53,12 @@ def _union_line(lines, ln, cov, btc, cb):
 
 def _union_file(lines, file_el):
     for lc in file_el.findall("lineToCover"):
-        ln = int(lc.get("lineNumber"))
+        try:
+            ln = int(lc.get("lineNumber"))
+        except (TypeError, ValueError):
+            continue  # malformed entry (no / non-integer lineNumber): skip
+        if ln < 1:
+            continue  # Sonar requires lineNumber >= 1; a stray line-0 entry would break the whole report
         cov = lc.get("covered") == "true"
         btc = lc.get("branchesToCover")
         cb = lc.get("coveredBranches")
@@ -95,19 +100,34 @@ def main():
                 for ln, val in lines.items():  # shared/recompiled: union (never lower)
                     _union_line(files[path], ln, val[0], val[1], val[2])
 
+    # Emit only Sonar-valid <file> elements. The generic-coverage parser rejects a file with no
+    # <lineToCover>, an empty path, a lineNumber < 1, or coveredBranches > branchesToCover; a single
+    # such entry (e.g. a line-0 artefact from a differing gcov version) makes the WHOLE report
+    # unparseable ("Error during parsing of the generic coverage report"). Drop the offenders here so a
+    # tool quirk degrades one line instead of zeroing all coverage, and name them so CI stays diagnosable.
     cov_el = ET.Element("coverage", {"version": "1"})
+    dropped = []
     for path in sorted(files):
+        if not path or not files[path]:
+            dropped.append(path or "<no-path>")
+            continue
         fe = ET.SubElement(cov_el, "file", {"path": path})
         for ln in sorted(files[path]):
             cov, btc, cb = files[path][ln]
             attrs = {"lineNumber": str(ln), "covered": "true" if cov else "false"}
             if btc is not None:
+                cov_b = cb if cb is not None else 0
+                if cov_b > btc:  # never report more covered branches than exist
+                    cov_b = btc
                 attrs["branchesToCover"] = str(btc)
-                attrs["coveredBranches"] = str(cb if cb is not None else 0)
+                attrs["coveredBranches"] = str(cov_b)
             ET.SubElement(fe, "lineToCover", attrs)
     ET.ElementTree(cov_el).write(args.out, encoding="utf-8", xml_declaration=True)
     tag = f" (+baseline {args.baseline})" if args.baseline else ""
-    print(f"merged {nrep} reports{tag} -> {args.out}: {len(files)} files, {sum(len(v) for v in files.values())} lines")
+    emitted = len(files) - len(dropped)
+    print(f"merged {nrep} reports{tag} -> {args.out}: {emitted} files, {sum(len(v) for v in files.values())} lines")
+    if dropped:
+        print(f"  dropped {len(dropped)} empty/invalid <file> entries: {', '.join(dropped[:10])}")
 
 
 if __name__ == "__main__":
