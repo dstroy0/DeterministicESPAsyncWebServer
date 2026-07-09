@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 14:56:48
+**Generated:** 2026-07-09 15:04:09
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2795 passed - 463s
+**Result:** ✅ 2796 passed - 462s
 
 ---
 
@@ -62,7 +62,7 @@
 | `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.725 |
 | `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.757 |
 | `test_application`       | `native_app`            |    70 |   ✅   | 00:00:00.924 |
-| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:05.616 |
+| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.631 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
@@ -70,7 +70,7 @@
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
 | `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.899 |
 | `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.935 |
-| `test_webdav`            | `native_webdav`         |    24 |   ✅   | 00:00:00.766 |
+| `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:03.349 |
 | `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.752 |
 | `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.878 |
 | `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:00.727 |
@@ -2257,7 +2257,7 @@ _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
 ---
 
-## test_webdav - native_webdav - ✅ 24 passed
+## test_webdav - native_webdav - ✅ 25 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2267,29 +2267,30 @@ _Unit tests for the WebDAV server core (services/webdav): method classification,
 |   # | Test                                      | Status | Description                                                                  |
 | --: | :---------------------------------------- | :----: | :--------------------------------------------------------------------------- |
 |   1 | `test_method_classification`              |   ✅   | Method classification                                                        |
-|   2 | `test_depth_parsing`                      |   ✅   | Depth parsing                                                                |
-|   3 | `test_xml_escape`                         |   ✅   | Xml escape                                                                   |
-|   4 | `test_xml_escape_truncates_safely`        |   ✅   | Xml escape truncates safely                                                  |
-|   5 | `test_dest_absolute_uri`                  |   ✅   | Dest absolute uri                                                            |
-|   6 | `test_dest_percent_decoded`               |   ✅   | Dest percent decoded                                                         |
-|   7 | `test_dest_abs_path`                      |   ✅   | Dest abs path                                                                |
-|   8 | `test_dest_rejects_malformed`             |   ✅   | Dest rejects malformed                                                       |
-|   9 | `test_multistatus_file_and_collection`    |   ✅   | Multistatus file and collection                                              |
-|  10 | `test_multistatus_escapes_href`           |   ✅   | Multistatus escapes href                                                     |
-|  11 | `test_multistatus_entry_stops_when_full`  |   ✅   | Multistatus entry stops when full                                            |
-|  12 | `test_proppatch_windows_timestamp`        |   ✅   | The PROPPATCH macOS Finder / Windows Explorer send after a PUT.              |
-|  13 | `test_proppatch_multiple_and_self_closed` |   ✅   | Proppatch multiple and self closed                                           |
-|  14 | `test_proppatch_remove_block`             |   ✅   | Proppatch remove block                                                       |
-|  15 | `test_proppatch_escapes_href`             |   ✅   | Proppatch escapes href                                                       |
-|  16 | `test_proppatch_empty_body_is_valid`      |   ✅   | Proppatch empty body is valid                                                |
-|  17 | `test_proppatch_rejects_injection`        |   ✅   | A property tag carrying a stray '<' must not be echoed (no XML injection).   |
-|  18 | `test_proppatch_fuzz_bounded`             |   ✅   | Throw random and partial-XML bytes at the scanner: it must always stay in    |
-|  19 | `test_proppatch_stops_when_full`          |   ✅   | Proppatch stops when full                                                    |
-|  20 | `test_method_all_including_head`          |   ✅   | Method all including head                                                    |
-|  21 | `test_depth_and_dest_path_guards`         |   ✅   | Depth and dest path guards                                                   |
-|  22 | `test_ms_entry_content_type_overflow`     |   ✅   | Ms entry content type overflow                                               |
-|  23 | `test_ms_entry_mtime_and_tiny_buf`        |   ✅   | Ms entry mtime and tiny buf                                                  |
-|  24 | `test_proppatch_ms_echo`                  |   ✅   | A self-closed property with trailing whitespace exercises the open-tag trim. |
+|   2 | `test_webdav_builder_guards`              |   ✅   | Webdav builder guards                                                        |
+|   3 | `test_depth_parsing`                      |   ✅   | Depth parsing                                                                |
+|   4 | `test_xml_escape`                         |   ✅   | Xml escape                                                                   |
+|   5 | `test_xml_escape_truncates_safely`        |   ✅   | Xml escape truncates safely                                                  |
+|   6 | `test_dest_absolute_uri`                  |   ✅   | Dest absolute uri                                                            |
+|   7 | `test_dest_percent_decoded`               |   ✅   | Dest percent decoded                                                         |
+|   8 | `test_dest_abs_path`                      |   ✅   | Dest abs path                                                                |
+|   9 | `test_dest_rejects_malformed`             |   ✅   | Dest rejects malformed                                                       |
+|  10 | `test_multistatus_file_and_collection`    |   ✅   | Multistatus file and collection                                              |
+|  11 | `test_multistatus_escapes_href`           |   ✅   | Multistatus escapes href                                                     |
+|  12 | `test_multistatus_entry_stops_when_full`  |   ✅   | Multistatus entry stops when full                                            |
+|  13 | `test_proppatch_windows_timestamp`        |   ✅   | The PROPPATCH macOS Finder / Windows Explorer send after a PUT.              |
+|  14 | `test_proppatch_multiple_and_self_closed` |   ✅   | Proppatch multiple and self closed                                           |
+|  15 | `test_proppatch_remove_block`             |   ✅   | Proppatch remove block                                                       |
+|  16 | `test_proppatch_escapes_href`             |   ✅   | Proppatch escapes href                                                       |
+|  17 | `test_proppatch_empty_body_is_valid`      |   ✅   | Proppatch empty body is valid                                                |
+|  18 | `test_proppatch_rejects_injection`        |   ✅   | A property tag carrying a stray '<' must not be echoed (no XML injection).   |
+|  19 | `test_proppatch_fuzz_bounded`             |   ✅   | Throw random and partial-XML bytes at the scanner: it must always stay in    |
+|  20 | `test_proppatch_stops_when_full`          |   ✅   | Proppatch stops when full                                                    |
+|  21 | `test_method_all_including_head`          |   ✅   | Method all including head                                                    |
+|  22 | `test_depth_and_dest_path_guards`         |   ✅   | Depth and dest path guards                                                   |
+|  23 | `test_ms_entry_content_type_overflow`     |   ✅   | Ms entry content type overflow                                               |
+|  24 | `test_ms_entry_mtime_and_tiny_buf`        |   ✅   | Ms entry mtime and tiny buf                                                  |
+|  25 | `test_proppatch_ms_echo`                  |   ✅   | A self-closed property with trailing whitespace exercises the open-tag trim. |
 
 </details>
 
