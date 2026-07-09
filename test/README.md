@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2599 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2600 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -8444,7 +8444,7 @@ A thorough directory of all **2599 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_h2_frame (6 tests)</b></summary>
+<summary><b>test_h2_frame (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_header_roundtrip</b> &mdash; <i>The reserved high bit of the stream id must be ignored on parse.</i></summary>
@@ -8522,6 +8522,29 @@ A thorough directory of all **2599 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (24, (int)H2_PREFACE_LEN)</code>
       * <code>Assert equal int (24, (int)strlen(H2_PREFACE))</code>
       * <code>Assert equal memory ("PRI * HTTP/2.0\\r\\n\\r\\nSM\\r\\n\\r\\n", H2_PREFACE, 24)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_settings_all_ids_and_build_guards</b> &mdash; <i>Every recognized setting id with a valid value, plus an unknown id (ignored).</i></summary>
+
+    * **Objective**: Every recognized setting id with a valid value, plus an unknown id (ignored).
+    * **Assertions**:
+      * <code>Assert true (h2_parse_settings(f + 9, n - 9, &s))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, s.enable_push);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, s.max_concurrent_streams);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65535, s.initial_window_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(16384, s.max_frame_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8192, s.max_header_list_size);</code>
+      * <code>Assert false (h2_parse_settings(bad_iws, 6, &s))</code>
+      * <code>Assert false (h2_parse_settings(bad_mfs_hi, 6, &s))</code>
+      * <code>Assert false (h2_parse_header(tiny, sizeof(tiny), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_settings(small, sizeof(small), sid, sv, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_window_update(small, sizeof(small), 1, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_rst_stream(small, sizeof(small), 1, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_goaway(small, sizeof(small), 1, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_ping_ack(small, sizeof(small), op));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_headers(small, sizeof(small), 1, blk, sizeof(blk), false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, h2_build_data(small, sizeof(small), 1, blk, sizeof(blk), false));</code>
   </details>
 
 </details>
