@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2481 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2486 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -654,7 +654,7 @@ A thorough directory of all **2481 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ads1115 (3 tests)</b></summary>
+<summary><b>test_ads1115 (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_config_word</b> &mdash; <i>ch0, +/-4.096V, 128 SPS: OS\|MUX_AIN0\|PGA1\|MODE_SINGLE\|DR128\|COMP_DISABLE.</i></summary>
@@ -684,6 +684,24 @@ A thorough directory of all **2481 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(0, ads1115_raw_to_uv(0, ADS1115_GAIN_1));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(1024000, ads1115_raw_to_uv(16384, ADS1115_GAIN_2));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, ADS1115_GAIN_TWOTHIRDS));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_raw_to_uv_gain_clamp</b> &mdash; <i>An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the</i></summary>
+
+    * **Objective**: An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_i2c_stubs_fail_closed</b> &mdash; <i>On a host build there is no I2C: begin and both reads fail closed (false).</i></summary>
+
+    * **Objective**: On a host build there is no I2C: begin and both reads fail closed (false).
+    * **Assertions**:
+      * <code>Assert false (ads1115_begin(0x48))</code>
+      * <code>Assert false (ads1115_read_raw(0, ADS1115_GAIN_2, &raw))</code>
+      * <code>Assert false (ads1115_read_uv(0, ADS1115_GAIN_2, &uv))</code>
   </details>
 
 </details>
@@ -7841,7 +7859,7 @@ A thorough directory of all **2481 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_guardrails (6 tests)</b></summary>
+<summary><b>test_guardrails (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_eval_all_clear</b> &mdash; <i>Eval all clear</i></summary>
@@ -7890,6 +7908,35 @@ A thorough directory of all **2481 test cases** across **228 suites**. Expand a 
     * **Objective**: Json small buffer fails closed
     * **Assertions**:
       * <code>Assert equal int (0, detws_health_json(&h, buf, sizeof(buf)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_eval_null_health_is_clear</b> &mdash; <i>A null health snapshot reports no breach (nothing to evaluate).</i></summary>
+
+    * **Objective**: A null health snapshot reports no breach (nothing to evaluate).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_json_guards_fail_closed</b> &mdash; <i>Null out or zero cap -> 0 (nothing written).</i></summary>
+
+    * **Objective**: Null out or zero cap -> 0 (nothing written).
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_health_json(&h, nullptr, sizeof(buf)))</code>
+      * <code>Assert equal int (0, detws_health_json(&h, buf, 0))</code>
+      * <code>Assert equal int (0, detws_health_json(nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_sampler_stubs</b> &mdash; <i>On host there are no live counters: sample() zeroes the snapshot (and no-ops on null), begin()</i></summary>
+
+    * **Objective**: On host there are no live counters: sample() zeroes the snapshot (and no-ops on null), begin()
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.free_heap);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.stack_free);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrails_check());</code>
   </details>
 
 </details>
