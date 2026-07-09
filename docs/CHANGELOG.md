@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`830f622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/830f6220fa55a33cddd5eb47f3ec679e778797c6))
+- update CHANGELOG.md [skip ci] ([`458e990`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/458e9906943b8359358873b2e715a4261996c3c2))
 - update CHANGELOG.md [skip ci] ([`3131ca7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3131ca71fa104f16f9f4bf8bb349eca097944cff))
 - update CHANGELOG.md [skip ci] ([`e82e2dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e82e2dc4b4c61a7264a536efa8e7efbd04d16185))
 - update test report + coverage [skip ci] ([`00ea482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00ea48282792b5b0c480ae2214a9758bf973170e))
@@ -160,6 +162,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f22fcca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f22fccab0481270badeff38cedf7a30bb0a2c267))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e1d9842`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1d984218de31b1d962cb46707c4d0f8955215ad))
 - update ESP32 build footprints [skip ci] ([`d182aac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d182aac84672bbfb0616f27774b58d260aaae493))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dde7170`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dde717081dc332adeded69055ebfd6bb04ae03c8))
@@ -238,6 +241,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- drop dead ssh_dh_finish; cover KDF edge paths + slot guards (73->100%) ([`a62267f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a62267f05455dce6e0f3899cacd87eaaf35a68ec))
 - move MPR121 touch/release thresholds to ServerConfig.h (overridable) ([`e00567e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e00567ed578785498c25b7c2e0332c3020ab3434))
 - move ADS1115 + INA219 device tunables to ServerConfig.h (overridable) ([`349af2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/349af2e23be54807c386e395065e8878c11bfe54))
 - own the /stats + /metrics render buffers in StatsCtx/MetricsCtx ([`304ccd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/304ccd6392af30aae5536d238475f275f0fa1170))
