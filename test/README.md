@@ -11105,11 +11105,12 @@ A thorough directory of all **2681 test cases** across **228 suites**. Expand a 
 <summary><b>test_inflate (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_malformed_deflate_blocks</b> &mdash; <i>Malformed deflate blocks</i></summary>
+    <summary><b>test_malformed_deflate_blocks</b> &mdash; <i>A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.</i></summary>
 
-    * **Objective**: Malformed deflate blocks
+    * **Objective**: A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED,                                                                       \\</code>
+      * <code>Assert equal int (INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in)</code>
   </details>
 
   <details style="margin-left: 20px;">
