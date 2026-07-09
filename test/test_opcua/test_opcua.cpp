@@ -1449,6 +1449,80 @@ void test_parse_browse_truncated_item_rejected()
     TEST_ASSERT_FALSE(opcua_parse_browse(buf, n, &br));
 }
 
+// Build a WriteRequest with a controllable NodesToWrite count and IndexRange length (one real item).
+static size_t build_write(uint8_t *out, size_t cap, int32_t count_field, int32_t ir_len)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 7);
+    ua_w_u32(&w, 5);
+    ua_w_u32(&w, 700);
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_WRITE_REQ);
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u64(&w, 0);
+    ua_w_u32(&w, 95);
+    ua_w_u32(&w, 0);
+    ua_w_string(&w, nullptr, -1);
+    ua_w_u32(&w, 0);
+    ua_w_nodeid_numeric(&w, 0, 0);
+    ua_w_u8(&w, 0x00);
+    ua_w_i32(&w, count_field);      // NodesToWrite count (may exceed the items present)
+    ua_w_nodeid_numeric(&w, 1, 10); // WriteValue.NodeId
+    ua_w_u32(&w, OPCUA_ATTR_VALUE); // AttributeId
+    if (ir_len > 0)
+    {
+        ua_w_i32(&w, ir_len);
+        for (int32_t i = 0; i < ir_len; i++)
+            ua_w_u8(&w, '0'); // non-empty IndexRange
+    }
+    else
+    {
+        ua_w_string(&w, nullptr, -1);
+    }
+    OpcUaVariant v;
+    memset(&v, 0, sizeof(v));
+    v.type = OPCUA_VAR_INT32;
+    v.i32 = -1234;
+    ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = out[7] = 0;
+    return w.n;
+}
+
+void test_parse_write_truncated_item_and_indexrange()
+{
+    OpcUaWriteRequest wr;
+    // Count claims two items but only one is present -> the second NodeId read underruns -> reject.
+    uint8_t buf[160];
+    size_t n = build_write(buf, sizeof(buf), 2, 0);
+    TEST_ASSERT_FALSE(opcua_parse_write(buf, n, &wr));
+    // A non-empty IndexRange is skipped; the request stays valid.
+    n = build_write(buf, sizeof(buf), 1, 3);
+    TEST_ASSERT_TRUE(opcua_parse_write(buf, n, &wr));
+    TEST_ASSERT_EQUAL_UINT32(1, wr.count);
+}
+
+void test_parse_open_wrong_body_typeid()
+{
+    uint8_t buf[256];
+    size_t n = build_open(buf, sizeof(buf), 0, 1, 100, 42, 1, 3600000);
+    // Body TypeId is OPEN_REQ (446 -> FourByte bytes 01 00 BE 01); corrupt the id so it no longer matches.
+    for (size_t i = 0; i + 3 < n; i++)
+        if (buf[i] == 0x01 && buf[i + 1] == 0x00 && buf[i + 2] == 0xBE && buf[i + 3] == 0x01)
+        {
+            buf[i + 2] = 0xFF;
+            break;
+        }
+    OpcUaOpenChannel oc;
+    TEST_ASSERT_FALSE(opcua_parse_open(buf, n, &oc));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1494,5 +1568,7 @@ int main()
     RUN_TEST(test_parse_open_with_cert_and_nonce);
     RUN_TEST(test_parse_read_truncated_item_rejected);
     RUN_TEST(test_parse_browse_truncated_item_rejected);
+    RUN_TEST(test_parse_write_truncated_item_and_indexrange);
+    RUN_TEST(test_parse_open_wrong_body_typeid);
     return UNITY_END();
 }
