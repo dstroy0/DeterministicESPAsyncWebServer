@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2637 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2638 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24580,7 +24580,7 @@ A thorough directory of all **2637 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_comp (5 tests)</b></summary>
+<summary><b>test_ssh_comp (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_delayed_activation</b> &mdash; <i>Delayed activation</i></summary>
@@ -24621,6 +24621,15 @@ A thorough directory of all **2637 test cases** across **228 suites**. Expand a 
     <summary><b>test_packet_layer_window_slide</b> &mdash; <i>Packet layer window slide</i></summary>
 
     * **Objective**: Packet layer window slide
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_packet_compress_scratch_exhausted</b> &mdash; <i>Packet compress scratch exhausted</i></summary>
+
+    * **Objective**: Packet compress scratch exhausted
+    * **Assertions**:
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (-1, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
   </details>
 
 </details>
