@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
 bool hexval(char c, uint8_t *v)
@@ -55,58 +57,35 @@ const char *parse_hex(const char *p, uint32_t *out)
     return p;
 }
 
-// A double-ended JSON writer that fails closed on overflow.
-struct Buf
+void put_json_str(DetSb *b, const char *s)
 {
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strlen(s);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_json_str(Buf *b, const char *s)
-{
-    put(b, "\"");
+    det_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            put(b, esc);
+            det_sb_put(b, esc);
         }
         else if (b->len + 1 < b->cap)
             b->p[b->len++] = *p;
         else
             b->ok = false;
     }
-    put(b, "\"");
+    det_sb_put(b, "\"");
 }
 
 // Emit a 32-bit value as a JSON string literal "0x........".
-void put_hex32(Buf *b, uint32_t v)
+void put_hex32(DetSb *b, uint32_t v)
 {
     char t[13] = "\"0x00000000\"";
     static const char *H = "0123456789abcdef";
     for (int i = 0; i < 8; i++)
         t[3 + i] = H[(v >> ((7 - i) * 4)) & 0xF];
-    put(b, t);
+    det_sb_put(b, t);
 }
 
-void put_int(Buf *b, int v)
+void put_int(DetSb *b, int v)
 {
     char t[12];
     int n = 0;
@@ -124,7 +103,7 @@ void put_int(Buf *b, int v)
     for (int i = 0; i < n; i++)
         o[k++] = t[n - 1 - i];
     o[k] = '\0';
-    put(b, o);
+    det_sb_put(b, o);
 }
 } // namespace
 
@@ -235,34 +214,34 @@ size_t detws_exc_json(const ExcInfo *info, char *out, size_t cap)
 {
     if (!info || !out || cap == 0)
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "{");
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "{");
     bool first = true;
     if (info->core >= 0)
     {
-        put(&b, "\"core\":");
+        det_sb_put(&b, "\"core\":");
         put_int(&b, info->core);
         first = false;
     }
     if (!first)
-        put(&b, ",");
-    put(&b, "\"cause\":");
+        det_sb_put(&b, ",");
+    det_sb_put(&b, "\"cause\":");
     put_json_str(&b, info->cause);
-    put(&b, ",\"pc\":");
+    det_sb_put(&b, ",\"pc\":");
     put_hex32(&b, info->pc);
     if (info->has_excvaddr)
     {
-        put(&b, ",\"excvaddr\":");
+        det_sb_put(&b, ",\"excvaddr\":");
         put_hex32(&b, info->excvaddr);
     }
-    put(&b, ",\"backtrace\":[");
+    det_sb_put(&b, ",\"backtrace\":[");
     for (size_t i = 0; i < info->frame_count; i++)
     {
         if (i)
-            put(&b, ",");
+            det_sb_put(&b, ",");
         put_hex32(&b, info->frames[i].pc);
     }
-    put(&b, "]}");
+    det_sb_put(&b, "]}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';

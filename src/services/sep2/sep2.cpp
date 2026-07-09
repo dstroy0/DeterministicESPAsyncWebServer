@@ -12,69 +12,11 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strlen(s);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_escaped(Buf *b, const char *s)
-{
-    if (!b->ok || !s)
-        return;
-    for (; *s; s++)
-    {
-        const char *rep = nullptr;
-        switch (*s)
-        {
-        case '&':
-            rep = "&amp;";
-            break;
-        case '<':
-            rep = "&lt;";
-            break;
-        case '>':
-            rep = "&gt;";
-            break;
-        case '"':
-            rep = "&quot;";
-            break;
-        default:
-            break;
-        }
-        if (rep)
-            put(b, rep);
-        else
-        {
-            if (b->len + 1 >= b->cap)
-            {
-                b->ok = false;
-                return;
-            }
-            b->p[b->len++] = *s;
-        }
-    }
-}
-
-void put_i64(Buf *b, int64_t v)
+void put_i64(DetSb *b, int64_t v)
 {
     if (!b->ok)
         return;
@@ -94,15 +36,7 @@ void put_i64(Buf *b, int64_t v)
     for (int i = 0; i < n; i++)
         out[k++] = tmp[n - 1 - i];
     out[k] = '\0';
-    put(b, out);
-}
-
-size_t finish(Buf *b)
-{
-    if (!b->ok)
-        return 0;
-    b->p[b->len] = '\0';
-    return b->len;
+    det_sb_put(b, out);
 }
 
 const char *NS = " xmlns=\"urn:ieee:std:2030.5:ns\"";
@@ -112,56 +46,56 @@ const char *DECL = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 size_t detws_sep2_device_capability(uint32_t poll_rate, const char *edev_list_href, const char *derp_list_href,
                                     char *out, size_t cap)
 {
-    Buf b = {out, cap, 0, out != nullptr && cap > 0};
-    put(&b, DECL);
-    put(&b, "<DeviceCapability");
-    put(&b, NS);
-    put(&b, " pollRate=\"");
+    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
+    det_sb_put(&b, DECL);
+    det_sb_put(&b, "<DeviceCapability");
+    det_sb_put(&b, NS);
+    det_sb_put(&b, " pollRate=\"");
     put_i64(&b, poll_rate);
-    put(&b, "\">");
-    put(&b, "<EndDeviceListLink href=\"");
-    put_escaped(&b, edev_list_href);
-    put(&b, "\"/>");
-    put(&b, "<DERProgramListLink href=\"");
-    put_escaped(&b, derp_list_href);
-    put(&b, "\"/>");
-    put(&b, "</DeviceCapability>");
-    return finish(&b);
+    det_sb_put(&b, "\">");
+    det_sb_put(&b, "<EndDeviceListLink href=\"");
+    det_sb_xml(&b, edev_list_href);
+    det_sb_put(&b, "\"/>");
+    det_sb_put(&b, "<DERProgramListLink href=\"");
+    det_sb_xml(&b, derp_list_href);
+    det_sb_put(&b, "\"/>");
+    det_sb_put(&b, "</DeviceCapability>");
+    return det_sb_finish(&b);
 }
 
 size_t detws_sep2_end_device(uint64_t sfdi, const char *lfdi, const char *href, char *out, size_t cap)
 {
-    Buf b = {out, cap, 0, out != nullptr && cap > 0};
-    put(&b, DECL);
-    put(&b, "<EndDevice");
-    put(&b, NS);
-    put(&b, " href=\"");
-    put_escaped(&b, href);
-    put(&b, "\"><sFDI>");
+    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
+    det_sb_put(&b, DECL);
+    det_sb_put(&b, "<EndDevice");
+    det_sb_put(&b, NS);
+    det_sb_put(&b, " href=\"");
+    det_sb_xml(&b, href);
+    det_sb_put(&b, "\"><sFDI>");
     put_i64(&b, (int64_t)sfdi);
-    put(&b, "</sFDI><lFDI>");
-    put_escaped(&b, lfdi);
-    put(&b, "</lFDI></EndDevice>");
-    return finish(&b);
+    det_sb_put(&b, "</sFDI><lFDI>");
+    det_sb_xml(&b, lfdi);
+    det_sb_put(&b, "</lFDI></EndDevice>");
+    return det_sb_finish(&b);
 }
 
 size_t detws_sep2_der_control(const char *mrid, uint32_t start, uint32_t duration, int32_t opmod_target_w, char *out,
                               size_t cap)
 {
-    Buf b = {out, cap, 0, out != nullptr && cap > 0};
-    put(&b, DECL);
-    put(&b, "<DERControl");
-    put(&b, NS);
-    put(&b, "><mRID>");
-    put_escaped(&b, mrid);
-    put(&b, "</mRID><interval><start>");
+    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
+    det_sb_put(&b, DECL);
+    det_sb_put(&b, "<DERControl");
+    det_sb_put(&b, NS);
+    det_sb_put(&b, "><mRID>");
+    det_sb_xml(&b, mrid);
+    det_sb_put(&b, "</mRID><interval><start>");
     put_i64(&b, start);
-    put(&b, "</start><duration>");
+    det_sb_put(&b, "</start><duration>");
     put_i64(&b, duration);
-    put(&b, "</duration></interval><DERControlBase><opModFixedW>");
+    det_sb_put(&b, "</duration></interval><DERControlBase><opModFixedW>");
     put_i64(&b, opmod_target_w);
-    put(&b, "</opModFixedW></DERControlBase></DERControl>");
-    return finish(&b);
+    det_sb_put(&b, "</opModFixedW></DERControlBase></DERControl>");
+    return det_sb_finish(&b);
 }
 
 #endif // DETWS_ENABLE_SEP2

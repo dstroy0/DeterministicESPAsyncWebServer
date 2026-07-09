@@ -12,42 +12,22 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
-struct Buf
+void put_json_str(DetSb *b, const char *s)
 {
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strlen(s);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_json_str(Buf *b, const char *s)
-{
-    put(b, "\"");
+    det_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            put(b, esc);
+            det_sb_put(b, esc);
         }
         else if (*p == '\n')
-            put(b, "\\n");
+            det_sb_put(b, "\\n");
         else
         {
             if (b->len + 1 >= b->cap)
@@ -58,10 +38,10 @@ void put_json_str(Buf *b, const char *s)
             b->p[b->len++] = *p;
         }
     }
-    put(b, "\"");
+    det_sb_put(b, "\"");
 }
 
-void put_u64(Buf *b, uint64_t v)
+void put_u64(DetSb *b, uint64_t v)
 {
     char tmp[21];
     int n = 0;
@@ -74,15 +54,15 @@ void put_u64(Buf *b, uint64_t v)
     for (int i = 0; i < n; i++)
         out[i] = tmp[n - 1 - i];
     out[n] = '\0';
-    put(b, out);
+    det_sb_put(b, out);
 }
 
 // Format a double with 3 decimal places (no stdlib). Rounds to milli-units; handles the sign.
-void put_double(Buf *b, double v)
+void put_double(DetSb *b, double v)
 {
     if (v < 0)
     {
-        put(b, "-");
+        det_sb_put(b, "-");
         v = -v;
     }
     // scale by 1000 and round.
@@ -90,18 +70,10 @@ void put_double(Buf *b, double v)
     uint64_t whole = scaled / 1000;
     uint32_t frac = (uint32_t)(scaled % 1000);
     put_u64(b, whole);
-    put(b, ".");
+    det_sb_put(b, ".");
     // three digits, zero-padded.
     char f[4] = {(char)('0' + (frac / 100) % 10), (char)('0' + (frac / 10) % 10), (char)('0' + frac % 10), '\0'};
-    put(b, f);
-}
-
-size_t finish(Buf *b)
-{
-    if (!b->ok)
-        return 0;
-    b->p[b->len] = '\0';
-    return b->len;
+    det_sb_put(b, f);
 }
 } // namespace
 
@@ -110,30 +82,30 @@ size_t detws_openadr_event(const char *program_id, const char *event_name, const
 {
     if (!out || (count && !intervals))
         return 0;
-    Buf b = {out, cap, 0, cap > 0};
-    put(&b, "{\"objectType\":\"EVENT\",\"programID\":");
+    DetSb b = {out, cap, 0, cap > 0};
+    det_sb_put(&b, "{\"objectType\":\"EVENT\",\"programID\":");
     put_json_str(&b, program_id);
-    put(&b, ",\"eventName\":");
+    det_sb_put(&b, ",\"eventName\":");
     put_json_str(&b, event_name);
-    put(&b, ",\"intervals\":[");
+    det_sb_put(&b, ",\"intervals\":[");
     for (size_t i = 0; i < count; i++)
     {
         if (i)
-            put(&b, ",");
-        put(&b, "{\"id\":");
+            det_sb_put(&b, ",");
+        det_sb_put(&b, "{\"id\":");
         put_u64(&b, i);
-        put(&b, ",\"interval\":{\"start\":");
+        det_sb_put(&b, ",\"interval\":{\"start\":");
         put_u64(&b, intervals[i].start);
-        put(&b, ",\"duration\":");
+        det_sb_put(&b, ",\"duration\":");
         put_u64(&b, intervals[i].duration);
-        put(&b, "},\"payloads\":[{\"type\":");
+        det_sb_put(&b, "},\"payloads\":[{\"type\":");
         put_json_str(&b, intervals[i].type);
-        put(&b, ",\"values\":[");
+        det_sb_put(&b, ",\"values\":[");
         put_double(&b, intervals[i].value);
-        put(&b, "]}]}");
+        det_sb_put(&b, "]}]}");
     }
-    put(&b, "]}");
-    return finish(&b);
+    det_sb_put(&b, "]}");
+    return det_sb_finish(&b);
 }
 
 size_t detws_openadr_report(const char *program_id, const char *event_id, const char *resource_name, double value,
@@ -141,19 +113,19 @@ size_t detws_openadr_report(const char *program_id, const char *event_id, const 
 {
     if (!out)
         return 0;
-    Buf b = {out, cap, 0, cap > 0};
-    put(&b, "{\"objectType\":\"REPORT\",\"programID\":");
+    DetSb b = {out, cap, 0, cap > 0};
+    det_sb_put(&b, "{\"objectType\":\"REPORT\",\"programID\":");
     put_json_str(&b, program_id);
-    put(&b, ",\"eventID\":");
+    det_sb_put(&b, ",\"eventID\":");
     put_json_str(&b, event_id);
-    put(&b, ",\"resources\":[{\"resourceName\":");
+    det_sb_put(&b, ",\"resources\":[{\"resourceName\":");
     put_json_str(&b, resource_name);
-    put(&b, ",\"intervals\":[{\"interval\":{\"start\":");
+    det_sb_put(&b, ",\"intervals\":[{\"interval\":{\"start\":");
     put_u64(&b, timestamp);
-    put(&b, "},\"payloads\":[{\"type\":\"READING\",\"values\":[");
+    det_sb_put(&b, "},\"payloads\":[{\"type\":\"READING\",\"values\":[");
     put_double(&b, value);
-    put(&b, "]}]}]}]}");
-    return finish(&b);
+    det_sb_put(&b, "]}]}]}]}");
+    return det_sb_finish(&b);
 }
 
 #endif // DETWS_ENABLE_OPENADR

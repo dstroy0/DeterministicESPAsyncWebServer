@@ -12,39 +12,19 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
-struct Buf
+void put_json_str(DetSb *b, const char *s)
 {
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strlen(s);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_json_str(Buf *b, const char *s)
-{
-    put(b, "\"");
+    det_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            put(b, esc);
+            det_sb_put(b, esc);
         }
         else
         {
@@ -56,10 +36,10 @@ void put_json_str(Buf *b, const char *s)
             b->p[b->len++] = *p;
         }
     }
-    put(b, "\"");
+    det_sb_put(b, "\"");
 }
 
-void put_u8(Buf *b, uint8_t v)
+void put_u8(DetSb *b, uint8_t v)
 {
     char t[4];
     int n = 0;
@@ -72,28 +52,28 @@ void put_u8(Buf *b, uint8_t v)
     for (int i = 0; i < n; i++)
         o[i] = t[n - 1 - i];
     o[n] = '\0';
-    put(b, o);
+    det_sb_put(b, o);
 }
 
 // Append the points of one direction (outputs or inputs) as a JSON array.
-void put_array(Buf *b, const AtcFieldIo *io, bool outputs)
+void put_array(DetSb *b, const AtcFieldIo *io, bool outputs)
 {
-    put(b, "[");
+    det_sb_put(b, "[");
     bool first = true;
     for (size_t i = 0; i < io->count; i++)
     {
         if (io->points[i].is_output != outputs)
             continue;
         if (!first)
-            put(b, ",");
+            det_sb_put(b, ",");
         first = false;
-        put(b, "{\"name\":");
+        det_sb_put(b, "{\"name\":");
         put_json_str(b, io->points[i].name);
-        put(b, ",\"value\":");
+        det_sb_put(b, ",\"value\":");
         put_u8(b, io->points[i].value);
-        put(b, "}");
+        det_sb_put(b, "}");
     }
-    put(b, "]");
+    det_sb_put(b, "]");
 }
 } // namespace
 
@@ -101,12 +81,12 @@ size_t detws_atc_snapshot_json(const AtcFieldIo *io, char *out, size_t cap)
 {
     if (!io || !out || (io->count && !io->points))
         return 0;
-    Buf b = {out, cap, 0, cap > 0};
-    put(&b, "{\"inputs\":");
+    DetSb b = {out, cap, 0, cap > 0};
+    det_sb_put(&b, "{\"inputs\":");
     put_array(&b, io, false);
-    put(&b, ",\"outputs\":");
+    det_sb_put(&b, ",\"outputs\":");
     put_array(&b, io, true);
-    put(&b, "}");
+    det_sb_put(&b, "}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';

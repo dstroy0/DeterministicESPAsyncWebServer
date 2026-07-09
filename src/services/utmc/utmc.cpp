@@ -12,69 +12,11 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strlen(s);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_escaped(Buf *b, const char *s)
-{
-    if (!b->ok || !s)
-        return;
-    for (; *s; s++)
-    {
-        const char *rep = nullptr;
-        switch (*s)
-        {
-        case '&':
-            rep = "&amp;";
-            break;
-        case '<':
-            rep = "&lt;";
-            break;
-        case '>':
-            rep = "&gt;";
-            break;
-        case '"':
-            rep = "&quot;";
-            break;
-        default:
-            break;
-        }
-        if (rep)
-            put(b, rep);
-        else
-        {
-            if (b->len + 1 >= b->cap)
-            {
-                b->ok = false;
-                return;
-            }
-            b->p[b->len++] = *s;
-        }
-    }
-}
-
-void put_u(Buf *b, uint32_t v)
+void put_u(DetSb *b, uint32_t v)
 {
     char tmp[11];
     int n = 0;
@@ -87,41 +29,33 @@ void put_u(Buf *b, uint32_t v)
     for (int i = 0; i < n; i++)
         out[i] = tmp[n - 1 - i];
     out[n] = '\0';
-    put(b, out);
-}
-
-size_t finish(Buf *b)
-{
-    if (!b->ok)
-        return 0;
-    b->p[b->len] = '\0';
-    return b->len;
+    det_sb_put(b, out);
 }
 } // namespace
 
 size_t detws_utmc_request(const char *object_id, char *out, size_t cap)
 {
-    Buf b = {out, cap, 0, out != nullptr && cap > 0};
-    put(&b, "<?xml version=\"1.0\"?><UTMCRequest><object id=\"");
-    put_escaped(&b, object_id);
-    put(&b, "\"/></UTMCRequest>");
-    return finish(&b);
+    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
+    det_sb_put(&b, "<?xml version=\"1.0\"?><UTMCRequest><object id=\"");
+    det_sb_xml(&b, object_id);
+    det_sb_put(&b, "\"/></UTMCRequest>");
+    return det_sb_finish(&b);
 }
 
 size_t detws_utmc_response(const char *object_id, const char *value, uint8_t quality, const char *timestamp, char *out,
                            size_t cap)
 {
-    Buf b = {out, cap, 0, out != nullptr && cap > 0};
-    put(&b, "<?xml version=\"1.0\"?><UTMCResponse><object id=\"");
-    put_escaped(&b, object_id);
-    put(&b, "\" value=\"");
-    put_escaped(&b, value);
-    put(&b, "\" quality=\"");
+    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
+    det_sb_put(&b, "<?xml version=\"1.0\"?><UTMCResponse><object id=\"");
+    det_sb_xml(&b, object_id);
+    det_sb_put(&b, "\" value=\"");
+    det_sb_xml(&b, value);
+    det_sb_put(&b, "\" quality=\"");
     put_u(&b, quality);
-    put(&b, "\" timestamp=\"");
-    put_escaped(&b, timestamp);
-    put(&b, "\"/></UTMCResponse>");
-    return finish(&b);
+    det_sb_put(&b, "\" timestamp=\"");
+    det_sb_xml(&b, timestamp);
+    det_sb_put(&b, "\"/></UTMCResponse>");
+    return det_sb_finish(&b);
 }
 
 size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t cap)
