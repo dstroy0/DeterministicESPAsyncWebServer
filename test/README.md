@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2681 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2682 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16192,7 +16192,68 @@ A thorough directory of all **2681 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_oidc (17 tests)</b></summary>
+<summary><b>test_oidc (18 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_oidc_parse_edge_guards</b> &mdash; <i>Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:</i></summary>
+
+    * **Objective**: Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:
+    * **Assertions**:
+      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (detws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
+      * <code>Assert true (detws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
+      * <code>Assert equal string ("test-key-1", kid)</code>
+      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>Assert true (key.loaded)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[3]);</code>
+      * <code>Assert false (detws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
+      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal string ("user-42", c.sub)</code>
+      * <code>Assert equal string ("alice@example.com", c.email)</code>
+      * <code>Assert true (c.iat == 1700000000LL)</code>
+      * <code>Assert true (c.exp == 4102444800LL)</code>
+      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert false (detws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
+      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
+      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
+      * <code>Assert false (detws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid)))</code>
+      * <code>Assert false (detws_oidc_jwks_find(nullptr, "k", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[]}", "k", nullptr))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr))</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
+      * <code>Assert true (detws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_jwks_malformed_keys</b> &mdash; <i>escaped char inside a string value + a mismatching kid (get_str runs, then rejects).</i></summary>
