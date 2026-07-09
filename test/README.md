@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2643 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2644 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28444,7 +28444,7 @@ A thorough directory of all **2643 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webdav_handler (23 tests)</b></summary>
+<summary><b>test_webdav_handler (24 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_webdav_error_paths</b> &mdash; <i>Webdav error paths</i></summary>
@@ -28479,6 +28479,15 @@ A thorough directory of all **2643 test cases** across **228 suites**. Expand a 
       * <code>Assert true (resp_status(207))</code>
       * <code>Assert true (resp_status(207))</code>
       * <code>Assert true (resp_status(404))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_webdav_copy_fs_table_full</b> &mdash; <i>Webdav copy fs table full</i></summary>
+
+    * **Objective**: Webdav copy fs table full
+    * **Assertions**:
+      * <code>Assert true (resp_status(409))</code>
+      * <code>Assert true (resp_status(409))</code>
   </details>
 
   <details style="margin-left: 20px;">
