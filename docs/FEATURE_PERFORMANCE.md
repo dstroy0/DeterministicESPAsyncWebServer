@@ -41,12 +41,47 @@ Metrics captured per cell: **IOPS**, **latency** (avg + p99), **throughput (MB/s
 flush/`fsync` cost (the price of durability). The resulting curve sizes the atomic layer's write batch
 (the block size at the throughput knee) and its queue depth (where more in-flight I/O stops helping).
 
-> Status: **blocked on the SD card being attached.** The characterization harness is specified here and
-> is the next build once the hardware is on. Results land in the table below.
+> Measured 2026-07-09 on the COM4 **ESP32-S3** (SD-over-SPI on HSPI: SCK=12, MISO=13, MOSI=11, CS=10)
+> with a **~32 GB SDHC** card, FAT32. Each round trip byte-verified. (SDMMC 4-bit is not wired on this
+> board, so these are the SPI-mode numbers - SDMMC would be several times faster.)
 
-| Interface | Block | Pattern | Dir | IOPS | Latency avg / p99 | MB/s |
-| --------- | ----- | ------- | --- | ---- | ----------------- | ---- |
-| _pending_ |       |         |     |      |                   |      |
+### Throughput vs SPI clock (sustained sequential)
+
+| SPI clock | Seq write MB/s | Seq read MB/s | Max write latency | Verify |
+| --------- | -------------: | ------------: | ----------------: | ------ |
+| 4 MHz     |           0.44 |          0.42 |            168 ms | OK     |
+| 8 MHz     |           0.82 |          0.75 |             53 ms | OK     |
+| 16 MHz    |           1.26 |          1.22 |            127 ms | OK     |
+| 20 MHz    |       **1.55** |          1.39 |            119 ms | OK     |
+| 26.7 MHz  |           1.47 |          1.40 |            117 ms | OK     |
+| 40 MHz    |           1.56 |          1.40 |            117 ms | OK     |
+
+**Throughput scales with the clock up to ~20 MHz, then plateaus at ~1.5 MB/s write / ~1.4 MB/s read** -
+above 20 MHz the SD **card / filesystem is the bottleneck, not the SPI bus**. So ~20-26 MHz is the
+efficient operating point; 40 MHz buys almost nothing and only raises EMI / wiring sensitivity.
+Sustained is flat (a 139 MB run held ~1.4-1.5 MB/s with no SLC-cache knee).
+
+### Random I/O (durable = flush per op, at 40 MHz)
+
+| Pattern     | IOPS       | Avg latency | Max latency | MB/s      |
+| ----------- | ---------: | ----------: | ----------: | --------: |
+| 4 KiB write | 37-87 \*   |      ~8 ms   |     ~107 ms  | 0.15-0.36 |
+| 4 KiB read  | 31-93 \*   |      ~3 ms   |     ~3.7 ms  | 0.13-0.38 |
+| 512 B write | 39-105 \*  |    ~6-8 ms   |     ~106 ms  | -         |
+
+\* Durable random-**write** IOPS varied 2-3x run to run (the card's internal state / garbage collection).
+Reads are tight and predictable (~3 ms); durable writes carry **100+ ms tail-latency spikes** from SD
+internal housekeeping, and those spikes are **clock-independent** (present at every SPI clock).
+
+### Implications for the atomic buffer-to-flash layer
+
+- **Run SPI at ~20-26 MHz** - past that the card, not the bus, is the limit.
+- **Batch into large sequential writes.** Sequential ~1.5 MB/s vs durable random ~40-100 IOPS
+  (0.15-0.38 MB/s) is a **10-40x** gap. A write-ahead journal (append sequentially, then checkpoint in
+  bulk) matches the hardware; scattered small durable writes fight it.
+- **Absorb the 100+ ms write tail.** Any single durable write can stall 100+ ms (card GC), so the
+  layer's queue must be deep enough to hide the spike or commit asynchronously.
+- 16-32 KiB is a good journal block; 512 B durable writes are the worst case.
 
 ## 2. Pure codec host baseline
 
