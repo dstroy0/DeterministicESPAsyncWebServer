@@ -775,6 +775,7 @@ src/
 │   ├── numparse.h
 │   ├── pcap.h
 │   ├── ring.h
+│   ├── strbuf.h
 │   └── utf8.h
 ├── web/
 │   ├── favicons/  (288 generated files)
@@ -853,7 +854,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 751,037 | 66,352 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 751,081 | 66,352 |
 | `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 751,205 | 66,352 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 751,241 | 66,352 |
 | `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 751,321 | 66,352 |
 | `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,385 | 66,800 |
 | `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,417 | 66,392 |
@@ -876,6 +876,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/33.Csrf` | 752,437 | 66,400 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 752,525 | 69,480 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,645 | 66,352 |
+| `DIAG` | `Foundation/05.Configuration` | 752,733 | 63,104 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 752,809 | 66,632 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 752,845 | 66,392 |
 | `STATS` | `L7-Application/22.Stats` | 752,897 | 66,448 |
