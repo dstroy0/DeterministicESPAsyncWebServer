@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 10:18:26
+**Generated:** 2026-07-09 10:29:55
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2738 passed - 335s
+**Result:** ✅ 2740 passed - 345s
 
 ---
 
@@ -235,12 +235,12 @@
 | `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.832 |
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:05.230 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
-| `test_quic_tls`          | `native_quic_tls`       |    11 |   ✅   | 00:00:01.210 |
-| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.308 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.251 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.300 |
-| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.367 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.114 |
+| `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.285 |
+| `test_quic_conn`         | `native_quic_conn`      |    16 |   ✅   | 00:00:01.283 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:11.206 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.305 |
+| `test_quic_server`       | `native_quic_server`    |     2 |   ✅   | 00:00:01.354 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.098 |
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.833 |
 
 ---
@@ -6087,26 +6087,28 @@ _Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/htt
 
 ---
 
-## test_quic_tls - native_quic_tls - ✅ 11 passed
+## test_quic_tls - native_quic_tls - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the TLS 1.3 server handshake state machine (network_drivers/presentation/http3/_
 
-|   # | Test                                 | Status | Description                   |
-| --: | :----------------------------------- | :----: | :---------------------------- |
-|   1 | `test_full_handshake_roundtrip`      |   ✅   | Full handshake roundtrip      |
-|   2 | `test_reject_bad_client_finished`    |   ✅   | Reject bad client finished    |
-|   3 | `test_reject_no_h3_alpn`             |   ✅   | Reject no h3 alpn             |
-|   4 | `test_partial_client_hello`          |   ✅   | Partial client hello          |
-|   5 | `test_reject_no_tls13`               |   ✅   | Reject no tls13               |
-|   6 | `test_reject_no_key_share`           |   ✅   | Reject no key share           |
-|   7 | `test_reject_no_x25519_group`        |   ✅   | Reject no x25519 group        |
-|   8 | `test_reject_no_ed25519`             |   ✅   | Reject no ed25519             |
-|   9 | `test_reject_no_transport_params`    |   ✅   | Reject no transport params    |
-|  10 | `test_reject_bad_transport_params`   |   ✅   | Reject bad transport params   |
-|  11 | `test_reject_malformed_client_hello` |   ✅   | Reject malformed client hello |
+|   # | Test                                          | Status | Description                                                                                  |
+| --: | :-------------------------------------------- | :----: | :------------------------------------------------------------------------------------------- |
+|   1 | `test_full_handshake_roundtrip`               |   ✅   | Full handshake roundtrip                                                                     |
+|   2 | `test_reject_bad_client_finished`             |   ✅   | Reject bad client finished                                                                   |
+|   3 | `test_reject_no_h3_alpn`                      |   ✅   | Reject no h3 alpn                                                                            |
+|   4 | `test_partial_client_hello`                   |   ✅   | Partial client hello                                                                         |
+|   5 | `test_reject_no_tls13`                        |   ✅   | Reject no tls13                                                                              |
+|   6 | `test_reject_no_key_share`                    |   ✅   | Reject no key share                                                                          |
+|   7 | `test_reject_no_x25519_group`                 |   ✅   | Reject no x25519 group                                                                       |
+|   8 | `test_reject_no_ed25519`                      |   ✅   | Reject no ed25519                                                                            |
+|   9 | `test_reject_no_transport_params`             |   ✅   | Reject no transport params                                                                   |
+|  10 | `test_reject_bad_transport_params`            |   ✅   | Reject bad transport params                                                                  |
+|  11 | `test_reject_malformed_client_hello`          |   ✅   | Reject malformed client hello                                                                |
+|  12 | `test_quic_tls_more_guards`                   |   ✅   | A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished. |
+|  13 | `test_quic_tls_cert_size_boundary_emit_fails` |   ✅   | Quic tls cert size boundary emit fails                                                       |
 
 </details>
 
