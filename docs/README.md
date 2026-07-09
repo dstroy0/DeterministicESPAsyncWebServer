@@ -741,6 +741,7 @@ src/
 │   ├── wal/
 │   │   ├── wal.cpp
 │   │   ├── wal.h
+│   │   ├── wal_fs.h
 │   │   ├── wal_store.cpp
 │   │   └── wal_store.h
 │   ├── wamp/  (wamp.h, wamp.cpp)
