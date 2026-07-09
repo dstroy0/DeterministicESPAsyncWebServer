@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`3131ca7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3131ca71fa104f16f9f4bf8bb349eca097944cff))
 - update CHANGELOG.md [skip ci] ([`e82e2dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e82e2dc4b4c61a7264a536efa8e7efbd04d16185))
 - update test report + coverage [skip ci] ([`00ea482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00ea48282792b5b0c480ae2214a9758bf973170e))
 - update CHANGELOG.md [skip ci] ([`e160862`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e160862fdc7984f2e1ed0837f64e21660cafb421))
@@ -159,6 +160,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e1d9842`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1d984218de31b1d962cb46707c4d0f8955215ad))
+- update ESP32 build footprints [skip ci] ([`d182aac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d182aac84672bbfb0616f27774b58d260aaae493))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dde7170`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dde717081dc332adeded69055ebfd6bb04ae03c8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5f0a3d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f0a3d5e738199295a137841a498bea77738933b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b4b61d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4b61d17624854312741cd9053993999def2ea21))
@@ -322,6 +325,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover form-field null guards + host load/clear stubs (72->95%) ([`04118db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04118dbdc6b72e05178c22fb29c4faa28cdd5923))
 - cover raw_to_uv gain clamp + host I2C stubs (70->100%) ([`7690457`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76904574f82d46eb78cb24676b57fa12930c916f))
 - cover null-guards + host sampler stubs (65->100%) ([`f7437eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f7437eb08f707714e54971906f8bbb95ab1d25bd))
 - cover the host I2C stubs fail-closed (58->100%) ([`0a8806b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a8806bef9757f30a8fa66555babbc7a3426c7ba))
