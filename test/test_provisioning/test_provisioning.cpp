@@ -60,6 +60,27 @@ void test_capacity_bound()
     TEST_ASSERT_EQUAL_STRING("abc", v); // 3 chars + null
 }
 
+void test_form_field_null_guards()
+{
+    // Any null argument (or zero cap) fails closed and leaves a writable out empty.
+    char v[8] = "x";
+    TEST_ASSERT_FALSE(detws_prov_form_field(nullptr, "ssid", v, sizeof(v)));
+    TEST_ASSERT_EQUAL_STRING("", v);
+    TEST_ASSERT_FALSE(detws_prov_form_field("ssid=x", nullptr, v, sizeof(v)));
+    TEST_ASSERT_FALSE(detws_prov_form_field("ssid=x", "ssid", nullptr, sizeof(v)));
+    TEST_ASSERT_FALSE(detws_prov_form_field("ssid=x", "ssid", v, 0));
+}
+
+void test_host_provisioning_stubs()
+{
+    // On host there is no NVS/WiFi: load reports no stored creds and clears the buffers; clear no-ops.
+    char ssid[8] = "x", psk[8] = "y";
+    TEST_ASSERT_FALSE(detws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)));
+    TEST_ASSERT_EQUAL_STRING("", ssid);
+    TEST_ASSERT_EQUAL_STRING("", psk);
+    detws_provisioning_clear(); // no-op, must not crash
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -68,5 +89,7 @@ int main()
     RUN_TEST(test_missing_field);
     RUN_TEST(test_no_substring_match);
     RUN_TEST(test_capacity_bound);
+    RUN_TEST(test_form_field_null_guards);
+    RUN_TEST(test_host_provisioning_stubs);
     return UNITY_END();
 }
