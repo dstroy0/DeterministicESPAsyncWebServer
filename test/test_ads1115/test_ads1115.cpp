@@ -45,11 +45,30 @@ void test_raw_to_uv()
     TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, ADS1115_GAIN_TWOTHIRDS));
 }
 
+void test_raw_to_uv_gain_clamp()
+{
+    // An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the
+    // FSR table.
+    TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));
+}
+
+void test_host_i2c_stubs_fail_closed()
+{
+    // On a host build there is no I2C: begin and both reads fail closed (false).
+    TEST_ASSERT_FALSE(ads1115_begin(0x48));
+    int16_t raw = 0;
+    TEST_ASSERT_FALSE(ads1115_read_raw(0, ADS1115_GAIN_2, &raw));
+    int32_t uv = 0;
+    TEST_ASSERT_FALSE(ads1115_read_uv(0, ADS1115_GAIN_2, &uv));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_config_word);
     RUN_TEST(test_config_fallbacks);
     RUN_TEST(test_raw_to_uv);
+    RUN_TEST(test_raw_to_uv_gain_clamp);
+    RUN_TEST(test_host_i2c_stubs_fail_closed);
     return UNITY_END();
 }
