@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 05:44:17
+**Generated:** 2026-07-09 06:32:10
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2633 passed - 203s
+**Result:** ✅ 2643 passed - 215s
 
 ---
 
@@ -79,10 +79,10 @@
 | `test_flow_export`       | `native_flow_export`    |     6 |   ✅   | 00:00:00.598 |
 | `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.609 |
 | `test_preempt_queue`     | `native_preempt_queue`  |    11 |   ✅   | 00:00:00.634 |
-| `test_dma`               | `native_dma`            |    11 |   ✅   | 00:00:00.717 |
+| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:01.091 |
 | `test_forward`           | `native_forward`        |    16 |   ✅   | 00:00:01.073 |
 | `test_gateway`           | `native_gateway`        |    11 |   ✅   | 00:00:00.730 |
-| `test_lora`              | `native_lora`           |    13 |   ✅   | 00:00:00.616 |
+| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.785 |
 | `test_nrf24`             | `native_nrf24`          |    10 |   ✅   | 00:00:00.688 |
 | `test_enocean`           | `native_enocean`        |     9 |   ✅   | 00:00:00.592 |
 | `test_pn532`             | `native_pn532`          |    10 |   ✅   | 00:00:00.670 |
@@ -112,7 +112,7 @@
 | `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.632 |
 | `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.629 |
 | `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.578 |
-| `test_totp`              | `native_totp`           |     4 |   ✅   | 00:00:00.619 |
+| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.785 |
 | `test_webhook`           | `native_webhook`        |     5 |   ✅   | 00:00:00.605 |
 | `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.568 |
 | `test_dns_resolver`      | `native_dns_resolver`   |     4 |   ✅   | 00:00:00.620 |
@@ -132,7 +132,7 @@
 | `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.601 |
 | `test_rtc`               | `native_rtc`            |     8 |   ✅   | 00:00:00.586 |
 | `test_ld2410`            | `native_ld2410`         |     7 |   ✅   | 00:00:00.679 |
-| `test_mpr121`            | `native_mpr121`         |     5 |   ✅   | 00:00:00.606 |
+| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.764 |
 | `test_sht3x`             | `native_sht3x`          |     5 |   ✅   | 00:00:00.634 |
 | `test_pca9685`           | `native_pca9685`        |     4 |   ✅   | 00:00:00.620 |
 | `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:03.095 |
@@ -159,7 +159,7 @@
 | `test_config_store`      | `native_config_store`   |    14 |   ✅   | 00:00:00.592 |
 | `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.607 |
 | `test_auth_lockout`      | `native_auth_lockout`   |    11 |   ✅   | 00:00:00.658 |
-| `test_csrf`              | `native_csrf`           |     9 |   ✅   | 00:00:00.633 |
+| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:10.876 |
 | `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.594 |
 | `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.608 |
 | `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.574 |
@@ -175,11 +175,11 @@
 | `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.592 |
 | `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.621 |
 | `test_dshot`             | `native_dshot`          |     7 |   ✅   | 00:00:00.643 |
-| `test_hart`              | `native_hart`           |     6 |   ✅   | 00:00:00.586 |
+| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.739 |
 | `test_nts`               | `native_nts`            |     4 |   ✅   | 00:00:00.589 |
 | `test_dds`               | `native_dds`            |     4 |   ✅   | 00:00:00.585 |
 | `test_xmpp`              | `native_xmpp`           |     6 |   ✅   | 00:00:00.602 |
-| `test_rawl2`             | `native_rawl2`          |     4 |   ✅   | 00:00:00.585 |
+| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.751 |
 | `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.571 |
 | `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.583 |
 | `test_mtconnect`         | `native_mtconnect`      |     4 |   ✅   | 00:00:00.644 |
@@ -196,7 +196,7 @@
 | `test_powerlink`         | `native_powerlink`      |     3 |   ✅   | 00:00:00.861 |
 | `test_sercos`            | `native_sercos`         |     3 |   ✅   | 00:00:00.604 |
 | `test_profibus`          | `native_profibus`       |     4 |   ✅   | 00:00:00.597 |
-| `test_lonworks`          | `native_lonworks`       |     4 |   ✅   | 00:00:00.602 |
+| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.752 |
 | `test_mbplus`            | `native_mbplus`         |     5 |   ✅   | 00:00:00.719 |
 | `test_interbus`          | `native_interbus`       |     4 |   ✅   | 00:00:00.596 |
 | `test_iccp`              | `native_iccp`           |     4 |   ✅   | 00:00:00.606 |
@@ -209,10 +209,10 @@
 | `test_http_delivery`     | `native_http_delivery`  |     6 |   ✅   | 00:00:00.627 |
 | `test_hw_health`         | `native_hw_health`      |     5 |   ✅   | 00:00:00.613 |
 | `test_mdns_adaptive`     | `native_mdns_adaptive`  |     4 |   ✅   | 00:00:00.623 |
-| `test_sockpool`          | `native_sockpool`       |     5 |   ✅   | 00:00:00.661 |
+| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.764 |
 | `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.592 |
 | `test_happy_eyeballs`    | `native_happy_eyeballs` |     4 |   ✅   | 00:00:00.628 |
-| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     5 |   ✅   | 00:00:00.576 |
+| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.750 |
 | `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.733 |
 | `test_cc1101`            | `native_cc1101`         |    10 |   ✅   | 00:00:00.600 |
 | `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.581 |
@@ -2453,7 +2453,7 @@ _Unit tests for the preempting work queue (services/preempt_queue) host core: th
 
 ---
 
-## test_dma - native_dma - ✅ 11 passed
+## test_dma - native_dma - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2473,6 +2473,7 @@ _Unit tests for the DMA ingest / egress simulator (services/dma) host core: an i
 |   9 | `test_feed_fail_closed_when_full`      |   ✅   | Feed fail closed when full      |
 |  10 | `test_closed_channel_is_inert`         |   ✅   | Closed channel is inert         |
 |  11 | `test_two_channels_independent`        |   ✅   | Two channels independent        |
+|  12 | `test_channel_guard_subconditions`     |   ✅   | Channel guard subconditions     |
 
 </details>
 
@@ -2533,7 +2534,7 @@ _Unit tests for the radio / wireless gateway bridge (services/gateway): an uplin
 
 ---
 
-## test_lora - native_lora - ✅ 13 passed
+## test_lora - native_lora - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2555,6 +2556,7 @@ _Unit tests for the LoRa codec + SX127x driver (services/lora). The codec (Radio
 |  11 | `test_recv_no_packet`                          |   ✅   | Recv no packet                          |
 |  12 | `test_recv_crc_error_dropped`                  |   ✅   | Recv crc error dropped                  |
 |  13 | `test_recv_truncates_to_cap`                   |   ✅   | Recv truncates to cap                   |
+|  14 | `test_frame_parse_build_guards`                |   ✅   | Frame parse build guards                |
 
 </details>
 
@@ -3220,19 +3222,20 @@ _Unit tests for the OTA rollback decision (services/ota_rollback). The esp_ota_
 
 ---
 
-## test_totp - native_totp - ✅ 4 passed
+## test_totp - native_totp - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for TOTP (services/totp): the RFC 6238 Appendix B test vectors_
 
-|   # | Test                          | Status | Description                                           |
-| --: | :---------------------------- | :----: | :---------------------------------------------------- |
-|   1 | `test_rfc6238_vectors`        |   ✅   | RFC 6238 Appendix B (SHA-1, T0=0, step=30, digits=8). |
-|   2 | `test_verify_window`          |   ✅   | Verify window                                         |
-|   3 | `test_base32_decode`          |   ✅   | Base32 decode                                         |
-|   4 | `test_base32_rejects_invalid` |   ✅   | Base32 rejects invalid                                |
+|   # | Test                                      | Status | Description                                           |
+| --: | :---------------------------------------- | :----: | :---------------------------------------------------- |
+|   1 | `test_rfc6238_vectors`                    |   ✅   | RFC 6238 Appendix B (SHA-1, T0=0, step=30, digits=8). |
+|   2 | `test_verify_window`                      |   ✅   | Verify window                                         |
+|   3 | `test_base32_decode`                      |   ✅   | Base32 decode                                         |
+|   4 | `test_base32_rejects_invalid`             |   ✅   | Base32 rejects invalid                                |
+|   5 | `test_long_key_default_period_and_base32` |   ✅   | Long key default period and base32                    |
 
 </details>
 
@@ -3749,7 +3752,7 @@ _Unit tests for the LD2410 mmWave radar codec (services/ld2410): decoding a basi
 
 ---
 
-## test_mpr121 - native_mpr121 - ✅ 5 passed
+## test_mpr121 - native_mpr121 - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3763,6 +3766,7 @@ _Unit tests for the MPR121 capacitive-touch codec (services/mpr121): decoding th
 |   3 | `test_word10`                      |   ✅   | Word10                                                                                   |
 |   4 | `test_build_init_bytes`            |   ✅   | Build init bytes                                                                         |
 |   5 | `test_build_init_guards`           |   ✅   | one electrode: 26 fixed + 4 threshold + 8 tail = 38 bytes; ECR enables 1 electrode.      |
+|   6 | `test_host_i2c_stubs`              |   ✅   | Host build: no I2C bus. begin() fails, register reads return 0.                          |
 
 </details>
 
@@ -4462,7 +4466,7 @@ _Unit tests for the per-peer brute-force auth lockout (services/auth_lockout)._
 
 ---
 
-## test_csrf - native_csrf - ✅ 9 passed
+## test_csrf - native_csrf - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4480,6 +4484,7 @@ _Unit tests for the stateless HMAC-signed CSRF token (services/csrf). A fixed_
 |   7 | `test_no_secret_fails_closed`        |   ✅   | No secret fails closed        |
 |   8 | `test_issue_unique`                  |   ✅   | Issue unique                  |
 |   9 | `test_issue_rejects_small_buffer`    |   ✅   | Issue rejects small buffer    |
+|  10 | `test_reset_and_verify_guards`       |   ✅   | Reset and verify guards       |
 
 </details>
 
@@ -4835,7 +4840,7 @@ _Host tests for services/dshot: the DShot ESC throttle frame codec (hand-compute
 
 ---
 
-## test_hart - native_hart - ✅ 6 passed
+## test_hart - native_hart - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4850,6 +4855,7 @@ _Host tests for services/hart: the HART command frame + HART-IP header codec._
 |   4 | `test_build_long_address`               |   ✅   | Build long address                                                        |
 |   5 | `test_parse_roundtrip_and_bad_checksum` |   ✅   | Parse roundtrip and bad checksum                                          |
 |   6 | `test_hartip_header`                    |   ✅   | Hartip header                                                             |
+|   7 | `test_build_and_parse_guards`           |   ✅   | Build and parse guards                                                    |
 
 </details>
 
@@ -4911,19 +4917,20 @@ _Host tests for services/xmpp: the XMPP stanza builder + minimal reader._
 
 ---
 
-## test_rawl2 - native_rawl2 - ✅ 4 passed
+## test_rawl2 - native_rawl2 - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/rawl2: the Ethernet II / 802.1Q frame codec + the FCS._
 
-|   # | Test                     | Status | Description                                                        |
-| --: | :----------------------- | :----: | :----------------------------------------------------------------- |
-|   1 | `test_build_ethernet_ii` |   ✅   | Build ethernet ii                                                  |
-|   2 | `test_build_vlan`        |   ✅   | pcp 3, dei 0, vid 100 -> TCI 0x6064; PROFINET ethertype.           |
-|   3 | `test_parse`             |   ✅   | Parse                                                              |
-|   4 | `test_fcs_check_vector`  |   ✅   | The canonical CRC-32 check value: CRC of "123456789" = 0xCBF43926. |
+|   # | Test                          | Status | Description                                                        |
+| --: | :---------------------------- | :----: | :----------------------------------------------------------------- |
+|   1 | `test_build_ethernet_ii`      |   ✅   | Build ethernet ii                                                  |
+|   2 | `test_build_vlan`             |   ✅   | pcp 3, dei 0, vid 100 -> TCI 0x6064; PROFINET ethertype.           |
+|   3 | `test_parse`                  |   ✅   | Parse                                                              |
+|   4 | `test_fcs_check_vector`       |   ✅   | The canonical CRC-32 check value: CRC of "123456789" = 0xCBF43926. |
+|   5 | `test_eth_build_parse_guards` |   ✅   | Eth build parse guards                                             |
 
 </details>
 
@@ -5228,7 +5235,7 @@ _Host tests for services/profibus: the PROFIBUS-DP FDL telegram codec._
 
 ---
 
-## test_lonworks - native_lonworks - ✅ 4 passed
+## test_lonworks - native_lonworks - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5241,6 +5248,7 @@ _Host tests for services/lonworks: the LonTalk NV PDU + SNVT scalar codec._
 |   2 | `test_nv_selector_masked_to_14_bits` |   ✅   | The top two bits of the selector byte are not part of the 14-bit value. |
 |   3 | `test_snvt_temp`                     |   ✅   | Snvt temp                                                               |
 |   4 | `test_snvt_switch`                   |   ✅   | Snvt switch                                                             |
+|   5 | `test_snvt_clamps_and_guards`        |   ✅   | Snvt clamps and guards                                                  |
 
 </details>
 
@@ -5474,20 +5482,21 @@ _Host tests for services/mdns_adaptive: RF-aware backoff, TTL refresher, auto-sl
 
 ---
 
-## test_sockpool - native_sockpool - ✅ 5 passed
+## test_sockpool - native_sockpool - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/sockpool: the LRU connection-slot recycling pool._
 
-|   # | Test                        | Status | Description                         |
-| --: | :-------------------------- | :----: | :---------------------------------- |
-|   1 | `test_acquire_free`         |   ✅   | Acquire free                        |
-|   2 | `test_lru_recycle`          |   ✅   | Fill: id 100@t10, 101@t20, 102@t30. |
-|   3 | `test_touch_changes_lru`    |   ✅   | Touch changes lru                   |
-|   4 | `test_release_reopens_free` |   ✅   | Release reopens free                |
-|   5 | `test_empty_pool_fails`     |   ✅   | Empty pool fails                    |
+|   # | Test                            | Status | Description                         |
+| --: | :------------------------------ | :----: | :---------------------------------- |
+|   1 | `test_acquire_free`             |   ✅   | Acquire free                        |
+|   2 | `test_lru_recycle`              |   ✅   | Fill: id 100@t10, 101@t20, 102@t30. |
+|   3 | `test_touch_changes_lru`        |   ✅   | Touch changes lru                   |
+|   4 | `test_release_reopens_free`     |   ✅   | Release reopens free                |
+|   5 | `test_empty_pool_fails`         |   ✅   | Empty pool fails                    |
+|   6 | `test_null_guard_subconditions` |   ✅   | Null guard subconditions            |
 
 </details>
 
@@ -5530,20 +5539,21 @@ _Host tests for services/happy_eyeballs: RFC 6724 ordering + RFC 8305 family int
 
 ---
 
-## test_wifi_sniffer - native_wifi_sniffer - ✅ 5 passed
+## test_wifi_sniffer - native_wifi_sniffer - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/wifi_sniffer: 802.11 header decode, traffic tally, roaming decision._
 
-|   # | Test                    | Status | Description                                                          |
-| --: | :---------------------- | :----: | :------------------------------------------------------------------- |
-|   1 | `test_parse_data`       |   ✅   | Parse data                                                           |
-|   2 | `test_parse_beacon`     |   ✅   | Parse beacon                                                         |
-|   3 | `test_parse_ctrl_short` |   ✅   | Parse ctrl short                                                     |
-|   4 | `test_stats`            |   ✅   | Stats                                                                |
-|   5 | `test_roam`             |   ✅   | Current -80 dBm, candidate -70 dBm, 8 dB hysteresis: 10 > 8 -> roam. |
+|   # | Test                                   | Status | Description                                                          |
+| --: | :------------------------------------- | :----: | :------------------------------------------------------------------- |
+|   1 | `test_parse_data`                      |   ✅   | Parse data                                                           |
+|   2 | `test_parse_beacon`                    |   ✅   | Parse beacon                                                         |
+|   3 | `test_parse_ctrl_short`                |   ✅   | Parse ctrl short                                                     |
+|   4 | `test_stats`                           |   ✅   | Stats                                                                |
+|   5 | `test_roam`                            |   ✅   | Current -80 dBm, candidate -70 dBm, 8 dB hysteresis: 10 > 8 -> roam. |
+|   6 | `test_stats_add_null_and_default_type` |   ✅   | Stats add null and default type                                      |
 
 </details>
 
