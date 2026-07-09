@@ -200,9 +200,132 @@ void test_cert_verify_sign_roundtrip()
     TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, content, clen, out + 8));
 }
 
+// Assemble a minimal TLS 1.3 ClientHello wrapping the given extensions block.
+static size_t build_ch(uint8_t *msg, const uint8_t *exts, size_t exts_len)
+{
+    uint8_t body[600];
+    size_t b = 0;
+    body[b++] = 0x03;
+    body[b++] = 0x03; // legacy_version
+    for (int j = 0; j < 32; j++)
+        body[b++] = 0; // random
+    body[b++] = 0;     // session_id length 0
+    body[b++] = 0x00;
+    body[b++] = 0x02;
+    body[b++] = 0x13;
+    body[b++] = 0x01; // cipher_suites (one)
+    body[b++] = 0x01;
+    body[b++] = 0x00; // compression_methods (null)
+    body[b++] = (uint8_t)(exts_len >> 8);
+    body[b++] = (uint8_t)exts_len;
+    memcpy(body + b, exts, exts_len);
+    b += exts_len;
+    size_t m = 0;
+    msg[m++] = TLS_HS_CLIENT_HELLO;
+    msg[m++] = (uint8_t)(b >> 16);
+    msg[m++] = (uint8_t)(b >> 8);
+    msg[m++] = (uint8_t)b;
+    memcpy(msg + m, body, b);
+    return m + b;
+}
+
+// A malformed extension body is skipped without failing the overall parse (the guard just returns).
+void test_tls13_malformed_extensions()
+{
+    struct EC
+    {
+        uint8_t ext[8];
+        size_t elen;
+    };
+    static const EC cases[] = {
+        {{0x00, 0x0a, 0x00, 0x01, 0x00}, 5},                   // supported_groups body < 2
+        {{0x00, 0x33, 0x00, 0x03, 0x00, 0xFF, 0x00}, 7},       // key_share list len > body
+        {{0x00, 0x10, 0x00, 0x03, 0x00, 0xFF, 0x00}, 7},       // ALPN list len > body
+        {{0x00, 0x10, 0x00, 0x04, 0x00, 0x02, 0x05, 0x68}, 8}, // ALPN name len > end
+        {{0x00, 0x00, 0x00, 0x01, 0x00}, 5},                   // server_name body < 2
+        {{0x00, 0x00, 0x00, 0x03, 0x00, 0xFF, 0x00}, 7},       // server_name list len > body
+        {{0x00, 0x00, 0x00, 0x02, 0x00, 0x00}, 6},             // server_name too short for an entry
+    };
+    uint8_t msg[128];
+    Tls13ClientHello ch;
+    for (size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
+    {
+        size_t n = build_ch(msg, cases[k].ext, cases[k].elen);
+        TEST_ASSERT_TRUE(tls13_parse_client_hello(msg, n, &ch)); // malformed ext skipped, not fatal
+    }
+}
+
+// ClientHello framing guards: bad type, unreadable/oversized lengths, truncated fields.
+void test_tls13_parse_guards()
+{
+    Tls13ClientHello ch;
+    uint8_t bad_type[4] = {0x02, 0, 0, 0};
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(bad_type, sizeof(bad_type), &ch)); // wrong hs type
+    uint8_t short_hdr[2] = {TLS_HS_CLIENT_HELLO, 0x00};
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(short_hdr, sizeof(short_hdr), &ch)); // r_u24 body len
+    uint8_t big_body[4] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0xFF};
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(big_body, sizeof(big_body), &ch)); // body len > msg
+    uint8_t no_ver[5] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x01, 0x03};
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(no_ver, sizeof(no_ver), &ch)); // r_u16 legacy_version
+
+    // session id length > 32: body_len 35 = version(2)+random(32)+sid_len(1).
+    uint8_t sid_big[39] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
+    sid_big[38] = 33;
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_big, sizeof(sid_big), &ch)); // sid_len > 32
+
+    // session id length 32 but the bytes are not present (r_take fails).
+    uint8_t sid_trunc[39] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
+    sid_trunc[38] = 32;
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_trunc, sizeof(sid_trunc), &ch)); // sid r_take
+
+    // A valid-through-extensions base, then corrupt one internal length field each.
+    uint8_t base[64];
+    size_t bn = build_ch(base, nullptr, 0);
+    uint8_t v[64];
+    memcpy(v, base, bn);
+    v[40] = 3; // cipher_suites length odd
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+    memcpy(v, base, bn);
+    v[43] = 255; // compression_methods length overruns
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+    memcpy(v, base, bn);
+    v[45] = 0xFF;
+    v[46] = 0xFF; // extensions_length overruns
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
+
+    // ext_total unreadable: message ends exactly after compression_methods.
+    uint8_t no_ext[44] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x28, 0x03, 0x03};
+    no_ext[38] = 0x00; // sid len 0
+    no_ext[39] = 0x00;
+    no_ext[40] = 0x02;
+    no_ext[41] = 0x13;
+    no_ext[42] = 0x01; // cipher_suites
+    no_ext[43] = 0x00; // comp_len 0 -> body ends here, no ext_total
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(no_ext, sizeof(no_ext), &ch));
+
+    // An extension whose declared length runs past the buffer.
+    uint8_t bad_ext[4] = {0x00, 0x0a, 0x00, 0xFF}; // ext len 255, no body
+    uint8_t msg[64];
+    size_t mn = build_ch(msg, bad_ext, sizeof(bad_ext));
+    TEST_ASSERT_FALSE(tls13_parse_client_hello(msg, mn, &ch));
+}
+
+// Builder capacity guards: a buffer too small for a w_bytes copy, and cert_verify_content overflow.
+void test_tls13_builder_cap_guards()
+{
+    uint8_t out[16];
+    uint8_t r32[32] = {0}, pub[32] = {0};
+    TEST_ASSERT_EQUAL_UINT(0, tls13_build_server_hello(out, 10, r32, nullptr, 0, pub)); // w_bytes(random) overruns
+    uint8_t thash[32] = {0};
+    TEST_ASSERT_EQUAL_UINT(0, tls13_cert_verify_content(out, 10, thash, true)); // total > cap
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_tls13_malformed_extensions);
+    RUN_TEST(test_tls13_parse_guards);
+    RUN_TEST(test_tls13_builder_cap_guards);
     RUN_TEST(test_parse_client_hello);
     RUN_TEST(test_build_server_hello);
     RUN_TEST(test_build_certificate);

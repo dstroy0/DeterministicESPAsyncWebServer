@@ -406,8 +406,11 @@ size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcrip
 {
     uint8_t content[64 + 33 + 1 + 32];
     size_t clen = tls13_cert_verify_content(content, sizeof(content), transcript_hash, true);
+    // GCOVR_EXCL_START  content[] is sized to the exact maximum (64 + ctx 33 + 1 + hash 32), so
+    // tls13_cert_verify_content always succeeds here; the guard cannot fire.
     if (!clen)
         return 0;
+    // GCOVR_EXCL_STOP
     uint8_t sig[SSH_ED25519_SIG_LEN];
     ssh_ed25519_sign(sig, content, clen, seed);
 
