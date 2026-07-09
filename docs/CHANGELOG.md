@@ -2,7 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.68.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.68.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ba309d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba309d9581b56d50ed27103f423e4ddee92c121c))
+
+### Changes
+
+- Bump version: 5.67.0 → 5.68.0 ([`58a8b62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58a8b62e849403ec5b7165d4564fb3f4dbda15e1))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e10e15c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e10e15cdf30c5818f533b856cb9386d3d0efdb29))
+
+### Features
+
+- log-structured hash key-value store on the WAL ([`e75bf9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e75bf9cc81b296512dfaefe3dc43be01f8ac6399))
+
+</details>
+
+## [5.67.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.67.0 - 2026-07-09</b></summary>
 
 ### CI / Build
 
