@@ -157,8 +157,8 @@ void handle_stream(QuicConn *qc, const QuicFrame *f)
         size_t skip = (size_t)(want - f->stream.offset);
         const uint8_t *nd = f->stream.data + skip;
         size_t nl = (size_t)(f->stream.length - skip);
-        if (nl > sizeof(st->rx))
-            nl = sizeof(st->rx);
+        if (nl > sizeof(st->rx)) // GCOVR_EXCL_LINE  one STREAM frame's length <= datagram (<=1350) < STREAM_RX(2048)
+            nl = sizeof(st->rx); // GCOVR_EXCL_LINE  so nl never exceeds the per-stream reassembly buffer
         // Deliver in place (we hand the callback the contiguous new bytes directly).
         st->rx_off += nl;
         if (f->stream.fin)
@@ -238,7 +238,7 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
 size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
 {
     if (len < 1)
-        return 0;
+        return 0; // GCOVR_EXCL_LINE  quic_conn_recv's loop only calls this with off<len, so len-off>=1
     bool is_long = quic_is_long_header(dg[0]);
 
     int level;

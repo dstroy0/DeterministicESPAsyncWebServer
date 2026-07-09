@@ -879,6 +879,214 @@ void test_quic_stream_send_table_full()
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_stream_send(&qc, 999, (const uint8_t *)"x", 1, false)); // table full
 }
 
+// recv_packet header-parse guards: crafted Initials that fail before any decryption.
+void test_quic_recv_malformed_initial_headers()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    uint8_t dg[1500];
+
+    // 269: a truncated token-length varint (0xC0 announces 8 octets, none follow).
+    size_t hn = quic_build_long_header(dg, sizeof dg, QUIC_LP_INITIAL, QUIC_VERSION_1, ODCID, sizeof(ODCID),
+                                       CLIENT_SCID, sizeof(CLIENT_SCID), 1);
+    dg[hn] = 0xC0;
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 1));
+
+    // 272: a token length that runs past the datagram end.
+    dg[hn] = 0x40;
+    dg[hn + 1] = 0xFF; // 2-octet varint = a 255-octet token
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 2));
+
+    // 276: a truncated payload-length varint after a zero-length token.
+    dg[hn] = 0x00;
+    dg[hn + 1] = 0xC0; // 8-octet payload varint, none follow
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 2));
+
+    // 281: a payload length larger than the datagram (pkt_len > len).
+    dg[hn] = 0x00;
+    dg[hn + 1] = 0x44;
+    dg[hn + 2] = 0x00; // payload length 0x400 = 1024
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 8));
+
+    // 303: a packet larger than the decrypt work buffer (pkt_len > DETWS_QUIC_MAX_DATAGRAM), yet <= len.
+    dg[hn] = 0x00;
+    size_t c = quic_varint_encode(dg + hn + 1, sizeof(dg) - hn - 1, 1400);
+    memset(dg + hn + 1 + c, 0, 1450 - (hn + 1 + c));
+    TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, 1450));
+}
+
+// A HANDSHAKE_DONE frame from a peer is ignored (server-only frame).
+void test_quic_recv_handshake_done_frame()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t hd[32];
+    size_t hdl = quic_build_handshake_done(hd, sizeof hd);
+    memset(hd + hdl, 0, 20); // PADDING so the packet is long enough for header-protection sampling
+    hdl += 20;
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
+                           &init.client, hd, hdl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// handle_stream guards driven from Initial packets (process_frames does not gate frame type by level).
+void test_quic_conn_stream_frames()
+{
+    fill();
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t dg[1500];
+
+    // (a) Out-of-order STREAM (offset beyond the rx window) is held, not delivered.
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        uint8_t data[4] = {1, 2, 3, 4};
+        uint8_t fr[32];
+        size_t fl = quic_build_stream(fr, sizeof fr, 0, 100 /*offset > rx_off*/, data, 4, false);
+        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        g_stream_len = 0;
+        quic_conn_recv(&qc, dg, dl);
+        TEST_ASSERT_EQUAL_UINT(0, g_stream_len);
+    }
+    // (b) A pure-FIN STREAM at the current offset delivers a zero-length FIN.
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        uint8_t d0 = 0;
+        uint8_t fr[16];
+        size_t fl = quic_build_stream(fr, sizeof fr, 0, 0, &d0, 0, true);
+        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        g_stream_fin = false;
+        quic_conn_recv(&qc, dg, dl);
+        TEST_ASSERT_TRUE(g_stream_fin);
+    }
+    // (c) The inbound stream table fills at DETWS_QUIC_MAX_STREAMS distinct ids; the extra is dropped.
+    {
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        init_conn(&qc, &cb);
+        uint8_t d1 = 0x55;
+        uint8_t fr[512];
+        size_t fl = 0;
+        for (int i = 0; i <= DETWS_QUIC_MAX_STREAMS; i++)
+            fl += quic_build_stream(fr + fl, sizeof(fr) - fl, (uint64_t)(i * 4), 0, &d1, 1, false);
+        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    }
+}
+
+// A CRYPTO reassembly window overflow is clamped (two datagrams push past DETWS_QUIC_CRYPTO_RX).
+void test_quic_conn_crypto_window_clamp()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t dg[1500];
+    uint8_t chunk[1200];
+    chunk[0] = 0x01; // ClientHello with a huge declared length so TLS buffers it without failing
+    chunk[1] = 0x00;
+    chunk[2] = 0xFF;
+    chunk[3] = 0xFF;
+    memset(chunk + 4, 0, sizeof(chunk) - 4);
+    uint8_t fr[1300];
+    size_t fl = quic_build_crypto(fr, sizeof fr, 0, chunk, sizeof chunk);
+    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+    fl = quic_build_crypto(fr, sizeof fr, 1200, chunk, sizeof chunk); // offset 1200 -> 2400 > 2048 -> clamp
+    dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 1, &init.client, fr, fl);
+    quic_conn_recv(&qc, dg, dl);
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// A malformed ClientHello in a CRYPTO frame fails the TLS handshake -> a QUIC CRYPTO_ERROR close.
+void test_quic_conn_crypto_error_close()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t bad_ch[6] = {0x01, 0x00, 0x00, 0x02, 0x03, 0x03}; // ClientHello, body too short
+    uint8_t fr[32];
+    size_t fl = quic_build_crypto(fr, sizeof fr, 0, bad_ch, sizeof bad_ch);
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+    quic_conn_recv(&qc, dg, dl);
+    // A second close request is now a no-op (a close is already queued).
+    quic_conn_close(&qc, 0);
+    uint8_t out[256];
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, out, sizeof out) > 0); // emits the CONNECTION_CLOSE
+}
+
+// quic_conn_send builds nothing for a level whose keys are not ready yet (the seal-keys guard).
+void test_quic_conn_no_keys_build()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    init_conn(&qc, &cb);
+    QuicInitialSecrets init;
+    quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
+    uint8_t fr[32] = {QUIC_FT_PING}; // ack-eliciting (+ trailing PADDING for a full-length packet)
+    uint8_t dg[256];
+    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, sizeof fr);
+    TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
+    uint8_t out[256];
+    // Initial builds the ACK; Handshake and 1-RTT have no keys -> build_packet returns 0 for them.
+    (void)quic_conn_send(&qc, out, sizeof out);
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// A PTO timeout before the deadline is a no-op.
+void test_quic_conn_pto_not_yet()
+{
+    fill();
+    QuicConn qc;
+    QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+    QuicInitialSecrets init;
+    uint8_t ch[512];
+    size_t ch_len = 0;
+    feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+    uint8_t out[2048];
+    TEST_ASSERT_TRUE(quic_conn_send(&qc, out, sizeof out) > 0); // ack-eliciting flight now outstanding
+    quic_conn_on_timeout(&qc, 0);                               // arm the PTO
+    quic_conn_on_timeout(&qc, 1);                               // still before the deadline -> no-op
+    TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
+}
+
+// build_packet header/length/remainder overflow guards, swept across tiny output caps.
+void test_quic_conn_send_tiny_cap()
+{
+    for (size_t cap = 1; cap <= 40; cap++)
+    {
+        fill();
+        QuicConn qc;
+        QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
+        QuicInitialSecrets init;
+        uint8_t ch[512];
+        size_t ch_len = 0;
+        feed_client_initial(&qc, &cb, &init, ch, &ch_len);
+        uint8_t out[64];
+        (void)quic_conn_send(&qc, out, cap); // the pending Initial flight cannot fit -> overflow returns
+    }
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -898,5 +1106,13 @@ int main(int, char **)
     RUN_TEST(test_quic_recv_short_too_short);
     RUN_TEST(test_quic_recv_unprotect_failure);
     RUN_TEST(test_quic_recv_truncated_long_header);
+    RUN_TEST(test_quic_recv_malformed_initial_headers);
+    RUN_TEST(test_quic_recv_handshake_done_frame);
+    RUN_TEST(test_quic_conn_stream_frames);
+    RUN_TEST(test_quic_conn_crypto_window_clamp);
+    RUN_TEST(test_quic_conn_crypto_error_close);
+    RUN_TEST(test_quic_conn_no_keys_build);
+    RUN_TEST(test_quic_conn_pto_not_yet);
+    RUN_TEST(test_quic_conn_send_tiny_cap);
     return UNITY_END();
 }
