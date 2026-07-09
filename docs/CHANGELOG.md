@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`4cae75b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cae75b1558819d7a4cbd30bc48520e7e8a590b4))
+- update CHANGELOG.md [skip ci] ([`2fe7f30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fe7f30984e9bb5765150740a8e82759d45d3a25))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c165acf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c165acf17815c1f593b3d14dba40f961de27cf6b))
+- update ESP32 build footprints [skip ci] ([`0827980`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0827980e9d31e77af5f26cf42b7e35a93d2132a5))
+
+### Features
+
+- SQLite3 on-disk file-format reader (parsing foundation) ([`b20de39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b20de39781d9d5a1eae9d1f1b300059316262601))
+
 ## [5.68.0] - 2026-07-09
 
 <details>
@@ -24,23 +40,6 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - log-structured hash key-value store on the WAL ([`e75bf9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e75bf9cc81b296512dfaefe3dc43be01f8ac6399))
 
 </details>
-
-## [5.67.0] - 2026-07-09
-
-<details>
-<summary><b>Show Changelog for version 5.67.0 - 2026-07-09</b></summary>
-
-### CI / Build
-
-- update CHANGELOG.md [skip ci] ([`ba309d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba309d9581b56d50ed27103f423e4ddee92c121c))
-
-### Documentation
-
-- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e10e15c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e10e15cdf30c5818f533b856cb9386d3d0efdb29))
-
-### Features
-
-- log-structured hash key-value store on the WAL ([`e75bf9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e75bf9cc81b296512dfaefe3dc43be01f8ac6399))
 
 ## [5.67.0] - 2026-07-09
 
