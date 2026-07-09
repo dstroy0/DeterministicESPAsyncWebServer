@@ -1234,6 +1234,68 @@ static void test_pkt_etm_bad_length(void)
     ssh_keymat_wipe(0);
 }
 
+static void etm_recv_setup(SshKeyMat *km, uint8_t *key, uint8_t *iv)
+{
+    ssh_keymat_wipe(0);
+    km->cipher_mode = SSH_CIPHER_AES256CTR;
+    km->mac_mode = SSH_MAC_HMAC_SHA256_ETM;
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i + 1);
+    for (int i = 0; i < 16; i++)
+        iv[i] = (uint8_t)(0x80 + i);
+    for (int i = 0; i < 64; i++)
+        km->mac_key_c2s[i] = (uint8_t)(i * 5 + 3);
+    km->active = true;
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+}
+
+// Forge an aes256-ctr encrypt-then-MAC wire packet at a given seq with a chosen padding byte, with a
+// valid HMAC over (seq || length || ciphertext). Leaves c2s_ctx reset so recv decrypts from the start.
+static size_t forge_etm(SshKeyMat *km, const uint8_t *key, const uint8_t *iv, uint32_t seq, uint32_t pkt_len,
+                        uint8_t pad_byte, uint8_t *out)
+{
+    out[0] = (uint8_t)(pkt_len >> 24);
+    out[1] = (uint8_t)(pkt_len >> 16);
+    out[2] = (uint8_t)(pkt_len >> 8);
+    out[3] = (uint8_t)pkt_len;
+    uint8_t body[256];
+    memset(body, 0, pkt_len);
+    body[0] = pad_byte;
+    if (pkt_len >= 2)
+        body[1] = SSH_MSG_IGNORE;
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    ssh_aes256ctr_crypt(&km->c2s_ctx, body, body, pkt_len);
+    memcpy(out + 4, body, pkt_len);
+    uint8_t seq_be[4] = {(uint8_t)(seq >> 24), (uint8_t)(seq >> 16), (uint8_t)(seq >> 8), (uint8_t)seq};
+    SshHmacCtx hctx;
+    ssh_hmac_sha256_init(&hctx, km->mac_key_c2s, 32);
+    ssh_hmac_sha256_update(&hctx, seq_be, 4);
+    ssh_hmac_sha256_update(&hctx, out, 4 + pkt_len);
+    ssh_hmac_sha256_final(&hctx, out + 4 + pkt_len);
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv); // reset the receive cipher to the packet boundary
+    return 4 + pkt_len + SSH_HMAC_SHA256_LEN;
+}
+
+// aes256-ctr ETM: a MAC-valid packet whose decrypted padding_length is too small, or that arrives at
+// the sequence close threshold, is rejected.
+static void test_pkt_etm_forged_rejects(void)
+{
+    SshKeyMat *km = &ssh_keys[0];
+    uint8_t key[32], iv[16], wire[256];
+
+    etm_recv_setup(km, key, iv); // padding_length 2 -> below the minimum of 4
+    size_t wlen = forge_etm(km, key, iv, 0, 16, 2, wire);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    etm_recv_setup(km, key, iv); // MAC verifies, then the sequence-overflow guard closes the connection
+    ssh_pkt[0].seq_no_recv = SSH_SEQ_CLOSE_THRESHOLD;
+    wlen = forge_etm(km, key, iv, SSH_SEQ_CLOSE_THRESHOLD, 16, 4, wire);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    ssh_keymat_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1302,6 +1364,7 @@ int main(void)
     RUN_TEST(test_pkt_etm_padding_and_incomplete);
     RUN_TEST(test_pkt_chacha_forged_rejects);
     RUN_TEST(test_pkt_etm_bad_length);
+    RUN_TEST(test_pkt_etm_forged_rejects);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
 
