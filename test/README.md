@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2644 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2649 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -801,7 +801,7 @@ A thorough directory of all **2644 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (64 tests)</b></summary>
+<summary><b>test_application (66 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
@@ -1183,6 +1183,23 @@ A thorough directory of all **2644 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(out, "HTTP/1.1 200 OK"))</code>
       * <code>Assert not null (strstr(out, "Content-Type: text/css"))</code>
       * <code>Assert not null (strstr(out, "body{color:red}"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_wildcard_and_route_full</b> &mdash; <i>Serve static wildcard and route full</i></summary>
+
+    * **Objective**: Serve static wildcard and route full
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "HTTP/1.1 200 OK"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_header_cookie_guards</b> &mdash; <i>Response header cookie guards</i></summary>
+
+    * **Objective**: Response header cookie guards
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "X-Ok: 1"))</code>
+      * <code>Assert null (strstr(out, "toobig"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2937,7 +2954,18 @@ A thorough directory of all **2644 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_chunked (12 tests)</b></summary>
+<summary><b>test_chunked (13 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chunked_backpressure_resumes_across_polls</b> &mdash; <i>Chunked backpressure resumes across polls</i></summary>
+
+    * **Objective**: Chunked backpressure resumes across polls
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "Transfer-Encoding: chunked\\r\\n"))</code>
+      * <code>Assert null (strstr(r, "hello"))</code>
+      * <code>Assert null (strstr(r, "0\\r\\n\\r\\n"))</code>
+      * <code>Assert not null (strstr(r, "5\\r\\nhello\\r\\n5\\r\\nworld\\r\\n0\\r\\n\\r\\n"))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_headers_announce_chunked_no_content_length</b> &mdash; <i>Headers announce chunked no content length</i></summary>
@@ -12001,7 +12029,17 @@ A thorough directory of all **2644 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_keepalive (10 tests)</b></summary>
+<summary><b>test_keepalive (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_conn_token_ws_and_bare_keepalive</b> &mdash; <i>Conn token ws and bare keepalive</i></summary>
+
+    * **Objective**: Conn token ws and bare keepalive
+    * **Assertions**:
+      * <code>Assert not null (strstr(tcp_captured(), "Connection: close"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
+      * <code>Assert equal (CONN_ACTIVE, conn_pool[1].state)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_http11_default_keeps_alive</b> &mdash; <i>Slot recycled, not freed.</i></summary>
@@ -20501,7 +20539,19 @@ A thorough directory of all **2644 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_range (13 tests)</b></summary>
+<summary><b>test_range (14 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_file_send_backpressure_resumes_across_polls</b> &mdash; <i>File send backpressure resumes across polls</i></summary>
+
+    * **Objective**: File send backpressure resumes across polls
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "200 OK"))</code>
+      * <code>Assert not null (strstr(r, "Content-Length: 20"))</code>
+      * <code>Assert equal uint (0, body_len())</code>
+      * <code>Assert equal uint (20, body_len())</code>
+      * <code>Assert equal memory (FILE_DATA, body_ptr(), 20)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_no_range_full_200</b> &mdash; <i>No range full 200</i></summary>
