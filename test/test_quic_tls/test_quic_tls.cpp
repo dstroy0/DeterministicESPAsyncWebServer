@@ -400,6 +400,135 @@ void test_reject_malformed_client_hello()
     TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
 }
 
+// Drive a fresh server to QTLS_WAIT_FINISHED with a well-formed ClientHello.
+static void drive_to_wait_finished(QuicTls *qt, QuicTlsConfig *cfg)
+{
+    fill_test_material();
+    make_server_config(cfg);
+    quic_tls_server_init(qt, cfg);
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    quic_tls_recv_crypto(qt, QUIC_ENC_INITIAL, ch, ch_len);
+}
+
+// Drive a fresh server through a ClientHello with the given config; return the resulting state.
+static uint8_t run_handshake(const QuicTlsConfig *cfg)
+{
+    QuicTls qt;
+    quic_tls_server_init(&qt, cfg);
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    return qt.state;
+}
+
+// A certificate sized so the Certificate message fits the flight buffer but the following
+// CertificateVerify (then, separately, the Finished) does not - exercising each later emit()
+// overflow guard. Sizes are measured at runtime so this stays correct if a buffer/builder changes.
+void test_quic_tls_cert_size_boundary_emit_fails()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+
+    QuicTls dummy;
+    const size_t buf = sizeof(dummy.flight_hs);
+    uint8_t scratch[4096];
+    uint8_t tp_enc[512];
+    size_t tp_len = quic_tp_encode(&cfg.params, tp_enc, sizeof(tp_enc));
+    size_t ee = tls13_build_encrypted_extensions(scratch, sizeof(scratch), tp_enc, tp_len);
+    size_t cert_overhead = tls13_build_certificate(scratch, sizeof(scratch), CERT, 0); // fixed part only
+    uint8_t z[32] = {0};
+    size_t cv = tls13_build_cert_verify(scratch, sizeof(scratch), z, cfg.ed25519_seed);
+    size_t fin = tls13_build_finished(scratch, sizeof(scratch), z);
+    TEST_ASSERT_TRUE(ee > 0 && cert_overhead > 0 && cv > 4 && fin > 4);
+
+    static uint8_t big_cert[4096];
+    memset(big_cert, 0x30, sizeof(big_cert));
+    cfg.cert_der = big_cert;
+
+    // (a) Certificate fits but leaves fewer than cv bytes -> CertificateVerify emit fails.
+    size_t leave_a = 8; // 0 < leave_a < cv
+    TEST_ASSERT_TRUE(buf > ee + cert_overhead + leave_a);
+    cfg.cert_len = buf - ee - cert_overhead - leave_a;
+    TEST_ASSERT_TRUE(cfg.cert_len < sizeof(big_cert));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));
+
+    // (b) Certificate + CertificateVerify fit but leave fewer than fin bytes -> Finished emit fails.
+    size_t leave_b = cv + (fin - 4); // CertVerify fits; the fin-4 left is too small for Finished
+    TEST_ASSERT_TRUE(buf > ee + cert_overhead + leave_b);
+    cfg.cert_len = buf - ee - cert_overhead - leave_b;
+    TEST_ASSERT_TRUE(cfg.cert_len < sizeof(big_cert));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));
+}
+
+void test_quic_tls_more_guards()
+{
+    QuicTlsConfig cfg;
+    QuicTls qt;
+
+    // A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished.
+    drive_to_wait_finished(&qt, &cfg);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+    uint8_t fin_badlen[8] = {TLS_HS_FINISHED, 0x00, 0x00, 0x04, 1, 2, 3, 4}; // 4-byte verify, not 32
+    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, fin_badlen, sizeof(fin_badlen));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
+
+    // A non-Finished message while awaiting the client Finished -> UNEXPECTED_MESSAGE.
+    drive_to_wait_finished(&qt, &cfg);
+    uint8_t wrong[36] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x20};
+    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, wrong, sizeof(wrong));
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message
+
+    // recv_crypto on a FAILED handshake drains (returns the whole length, changes nothing).
+    uint8_t more[4] = {0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT(sizeof(more), quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, more, sizeof(more)));
+
+    // flight() for a level that is neither Initial nor Handshake -> nullptr / zero length.
+    size_t l = 123;
+    TEST_ASSERT_NULL(quic_tls_flight(&qt, QUIC_ENC_APP, &l));
+    TEST_ASSERT_EQUAL_UINT(0, l);
+
+    // keys() before the handshake has derived them -> nullptr (both levels + an unknown level).
+    QuicTls fresh;
+    quic_tls_server_init(&fresh, &cfg);
+    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QUIC_ENC_APP, false));
+    TEST_ASSERT_NULL(quic_tls_keys(&fresh, 999, true));
+
+    // An oversized certificate overruns the handshake flight buffer, so the emit() flight-bound guard
+    // fails the handshake with INTERNAL_ERROR (cert_der/cert_len are caller-supplied and unbounded).
+    fill_test_material();
+    make_server_config(&cfg);
+    cfg.cert_len = 100000; // far larger than DETWS_H3_CRYPTO_BUF; the Certificate builder returns 0
+    quic_tls_server_init(&qt, &cfg);
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    uint8_t ctp_enc[64];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    uint8_t ch[512];
+    size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
+    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -414,5 +543,7 @@ int main(int, char **)
     RUN_TEST(test_reject_no_transport_params);
     RUN_TEST(test_reject_bad_transport_params);
     RUN_TEST(test_reject_malformed_client_hello);
+    RUN_TEST(test_quic_tls_more_guards);
+    RUN_TEST(test_quic_tls_cert_size_boundary_emit_fails);
     return UNITY_END();
 }

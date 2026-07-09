@@ -107,7 +107,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
                                         ch.session_id_len, server_pub);
     qt->flight_initial_len = 0;
     if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
-        return false;
+        return false; // GCOVR_EXCL_LINE  ServerHello (<=~160B: 32B session_id cap + key share) always fits
+                      // flight_initial[256]
 
     // Handshake keys from Transcript-Hash(ClientHello..ServerHello).
     uint8_t hash[32];
@@ -126,7 +127,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     n = tls13_build_encrypted_extensions(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
                                          tp_enc, tp_len);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
-        return false;
+        return false; // GCOVR_EXCL_LINE  EncryptedExtensions (tp <= tp_enc[512]) always fits flight_hs[2048]
 
     n = tls13_build_certificate(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len,
                                 qt->cfg.cert_der, qt->cfg.cert_len);
