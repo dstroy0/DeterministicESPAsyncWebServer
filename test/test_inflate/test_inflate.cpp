@@ -48,6 +48,17 @@ static const uint8_t k_pmd_repeat_in[] = {114, 116, 114, 118, 196, 64, 0, 0};
 static const uint8_t k_pmd_repeat_out[] = {65, 66, 67, 65, 66, 67, 65, 66, 67, 65, 66,
                                            67, 65, 66, 67, 65, 66, 67, 65, 66, 67};
 
+// Malformed DEFLATE bit-streams (scratchpad/gen_inflate_bad.py): each drives a distinct
+// error guard in the fixed/dynamic block decoders. All must be rejected as MALFORMED.
+static const uint8_t k_bad_lencode_286[] = {115, 28, 3};             // fixed block emits length symbol 286
+static const uint8_t k_bad_distcode_30[] = {115, 4, 62};             // distance symbol 30 (>= 30)
+static const uint8_t k_bad_dist_gt_out[] = {115, 4, 66};             // back-ref distance past start of output
+static const uint8_t k_trunc_len_extra[] = {115, 68, 2};             // length code needs extra bits, stream ends
+static const uint8_t k_trunc_dist_extra[] = {115, 4, 18};            // distance code needs extra bits, stream ends
+static const uint8_t k_stored_len_over[] = {1, 10, 0, 245, 255, 65}; // stored LEN exceeds the input
+static const uint8_t k_dyn_hdr_trunc[] = {5};                        // dynamic header truncated mid HLIT/HDIST/HCLEN
+static const uint8_t k_dyn_hlit_big[] = {253, 0, 0};                 // HLIT too large (nlen 288 > 286)
+
 // ---------------------------------------------------------------------------
 
 static uint8_t g_scratch[INFLATE_SCRATCH_SIZE];
@@ -190,9 +201,29 @@ void test_inflate_error_paths()
                      INFLATE_OK);
 }
 
+// Each crafted malformed stream is rejected by the specific decoder guard it targets.
+void test_malformed_deflate_blocks()
+{
+    uint8_t out[64];
+    size_t out_len = 0;
+#define BAD(v)                                                                                                         \
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED,                                                                       \
+                          inflate_raw(v, sizeof(v), out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch)))
+    BAD(k_bad_lencode_286);
+    BAD(k_bad_distcode_30);
+    BAD(k_bad_dist_gt_out);
+    BAD(k_trunc_len_extra);
+    BAD(k_trunc_dist_extra);
+    BAD(k_stored_len_over);
+    BAD(k_dyn_hdr_trunc);
+    BAD(k_dyn_hlit_big);
+#undef BAD
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_malformed_deflate_blocks);
     RUN_TEST(test_fixed_huffman);
     RUN_TEST(test_back_references);
     RUN_TEST(test_stored_block);
