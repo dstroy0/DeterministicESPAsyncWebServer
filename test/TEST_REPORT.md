@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 10:53:43
+**Generated:** 2026-07-09 11:00:27
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2750 passed - 347s
+**Result:** ✅ 2753 passed - 366s
 
 ---
 
@@ -236,11 +236,11 @@
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:05.230 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
 | `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.285 |
-| `test_quic_conn`         | `native_quic_conn`      |    24 |   ✅   | 00:00:02.391 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:12.069 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.297 |
-| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.382 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.173 |
+| `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   | 00:00:02.469 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:31.082 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.249 |
+| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.320 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.176 |
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.833 |
 
 ---
@@ -6114,7 +6114,7 @@ _Unit tests for the TLS 1.3 server handshake state machine (network_drivers/pres
 
 ---
 
-## test_quic_conn - native_quic_conn - ✅ 24 passed
+## test_quic_conn - native_quic_conn - ✅ 27 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6147,6 +6147,9 @@ _Unit tests for the QUIC v1 server connection engine (network_drivers/presentati
 |  22 | `test_quic_conn_no_keys_build`             |   ✅   | Quic conn no keys build             |
 |  23 | `test_quic_conn_pto_not_yet`               |   ✅   | Quic conn pto not yet               |
 |  24 | `test_quic_conn_send_tiny_cap`             |   ✅   | Quic conn send tiny cap             |
+|  25 | `test_quic_conn_stream_nothing_to_send`    |   ✅   | Quic conn stream nothing to send    |
+|  26 | `test_quic_conn_short_header_tiny_cap`     |   ✅   | Quic conn short header tiny cap     |
+|  27 | `test_quic_conn_close_level_fallback`      |   ✅   | Quic conn close level fallback      |
 
 </details>
 
