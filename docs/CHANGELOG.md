@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- resolve two real SonarCloud smells at source ([`6dbb23b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6dbb23b751156987b6e946dc6a17300cc71fcce4))
 - group host-build test hooks into an owned DnsTestCtx ([`2e854c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e854c5ac29e9ac7d0df1a7469e24a301cd8a41a))
 - make merged coverage.xml always Sonar-parseable ([`0ab50d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ab50d767f751162479ed350b68058e046804100))
 - handle the bare 'native' core-engine env in the report merge + env selector ([`c69b1c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c69b1c9da94da26b1e2b8797bac7630db6f6aeee))
@@ -15,6 +16,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`ac5a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac5a6d62df621b0ada6ea17b1f80c43579917262))
+- update CHANGELOG.md [skip ci] ([`01e3bb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01e3bb96718e03c5738dccfc63e21893fc79d7e6))
 - update test report + coverage [skip ci] ([`f91568f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f91568ffc2f11f7f1d2ae4f7fce83a98d145f2d7))
 - update CHANGELOG.md [skip ci] ([`4d020a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d020a1105146aefbc2a2cea0a71086fb8122990))
 - update CHANGELOG.md [skip ci] ([`843f514`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/843f514a2fcc913060073fb6d0f75f415f0bc051))
@@ -292,6 +295,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`147eaff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/147eaff9777b386da595704af0c7d98c731539c4))
 - update ESP32 build footprints [skip ci] ([`8530ca6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8530ca63d648a39e37db446c847123e07b00f653))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7b45c60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b45c60f9569ff51076aff42e8c4887361150b96))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cdc17aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdc17aafb333db7ccc3048e9bb2ebb226953b7d0))
