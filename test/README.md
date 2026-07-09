@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2489 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2490 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -2021,7 +2021,7 @@ A thorough directory of all **2489 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_bus_capture (5 tests)</b></summary>
+<summary><b>test_bus_capture (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_standard_data_frame</b> &mdash; <i>can_id 0x00000123, big-endian, no flags.</i></summary>
@@ -2084,6 +2084,14 @@ A thorough directory of all **2489 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (DET_PCAP_GLOBAL_HDR_LEN, det_pcap_global_header(g, sizeof(g), DET_DLT_CAN_SOCKETCAN))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(227, g[20]); // DLT_CAN_SOCKETCAN</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_twai_stubs_fail_closed</b> &mdash; <i>On host there is no TWAI controller: begin fails closed and poll/end are safe no-ops.</i></summary>
+
+    * **Objective**: On host there is no TWAI controller: begin fails closed and poll/end are safe no-ops.
+    * **Assertions**:
+      * <code>Assert false (bus_capture_begin(5, 4, 500000, bus_sink_noop))</code>
   </details>
 
 </details>
