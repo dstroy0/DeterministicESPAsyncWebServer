@@ -453,6 +453,52 @@ void test_on_read_unknown_variant_rejected()
     TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn, cv, cs, 1)); // default arm -> err -> -1
 }
 
+// Build a minimal valid MSG response (header + security/sequence + TypeId + ResponseHeader) whose
+// service body starts with a single i32 - used to feed the array-count guards an out-of-range value.
+static size_t build_min_response(uint8_t *out, size_t cap, uint32_t type_id, int32_t count_field)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+    ua_w_u32(&w, 0); // SecureChannelId
+    ua_w_u32(&w, 0); // TokenId
+    ua_w_u32(&w, 0); // SequenceNumber
+    ua_w_u32(&w, 0); // RequestId
+    ua_w_nodeid_numeric(&w, 0, type_id);
+    ua_w_u64(&w, 0);                 // ResponseHeader.Timestamp
+    ua_w_u32(&w, 0);                 // RequestHandle
+    ua_w_u32(&w, OPCUA_STATUS_GOOD); // ServiceResult
+    ua_w_u8(&w, 0);                  // ServiceDiagnostics
+    ua_w_i32(&w, 0);                 // StringTable count = 0
+    ua_w_nodeid_numeric(&w, 0, 0);   // AdditionalHeader NodeId (null)
+    ua_w_u8(&w, 0);                  // AdditionalHeader ExtensionObject (no body)
+    ua_w_i32(&w, count_field);       // service body: Results/Endpoints count
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = (uint8_t)(w.n >> 16);
+    out[7] = (uint8_t)(w.n >> 24);
+    return w.ok ? w.n : 0;
+}
+
+void test_response_parsers_reject_negative_count()
+{
+    uint8_t resp[128];
+    OpcUaVariant v[1];
+    uint32_t s[1];
+    size_t n = build_min_response(resp, sizeof(resp), OPCUA_ID_READ_RESP, -1);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, n, v, s, 1));
+    uint32_t wr[1];
+    n = build_min_response(resp, sizeof(resp), OPCUA_ID_WRITE_RESP, -1);
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_write(resp, n, wr, 1));
+    OpcUaClientRef refs[1];
+    n = build_min_response(resp, sizeof(resp), OPCUA_ID_BROWSE_RESP, -1);
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_browse(resp, n, refs, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -472,5 +518,6 @@ int main()
     RUN_TEST(test_seq_and_request_id_increment);
     RUN_TEST(test_builder_overflow_guard);
     RUN_TEST(test_on_read_unknown_variant_rejected);
+    RUN_TEST(test_response_parsers_reject_negative_count);
     return UNITY_END();
 }
