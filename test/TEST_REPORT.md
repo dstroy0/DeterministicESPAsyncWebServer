@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 02:57:24
+**Generated:** 2026-07-09 03:01:52
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2620 passed - 211s
+**Result:** ✅ 2621 passed - 223s
 
 ---
 
@@ -44,24 +44,24 @@
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.677 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.169 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.898 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.458 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.668 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.654 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.581 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.648 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.648 |
-| `test_json`              | `native_app`            |    23 |   ✅   | 00:00:00.609 |
-| `test_response_headers`  | `native_app`            |    11 |   ✅   | 00:00:00.660 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.662 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.685 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.653 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.622 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.658 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.658 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.680 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.650 |
-| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.660 |
-| `test_application`       | `native_app`            |    59 |   ✅   | 00:00:00.794 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:12.494 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.698 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.714 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.628 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.694 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.687 |
+| `test_json`              | `native_app`            |    23 |   ✅   | 00:00:00.654 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.702 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.705 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.743 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.703 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.652 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.705 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.711 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.722 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.726 |
+| `test_chunked`           | `native_app`            |    12 |   ✅   | 00:00:00.719 |
+| `test_application`       | `native_app`            |    59 |   ✅   | 00:00:00.927 |
 | `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.489 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.427 |
 | `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.764 |
@@ -1589,26 +1589,27 @@ _Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the_
 
 ---
 
-## test_response_headers - native_app - ✅ 11 passed
+## test_response_headers - native_app - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for custom response headers and cookies:_
 
-|   # | Test                                       | Status | Description                              |
-| --: | :----------------------------------------- | :----: | :--------------------------------------- |
-|   1 | `test_date_header_emitted_when_time_set`   |   ✅   | Date header emitted when time set        |
-|   2 | `test_date_header_omitted_when_clockless`  |   ✅   | Date header omitted when clockless       |
-|   3 | `test_single_custom_header_present`        |   ✅   | Single custom header present             |
-|   4 | `test_multiple_custom_headers_present`     |   ✅   | Multiple custom headers present          |
-|   5 | `test_set_cookie_basic`                    |   ✅   | Set cookie basic                         |
-|   6 | `test_set_cookie_with_attrs`               |   ✅   | Set cookie with attrs                    |
-|   7 | `test_custom_header_on_send_empty`         |   ✅   | Custom header on send empty              |
-|   8 | `test_custom_header_on_redirect`           |   ✅   | Custom header on redirect                |
-|   9 | `test_headers_do_not_leak_across_requests` |   ✅   | First request queues X-Custom on slot 0. |
-|  10 | `test_clear_response_headers`              |   ✅   | Clear response headers                   |
-|  11 | `test_oversized_header_dropped_whole`      |   ✅   | Oversized header dropped whole           |
+|   # | Test                                       | Status | Description                                                                                  |
+| --: | :----------------------------------------- | :----: | :------------------------------------------------------------------------------------------- |
+|   1 | `test_ntp_host_seam_accessors`             |   ✅   | Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch. |
+|   2 | `test_date_header_emitted_when_time_set`   |   ✅   | Date header emitted when time set                                                            |
+|   3 | `test_date_header_omitted_when_clockless`  |   ✅   | Date header omitted when clockless                                                           |
+|   4 | `test_single_custom_header_present`        |   ✅   | Single custom header present                                                                 |
+|   5 | `test_multiple_custom_headers_present`     |   ✅   | Multiple custom headers present                                                              |
+|   6 | `test_set_cookie_basic`                    |   ✅   | Set cookie basic                                                                             |
+|   7 | `test_set_cookie_with_attrs`               |   ✅   | Set cookie with attrs                                                                        |
+|   8 | `test_custom_header_on_send_empty`         |   ✅   | Custom header on send empty                                                                  |
+|   9 | `test_custom_header_on_redirect`           |   ✅   | Custom header on redirect                                                                    |
+|  10 | `test_headers_do_not_leak_across_requests` |   ✅   | First request queues X-Custom on slot 0.                                                     |
+|  11 | `test_clear_response_headers`              |   ✅   | Clear response headers                                                                       |
+|  12 | `test_oversized_header_dropped_whole`      |   ✅   | Oversized header dropped whole                                                               |
 
 </details>
 
