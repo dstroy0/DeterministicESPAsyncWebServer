@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`2a047f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a047f3dd1b9240cb9f9c24480408c1cb8c00334))
 - fix Sonar coverage-xml parse failure from rebase conflicts ([`816d9aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/816d9aaa1c384e3b26ecad2b655733ae0e4c9dad))
 - update test report + coverage [skip ci] ([`3a14857`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a14857a42abaa975cb8c89b7b45daeb06768c86))
 - update CHANGELOG.md [skip ci] ([`04e3530`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04e353071fdf04ffc3bea7299bb4b832b53e6e55))
@@ -370,6 +371,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover GETBULK, malformed-message guards + UDP handler (92->97%) ([`5f300fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f300fd21ed3a289dd3629a49523816f955aeb1a))
 - deep branch coverage for wisun (->100%) + webdav (->95%) ([`7c69e67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c69e6711250101e3faf43f1c5da55ac44aa8710))
 - cover build/parse fail-closed guards across 10 more services ([`e5b7c61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5b7c616e7b9e079d13f6be97be82d50731f63e0))
 - cover host stubs, build/parse guards + edges across 10 services ([`1f0bcce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f0bcce657106be9b10c6fd7edcec8bcfb0b9d82))
