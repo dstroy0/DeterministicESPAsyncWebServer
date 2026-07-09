@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 14:15:00
+**Generated:** 2026-07-09 14:36:01
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2790 passed - 429s
+**Result:** ✅ 2791 passed - 441s
 
 ---
 
@@ -205,7 +205,7 @@
 | `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.753 |
 | `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.759 |
 | `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.762 |
-| `test_exc_decoder`       | `native_exc_decoder`    |     6 |   ✅   | 00:00:00.781 |
+| `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   | 00:00:12.290 |
 | `test_http_delivery`     | `native_http_delivery`  |     7 |   ✅   | 00:00:00.758 |
 | `test_hw_health`         | `native_hw_health`      |     6 |   ✅   | 00:00:00.768 |
 | `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.759 |
@@ -5525,7 +5525,7 @@ _Host tests for services/southbound: the driver registry + name-dispatched read/
 
 ---
 
-## test_exc_decoder - native_exc_decoder - ✅ 6 passed
+## test_exc_decoder - native_exc_decoder - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5534,12 +5534,13 @@ _Host tests for services/exc_decoder: parsing a real ESP32 Guru Meditation panic
 
 |   # | Test                                            | Status | Description                                                                                   |
 | --: | :---------------------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
-|   1 | `test_parse_full`                               |   ✅   | Parse full                                                                                    |
-|   2 | `test_json`                                     |   ✅   | Json                                                                                          |
-|   3 | `test_backtrace_only_and_corrupted`             |   ✅   | No register dump: PC must fall back to the first backtrace frame. Trailing corruption marker. |
-|   4 | `test_garbage_returns_false`                    |   ✅   | Garbage returns false                                                                         |
-|   5 | `test_json_omits_core_when_absent_and_overflow` |   ✅   | Json omits core when absent and overflow                                                      |
-|   6 | `test_upper_hex_and_json_overflow`              |   ✅   | Uppercase hex addresses exercise the A-F branch of the nibble parser.                         |
+|   1 | `test_exc_edge_guards`                          |   ✅   | Exc edge guards                                                                               |
+|   2 | `test_parse_full`                               |   ✅   | Parse full                                                                                    |
+|   3 | `test_json`                                     |   ✅   | Json                                                                                          |
+|   4 | `test_backtrace_only_and_corrupted`             |   ✅   | No register dump: PC must fall back to the first backtrace frame. Trailing corruption marker. |
+|   5 | `test_garbage_returns_false`                    |   ✅   | Garbage returns false                                                                         |
+|   6 | `test_json_omits_core_when_absent_and_overflow` |   ✅   | Json omits core when absent and overflow                                                      |
+|   7 | `test_upper_hex_and_json_overflow`              |   ✅   | Uppercase hex addresses exercise the A-F branch of the nibble parser.                         |
 
 </details>
 
