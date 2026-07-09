@@ -14,6 +14,7 @@
 
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
@@ -1164,6 +1165,75 @@ static void test_pkt_etm_padding_and_incomplete(void)
     ssh_keymat_wipe(0);
 }
 
+// Forge a chacha20-poly1305 wire packet (valid Poly1305 tag) with a chosen packet_length + padding
+// byte at a given sequence number - drives the decrypted-field guards the loopback cannot reach.
+static size_t forge_chacha(SshKeyMat *km, uint32_t seq, uint32_t pkt_len, uint8_t pad_byte, uint8_t *out)
+{
+    memset(out, 0, 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN);
+    out[0] = (uint8_t)(pkt_len >> 24);
+    out[1] = (uint8_t)(pkt_len >> 16);
+    out[2] = (uint8_t)(pkt_len >> 8);
+    out[3] = (uint8_t)pkt_len;
+    if (pkt_len >= 1)
+        out[4] = pad_byte;
+    if (pkt_len >= 2)
+        out[5] = SSH_MSG_IGNORE;
+    ssh_chachapoly_encrypt(km->chacha_key_c2s, seq, out, out, pkt_len);
+    return 4 + pkt_len + SSH_CHACHAPOLY_TAG_LEN;
+}
+
+static void chacha_recv_setup(SshKeyMat *km)
+{
+    ssh_keymat_wipe(0);
+    km->cipher_mode = SSH_CIPHER_CHACHA20POLY1305;
+    for (int i = 0; i < SSH_CHACHAPOLY_KEY_LEN; i++)
+        km->chacha_key_c2s[i] = km->chacha_key_s2c[i] = (uint8_t)(i * 3 + 1);
+    km->active = true;
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+}
+
+// A chacha packet that decrypts cleanly but carries a bad packet_length / padding_length, or arrives
+// at the sequence close threshold, is rejected.
+static void test_pkt_chacha_forged_rejects(void)
+{
+    SshKeyMat *km = &ssh_keys[0];
+    uint8_t wire[128];
+
+    chacha_recv_setup(km); // packet_length 0 -> below the minimum
+    size_t wlen = forge_chacha(km, 0, 0, 0, wire);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    chacha_recv_setup(km); // padding_length 2 -> below the RFC 4253 minimum of 4
+    wlen = forge_chacha(km, 0, 8, 2, wire);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    chacha_recv_setup(km); // decrypts, then the sequence-overflow guard closes the connection
+    ssh_pkt[0].seq_no_recv = SSH_SEQ_CLOSE_THRESHOLD;
+    wlen = forge_chacha(km, SSH_SEQ_CLOSE_THRESHOLD, 8, 4, wire);
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    ssh_keymat_wipe(0);
+}
+
+// aes256-ctr ETM: the 4-byte packet_length is in the clear, so a length that is not a whole number of
+// AES blocks is rejected before any decryption.
+static void test_pkt_etm_bad_length(void)
+{
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_AES256CTR;
+    km->mac_mode = SSH_MAC_HMAC_SHA256_ETM;
+    uint8_t key[32] = {0}, iv[16] = {0};
+    ssh_aes256ctr_init(&km->c2s_ctx, key, iv);
+    km->active = true;
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_in = true;
+    uint8_t wire[8] = {0, 0, 0, 17, 1, 2, 3, 4}; // pkt_len 17 is not a multiple of 16
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, sizeof(wire), pkt_handler));
+    ssh_keymat_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1230,6 +1300,8 @@ int main(void)
     RUN_TEST(test_pkt_encrypted_two_packets);
     RUN_TEST(test_pkt_chacha_padding_and_incomplete);
     RUN_TEST(test_pkt_etm_padding_and_incomplete);
+    RUN_TEST(test_pkt_chacha_forged_rejects);
+    RUN_TEST(test_pkt_etm_bad_length);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
 
