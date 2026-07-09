@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 14:50:11
+**Generated:** 2026-07-09 14:56:48
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2794 passed - 444s
+**Result:** ✅ 2795 passed - 463s
 
 ---
 
@@ -234,7 +234,7 @@
 | `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.912 |
 | `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.832 |
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:05.230 |
-| `test_tls13_msg`         | `native_tls13_msg`      |    10 |   ✅   | 00:00:00.914 |
+| `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:19.787 |
 | `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.285 |
 | `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   | 00:00:02.469 |
 | `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:31.082 |
@@ -6104,25 +6104,26 @@ _Unit tests for the QUIC transport-parameters codec (network_drivers/presentatio
 
 ---
 
-## test_tls13_msg - native_tls13_msg - ✅ 10 passed
+## test_tls13_msg - native_tls13_msg - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the TLS 1.3 handshake messages (network_drivers/presentation/http3/tls13_msg;_
 
-|   # | Test                              | Status | Description                                                                                     |
-| --: | :-------------------------------- | :----: | :---------------------------------------------------------------------------------------------- |
-|   1 | `test_tls13_malformed_extensions` |   ✅   | Tls13 malformed extensions                                                                      |
-|   2 | `test_tls13_parse_guards`         |   ✅   | Tls13 parse guards                                                                              |
-|   3 | `test_tls13_builder_cap_guards`   |   ✅   | Tls13 builder cap guards                                                                        |
-|   4 | `test_parse_client_hello`         |   ✅   | Parse client hello                                                                              |
-|   5 | `test_build_server_hello`         |   ✅   | Build server hello                                                                              |
-|   6 | `test_build_certificate`          |   ✅   | Reconstruct the DER cert from the expected message: strip the 11-byte prefix and 2-byte suffix. |
-|   7 | `test_build_finished`             |   ✅   | Build finished                                                                                  |
-|   8 | `test_encrypted_extensions`       |   ✅   | Encrypted extensions                                                                            |
-|   9 | `test_cert_verify_content`        |   ✅   | Cert verify content                                                                             |
-|  10 | `test_cert_verify_sign_roundtrip` |   ✅   | Cert verify sign roundtrip                                                                      |
+|   # | Test                                           | Status | Description                                                                                     |
+| --: | :--------------------------------------------- | :----: | :---------------------------------------------------------------------------------------------- |
+|   1 | `test_tls13_extension_and_truncation_coverage` |   ✅   | Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.              |
+|   2 | `test_tls13_malformed_extensions`              |   ✅   | Tls13 malformed extensions                                                                      |
+|   3 | `test_tls13_parse_guards`                      |   ✅   | Tls13 parse guards                                                                              |
+|   4 | `test_tls13_builder_cap_guards`                |   ✅   | Tls13 builder cap guards                                                                        |
+|   5 | `test_parse_client_hello`                      |   ✅   | Parse client hello                                                                              |
+|   6 | `test_build_server_hello`                      |   ✅   | Build server hello                                                                              |
+|   7 | `test_build_certificate`                       |   ✅   | Reconstruct the DER cert from the expected message: strip the 11-byte prefix and 2-byte suffix. |
+|   8 | `test_build_finished`                          |   ✅   | Build finished                                                                                  |
+|   9 | `test_encrypted_extensions`                    |   ✅   | Encrypted extensions                                                                            |
+|  10 | `test_cert_verify_content`                     |   ✅   | Cert verify content                                                                             |
+|  11 | `test_cert_verify_sign_roundtrip`              |   ✅   | Cert verify sign roundtrip                                                                      |
 
 </details>
 
