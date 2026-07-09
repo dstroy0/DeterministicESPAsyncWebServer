@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2594 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2595 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16009,7 +16009,7 @@ A thorough directory of all **2594 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (46 tests)</b></summary>
+<summary><b>test_opcua (47 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -16734,6 +16734,15 @@ A thorough directory of all **2594 test cases** across **228 suites**. Expand a 
     * **Objective**: Parse request header truncated addhdr
     * **Assertions**:
       * <code>Assert false (opcua_parse_write(buf, n, &wr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_open_truncated_frames</b> &mdash; <i>Parse open truncated frames</i></summary>
+
+    * **Objective**: Parse open truncated frames
+    * **Assertions**:
+      * <code>Assert false (opcua_parse_open(buf, n, &oc))</code>
+      * <code>Assert false (opcua_parse_open(buf, n, &oc))</code>
   </details>
 
 </details>
