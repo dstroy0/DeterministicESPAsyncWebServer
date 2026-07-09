@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2525 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2535 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -707,7 +707,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_amqp (7 tests)</b></summary>
+<summary><b>test_amqp (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_protocol_header</b> &mdash; <i>Protocol header</i></summary>
@@ -785,6 +785,17 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, amqp_build_method(small, sizeof(small), 1, 10, 10, args, sizeof(args)));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, amqp_protocol_header(small, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_and_parse_guards</b> &mdash; <i>Build and parse guards</i></summary>
+
+    * **Objective**: Build and parse guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(nullptr, sizeof(buf), 1, 0, payload, sizeof(payload))); // null buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(buf, sizeof(buf), 1, 0, nullptr, 4));                   // null payload</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, amqp_build_frame(buf, 4, 1, 0, payload, sizeof(payload)));               // cap &lt; total</code>
+      * <code>Assert false (amqp_parse_frame(tiny, sizeof(tiny), &fr, &consumed))</code>
   </details>
 
 </details>
@@ -2730,7 +2741,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cc1101 (10 tests)</b></summary>
+<summary><b>test_cc1101 (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_init_configures_and_detects</b> &mdash; <i>Init configures and detects</i></summary>
@@ -2829,6 +2840,18 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT16(-34, cc1101_rssi_dbm(0x50));  // 80/2-74</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-74, cc1101_rssi_dbm(0x00));  // 0/2-74</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-138, cc1101_rssi_dbm(0x80)); // (128-256)/2-74 = -64-74</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_guard_subconditions</b> &mdash; <i>Send guard subconditions</i></summary>
+
+    * **Objective**: Send guard subconditions
+    * **Assertions**:
+      * <code>Assert false (cc1101_send(nullptr, data, 8))</code>
+      * <code>Assert false (cc1101_send(&g_bus, nullptr, 8))</code>
+      * <code>Assert false (cc1101_send(&g_bus, data, 0))</code>
+      * <code>Assert false (cc1101_send(&g_bus, data, 64))</code>
+      * <code>Assert true (cc1101_send(&g_bus, data, 8))</code>
   </details>
 
 </details>
@@ -6966,7 +6989,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_flow_export (6 tests)</b></summary>
+<summary><b>test_flow_export (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v5_header_bytes</b> &mdash; <i>V5 header bytes</i></summary>
@@ -7040,6 +7063,15 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
     * **Objective**: Finish overflow fails closed
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v5_write_overflow</b> &mdash; <i>V5 write overflow</i></summary>
+
+    * **Objective**: V5 write overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_header(buf, sizeof(buf), &h));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, flow_v5_write_record(buf, sizeof(buf), &r));</code>
   </details>
 
 </details>
@@ -9230,7 +9262,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_http_delivery (6 tests)</b></summary>
+<summary><b>test_http_delivery (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_swr_decision</b> &mdash; <i>max-age=60, swr=30.</i></summary>
@@ -9314,6 +9346,20 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
       * <code>Assert equal string ("{\\"version\\":\\"v42\\",\\"precache\\":[\\"/\\",\\"/app.js\\",\\"/style.css\\"]}", buf)</code>
       * <code>Assert equal string ("{\\"version\\":\\"v1\\",\\"precache\\":[]}", buf)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_delivery_guards_and_escape</b> &mdash; <i>Delivery guards and escape</i></summary>
+
+    * **Objective**: Delivery guards and escape
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, buf, 0));               // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap</code>
+      * <code>Assert equal int (0, detws_delivery_range("garbage", 100, &start, &end))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "\\\\\\""))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -11013,7 +11059,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j2735 (9 tests)</b></summary>
+<summary><b>test_j2735 (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_cint_bits</b> &mdash; <i>Cint bits</i></summary>
@@ -11121,6 +11167,15 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>Assert false (out[1].is_ingress)</code>
       * <code>TEST_ASSERT_EQUAL_INT16(2047, out[1].node_x);</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-2048, out[1].node_y);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_uper_overflow_and_bsm_guard</b> &mdash; <i>Uper overflow and bsm guard</i></summary>
+
+    * **Objective**: Uper overflow and bsm guard
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -14159,7 +14214,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mtconnect (4 tests)</b></summary>
+<summary><b>test_mtconnect (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_streams_document</b> &mdash; <i>Properly closed.</i></summary>
@@ -14205,6 +14260,17 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
     * **Objective**: Overflow returns zero
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s)); // did not fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_escape_gt_quote_and_overflow</b> &mdash; <i>Stream overflow closes at end(); error document overflow fails closed.</i></summary>
+
+    * **Objective**: Stream overflow closes at end(); error document overflow fails closed.
+    * **Assertions**:
+      * <code>Assert not null (strstr(buf, "&gt;"))</code>
+      * <code>Assert not null (strstr(buf, "&quot;"))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));</code>
   </details>
 
 </details>
@@ -14938,7 +15004,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_nrf24 (10 tests)</b></summary>
+<summary><b>test_nrf24 (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_init_configures_and_powers_up</b> &mdash; <i>Init configures and powers up</i></summary>
@@ -15039,6 +15105,15 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (4, n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, pipe);</code>
       * <code>Assert equal memory (g.rx_payload, buf, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_data_rate_variants</b> &mdash; <i>Data rate variants</i></summary>
+
+    * **Objective**: Data rate variants
+    * **Assertions**:
+      * <code>Assert true (nrf24_init(&g_bus, &c))</code>
+      * <code>Assert true (nrf24_init(&g_bus, &c2))</code>
   </details>
 
 </details>
@@ -18119,7 +18194,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_promisc (8 tests)</b></summary>
+<summary><b>test_promisc (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_beacon_mgmt</b> &mdash; <i>Mgmt (type 0), Beacon (subtype 8): fc0 = (8<<4)\|(0<<2) = 0x80; no DS bits.</i></summary>
@@ -18228,6 +18303,15 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x11, r[3]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(100, r[8]);  // caplen</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(120, r[12]); // origlen</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_stubs_and_short_frame</b> &mdash; <i>Host stubs and short frame</i></summary>
+
+    * **Objective**: Host stubs and short frame
+    * **Assertions**:
+      * <code>Assert false (promisc_begin(6, nullptr))</code>
+      * <code>Assert false (wifi_frame_parse(too_short, sizeof(too_short), &info))</code>
   </details>
 
 </details>
@@ -25310,7 +25394,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_thread (13 tests)</b></summary>
+<summary><b>test_thread (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_x25_check_value</b> &mdash; <i>CRC-16/X-25 (poly 0x8408, init 0xFFFF, reflected, xorout 0xFFFF) of "123456789" = 0x906E.</i></summary>
@@ -25448,6 +25532,17 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_GET, cmd);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, prop);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, vlen);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spinel_guards</b> &mdash; <i>Spinel guards</i></summary>
+
+    * **Objective**: Spinel guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, spinel_pack_uint(0x12345, out, 0)); // zero cap</code>
+      * <code>Assert true (spinel_unpack_uint(trunc, sizeof(trunc), &v) &lt;= 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(pay, sizeof(pay), out, 2)); // overflow</code>
+      * <code>Assert equal int (-1, spinel_frame_decode(short_frame, sizeof(short_frame), fpay, sizeof(fpay), &fl))</code>
   </details>
 
 </details>
@@ -28693,7 +28788,7 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_zigbee (9 tests)</b></summary>
+<summary><b>test_zigbee (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_crc16_rst_kat</b> &mdash; <i>CRC-16/CCITT (poly 0x1021, init 0xFFFF) of {0xC0} is 0x38BC (the ASH RST frame CRC).</i></summary>
@@ -28779,6 +28874,15 @@ A thorough directory of all **2525 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, ash_frame_encode(0x00, data, 33, out, sizeof(out))); // &gt; MAX_DATA 32</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, ash_frame_encode(0x00, data, 8, small, sizeof(small))); // will not fit</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_decode_guards</b> &mdash; <i>Encode decode guards</i></summary>
+
+    * **Objective**: Encode decode guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, ash_frame_encode(0x00, payload, sizeof(payload), out, 2)); // overflow</code>
+      * <code>Assert equal int (-1, ash_frame_decode(short_raw, sizeof(short_raw), &control, pay, sizeof(pay), &pay_len))</code>
   </details>
 
 </details>
