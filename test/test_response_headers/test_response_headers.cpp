@@ -245,9 +245,36 @@ void test_date_header_omitted_when_clockless()
     TEST_ASSERT_NULL(strstr(tcp_captured(), "Date:"));
 }
 
+void test_ntp_host_seam_accessors()
+{
+    // Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch.
+    TEST_ASSERT_FALSE(detws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"));
+    detws_ntp_set_test_epoch(0);
+    TEST_ASSERT_FALSE(detws_ntp_synced());
+    TEST_ASSERT_EQUAL_INT(0, (long)detws_ntp_epoch());
+    detws_ntp_set_test_epoch(784111777);
+    TEST_ASSERT_TRUE(detws_ntp_synced());
+    TEST_ASSERT_EQUAL_INT(784111777, (long)detws_ntp_epoch());
+    // http_date guards: null out / zero cap both return 0 without writing.
+    char buf[40];
+    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(buf, 0));
+    // Valid IMF-fixdate for the injected epoch.
+    TEST_ASSERT_TRUE(detws_ntp_http_date(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:49:37 GMT", buf);
+    // A pathologically large epoch overflows the broken-down year, so gmtime_r fails and http_date
+    // fails closed (empty string, length 0). glibc returns EOVERFLOW here; the host test runs on glibc.
+    detws_ntp_set_test_epoch((time_t)100000000000000000LL);
+    buf[0] = 'x';
+    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_CHAR('\0', buf[0]);
+    detws_ntp_set_test_epoch(0); // restore the clockless default for the other tests
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_ntp_host_seam_accessors);
     RUN_TEST(test_date_header_emitted_when_time_set);
     RUN_TEST(test_date_header_omitted_when_clockless);
     RUN_TEST(test_single_custom_header_present);
