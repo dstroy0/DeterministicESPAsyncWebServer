@@ -22,6 +22,7 @@
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/session/scratch.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -1296,6 +1297,32 @@ static void test_pkt_etm_forged_rejects(void)
     ssh_keymat_wipe(0);
 }
 
+// A valid encrypted packet is discarded (connection closed) when the scratch arena has no room for
+// the decrypt buffer - both cipher paths fail closed.
+static void test_pkt_scratch_exhausted(void)
+{
+    SshKeyMat *km = &ssh_keys[0];
+    uint8_t wire[256];
+
+    chacha_recv_setup(km);
+    size_t wlen = forge_chacha(km, 0, 8, 4, wire); // a valid packet (pad 4)
+    scratch_reset();
+    while (scratch_alloc(8, 1))
+        ; // drain the arena so the recv decrypt-buffer alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    scratch_reset();
+
+    uint8_t key[32], iv[16];
+    etm_recv_setup(km, key, iv);
+    wlen = forge_etm(km, key, iv, 0, 16, 4, wire); // valid MAC + padding
+    scratch_reset();
+    while (scratch_alloc(8, 1))
+        ;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    scratch_reset();
+    ssh_keymat_wipe(0);
+}
+
 // ============================================================================
 // main
 // ============================================================================
@@ -1365,6 +1392,7 @@ int main(void)
     RUN_TEST(test_pkt_chacha_forged_rejects);
     RUN_TEST(test_pkt_etm_bad_length);
     RUN_TEST(test_pkt_etm_forged_rejects);
+    RUN_TEST(test_pkt_scratch_exhausted);
     RUN_TEST(test_ssh_kdf_canonical_mpint_k);
     RUN_TEST(test_ssh_kdf_extension_chain);
 
