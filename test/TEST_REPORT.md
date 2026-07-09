@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 11:17:21
+**Generated:** 2026-07-09 11:28:05
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2760 passed - 377s
+**Result:** ✅ 2762 passed - 395s
 
 ---
 
@@ -37,13 +37,13 @@
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.233 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.784 |
 | `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.760 |
-| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:04.365 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.728 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.086 |
-| `test_ssh_transport`     | `native_ssh`            |    35 |   ✅   | 00:00:01.819 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.723 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.240 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.945 |
+| `test_ssh_crypto`        | `native_ssh`            |    45 |   ✅   | 00:00:21.952 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.776 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.091 |
+| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:02.050 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.737 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.244 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:02.021 |
 | `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.537 |
 | `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.692 |
 | `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.694 |
@@ -153,7 +153,7 @@
 | `test_inflate`           | `native_inflate`        |    13 |   ✅   | 00:00:08.679 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.332 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.374 |
 | `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.366 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.824 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.838 |
@@ -1290,7 +1290,7 @@ _End-to-end SSH server dispatcher test: drives a full handshake_
 
 ---
 
-## test_ssh_transport - native_ssh - ✅ 35 passed
+## test_ssh_transport - native_ssh - ✅ 37 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1334,6 +1334,8 @@ _SSH transport handshake tests (RFC 4253): identification-string exchange and_
 |  33 | `test_rekey_due_volume_and_time`                           |   ✅   | Neither budget spent.                                                           |
 |  34 | `test_begin_rekey_preserves_session_and_auth`              |   ✅   | Begin rekey preserves session and auth                                          |
 |  35 | `test_kdf_edge_paths_and_slot_guards`                      |   ✅   | Kdf edge paths and slot guards                                                  |
+|  36 | `test_kexinit_parse_truncation_points`                     |   ✅   | Kexinit parse truncation points                                                 |
+|  37 | `test_ssh_transport_more_guards`                           |   ✅   | Ssh transport more guards                                                       |
 
 </details>
 
