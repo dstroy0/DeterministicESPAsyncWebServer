@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 06:47:07
+**Generated:** 2026-07-09 07:03:12
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2653 passed - 220s
+**Result:** ✅ 2662 passed - 231s
 
 ---
 
@@ -70,7 +70,7 @@
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.748 |
 | `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.991 |
 | `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.759 |
-| `test_webdav`            | `native_webdav`         |    19 |   ✅   | 00:00:00.615 |
+| `test_webdav`            | `native_webdav`         |    24 |   ✅   | 00:00:11.621 |
 | `test_modbus`            | `native_modbus`         |    22 |   ✅   | 00:00:00.601 |
 | `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.897 |
 | `test_redis_resp`        | `native_redis`          |    10 |   ✅   | 00:00:13.151 |
@@ -221,7 +221,7 @@
 | `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.584 |
 | `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.608 |
 | `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.631 |
-| `test_wisun`             | `native_wisun`          |     6 |   ✅   | 00:00:00.707 |
+| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.845 |
 | `test_logbuf`            | `native_logbuf`         |     4 |   ✅   | 00:00:00.612 |
 | `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:04.972 |
 | `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.709 |
@@ -2211,34 +2211,39 @@ _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
 ---
 
-## test_webdav - native_webdav - ✅ 19 passed
+## test_webdav - native_webdav - ✅ 24 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the WebDAV server core (services/webdav): method classification,_
 
-|   # | Test                                      | Status | Description                                                                |
-| --: | :---------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_method_classification`              |   ✅   | Method classification                                                      |
-|   2 | `test_depth_parsing`                      |   ✅   | Depth parsing                                                              |
-|   3 | `test_xml_escape`                         |   ✅   | Xml escape                                                                 |
-|   4 | `test_xml_escape_truncates_safely`        |   ✅   | Xml escape truncates safely                                                |
-|   5 | `test_dest_absolute_uri`                  |   ✅   | Dest absolute uri                                                          |
-|   6 | `test_dest_percent_decoded`               |   ✅   | Dest percent decoded                                                       |
-|   7 | `test_dest_abs_path`                      |   ✅   | Dest abs path                                                              |
-|   8 | `test_dest_rejects_malformed`             |   ✅   | Dest rejects malformed                                                     |
-|   9 | `test_multistatus_file_and_collection`    |   ✅   | Multistatus file and collection                                            |
-|  10 | `test_multistatus_escapes_href`           |   ✅   | Multistatus escapes href                                                   |
-|  11 | `test_multistatus_entry_stops_when_full`  |   ✅   | Multistatus entry stops when full                                          |
-|  12 | `test_proppatch_windows_timestamp`        |   ✅   | The PROPPATCH macOS Finder / Windows Explorer send after a PUT.            |
-|  13 | `test_proppatch_multiple_and_self_closed` |   ✅   | Proppatch multiple and self closed                                         |
-|  14 | `test_proppatch_remove_block`             |   ✅   | Proppatch remove block                                                     |
-|  15 | `test_proppatch_escapes_href`             |   ✅   | Proppatch escapes href                                                     |
-|  16 | `test_proppatch_empty_body_is_valid`      |   ✅   | Proppatch empty body is valid                                              |
-|  17 | `test_proppatch_rejects_injection`        |   ✅   | A property tag carrying a stray '<' must not be echoed (no XML injection). |
-|  18 | `test_proppatch_fuzz_bounded`             |   ✅   | Throw random and partial-XML bytes at the scanner: it must always stay in  |
-|  19 | `test_proppatch_stops_when_full`          |   ✅   | Proppatch stops when full                                                  |
+|   # | Test                                      | Status | Description                                                                  |
+| --: | :---------------------------------------- | :----: | :--------------------------------------------------------------------------- |
+|   1 | `test_method_classification`              |   ✅   | Method classification                                                        |
+|   2 | `test_depth_parsing`                      |   ✅   | Depth parsing                                                                |
+|   3 | `test_xml_escape`                         |   ✅   | Xml escape                                                                   |
+|   4 | `test_xml_escape_truncates_safely`        |   ✅   | Xml escape truncates safely                                                  |
+|   5 | `test_dest_absolute_uri`                  |   ✅   | Dest absolute uri                                                            |
+|   6 | `test_dest_percent_decoded`               |   ✅   | Dest percent decoded                                                         |
+|   7 | `test_dest_abs_path`                      |   ✅   | Dest abs path                                                                |
+|   8 | `test_dest_rejects_malformed`             |   ✅   | Dest rejects malformed                                                       |
+|   9 | `test_multistatus_file_and_collection`    |   ✅   | Multistatus file and collection                                              |
+|  10 | `test_multistatus_escapes_href`           |   ✅   | Multistatus escapes href                                                     |
+|  11 | `test_multistatus_entry_stops_when_full`  |   ✅   | Multistatus entry stops when full                                            |
+|  12 | `test_proppatch_windows_timestamp`        |   ✅   | The PROPPATCH macOS Finder / Windows Explorer send after a PUT.              |
+|  13 | `test_proppatch_multiple_and_self_closed` |   ✅   | Proppatch multiple and self closed                                           |
+|  14 | `test_proppatch_remove_block`             |   ✅   | Proppatch remove block                                                       |
+|  15 | `test_proppatch_escapes_href`             |   ✅   | Proppatch escapes href                                                       |
+|  16 | `test_proppatch_empty_body_is_valid`      |   ✅   | Proppatch empty body is valid                                                |
+|  17 | `test_proppatch_rejects_injection`        |   ✅   | A property tag carrying a stray '<' must not be echoed (no XML injection).   |
+|  18 | `test_proppatch_fuzz_bounded`             |   ✅   | Throw random and partial-XML bytes at the scanner: it must always stay in    |
+|  19 | `test_proppatch_stops_when_full`          |   ✅   | Proppatch stops when full                                                    |
+|  20 | `test_method_all_including_head`          |   ✅   | Method all including head                                                    |
+|  21 | `test_depth_and_dest_path_guards`         |   ✅   | Depth and dest path guards                                                   |
+|  22 | `test_ms_entry_content_type_overflow`     |   ✅   | Ms entry content type overflow                                               |
+|  23 | `test_ms_entry_mtime_and_tiny_buf`        |   ✅   | Ms entry mtime and tiny buf                                                  |
+|  24 | `test_proppatch_ms_echo`                  |   ✅   | A self-closed property with trailing whitespace exercises the open-tag trim. |
 
 </details>
 
@@ -5720,21 +5725,25 @@ _Host tests for services/tls_policy: version negotiation, cipher selection, AEAD
 
 ---
 
-## test_wisun - native_wisun - ✅ 6 passed
+## test_wisun - native_wisun - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/wisun: the CoAP client request builder (RFC 7252) + the FAN node registry._
 
-|   # | Test                                           | Status | Description                                                                   |
-| --: | :--------------------------------------------- | :----: | :---------------------------------------------------------------------------- |
-|   1 | `test_build_coap_get`                          |   ✅   | CON GET "sensors/temp", msg id 0x1234, no token.                              |
-|   2 | `test_build_coap_put_with_token_and_payload`   |   ✅   | Header: 0x52 (ver=01, type NON=01, tkl=0010), code 0x03 (PUT), mid 0x00 0x05. |
-|   3 | `test_build_coap_long_segment_extended_length` |   ✅   | A 13-char path segment forces the extended-length nibble (0xD).               |
-|   4 | `test_build_coap_rejects_bad_args`             |   ✅   | Build coap rejects bad args                                                   |
-|   5 | `test_node_registry`                           |   ✅   | Node registry                                                                 |
-|   6 | `test_registry_full_and_misses`                |   ✅   | Registry full and misses                                                      |
+|   # | Test                                           | Status | Description                                                                                   |
+| --: | :--------------------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
+|   1 | `test_build_coap_get`                          |   ✅   | CON GET "sensors/temp", msg id 0x1234, no token.                                              |
+|   2 | `test_build_coap_put_with_token_and_payload`   |   ✅   | Header: 0x52 (ver=01, type NON=01, tkl=0010), code 0x03 (PUT), mid 0x00 0x05.                 |
+|   3 | `test_build_coap_long_segment_extended_length` |   ✅   | A 13-char path segment forces the extended-length nibble (0xD).                               |
+|   4 | `test_build_coap_rejects_bad_args`             |   ✅   | Build coap rejects bad args                                                                   |
+|   5 | `test_node_registry`                           |   ✅   | Node registry                                                                                 |
+|   6 | `test_registry_full_and_misses`                |   ✅   | Registry full and misses                                                                      |
+|   7 | `test_coap_length_ext`                         |   ✅   | A Uri-Path segment >= 269 bytes drives the 2-byte length-extension encoding.                  |
+|   8 | `test_coap_overflow_and_emit_fail`             |   ✅   | Header fits (cap == 4) but no room for even the first option header -> emit fails -> build 0. |
+|   9 | `test_coap_arg_guards`                         |   ✅   | Coap arg guards                                                                               |
+|  10 | `test_wisun_null_guards`                       |   ✅   | Wisun null guards                                                                             |
 
 </details>
 
