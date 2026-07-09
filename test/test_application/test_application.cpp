@@ -1285,11 +1285,39 @@ void test_restart_and_stop()
     listener_stop_all();
 }
 
+// Every route-registration variant guards `_route_count >= MAX_ROUTES` and silently drops the route.
+// The plain on() path is covered elsewhere; this hits the iface / regex / auth / ws / sse variants.
+void test_route_registration_variants_table_full()
+{
+    DetWebServer srv;
+    for (int i = 0; i < MAX_ROUTES; i++)
+        srv.on("/x", HTTP_GET, record_handler);
+
+    srv.on("/i", HTTP_GET, record_handler, DETIFACE_STA); // on(..., iface)
+    srv.on_regex("/re.*", HTTP_GET, record_handler);
+#if DETWS_ENABLE_AUTH
+    srv.on("/a", HTTP_GET, record_handler, "realm", "u", "p", false);
+#endif
+#if DETWS_ENABLE_WEBSOCKET
+    srv.on_ws("/ws", nullptr, nullptr, nullptr);
+#endif
+#if DETWS_ENABLE_SSE
+    srv.on_sse("/sse", nullptr);
+#endif
+
+    // The dropped iface route does not dispatch: a request to it falls through (handler untouched).
+    arm_slot(0, "GET /i HTTP/1.1\r\n\r\n");
+    handler_called = false;
+    srv.handle();
+    TEST_ASSERT_FALSE(handler_called);
+}
+
 int main()
 {
     UNITY_BEGIN();
 
     RUN_TEST(test_restart_and_stop);
+    RUN_TEST(test_route_registration_variants_table_full);
 
     // Function I/O: handler API access
     RUN_TEST(test_handler_reads_body);
