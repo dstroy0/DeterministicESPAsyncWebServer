@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`735d3dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/735d3dc08f2f7a8b0c992728864fd3c38fac7f11))
+- update CHANGELOG.md [skip ci] ([`3de1dbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3de1dbde70180372c78e9f516e1eca08e72aada1))
 - update test report + coverage [skip ci] ([`a0b1a4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b1a4bf0273c9bd1477c335afe6a209015f1c56))
 - update CHANGELOG.md [skip ci] ([`5470f91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5470f91a8db1d0ece8c679b36e6f997720a48fdc))
 - update test report + coverage [skip ci] ([`fa40ba9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa40ba98d43824c6bbb71027d95f5980de49eb03))
@@ -147,6 +149,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`27a049b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27a049bf6bc16ae17a303dfb664f84c19231334e))
 - consolidate test docs into a generated test/README.md ([`3536ecb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3536ecb5fcb98d8af75cff1a5a4782bd8cf97a61))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6743496`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6743496ec32b32a2fc867b1c4627d6968de3d4f2))
 - update ESP32 build footprints [skip ci] ([`bc74a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc74a965a7e17b21c22c6d259a23d9fbf780ea47))
@@ -296,6 +299,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover worker_set_self + host lifecycle stubs + inline defer (50->100%) ([`a3e3b41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3e3b4112b9ccb8de80571fc76d6a46ceca4a550))
 - cover the host platform-hook stubs (50->100%) ([`7e6e63c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e6e63caac815f7cbe6ce9d9d37c711e6b23c7cb))
 - cover ATT/GATT codec build + parse guards (83->100%) ([`3ad6787`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ad6787ce04ab382e127bba84306b9b8f4d95466))
 - cover PSID/WSMP/1609.2 codec guards (71->100%) ([`8303915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83039157efa13c71f4ecc34a3d1c2ff55baee325))
