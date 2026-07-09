@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2496 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2497 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -790,7 +790,7 @@ A thorough directory of all **2496 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (60 tests)</b></summary>
+<summary><b>test_application (61 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
@@ -801,6 +801,14 @@ A thorough directory of all **2496 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)9500));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_registration_variants_table_full</b> &mdash; <i>The dropped iface route does not dispatch: a request to it falls through (handler untouched).</i></summary>
+
+    * **Objective**: The dropped iface route does not dispatch: a request to it falls through (handler untouched).
+    * **Assertions**:
+      * <code>Assert false (handler_called)</code>
   </details>
 
   <details style="margin-left: 20px;">
