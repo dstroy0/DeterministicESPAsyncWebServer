@@ -292,6 +292,95 @@ void test_decoder_oversized_integer_fails()
     TEST_ASSERT_FALSE(d.ok);
 }
 
+void test_enc_len_long_form()
+{
+    // A value >= 128 octets forces the long-form definite length (0x81 <len>).
+    uint8_t buf[300];
+    BerEnc e;
+    ber_enc_init(&e, buf, sizeof(buf));
+    uint8_t val[200];
+    for (int i = 0; i < 200; i++)
+        val[i] = (uint8_t)i;
+    TEST_ASSERT_TRUE(ber_put_octet_string(&e, BER_OCTET_STRING, val, sizeof(val)));
+    TEST_ASSERT_EQUAL_size_t(203, e.len); // tag(1) + 0x81 0xC8 (2) + 200
+    TEST_ASSERT_EQUAL_HEX8(0x81, buf[1]); // long form, one length octet
+    TEST_ASSERT_EQUAL_HEX8(0xC8, buf[2]); // 200
+    BerDec d;
+    ber_dec_init(&d, buf, e.len);
+    uint8_t tag;
+    size_t len;
+    TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &len));
+    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);
+    TEST_ASSERT_EQUAL_size_t(200, len);
+}
+
+void test_put_oid_guards()
+{
+    uint8_t buf[256];
+    BerEnc e;
+    ber_enc_init(&e, buf, sizeof(buf));
+    uint32_t one[1] = {1};
+    TEST_ASSERT_FALSE(ber_put_oid(&e, one, 1)); // fewer than 2 arcs
+    TEST_ASSERT_FALSE(e.ok);
+    // More subidentifier octets than the internal scratch (SNMP_MAX_OID_LEN*5) holds.
+    ber_enc_init(&e, buf, sizeof(buf));
+    uint32_t big[40];
+    for (int i = 0; i < 40; i++)
+        big[i] = 0xFFFFFFFFu; // each encodes to five base-128 octets
+    TEST_ASSERT_FALSE(ber_put_oid(&e, big, 40));
+    TEST_ASSERT_FALSE(e.ok);
+}
+
+void test_seq_end_overflow()
+{
+    // A content region larger than the 16-bit back-patched length field fails closed.
+    uint8_t buf[16];
+    BerEnc e;
+    ber_enc_init(&e, buf, sizeof(buf));
+    size_t tok = ber_seq_begin(&e, BER_SEQUENCE);
+    e.len = tok + 3 + 0x10000; // pretend > 64 KiB of content was written
+    ber_seq_end(&e, tok);
+    TEST_ASSERT_FALSE(e.ok);
+}
+
+void test_read_oid_rejects()
+{
+    // ber_read_oid on a non-OID TLV.
+    const uint8_t intv[] = {BER_INTEGER, 0x01, 0x05};
+    BerDec d;
+    ber_dec_init(&d, intv, sizeof(intv));
+    uint32_t arcs[8];
+    size_t n = 0;
+    TEST_ASSERT_FALSE(ber_read_oid(&d, arcs, 8, &n));
+    TEST_ASSERT_FALSE(d.ok);
+    // An OID with more subidentifiers than the caller's array holds.
+    uint8_t buf[64];
+    BerEnc e;
+    ber_enc_init(&e, buf, sizeof(buf));
+    uint32_t oid[4] = {1, 3, 6, 1};
+    TEST_ASSERT_TRUE(ber_put_oid(&e, oid, 4));
+    BerDec d2;
+    ber_dec_init(&d2, buf, e.len);
+    uint32_t out2[2];
+    size_t n2 = 0;
+    TEST_ASSERT_FALSE(ber_read_oid(&d2, out2, 2, &n2)); // 4 arcs into max 2
+    TEST_ASSERT_FALSE(d2.ok);
+}
+
+void test_ber_skip()
+{
+    const uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    BerDec d;
+    ber_dec_init(&d, data, sizeof(data));
+    TEST_ASSERT_TRUE(ber_skip(&d, 3));
+    TEST_ASSERT_EQUAL_size_t(3, d.pos);
+    TEST_ASSERT_FALSE(ber_skip(&d, 100)); // beyond the remaining buffer
+    TEST_ASSERT_FALSE(d.ok);
+    BerDec d2;
+    ber_dec_init(&d2, nullptr, 0); // ok == false
+    TEST_ASSERT_FALSE(ber_skip(&d2, 1));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -311,5 +400,10 @@ int main()
     RUN_TEST(test_decoder_longform_length_max_uint32_fails);
     RUN_TEST(test_decoder_indefinite_length_fails);
     RUN_TEST(test_decoder_oversized_integer_fails);
+    RUN_TEST(test_enc_len_long_form);
+    RUN_TEST(test_put_oid_guards);
+    RUN_TEST(test_seq_end_overflow);
+    RUN_TEST(test_read_oid_rejects);
+    RUN_TEST(test_ber_skip);
     return UNITY_END();
 }
