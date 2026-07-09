@@ -1514,6 +1514,67 @@ void test_request_error_paths_te_method_ws()
     tcp_capture_disable();
 }
 
+// WebSocket/SSE upgrade failure paths (all with a valid Upgrade + Version: 13 where noted):
+// a malformed or missing Sec-WebSocket-Key is a client error (400 after ws_accept_key /
+// the null-key guard), and an exhausted WS/SSE connection pool aborts the upgrade after its
+// optimistic handshake header (101 for WS, the 200 event-stream header for SSE). Note:
+// ws_accept_key's over-64-char length cap is only reachable when MAX_VAL_LEN is configured
+// > 64 (the parser truncates header values to MAX_VAL_LEN, 48 by default), so here a bad key
+// is rejected by the base64 length check instead.
+void test_ws_sse_upgrade_failure_paths()
+{
+#if DETWS_ENABLE_WEBSOCKET
+    g_server->on_ws("/ws", nullptr, nullptr, nullptr);
+
+    // (a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400.
+    arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGVzdA==\r\nSec-WebSocket-Version: 13\r\n\r\n"); // "test" -> 4 bytes, not 16
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
+
+    // (b) Upgrade with Version: 13 but no Sec-WebSocket-Key -> 400.
+    arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Version: 13\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
+
+    // (c) A valid upgrade with the WS pool exhausted -> ws_alloc fails, connection aborted
+    // after the optimistic 101 header is emitted.
+    ws_alloc(1);
+    ws_alloc(2); // fill the 2-slot ws_pool (MAX_WS_CONNS)
+    arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "101")); // optimistic handshake sent before the pool check
+    ws_init();                                           // release the pool for later tests
+    tcp_capture_disable();
+#endif
+}
+
+#if DETWS_ENABLE_SSE
+// An SSE upgrade with the SSE pool exhausted -> sse_alloc fails, connection aborted after
+// the optimistic 200 event-stream header.
+void test_sse_upgrade_pool_exhausted()
+{
+    g_server->on_sse("/events", nullptr);
+    sse_alloc(1, "/a");
+    sse_alloc(2, "/b"); // fill the 2-slot sse_pool (MAX_SSE_CONNS)
+    arm_slot(0, "GET /events HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "text/event-stream")); // header sent before the pool check
+    sse_init();                                                        // release the pool for later tests
+    tcp_capture_disable();
+}
+#endif
+
 int main()
 {
     UNITY_BEGIN();
@@ -1523,6 +1584,10 @@ int main()
     RUN_TEST(test_send_family_slot_and_conn_gone_guards);
     RUN_TEST(test_redirect_response_and_code_normalization);
     RUN_TEST(test_request_error_paths_te_method_ws);
+    RUN_TEST(test_ws_sse_upgrade_failure_paths);
+#if DETWS_ENABLE_SSE
+    RUN_TEST(test_sse_upgrade_pool_exhausted);
+#endif
 
     // Function I/O: handler API access
     RUN_TEST(test_handler_reads_body);
