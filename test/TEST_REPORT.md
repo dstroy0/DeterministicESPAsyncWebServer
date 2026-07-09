@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 16:22:47
+**Generated:** 2026-07-09 16:34:04
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2810 passed - 501s
+**Result:** ✅ 2810 passed - 503s
 
 ---
 
@@ -146,7 +146,7 @@
 | `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.499 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.748 |
 | `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.804 |
-| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.774 |
+| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:03.359 |
 | `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.818 |
 | `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.784 |
 | `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.777 |
