@@ -325,9 +325,40 @@ void test_hpack_more_errors()
     TEST_ASSERT_FALSE(hpack_decode(&t, badhuff, sizeof badhuff, scratch, sizeof scratch, collect, &c));
 }
 
+// Low-level hpack_prim edge guards called directly: integer-encode buffer overflow (in the
+// continuation loop and on the final byte), decode of a zero-length input, Huffman encode
+// with no room for the trailing partial byte, a decoded EOS symbol, output overflow, and
+// over-a-byte trailing padding.
+void test_hpack_prim_edge_guards()
+{
+    uint8_t b[8];
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_int(b, 1, 7, 0, 20000)); // overflow mid-continuation
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_encode_int(b, 1, 7, 0, 200));   // overflow on the final byte
+
+    size_t c;
+    uint32_t v;
+    TEST_ASSERT_FALSE(hpack_decode_int(b, 0, 5, &c, &v)); // empty input
+
+    uint8_t enc[8];
+    TEST_ASSERT_EQUAL_INT(0, (int)hpack_huff_encode(enc, 0, "a", 1)); // no room for the trailing byte
+
+    char out[32];
+    size_t ol;
+    const uint8_t eos[4] = {0xff, 0xff, 0xff, 0xff}; // 30 one-bits resolve to the EOS symbol
+    TEST_ASSERT_FALSE(hpack_huff_decode(eos, sizeof eos, out, sizeof out, &ol));
+
+    size_t el = hpack_huff_encode(enc, sizeof enc, "00", 2); // two symbols
+    TEST_ASSERT_TRUE(el > 0);
+    TEST_ASSERT_FALSE(hpack_huff_decode(enc, el, out, 1, &ol)); // second symbol overflows the output
+
+    const uint8_t pad[1] = {0xff}; // 8 unmatched bits -> more than a byte of padding
+    TEST_ASSERT_FALSE(hpack_huff_decode(pad, 1, out, sizeof out, &ol));
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_hpack_prim_edge_guards);
     RUN_TEST(test_hpack_more_errors);
     RUN_TEST(test_dyn_size_update);
     RUN_TEST(test_oversize_entry_clears);

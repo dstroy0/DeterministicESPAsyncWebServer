@@ -188,8 +188,10 @@ bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_
         {
             code = (code << 1) | ((in[i] >> bit) & 1);
             len++;
+            // RFC 7541 Huffman is a complete prefix code (Kraft sum 1, max length 30), so every bit
+            // path matches a symbol by length 30 and len can never reach 31.
             if (len > 30)
-                return false;
+                return false; // GCOVR_EXCL_LINE unreachable: complete code always matches by len 30 (see above)
             uint16_t cnt = DEC_COUNT[len];
             if (cnt)
             {
