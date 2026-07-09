@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2474 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2475 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16387,7 +16387,7 @@ A thorough directory of all **2474 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ota_rollback (5 tests)</b></summary>
+<summary><b>test_ota_rollback (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_not_pending_waits</b> &mdash; <i>A normally-booted (valid/undefined) image never rolls back.</i></summary>
@@ -16429,6 +16429,16 @@ A thorough directory of all **2474 test cases** across **228 suites**. Expand a 
     * **Objective**: A passing self-test commits even past the window.
     * **Assertions**:
       * <code>Assert equal int (DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 99999, 30000))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_platform_hooks_are_safe_noops</b> &mdash; <i>On a host build there are no OTA partitions: img_state reports UNDEFINED and the</i></summary>
+
+    * **Objective**: On a host build there are no OTA partitions: img_state reports UNDEFINED and the
+    * **Assertions**:
+      * <code>Assert equal int (DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state())</code>
+      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_rollback_tick(true))</code>
+      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_rollback_tick(false))</code>
   </details>
 
 </details>
