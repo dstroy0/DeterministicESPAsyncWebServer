@@ -563,6 +563,21 @@ void test_observe_option_in_response()
     TEST_ASSERT_EQUAL_size_t(2, d.payload_len);
 }
 
+// append_opt stops without writing when an option would overflow the response buffer:
+// a GET whose response header fits but whose Content-Format option does not.
+void test_response_option_overflows_buffer()
+{
+    const char *paths[] = {"ro"};
+    uint8_t tok[] = {0x01, 0x02};
+    uint8_t req[128], resp[8];
+    size_t rl = build(req, COAP_TYPE_CON, COAP_GET, tok, 2, 0x2222, paths, 1, nullptr, 0, -1, nullptr, 0);
+    // resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option.
+    size_t n = coap_server_process(req, rl, resp, 6);
+    CoapDec d;
+    TEST_ASSERT_TRUE(dec(resp, n, &d));
+    TEST_ASSERT_EQUAL_UINT16(COAP_CF_NONE, d.content_format); // option dropped, response still well-formed
+}
+
 void test_no_observe_option_when_seq_negative()
 {
     const char *paths[] = {"ro"};
@@ -1192,6 +1207,7 @@ int main()
     RUN_TEST(test_block1_out_of_order);
     RUN_TEST(test_block1_too_large);
     RUN_TEST(test_observe_option_in_response);
+    RUN_TEST(test_response_option_overflows_buffer);
     RUN_TEST(test_no_observe_option_when_seq_negative);
     RUN_TEST(test_get_content);
     RUN_TEST(test_not_found);
