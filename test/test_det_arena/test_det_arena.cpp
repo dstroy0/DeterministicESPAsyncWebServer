@@ -266,6 +266,43 @@ void test_set_scratch_overflow_and_unwind()
     TEST_ASSERT_EQUAL_size_t(0, det_arena_set_scratch_used(&s));
 }
 
+void test_persist_split_and_max_align()
+{
+    // A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).
+    void *A = det_arena_persist_alloc(&a, 64);
+    void *B = det_arena_persist_alloc(&a, 200);
+    void *C = det_arena_persist_alloc(&a, 64);
+    (void)A;
+    det_arena_persist_free(&a, B); // a 200-byte hole between A and C (not the last block)
+    void *D = det_arena_persist_alloc(&a, 16);
+    TEST_ASSERT_EQUAL_PTR(B, D);               // reuses B's hole
+    void *E = det_arena_persist_alloc(&a, 16); // the split remainder is itself reusable
+    TEST_ASSERT_NOT_NULL(E);
+    TEST_ASSERT_TRUE((uintptr_t)E > (uintptr_t)D && (uintptr_t)E < (uintptr_t)C);
+
+    // Requesting more alignment than the base guarantees clamps to DET_ARENA_MAX_ALIGN.
+    void *p = det_arena_scratch_alloc_aligned(&a, 32, 32); // 32 > 16 -> clamps to 16
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_TRUE(((uintptr_t)p & 15u) == 0);
+}
+
+void test_set_exhaustion_and_free_bytes()
+{
+    DetArenaSet s;
+    det_arena_set_init(&s);
+    det_arena_set_add(&s, g_r0, sizeof(g_r0)); // 512
+    det_arena_set_add(&s, g_r1, sizeof(g_r1)); // 2048
+    // A request larger than any single region fails closed across the whole set.
+    TEST_ASSERT_NULL(det_arena_set_persist_alloc(&s, 100000));
+    TEST_ASSERT_NULL(det_arena_set_scratch_alloc(&s, 100000));
+    // free_bytes sums the free middle of every region.
+    size_t before = det_arena_set_free_bytes(&s);
+    TEST_ASSERT_TRUE(before > 0);
+    void *p = det_arena_set_persist_alloc(&s, 128);
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_TRUE(det_arena_set_free_bytes(&s) < before); // shrank by the allocation
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -286,5 +323,7 @@ int main()
     RUN_TEST(test_set_persist_overflow_and_prefer);
     RUN_TEST(test_set_persist_free_routes_by_address);
     RUN_TEST(test_set_scratch_overflow_and_unwind);
+    RUN_TEST(test_persist_split_and_max_align);
+    RUN_TEST(test_set_exhaustion_and_free_bytes);
     return UNITY_END();
 }
