@@ -208,6 +208,65 @@ void test_spinel_guards()
     TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(short_frame, sizeof(short_frame), fpay, sizeof(fpay), &fl));
 }
 
+void test_thread_more_guards()
+{
+    uint8_t out[64];
+
+    // pack/unpack null-pointer guards.
+    TEST_ASSERT_EQUAL_UINT8(0, spinel_pack_uint(5, nullptr, 8));
+    uint32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(0, spinel_unpack_uint(nullptr, 4, &v));
+
+    // command_build guards: null out, cap < 1, value==null with a positive length.
+    uint8_t val[2] = {0xAA, 0xBB};
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 2, nullptr, 8));
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 2, out, 0));
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, nullptr, 2, out, 8));
+    // command_build overflow at each stage: cmd pack, prop pack, value copy.
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, nullptr, 0, out, 1));    // cmd pack (cap 0)
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1337, 1, nullptr, 0, out, 3)); // prop pack
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 10, out, 5));       // value copy
+
+    // command_parse guards: null payload, then a truncated cmd, then a truncated prop.
+    uint8_t hdr = 0;
+    uint32_t cmd = 0, prop = 0;
+    const uint8_t *pv = nullptr;
+    uint16_t pvl = 0;
+    TEST_ASSERT_EQUAL_INT(-1, spinel_command_parse(nullptr, 4, &hdr, &cmd, &prop, &pv, &pvl));
+    const uint8_t tc[2] = {0x81, 0x80}; // header + cmd byte with continuation, no terminator
+    TEST_ASSERT_EQUAL_INT(-1, spinel_command_parse(tc, 2, &hdr, &cmd, &prop, &pv, &pvl));
+    const uint8_t tp[3] = {0x81, 0x01, 0x80}; // header + valid cmd + truncated prop
+    TEST_ASSERT_EQUAL_INT(-1, spinel_command_parse(tp, 3, &hdr, &cmd, &prop, &pv, &pvl));
+
+    // frame_encode: an escaped byte that overflows, an FCS byte that overflows, a flag that overflows.
+    uint8_t resv[1] = {0x7E};
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(resv, 1, out, 1)); // escape needs 2, cap 1
+    uint8_t one[1] = {0x01};
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(one, 1, out, 1)); // payload fits, FCS byte overflows
+    uint8_t p4[4] = {0x01, 0x02, 0x03, 0x04};
+    uint8_t full[32];
+    uint16_t fulln = spinel_frame_encode(p4, 4, full, sizeof(full));
+    TEST_ASSERT_TRUE(fulln > 1);
+    TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(p4, 4, out, (uint16_t)(fulln - 1))); // only the flag can't fit
+
+    // frame_decode: null raw, an over-long unstuffed run, and a real FCS mismatch.
+    uint8_t pay[16];
+    uint16_t pl = 0;
+    TEST_ASSERT_EQUAL_INT(0, spinel_frame_decode(nullptr, 4, pay, sizeof(pay), &pl));
+    uint8_t big[80];
+    for (int i = 0; i < 70; i++)
+        big[i] = 0x00;
+    big[70] = HDLC_FLAG;
+    TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(big, 71, pay, sizeof(pay), &pl)); // unstuffed > scratch
+    uint8_t p3[3] = {0x01, 0x02, 0x03};
+    uint8_t fr[32];
+    uint16_t frn = spinel_frame_encode(p3, 3, fr, sizeof(fr));
+    fr[0] ^= 0x01; // 0x01 -> 0x00 (not flag/escape): the payload changes so the stored FCS no longer matches
+    uint8_t got[16];
+    uint16_t gl = 0;
+    TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(fr, frn, got, sizeof(got), &gl));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -225,5 +284,6 @@ int main()
     RUN_TEST(test_spinel_command_build_parse_round_trip);
     RUN_TEST(test_spinel_command_through_hdlc);
     RUN_TEST(test_spinel_guards);
+    RUN_TEST(test_thread_more_guards);
     return UNITY_END();
 }
