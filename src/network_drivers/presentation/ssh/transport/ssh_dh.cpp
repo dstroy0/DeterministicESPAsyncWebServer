@@ -51,48 +51,6 @@ int ssh_dh_generate(uint8_t i)
 }
 
 // ---------------------------------------------------------------------------
-// DH finish: compute K, build exchange hash, derive session keys
-// ---------------------------------------------------------------------------
-
-int ssh_dh_finish(uint8_t i, const uint8_t e_be[256], const uint8_t *hash_input, size_t hi_len)
-{
-    if (i >= MAX_SSH_CONNS)
-        return -1;
-    SshDhState *dh = &ssh_dh[i];
-
-    // Parse and validate client public value e.
-    SshBigNum e;
-    bn_from_bytes(&e, e_be, 256);
-    if (bn_dh_validate(&e) != 0)
-        return -1; // close connection
-
-    // K = e^y mod p
-    bn_expmod_group14(&dh->K, &e, &dh->y);
-
-    // Build exchange hash H = SHA256(hash_input).
-    // hash_input is assembled by the SSH packet layer and contains:
-    //   mpint(K) || byte[32](H fields) from RFC 4253 §8 ordering.
-    // The full pre-image (V_C, V_S, I_C, I_S, K_S, e, f, K) is encoded
-    // by the caller into hash_input before calling here.
-    ssh_sha256(hash_input, hi_len, dh->H);
-
-    // Derive session keys (AES + HMAC) from K and H.
-    uint8_t K_be[256];
-    bn_to_bytes(K_be, &dh->K);
-    ssh_dh_derive_keys(i, K_be, dh->H);
-
-    // Zero sensitive material: y (private scalar), K (shared secret),
-    // and the K_be stack buffer.
-    ssh_wipe(dh->y.d, sizeof(SshBigNum));
-    ssh_wipe(dh->K.d, sizeof(SshBigNum));
-    ssh_wipe(K_be, 256);
-    // f and H are retained: f was already sent; H is the session_id.
-
-    dh->kex_done = true;
-    return 0;
-}
-
-// ---------------------------------------------------------------------------
 // Session key derivation (RFC 4253 §7.2)
 // ---------------------------------------------------------------------------
 

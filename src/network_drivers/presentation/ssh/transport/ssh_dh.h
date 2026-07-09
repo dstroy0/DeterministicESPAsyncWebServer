@@ -16,7 +16,7 @@
  *                                   f  = 2^y mod p        (server public)
  *                                   (y, f stored in ssh_dh[slot])
  *
- *                                 ssh_dh_finish(slot, e):
+ *                                 ssh_kexdh_handle(slot, e):
  *                                   validate e: 1 < e < p-1
  *                                   K  = e^y mod p        (shared secret)
  *                                   H  = SHA256(V_C||V_S||I_C||I_S||K_S||e||f||K)
@@ -89,26 +89,6 @@ void ssh_rng_fill(uint8_t *buf, size_t len);
 int ssh_dh_generate(uint8_t i);
 
 /**
- * @brief Complete the DH exchange given the client's public value @p e.
- *
- * Steps:
- *   1. Validate e: 1 < e < p-1.  Returns -1 on failure (close connection).
- *   2. Compute K = e^y mod p.
- *   3. Compute exchange hash H = SHA256(hash_input).
- *   4. Derive session keys into ssh_keys[i].
- *   5. Zero ssh_dh[i].y and ssh_dh[i].K via ssh_dh_wipe().
- *      ssh_dh[i].f and ssh_dh[i].H are retained (f for KEXDH_REPLY if
- *      called before send, H becomes the session_id).
- *
- * @param i           SSH connection slot index.
- * @param e           Client's DH public value (2048-bit, big-endian, 256 bytes).
- * @param hash_input  Pre-assembled hash input buffer (see RFC 4253 §8).
- * @param hi_len      Length of hash_input in bytes.
- * @return 0 on success, -1 if e is invalid or slot is out of range.
- */
-int ssh_dh_finish(uint8_t i, const uint8_t e[256], const uint8_t *hash_input, size_t hi_len);
-
-/**
  * @brief Derive the six session keys from shared secret K and exchange hash H.
  *
  * Implements RFC 4253 §7.2 key derivation:
@@ -120,7 +100,7 @@ int ssh_dh_finish(uint8_t i, const uint8_t e[256], const uint8_t *hash_input, si
  *   mac_s2c = SHA256(K || H || 'F' || session_id)  [32 bytes]
  *
  * Installs the derived keys into ssh_keys[i].
- * Does NOT zero K or H - the caller (ssh_dh_finish) does that.
+ * Does NOT zero K or H - the caller does that.
  *
  * @param i           Slot index.
  * @param K_be        Shared secret K, big-endian, 256 bytes.

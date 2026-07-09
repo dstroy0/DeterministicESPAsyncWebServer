@@ -868,6 +868,29 @@ void test_kexdh_parse_and_handle_errors()
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
 }
 
+void test_kdf_edge_paths_and_slot_guards()
+{
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    memset(H, 0x11, sizeof(H));
+
+    // A K of all zeros exercises the empty-mpint (K == 0) branch of the KDF's mpint(K) hashing, and an
+    // out_len beyond SSH_KDF_MAX exercises the clamp. (K == 0 cannot happen for a real DH secret.)
+    uint8_t K0[256] = {0};
+    uint8_t big[SSH_KDF_MAX];
+    ssh_kdf_derive(K0, H, H, 'A', big, sizeof(big) + 64); // clamps to SSH_KDF_MAX; K == 0 -> empty mpint
+
+    // Slot-index guards on the DH generate + the SID key derivation are no-ops / -1.
+    TEST_ASSERT_EQUAL_INT(-1, ssh_dh_generate(MAX_SSH_CONNS));
+    ssh_dh_derive_keys_sid(MAX_SSH_CONNS, K0, H, H, SSH_CIPHER_AES256CTR, SSH_MAC_HMAC_SHA256); // must not crash
+
+    // The chacha20-poly1305 branch derives two 512-bit keys and installs no separate MAC key.
+    uint8_t K[256] = {0};
+    K[0] = 0x42; // nonzero shared secret
+    ssh_dh_derive_keys_sid(0, K, H, H, SSH_CIPHER_CHACHA20POLY1305, SSH_MAC_HMAC_SHA256);
+    TEST_ASSERT_TRUE(ssh_keys[0].active);
+    TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_CHACHA20POLY1305, ssh_keys[0].cipher_mode);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -905,5 +928,6 @@ int main()
     RUN_TEST(test_rekey_needed_threshold);
     RUN_TEST(test_rekey_due_volume_and_time);
     RUN_TEST(test_begin_rekey_preserves_session_and_auth);
+    RUN_TEST(test_kdf_edge_paths_and_slot_guards);
     return UNITY_END();
 }
