@@ -70,11 +70,21 @@ void test_at_telegram_and_rejects(void)
     TEST_ASSERT_FALSE(detws_sercos_parse(bad, 4, &t));
 }
 
+void test_sercos_build_guards()
+{
+    uint8_t out[64];
+    uint8_t data[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0xEE, 0, 0, data, sizeof(data), out, sizeof(out))); // bad type
+    TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, data, sizeof(data), out, 2)); // cap too small
+    TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, nullptr, 4, out, sizeof(out))); // null data
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_idn_roundtrip);
     RUN_TEST(test_telegram_roundtrip);
     RUN_TEST(test_at_telegram_and_rejects);
+    RUN_TEST(test_sercos_build_guards);
     return UNITY_END();
 }

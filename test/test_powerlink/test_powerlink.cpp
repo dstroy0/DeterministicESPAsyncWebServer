@@ -56,11 +56,20 @@ void test_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_epl_parse(bad, 3, &f));
 }
 
+void test_epl_build_guards()
+{
+    uint8_t out[64];
+    uint8_t pdo[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, nullptr, 4, out, sizeof(out))); // null payload with len
+    TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, pdo, sizeof(pdo), out, 2));     // cap too small
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_soc);
     RUN_TEST(test_preq_pres_roundtrip);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_epl_build_guards);
     return UNITY_END();
 }

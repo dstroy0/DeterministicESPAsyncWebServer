@@ -133,6 +133,17 @@ void test_build_bounds()
     TEST_ASSERT_EQUAL_UINT16(0, pn532_build_frame(PN532_TFI_HOST, big, 9, big, sizeof(big))); // 9 > MAX_DATA 8
 }
 
+void test_frame_parse_and_ack_guards()
+{
+    uint8_t tfi = 0;
+    const uint8_t *pdata = nullptr;
+    uint8_t pdata_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, pn532_parse_frame(nullptr, 10, &tfi, &pdata, &pdata_len)); // null raw
+    uint8_t tiny[1] = {0};
+    TEST_ASSERT_FALSE(pn532_is_ack(tiny, sizeof(tiny))); // too short
+    TEST_ASSERT_FALSE(pn532_is_ack(nullptr, 6));         // null
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -146,5 +157,6 @@ int main()
     RUN_TEST(test_parse_rejects_over_length);
     RUN_TEST(test_ack_frame);
     RUN_TEST(test_build_bounds);
+    RUN_TEST(test_frame_parse_and_ack_guards);
     return UNITY_END();
 }

@@ -114,6 +114,14 @@ void test_build_bounds()
     TEST_ASSERT_EQUAL_UINT16(0, esp3_build(ESP3_RADIO_ERP1, big, 17, nullptr, 0, big, sizeof(big))); // 17 > MAX_DATA 16
 }
 
+void test_esp3_parse_null_guard()
+{
+    esp3_packet pkt;
+    TEST_ASSERT_EQUAL_INT(0, esp3_parse(nullptr, 10, &pkt)); // null raw
+    uint8_t tiny[1] = {0};
+    TEST_ASSERT_EQUAL_INT(0, esp3_parse(tiny, 0, &pkt)); // zero length
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -126,5 +134,6 @@ int main()
     RUN_TEST(test_parse_rejects_over_length);
     RUN_TEST(test_parse_resynchronises_after_junk);
     RUN_TEST(test_build_bounds);
+    RUN_TEST(test_esp3_parse_null_guard);
     return UNITY_END();
 }

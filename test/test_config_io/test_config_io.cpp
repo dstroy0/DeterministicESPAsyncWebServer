@@ -75,6 +75,16 @@ void test_export_overflow_fails_closed()
     TEST_ASSERT_EQUAL_INT(0, detws_config_export("t", SCHEMA, N, buf, sizeof(buf)));
 }
 
+void test_export_import_null_guards()
+{
+    char out[128];
+    DetwsCfgField fields[1] = {};
+    TEST_ASSERT_EQUAL_INT(0, detws_config_export("ns", fields, 1, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_INT(0, detws_config_export("ns", nullptr, 1, out, sizeof(out)));    // null fields
+    TEST_ASSERT_EQUAL_INT(0, detws_config_import("ns", nullptr, 1, "text", 4));           // null fields
+    TEST_ASSERT_EQUAL_INT(0, detws_config_import("ns", fields, 1, nullptr, 0));           // null text
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -82,5 +92,6 @@ int main()
     RUN_TEST(test_round_trip);
     RUN_TEST(test_import_skips_unknown_keys);
     RUN_TEST(test_export_overflow_fails_closed);
+    RUN_TEST(test_export_import_null_guards);
     return UNITY_END();
 }

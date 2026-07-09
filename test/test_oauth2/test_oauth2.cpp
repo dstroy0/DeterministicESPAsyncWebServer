@@ -93,6 +93,19 @@ void test_parse_error_response_fails()
     TEST_ASSERT_FALSE(detws_oauth2_parse_token_response(err, &t));
 }
 
+void test_oauth2_build_parse_guards()
+{
+    char out[256];
+    TEST_ASSERT_EQUAL_INT(
+        0, detws_oauth2_build_code_request(nullptr, "uri", "cid", "sec", "ver", out, sizeof(out))); // null code
+    TEST_ASSERT_EQUAL_INT(0,
+                          detws_oauth2_build_refresh_request(nullptr, "cid", "sec", out, sizeof(out))); // null refresh
+    DetwsOAuth2Tokens tok;
+    TEST_ASSERT_FALSE(detws_oauth2_parse_token_response(nullptr, &tok)); // null json
+    // A value needing percent-encoding into a tiny buffer overflows (b.ok=false).
+    TEST_ASSERT_EQUAL_INT(0, detws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -104,5 +117,6 @@ int main()
     RUN_TEST(test_parse_token_response);
     RUN_TEST(test_parse_minimal_response);
     RUN_TEST(test_parse_error_response_fails);
+    RUN_TEST(test_oauth2_build_parse_guards);
     return UNITY_END();
 }

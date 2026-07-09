@@ -329,6 +329,14 @@ void test_bearer_valid_at()
     TEST_ASSERT_FALSE(jwt_bearer_valid_at(hdr, (const uint8_t *)"wrong", 5, 1699999000, 0));
 }
 
+void test_bearer_header_guards()
+{
+    uint8_t secret[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_FALSE(jwt_bearer_valid(nullptr, secret, sizeof(secret)));               // null header
+    TEST_ASSERT_FALSE(jwt_bearer_valid("Basic abc", secret, sizeof(secret)));           // not a Bearer
+    TEST_ASSERT_FALSE(jwt_bearer_valid("Bearer    not.a.jwt", secret, sizeof(secret))); // leading spaces skipped
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -353,5 +361,6 @@ int main()
     RUN_TEST(test_time_nbf_enforced);
     RUN_TEST(test_time_no_claims_valid);
     RUN_TEST(test_bearer_valid_at);
+    RUN_TEST(test_bearer_header_guards);
     return UNITY_END();
 }

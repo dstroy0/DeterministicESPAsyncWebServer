@@ -228,6 +228,21 @@ void test_seq_increments_per_uplink()
     TEST_ASSERT_EQUAL_UINT32(1, g_up[1].seq);
 }
 
+void test_topic_zero_and_overflow_steps()
+{
+    det_gw_reset();
+    det_gw_set_topic_prefix("gw");
+    char buf[64];
+    det_gw_msg m = {};
+    m.port_id = 0; // zero -> put_u32 '0' branch
+    m.src_addr = 0;
+    TEST_ASSERT_TRUE(det_gw_topic(&m, buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(nullptr, buf, sizeof(buf))); // null msg
+    TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, 0));                // zero buflen
+    for (uint16_t cap = 1; cap <= 4; cap++)                               // fail at successive append steps
+        TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, cap));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -242,5 +257,6 @@ int main()
     RUN_TEST(test_topic_format);
     RUN_TEST(test_add_port_validation_and_table_full);
     RUN_TEST(test_seq_increments_per_uplink);
+    RUN_TEST(test_topic_zero_and_overflow_steps);
     return UNITY_END();
 }

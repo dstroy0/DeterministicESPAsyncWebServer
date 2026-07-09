@@ -64,6 +64,16 @@ void test_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));
 }
 
+void test_parse_request_guards()
+{
+    char out[64];
+    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml
+    const char *xml = "<x id=\"ABCDEFGHIJ\"/>";
+    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out
+    const char *unterm = "<x id=\"ABC";
+    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -72,5 +82,6 @@ int main(void)
     RUN_TEST(test_response_escapes);
     RUN_TEST(test_parse_request);
     RUN_TEST(test_overflow);
+    RUN_TEST(test_parse_request_guards);
     return UNITY_END();
 }

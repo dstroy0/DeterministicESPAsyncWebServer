@@ -143,6 +143,14 @@ void test_key_too_long_rejected()
     TEST_ASSERT_FALSE(detws_config_set_str(longkey, "v"));
 }
 
+void test_setter_getter_null_guards()
+{
+    detws_config_begin("ns");
+    TEST_ASSERT_FALSE(detws_config_set_str("k", nullptr));                     // null value
+    TEST_ASSERT_EQUAL_size_t(0, detws_config_get_str("k", nullptr, 0, "def")); // null out
+    TEST_ASSERT_FALSE(detws_config_set_blob("k", nullptr, 4));                 // null data
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -160,5 +168,6 @@ int main()
     RUN_TEST(test_table_full_rejects_new_key);
     RUN_TEST(test_existing_key_overwrites_even_when_full);
     RUN_TEST(test_key_too_long_rejected);
+    RUN_TEST(test_setter_getter_null_guards);
     return UNITY_END();
 }
