@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a335022`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3350224c5bcf5bc1b1c8030bcdbd4e6bd3e0eb2))
 - update CHANGELOG.md [skip ci] ([`bc91b79`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc91b798ce5f741274a61ddcd9f025abf45c0122))
 - update CHANGELOG.md [skip ci] ([`f55b048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f55b048d03dc9ec3bbd961d629f3864848dd88d8))
 - update test report + coverage [skip ci] ([`1c5e3cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c5e3cd1f3a6bc7793a671e6d3d4dac6190b19a6))
@@ -241,6 +242,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`10b1336`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10b133637d6702201555db51da80540eb85f8cf1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ac084c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac084c2b9418fd55aeb35204547d28d375e3b37f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`036c401`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/036c4019d6b40144e62b490889d710262940ffe9))
 - update ESP32 build footprints [skip ci] ([`639582e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/639582e00721cb7bf71c5abd0580b8f76f35a1b2))
@@ -461,6 +463,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- forge aes-E&M packets (bad length/padding, seq-threshold, scratch-exhaust) (96.5->99.7%) ([`12f8caf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12f8cafdd9261b6081812e768ed251d8b8a8d456))
 - cover chacha/aes-etm scratch-arena-exhaustion fail-closed (94.4->96.5%) ([`4cd8986`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cd898696d1da763ef7dcebcd8901967e346ad76))
 - forge aes-etm packets (bad padding, seq-threshold) via ETM MAC replication (93.4->94.4%) ([`c88b567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c88b5675f7744e744a1f4b34078f4c82e4f2b341))
 - forge chacha packets (bad length/padding, seq-threshold) + aes-etm clear bad-length (90.6->93.4%) ([`946d0d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/946d0d70d21ad34bc00896134b344ef7f95bb2b6))
