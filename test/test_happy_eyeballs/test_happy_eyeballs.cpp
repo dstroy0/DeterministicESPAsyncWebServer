@@ -65,6 +65,32 @@ void test_attempt_due(void)
     TEST_ASSERT_TRUE(detws_he_attempt_due(0xFFFFFF00u, 0xFFFFFF00u + 250, DETWS_HE_ATTEMPT_DELAY_MS));
 }
 
+void test_pref_scopes_and_order_edges()
+{
+    // Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified).
+    DetIp mc4 = det_ip_from_v4_octets(239, 1, 2, 3); // admin-scoped IPv4 multicast
+    DetIp mc6;
+    det_ip_parse("ff0e::1", &mc6); // global-scope IPv6 multicast
+    DetIp un;
+    det_ip_parse("::", &un); // unspecified
+    (void)detws_he_pref(&mc4);
+    (void)detws_he_pref(&mc6);
+    (void)detws_he_pref(&un);
+    // n <= 1 returns immediately (no reorder).
+    DetIp one[1];
+    det_ip_parse("2606:4700::1", &one[0]);
+    detws_he_order(one, 1);
+    // A larger mixed list exercises the v4/v6 interleave.
+    DetIp many[5];
+    det_ip_parse("2606:4700::1", &many[0]);
+    many[1] = det_ip_from_v4_octets(8, 8, 8, 8);
+    det_ip_parse("2606:4700::2", &many[2]);
+    many[3] = det_ip_from_v4_octets(1, 1, 1, 1);
+    det_ip_parse("2606:4700::3", &many[4]);
+    detws_he_order(many, 5);
+    TEST_PASS();
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -72,5 +98,6 @@ int main(void)
     RUN_TEST(test_order_and_interleave);
     RUN_TEST(test_order_single_family);
     RUN_TEST(test_attempt_due);
+    RUN_TEST(test_pref_scopes_and_order_edges);
     return UNITY_END();
 }

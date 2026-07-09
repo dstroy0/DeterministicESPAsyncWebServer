@@ -126,6 +126,19 @@ void test_emit_noop_until_begin()
     TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
 }
 
+void test_rate_clamp_and_stage_overflow()
+{
+    char out[64];
+    // A rate rounding below one thousandth clamps up to 1; a rate near 1 clamps down to 999.
+    TEST_ASSERT_TRUE(statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.0001f, nullptr) > 0);
+    TEST_ASSERT_TRUE(statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.9999f, nullptr) > 0);
+    // Overflow at successive build stages all fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 2, "metric", "1", STATSD_COUNTER, 1.0f, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 4, "m", "1", STATSD_TIMING, 1.0f, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 6, "m", "1", STATSD_COUNTER, 0.5f, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 7, "m", "1", STATSD_COUNTER, 1.0f, "#tag:x"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -138,5 +151,6 @@ int main()
     RUN_TEST(test_emit_timing_set_sampled);
     RUN_TEST(test_emit_global_tags);
     RUN_TEST(test_emit_noop_until_begin);
+    RUN_TEST(test_rate_clamp_and_stage_overflow);
     return UNITY_END();
 }

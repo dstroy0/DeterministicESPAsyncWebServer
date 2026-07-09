@@ -67,6 +67,16 @@ void test_set_pwm_bytes()
     TEST_ASSERT_EQUAL_INT(0, (int)pca9685_set_pwm_bytes(b, 5, 16, 0, 0)); // channel out of range
 }
 
+void test_prescale_zero_and_host_stubs()
+{
+    // Zero frequency takes the max-prescale early return.
+    TEST_ASSERT_TRUE(pca9685_prescale(0) > 0);
+    // Host build: the I2C bind functions all fail closed.
+    TEST_ASSERT_FALSE(pca9685_begin(0x40, 50));
+    TEST_ASSERT_FALSE(pca9685_set_pwm(0, 0, 2048));
+    TEST_ASSERT_FALSE(pca9685_set_servo_us(0, 1500));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -74,5 +84,6 @@ int main()
     RUN_TEST(test_channel_reg);
     RUN_TEST(test_us_to_count);
     RUN_TEST(test_set_pwm_bytes);
+    RUN_TEST(test_prescale_zero_and_host_stubs);
     return UNITY_END();
 }

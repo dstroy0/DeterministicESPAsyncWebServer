@@ -92,6 +92,22 @@ void test_cap_leak(void)
     TEST_ASSERT_EQUAL_INT(HW_CAP_OK, detws_hwhealth_cap_leak(50, 0, 10));
 }
 
+void test_rail_ok_spi_clamps_probes()
+{
+    HwRailMonitor m;
+    detws_hwhealth_rail_init(&m, 3300, 3000, 2800);
+    TEST_ASSERT_EQUAL_INT(HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300)); // nominal -> OK
+    HwSpiBackoff s;
+    detws_hwhealth_spi_init(&s, 1000000, 100000, 8000000, 2, 2);
+    for (int i = 0; i < 80; i++)
+        detws_hwhealth_spi_result(&s, false); // repeated CRC fails drive toward min_hz
+    for (int i = 0; i < 80; i++)
+        detws_hwhealth_spi_result(&s, true); // repeated successes ramp toward max_hz
+    detws_hwhealth_gpio_short(true, false);
+    detws_hwhealth_cap_leak(90, 100, 5);
+    TEST_PASS();
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -100,5 +116,6 @@ int main(void)
     RUN_TEST(test_spi_backoff_clamps);
     RUN_TEST(test_gpio_short);
     RUN_TEST(test_cap_leak);
+    RUN_TEST(test_rail_ok_spi_clamps_probes);
     return UNITY_END();
 }

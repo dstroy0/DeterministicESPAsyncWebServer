@@ -88,6 +88,20 @@ void test_json_omits_core_when_absent_and_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, tiny, sizeof(tiny)));
 }
 
+void test_upper_hex_and_json_overflow()
+{
+    ExcInfo info;
+    // Uppercase hex addresses exercise the A-F branch of the nibble parser.
+    const char *up = "Guru Meditation Error: Core  0 panic'ed (StoreProhibited).\n"
+                     "Backtrace: 0x400D1234:0x3FFB2200 0x400DABCD:0x3FFB2220\n";
+    TEST_ASSERT_TRUE(detws_exc_parse(up, &info));
+    TEST_ASSERT_EQUAL_HEX32(0x400D1234, info.frames[0].pc);
+    TEST_ASSERT_EQUAL_HEX32(0x400DABCD, info.frames[1].pc);
+    char buf[256];
+    TEST_ASSERT_TRUE(detws_exc_json(&info, buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 8)); // tiny cap fails closed
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -96,5 +110,6 @@ int main(void)
     RUN_TEST(test_backtrace_only_and_corrupted);
     RUN_TEST(test_garbage_returns_false);
     RUN_TEST(test_json_omits_core_when_absent_and_overflow);
+    RUN_TEST(test_upper_hex_and_json_overflow);
     return UNITY_END();
 }

@@ -108,6 +108,19 @@ void test_json(void)
     TEST_ASSERT_NOT_NULL(strstr(buf, "\"overdue\":true"));
 }
 
+void test_millis_wrappers_and_json()
+{
+    detws_failsafe_reset();
+    int id = detws_failsafe_register("alpha", 1000); // clock-reading wrapper
+    TEST_ASSERT_TRUE(id >= 0);
+    TEST_ASSERT_TRUE(detws_failsafe_feed(id)); // clock-reading wrapper
+    detws_failsafe_check();                    // clock-reading wrapper
+    // A second lifeline drives the JSON comma separator.
+    detws_failsafe_register("beta", 1000);
+    char buf[256];
+    TEST_ASSERT_TRUE(detws_failsafe_json_at(0, buf, sizeof(buf)) > 0);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -117,5 +130,6 @@ int main(void)
     RUN_TEST(test_registry_full);
     RUN_TEST(test_feed_bad_id);
     RUN_TEST(test_json);
+    RUN_TEST(test_millis_wrappers_and_json);
     return UNITY_END();
 }

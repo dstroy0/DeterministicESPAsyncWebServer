@@ -86,6 +86,15 @@ void test_esc_pwm_mapping(void)
     TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DETWS_ESC_ONESHOT125));
 }
 
+void test_bit_ns_all_rates()
+{
+    // Each supported line rate maps to a non-zero bit period; an unknown rate is rejected.
+    TEST_ASSERT_TRUE(detws_dshot_bit_ns(150, true) > 0);
+    TEST_ASSERT_TRUE(detws_dshot_bit_ns(300, false) > 0);
+    TEST_ASSERT_TRUE(detws_dshot_bit_ns(1200, true) > 0);
+    TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -96,5 +105,6 @@ int main(void)
     RUN_TEST(test_decode_roundtrip_and_crc);
     RUN_TEST(test_bit_timing);
     RUN_TEST(test_esc_pwm_mapping);
+    RUN_TEST(test_bit_ns_all_rates);
     return UNITY_END();
 }

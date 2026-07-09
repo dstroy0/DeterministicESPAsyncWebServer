@@ -115,6 +115,19 @@ void test_broadcast_address()
         TEST_ASSERT_EQUAL_UINT8(0xFF, DETWS_ESPNOW_BROADCAST[i]);
 }
 
+void test_peer_guard_and_host_stubs()
+{
+    detws_espnow_peers_reset();
+    TEST_ASSERT_FALSE(detws_espnow_peer_add(nullptr)); // null mac fails closed
+    // Host build: the ESP-NOW bind functions are unavailable.
+    TEST_ASSERT_FALSE(detws_espnow_begin(1, nullptr));
+    uint8_t mac[6] = {1, 2, 3, 4, 5, 6};
+    detws_espnow_add_peer(mac); // delegates to the pure peer registry
+    uint8_t payload[2] = {0xAA, 0xBB};
+    TEST_ASSERT_FALSE(detws_espnow_send(mac, 1, payload, sizeof(payload)));
+    TEST_ASSERT_FALSE(detws_espnow_broadcast(1, payload, sizeof(payload)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -125,5 +138,6 @@ int main()
     RUN_TEST(test_peer_registry);
     RUN_TEST(test_peer_table_full_fails_closed);
     RUN_TEST(test_broadcast_address);
+    RUN_TEST(test_peer_guard_and_host_stubs);
     return UNITY_END();
 }

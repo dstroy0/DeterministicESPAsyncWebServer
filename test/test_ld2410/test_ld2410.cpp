@@ -198,6 +198,21 @@ void test_command_encoders()
     TEST_ASSERT_EQUAL_INT((int)(0), (int)(ld2410_cmd_config_enable(f, 4)));
 }
 
+void test_host_stubs_and_parse_guards()
+{
+    // Host build: the UART bind functions fail closed / return null.
+    TEST_ASSERT_FALSE(ld2410_begin(16, 17));
+    TEST_ASSERT_FALSE(ld2410_poll());
+    TEST_ASSERT_NULL(ld2410_last());
+    TEST_ASSERT_FALSE(ld2410_set_engineering(true));
+    TEST_ASSERT_FALSE(ld2410_restart());
+    // Malformed report frames fail closed.
+    Ld2410Report rep;
+    TEST_ASSERT_FALSE(ld2410_parse_report(nullptr, 20, &rep));
+    uint8_t too_short[4] = {0xF4, 0xF3, 0xF2, 0xF1};
+    TEST_ASSERT_FALSE(ld2410_parse_report(too_short, sizeof(too_short), &rep));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -208,5 +223,6 @@ int main()
     RUN_TEST(test_stream_absurd_length_drops);
     RUN_TEST(test_helpers);
     RUN_TEST(test_command_encoders);
+    RUN_TEST(test_host_stubs_and_parse_guards);
     return UNITY_END();
 }

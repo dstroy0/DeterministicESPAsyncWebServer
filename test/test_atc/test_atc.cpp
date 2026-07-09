@@ -69,6 +69,17 @@ void test_empty_and_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io2, small, sizeof(small)));
 }
 
+void test_json_escapes_and_overflow()
+{
+    AtcPoint pts[1] = {{"a\"b\\c", false, 1}}; // name with a quote + backslash gets escaped
+    AtcFieldIo io = {pts, 1};
+    char buf[128];
+    size_t n = detws_atc_snapshot_json(&io, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\\\""));                         // escaped quote present
+    TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -76,5 +87,6 @@ int main(void)
     RUN_TEST(test_set_output);
     RUN_TEST(test_get);
     RUN_TEST(test_empty_and_overflow);
+    RUN_TEST(test_json_escapes_and_overflow);
     return UNITY_END();
 }
