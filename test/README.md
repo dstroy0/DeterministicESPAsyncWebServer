@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2586 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2587 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16686,7 +16686,7 @@ A thorough directory of all **2586 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (17 tests)</b></summary>
+<summary><b>test_opcua_client (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_on_read_all_variant_types</b> &mdash; <i>On read all variant types</i></summary>
@@ -16913,6 +16913,16 @@ A thorough directory of all **2586 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, n, v, s, 1));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_write(resp, n, wr, 1));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_browse(resp, n, refs, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_on_open_guards</b> &mdash; <i>Non-empty SecurityPolicyUri exercises the cr_skip_string skip; then the missing ResponseHeader</i></summary>
+
+    * **Objective**: Non-empty SecurityPolicyUri exercises the cr_skip_string skip; then the missing ResponseHeader
+    * **Assertions**:
+      * <code>Assert false (opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (opcua_client_on_open(&c, buf, n))</code>
+      * <code>Assert false (opcua_client_on_open(&c, ovf, w.n))</code>
   </details>
 
 </details>
