@@ -114,19 +114,54 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, proxy_v2_build(v2small, sizeof(v2small), SRC, DST, 12345, 80)); // needs 28
 }
 
-void test_v1_malformed_addresses_fail_closed()
+// A complete (CRLF-terminated) v1 header whose 5-tuple is malformed: the header parses, but
+// the bad field leaves has_addr false (the address is only set when every field is valid).
+static bool no_addr(const char *line)
 {
     ProxyInfo info;
     size_t consumed = 0;
-    // Each malformed v1 source address drives a distinct parse_ipv4 reject path.
-    TEST_ASSERT_FALSE(
-        proxy_parse((const uint8_t *)"PROXY TCP4 25x.0.0.1 10.0.0.1 1 2 ", 34, &info, &consumed)); // non-digit
-    TEST_ASSERT_FALSE(
-        proxy_parse((const uint8_t *)"PROXY TCP4 999.0.0.1 10.0.0.1 1 2 ", 34, &info, &consumed)); // octet > 255
-    TEST_ASSERT_FALSE(
-        proxy_parse((const uint8_t *)"PROXY TCP4 10-0-0-1 10.0.0.1 1 2 ", 33, &info, &consumed)); // missing dot
-    TEST_ASSERT_FALSE(
-        proxy_parse((const uint8_t *)"PROXY TCP4 10.0.0 10.0.0.1 1 2 ", 31, &info, &consumed)); // three octets
+    bool ok = proxy_parse((const uint8_t *)line, strlen(line), &info, &consumed);
+    return ok && !info.has_addr;
+}
+
+void test_v1_malformed_addresses_fail_closed()
+{
+    // Each line is CRLF-terminated so it reaches parse_ipv4 / parse_u16 (a header without a
+    // CRLF is rejected earlier as "line not complete", exercising nothing in those parsers).
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 x.0.0.1 10.0.0.1 1 2\r\n"));       // non-digit octet start
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 999.0.0.1 10.0.0.1 1 2\r\n"));     // octet > 255
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10x0.0.0.1 10.0.0.1 1 2\r\n"));    // missing dot separator
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 1.2.3.4x 10.0.0.1 1 2\r\n"));      // trailing junk after 4 octets
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 123456 2\r\n")); // port > 5 digits
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 8x 2\r\n"));     // non-digit in port
+    TEST_ASSERT_TRUE(no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 99999 2\r\n"));  // port > 65535
+}
+
+void test_parse_and_build_guards()
+{
+    ProxyInfo info;
+    size_t consumed = 0;
+    // proxy_parse null-argument guards + proxy_v1_build null buffer.
+    TEST_ASSERT_FALSE(proxy_parse(nullptr, 16, &info, &consumed));
+    uint8_t any[16] = {0};
+    TEST_ASSERT_FALSE(proxy_parse(any, 16, nullptr, &consumed));
+    TEST_ASSERT_FALSE(proxy_parse(any, 16, &info, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, proxy_v1_build(nullptr, 64, SRC, DST, 1, 2));
+
+    // v2: signature + full header, but the declared address block isn't fully buffered.
+    uint8_t under[16] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
+                         0x55, 0x49, 0x54, 0x0A, 0x21, 0x11, 0x00, 0xFF}; // addr_len 255, only 16 octets present
+    TEST_ASSERT_FALSE(proxy_parse(under, sizeof(under), &info, &consumed));
+
+    // v2: signature + full header, but the version nibble is not 2.
+    uint8_t badver[16] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51,
+                          0x55, 0x49, 0x54, 0x0A, 0x31, 0x11, 0x00, 0x00}; // ver_cmd 0x31 -> high nibble 3
+    TEST_ASSERT_FALSE(proxy_parse(badver, sizeof(badver), &info, &consumed));
+
+    // v1 header with trailing spaces + too few tokens (tokenizer break-on-trailing-space path).
+    const char *sp = "PROXY UNKNOWN \r\n";
+    TEST_ASSERT_TRUE(proxy_parse((const uint8_t *)sp, strlen(sp), &info, &consumed));
+    TEST_ASSERT_FALSE(info.has_addr);
 }
 
 int main()
@@ -141,5 +176,6 @@ int main()
     RUN_TEST(test_incomplete);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_v1_malformed_addresses_fail_closed);
+    RUN_TEST(test_parse_and_build_guards);
     return UNITY_END();
 }
