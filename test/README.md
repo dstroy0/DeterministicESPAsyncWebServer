@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2595 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2597 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -1760,7 +1760,7 @@ A thorough directory of all **2595 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_auth_lockout (11 tests)</b></summary>
+<summary><b>test_auth_lockout (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_below_threshold_not_locked</b> &mdash; <i>Below threshold not locked</i></summary>
@@ -1860,6 +1860,14 @@ A thorough directory of all **2595 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (auth_lockout_remaining_ms(&victim, 0) &gt; 0)</code>
       * <code>Assert true (auth_lockout_remaining_ms(&victim, 1) &gt; 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_succeed_unspecified_and_table_full_eviction</b> &mdash; <i>Fill every bucket with an active lockout.</i></summary>
+
+    * **Objective**: Fill every bucket with an active lockout.
+    * **Assertions**:
+      * <code>Assert true (auth_lockout_remaining_ms(&extra, 100000u) &gt; 0)</code>
   </details>
 
 </details>
@@ -12149,7 +12157,7 @@ A thorough directory of all **2595 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_logbuf (4 tests)</b></summary>
+<summary><b>test_logbuf (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_append_and_order</b> &mdash; <i>Append and order</i></summary>
@@ -12189,6 +12197,16 @@ A thorough directory of all **2595 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (0, g_traps)</code>
       * <code>Assert equal int (2, g_traps)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_LOG_ERROR, g_last_level);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dump_guards</b> &mdash; <i>A dump buffer too small for the logged line fails closed.</i></summary>
+
+    * **Objective**: A dump buffer too small for the logged line fails closed.
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_log_dump(nullptr, sizeof(out)))</code>
+      * <code>Assert equal int (0, detws_log_dump(out, 0))</code>
+      * <code>Assert equal int (0, detws_log_dump(out, 8))</code>
   </details>
 
 </details>
