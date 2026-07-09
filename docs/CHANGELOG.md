@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dd69959`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd69959fc0749b6dfcc4f77412ccb5e8154284bc))
+- update CHANGELOG.md [skip ci] ([`35a0170`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35a0170f094407abeafdfa8e10c0290c579dd390))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ed399d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed399d9ebc1b04264eccd38fa14edbbd67bc1797))
+
+### Features
+
+- fs::FS adapter + hardware-verified SD durability ([`381ab1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/381ab1e29ceb58655b38b52bbab957b159435358))
+
 ## [5.66.0] - 2026-07-09
 
 <details>
@@ -25,24 +40,6 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - durable A/B superblock + checkpoint store over a block-device seam ([`a748bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a748bd51b1db0bbccb2a131fb058358cf894fe27))
 
 </details>
-
-## [5.65.0] - 2026-07-09
-
-<details>
-<summary><b>Show Changelog for version 5.65.0 - 2026-07-09</b></summary>
-
-### CI / Build
-
-- update test report + coverage [skip ci] ([`832b349`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/832b349ce2aa8eb507fe5ad6432e405ac733ee7e))
-- update CHANGELOG.md [skip ci] ([`74e71f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74e71f576f8e50d699a80c24c671ce7eba5d9d73))
-
-### Documentation
-
-- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a766fc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a766fc17fa157f24fd1907da77c8d487a33c5486))
-
-### Features
-
-- durable A/B superblock + checkpoint store over a block-device seam ([`a748bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a748bd51b1db0bbccb2a131fb058358cf894fe27))
 
 ## [5.65.0] - 2026-07-09
 
