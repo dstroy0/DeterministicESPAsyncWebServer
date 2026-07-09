@@ -418,6 +418,41 @@ void test_builder_overflow_guard()
     TEST_ASSERT_EQUAL_size_t(0, opcua_client_activate_session(&c, tiny, sizeof(tiny)));
 }
 
+void test_on_read_unknown_variant_rejected()
+{
+    // A server sending a DataValue whose Variant type byte is unsupported must be rejected, not
+    // mis-decoded. Build a valid UINT32 response with a distinctive value, then patch its type byte.
+    OpcUaClient c;
+    opcua_client_init(&c);
+    OpcUaReadItem items[1] = {{1, 1, true, OPCUA_ATTR_VALUE}};
+    uint8_t req[128];
+    size_t rn = opcua_client_read(&c, items, 1, req, sizeof(req));
+    OpcUaReadRequest rr;
+    TEST_ASSERT_TRUE(opcua_parse_read(req, rn, &rr));
+    OpcUaVariant sv[1];
+    uint32_t ss[1];
+    memset(sv, 0, sizeof(sv));
+    sv[0].type = OPCUA_VAR_UINT32;
+    sv[0].u32 = 0xA1B2C3D4; // distinctive little-endian marker D4 C3 B2 A1
+    ss[0] = OPCUA_STATUS_GOOD;
+    uint8_t resp[128];
+    size_t sn = opcua_build_read_response(&rr, sv, ss, 1, 0, resp, sizeof(resp));
+    TEST_ASSERT_TRUE(sn > 0);
+    int type_off = -1;
+    for (size_t i = 1; i + 4 < sn; i++)
+        if (resp[i] == OPCUA_VAR_UINT32 && resp[i + 1] == 0xD4 && resp[i + 2] == 0xC3 && resp[i + 3] == 0xB2 &&
+            resp[i + 4] == 0xA1)
+        {
+            type_off = (int)i;
+            break;
+        }
+    TEST_ASSERT_TRUE(type_off > 0);
+    resp[type_off] = 200; // an unsupported Variant type
+    OpcUaVariant cv[1];
+    uint32_t cs[1];
+    TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn, cv, cs, 1)); // default arm -> err -> -1
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -436,5 +471,6 @@ int main()
     RUN_TEST(test_close_channel_is_clo);
     RUN_TEST(test_seq_and_request_id_increment);
     RUN_TEST(test_builder_overflow_guard);
+    RUN_TEST(test_on_read_unknown_variant_rejected);
     return UNITY_END();
 }
