@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`035f0d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/035f0d2971e0c4fc6d05f0de7368120436587df8))
+- update CHANGELOG.md [skip ci] ([`19337c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19337c99a9835e95170924dd71011e8bc9de5a52))
 - update CHANGELOG.md [skip ci] ([`551b09a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/551b09a1ab78c9fa42c4b4db173754481ba6d6b6))
 - update CHANGELOG.md [skip ci] ([`a65a940`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a65a940ef956344af4960740e7c80bb8bad256cf))
 - update test report + coverage [skip ci] ([`ffd86c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffd86c1820070344be06dfaad73fbe2a25df30f5))
@@ -530,6 +532,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover header-parse edges, scratch exhaustion, malformed JWK modulus ([`ba1e934`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba1e9349c6481152fb544b7ff73660d80f8703ff))
 - complete malformed-DEFLATE coverage (100%) ([`2843975`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/284397505065b9ce6d59b7dd2f544b62d16f1410))
 - cover empty-distance-code + back-ref length overflow ([`819ff9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/819ff9c016d8446b7992950a01145b8e919f3987))
 - cover dynamic-block code-length + table-construction guards ([`020c649`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/020c64971120eef53cf2fbe64e420a535e00196e))
