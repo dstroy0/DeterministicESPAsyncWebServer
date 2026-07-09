@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **209 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **210 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -244,6 +244,7 @@ The native test matrix has **209 environments**, one per feature, generated from
 | `native_southbound` | `ETWS_ENABLE_SOUTHBOUND=1` | `test_southbound` | Southbound protocol-driver framework (services/southbound): the bounded driver registry (register / find / clear / count) and the name-dispatched read/write/read_block/write_block facade, including ca... |
 | `native_spa_router` | `ETWS_ENABLE_SPA_ROUTER=1` | `test_spa_router` | Single-page-app micro-routing (services/spa_router): the serve-file / serve-shell / passthrough decision from a request path (extension test + API prefix). |
 | `native_sparkplug` | `ETWS_ENABLE_SPARKPLUG=1` | `test_sparkplug` | Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload protobuf serializers (over the protobuf codec). |
+| `native_sqlite` | `ETWS_ENABLE_SQLITE=1` | `test_sqlite` | SQLite3 on-disk file-format reader (services/sqlite): the 100-byte database header, the b-tree page header, the record varint, and record serial types, parsed by hand. |
 | `native_ssh` | `ETWS_SSH_MAX_CHANNELS=3` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing |
 | `native_ssh_chachapoly` | default | `test_ssh_chachapoly` | chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC 8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction (length decode, encrypt... |
 | `native_ssh_comp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ... |
@@ -499,7 +500,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2717 test cases** across **231 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2724 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24205,6 +24206,115 @@ A thorough directory of all **2717 test cases** across **231 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, spb_build_metric(small, sizeof(small), &m));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, spb_build_topic(tsmall, sizeof(tsmall), "group1", "NDATA", "edge1", nullptr));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_sqlite (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
+
+    * **Objective**: Db header real file
+    * **Assertions**:
+      * <code>Assert true (sqlite_parse_db_header(PAGE1, sizeof(PAGE1), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(512, h.page_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, h.write_version); // legacy rollback journal</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, h.read_version);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, h.reserved_per_page);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, h.page_count);    // matches PRAGMA page_count</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, h.schema_cookie); // matches PRAGMA schema_version</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, h.schema_format);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);        // UTF-8</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3046001, h.sqlite_version); // SQLite 3.46.1</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.freelist_first);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_db_header_rejects_bad_magic</b> &mdash; <i>Too short also fails.</i></summary>
+
+    * **Objective**: Too short also fails.
+    * **Assertions**:
+      * <code>Assert false (sqlite_parse_db_header(bad, sizeof(bad), &h))</code>
+      * <code>Assert false (sqlite_parse_db_header(PAGE1, 99, &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_btree_header_real_page1</b> &mdash; <i>Page 1's b-tree header follows the 100-byte database header.</i></summary>
+
+    * **Objective**: Page 1's b-tree header follows the 100-byte database header.
+    * **Assertions**:
+      * <code>Assert true (sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, b.first_freeblock);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, b.cell_count); // one schema row (the CREATE TABLE)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(463, b.cell_content_start);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, b.header_size); // leaf</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, b.right_most_page);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_btree_header_rejects_bad_type</b> &mdash; <i>A valid leaf type but the header runs past the buffer.</i></summary>
+
+    * **Objective**: A valid leaf type but the header runs past the buffer.
+    * **Assertions**:
+      * <code>Assert false (sqlite_parse_btree_header(page, sizeof(page), 0, &b))</code>
+      * <code>Assert false (sqlite_parse_btree_header(page, 4, 0, &b))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_first_cell_varints</b> &mdash; <i>The single cell pointer lives right after the 8-byte leaf header (offset 108), big-endian u16.</i></summary>
+
+    * **Objective**: The single cell pointer lives right after the 8-byte leaf header (offset 108), big-endian u16.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(463, cell_off);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(47, payload_len); // 0x2f</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, n2);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, rowid);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_varint_spec_vectors</b> &mdash; <i>All nine bytes set -> the full 64-bit value.</i></summary>
+
+    * **Objective**: All nine bytes set -> the full 64-bit value.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(1, sqlite_varint_decode(a, 1, &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, sqlite_varint_decode(b, 1, &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(127, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, sqlite_varint_decode(c, 2, &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(128, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, sqlite_varint_decode(d, 2, &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(303, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(9, sqlite_varint_decode(big, 9, &v));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0xFFFFFFFFFFFFFFFFull, v);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, sqlite_varint_decode(inc, 1, &v));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serial_type_sizes</b> &mdash; <i>Serial type sizes</i></summary>
+
+    * **Objective**: Serial type sizes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(0)); // NULL</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(2, sqlite_serial_type_size(2));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(3, sqlite_serial_type_size(3));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(4, sqlite_serial_type_size(4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(6, sqlite_serial_type_size(5));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(8, sqlite_serial_type_size(6));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(8, sqlite_serial_type_size(7));  // float64</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(8));  // int 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(9));  // int 1</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(10)); // reserved</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(11)); // reserved</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(12)); // BLOB len 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(14)); // BLOB len 1</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(13)); // TEXT len 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(15)); // TEXT len 1  (seen in the real record)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5, sqlite_serial_type_size(23)); // TEXT len 5  ("table", the real record)</code>
   </details>
 
 </details>

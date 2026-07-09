@@ -956,6 +956,12 @@ Opt-in single-page-app micro-routing decision. When set, services/spa_router pro
 
 Sparkplug B payload + topic codec - the Eclipse Sparkplug B industrial-IoT format over MQTT. Default off; implies PROTOBUF (the payload is a Protobuf message). services/sparkplug builds the topic (`spb_build_topic` -> `spBv1.0/group/type/node[/device]`) and serializes the payload over the protobuf codec: `spb_build_metric` emits one Tahu Metric (name / alias / timestamp / datatype + a value - int / long / float / double / boolean / string), and `spb_build_payload` wraps the timestamp + metrics + seq. Field numbers and datatype codes are verified against the Eclipse Tahu sparkplug_b.proto. Pure and host-tested; publish the payload with the MQTT client. See src/services/sparkplug/sparkplug.h.
 
+## SQLite
+
+`DETWS_ENABLE_SQLITE`
+
+Opt-in SQLite3 on-disk file-format reader (services/sqlite). Default off. This is file-format access, not the SQLite library: the documented SQLite3 database file structure parsed by hand - the 100-byte database header, the b-tree page header, the record varint, and record serial types - so a device can read a SQLite file (from wal_fs / fs::FS) without the SQLite amalgamation, which needs a heap and stdio and does not fit the no-stdlib zero-heap model. Read-first (a bounded writer is a later step); pure (you hand it page bytes, it does no I/O) and host-tested against a real database produced by the sqlite3 CLI (page-1 header, b-tree header, first-cell varints) plus varint and serial-type spec vectors.
+
 ## SSE
 
 `DETWS_ENABLE_SSE`

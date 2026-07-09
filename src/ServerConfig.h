@@ -2850,6 +2850,19 @@
 #endif
 
 /**
+ * @brief Opt-in SQLite3 on-disk file-format reader (DETWS_ENABLE_SQLITE).
+ *
+ * services/sqlite parses the documented SQLite database file structure by hand - the 100-byte database
+ * header, the b-tree page header, the record varint, and record serial types - so a device can read a
+ * SQLite file (from wal_fs / fs::FS) without the SQLite amalgamation (which needs a heap + stdio and does
+ * not fit the no-stdlib zero-heap model). Read-first (a bounded writer is a later step); pure, host-tested
+ * against real files from the sqlite3 CLI. Default off.
+ */
+#ifndef DETWS_ENABLE_SQLITE
+#define DETWS_ENABLE_SQLITE 0
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

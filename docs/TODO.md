@@ -77,9 +77,14 @@ layer built first, then the store codecs on top. Substrate before stores.
       tombstone resurrection, persistence across remount with/without checkpoint, collisions, index-full
       fail-closed, bounds, max-value round-trip). _Follow-up:_ log compaction to reclaim space from
       overwritten/deleted keys (the log currently only grows).
-- [ ] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
+- [~] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
-      incompatible with the no-stdlib zero-heap model).
+      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - the pure parsing
+      foundation is **done** (`services/sqlite/sqlite_format.h`: database header, b-tree page header,
+      the varint, and record serial-type sizes), host-tested against a real sqlite3-CLI file plus spec
+      vectors (7 cases). **Remaining:** walk a table b-tree (cell parser -> record header -> column
+      values) to actually read rows, following interior-page pointers across pages; then a bounded
+      writer.
 - [ ] **nosql**: a NoSQL store - target TBD (a Redis RESP or MongoDB OP_MSG/BSON **wire client**, or a
       local on-flash document / KV store). Scope with the user before building.
 
