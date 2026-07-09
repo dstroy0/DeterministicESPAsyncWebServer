@@ -76,6 +76,17 @@ void test_parse_rejects(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(65, MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));
 }
 
+void test_build_parse_and_token_wrap()
+{
+    uint8_t out[64];
+    uint8_t payload[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(1, 0, payload, sizeof(payload), out, 2)); // cap too small
+    MbPlusFrame fr;
+    uint8_t tiny[2] = {0, 0};
+    TEST_ASSERT_FALSE(detws_mbplus_parse(tiny, sizeof(tiny), &fr)); // too short
+    TEST_ASSERT_EQUAL_UINT8(1, detws_mbplus_next_token(8, 8));      // current == max -> wrap to 1
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -84,5 +95,6 @@ int main(void)
     RUN_TEST(test_token_frame_no_payload);
     RUN_TEST(test_next_token_ring);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_build_parse_and_token_wrap);
     return UNITY_END();
 }

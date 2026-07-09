@@ -73,6 +73,19 @@ void test_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_interbus_parse(buf, n, out, 1, &count));
 }
 
+void test_build_parse_guards()
+{
+    uint8_t out[64];
+    uint16_t words[2] = {0x1234, 0x5678};
+    TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(nullptr, 2, out, sizeof(out))); // null words
+    TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(words, 2, out, 2));             // cap too small
+    uint16_t ow[4];
+    size_t oc = 0;
+    TEST_ASSERT_FALSE(detws_interbus_parse(nullptr, 10, ow, 4, &oc)); // null frame
+    uint8_t tiny[2] = {0, 0};
+    TEST_ASSERT_FALSE(detws_interbus_parse(tiny, sizeof(tiny), ow, 4, &oc)); // too short
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -80,5 +93,6 @@ int main(void)
     RUN_TEST(test_build_and_parse);
     RUN_TEST(test_empty_frame);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_build_parse_guards);
     return UNITY_END();
 }

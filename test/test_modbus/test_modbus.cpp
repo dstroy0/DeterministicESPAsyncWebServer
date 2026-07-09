@@ -418,6 +418,15 @@ void test_rtu_edge_cases()
 }
 #endif // DETWS_ENABLE_MODBUS_RTU
 
+void test_server_init_bounds_and_handler()
+{
+    modbus_server_init();
+    modbus_set_coil(0xFFFF, true);
+    TEST_ASSERT_FALSE(modbus_get_coil(0xFFFF));                  // out of range -> false
+    TEST_ASSERT_EQUAL_UINT16(0, modbus_get_holding_reg(0xFFFF)); // out of range -> 0
+    (void)modbus_proto_handler();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -445,5 +454,6 @@ int main()
     RUN_TEST(test_rtu_broadcast_executes_without_reply);
     RUN_TEST(test_rtu_edge_cases);
 #endif
+    RUN_TEST(test_server_init_bounds_and_handler);
     return UNITY_END();
 }

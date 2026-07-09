@@ -95,6 +95,16 @@ void test_parse_rejects(void)
     TEST_ASSERT_FALSE(detws_rtps_parse(msg, 10, nullptr, nullptr));
 }
 
+void test_rtps_build_guards()
+{
+    uint8_t out[8];
+    uint8_t guid[12] = {0};
+    uint8_t vendor[2] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, detws_rtps_header(guid, vendor, out, 4)); // cap too small
+    uint8_t body[4] = {1, 2, 3, 4};
+    TEST_ASSERT_EQUAL_size_t(0, detws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -102,5 +112,6 @@ int main(void)
     RUN_TEST(test_submessage_endianness);
     RUN_TEST(test_parse_message);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_rtps_build_guards);
     return UNITY_END();
 }

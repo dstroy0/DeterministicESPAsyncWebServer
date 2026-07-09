@@ -60,6 +60,18 @@ void test_presleep(void)
     TEST_ASSERT_TRUE(detws_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u));
 }
 
+void test_refresh_interval_and_beacon()
+{
+    (void)detws_mdns_refresh_interval(0); // ttl 0 edge
+    (void)detws_mdns_refresh_interval(3600);
+    MdnsBeacon b;
+    detws_mdns_beacon_init(&b, 1000, 60000, 3);
+    detws_mdns_beacon_adapt(&b, 5);                           // high contention
+    detws_mdns_beacon_adapt(&b, 0);                           // no contention
+    TEST_ASSERT_FALSE(detws_mdns_beacon_due(&b, 1000, 1000)); // not yet due
+    detws_mdns_beacon_init(nullptr, 0, 0, 0);                 // null guard
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -67,5 +79,6 @@ int main(void)
     RUN_TEST(test_backoff_and_recover);
     RUN_TEST(test_due);
     RUN_TEST(test_presleep);
+    RUN_TEST(test_refresh_interval_and_beacon);
     return UNITY_END();
 }

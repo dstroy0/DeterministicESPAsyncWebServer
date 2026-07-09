@@ -118,6 +118,14 @@ void test_host_twai_stubs_fail_closed()
     bus_capture_end();  // no-op, must not crash
 }
 
+void test_host_can_stubs()
+{
+    // Host build: no TWAI/CAN peripheral. begin() fails; poll/end are no-ops.
+    TEST_ASSERT_FALSE(bus_capture_begin(4, 5, 500000, nullptr));
+    bus_capture_poll();
+    bus_capture_end();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -127,5 +135,6 @@ int main()
     RUN_TEST(test_masks_and_bounds);
     RUN_TEST(test_pcap_can_linktype);
     RUN_TEST(test_host_twai_stubs_fail_closed);
+    RUN_TEST(test_host_can_stubs);
     return UNITY_END();
 }

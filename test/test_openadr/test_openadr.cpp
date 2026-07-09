@@ -64,6 +64,18 @@ void test_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", &iv, 1, buf, sizeof(buf)));
 }
 
+void test_openadr_escape_and_overflow()
+{
+    char out[512];
+    size_t n = detws_openadr_event("prog", "line1\nline2", nullptr, 0, out, sizeof(out));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_NOT_NULL(strstr(out, "\\n"));                                                       // newline escaped
+    TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", nullptr, 0, nullptr, sizeof(out)));   // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "eventNameTooLong", nullptr, 0, out, 8));  // overflow
+    TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "r", 1.0, 0, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "res", 1.0, 0, out, 8));             // overflow
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -71,5 +83,6 @@ int main(void)
     RUN_TEST(test_report_negative_value);
     RUN_TEST(test_json_escape);
     RUN_TEST(test_overflow);
+    RUN_TEST(test_openadr_escape_and_overflow);
     return UNITY_END();
 }

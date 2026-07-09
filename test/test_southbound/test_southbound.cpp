@@ -155,6 +155,15 @@ void test_registry_full(void)
     TEST_ASSERT_EQUAL_INT(8, registered);
 }
 
+void test_dispatch_not_found_guards()
+{
+    detws_southbound_clear();
+    TEST_ASSERT_NULL(detws_southbound_find("nope")); // not registered -> null
+    int32_t v = 0;
+    TEST_ASSERT_EQUAL_INT(SB_ERR_NOT_FOUND, detws_southbound_read("nope", 0, &v));  // no driver
+    TEST_ASSERT_EQUAL_INT(SB_ERR_NOT_FOUND, detws_southbound_write("nope", 0, 42)); // no driver
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -163,5 +172,6 @@ int main(void)
     RUN_TEST(test_block_atomic);
     RUN_TEST(test_unsupported_capability);
     RUN_TEST(test_registry_full);
+    RUN_TEST(test_dispatch_not_found_guards);
     return UNITY_END();
 }

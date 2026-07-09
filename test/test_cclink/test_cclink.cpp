@@ -68,6 +68,17 @@ void test_parse_rejects(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(64, CCLINK_CMD_POLL, nullptr, 0, nullptr, 0, buf, sizeof(buf)));
 }
 
+void test_build_and_accessor_guards()
+{
+    uint8_t out[64];
+    uint8_t bits[2] = {0xFF, 0x00};
+    uint8_t words[4] = {0x12, 0x34, 0x56, 0x78};
+    TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(1, 0, bits, 16, words, 2, out, 2)); // cap too small
+    detws_cclink_set_bit(bits, 16, 999, true);                                         // out of range -> no-op
+    TEST_ASSERT_FALSE(detws_cclink_get_bit(bits, 16, 999));                            // out of range -> false
+    TEST_ASSERT_EQUAL_UINT16(0, detws_cclink_get_word(words, 2, 999));                 // out of range -> 0
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -75,5 +86,6 @@ int main(void)
     RUN_TEST(test_build_and_parse);
     RUN_TEST(test_bit_accessors);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_build_and_accessor_guards);
     return UNITY_END();
 }
