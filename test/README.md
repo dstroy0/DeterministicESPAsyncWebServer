@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2669 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2670 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -9592,7 +9592,23 @@ A thorough directory of all **2669 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_http_delivery (7 tests)</b></summary>
+<summary><b>test_http_delivery (8 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_and_builder_edge_guards</b> &mdash; <i>Oversized start (>10 digits) -> read_u32 overflow guard rejects.</i></summary>
+
+    * **Objective**: Oversized start (>10 digits) -> read_u32 overflow guard rejects.
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_delivery_range("bytes=99999999999-", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, detws_delivery_range("bytes=5", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, detws_delivery_range("bytes=0-99999999999", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, detws_delivery_range("bytes=0-5 ", 1000, &s, &e))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, e);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n&gt;0, null paths</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_swr_decision</b> &mdash; <i>max-age=60, swr=30.</i></summary>
