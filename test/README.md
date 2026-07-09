@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2683 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2684 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23355,7 +23355,18 @@ A thorough directory of all **2683 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_v3 (20 tests)</b></summary>
+<summary><b>test_snmp_v3 (21 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v3_response_scopedpdu_overflow</b> &mdash; <i>V3 response scopedpdu overflow</i></summary>
+
+    * **Objective**: V3 response scopedpdu overflow
+    * **Assertions**:
+      * <code>Assert true (snmp_agent_add_dynamic(big_oid, 9, BER_OCTET_STRING, big_getter))</code>
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (saw_overflow)</code>
+      * <code>Assert true (saw_ok)</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v3_field_tag_corruption</b> &mdash; <i>Walk the message exactly as snmp_v3_process does, recording each field's offset.</i></summary>
