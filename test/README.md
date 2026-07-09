@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2486 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2488 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -18160,7 +18160,7 @@ A thorough directory of all **2486 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_provisioning (5 tests)</b></summary>
+<summary><b>test_provisioning (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_plain_fields</b> &mdash; <i>Plain fields</i></summary>
@@ -18209,6 +18209,28 @@ A thorough directory of all **2486 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_prov_form_field("ssid=abcdef", "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("abc", v)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_form_field_null_guards</b> &mdash; <i>Any null argument (or zero cap) fails closed and leaves a writable out empty.</i></summary>
+
+    * **Objective**: Any null argument (or zero cap) fails closed and leaves a writable out empty.
+    * **Assertions**:
+      * <code>Assert false (detws_prov_form_field(nullptr, "ssid", v, sizeof(v)))</code>
+      * <code>Assert equal string ("", v)</code>
+      * <code>Assert false (detws_prov_form_field("ssid=x", nullptr, v, sizeof(v)))</code>
+      * <code>Assert false (detws_prov_form_field("ssid=x", "ssid", nullptr, sizeof(v)))</code>
+      * <code>Assert false (detws_prov_form_field("ssid=x", "ssid", v, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_host_provisioning_stubs</b> &mdash; <i>On host there is no NVS/WiFi: load reports no stored creds and clears the buffers; clear no-ops.</i></summary>
+
+    * **Objective**: On host there is no NVS/WiFi: load reports no stored creds and clears the buffers; clear no-ops.
+    * **Assertions**:
+      * <code>Assert false (detws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)))</code>
+      * <code>Assert equal string ("", ssid)</code>
+      * <code>Assert equal string ("", psk)</code>
   </details>
 
 </details>
