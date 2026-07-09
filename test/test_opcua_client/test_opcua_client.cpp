@@ -407,6 +407,17 @@ void test_client_parsers_reject_malformed()
     TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_read(resp, sn - 4, v, s, 1));
 }
 
+void test_builder_overflow_guard()
+{
+    // A capacity too small for even the frame header overflows the writer; cw_patch returns 0.
+    uint8_t tiny[6];
+    TEST_ASSERT_EQUAL_size_t(0, opcua_client_hello("opc.tcp://host:4840", tiny, sizeof(tiny)));
+    OpcUaClient c;
+    opcua_client_init(&c);
+    TEST_ASSERT_EQUAL_size_t(0, opcua_client_open(&c, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_size_t(0, opcua_client_activate_session(&c, tiny, sizeof(tiny)));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -424,5 +435,6 @@ int main()
     RUN_TEST(test_close_session_roundtrip);
     RUN_TEST(test_close_channel_is_clo);
     RUN_TEST(test_seq_and_request_id_increment);
+    RUN_TEST(test_builder_overflow_guard);
     return UNITY_END();
 }
