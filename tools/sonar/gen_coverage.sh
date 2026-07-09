@@ -37,6 +37,6 @@ for e in $envs; do
     echo "::endgroup::"
 done
 
-python3 tools/sonar/merge_coverage.py coverage.xml "coverage_reports/*.xml"
+python3 tools/sonar/merge_coverage.py test/coverage.xml "coverage_reports/*.xml"
 rm -rf coverage_reports
-echo "wrote coverage.xml"
+echo "wrote test/coverage.xml"

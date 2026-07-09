@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Union per-env SonarQube generic-coverage reports into one.
+"""Union per-env SonarQube generic-coverage reports into one, with optional baseline overlay.
 
 gcov cannot merge the same source compiled with different flags across envs in a
 single pass (it raises a worker exception), so gen_coverage.sh emits one report
@@ -7,44 +7,93 @@ per env and this unions them: a line is covered if it is covered in ANY env, and
 the per-line branch counts from the env that covered the most branches are kept.
 Output is a single SonarQube generic-coverage report (one <file> per path).
 
-Usage: merge_coverage.py <out.xml> <report-glob>
+Incremental (affected-only) CI runs pass --baseline: only the envs affected by the
+diff run, so the fresh reports cover only some files. The committed coverage.xml is
+overlaid so the output is still whole-project:
+
+  * a file listed in --changed (the .cpp that actually changed) is REPLACED by its
+    fresh coverage - the baseline's line numbers are stale after the edit, and the
+    changed feature's env(s) ran to completion so the fresh view is authoritative;
+  * any other file present in a fresh report (a shared header, or a neighbour source
+    recompiled because it shares an env) is UNIONED with the baseline - a partial run
+    only exercised part of its callers, so replacing would wrongly lower it;
+  * a file only in the baseline (not recompiled this run) is kept verbatim.
+
+Usage:
+    merge_coverage.py <out.xml> <report-glob>
+    merge_coverage.py <out.xml> <report-glob> --baseline coverage.xml --changed changed.txt
 """
 
+import argparse
 import glob
-import sys
 import xml.etree.ElementTree as ET
 
 
-def main():
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "coverage.xml"
-    rep_glob = sys.argv[2] if len(sys.argv) > 2 else "coverage_reports/*.xml"
+def parse_report(path, into):
+    """Union one SonarQube report at `path` into the {path: {line: [cov,btc,cb]}} dict `into`."""
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, FileNotFoundError):
+        return False
+    for f in root.findall("file"):
+        _union_file(into.setdefault(f.get("path"), {}), f)
+    return True
 
-    # files[path][line] = [covered(bool), branchesToCover(int|None), coveredBranches(int|None)]
+
+def _union_line(lines, ln, cov, btc, cb):
+    if ln not in lines:
+        lines[ln] = [cov, btc, cb]
+    else:
+        cur = lines[ln]
+        cur[0] = cur[0] or cov
+        # keep the branch pair from whichever env covered the most branches
+        if (cb if cb is not None else -1) > (cur[2] if cur[2] is not None else -1):
+            cur[1], cur[2] = btc, cb
+
+
+def _union_file(lines, file_el):
+    for lc in file_el.findall("lineToCover"):
+        ln = int(lc.get("lineNumber"))
+        cov = lc.get("covered") == "true"
+        btc = lc.get("branchesToCover")
+        cb = lc.get("coveredBranches")
+        _union_line(lines, ln, cov, int(btc) if btc is not None else None, int(cb) if cb is not None else None)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("out", nargs="?", default="coverage.xml")
+    ap.add_argument("reports", nargs="?", default="coverage_reports/*.xml", help="glob of per-env reports")
+    ap.add_argument("--baseline", help="committed coverage.xml to overlay under the fresh reports")
+    ap.add_argument("--changed", help="file with one changed path per line; these are replaced, not unioned")
+    args = ap.parse_args()
+
+    # 1) Union the fresh per-env reports (this run's actual coverage).
     files = {}
     nrep = 0
-    for rep in sorted(glob.glob(rep_glob)):
-        try:
-            root = ET.parse(rep).getroot()
-        except ET.ParseError:
-            continue
-        nrep += 1
-        for f in root.findall("file"):
-            lines = files.setdefault(f.get("path"), {})
-            for lc in f.findall("lineToCover"):
-                ln = int(lc.get("lineNumber"))
-                cov = lc.get("covered") == "true"
-                btc = lc.get("branchesToCover")
-                cb = lc.get("coveredBranches")
-                btc = int(btc) if btc is not None else None
-                cb = int(cb) if cb is not None else None
-                if ln not in lines:
-                    lines[ln] = [cov, btc, cb]
-                else:
-                    cur = lines[ln]
-                    cur[0] = cur[0] or cov
-                    # keep the branch pair from whichever env covered the most branches
-                    if (cb if cb is not None else -1) > (cur[2] if cur[2] is not None else -1):
-                        cur[1], cur[2] = btc, cb
+    for rep in sorted(glob.glob(args.reports)):
+        if parse_report(rep, files):
+            nrep += 1
+
+    # 2) Overlay the baseline so the report stays whole-project on a partial run.
+    if args.baseline:
+        changed = set()
+        if args.changed:
+            try:
+                with open(args.changed, encoding="utf-8") as fh:
+                    changed = {ln.strip().replace("\\", "/") for ln in fh if ln.strip()}
+            except FileNotFoundError:
+                pass
+        base = {}
+        parse_report(args.baseline, base)
+        for path, lines in base.items():
+            if path in changed:
+                continue  # changed source: baseline is stale, keep only the fresh view
+            if path not in files:
+                files[path] = lines  # untouched file: keep the baseline verbatim
+            else:
+                for ln, val in lines.items():  # shared/recompiled: union (never lower)
+                    _union_line(files[path], ln, val[0], val[1], val[2])
 
     cov_el = ET.Element("coverage", {"version": "1"})
     for path in sorted(files):
@@ -56,8 +105,9 @@ def main():
                 attrs["branchesToCover"] = str(btc)
                 attrs["coveredBranches"] = str(cb if cb is not None else 0)
             ET.SubElement(fe, "lineToCover", attrs)
-    ET.ElementTree(cov_el).write(out_path, encoding="utf-8", xml_declaration=True)
-    print(f"merged {nrep} reports -> {out_path}: {len(files)} files, {sum(len(v) for v in files.values())} lines")
+    ET.ElementTree(cov_el).write(args.out, encoding="utf-8", xml_declaration=True)
+    tag = f" (+baseline {args.baseline})" if args.baseline else ""
+    print(f"merged {nrep} reports{tag} -> {args.out}: {len(files)} files, {sum(len(v) for v in files.values())} lines")
 
 
 if __name__ == "__main__":

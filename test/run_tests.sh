@@ -15,9 +15,18 @@ set -uo pipefail
 # runs the whole suite ONCE for both the test report and the Sonar scan instead of twice. Strip the
 # flag out of $@ so an explicit env list still works.
 COVERAGE=0
+REPORT_OUT=""      # --report-out PATH: write the report here instead of the default (partial runs)
+COV_BASELINE=""    # --cov-baseline coverage.xml: overlay this baseline under the fresh per-env coverage
+COV_CHANGED=""     # --cov-changed list.txt: changed paths to REPLACE (not union) in the baseline overlay
 _pos=()
-for _a in "$@"; do
-    if [[ "$_a" == "--coverage" ]]; then COVERAGE=1; else _pos+=("$_a"); fi
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --coverage) COVERAGE=1; shift ;;
+        --report-out) REPORT_OUT="$2"; shift 2 ;;
+        --cov-baseline) COV_BASELINE="$2"; shift 2 ;;
+        --cov-changed) COV_CHANGED="$2"; shift 2 ;;
+        *) _pos+=("$1"); shift ;;
+    esac
 done
 set -- ${_pos[@]+"${_pos[@]}"}
 
@@ -43,7 +52,8 @@ else
     PROJECT_ROOT="$SCRIPT_DIR"
 fi
 TEST_DIR="${PROJECT_ROOT}/test"
-REPORT_PATH="${PROJECT_ROOT}/docs/TEST_REPORT.md"
+REPORT_PATH="${PROJECT_ROOT}/test/TEST_REPORT.md"
+[[ -n "$REPORT_OUT" ]] && REPORT_PATH="$REPORT_OUT"
 
 # ── Find pio ──────────────────────────────────────────────────────────────────
 
@@ -443,7 +453,7 @@ for (( i=0; i<T_IDX; i++ )); do
     _gicon="✅"; [[ $_fail -gt 0 ]] && _gicon="❌"
     _brief=$(get_suite_brief "$_suite") || true
 
-    _header="## ${_suite} - ${_gicon} ${_pass} passed"
+    _header="## ${_suite} - ${_env} - ${_gicon} ${_pass} passed"
     [[ $_fail -gt 0 ]] && _header+=", ${_fail} failed"
     echo "$_header"
     echo ""
@@ -484,28 +494,22 @@ for (( i=0; i<T_IDX; i++ )); do
     echo ""
 done
 
-# Collapsible raw output
-cat <<'RAWEOF'
-## Raw Output
-
-<details>
-<summary>Expand full pio output</summary>
-
-```
-RAWEOF
-cat "$CLEAN_FILE"
-printf '```\n\n</details>\n'
-
 } > "$REPORT_PATH"
 
 echo ""
 echo "Report written: $REPORT_PATH"
 
 if [[ $COVERAGE -eq 1 ]]; then
-    # Union every per-env report into one SonarQube coverage.xml (src/ only) for the scan.
-    python3 tools/sonar/merge_coverage.py coverage.xml "coverage_reports/*.xml"
+    # Union every per-env report into one SonarQube coverage report (src/ only) for the scan. On an
+    # affected-only run, --cov-baseline overlays the committed coverage so the report stays whole-project
+    # (fresh per-file coverage for the changed sources, the baseline kept for everything not rerun).
+    _cov_out="${PROJECT_ROOT}/test/coverage.xml"
+    _cov_overlay=()
+    [[ -n "$COV_BASELINE" ]] && _cov_overlay+=(--baseline "$COV_BASELINE")
+    [[ -n "$COV_CHANGED" ]] && _cov_overlay+=(--changed "$COV_CHANGED")
+    python3 tools/sonar/merge_coverage.py "$_cov_out" "coverage_reports/*.xml" "${_cov_overlay[@]}"
     rm -rf coverage_reports
-    echo "Coverage written: coverage.xml"
+    echo "Coverage written: $_cov_out"
 fi
 
 exit $PIO_EXIT
