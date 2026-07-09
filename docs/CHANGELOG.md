@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1d26cb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d26cb04559355afec4d16720dbc0543b7b20304))
 - update test report + coverage [skip ci] ([`1e29495`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e294955739e91015530bd613cfcf120bbf7964c))
 - update CHANGELOG.md [skip ci] ([`9304848`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93048488add6f33ec2ff9001bd7178825adb3c9f))
 - update CHANGELOG.md [skip ci] ([`e5c8eaa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5c8eaa11a227abd7091cf2138ecfbc65d5bdee8))
@@ -174,6 +175,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add CNC / machine-tool connectivity section ([`153e236`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/153e2367756d7fb91007e55afff959651006b9dd))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eea69ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eea69cef1976fa3ace70f1de3cbfcfa4553740be))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5781af1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5781af1880e77099054421956d6efcc97c4008fb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ba5b577`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba5b577ddc0c3610e655aa1dd0ff5229f27ec397))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a130004`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a13000491c82dbcd77f164596f8eb9deeb4a3d96))
