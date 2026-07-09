@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2583 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2584 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16686,7 +16686,7 @@ A thorough directory of all **2583 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua_client (14 tests)</b></summary>
+<summary><b>test_opcua_client (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_on_read_all_variant_types</b> &mdash; <i>On read all variant types</i></summary>
@@ -16881,6 +16881,16 @@ A thorough directory of all **2583 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(2, c.seq);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, c.request_id);</code>
       * <code>Assert true (c.request_handle &gt;= 2)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builder_overflow_guard</b> &mdash; <i>A capacity too small for even the frame header overflows the writer; cw_patch returns 0.</i></summary>
+
+    * **Objective**: A capacity too small for even the frame header overflows the writer; cw_patch returns 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_hello("opc.tcp://host:4840", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_open(&c, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, opcua_client_activate_session(&c, tiny, sizeof(tiny)));</code>
   </details>
 
 </details>
