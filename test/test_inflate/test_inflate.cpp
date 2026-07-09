@@ -68,6 +68,8 @@ static const uint8_t k_dyn_cl_oversub[] = {5, 224, 1, 4, 0, 0, 0, 64, 16, 0};   
 static const uint8_t k_dyn_no_eob[] = {5, 224, 129, 4, 0, 0, 0, 0, 0, 252, 111, 3}; // no end-of-block code
 static const uint8_t k_dyn_cl_decode_trunc[] = {5, 224, 21, 8, 0,
                                                 0, 0,   0,  0, 0}; // truncated before any code-length symbol
+static const uint8_t k_dyn_empty_dist[] = {253, 224, 129, 0,   0,   0,   0,
+                                           0,   16,  180, 249, 159, 178, 2}; // literals-only: empty distance code
 
 // ---------------------------------------------------------------------------
 
@@ -233,7 +235,11 @@ void test_malformed_deflate_blocks()
     BAD(k_dyn_cl_oversub);
     BAD(k_dyn_no_eob);
     BAD(k_dyn_cl_decode_trunc);
+    BAD(k_dyn_empty_dist); // 120 (empty dist code) hit during construction; the truncated data then fails
 #undef BAD
+    // A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.
+    TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in), out, 4, &out_len,
+                                                            g_scratch, sizeof(g_scratch)));
 }
 
 int main()
