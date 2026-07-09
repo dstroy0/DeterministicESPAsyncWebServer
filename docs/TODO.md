@@ -54,6 +54,17 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
 - [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
 
+### CNC / machine-tool connectivity
+
+Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and modern **Ethernet** (vendor APIs, file transfer, open telemetry). The read/telemetry side already ships as `services/mtconnect` (an ANSI/MTC1.4 agent over the existing HTTP stack); the rest below is open.
+
+- [ ] RS-232 DNC codec: G-code (RS-274 / ISO 6983) line framing to drip-feed a program to a controller, with software flow control (XON/XOFF = DC1 `0x11` / DC3 `0x13`), `%` program start/end markers, and EIA RS-244 vs ISO 7-bit tape handling. Transport-agnostic so the same framing rides RS-232 or a socket.
+- [ ] Ethernet DNC: stream the same G-code framing over a plain TCP socket (network drip-feed) for controllers that expose a raw program port.
+- [ ] Fanuc FOCAS: client codec for the Fanuc Open CNC API (FOCAS1/2 over Ethernet) - read position/status/alarms and program up/download. Proprietary wire format; reverse from manuals plus a real controller.
+- [ ] FTP client: many controllers (Fanuc, Haas, Mazak, Heidenhain) expose program storage over FTP - a small RFC 959 client (control + passive data channel) to push/pull `.nc` files.
+- [ ] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share.
+- [ ] MTConnect follow-ups: add the `probe` (device model) and `asset` documents plus a streaming `sample` sequence cursor to round out the already-shipped `current` / `sample` agent.
+
 ### Pentesting
 
 - [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server.
