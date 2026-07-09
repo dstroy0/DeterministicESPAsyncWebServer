@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2598 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2599 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -17713,7 +17713,7 @@ A thorough directory of all **2598 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_preempt_queue (11 tests)</b></summary>
+<summary><b>test_preempt_queue (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_start_validates_and_runs</b> &mdash; <i>Start validates and runs</i></summary>
@@ -17840,6 +17840,21 @@ A thorough directory of all **2598 test cases** across **228 suites**. Expand a 
       * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma))</code>
       * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(DETWS_PQ_LANE_DMA));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(DETWS_PQ_LANE_DEVICE)); // untouched lane</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_lane_api_urgent_and_drain</b> &mdash; <i>Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.</i></summary>
+
+    * **Objective**: Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.
+    * **Assertions**:
+      * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &cfg))</code>
+      * <code>Assert true (detws_pq_post_lane(DETWS_PQ_LANE_DMA, &a, 0))</code>
+      * <code>Assert true (detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, &b, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)g_seen_dma.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(20u, g_seen_dma[0]); // urgent item first</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(10u, g_seen_dma[1]);</code>
+      * <code>Assert false (detws_pq_post_lane_urgent((detws_pq_lane)DETWS_PQ_LANE_COUNT, &a, 0))</code>
+      * <code>Assert false (detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, nullptr, 0))</code>
   </details>
 
 </details>
