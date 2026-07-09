@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a65a940`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a65a940ef956344af4960740e7c80bb8bad256cf))
 - update test report + coverage [skip ci] ([`ffd86c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffd86c1820070344be06dfaad73fbe2a25df30f5))
 - update CHANGELOG.md [skip ci] ([`eeda4a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eeda4a407c66b73c21efe7ac3bff5484c6b5b870))
 - update test report + coverage [skip ci] ([`78e5994`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78e59943a65eaad0fe4adcafc86eeaa310bc4536))
@@ -527,6 +528,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover empty-distance-code + back-ref length overflow ([`819ff9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/819ff9c016d8446b7992950a01145b8e919f3987))
 - cover dynamic-block code-length + table-construction guards ([`020c649`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/020c64971120eef53cf2fbe64e420a535e00196e))
 - cover fixed-block + stored malformed-DEFLATE guards ([`461a8e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461a8e8e80c35bfa9a0295438cc93152650f6122))
 - cover append_opt response-buffer overflow guard ([`2adb491`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2adb491443c3e94b0e02988a2f2754302e04f3ed))
