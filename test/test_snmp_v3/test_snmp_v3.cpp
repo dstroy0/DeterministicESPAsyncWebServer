@@ -821,6 +821,38 @@ void test_v3_auth_edge_rejections(void)
     TEST_ASSERT_EQUAL_UINT(0, snmp_v3_process(req, rl, resp, sizeof(resp)));
 }
 
+// A notification whose varbind value is too large fails the inner PDU / scopedPDU build. Sweeping the
+// value length across the 1472-byte inner-buffer boundary drives both overflow guards: below it the
+// PDU fits but the scopedPDU wrapper overruns; above it the PDU itself overruns.
+void test_v3_notify_overflow_guards()
+{
+    snmp_v3_set_user("myuser", "authpass12", "privpass12");
+    det_udp_capture_enable();
+    uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
+    uint32_t vb_oid[] = {1, 3, 6, 1, 4, 1, 49374, 5, 0};
+    static uint8_t big[1600];
+    memset(big, 0x41, sizeof(big));
+
+    SnmpVarbind vb;
+    vb.oid = vb_oid;
+    vb.oid_len = 9;
+    vb.type = SNMP_VB_STRING;
+    vb.ival = 0;
+    vb.bytes = big;
+    vb.oid_val = nullptr;
+    vb.oid_val_len = 0;
+
+    vb.blen = 32; // small: builds + sends fine
+    TEST_ASSERT_TRUE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
+    vb.blen = 1550; // huge: the inner PDU overflows
+    TEST_ASSERT_FALSE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1));
+    for (size_t blen = 1360; blen <= 1480; blen += 2) // crosses the fit/overflow boundary for both buffers
+    {
+        vb.blen = blen;
+        (void)snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, &vb, 1);
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -833,6 +865,7 @@ int main()
     RUN_TEST(test_v3_discovery_variants);
     RUN_TEST(test_v3_priv_not_configured);
     RUN_TEST(test_v3_notify_paths);
+    RUN_TEST(test_v3_notify_overflow_guards);
     RUN_TEST(test_localize_key_sha256_vector);
     RUN_TEST(test_aes128_fips197_vector);
     RUN_TEST(test_aes_cfb_roundtrip_partial_block);
