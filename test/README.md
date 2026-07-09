@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2478 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2479 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19732,7 +19732,25 @@ A thorough directory of all **2478 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_response_headers (11 tests)</b></summary>
+<summary><b>test_response_headers (12 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntp_host_seam_accessors</b> &mdash; <i>Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch.</i></summary>
+
+    * **Objective**: Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch.
+    * **Assertions**:
+      * <code>Assert false (detws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"))</code>
+      * <code>Assert false (detws_ntp_synced())</code>
+      * <code>Assert equal int (0, (long)detws_ntp_epoch())</code>
+      * <code>Assert true (detws_ntp_synced())</code>
+      * <code>Assert equal int (784111777, (long)detws_ntp_epoch())</code>
+      * <code>Assert equal uint (0, detws_ntp_http_date(nullptr, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, detws_ntp_http_date(buf, 0))</code>
+      * <code>Assert true (detws_ntp_http_date(buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal string ("Sun, 06 Nov 1994 08:49:37 GMT", buf)</code>
+      * <code>Assert equal uint (0, detws_ntp_http_date(buf, sizeof(buf)))</code>
+      * <code>Assert equal char ('\\0', buf[0])</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_date_header_emitted_when_time_set</b> &mdash; <i>Date header emitted when time set</i></summary>
