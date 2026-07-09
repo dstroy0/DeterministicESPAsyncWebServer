@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2608 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2611 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11325,7 +11325,7 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_j2735 (10 tests)</b></summary>
+<summary><b>test_j2735 (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_cint_bits</b> &mdash; <i>Cint bits</i></summary>
@@ -11442,6 +11442,32 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_j2735_guards_and_truncation</b> &mdash; <i>uper_put_cint / uper_get_cint with a single-value (zero-bit) range: nothing on the wire.</i></summary>
+
+    * **Objective**: uper_put_cint / uper_get_cint with a single-value (zero-bit) range: nothing on the wire.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));</code>
+      * <code>Assert true (uper_get_cint(&r, 5, 5) == 5)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&r, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&rn, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));</code>
+      * <code>Assert false (detws_j2735_bsm_core_decode(nullptr, 16, &c))</code>
+      * <code>Assert false (detws_j2735_bsm_core_decode(buf, 16, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 2, nullptr, 16));       // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count &gt; 31</code>
+      * <code>Assert false (detws_j2735_spat_decode(nullptr, 16, sout, 4, &count))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count &gt; 31</code>
+      * <code>Assert false (detws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count))</code>
+      * <code>Assert true (sn &gt; 1)</code>
+      * <code>Assert false (detws_j2735_spat_decode(buf, 1, sout, 4, &count))</code>
+      * <code>Assert true (mn &gt; 7)</code>
+      * <code>Assert false (detws_j2735_map_decode(buf, mn, &isect, lout, 1, &count))</code>
+      * <code>Assert false (detws_j2735_map_decode(buf, 7, &isect, lout, 4, &count))</code>
   </details>
 
 </details>
@@ -19093,7 +19119,7 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_proxy_protocol (9 tests)</b></summary>
+<summary><b>test_proxy_protocol (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_v1_build</b> &mdash; <i>V1 build</i></summary>
@@ -19181,14 +19207,32 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_v1_malformed_addresses_fail_closed</b> &mdash; <i>Each malformed v1 source address drives a distinct parse_ipv4 reject path.</i></summary>
+    <summary><b>test_v1_malformed_addresses_fail_closed</b> &mdash; <i>Each line is CRLF-terminated so it reaches parse_ipv4 / parse_u16 (a header without a</i></summary>
 
-    * **Objective**: Each malformed v1 source address drives a distinct parse_ipv4 reject path.
+    * **Objective**: Each line is CRLF-terminated so it reaches parse_ipv4 / parse_u16 (a header without a
     * **Assertions**:
-      * <code>TEST_ASSERT_FALSE(</code>
-      * <code>TEST_ASSERT_FALSE(</code>
-      * <code>TEST_ASSERT_FALSE(</code>
-      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert true (no_addr("PROXY TCP4 x.0.0.1 10.0.0.1 1 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 999.0.0.1 10.0.0.1 1 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 10x0.0.0.1 10.0.0.1 1 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 1.2.3.4x 10.0.0.1 1 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 123456 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 8x 2\\r\\n"))</code>
+      * <code>Assert true (no_addr("PROXY TCP4 10.0.0.1 10.0.0.1 99999 2\\r\\n"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_and_build_guards</b> &mdash; <i>proxy_parse null-argument guards + proxy_v1_build null buffer.</i></summary>
+
+    * **Objective**: proxy_parse null-argument guards + proxy_v1_build null buffer.
+    * **Assertions**:
+      * <code>Assert false (proxy_parse(nullptr, 16, &info, &consumed))</code>
+      * <code>Assert false (proxy_parse(any, 16, nullptr, &consumed))</code>
+      * <code>Assert false (proxy_parse(any, 16, &info, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, proxy_v1_build(nullptr, 64, SRC, DST, 1, 2));</code>
+      * <code>Assert false (proxy_parse(under, sizeof(under), &info, &consumed))</code>
+      * <code>Assert false (proxy_parse(badver, sizeof(badver), &info, &consumed))</code>
+      * <code>Assert true (proxy_parse((const uint8_t *)sp, strlen(sp), &info, &consumed))</code>
+      * <code>Assert false (info.has_addr)</code>
   </details>
 
 </details>
@@ -26063,7 +26107,7 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_thread (14 tests)</b></summary>
+<summary><b>test_thread (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_fcs_x25_check_value</b> &mdash; <i>CRC-16/X-25 (poly 0x8408, init 0xFFFF, reflected, xorout 0xFFFF) of "123456789" = 0x906E.</i></summary>
@@ -26212,6 +26256,31 @@ A thorough directory of all **2608 test cases** across **228 suites**. Expand a 
       * <code>Assert true (spinel_unpack_uint(trunc, sizeof(trunc), &v) &lt;= 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(pay, sizeof(pay), out, 2)); // overflow</code>
       * <code>Assert equal int (-1, spinel_frame_decode(short_frame, sizeof(short_frame), fpay, sizeof(fpay), &fl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_thread_more_guards</b> &mdash; <i>pack/unpack null-pointer guards.</i></summary>
+
+    * **Objective**: pack/unpack null-pointer guards.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, spinel_pack_uint(5, nullptr, 8));</code>
+      * <code>Assert equal int (0, spinel_unpack_uint(nullptr, 4, &v))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 2, nullptr, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 2, out, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, nullptr, 2, out, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, nullptr, 0, out, 1));    // cmd pack (cap 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1337, 1, nullptr, 0, out, 3)); // prop pack</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_command_build(0x81, 1, 1, val, 10, out, 5));       // value copy</code>
+      * <code>Assert equal int (-1, spinel_command_parse(nullptr, 4, &hdr, &cmd, &prop, &pv, &pvl))</code>
+      * <code>Assert equal int (-1, spinel_command_parse(tc, 2, &hdr, &cmd, &prop, &pv, &pvl))</code>
+      * <code>Assert equal int (-1, spinel_command_parse(tp, 3, &hdr, &cmd, &prop, &pv, &pvl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(resv, 1, out, 1)); // escape needs 2, cap 1</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(one, 1, out, 1)); // payload fits, FCS byte overflows</code>
+      * <code>Assert true (fulln &gt; 1)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, spinel_frame_encode(p4, 4, out, (uint16_t)(fulln - 1))); // only the flag can't fit</code>
+      * <code>Assert equal int (0, spinel_frame_decode(nullptr, 4, pay, sizeof(pay), &pl))</code>
+      * <code>Assert equal int (-1, spinel_frame_decode(big, 71, pay, sizeof(pay), &pl))</code>
+      * <code>Assert equal int (-1, spinel_frame_decode(fr, frn, got, sizeof(got), &gl))</code>
   </details>
 
 </details>
