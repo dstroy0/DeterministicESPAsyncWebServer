@@ -118,6 +118,15 @@ void test_invalid_guards()
     TEST_ASSERT_FALSE(rtc_regs_to_epoch(bad_sec, nullptr)); // null out
 }
 
+void test_host_i2c_stubs()
+{
+    // Host build: no I2C bus. begin() reports ready, reads yield 0, set fails, time source is 0.
+    TEST_ASSERT_TRUE(rtc_begin());
+    TEST_ASSERT_EQUAL_UINT32(0, rtc_read_epoch());
+    TEST_ASSERT_FALSE(rtc_set_epoch(1730882977u));
+    TEST_ASSERT_EQUAL_UINT32(0, rtc_time_source());
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -129,5 +138,6 @@ int main()
     RUN_TEST(test_leap_day);
     RUN_TEST(test_masks_ch_and_century);
     RUN_TEST(test_invalid_guards);
+    RUN_TEST(test_host_i2c_stubs);
     return UNITY_END();
 }

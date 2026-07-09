@@ -95,6 +95,17 @@ void test_tag_after_field_fails_closed()
     TEST_ASSERT_FALSE(detws_line_ok(&l));
 }
 
+void test_host_stubs_and_line_overflow()
+{
+    detws_udp_telemetry_begin("host", 8125); // host no-op stub
+    char buf[8];
+    DetwsLine l;
+    detws_line_init(&l, buf, sizeof(buf), "measurementNameFarTooLongForBuf");
+    TEST_ASSERT_TRUE(l.overflow); // measurement did not fit
+    detws_udp_telemetry_cast(&l); // host no-op stub
+    TEST_PASS();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -105,5 +116,6 @@ int main()
     RUN_TEST(test_tags_and_timestamp);
     RUN_TEST(test_tag_escaping);
     RUN_TEST(test_tag_after_field_fails_closed);
+    RUN_TEST(test_host_stubs_and_line_overflow);
     return UNITY_END();
 }

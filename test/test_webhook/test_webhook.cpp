@@ -59,6 +59,13 @@ void test_overflow_fails_closed()
     TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("aaaa", "bbbb", "cccc", buf, sizeof(buf)));
 }
 
+void test_ifttt_trigger_and_post_stub()
+{
+    // Host build (no HTTP client): webhook_post is a -1 stub; ifttt_trigger builds url+payload then posts.
+    TEST_ASSERT_EQUAL_INT(-1, detws_webhook_post("http://x/y", "{}"));
+    TEST_ASSERT_EQUAL_INT(-1, detws_ifttt_trigger("evt", "key", "1", "2", "3"));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -67,5 +74,6 @@ int main()
     RUN_TEST(test_payload_omits_nulls);
     RUN_TEST(test_payload_escapes_json);
     RUN_TEST(test_overflow_fails_closed);
+    RUN_TEST(test_ifttt_trigger_and_post_stub);
     return UNITY_END();
 }

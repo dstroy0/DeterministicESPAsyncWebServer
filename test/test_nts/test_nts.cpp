@@ -96,6 +96,16 @@ void test_extension_field_padding(void)
     TEST_ASSERT_EQUAL_HEX8(0x00, out[11]);
 }
 
+void test_ef_wrappers_and_guards()
+{
+    uint8_t out[64];
+    uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    TEST_ASSERT_TRUE(detws_nts_ef_cookie(data, sizeof(data), out, sizeof(out)) > 0);
+    TEST_ASSERT_TRUE(detws_nts_ef_unique_id(data, sizeof(data), out, sizeof(out)) > 0);
+    TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -103,5 +113,6 @@ int main(void)
     RUN_TEST(test_ke_request);
     RUN_TEST(test_ke_parse);
     RUN_TEST(test_extension_field_padding);
+    RUN_TEST(test_ef_wrappers_and_guards);
     return UNITY_END();
 }

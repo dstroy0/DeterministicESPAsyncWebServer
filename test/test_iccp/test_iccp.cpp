@@ -74,6 +74,16 @@ void test_real_q_negative(void)
     TEST_ASSERT_TRUE(find(out, n, iv2, 4) >= 0);
 }
 
+void test_state_and_real_q_guards()
+{
+    uint8_t out[64];
+    uint8_t t[4] = {0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, out, 2));               // overflow
+    TEST_ASSERT_EQUAL_size_t(0, detws_iccp_real_q(100, 0, t, out, 2));              // overflow
+    TEST_ASSERT_TRUE(detws_iccp_state_q(1, 0x40, t, out, sizeof(out)) > 0);         // valid (time-field tlv)
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -81,5 +91,6 @@ int main(void)
     RUN_TEST(test_state_q_with_time);
     RUN_TEST(test_real_q);
     RUN_TEST(test_real_q_negative);
+    RUN_TEST(test_state_and_real_q_guards);
     return UNITY_END();
 }

@@ -65,6 +65,12 @@ void test_collect_host_stub()
     TEST_ASSERT_EQUAL_UINT8(0, detws_partition_collect(p, 4));
 }
 
+void test_partition_kind_data_subtypes()
+{
+    TEST_ASSERT_EQUAL_STRING("nvs_keys", detws_partition_kind(0x01, 0x04));
+    TEST_ASSERT_EQUAL_STRING("fat", detws_partition_kind(0x01, 0x81));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -73,5 +79,6 @@ int main()
     RUN_TEST(test_json);
     RUN_TEST(test_json_small_buffer_fails_closed);
     RUN_TEST(test_collect_host_stub);
+    RUN_TEST(test_partition_kind_data_subtypes);
     return UNITY_END();
 }

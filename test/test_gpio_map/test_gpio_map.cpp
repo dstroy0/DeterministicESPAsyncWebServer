@@ -101,6 +101,16 @@ void test_is_output()
     TEST_ASSERT_FALSE(detws_gpio_is_output(pins, 2, 99)); // not in table
 }
 
+void test_host_gpio_stubs()
+{
+    // Host build: the GPIO bind functions are no-ops (no digitalRead/Write).
+    DetwsGpioPin pins[1] = {};
+    detws_gpio_begin_pins(pins, 1);
+    detws_gpio_read(pins, 1);
+    detws_gpio_write(0, 1);
+    TEST_PASS();
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -112,5 +122,6 @@ int main()
     RUN_TEST(test_parse_set_rejects_partial);
     RUN_TEST(test_parse_set_no_prefix_match);
     RUN_TEST(test_is_output);
+    RUN_TEST(test_host_gpio_stubs);
     return UNITY_END();
 }
