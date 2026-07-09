@@ -2,7 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.70.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.70.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`302b583`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/302b583912de2c569be5f9fb9acb4182f59cf571))
+
+### Changes
+
+- Bump version: 5.69.0 → 5.70.0 ([`9a1c49e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9a1c49ebcf27b4aa54ac5feca5a71a2304f3f043))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6859672`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68596723d890a05e46c0bab881916b678370a73f))
+
+### Features
+
+- read rows - cell parser, record cursor, typed columns ([`e7c9355`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7c93559409e6dd5f9dd90e993c5dfc29f9af431))
+
+</details>
+
+## [5.69.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.69.0 - 2026-07-09</b></summary>
 
 ### CI / Build
 
