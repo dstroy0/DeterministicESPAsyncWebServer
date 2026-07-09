@@ -1312,12 +1312,87 @@ void test_route_registration_variants_table_full()
     TEST_ASSERT_FALSE(handler_called);
 }
 
+// redirect / send_template / send_chunked all guard slot_id >= MAX_CONNS and a gone connection
+// (freed slot / null pcb -> http_reset + return). Neither guard was exercised.
+void test_send_family_slot_and_conn_gone_guards()
+{
+    g_server->redirect(MAX_CONNS, 302, "/x"); // slot out of range -> no-op
+    g_server->send_template(MAX_CONNS, 200, "text/html", "hi", nullptr);
+    g_server->send_chunked(MAX_CONNS, 200, "text/plain", nullptr, nullptr);
+
+    conn_pool[0].state = CONN_FREE; // connection gone
+    conn_pool[0].pcb = nullptr;
+    g_server->redirect(0, 302, "/x");
+    g_server->send_template(0, 200, "text/html", "hi", nullptr);
+    g_server->send_chunked(0, 200, "text/plain", nullptr, nullptr);
+    TEST_PASS(); // guards hit, nothing sent, no crash
+}
+
+void test_redirect_response_and_code_normalization()
+{
+    conn_pool[0] = {};
+    conn_pool[0].id = 0;
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].pcb = &_mock_pcb;
+    http_reset(0);
+    tcp_capture_reset();
+    g_server->redirect(0, 307, "/new");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "307 Temporary Redirect"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Location: /new"));
+
+    // An out-of-range redirect code normalizes to 302.
+    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].pcb = &_mock_pcb;
+    http_reset(0);
+    tcp_capture_reset();
+    g_server->redirect(0, 200, "/z");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "302 Found"));
+    tcp_capture_disable();
+}
+
+void test_request_error_paths_te_method_ws()
+{
+    g_server->on("/only-get", HTTP_GET, record_handler);
+#if DETWS_ENABLE_WEBSOCKET
+    g_server->on_ws("/ws", nullptr, nullptr, nullptr);
+#endif
+    // Wrong method to a GET-only route -> 405 with an Allow header.
+    arm_slot(0, "POST /only-get HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Allow:"));
+
+#if DETWS_ENABLE_WEBSOCKET
+    // A WS route hit without an upgrade -> 400.
+    arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
+
+    // A WS upgrade with an unsupported version -> 426 Upgrade Required.
+    arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 12\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->handle();
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "426"));
+#endif
+    tcp_capture_disable();
+}
+
 int main()
 {
     UNITY_BEGIN();
 
     RUN_TEST(test_restart_and_stop);
     RUN_TEST(test_route_registration_variants_table_full);
+    RUN_TEST(test_send_family_slot_and_conn_gone_guards);
+    RUN_TEST(test_redirect_response_and_code_normalization);
+    RUN_TEST(test_request_error_paths_te_method_ws);
 
     // Function I/O: handler API access
     RUN_TEST(test_handler_reads_body);
