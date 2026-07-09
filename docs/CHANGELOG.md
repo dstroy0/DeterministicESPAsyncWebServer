@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`497fb9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/497fb9ff96f4cb5754cd6d916d1b064ec1af5168))
+- update CHANGELOG.md [skip ci] ([`0223219`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/022321982b005400df08508b1131fca3bdc565bf))
 - update CHANGELOG.md [skip ci] ([`7bafc2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bafc2bdadd226e09ddecf2221c9297c8857b843))
 - update CHANGELOG.md [skip ci] ([`a3095db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3095db96f546a848c9f6036810d0c7fba11a91f))
 - update CHANGELOG.md [skip ci] ([`f655012`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f65501259b4e26a868bc9b3f5bf055366420f958))
@@ -179,6 +181,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0e6f89a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e6f89ade5edd0603fdbd09e66a897a2a14001e2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`05720da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05720da99cfe2faa251c340409d2cc8969147773))
 - add routing / forwarding / inspection section ([`9866406`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9866406adac7a527348d2eae81849efdae88bfa6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`18bb2f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18bb2f8b833df541bf3f76910f282794d4f47745))
@@ -360,6 +363,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover host stubs, build/parse guards + edges across 10 services ([`1f0bcce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f0bcce657106be9b10c6fd7edcec8bcfb0b9d82))
+- cover host stubs, guards + clamps across 10 more services ([`9e93f63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e93f6310f4db6692337e2c3b04dd0a9a8d7beb0))
 - cover codec guards, host stubs + escape paths across 10 services ([`4bfc4ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bfc4ad5c195fde5d1d975be62e6a188d515c433))
 - cover host stubs, switch arms + fail-closed guards across 10 services ([`7280879`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72808799d0e71275dd83bd7a1061cfbfa51e7ee0))
 - cover fail-closed guards in proxy_protocol, vfs, profibus ([`9ff0dbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ff0dbe755bc266f087e994b0428d3dbc61f1e83))
