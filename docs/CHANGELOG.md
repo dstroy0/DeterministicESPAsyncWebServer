@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`535e5ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/535e5ab5f59038eefefcb9371c694a2d94ca3ae6))
 - update CHANGELOG.md [skip ci] ([`eaefd9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eaefd9ad5039386c59b30dccb73ca1f7bdd46736))
 - update CHANGELOG.md [skip ci] ([`af9994a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af9994a77653cac8b456296ce9c95efd8775c470))
 - update test report + coverage [skip ci] ([`160b87f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/160b87fe37d4027262b22b2bf0d7fb7668dae554))
@@ -217,6 +218,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`590687a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/590687aa18ae2b76b74436cd875b2e564aa7161b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6c4c63f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c4c63fcef2fd797bd1b7ddee2c04cee06ad4e49))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ed3a30b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed3a30b2dd0c74eb11a28f83944763cec6dfb9f3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3fc174`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3fc174db44c685dc25961a7436eb577fd103561))
@@ -421,6 +423,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover spinel build/parse overflow+truncation, real FCS mismatch, unstuff overflow (->100%) ([`79c3b56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79c3b56a3e20147bedf12ec238b23df461216d9f))
+- cover UPER zero-bit range, null guards, count-overflow + truncation underruns (->100%) ([`5e55c29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e55c29c6b3822114ab9f29a051f8bc258013989))
+- drive real v1 parse_ipv4/u16 rejects (were CRLF-less no-ops) + v2/null guards (->100%) ([`3c9cf3b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c9cf3beea837499d475949ce5f39affd29f357a))
 - cover persist split, max-align clamp, set exhaustion + free_bytes (->100%) ([`b436f1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b436f1f04c28df462a6c6af04a82ead80f66346e))
 - cover v9/IPFIX cursor guards + overflow/error paths (->100%) ([`433e9b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/433e9b6410cd9b831e1d0f054fbad194a44ed6b1))
 - cover classify/equal/CIDR + parse/format/to_v4 guards (96->100%) ([`f51cd90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f51cd9036e0351cb19a1b57c13f2e94cac636656))
