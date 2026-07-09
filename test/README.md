@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2666 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2669 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28908,7 +28908,7 @@ A thorough directory of all **2666 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_webhook (6 tests)</b></summary>
+<summary><b>test_webhook (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ifttt_url</b> &mdash; <i>Ifttt url</i></summary>
@@ -28962,6 +28962,40 @@ A thorough directory of all **2666 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (-1, detws_webhook_post("http://x/y", "{}"))</code>
       * <code>Assert equal int (-1, detws_ifttt_trigger("evt", "key", "1", "2", "3"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_builder_arg_guards</b> &mdash; <i>Builder arg guards</i></summary>
+
+    * **Objective**: Builder arg guards
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_ifttt_url(nullptr, "k", buf, sizeof(buf)))</code>
+      * <code>Assert equal string ("", buf)</code>
+      * <code>Assert equal int (0, detws_ifttt_url("e", nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, detws_ifttt_url("e", "k", nullptr, 10));                  // null out (no clear)</code>
+      * <code>Assert equal int (0, detws_ifttt_url("e", "k", buf, 0))</code>
+      * <code>Assert equal int (0, detws_ifttt_payload("a", nullptr, nullptr, nullptr, 64))</code>
+      * <code>Assert equal int (0, detws_ifttt_payload("a", nullptr, nullptr, buf, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_payload_escape_overflow_fails_closed</b> &mdash; <i>"{\"value1\":\"" is 11 chars; a 10-char plain value overruns mid-escape-loop.</i></summary>
+
+    * **Objective**: "{\"value1\":\"" is 11 chars; a 10-char plain value overruns mid-escape-loop.
+    * **Assertions**:
+      * <code>Assert equal int (0, detws_ifttt_payload("aaaaaaaaaa", nullptr, nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, detws_ifttt_payload("aaa\\"", nullptr, nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (-1, detws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, detws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_trigger_build_failures</b> &mdash; <i>Trigger build failures</i></summary>
+
+    * **Objective**: Trigger build failures
+    * **Assertions**:
+      * <code>Assert equal int (-1, detws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, detws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
   </details>
 
 </details>
