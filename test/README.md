@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2581 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2583 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16009,7 +16009,7 @@ A thorough directory of all **2581 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_opcua (38 tests)</b></summary>
+<summary><b>test_opcua (40 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_parse_read_optional_fields</b> &mdash; <i>Parse read optional fields</i></summary>
@@ -16663,6 +16663,24 @@ A thorough directory of all **2581 test cases** across **228 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_GOOD, ua_r_u32(&r));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(0, ua_r_i32(&r)); // DiagnosticInfos</code>
       * <code>Assert false (r.err)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_rx_and_proto_handler_host_stubs</b> &mdash; <i>Rx and proto handler host stubs</i></summary>
+
+    * **Objective**: Rx and proto handler host stubs
+    * **Assertions**:
+      * <code>Assert null (opcua_proto_handler())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_open_with_cert_and_nonce</b> &mdash; <i>An OPEN carrying non-empty SenderCertificate + ReceiverCertificateThumbprint + ClientNonce</i></summary>
+
+    * **Objective**: An OPEN carrying non-empty SenderCertificate + ReceiverCertificateThumbprint + ClientNonce
+    * **Assertions**:
+      * <code>Assert true (opcua_parse_open(buf, w.n, &oc))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, oc.secure_channel_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, oc.request_handle);</code>
   </details>
 
 </details>
