@@ -500,7 +500,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2727 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2728 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24211,7 +24211,7 @@ A thorough directory of all **2727 test cases** across **232 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (10 tests)</b></summary>
+<summary><b>test_sqlite (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -24372,6 +24372,24 @@ A thorough directory of all **2727 test cases** across **232 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(478, cell.payload_len);</code>
       * <code>Assert true (cell.has_overflow)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(39, cell.local_len); // min_local per the SQLite threshold formula</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_table_cursor_multipage</b> &mdash; <i>The table's root page (page 2) is an interior table page, so this exercises the descent stack.</i></summary>
+
+    * **Objective**: The table's root page (page 2) is an interior table page, so this exercises the descent stack.
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_INTERIOR_TABLE, bh.type);</code>
+      * <code>Assert true (sqlite_table_cursor_begin(&c, mem_read, &db, DB_MP_PAGE_SIZE, 0, 2, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(n, rowid); // rowids 1..40, in order, across pages</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl)); // column a (INTEGER)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64((int64_t)n, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl)); // column b (TEXT)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(expect), vl);</code>
+      * <code>Assert equal memory (expect, v, vl)</code>
+      * <code>Assert false (sqlite_record_next(&row, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DB_MP_ROWS, n); // every row visited exactly once</code>
   </details>
 
 </details>
