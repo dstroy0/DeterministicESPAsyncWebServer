@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2635 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2637 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -25181,7 +25181,7 @@ A thorough directory of all **2635 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (35 tests)</b></summary>
+<summary><b>test_ssh_transport (37 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -25554,6 +25554,29 @@ A thorough directory of all **2635 test cases** across **228 suites**. Expand a 
       * <code>Assert equal int (-1, ssh_dh_generate(MAX_SSH_CONNS))</code>
       * <code>Assert true (ssh_keys[0].active)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_CHACHA20POLY1305, ssh_keys[0].cipher_mode);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_truncation_points</b> &mdash; <i>Kexinit parse truncation points</i></summary>
+
+    * **Objective**: Kexinit parse truncation points
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ssh_transport_more_guards</b> &mdash; <i>Negotiate curve25519 so ssh_kexdh_handle takes the ECDH branch, then feed a malformed ECDH_INIT.</i></summary>
+
+    * **Objective**: Negotiate curve25519 so ssh_kexdh_handle takes the ECDH branch, then feed a malformed ECDH_INIT.
+    * **Assertions**:
+      * <code>Assert true (ssh_kex_prefer_rsa())</code>
+      * <code>Assert false (ssh_kex_prefer_rsa())</code>
+      * <code>Assert equal int (0, ssh_kexinit_build(0, kbuf, &kn, sizeof(kbuf)))</code>
+      * <code>Assert equal int (-1, ssh_kex_generate(200))</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, too_short, sizeof(too_short), reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)))</code>
   </details>
 
 </details>
