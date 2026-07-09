@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a4cbd44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4cbd44a24d42ac28085cb87a007f6e3129e991d))
 - update CHANGELOG.md [skip ci] ([`1d26cb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d26cb04559355afec4d16720dbc0543b7b20304))
 - update test report + coverage [skip ci] ([`1e29495`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e294955739e91015530bd613cfcf120bbf7964c))
 - update CHANGELOG.md [skip ci] ([`9304848`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93048488add6f33ec2ff9001bd7178825adb3c9f))
@@ -353,6 +354,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover fail-closed guards in proxy_protocol, vfs, profibus ([`9ff0dbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ff0dbe755bc266f087e994b0428d3dbc61f1e83))
 - cover host stubs + fail-closed guards across 7 services ([`586b147`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/586b14792fcb1a8c3daf591ab3c9623a7806d406))
 - cover encode/parse guard sub-conditions + int/bulk/nil edges (branch 70->88%) ([`b4d02e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4d02e29d37673a03352fbabe6a855915bf87f8d))
 - cover non-object/bad-member find, int string/non-digit rejects, invalid \u (branch 76->80%) ([`47c781b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c781b91b6ee6f88e71110535ff2b7641c6a60b))
