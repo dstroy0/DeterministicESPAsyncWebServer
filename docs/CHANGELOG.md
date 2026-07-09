@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f655012`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f65501259b4e26a868bc9b3f5bf055366420f958))
 - update CHANGELOG.md [skip ci] ([`a4cbd44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4cbd44a24d42ac28085cb87a007f6e3129e991d))
 - update CHANGELOG.md [skip ci] ([`1d26cb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d26cb04559355afec4d16720dbc0543b7b20304))
 - update test report + coverage [skip ci] ([`1e29495`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e294955739e91015530bd613cfcf120bbf7964c))
@@ -176,6 +177,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add routing / forwarding / inspection section ([`9866406`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9866406adac7a527348d2eae81849efdae88bfa6))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`18bb2f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18bb2f8b833df541bf3f76910f282794d4f47745))
 - add CNC / machine-tool connectivity section ([`153e236`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/153e2367756d7fb91007e55afff959651006b9dd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eea69ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eea69cef1976fa3ace70f1de3cbfcfa4553740be))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5781af1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5781af1880e77099054421956d6efcc97c4008fb))
