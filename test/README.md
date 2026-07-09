@@ -500,7 +500,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2724 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2727 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24211,7 +24211,7 @@ A thorough directory of all **2724 test cases** across **232 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (7 tests)</b></summary>
+<summary><b>test_sqlite (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -24315,6 +24315,63 @@ A thorough directory of all **2724 test cases** across **232 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT64(0, sqlite_serial_type_size(13)); // TEXT len 0</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(1, sqlite_serial_type_size(15)); // TEXT len 1  (seen in the real record)</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(5, sqlite_serial_type_size(23)); // TEXT len 5  ("table", the real record)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_schema_row</b> &mdash; <i>Read schema row</i></summary>
+
+    * **Objective**: Read schema row
+    * **Assertions**:
+      * <code>Assert true (sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(463, cp);</code>
+      * <code>Assert true (sqlite_parse_table_leaf_cell(PAGE1, sizeof(PAGE1), 512, 0, cp, &cell))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(47, cell.payload_len);</code>
+      * <code>Assert false (cell.has_overflow)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(47, cell.local_len);</code>
+      * <code>Assert true (sqlite_record_begin(&c, PAGE1 + cell.local_off, cell.local_len))</code>
+      * <code>Assert true (sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(23, st);                       // text, 5 bytes</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, vl);</code>
+      * <code>Assert equal memory ("table", v, 5)</code>
+      * <code>Assert true (sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, vl);</code>
+      * <code>Assert equal memory ("t", v, 1)</code>
+      * <code>Assert true (sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>Assert equal memory ("t", v, 1)</code>
+      * <code>Assert true (sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, st);                        // 1-byte int</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(2, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert true (sqlite_record_next(&c, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(79, st);                       // text, 33 bytes</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(33, vl);</code>
+      * <code>Assert equal memory ("CREATE TABLE t(a INTEGER, b TEXT)", v, 33)</code>
+      * <code>Assert false (sqlite_record_next(&c, &st, &v, &vl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_column_int_signextend</b> &mdash; <i>Column int signextend</i></summary>
+
+    * **Objective**: Column int signextend
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(-1, sqlite_column_int(1, m1, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(127, sqlite_column_int(1, p127, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-2, sqlite_column_int(2, m2, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(256, sqlite_column_int(6, big, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, sqlite_column_int(8, nullptr, 0)); // constant 0</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1, sqlite_column_int(9, nullptr, 0)); // constant 1</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leaf_cell_overflow_detection</b> &mdash; <i>cell at offset 100: payload-length varint 478 (0x83,0x5E), rowid varint 1.</i></summary>
+
+    * **Objective**: cell at offset 100: payload-length varint 478 (0x83,0x5E), rowid varint 1.
+    * **Assertions**:
+      * <code>Assert true (sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 100, &cell))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(478, cell.payload_len);</code>
+      * <code>Assert true (cell.has_overflow)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(39, cell.local_len); // min_local per the SQLite threshold formula</code>
   </details>
 
 </details>
