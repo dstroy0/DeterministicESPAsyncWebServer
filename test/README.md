@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2639 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2640 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -21312,7 +21312,16 @@ A thorough directory of all **2639 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_scratch (14 tests)</b></summary>
+<summary><b>test_scratch (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_zero_align_uses_default</b> &mdash; <i>Zero align uses default</i></summary>
+
+    * **Objective**: Zero align uses default
+    * **Assertions**:
+      * <code>Assert not null (p)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, (uintptr_t)p % 8); // default alignment is at least 8</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_alloc_returns_nonnull_and_advances_used</b> &mdash; <i>Alloc returns nonnull and advances used</i></summary>
