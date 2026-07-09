@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1ffb314`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ffb314d470ef1ecc6d7b04751bad288c9bf069f))
 - update test report + coverage [skip ci] ([`04dcea5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04dcea5adfb58005c2b580e8b67dbfee2be819e0))
 - update CHANGELOG.md [skip ci] ([`a83628d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a83628d2986b5633eb0b9cb5d32edd5fe8d1e5a2))
 - run only the envs the diff affects; keep report + coverage as committed, incremental artifacts ([`33f83e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33f83e40cb642a41ce0901c8676be35680fe946a))
@@ -205,6 +206,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- own the /stats + /metrics render buffers in StatsCtx/MetricsCtx ([`304ccd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/304ccd6392af30aae5536d238475f275f0fa1170))
 - extract the duplicated MSG-envelope preamble into r_msg_preamble ([`2115d33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2115d3342b2f503ffaa3cc5443f55cdbe3db05b0))
 - hoist the bounded XML string-builder into a shared primitive (dedup) ([`cc88478`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc88478d88062a2918c4e9c998c96f0c1157932c))
 - hoist the AES S-box into a shared primitive (dedup) ([`be31581`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be31581db93542c9cd6bbd62ee401706cf735f60))
