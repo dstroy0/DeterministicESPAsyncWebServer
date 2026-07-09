@@ -2,7 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.66.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.66.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`832b349`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/832b349ce2aa8eb507fe5ad6432e405ac733ee7e))
+- update CHANGELOG.md [skip ci] ([`74e71f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/74e71f576f8e50d699a80c24c671ce7eba5d9d73))
+
+### Changes
+
+- Bump version: 5.65.0 → 5.66.0 ([`f751e1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f751e1ec7614a2cc1dc0d2b755917eb5b1434c66))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a766fc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a766fc17fa157f24fd1907da77c8d487a33c5486))
+
+### Features
+
+- durable A/B superblock + checkpoint store over a block-device seam ([`a748bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a748bd51b1db0bbccb2a131fb058358cf894fe27))
+
+</details>
+
+## [5.65.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.65.0 - 2026-07-09</b></summary>
 
 ### CI / Build
 
