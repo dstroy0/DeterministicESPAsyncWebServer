@@ -50,6 +50,23 @@ void test_localize_key_sha256_vector()
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, key, 32);
 }
 
+// An empty or null password fails closed to an all-zero key (rather than hashing an empty
+// password into a usable one) - a v3 user with no auth secret cannot derive a valid key.
+void test_localize_key_empty_password()
+{
+    const uint8_t engine[] = {0x80, 0x00, 0xC0, 0xDE, 0x05, 0x01, 0x02, 0x03, 0x04};
+    const uint8_t zero[SNMP_USM_KEY_LEN] = {0};
+    uint8_t key[SNMP_USM_KEY_LEN];
+
+    memset(key, 0xAA, sizeof(key));
+    snmp_usm_localize_key("", engine, sizeof(engine), key); // empty password
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);
+
+    memset(key, 0xBB, sizeof(key));
+    snmp_usm_localize_key(nullptr, engine, sizeof(engine), key); // null password
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(zero, key, SNMP_USM_KEY_LEN);
+}
+
 void test_aes128_fips197_vector()
 {
     // FIPS-197 C.1. CFB with IV = plaintext and zero input yields E_key(plaintext).
@@ -914,6 +931,7 @@ int main()
     RUN_TEST(test_v3_notify_paths);
     RUN_TEST(test_v3_notify_overflow_guards);
     RUN_TEST(test_localize_key_sha256_vector);
+    RUN_TEST(test_localize_key_empty_password);
     RUN_TEST(test_aes128_fips197_vector);
     RUN_TEST(test_aes_cfb_roundtrip_partial_block);
     RUN_TEST(test_discovery_reports_engine_id);
