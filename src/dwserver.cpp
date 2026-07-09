@@ -2442,30 +2442,34 @@ const char *DetWebServer::mime_type(const char *path)
 // rendered through the {{name}} engine, like /metrics - values are substituted by
 // name, with no printf-format coupling. Snapshot into statics just before the
 // (twice-invoked, size + emit) resolver runs.
-static char s_s_uptime[12];
-static char s_s_requests[12];
-static char s_s_2xx[12];
-static char s_s_4xx[12];
-static char s_s_5xx[12];
-static char s_s_active[8];
-static char s_s_heap[12];
+struct StatsCtx
+{
+    char uptime[12];
+    char requests[12];
+    char n2xx[12];
+    char n4xx[12];
+    char n5xx[12];
+    char active[8];
+    char heap[12];
+};
+static StatsCtx s_stats;
 
 static const char *stats_var(const char *name)
 {
     if (!strcmp(name, "uptime_ms"))
-        return s_s_uptime;
+        return s_stats.uptime;
     if (!strcmp(name, "requests"))
-        return s_s_requests;
+        return s_stats.requests;
     if (!strcmp(name, "http_2xx"))
-        return s_s_2xx;
+        return s_stats.n2xx;
     if (!strcmp(name, "http_4xx"))
-        return s_s_4xx;
+        return s_stats.n4xx;
     if (!strcmp(name, "http_5xx"))
-        return s_s_5xx;
+        return s_stats.n5xx;
     if (!strcmp(name, "active_conns"))
-        return s_s_active;
+        return s_stats.active;
     if (!strcmp(name, "free_heap"))
-        return s_s_heap;
+        return s_stats.heap;
     return nullptr;
 }
 
@@ -2483,13 +2487,13 @@ void DetWebServer::stats(uint8_t slot_id)
     uint32_t heap = 0;
 #endif
 
-    snprintf(s_s_uptime, sizeof(s_s_uptime), "%lu", up);
-    snprintf(s_s_requests, sizeof(s_s_requests), "%lu", (unsigned long)_stat_requests);
-    snprintf(s_s_2xx, sizeof(s_s_2xx), "%lu", (unsigned long)_stat_2xx);
-    snprintf(s_s_4xx, sizeof(s_s_4xx), "%lu", (unsigned long)_stat_4xx);
-    snprintf(s_s_5xx, sizeof(s_s_5xx), "%lu", (unsigned long)_stat_5xx);
-    snprintf(s_s_active, sizeof(s_s_active), "%d", active);
-    snprintf(s_s_heap, sizeof(s_s_heap), "%u", (unsigned)heap);
+    snprintf(s_stats.uptime, sizeof(s_stats.uptime), "%lu", up);
+    snprintf(s_stats.requests, sizeof(s_stats.requests), "%lu", (unsigned long)_stat_requests);
+    snprintf(s_stats.n2xx, sizeof(s_stats.n2xx), "%lu", (unsigned long)_stat_2xx);
+    snprintf(s_stats.n4xx, sizeof(s_stats.n4xx), "%lu", (unsigned long)_stat_4xx);
+    snprintf(s_stats.n5xx, sizeof(s_stats.n5xx), "%lu", (unsigned long)_stat_5xx);
+    snprintf(s_stats.active, sizeof(s_stats.active), "%d", active);
+    snprintf(s_stats.heap, sizeof(s_stats.heap), "%u", (unsigned)heap);
 
     send_template(slot_id, 200, DET_MIME_JSON, DETWS_STATS_JSON, stats_var);
 }
@@ -2501,42 +2505,46 @@ void DetWebServer::stats(uint8_t slot_id)
 // substituted by name (no printf format coupling). metrics() snapshots the live
 // values into these statics just before send_template(), which invokes the
 // resolver twice (size + emit) - deterministic because the snapshot is fixed.
-static char s_m_uptime[12];
-static char s_m_requests[12];
-static char s_m_2xx[12];
-static char s_m_4xx[12];
-static char s_m_5xx[12];
-static char s_m_active[8];
-static char s_m_max[8];
-static char s_m_heap[12];
-static char s_m_minheap[12];
-static char s_m_heapsize[12];
-static char s_m_maxalloc[12];
+struct MetricsCtx
+{
+    char uptime[12];
+    char requests[12];
+    char n2xx[12];
+    char n4xx[12];
+    char n5xx[12];
+    char active[8];
+    char max[8];
+    char heap[12];
+    char minheap[12];
+    char heapsize[12];
+    char maxalloc[12];
+};
+static MetricsCtx s_metrics;
 
 static const char *metrics_var(const char *name)
 {
     if (!strcmp(name, "uptime_seconds"))
-        return s_m_uptime;
+        return s_metrics.uptime;
     if (!strcmp(name, "requests_total"))
-        return s_m_requests;
+        return s_metrics.requests;
     if (!strcmp(name, "resp_2xx"))
-        return s_m_2xx;
+        return s_metrics.n2xx;
     if (!strcmp(name, "resp_4xx"))
-        return s_m_4xx;
+        return s_metrics.n4xx;
     if (!strcmp(name, "resp_5xx"))
-        return s_m_5xx;
+        return s_metrics.n5xx;
     if (!strcmp(name, "active_conns"))
-        return s_m_active;
+        return s_metrics.active;
     if (!strcmp(name, "max_conns"))
-        return s_m_max;
+        return s_metrics.max;
     if (!strcmp(name, "free_heap"))
-        return s_m_heap;
+        return s_metrics.heap;
     if (!strcmp(name, "min_free_heap"))
-        return s_m_minheap;
+        return s_metrics.minheap;
     if (!strcmp(name, "heap_size"))
-        return s_m_heapsize;
+        return s_metrics.heapsize;
     if (!strcmp(name, "max_alloc_heap"))
-        return s_m_maxalloc;
+        return s_metrics.maxalloc;
     return nullptr;
 }
 
@@ -2560,17 +2568,17 @@ void DetWebServer::metrics(uint8_t slot_id)
     uint32_t max_alloc = 0;
 #endif
 
-    snprintf(s_m_uptime, sizeof(s_m_uptime), "%lu", up / 1000UL);
-    snprintf(s_m_requests, sizeof(s_m_requests), "%lu", (unsigned long)_stat_requests);
-    snprintf(s_m_2xx, sizeof(s_m_2xx), "%lu", (unsigned long)_stat_2xx);
-    snprintf(s_m_4xx, sizeof(s_m_4xx), "%lu", (unsigned long)_stat_4xx);
-    snprintf(s_m_5xx, sizeof(s_m_5xx), "%lu", (unsigned long)_stat_5xx);
-    snprintf(s_m_active, sizeof(s_m_active), "%d", active);
-    snprintf(s_m_max, sizeof(s_m_max), "%d", (int)MAX_CONNS);
-    snprintf(s_m_heap, sizeof(s_m_heap), "%u", (unsigned)heap);
-    snprintf(s_m_minheap, sizeof(s_m_minheap), "%u", (unsigned)min_heap);
-    snprintf(s_m_heapsize, sizeof(s_m_heapsize), "%u", (unsigned)heap_size);
-    snprintf(s_m_maxalloc, sizeof(s_m_maxalloc), "%u", (unsigned)max_alloc);
+    snprintf(s_metrics.uptime, sizeof(s_metrics.uptime), "%lu", up / 1000UL);
+    snprintf(s_metrics.requests, sizeof(s_metrics.requests), "%lu", (unsigned long)_stat_requests);
+    snprintf(s_metrics.n2xx, sizeof(s_metrics.n2xx), "%lu", (unsigned long)_stat_2xx);
+    snprintf(s_metrics.n4xx, sizeof(s_metrics.n4xx), "%lu", (unsigned long)_stat_4xx);
+    snprintf(s_metrics.n5xx, sizeof(s_metrics.n5xx), "%lu", (unsigned long)_stat_5xx);
+    snprintf(s_metrics.active, sizeof(s_metrics.active), "%d", active);
+    snprintf(s_metrics.max, sizeof(s_metrics.max), "%d", (int)MAX_CONNS);
+    snprintf(s_metrics.heap, sizeof(s_metrics.heap), "%u", (unsigned)heap);
+    snprintf(s_metrics.minheap, sizeof(s_metrics.minheap), "%u", (unsigned)min_heap);
+    snprintf(s_metrics.heapsize, sizeof(s_metrics.heapsize), "%u", (unsigned)heap_size);
+    snprintf(s_metrics.maxalloc, sizeof(s_metrics.maxalloc), "%u", (unsigned)max_alloc);
 
     send_template(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", DETWS_METRICS_PROM, metrics_var);
 }
