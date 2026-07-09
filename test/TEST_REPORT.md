@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 13:27:54
+**Generated:** 2026-07-09 13:45:56
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2783 passed - 427s
+**Result:** ✅ 2785 passed - 419s
 
 ---
 
@@ -44,25 +44,25 @@
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.649 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.066 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    12 |   ✅   | 00:00:01.876 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:12.372 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.717 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.742 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.657 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.713 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.771 |
-| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.711 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.750 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.751 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.752 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.712 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.721 |
-| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.747 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.738 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.748 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.731 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.779 |
-| `test_application`       | `native_app`            |    68 |   ✅   | 00:00:00.946 |
-| `test_webdav_handler`    | `native_webdav_handler` |    24 |   ✅   | 00:00:01.749 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:04.708 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.703 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.698 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.636 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.707 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.709 |
+| `test_json`              | `native_app`            |    26 |   ✅   | 00:00:00.664 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.736 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.709 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.743 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.709 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.678 |
+| `test_multipart`         | `native_app`            |    19 |   ✅   | 00:00:00.728 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.719 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.741 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.705 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.723 |
+| `test_application`       | `native_app`            |    68 |   ✅   | 00:00:00.890 |
+| `test_webdav_handler`    | `native_webdav_handler` |    26 |   ✅   | 00:00:01.651 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
@@ -124,8 +124,8 @@
 | `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.778 |
 | `test_opcua`             | `native_opcua`          |    40 |   ✅   | 00:00:12.323 |
 | `test_opcua_client`      | `native_opcua_client`   |    19 |   ✅   | 00:00:25.656 |
-| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.449 |
-| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.551 |
+| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.467 |
+| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.501 |
 | `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.779 |
 | `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.983 |
 | `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.749 |
@@ -143,7 +143,7 @@
 | `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.743 |
 | `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.770 |
 | `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.820 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.547 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.499 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.748 |
 | `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.804 |
 | `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.774 |
@@ -1938,39 +1938,41 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 
 ---
 
-## test_webdav_handler - native_webdav_handler - ✅ 24 passed
+## test_webdav_handler - native_webdav_handler - ✅ 26 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for the WebDAV request handler's recursive filesystem operations_
 
-|   # | Test                                       | Status | Description                                                          |
-| --: | :----------------------------------------- | :----: | :------------------------------------------------------------------- |
-|   1 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                   |
-|   2 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                            |
-|   3 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                  |
-|   4 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                            |
-|   5 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                            |
-|   6 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                       |
-|   7 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                             |
-|   8 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                            |
-|   9 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                          |
-|  10 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                      |
-|  11 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                        |
-|  12 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                            |
-|  13 | `test_delete_single_file`                  |   ✅   | Delete single file                                                   |
-|  14 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                               |
-|  15 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                               |
-|  16 | `test_put_stream_create`                   |   ✅   | Put stream create                                                    |
-|  17 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                 |
-|  18 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                   |
-|  19 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                           |
-|  20 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                            |
-|  21 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                             |
-|  22 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.          |
-|  23 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive. |
-|  24 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                 |
+|   # | Test                                       | Status | Description                                                                   |
+| --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------- |
+|   1 | `test_webdav_get_put_dest_edges`           |   ✅   | Webdav get put dest edges                                                     |
+|   2 | `test_webdav_copy_dest_path_too_long_414`  |   ✅   | 240-char fs root: a short source ("/s") still joins under 256, but root + any |
+|   3 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                            |
+|   4 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                                     |
+|   5 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                           |
+|   6 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                                     |
+|   7 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                                     |
+|   8 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                                |
+|   9 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                                      |
+|  10 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                                     |
+|  11 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                                   |
+|  12 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                               |
+|  13 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                                 |
+|  14 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                                     |
+|  15 | `test_delete_single_file`                  |   ✅   | Delete single file                                                            |
+|  16 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                                        |
+|  17 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                                        |
+|  18 | `test_put_stream_create`                   |   ✅   | Put stream create                                                             |
+|  19 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                          |
+|  20 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                            |
+|  21 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                                    |
+|  22 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                                     |
+|  23 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                                      |
+|  24 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.                   |
+|  25 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive.          |
+|  26 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                          |
 
 </details>
 
