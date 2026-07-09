@@ -75,6 +75,17 @@ void test_trap_threshold()
     TEST_ASSERT_EQUAL_UINT8(DETWS_LOG_ERROR, g_last_level);
 }
 
+void test_dump_guards()
+{
+    char out[64];
+    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(out, 0));               // zero cap
+    // A dump buffer too small for the logged line fails closed.
+    detws_logbuf_reset();
+    detws_log(0, "a fairly long log line that will not fit a tiny dump buffer");
+    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(out, 8));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -82,5 +93,6 @@ int main()
     RUN_TEST(test_dump);
     RUN_TEST(test_rotation_drops_oldest);
     RUN_TEST(test_trap_threshold);
+    RUN_TEST(test_dump_guards);
     return UNITY_END();
 }
