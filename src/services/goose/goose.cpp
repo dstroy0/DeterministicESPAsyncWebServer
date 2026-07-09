@@ -133,7 +133,10 @@ size_t detws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid,
     // GOOSE header: APPID(2), length(2, filled below), reserved1(2), reserved2(2).
     out[14] = (uint8_t)(appid >> 8);
     out[15] = (uint8_t)appid;
-    out[18] = out[19] = out[20] = out[21] = 0;
+    out[18] = 0;
+    out[19] = 0;
+    out[20] = 0;
+    out[21] = 0;
 
     size_t pdu = detws_goose_pdu(g, out + 22, cap - 22);
     if (!pdu)

@@ -49,7 +49,11 @@ struct GqlCtx
     Node nodes[DETWS_GQL_MAX_NODES];
     Arg args[DETWS_GQL_MAX_ARGS];
     char strbuf[DETWS_GQL_STRBUF];
-    int nnodes, nargs, str_len, root, err;
+    int nnodes;
+    int nargs;
+    int str_len;
+    int root;
+    int err;
     // executor: scope stack of in-scope arg indices, resolver, and dotted path
     int scope[DETWS_GQL_MAX_ARGS];
     int scope_n;
@@ -604,7 +608,10 @@ bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out)
 
 int detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out, size_t cap)
 {
-    s_gql.nnodes = s_gql.nargs = s_gql.str_len = s_gql.scope_n = 0;
+    s_gql.nnodes = 0;
+    s_gql.nargs = 0;
+    s_gql.str_len = 0;
+    s_gql.scope_n = 0;
     s_gql.root = -1;
     s_gql.err = 0;
     s_gql.resolver = resolver;

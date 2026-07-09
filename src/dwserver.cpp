@@ -288,7 +288,10 @@ DetWebServer::DetWebServer()
     regen_digest_secret();
 #endif
 #if DETWS_ENABLE_STATS
-    _stat_requests = _stat_2xx = _stat_4xx = _stat_5xx = 0;
+    _stat_requests = 0;
+    _stat_2xx = 0;
+    _stat_4xx = 0;
+    _stat_5xx = 0;
 #endif
 }
 
@@ -2439,7 +2442,13 @@ const char *DetWebServer::mime_type(const char *path)
 // rendered through the {{name}} engine, like /metrics - values are substituted by
 // name, with no printf-format coupling. Snapshot into statics just before the
 // (twice-invoked, size + emit) resolver runs.
-static char s_s_uptime[12], s_s_requests[12], s_s_2xx[12], s_s_4xx[12], s_s_5xx[12], s_s_active[8], s_s_heap[12];
+static char s_s_uptime[12];
+static char s_s_requests[12];
+static char s_s_2xx[12];
+static char s_s_4xx[12];
+static char s_s_5xx[12];
+static char s_s_active[8];
+static char s_s_heap[12];
 
 static const char *stats_var(const char *name)
 {
@@ -2492,8 +2501,17 @@ void DetWebServer::stats(uint8_t slot_id)
 // substituted by name (no printf format coupling). metrics() snapshots the live
 // values into these statics just before send_template(), which invokes the
 // resolver twice (size + emit) - deterministic because the snapshot is fixed.
-static char s_m_uptime[12], s_m_requests[12], s_m_2xx[12], s_m_4xx[12], s_m_5xx[12];
-static char s_m_active[8], s_m_max[8], s_m_heap[12], s_m_minheap[12], s_m_heapsize[12], s_m_maxalloc[12];
+static char s_m_uptime[12];
+static char s_m_requests[12];
+static char s_m_2xx[12];
+static char s_m_4xx[12];
+static char s_m_5xx[12];
+static char s_m_active[8];
+static char s_m_max[8];
+static char s_m_heap[12];
+static char s_m_minheap[12];
+static char s_m_heapsize[12];
+static char s_m_maxalloc[12];
 
 static const char *metrics_var(const char *name)
 {
@@ -2536,7 +2554,10 @@ void DetWebServer::metrics(uint8_t slot_id)
     uint32_t heap_size = ESP.getHeapSize();
     uint32_t max_alloc = ESP.getMaxAllocHeap();
 #else
-    uint32_t heap = 0, min_heap = 0, heap_size = 0, max_alloc = 0;
+    uint32_t heap = 0;
+    uint32_t min_heap = 0;
+    uint32_t heap_size = 0;
+    uint32_t max_alloc = 0;
 #endif
 
     snprintf(s_m_uptime, sizeof(s_m_uptime), "%lu", up / 1000UL);
@@ -3024,7 +3045,11 @@ static bool http_not_modified_since(time_t mtime, const char *ims)
     if (mtime <= 0 || !ims)
         return false;
     char mon[4] = {0};
-    int day = 0, year = 0, hh = 0, mm = 0, ss = 0;
+    int day = 0;
+    int year = 0;
+    int hh = 0;
+    int mm = 0;
+    int ss = 0;
     // "Sun, 06 Nov 1994 08:49:37 GMT" - skip the weekday, read the rest.
     if (sscanf(ims, "%*3s, %d %3s %d %d:%d:%d", &day, mon, &year, &hh, &mm, &ss) != 6)
         return false;

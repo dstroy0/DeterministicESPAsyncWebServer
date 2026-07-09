@@ -17,7 +17,10 @@ namespace
 // 32-bit SSH seqnr leaves the high 4 bytes zero.
 void seq_nonce(uint32_t seqnr, uint8_t iv[8])
 {
-    iv[0] = iv[1] = iv[2] = iv[3] = 0;
+    iv[0] = 0;
+    iv[1] = 0;
+    iv[2] = 0;
+    iv[3] = 0;
     iv[4] = (uint8_t)(seqnr >> 24);
     iv[5] = (uint8_t)(seqnr >> 16);
     iv[6] = (uint8_t)(seqnr >> 8);
