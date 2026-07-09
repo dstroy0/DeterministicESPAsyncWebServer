@@ -29,11 +29,15 @@ uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
     if (channel > 3)
         channel = 0;
     if (gain > ADS1115_GAIN_16)
-        gain = ADS1115_GAIN_2;
+        gain = (uint8_t)DETWS_ADS1115_GAIN;
     if (dr > ADS1115_DR_860)
-        dr = ADS1115_DR_128;
+        dr = (uint8_t)DETWS_ADS1115_DR;
     uint16_t cfg = OS_SINGLE;
+#if DETWS_ADS1115_DIFFERENTIAL
+    cfg |= (uint16_t)((uint16_t)channel << 12); // differential pair: MUX 0=AIN0-1, 1=AIN0-3, 2=AIN1-3, 3=AIN2-3
+#else
     cfg |= (uint16_t)(MUX_SINGLE0 | ((uint16_t)channel << 12)); // single-ended AINx
+#endif
     cfg |= PGA_BITS[gain];
     cfg |= MODE_SINGLE;
     cfg |= (uint16_t)((uint16_t)dr << 5); // data-rate bits [7:5]
@@ -44,7 +48,7 @@ uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
 int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 {
     if (gain > ADS1115_GAIN_16)
-        gain = ADS1115_GAIN_2;
+        gain = (uint8_t)DETWS_ADS1115_GAIN;
     return (int32_t)((int64_t)raw * FSR_UV[gain] / 32768);
 }
 
@@ -103,9 +107,14 @@ bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
 {
     if (!raw)
         return false;
-    if (!wr16(ADS1115_REG_CONFIG, ads1115_config_single(channel, gain, ADS1115_DR_128)))
+    uint8_t dr = (uint8_t)DETWS_ADS1115_DR;
+    if (dr > ADS1115_DR_860)
+        dr = ADS1115_DR_128;
+    if (!wr16(ADS1115_REG_CONFIG, ads1115_config_single(channel, gain, dr)))
         return false;
-    delay(9); // a 128 SPS conversion finishes in ~8 ms
+    // Single-shot conversion time tracks the data rate (~1000/SPS ms); wait it out plus a 1 ms margin.
+    static const uint16_t ads1115_sps[8] = {8, 16, 32, 64, 128, 250, 475, 860};
+    delay(1000u / ads1115_sps[dr] + 1);
     uint16_t v = 0;
     if (!rd16(ADS1115_REG_CONVERSION, &v))
         return false;

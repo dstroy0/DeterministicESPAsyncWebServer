@@ -2339,6 +2339,24 @@
 #define DETWS_ADS1115_I2C_ADDR 0x48
 #endif
 
+/** @brief Default ADS1115 PGA gain code (ADS1115_GAIN_*): 0=+/-6.144V, 1=+/-4.096V, 2=+/-2.048V (default),
+ *         3=+/-1.024V, 4=+/-0.512V, 5=+/-0.256V. Also the fallback when a read passes an invalid gain. */
+#ifndef DETWS_ADS1115_GAIN
+#define DETWS_ADS1115_GAIN 2 // ADS1115_GAIN_2 (+/- 2.048 V)
+#endif
+
+/** @brief Default ADS1115 data-rate code (ADS1115_DR_*): 0=8, 1=16, 2=32, 3=64, 4=128 (default), 5=250,
+ *         6=475, 7=860 SPS. The single-shot read waits the matching conversion time. */
+#ifndef DETWS_ADS1115_DR
+#define DETWS_ADS1115_DR 4 // ADS1115_DR_128 (128 SPS)
+#endif
+
+/** @brief ADS1115 input mode: 0 = single-ended (AINx vs GND), 1 = differential. In differential mode the
+ *         channel selects the pair: 0=AIN0-AIN1, 1=AIN0-AIN3, 2=AIN1-AIN3, 3=AIN2-AIN3. */
+#ifndef DETWS_ADS1115_DIFFERENTIAL
+#define DETWS_ADS1115_DIFFERENTIAL 0
+#endif
+
 /**
  * @brief TI INA219 high-side current / power monitor (I2C).
  *
@@ -2356,6 +2374,18 @@
 /** @brief I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). */
 #ifndef DETWS_INA219_I2C_ADDR
 #define DETWS_INA219_I2C_ADDR 0x40
+#endif
+
+/** @brief Default INA219 current LSB in microamps per bit (calibration input). The fallback when
+ *         ina219_begin() is passed 0. 100 uA/bit with a 100 mohm shunt -> a 2 A full-scale range. */
+#ifndef DETWS_INA219_CURRENT_LSB_UA
+#define DETWS_INA219_CURRENT_LSB_UA 100
+#endif
+
+/** @brief Default INA219 shunt resistance in milliohms (calibration input). The fallback when
+ *         ina219_begin() is passed 0. 100 mohm is the common breakout value. */
+#ifndef DETWS_INA219_SHUNT_MOHM
+#define DETWS_INA219_SHUNT_MOHM 100
 #endif
 
 /**
