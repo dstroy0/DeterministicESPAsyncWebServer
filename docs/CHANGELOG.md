@@ -13,6 +13,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`9926549`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9926549388e8839c458ac6fe1cf29233bdf836cf))
+- update CHANGELOG.md [skip ci] ([`ab7f17f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7f17fc7eb3e0dac2601bb8513ef5274e820c2a))
 - update test report + coverage [skip ci] ([`99d6078`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99d60782221e0d03ea6f8f041fb1b5ec0fe1d185))
 - update CHANGELOG.md [skip ci] ([`1ecf3f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ecf3f48c846979fb90295ee179132bc6d8e64dd))
 - update CHANGELOG.md [skip ci] ([`1657f3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1657f3cf706cb38d897707b6edbe32772f93c22e))
@@ -167,6 +169,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a130004`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a13000491c82dbcd77f164596f8eb9deeb4a3d96))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c521b7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c521b7a6c17e4ad6cb3c8db2f78b4600693d729d))
 - update ESP32 build footprints [skip ci] ([`f4ecfa4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4ecfa4c88912b60a9bfc197b2b2cf70ebd0778d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`02f9b1b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02f9b1bdbd937c52d2623bcfbb593d1e51955c47))
@@ -340,6 +343,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover send-family guards + 405/WS-400/WS-426 paths (dwserver batch) ([`941535d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/941535d0cfdfb1577b962abc866e586db98b8c72))
 - cover route-registration variant table-full guards (dwserver 867-934) ([`e24dbf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e24dbf218418189d4875206582928dd735070fee))
 - cover DetWebServer::restart + stop teardown (dwserver 801-825) ([`bbb4a96`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbb4a96a5785c5df98ab18238a8f0d9118ba475d))
 - cover overflow / null / parser-edge branches (branch 59->81%) ([`1448399`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/144839951239ef5bad29ac5d626ce261b15062c2))
