@@ -252,4 +252,117 @@ double sqlite_column_float(const uint8_t *val, uint32_t val_len)
     return d;
 }
 
+namespace
+{
+// The page byte offset of an interior page's b-tree header (100 only for page 1, the schema root).
+size_t page_hdr_off(uint32_t pgno)
+{
+    return pgno == 1 ? 100 : 0;
+}
+
+// Child page pointer to descend for child index `i` of an interior table page: the left-child of cell i,
+// or the right-most pointer when i == cell_count. 0 on a bad pointer.
+uint32_t interior_child(const uint8_t *page, size_t page_len, const SqliteBtreeHeader *h, size_t off, uint16_t i)
+{
+    if (i >= h->cell_count)
+        return h->right_most_page;
+    uint32_t cp = sqlite_cell_pointer(page, page_len, h, off, i);
+    if (cp == 0 || (size_t)cp + 4 > page_len)
+        return 0;
+    return be32(page + cp); // an interior-table cell starts with the u32 left-child page number
+}
+
+// Descend leftmost from `pgno`, pushing interior frames, until a leaf table page is loaded into c->leaf.
+bool cursor_descend(SqliteTableCursor *c, uint32_t pgno)
+{
+    for (;;)
+    {
+        if (!c->read(c->ctx, pgno, c->work, c->page_size))
+            return false;
+        size_t off = page_hdr_off(pgno);
+        SqliteBtreeHeader h;
+        if (!sqlite_parse_btree_header(c->work, c->page_size, off, &h))
+            return false;
+        if (h.type == SQLITE_BTREE_LEAF_TABLE)
+        {
+            memcpy(c->leaf, c->work, c->page_size);
+            c->leaf_hdr = h;
+            c->leaf_off = (uint32_t)off;
+            c->leaf_pgno = pgno;
+            c->leaf_count = h.cell_count;
+            c->leaf_cell = 0;
+            return true;
+        }
+        if (h.type != SQLITE_BTREE_INTERIOR_TABLE)
+            return false; // an index b-tree or garbage - not a table scan
+        if (c->depth >= SQLITE_BTREE_MAX_DEPTH)
+            return false;
+        uint32_t child = interior_child(c->work, c->page_size, &h, off, 0);
+        if (child == 0)
+            return false;
+        c->stack_pg[c->depth] = pgno;
+        c->stack_idx[c->depth] = 1; // child 0 taken; next is 1
+        c->depth++;
+        pgno = child;
+    }
+}
+} // namespace
+
+bool sqlite_table_cursor_begin(SqliteTableCursor *c, SqlitePageReader read, void *ctx, uint32_t page_size,
+                               uint8_t reserved, uint32_t rootpage, uint8_t *leaf_buf, uint8_t *work_buf)
+{
+    c->read = read;
+    c->ctx = ctx;
+    c->page_size = page_size;
+    c->reserved = reserved;
+    c->leaf = leaf_buf;
+    c->work = work_buf;
+    c->depth = 0;
+    c->leaf_count = 0;
+    c->leaf_cell = 0;
+    return cursor_descend(c, rootpage);
+}
+
+bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecordCursor *row)
+{
+    for (;;)
+    {
+        if (c->leaf_cell < c->leaf_count)
+        {
+            uint32_t cp = sqlite_cell_pointer(c->leaf, c->page_size, &c->leaf_hdr, c->leaf_off, c->leaf_cell);
+            c->leaf_cell++;
+            if (cp == 0)
+                continue;
+            SqliteTableLeafCell cell;
+            if (!sqlite_parse_table_leaf_cell(c->leaf, c->page_size, c->page_size, c->reserved, cp, &cell))
+                continue;
+            if (!sqlite_record_begin(row, c->leaf + cell.local_off, cell.local_len))
+                continue;
+            *rowid = cell.rowid;
+            return true;
+        }
+        // Current leaf is exhausted: advance the descent stack to the next subtree.
+        if (c->depth == 0)
+            return false; // whole table consumed
+        int top = c->depth - 1;
+        if (!c->read(c->ctx, c->stack_pg[top], c->work, c->page_size))
+            return false;
+        size_t off = page_hdr_off(c->stack_pg[top]);
+        SqliteBtreeHeader h;
+        if (!sqlite_parse_btree_header(c->work, c->page_size, off, &h))
+            return false;
+        if (c->stack_idx[top] <= h.cell_count)
+        {
+            uint32_t child = interior_child(c->work, c->page_size, &h, off, c->stack_idx[top]);
+            c->stack_idx[top]++;
+            if (child == 0 || !cursor_descend(c, child))
+                return false;
+        }
+        else
+        {
+            c->depth--; // this interior frame's children are all visited; pop to its parent
+        }
+    }
+}
+
 #endif // DETWS_ENABLE_SQLITE

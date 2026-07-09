@@ -79,15 +79,21 @@ layer built first, then the store codecs on top. Substrate before stores.
       overwritten/deleted keys (the log currently only grows).
 - [~] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
-      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **row reading is done**
+      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **reading is complete**
       (`services/sqlite/sqlite_format.h`): database header, b-tree page header, cell pointers, the
       leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
-      column values), and int/float decoders. Host-tested against a real sqlite3-CLI file (10 cases,
-      incl. reading the actual `sqlite_schema` row column-by-column) plus spec vectors. **Remaining:**
-      traverse an interior b-tree across multiple pages (a table cursor over `rootpage`), follow
-      overflow-page chains for large payloads, then a bounded writer.
-- [ ] **nosql**: a NoSQL store - target TBD (a Redis RESP or MongoDB OP_MSG/BSON **wire client**, or a
-      local on-flash document / KV store). Scope with the user before building.
+      column values), int/float decoders, and a **multi-page table cursor** that walks an interior
+      b-tree over `rootpage` in rowid order with a bounded descent stack + two page buffers (works over
+      any page source via a reader callback: RAM, wal_fs, fs::FS). Host-tested against real sqlite3-CLI
+      files (11 cases): the `sqlite_schema` row column-by-column and a full scan of a 40-row, 2-level
+      b-tree. **Remaining:** follow overflow-page chains for large payloads, then a bounded writer.
+- [ ] **nosql (both)**: the user wants a NoSQL **wire client** and a **local on-flash store**.
+  - [ ] **wire client**: a Redis **RESP** codec (RESP2/RESP3: simple string / error / integer / bulk
+        string / array, plus RESP3 map / set / double / boolean / push) - command encoder + reply
+        decoder, host-testable and verifiable against a real `redis-server` on the RPi. MongoDB
+        OP_MSG/BSON is a possible later addition.
+  - [ ] **local store**: a JSON **document store on the WAL** - keyed documents (put/get/delete by id)
+        plus a simple field-equality scan, distinct from dbm's opaque-value KV. Zero-heap, bounded.
 
 ### Performance
 

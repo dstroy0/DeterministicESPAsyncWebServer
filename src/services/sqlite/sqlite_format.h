@@ -146,5 +146,54 @@ int64_t sqlite_column_int(uint64_t serial_type, const uint8_t *val, uint32_t val
 /** @brief Decode a float column value (serial type 7): an 8-byte big-endian IEEE-754 double. */
 double sqlite_column_float(const uint8_t *val, uint32_t val_len);
 
+/** @brief Maximum table b-tree depth the cursor descends (SQLite trees are shallow; this is generous). */
+#define SQLITE_BTREE_MAX_DEPTH 20
+
+/**
+ * @brief Fetch page number @p pgno (1-based) into @p page (@p page_size bytes). @return true on success.
+ * The table cursor pulls pages through this so it works over any backing store (a RAM image, wal_fs, fs::FS).
+ */
+typedef bool (*SqlitePageReader)(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size);
+
+/**
+ * @brief A forward cursor over the rows of a table b-tree, in rowid order, across pages.
+ *
+ * It walks the interior/leaf table b-tree rooted at a table's `rootpage`, descending leftmost and yielding
+ * each leaf cell as a row. It keeps only a bounded descent stack of page numbers (re-reading an interior
+ * page when it returns to it) plus two page buffers - the current leaf and a scratch - so memory is fixed
+ * regardless of table size. Rows that overflow onto overflow pages yield only their in-page prefix for now
+ * (full overflow-chain reassembly is a follow-up); @c has_overflow on the cell flags that.
+ */
+struct SqliteTableCursor
+{
+    SqlitePageReader read;
+    void *ctx;
+    uint32_t page_size;
+    uint8_t reserved;
+    uint8_t *leaf; ///< page_size buffer holding the current leaf page (values point into it)
+    uint8_t *work; ///< page_size scratch for interior-page reads during traversal
+    uint32_t stack_pg[SQLITE_BTREE_MAX_DEPTH];
+    uint16_t stack_idx[SQLITE_BTREE_MAX_DEPTH]; ///< next child index to descend at each interior frame
+    int depth;
+    SqliteBtreeHeader leaf_hdr;
+    uint32_t leaf_off;
+    uint32_t leaf_pgno;
+    uint16_t leaf_cell;  ///< next cell index within the current leaf
+    uint16_t leaf_count; ///< cells in the current leaf
+};
+
+/**
+ * @brief Begin a table cursor at @p rootpage. @p leaf_buf and @p work_buf are each @p page_size bytes and
+ * must outlive the cursor. @return false if the root page cannot be read/parsed as a table b-tree.
+ */
+bool sqlite_table_cursor_begin(SqliteTableCursor *c, SqlitePageReader read, void *ctx, uint32_t page_size,
+                               uint8_t reserved, uint32_t rootpage, uint8_t *leaf_buf, uint8_t *work_buf);
+
+/**
+ * @brief Advance to the next row: sets @p rowid and starts @p row (a record cursor over the row's columns).
+ * Column value pointers stay valid until the next call. @return false at the end of the table.
+ */
+bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecordCursor *row);
+
 #endif // DETWS_ENABLE_SQLITE
 #endif // DETERMINISTICESPASYNCWEBSERVER_SQLITE_FORMAT_H

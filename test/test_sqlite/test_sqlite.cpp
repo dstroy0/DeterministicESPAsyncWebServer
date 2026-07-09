@@ -7,8 +7,11 @@
 //   CREATE TABLE t(a INTEGER, b TEXT); INSERT INTO t VALUES(42,'hello'); INSERT INTO t VALUES(7,'world');
 // so the parsers are checked against bytes an authoritative implementation actually wrote.
 
+#include "db_multipage.h"
 #include "services/sqlite/sqlite_format.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <unity.h>
 
 void setUp(void)
@@ -251,6 +254,63 @@ void test_leaf_cell_overflow_detection(void)
     TEST_ASSERT_EQUAL_UINT32(39, cell.local_len); // min_local per the SQLite threshold formula
 }
 
+// Page reader over an in-memory database image (pages are 1-based).
+struct MemDb
+{
+    const uint8_t *data;
+    uint32_t size;
+};
+static bool mem_read(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size)
+{
+    MemDb *m = (MemDb *)ctx;
+    if (pgno < 1)
+        return false;
+    uint32_t off = (pgno - 1) * page_size;
+    if (off + page_size > m->size)
+        return false;
+    memcpy(page, m->data + off, page_size);
+    return true;
+}
+
+// Walk a real 2-level table b-tree (interior root on page 2) and read all 40 rows in rowid order.
+void test_table_cursor_multipage(void)
+{
+    // The table's root page (page 2) is an interior table page, so this exercises the descent stack.
+    SqliteBtreeHeader bh;
+    TEST_ASSERT_TRUE(
+        sqlite_parse_btree_header(DB_MULTIPAGE + DB_MP_PAGE_SIZE, sizeof(DB_MULTIPAGE) - DB_MP_PAGE_SIZE, 0, &bh));
+    TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_INTERIOR_TABLE, bh.type);
+
+    MemDb db = {DB_MULTIPAGE, sizeof(DB_MULTIPAGE)};
+    static uint8_t leaf[512], work[512];
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(sqlite_table_cursor_begin(&c, mem_read, &db, DB_MP_PAGE_SIZE, 0, 2, leaf, work));
+
+    uint32_t n = 0;
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    while (sqlite_table_cursor_next(&c, &rowid, &row))
+    {
+        n++;
+        TEST_ASSERT_EQUAL_UINT64(n, rowid); // rowids 1..40, in order, across pages
+
+        uint64_t st = 0;
+        const uint8_t *v = nullptr;
+        uint32_t vl = 0;
+        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // column a (INTEGER) == rowid
+        TEST_ASSERT_EQUAL_INT64((int64_t)n, sqlite_column_int(st, v, vl));
+
+        TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // column b (TEXT)
+        char expect[64];
+        snprintf(expect, sizeof(expect), "row%04d-abcdefghijklmnopqrstuvwxyz", (int)n);
+        TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(expect), vl);
+        TEST_ASSERT_EQUAL_MEMORY(expect, v, vl);
+
+        TEST_ASSERT_FALSE(sqlite_record_next(&row, &st, &v, &vl)); // exactly two columns
+    }
+    TEST_ASSERT_EQUAL_UINT32(DB_MP_ROWS, n); // every row visited exactly once
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -264,5 +324,6 @@ int main(void)
     RUN_TEST(test_read_schema_row);
     RUN_TEST(test_column_int_signextend);
     RUN_TEST(test_leaf_cell_overflow_detection);
+    RUN_TEST(test_table_cursor_multipage);
     return UNITY_END();
 }
