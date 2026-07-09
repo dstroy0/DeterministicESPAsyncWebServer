@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 15:21:41
+**Generated:** 2026-07-09 15:28:42
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2804 passed - 487s
+**Result:** ✅ 2805 passed - 483s
 
 ---
 
@@ -150,7 +150,7 @@
 | `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.818 |
 | `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.784 |
 | `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.777 |
-| `test_inflate`           | `native_inflate`        |    13 |   ✅   | 00:00:08.679 |
+| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:05.454 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
 | `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:35.375 |
@@ -4290,7 +4290,7 @@ _Host unit tests for the outbound SNMP notification builder (env:native_snmp_tra
 
 ---
 
-## test_inflate - native_inflate - ✅ 13 passed
+## test_inflate - native_inflate - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4299,19 +4299,20 @@ _Unit tests for the RFC 1951 INFLATE core (network_drivers/presentation/inflate)
 
 |   # | Test                                      | Status | Description                                                            |
 | --: | :---------------------------------------- | :----: | :--------------------------------------------------------------------- |
-|   1 | `test_fixed_huffman`                      |   ✅   | Fixed huffman                                                          |
-|   2 | `test_back_references`                    |   ✅   | Back references                                                        |
-|   3 | `test_stored_block`                       |   ✅   | Stored block                                                           |
-|   4 | `test_dynamic_huffman`                    |   ✅   | Dynamic huffman                                                        |
-|   5 | `test_empty_message`                      |   ✅   | Empty message                                                          |
-|   6 | `test_permessage_deflate_marker`          |   ✅   | Permessage deflate marker                                              |
-|   7 | `test_permessage_deflate_back_references` |   ✅   | Permessage deflate back references                                     |
-|   8 | `test_output_overflow_fails_closed`       |   ✅   | Output overflow fails closed                                           |
-|   9 | `test_scratch_too_small_fails_closed`     |   ✅   | Scratch too small fails closed                                         |
-|  10 | `test_truncated_input_is_malformed`       |   ✅   | Half of the fixed-Huffman stream: decode runs out of input mid-symbol. |
-|  11 | `test_reserved_block_type_is_malformed`   |   ✅   | Reserved block type is malformed                                       |
-|  12 | `test_corrupt_stored_nlen_is_malformed`   |   ✅   | Corrupt stored nlen is malformed                                       |
-|  13 | `test_inflate_error_paths`                |   ✅   | OVERFLOW: a valid stream decompressed into a buffer that is too small. |
+|   1 | `test_malformed_deflate_blocks`           |   ✅   | Malformed deflate blocks                                               |
+|   2 | `test_fixed_huffman`                      |   ✅   | Fixed huffman                                                          |
+|   3 | `test_back_references`                    |   ✅   | Back references                                                        |
+|   4 | `test_stored_block`                       |   ✅   | Stored block                                                           |
+|   5 | `test_dynamic_huffman`                    |   ✅   | Dynamic huffman                                                        |
+|   6 | `test_empty_message`                      |   ✅   | Empty message                                                          |
+|   7 | `test_permessage_deflate_marker`          |   ✅   | Permessage deflate marker                                              |
+|   8 | `test_permessage_deflate_back_references` |   ✅   | Permessage deflate back references                                     |
+|   9 | `test_output_overflow_fails_closed`       |   ✅   | Output overflow fails closed                                           |
+|  10 | `test_scratch_too_small_fails_closed`     |   ✅   | Scratch too small fails closed                                         |
+|  11 | `test_truncated_input_is_malformed`       |   ✅   | Half of the fixed-Huffman stream: decode runs out of input mid-symbol. |
+|  12 | `test_reserved_block_type_is_malformed`   |   ✅   | Reserved block type is malformed                                       |
+|  13 | `test_corrupt_stored_nlen_is_malformed`   |   ✅   | Corrupt stored nlen is malformed                                       |
+|  14 | `test_inflate_error_paths`                |   ✅   | OVERFLOW: a valid stream decompressed into a buffer that is too small. |
 
 </details>
 
