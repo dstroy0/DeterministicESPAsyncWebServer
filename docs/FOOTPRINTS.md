@@ -21,7 +21,7 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.8 KB (57.4%) | 64.8 KB (20.3%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.7 KB (58.9%) | 65.2 KB (20.4%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.8 KB (57.3%) | 64.8 KB (20.3%)  |
-| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.6 KB (57.3%) | 64.8 KB (20.2%)  |
+| `DIAG`                                   | Foundation/05.Configuration             | 735.1 KB (57.4%) | 61.6 KB (19.3%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.1 KB (20.6%) | 28.2 KB (8.8%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
@@ -101,7 +101,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/01.FormParams`                     | L6-Presentation/01.FormParams           | 734.2 KB (57.4%) | 64.8 KB (20.2%)  |
 | `core/02.Advanced`                       | Foundation/02.Advanced                  | 741.9 KB (58.0%) | 64.9 KB (20.3%)  |
 | `core/02.CORS`                           | L7-Application/02.CORS                  | 733.4 KB (57.3%) | 64.8 KB (20.2%)  |
-| `core/02.Json`                           | L6-Presentation/02.Json                 | 737.1 KB (57.6%) | 64.8 KB (20.2%)  |
+| `core/02.Json`                           | L6-Presentation/02.Json                 | 737.4 KB (57.6%) | 64.8 KB (20.2%)  |
 | `core/02.SSHCryptoSelfTest`              | L5-Session/02.SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
 | `core/03.Expert`                         | Foundation/03.Expert                    | 736.1 KB (57.5%) | 64.8 KB (20.3%)  |
 | `core/03.InterfaceFilter`                | L7-Application/03.InterfaceFilter       | 735.0 KB (57.4%) | 64.8 KB (20.2%)  |
