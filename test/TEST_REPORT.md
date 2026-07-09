@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 07:47:07
+**Generated:** 2026-07-09 08:00:24
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2723 passed - 593s
+**Result:** ✅ 2725 passed - 225s
 
 ---
 
@@ -122,7 +122,7 @@
 | `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.778 |
 | `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.736 |
 | `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.778 |
-| `test_opcua`             | `native_opcua`          |    38 |   ✅   | 00:00:00.845 |
+| `test_opcua`             | `native_opcua`          |    40 |   ✅   | 00:00:12.323 |
 | `test_opcua_client`      | `native_opcua_client`   |    14 |   ✅   | 00:00:00.817 |
 | `test_keepalive`         | `native_keepalive`      |    10 |   ✅   | 00:00:01.444 |
 | `test_range`             | `native_range`          |    13 |   ✅   | 00:00:01.437 |
@@ -3502,53 +3502,55 @@ _Unit tests for the OAuth2 token-endpoint client core (services/oauth2): buildin
 
 ---
 
-## test_opcua - native_opcua - ✅ 38 passed
+## test_opcua - native_opcua - ✅ 40 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for OPC UA (services/opcua): the Binary built-in type codec (incl._
 
-|   # | Test                                   | Status | Description                                                                 |
-| --: | :------------------------------------- | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_parse_read_optional_fields`      |   ✅   | Parse read optional fields                                                  |
-|   2 | `test_parse_rejections`                |   ✅   | Parse rejections                                                            |
-|   3 | `test_build_guards_and_overflow`       |   ✅   | Build guards and overflow                                                   |
-|   4 | `test_setters_and_endpoint_url`        |   ✅   | Setters and endpoint url                                                    |
-|   5 | `test_variant_scalar_types`            |   ✅   | Variant scalar types                                                        |
-|   6 | `test_variant_errors`                  |   ✅   | Variant errors                                                              |
-|   7 | `test_datavalue_all_masks`             |   ✅   | Datavalue all masks                                                         |
-|   8 | `test_nodeid_encodings`                |   ✅   | Nodeid encodings                                                            |
-|   9 | `test_reader_underruns`                |   ✅   | Reader underruns                                                            |
-|  10 | `test_codec_roundtrip`                 |   ✅   | Codec roundtrip                                                             |
-|  11 | `test_string_null_roundtrip`           |   ✅   | String null roundtrip                                                       |
-|  12 | `test_reader_underrun_latches`         |   ✅   | Reader underrun latches                                                     |
-|  13 | `test_writer_overflow_fails_closed`    |   ✅   | Writer overflow fails closed                                                |
-|  14 | `test_parse_header`                    |   ✅   | Parse header                                                                |
-|  15 | `test_parse_hello`                     |   ✅   | Parse hello                                                                 |
-|  16 | `test_parse_hello_rejects_short`       |   ✅   | Parse hello rejects short                                                   |
-|  17 | `test_build_ack_negotiates`            |   ✅   | Build ack negotiates                                                        |
-|  18 | `test_nodeid_roundtrip`                |   ✅   | Nodeid roundtrip                                                            |
-|  19 | `test_filetime_from_unix`              |   ✅   | Filetime from unix                                                          |
-|  20 | `test_parse_open`                      |   ✅   | Parse open                                                                  |
-|  21 | `test_parse_open_rejects_wrong_type`   |   ✅   | Corrupt the message type so it is no longer "OPN".                          |
-|  22 | `test_build_open_response`             |   ✅   | Build open response                                                         |
-|  23 | `test_parse_msg`                       |   ✅   | Parse msg                                                                   |
-|  24 | `test_parse_msg_rejects_non_msg`       |   ✅   | Parse msg rejects non msg                                                   |
-|  25 | `test_build_create_session_response`   |   ✅   | Build create session response                                               |
-|  26 | `test_build_activate_session_response` |   ✅   | Build activate session response                                             |
-|  27 | `test_datavalue_good_int32`            |   ✅   | Datavalue good int32                                                        |
-|  28 | `test_datavalue_bad_status`            |   ✅   | Datavalue bad status                                                        |
-|  29 | `test_parse_read`                      |   ✅   | Parse read                                                                  |
-|  30 | `test_build_read_response`             |   ✅   | Build read response                                                         |
-|  31 | `test_parse_browse`                    |   ✅   | Parse browse                                                                |
-|  32 | `test_build_browse_response`           |   ✅   | Build browse response                                                       |
-|  33 | `test_build_browse_response_unknown`   |   ✅   | Build browse response unknown                                               |
-|  34 | `test_build_close_session_response`    |   ✅   | Build close session response                                                |
-|  35 | `test_build_get_endpoints`             |   ✅   | Build get endpoints                                                         |
-|  36 | `test_build_service_fault`             |   ✅   | Build service fault                                                         |
-|  37 | `test_datavalue_roundtrip`             |   ✅   | Datavalue roundtrip                                                         |
-|  38 | `test_parse_and_build_write`           |   ✅   | Build a WriteRequest writing one Int32 to ns=1;i=10 (value-only DataValue). |
+|   # | Test                                   | Status | Description                                                                                |
+| --: | :------------------------------------- | :----: | :----------------------------------------------------------------------------------------- |
+|   1 | `test_parse_read_optional_fields`      |   ✅   | Parse read optional fields                                                                 |
+|   2 | `test_parse_rejections`                |   ✅   | Parse rejections                                                                           |
+|   3 | `test_build_guards_and_overflow`       |   ✅   | Build guards and overflow                                                                  |
+|   4 | `test_setters_and_endpoint_url`        |   ✅   | Setters and endpoint url                                                                   |
+|   5 | `test_variant_scalar_types`            |   ✅   | Variant scalar types                                                                       |
+|   6 | `test_variant_errors`                  |   ✅   | Variant errors                                                                             |
+|   7 | `test_datavalue_all_masks`             |   ✅   | Datavalue all masks                                                                        |
+|   8 | `test_nodeid_encodings`                |   ✅   | Nodeid encodings                                                                           |
+|   9 | `test_reader_underruns`                |   ✅   | Reader underruns                                                                           |
+|  10 | `test_codec_roundtrip`                 |   ✅   | Codec roundtrip                                                                            |
+|  11 | `test_string_null_roundtrip`           |   ✅   | String null roundtrip                                                                      |
+|  12 | `test_reader_underrun_latches`         |   ✅   | Reader underrun latches                                                                    |
+|  13 | `test_writer_overflow_fails_closed`    |   ✅   | Writer overflow fails closed                                                               |
+|  14 | `test_parse_header`                    |   ✅   | Parse header                                                                               |
+|  15 | `test_parse_hello`                     |   ✅   | Parse hello                                                                                |
+|  16 | `test_parse_hello_rejects_short`       |   ✅   | Parse hello rejects short                                                                  |
+|  17 | `test_build_ack_negotiates`            |   ✅   | Build ack negotiates                                                                       |
+|  18 | `test_nodeid_roundtrip`                |   ✅   | Nodeid roundtrip                                                                           |
+|  19 | `test_filetime_from_unix`              |   ✅   | Filetime from unix                                                                         |
+|  20 | `test_parse_open`                      |   ✅   | Parse open                                                                                 |
+|  21 | `test_parse_open_rejects_wrong_type`   |   ✅   | Corrupt the message type so it is no longer "OPN".                                         |
+|  22 | `test_build_open_response`             |   ✅   | Build open response                                                                        |
+|  23 | `test_parse_msg`                       |   ✅   | Parse msg                                                                                  |
+|  24 | `test_parse_msg_rejects_non_msg`       |   ✅   | Parse msg rejects non msg                                                                  |
+|  25 | `test_build_create_session_response`   |   ✅   | Build create session response                                                              |
+|  26 | `test_build_activate_session_response` |   ✅   | Build activate session response                                                            |
+|  27 | `test_datavalue_good_int32`            |   ✅   | Datavalue good int32                                                                       |
+|  28 | `test_datavalue_bad_status`            |   ✅   | Datavalue bad status                                                                       |
+|  29 | `test_parse_read`                      |   ✅   | Parse read                                                                                 |
+|  30 | `test_build_read_response`             |   ✅   | Build read response                                                                        |
+|  31 | `test_parse_browse`                    |   ✅   | Parse browse                                                                               |
+|  32 | `test_build_browse_response`           |   ✅   | Build browse response                                                                      |
+|  33 | `test_build_browse_response_unknown`   |   ✅   | Build browse response unknown                                                              |
+|  34 | `test_build_close_session_response`    |   ✅   | Build close session response                                                               |
+|  35 | `test_build_get_endpoints`             |   ✅   | Build get endpoints                                                                        |
+|  36 | `test_build_service_fault`             |   ✅   | Build service fault                                                                        |
+|  37 | `test_datavalue_roundtrip`             |   ✅   | Datavalue roundtrip                                                                        |
+|  38 | `test_parse_and_build_write`           |   ✅   | Build a WriteRequest writing one Int32 to ns=1;i=10 (value-only DataValue).                |
+|  39 | `test_rx_and_proto_handler_host_stubs` |   ✅   | Rx and proto handler host stubs                                                            |
+|  40 | `test_parse_open_with_cert_and_nonce`  |   ✅   | An OPEN carrying non-empty SenderCertificate + ReceiverCertificateThumbprint + ClientNonce |
 
 </details>
 
