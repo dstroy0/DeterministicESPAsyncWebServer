@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 14:03:58
+**Generated:** 2026-07-09 14:15:00
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2787 passed - 425s
+**Result:** ✅ 2790 passed - 429s
 
 ---
 
@@ -62,7 +62,7 @@
 | `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.725 |
 | `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.757 |
 | `test_application`       | `native_app`            |    70 |   ✅   | 00:00:00.924 |
-| `test_webdav_handler`    | `native_webdav_handler` |    26 |   ✅   | 00:00:01.651 |
+| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:05.616 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
@@ -1940,41 +1940,44 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 
 ---
 
-## test_webdav_handler - native_webdav_handler - ✅ 26 passed
+## test_webdav_handler - native_webdav_handler - ✅ 29 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for the WebDAV request handler's recursive filesystem operations_
 
-|   # | Test                                       | Status | Description                                                                   |
-| --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------- |
-|   1 | `test_webdav_get_put_dest_edges`           |   ✅   | Webdav get put dest edges                                                     |
-|   2 | `test_webdav_copy_dest_path_too_long_414`  |   ✅   | 240-char fs root: a short source ("/s") still joins under 256, but root + any |
-|   3 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                            |
-|   4 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                                     |
-|   5 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                           |
-|   6 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                                     |
-|   7 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                                     |
-|   8 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                                |
-|   9 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                                      |
-|  10 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                                     |
-|  11 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                                   |
-|  12 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                               |
-|  13 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                                 |
-|  14 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                                     |
-|  15 | `test_delete_single_file`                  |   ✅   | Delete single file                                                            |
-|  16 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                                        |
-|  17 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                                        |
-|  18 | `test_put_stream_create`                   |   ✅   | Put stream create                                                             |
-|  19 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                          |
-|  20 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                            |
-|  21 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                                    |
-|  22 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                                     |
-|  23 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                                      |
-|  24 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.                   |
-|  25 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive.          |
-|  26 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                          |
+|   # | Test                                       | Status | Description                                                                        |
+| --: | :----------------------------------------- | :----: | :--------------------------------------------------------------------------------- |
+|   1 | `test_webdav_get_put_dest_edges`           |   ✅   | Webdav get put dest edges                                                          |
+|   2 | `test_webdav_copy_dest_path_too_long_414`  |   ✅   | 240-char fs root: a short source ("/s") still joins under 256, but root + any      |
+|   3 | `test_webdav_recursive_open_failure`       |   ✅   | DELETE: the resource exists but its open() fails -> dav_rm_recursive bails -> 403. |
+|   4 | `test_webdav_source_path_too_long_414`     |   ✅   | Webdav source path too long 414                                                    |
+|   5 | `test_webdav_dav_wildcard_and_route_full`  |   ✅   | (a) A wildcard-terminated prefix is stored as-is; a request under it still routes. |
+|   6 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                                 |
+|   7 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                                          |
+|   8 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                                |
+|   9 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                                          |
+|  10 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                                          |
+|  11 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                                     |
+|  12 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                                           |
+|  13 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                                          |
+|  14 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                                        |
+|  15 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                                    |
+|  16 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                                      |
+|  17 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                                          |
+|  18 | `test_delete_single_file`                  |   ✅   | Delete single file                                                                 |
+|  19 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                                             |
+|  20 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                                             |
+|  21 | `test_put_stream_create`                   |   ✅   | Put stream create                                                                  |
+|  22 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                               |
+|  23 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                                 |
+|  24 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                                         |
+|  25 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                                          |
+|  26 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                                           |
+|  27 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.                        |
+|  28 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive.               |
+|  29 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                               |
 
 </details>
 
