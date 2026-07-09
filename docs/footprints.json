@@ -91,11 +91,11 @@
     "ram_bytes": 66392
   },
   "DIAG": {
-    "example": "L7-Application/20.Diagnostics",
+    "example": "Foundation/05.Configuration",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 751241,
-    "ram_bytes": 66352
+    "flash_bytes": 752733,
+    "ram_bytes": 63104
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -469,10 +469,10 @@
     "ram_bytes": 44928
   },
   "SSH": {
-    "example": "L5-Session/03.SSHHostKey",
+    "example": "L5-Session/01.SSH",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 820949,
+    "flash_bytes": 821605,
     "ram_bytes": 88676
   },
   "STATS": {
