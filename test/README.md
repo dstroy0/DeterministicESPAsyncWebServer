@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2606 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2608 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4674,7 +4674,7 @@ A thorough directory of all **2606 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_det_arena (17 tests)</b></summary>
+<summary><b>test_det_arena (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_persist_basic_alloc</b> &mdash; <i>Persist basic alloc</i></summary>
@@ -4854,6 +4854,30 @@ A thorough directory of all **2606 test cases** across **228 suites**. Expand a 
       * <code>Assert true (det_arena_set_scratch_used(&s) &gt;= 400)</code>
       * <code>Assert true (det_arena_set_scratch_used(&s) &lt; 900)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_set_scratch_used(&s));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_split_and_max_align</b> &mdash; <i>A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).</i></summary>
+
+    * **Objective**: A small alloc into a large non-terminal hole splits the hole (leaves a free remainder).
+    * **Assertions**:
+      * <code>Assert equal ptr (B, D)</code>
+      * <code>Assert not null (E)</code>
+      * <code>Assert true ((uintptr_t)E &gt; (uintptr_t)D && (uintptr_t)E &lt; (uintptr_t)C)</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (((uintptr_t)p & 15u) == 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_exhaustion_and_free_bytes</b> &mdash; <i>A request larger than any single region fails closed across the whole set.</i></summary>
+
+    * **Objective**: A request larger than any single region fails closed across the whole set.
+    * **Assertions**:
+      * <code>Assert null (det_arena_set_persist_alloc(&s, 100000))</code>
+      * <code>Assert null (det_arena_set_scratch_alloc(&s, 100000))</code>
+      * <code>Assert true (before &gt; 0)</code>
+      * <code>Assert not null (p)</code>
+      * <code>Assert true (det_arena_set_free_bytes(&s) &lt; before)</code>
   </details>
 
 </details>
