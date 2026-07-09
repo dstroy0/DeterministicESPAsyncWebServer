@@ -801,11 +801,11 @@ by how often a deployed device needs it.
       `JSON_MAX_DEPTH` nesting cap; overflow flips `ok()` and truncates safely)
       plus top-level object readers `json_get_str()`/`json_get_int()`/
       `json_get_bool()` (`src/network_drivers/presentation/json.*`). ArduinoJson stays optional (it
-      heap-allocates). Tested by `test_json` (17); example `10.Json`.
-      _Follow-up:_ string unescaping decodes `\uXXXX` only for code points ≤ 0xFF
-      (one byte); higher code points and UTF-16 surrogate pairs become `?`
-      (`json.cpp`). Add UTF-8 multi-byte emission + surrogate-pair joining if full
-      Unicode reads are needed.
+      heap-allocates). Tested by `test_json` (28); example `10.Json`.
+      _Follow-up (done):_ string unescaping now decodes `\uXXXX` to UTF-8 (1-4
+      bytes) and joins UTF-16 surrogate pairs into astral code points; an unpaired
+      surrogate becomes U+FFFD and malformed/short hex becomes `?`, with a clean
+      truncation when a code point's UTF-8 sequence would not fit (`json.cpp`).
 
 - [x] **Web "serial" terminal ([`DETWS_ENABLE_WEB_TERMINAL`](@ref DETWS_ENABLE_WEB_TERMINAL)).**
       _(done)_ A WebSerial-style browser terminal over the existing WebSocket

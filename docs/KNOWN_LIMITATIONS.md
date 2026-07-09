@@ -34,8 +34,11 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 ## JSON
 
-- The reader decodes `\uXXXX` escapes only for code points <= 0xFF; higher code
-  points and UTF-16 surrogate pairs become `?` (no multi-byte UTF-8 emission).
+- The reader decodes `\uXXXX` escapes to UTF-8 (1-4 bytes), joining UTF-16
+  surrogate pairs into astral code points; an unpaired surrogate becomes U+FFFD
+  and malformed/short hex becomes `?`. A code point whose UTF-8 sequence would not
+  fit the caller buffer truncates the string before it rather than writing a
+  partial character.
 - `JsonWriter` is bounded by the caller buffer + `JSON_MAX_DEPTH`; overflow flips
   `ok()` and truncates rather than growing.
 

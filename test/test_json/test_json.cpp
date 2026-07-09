@@ -250,15 +250,55 @@ void test_reader_all_escapes()
     TEST_ASSERT_EQUAL_STRING(expect, out);
 }
 
-// \uXXXX with lower- and upper-case hex letters each decode to a byte.
+// \uXXXX with lower- and upper-case hex letters each decode to their UTF-8 encoding.
 void test_reader_unicode_hex_case()
 {
-    const char *body = "{\"a\":\"\\u00ab\\u00CD\"}"; // 0xAB, 0xCD
+    const char *body = "{\"a\":\"\\u00ab\\u00CD\"}"; // U+00AB, U+00CD -> two 2-byte UTF-8 sequences
     char out[8];
     TEST_ASSERT_TRUE(json_get_str(body, "a", out, sizeof(out)));
-    TEST_ASSERT_EQUAL_HEX8(0xAB, (unsigned char)out[0]);
-    TEST_ASSERT_EQUAL_HEX8(0xCD, (unsigned char)out[1]);
-    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xC2, (unsigned char)out[0]); // U+00AB
+    TEST_ASSERT_EQUAL_HEX8(0xAB, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xC3, (unsigned char)out[2]); // U+00CD
+    TEST_ASSERT_EQUAL_HEX8(0x8D, (unsigned char)out[3]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[4]);
+}
+
+// \uXXXX above the BMP one-byte range emits multi-byte UTF-8, and a UTF-16 surrogate pair
+// joins into one 4-byte code point.
+void test_reader_unicode_utf8_multibyte()
+{
+    char out[16];
+    // U+20AC EURO SIGN -> 3-byte UTF-8 E2 82 AC.
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u20AC\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xE2, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x82, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xAC, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[3]);
+    // U+1F600 GRINNING FACE as the surrogate pair D83D DE00 -> 4-byte UTF-8 F0 9F 98 80.
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD83D\\uDE00\"}", "u", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_HEX8(0xF0, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0x9F, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0x98, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x80, (unsigned char)out[3]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[4]);
+}
+
+// An unpaired surrogate (high with no low, or a lone low) becomes U+FFFD (EF BF BD); the
+// full UTF-8 sequence must fit or the string truncates cleanly at the boundary.
+void test_reader_unicode_surrogate_edges()
+{
+    char out[16];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD800Z\"}", "u", out, sizeof(out))); // high, no low
+    TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);
+    TEST_ASSERT_EQUAL_HEX8(0xBF, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_HEX8(0xBD, (unsigned char)out[2]);
+    TEST_ASSERT_EQUAL_HEX8('Z', (unsigned char)out[3]);
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uDC00\"}", "u", out, sizeof(out))); // lone low
+    TEST_ASSERT_EQUAL_HEX8(0xEF, (unsigned char)out[0]);
+    // A 4-byte sequence that will not fit truncates before it rather than writing a partial char.
+    char tiny[3];
+    TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uD83D\\uDE00\"}", "u", tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)tiny[0]); // nothing fit -> empty, still NUL-terminated
 }
 
 // json_get_bool decodes false as well as true.
@@ -296,12 +336,14 @@ void test_reader_int_rejects_string_and_nondigits()
     TEST_ASSERT_FALSE(json_get_int("{\"n\":xyz}", "n", &v));    // no digits parse
 }
 
-// \uXXXX with a codepoint > 0xFF, or with malformed / short hex, collapses to '?'.
+// A valid \uXXXX above 0xFF now emits UTF-8; malformed / short hex still collapses to '?'.
 void test_reader_unicode_escape_invalid_and_wide()
 {
     char out[16];
     TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\u01F6\"}", "u", out, sizeof(out)));
-    TEST_ASSERT_EQUAL_STRING("?", out); // valid hex, codepoint > 0xFF -> '?' (digits consumed)
+    TEST_ASSERT_EQUAL_HEX8(0xC7, (unsigned char)out[0]); // U+01F6 -> 2-byte UTF-8 C7 B6
+    TEST_ASSERT_EQUAL_HEX8(0xB6, (unsigned char)out[1]);
+    TEST_ASSERT_EQUAL_UINT8(0, (unsigned char)out[2]);
     // Invalid / short \u emits '?' without consuming the bad chars, so they trail as literals.
     TEST_ASSERT_TRUE(json_get_str("{\"u\":\"\\uZZZZ\"}", "u", out, sizeof(out)));
     TEST_ASSERT_EQUAL_STRING("?ZZZZ", out); // invalid hex digit
@@ -336,6 +378,8 @@ int main()
     RUN_TEST(test_reader_null_guards);
     RUN_TEST(test_reader_all_escapes);
     RUN_TEST(test_reader_unicode_hex_case);
+    RUN_TEST(test_reader_unicode_utf8_multibyte);
+    RUN_TEST(test_reader_unicode_surrogate_edges);
     RUN_TEST(test_reader_false_bool);
     RUN_TEST(test_reader_malformed);
     return UNITY_END();
