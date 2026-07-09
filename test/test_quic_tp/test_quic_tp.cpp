@@ -149,6 +149,63 @@ void test_reject_bad_values()
     TEST_ASSERT_FALSE(quic_tp_parse(h, sizeof(h), &tp));
 }
 
+void test_quic_tp_more_paths()
+{
+    QuicTransportParams tp;
+    QuicTransportParams out;
+    uint8_t buf[256];
+
+    // Encode overflow: a CID param's ID varint, length varint, and value each fail at a tight cap.
+    quic_tp_defaults(&tp);
+    tp.has_original_dcid = true;
+    tp.original_dcid_len = 8;
+    memset(tp.original_dcid, 0xAB, 8);
+    TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 0)); // ID varint has no room
+    TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 1)); // length varint has no room
+    TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, 6)); // value (8 octets) overruns
+
+    // Encode: a varint value beyond the 62-bit range fails the inner varint encode.
+    quic_tp_defaults(&tp);
+    tp.initial_max_data = 0xFFFFFFFFFFFFFFFFull;
+    TEST_ASSERT_EQUAL_size_t(0, quic_tp_encode(&tp, buf, sizeof(buf)));
+
+    // Encode + parse a retry_source_connection_id round-trip (encode arm + valid-parse arm).
+    quic_tp_defaults(&tp);
+    tp.has_retry_scid = true;
+    tp.retry_scid_len = 4;
+    memcpy(tp.retry_scid, "\xaa\xbb\xcc\xdd", 4);
+    size_t n = quic_tp_encode(&tp, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(quic_tp_parse(buf, n, &out));
+    TEST_ASSERT_TRUE(out.has_retry_scid);
+    TEST_ASSERT_EQUAL_UINT8(4, out.retry_scid_len);
+
+    // Parse: a truncated length varint (0xC0 announces an 8-octet varint with no octets after it).
+    static const uint8_t badlen[2] = {0x04, 0xC0};
+    TEST_ASSERT_FALSE(quic_tp_parse(badlen, sizeof(badlen), &out));
+
+    // Parse: an oversized initial_source_connection_id (0x0f).
+    uint8_t bigscid[2 + 21];
+    bigscid[0] = QUIC_TP_INITIAL_SCID;
+    bigscid[1] = 21;
+    memset(bigscid + 2, 0x22, 21);
+    TEST_ASSERT_FALSE(quic_tp_parse(bigscid, sizeof(bigscid), &out));
+
+    // Parse: each varint-valued parameter whose value does not consume exactly its declared length.
+    const uint8_t ids[] = {0x01, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+    for (unsigned i = 0; i < sizeof(ids); i++)
+    {
+        const uint8_t bad[4] = {ids[i], 0x02, 0x00, 0x00}; // 2-octet value, but the varint consumes 1
+        TEST_ASSERT_FALSE(quic_tp_parse(bad, sizeof(bad), &out));
+    }
+
+    // Parse: a valid ack_delay_exponent and max_ack_delay (the success arm of each range check).
+    static const uint8_t ade[3] = {0x0a, 0x01, 0x03}; // ack_delay_exponent = 3
+    TEST_ASSERT_TRUE(quic_tp_parse(ade, sizeof(ade), &out));
+    static const uint8_t mad[3] = {0x0b, 0x01, 0x19}; // max_ack_delay = 25
+    TEST_ASSERT_TRUE(quic_tp_parse(mad, sizeof(mad), &out));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -159,5 +216,6 @@ int main(int, char **)
     RUN_TEST(test_reject_duplicate);
     RUN_TEST(test_reject_oversized_cid);
     RUN_TEST(test_reject_bad_values);
+    RUN_TEST(test_quic_tp_more_paths);
     return UNITY_END();
 }
