@@ -738,7 +738,11 @@ src/
 │   ├── utmc/  (utmc.h, utmc.cpp)
 │   ├── vfs/  (vfs.h, vfs.cpp)
 │   ├── vl53l0x/  (vl53l0x.h, vl53l0x.cpp)
-│   ├── wal/  (wal.h, wal.cpp)
+│   ├── wal/
+│   │   ├── wal.cpp
+│   │   ├── wal.h
+│   │   ├── wal_store.cpp
+│   │   └── wal_store.h
 │   ├── wamp/  (wamp.h, wamp.cpp)
 │   ├── wave/  (wave.h, wave.cpp)
 │   ├── wearlevel/  (wearlevel.h, wearlevel.cpp)
