@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2611 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2616 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22466,7 +22466,7 @@ A thorough directory of all **2611 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_snmp_ber (16 tests)</b></summary>
+<summary><b>test_snmp_ber (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_integer_vectors</b> &mdash; <i>Integer vectors</i></summary>
@@ -22628,6 +22628,63 @@ A thorough directory of all **2611 test cases** across **228 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (ber_read_integer(&d, &v))</code>
       * <code>Assert false (d.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enc_len_long_form</b> &mdash; <i>A value >= 128 octets forces the long-form definite length (0x81 <len>).</i></summary>
+
+    * **Objective**: A value >= 128 octets forces the long-form definite length (0x81 <len>).
+    * **Assertions**:
+      * <code>Assert true (ber_put_octet_string(&e, BER_OCTET_STRING, val, sizeof(val)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(203, e.len); // tag(1) + 0x81 0xC8 (2) + 200</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x81, buf[1]); // long form, one length octet</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xC8, buf[2]); // 200</code>
+      * <code>Assert true (ber_read_header(&d, &tag, &len))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(200, len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_oid_guards</b> &mdash; <i>More subidentifier octets than the internal scratch (SNMP_MAX_OID_LEN*5) holds.</i></summary>
+
+    * **Objective**: More subidentifier octets than the internal scratch (SNMP_MAX_OID_LEN*5) holds.
+    * **Assertions**:
+      * <code>Assert false (ber_put_oid(&e, one, 1))</code>
+      * <code>Assert false (e.ok)</code>
+      * <code>Assert false (ber_put_oid(&e, big, 40))</code>
+      * <code>Assert false (e.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_seq_end_overflow</b> &mdash; <i>A content region larger than the 16-bit back-patched length field fails closed.</i></summary>
+
+    * **Objective**: A content region larger than the 16-bit back-patched length field fails closed.
+    * **Assertions**:
+      * <code>Assert false (e.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_oid_rejects</b> &mdash; <i>ber_read_oid on a non-OID TLV.</i></summary>
+
+    * **Objective**: ber_read_oid on a non-OID TLV.
+    * **Assertions**:
+      * <code>Assert false (ber_read_oid(&d, arcs, 8, &n))</code>
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert true (ber_put_oid(&e, oid, 4))</code>
+      * <code>Assert false (ber_read_oid(&d2, out2, 2, &n2))</code>
+      * <code>Assert false (d2.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ber_skip</b> &mdash; <i>Ber skip</i></summary>
+
+    * **Objective**: Ber skip
+    * **Assertions**:
+      * <code>Assert true (ber_skip(&d, 3))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, d.pos);</code>
+      * <code>Assert false (ber_skip(&d, 100))</code>
+      * <code>Assert false (d.ok)</code>
+      * <code>Assert false (ber_skip(&d2, 1))</code>
   </details>
 
 </details>
