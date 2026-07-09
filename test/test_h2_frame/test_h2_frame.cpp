@@ -125,6 +125,47 @@ void test_preface()
     TEST_ASSERT_EQUAL_MEMORY("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", H2_PREFACE, 24);
 }
 
+void test_settings_all_ids_and_build_guards()
+{
+    H2Settings s;
+    h2_settings_defaults(&s);
+    // Every recognized setting id with a valid value, plus an unknown id (ignored).
+    const uint16_t ids[6] = {H2_SETTINGS_ENABLE_PUSH,          H2_SETTINGS_MAX_CONCURRENT_STREAMS,
+                             H2_SETTINGS_INITIAL_WINDOW_SIZE,  H2_SETTINGS_MAX_FRAME_SIZE,
+                             H2_SETTINGS_MAX_HEADER_LIST_SIZE, 0x99};
+    const uint32_t vals[6] = {1, 100, 65535, 16384, 8192, 0};
+    uint8_t f[128];
+    size_t n = h2_build_settings(f, sizeof f, ids, vals, 6);
+    TEST_ASSERT_TRUE(h2_parse_settings(f + 9, n - 9, &s));
+    TEST_ASSERT_EQUAL_UINT32(1, s.enable_push);
+    TEST_ASSERT_EQUAL_UINT32(100, s.max_concurrent_streams);
+    TEST_ASSERT_EQUAL_UINT32(65535, s.initial_window_size);
+    TEST_ASSERT_EQUAL_UINT32(16384, s.max_frame_size);
+    TEST_ASSERT_EQUAL_UINT32(8192, s.max_header_list_size);
+    // Upper-bound validation guards.
+    const uint8_t bad_iws[6] = {0x00, 0x04, 0x80, 0x00, 0x00, 0x00}; // INITIAL_WINDOW_SIZE = 2^31
+    TEST_ASSERT_FALSE(h2_parse_settings(bad_iws, 6, &s));
+    const uint8_t bad_mfs_hi[6] = {0x00, 0x05, 0x01, 0x00, 0x00, 0x00}; // MAX_FRAME_SIZE = 2^24
+    TEST_ASSERT_FALSE(h2_parse_settings(bad_mfs_hi, 6, &s));
+    // A too-short frame header is rejected.
+    H2FrameHeader h;
+    uint8_t tiny[4] = {0};
+    TEST_ASSERT_FALSE(h2_parse_header(tiny, sizeof(tiny), &h));
+    // Every builder fails closed on a buffer smaller than the frame header.
+    uint8_t small[8];
+    const uint16_t sid[1] = {1};
+    const uint32_t sv[1] = {1};
+    uint8_t op[8] = {0};
+    uint8_t blk[4] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_settings(small, sizeof(small), sid, sv, 1));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_window_update(small, sizeof(small), 1, 1));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_rst_stream(small, sizeof(small), 1, 0));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_goaway(small, sizeof(small), 1, 0));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_ping_ack(small, sizeof(small), op));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_headers(small, sizeof(small), 1, blk, sizeof(blk), false));
+    TEST_ASSERT_EQUAL_size_t(0, h2_build_data(small, sizeof(small), 1, blk, sizeof(blk), false));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -134,5 +175,6 @@ int main()
     RUN_TEST(test_control_frames);
     RUN_TEST(test_headers_and_data);
     RUN_TEST(test_preface);
+    RUN_TEST(test_settings_all_ids_and_build_guards);
     return UNITY_END();
 }
