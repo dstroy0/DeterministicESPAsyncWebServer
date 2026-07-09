@@ -6,12 +6,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- handle the bare 'native' core-engine env in the report merge + env selector ([`c69b1c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c69b1c9da94da26b1e2b8797bac7630db6f6aeee))
 - split hot flag/handles from cold buffers so client builds gc-drop server/worker state ([`73ced5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73ced5df6365c1278799d7a1729d784696e17877))
 - split the bump arena into its own owned symbol so --gc-sections can drop it ([`73cfe09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73cfe09f7eea210247cf6b0002ca7b444f140527))
 - use nullptr instead of NULL (cpp:S4962) ([`0ea30fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ea30fde86728a9fac5733a3ed6a9cfb8c87a166))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`fa40ba9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa40ba98d43824c6bbb71027d95f5980de49eb03))
+- update CHANGELOG.md [skip ci] ([`8e70ec9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e70ec943616fd00763f448c2607bf998af49c3b))
 - update CHANGELOG.md [skip ci] ([`1ffb314`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ffb314d470ef1ecc6d7b04751bad288c9bf069f))
 - update test report + coverage [skip ci] ([`04dcea5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04dcea5adfb58005c2b580e8b67dbfee2be819e0))
 - update CHANGELOG.md [skip ci] ([`a83628d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a83628d2986b5633eb0b9cb5d32edd5fe8d1e5a2))
