@@ -16,6 +16,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`16833fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16833fdd2f641f502fffe5a44f02e0a2b3354905))
+- update CHANGELOG.md [skip ci] ([`ef30307`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef30307f7809318e7ff89adf0c4881f24585965c))
 - update CHANGELOG.md [skip ci] ([`910d41b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/910d41b80c227e7d71448c1a657471f043040aed))
 - update test report + coverage [skip ci] ([`ac5a6d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac5a6d62df621b0ada6ea17b1f80c43579917262))
 - update CHANGELOG.md [skip ci] ([`01e3bb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01e3bb96718e03c5738dccfc63e21893fc79d7e6))
@@ -297,6 +299,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`804ea21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/804ea211ff47eb900d5d84b2bbcceb94936798c2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`147eaff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/147eaff9777b386da595704af0c7d98c731539c4))
 - update ESP32 build footprints [skip ci] ([`8530ca6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8530ca63d648a39e37db446c847123e07b00f653))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7b45c60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b45c60f9569ff51076aff42e8c4887361150b96))
@@ -461,6 +464,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- decode \uXXXX to UTF-8 with surrogate-pair joining ([`7416efa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7416efa720486657126359661464509de37183bc))
 - emit the Date header from any enabled time source (NTP/GPS/RTC), not just NTP ([`0ebafd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ebafd26cf4c1de8be2be7ad0ef746d213876964))
 
 ### Refactor
