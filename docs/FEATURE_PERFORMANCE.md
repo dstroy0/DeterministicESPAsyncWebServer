@@ -83,6 +83,48 @@ internal housekeeping, and those spikes are **clock-independent** (present at ev
   layer's queue must be deep enough to hide the spike or commit asynchronously.
 - 16-32 KiB is a good journal block; 512 B durable writes are the worst case.
 
+### Batch / write-size sweep (sizing the journal + queue)
+
+Measured at 20 MHz. **(A)** how larger _durable_ writes (one flush each) amortize the flush cost, and
+**(B)** how _batching_ small (4 KiB) writes behind one flush does the same - the two knobs that size the
+journal record and the queue depth.
+
+**A. Durable write size (one flush per write)**
+
+| Write size | MB/s  | IOPS | Avg latency | Max latency |
+| ---------- | ----: | ---: | ----------: | ----------: |
+| 512 B      | 0.112 |  218 |      4.6 ms |      104 ms |
+| 1 KiB      | 0.171 |  167 |      6.0 ms |      106 ms |
+| 4 KiB      | 0.449 |  110 |      9.1 ms |      110 ms |
+| 16 KiB     | 0.785 |   48 |     20.9 ms |      117 ms |
+| 32 KiB     | 1.065 |   32 |     30.8 ms |      127 ms |
+| 64 KiB     | 1.084 |   17 |     60.5 ms |      150 ms |
+
+**32 KiB is the knee** - 0.11 MB/s at 512 B climbs ~10x to 1.07 MB/s at 32 KiB, and 64 KiB adds only ~2%
+(at double the per-op latency). So the journal should write in ~32 KiB units.
+
+**B. Batch depth (4 KiB writes, flush every N)**
+
+| Flush every N | MB/s  | Flushes/s | Avg flush | Max flush |
+| ------------- | ----: | --------: | --------: | --------: |
+| 1             | 0.447 |       109 |    6.0 ms |    107 ms |
+| 2             | 0.530 |        65 |    9.0 ms |    109 ms |
+| 4             | 0.591 |        36 |    7.0 ms |    9.8 ms |
+| 8             | 0.740 |        23 |    9.9 ms |    100 ms |
+| 16            | 0.862 |        13 |   10.5 ms |    107 ms |
+| 32            | 0.926 |       7.0 |   13.6 ms |    105 ms |
+| 64            | 0.959 |       3.6 |   15.2 ms |     95 ms |
+| 128           | 0.986 |       1.9 |   12.7 ms |     91 ms |
+
+Throughput **plateaus around N=32-64** (flushing every 128-256 KiB of accumulated data): N=32 reaches ~94%
+of max, N=64 ~97%. Past that, more batching barely helps and only widens the durability window.
+
+**Queue sizing (the answer to "what to queue up"):** write in **~32 KiB units** and force a durable flush
+about **every 128-256 KiB** (a batch of 4-8 units). That reaches ~95%+ of the durable throughput ceiling
+(~1 MB/s) while bounding the at-risk window to a few hundred KB. Per-op durable writes below ~4 KiB throw
+away 60-90% of the throughput. The 90-150 ms write tail is present at every size, so the queue must be deep
+enough to keep accepting work across a stalled flush.
+
 ## 2. Pure codec host baseline
 
 Measured on a Raspberry Pi 5 (Cortex-A76, `-O2`); a relative baseline only. The ESP32-S3 column is
