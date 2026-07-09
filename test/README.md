@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2652 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2658 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -801,7 +801,7 @@ A thorough directory of all **2652 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (66 tests)</b></summary>
+<summary><b>test_application (68 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_restart_and_stop</b> &mdash; <i>Before any listener, restart() forwards the no-listeners error (no stop()/begin()).</i></summary>
@@ -1269,6 +1269,7 @@ A thorough directory of all **2652 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(tcp_captured(), "304 Not Modified"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "304 Not Modified"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "HTTP/1.1 200 OK"))</code>
+      * <code>Assert not null (strstr(tcp_captured(), "HTTP/1.1 200 OK"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1283,6 +1284,28 @@ A thorough directory of all **2652 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(o, "HTTP/1.1 200 OK"))</code>
       * <code>Assert not null (strstr(o, "&lt;html&gt;hi&lt;/html&gt;"))</code>
       * <code>Assert not null (strstr(o, "304 Not Modified"))</code>
+      * <code>Assert not null (strstr(o, "HTTP/1.1 200 OK"))</code>
+      * <code>Assert not null (strstr(o, "&lt;html&gt;hi&lt;/html&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_ims_field_comparisons</b> &mdash; <i>The year-younger direction takes the other branch of the same compare -> 200.</i></summary>
+
+    * **Objective**: The year-younger direction takes the other branch of the same compare -> 200.
+    * **Assertions**:
+      * <code>Assert not null (strstr(o, "304 Not Modified"))</code>
+      * <code>Assert null (strstr(o, "&lt;html&gt;hi&lt;/html&gt;"))</code>
+      * <code>Assert not null (strstr(o, "HTTP/1.1 200 OK"))</code>
+      * <code>Assert not null (strstr(o, "&lt;html&gt;hi&lt;/html&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_static_unrepresentable_mtime</b> &mdash; <i>(a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).</i></summary>
+
+    * **Objective**: (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).
+    * **Assertions**:
+      * <code>Assert not null (strstr(o, "HTTP/1.1 200 OK"))</code>
+      * <code>Assert null (strstr(o, "Last-Modified:"))</code>
       * <code>Assert not null (strstr(o, "HTTP/1.1 200 OK"))</code>
       * <code>Assert not null (strstr(o, "&lt;html&gt;hi&lt;/html&gt;"))</code>
   </details>
@@ -20549,7 +20572,7 @@ A thorough directory of all **2652 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_range (16 tests)</b></summary>
+<summary><b>test_range (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_file_send_backpressure_resumes_across_polls</b> &mdash; <i>File send backpressure resumes across polls</i></summary>
@@ -20584,6 +20607,43 @@ A thorough directory of all **2652 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(r, "Content-Length: 20"))</code>
       * <code>Assert equal uint (8, body_len())</code>
       * <code>Assert equal memory (FILE_DATA, body_ptr(), 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_trailing_garbage_ignored</b> &mdash; <i>Range trailing garbage ignored</i></summary>
+
+    * **Objective**: Range trailing garbage ignored
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "200 OK"))</code>
+      * <code>Assert null (strstr(r, "206"))</code>
+      * <code>Assert equal uint (20, body_len())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_start_after_end_unsatisfiable</b> &mdash; <i>Range start after end unsatisfiable</i></summary>
+
+    * **Objective**: Range start after end unsatisfiable
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "416 Range Not Satisfiable"))</code>
+      * <code>Assert null (strstr(r, "206"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_suffix_on_empty_file</b> &mdash; <i>Range suffix on empty file</i></summary>
+
+    * **Objective**: Range suffix on empty file
+    * **Assertions**:
+      * <code>Assert not null (strstr(r, "416 Range Not Satisfiable"))</code>
+      * <code>Assert null (strstr(r, "206"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serve_file_connection_gone</b> &mdash; <i>Serve file connection gone</i></summary>
+
+    * **Objective**: Serve file connection gone
+    * **Assertions**:
+      * <code>Assert equal uint (0, tcp_captured_len())</code>
+      * <code>Assert null (strstr(tcp_captured(), "200 OK"))</code>
   </details>
 
   <details style="margin-left: 20px;">
