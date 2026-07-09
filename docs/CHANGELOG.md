@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`fa86c9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa86c9e85f12929245b8d032d6b2a42f6c36b27a))
+- update CHANGELOG.md [skip ci] ([`280e256`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/280e25672d2915e5e99a2945d72b770bc02c32e3))
 - update test report + coverage [skip ci] ([`840b343`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/840b343092b26b8cd23508b79b20897bc54c7872))
 - update CHANGELOG.md [skip ci] ([`6c3f932`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c3f932414b639a2970e64f6287bd0bdb573b9fd))
 - update test report + coverage [skip ci] ([`76e0772`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76e0772aeb4af4628ec21efdcdcfe8bfdcdf731c))
@@ -519,6 +521,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover append_opt response-buffer overflow guard ([`2adb491`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2adb491443c3e94b0e02988a2f2754302e04f3ed))
 - cover verify/encode guards + modexp exp==0 fast path ([`4121acb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4121acbc5f808d350b3d205c6c9469f28d7eb822))
 - cover method GET/DELETE + builder fail-closed guards ([`6c5d7fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c5d7fe269e2032107df9fe4db76ce389eb85373))
 - cover ClientHello ALPN/quic_tp extensions + truncation guards ([`94bb970`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94bb97056f029f3958366c2ea3188d888951a312))
