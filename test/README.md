@@ -177,7 +177,7 @@ The native test matrix has **207 environments**, one per feature, generated from
 | `native_mqtt` | `ETWS_ENABLE_MQTT=1` | `test_mqtt` |  |
 | `native_mqtt_sn` | `ETWS_ENABLE_MQTT_SN=1` | `test_mqtt_sn` | MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders (CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType header parser (1- and 3-octet form... |
 | `native_msgpack` | `ETWS_ENABLE_MSGPACK=1` | `test_msgpack` | MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output codec, host-tested against the spec encodings. |
-| `native_mtconnect` | `ETWS_ENABLE_MTCONNECT=1` | `test_mtconnect` | MTConnect agent response codec (services/mtconnect, ANSI/MTC1.4): the incremental MTConnectStreams builder (header + Samples/Events/Condition) and the MTConnectError document, XML-escaped. |
+| `native_mtconnect` | `ETWS_ENABLE_MTCONNECT=1` | `test_mtconnect` | MTConnect agent response codec (services/mtconnect, ANSI/MTC1.4): the incremental MTConnectStreams builder (header + Samples/Events/Condition), the MTConnectDevices probe (device model), the MTConnect... |
 | `native_nats` | `ETWS_ENABLE_NATS=1` | `test_nats` | NATS client protocol codec (services/nats): the CONNECT / PUB / SUB / UNSUB / PING / PONG builders + the inbound MSG / INFO / PING / +OK / -ERR parser (subject/sid/reply/payload). |
 | `native_nema_ts2` | `ETWS_ENABLE_NEMA_TS2=1` | `test_nema_ts2` | NEMA TS 2 SDLC frame codec (services/nema_ts2): the traffic-cabinet bus frame ([address][control][frame-type][data][CRC-16/X-25]) build + validate. |
 | `native_net_egress` | default | `test_net_egress` | Egress-interface reporting (network_drivers/physical). |
@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2690 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2692 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -14804,7 +14804,7 @@ A thorough directory of all **2690 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mtconnect (7 tests)</b></summary>
+<summary><b>test_mtconnect (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_streams_document</b> &mdash; <i>Properly closed.</i></summary>
@@ -14888,6 +14888,34 @@ A thorough directory of all **2690 test cases** across **228 suites**. Expand a 
       * <code>Assert true (contains(buf, "id=\\"d&lt;1\\" name=\\"n&amp;m\\""))</code>
       * <code>Assert true (contains(buf, "id=\\"i&quot;d\\" type=\\"T&gt;y\\""))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_assets_document</b> &mdash; <i>A second tool with only the required assetId - optional attrs omitted.</i></summary>
+
+    * **Objective**: A second tool with only the required assetId - optional attrs omitted.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "&lt;MTConnectAssets"))</code>
+      * <code>Assert true (contains(buf, "instanceId=\\"1500\\" version=\\"1.4\\" assetBufferSize=\\"1024\\" assetCount=\\"2\\""))</code>
+      * <code>TEST_ASSERT_TRUE(contains(</code>
+      * <code>Assert true (contains(buf, "&lt;ToolLife type=\\"MINUTES\\" countDirection=\\"DOWN\\" limit=\\"100\\"&gt;42&lt;/ToolLife&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;/CuttingToolLifeCycle&gt;&lt;/CuttingTool&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;CuttingTool assetId=\\"tool-2\\"&gt;&lt;CuttingToolLifeCycle&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;ToolLife type=\\"PART_COUNT\\" countDirection=\\"UP\\"&gt;7&lt;/ToolLife&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;/Assets&gt;&lt;/MTConnectAssets&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_assets_escape_and_overflow</b> &mdash; <i>An asset document that does not fit fails closed.</i></summary>
+
+    * **Objective**: An asset document that does not fit fails closed.
+    * **Assertions**:
+      * <code>Assert true (detws_mtc_assets_end(&s) &gt; 0)</code>
+      * <code>Assert true (contains(buf, "assetId=\\"a&lt;1\\" serialNumber=\\"s&amp;n\\""))</code>
+      * <code>Assert true (contains(buf, "&gt;1&gt;2&lt;/ToolLife&gt;"))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_assets_end(&s2));</code>
   </details>
 
 </details>
