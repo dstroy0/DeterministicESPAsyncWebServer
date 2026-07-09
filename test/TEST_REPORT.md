@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 11:00:27
+**Generated:** 2026-07-09 11:17:21
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2753 passed - 366s
+**Result:** ✅ 2760 passed - 377s
 
 ---
 
@@ -64,8 +64,8 @@
 | `test_application`       | `native_app`            |    64 |   ✅   | 00:00:00.859 |
 | `test_webdav_handler`    | `native_webdav_handler` |    20 |   ✅   | 00:00:01.607 |
 | `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.527 |
-| `test_snmp_ber`          | `native_snmp`           |    16 |   ✅   | 00:00:00.819 |
-| `test_snmp_agent`        | `native_snmp`           |    26 |   ✅   | 00:00:00.625 |
+| `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:11.491 |
+| `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
 | `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.656 |
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
 | `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.899 |
@@ -1978,37 +1978,42 @@ _Exercises the runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG):_
 
 ---
 
-## test_snmp_ber - native_snmp - ✅ 16 passed
+## test_snmp_ber - native_snmp - ✅ 21 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the SNMP ASN.1 BER codec. Encodings are checked against_
 
-|   # | Test                                                     | Status | Description                                                                 |
-| --: | :------------------------------------------------------- | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_integer_vectors`                                   |   ✅   | Integer vectors                                                             |
-|   2 | `test_oid_vector`                                        |   ✅   | 1.3.6.1 -> 06 03 2B 06 01                                                   |
-|   3 | `test_octet_string_and_null`                             |   ✅   | Octet string and null                                                       |
-|   4 | `test_counter32_keeps_unsigned`                          |   ✅   | 0x80000000 has the top bit set -> a leading 0x00 must be added.             |
-|   5 | `test_sequence_roundtrip`                                |   ✅   | Sequence roundtrip                                                          |
-|   6 | `test_oid_roundtrip`                                     |   ✅   | Oid roundtrip                                                               |
-|   7 | `test_large_arc_roundtrip`                               |   ✅   | An arc > 127 exercises multi-byte base-128 encoding (e.g. enterprise 8072). |
-|   8 | `test_oid_large_first_subidentifier_roundtrip`           |   ✅   | Oid large first subidentifier roundtrip                                     |
-|   9 | `test_encoder_overflow_sets_not_ok`                      |   ✅   | Encoder overflow sets not ok                                                |
-|  10 | `test_decoder_truncated_length_fails`                    |   ✅   | Claims 10 bytes of content but only 2 are present.                          |
-|  11 | `test_decoder_longform_length_count_past_buffer_fails`   |   ✅   | Decoder longform length count past buffer fails                             |
-|  12 | `test_decoder_longform_length_too_wide_fails`            |   ✅   | Decoder longform length too wide fails                                      |
-|  13 | `test_decoder_longform_length_content_past_buffer_fails` |   ✅   | 0x82 0x01 0x00 = long form, length 256; only a few content bytes follow.    |
-|  14 | `test_decoder_longform_length_max_uint32_fails`          |   ✅   | Decoder longform length max uint32 fails                                    |
-|  15 | `test_decoder_indefinite_length_fails`                   |   ✅   | Decoder indefinite length fails                                             |
-|  16 | `test_decoder_oversized_integer_fails`                   |   ✅   | Decoder oversized integer fails                                             |
+|   # | Test                                                     | Status | Description                                                                     |
+| --: | :------------------------------------------------------- | :----: | :------------------------------------------------------------------------------ |
+|   1 | `test_integer_vectors`                                   |   ✅   | Integer vectors                                                                 |
+|   2 | `test_oid_vector`                                        |   ✅   | 1.3.6.1 -> 06 03 2B 06 01                                                       |
+|   3 | `test_octet_string_and_null`                             |   ✅   | Octet string and null                                                           |
+|   4 | `test_counter32_keeps_unsigned`                          |   ✅   | 0x80000000 has the top bit set -> a leading 0x00 must be added.                 |
+|   5 | `test_sequence_roundtrip`                                |   ✅   | Sequence roundtrip                                                              |
+|   6 | `test_oid_roundtrip`                                     |   ✅   | Oid roundtrip                                                                   |
+|   7 | `test_large_arc_roundtrip`                               |   ✅   | An arc > 127 exercises multi-byte base-128 encoding (e.g. enterprise 8072).     |
+|   8 | `test_oid_large_first_subidentifier_roundtrip`           |   ✅   | Oid large first subidentifier roundtrip                                         |
+|   9 | `test_encoder_overflow_sets_not_ok`                      |   ✅   | Encoder overflow sets not ok                                                    |
+|  10 | `test_decoder_truncated_length_fails`                    |   ✅   | Claims 10 bytes of content but only 2 are present.                              |
+|  11 | `test_decoder_longform_length_count_past_buffer_fails`   |   ✅   | Decoder longform length count past buffer fails                                 |
+|  12 | `test_decoder_longform_length_too_wide_fails`            |   ✅   | Decoder longform length too wide fails                                          |
+|  13 | `test_decoder_longform_length_content_past_buffer_fails` |   ✅   | 0x82 0x01 0x00 = long form, length 256; only a few content bytes follow.        |
+|  14 | `test_decoder_longform_length_max_uint32_fails`          |   ✅   | Decoder longform length max uint32 fails                                        |
+|  15 | `test_decoder_indefinite_length_fails`                   |   ✅   | Decoder indefinite length fails                                                 |
+|  16 | `test_decoder_oversized_integer_fails`                   |   ✅   | Decoder oversized integer fails                                                 |
+|  17 | `test_enc_len_long_form`                                 |   ✅   | A value >= 128 octets forces the long-form definite length (0x81 <len>).        |
+|  18 | `test_put_oid_guards`                                    |   ✅   | Put oid guards                                                                  |
+|  19 | `test_seq_end_overflow`                                  |   ✅   | A content region larger than the 16-bit back-patched length field fails closed. |
+|  20 | `test_read_oid_rejects`                                  |   ✅   | ber_read_oid on a non-OID TLV.                                                  |
+|  21 | `test_ber_skip`                                          |   ✅   | Ber skip                                                                        |
 
 </details>
 
 ---
 
-## test_snmp_agent - native_snmp - ✅ 26 passed
+## test_snmp_agent - native_snmp - ✅ 28 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -2043,6 +2048,8 @@ _Unit tests for the SNMP v1/v2c agent core (snmp_agent_process). Each test_
 |  24 | `test_dispatch_malformed_pdu`               |   ✅   | A PDU whose header parses but whose request-id integer is truncated fails closed. |
 |  25 | `test_udp_handler_via_inject`               |   ✅   | Udp handler via inject                                                            |
 |  26 | `test_malformed_message_guards`             |   ✅   | Malformed message guards                                                          |
+|  27 | `test_snmp_dispatch_varbind_guards`         |   ✅   | Snmp dispatch varbind guards                                                      |
+|  28 | `test_snmp_oid_cmp_request_longer`          |   ✅   | Snmp oid cmp request longer                                                       |
 
 </details>
 
