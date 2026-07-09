@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 15:13:01
+**Generated:** 2026-07-09 15:21:41
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2802 passed - 467s
+**Result:** ✅ 2804 passed - 487s
 
 ---
 
@@ -68,8 +68,8 @@
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.666 |
 | `test_snmp_v3`           | `native_snmp_v3`        |    19 |   ✅   | 00:00:02.656 |
 | `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.930 |
-| `test_coap`              | `native_coap`           |    43 |   ✅   | 00:00:00.899 |
-| `test_coap`              | `native_coap_observe`   |    45 |   ✅   | 00:00:00.935 |
+| `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:20.919 |
+| `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.937 |
 | `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:03.349 |
 | `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.752 |
 | `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.878 |
@@ -2147,117 +2147,119 @@ _Telnet server test: drives a PROTO_TELNET connection through the real_
 
 ---
 
-## test_coap - native_coap - ✅ 43 passed
+## test_coap - native_coap - ✅ 44 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
-|   # | Test                                       | Status | Description                                                                 |
-| --: | :----------------------------------------- | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_response_option_capacity_stop`       |   ✅   | Response option capacity stop                                               |
-|   2 | `test_coap_udp_handler_basic`              |   ✅   | Coap udp handler basic                                                      |
-|   3 | `test_add_resource_limits`                 |   ✅   | Add resource limits                                                         |
-|   4 | `test_short_and_truncated_token`           |   ✅   | Short and truncated token                                                   |
-|   5 | `test_malformed_options_bad_request`       |   ✅   | Malformed options bad request                                               |
-|   6 | `test_extended_delta_and_length_ignored`   |   ✅   | Extended delta and length ignored                                           |
-|   7 | `test_oversized_path_and_query`            |   ✅   | Oversized path and query                                                    |
-|   8 | `test_block_option_too_wide`               |   ✅   | Block option too wide                                                       |
-|   9 | `test_block1_reserved_szx`                 |   ✅   | Block1 reserved szx                                                         |
-|  10 | `test_block1_continue_no_space`            |   ✅   | Block1 continue no space                                                    |
-|  11 | `test_response_payload_clamped`            |   ✅   | Response payload clamped                                                    |
-|  12 | `test_response_buffer_too_small`           |   ✅   | Response buffer too small                                                   |
-|  13 | `test_well_known_core_truncates`           |   ✅   | Well known core truncates                                                   |
-|  14 | `test_observe_large_seq_encoding`          |   ✅   | Observe large seq encoding                                                  |
-|  15 | `test_block2_explicit_paging`              |   ✅   | Block2 explicit paging                                                      |
-|  16 | `test_block2_auto_when_large`              |   ✅   | Block2 auto when large                                                      |
-|  17 | `test_block2_szx_clamped`                  |   ✅   | Block2 szx clamped                                                          |
-|  18 | `test_block2_absent_for_small`             |   ✅   | Block2 absent for small                                                     |
-|  19 | `test_block2_out_of_range`                 |   ✅   | Block2 out of range                                                         |
-|  20 | `test_block2_reserved_szx`                 |   ✅   | Block2 reserved szx                                                         |
-|  21 | `test_block1_upload_two_blocks`            |   ✅   | Block1 upload two blocks                                                    |
-|  22 | `test_block1_out_of_order`                 |   ✅   | Block1 out of order                                                         |
-|  23 | `test_block1_too_large`                    |   ✅   | Block1 too large                                                            |
-|  24 | `test_observe_option_in_response`          |   ✅   | Observe option in response                                                  |
-|  25 | `test_no_observe_option_when_seq_negative` |   ✅   | No observe option when seq negative                                         |
-|  26 | `test_get_content`                         |   ✅   | Get content                                                                 |
-|  27 | `test_not_found`                           |   ✅   | Not found                                                                   |
-|  28 | `test_method_not_allowed`                  |   ✅   | Method not allowed                                                          |
-|  29 | `test_non_request_type`                    |   ✅   | Non request type                                                            |
-|  30 | `test_put_with_payload`                    |   ✅   | Put with payload                                                            |
-|  31 | `test_multi_segment_path`                  |   ✅   | Multi segment path                                                          |
-|  32 | `test_uri_query`                           |   ✅   | Uri query                                                                   |
-|  33 | `test_empty_con_ping_rst`                  |   ✅   | Empty con ping rst                                                          |
-|  34 | `test_bad_version_rst`                     |   ✅   | Bad version rst                                                             |
-|  35 | `test_delete`                              |   ✅   | Delete                                                                      |
-|  36 | `test_token_8_bytes`                       |   ✅   | Token 8 bytes                                                               |
-|  37 | `test_extended_option_length`              |   ✅   | Extended option length                                                      |
-|  38 | `test_ack_ignored`                         |   ✅   | Ack ignored                                                                 |
-|  39 | `test_root_path`                           |   ✅   | Root path                                                                   |
-|  40 | `test_unknown_method_not_allowed`          |   ✅   | Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8: |
-|  41 | `test_unknown_critical_option_bad_option`  |   ✅   | Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a   |
-|  42 | `test_well_known_core_discovery`           |   ✅   | Well known core discovery                                                   |
-|  43 | `test_well_known_core_rejects_post`        |   ✅   | Well known core rejects post                                                |
+|   # | Test                                       | Status | Description                                                                         |
+| --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
+|   1 | `test_response_option_capacity_stop`       |   ✅   | Response option capacity stop                                                       |
+|   2 | `test_coap_udp_handler_basic`              |   ✅   | Coap udp handler basic                                                              |
+|   3 | `test_add_resource_limits`                 |   ✅   | Add resource limits                                                                 |
+|   4 | `test_short_and_truncated_token`           |   ✅   | Short and truncated token                                                           |
+|   5 | `test_malformed_options_bad_request`       |   ✅   | Malformed options bad request                                                       |
+|   6 | `test_extended_delta_and_length_ignored`   |   ✅   | Extended delta and length ignored                                                   |
+|   7 | `test_oversized_path_and_query`            |   ✅   | Oversized path and query                                                            |
+|   8 | `test_block_option_too_wide`               |   ✅   | Block option too wide                                                               |
+|   9 | `test_block1_reserved_szx`                 |   ✅   | Block1 reserved szx                                                                 |
+|  10 | `test_block1_continue_no_space`            |   ✅   | Block1 continue no space                                                            |
+|  11 | `test_response_payload_clamped`            |   ✅   | Response payload clamped                                                            |
+|  12 | `test_response_buffer_too_small`           |   ✅   | Response buffer too small                                                           |
+|  13 | `test_well_known_core_truncates`           |   ✅   | Well known core truncates                                                           |
+|  14 | `test_observe_large_seq_encoding`          |   ✅   | Observe large seq encoding                                                          |
+|  15 | `test_block2_explicit_paging`              |   ✅   | Block2 explicit paging                                                              |
+|  16 | `test_block2_auto_when_large`              |   ✅   | Block2 auto when large                                                              |
+|  17 | `test_block2_szx_clamped`                  |   ✅   | Block2 szx clamped                                                                  |
+|  18 | `test_block2_absent_for_small`             |   ✅   | Block2 absent for small                                                             |
+|  19 | `test_block2_out_of_range`                 |   ✅   | Block2 out of range                                                                 |
+|  20 | `test_block2_reserved_szx`                 |   ✅   | Block2 reserved szx                                                                 |
+|  21 | `test_block1_upload_two_blocks`            |   ✅   | Block1 upload two blocks                                                            |
+|  22 | `test_block1_out_of_order`                 |   ✅   | Block1 out of order                                                                 |
+|  23 | `test_block1_too_large`                    |   ✅   | Block1 too large                                                                    |
+|  24 | `test_observe_option_in_response`          |   ✅   | Observe option in response                                                          |
+|  25 | `test_response_option_overflows_buffer`    |   ✅   | resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option. |
+|  26 | `test_no_observe_option_when_seq_negative` |   ✅   | No observe option when seq negative                                                 |
+|  27 | `test_get_content`                         |   ✅   | Get content                                                                         |
+|  28 | `test_not_found`                           |   ✅   | Not found                                                                           |
+|  29 | `test_method_not_allowed`                  |   ✅   | Method not allowed                                                                  |
+|  30 | `test_non_request_type`                    |   ✅   | Non request type                                                                    |
+|  31 | `test_put_with_payload`                    |   ✅   | Put with payload                                                                    |
+|  32 | `test_multi_segment_path`                  |   ✅   | Multi segment path                                                                  |
+|  33 | `test_uri_query`                           |   ✅   | Uri query                                                                           |
+|  34 | `test_empty_con_ping_rst`                  |   ✅   | Empty con ping rst                                                                  |
+|  35 | `test_bad_version_rst`                     |   ✅   | Bad version rst                                                                     |
+|  36 | `test_delete`                              |   ✅   | Delete                                                                              |
+|  37 | `test_token_8_bytes`                       |   ✅   | Token 8 bytes                                                                       |
+|  38 | `test_extended_option_length`              |   ✅   | Extended option length                                                              |
+|  39 | `test_ack_ignored`                         |   ✅   | Ack ignored                                                                         |
+|  40 | `test_root_path`                           |   ✅   | Root path                                                                           |
+|  41 | `test_unknown_method_not_allowed`          |   ✅   | Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8:         |
+|  42 | `test_unknown_critical_option_bad_option`  |   ✅   | Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a           |
+|  43 | `test_well_known_core_discovery`           |   ✅   | Well known core discovery                                                           |
+|  44 | `test_well_known_core_rejects_post`        |   ✅   | Well known core rejects post                                                        |
 
 </details>
 
 ---
 
-## test_coap - native_coap_observe - ✅ 45 passed
+## test_coap - native_coap_observe - ✅ 46 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 
-|   # | Test                                       | Status | Description                                                                 |
-| --: | :----------------------------------------- | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_response_option_capacity_stop`       |   ✅   | Response option capacity stop                                               |
-|   2 | `test_coap_udp_handler_basic`              |   ✅   | Coap udp handler basic                                                      |
-|   3 | `test_coap_observe_over_udp`               |   ✅   | Coap observe over udp                                                       |
-|   4 | `test_coap_observe_registry_full`          |   ✅   | Coap observe registry full                                                  |
-|   5 | `test_add_resource_limits`                 |   ✅   | Add resource limits                                                         |
-|   6 | `test_short_and_truncated_token`           |   ✅   | Short and truncated token                                                   |
-|   7 | `test_malformed_options_bad_request`       |   ✅   | Malformed options bad request                                               |
-|   8 | `test_extended_delta_and_length_ignored`   |   ✅   | Extended delta and length ignored                                           |
-|   9 | `test_oversized_path_and_query`            |   ✅   | Oversized path and query                                                    |
-|  10 | `test_block_option_too_wide`               |   ✅   | Block option too wide                                                       |
-|  11 | `test_block1_reserved_szx`                 |   ✅   | Block1 reserved szx                                                         |
-|  12 | `test_block1_continue_no_space`            |   ✅   | Block1 continue no space                                                    |
-|  13 | `test_response_payload_clamped`            |   ✅   | Response payload clamped                                                    |
-|  14 | `test_response_buffer_too_small`           |   ✅   | Response buffer too small                                                   |
-|  15 | `test_well_known_core_truncates`           |   ✅   | Well known core truncates                                                   |
-|  16 | `test_observe_large_seq_encoding`          |   ✅   | Observe large seq encoding                                                  |
-|  17 | `test_block2_explicit_paging`              |   ✅   | Block2 explicit paging                                                      |
-|  18 | `test_block2_auto_when_large`              |   ✅   | Block2 auto when large                                                      |
-|  19 | `test_block2_szx_clamped`                  |   ✅   | Block2 szx clamped                                                          |
-|  20 | `test_block2_absent_for_small`             |   ✅   | Block2 absent for small                                                     |
-|  21 | `test_block2_out_of_range`                 |   ✅   | Block2 out of range                                                         |
-|  22 | `test_block2_reserved_szx`                 |   ✅   | Block2 reserved szx                                                         |
-|  23 | `test_block1_upload_two_blocks`            |   ✅   | Block1 upload two blocks                                                    |
-|  24 | `test_block1_out_of_order`                 |   ✅   | Block1 out of order                                                         |
-|  25 | `test_block1_too_large`                    |   ✅   | Block1 too large                                                            |
-|  26 | `test_observe_option_in_response`          |   ✅   | Observe option in response                                                  |
-|  27 | `test_no_observe_option_when_seq_negative` |   ✅   | No observe option when seq negative                                         |
-|  28 | `test_get_content`                         |   ✅   | Get content                                                                 |
-|  29 | `test_not_found`                           |   ✅   | Not found                                                                   |
-|  30 | `test_method_not_allowed`                  |   ✅   | Method not allowed                                                          |
-|  31 | `test_non_request_type`                    |   ✅   | Non request type                                                            |
-|  32 | `test_put_with_payload`                    |   ✅   | Put with payload                                                            |
-|  33 | `test_multi_segment_path`                  |   ✅   | Multi segment path                                                          |
-|  34 | `test_uri_query`                           |   ✅   | Uri query                                                                   |
-|  35 | `test_empty_con_ping_rst`                  |   ✅   | Empty con ping rst                                                          |
-|  36 | `test_bad_version_rst`                     |   ✅   | Bad version rst                                                             |
-|  37 | `test_delete`                              |   ✅   | Delete                                                                      |
-|  38 | `test_token_8_bytes`                       |   ✅   | Token 8 bytes                                                               |
-|  39 | `test_extended_option_length`              |   ✅   | Extended option length                                                      |
-|  40 | `test_ack_ignored`                         |   ✅   | Ack ignored                                                                 |
-|  41 | `test_root_path`                           |   ✅   | Root path                                                                   |
-|  42 | `test_unknown_method_not_allowed`          |   ✅   | Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8: |
-|  43 | `test_unknown_critical_option_bad_option`  |   ✅   | Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a   |
-|  44 | `test_well_known_core_discovery`           |   ✅   | Well known core discovery                                                   |
-|  45 | `test_well_known_core_rejects_post`        |   ✅   | Well known core rejects post                                                |
+|   # | Test                                       | Status | Description                                                                         |
+| --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
+|   1 | `test_response_option_capacity_stop`       |   ✅   | Response option capacity stop                                                       |
+|   2 | `test_coap_udp_handler_basic`              |   ✅   | Coap udp handler basic                                                              |
+|   3 | `test_coap_observe_over_udp`               |   ✅   | Coap observe over udp                                                               |
+|   4 | `test_coap_observe_registry_full`          |   ✅   | Coap observe registry full                                                          |
+|   5 | `test_add_resource_limits`                 |   ✅   | Add resource limits                                                                 |
+|   6 | `test_short_and_truncated_token`           |   ✅   | Short and truncated token                                                           |
+|   7 | `test_malformed_options_bad_request`       |   ✅   | Malformed options bad request                                                       |
+|   8 | `test_extended_delta_and_length_ignored`   |   ✅   | Extended delta and length ignored                                                   |
+|   9 | `test_oversized_path_and_query`            |   ✅   | Oversized path and query                                                            |
+|  10 | `test_block_option_too_wide`               |   ✅   | Block option too wide                                                               |
+|  11 | `test_block1_reserved_szx`                 |   ✅   | Block1 reserved szx                                                                 |
+|  12 | `test_block1_continue_no_space`            |   ✅   | Block1 continue no space                                                            |
+|  13 | `test_response_payload_clamped`            |   ✅   | Response payload clamped                                                            |
+|  14 | `test_response_buffer_too_small`           |   ✅   | Response buffer too small                                                           |
+|  15 | `test_well_known_core_truncates`           |   ✅   | Well known core truncates                                                           |
+|  16 | `test_observe_large_seq_encoding`          |   ✅   | Observe large seq encoding                                                          |
+|  17 | `test_block2_explicit_paging`              |   ✅   | Block2 explicit paging                                                              |
+|  18 | `test_block2_auto_when_large`              |   ✅   | Block2 auto when large                                                              |
+|  19 | `test_block2_szx_clamped`                  |   ✅   | Block2 szx clamped                                                                  |
+|  20 | `test_block2_absent_for_small`             |   ✅   | Block2 absent for small                                                             |
+|  21 | `test_block2_out_of_range`                 |   ✅   | Block2 out of range                                                                 |
+|  22 | `test_block2_reserved_szx`                 |   ✅   | Block2 reserved szx                                                                 |
+|  23 | `test_block1_upload_two_blocks`            |   ✅   | Block1 upload two blocks                                                            |
+|  24 | `test_block1_out_of_order`                 |   ✅   | Block1 out of order                                                                 |
+|  25 | `test_block1_too_large`                    |   ✅   | Block1 too large                                                                    |
+|  26 | `test_observe_option_in_response`          |   ✅   | Observe option in response                                                          |
+|  27 | `test_response_option_overflows_buffer`    |   ✅   | resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option. |
+|  28 | `test_no_observe_option_when_seq_negative` |   ✅   | No observe option when seq negative                                                 |
+|  29 | `test_get_content`                         |   ✅   | Get content                                                                         |
+|  30 | `test_not_found`                           |   ✅   | Not found                                                                           |
+|  31 | `test_method_not_allowed`                  |   ✅   | Method not allowed                                                                  |
+|  32 | `test_non_request_type`                    |   ✅   | Non request type                                                                    |
+|  33 | `test_put_with_payload`                    |   ✅   | Put with payload                                                                    |
+|  34 | `test_multi_segment_path`                  |   ✅   | Multi segment path                                                                  |
+|  35 | `test_uri_query`                           |   ✅   | Uri query                                                                           |
+|  36 | `test_empty_con_ping_rst`                  |   ✅   | Empty con ping rst                                                                  |
+|  37 | `test_bad_version_rst`                     |   ✅   | Bad version rst                                                                     |
+|  38 | `test_delete`                              |   ✅   | Delete                                                                              |
+|  39 | `test_token_8_bytes`                       |   ✅   | Token 8 bytes                                                                       |
+|  40 | `test_extended_option_length`              |   ✅   | Extended option length                                                              |
+|  41 | `test_ack_ignored`                         |   ✅   | Ack ignored                                                                         |
+|  42 | `test_root_path`                           |   ✅   | Root path                                                                           |
+|  43 | `test_unknown_method_not_allowed`          |   ✅   | Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8:         |
+|  44 | `test_unknown_critical_option_bad_option`  |   ✅   | Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a           |
+|  45 | `test_well_known_core_discovery`           |   ✅   | Well known core discovery                                                           |
+|  46 | `test_well_known_core_rejects_post`        |   ✅   | Well known core rejects post                                                        |
 
 </details>
 
