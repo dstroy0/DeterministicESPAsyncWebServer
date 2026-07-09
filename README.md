@@ -507,7 +507,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DASHBOARD`       |            18.5 KB |           0.5 KB |
 | L7    | `RTC`             |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`            |            11.4 KB |          13.0 KB |
-| L7    | `OAUTH2`          |            10.4 KB |          22.4 KB |
+| L7    | `OAUTH2`          |            10.8 KB |          22.4 KB |
 | L7    | `WEBHOOK`         |             8.5 KB |          19.4 KB |
 | L7    | `OPCUA`           |         6.0-6.9 KB |     10.0-10.2 KB |
 | L7    | `SNMP`            |             6.9 KB |          12.3 KB |
