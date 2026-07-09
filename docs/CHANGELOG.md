@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e82e2dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e82e2dc4b4c61a7264a536efa8e7efbd04d16185))
 - update test report + coverage [skip ci] ([`00ea482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00ea48282792b5b0c480ae2214a9758bf973170e))
 - update CHANGELOG.md [skip ci] ([`e160862`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e160862fdc7984f2e1ed0837f64e21660cafb421))
 - update CHANGELOG.md [skip ci] ([`51bdf0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51bdf0a5b885ef75226b3d628c0462cf5b9e58a5))
@@ -158,6 +159,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dde7170`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dde717081dc332adeded69055ebfd6bb04ae03c8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5f0a3d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f0a3d5e738199295a137841a498bea77738933b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b4b61d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4b61d17624854312741cd9053993999def2ea21))
 - update ESP32 build footprints [skip ci] ([`4117137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41171371d9bd78528db8cfccb7f99352d2d8d585))
@@ -233,6 +235,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- move MPR121 touch/release thresholds to ServerConfig.h (overridable) ([`e00567e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e00567ed578785498c25b7c2e0332c3020ab3434))
 - move ADS1115 + INA219 device tunables to ServerConfig.h (overridable) ([`349af2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/349af2e23be54807c386e395065e8878c11bfe54))
 - own the /stats + /metrics render buffers in StatsCtx/MetricsCtx ([`304ccd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/304ccd6392af30aae5536d238475f275f0fa1170))
 - extract the duplicated MSG-envelope preamble into r_msg_preamble ([`2115d33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2115d3342b2f503ffaa3cc5443f55cdbe3db05b0))
