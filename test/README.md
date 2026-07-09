@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2688 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2690 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -14804,7 +14804,7 @@ A thorough directory of all **2688 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mtconnect (5 tests)</b></summary>
+<summary><b>test_mtconnect (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_streams_document</b> &mdash; <i>Properly closed.</i></summary>
@@ -14861,6 +14861,33 @@ A thorough directory of all **2688 test cases** across **228 suites**. Expand a 
       * <code>Assert not null (strstr(buf, "&quot;"))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s2));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_devices_probe_document</b> &mdash; <i>name + units are emitted only when present.</i></summary>
+
+    * **Objective**: name + units are emitted only when present.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "&lt;MTConnectDevices"))</code>
+      * <code>Assert true (contains(buf, "instanceId=\\"1500\\""))</code>
+      * <code>Assert true (contains(buf, "&lt;Devices&gt;&lt;Device id=\\"dev1\\" name=\\"cnc1\\" uuid=\\"uuid-abc\\"&gt;&lt;DataItems&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;DataItem category=\\"EVENT\\" id=\\"avail\\" type=\\"Availability\\"/&gt;"))</code>
+      * <code>TEST_ASSERT_TRUE(contains(</code>
+      * <code>Assert true (contains(buf, "&lt;DataItem category=\\"CONDITION\\" id=\\"sys\\" type=\\"SystemCondition\\"/&gt;"))</code>
+      * <code>Assert true (contains(buf, "&lt;/DataItems&gt;&lt;/Device&gt;&lt;/Devices&gt;&lt;/MTConnectDevices&gt;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_devices_escape_and_overflow</b> &mdash; <i>A device document that does not fit fails closed.</i></summary>
+
+    * **Objective**: A device document that does not fit fails closed.
+    * **Assertions**:
+      * <code>Assert true (detws_mtc_devices_end(&s) &gt; 0)</code>
+      * <code>Assert true (contains(buf, "id=\\"d&lt;1\\" name=\\"n&amp;m\\""))</code>
+      * <code>Assert true (contains(buf, "id=\\"i&quot;d\\" type=\\"T&gt;y\\""))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));</code>
   </details>
 
 </details>
