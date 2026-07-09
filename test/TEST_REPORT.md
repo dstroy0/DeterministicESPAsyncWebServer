@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 15:28:42
+**Generated:** 2026-07-09 15:50:27
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2805 passed - 483s
+**Result:** ✅ 2805 passed - 481s
 
 ---
 
@@ -150,7 +150,7 @@
 | `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.818 |
 | `test_scratch`           | `native_scratch`        |    14 |   ✅   | 00:00:00.784 |
 | `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.777 |
-| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:05.454 |
+| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:03.319 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
 | `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:35.375 |
