@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2673 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2674 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -19980,7 +19980,23 @@ A thorough directory of all **2673 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_frame (8 tests)</b></summary>
+<summary><b>test_quic_frame (9 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_edge_guards</b> &mdash; <i>STREAM with LEN set but the Length varint is absent -> rejected at the length read.</i></summary>
+
+    * **Objective**: STREAM with LEN set but the Length varint is absent -> rejected at the length read.
+    * **Assertions**:
+      * <code>Assert equal int (0, (int)quic_frame_parse(stream_len_trunc, 2, &f))</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(close_ft_trunc, 2, &f))</code>
+      * <code>Assert equal int (3, (int)quic_build_padding(b, sizeof b, 3))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0, b[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0, b[2]);</code>
+      * <code>Assert equal int (0, (int)quic_build_crypto(b, 4, 7, d, 3))</code>
+      * <code>Assert equal int (0, (int)quic_build_stream(b, 2, 4, 100, d, 3, true))</code>
+      * <code>Assert equal int (0, (int)quic_build_stream(b, 2, 0, 0, d, 3, false))</code>
+      * <code>Assert equal int (0, (int)quic_build_stream(b, 3, 0, 0, d, 3, false))</code>
+  </details>
 
   <details style="margin-left: 20px;">
     <summary><b>test_simple_frames</b> &mdash; <i>A PADDING byte (0x00) parses as one PADDING frame consuming one byte.</i></summary>
