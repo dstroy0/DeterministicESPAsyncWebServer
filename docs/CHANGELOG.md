@@ -14,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`93c7ff7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c7ff72e2291d84c5bce2270f06ad1214995e04))
 - update CHANGELOG.md [skip ci] ([`d78ed0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d78ed0bf09a28084fed078592e3ad7139afe1e05))
 - update CHANGELOG.md [skip ci] ([`3e31dd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e31dd58bc5c7e3e37673fb6505934db202ac180))
 - update test report + coverage [skip ci] ([`1a8c440`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a8c440c39d1d1dbaad5c3770519fba3f585bcf1))
@@ -250,6 +251,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0b80af1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b80af1a59385ada547de2cb5bab77513e8cf954))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7109290`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71092905549587f74257a6941fe251586fd6df92))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e2ca271`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2ca271902340fdf2ed419eabe91d6684d4272c1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8c9313a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c9313a7a701c262a67fb221887d086e48d11ff0))
@@ -479,6 +481,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- cover conditional-GET + range-parse edges ([`d4a4eef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a4eefa5f8618ebcf7a24a320a7e506f9291ecf))
 - cover send-pump write-fail retry, short-read stop, over-report clamp ([`bd21eb6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd21eb640621c164c2f84193387d8e241672ba02))
 - cover file/chunk send-pump backpressure + cross-poll resume ([`fb339a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb339a607994edd31298f02d57b8b8d875f8d946))
 - cover add_response_header/set_cookie/clear bad-slot+null guards + cookie buffer-overflow drop ([`a0b6bbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b6bbba1038a4d733249d8c513f114da3a6f30f))
