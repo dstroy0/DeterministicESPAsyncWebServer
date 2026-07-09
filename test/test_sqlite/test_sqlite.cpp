@@ -173,6 +173,84 @@ void test_serial_type_sizes(void)
     TEST_ASSERT_EQUAL_UINT64(5, sqlite_serial_type_size(23)); // TEXT len 5  ("table", the real record)
 }
 
+// Read the one real row on page 1: the sqlite_schema entry describing table t.
+// Columns are (type, name, tbl_name, rootpage, sql) = ("table","t","t",2,"CREATE TABLE t(a INTEGER, b TEXT)").
+void test_read_schema_row(void)
+{
+    SqliteBtreeHeader b;
+    TEST_ASSERT_TRUE(sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
+    uint32_t cp = sqlite_cell_pointer(PAGE1, sizeof(PAGE1), &b, 100, 0);
+    TEST_ASSERT_EQUAL_UINT32(463, cp);
+
+    SqliteTableLeafCell cell;
+    TEST_ASSERT_TRUE(sqlite_parse_table_leaf_cell(PAGE1, sizeof(PAGE1), 512, 0, cp, &cell));
+    TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);
+    TEST_ASSERT_EQUAL_UINT32(47, cell.payload_len);
+    TEST_ASSERT_FALSE(cell.has_overflow);
+    TEST_ASSERT_EQUAL_UINT32(47, cell.local_len);
+
+    SqliteRecordCursor c;
+    TEST_ASSERT_TRUE(sqlite_record_begin(&c, PAGE1 + cell.local_off, cell.local_len));
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+
+    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // type
+    TEST_ASSERT_EQUAL_UINT64(23, st);                       // text, 5 bytes
+    TEST_ASSERT_EQUAL_UINT32(5, vl);
+    TEST_ASSERT_EQUAL_MEMORY("table", v, 5);
+
+    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // name
+    TEST_ASSERT_EQUAL_UINT32(1, vl);
+    TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
+
+    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // tbl_name
+    TEST_ASSERT_EQUAL_MEMORY("t", v, 1);
+
+    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // rootpage
+    TEST_ASSERT_EQUAL_UINT64(1, st);                        // 1-byte int
+    TEST_ASSERT_EQUAL_INT64(2, sqlite_column_int(st, v, vl));
+
+    TEST_ASSERT_TRUE(sqlite_record_next(&c, &st, &v, &vl)); // sql
+    TEST_ASSERT_EQUAL_UINT64(79, st);                       // text, 33 bytes
+    TEST_ASSERT_EQUAL_UINT32(33, vl);
+    TEST_ASSERT_EQUAL_MEMORY("CREATE TABLE t(a INTEGER, b TEXT)", v, 33);
+
+    TEST_ASSERT_FALSE(sqlite_record_next(&c, &st, &v, &vl)); // exactly five columns
+}
+
+void test_column_int_signextend(void)
+{
+    const uint8_t m1[] = {0xFF};
+    TEST_ASSERT_EQUAL_INT64(-1, sqlite_column_int(1, m1, 1));
+    const uint8_t p127[] = {0x7F};
+    TEST_ASSERT_EQUAL_INT64(127, sqlite_column_int(1, p127, 1));
+    const uint8_t m2[] = {0xFF, 0xFE};
+    TEST_ASSERT_EQUAL_INT64(-2, sqlite_column_int(2, m2, 2));
+    const uint8_t big[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}; // 256 as a 64-bit int
+    TEST_ASSERT_EQUAL_INT64(256, sqlite_column_int(6, big, 8));
+    TEST_ASSERT_EQUAL_INT64(0, sqlite_column_int(8, nullptr, 0)); // constant 0
+    TEST_ASSERT_EQUAL_INT64(1, sqlite_column_int(9, nullptr, 0)); // constant 1
+}
+
+// A payload larger than the local max for a 512-byte page must be flagged as overflowing.
+void test_leaf_cell_overflow_detection(void)
+{
+    uint8_t page[512];
+    for (int i = 0; i < 512; i++)
+        page[i] = 0;
+    // cell at offset 100: payload-length varint 478 (0x83,0x5E), rowid varint 1.
+    page[100] = 0x83;
+    page[101] = 0x5E;
+    page[102] = 0x01;
+    SqliteTableLeafCell cell;
+    TEST_ASSERT_TRUE(sqlite_parse_table_leaf_cell(page, sizeof(page), 512, 0, 100, &cell));
+    TEST_ASSERT_EQUAL_UINT64(1, cell.rowid);
+    TEST_ASSERT_EQUAL_UINT32(478, cell.payload_len);
+    TEST_ASSERT_TRUE(cell.has_overflow);
+    TEST_ASSERT_EQUAL_UINT32(39, cell.local_len); // min_local per the SQLite threshold formula
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -183,5 +261,8 @@ int main(void)
     RUN_TEST(test_first_cell_varints);
     RUN_TEST(test_varint_spec_vectors);
     RUN_TEST(test_serial_type_sizes);
+    RUN_TEST(test_read_schema_row);
+    RUN_TEST(test_column_int_signextend);
+    RUN_TEST(test_leaf_cell_overflow_detection);
     return UNITY_END();
 }

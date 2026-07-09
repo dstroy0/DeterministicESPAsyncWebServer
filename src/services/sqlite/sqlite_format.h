@@ -94,5 +94,57 @@ struct SqliteBtreeHeader
  */
 bool sqlite_parse_btree_header(const uint8_t *page, size_t page_len, size_t offset, SqliteBtreeHeader *out);
 
+/**
+ * @brief In-page byte offset of the @p i-th cell (0-based) from the cell pointer array. @return 0 if @p i is
+ * out of range or the pointer array runs past @p page_len. @p page_offset is 100 for page 1, else 0.
+ */
+uint32_t sqlite_cell_pointer(const uint8_t *page, size_t page_len, const SqliteBtreeHeader *bh, size_t page_offset,
+                             uint16_t i);
+
+/** @brief A parsed table-b-tree leaf cell (a table row): its rowid and where its record payload lives. */
+struct SqliteTableLeafCell
+{
+    uint64_t rowid;
+    uint32_t payload_len; ///< total record payload length
+    uint32_t local_off;   ///< in-page offset where the record payload begins
+    uint32_t local_len;   ///< payload bytes stored in this page (== payload_len unless it overflows)
+    bool has_overflow;    ///< true when payload_len > local_len (remainder is on overflow pages)
+};
+
+/**
+ * @brief Parse the leaf-table cell at in-page offset @p cell_off (payload-length varint, then rowid varint).
+ *
+ * Computes the local payload extent using the SQLite overflow threshold (@p page_size and @p reserved size
+ * the usable area). Reading the overflow-page chain is a follow-up; @c has_overflow tells you when the
+ * record is only partially present in this page. @return false on a truncated/invalid cell.
+ */
+bool sqlite_parse_table_leaf_cell(const uint8_t *page, size_t page_len, uint32_t page_size, uint8_t reserved,
+                                  uint32_t cell_off, SqliteTableLeafCell *out);
+
+/** @brief Cursor over the columns of a record (row payload): the header varints and the value bytes. */
+struct SqliteRecordCursor
+{
+    const uint8_t *rec;
+    uint32_t rec_len;
+    uint32_t hdr_pos; ///< offset of the next serial-type varint within the header
+    uint32_t hdr_end; ///< end of the record header (start of the value area)
+    uint32_t val_pos; ///< offset of the next column value
+};
+
+/** @brief Begin a record cursor over @p rec_len bytes at @p rec. @return false if the header is malformed. */
+bool sqlite_record_begin(SqliteRecordCursor *c, const uint8_t *rec, uint32_t rec_len);
+
+/**
+ * @brief Advance to the next column. Sets @p serial_type and points @p val / @p val_len at the value bytes
+ * (0-length for NULL and the integer constants 0/1). @return false when there are no more columns.
+ */
+bool sqlite_record_next(SqliteRecordCursor *c, uint64_t *serial_type, const uint8_t **val, uint32_t *val_len);
+
+/** @brief Decode an integer column value (serial types 1-6, and 8/9 -> 0/1), sign-extended big-endian. */
+int64_t sqlite_column_int(uint64_t serial_type, const uint8_t *val, uint32_t val_len);
+
+/** @brief Decode a float column value (serial type 7): an 8-byte big-endian IEEE-754 double. */
+double sqlite_column_float(const uint8_t *val, uint32_t val_len);
+
 #endif // DETWS_ENABLE_SQLITE
 #endif // DETERMINISTICESPASYNCWEBSERVER_SQLITE_FORMAT_H

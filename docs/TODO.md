@@ -79,12 +79,13 @@ layer built first, then the store codecs on top. Substrate before stores.
       overwritten/deleted keys (the log currently only grows).
 - [~] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
-      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - the pure parsing
-      foundation is **done** (`services/sqlite/sqlite_format.h`: database header, b-tree page header,
-      the varint, and record serial-type sizes), host-tested against a real sqlite3-CLI file plus spec
-      vectors (7 cases). **Remaining:** walk a table b-tree (cell parser -> record header -> column
-      values) to actually read rows, following interior-page pointers across pages; then a bounded
-      writer.
+      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **row reading is done**
+      (`services/sqlite/sqlite_format.h`): database header, b-tree page header, cell pointers, the
+      leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
+      column values), and int/float decoders. Host-tested against a real sqlite3-CLI file (10 cases,
+      incl. reading the actual `sqlite_schema` row column-by-column) plus spec vectors. **Remaining:**
+      traverse an interior b-tree across multiple pages (a table cursor over `rootpage`), follow
+      overflow-page chains for large payloads, then a bounded writer.
 - [ ] **nosql**: a NoSQL store - target TBD (a Redis RESP or MongoDB OP_MSG/BSON **wire client**, or a
       local on-flash document / KV store). Scope with the user before building.
 
