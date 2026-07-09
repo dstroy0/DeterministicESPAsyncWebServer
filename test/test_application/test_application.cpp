@@ -1575,10 +1575,45 @@ void test_sse_upgrade_pool_exhausted()
 }
 #endif
 
+// append_resp_trailer clamps the returned length in-bounds so a response whose status
+// line and/or custom-header trailer would overflow the header buffer is emitted truncated
+// rather than making the writer read past the buffer (a stack over-read). Driven with an
+// over-long content_type (an unbounded caller string).
+void test_response_trailer_truncation_clamps()
+{
+    // (a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.
+    char bigct[800];
+    memset(bigct, 'a', 750);
+    bigct[750] = '\0';
+    arm_slot(0, "GET /x HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    tcp_capture_reset();
+    g_server->send(0, 200, bigct, "ok");                          // public entry, no route needed
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "HTTP/1.1 200")); // emitted, clamped, no crash
+    tcp_capture_disable();
+
+    // (b) The status line fits but the trailer (a full custom-header block + Connection)
+    // does not -> the trailer snprintf truncates -> clamp.
+    char midct[600];
+    memset(midct, 'b', 500);
+    midct[500] = '\0';
+    char hv[250];
+    memset(hv, 'c', 240);
+    hv[240] = '\0';
+    arm_slot(0, "GET /y HTTP/1.1\r\nHost: x\r\n\r\n");
+    conn_pool[0].pcb = &_mock_pcb;
+    g_server->add_response_header(0, "X-Big", hv); // fill the extra-header block (~249 bytes)
+    tcp_capture_reset();
+    g_server->send(0, 200, midct, "ok");
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "HTTP/1.1 200"));
+    tcp_capture_disable();
+}
+
 int main()
 {
     UNITY_BEGIN();
 
+    RUN_TEST(test_response_trailer_truncation_clamps);
     RUN_TEST(test_restart_and_stop);
     RUN_TEST(test_route_registration_variants_table_full);
     RUN_TEST(test_send_family_slot_and_conn_gone_guards);
