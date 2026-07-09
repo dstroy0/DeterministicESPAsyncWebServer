@@ -145,5 +145,61 @@ void detws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s);
 /** @brief Finish the asset document (close `<Assets>` + root). @return length, or 0 on overflow. */
 size_t detws_mtc_assets_end(DetwsMtcStreams *s);
 
+// --- sample sequence cursor: a rolling observation buffer for the `sample` from/count long-poll ---
+
+/** @brief One buffered observation (a value at a sequence number), stored in fixed fields. */
+struct DetwsMtcObservation
+{
+    DetwsMtcCategory cat;
+    uint64_t seq;                     ///< the monotonic sequence number assigned when it was recorded.
+    char type[DETWS_MTC_STR_MAX + 1]; ///< DataItem type element name (e.g. "Position").
+    char data_id[DETWS_MTC_STR_MAX + 1];
+    char timestamp[DETWS_MTC_TS_MAX + 1];
+    char value[DETWS_MTC_VAL_MAX + 1];
+};
+
+/**
+ * @brief A fixed-size ring of the most recent observations, with the agent's sequence bookkeeping.
+ *
+ * Holds up to ::DETWS_MTC_SAMPLE_BUFFER observations. Each ::detws_mtc_sample_buffer_add assigns the
+ * next sequence number; when the ring is full the oldest is evicted and `first_seq` advances, so the
+ * retained window is always `[first_seq, next_seq)`. ::detws_mtc_sample_query then replays a requested
+ * sub-window as an MTConnectStreams document whose header carries firstSequence / lastSequence /
+ * nextSequence (MTC1.4 §6.7). Zero heap, single-owner (the caller serializes access).
+ */
+struct DetwsMtcSampleBuffer
+{
+    DetwsMtcObservation obs[DETWS_MTC_SAMPLE_BUFFER];
+    uint32_t count;     ///< valid entries (<= DETWS_MTC_SAMPLE_BUFFER).
+    uint32_t head;      ///< ring write index (next slot to fill).
+    uint64_t next_seq;  ///< sequence the next add will assign (one past the newest).
+    uint64_t first_seq; ///< sequence of the oldest retained observation.
+};
+
+/**
+ * @brief Initialize an empty sample buffer.
+ * @param start_seq the first sequence number the agent will assign (0 is treated as 1).
+ */
+void detws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq);
+
+/**
+ * @brief Record one observation, assigning it the next sequence number (evicting the oldest if full).
+ * @return the sequence number assigned to this observation.
+ */
+uint64_t detws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat, const char *type,
+                                     const char *data_id, const char *timestamp, const char *value);
+
+/**
+ * @brief Build the `sample` MTConnectStreams response for the window starting at @p from.
+ *
+ * Emits up to @p count observations from sequence @p from onward (a @p from below the retained
+ * firstSequence is clamped up to it - a stale subscriber catches up from the oldest kept, and the header
+ * firstSequence tells it data was dropped). The header reports firstSequence / lastSequence and a
+ * nextSequence the client uses to resume (the sequence past the last one returned, or the buffer's
+ * nextSequence when @p from is already at/after the newest). @return document length, or 0 on overflow.
+ */
+size_t detws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
+                              const char *device_name, uint64_t from, uint32_t count);
+
 #endif // DETWS_ENABLE_MTCONNECT
 #endif // DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H

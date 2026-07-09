@@ -353,4 +353,103 @@ size_t detws_mtc_assets_end(DetwsMtcStreams *s)
     return s->len;
 }
 
+// --- sample sequence cursor: a rolling observation buffer for the `sample` from/count long-poll ---
+
+namespace
+{
+// Bounded, always-NUL-terminated copy into a fixed field.
+void mtc_copy_str(char *dst, size_t cap, const char *src)
+{
+    if (cap == 0)
+        return;
+    size_t i = 0;
+    if (src)
+        for (; src[i] != '\0' && i < cap - 1; i++)
+            dst[i] = src[i];
+    dst[i] = '\0';
+}
+
+// Open an MTConnectStreams document with the full sample-cursor header (buffer/first/last/next seq).
+void mtc_streams_begin_windowed(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t first_seq,
+                                uint64_t last_seq, uint64_t next_seq, uint32_t buffer_size, const char *device_name)
+{
+    s->buf = buf;
+    s->cap = cap;
+    s->len = 0;
+    s->ok = (buf != nullptr && cap > 0);
+    s->in_comp = false;
+    put(s, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    put(s, "<MTConnectStreams xmlns=\"urn:mtconnect.org:MTConnectStreams:1.4\">");
+    put(s, "<Header instanceId=\"");
+    put_u64(s, instance_id);
+    put(s, "\" version=\"1.4\" bufferSize=\"");
+    put_u64(s, buffer_size);
+    put(s, "\" firstSequence=\"");
+    put_u64(s, first_seq);
+    put(s, "\" lastSequence=\"");
+    put_u64(s, last_seq);
+    put(s, "\" nextSequence=\"");
+    put_u64(s, next_seq);
+    put(s, "\"/>");
+    put(s, "<Streams><DeviceStream name=\"");
+    put_escaped(s, device_name ? device_name : "");
+    put(s, "\">");
+}
+} // namespace
+
+void detws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq)
+{
+    b->count = 0;
+    b->head = 0;
+    b->next_seq = start_seq ? start_seq : 1;
+    b->first_seq = b->next_seq; // empty: first == next (lastSequence = next-1 sits just below first)
+}
+
+uint64_t detws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat, const char *type,
+                                     const char *data_id, const char *timestamp, const char *value)
+{
+    DetwsMtcObservation *o = &b->obs[b->head];
+    o->cat = cat;
+    o->seq = b->next_seq;
+    mtc_copy_str(o->type, sizeof(o->type), type);
+    mtc_copy_str(o->data_id, sizeof(o->data_id), data_id);
+    mtc_copy_str(o->timestamp, sizeof(o->timestamp), timestamp);
+    mtc_copy_str(o->value, sizeof(o->value), value);
+    b->head = (b->head + 1) % DETWS_MTC_SAMPLE_BUFFER;
+    if (b->count < DETWS_MTC_SAMPLE_BUFFER)
+        b->count++;
+    else
+        b->first_seq++; // ring full: the oldest was overwritten, so the window slides forward
+    return b->next_seq++;
+}
+
+size_t detws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
+                              const char *device_name, uint64_t from, uint32_t count)
+{
+    uint64_t first = b->first_seq;
+    uint64_t next = b->next_seq;                  // one past the newest retained observation
+    uint64_t last = next - 1;                     // newest sequence (next-1); when empty this is first-1
+    uint64_t start = from < first ? first : from; // a stale `from` catches up from the oldest kept
+
+    uint32_t avail = (start < next) ? (uint32_t)(next - start) : 0;
+    uint32_t to_emit = (count < avail) ? count : avail;
+    // Resume point: past the last one returned, or the buffer's nextSequence when nothing was in range.
+    uint64_t next_report = (start >= next) ? next : start + to_emit;
+
+    DetwsMtcStreams s;
+    mtc_streams_begin_windowed(&s, buf, cap, instance_id, first, last, next_report, DETWS_MTC_SAMPLE_BUFFER,
+                               device_name);
+
+    // The oldest retained observation sits `count` slots behind head; observation `first + k` is at
+    // (oldest_idx + k) around the ring.
+    uint32_t oldest_idx = (uint32_t)((b->head + DETWS_MTC_SAMPLE_BUFFER - b->count) % DETWS_MTC_SAMPLE_BUFFER);
+    for (uint32_t e = 0; e < to_emit; e++)
+    {
+        uint32_t k = (uint32_t)((start - first) + e);
+        DetwsMtcObservation *o = &b->obs[(oldest_idx + k) % DETWS_MTC_SAMPLE_BUFFER];
+        detws_mtc_streams_add(&s, o->cat, o->type, o->data_id, o->seq, o->timestamp, o->value);
+    }
+    return detws_mtc_streams_end(&s);
+}
+
 #endif // DETWS_ENABLE_MTCONNECT

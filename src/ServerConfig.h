@@ -2784,6 +2784,30 @@
 #endif
 
 /**
+ * @brief MTConnect rolling sample buffer sizing (DETWS_ENABLE_MTCONNECT).
+ *
+ * The agent retains the most recent ::DETWS_MTC_SAMPLE_BUFFER observations in a fixed ring so a
+ * subscriber can replay them with the `sample` from/count long-poll cursor (MTC1.4 §6.7): a request
+ * asks for observations starting at a sequence number, and the response header reports firstSequence /
+ * lastSequence / nextSequence so the client knows what it received and where to resume. Each retained
+ * observation stores its type / dataItemId / timestamp / value in fixed char fields; when the ring is
+ * full the oldest is evicted and firstSequence advances. Zero-heap, compile-time sized; the buffer costs
+ * ~DETWS_MTC_SAMPLE_BUFFER * (48 + the four string caps) bytes only where a DetwsMtcSampleBuffer is used.
+ */
+#ifndef DETWS_MTC_SAMPLE_BUFFER
+#define DETWS_MTC_SAMPLE_BUFFER 32 // observations retained for `sample` replay
+#endif
+#ifndef DETWS_MTC_STR_MAX
+#define DETWS_MTC_STR_MAX 24 // max stored type / dataItemId length (excl NUL)
+#endif
+#ifndef DETWS_MTC_TS_MAX
+#define DETWS_MTC_TS_MAX 32 // max stored ISO-8601 timestamp length (excl NUL)
+#endif
+#ifndef DETWS_MTC_VAL_MAX
+#define DETWS_MTC_VAL_MAX 32 // max stored observation value length (excl NUL)
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

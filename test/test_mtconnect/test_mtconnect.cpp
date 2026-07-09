@@ -4,6 +4,7 @@
 // Host tests for services/mtconnect: the MTConnectStreams + MTConnectError document builders.
 
 #include "services/mtconnect/mtconnect.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
@@ -181,6 +182,98 @@ void test_assets_escape_and_overflow(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_assets_end(&s2));
 }
 
+void test_sample_buffer_and_query(void)
+{
+    DetwsMtcSampleBuffer b;
+    detws_mtc_sample_buffer_init(&b, 1);
+    TEST_ASSERT_EQUAL_UINT64(1, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));
+    TEST_ASSERT_EQUAL_UINT64(2, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));
+    TEST_ASSERT_EQUAL_UINT64(3, detws_mtc_sample_buffer_add(&b, DETWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));
+
+    char buf[1024];
+    size_t n = detws_mtc_sample_query(&b, buf, sizeof(buf), 1500, "cnc1", 1, 10);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
+    // Full sample-cursor header.
+    TEST_ASSERT_TRUE(contains(buf, "instanceId=\"1500\" version=\"1.4\" bufferSize=\""));
+    TEST_ASSERT_TRUE(contains(buf, "firstSequence=\"1\" lastSequence=\"3\" nextSequence=\"4\""));
+    TEST_ASSERT_TRUE(contains(buf, "<Position dataItemId=\"xpos\" sequence=\"1\" timestamp=\"T1\">1.0</Position>"));
+    TEST_ASSERT_TRUE(
+        contains(buf, "<Execution dataItemId=\"exec\" sequence=\"3\" timestamp=\"T3\">ACTIVE</Execution>"));
+
+    // A windowed request: one observation from sequence 2, so nextSequence advances to 3.
+    n = detws_mtc_sample_query(&b, buf, sizeof(buf), 1500, "cnc1", 2, 1);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(contains(buf, "firstSequence=\"1\" lastSequence=\"3\" nextSequence=\"3\""));
+    TEST_ASSERT_TRUE(contains(buf, "sequence=\"2\" timestamp=\"T2\">2.0</Position>"));
+    TEST_ASSERT_FALSE(contains(buf, "timestamp=\"T3\"")); // count=1 stopped before seq 3
+}
+
+void test_sample_buffer_eviction(void)
+{
+    DetwsMtcSampleBuffer b;
+    detws_mtc_sample_buffer_init(&b, 1);
+    // Overfill the ring: DETWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.
+    const uint32_t total = DETWS_MTC_SAMPLE_BUFFER + 8;
+    for (uint32_t i = 1; i <= total; i++)
+    {
+        char ts[16];
+        int p = 0;
+        ts[p++] = 'T';
+        // tiny uint->decimal
+        char d[12];
+        int q = 0;
+        uint32_t v = i;
+        do
+        {
+            d[q++] = (char)('0' + v % 10);
+            v /= 10;
+        } while (v);
+        while (q > 0)
+            ts[p++] = d[--q];
+        ts[p] = '\0';
+        detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", ts, "9.9");
+    }
+    // Retained window is [total-BUFFER+1, total]; first advanced by 8.
+    char buf[8192];
+    size_t n = detws_mtc_sample_query(&b, buf, sizeof(buf), 1, "d", 1 /* stale -> clamps up */, 1000);
+    TEST_ASSERT_TRUE(n > 0);
+    char expect[96];
+    snprintf(expect, sizeof(expect), "firstSequence=\"%u\" lastSequence=\"%u\" nextSequence=\"%u\"",
+             (unsigned)(total - DETWS_MTC_SAMPLE_BUFFER + 1), (unsigned)total, (unsigned)(total + 1));
+    TEST_ASSERT_TRUE(contains(buf, expect));
+    // The oldest kept observation carries the sliding first sequence, not sequence 1.
+    char oldest[48];
+    snprintf(oldest, sizeof(oldest), "sequence=\"%u\"", (unsigned)(total - DETWS_MTC_SAMPLE_BUFFER + 1));
+    TEST_ASSERT_TRUE(contains(buf, oldest));
+    TEST_ASSERT_FALSE(contains(buf, "sequence=\"1\"")); // evicted
+}
+
+void test_sample_query_future_and_empty(void)
+{
+    DetwsMtcSampleBuffer b;
+    detws_mtc_sample_buffer_init(&b, 5);
+    detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T", "1.0"); // seq 5
+
+    char buf[512];
+    // A `from` past the newest yields no observations and nextSequence = the buffer's next (6).
+    size_t n = detws_mtc_sample_query(&b, buf, sizeof(buf), 1, "d", 100, 10);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(contains(buf, "firstSequence=\"5\" lastSequence=\"5\" nextSequence=\"6\""));
+    TEST_ASSERT_FALSE(contains(buf, "<Position"));
+
+    // An empty buffer answers with lastSequence = first-1 and no observations.
+    DetwsMtcSampleBuffer e;
+    detws_mtc_sample_buffer_init(&e, 1);
+    n = detws_mtc_sample_query(&e, buf, sizeof(buf), 1, "d", 1, 10);
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE(contains(buf, "firstSequence=\"1\" lastSequence=\"0\" nextSequence=\"1\""));
+
+    // Fail-closed on a buffer too small for even the header.
+    char tiny[32];
+    TEST_ASSERT_EQUAL_size_t(0, detws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -193,5 +286,8 @@ int main(void)
     RUN_TEST(test_devices_escape_and_overflow);
     RUN_TEST(test_assets_document);
     RUN_TEST(test_assets_escape_and_overflow);
+    RUN_TEST(test_sample_buffer_and_query);
+    RUN_TEST(test_sample_buffer_eviction);
+    RUN_TEST(test_sample_query_future_and_empty);
     return UNITY_END();
 }

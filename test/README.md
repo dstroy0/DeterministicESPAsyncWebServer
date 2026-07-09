@@ -497,7 +497,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2692 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2695 test cases** across **228 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -14804,7 +14804,7 @@ A thorough directory of all **2692 test cases** across **228 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_mtconnect (9 tests)</b></summary>
+<summary><b>test_mtconnect (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_streams_document</b> &mdash; <i>Properly closed.</i></summary>
@@ -14916,6 +14916,50 @@ A thorough directory of all **2692 test cases** across **228 suites**. Expand a 
       * <code>Assert true (contains(buf, "assetId=\\"a&lt;1\\" serialNumber=\\"s&amp;n\\""))</code>
       * <code>Assert true (contains(buf, "&gt;1&gt;2&lt;/ToolLife&gt;"))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_assets_end(&s2));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sample_buffer_and_query</b> &mdash; <i>Full sample-cursor header.</i></summary>
+
+    * **Objective**: Full sample-cursor header.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(2, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(3, detws_mtc_sample_buffer_add(&b, DETWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
+      * <code>Assert true (contains(buf, "instanceId=\\"1500\\" version=\\"1.4\\" bufferSize=\\""))</code>
+      * <code>Assert true (contains(buf, "firstSequence=\\"1\\" lastSequence=\\"3\\" nextSequence=\\"4\\""))</code>
+      * <code>Assert true (contains(buf, "&lt;Position dataItemId=\\"xpos\\" sequence=\\"1\\" timestamp=\\"T1\\"&gt;1.0&lt;/Position&gt;"))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, "firstSequence=\\"1\\" lastSequence=\\"3\\" nextSequence=\\"3\\""))</code>
+      * <code>Assert true (contains(buf, "sequence=\\"2\\" timestamp=\\"T2\\"&gt;2.0&lt;/Position&gt;"))</code>
+      * <code>Assert false (contains(buf, "timestamp=\\"T3\\""))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sample_buffer_eviction</b> &mdash; <i>Overfill the ring: DETWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.</i></summary>
+
+    * **Objective**: Overfill the ring: DETWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, expect))</code>
+      * <code>Assert true (contains(buf, oldest))</code>
+      * <code>Assert false (contains(buf, "sequence=\\"1\\""))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sample_query_future_and_empty</b> &mdash; <i>A `from` past the newest yields no observations and nextSequence = the buffer's next (6).</i></summary>
+
+    * **Objective**: A `from` past the newest yields no observations and nextSequence = the buffer's next (6).
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, "firstSequence=\\"5\\" lastSequence=\\"5\\" nextSequence=\\"6\\""))</code>
+      * <code>Assert false (contains(buf, "&lt;Position"))</code>
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (contains(buf, "firstSequence=\\"1\\" lastSequence=\\"0\\" nextSequence=\\"1\\""))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));</code>
   </details>
 
 </details>
