@@ -575,9 +575,71 @@ void test_response_header_string_table_skip()
     TEST_ASSERT_EQUAL_INT32(0, opcua_client_on_read(resp, n, v, s, 1));
 }
 
+// Forge a BrowseResponse carrying one ReferenceDescription whose DisplayName LocalizedText sets the
+// Locale mask bit (0x01). Our own server never emits a Locale (ua_w_localizedtext is always called
+// with a null locale), so only a forged / third-party-server response exercises the client's
+// Locale-skip parse path - a real path for a spec-compliant peer that does send a Locale.
+static size_t build_browse_with_locale(uint8_t *out, size_t cap)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'M');
+    ua_w_u8(&w, 'S');
+    ua_w_u8(&w, 'G');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+    ua_w_u32(&w, 0); // SecureChannelId
+    ua_w_u32(&w, 0); // TokenId
+    ua_w_u32(&w, 0); // SequenceNumber
+    ua_w_u32(&w, 0); // RequestId
+    ua_w_nodeid_numeric(&w, 0, OPCUA_ID_BROWSE_RESP);
+    ua_w_u64(&w, 0);                 // ResponseHeader.Timestamp
+    ua_w_u32(&w, 0);                 // RequestHandle
+    ua_w_u32(&w, OPCUA_STATUS_GOOD); // ServiceResult
+    ua_w_u8(&w, 0);                  // ServiceDiagnostics
+    ua_w_i32(&w, 0);                 // StringTable count (none)
+    ua_w_nodeid_numeric(&w, 0, 0);   // AdditionalHeader NodeId (null)
+    ua_w_u8(&w, 0);                  // AdditionalHeader ExtensionObject (no body)
+    // BrowseResponse body: Results[1] -> one BrowseResult -> one ReferenceDescription.
+    ua_w_i32(&w, 1);                                              // Results count
+    ua_w_u32(&w, OPCUA_STATUS_GOOD);                              // BrowseResult.StatusCode
+    ua_w_i32(&w, -1);                                             // ContinuationPoint (null ByteString)
+    ua_w_i32(&w, 1);                                              // References count
+    ua_w_nodeid_numeric(&w, 0, OPCUA_REFTYPE_ORGANIZES);          // ReferenceTypeId
+    ua_w_bool(&w, true);                                          // IsForward
+    ua_w_nodeid_numeric(&w, 1, 7);                                // TargetId (NodeId, numeric)
+    ua_w_u16(&w, 1);                                              // BrowseName.NamespaceIndex
+    ua_w_string(&w, "Node7", 5);                                  // BrowseName.Name
+    ua_w_u8(&w, 0x03);                                            // DisplayName mask: Locale (0x01) + Text (0x02)
+    ua_w_string(&w, "en-US", 5);                                  // Locale -> client Locale-skip path
+    ua_w_string(&w, "Node 7", 6);                                 // Text
+    ua_w_u32(&w, OPCUA_NODECLASS_VARIABLE);                       // NodeClass
+    ua_w_nodeid_numeric(&w, 0, OPCUA_TYPEDEF_BASE_DATA_VARIABLE); // TypeDefinition
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = (uint8_t)(w.n >> 16);
+    out[7] = (uint8_t)(w.n >> 24);
+    return w.ok ? w.n : 0;
+}
+
+// A DisplayName carrying a Locale (mask 0x01) is skipped, and the reference still parses correctly.
+void test_browse_display_name_locale()
+{
+    uint8_t resp[256];
+    size_t n = build_browse_with_locale(resp, sizeof(resp));
+    TEST_ASSERT_TRUE(n > 0);
+
+    OpcUaClientRef refs[2];
+    int32_t got = opcua_client_on_browse(resp, n, refs, 2);
+    TEST_ASSERT_EQUAL_INT32(1, got);
+    TEST_ASSERT_EQUAL_STRING("Node7", refs[0].browse_name);
+    TEST_ASSERT_EQUAL_UINT32(7, refs[0].target_id);
+    TEST_ASSERT_EQUAL_UINT16(1, refs[0].target_ns);
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_browse_display_name_locale);
     RUN_TEST(test_on_read_all_variant_types);
     RUN_TEST(test_client_parsers_reject_fault);
     RUN_TEST(test_client_parsers_reject_malformed);
