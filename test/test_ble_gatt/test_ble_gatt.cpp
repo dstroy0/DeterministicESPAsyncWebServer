@@ -88,10 +88,61 @@ void test_char_json(void)
     TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(chars, 2, tiny, sizeof(tiny)));
 }
 
+// att_read_rsp build + the build-time guards (null out / null value / tiny caps).
+void test_read_rsp_and_build_guards(void)
+{
+    uint8_t out[16];
+    const uint8_t val[3] = {1, 2, 3};
+    size_t n = att_read_rsp(val, 3, out, sizeof(out));
+    TEST_ASSERT_EQUAL_size_t(4, n);
+    TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_RSP, out[0]);
+    TEST_ASSERT_EQUAL_MEMORY(val, out + 1, 3);
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, nullptr, sizeof(out)));         // null out
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(nullptr, 3, out, sizeof(out)));         // len but null value
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, out, 2));                       // cap < 1 + vlen
+    TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out)));  // handle_value: null value
+    TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                   // handle_value: cap < 3 + vlen
+    TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap < 5
+}
+
+// att_parse guards (null / empty / truncated) and the remaining opcodes.
+void test_parse_guards_and_opcodes(void)
+{
+    AttPdu p;
+    TEST_ASSERT_FALSE(att_parse(nullptr, 5, &p)); // null pdu
+    uint8_t z = 0;
+    TEST_ASSERT_FALSE(att_parse(&z, 0, &p)); // len 0
+    const uint8_t err_trunc[3] = {ATT_OP_ERROR_RSP, ATT_OP_READ_REQ, 0x25};
+    TEST_ASSERT_FALSE(att_parse(err_trunc, sizeof(err_trunc), &p)); // ERROR_RSP len < 5
+    const uint8_t rr[3] = {ATT_OP_READ_REQ, 0x25, 0x00};
+    TEST_ASSERT_TRUE(att_parse(rr, sizeof(rr), &p)); // READ_REQ
+    TEST_ASSERT_EQUAL_HEX16(0x0025, p.handle);
+    const uint8_t rr_trunc[2] = {ATT_OP_READ_REQ, 0x25};
+    TEST_ASSERT_FALSE(att_parse(rr_trunc, sizeof(rr_trunc), &p)); // READ_REQ len < 3
+    const uint8_t wrsp[1] = {ATT_OP_WRITE_RSP};
+    TEST_ASSERT_TRUE(att_parse(wrsp, sizeof(wrsp), &p)); // WRITE_RSP: no fields
+    const uint8_t unk[2] = {0xFF, 0x01};
+    TEST_ASSERT_TRUE(att_parse(unk, sizeof(unk), &p)); // unknown opcode: reported, no fields
+    TEST_ASSERT_EQUAL_HEX8(0xFF, p.opcode);
+}
+
+// gatt_char_json rejects a null output, a zero cap, and a null array with a nonzero count.
+void test_char_json_guards(void)
+{
+    GattChar c = {0x10, 0x2A00, GATT_PROP_READ};
+    char out[64];
+    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, out, 0));
+    TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(nullptr, 1, out, sizeof(out)));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_pdus);
+    RUN_TEST(test_read_rsp_and_build_guards);
+    RUN_TEST(test_parse_guards_and_opcodes);
+    RUN_TEST(test_char_json_guards);
     RUN_TEST(test_build_overflow);
     RUN_TEST(test_parse);
     RUN_TEST(test_char_json);
