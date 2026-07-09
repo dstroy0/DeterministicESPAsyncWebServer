@@ -43,6 +43,18 @@ void test_self_test_ok_beats_window()
     TEST_ASSERT_EQUAL_INT(DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 99999, 30000));
 }
 
+void test_host_platform_hooks_are_safe_noops()
+{
+    // On a host build there are no OTA partitions: img_state reports UNDEFINED and the
+    // commit/rollback hooks are no-ops (the real rollback reboots), so rollback_tick, which
+    // decides on an UNDEFINED (non-pending) image, always WAITs and never touches the flash.
+    TEST_ASSERT_EQUAL_INT(DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state());
+    detws_ota_commit();
+    detws_ota_rollback();
+    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_rollback_tick(true));
+    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_rollback_tick(false));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -51,5 +63,6 @@ int main()
     RUN_TEST(test_pending_within_window_waits);
     RUN_TEST(test_pending_window_elapsed_rolls_back);
     RUN_TEST(test_self_test_ok_beats_window);
+    RUN_TEST(test_host_platform_hooks_are_safe_noops);
     return UNITY_END();
 }
