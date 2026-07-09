@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 09:14:12
+**Generated:** 2026-07-09 09:28:31
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2732 passed - 306s
+**Result:** ✅ 2735 passed - 317s
 
 ---
 
@@ -27,12 +27,12 @@
 | `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.745 |
 | `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.744 |
 | `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.731 |
-| `test_sse`               | `native`                |    37 |   ✅   | 00:00:01.297 |
-| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.657 |
-| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.714 |
-| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.712 |
-| `test_websocket`         | `native`                |    68 |   ✅   | 00:00:00.750 |
-| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.696 |
+| `test_sse`               | `native`                |    37 |   ✅   | 00:00:12.398 |
+| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.672 |
+| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.720 |
+| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.718 |
+| `test_websocket`         | `native`                |    69 |   ✅   | 00:00:00.771 |
+| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.712 |
 | `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.892 |
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.233 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.784 |
@@ -154,7 +154,7 @@
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.808 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.812 |
 | `test_ssh_comp`          | `native_ssh_comp`       |     5 |   ✅   | 00:00:01.332 |
-| `test_websocket`         | `native_ws_deflate`     |    72 |   ✅   | 00:00:01.423 |
+| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.366 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.824 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.838 |
 | `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.833 |
@@ -872,7 +872,7 @@ _Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,_
 
 ---
 
-## test_websocket - native - ✅ 68 passed
+## test_websocket - native - ✅ 69 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -949,6 +949,7 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 |  66 | `stress_ws_parse_incremental_byte_by_byte`             |   ✅   | Stress - Ws parse incremental byte by byte                                |
 |  67 | `stress_ws_parse_max_payload`                          |   ✅   | Stress - Ws parse max payload                                             |
 |  68 | `stress_ws_parse_two_consecutive_frames`               |   ✅   | First frame                                                               |
+|  69 | `test_ws_send_frame_paths_and_parse_guard`             |   ✅   | Ws send frame paths and parse guard                                       |
 
 </details>
 
@@ -4332,7 +4333,7 @@ _Integration test for SSH server-to-client compression WIRING (network_drivers/p
 
 ---
 
-## test_websocket - native_ws_deflate - ✅ 72 passed
+## test_websocket - native_ws_deflate - ✅ 74 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -4406,13 +4407,15 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 |  63 | `test_ws_permessage_deflate_inbound`                   |   ✅   | "Hello, World!" as permessage-deflate (SYNC_FLUSH, marker stripped) - the |
 |  64 | `test_ws_rsv1_without_negotiation_closes`              |   ✅   | Ws rsv1 without negotiation closes                                        |
 |  65 | `test_ws_permessage_deflate_outbound`                  |   ✅   | Ws permessage deflate outbound                                            |
-|  66 | `test_ws_outbound_incompressible_not_flagged`          |   ✅   | Ws outbound incompressible not flagged                                    |
-|  67 | `test_ws_outbound_fragmentation`                       |   ✅   | Ws outbound fragmentation                                                 |
-|  68 | `stress_ws_parse_reset_100_cycles`                     |   ✅   | Stress - Ws parse reset 100 cycles                                        |
-|  69 | `stress_ws_alloc_free_pool_cycle`                      |   ✅   | Stress - Ws alloc free pool cycle                                         |
-|  70 | `stress_ws_parse_incremental_byte_by_byte`             |   ✅   | Stress - Ws parse incremental byte by byte                                |
-|  71 | `stress_ws_parse_max_payload`                          |   ✅   | Stress - Ws parse max payload                                             |
-|  72 | `stress_ws_parse_two_consecutive_frames`               |   ✅   | First frame                                                               |
+|  66 | `test_ws_deflate_inflate_error_closes`                 |   ✅   | Ws deflate inflate error closes                                           |
+|  67 | `test_ws_outbound_incompressible_not_flagged`          |   ✅   | Ws outbound incompressible not flagged                                    |
+|  68 | `test_ws_outbound_fragmentation`                       |   ✅   | Ws outbound fragmentation                                                 |
+|  69 | `stress_ws_parse_reset_100_cycles`                     |   ✅   | Stress - Ws parse reset 100 cycles                                        |
+|  70 | `stress_ws_alloc_free_pool_cycle`                      |   ✅   | Stress - Ws alloc free pool cycle                                         |
+|  71 | `stress_ws_parse_incremental_byte_by_byte`             |   ✅   | Stress - Ws parse incremental byte by byte                                |
+|  72 | `stress_ws_parse_max_payload`                          |   ✅   | Stress - Ws parse max payload                                             |
+|  73 | `stress_ws_parse_two_consecutive_frames`               |   ✅   | First frame                                                               |
+|  74 | `test_ws_send_frame_paths_and_parse_guard`             |   ✅   | Ws send frame paths and parse guard                                       |
 
 </details>
 
