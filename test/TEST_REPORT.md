@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-09 02:41:30
+**Generated:** 2026-07-09 02:51:37
 **Command:** `pio test` over 205 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 2616 passed - 520s
+**Result:** ✅ 2617 passed - 201s
 
 ---
 
@@ -111,7 +111,7 @@
 | `test_proxy_protocol`    | `native_proxy_protocol` |     8 |   ✅   | 00:00:00.685 |
 | `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.714 |
 | `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.696 |
-| `test_ota_rollback`      | `native_ota_rollback`   |     5 |   ✅   | 00:00:00.656 |
+| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:05.347 |
 | `test_totp`              | `native_totp`           |     4 |   ✅   | 00:00:00.705 |
 | `test_webhook`           | `native_webhook`        |     5 |   ✅   | 00:00:00.693 |
 | `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.659 |
@@ -3190,20 +3190,21 @@ _Unit tests for the Modbus master codec (services/modbus/modbus_master): request
 
 ---
 
-## test_ota_rollback - native_ota_rollback - ✅ 5 passed
+## test_ota_rollback - native_ota_rollback - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the OTA rollback decision (services/ota_rollback). The esp_ota_
 
-|   # | Test                                     | Status | Description                                                 |
-| --: | :--------------------------------------- | :----: | :---------------------------------------------------------- |
-|   1 | `test_not_pending_waits`                 |   ✅   | A normally-booted (valid/undefined) image never rolls back. |
-|   2 | `test_pending_self_test_ok_commits`      |   ✅   | Pending self test ok commits                                |
-|   3 | `test_pending_within_window_waits`       |   ✅   | Pending within window waits                                 |
-|   4 | `test_pending_window_elapsed_rolls_back` |   ✅   | Pending window elapsed rolls back                           |
-|   5 | `test_self_test_ok_beats_window`         |   ✅   | A passing self-test commits even past the window.           |
+|   # | Test                                      | Status | Description                                                                      |
+| --: | :---------------------------------------- | :----: | :------------------------------------------------------------------------------- |
+|   1 | `test_not_pending_waits`                  |   ✅   | A normally-booted (valid/undefined) image never rolls back.                      |
+|   2 | `test_pending_self_test_ok_commits`       |   ✅   | Pending self test ok commits                                                     |
+|   3 | `test_pending_within_window_waits`        |   ✅   | Pending within window waits                                                      |
+|   4 | `test_pending_window_elapsed_rolls_back`  |   ✅   | Pending window elapsed rolls back                                                |
+|   5 | `test_self_test_ok_beats_window`          |   ✅   | A passing self-test commits even past the window.                                |
+|   6 | `test_host_platform_hooks_are_safe_noops` |   ✅   | On a host build there are no OTA partitions: img_state reports UNDEFINED and the |
 
 </details>
 
