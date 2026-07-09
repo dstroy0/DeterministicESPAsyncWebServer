@@ -66,6 +66,47 @@ void test_ifttt_trigger_and_post_stub()
     TEST_ASSERT_EQUAL_INT(-1, detws_ifttt_trigger("evt", "key", "1", "2", "3"));
 }
 
+// Null / zero-cap argument guards on the pure builders: fail closed, clearing the output
+// buffer when one is provided.
+void test_builder_arg_guards()
+{
+    char buf[64];
+    buf[0] = 'x';
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_url(nullptr, "k", buf, sizeof(buf)));         // null event
+    TEST_ASSERT_EQUAL_STRING("", buf);                                                 // cleared
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_url("e", nullptr, buf, sizeof(buf)));         // null key
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_url("e", "k", nullptr, 10));                  // null out (no clear)
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_url("e", "k", buf, 0));                       // zero cap
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("a", nullptr, nullptr, nullptr, 64)); // null out
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("a", nullptr, nullptr, buf, 0));      // zero cap
+}
+
+// put_escaped fails closed when the escaped value would overrun the buffer, both on a
+// plain character and on an escape sequence landing at the boundary.
+void test_payload_escape_overflow_fails_closed()
+{
+    char buf[16];
+    // "{\"value1\":\"" is 11 chars; a 10-char plain value overruns mid-escape-loop.
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("aaaaaaaaaa", nullptr, nullptr, buf, sizeof(buf)));
+    // A value whose escape ('"' -> two bytes) lands with < 2 bytes left also fails closed.
+    TEST_ASSERT_EQUAL_INT(0, detws_ifttt_payload("aaa\"", nullptr, nullptr, buf, sizeof(buf)));
+}
+
+// detws_ifttt_trigger returns -1 when the url or payload cannot be built (too long for its
+// fixed stack buffer), before any post is attempted.
+void test_trigger_build_failures()
+{
+    char bigev[200];
+    memset(bigev, 'e', 190);
+    bigev[190] = '\0';
+    TEST_ASSERT_EQUAL_INT(-1, detws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr)); // url overflows url[160]
+
+    char bigval[400];
+    memset(bigval, 'v', 350);
+    bigval[350] = '\0';
+    TEST_ASSERT_EQUAL_INT(-1, detws_ifttt_trigger("e", "k", bigval, nullptr, nullptr)); // payload overflows body[256]
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -75,5 +116,8 @@ int main()
     RUN_TEST(test_payload_escapes_json);
     RUN_TEST(test_overflow_fails_closed);
     RUN_TEST(test_ifttt_trigger_and_post_stub);
+    RUN_TEST(test_builder_arg_guards);
+    RUN_TEST(test_payload_escape_overflow_fails_closed);
+    RUN_TEST(test_trigger_build_failures);
     return UNITY_END();
 }
