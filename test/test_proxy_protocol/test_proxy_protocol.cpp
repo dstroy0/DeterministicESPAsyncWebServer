@@ -114,6 +114,21 @@ void test_build_overflow_fails_closed()
     TEST_ASSERT_EQUAL_size_t(0, proxy_v2_build(v2small, sizeof(v2small), SRC, DST, 12345, 80)); // needs 28
 }
 
+void test_v1_malformed_addresses_fail_closed()
+{
+    ProxyInfo info;
+    size_t consumed = 0;
+    // Each malformed v1 source address drives a distinct parse_ipv4 reject path.
+    TEST_ASSERT_FALSE(
+        proxy_parse((const uint8_t *)"PROXY TCP4 25x.0.0.1 10.0.0.1 1 2 ", 34, &info, &consumed)); // non-digit
+    TEST_ASSERT_FALSE(
+        proxy_parse((const uint8_t *)"PROXY TCP4 999.0.0.1 10.0.0.1 1 2 ", 34, &info, &consumed)); // octet > 255
+    TEST_ASSERT_FALSE(
+        proxy_parse((const uint8_t *)"PROXY TCP4 10-0-0-1 10.0.0.1 1 2 ", 33, &info, &consumed)); // missing dot
+    TEST_ASSERT_FALSE(
+        proxy_parse((const uint8_t *)"PROXY TCP4 10.0.0 10.0.0.1 1 2 ", 31, &info, &consumed)); // three octets
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -125,5 +140,6 @@ int main()
     RUN_TEST(test_not_a_proxy_header);
     RUN_TEST(test_incomplete);
     RUN_TEST(test_build_overflow_fails_closed);
+    RUN_TEST(test_v1_malformed_addresses_fail_closed);
     return UNITY_END();
 }

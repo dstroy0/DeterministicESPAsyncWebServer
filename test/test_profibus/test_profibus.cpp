@@ -75,6 +75,23 @@ void test_parse_rejects(void)
     TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(0x05, 0x02, PB_FC_SRD_LOW, data, 300, out, sizeof(out)));
 }
 
+void test_build_and_parse_guard_subconditions(void)
+{
+    uint8_t out[16];
+    uint8_t data[3] = {0xAA, 0xBB, 0xCC};
+    // Build guards: null out and a capacity below the frame size fail closed.
+    TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, out, 5));
+    TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(3, 2, 0x6C, data, sizeof(data), out, 4));
+    // Parse guards: null frame, null out, short frame, and an SD2 with LE < 3.
+    PbTelegram tg;
+    TEST_ASSERT_FALSE(detws_pb_parse(nullptr, 6, &tg));
+    TEST_ASSERT_FALSE(detws_pb_parse(out, 6, nullptr));
+    TEST_ASSERT_FALSE(detws_pb_parse(out, 3, &tg));
+    const uint8_t bad_sd2[9] = {PB_SD2, 0x02, 0x02, PB_SD2, 1, 2, 3, 4, 5}; // LE=2 (< 3)
+    TEST_ASSERT_FALSE(detws_pb_parse(bad_sd2, sizeof(bad_sd2), &tg));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -82,5 +99,6 @@ int main(void)
     RUN_TEST(test_sd1);
     RUN_TEST(test_sd2_roundtrip);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_build_and_parse_guard_subconditions);
     return UNITY_END();
 }
