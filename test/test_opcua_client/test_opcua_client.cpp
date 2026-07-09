@@ -499,6 +499,69 @@ void test_response_parsers_reject_negative_count()
     TEST_ASSERT_EQUAL_INT32(-1, opcua_client_on_browse(resp, n, refs, 1));
 }
 
+// Build an OPN response frame with a controllable SecurityPolicyUri length, body TypeId, and whether
+// a ResponseHeader follows - to drive on_open's skip/guard paths.
+static size_t build_opn(uint8_t *out, size_t cap, uint32_t type_id, int32_t policy_len, bool with_rh)
+{
+    UaWriter w = {out, cap, 0, true};
+    ua_w_u8(&w, 'O');
+    ua_w_u8(&w, 'P');
+    ua_w_u8(&w, 'N');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0); // size placeholder
+    ua_w_u32(&w, 0); // SecureChannelId
+    ua_w_i32(&w, policy_len);
+    for (int32_t i = 0; i < policy_len; i++)
+        ua_w_u8(&w, 'x'); // SecurityPolicyUri bytes
+    ua_w_i32(&w, -1);     // SenderCertificate (null)
+    ua_w_i32(&w, -1);     // ReceiverCertificateThumbprint (null)
+    ua_w_u32(&w, 0);      // SequenceNumber
+    ua_w_u32(&w, 0);      // RequestId
+    ua_w_nodeid_numeric(&w, 0, type_id);
+    if (with_rh)
+    {
+        ua_w_u64(&w, 0);
+        ua_w_u32(&w, 0);
+        ua_w_u32(&w, OPCUA_STATUS_GOOD);
+        ua_w_u8(&w, 0);
+        ua_w_i32(&w, 0);
+        ua_w_nodeid_numeric(&w, 0, 0);
+        ua_w_u8(&w, 0);
+    }
+    out[4] = (uint8_t)w.n;
+    out[5] = (uint8_t)(w.n >> 8);
+    out[6] = (uint8_t)(w.n >> 16);
+    out[7] = (uint8_t)(w.n >> 24);
+    return w.ok ? w.n : 0;
+}
+
+void test_on_open_guards()
+{
+    OpcUaClient c;
+    opcua_client_init(&c);
+    uint8_t buf[128];
+    // Non-empty SecurityPolicyUri exercises the cr_skip_string skip; then the missing ResponseHeader
+    // underruns the reader -> parse fails.
+    size_t n = build_opn(buf, sizeof(buf), OPCUA_ID_OPEN_RESP, 10, false);
+    TEST_ASSERT_FALSE(opcua_client_on_open(&c, buf, n));
+    // A wrong body TypeId is rejected.
+    n = build_opn(buf, sizeof(buf), 999, 0, true);
+    TEST_ASSERT_FALSE(opcua_client_on_open(&c, buf, n));
+    // A SecurityPolicyUri length larger than the frame overflows cr_skip.
+    uint8_t ovf[16];
+    UaWriter w = {ovf, sizeof(ovf), 0, true};
+    ua_w_u8(&w, 'O');
+    ua_w_u8(&w, 'P');
+    ua_w_u8(&w, 'N');
+    ua_w_u8(&w, 'F');
+    ua_w_u32(&w, 0);
+    ua_w_u32(&w, 0);       // SecureChannelId
+    ua_w_i32(&w, 1000000); // SecurityPolicyUri length far past the frame
+    ovf[4] = (uint8_t)w.n;
+    ovf[5] = ovf[6] = ovf[7] = 0;
+    TEST_ASSERT_FALSE(opcua_client_on_open(&c, ovf, w.n));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -519,5 +582,6 @@ int main()
     RUN_TEST(test_builder_overflow_guard);
     RUN_TEST(test_on_read_unknown_variant_rejected);
     RUN_TEST(test_response_parsers_reject_negative_count);
+    RUN_TEST(test_on_open_guards);
     return UNITY_END();
 }
