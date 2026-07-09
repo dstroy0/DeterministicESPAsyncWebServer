@@ -6,12 +6,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`cb21ec5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb21ec5f4d68a114110c5cc0e01423110abc631f))
 - prepend a summary to release notes + publish to PlatformIO on tag ([`88d0f11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88d0f111984ef2c1d1de247ebdfa7f6e9729d275))
 - update CHANGELOG.md [skip ci] ([`81caacf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81caacf4d1da65f8b84c85810f931842a067d01d))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f1ad5a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1ad5a7bfceda4c399409fb481c60902af6675e9))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5ec4642`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ec4642b3bdce4d624f0d4a15fae24d3fcf2613a))
+
+### Testing
+
+- regenerate platformio.ini + test/README.md for the mtconnect matrix desc ([`89edcfd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89edcfd62763e386fb3969f6e447fe0bfc56de43))
 
 ## [5.63.0] - 2026-07-09
 
