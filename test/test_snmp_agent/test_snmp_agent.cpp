@@ -708,6 +708,16 @@ void test_snmp_dispatch_varbind_guards()
     TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, n, false, true, tiny, sizeof(tiny)) > 0);
 }
 
+// A request OID that extends a registered OID (longer, shared prefix) drives oid_cmp's an<bn branch.
+void test_snmp_oid_cmp_request_longer()
+{
+    uint8_t req[256], resp[256];
+    static const uint32_t OID_LONGER[] = {1, 3, 6, 1, 2, 1, 1, 1, 0, 7}; // sysDescr.0 + an extra arc
+    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 1, 0, 0, OID_LONGER, 10, nullptr);
+    TEST_ASSERT_TRUE(rl > 0);
+    TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -738,5 +748,6 @@ int main()
     RUN_TEST(test_udp_handler_via_inject);
     RUN_TEST(test_malformed_message_guards);
     RUN_TEST(test_snmp_dispatch_varbind_guards);
+    RUN_TEST(test_snmp_oid_cmp_request_longer);
     return UNITY_END();
 }
