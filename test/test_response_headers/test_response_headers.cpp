@@ -252,9 +252,11 @@ void test_ntp_host_seam_accessors()
     detws_ntp_set_test_epoch(0);
     TEST_ASSERT_FALSE(detws_ntp_synced());
     TEST_ASSERT_EQUAL_INT(0, (long)detws_ntp_epoch());
+    TEST_ASSERT_EQUAL_UINT32(0, ntp_time_source()); // registry adapter: 0 when unsynced
     detws_ntp_set_test_epoch(784111777);
     TEST_ASSERT_TRUE(detws_ntp_synced());
     TEST_ASSERT_EQUAL_INT(784111777, (long)detws_ntp_epoch());
+    TEST_ASSERT_EQUAL_UINT32(784111777, ntp_time_source()); // registry adapter mirrors the epoch
     // http_date guards: null out / zero cap both return 0 without writing.
     char buf[40];
     TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(nullptr, sizeof(buf)));

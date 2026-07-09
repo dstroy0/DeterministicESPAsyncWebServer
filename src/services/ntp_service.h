@@ -62,6 +62,15 @@ time_t detws_ntp_epoch();
  */
 size_t detws_ntp_http_date(char *out, size_t out_cap);
 
+/**
+ * @brief NTP as a time source for the multi-source registry (services/time_source).
+ *
+ * Register with detws_time_source_add("ntp", priority, ntp_time_source) so the aggregated
+ * detws_time_now() (and thus the HTTP `Date` header when DETWS_ENABLE_TIME_SOURCE is set) can
+ * be fed by NTP alongside an RTC / GPS. Returns the current epoch, or 0 when not synced.
+ */
+uint32_t ntp_time_source(void);
+
 #if !defined(ARDUINO)
 /**
  * @brief Host-only test seam: inject a wall-clock epoch so time-dependent paths

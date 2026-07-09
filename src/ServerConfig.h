@@ -2173,10 +2173,13 @@
  *
  * Default off: a clock-less device must not emit a wrong `Date`, and most embedded
  * responses do not need one, so it stays off the hot path. When set, every dynamic
- * response carries `Date: <IMF-fixdate>` - but only once a real time exists
- * (`detws_ntp_http_date()` returns non-empty, i.e. NTP has synced); before sync, or
- * with no time source, it is silently omitted (still correct for a clock-less boot).
- * Needs a time source (e.g. DETWS_ENABLE_NTP) to ever emit.
+ * response carries `Date: <IMF-fixdate>` - but only once a real time exists; before a
+ * source has valid time it is silently omitted (still correct for a clock-less boot).
+ *
+ * The time is taken from the multi-source registry (any enabled NTP / GPS / RTC / ...
+ * by priority) when DETWS_ENABLE_TIME_SOURCE is set - register your sources with
+ * detws_time_source_add() (rtc_time_source, ntp_time_source, ...). Otherwise it comes
+ * straight from NTP (detws_ntp_http_date). Needs at least one such time source to emit.
  */
 #ifndef DETWS_HTTP_EMIT_DATE
 #define DETWS_HTTP_EMIT_DATE 0

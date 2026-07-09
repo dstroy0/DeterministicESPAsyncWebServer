@@ -9,6 +9,7 @@
  */
 
 #include "time_source.h"
+#include "shared_primitives/http_date.h" // detws_http_date() - the shared IMF-fixdate formatter
 
 #if DETWS_ENABLE_TIME_SOURCE
 
@@ -114,3 +115,11 @@ void detws_time_source_reset(void)
 }
 
 #endif // DETWS_ENABLE_TIME_SOURCE
+
+// The current best time (detws_time_now, any registered NTP / GPS / RTC / ... source) as an RFC 7231
+// IMF-fixdate. Defined unconditionally: with the registry disabled detws_time_now() is 0, so this
+// returns 0 (no Date). Lets the HTTP Date header draw from whatever time source is enabled.
+size_t detws_time_http_date(char *out, size_t out_cap)
+{
+    return detws_http_date((time_t)detws_time_now(), out, out_cap);
+}

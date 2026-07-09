@@ -7,6 +7,7 @@
  */
 
 #include "ntp_service.h"
+#include "shared_primitives/http_date.h" // detws_http_date() - the shared IMF-fixdate formatter
 
 #if DETWS_ENABLE_NTP && defined(ARDUINO)
 
@@ -36,18 +37,7 @@ time_t detws_ntp_epoch()
 
 size_t detws_ntp_http_date(char *out, size_t out_cap)
 {
-    if (!out || out_cap == 0)
-        return 0;
-    time_t now = detws_ntp_epoch();
-    if (now == 0)
-    {
-        out[0] = '\0';
-        return 0;
-    }
-    struct tm gmt;
-    gmtime_r(&now, &gmt);
-    // RFC 7231 §7.1.1.1 IMF-fixdate, always GMT.
-    return strftime(out, out_cap, "%a, %d %b %Y %H:%M:%S GMT", &gmt);
+    return detws_http_date(detws_ntp_epoch(), out, out_cap);
 }
 
 #else
@@ -87,20 +77,15 @@ time_t detws_ntp_epoch()
 }
 size_t detws_ntp_http_date(char *out, size_t out_cap)
 {
-    if (!out || out_cap == 0)
-        return 0;
-    if (s_ntp_svc.host_test_epoch == 0)
-    {
-        out[0] = '\0';
-        return 0;
-    }
-    struct tm tmv; // reentrant: gmtime_r, never the shared static buffer (worker-safe)
-    if (!gmtime_r(&s_ntp_svc.host_test_epoch, &tmv))
-    {
-        out[0] = '\0';
-        return 0;
-    }
-    return strftime(out, out_cap, "%a, %d %b %Y %H:%M:%S GMT", &tmv); // RFC 7231 IMF-fixdate
+    return detws_http_date(detws_ntp_epoch(), out, out_cap);
 }
 
 #endif // DETWS_ENABLE_NTP && ARDUINO
+
+// NTP as a registry time source (defined for both the device and host builds; detws_ntp_epoch is 0
+// until synced / when no test epoch is injected). Register it with detws_time_source_add() so the
+// aggregated detws_time_now() - and the HTTP Date header - can be fed by NTP alongside an RTC / GPS.
+uint32_t ntp_time_source(void)
+{
+    return (uint32_t)detws_ntp_epoch();
+}

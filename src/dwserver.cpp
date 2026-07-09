@@ -79,7 +79,11 @@
 #include "network_drivers/application/web_assets.h" // DETWS_METRICS_PROM / DETWS_STATS_JSON (generated)
 #endif
 #if DETWS_HTTP_EMIT_DATE
-#include "services/ntp_service.h" // detws_ntp_http_date() for the optional Date header
+#if DETWS_ENABLE_TIME_SOURCE
+#include "services/time_source/time_source.h" // detws_time_http_date() - any NTP/GPS/RTC/... source
+#else
+#include "services/ntp_service.h" // detws_ntp_http_date() - direct NTP (or the host test seam)
+#endif
 #endif
 #include <stdarg.h>
 #include <stdio.h>
@@ -419,11 +423,17 @@ int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t s
     if ((size_t)hlen >= cap)
         return (int)cap - 1; // status line already filled the buffer (truncated); clamp in-bounds
 #if DETWS_HTTP_EMIT_DATE
-    // RFC 7231 7.1.1.2: emit Date only when a real wall-clock time exists; a
-    // clock-less device (or one whose NTP has not synced yet) omits it.
+    // RFC 7231 7.1.1.2: emit Date only when a real wall-clock time exists; a clock-less device (no
+    // synced/valid time source yet) omits it. The time comes from the multi-source registry (any
+    // enabled NTP / GPS / RTC / ... by priority) when DETWS_ENABLE_TIME_SOURCE is set, else straight
+    // from NTP.
     char date_hdr[48] = "";
     char imf[40];
+#if DETWS_ENABLE_TIME_SOURCE
+    if (detws_time_http_date(imf, sizeof(imf)) > 0)
+#else
     if (detws_ntp_http_date(imf, sizeof(imf)) > 0)
+#endif
         snprintf(date_hdr, sizeof(date_hdr), "Date: %s\r\n", imf);
 #else
     const char *date_hdr = "";

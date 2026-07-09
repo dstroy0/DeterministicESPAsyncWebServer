@@ -123,6 +123,20 @@ void test_reset_clears_sources()
     TEST_ASSERT_NULL(detws_time_source_active());
 }
 
+void test_http_date_from_active_source()
+{
+    // The HTTP Date header draws from the registry: no valid source -> nothing; a source with a
+    // valid epoch -> the RFC 7231 IMF-fixdate for it. Null out / zero cap are rejected.
+    char buf[40];
+    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(buf, sizeof(buf)));
+    detws_time_source_add("rtc", 0, rtc_fn);
+    g_rtc = 784111777; // Sun, 06 Nov 1994 08:49:37 GMT
+    TEST_ASSERT_TRUE(detws_time_http_date(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:49:37 GMT", buf);
+    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(buf, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -135,5 +149,6 @@ int main()
     RUN_TEST(test_table_full_rejects);
     RUN_TEST(test_null_fn_rejected);
     RUN_TEST(test_reset_clears_sources);
+    RUN_TEST(test_http_date_from_active_source);
     return UNITY_END();
 }
