@@ -11,6 +11,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
+#include "network_drivers/session/scratch.h"
 #include "network_drivers/transport/tcp.h"
 #include <stdint.h>
 #include <string.h>
@@ -308,9 +309,83 @@ void test_rx_overlong_banner_closes()
     TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot); // slot released
 }
 
+static void drain_arena()
+{
+    scratch_reset();
+    while (scratch_alloc(256, 1))
+    {
+    }
+}
+
+// Every outbound SSH function fails closed when the shared scratch arena is exhausted:
+// the wire/payload borrow returns null and the message is dropped.
+void test_conn_outbound_arena_exhausted()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_chan[j][0].open = true;
+    ssh_chan[j][0].local_id = 0;
+    ssh_chan[j][0].peer_id = 1;
+    ssh_chan[j][0].peer_window = 100000;
+    ssh_chan[j][0].peer_max_pkt = 100000;
+    const uint8_t data[3] = {1, 2, 3};
+
+    drain_arena();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data)));     // payload/wire alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));                // wire alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1)); // payload/wire alloc fails
+    scratch_reset();
+}
+
+// Every outbound SSH function fails closed when the packet layer refuses to send (the send
+// sequence number has reached the close threshold, RFC 4253 rekey/overflow guard).
+void test_conn_outbound_pkt_send_fails()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_chan[j][0].open = true;
+    ssh_chan[j][0].local_id = 0;
+    ssh_chan[j][0].peer_id = 1;
+    ssh_chan[j][0].peer_window = 100000;
+    ssh_chan[j][0].peer_max_pkt = 100000;
+    ssh_pkt[j].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD;
+    const uint8_t data[3] = {1, 2, 3};
+
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data))); // build_data ok, pkt_send fails
+    ssh_chan[j][0].open = true;                                         // still open for the close
+    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));            // build_close ok, pkt_send fails
+    ssh_chan[j][0].open = false;                                        // free the slot for a forwarded open
+    TEST_ASSERT_EQUAL_INT(-1,
+                          ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000)); // open ok, pkt_send fails
+}
+
+// The poll-driven server re-key emits via ssh_emit, which fails closed when the packet
+// layer refuses (sequence threshold) and when the arena is exhausted.
+void test_poll_rekey_emit_fails()
+{
+    ssh_conn_accept(0);
+    uint8_t j = conn_pool[0].proto_slot;
+    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_pkt[j].kex_active = false;
+    ssh_sess[j].last_kex_ms = 0;
+    ssh_pkt[j].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD; // rekey due; ssh_emit's pkt_send then fails
+    ssh_conn_poll(0);
+
+    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_pkt[j].kex_active = false;
+    ssh_pkt[j].seq_no_send = SSH_REKEY_PACKET_THRESHOLD; // rekey due; ssh_emit's arena borrow then fails
+    drain_arena();
+    ssh_conn_poll(0);
+    scratch_reset();
+    TEST_PASS();
+}
+
 int main()
 {
     UNITY_BEGIN();
+    RUN_TEST(test_conn_outbound_arena_exhausted);
+    RUN_TEST(test_conn_outbound_pkt_send_fails);
+    RUN_TEST(test_poll_rekey_emit_fails);
     RUN_TEST(test_accept_sends_server_banner);
     RUN_TEST(test_banner_then_kexinit_advances_and_replies);
     RUN_TEST(test_poll_triggers_server_rekey);
