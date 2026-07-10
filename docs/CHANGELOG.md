@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`8d1b066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d1b0662b5c44ad050d4dede990905a83b7b1d2f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`a20d0e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a20d0e45320c7dfc15fb0112dd1f386a6a949e69))
+
+### Testing
+
+- add RFC 8032 Ed25519 sign vectors (host-key signing path) ([`e29c2ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e29c2ac1f61f72b1791eb453db09a364b684a1a9))
+
 ## [5.81.2] - 2026-07-10
 
 <details>
