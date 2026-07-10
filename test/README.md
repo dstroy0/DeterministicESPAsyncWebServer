@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2856 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2860 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23917,7 +23917,7 @@ A thorough directory of all **2856 test cases** across **241 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (15 tests)</b></summary>
+<summary><b>test_smb2 (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -24151,6 +24151,69 @@ A thorough directory of all **2856 test cases** across **241 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX64(0x4000ULL, r.end_of_file);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x80, r.file_attributes);</code>
       * <code>Assert false (smb2_parse_close_response(bad, 64 + 60, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read</b> &mdash; <i>Build read</i></summary>
+
+    * **Objective**: Build read
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 48 + 1, n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_READ, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));                                   // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(80, b[2]);                                           // Padding = header + 16</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x10000, r32(b + 4));                              // Length</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x1000ULL, r64(b + 8));                             // Offset</code>
+      * <code>Assert equal memory (fid, b + 16, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, r32(b + 32));                                   // MinimumCount</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_read(buf, 100, 5, 0, 0, fid, 1, 0)); // overflow</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_read_response</b> &mdash; <i>empty read (EOF) -> nullptr, still valid</i></summary>
+
+    * **Objective**: empty read (EOF) -> nullptr, still valid
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_read_response(m, n, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), r.data_len);</code>
+      * <code>Assert equal memory (data, r.data, sizeof(data))</code>
+      * <code>Assert true (smb2_parse_read_response(m, n, &r))</code>
+      * <code>Assert null (r.data)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, r.data_len);</code>
+      * <code>Assert false (smb2_parse_read_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_read_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_read_response(m, 70, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write</b> &mdash; <i>Build write</i></summary>
+
+    * **Objective**: Build write
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 48 + sizeof(data), n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_WRITE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));           // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(112, r16(b + 2));          // DataOffset</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), r32(b + 4)); // Length</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x800ULL, r64(b + 8));      // Offset</code>
+      * <code>Assert equal memory (fid, b + 16, 16)</code>
+      * <code>Assert equal memory (data, buf + 112, sizeof(data))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_write(buf, 100, 6, 0, 0, fid, data, sizeof(data), 0)); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, data, 0, 0));    // empty data</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_write_response</b> &mdash; <i>Parse write response</i></summary>
+
+    * **Objective**: Parse write response
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_write_response(m, 64 + 16, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4096, r.count);</code>
+      * <code>Assert false (smb2_parse_write_response(bad, 64 + 16, &r))</code>
+      * <code>Assert false (smb2_parse_write_response(m, 70, &r))</code>
   </details>
 
 </details>
