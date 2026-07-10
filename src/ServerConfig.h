@@ -2980,17 +2980,29 @@
 #endif
 
 /**
- * @brief Opt-in SMB2 client wire codec (DETWS_ENABLE_SMB).
+ * @brief Opt-in SMB2 client (DETWS_ENABLE_SMB).
  *
- * services/smb is the pure wire layer of an SMB2 client (MS-SMB2) so a device can read/write files
- * on a Windows share - e.g. a CNC controller's program store. Increment 1: the Direct-TCP transport
- * frame, the 64-byte SMB2 sync header (build/parse), and the NEGOTIATE exchange (offer a dialect
- * list, parse the chosen dialect + server GUID + max sizes + the SPNEGO/NTLM security token). All
- * little-endian; you own the TCP socket. NTLM auth (SESSION_SETUP) + the file commands are later
- * increments. Host-tested. Default off.
+ * services/smb is an SMB2 client (MS-SMB2) so a device can read/write files on a Windows share -
+ * e.g. a CNC controller's program store. The full read/write-a-file path: the Direct-TCP transport
+ * frame + SMB2 sync header, NEGOTIATE, the two-round NTLMv2 SESSION_SETUP (NTLM digests MD4/MD5/
+ * HMAC-MD5, the NTLMv2 response, the NTLMSSP messages, SPNEGO wrapping), TREE_CONNECT, CREATE, READ,
+ * WRITE, and CLOSE. smb_client ties the codecs into the exchange over a send/recv seam (host-tested
+ * with a scripted mock server); you own the TCP socket (det_client). All little-endian. Default off.
  */
 #ifndef DETWS_ENABLE_SMB
 #define DETWS_ENABLE_SMB 0
+#endif
+
+/**
+ * @brief SMB2 client work-buffer size (bytes) for smb_client's request/response framing.
+ *
+ * Two buffers of this size live on the stack during a call, plus a few half-size scratch buffers for
+ * the NTLM auth tokens, so the engine needs roughly 4x this in stack. 1024 covers the NEGOTIATE ->
+ * SESSION_SETUP -> TREE_CONNECT -> CREATE handshake; raise it if a server's SPNEGO/target-info token
+ * or your share path is unusually large.
+ */
+#ifndef DETWS_SMB_BUF
+#define DETWS_SMB_BUF 1024
 #endif
 
 /**

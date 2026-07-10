@@ -239,7 +239,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego`, `test_smb_client` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE, SESSION_SETUP, TREE_CONNECT/CREATE/CLOSE/READ/WRITE); the NTLM digests MD4 (RFC 1320) / MD5... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2860 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2866 test cases** across **242 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24214,6 +24214,69 @@ A thorough directory of all **2860 test cases** across **241 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(4096, r.count);</code>
       * <code>Assert false (smb2_parse_write_response(bad, 64 + 16, &r))</code>
       * <code>Assert false (smb2_parse_write_response(m, 70, &r))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_smb_client (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
+
+    * **Objective**: NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests
+    * **Assertions**:
+      * <code>Assert equal int (SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(m.session_id, h.session_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(m.tree_id, h.tree_id);</code>
+      * <code>Assert equal memory (m.file_id, h.file_id, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(4096, h.file_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(5, h.next_message_id);</code>
+      * <code>Assert equal int (5, m.req_count)</code>
+      * <code>Assert equal int (SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(6, h.next_message_id);</code>
+      * <code>Assert equal int (6, m.req_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_auth_failure</b> &mdash; <i>Auth failure</i></summary>
+
+    * **Objective**: Auth failure
+    * **Assertions**:
+      * <code>Assert equal int (SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bad_share</b> &mdash; <i>Bad share</i></summary>
+
+    * **Objective**: Bad share
+    * **Assertions**:
+      * <code>Assert equal int (SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_not_found</b> &mdash; <i>Create not found</i></summary>
+
+    * **Objective**: Create not found
+    * **Assertions**:
+      * <code>Assert equal int (SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_error</b> &mdash; <i>Io error</i></summary>
+
+    * **Objective**: Io error
+    * **Assertions**:
+      * <code>Assert equal int (SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_arg_validation</b> &mdash; <i>Arg validation</i></summary>
+
+    * **Objective**: Arg validation
+    * **Assertions**:
+      * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
 </details>

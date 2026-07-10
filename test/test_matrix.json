@@ -1005,21 +1005,23 @@
       "tests": ["test_syslog"]
     },
     "native_smb": {
-      "desc": "SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame,\nsync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC\n2104) KAT-verified vs the RFC vectors; the NTLMv2 response computation (NThash / NTOWFv2\n/ NTProofStr / SessionBaseKey) verified against the MS-NLMP section 4.2 worked example; the\nNTLMSSP message codec (NEGOTIATE/CHALLENGE/AUTHENTICATE); and the SPNEGO GSS-API DER wrapping\n(RFC 4178) verified byte-exact + round-trip. Pure host tests.",
+      "desc": "SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame,\nsync header, NEGOTIATE, SESSION_SETUP, TREE_CONNECT/CREATE/CLOSE/READ/WRITE); the NTLM digests\nMD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the RFC vectors; the\nNTLMv2 response (NThash / NTOWFv2 / NTProofStr / SessionBaseKey) vs the MS-NLMP section 4.2\nworked example; the NTLMSSP message codec; the SPNEGO GSS-API DER wrapping (RFC 4178) verified\nbyte-exact + independently vs openssl; and the smb_client dialogue engine (the full NEGOTIATE\n-> NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE -> CLOSE handshake) driven by a scripted mock\nSMB2 server over a send/recv seam. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_SMB=1"],
       "src": [
         "+<services/smb/smb2.cpp>",
         "+<services/smb/smb_md.cpp>",
         "+<services/smb/ntlm.cpp>",
         "+<services/smb/ntlmssp.cpp>",
-        "+<services/smb/spnego.cpp>"
+        "+<services/smb/spnego.cpp>",
+        "+<services/smb/smb_client.cpp>"
       ],
       "tests": [
         "test_smb2",
         "test_smb_crypto",
         "test_ntlm",
         "test_ntlmssp",
-        "test_spnego"
+        "test_spnego",
+        "test_smb_client"
       ]
     },
     "native_smtp": {
