@@ -110,10 +110,11 @@ layer built first, then the store codecs on top. Substrate before stores.
       ESP32-S3 numbers for WAL / dbm / docstore / SQLite / RESP (`perf/bench_datastore.cpp`). _Remaining:_
       the base64 / mtconnect on-device column (section 2), and whole request-paths (section 3: HTTP
       parse, TLS handshake, JSON render).
-- [ ] **WAL CRC-32 is CRC-bound on-device (~4.4 MB/s), the WAL write bottleneck.** Replace the table-less
-      bit-by-bit CRC with a table-driven CRC-32 (or the ESP32 ROM `crc32_le`); measured to dominate
-      `record_encode` / `store_append` / dbm `put` (see FEATURE_PERFORMANCE section 4). Guarded by the
-      existing CRC-32 check-vector test.
+- [x] **WAL CRC-32 was CRC-bound on-device.** _(done)_ Replaced the table-less bit-by-bit CRC with a
+      byte-table CRC-32 (1 KiB rodata). Measured **~3.6x faster** on the ESP32-S3 (231 -> 64 us/KiB,
+      ~4.4 -> ~15.9 MB/s), roughly halving `record_encode` / `store_append` / dbm `put`; same 3.6x on the
+      host. Byte-identical output (the CRC-32 check-vector `0xCBF43926` and all wal/dbm/docstore tests
+      still pass). See FEATURE_PERFORMANCE section 4.
 - [ ] **`resp_encode_command` is ~20 us on-device** because it formats length prefixes with `snprintf`;
       replace with a hand-rolled integer format.
 

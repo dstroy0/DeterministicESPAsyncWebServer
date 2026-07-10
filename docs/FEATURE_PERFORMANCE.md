@@ -157,34 +157,36 @@ RESP), measured over a **RAM-backed device** so this is pure compute, not I/O. H
 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real device at 240 MHz (`perf/bench_datastore.cpp`
 on the host, the same benches in an on-device firmware for the ESP32-S3 column).
 
+The CRC-32 is now **table-driven** (a device-motivated optimization this benchmark drove - see below);
+numbers below are post-optimization.
+
 | Feature  | Operation               | Host ns/op | ESP32-S3 us/op |
 | -------- | ----------------------- | ---------: | -------------: |
-| wal      | crc32 (1 KiB)           |    10672.3 |        231.672 |
-| wal      | record_encode (128 B)   |     1510.0 |         34.483 |
-| wal      | store_append (64 B)     |      871.1 |         20.820 |
-| wal      | store_checkpoint        |      325.4 |         10.739 |
-| dbm      | put (16 B key/64 B val) |      392.7 |         26.485 |
-| dbm      | get                     |       32.4 |          2.066 |
-| docstore | find_str (scan 100)     |     8914.3 |        443.617 |
-| docstore | -> per doc scanned      |       89.1 |          4.436 |
+| wal      | crc32 (1 KiB)           |     2975.5 |         64.483 |
+| wal      | record_encode (128 B)   |      429.9 |         10.974 |
+| wal      | store_append (64 B)     |      274.3 |          7.758 |
+| wal      | store_checkpoint        |      111.0 |          6.165 |
+| dbm      | put (16 B key/64 B val) |      153.9 |         11.298 |
+| dbm      | get                     |       32.5 |          2.066 |
+| docstore | find_str (scan 100)     |     8962.8 |        443.618 |
+| docstore | -> per doc scanned      |       89.6 |          4.436 |
 | sqlite   | varint_decode           |        5.0 |          0.301 |
-| sqlite   | table scan (40 rows)    |     1486.0 |        127.239 |
-| sqlite   | -> per row (+ columns)  |       37.1 |          3.181 |
-| resp     | encode_command (3 args) |      327.7 |         19.864 |
-| resp     | parse bulk reply        |       13.3 |          1.026 |
+| sqlite   | table scan (40 rows)    |     1500.0 |        127.239 |
+| sqlite   | -> per row (+ columns)  |       37.5 |          3.181 |
+| resp     | encode_command (3 args) |      328.9 |         19.864 |
+| resp     | parse bulk reply        |       13.4 |          1.026 |
 
-**Reads are cheap on the device; the WAL write path is CRC-bound.** A dbm `get` is ~2 us, a SQLite row
-(with its columns) ~3.2 us, a RESP reply parse ~1 us, a `docstore` field scan ~4.4 us per document - all
-comfortably faster than any flash access, so durable reads/queries are I/O-bound. The write path is
-different on real hardware: the **table-less CRC-32 runs at only ~4.4 MB/s on the ESP32-S3** (231 us/KiB,
-vs ~96 MB/s on the host), and `record_encode` / `store_append` / dbm `put` are essentially their CRC cost.
-That 4.4 MB/s is only ~3x the ~1.5 MB/s durable SD write rate (section 1) - so on the device the CRC is
-_close_ to mattering, where on the host (60x headroom) it never does. It is still not the ceiling for
-durable writes (the SD card's ~40-100 IOPS and 100+ ms write tail dominate, which is why the layer batches
-and checkpoints in bulk), but for a **buffered / PSRAM / LittleFS** backing store the CRC would become the
-limit. A second device-only cost: `resp_encode_command` is ~20 us because it formats length prefixes with
-`snprintf` - a hand-rolled decimal would cut that sharply.
+**Reads are cheap; the write path is CRC-bound, so the CRC was made table-driven.** A dbm `get` is ~2 us
+on the device, a SQLite row (with its columns) ~3.2 us, a RESP reply parse ~1 us, a `docstore` field scan
+~4.4 us per document - all comfortably faster than any flash access, so durable reads/queries are
+I/O-bound. The write path is `record_encode` / `store_append` / dbm `put`, and these are dominated by the
+CRC over the record. The **first on-device run exposed the table-less CRC-32 as the bottleneck at only
+~4.4 MB/s** (231 us/KiB) - just ~3x the ~1.5 MB/s durable SD rate, close enough to matter. Switching to a
+byte-table CRC (1 KiB of rodata) **cut it ~3.6x to ~15.9 MB/s** (64 us/KiB), which roughly halved
+`record_encode`, `store_append`, and dbm `put`; the CRC is now ~10x the SD rate, back to comfortable
+I/O-bound territory (the SD card's ~40-100 IOPS and 100+ ms write tail set the real ceiling, which is why
+the layer batches and checkpoints in bulk). The host saw the same 3.6x (96 -> 344 MB/s), a nice example of
+a fix that only the on-device number motivated - the host had 60x headroom and never showed the problem.
 
-_Follow-ups (device-motivated): a **table-driven or ESP32 ROM `crc32_le`** CRC (the WAL write path is
-CRC-bound at ~4.4 MB/s on-device); and replacing `snprintf` in `resp_encode_command` with a hand-rolled
-integer format._
+_Remaining device-only cost: `resp_encode_command` is ~20 us because it formats length prefixes with
+`snprintf`; a hand-rolled decimal would cut that sharply (tracked in TODO)._
