@@ -17,8 +17,9 @@
  * §2.2.4 response): the client offers a dialect list, the server picks one and returns the SPNEGO
  * security token that seeds authentication.
  *
- * Roadmap (later increments): NTLM crypto (MD4/MD5/HMAC-MD5) + SESSION_SETUP, then TREE_CONNECT /
- * CREATE / READ / WRITE / CLOSE. Increment 1 needs no crypto.
+ * Shipped: the NEGOTIATE exchange; the NTLM crypto (smb_md / ntlm / ntlmssp); the SPNEGO wrapping
+ * (spnego); and (this file) the SESSION_SETUP request/response framing that carries those tokens.
+ * Roadmap (later increments): TREE_CONNECT / CREATE / READ / WRITE / CLOSE.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -64,6 +65,21 @@ enum
     SMB2_NEGOTIATE_SIGNING_REQUIRED = 0x0002,
     SMB2_FLAGS_SERVER_TO_REDIR = 0x00000001, ///< set on a response (server -> client)
     SMB2_HEADER_SIZE = 64,
+};
+
+/** @brief SESSION_SETUP response SessionFlags (MS-SMB2 §2.2.6). */
+enum
+{
+    SMB2_SESSION_FLAG_IS_GUEST = 0x0001,
+    SMB2_SESSION_FLAG_IS_NULL = 0x0002,
+    SMB2_SESSION_FLAG_ENCRYPT_DATA = 0x0004,
+};
+
+/** @brief NT status values seen in the SMB2 header during the SESSION_SETUP exchange. */
+enum
+{
+    SMB2_STATUS_SUCCESS = 0x00000000,
+    SMB2_STATUS_MORE_PROCESSING_REQUIRED = 0xC0000016, ///< server wants the next SESSION_SETUP round
 };
 
 /** @brief Parsed SMB2 sync header. */
@@ -137,6 +153,43 @@ size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[
  *         into @p msg (or is nullptr when SecurityBufferLength is 0).
  */
 bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2NegotiateResp *out);
+
+/** @brief Parsed SESSION_SETUP response (MS-SMB2 §2.2.6). */
+struct Smb2SessionSetupResp
+{
+    uint16_t session_flags;
+    const uint8_t *sec_buf; ///< the server's SPNEGO/NTLM token (points into @p msg), or nullptr
+    uint16_t sec_buf_len;
+};
+
+/**
+ * @brief Build a SESSION_SETUP request (header + §2.2.5 body) carrying a security token.
+ *
+ * The token is the SPNEGO/NTLMSSP blob for this round of the handshake: the InitialContextToken on
+ * the first request, and (echoing the SessionId the server returned) the AUTHENTICATE NegTokenResp
+ * on the second. Capabilities / Channel / PreviousSessionId are 0 (a plain new session).
+ *
+ * @param message_id    the SMB2 MessageId (increments across the exchange).
+ * @param session_id    0 on the first round; the server-assigned SessionId on the second.
+ * @param security_mode SMB2_NEGOTIATE_SIGNING_ENABLED and/or _REQUIRED (one byte on the wire).
+ * @return total message bytes (no transport prefix), or 0 on overflow / empty token.
+ */
+size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len);
+
+/**
+ * @brief Parse a SESSION_SETUP response message (the SMB2 header + §2.2.6 body).
+ *
+ * The caller reads the SessionId (to echo on the next round) and the NT status
+ * (SMB2_STATUS_MORE_PROCESSING_REQUIRED vs SMB2_STATUS_SUCCESS) from smb2_parse_header on the same
+ * @p msg; this extracts the SessionFlags and the server security buffer.
+ *
+ * @param msg the SMB2 message (starting at the sync header, transport prefix already stripped).
+ * @return true on a well-formed response (header valid, command == SESSION_SETUP, StructureSize == 9,
+ *         security buffer within bounds); false otherwise. On success @p out->sec_buf points into
+ *         @p msg (or is nullptr when SecurityBufferLength is 0).
+ */
+bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out);
 
 #endif // DETWS_ENABLE_SMB
 

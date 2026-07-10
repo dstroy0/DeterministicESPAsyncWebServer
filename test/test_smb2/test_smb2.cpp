@@ -1,11 +1,14 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the SMB2 client wire codec (services/smb, MS-SMB2 increment 1): the
-// Direct-TCP transport frame, the 64-byte sync header (build/parse), and the NEGOTIATE
-// exchange. All fields little-endian. Pure host tests against the MS-SMB2 field layout.
+// Unit tests for the SMB2 client wire codec (services/smb, MS-SMB2): the Direct-TCP transport
+// frame, the 64-byte sync header (build/parse), the NEGOTIATE exchange, and the SESSION_SETUP
+// request/response framing - including a full auth round routed through the framing (SPNEGO +
+// NTLMSSP). All fields little-endian. Pure host tests against the MS-SMB2 field layout.
 
+#include "services/smb/ntlmssp.h"
 #include "services/smb/smb2.h"
+#include "services/smb/spnego.h"
 #include <string.h>
 #include <unity.h>
 
@@ -187,6 +190,151 @@ void test_parse_negotiate_response_rejects()
     TEST_ASSERT_FALSE(smb2_parse_negotiate_response(m, 100, &r)); // truncated before the body
 }
 
+void test_build_session_setup()
+{
+    uint8_t tok[40];
+    for (int i = 0; i < 40; i++)
+        tok[i] = (uint8_t)(i + 1);
+    uint8_t buf[256];
+    size_t n =
+        smb2_build_session_setup(buf, sizeof(buf), 7, 0xDEADBEEFULL, SMB2_NEGOTIATE_SIGNING_ENABLED, tok, sizeof(tok));
+    TEST_ASSERT_EQUAL_size_t(64 + 24 + 40, n);
+
+    Smb2Header h;
+    TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_SETUP, h.command);
+    TEST_ASSERT_EQUAL_HEX64(0xDEADBEEFULL, h.session_id); // echoes the server SessionId
+    TEST_ASSERT_EQUAL_HEX64(7, h.message_id);
+
+    const uint8_t *b = buf + 64;
+    TEST_ASSERT_EQUAL_UINT16(25, r16(b + 0)); // StructureSize
+    TEST_ASSERT_EQUAL_HEX8(SMB2_NEGOTIATE_SIGNING_ENABLED, b[3]);
+    TEST_ASSERT_EQUAL_UINT16(64 + 24, r16(b + 12)); // SecurityBufferOffset = 88
+    TEST_ASSERT_EQUAL_UINT16(40, r16(b + 14));      // SecurityBufferLength
+    TEST_ASSERT_EQUAL_MEMORY(tok, buf + 88, 40);
+    // overflow + empty token fail closed
+    TEST_ASSERT_EQUAL_size_t(0, smb2_build_session_setup(buf, 100, 7, 0, 0, tok, sizeof(tok)));
+    TEST_ASSERT_EQUAL_size_t(0, smb2_build_session_setup(buf, sizeof(buf), 7, 0, 0, tok, 0));
+}
+
+// Build a well-formed SESSION_SETUP response message into m; returns its length.
+static size_t build_ss_resp(uint8_t *m, uint64_t session_id, uint32_t status, uint16_t flags, const uint8_t *sec,
+                            uint16_t sec_len)
+{
+    smb2_build_header(m, 512, SMB2_SESSION_SETUP, 1, 6, 0, session_id);
+    w32(m + 8, status); // Status (STATUS_MORE_PROCESSING_REQUIRED then SUCCESS)
+    m[16] |= 0x01;      // SMB2_FLAGS_SERVER_TO_REDIR
+    uint8_t *b = m + 64;
+    memset(b, 0, 8);
+    w16(b + 0, 9);     // StructureSize
+    w16(b + 2, flags); // SessionFlags
+    size_t total = 72; // header + 8-byte fixed body
+    uint16_t off = 0;
+    if (sec_len)
+    {
+        off = 72;
+        memcpy(m + off, sec, sec_len);
+        total = (size_t)off + sec_len;
+    }
+    w16(b + 4, off);     // SecurityBufferOffset
+    w16(b + 6, sec_len); // SecurityBufferLength
+    return total;
+}
+
+void test_parse_session_setup_response()
+{
+    const uint8_t tok[] = {0xa1, 0x05, 'c', 'h', 'a', 'l'};
+    uint8_t m[256];
+    size_t n =
+        build_ss_resp(m, 0x1234ULL, SMB2_STATUS_MORE_PROCESSING_REQUIRED, SMB2_SESSION_FLAG_IS_GUEST, tok, sizeof(tok));
+
+    Smb2Header h;
+    TEST_ASSERT_TRUE(smb2_parse_header(m, n, &h));
+    TEST_ASSERT_EQUAL_HEX32(SMB2_STATUS_MORE_PROCESSING_REQUIRED, h.status);
+    TEST_ASSERT_EQUAL_HEX64(0x1234ULL, h.session_id);
+
+    Smb2SessionSetupResp r;
+    TEST_ASSERT_TRUE(smb2_parse_session_setup_response(m, n, &r));
+    TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_FLAG_IS_GUEST, r.session_flags);
+    TEST_ASSERT_EQUAL_UINT16(sizeof(tok), r.sec_buf_len);
+    TEST_ASSERT_EQUAL_MEMORY(tok, r.sec_buf, sizeof(tok));
+
+    // the final SUCCESS round carries no security buffer -> nullptr, still valid
+    n = build_ss_resp(m, 0x1234ULL, SMB2_STATUS_SUCCESS, 0, nullptr, 0);
+    TEST_ASSERT_TRUE(smb2_parse_session_setup_response(m, n, &r));
+    TEST_ASSERT_NULL(r.sec_buf);
+    TEST_ASSERT_EQUAL_UINT16(0, r.sec_buf_len);
+}
+
+void test_session_setup_rejects()
+{
+    const uint8_t tok[] = {1, 2, 3, 4};
+    uint8_t m[256];
+    size_t n = build_ss_resp(m, 1, 0, 0, tok, sizeof(tok));
+    Smb2SessionSetupResp r;
+    uint8_t bad[256];
+
+    memcpy(bad, m, n);
+    w16(bad + 64, 8); // wrong StructureSize (must be 9)
+    TEST_ASSERT_FALSE(smb2_parse_session_setup_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 12, SMB2_READ); // wrong command
+    TEST_ASSERT_FALSE(smb2_parse_session_setup_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w16(bad + 64 + 6, 5000); // SecurityBufferLength past the message
+    TEST_ASSERT_FALSE(smb2_parse_session_setup_response(bad, n, &r));
+    TEST_ASSERT_FALSE(smb2_parse_session_setup_response(m, 68, &r)); // truncated before the body
+}
+
+// A minimal NTLMSSP CHALLENGE (server type-2) with the given server challenge and a single-EOL
+// target info, so the client can parse it out at the end of the SESSION_SETUP flow.
+static size_t build_ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
+{
+    memset(m, 0, 52);
+    const uint8_t sig[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
+    memcpy(m, sig, 8);
+    w32(m + 8, 2); // MessageType CHALLENGE
+    w32(m + 20, NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_TARGET_INFO);
+    memcpy(m + 24, sc, 8); // ServerChallenge
+    w16(m + 40, 4);        // TargetInfoLen (a lone MsvAvEOL pair)
+    w16(m + 42, 4);
+    w32(m + 44, 48); // TargetInfoBufferOffset
+    // m[48..51] = 00 00 00 00 (AvId=0, AvLen=0)
+    return 52;
+}
+
+// End to end through the SESSION_SETUP framing: the client wraps an NTLMSSP NEGOTIATE in SPNEGO and
+// frames it as a request; the server's SESSION_SETUP response carries a SPNEGO-wrapped CHALLENGE;
+// the client unwinds framing -> SPNEGO -> NTLMSSP and recovers the server challenge intact.
+void test_session_setup_spnego_flow()
+{
+    uint8_t neg[64];
+    size_t neg_n = ntlmssp_build_negotiate(neg, sizeof(neg), NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    uint8_t spnego[128];
+    size_t sp_n = spnego_wrap_negotiate(neg, neg_n, spnego, sizeof(spnego));
+    uint8_t req[256];
+    size_t req_n = smb2_build_session_setup(req, sizeof(req), 1, 0, SMB2_NEGOTIATE_SIGNING_ENABLED, spnego, sp_n);
+    TEST_ASSERT_GREATER_THAN_size_t(0, req_n);
+    TEST_ASSERT_EQUAL_MEMORY(spnego, req + 88, sp_n); // the token is framed at offset 88
+
+    const uint8_t sc[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    uint8_t chal[64];
+    size_t chal_n = build_ntlmssp_challenge(chal, sc);
+    uint8_t srv_tok[128];
+    size_t srv_n = spnego_wrap_authenticate(chal, chal_n, srv_tok, sizeof(srv_tok)); // server NegTokenResp shape
+    uint8_t resp[256];
+    size_t resp_n = build_ss_resp(resp, 0xABCDULL, SMB2_STATUS_MORE_PROCESSING_REQUIRED, 0, srv_tok, (uint16_t)srv_n);
+
+    Smb2SessionSetupResp r;
+    TEST_ASSERT_TRUE(smb2_parse_session_setup_response(resp, resp_n, &r));
+    const uint8_t *ct = nullptr;
+    size_t cl = 0;
+    TEST_ASSERT_TRUE(spnego_parse_response(r.sec_buf, r.sec_buf_len, &ct, &cl));
+    NtlmChallenge nch;
+    TEST_ASSERT_TRUE(ntlmssp_parse_challenge(ct, cl, &nch));
+    TEST_ASSERT_EQUAL_MEMORY(sc, nch.server_challenge, 8); // survived framing -> SPNEGO -> NTLMSSP
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -196,5 +344,9 @@ int main()
     RUN_TEST(test_build_negotiate);
     RUN_TEST(test_parse_negotiate_response);
     RUN_TEST(test_parse_negotiate_response_rejects);
+    RUN_TEST(test_build_session_setup);
+    RUN_TEST(test_parse_session_setup_response);
+    RUN_TEST(test_session_setup_rejects);
+    RUN_TEST(test_session_setup_spnego_flow);
     return UNITY_END();
 }

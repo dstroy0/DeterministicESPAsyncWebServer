@@ -161,4 +161,57 @@ bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2Negotiate
     return true;
 }
 
+size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                                uint8_t security_mode, const uint8_t *sec_buf, size_t sec_len)
+{
+    const size_t body = 24; // fixed SESSION_SETUP request body (§2.2.5)
+    const size_t total = SMB2_HEADER_SIZE + body + sec_len;
+    if (!buf || !sec_buf || sec_len == 0 || sec_len > 0xFFFF || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_SESSION_SETUP, 1, message_id, 0, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body);
+    wr16(b + 0, 25);      // StructureSize (fixed 24 + 1 for the variable buffer)
+    b[2] = 0;             // Flags (SMB2_SESSION_FLAG_BINDING only for 3.x channel binding)
+    b[3] = security_mode; // SecurityMode (one byte here)
+    // Capabilities (4) = 0, Channel (8) = 0
+    wr16(b + 12, (uint16_t)(SMB2_HEADER_SIZE + body)); // SecurityBufferOffset (from the header start)
+    wr16(b + 14, (uint16_t)sec_len);                   // SecurityBufferLength
+    // PreviousSessionId (16) = 0 (a fresh session)
+    memcpy(b + body, sec_buf, sec_len);
+    return total;
+}
+
+bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_SESSION_SETUP)
+        return false;
+    // The fixed response body is 8 bytes (StructureSize .. SecurityBufferLength), Buffer follows.
+    if (len < SMB2_HEADER_SIZE + 8)
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 9) // StructureSize
+        return false;
+
+    out->session_flags = rd16(b + 2);
+    uint16_t sec_off = rd16(b + 4); // SecurityBufferOffset - from the start of the SMB2 header (msg)
+    uint16_t sec_len = rd16(b + 6); // SecurityBufferLength
+    if (sec_len == 0)
+    {
+        out->sec_buf = nullptr;
+        out->sec_buf_len = 0;
+        return true;
+    }
+    if ((size_t)sec_off + sec_len > len || sec_off < SMB2_HEADER_SIZE)
+        return false; // security buffer out of bounds - fail closed
+    out->sec_buf = msg + sec_off;
+    out->sec_buf_len = sec_len;
+    return true;
+}
+
 #endif // DETWS_ENABLE_SMB

@@ -126,7 +126,7 @@ newer entry here.
 - [RFC 4918](https://www.rfc-editor.org/rfc/rfc4918) - WebDAV - **impl**.
 - [RFC 959](https://www.rfc-editor.org/rfc/rfc959) - File Transfer Protocol (FTP) - **impl** (client codec: command builders, single/multi-line reply parser, PASV address).
 - [RFC 2428](https://www.rfc-editor.org/rfc/rfc2428) - FTP Extensions for IPv6 and NATs (EPSV / EPRT) - **impl** (client codec: EPRT builder, EPSV port parser).
-- [MS-SMB2](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2) - SMB2 (Server Message Block 2) - **impl** (client wire codec, increment 1: the sync header + the NEGOTIATE exchange; SESSION_SETUP / file commands are staged).
+- [MS-SMB2](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2) - SMB2 (Server Message Block 2) - **impl** (client wire codec: the sync header, the NEGOTIATE exchange, and the SESSION_SETUP request/response framing that carries the SPNEGO tokens, §2.2.5/§2.2.6; the file commands are staged).
 - [MS-NLMP](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp) - NTLM Authentication - **impl** (the NTLMv2 response: NThash / NTOWFv2 / NTProofStr / SessionBaseKey, §3.3.2, verified vs the §4.2 worked example; plus the NTLMSSP message codec, §2.2.1: NEGOTIATE / CHALLENGE / AUTHENTICATE).
 - [RFC 4178](https://www.rfc-editor.org/rfc/rfc4178) - SPNEGO (GSS-API negotiation) - **impl** (SMB/NTLM only: the DER InitialContextToken / NegTokenResp wrapping of the NTLMSSP tokens; verified byte-exact + independently vs `openssl asn1parse`).
 - [RFC 5424](https://www.rfc-editor.org/rfc/rfc5424) - Syslog Protocol - **impl**.
