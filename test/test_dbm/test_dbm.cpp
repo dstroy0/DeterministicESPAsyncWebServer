@@ -24,8 +24,15 @@ struct RamDisk
     uint8_t *buf;
     uint64_t size;
 };
+// Fault-injection switches (default off): simulate a device whose read or sync fails, to exercise the
+// compaction fail-closed / no-data-loss paths.
+static bool g_fail_read = false;
+static bool g_fail_sync = false;
+
 static size_t ram_read(void *ctx, uint64_t off, uint8_t *buf, size_t len)
 {
+    if (g_fail_read)
+        return 0; // simulated read error
     RamDisk *d = (RamDisk *)ctx;
     if (off + len > d->size)
         return 0;
@@ -42,7 +49,7 @@ static size_t ram_write(void *ctx, uint64_t off, const uint8_t *buf, size_t len)
 }
 static bool ram_sync(void *)
 {
-    return true;
+    return !g_fail_sync; // simulated sync barrier failure when set
 }
 
 static uint8_t g_disk[64 * 1024];
@@ -329,6 +336,50 @@ void test_compact_dest_too_small_fails_closed(void)
     TEST_ASSERT_EQUAL_UINT8_ARRAY(big, out, 200);
 }
 
+void test_compact_source_read_failure(void)
+{
+    // If reading a value back from the source log fails mid-compaction, compact must fail closed BEFORE
+    // rebinding, so db keeps using its intact original log - no data loss.
+    fresh();
+    put_s("a", "one");
+    put_s("b", "two");
+    put_s("a", "one-updated"); // some churn so there is real live data to copy
+    WalStore *dst = fresh_dest(sizeof(g_disk2));
+
+    g_fail_read = true;
+    TEST_ASSERT_FALSE(detws_dbm_compact(&g_db, dst)); // a source pread fails
+    g_fail_read = false;
+
+    // db is untouched: still on the original log, every live key intact.
+    TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));
+    TEST_ASSERT_TRUE(get_eq("a", "one-updated"));
+    TEST_ASSERT_TRUE(get_eq("b", "two"));
+}
+
+void test_compact_checkpoint_failure(void)
+{
+    // If the destination checkpoint (sync) fails after the live keys are copied, compact must fail closed and
+    // leave db on the intact original log.
+    fresh();
+    put_s("x", "10");
+    put_s("y", "20");
+    WalStore *dst = fresh_dest(sizeof(g_disk2));
+
+    g_fail_sync = true;
+    TEST_ASSERT_FALSE(detws_dbm_compact(&g_db, dst)); // dst checkpoint sync fails
+    g_fail_sync = false;
+
+    TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));
+    TEST_ASSERT_TRUE(get_eq("x", "10"));
+    TEST_ASSERT_TRUE(get_eq("y", "20"));
+
+    // And a normal compaction still works afterward (the store was never corrupted).
+    WalStore *dst2 = fresh_dest(sizeof(g_disk2));
+    TEST_ASSERT_TRUE(detws_dbm_compact(&g_db, dst2));
+    TEST_ASSERT_TRUE(get_eq("x", "10"));
+    TEST_ASSERT_TRUE(get_eq("y", "20"));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -343,5 +394,7 @@ int main(void)
     RUN_TEST(test_max_value_roundtrip);
     RUN_TEST(test_compact_reclaims_space);
     RUN_TEST(test_compact_dest_too_small_fails_closed);
+    RUN_TEST(test_compact_source_read_failure);
+    RUN_TEST(test_compact_checkpoint_failure);
     return UNITY_END();
 }
