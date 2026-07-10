@@ -72,6 +72,7 @@ from each example's `pio ci` size report and aggregated into
 | `RTC+TIME_SOURCE+NTP`                    | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
 | `SHT3X`                                  | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
+| `SMB`                                    | L7-Application/68.SmbFileClient         | 717.2 KB (56.0%) | 42.4 KB (13.2%)  |
 | `SMTP`                                   | L7-Application/57.SmtpAlert             | 709.5 KB (55.4%) | 42.4 KB (13.2%)  |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 741.7 KB (57.9%) | 76.9 KB (24.0%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |

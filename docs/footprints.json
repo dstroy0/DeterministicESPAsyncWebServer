@@ -447,6 +447,13 @@
     "flash_bytes": 267961,
     "ram_bytes": 21464
   },
+  "SMB": {
+    "example": "L7-Application/68.SmbFileClient",
+    "flags": "-DDETWS_ENABLE_SMB=1",
+    "board": "esp32dev",
+    "flash_bytes": 734433,
+    "ram_bytes": 43408
+  },
   "SMTP": {
     "example": "L7-Application/57.SmtpAlert",
     "flags": "-DDETWS_ENABLE_SMTP=1",
