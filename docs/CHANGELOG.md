@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a569958`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a569958e8d58a9da28b93eee034582671ed4c2d5))
+- update CHANGELOG.md [skip ci] ([`7fed3df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fed3df3b9fef28885aaeecbc8532e3d89a51ab2))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7bdbdc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bdbdc1a630564ffdadc8f94a7e233bf1dd2b14f))
+- update ESP32 build footprints [skip ci] ([`34b6ac0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34b6ac0dd6f814e5fef8881fe4b3af8211c1d12f))
+
+### Features
+
+- local JSON document store on the WAL ([`ae94350`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae94350216a840792136fe93751f57d401415491))
+
 ## [5.72.0] - 2026-07-10
 
 <details>
@@ -24,23 +40,6 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - extend RESP2 codec to full RESP3 (verified vs real redis-server) ([`8773954`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87739548329dd9db30e0247cf1822e7311eed25a))
 
 </details>
-
-## [5.71.0] - 2026-07-09
-
-<details>
-<summary><b>Show Changelog for version 5.71.0 - 2026-07-09</b></summary>
-
-### CI / Build
-
-- update CHANGELOG.md [skip ci] ([`0433e4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0433e4e9081a2870a0ef80afa5aaa370e88172a9))
-
-### Documentation
-
-- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`979006a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/979006a5336e5df16ded6630a49a3d9a75700e96))
-
-### Features
-
-- extend RESP2 codec to full RESP3 (verified vs real redis-server) ([`8773954`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87739548329dd9db30e0247cf1822e7311eed25a))
 
 ## [5.71.0] - 2026-07-09
 
