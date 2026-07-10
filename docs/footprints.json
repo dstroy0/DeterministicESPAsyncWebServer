@@ -682,7 +682,7 @@
     "example": "L6-Presentation/03.Multipart",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 751645,
+    "flash_bytes": 751805,
     "ram_bytes": 66352
   },
   "core/04.BasicAuth": {

@@ -105,7 +105,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/02.SSHCryptoSelfTest`              | L5-Session/02.SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
 | `core/03.Expert`                         | Foundation/03.Expert                    | 735.7 KB (57.5%) | 64.8 KB (20.3%)  |
 | `core/03.InterfaceFilter`                | L7-Application/03.InterfaceFilter       | 734.7 KB (57.4%) | 64.8 KB (20.2%)  |
-| `core/03.Multipart`                      | L6-Presentation/03.Multipart            | 734.0 KB (57.3%) | 64.8 KB (20.2%)  |
+| `core/03.Multipart`                      | L6-Presentation/03.Multipart            | 734.2 KB (57.4%) | 64.8 KB (20.2%)  |
 | `core/04.BasicAuth`                      | L6-Presentation/04.BasicAuth            | 733.1 KB (57.3%) | 64.8 KB (20.2%)  |
 | `core/04.Middleware`                     | L7-Application/04.Middleware            | 733.7 KB (57.3%) | 64.8 KB (20.3%)  |
 | `core/04.Sysadmin`                       | Foundation/04.Sysadmin                  | 746.7 KB (58.3%) | 64.8 KB (20.3%)  |
