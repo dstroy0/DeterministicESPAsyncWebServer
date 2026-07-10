@@ -39,6 +39,12 @@
       "src": ["+<services/dnc/dnc.cpp>"],
       "tests": ["test_dnc"]
     },
+    "native_ftp": {
+      "desc": "FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command\nbuilders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the\nPASV / EPSV data-address decoders. Pure host tests with authentic reply strings captured from a\nlive FTP server (multiline greeting + FEAT, PASV/EPSV tuples).",
+      "flags": ["-DDETWS_ENABLE_FTP=1"],
+      "src": ["+<services/ftp/ftp.cpp>"],
+      "tests": ["test_ftp"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

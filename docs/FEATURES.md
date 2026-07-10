@@ -322,6 +322,12 @@ Omron FINS frame codec. Default off. services/fins is a zero-heap command/respon
 
 Flow-record export codec. Default off. services/flow_export is a zero-heap exporter-side codec for on-device flow accounting in three formats: NetFlow v5 (the fixed 24-octet header + 48-octet record, via `flow_v5_write_header` / `flow_v5_write_record`), NetFlow v9 (RFC 3954), and IPFIX (RFC 7011). The v9 / IPFIX side is a small cursor (`FlowWriter`): begin the message (`flow_ipfix_begin` / `flow_v9_begin`), emit a Template (`flow_export_template`), open a matching Data Set and append records (`flow_export_data_begin` / `flow_export_data_record` / `flow_export_data_end`), then `flow_export_finish()` patches the IPFIX message length or the NetFlow v9 record count (and pads each v9 FlowSet to a 4-octet boundary). Field offsets verified against RFC 7011 / RFC 3954 / the published v5 layout; pure and host-tested. The flow cache (5-tuple + counters) and the UDP send (det_udp_sendto) are the application's. See src/services/flow_export/flow_export.h.
 
+## FTP client
+
+`DETWS_ENABLE_FTP`
+
+FTP client wire codec (RFC 959 + RFC 2428). Default off. services/ftp is the pure protocol layer of an FTP client so a device can push/pull files - e.g. drip a `.nc` program to a CNC controller's FTP program store (Fanuc / Haas / Mazak / Heidenhain all expose one), fetch a config, or archive a log. `ftp_build_command` frames any control-channel command (`VERB` or `VERB arg` + CRLF - USER / PASS / TYPE / CWD / RETR / STOR / LIST / SIZE / DELE / PASV / EPSV / QUIT / ...); `ftp_build_port` and `ftp_build_eprt` build the active-mode data-address commands (RFC 2428 EPRT for IPv4 / IPv6). `ftp_parse_reply` detects a complete reply at the head of the control buffer - single line `NNN<SP>text` or a multiline `NNN-...` block ended by the same code followed by a space - and reports the 3-digit code + the bytes consumed (so pipelined replies advance cleanly); `ftp_parse_pasv` decodes the `227 ...(h1,h2,h3,h4,p1,p2)` passive address and `ftp_parse_epsv` the `229 ...(|||port|)` extended-passive port. Reply / PASV / EPSV formats verified against authentic strings captured from a live FTP server; pure and host-tested (the control + data sockets are the application's). See src/services/ftp/ftp.h.
+
 ## GOOSE
 
 `DETWS_ENABLE_GOOSE`

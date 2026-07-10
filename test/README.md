@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **212 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **213 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -133,6 +133,7 @@ The native test matrix has **212 environments**, one per feature, generated from
 | `native_fins` | `ETWS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
 | `native_flow_export` | `ETWS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
 | `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
+| `native_ftp` | `ETWS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `ETWS_ENABLE_GATEWAY=1`, `ETWS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
 | `native_goose` | `ETWS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
 | `native_gpio_map` | `ETWS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
@@ -502,7 +503,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2772 test cases** across **234 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2785 test cases** across **235 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -8027,6 +8028,157 @@ A thorough directory of all **2772 test cases** across **234 suites**. Expand a 
       * <code>Assert false (det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, DET_FWD_DENY))</code>
       * <code>Assert true (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
       * <code>Assert false (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ftp (13 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_command</b> &mdash; <i>bare verb (no arg) -> no trailing space</i></summary>
+
+    * **Objective**: bare verb (no arg) -> no trailing space
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(11, n);</code>
+      * <code>Assert equal string ("USER demo\\r\\n", b)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, strlen(b));</code>
+      * <code>Assert equal string ("TYPE I\\r\\n", b)</code>
+      * <code>Assert equal string ("PASV\\r\\n", b)</code>
+      * <code>Assert equal string ("QUIT\\r\\n", b)</code>
+      * <code>Assert equal string ("RETR /programs/O1234.nc\\r\\n", b)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_command_fail_closed</b> &mdash; <i>exact-fit boundary: "NO\r\n" + NUL needs 5 bytes</i></summary>
+
+    * **Objective**: exact-fit boundary: "NO\r\n" + NUL needs 5 bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(b, sizeof(b), "RETR", "/too/long/path")); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(b, sizeof(b), nullptr, "x"));             // bad verb</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(b, sizeof(b), "", "x"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, ftp_build_command(b5, sizeof(b5), "NO", nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(b4, sizeof(b4), "NO", nullptr)); // no room for NUL</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_port_and_eprt</b> &mdash; <i>Build port and eprt</i></summary>
+
+    * **Objective**: Build port and eprt
+    * **Assertions**:
+      * <code>Assert equal string ("PORT 192,168,1,50,16,0\\r\\n", b)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, strlen(b));</code>
+      * <code>Assert equal string ("PORT 192,168,1,50,156,64\\r\\n", b)</code>
+      * <code>Assert equal string ("EPRT |1|132.235.1.2|6275|\\r\\n", b)</code>
+      * <code>Assert equal string ("EPRT |2|1080::8:800:200C:417A|5282|\\r\\n", b)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_single_line</b> &mdash; <i>Reply single line</i></summary>
+
+    * **Objective**: Reply single line
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(r, strlen(r), &code, &used))</code>
+      * <code>Assert equal int (230, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(r), used);</code>
+      * <code>Assert true (ftp_reply_ok(code))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_multiline_greeting</b> &mdash; <i>real test.rebex.net greeting: continuation lines do NOT repeat the code</i></summary>
+
+    * **Objective**: real test.rebex.net greeting: continuation lines do NOT repeat the code
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(g, strlen(g), &code, &used))</code>
+      * <code>Assert equal int (220, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(g), used); // consumed the whole multiline reply</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_multiline_feat</b> &mdash; <i>real FEAT reply: many indented continuation lines, terminated by "211 End."</i></summary>
+
+    * **Objective**: real FEAT reply: many indented continuation lines, terminated by "211 End."
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(feat, strlen(feat), &code, &used))</code>
+      * <code>Assert equal int (211, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(feat), used);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_incomplete_and_malformed</b> &mdash; <i>single line without its CRLF yet -> incomplete</i></summary>
+
+    * **Objective**: single line without its CRLF yet -> incomplete
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_reply("230 User logged in", 18, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply(partial, strlen(partial), &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("2x0 bad\\r\\n", 9, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("200X\\r\\n", 6, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("22", 2, &code, &used))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_pipelined_advance</b> &mdash; <i>two replies back-to-back; parse the first, advance by `used`, parse the second.</i></summary>
+
+    * **Objective**: two replies back-to-back; parse the first, advance by `used`, parse the second.
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(stream, strlen(stream), &code, &used))</code>
+      * <code>Assert equal int (220, code)</code>
+      * <code>Assert true (ftp_parse_reply(stream + off, strlen(stream) - off, &code, &used))</code>
+      * <code>Assert equal int (331, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(off + used, strlen(stream));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_multiline_not_terminated_by_other_code</b> &mdash; <i>Reply multiline not terminated by other code</i></summary>
+
+    * **Objective**: Reply multiline not terminated by other code
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(r, strlen(r), &code, &used))</code>
+      * <code>Assert equal int (150, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(r), used);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_pasv</b> &mdash; <i>Parse pasv</i></summary>
+
+    * **Objective**: Parse pasv
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_pasv(r, strlen(r), ip, &port))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(194, ip[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(108, ip[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(117, ip[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(16, ip[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4 * 256 + 6, port); // 1030</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_pasv_malformed</b> &mdash; <i>Parse pasv malformed</i></summary>
+
+    * **Objective**: Parse pasv malformed
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_pasv("227 no tuple here\\r\\n", 19, ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(oob, strlen(oob), ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(few, strlen(few), ip, &port))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_epsv</b> &mdash; <i>a non-'\|' delimiter is also legal (RFC 2428: any ASCII 33-126)</i></summary>
+
+    * **Objective**: a non-'\|' delimiter is also legal (RFC 2428: any ASCII 33-126)
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_epsv(r, strlen(r), &port))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1050, port);</code>
+      * <code>Assert true (ftp_parse_epsv(r2, strlen(r2), &port))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(49152, port);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_epsv_malformed</b> &mdash; <i>Parse epsv malformed</i></summary>
+
+    * **Objective**: Parse epsv malformed
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_epsv("229 no parens\\r\\n", 15, &port))</code>
+      * <code>Assert false (ftp_parse_epsv("229 (|||)\\r\\n", 11, &port))</code>
   </details>
 
 </details>

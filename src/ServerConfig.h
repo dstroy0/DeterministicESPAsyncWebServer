@@ -2927,6 +2927,31 @@
 #endif
 
 /**
+ * @brief Opt-in FTP client wire codec (DETWS_ENABLE_FTP).
+ *
+ * services/ftp is the pure protocol layer of an FTP client (RFC 959 + RFC 2428 EPSV/EPRT):
+ * `ftp_build_command` / `ftp_build_port` / `ftp_build_eprt` build control-channel commands,
+ * `ftp_parse_reply` detects a complete single- or multi-line 3-digit reply, and
+ * `ftp_parse_pasv` / `ftp_parse_epsv` decode the data-channel address the server returns. So a
+ * device can push/pull files - e.g. drip a `.nc` program to a CNC controller's FTP store. Pure
+ * codec (you own the control + data sockets); host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_FTP
+#define DETWS_ENABLE_FTP 0
+#endif
+
+/**
+ * @brief Suggested FTP control-command buffer size (DETWS_ENABLE_FTP).
+ *
+ * A convenience cap for callers sizing the buffer they hand `ftp_build_command`; the builders
+ * are all length-checked against the caller's `cap`, so this is only a sensible default. Large
+ * enough for a RETR / STOR with a long path.
+ */
+#ifndef DETWS_FTP_CMD_MAX
+#define DETWS_FTP_CMD_MAX 256
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive
