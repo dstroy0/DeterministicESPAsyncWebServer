@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.76.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.76.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`03ded55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03ded556d50fc78d15b518309e31b56fc52692d4))
+
+### Changes
+
+- Bump version: 5.75.0 → 5.76.0 ([`edec14a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edec14a1c85ed71b7c7115148354f7b4b23a687f))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dab35b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab35b3b29d9837d1744e7c2133fa2ed753109b1))
+- update ESP32 build footprints [skip ci] ([`fcc62ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcc62ef9d2b6de0fc2c991ae17134ac199b723b7))
+
+### Features
+
+- log compaction to reclaim dead space ([`d83c929`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83c9296c3437d844e9af7f5ce7a79d7a0afff67))
+
+</details>
+
 ## [5.75.0] - 2026-07-10
 
 <details>
