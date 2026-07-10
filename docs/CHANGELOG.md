@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.92.1] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.92.1 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a2e850e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2e850e3d52cfd08cebe9bd414e65973aa71b5f0))
+
+### Changes
+
+- Bump version: 5.92.0 → 5.92.1 ([`6de6311`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6de63110a98eb018782a7e8f9aa9a7b5ed909f78))
+
+### Documentation
+
+- runnable Ethernet DNC example (69.EthernetDnc) ([`abfdb9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abfdb9f233f3799737a966b42f18c525e9ad4c9b))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d78f628`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d78f628601a473890dda94be49d93ea907736ba8))
+
+</details>
+
 ## [5.92.0] - 2026-07-10
 
 <details>
