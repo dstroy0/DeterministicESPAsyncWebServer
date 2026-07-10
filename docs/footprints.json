@@ -80,7 +80,7 @@
     "example": "L7-Application/35.Dashboard",
     "flags": "-DDETWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 771469,
+    "flash_bytes": 771477,
     "ram_bytes": 66728
   },
   "DEVICE_ID": {
@@ -171,7 +171,7 @@
     "example": "L7-Application/52.GraphQL",
     "flags": "-DDETWS_ENABLE_GRAPHQL=1",
     "board": "esp32dev",
-    "flash_bytes": 755565,
+    "flash_bytes": 755569,
     "ram_bytes": 70760
   },
   "GUARDRAILS": {
