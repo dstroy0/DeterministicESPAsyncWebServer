@@ -8,6 +8,24 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## server.listen() returned DETWS_OK instead of the listener id (port-forward never matched)
+
+- **Status:** FIXED (HW: the relay/DNAT example now forwards a file byte-exact through the ESP32;
+  native_app + native_relay pass with the corrected return).
+- **Found:** 2026-07-10, on hardware, testing 70.PortForward against a real HTTP origin.
+- **Symptom:** a connection to the published front port was accepted then RST with nothing relayed;
+  `relay_on_accept`'s bind lookup found no bind, so it closed the connection. The origin never saw the
+  request. No handler output at all, which made it look like the event was dropped.
+- **Root cause:** `DetWebServer::listen()` returned `DETWS_OK` - which is **1**, not 0 - but the relay
+  example (and `relay_listener.h`'s own docs) treat the return as the listener id passed to
+  `det_relay_publish()`. `begin()` assigns the actual listener index (0 for the only listener), so the
+  bind was stored under id 1 while the accepted slot carried id 0; `bind_by_listener()` missed.
+- **Fix:** `listen()` now returns the listener id (its index, `_listener_count - 1`) on success; errors
+  stay negative. Updated the two tests that asserted `== DETWS_OK` and the header doc.
+- **Lesson:** an API whose documented use is "pass the return to publish()" must return that id, not a
+  generic success sentinel - and `DETWS_OK == 1` turned it into an off-by-one that only bit when the
+  listener was not index 1.
+
 ## SMB / DNC / relay / SMTP / SSH-forward could never connect (client transport stubbed out)
 
 - **Status:** FIXED (HW: an ESP32-S3 SMB client now connects to a real Samba server - `det_client_open`

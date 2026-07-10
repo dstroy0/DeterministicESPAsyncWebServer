@@ -1371,9 +1371,10 @@ void test_listen_and_begin()
     // begin() before any listen() -> no-listeners error, no side effects.
     TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.begin());
 
-    // Fill the listener table, then the next listen() is rejected.
+    // Fill the listener table, then the next listen() is rejected. listen() returns each
+    // listener's id (its index), so the i-th call returns i.
     for (int i = 0; i < MAX_LISTENERS; i++)
-        TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)(9100 + i)));
+        TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));
     TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, srv.listen(9999));
 
     // begin() now brings the registered listeners up.
@@ -1404,8 +1405,8 @@ void test_restart_and_stop()
     // Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
     TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.restart());
 
-    // Bring a listener up, then restart() tears down and re-binds it.
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)9500));
+    // Bring a listener up, then restart() tears down and re-binds it. The first listen() returns id 0.
+    TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));
     TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());
     TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());
 

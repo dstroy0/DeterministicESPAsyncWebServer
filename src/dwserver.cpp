@@ -517,7 +517,10 @@ int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
     _listen_protos[_listener_count] = proto;
     _listen_tls[_listener_count] = false;
     _listener_count++;
-    return DETWS_OK;
+    // Return the listener id (its index), not DETWS_OK: begin() binds listener_pool[i] from
+    // _listen_ports[i] and the accept path stamps that same index onto the slot, so this id is what
+    // det_relay_publish() / ssh_forward_begin() must match against. (Errors are negative.)
+    return (int32_t)(_listener_count - 1);
 }
 
 // Server instance bindings, owned by one instance (internal linkage): the instance whose

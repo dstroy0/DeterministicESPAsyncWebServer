@@ -585,7 +585,8 @@ class DetWebServer
      *
      * @param port  TCP port to open.
      * @param proto Application protocol; defaults to PROTO_HTTP.
-     * @return DETWS_OK on success; DETWS_ERR_LISTENER_FULL if the pool is full.
+     * @return the listener id (a non-negative index) on success - pass it to
+     *         det_relay_publish() / ssh_forward_begin(); DETWS_ERR_LISTENER_FULL if the pool is full.
      */
     int32_t listen(uint16_t port, ConnProto proto = PROTO_HTTP);
 
