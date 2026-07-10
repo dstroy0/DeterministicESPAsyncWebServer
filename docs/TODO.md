@@ -115,8 +115,9 @@ layer built first, then the store codecs on top. Substrate before stores.
       ~4.4 -> ~15.9 MB/s), roughly halving `record_encode` / `store_append` / dbm `put`; same 3.6x on the
       host. Byte-identical output (the CRC-32 check-vector `0xCBF43926` and all wal/dbm/docstore tests
       still pass). See FEATURE_PERFORMANCE section 4.
-- [ ] **`resp_encode_command` is ~20 us on-device** because it formats length prefixes with `snprintf`;
-      replace with a hand-rolled integer format.
+- [x] **`resp_encode_command` was ~20 us on-device** (formatted length prefixes with `snprintf`). _(done)_
+      Replaced with a hand-rolled decimal writer: **~6x faster** on the ESP32-S3 (19.9 -> 3.3 us), ~5x on
+      the host (329 -> 65 ns), byte-identical output (all 14 native_redis tests pass).
 
 ### CNC / machine-tool connectivity
 

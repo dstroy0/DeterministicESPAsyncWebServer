@@ -10,32 +10,49 @@
 
 #if DETWS_ENABLE_REDIS
 
-#include <stdio.h> // snprintf for the decimal length prefixes
 #include <string.h>
+
+// Write a "<tag><decimal>\r\n" length prefix into buf at *pos, advancing it. A hand-rolled decimal is
+// several times faster than snprintf on the ESP32-S3, where this was the dominant cost of encoding a
+// command (docs/FEATURE_PERFORMANCE.md section 4). Reserves a trailing byte for the final NUL, as before.
+static bool put_len_prefix(char *buf, size_t cap, size_t *pos, char tag, size_t n)
+{
+    char tmp[20];
+    int t = 0;
+    if (n == 0)
+        tmp[t++] = '0';
+    while (n)
+    {
+        tmp[t++] = (char)('0' + (n % 10));
+        n /= 10;
+    }
+    if (*pos + 1u + (size_t)t + 2u >= cap)
+        return false;
+    buf[(*pos)++] = tag;
+    while (t)
+        buf[(*pos)++] = tmp[--t]; // reverse the digits
+    buf[(*pos)++] = '\r';
+    buf[(*pos)++] = '\n';
+    return true;
+}
 
 size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const size_t *arg_lens, size_t argc)
 {
     if (!buf || cap == 0 || !args || argc == 0)
         return 0;
     size_t pos = 0;
-    char hdr[24];
-
-    int n = snprintf(hdr, sizeof(hdr), "*%zu\r\n", argc);
-    if (n < 0 || pos + (size_t)n >= cap)
+    if (!put_len_prefix(buf, cap, &pos, '*', argc))
         return 0;
-    memcpy(buf + pos, hdr, (size_t)n);
-    pos += (size_t)n;
 
     for (size_t i = 0; i < argc; i++)
     {
         if (!args[i])
             return 0;
         size_t alen = arg_lens ? arg_lens[i] : strlen(args[i]);
-        n = snprintf(hdr, sizeof(hdr), "$%zu\r\n", alen);
-        if (n < 0 || pos + (size_t)n + alen + 2 >= cap) // header + arg + trailing CRLF + NUL room
+        if (!put_len_prefix(buf, cap, &pos, '$', alen))
             return 0;
-        memcpy(buf + pos, hdr, (size_t)n);
-        pos += (size_t)n;
+        if (pos + alen + 2 >= cap) // arg body + trailing CRLF (reserve NUL room)
+            return 0;
         memcpy(buf + pos, args[i], alen);
         pos += alen;
         buf[pos++] = '\r';

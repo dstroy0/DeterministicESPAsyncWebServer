@@ -157,8 +157,8 @@ RESP), measured over a **RAM-backed device** so this is pure compute, not I/O. H
 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real device at 240 MHz (`perf/bench_datastore.cpp`
 on the host, the same benches in an on-device firmware for the ESP32-S3 column).
 
-The CRC-32 is now **table-driven** (a device-motivated optimization this benchmark drove - see below);
-numbers below are post-optimization.
+Two device-motivated optimizations this benchmark drove are already applied (a table-driven CRC-32 and a
+hand-rolled RESP length prefix - see the discussion below); numbers below are post-optimization.
 
 | Feature  | Operation               | Host ns/op | ESP32-S3 us/op |
 | -------- | ----------------------- | ---------: | -------------: |
@@ -173,7 +173,7 @@ numbers below are post-optimization.
 | sqlite   | varint_decode           |        5.0 |          0.301 |
 | sqlite   | table scan (40 rows)    |     1500.0 |        127.239 |
 | sqlite   | -> per row (+ columns)  |       37.5 |          3.181 |
-| resp     | encode_command (3 args) |      328.9 |         19.864 |
+| resp     | encode_command (3 args) |       65.2 |          3.262 |
 | resp     | parse bulk reply        |       13.4 |          1.026 |
 
 **Reads are cheap; the write path is CRC-bound, so the CRC was made table-driven.** A dbm `get` is ~2 us
@@ -188,5 +188,7 @@ I/O-bound territory (the SD card's ~40-100 IOPS and 100+ ms write tail set the r
 the layer batches and checkpoints in bulk). The host saw the same 3.6x (96 -> 344 MB/s), a nice example of
 a fix that only the on-device number motivated - the host had 60x headroom and never showed the problem.
 
-_Remaining device-only cost: `resp_encode_command` is ~20 us because it formats length prefixes with
-`snprintf`; a hand-rolled decimal would cut that sharply (tracked in TODO)._
+The second finding was `resp_encode_command` at ~20 us on the device - it formatted the RESP length
+prefixes with `snprintf`. Replacing that with a hand-rolled decimal writer **cut it ~6x to ~3.3 us**
+(and ~5x on the host, 329 -> 65 ns), with byte-identical output. Both fixes came straight out of this
+table; neither was visible from the host baseline alone.
