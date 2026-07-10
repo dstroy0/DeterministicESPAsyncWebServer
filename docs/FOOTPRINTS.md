@@ -12,7 +12,7 @@ from each example's `pio ci` size report and aggregated into
 | `ADS1115`                                | L7-Application/66.Ads1115               | 280.1 KB (21.9%) | 21.3 KB (6.7%)   |
 | `AUDIT_LOG`                              | L7-Application/49.AuditLog              | 735.3 KB (57.4%) | 67.7 KB (21.2%)  |
 | `AUTH_LOCKOUT`                           | L6-Presentation/12.AuthLockout          | 734.1 KB (57.4%) | 65.4 KB (20.4%)  |
-| `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 752.7 KB (58.8%) | 44.3 KB (13.8%)  |
+| `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 753.1 KB (58.8%) | 44.4 KB (13.9%)  |
 | `CBOR`                                   | L6-Presentation/13.Cbor                 | 735.3 KB (57.4%) | 64.9 KB (20.3%)  |
 | `COAP`                                   | L7-Application/13.CoAP                  | 738.6 KB (57.7%) | 67.3 KB (21.0%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
@@ -23,7 +23,7 @@ from each example's `pio ci` size report and aggregated into
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.5 KB (57.3%) | 64.8 KB (20.3%)  |
 | `DIAG`                                   | Foundation/05.Configuration             | 734.7 KB (57.4%) | 61.6 KB (19.3%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
-| `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.1 KB (20.6%) | 28.2 KB (8.8%)   |
+| `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
 | `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 738.9 KB (57.7%) | 66.0 KB (20.6%)  |
 | `DNS_SERVER`                             | L7-Application/60.DnsServer             | 708.6 KB (55.4%) | 44.9 KB (14.0%)  |
@@ -65,7 +65,7 @@ from each example's `pio ci` size report and aggregated into
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 733.4 KB (57.3%) | 65.2 KB (20.4%)  |
 | `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
 | `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
-| `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 746.4 KB (58.3%) | 46.2 KB (14.4%)  |
+| `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 746.7 KB (58.3%) | 46.4 KB (14.5%)  |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 740.5 KB (57.9%) | 66.3 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.1 KB (57.3%) | 64.8 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 774.7 KB (60.5%) | 64.8 KB (20.3%)  |
@@ -83,7 +83,7 @@ from each example's `pio ci` size report and aggregated into
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 741.7 KB (57.9%) | 65.1 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.4 KB (57.4%) | 65.3 KB (20.4%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
-| `TLS`                                    | L6-Presentation/07.SecureWebSocket      | 834.8 KB (65.2%) | 114.5 KB (35.8%) |
+| `TLS`                                    | L4-Transport/03.HTTPS                   | 835.0 KB (65.2%) | 114.5 KB (35.8%) |
 | `TLS+MTLS`                               | L4-Transport/04.mTLS                    | 835.8 KB (65.3%) | 114.9 KB (35.9%) |
 | `TLS+TLS_RESUMPTION`                     | L4-Transport/06.TlsResumption           | 835.6 KB (65.3%) | 114.7 KB (35.8%) |
 | `TOTP`                                   | L7-Application/45.Totp                  | 734.2 KB (57.4%) | 64.8 KB (20.3%)  |
