@@ -149,3 +149,39 @@ Notes:
 _To be added: HTTP request parse, JSON encode/decode throughput, a chunked/file send-pump pass, an SSH
 KEX, a TLS handshake time, and per-protocol codec encode/decode rates - each host-baselined here and
 then measured on the ESP32-S3._
+
+## 4. Embedded data-store stack (host baseline)
+
+The CPU cost of the hot ops in the data-store stack (WAL / dbm / document store / SQLite reader / Redis
+RESP), measured over a **RAM-backed device** so this is pure compute, not I/O. Raspberry Pi 5
+(Cortex-A76, `-O2`); relative baseline. Harness: `perf/bench_datastore.cpp`.
+
+| Feature  | Operation               | Host ns/op | Host MB/s |
+| -------- | ----------------------- | ---------: | --------: |
+| wal      | crc32 (1 KiB)           |    10672.3 |      95.9 |
+| wal      | record_encode (128 B)   |     1510.0 |      84.8 |
+| wal      | store_append (64 B)     |      871.1 |      73.5 |
+| wal      | store_checkpoint        |      325.4 |         - |
+| dbm      | put (16 B key/64 B val) |      392.7 |         - |
+| dbm      | get                     |       32.4 |         - |
+| docstore | find_str (scan 100)     |     8914.3 |         - |
+| docstore | -> per doc scanned      |       89.1 |         - |
+| sqlite   | varint_decode           |        5.0 |         - |
+| sqlite   | table scan (40 rows)    |     1486.0 |         - |
+| sqlite   | -> per row (+ columns)  |       37.1 |         - |
+| resp     | encode_command (3 args) |      327.7 |      91.5 |
+| resp     | parse bulk reply        |       13.3 |         - |
+
+**The takeaway: the stores are I/O-bound, not CPU-bound.** The compute per op is tiny - a dbm `get` is
+~32 ns, a SQLite row (with its columns) ~37 ns, a RESP reply parse ~13 ns. The WAL write path is the
+heaviest, and it is dominated by the **table-less CRC-32** (~96 MB/s, ~10 ns/byte): `record_encode` and
+`store_append` are essentially their CRC cost. Even so, 96 MB/s is ~60x the measured durable SD write
+rate (~1.5 MB/s, section 1), so the CRC is nowhere near the bottleneck - the SD card's ~40-100 durable
+IOPS and 100+ ms write tail set the real ceiling, which is exactly why the layer batches into the WAL and
+checkpoints in bulk. A `docstore` field query is a linear scan of ~89 ns per document (a dbm `get` plus a
+top-level JSON parse), so an in-RAM 100-document `find` is ~9 us; at scale it is again the per-document
+flash read, not the compare, that dominates.
+
+_Follow-up: a table-driven or hardware (ESP32 ROM `crc32_le`) CRC would cut the WAL write CPU several-fold
+if a faster backing store (PSRAM / LittleFS) ever makes it CPU-bound; and the on-device ESP32-S3 us/op
+column for this table (the numbers above are the host baseline)._
