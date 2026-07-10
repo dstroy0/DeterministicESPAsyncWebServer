@@ -730,6 +730,8 @@ src/
 │   │   ├── ntlmssp.h
 │   │   ├── smb2.cpp
 │   │   ├── smb2.h
+│   │   ├── smb_client.cpp
+│   │   ├── smb_client.h
 │   │   ├── smb_md.cpp
 │   │   ├── smb_md.h
 │   │   ├── spnego.cpp
@@ -959,7 +961,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RANGE` | `L7-Application/12.Range` | 793,317 | 66,384 |
 | `VFS` | `L7-Application/51.Vfs` | 794,253 | 70,880 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 819,797 | 105,720 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 820,577 | 88,676 |
+| `SSH` | `L5-Session/01.SSH` | 821,265 | 88,676 |
 | `ETAG` | `L7-Application/09.ETag` | 826,853 | 67,656 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,580 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 854,865 | 117,276 |
@@ -1184,7 +1186,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_SHT3X` | `0` | Sensirion SHT3x temperature / humidity sensor (I2C). |
 | `DETWS_ENABLE_SIGFOX` | `0` | Enable the Sigfox AT-command codec (default off). |
 | `DETWS_ENABLE_SLEEP_SCHED` | `0` | Opt-in dynamic sleep-cycle scheduler. |
-| `DETWS_ENABLE_SMB` | `0` | Opt-in SMB2 client wire codec. |
+| `DETWS_ENABLE_SMB` | `0` | Opt-in SMB2 client. |
 | `DETWS_ENABLE_SMTP` | `0` | Outbound SMTP client (RFC 5321) for device email alerts (services/smtp). |
 | `DETWS_ENABLE_SNMP` | `0` | SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP. |
 | `DETWS_ENABLE_SNMP_TRAP` | `0` | Outbound SNMP notifications - traps and informs (requires DETWS_ENABLE_SNMP). |
@@ -1375,6 +1377,7 @@ guards at compile time.
 | `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
 | `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
 | `DETWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
+| `DETWS_SMB_BUF` | `1024` | SMB2 client work-buffer size (bytes) for smb_client's request/response framing. |
 | `DETWS_SMTP_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for SMTPS, bytes (only used when the message is TLS). |
 | `DETWS_SMTP_LINE_MAX` | `256` | Max length of one SMTP command / address line (bytes, incl. |
 | `DETWS_SMTP_MSG_MAX` | `2048` | Max size of the assembled DATA payload (headers + dot-stuffed body), bytes. |
