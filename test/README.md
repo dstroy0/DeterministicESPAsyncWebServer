@@ -201,7 +201,7 @@ The native test matrix has **211 environments**, one per feature, generated from
 | `native_ota_rollback` | `ETWS_ENABLE_OTA_ROLLBACK=1` | `test_ota_rollback` | OTA rollback decision (services/ota_rollback): pure decision matrix host-tested; the esp_ota commit/rollback are ESP32-only. |
 | `native_partition` | `ETWS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
 | `native_pca9685` | `ETWS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
-| `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
+| `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SQLITE=1`, `ETWS_ENABLE_REDIS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
 | `native_pn532` | `ETWS_ENABLE_PN532=1`, `ETWS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
 | `native_powerlink` | `ETWS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
 | `native_preempt_queue` | `ETWS_ENABLE_PREEMPT_QUEUE=1`, `ETWS_PQ_DEPTH=4`, `ETWS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2751 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2757 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -18160,7 +18160,7 @@ A thorough directory of all **2751 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pentest (24 tests)</b></summary>
+<summary><b>test_pentest (30 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_http_oversized_path</b> &mdash; <i>Http oversized path</i></summary>
@@ -18334,6 +18334,17 @@ A thorough directory of all **2751 test cases** across **233 suites**. Expand a 
       * <code>Assert true (true)</code>
       * <code>Assert true (r &lt;= sizeof(out))</code>
       * <code>Assert true (r &lt;= (int)sizeof(out))</code>
+      * <code>Assert true (bh.header_size == 8 || bh.header_size == 12)</code>
+      * <code>Assert true ((uint64_t)cell.local_off + cell.local_len &lt;= 512)</code>
+      * <code>Assert true (v &gt;= page && v + vl &lt;= page + 64)</code>
+      * <code>Assert true (v + vl &lt;= leaf + 512)</code>
+      * <code>Assert true (cell.payload_len &lt;= sizeof(out))</code>
+      * <code>Assert true (v + vl &lt;= leaf + 512)</code>
+      * <code>Assert true (r-&gt;str &gt;= (const char *)buf)</code>
+      * <code>Assert true (r-&gt;str + r-&gt;str_len &lt;= (const char *)buf + len)</code>
+      * <code>Assert true (consumed &lt;= len)</code>
+      * <code>Assert true (consumed &lt;= len)</code>
+      * <code>Assert true (c2 &lt;= cut)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18350,6 +18361,57 @@ A thorough directory of all **2751 test cases** across **233 suites**. Expand a 
     * **Objective**: Base32 random
     * **Assertions**:
       * <code>Assert true (r &lt;= (int)sizeof(out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sqlite_random_page</b> &mdash; <i>Record cursor over random bytes: every column value stays inside the record.</i></summary>
+
+    * **Objective**: Record cursor over random bytes: every column value stays inside the record.
+    * **Assertions**:
+      * <code>Assert true (bh.header_size == 8 || bh.header_size == 12)</code>
+      * <code>Assert true ((uint64_t)cell.local_off + cell.local_len &lt;= 512)</code>
+      * <code>Assert true (v &gt;= page && v + vl &lt;= page + 64)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sqlite_hostile_table_cursor</b> &mdash; <i>Walk a table b-tree of pure garbage from many random rootpages. The bounded descent stack + per-page</i></summary>
+
+    * **Objective**: Walk a table b-tree of pure garbage from many random rootpages. The bounded descent stack + per-page
+    * **Assertions**:
+      * <code>Assert true (v + vl &lt;= leaf + 512)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sqlite_hostile_overflow</b> &mdash; <i>sqlite_read_payload following a garbage overflow chain (cyclic / dangling next-pointers) must bound</i></summary>
+
+    * **Objective**: sqlite_read_payload following a garbage overflow chain (cyclic / dangling next-pointers) must bound
+    * **Assertions**:
+      * <code>Assert true (cell.payload_len &lt;= sizeof(out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sqlite_structured_mutation</b> &mdash; <i>Build a VALID two-page database, corrupt random bytes, then re-read the whole thing. A single-bit or</i></summary>
+
+    * **Objective**: Build a VALID two-page database, corrupt random bytes, then re-read the whole thing. A single-bit or
+    * **Assertions**:
+      * <code>Assert true (v + vl &lt;= leaf + 512)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resp_random</b> &mdash; <i>Resp random</i></summary>
+
+    * **Objective**: Resp random
+    * **Assertions**:
+      * <code>Assert true (consumed &lt;= len)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_resp_hostile_lengths</b> &mdash; <i>Crafted replies whose length prefixes lie: the decoder must fail (need-more-data) or bound the</i></summary>
+
+    * **Objective**: Crafted replies whose length prefixes lie: the decoder must fail (need-more-data) or bound the
+    * **Assertions**:
+      * <code>Assert true (consumed &lt;= len)</code>
+      * <code>Assert true (c2 &lt;= cut)</code>
   </details>
 
 </details>

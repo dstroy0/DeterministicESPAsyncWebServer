@@ -182,7 +182,14 @@ Let the device act as a caching edge / content-distribution node, not just an or
 
 ### Pentesting
 
-- [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server.
+- [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server. _Ongoing:_
+      the fuzz harness (`native_pentest`) now also hammers the **SQLite on-disk reader** (random pages, a
+      garbage b-tree the multi-page cursor must survive without hanging, a hostile overflow chain, and
+      structure-aware mutation of a valid image) and the **Redis RESP decoder** (random bytes + lying `$`/`*`
+      length prefixes that must not become an over-read) - 30/30 cases pass plain and clean under ASan+UBSan
+      (run the built `program` directly; the PIO runner mishandles the sanitizer binary's signals). _Next
+      candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the transport/session mocks wired
+      into the env since it dispatches on frame-ready), and the WebDAV / OPC UA binary decoders.
 
 ### Docs
 

@@ -10,12 +10,20 @@
     "native_dbm": {
       "desc": "Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an\nin-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by\nreplaying the log on open. Pure host tests over a RAM-backed WalDev, incl. overwrite, tombstone\nresurrection, persistence across a remount (with and without checkpoint), collisions, index-full\nfail-closed, key/value bounds, and a max-size value round-trip.",
       "flags": ["-DDETWS_ENABLE_WAL=1", "-DDETWS_ENABLE_DBM=1"],
-      "src": ["+<services/wal/wal.cpp>", "+<services/wal/wal_store.cpp>", "+<services/dbm/dbm.cpp>"],
+      "src": [
+        "+<services/wal/wal.cpp>",
+        "+<services/wal/wal_store.cpp>",
+        "+<services/dbm/dbm.cpp>"
+      ],
       "tests": ["test_dbm"]
     },
     "native_docstore": {
       "desc": "Local JSON document store on the WAL (services/docstore): JSON documents addressed by id,\nstored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field\nequals a value) via the zero-heap JSON reader. Pure host tests over a RAM-backed WalDev, incl.\nput/get/delete, string/int/bool field finds, persistence + query across a remount, and early stop.",
-      "flags": ["-DDETWS_ENABLE_WAL=1", "-DDETWS_ENABLE_DBM=1", "-DDETWS_ENABLE_DOCSTORE=1"],
+      "flags": [
+        "-DDETWS_ENABLE_WAL=1",
+        "-DDETWS_ENABLE_DBM=1",
+        "-DDETWS_ENABLE_DOCSTORE=1"
+      ],
       "src": [
         "+<services/wal/wal.cpp>",
         "+<services/wal/wal_store.cpp>",
@@ -870,7 +878,7 @@
       "tests": ["test_opcua_client"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32) with malformed/\noversized/partial/random input and asserts bounded buffers + fail-closed + no\ncrash. Pairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, and the Redis RESP reply decoder) with malformed/\noversized/partial/random/mutated input and asserts bounded buffers + fail-closed\n+ termination (no crash, no over-read, no hang). Pairs with the live driver\npentesting/detws_pentest.py. See docs/PENTEST.md.",
       "flags": [
         "-DDETWS_ENABLE_MODBUS=1",
         "-DDETWS_ENABLE_MODBUS_MASTER=1",
@@ -882,7 +890,9 @@
         "-DDETWS_ENABLE_COAP_BLOCK=1",
         "-DDETWS_COAP_BLOCK_SZX_MAX=2",
         "-DDETWS_COAP_BLOCK1_MAX=128",
-        "-DDETWS_ENABLE_SNMP=1"
+        "-DDETWS_ENABLE_SNMP=1",
+        "-DDETWS_ENABLE_SQLITE=1",
+        "-DDETWS_ENABLE_REDIS=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -899,7 +909,9 @@
         "+<services/snmp/snmp_ber.cpp>",
         "+<services/snmp/snmp_agent.cpp>",
         "+<network_drivers/transport/udp.cpp>",
-        "+<network_drivers/presentation/sha1/sha1.cpp>"
+        "+<network_drivers/presentation/sha1/sha1.cpp>",
+        "+<services/sqlite/sqlite_format.cpp>",
+        "+<services/redis_resp.cpp>"
       ],
       "tests": ["test_pentest"]
     },
