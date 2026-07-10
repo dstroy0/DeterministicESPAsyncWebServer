@@ -2,10 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.94.1] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.94.1 - 2026-07-10</b></summary>
+
+### Bug Fixes
+
+- consolidate listener statics into an owned RelayListenerCtx ([`13cc2ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13cc2caa3e571d550d7445e6a3988f274d9172ef))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`62bba24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62bba24fd40ed336ff6ab0c056fb873119fa6240))
 - update CHANGELOG.md [skip ci] ([`05b945a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05b945a387e74b927f1f2b520268aa2ce915b6f7))
 - update CHANGELOG.md [skip ci] ([`400b38b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400b38b674427674065a58077122ed0579cf41e7))
 - update CHANGELOG.md [skip ci] ([`216ff40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216ff4062f9bd2e2cba0f5315db5ab218316e1aa))
@@ -13,8 +21,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`ceda34b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ceda34b1d9f0fb4262d5d3b73cc78d1086768825))
 - update CHANGELOG.md [skip ci] ([`49bd336`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49bd336a6ed4996548348123c868391789bd2dd8))
 
+### Changes
+
+- Bump version: 5.94.0 → 5.94.1 ([`741530c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/741530c3148baa1c49bb33850b1adba44a546351))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`178c175`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/178c175b6ab48df7193b4558d5eb0853b06f2405))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`972b7a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/972b7a171a8ec35de3985812825fbefbf355304a))
 - re-sort EXAMPLES.md L5 example order (generator drift) ([`fbc180b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbc180b89142dbb6f2f47b5be4f01d7fdb322495))
 - update ESP32 build footprints [skip ci] ([`b26a698`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b26a698b35398eff9474d4a4842801e221eb931b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eecc977`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eecc9776723c91320c059e7411a15b3cc49ab9e1))
@@ -32,6 +46,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - fuzz BACnet/IP, TPKT/COTP, C37.118 + FINS command parsers ([`96fdba2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96fdba232bc687158c00d641ae0cf3437ba64302))
 - fuzz the FTP + industrial client response parsers ([`0a3dce2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a3dce2b8d560ea3ea97ba7461e19648c2bfebc2))
 - fuzz the new SMB / SPNEGO / NTLMSSP / DNC parsers ([`eaa2897`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eaa2897589e7239da55c815cc426a989acd8066b))
+
+</details>
 
 ## [5.94.0] - 2026-07-10
 
