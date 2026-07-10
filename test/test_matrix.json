@@ -1005,10 +1005,14 @@
       "tests": ["test_syslog"]
     },
     "native_smb": {
-      "desc": "SMB2 client wire codec (services/smb, MS-SMB2): increment 1 - the Direct-TCP transport\nframe, the 64-byte little-endian sync header (build/parse, ProtocolId + StructureSize\nvalidated), the NEGOTIATE request builder + response parser (dialect / server GUID / max\nsizes / SPNEGO buffer). Increment 2 - the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) /\nHMAC-MD5 (RFC 2104), KAT-verified against the RFC vectors + the NT hash. Pure host tests.",
+      "desc": "SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame,\nsync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC\n2104) KAT-verified vs the RFC vectors; and the NTLMv2 response computation (NThash / NTOWFv2\n/ NTProofStr / SessionBaseKey) verified against the MS-NLMP section 4.2 worked example. Pure\nhost tests.",
       "flags": ["-DDETWS_ENABLE_SMB=1"],
-      "src": ["+<services/smb/smb2.cpp>", "+<services/smb/smb_md.cpp>"],
-      "tests": ["test_smb2", "test_smb_crypto"]
+      "src": [
+        "+<services/smb/smb2.cpp>",
+        "+<services/smb/smb_md.cpp>",
+        "+<services/smb/ntlm.cpp>"
+      ],
+      "tests": ["test_smb2", "test_smb_crypto", "test_ntlm"]
     },
     "native_smtp": {
       "desc": "SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH\nLOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply\nparsing. Driven by a scripted mock server on the host - no lwIP or TLS.",

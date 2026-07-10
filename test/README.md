@@ -239,7 +239,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto` | SMB2 client wire codec (services/smb, MS-SMB2): increment 1 - the Direct-TCP transport frame, the 64-byte little-endian sync header (build/parse, ProtocolId + StructureSize validated), the NEGOTIATE r... |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2835 test cases** across **238 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2838 test cases** across **239 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16778,6 +16778,40 @@ A thorough directory of all **2835 test cases** across **238 suites**. Expand a 
     * **Objective**: Oid builder overflow
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ntlm (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntowfv2</b> &mdash; <i>MS-NLMP 4.2.4.1 published value</i></summary>
+
+    * **Objective**: MS-NLMP 4.2.4.1 published value
+    * **Assertions**:
+      * <code>Assert true (ntlm_ntowfv2(nt, "User", "Domain", owf))</code>
+      * <code>Assert equal string ("0c868a403bfd7a93a3001ef22ef02e3f", hex)</code>
+      * <code>Assert equal string ("8846f7eaee8fb117ad06bdd830b7586c", hex)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntlmv2_response</b> &mdash; <i>Ntlmv2 response</i></summary>
+
+    * **Objective**: Ntlmv2 response
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);</code>
+      * <code>Assert equal string ("68cd0ab851e51c96aabc927bebef6a1c", hex)</code>
+      * <code>Assert equal string ("8de40ccadbc14a82f15cb0ad0de95ca3", hex)</code>
+      * <code>TEST_ASSERT_EQUAL_STRING("68cd0ab851e51c96aabc927bebef6a1c"</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fail_closed</b> &mdash; <i>Fail closed</i></summary>
+
+    * **Objective**: Fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), out, sizeof(out), skey));</code>
   </details>
 
 </details>
