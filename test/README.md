@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2757 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2759 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4610,7 +4610,7 @@ A thorough directory of all **2757 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dbm (11 tests)</b></summary>
+<summary><b>test_dbm (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_put_get_overwrite</b> &mdash; <i>Put get overwrite</i></summary>
@@ -4762,6 +4762,31 @@ A thorough directory of all **2757 test cases** across **233 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db));</code>
       * <code>Assert equal int (200, detws_dbm_get(&g_db, "key0", 4, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(big, out, 200);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compact_source_read_failure</b> &mdash; <i>If reading a value back from the source log fails mid-compaction, compact must fail closed BEFORE</i></summary>
+
+    * **Objective**: If reading a value back from the source log fails mid-compaction, compact must fail closed BEFORE
+    * **Assertions**:
+      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (get_eq("a", "one-updated"))</code>
+      * <code>Assert true (get_eq("b", "two"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compact_checkpoint_failure</b> &mdash; <i>If the destination checkpoint (sync) fails after the live keys are copied, compact must fail closed and</i></summary>
+
+    * **Objective**: If the destination checkpoint (sync) fails after the live keys are copied, compact must fail closed and
+    * **Assertions**:
+      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (get_eq("x", "10"))</code>
+      * <code>Assert true (get_eq("y", "20"))</code>
+      * <code>Assert true (detws_dbm_compact(&g_db, dst2))</code>
+      * <code>Assert true (get_eq("x", "10"))</code>
+      * <code>Assert true (get_eq("y", "20"))</code>
   </details>
 
 </details>
