@@ -617,7 +617,11 @@ src/
 │   ├── directnet/  (directnet.h, directnet.cpp)
 │   ├── dma/  (dma.h, dma.cpp)
 │   ├── dmx/  (dmx.h, dmx.cpp)
-│   ├── dnc/  (dnc.h, dnc.cpp)
+│   ├── dnc/
+│   │   ├── dnc.cpp
+│   │   ├── dnc.h
+│   │   ├── dnc_stream.cpp
+│   │   └── dnc_stream.h
 │   ├── dnp3/  (dnp3.h, dnp3.cpp)
 │   ├── dns_resolver/  (dns_resolver.h, dns_resolver.cpp)
 │   ├── dns_server/  (dns_server.h, dns_server.cpp)
@@ -1293,6 +1297,7 @@ guards at compile time.
 | `DETWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
 | `DETWS_DNC_LEADER_LEN` | `32` | Default leader/trailer runout length for the DNC encoder. |
 | `DETWS_DNC_LINE_MAX` | `128` | Largest G-code block (one line) the DNC decoder reassembles. |
+| `DETWS_DNC_XOFF_MAX_POLLS` | `200000` | Safety cap on how many times the DNC stream engine polls the reverse channel while paused by an XOFF, before giving up with an I/O error. |
 | `DETWS_DNS_NAME_MAX` | `128` | Max length of a queried/stored DNS name (bytes, incl NUL). |
 | `DETWS_DNS_SERVER_MAX_RECORDS` | `8` | Max A records in the DNS server's fixed table. |
 | `DETWS_DNS_SERVER_TTL` | `60` | TTL (seconds) the DNS server puts on its answers. |
