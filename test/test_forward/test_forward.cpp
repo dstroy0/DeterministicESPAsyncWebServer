@@ -342,6 +342,66 @@ void test_route_add_validation_and_table_full()
     TEST_ASSERT_FALSE(route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0)); // table full
 }
 
+// --- inspection hook (DETWS_FWD_INSPECT) ---
+
+#if DETWS_FWD_INSPECT
+static int g_inspect_calls = 0;
+// Inspector that drops frames whose first byte is 'D', passes the rest, and counts calls.
+static uint8_t inspect_drop_D(uint8_t src, const uint8_t *d, uint16_t n, void *ctx)
+{
+    (void)src;
+    (void)ctx;
+    g_inspect_calls++;
+    if (n > 0 && d[0] == 'D')
+        return DET_FWD_INSPECT_DROP;
+    return DET_FWD_INSPECT_PASS;
+}
+
+void test_inspect_pass_and_drop()
+{
+    g_inspect_calls = 0;
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_set_inspector(inspect_drop_D, nullptr);
+
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "ok")); // passes inspection -> forwarded
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Drop it"));   // inspector drops
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size()); // not forwarded
+    TEST_ASSERT_EQUAL_UINT32(1, stats().inspect_dropped);
+    TEST_ASSERT_EQUAL_INT(2, g_inspect_calls); // called for every ingress that passed the ACL
+}
+
+void test_inspect_runs_after_acl()
+{
+    g_inspect_calls = 0;
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_set_inspector(inspect_drop_D, nullptr);
+    // deny 'X...' at the ACL: the inspector must not even see an ACL-denied frame
+    uint8_t pat[1] = {'X'}, msk[1] = {0xFF};
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, pat, msk, 1, DET_FWD_DENY);
+
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xhi")); // ACL-denied
+    TEST_ASSERT_EQUAL_INT(0, g_inspect_calls);     // inspector never called
+    TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
+}
+
+void test_inspect_cleared_by_null()
+{
+    add_if(1);
+    add_if(2);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_set_inspector(inspect_drop_D, nullptr);
+    det_forward_set_inspector(nullptr, nullptr);    // clear it
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Drop")); // would drop, but inspector is gone
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(0, stats().inspect_dropped);
+}
+#endif // DETWS_FWD_INSPECT
+
 int main()
 {
     UNITY_BEGIN();
@@ -368,5 +428,10 @@ int main()
     RUN_TEST(test_route_default_any_content);
     RUN_TEST(test_route_first_match_wins);
     RUN_TEST(test_route_add_validation_and_table_full);
+#if DETWS_FWD_INSPECT
+    RUN_TEST(test_inspect_pass_and_drop);
+    RUN_TEST(test_inspect_runs_after_acl);
+    RUN_TEST(test_inspect_cleared_by_null);
+#endif
     return UNITY_END();
 }

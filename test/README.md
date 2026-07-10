@@ -132,7 +132,7 @@ The native test matrix has **214 environments**, one per feature, generated from
 | `native_fdc2214` | `ETWS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
 | `native_fins` | `ETWS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
 | `native_flow_export` | `ETWS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
-| `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
+| `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4`, `ETWS_FWD_MAX_ROUTES=4`, `ETWS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
 | `native_ftp` | `ETWS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `ETWS_ENABLE_GATEWAY=1`, `ETWS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
 | `native_goose` | `ETWS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2800 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2803 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7861,7 +7861,7 @@ A thorough directory of all **2800 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_forward (23 tests)</b></summary>
+<summary><b>test_forward (26 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_default_deny</b> &mdash; <i>Default deny</i></summary>
@@ -8108,6 +8108,39 @@ A thorough directory of all **2800 test cases** across **236 suites**. Expand a 
       * <code>Assert false (det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0))</code>
       * <code>Assert true (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
       * <code>Assert false (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inspect_pass_and_drop</b> &mdash; <i>Inspect pass and drop</i></summary>
+
+    * **Objective**: Inspect pass and drop
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "ok")); // passes inspection -&gt; forwarded</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Drop it"));   // inspector drops</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size()); // not forwarded</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().inspect_dropped);</code>
+      * <code>Assert equal int (2, g_inspect_calls)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inspect_runs_after_acl</b> &mdash; <i>deny 'X...' at the ACL: the inspector must not even see an ACL-denied frame</i></summary>
+
+    * **Objective**: deny 'X...' at the ACL: the inspector must not even see an ACL-denied frame
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xhi")); // ACL-denied</code>
+      * <code>Assert equal int (0, g_inspect_calls)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_inspect_cleared_by_null</b> &mdash; <i>Inspect cleared by null</i></summary>
+
+    * **Objective**: Inspect cleared by null
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Drop")); // would drop, but inspector is gone</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().inspect_dropped);</code>
   </details>
 
 </details>

@@ -595,12 +595,14 @@
       "tests": ["test_dma"]
     },
     "native_forward": {
-      "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, and the ingress ACL (byte-pattern permit/deny, first-match, default\naction). Pure host tests; the DMA-driven wiring is HW-verified.",
+      "desc": "Interface forwarding plane (services/forward), v5 bridge / router: default-deny,\nan ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the\nsource, the per-rule rate cap (host test clock), send-failure counting, the interface /\nrule table limits, the ingress ACL (byte-pattern permit/deny, first-match, default\naction), policy routing (byte-pattern -> egress, precedence + fail-closed), and the opt-in\ninspection hook. Pure host tests; the DMA-driven wiring is HW-verified.",
       "flags": [
         "-DDETWS_ENABLE_FORWARD=1",
         "-DDETWS_FWD_MAX_IFACES=4",
         "-DDETWS_FWD_MAX_RULES=4",
-        "-DDETWS_FWD_MAX_ACL=4"
+        "-DDETWS_FWD_MAX_ACL=4",
+        "-DDETWS_FWD_MAX_ROUTES=4",
+        "-DDETWS_FWD_INSPECT=1"
       ],
       "src": ["+<services/forward/forward.cpp>"],
       "tests": ["test_forward"]

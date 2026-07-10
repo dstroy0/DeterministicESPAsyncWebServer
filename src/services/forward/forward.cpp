@@ -78,6 +78,10 @@ struct ForwardCtx
     acl_entry acl[DETWS_FWD_MAX_ACL];
     route routes[DETWS_FWD_MAX_ROUTES];
     uint8_t acl_default = DET_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
+#if DETWS_FWD_INSPECT
+    det_fwd_inspect_fn inspector = nullptr; // opt-in ingress inspection hook
+    void *inspect_ctx = nullptr;
+#endif
     det_forward_stats stats;
 #ifndef ARDUINO
     uint32_t now_ms = 0; // host test clock (real builds use detws_millis())
@@ -199,6 +203,10 @@ void det_forward_reset(void)
     memset(s_fwd.acl, 0, sizeof(s_fwd.acl));
     memset(s_fwd.routes, 0, sizeof(s_fwd.routes));
     s_fwd.acl_default = DET_FWD_ALLOW;
+#if DETWS_FWD_INSPECT
+    s_fwd.inspector = nullptr;
+    s_fwd.inspect_ctx = nullptr;
+#endif
     memset(&s_fwd.stats, 0, sizeof(s_fwd.stats));
 }
 
@@ -306,6 +314,14 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
         s_fwd.stats.acl_denied++;
         return 0;
     }
+#if DETWS_FWD_INSPECT
+    // Opt-in inspection hook: an app callback observes/filters the frame before routing.
+    if (s_fwd.inspector && s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == DET_FWD_INSPECT_DROP)
+    {
+        s_fwd.stats.inspect_dropped++;
+        return 0;
+    }
+#endif
     // Policy routes take precedence over the src->dst fan-out: the first matching route sends
     // the frame only to its chosen egress and ends the decision (same guarantees as a rule).
     for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
@@ -374,6 +390,14 @@ void det_forward_get_stats(det_forward_stats *out)
     if (out)
         *out = s_fwd.stats;
 }
+
+#if DETWS_FWD_INSPECT
+void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx)
+{
+    s_fwd.inspector = fn;
+    s_fwd.inspect_ctx = ctx;
+}
+#endif
 
 #if !defined(ARDUINO)
 void det_forward_test_set_now(uint32_t ms)

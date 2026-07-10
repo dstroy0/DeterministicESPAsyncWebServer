@@ -337,6 +337,14 @@
 #define DETWS_FWD_MAX_ROUTES 8
 #endif
 
+/** @brief Build-time toggle for the forwarding-path inspection hook (default off, for cost +
+ *         privacy). When 1, det_forward_set_inspector() installs a runtime callback that observes
+ *         / filters each ingress frame before it is forwarded; when 0 the hook is compiled out
+ *         entirely (no call site). Runtime toggle: register or clear (null) the inspector. */
+#ifndef DETWS_FWD_INSPECT
+#define DETWS_FWD_INSPECT 0
+#endif
+
 #if DETWS_ENABLE_FORWARD && (DETWS_FWD_MAX_IFACES < 1 || DETWS_FWD_MAX_RULES < 1 || DETWS_FWD_ACL_PATLEN < 1)
 #error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES / DETWS_FWD_MAX_RULES / DETWS_FWD_ACL_PATLEN must be >= 1"
 #endif

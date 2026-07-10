@@ -34,6 +34,11 @@
  * NIC / radio. The ingress ACL still runs first, and the same rate-cap / never-reflect /
  * fail-closed guarantees apply to the chosen egress.
  *
+ * **Inspection hook** (DETWS_FWD_INSPECT, off by default for cost + privacy): when built in, an
+ * app can register an inspector (det_forward_set_inspector) that runs on every ingress frame
+ * after the ACL and before routing - to observe / parse / meter, and optionally drop it. It is a
+ * flexible app callback (arbitrary logic), complementing the fast fixed-offset ACL.
+ *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
  */
@@ -78,13 +83,14 @@ typedef bool (*det_if_send_fn)(uint8_t if_id, const uint8_t *data, uint16_t len,
 /** @brief Forwarding counters (monotonic since the last det_forward_reset()). */
 struct det_forward_stats
 {
-    uint32_t frames_in;     ///< ingress calls
-    uint32_t forwarded;     ///< destination sends that succeeded
-    uint32_t blocked;       ///< destinations refused by a DENY / default-deny
-    uint32_t rate_dropped;  ///< destinations dropped by a rate cap
-    uint32_t send_fail;     ///< destination send callbacks that returned false
-    uint32_t acl_denied;    ///< frames dropped at ingress by the access-control list
-    uint32_t policy_routed; ///< frames that matched a policy route (routed to its chosen egress)
+    uint32_t frames_in;       ///< ingress calls
+    uint32_t forwarded;       ///< destination sends that succeeded
+    uint32_t blocked;         ///< destinations refused by a DENY / default-deny
+    uint32_t rate_dropped;    ///< destinations dropped by a rate cap
+    uint32_t send_fail;       ///< destination send callbacks that returned false
+    uint32_t acl_denied;      ///< frames dropped at ingress by the access-control list
+    uint32_t policy_routed;   ///< frames that matched a policy route (routed to its chosen egress)
+    uint32_t inspect_dropped; ///< frames dropped by the inspection hook (DETWS_FWD_INSPECT)
 };
 
 /** @brief Clear all interfaces, rules, and stats (start from empty). */
@@ -141,6 +147,30 @@ bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern
  */
 bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
                            uint8_t egress_if, uint16_t rate_cap_per_sec);
+
+#if DETWS_FWD_INSPECT
+/** @brief The verdict an inspection hook returns for a frame. */
+enum det_fwd_verdict
+{
+    DET_FWD_INSPECT_PASS = 0, ///< let the frame continue to routing / forwarding
+    DET_FWD_INSPECT_DROP = 1, ///< drop the frame (counted as inspect_dropped)
+};
+
+/**
+ * @brief Ingress inspection hook: observe / parse @p data (from @p src_if, @p len bytes) and
+ *        return a ::det_fwd_verdict. Runs after the ACL and before policy routes / the fan-out.
+ *        The callback must not block; it may record metrics, log, or decide to drop.
+ */
+typedef uint8_t (*det_fwd_inspect_fn)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
+
+/**
+ * @brief Install (or clear, with @p fn null) the ingress inspection hook.
+ *
+ * Opt-in twice over: compiled in only when DETWS_FWD_INSPECT is set (cost + privacy), and inert
+ * until an inspector is registered. A DROP verdict discards the frame before any forwarding.
+ */
+void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx);
+#endif
 
 /**
  * @brief Forward a frame that arrived on @p src_if to every allowed destination.
