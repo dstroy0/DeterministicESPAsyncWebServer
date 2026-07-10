@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`adeba2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/adeba2f729e889c7a2729f13a225aa282bb7447c))
+
+### Documentation
+
+- SMB client complete - move to PARTIAL (only HW-verify remains) ([`fe6de9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe6de9f3e8e0914de812f4f60b09137cf61d6d98))
+- update ESP32 build footprints [skip ci] ([`52d3de0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52d3de0583f2f2c4d77149bdec112c6e7e2c9687))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f8e41e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8e41e43099209cf96a66ac7243069eb15616420))
+
 ## [5.91.1] - 2026-07-10
 
 <details>
