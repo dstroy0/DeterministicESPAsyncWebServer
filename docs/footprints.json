@@ -437,8 +437,8 @@
     "example": "L7-Application/70.PortForward",
     "flags": "-DDETWS_ENABLE_RELAY=1",
     "board": "esp32dev",
-    "flash_bytes": 760993,
-    "ram_bytes": 88680
+    "flash_bytes": 761113,
+    "ram_bytes": 100968
   },
   "RTC+TIME_SOURCE+NTP": {
     "example": "L7-Application/61.Rtc",
@@ -535,7 +535,7 @@
     "example": "L5-Session/03.Telnet",
     "flags": "-DDETWS_ENABLE_TELNET=1",
     "board": "esp32dev",
-    "flash_bytes": 753437,
+    "flash_bytes": 753485,
     "ram_bytes": 66888
   },
   "THREAD+GATEWAY": {

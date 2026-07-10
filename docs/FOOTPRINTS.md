@@ -70,7 +70,7 @@ from each example's `pio ci` size report and aggregated into
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 741.0 KB (57.9%) | 66.3 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.6 KB (57.3%) | 64.8 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 775.2 KB (60.6%) | 64.8 KB (20.3%)  |
-| `RELAY`                                  | L7-Application/70.PortForward           | 743.2 KB (58.1%) | 86.6 KB (27.1%)  |
+| `RELAY`                                  | L7-Application/70.PortForward           | 743.3 KB (58.1%) | 98.6 KB (30.8%)  |
 | `RTC+TIME_SOURCE+NTP`                    | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
 | `SHT3X`                                  | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
