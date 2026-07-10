@@ -260,4 +260,41 @@ uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
     return visited;
 }
 
+uint64_t detws_dbm_live_bytes(DetwsDbm *db)
+{
+    uint64_t bytes = 0;
+    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    {
+        const DetwsDbmSlot *s = &db->slots[i];
+        if (s->state == 1)
+            bytes += WAL_RECORD_HEADER + DBM_HDR + s->key_len + s->val_len; // one framed record per live key
+    }
+    return bytes;
+}
+
+bool detws_dbm_compact(DetwsDbm *db, WalStore *dst)
+{
+    // Copy each live key (latest value, no tombstones) into the fresh destination. Read the value straight
+    // from the old log so this needs no per-key RAM beyond one record buffer, the same the put path uses.
+    uint8_t rec[DBM_HDR + DETWS_DBM_KEY_MAX + DETWS_DBM_VAL_MAX];
+    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    {
+        const DetwsDbmSlot *s = &db->slots[i];
+        if (s->state != 1)
+            continue;
+        rec[0] = 0; // put
+        put_u16(rec + 1, s->key_len);
+        put_u32(rec + 3, s->val_len);
+        memcpy(rec + DBM_HDR, s->key, s->key_len);
+        // On any failure, return before rebinding so db keeps using its intact original log (no data loss).
+        if (s->val_len && !wal_store_pread(db->wal, s->val_off, rec + DBM_HDR + s->key_len, s->val_len))
+            return false;
+        if (!wal_store_append(dst, rec, (uint32_t)(DBM_HDR + s->key_len + s->val_len)))
+            return false; // destination too small
+    }
+    if (!wal_store_checkpoint(dst))
+        return false;
+    return detws_dbm_open(db, dst); // rebind to the compacted log + rebuild the index with fresh offsets
+}
+
 #endif // DETWS_ENABLE_DBM

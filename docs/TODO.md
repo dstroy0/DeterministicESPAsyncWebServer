@@ -73,10 +73,16 @@ layer built first, then the store codecs on top. Substrate before stores.
 - [x] **dbm**: a hash key-value store on the flash layer. _(done)_ `DETWS_ENABLE_DBM` - a Bitcask-style
       log-structured store: put/delete append one WAL record (fast sequential writes), an in-RAM
       open-addressed hash index (fixed BSS, no heap) maps each live key to its value in the log, and
-      open rebuilds the index by replaying the log. Host-tested over a RAM device (9 cases: overwrite,
-      tombstone resurrection, persistence across remount with/without checkpoint, collisions, index-full
-      fail-closed, bounds, max-value round-trip). _Follow-up:_ log compaction to reclaim space from
-      overwritten/deleted keys (the log currently only grows).
+      open rebuilds the index by replaying the log. **Log compaction now reclaims dead space**
+      (`detws_dbm_compact` merges only the live keys - latest value each, no tombstones - into a freshly
+      formatted destination store, checkpoints it, then rebinds the handle and rebuilds the index; fails
+      closed leaving the original log intact on any I/O error so no data is lost; `detws_dbm_live_bytes`
+      pairs with `wal_store_used` to measure the dead fraction and decide when to compact). Host-tested over
+      a RAM device (11 cases: overwrite, tombstone resurrection, persistence across remount with/without
+      checkpoint, collisions, index-full fail-closed, bounds, max-value round-trip, compaction reclaims
+      space + preserves the live set, compaction fails closed on a too-small destination) and **HW-verified
+      on an ESP32-S3** (a churned 1632-byte log compacted to 69 bytes - exactly the live records - with every
+      value intact).
 - [x] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - reader + bounded writer, both done. Not the full SQLite amalgamation (heap + stdio,
       incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **reading is complete**

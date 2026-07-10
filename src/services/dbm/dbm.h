@@ -95,5 +95,26 @@ typedef bool (*DetwsDbmIterCb)(const char *key, uint16_t key_len, void *ctx);
 /** @brief Visit every live key (unordered). @return the number of keys visited. */
 uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx);
 
+/**
+ * @brief Bytes the live keys would occupy after a compaction (the summed framed size of one WAL record per
+ * live key). The current log (::wal_store_used on the bound store) is always at least this large; the
+ * difference is reclaimable dead space from overwritten and deleted keys. Pair the two to decide when the
+ * dead fraction is worth a ::detws_dbm_compact.
+ */
+uint64_t detws_dbm_live_bytes(DetwsDbm *db);
+
+/**
+ * @brief Compact the store: copy only the live keys (the latest value each, no tombstones) into a freshly
+ * formatted destination @p dst, checkpoint it, then rebind @p db to @p dst and rebuild the index - reclaiming
+ * all space held by overwritten / deleted keys (Bitcask-style merge to new, never in place).
+ *
+ * @p dst must be a mounted, freshly formatted ::WalStore backed by a DIFFERENT device than @p db's current
+ * log. On success @p db reads and writes through @p dst (the old device can then be reused); on failure
+ * (@p dst too small, or an I/O error) @p db is left UNCHANGED on its original log, so no data is lost and the
+ * caller can retry or keep using the old store.
+ * @return true when every live key was copied, the destination checkpointed, and the index rebuilt.
+ */
+bool detws_dbm_compact(DetwsDbm *db, WalStore *dst);
+
 #endif // DETWS_ENABLE_DBM
 #endif // DETERMINISTICESPASYNCWEBSERVER_DBM_H

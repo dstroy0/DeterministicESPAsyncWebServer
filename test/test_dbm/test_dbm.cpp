@@ -249,6 +249,86 @@ void test_max_value_roundtrip(void)
     TEST_ASSERT_EQUAL_INT(-1, detws_dbm_get(&g_db, "big", 3, small, sizeof(small)));
 }
 
+// A second RAM disk + store to compact INTO (compaction is merge-to-new, never in place).
+static uint8_t g_disk2[64 * 1024];
+static RamDisk g_d2;
+static WalDev g_dev2;
+static WalStore g_wal2;
+static WalStore *fresh_dest(uint64_t size)
+{
+    g_d2.buf = g_disk2;
+    g_d2.size = size;
+    g_dev2 = dev_over(&g_d2);
+    TEST_ASSERT_TRUE(wal_store_format(&g_wal2, &g_dev2));
+    return &g_wal2;
+}
+
+void test_compact_reclaims_space(void)
+{
+    fresh();
+    put_s("k1", "v1");
+    put_s("k2", "v2");
+    put_s("k3", "v3");
+    put_s("k4", "v4");
+    // Churn: overwrite k1 many times and delete k3 - all of that becomes dead space in the log.
+    for (int i = 0; i < 30; i++)
+    {
+        char v[32];
+        snprintf(v, sizeof(v), "k1-value-revision-%d", i);
+        TEST_ASSERT_TRUE(put_s("k1", v));
+    }
+    TEST_ASSERT_TRUE(detws_dbm_del(&g_db, "k3", 2));
+    TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db)); // k1,k2,k4 live
+
+    uint64_t used_before = wal_store_used(&g_wal);
+    uint64_t live = detws_dbm_live_bytes(&g_db);
+    TEST_ASSERT_TRUE(live < used_before); // the log carries reclaimable dead space
+
+    // Compact into the fresh destination; db is now bound to it.
+    WalStore *dst = fresh_dest(sizeof(g_disk2));
+    TEST_ASSERT_TRUE(detws_dbm_compact(&g_db, dst));
+
+    // Live set preserved, tombstoned key gone, latest value intact.
+    TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db));
+    TEST_ASSERT_TRUE(get_eq("k1", "k1-value-revision-29"));
+    TEST_ASSERT_TRUE(get_eq("k2", "v2"));
+    TEST_ASSERT_TRUE(get_eq("k4", "v4"));
+    TEST_ASSERT_FALSE(detws_dbm_contains(&g_db, "k3", 2));
+
+    // The compacted log is smaller than the churned one and holds only the live records.
+    uint64_t used_after = wal_store_used(&g_wal2);
+    TEST_ASSERT_TRUE(used_after < used_before);
+    TEST_ASSERT_TRUE(used_after >= live);
+
+    // A further write goes to the new log and reads back.
+    TEST_ASSERT_TRUE(put_s("k5", "v5"));
+    TEST_ASSERT_TRUE(get_eq("k5", "v5"));
+}
+
+void test_compact_dest_too_small_fails_closed(void)
+{
+    fresh();
+    char big[200]; // within DETWS_DBM_VAL_MAX (256)
+    memset(big, 'Z', sizeof(big));
+    for (int i = 0; i < 4; i++)
+    {
+        char k[8];
+        snprintf(k, sizeof(k), "key%d", i);
+        TEST_ASSERT_TRUE(detws_dbm_put(&g_db, k, (uint16_t)strlen(k), (const uint8_t *)big, sizeof(big)));
+    }
+    TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db)); // ~800+ B of live values, plus framing
+
+    // A 512-byte destination (384 B usable) cannot hold the live set: compact must fail closed.
+    WalStore *dst = fresh_dest(512);
+    TEST_ASSERT_FALSE(detws_dbm_compact(&g_db, dst));
+
+    // db is untouched: still on the original log, every key still readable.
+    TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db));
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_INT(200, detws_dbm_get(&g_db, "key0", 4, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(big, out, 200);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -261,5 +341,7 @@ int main(void)
     RUN_TEST(test_index_full_fails_closed);
     RUN_TEST(test_bounds_and_empty_value);
     RUN_TEST(test_max_value_roundtrip);
+    RUN_TEST(test_compact_reclaims_space);
+    RUN_TEST(test_compact_dest_too_small_fails_closed);
     return UNITY_END();
 }
