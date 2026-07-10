@@ -612,6 +612,7 @@ src/
 │   ├── directnet/  (directnet.h, directnet.cpp)
 │   ├── dma/  (dma.h, dma.cpp)
 │   ├── dmx/  (dmx.h, dmx.cpp)
+│   ├── dnc/  (dnc.h, dnc.cpp)
 │   ├── dnp3/  (dnp3.h, dnp3.cpp)
 │   ├── dns_resolver/  (dns_resolver.h, dns_resolver.cpp)
 │   ├── dns_server/  (dns_server.h, dns_server.cpp)
@@ -1047,6 +1048,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_DIRECTNET` | `0` | Opt-in AutomationDirect / Koyo DirectNET serial frame codec. |
 | `DETWS_ENABLE_DMA` | `0` | Enable the DMA peripheral ingest / egress primitive (default off). |
 | `DETWS_ENABLE_DMX` | `0` | DMX512 + RDM (ANSI E1.20) lighting codec (`services/dmx`). |
+| `DETWS_ENABLE_DNC` | `0` | Opt-in CNC RS-232 DNC drip-feed codec. |
 | `DETWS_ENABLE_DNP3` | `0` | DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`). |
 | `DETWS_ENABLE_DNS_RESOLVER` | `0` | Opt-in DNS resolver with answer verification. |
 | `DETWS_ENABLE_DNS_SERVER` | `0` | Authoritative DNS server (services/dns_server) on UDP/53. |
@@ -1266,6 +1268,8 @@ guards at compile time.
 | `DETWS_DMA_BUF_SIZE` | `256` | Bytes per DMA transfer buffer (RX is double-buffered at this size). |
 | `DETWS_DMA_CHANNELS` | `2` | Number of DMA channels (static-allocated; each is one peripheral link). |
 | `DETWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
+| `DETWS_DNC_LEADER_LEN` | `32` | Default leader/trailer runout length for the DNC encoder. |
+| `DETWS_DNC_LINE_MAX` | `128` | Largest G-code block (one line) the DNC decoder reassembles. |
 | `DETWS_DNS_NAME_MAX` | `128` | Max length of a queried/stored DNS name (bytes, incl NUL). |
 | `DETWS_DNS_SERVER_MAX_RECORDS` | `8` | Max A records in the DNS server's fixed table. |
 | `DETWS_DNS_SERVER_TTL` | `60` | TTL (seconds) the DNS server puts on its answers. |
