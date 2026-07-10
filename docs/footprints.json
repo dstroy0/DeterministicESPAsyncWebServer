@@ -437,7 +437,7 @@
     "example": "L7-Application/70.PortForward",
     "flags": "-DDETWS_ENABLE_RELAY=1",
     "board": "esp32dev",
-    "flash_bytes": 752497,
+    "flash_bytes": 752557,
     "ram_bytes": 70976
   },
   "RTC+TIME_SOURCE+NTP": {
