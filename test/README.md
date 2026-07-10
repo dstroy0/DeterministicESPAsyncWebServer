@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2793 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2800 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7861,7 +7861,7 @@ A thorough directory of all **2793 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_forward (16 tests)</b></summary>
+<summary><b>test_forward (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_default_deny</b> &mdash; <i>Default deny</i></summary>
@@ -8029,6 +8029,85 @@ A thorough directory of all **2793 test cases** across **236 suites**. Expand a 
       * <code>Assert false (det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, DET_FWD_DENY))</code>
       * <code>Assert true (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
       * <code>Assert false (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_selects_egress_and_falls_through</b> &mdash; <i>Route selects egress and falls through</i></summary>
+
+    * **Objective**: Route selects egress and falls through
+    * **Assertions**:
+      * <code>Assert true (route_firstbyte(DET_FWD_IF_ANY, 'X', 3, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xyz")); // matched -&gt; routed only to if 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[3].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[2].frames.size()); // the fan-out rule was skipped</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "abc")); // no route -&gt; normal rule -&gt; if 2</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed); // unchanged</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_never_reflects_to_source</b> &mdash; <i>Route never reflects to source</i></summary>
+
+    * **Objective**: Route never reflects to source
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xyz"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_unregistered_egress_fail_closed</b> &mdash; <i>Route unregistered egress fail closed</i></summary>
+
+    * **Objective**: Route unregistered egress fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xyz"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().send_fail);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_rate_cap</b> &mdash; <i>Route rate cap</i></summary>
+
+    * **Objective**: Route rate cap
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "X1"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "X2")); // over cap -&gt; dropped</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().rate_dropped);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "X3"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, g_cap[2].frames.size());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_default_any_content</b> &mdash; <i>Route default any content</i></summary>
+
+    * **Objective**: Route default any content
+    * **Assertions**:
+      * <code>Assert true (det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, 2, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "anything"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_first_match_wins</b> &mdash; <i>Route first match wins</i></summary>
+
+    * **Objective**: Route first match wins
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xy"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[3].frames.size());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_route_add_validation_and_table_full</b> &mdash; <i>Route add validation and table full</i></summary>
+
+    * **Objective**: Route add validation and table full
+    * **Assertions**:
+      * <code>Assert false (det_forward_route_add(DET_FWD_IF_ANY, 0, pat, msk, DETWS_FWD_ACL_PATLEN + 1, 2, 0))</code>
+      * <code>Assert false (det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0))</code>
+      * <code>Assert true (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
+      * <code>Assert false (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
   </details>
 
 </details>

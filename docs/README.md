@@ -1289,6 +1289,7 @@ guards at compile time.
 | `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
 | `DETWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
 | `DETWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
+| `DETWS_FWD_MAX_ROUTES` | `8` | Max policy routes (byte-pattern -> egress interface; static). |
 | `DETWS_FWD_MAX_RULES` | `8` | Max forwarding rules (src -> dst allow/deny + rate cap; static-allocated). |
 | `DETWS_GPIO_JSON_BUF` | `1024` | Stack buffer for the GPIO-map JSON (bytes). |
 | `DETWS_GPIO_MAX` | `40` | Maximum GPIO pins the mapper reports (BSS table). |
