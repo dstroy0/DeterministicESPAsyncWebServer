@@ -139,6 +139,7 @@ void test_half_close_shutdown()
     MockSock a, b;
     sock_init(&a, "req", 3, true);           // client sends a short request then closes
     sock_init(&b, resp, sizeof(resp), true); // origin streams a long response
+    a.send_cap = 64; // client drains slowly, so b->a stays multi-step regardless of DETWS_RELAY_BUF
     DetRelayEnd ea = end_of(&a), eb = end_of(&b);
     DetRelay r;
     det_relay_init(&r, &ea, &eb);
