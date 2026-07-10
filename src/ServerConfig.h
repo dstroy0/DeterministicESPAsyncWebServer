@@ -2970,10 +2970,22 @@
  *
  * Each active relay holds two buffers of this size (one per direction) for bytes read from one peer
  * but not yet accepted by the other (backpressure carry). Larger buffers raise throughput per step
- * at the cost of RAM per concurrent relay.
+ * (fewer cross-thread det_conn_send marshals per KB) at the cost of RAM per concurrent relay
+ * (2 * DETWS_RELAY_BUF * DETWS_RELAY_MAX_CONNS bytes).
  */
 #ifndef DETWS_RELAY_BUF
-#define DETWS_RELAY_BUF 512
+#define DETWS_RELAY_BUF 2048
+#endif
+
+/**
+ * @brief Max det_relay_step passes per poll for the relay listener (DETWS_ENABLE_RELAY).
+ *
+ * One poll drains up to this many DETWS_RELAY_BUF chunks per direction, so a single event forwards the
+ * whole buffered origin RX ring (DETWS_CLIENT_RX_BUF) instead of one chunk - the difference between a
+ * ~0.4 Mbps and a multi-Mbps port-forward. Bounded so one busy bridge cannot starve the others.
+ */
+#ifndef DETWS_RELAY_DRAIN_MAX
+#define DETWS_RELAY_DRAIN_MAX 8
 #endif
 
 /**

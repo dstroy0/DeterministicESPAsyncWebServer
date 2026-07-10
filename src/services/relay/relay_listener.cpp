@@ -84,7 +84,14 @@ int a_recv(void *c, uint8_t *buf, size_t cap)
 int a_send(void *c, const uint8_t *buf, size_t len)
 {
     RelayBridge *br = (RelayBridge *)c;
-    return det_conn_send(br->conn_slot, buf, (u16_t)len) ? (int)len : 0; // all-or-nothing = backpressure
+    // Send as much as the inbound TCP send window currently allows (partial), not all-or-nothing: a
+    // whole DETWS_RELAY_BUF chunk rarely fits tcp_sndbuf in one shot, and a failed all-or-nothing send
+    // forwards zero bytes and stalls the transfer. room==0 is real backpressure - the pump retries.
+    u16_t room = det_conn_sndbuf(br->conn_slot);
+    if (room == 0)
+        return 0;
+    u16_t n = (len < (size_t)room) ? (u16_t)len : room;
+    return det_conn_send(br->conn_slot, buf, n) ? (int)n : 0;
 }
 // Origin (b) = the outbound det_client; it reports EOF through the recv seam.
 int b_recv(void *c, uint8_t *buf, size_t cap)
@@ -117,11 +124,20 @@ void service(uint8_t slot)
     RelayBridge *br = bridge_by_conn(slot);
     if (!br)
         return;
-    int st = det_relay_step(&br->relay);
-    if (st == DET_RELAY_ERROR || st == DET_RELAY_DONE)
+    // Drain as much as the buffers allow this pass: keep stepping while a step actually moves bytes,
+    // so one poll forwards the whole buffered origin RX ring (DETWS_CLIENT_RX_BUF) instead of a single
+    // DETWS_RELAY_BUF chunk. Bounded by DETWS_RELAY_DRAIN_MAX so one busy bridge cannot starve others.
+    for (int pass = 0; pass < DETWS_RELAY_DRAIN_MAX; pass++)
     {
-        teardown(br, true);
-        return;
+        uint32_t moved = br->relay.bytes_a2b + br->relay.bytes_b2a;
+        int st = det_relay_step(&br->relay);
+        if (st == DET_RELAY_ERROR || st == DET_RELAY_DONE)
+        {
+            teardown(br, true);
+            return;
+        }
+        if (br->relay.bytes_a2b + br->relay.bytes_b2a == moved)
+            break; // no progress this pass; nothing more buffered to move right now
     }
     // origin closed and everything it sent has been forwarded -> nothing more to do
     if (det_client_is_closed(br->origin_cid) && det_client_available(br->origin_cid) == 0 &&
