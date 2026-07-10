@@ -407,6 +407,44 @@ void test_overflow_read_payload(void)
         TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]); // every byte survived the chain intact
 }
 
+// A non-overflow cell reassembles trivially: sqlite_read_payload copies the in-page prefix and succeeds.
+void test_read_payload_nonoverflow(void)
+{
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], out[OVF_PAGE_SIZE];
+    memset(leaf, 0, sizeof(leaf));
+    for (uint32_t i = 0; i < 50; i++)
+        leaf[8 + i] = (uint8_t)(i + 1); // a known local payload at offset 8
+    SqliteTableLeafCell cell;
+    cell.rowid = 1;
+    cell.payload_len = 50;
+    cell.local_off = 8;
+    cell.local_len = 50;
+    cell.has_overflow = false;
+    TEST_ASSERT_TRUE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
+    TEST_ASSERT_EQUAL_MEMORY(leaf + 8, out, 50);
+}
+
+// A corrupt overflow next-pointer (to a page the reader rejects) must fail closed, not crash.
+void test_read_payload_bad_overflow_pointer(void)
+{
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], out[4096];
+    memset(leaf, 0, sizeof(leaf));
+    SqliteTableLeafCell cell;
+    cell.rowid = 1;
+    cell.payload_len = 1000; // > local -> claims an overflow chain
+    cell.local_off = 8;
+    cell.local_len = 100;
+    cell.has_overflow = true;
+    // The 4-byte first-overflow pointer sits right after the local prefix: point it at page 9999, which
+    // ovf_read (only 11 pages) refuses -> the read fails and the reassembly returns false.
+    uint32_t ptr = cell.local_off + cell.local_len;
+    leaf[ptr] = 0x00;
+    leaf[ptr + 1] = 0x00;
+    leaf[ptr + 2] = 0x27;
+    leaf[ptr + 3] = 0x0f; // 9999
+    TEST_ASSERT_FALSE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work));
+}
+
 // A short output buffer must fail closed, not overrun.
 void test_overflow_read_payload_bounds(void)
 {
@@ -587,6 +625,86 @@ void test_build_table_db_roundtrip(void)
     TEST_ASSERT_EQUAL_INT(3, n);
 }
 
+void test_encode_record_int_widths(void)
+{
+    // Every integer serial type: the value round-trips and the encoder picks the minimal type.
+    struct
+    {
+        int64_t v;
+        uint64_t st;
+    } cases[] = {
+        {0, 8},
+        {1, 9},
+        {-1, 1},
+        {127, 1},
+        {-128, 1},
+        {128, 2},
+        {-129, 2},
+        {32767, 2},
+        {40000, 3},
+        {-40000, 3},
+        {8388607, 3},
+        {10000000, 4},
+        {-10000000, 4},
+        {2147483647, 4},
+        {3000000000LL, 5},
+        {-3000000000LL, 5},
+        {140737488355327LL, 5},
+        {200000000000000LL, 6},
+        {-9000000000000000000LL, 6},
+    };
+    for (unsigned k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
+    {
+        SqliteValue col = {SQLITE_COL_INT, cases[k].v, 0, nullptr, 0};
+        uint8_t rec[32];
+        uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
+        TEST_ASSERT_TRUE(rl > 0);
+        SqliteRecordCursor rc;
+        TEST_ASSERT_TRUE(sqlite_record_begin(&rc, rec, rl));
+        uint64_t st = 0;
+        const uint8_t *v = nullptr;
+        uint32_t vl = 0;
+        TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl));
+        TEST_ASSERT_EQUAL_UINT64(cases[k].st, st); // minimal serial type
+        TEST_ASSERT_EQUAL_INT64(cases[k].v, sqlite_column_int(st, v, vl));
+        TEST_ASSERT_FALSE(sqlite_record_next(&rc, &st, &v, &vl)); // single column
+    }
+}
+
+void test_encode_record_blob(void)
+{
+    // A BLOB column (serial type 12 + 2n) round-trips its raw bytes, including embedded NULs.
+    const uint8_t blob[] = {0x00, 0xff, 0x10, 0x00, 0x7f, 0x80};
+    SqliteValue col = {SQLITE_COL_BLOB, 0, 0, blob, sizeof(blob)};
+    uint8_t rec[32];
+    uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
+    TEST_ASSERT_TRUE(rl > 0);
+    SqliteRecordCursor rc;
+    TEST_ASSERT_TRUE(sqlite_record_begin(&rc, rec, rl));
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    TEST_ASSERT_TRUE(sqlite_record_next(&rc, &st, &v, &vl));
+    TEST_ASSERT_EQUAL_UINT64(12u + 2u * sizeof(blob), st); // BLOB serial type
+    TEST_ASSERT_EQUAL_UINT32(sizeof(blob), vl);
+    TEST_ASSERT_EQUAL_MEMORY(blob, v, sizeof(blob));
+}
+
+void test_build_table_db_page_overflow_fails_closed(void)
+{
+    // Many rows that each fit but collectively exceed one leaf page must fail closed (distinct from the
+    // single-oversized-row path): the cells + pointer array do not fit page 2.
+    static SqliteValue rowvals[60][1];
+    static SqliteRow rows[60];
+    for (int r = 0; r < 60; r++)
+    {
+        rowvals[r][0] = {SQLITE_COL_INT, 1000000 + r, 0, nullptr, 0}; // ~4-byte int + framing each
+        rows[r] = {(uint64_t)(r + 1), rowvals[r], 1};
+    }
+    static uint8_t img[1024];
+    TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", rows, 60, img, sizeof(img)));
+}
+
 void test_build_table_db_fails_closed(void)
 {
     // A single row larger than one leaf page can hold must fail closed (bounded writer, no overflow pages).
@@ -617,11 +735,16 @@ int main(void)
     RUN_TEST(test_leaf_cell_overflow_detection);
     RUN_TEST(test_table_cursor_multipage);
     RUN_TEST(test_overflow_read_payload);
+    RUN_TEST(test_read_payload_nonoverflow);
+    RUN_TEST(test_read_payload_bad_overflow_pointer);
     RUN_TEST(test_overflow_read_payload_bounds);
     RUN_TEST(test_overflow_cursor);
     RUN_TEST(test_varint_encode_roundtrip);
     RUN_TEST(test_encode_record_roundtrip);
     RUN_TEST(test_build_table_db_roundtrip);
+    RUN_TEST(test_encode_record_int_widths);
+    RUN_TEST(test_encode_record_blob);
+    RUN_TEST(test_build_table_db_page_overflow_fails_closed);
     RUN_TEST(test_build_table_db_fails_closed);
     return UNITY_END();
 }

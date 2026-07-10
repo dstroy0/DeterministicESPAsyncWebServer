@@ -217,16 +217,20 @@ bool sqlite_read_payload(SqlitePageReader read, void *ctx, uint32_t page_size, u
 
     for (uint32_t pages = 0; next != 0 && got < cell->payload_len; pages++)
     {
+        // Unreachable belt-and-suspenders: `got` grows by `content` every iteration, so it reaches
+        // payload_len in fewer than max_pages steps - kept only as a guard against future logic changes.
         if (pages >= max_pages)
-            return false; // broken / looping chain
+            return false; // GCOVR_EXCL_LINE  broken / looping chain (provably not hit; see above)
         if (!read(ctx, next, work_page, page_size))
             return false;
         uint32_t nnext = be32(work_page);
         uint32_t chunk = cell->payload_len - got;
         if (chunk > content)
             chunk = content;
+        // Also unreachable: got < payload_len <= out_cap and chunk <= payload_len - got, so got + chunk
+        // never exceeds out_cap - the entry check at the top already bounded the write.
         if (got + chunk > out_cap)
-            return false;
+            return false; // GCOVR_EXCL_LINE
         memcpy(out + got, work_page + 4, chunk);
         got += chunk;
         next = nnext;
