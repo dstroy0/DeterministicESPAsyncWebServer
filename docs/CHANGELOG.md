@@ -6,8 +6,29 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`17d1062`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17d10621d5f24e5c32bce108ef22a186fc01d732))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`962d030`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/962d03066c6e67cf247a2017152a6e3e0c16860f))
+
+### Performance
+
+- host CPU baseline for the WAL/dbm/docstore/sqlite/resp stack ([`eb33f37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb33f37bed1e96ded1afe5ef025d21d8070f8f1d))
+
+## [5.73.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.73.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`a569958`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a569958e8d58a9da28b93eee034582671ed4c2d5))
 - update CHANGELOG.md [skip ci] ([`7fed3df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fed3df3b9fef28885aaeecbc8532e3d89a51ab2))
+
+### Changes
+
+- Bump version: 5.72.0 → 5.73.0 ([`8fecaa5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8fecaa58c4fa2eaee701ab0d4322918e05837861))
 
 ### Documentation
 
@@ -17,6 +38,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - local JSON document store on the WAL ([`ae94350`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae94350216a840792136fe93751f57d401415491))
+
+</details>
 
 ## [5.72.0] - 2026-07-10
 
