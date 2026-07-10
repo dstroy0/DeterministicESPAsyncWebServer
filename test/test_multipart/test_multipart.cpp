@@ -543,6 +543,66 @@ void test_binary_part_not_truncated()
     TEST_ASSERT_EQUAL_STRING("a.png", mp.parts[0].filename);
 }
 
+// A quoted boundary value (boundary="BND") parses the same as an unquoted one.
+void test_quoted_boundary()
+{
+    char bb[256];
+    const char *body = "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nval\r\n--BND--\r\n";
+    HttpReq *req = build_multipart_req(0, "\"BND\"", body, bb, sizeof(bb)); // Content-Type: boundary="BND"
+    Multipart mp;
+    TEST_ASSERT_TRUE(multipart_parse(req, &mp));
+    TEST_ASSERT_EQUAL_INT(1, mp.part_count);
+    TEST_ASSERT_EQUAL_STRING("val", mp.parts[0].data);
+}
+
+// An empty quoted boundary (boundary="") is rejected.
+void test_empty_boundary_returns_false()
+{
+    char bb[128];
+    HttpReq *req = build_multipart_req(0, "\"\"", "--\r\n\r\n", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(multipart_parse(req, &mp));
+}
+
+// An unquoted or unterminated Content-Disposition value yields a null field (not a crash).
+void test_malformed_disposition_values()
+{
+    char bb[256];
+    Multipart mp;
+    // unquoted name= value
+    const char *b1 = "--BND\r\nContent-Disposition: form-data; name=nq\r\n\r\nx\r\n--BND--\r\n";
+    HttpReq *r1 = build_multipart_req(0, "BND", b1, bb, sizeof(bb));
+    TEST_ASSERT_TRUE(multipart_parse(r1, &mp));
+    TEST_ASSERT_EQUAL_INT(1, mp.part_count);
+    TEST_ASSERT_NULL(mp.parts[0].name);
+    // opening quote with no closing quote
+    const char *b2 = "--BND\r\nContent-Disposition: form-data; name=\"unclosed\r\n\r\nx\r\n--BND--\r\n";
+    HttpReq *r2 = build_multipart_req(0, "BND", b2, bb, sizeof(bb));
+    TEST_ASSERT_TRUE(multipart_parse(r2, &mp));
+    TEST_ASSERT_NULL(mp.parts[0].name);
+}
+
+// A body shorter than the delimiter finds no boundary (length-bounded search, not an over-read).
+void test_body_shorter_than_delimiter()
+{
+    char bb[64];
+    HttpReq *req = build_multipart_req(0, "BND", "--B", bb, sizeof(bb));
+    Multipart mp;
+    TEST_ASSERT_FALSE(multipart_parse(req, &mp));
+}
+
+// A part header with no CRLF, and part data with no closing delimiter, both fail closed.
+void test_truncated_part_fails_closed()
+{
+    char bb[256];
+    Multipart mp;
+    HttpReq *r1 = build_multipart_req(0, "BND", "--BND\r\nContent-Disposition: form-data; name=\"f\"", bb, sizeof(bb));
+    TEST_ASSERT_FALSE(multipart_parse(r1, &mp)); // header without CRLF
+    HttpReq *r2 = build_multipart_req(
+        0, "BND", "--BND\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\ndata-no-end", bb, sizeof(bb));
+    TEST_ASSERT_FALSE(multipart_parse(r2, &mp)); // data without closing "\r\n--boundary"
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -567,6 +627,11 @@ int main()
     RUN_TEST(stress_parse_100_requests);
     RUN_TEST(stress_get_field_100_lookups);
     RUN_TEST(test_binary_part_not_truncated);
+    RUN_TEST(test_quoted_boundary);
+    RUN_TEST(test_empty_boundary_returns_false);
+    RUN_TEST(test_malformed_disposition_values);
+    RUN_TEST(test_body_shorter_than_delimiter);
+    RUN_TEST(test_truncated_part_fails_closed);
 
     return UNITY_END();
 }
