@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2851 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2856 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23917,7 +23917,7 @@ A thorough directory of all **2851 test cases** across **241 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (10 tests)</b></summary>
+<summary><b>test_smb2 (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -24067,6 +24067,90 @@ A thorough directory of all **2851 test cases** across **241 suites**. Expand a 
       * <code>Assert true (spnego_parse_response(r.sec_buf, r.sec_buf_len, &ct, &cl))</code>
       * <code>Assert true (ntlmssp_parse_challenge(ct, cl, &nch))</code>
       * <code>Assert equal memory (sc, nch.server_challenge, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_tree_connect</b> &mdash; <i>Build tree connect</i></summary>
+
+    * **Objective**: Build tree connect
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 8 + sizeof(path), n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0xABCDULL, h.session_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(9, r16(b + 0));            // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(72, r16(b + 4));           // PathOffset</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(path), r16(b + 6)); // PathLength</code>
+      * <code>Assert equal memory (path, buf + 72, sizeof(path))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_tree_connect(buf, 60, 2, 0, path, sizeof(path))); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_tree_connect(buf, sizeof(buf), 2, 0, path, 0));   // empty path</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_tree_connect_response</b> &mdash; <i>Parse tree connect response</i></summary>
+
+    * **Objective**: Parse tree connect response
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_header(m, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id); // TreeId comes from the header</code>
+      * <code>Assert true (smb2_parse_tree_connect_response(m, n, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SMB2_SHARE_TYPE_DISK, r.share_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x001f01ff, r.maximal_access);</code>
+      * <code>Assert false (smb2_parse_tree_connect_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_tree_connect_response(m, 70, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_create</b> &mdash; <i>Build create</i></summary>
+
+    * **Objective**: Build create
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 56 + sizeof(name), n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_CREATE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(57, r16(b + 0)); // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, r32(b + 4));  // ImpersonationLevel</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_GENERIC_READ, r32(b + 24));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_SHARE_READ, r32(b + 32));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_OPEN, r32(b + 36));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_NON_DIRECTORY_FILE, r32(b + 40));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(120, r16(b + 44));          // NameOffset</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(name), r16(b + 46)); // NameLength</code>
+      * <code>Assert equal memory (name, buf + 120, sizeof(name))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_create(buf, 100, 3, 0, 0, 0, 0, 0, 0, name, sizeof(name))); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_create(buf, sizeof(buf), 3, 0, 0, 0, 0, 0, 0, name, 0));    // empty name</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_create_response</b> &mdash; <i>Parse create response</i></summary>
+
+    * **Objective**: Parse create response
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_create_response(m, n, &r))</code>
+      * <code>Assert equal memory (fid, r.file_id, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x123456789ULL, r.end_of_file);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, r.create_action);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x80, r.file_attributes);</code>
+      * <code>Assert false (smb2_parse_create_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_create_response(m, 100, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_roundtrip</b> &mdash; <i>Close roundtrip</i></summary>
+
+    * **Objective**: Close roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 24, n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_CLOSE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(b + 0));                             // StructureSize</code>
+      * <code>Assert equal memory (fid, b + 8, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_close(buf, 80, 4, 0, 0, fid)); // overflow</code>
+      * <code>Assert true (smb2_parse_close_response(m, 64 + 60, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x4000ULL, r.end_of_file);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x80, r.file_attributes);</code>
+      * <code>Assert false (smb2_parse_close_response(bad, 64 + 60, &r))</code>
   </details>
 
 </details>
