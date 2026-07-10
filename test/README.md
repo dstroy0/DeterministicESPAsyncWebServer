@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **213 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **214 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -152,6 +152,7 @@ The native test matrix has **213 environments**, one per feature, generated from
 | `native_hpack` | `ETWS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
 | `native_http_client` | `ETWS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
 | `native_http_delivery` | `ETWS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate decision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206 Content-Rang... |
+| `native_httpcache` | `ETWS_ENABLE_HTTP_CACHE=1` | `test_httpcache` | HTTP Cache-Control helpers (services/httpcache, RFC 9111 + 8246 + 5861): the structured directive builder + first-class origin presets (immutable asset / shared / no-store / revalidatable), the tolera... |
 | `native_hw_health` | `ETWS_ENABLE_HW_HEALTH=1` | `test_hw_health` | Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst droop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test (driven v... |
 | `native_iccp` | `ETWS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
 | `native_iec60870` | `ETWS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
@@ -503,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2785 test cases** across **235 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2793 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -11210,6 +11211,105 @@ A thorough directory of all **2785 test cases** across **235 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (MAX_QUERY_PARAMS, (int)http_pool[0].query_count)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_httpcache (8 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_preset_immutable</b> &mdash; <i>Preset immutable</i></summary>
+
+    * **Objective**: Preset immutable
+    * **Assertions**:
+      * <code>Assert equal string ("public, max-age=31536000, immutable", b)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, strlen(b));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_preset_no_store_and_shared_and_revalidatable</b> &mdash; <i>Preset no store and shared and revalidatable</i></summary>
+
+    * **Objective**: Preset no store and shared and revalidatable
+    * **Assertions**:
+      * <code>Assert equal string ("no-store", b)</code>
+      * <code>Assert equal string ("public, max-age=60, s-maxage=600", b)</code>
+      * <code>Assert equal string ("public, max-age=300, stale-while-revalidate=60", b)</code>
+      * <code>Assert equal string ("public, max-age=300", b)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_manual_and_edges</b> &mdash; <i>empty set -> 0 (nothing to emit)</i></summary>
+
+    * **Objective**: empty set -> 0 (nothing to emit)
+    * **Assertions**:
+      * <code>Assert equal string ("private, no-cache, max-age=0, must-revalidate", b)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, sizeof(b), &cc));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(tiny, sizeof(tiny), &cc));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_response_directives</b> &mdash; <i>Parse response directives</i></summary>
+
+    * **Objective**: Parse response directives
+    * **Assertions**:
+      * <code>Assert true (cache_control_parse(s, strlen(s), &cc))</code>
+      * <code>Assert true (cc.cc_public)</code>
+      * <code>Assert true (cc.cc_immutable)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(31536000, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, cc.s_maxage); // absent</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_case_insensitive_and_quoted_and_unknown</b> &mdash; <i>case-insensitive names, a quoted delta, extra OWS, and an unknown directive to ignore</i></summary>
+
+    * **Objective**: case-insensitive names, a quoted delta, extra OWS, and an unknown directive to ignore
+    * **Assertions**:
+      * <code>Assert true (cache_control_parse(s, strlen(s), &cc))</code>
+      * <code>Assert true (cc.no_store)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(3600, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(120, cc.s_maxage);</code>
+      * <code>Assert false (cc.cc_public)</code>
+      * <code>Assert false (cache_control_parse(u, strlen(u), &cc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_request_directives</b> &mdash; <i>Parse request directives</i></summary>
+
+    * **Objective**: Parse request directives
+    * **Assertions**:
+      * <code>Assert true (cache_control_parse(s, strlen(s), &cc))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-2, cc.max_stale); // present, no value = "any"</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(30, cc.min_fresh);</code>
+      * <code>Assert true (cc.only_if_cached)</code>
+      * <code>Assert true (cache_control_parse(s2, strlen(s2), &cc))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(90, cc.max_stale);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_parse_roundtrip</b> &mdash; <i>Build parse roundtrip</i></summary>
+
+    * **Objective**: Build parse roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, n);</code>
+      * <code>Assert true (cache_control_parse(b, n, &c))</code>
+      * <code>Assert equal (a.cc_public, c.cc_public)</code>
+      * <code>Assert equal (a.must_revalidate, c.must_revalidate)</code>
+      * <code>Assert equal (a.no_transform, c.no_transform)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(a.max_age, c.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(a.s_maxage, c.s_maxage);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(a.stale_if_error, c.stale_if_error);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_freshness_precedence</b> &mdash; <i>shared cache honors s-maxage first</i></summary>
+
+    * **Objective**: shared cache honors s-maxage first
+    * **Assertions**:
+      * <code>Assert equal int (200, (int)cache_freshness_lifetime(&cc, true, 999))</code>
+      * <code>Assert equal int (100, (int)cache_freshness_lifetime(&cc, false, 999))</code>
+      * <code>Assert equal int (50, (int)cache_freshness_lifetime(&cc, true, 50))</code>
+      * <code>Assert equal int (-1, (int)cache_freshness_lifetime(&cc, true, -1))</code>
   </details>
 
 </details>

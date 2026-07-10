@@ -45,6 +45,12 @@
       "src": ["+<services/ftp/ftp.cpp>"],
       "tests": ["test_ftp"]
     },
+    "native_httpcache": {
+      "desc": "HTTP Cache-Control helpers (services/httpcache, RFC 9111 + 8246 + 5861): the\nstructured directive builder + first-class origin presets (immutable asset / shared / no-store /\nrevalidatable), the tolerant directive parser (case-insensitive, quoted deltas, unknown ignored),\nand the RFC 9111 freshness-lifetime precedence. Pure host tests incl. a build->parse round-trip.",
+      "flags": ["-DDETWS_ENABLE_HTTP_CACHE=1"],
+      "src": ["+<services/httpcache/httpcache.cpp>"],
+      "tests": ["test_httpcache"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

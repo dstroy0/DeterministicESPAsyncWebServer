@@ -2952,6 +2952,20 @@
 #endif
 
 /**
+ * @brief Opt-in HTTP Cache-Control directive helpers (DETWS_ENABLE_HTTP_CACHE).
+ *
+ * services/httpcache is the origin-side of edge caching (RFC 9111 + RFC 8246 + RFC 5861): a
+ * structured `Cache-Control` builder (`cache_control_build` + first-class presets like
+ * `cache_immutable_asset` / `cache_shared`) so app routes emit correct, edge-cacheable responses
+ * (hand the value to DetWebServer::set_cache_control()), a tolerant directive parser
+ * (`cache_control_parse`), and the RFC 9111 freshness-lifetime calculation. Pure text, host-tested.
+ * Groundwork for the CDN roadmap; the caching tier itself is a separate piece. Default off.
+ */
+#ifndef DETWS_ENABLE_HTTP_CACHE
+#define DETWS_ENABLE_HTTP_CACHE 0
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

@@ -382,6 +382,12 @@ Opt-in HART / HART-IP process-instrument protocol codec. When set, services/hart
 
 Omron Host Link (C-mode) frame codec. Default off. services/hostlink is a zero-heap ASCII command/response codec for Omron's serial host-link protocol (the RS-232/485 sibling of FINS): `hostlink_build` emits `@UU` + 2-char header code + text + FCS + `*`CR, and `hostlink_parse` FCS-validates and splits a frame (`hostlink_end_code` reads a response's end code). The FCS is the 8-bit XOR from `@` through the text, rendered as two hex digits (verified against the `@00RD00000010` -> `57` example). Pure and host-tested; the UART transport is the application's. See src/services/hostlink/hostlink.h.
 
+## HTTP Cache
+
+`DETWS_ENABLE_HTTP_CACHE`
+
+HTTP `Cache-Control` directive helpers (RFC 9111 + RFC 8246 + RFC 5861). Default off. services/httpcache is the origin-side of edge caching so app routes emit correct, edge-cacheable responses (the groundwork for the CDN roadmap; the caching tier itself is a separate piece). `cache_control_build` serializes a `DetwsCacheControl` struct into the canonical directive string (hand it to `set_cache_control()`), with first-class presets for the common cases - `cache_immutable_asset` (`public, max-age=..., immutable`), `cache_shared` (distinct browser vs shared-cache TTL via `s-maxage`), `cache_revalidatable` (`stale-while-revalidate`), and `cache_no_store`. `cache_control_parse` is a tolerant reader (case-insensitive names, bare or quoted delta-seconds, unknown directives ignored) covering the response directives plus `no-cache` / `must-revalidate` / `proxy-revalidate` / `must-understand` / the extensions and the request directives (`only-if-cached` / `max-stale` / `min-fresh`). `cache_freshness_lifetime` implements the RFC 9111 sec 4.2.1 first-match precedence (s-maxage for a shared cache, then max-age, then `Expires` minus `Date`). Directive set + freshness precedence verified against RFC 9111; pure and host-tested with a build->parse round-trip. See src/services/httpcache/httpcache.h.
+
 ## HTTP Client
 
 `DETWS_ENABLE_HTTP_CLIENT`
