@@ -6,10 +6,13 @@ The library is released from `main` and published to the Arduino and PlatformIO
 registries. Security fixes target the latest released version. Please reproduce
 on the latest release before reporting.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.x     | :white_check_mark: |
-| < 3.0   | :x:                |
+Only the latest released version is supported; earlier versions receive no fixes. This table is kept
+current automatically by the release bump (`.bumpversion.cfg`).
+
+| Version  | Supported          |
+| -------- | ------------------ |
+| 5.94.1   | :white_check_mark: |
+| < 5.94.1 | :x:                |
 
 ## Reporting a vulnerability
 
