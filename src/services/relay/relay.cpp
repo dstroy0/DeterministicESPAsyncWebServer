@@ -1,0 +1,97 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file relay.cpp
+ * @brief TCP relay / DNAT byte pump implementation (see relay.h).
+ */
+
+#include "relay.h"
+
+#if DETWS_ENABLE_RELAY
+
+#include <string.h>
+
+// Pump one direction (src -> dst) one non-blocking pass: flush pending bytes, then read more.
+// @param dst_shut_sent  the "shutdown already called" flag for @p dst (the peer that stops receiving
+//                       once this direction finishes). Returns -1 on a seam error, else 0.
+static int pump(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
+                bool *dir_done, bool *dst_shut_sent, uint32_t *counter)
+{
+    if (*dir_done)
+        return 0;
+
+    // 1. flush whatever is already buffered for dst
+    if (*off < *len)
+    {
+        int s = dst->send(dst->ctx, buf + *off, (size_t)(*len - *off));
+        if (s < 0)
+            return -1;
+        *off = (uint16_t)(*off + s);
+        *counter += (uint32_t)s;
+    }
+
+    // 2. buffer drained: read more from src (unless it already hit EOF), then try to send it right
+    //    away so one step moves data end to end
+    if (*off >= *len)
+    {
+        *off = 0;
+        *len = 0;
+        if (!*src_eof)
+        {
+            int r = src->recv(src->ctx, buf, DETWS_RELAY_BUF);
+            if (r < 0)
+            {
+                *src_eof = true;
+            }
+            else if (r > 0)
+            {
+                *len = (uint16_t)r;
+                int s = dst->send(dst->ctx, buf, *len);
+                if (s < 0)
+                    return -1;
+                *off = (uint16_t)s;
+                *counter += (uint32_t)s;
+            }
+        }
+    }
+
+    // 3. this direction is finished once src is at EOF and nothing is left to flush
+    if (*src_eof && *off >= *len)
+    {
+        *dir_done = true;
+        if (dst->shutdown && !*dst_shut_sent)
+        {
+            dst->shutdown(dst->ctx); // propagate the half-close to the peer that stops receiving
+            *dst_shut_sent = true;
+        }
+    }
+    return 0;
+}
+
+void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *origin)
+{
+    if (!r || !client || !origin)
+        return;
+    memset(r, 0, sizeof(*r));
+    r->a = *client;
+    r->b = *origin;
+}
+
+int det_relay_step(DetRelay *r)
+{
+    if (!r)
+        return DET_RELAY_ERROR;
+    // a -> b: dst is b, so b's shutdown fires when this direction finishes
+    if (pump(&r->a, &r->b, r->buf_a2b, &r->a2b_len, &r->a2b_off, &r->a_eof, &r->a2b_done, &r->b_shut_sent,
+             &r->bytes_a2b) < 0)
+        return DET_RELAY_ERROR;
+    // b -> a: dst is a
+    if (pump(&r->b, &r->a, r->buf_b2a, &r->b2a_len, &r->b2a_off, &r->b_eof, &r->b2a_done, &r->a_shut_sent,
+             &r->bytes_b2a) < 0)
+        return DET_RELAY_ERROR;
+
+    return (r->a2b_done && r->b2a_done) ? DET_RELAY_DONE : DET_RELAY_RUNNING;
+}
+
+#endif // DETWS_ENABLE_RELAY

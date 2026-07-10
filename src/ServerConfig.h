@@ -2953,6 +2953,30 @@
 #endif
 
 /**
+ * @brief Opt-in TCP relay / DNAT port forwarding (DETWS_ENABLE_RELAY).
+ *
+ * services/relay is a bidirectional byte pump that publishes an internal `host:port` through the
+ * server: an inbound connection is relayed to an origin (an outbound det_client connection), moving
+ * bytes both ways with backpressure and independent half-close, so the device fronts a service that
+ * lives behind it. The engine is a pure step function over two send/recv seams (host-testable); the
+ * app owns the two sockets. Default off.
+ */
+#ifndef DETWS_ENABLE_RELAY
+#define DETWS_ENABLE_RELAY 0
+#endif
+
+/**
+ * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
+ *
+ * Each active relay holds two buffers of this size (one per direction) for bytes read from one peer
+ * but not yet accepted by the other (backpressure carry). Larger buffers raise throughput per step
+ * at the cost of RAM per concurrent relay.
+ */
+#ifndef DETWS_RELAY_BUF
+#define DETWS_RELAY_BUF 512
+#endif
+
+/**
  * @brief Opt-in FTP client wire codec (DETWS_ENABLE_FTP).
  *
  * services/ftp is the pure protocol layer of an FTP client (RFC 959 + RFC 2428 EPSV/EPRT):

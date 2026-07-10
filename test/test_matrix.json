@@ -1051,6 +1051,12 @@
       "src": ["+<services/rtc/rtc.cpp>"],
       "tests": ["test_rtc"]
     },
+    "native_relay": {
+      "desc": "TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that\npublishes an internal host:port through the server. Tests cover a bidirectional transfer, the\nbackpressure carry (a send that accepts partial writes), independent half-close with shutdown\npropagation, a large multi-step transfer (byte-exact), and a seam error - driven by two mock\nsockets over the send/recv seams. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_RELAY=1"],
+      "src": ["+<services/relay/relay.cpp>"],
+      "tests": ["test_relay"]
+    },
     "native_ld2410": {
       "desc": "LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode\nreport frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past\nnoise, split feeds, absurd-length drop), the presence/distance helpers, and the exact bytes\nof the config-command encoders. Pure - the UART pump is ESP32-only.",
       "flags": ["-DDETWS_ENABLE_LD2410=1"],

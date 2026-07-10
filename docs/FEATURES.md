@@ -868,6 +868,12 @@ Opt-in raw Layer-2 Ethernet frame codec. When set, services/rawl2 builds/parses 
 
 Redis RESP2/RESP3 wire codec. Default off. services/redis_resp lets a device drive a Redis server over the shipped outbound client transport: `resp_encode_command` builds a command (an array of bulk strings, binary-safe via explicit arg lengths) and `resp_parse` is a streaming cursor reply decoder covering RESP2 (simple / error / integer / bulk / array / nil) plus the RESP3 additions (null / boolean / double / big number / bulk error / verbatim / map / set / push); aggregates report a child count and the caller walks each child, so nested replies decode with no heap. Pure and host-tested against Redis spec vectors and verified live against a real redis-server (SET/GET, arrays, and a RESP3 map from HELLO 3); the connection is the application's. See src/services/redis_resp.h.
 
+## Relay (TCP forward / DNAT)
+
+`DETWS_ENABLE_RELAY`
+
+TCP relay / DNAT port forwarding. Default off. services/relay publishes an internal `host:port` through the server: an inbound (accepted) connection is relayed to an origin (an outbound `det_client` connection to the internal service), moving bytes in both directions so the device fronts a service that lives behind it. `det_relay_step` is a pure, non-blocking byte pump over two send/recv seams: the app calls it each poll tick until it returns `DET_RELAY_DONE`, then closes both sockets. It handles **backpressure** (a `send` seam that accepts a partial write carries the rest in a per-direction buffer and retries before reading more) and **independent half-close** (each direction finishes when its source hits EOF and drains; the opposite peer's optional `shutdown` seam is then called once to propagate the FIN, and the relay is done only when both directions have finished). Zero heap - each active relay owns two `DETWS_RELAY_BUF` buffers. Host-tested with two mock sockets covering a bidirectional transfer, the backpressure carry, half-close with shutdown propagation, a large multi-step byte-exact transfer, and a seam error (`native_relay`, 5 cases); you own the two sockets. See src/services/relay/relay.h.
+
 ## Routing
 
 Exact, wildcard (/*), :param path parameters, bounded allocation-free regex routes, and per-interface STA/softAP route filters. Always on.

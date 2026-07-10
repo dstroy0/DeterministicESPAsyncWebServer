@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **215 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **216 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -229,6 +229,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_range` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
 | `native_rawl2` | `ETWS_ENABLE_RAWL2=1` | `test_rawl2` | Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the 802.3 FCS (CRC-32). |
 | `native_redis` | `ETWS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
+| `native_relay` | `ETWS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
 | `native_rtc` | `ETWS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
 | `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
@@ -505,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2878 test cases** across **243 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2883 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22805,6 +22806,69 @@ A thorough directory of all **2878 test cases** across **243 suites**. Expand a 
       * <code>Assert false (hit("GET", "/c/x"))</code>
       * <code>Assert true (hit("GET", "/r/507"))</code>
       * <code>Assert false (hit("GET", "/r/9a"))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_relay (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bidirectional</b> &mdash; <i>Bidirectional</i></summary>
+
+    * **Objective**: Bidirectional
+    * **Assertions**:
+      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(17, b.out_len);</code>
+      * <code>Assert equal memory ("hello from client", b.out, 17)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(14, a.out_len);</code>
+      * <code>Assert equal memory ("hi from origin", a.out, 14)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(17, r.bytes_a2b);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(14, r.bytes_b2a);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_backpressure</b> &mdash; <i>Backpressure</i></summary>
+
+    * **Objective**: Backpressure
+    * **Assertions**:
+      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 1000))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1000, b.out_len);</code>
+      * <code>Assert equal memory (data, b.out, 1000)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_half_close_shutdown</b> &mdash; <i>once a->b finishes (client EOF) the origin's half-close must fire, while b->a is still</i></summary>
+
+    * **Objective**: once a->b finishes (client EOF) the origin's half-close must fire, while b->a is still
+    * **Assertions**:
+      * <code>Assert true (r.b_shut_sent)</code>
+      * <code>Assert true (b.shutdown_called)</code>
+      * <code>Assert false (r.b2a_done)</code>
+      * <code>Assert equal int (DET_RELAY_RUNNING, st)</code>
+      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>Assert equal memory ("req", b.out, 3)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(800, a.out_len);</code>
+      * <code>Assert equal memory (resp, a.out, 800)</code>
+      * <code>Assert true (a.shutdown_called)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_error</b> &mdash; <i>Send error</i></summary>
+
+    * **Objective**: Send error
+    * **Assertions**:
+      * <code>Assert equal int (DET_RELAY_ERROR, st)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_one_way_idle_then_close</b> &mdash; <i>origin never sends; client sends then closes -> relay completes cleanly</i></summary>
+
+    * **Objective**: origin never sends; client sends then closes -> relay completes cleanly
+    * **Assertions**:
+      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 32))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(18, b.out_len);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, a.out_len);</code>
   </details>
 
 </details>

@@ -42,7 +42,6 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 
 ### OPEN (actionable now)
 
-- **Port forwarding / DNAT** - publish an internal `host:port` through the server.
 - **CDN caching tier** - edge cache + cache key/invalidation + range-aware delivery + mesh distribution
   (origin-side `Cache-Control` helpers are **done**; the tier itself is a design/scope-with-user piece).
 - **Industrial_ESPIDF/** - create the directory + its CMake (use the library as an ESP-IDF component).
@@ -54,6 +53,10 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 
 ### PARTIAL (`[~]` - shipped, remainder noted)
 
+- **Port forwarding / DNAT** - the reusable core, the `det_relay` bidirectional TCP byte pump
+  (backpressure + independent half-close, a pure step function over two send/recv seams), is shipped
+  and host-tested (`native_relay` 5 cases). Remaining: the server-side wiring (accept on a published
+  port -> open the origin `det_client` -> step the relay in the poll loop) + a runnable example.
 - **Ethernet DNC** - the transport-agnostic `dnc_stream` drip-feed engine + a runnable example
   (`69.EthernetDnc`, ESP32-compile-verified) are shipped (leader / `%` markers / blocks over a
   send/recv seam, XOFF/XON pacing; `native_dnc` 22 cases). Only remainder: HW-verify against a
@@ -218,7 +221,7 @@ Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and 
 Building on the existing forwarder (`native_forward` / `native_gateway` / `native_southbound`) toward the v5 "interface forwarding" milestone.
 
 - [x] Route-by-tag to interface _(done)_: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder. `det_forward_route_add(src, offset, pattern, mask, patlen, egress_if, rate_cap)` (services/forward): a frame matching the byte pattern (the same offset/mask primitive as the ACL, so it keys on EtherType / IP-proto / port / address-prefix - any field at a known offset) is forwarded only to `egress_if`, taking precedence over the src->dst fan-out (first-match-wins), with the same never-reflect / rate-cap / fail-closed guarantees and a `policy_routed` stat. Static table `DETWS_FWD_MAX_ROUTES`; additive (empty by default = no behavior change). `native_forward` +7 cases (23 total).
-- [ ] Port forwarding: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it.
+- [~] Port forwarding: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it. **Engine shipped** (`DETWS_ENABLE_RELAY`, services/relay): `det_relay_step` is a pure, non-blocking bidirectional byte pump over two send/recv seams (inbound connection <-> origin `det_client`), with backpressure carry and independent half-close (each direction finishes on its source's EOF; the peer's optional `shutdown` seam propagates the FIN). New knob `DETWS_RELAY_BUF`. Host-tested with two mock sockets (bidirectional transfer, backpressure, half-close + shutdown propagation, a large byte-exact transfer, a seam error; `native_relay`, 5 cases). _Remaining:_ the server-side wiring (accept on a published port, open the origin, step the relay in the poll loop) + a runnable example.
 - [x] Optional packet inspection _(done)_: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle. `DETWS_FWD_INSPECT` (build-time, compiles the hook out entirely when off) + `det_forward_set_inspector(fn, ctx)` (runtime; null clears): a flexible app callback runs on every ingress frame after the ACL and before routing, returning `DET_FWD_INSPECT_PASS`/`DROP` (a drop is counted as `inspect_dropped`). `native_forward` +3 cases (26 total).
 
 ### Content delivery network (CDN) capability
