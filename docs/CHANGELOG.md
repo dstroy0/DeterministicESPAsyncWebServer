@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.81.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.81.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e7caba4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7caba4c18e870488397be9ac07fe25074550c39))
+
+### Changes
+
+- Bump version: 5.80.0 → 5.81.0 ([`23445a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23445a0973f3f6b1ff7ae205e115f1b6ad111d92))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`51eb502`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51eb5023ac00622b8cbf2454011818488a32cb51))
+
+### Features
+
+- opt-in ingress inspection hook (DETWS_FWD_INSPECT) ([`e260945`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2609456315757ffa3136bb8c9bafd00a99ba42b))
+
+</details>
+
 ## [5.80.0] - 2026-07-10
 
 <details>
