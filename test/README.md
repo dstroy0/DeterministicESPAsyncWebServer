@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2740 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2744 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24355,7 +24355,7 @@ A thorough directory of all **2740 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (14 tests)</b></summary>
+<summary><b>test_sqlite (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -24571,6 +24571,82 @@ A thorough directory of all **2740 test cases** across **233 suites**. Expand a 
       * <code>Assert true (sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(n, rowid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_varint_encode_roundtrip</b> &mdash; <i>A capacity that is one short must fail closed.</i></summary>
+
+    * **Objective**: A capacity that is one short must fail closed.
+    * **Assertions**:
+      * <code>Assert true (n &gt;= 1 && n &lt;= 9)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, m); // encode and decode agree on the length</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(vals[k], back);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, sqlite_varint_encode(128, one, 1));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_record_roundtrip</b> &mdash; <i>A row of (INT, TEXT, FLOAT, NULL, INT=0) round-trips through the record reader.</i></summary>
+
+    * **Objective**: A row of (INT, TEXT, FLOAT, NULL, INT=0) round-trips through the record reader.
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (sqlite_record_begin(&rc, rec, rl))</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-12345, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(13u + 2u * 5u, st);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, vl);</code>
+      * <code>Assert equal memory ("hello", v, 5)</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(7, st);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(want_bits, got_bits);</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, st);</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl)); // INT 0 (constant)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(8, st);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert false (sqlite_record_next(&rc, &st, &v, &vl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_table_db_roundtrip</b> &mdash; <i>Build a real 2-page DB, then read it back with our own reader.</i></summary>
+
+    * **Objective**: Build a real 2-page DB, then read it back with our own reader.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1024, len);</code>
+      * <code>Assert true (sqlite_parse_db_header(img, len, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(512, h.page_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, h.page_count);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, h.text_encoding);</code>
+      * <code>Assert true (sqlite_parse_btree_header(img, 512, 100, &p1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, p1.cell_count);</code>
+      * <code>Assert true (sqlite_parse_table_leaf_cell(img, 512, 512, 0, mcp, &mcell))</code>
+      * <code>Assert true (sqlite_record_begin(&mrec, img + mcell.local_off, mcell.local_len))</code>
+      * <code>Assert true (sqlite_record_next(&mrec, &st, &v, &vl))</code>
+      * <code>Assert equal memory ("table", v, 5)</code>
+      * <code>Assert true (sqlite_record_next(&mrec, &st, &v, &vl))</code>
+      * <code>Assert equal memory ("t", v, 1)</code>
+      * <code>Assert true (sqlite_record_next(&mrec, &st, &v, &vl))</code>
+      * <code>Assert equal memory ("t", v, 1)</code>
+      * <code>Assert true (sqlite_record_next(&mrec, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(2, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert true (sqlite_table_cursor_begin(&c, mem_read, &db, 512, 0, 2, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64((uint64_t)(n + 1), rowid);</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(spec[n].a, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(spec[n].b), vl);</code>
+      * <code>Assert equal memory (spec[n].b, v, vl)</code>
+      * <code>Assert equal int (3, n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_table_db_fails_closed</b> &mdash; <i>A single row larger than one leaf page can hold must fail closed (bounded writer, no overflow pages).</i></summary>
+
+    * **Objective**: A single row larger than one leaf page can hold must fail closed (bounded writer, no overflow pages).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(b TEXT)", &row, 1, img, sizeof(img)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));</code>
   </details>
 
 </details>
