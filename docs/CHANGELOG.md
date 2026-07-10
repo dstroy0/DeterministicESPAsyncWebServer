@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- disable markdownlint (Prettier owns markdown formatting) ([`e7a5645`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7a564567d81cd42c61140b797a71e6d7d442e70))
+- update CHANGELOG.md [skip ci] ([`7b9ba64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9ba64e1a7c129ded33e51f8499fc06e11bc1cc))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1a0625a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a0625aea8af1672fec92ea13eb4099e9414b62d))
+- update ESP32 build footprints [skip ci] ([`0ca2eed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ca2eed4fa00b67feeb31bfce67b763a341671b6))
+
 ## [5.86.0] - 2026-07-10
 
 <details>
