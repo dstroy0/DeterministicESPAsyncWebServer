@@ -239,7 +239,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2843 test cases** across **240 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2847 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -25460,6 +25460,52 @@ A thorough directory of all **2843 test cases** across **240 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, spb_build_metric(small, sizeof(small), &m));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, spb_build_topic(tsmall, sizeof(tsmall), "group1", "NDATA", "edge1", nullptr));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_spnego (4 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_negotiate_bytes</b> &mdash; <i>overflow fails closed</i></summary>
+
+    * **Objective**: overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(38, n);</code>
+      * <code>Assert equal string ("602406062b0601050502a01a3018a00e300c060a2b06010401823702020aa206040401020304", hex)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_negotiate(tok, sizeof(tok), out, 20));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_authenticate_roundtrip</b> &mdash; <i>Authenticate roundtrip</i></summary>
+
+    * **Objective**: Authenticate roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(sizeof(tok), n);</code>
+      * <code>Assert true (spnego_parse_response(out, n, &rt, &rl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(tok), rl);</code>
+      * <code>Assert equal memory (tok, rt, sizeof(tok))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_server_response</b> &mdash; <i>Parse server response</i></summary>
+
+    * **Objective**: Parse server response
+    * **Assertions**:
+      * <code>Assert true (spnego_parse_response(blob, n, &rt, &rl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, rl);</code>
+      * <code>Assert equal memory (want, rt, 4)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects</b> &mdash; <i>a NegTokenResp with no responseToken (only negState) -> not found</i></summary>
+
+    * **Objective**: a NegTokenResp with no responseToken (only negState) -> not found
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(bad, n, &rt, &rl))</code>
+      * <code>Assert false (spnego_parse_response(blob, 10, &rt, &rl))</code>
+      * <code>Assert false (spnego_parse_response(nort, m, &rt, &rl))</code>
   </details>
 
 </details>
