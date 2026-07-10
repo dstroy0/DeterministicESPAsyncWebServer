@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.81.2] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.81.2 - 2026-07-10</b></summary>
+
+### Bug Fixes
+
+- complete the signed-overflow / 10^exp-DoS sweep in number parsers ([`c31eed7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c31eed7239729c54bc792c017b9bae4df36dfd17))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ef3c496`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef3c496b393988ab2d9797f32a07789dd96ee713))
+
+### Changes
+
+- Bump version: 5.81.1 → 5.81.2 ([`9b52807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b5280791828a5a5ed4fb0892ada9c2cd7051136))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`18526fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18526fc7bb6b8c37ed1535909d54a2fddb227b7b))
+
+</details>
+
 ## [5.81.1] - 2026-07-10
 
 <details>
