@@ -7,11 +7,11 @@
  *
  * Handles RFC 6455 framing.  Control frames (ping/pong/close) are handled
  * automatically here; data frames (text/binary) are surfaced to the
- * application layer via WS_FRAME_READY.
+ * application layer via WsParseState::WS_FRAME_READY.
  *
  * **Automatic control frame handling**
  * - Ping  -> sends Pong with the same payload immediately.
- * - Close -> sends echoed Close frame, marks slot WS_CLOSED.
+ * - Close -> sends echoed Close frame, marks slot WsParseState::WS_CLOSED.
  * - Pong  -> silently discarded (keepalive response, no action needed).
  */
 
@@ -47,7 +47,7 @@ WsConn *ws_alloc(uint8_t slot_id)
             ws_pool[i].ws_id = (uint8_t)i;
             ws_pool[i].slot_id = slot_id;
             ws_pool[i].active = true;
-            ws_pool[i].parse_state = WS_HEADER1;
+            ws_pool[i].parse_state = WsParseState::WS_HEADER1;
             return &ws_pool[i];
         }
     }
@@ -82,8 +82,8 @@ void ws_free(uint8_t slot_id)
 // resume reading the next frame after handling an interleaved control frame.
 static void ws_reset_perframe(WsConn *ws)
 {
-    ws->parse_state = WS_HEADER1;
-    ws->opcode = WS_OP_TEXT;
+    ws->parse_state = WsParseState::WS_HEADER1;
+    ws->opcode = WsOpcode::WS_OP_TEXT;
     ws->fin = false;
     ws->masked = false;
     ws->payload_len = 0;
@@ -97,7 +97,7 @@ void ws_reset_frame(WsConn *ws)
     ws_reset_perframe(ws);
     // Also clear reassembly state - a full reset between messages.
     ws->fragmenting = false;
-    ws->msg_opcode = WS_OP_TEXT;
+    ws->msg_opcode = WsOpcode::WS_OP_TEXT;
     ws->msg_len = 0;
     ws->buf[0] = '\0';
     ws->ctl_buf[0] = '\0';
@@ -160,7 +160,7 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     // are borrowed from the per-dispatch arena and released when this scope exits;
     // det_conn_send copies (TCP_WRITE_FLAG_COPY) so the buffer can go immediately.
     ScratchScope scope;
-    if (ws->pmd && len > 0 && (opcode == WS_OP_TEXT || opcode == WS_OP_BINARY))
+    if (ws->pmd && len > 0 && (opcode == WsOpcode::WS_OP_TEXT || opcode == WsOpcode::WS_OP_BINARY))
     {
         size_t cap = (size_t)len + len / 8 + 16; // static-Huffman worst-case headroom
         void *scr = scratch_alloc(DEFLATE_SCRATCH_SIZE, 16);
@@ -184,7 +184,7 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     // Fragment only data frames (RFC 6455 §5.4: control frames MUST NOT be fragmented, and are small
     // anyway). frag == 0, a non-data frame, or a message that already fits -> a single FIN frame (the
     // default, unchanged). Server-to-client frames are never masked (§5.1).
-    bool data = (opcode == WS_OP_TEXT || opcode == WS_OP_BINARY);
+    bool data = (opcode == WsOpcode::WS_OP_TEXT || opcode == WsOpcode::WS_OP_BINARY);
     uint16_t frag = s_ws.frag_size;
     if (!data || frag == 0 || len <= frag)
         return ws_emit_one(conn, (uint8_t)(0x80 | rsv1 | (uint8_t)opcode), payload, len);
@@ -198,7 +198,8 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
     {
         uint16_t chunk = (uint16_t)(len - off) < frag ? (uint16_t)(len - off) : frag;
         bool last = (uint16_t)(off + chunk) >= len;
-        uint8_t b0 = (uint8_t)((last ? 0x80 : 0x00) | (first ? (rsv1 | (uint8_t)opcode) : (uint8_t)WS_OP_CONTINUATION));
+        uint8_t b0 = (uint8_t)((last ? 0x80 : 0x00) |
+                               (first ? (rsv1 | (uint8_t)opcode) : (uint8_t)WsOpcode::WS_OP_CONTINUATION));
         if (!ws_emit_one(conn, b0, payload + off, chunk))
             return false;
         off = (uint16_t)(off + chunk);
@@ -211,13 +212,13 @@ void ws_close(WsConn *ws, WsCloseCode code)
 {
     // Send Close frame with 2-byte status code payload
     uint8_t payload[2] = {(uint8_t)((uint16_t)code >> 8), (uint8_t)code};
-    ws_send_frame(ws, WS_OP_CLOSE, payload, 2);
+    ws_send_frame(ws, WsOpcode::WS_OP_CLOSE, payload, 2);
 
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
         det_conn_flush(conn->id);
 
-    ws->parse_state = WS_CLOSED;
+    ws->parse_state = WsParseState::WS_CLOSED;
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +234,7 @@ static inline bool ws_is_control(WsOpcode op)
 // Called once a frame's full payload has been received (payload_idx ==
 // payload_len, also true immediately for zero-length frames once the masking
 // key is consumed).  Control frames are handled in place; data frames are
-// reassembled and delivered as WS_FRAME_READY only when the FIN frame arrives.
+// reassembled and delivered as WsParseState::WS_FRAME_READY only when the FIN frame arrives.
 static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 {
     // ---- Control frames (ping/pong/close): use the separate ctl_buf ----
@@ -242,15 +243,15 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         size_t n = ws->payload_idx < sizeof(ws->ctl_buf) - 1 ? ws->payload_idx : sizeof(ws->ctl_buf) - 1;
         ws->ctl_buf[n] = '\0';
 
-        if (ws->opcode == WS_OP_PING)
+        if (ws->opcode == WsOpcode::WS_OP_PING)
         {
-            ws_send_frame(ws, WS_OP_PONG, ws->ctl_buf, (uint16_t)ws->payload_idx);
+            ws_send_frame(ws, WsOpcode::WS_OP_PONG, ws->ctl_buf, (uint16_t)ws->payload_idx);
             if (conn->pcb)
                 det_conn_flush(conn->id);
         }
-        else if (ws->opcode == WS_OP_CLOSE)
+        else if (ws->opcode == WsOpcode::WS_OP_CLOSE)
         {
-            ws_close(ws, WS_CLOSE_NORMAL);
+            ws_close(ws, WsCloseCode::WS_CLOSE_NORMAL);
             return;
         }
         // PONG: silently ignored.
@@ -279,8 +280,8 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
             uint8_t *tbl = (uint8_t *)scratch_alloc(INFLATE_SCRATCH_SIZE, 16);
             if (!in || !out || !tbl)
             {
-                ws_close(ws, WS_CLOSE_PROTOCOL); // arena exhausted: fail closed
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL); // arena exhausted: fail closed
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             memcpy(in, ws->buf, comp_len);
@@ -292,14 +293,14 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
             int rc = inflate_raw(in, comp_len + 4, out, WS_FRAME_SIZE, &dlen, tbl, INFLATE_SCRATCH_SIZE);
             if (rc == INFLATE_ERR_OVERFLOW)
             {
-                ws_close(ws, WS_CLOSE_TOO_BIG);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_TOO_BIG);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             if (rc != INFLATE_OK)
             {
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             memcpy(ws->buf, out, dlen);
@@ -311,10 +312,10 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         size_t n = ws->msg_len < WS_FRAME_SIZE ? ws->msg_len : WS_FRAME_SIZE;
         // RFC 6455 8.1: a TEXT message MUST be valid UTF-8 (checked on the fully
         // reassembled + decompressed message); otherwise fail the connection with 1007.
-        if (ws->msg_opcode == WS_OP_TEXT && !det_utf8_valid(ws->buf, n))
+        if (ws->msg_opcode == WsOpcode::WS_OP_TEXT && !det_utf8_valid(ws->buf, n))
         {
-            ws_close(ws, WS_CLOSE_INVALID_PAYLOAD);
-            ws->parse_state = WS_ERROR;
+            ws_close(ws, WsCloseCode::WS_CLOSE_INVALID_PAYLOAD);
+            ws->parse_state = WsParseState::WS_ERROR;
             return;
         }
         ws->buf[n] = '\0';
@@ -322,7 +323,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         ws->payload_len = ws->msg_len; // app reads payload_len / payload_idx
         ws->payload_idx = ws->msg_len;
         ws->fragmenting = false;
-        ws->parse_state = WS_FRAME_READY;
+        ws->parse_state = WsParseState::WS_FRAME_READY;
     }
     else
     {
@@ -341,7 +342,8 @@ void ws_parse(WsConn *ws)
     while (det_conn_available(ws->slot_id) > 0)
     {
         // Stop if we hit a terminal state (leave the rest in the ring)
-        if (ws->parse_state == WS_FRAME_READY || ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+        if (ws->parse_state == WsParseState::WS_FRAME_READY || ws->parse_state == WsParseState::WS_CLOSED ||
+            ws->parse_state == WsParseState::WS_ERROR)
             return;
 
         uint8_t byte = 0;
@@ -357,45 +359,45 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
     {
         switch (ws->parse_state)
         {
-        case WS_HEADER1: {
+        case WsParseState::WS_HEADER1: {
             ws->fin = (byte & 0x80) != 0;
             // RSV bits are validated below, once the opcode / message position is
             // known (RSV1 is permessage-deflate's per-message "compressed" flag).
             uint8_t rsv = byte & 0x70;
-            ws->opcode = (WsOpcode)(byte & 0x0F);
+            ws->opcode = static_cast<WsOpcode>(byte & 0x0F);
             // RFC 6455 §5.2: only opcodes 0x0/0x1/0x2 (data) and 0x8/0x9/0xA
             // (control) are defined; everything else MUST fail the connection.
             switch (ws->opcode)
             {
-            case WS_OP_CONTINUATION:
-            case WS_OP_TEXT:
-            case WS_OP_BINARY:
-            case WS_OP_CLOSE:
-            case WS_OP_PING:
-            case WS_OP_PONG:
+            case WsOpcode::WS_OP_CONTINUATION:
+            case WsOpcode::WS_OP_TEXT:
+            case WsOpcode::WS_OP_BINARY:
+            case WsOpcode::WS_OP_CLOSE:
+            case WsOpcode::WS_OP_PING:
+            case WsOpcode::WS_OP_PONG:
                 break;
             default:
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             // RFC 6455 §5.5: control frames MUST NOT be fragmented (FIN set).
             if (ws_is_control(ws->opcode) && !ws->fin)
             {
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             // RFC 6455 §5.4: fragmentation sequencing for data frames.
             if (!ws_is_control(ws->opcode))
             {
-                if (ws->opcode == WS_OP_CONTINUATION)
+                if (ws->opcode == WsOpcode::WS_OP_CONTINUATION)
                 {
                     // A continuation with no message in progress is illegal.
                     if (!ws->fragmenting)
                     {
-                        ws_close(ws, WS_CLOSE_PROTOCOL);
-                        ws->parse_state = WS_ERROR;
+                        ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                        ws->parse_state = WsParseState::WS_ERROR;
                         return;
                     }
                 }
@@ -405,8 +407,8 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
                     // illegal - the previous message must finish first.
                     if (ws->fragmenting)
                     {
-                        ws_close(ws, WS_CLOSE_PROTOCOL);
-                        ws->parse_state = WS_ERROR;
+                        ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                        ws->parse_state = WsParseState::WS_ERROR;
                         return;
                     }
                     // Start of a new data message.
@@ -423,33 +425,33 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
             // as the per-message compression flag set above (pmd + new data frame).
 #if DETWS_ENABLE_WS_DEFLATE
             {
-                bool new_data = !ws_is_control(ws->opcode) && ws->opcode != WS_OP_CONTINUATION;
+                bool new_data = !ws_is_control(ws->opcode) && ws->opcode != WsOpcode::WS_OP_CONTINUATION;
                 if ((rsv & 0x30) || ((rsv & 0x40) && !(ws->pmd && new_data)))
                 {
-                    ws_close(ws, WS_CLOSE_PROTOCOL);
-                    ws->parse_state = WS_ERROR;
+                    ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                    ws->parse_state = WsParseState::WS_ERROR;
                     return;
                 }
             }
 #else
             if (rsv)
             {
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
 #endif
-            ws->parse_state = WS_HEADER2;
+            ws->parse_state = WsParseState::WS_HEADER2;
             break;
         }
 
-        case WS_HEADER2:
+        case WsParseState::WS_HEADER2:
             ws->masked = (byte & 0x80) != 0;
             // RFC 6455 §5.1: every client-to-server frame MUST be masked.
             if (!ws->masked)
             {
-                ws_close(ws, WS_CLOSE_PROTOCOL);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             {
@@ -457,88 +459,88 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
                 // RFC 6455 §5.5: control frames MUST have payload length <= 125.
                 if (ws_is_control(ws->opcode) && len7 > 125)
                 {
-                    ws_close(ws, WS_CLOSE_PROTOCOL);
-                    ws->parse_state = WS_ERROR;
+                    ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
+                    ws->parse_state = WsParseState::WS_ERROR;
                     return;
                 }
                 if (len7 <= 125)
                 {
                     // Masking is mandatory, so always consume the 4 mask bytes
-                    // next - even for zero-length frames (WS_MASK3 finishes them).
+                    // next - even for zero-length frames (WsParseState::WS_MASK3 finishes them).
                     ws->payload_len = len7;
                     // Reassembled data message must fit in WS_FRAME_SIZE.
                     if (!ws_is_control(ws->opcode) && ws->msg_len + ws->payload_len > WS_FRAME_SIZE)
                     {
-                        ws_close(ws, WS_CLOSE_TOO_BIG);
-                        ws->parse_state = WS_ERROR;
+                        ws_close(ws, WsCloseCode::WS_CLOSE_TOO_BIG);
+                        ws->parse_state = WsParseState::WS_ERROR;
                         return;
                     }
-                    ws->parse_state = WS_MASK0;
+                    ws->parse_state = WsParseState::WS_MASK0;
                 }
                 else if (len7 == 126)
                 {
                     ws->payload_len = 0;
-                    ws->parse_state = WS_LEN16_HI;
+                    ws->parse_state = WsParseState::WS_LEN16_HI;
                 }
                 else
                 {
                     // 64-bit length -- always too large
                     ws->len64_count = 0;
-                    ws->parse_state = WS_LEN64;
+                    ws->parse_state = WsParseState::WS_LEN64;
                 }
             }
             break;
 
-        case WS_LEN16_HI:
+        case WsParseState::WS_LEN16_HI:
             ws->payload_len = (uint32_t)byte << 8;
-            ws->parse_state = WS_LEN16_LO;
+            ws->parse_state = WsParseState::WS_LEN16_LO;
             break;
 
-        case WS_LEN16_LO:
+        case WsParseState::WS_LEN16_LO:
             ws->payload_len |= byte;
             // 16-bit length only occurs on data frames (control frames are
             // capped at 125); the reassembled message must fit WS_FRAME_SIZE.
             if (ws->msg_len + ws->payload_len > WS_FRAME_SIZE)
             {
-                ws_close(ws, WS_CLOSE_TOO_BIG);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_TOO_BIG);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             // Masking is mandatory; consume the 4 mask bytes next.
-            ws->parse_state = WS_MASK0;
+            ws->parse_state = WsParseState::WS_MASK0;
             break;
 
-        case WS_LEN64:
+        case WsParseState::WS_LEN64:
             // Consume all 8 bytes then reject
             if (++ws->len64_count == 8)
             {
-                ws_close(ws, WS_CLOSE_TOO_BIG);
-                ws->parse_state = WS_ERROR;
+                ws_close(ws, WsCloseCode::WS_CLOSE_TOO_BIG);
+                ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
             break;
 
-        case WS_MASK0:
+        case WsParseState::WS_MASK0:
             ws->mask_key[0] = byte;
-            ws->parse_state = WS_MASK1;
+            ws->parse_state = WsParseState::WS_MASK1;
             break;
-        case WS_MASK1:
+        case WsParseState::WS_MASK1:
             ws->mask_key[1] = byte;
-            ws->parse_state = WS_MASK2;
+            ws->parse_state = WsParseState::WS_MASK2;
             break;
-        case WS_MASK2:
+        case WsParseState::WS_MASK2:
             ws->mask_key[2] = byte;
-            ws->parse_state = WS_MASK3;
+            ws->parse_state = WsParseState::WS_MASK3;
             break;
-        case WS_MASK3:
+        case WsParseState::WS_MASK3:
             ws->mask_key[3] = byte;
             if (ws->payload_len > 0)
-                ws->parse_state = WS_PAYLOAD;
+                ws->parse_state = WsParseState::WS_PAYLOAD;
             else
                 ws_finish_frame(ws, conn); // zero-length frame is complete now
             break;
 
-        case WS_PAYLOAD: {
+        case WsParseState::WS_PAYLOAD: {
             // Mask is applied per frame, so the keystream index is the
             // within-frame position.
             uint8_t unmasked = byte ^ ws->mask_key[ws->payload_idx % 4];

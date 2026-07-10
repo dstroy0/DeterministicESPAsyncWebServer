@@ -1371,18 +1371,18 @@ void DetWebServer::http_poll_slot(uint8_t i)
                 for (int k = 0; k < n; k++)
                 {
                     ws_feed_byte(ws, tbuf[k]);
-                    if (ws->parse_state == WS_FRAME_READY)
+                    if (ws->parse_state == WsParseState::WS_FRAME_READY)
                     {
                         ws_dispatch_message(ws);
                         ws_reset_frame(ws);
                     }
-                    else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                    else if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR)
                         break;
                 }
-                if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+                if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR)
                     break;
             }
-            if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR || n < 0)
+            if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR || n < 0)
             {
                 ws_dispatch_close(ws);
                 ws_free(i);
@@ -1395,12 +1395,12 @@ void DetWebServer::http_poll_slot(uint8_t i)
 
         ws_parse(ws);
 
-        if (ws->parse_state == WS_FRAME_READY)
+        if (ws->parse_state == WsParseState::WS_FRAME_READY)
         {
             ws_dispatch_message(ws);
             ws_reset_frame(ws);
         }
-        else if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+        else if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR)
         {
             ws_dispatch_close(ws);
             ws_free(i);
@@ -2611,10 +2611,10 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
     WsConn *ws = &ws_pool[ws_id];
-    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+    if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR)
         return;
     uint16_t len = (uint16_t)strnlen(text, 0xFFFF);
-    if (ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)text, len))
+    if (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)text, len))
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
@@ -2627,9 +2627,9 @@ void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t l
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
     WsConn *ws = &ws_pool[ws_id];
-    if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
+    if (ws->parse_state == WsParseState::WS_CLOSED || ws->parse_state == WsParseState::WS_ERROR)
         return;
-    if (ws_send_frame(ws, WS_OP_BINARY, data, len))
+    if (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, data, len))
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
         if (conn->pcb)
@@ -2642,11 +2642,11 @@ void DetWebServer::ws_disconnect(uint8_t ws_id)
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
     WsConn *ws = &ws_pool[ws_id];
-    ws_close(ws, WS_CLOSE_NORMAL);
+    ws_close(ws, WsCloseCode::WS_CLOSE_NORMAL);
     TcpConn *conn = &conn_pool[ws->slot_id];
     if (conn->pcb)
         det_conn_flush(conn->id);
-    // handle() detects WS_CLOSED next tick and fires ws_close callback
+    // handle() detects WsParseState::WS_CLOSED next tick and fires ws_close callback
 }
 #endif // DETWS_ENABLE_WEBSOCKET
 

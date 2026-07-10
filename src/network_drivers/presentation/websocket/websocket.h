@@ -31,16 +31,16 @@
  *
  * **State machine**
  * ```
- * WS_HEADER1       -- read FIN + opcode byte
- * WS_HEADER2       -- read MASK + 7-bit payload length
- * WS_LEN16_HI      -- read extended 16-bit length high byte
- * WS_LEN16_LO      -- read extended 16-bit length low byte
- * WS_LEN64         -- consume 8-byte 64-bit length (reject; too large)
- * WS_MASK0..3      -- read 4-byte masking key
- * WS_PAYLOAD       -- accumulate payload bytes (unmasked)
- * WS_FRAME_READY   -- complete frame waiting for dispatch
- * WS_CLOSED        -- connection closed; slot may be recycled
- * WS_ERROR         -- protocol error; close frame sent
+ * WsParseState::WS_HEADER1       -- read FIN + opcode byte
+ * WsParseState::WS_HEADER2       -- read MASK + 7-bit payload length
+ * WsParseState::WS_LEN16_HI      -- read extended 16-bit length high byte
+ * WsParseState::WS_LEN16_LO      -- read extended 16-bit length low byte
+ * WsParseState::WS_LEN64         -- consume 8-byte 64-bit length (reject; too large)
+ * WsParseState::WS_MASK0..3      -- read 4-byte masking key
+ * WsParseState::WS_PAYLOAD       -- accumulate payload bytes (unmasked)
+ * WsParseState::WS_FRAME_READY   -- complete frame waiting for dispatch
+ * WsParseState::WS_CLOSED        -- connection closed; slot may be recycled
+ * WsParseState::WS_ERROR         -- protocol error; close frame sent
  * ```
  *
  * **Limitations**
@@ -68,7 +68,7 @@
 // ---------------------------------------------------------------------------
 
 /** @brief WebSocket frame opcodes. */
-enum WsOpcode
+enum class WsOpcode : uint8_t
 {
     WS_OP_CONTINUATION = 0x0, ///< Continuation frame (data-message fragment; reassembled into buf).
     WS_OP_TEXT = 0x1,         ///< UTF-8 text payload.
@@ -79,7 +79,7 @@ enum WsOpcode
 };
 
 /** @brief WebSocket close status codes (RFC 6455 §7.4.1). */
-enum WsCloseCode
+enum class WsCloseCode : uint16_t
 {
     WS_CLOSE_NORMAL = 1000,          ///< Normal closure.
     WS_CLOSE_GOING_AWAY = 1001,      ///< Endpoint going away.
@@ -94,7 +94,7 @@ enum WsCloseCode
 // ---------------------------------------------------------------------------
 
 /** @brief States of the WebSocket frame parser. */
-enum WsParseState
+enum class WsParseState : uint8_t
 {
     WS_HEADER1,     ///< Awaiting first header byte (FIN, RSV, opcode).
     WS_HEADER2,     ///< Awaiting second header byte (MASK, 7-bit length).
@@ -193,7 +193,7 @@ void ws_free(uint8_t slot_id);
  * @brief Drain the ring buffer for slot_id and feed bytes to the WS parser.
  *
  * Stops when the ring buffer is empty or the parser reaches a terminal state
- * (WS_FRAME_READY, WS_CLOSED, WS_ERROR).
+ * (WsParseState::WS_FRAME_READY, WsParseState::WS_CLOSED, WsParseState::WS_ERROR).
  *
  * @param ws  WebSocket connection to drain into.
  */
@@ -205,7 +205,8 @@ void ws_parse(WsConn *ws);
  * The per-byte core shared by ws_parse() (which reads the plaintext rx ring) and
  * the TLS receive path (which decrypts ciphertext and feeds the plaintext here).
  * Callers must stop feeding once parse_state reaches a terminal state
- * (WS_FRAME_READY / WS_CLOSED / WS_ERROR) and dispatch/reset before continuing.
+ * (WsParseState::WS_FRAME_READY / WsParseState::WS_CLOSED / WsParseState::WS_ERROR) and dispatch/reset before
+ * continuing.
  *
  * @param ws    WebSocket connection.
  * @param byte  Next plaintext byte of the client frame stream.
@@ -213,7 +214,7 @@ void ws_parse(WsConn *ws);
 void ws_feed_byte(WsConn *ws, uint8_t byte);
 
 /**
- * @brief Reset the frame parser back to WS_HEADER1, ready for the next frame.
+ * @brief Reset the frame parser back to WsParseState::WS_HEADER1, ready for the next frame.
  *
  * Does not change ws->active or ws->slot_id.
  *
@@ -229,7 +230,7 @@ void ws_reset_frame(WsConn *ws);
  * responsible for flushing afterwards (det_conn_flush()).
  *
  * @param ws       WebSocket connection.
- * @param opcode   Frame opcode (WS_OP_TEXT, WS_OP_BINARY, WS_OP_PONG, etc.).
+ * @param opcode   Frame opcode (WsOpcode::WS_OP_TEXT, WsOpcode::WS_OP_BINARY, WsOpcode::WS_OP_PONG, etc.).
  * @param payload  Payload bytes (may be nullptr for zero-length frames).
  * @param len      Payload length in bytes.
  * @return true on success, false if the TCP slot is not active.
@@ -245,10 +246,10 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
 void ws_set_frag_size(uint16_t bytes);
 
 /**
- * @brief Send a Close frame and mark the slot WS_CLOSED.
+ * @brief Send a Close frame and mark the slot WsParseState::WS_CLOSED.
  *
  * @param ws    WebSocket connection.
- * @param code  Close status code (e.g. WS_CLOSE_NORMAL).
+ * @param code  Close status code (e.g. WsCloseCode::WS_CLOSE_NORMAL).
  */
 void ws_close(WsConn *ws, WsCloseCode code);
 

@@ -1248,7 +1248,7 @@ class DetWebServer
     /**
      * @brief Initiate a graceful WebSocket close.
      *
-     * Sends a Close frame with WS_CLOSE_NORMAL and marks the slot WS_CLOSED.
+     * Sends a Close frame with WsCloseCode::WS_CLOSE_NORMAL and marks the slot WsParseState::WS_CLOSED.
      * The on_close handler fires on the next handle() call.
      *
      * @param ws_id  Index into ws_pool[].

@@ -1230,12 +1230,12 @@ void test_ws_send_api()
     TEST_ASSERT_EQUAL_HEX8(0x82, (uint8_t)tcp_captured()[0]);
 
     // A terminal parse state suppresses further sends.
-    ws->parse_state = WS_CLOSED;
+    ws->parse_state = WsParseState::WS_CLOSED;
     tcp_capture_reset();
     g_server->ws_send_text(0, "nope");
     g_server->ws_send_binary(0, payload, sizeof(payload));
     TEST_ASSERT_EQUAL_size_t(0, tcp_captured_len());
-    ws->parse_state = WS_HEADER1; // reopen for disconnect
+    ws->parse_state = WsParseState::WS_HEADER1; // reopen for disconnect
 
     // Disconnect: Close frame (opcode 0x88); the out-of-range id is a no-op.
     tcp_capture_reset();

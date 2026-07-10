@@ -155,7 +155,7 @@ void test_command_delivered_to_callback()
 {
     uint8_t wid = do_handshake(0);
     uint8_t frame[32];
-    size_t n = build_frame(frame, WS_OP_TEXT, (const uint8_t *)"reboot", 6);
+    size_t n = build_frame(frame, WsOpcode::WS_OP_TEXT, (const uint8_t *)"reboot", 6);
     push_bytes(0, frame, n);
     server.handle();
     TEST_ASSERT_EQUAL_STRING("reboot", g_cmd);
@@ -193,8 +193,8 @@ void test_close_clears_client()
     do_handshake(0);
     TEST_ASSERT_EQUAL_UINT(1, detws_web_terminal_client_count());
     WsConn *ws = ws_find(0);
-    ws->parse_state = WS_CLOSED; // simulate client close
-    server.handle();             // handle() fires the ws_close route callback
+    ws->parse_state = WsParseState::WS_CLOSED; // simulate client close
+    server.handle();                           // handle() fires the ws_close route callback
     TEST_ASSERT_EQUAL_UINT(0, detws_web_terminal_client_count());
 }
 
