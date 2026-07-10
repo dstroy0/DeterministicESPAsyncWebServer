@@ -6,10 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f869e2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f869e2e90f73b9f0fd841a866cc3daeccfb03312))
 - update CHANGELOG.md [skip ci] ([`91f8215`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91f82157e257a4e9b75d63e902b6cd1c3c539f13))
 
 ### Documentation
 
+- add a "Status at a glance" dashboard (OPEN/PARTIAL/WON'T/DONE) ([`da851c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da851c50e6b9b42f62c388bd92f13cae81fcac22))
+- update ESP32 build footprints [skip ci] ([`bbfba29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbfba299263f428bf3d16f7fc17c6ef7ef44cc86))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`343e12b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/343e12b9d7fbeab394761a1ec141e732c3e0756e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0d6dd68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d6dd6836f5e8cc4efe1c3b0a24ebae435ed472d))
 
 ### Testing
