@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.86.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.86.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d4b6ba7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4b6ba7a348bfe53d61ff09b2cdeef97076a3459))
+
+### Changes
+
+- Bump version: 5.85.0 → 5.86.0 ([`e4e44ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4e44ef88ae310b81130b87871f863c0bd7a41d2))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`705bbb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/705bbb1c358821b513d930f9b28638cb32b7d226))
+
+### Features
+
+- SPNEGO GSS-API wrapping of the NTLMSSP tokens (increment 5) ([`0fff16d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fff16d70972604b0aada4c50c0d81c25c8d0c31))
+
+</details>
+
 ## [5.85.0] - 2026-07-10
 
 <details>
