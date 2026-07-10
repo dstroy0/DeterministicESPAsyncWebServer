@@ -6,14 +6,17 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`4cb62ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cb62ffd2b137ec0671d1406108f52249417c357))
 - update CHANGELOG.md [skip ci] ([`e462f36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e462f361cbf30b61320bc29078d825ecb3bd1e72))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bbee5cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bbee5cf8de3ee410d6f2038973625cf88a01c3b8))
 - update ESP32 build footprints [skip ci] ([`65222eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65222ebc50e46464f04eb22d65bbb05b7b8c0a6a))
 
 ### Performance
 
+- fast software encode, keep constant-time mbedTLS decode (hybrid) ([`2aaffb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2aaffb19216ca940725727f0c90497ace5794ec3))
 - on-device base64/mtconnect numbers + a base64 finding (section 2) ([`17e6cd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17e6cd38ff3e9d5fdd17bf0ece43a1f9d4685a7b))
 
 ## [5.73.2] - 2026-07-10
