@@ -81,6 +81,7 @@ enum
 {
     SMB2_STATUS_SUCCESS = 0x00000000,
     SMB2_STATUS_MORE_PROCESSING_REQUIRED = 0xC0000016, ///< server wants the next SESSION_SETUP round
+    SMB2_STATUS_END_OF_FILE = 0xC0000011,              ///< a READ at/past the end of the file
 };
 
 /** @brief TREE_CONNECT response ShareType (MS-SMB2 §2.2.10). */

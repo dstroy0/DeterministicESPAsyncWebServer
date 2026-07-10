@@ -256,4 +256,89 @@ int smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
     return SMB_OK;
 }
 
+int smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size_t *out_len, SmbSendFn send, SmbRecvFn recv,
+             void *ctx)
+{
+    if (!h || !out || !out_len || !send || !recv)
+        return SMB_ERR_ARG;
+    *out_len = 0;
+    uint8_t tx[DETWS_SMB_BUF], rx[DETWS_SMB_BUF];
+    const size_t chunk_max = DETWS_SMB_BUF - 96; // room for the header + READ response body
+    size_t total = 0;
+    while (total < cap)
+    {
+        size_t want = cap - total;
+        if (want > chunk_max)
+            want = chunk_max;
+        size_t mlen = smb2_build_read(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id,
+                                      (uint32_t)want, offset + total);
+        if (!mlen)
+            return SMB_ERR_OVERFLOW;
+        if (!send_msg(send, ctx, tx, mlen))
+            return SMB_ERR_IO;
+        int rl = recv_msg(recv, ctx, rx, sizeof(rx));
+        if (rl < 0)
+            return rl == -2 ? SMB_ERR_OVERFLOW : SMB_ERR_IO;
+        Smb2Header hd;
+        if (!smb2_parse_header(rx, (size_t)rl, &hd))
+            return SMB_ERR_PROTOCOL;
+        h->next_message_id++;
+        if (hd.status == SMB2_STATUS_END_OF_FILE)
+            break;
+        if (hd.status != SMB2_STATUS_SUCCESS)
+            return SMB_ERR_PROTOCOL;
+        Smb2ReadResp r;
+        if (!smb2_parse_read_response(rx, (size_t)rl, &r) || r.data_len > want)
+            return SMB_ERR_PROTOCOL;
+        if (r.data_len == 0)
+            break;
+        memcpy(out + total, r.data, r.data_len);
+        total += r.data_len;
+        if (r.data_len < want)
+            break; // a short read means we reached the end of the file
+    }
+    *out_len = total;
+    return SMB_OK;
+}
+
+int smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t len, size_t *written, SmbSendFn send,
+              SmbRecvFn recv, void *ctx)
+{
+    if (!h || !data || !written || !send || !recv)
+        return SMB_ERR_ARG;
+    *written = 0;
+    uint8_t tx[DETWS_SMB_BUF], rx[DETWS_SMB_BUF];
+    const size_t chunk_max = DETWS_SMB_BUF - 128; // room for the header + WRITE request body
+    size_t total = 0;
+    while (total < len)
+    {
+        size_t want = len - total;
+        if (want > chunk_max)
+            want = chunk_max;
+        size_t mlen = smb2_build_write(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id,
+                                       h->file_id, data + total, want, offset + total);
+        if (!mlen)
+            return SMB_ERR_OVERFLOW;
+        if (!send_msg(send, ctx, tx, mlen))
+            return SMB_ERR_IO;
+        int rl = recv_msg(recv, ctx, rx, sizeof(rx));
+        if (rl < 0)
+            return rl == -2 ? SMB_ERR_OVERFLOW : SMB_ERR_IO;
+        Smb2Header hd;
+        if (!smb2_parse_header(rx, (size_t)rl, &hd))
+            return SMB_ERR_PROTOCOL;
+        h->next_message_id++;
+        if (hd.status != SMB2_STATUS_SUCCESS)
+            return SMB_ERR_PROTOCOL;
+        Smb2WriteResp w;
+        if (!smb2_parse_write_response(rx, (size_t)rl, &w) || w.count == 0 || w.count > want)
+            return SMB_ERR_PROTOCOL; // no progress or a bogus count
+        total += w.count;
+    }
+    if (offset + total > h->file_size)
+        h->file_size = offset + total;
+    *written = total;
+    return SMB_OK;
+}
+
 #endif // DETWS_ENABLE_SMB

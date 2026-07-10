@@ -35,6 +35,18 @@ static void w64(uint8_t *p, uint64_t v)
     w32(p, (uint32_t)v);
     w32(p + 4, (uint32_t)(v >> 32));
 }
+static uint16_t rd16(const uint8_t *p)
+{
+    return (uint16_t)(p[0] | (p[1] << 8));
+}
+static uint32_t rd32(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+static uint64_t rd64(const uint8_t *p)
+{
+    return (uint64_t)rd32(p) | ((uint64_t)rd32(p + 4) << 32);
+}
 
 // A minimal NTLMSSP CHALLENGE (server type-2) with a timestamp+EOL target info.
 static size_t ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
@@ -74,6 +86,8 @@ struct Mock
     uint32_t create_status;
     bool cut_after_negotiate; // simulate the peer closing mid-handshake
     int req_count;
+    uint8_t file_data[8192]; // the "file" backing READ / WRITE
+    size_t file_data_len;
 };
 
 static void append_frame(Mock *m, const uint8_t *resp, size_t rlen)
@@ -91,7 +105,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     if (!smb2_parse_header(msg, mlen, &h))
         return -1;
 
-    uint8_t resp[512];
+    uint8_t resp[DETWS_SMB_BUF + 128];
     memset(resp, 0, sizeof(resp));
     size_t rlen = 0;
     uint8_t *b = resp + 64;
@@ -141,6 +155,46 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         memcpy(b + 64, m->file_id, 16);
         rlen = 64 + 88;
         break;
+    case SMB2_READ: {
+        const uint8_t *rq = msg + 64; // READ request body
+        uint32_t length = rd32(rq + 4);
+        uint64_t off = rd64(rq + 8);
+        smb2_build_header(resp, sizeof(resp), SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
+        if (off >= m->file_data_len)
+        {
+            w32(resp + 8, SMB2_STATUS_END_OF_FILE);
+            w16(b + 0, 17); // StructureSize, no data
+            rlen = 64 + 16;
+        }
+        else
+        {
+            uint32_t avail = (uint32_t)(m->file_data_len - off);
+            uint32_t n2 = length < avail ? length : avail;
+            w16(b + 0, 17); // StructureSize
+            b[2] = 80;      // DataOffset (header + 16-byte body)
+            w32(b + 4, n2); // DataLength
+            memcpy(resp + 80, m->file_data + off, n2);
+            rlen = 80 + n2;
+        }
+        break;
+    }
+    case SMB2_WRITE: {
+        const uint8_t *wq = msg + 64; // WRITE request body
+        uint16_t data_off = rd16(wq + 2);
+        uint32_t length = rd32(wq + 4);
+        uint64_t off = rd64(wq + 8);
+        if (off + length <= sizeof(m->file_data))
+        {
+            memcpy(m->file_data + off, msg + data_off, length);
+            if (off + length > m->file_data_len)
+                m->file_data_len = (size_t)(off + length);
+        }
+        smb2_build_header(resp, sizeof(resp), SMB2_WRITE, 1, h.message_id, m->tree_id, m->session_id);
+        w16(b + 0, 17);     // StructureSize
+        w32(b + 4, length); // Count
+        rlen = 64 + 16;
+        break;
+    }
     case SMB2_CLOSE:
         smb2_build_header(resp, sizeof(resp), SMB2_CLOSE, 1, h.message_id, m->tree_id, m->session_id);
         w16(b + 0, 60); // StructureSize
@@ -266,6 +320,94 @@ void test_arg_validation()
     TEST_ASSERT_EQUAL_INT(SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
+static int open_ok(Mock *m, SmbConfig *cfg, SmbHandle *h)
+{
+    memset(h, 0, sizeof(*h));
+    return smb_open(cfg, h, mock_send, mock_recv, m);
+}
+
+// Read a 2000-byte file: spans multiple READ round trips (chunk_max < 2000).
+void test_read_file()
+{
+    Mock m = make_mock();
+    for (int i = 0; i < 2000; i++)
+        m.file_data[i] = (uint8_t)(i * 31 + 7);
+    m.file_data_len = 2000;
+    m.file_size = 2000;
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+
+    uint8_t buf[2048];
+    size_t got = 0;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(2000, got);
+    TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 2000);
+}
+
+// Read with a buffer larger than the file: stops at EOF (short read / STATUS_END_OF_FILE).
+void test_read_past_eof()
+{
+    Mock m = make_mock();
+    for (int i = 0; i < 100; i++)
+        m.file_data[i] = (uint8_t)i;
+    m.file_data_len = 100;
+    m.file_size = 100;
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+
+    uint8_t buf[512];
+    size_t got = 999;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(100, got);
+    TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 100);
+}
+
+// Write a 2000-byte file: spans multiple WRITE round trips; the cached file_size grows.
+void test_write_file()
+{
+    Mock m = make_mock();
+    m.file_data_len = 0;
+    m.file_size = 0;
+    SmbConfig cfg = make_cfg();
+    cfg.desired_access = SMB2_FILE_GENERIC_WRITE;
+    cfg.disposition = SMB2_FILE_OVERWRITE_IF;
+    SmbHandle h;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+
+    uint8_t data[2000];
+    for (int i = 0; i < 2000; i++)
+        data[i] = (uint8_t)(i * 13 + 3);
+    size_t wrote = 0;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(2000, wrote);
+    TEST_ASSERT_EQUAL_size_t(2000, m.file_data_len);
+    TEST_ASSERT_EQUAL_MEMORY(data, m.file_data, 2000);
+    TEST_ASSERT_EQUAL_HEX64(2000, h.file_size);
+}
+
+// Write then read back the same bytes through the mock (a byte-exact round trip).
+void test_write_then_read_roundtrip()
+{
+    Mock m = make_mock();
+    m.file_data_len = 0;
+    m.file_size = 0;
+    SmbConfig cfg = make_cfg();
+    SmbHandle h;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+
+    uint8_t data[1500];
+    for (int i = 0; i < 1500; i++)
+        data[i] = (uint8_t)(i ^ 0x5A);
+    size_t wrote = 0, got = 0;
+    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
+    uint8_t back[1500];
+    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_UINT32(1500, got);
+    TEST_ASSERT_EQUAL_MEMORY(data, back, 1500);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -275,5 +417,9 @@ int main()
     RUN_TEST(test_create_not_found);
     RUN_TEST(test_io_error);
     RUN_TEST(test_arg_validation);
+    RUN_TEST(test_read_file);
+    RUN_TEST(test_read_past_eof);
+    RUN_TEST(test_write_file);
+    RUN_TEST(test_write_then_read_roundtrip);
     return UNITY_END();
 }
