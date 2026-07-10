@@ -64,7 +64,7 @@ from each example's `pio ci` size report and aggregated into
 | `PCA9685`                                | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 733.4 KB (57.3%) | 65.2 KB (20.4%)  |
 | `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
-| `PREEMPT_QUEUE`                          | Foundation/06.PreemptQueue              | 267.7 KB (20.9%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 746.7 KB (58.3%) | 46.4 KB (14.5%)  |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 740.5 KB (57.9%) | 66.3 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.1 KB (57.3%) | 64.8 KB (20.2%)  |
@@ -84,7 +84,7 @@ from each example's `pio ci` size report and aggregated into
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 741.7 KB (57.9%) | 65.1 KB (20.3%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.4 KB (57.4%) | 65.3 KB (20.4%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
-| `TLS`                                    | L4-Transport/03.HTTPS                   | 835.0 KB (65.2%) | 114.5 KB (35.8%) |
+| `TLS`                                    | L6-Presentation/07.SecureWebSocket      | 834.8 KB (65.2%) | 114.5 KB (35.8%) |
 | `TLS+MTLS`                               | L4-Transport/04.mTLS                    | 835.8 KB (65.3%) | 114.9 KB (35.9%) |
 | `TLS+TLS_RESUMPTION`                     | L4-Transport/06.TlsResumption           | 835.6 KB (65.3%) | 114.7 KB (35.8%) |
 | `TOTP`                                   | L7-Application/45.Totp                  | 734.2 KB (57.4%) | 64.8 KB (20.3%)  |
