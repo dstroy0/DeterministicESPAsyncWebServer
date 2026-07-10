@@ -719,6 +719,7 @@ src/
 │   ├── radio_power/  (radio_power.h, radio_power.cpp)
 │   ├── radio_sniff/  (radio_sniff.h, radio_sniff.cpp)
 │   ├── rawl2/  (rawl2.h, rawl2.cpp)
+│   ├── relay/  (relay.h, relay.cpp)
 │   ├── rtc/  (rtc.h, rtc.cpp)
 │   ├── s7comm/  (s7comm.h, s7comm.cpp)
 │   ├── sdi12/  (sdi12.h, sdi12.cpp)
@@ -1182,6 +1183,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_RAWL2` | `0` | Opt-in raw Layer-2 Ethernet frame codec. |
 | `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
 | `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
+| `DETWS_ENABLE_RELAY` | `0` | Opt-in TCP relay / DNAT port forwarding. |
 | `DETWS_ENABLE_RTC` | `0` | I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source. |
 | `DETWS_ENABLE_S7COMM` | `0` | Siemens S7comm PDU codec (`services/s7comm`). |
 | `DETWS_ENABLE_SDI12` | `0` | SDI-12 sensor-bus codec (`services/sdi12`). |
@@ -1379,6 +1381,7 @@ guards at compile time.
 | `DETWS_PROTO_MAX` | `8` | Largest ConnProto id the protocol-handler dispatch table holds. |
 | `DETWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
 | `DETWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
+| `DETWS_RELAY_BUF` | `512` | Per-direction relay buffer size (bytes) for services/relay. |
 | `DETWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
 | `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
 | `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
