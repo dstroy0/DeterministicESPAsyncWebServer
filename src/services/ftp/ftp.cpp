@@ -178,18 +178,15 @@ bool ftp_parse_pasv(const char *buf, size_t len, uint8_t ip[4], uint16_t *port)
     for (int ni = 0; ni < 6; ni++)
     {
         if (i >= len || buf[i] < '0' || buf[i] > '9')
-            return false;
+            return false; // the guard above guarantees at least one digit in this field
         unsigned v = 0;
-        int digits = 0;
         while (i < len && buf[i] >= '0' && buf[i] <= '9')
         {
             v = v * 10 + (unsigned)(buf[i] - '0');
             if (v > 255)
                 return false;
             i++;
-            digits++;
         }
-        (void)digits; // guaranteed >=1 by the leading-digit check above
         nums[ni] = v;
         if (ni < 5)
         {
@@ -232,19 +229,15 @@ bool ftp_parse_epsv(const char *buf, size_t len, uint16_t *port)
         return false;
 
     if (i >= len || buf[i] < '0' || buf[i] > '9')
-        return false;
+        return false; // the guard above guarantees at least one port digit follows
     unsigned v = 0;
-    int digits = 0;
     while (i < len && buf[i] >= '0' && buf[i] <= '9')
     {
         v = v * 10 + (unsigned)(buf[i] - '0');
         if (v > 65535)
             return false;
         i++;
-        digits++;
     }
-    if (!digits)
-        return false;
     *port = (uint16_t)v;
     return true;
 }

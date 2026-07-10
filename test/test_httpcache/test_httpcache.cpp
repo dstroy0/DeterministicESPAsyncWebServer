@@ -162,6 +162,80 @@ void test_freshness_precedence()
     TEST_ASSERT_EQUAL_INT(-1, (int)cache_freshness_lifetime(&cc, true, -1));
 }
 
+// Build every directive (exercises the less-common emit branches) and the request directives.
+void test_build_all_directives()
+{
+    DetwsCacheControl cc;
+    cache_control_init(&cc);
+    cc.cc_private = true;
+    cc.no_cache = true;
+    cc.max_age = 10;
+    cc.s_maxage = 20;
+    cc.must_revalidate = true;
+    cc.proxy_revalidate = true;
+    cc.no_transform = true;
+    cc.must_understand = true;
+    cc.cc_immutable = true;
+    cc.stale_while_revalidate = 5;
+    cc.stale_if_error = 6;
+    cc.only_if_cached = true;
+    cc.min_fresh = 7;
+    cc.max_stale = 8;
+    char b[256];
+    TEST_ASSERT_GREATER_THAN_size_t(0, cache_control_build(b, sizeof(b), &cc));
+    TEST_ASSERT_NOT_NULL(strstr(b, "proxy-revalidate"));
+    TEST_ASSERT_NOT_NULL(strstr(b, "must-understand"));
+    TEST_ASSERT_NOT_NULL(strstr(b, "only-if-cached"));
+    TEST_ASSERT_NOT_NULL(strstr(b, "max-stale=8"));
+    TEST_ASSERT_NOT_NULL(strstr(b, "min-fresh=7"));
+
+    cc.max_stale = -2; // present, no value
+    cache_control_build(b, sizeof(b), &cc);
+    TEST_ASSERT_NOT_NULL(strstr(b, "max-stale"));
+    TEST_ASSERT_NULL(strstr(b, "max-stale=")); // emitted bare, no '='
+}
+
+void test_parse_all_directives()
+{
+    DetwsCacheControl cc;
+    const char *s = "private, no-cache, no-transform, must-revalidate, proxy-revalidate, "
+                    "must-understand, immutable, only-if-cached, stale-while-revalidate=30";
+    TEST_ASSERT_TRUE(cache_control_parse(s, strlen(s), &cc));
+    TEST_ASSERT_TRUE(cc.cc_private);
+    TEST_ASSERT_TRUE(cc.no_cache);
+    TEST_ASSERT_TRUE(cc.no_transform);
+    TEST_ASSERT_TRUE(cc.must_revalidate);
+    TEST_ASSERT_TRUE(cc.proxy_revalidate);
+    TEST_ASSERT_TRUE(cc.must_understand);
+    TEST_ASSERT_TRUE(cc.cc_immutable);
+    TEST_ASSERT_TRUE(cc.only_if_cached);
+    TEST_ASSERT_EQUAL_INT32(30, cc.stale_while_revalidate);
+}
+
+void test_parse_and_build_guards()
+{
+    DetwsCacheControl cc;
+    TEST_ASSERT_FALSE(cache_control_parse(nullptr, 0, &cc)); // null input
+    // a recognized numeric directive with no value stays absent (-1)
+    TEST_ASSERT_TRUE(cache_control_parse("max-age", 7, &cc));
+    TEST_ASSERT_EQUAL_INT32(-1, cc.max_age);
+    // an out-of-range delta clamps to INT32_MAX
+    cache_control_parse("max-age=99999999999", 19, &cc);
+    TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);
+    // trailing separators are skipped
+    TEST_ASSERT_TRUE(cache_control_parse("public,,,", 9, &cc));
+    TEST_ASSERT_TRUE(cc.cc_public);
+
+    // build guards: null buffer, zero cap, and overflow during a number emit
+    char b[8];
+    cache_control_init(&cc);
+    cc.max_age = 12345;
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(nullptr, 8, &cc));
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, 0, &cc));
+    char snug[12]; // "max-age=12345" (13) overflows mid-number
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(snug, sizeof(snug), &cc));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -173,5 +247,8 @@ int main()
     RUN_TEST(test_parse_request_directives);
     RUN_TEST(test_build_parse_roundtrip);
     RUN_TEST(test_freshness_precedence);
+    RUN_TEST(test_build_all_directives);
+    RUN_TEST(test_parse_all_directives);
+    RUN_TEST(test_parse_and_build_guards);
     return UNITY_END();
 }

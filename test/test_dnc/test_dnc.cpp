@@ -297,6 +297,19 @@ void test_decode_eia_three_is_not_xoff()
     TEST_ASSERT_EQUAL_STRING("M30", d.line);
 }
 
+// Every End-of-Block / marker overflow path fails closed (never overruns the buffer).
+void test_encode_overflow_paths()
+{
+    uint8_t o[8];
+    DncCfg eia = {DNC_CODE_EIA, false, false, 0};
+    TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows
+    DncCfg iso = {DNC_CODE_ISO, false, true, 0};                         // crlf
+    TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows
+    TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows
+    TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room
+    TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -313,5 +326,6 @@ int main()
     RUN_TEST(test_decode_overflow_and_recovery);
     RUN_TEST(test_decode_ignores_runout);
     RUN_TEST(test_decode_eia_three_is_not_xoff);
+    RUN_TEST(test_encode_overflow_paths);
     return UNITY_END();
 }

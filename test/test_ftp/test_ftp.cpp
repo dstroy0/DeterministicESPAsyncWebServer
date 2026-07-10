@@ -208,6 +208,42 @@ void test_parse_epsv_malformed()
     TEST_ASSERT_FALSE(ftp_parse_epsv("229 (|||)\r\n", 11, &port));     // no port digits
 }
 
+// null / partial / overflow edge cases (fail closed, never overrun).
+void test_reply_null_and_partial_multiline()
+{
+    int code = 0;
+    size_t used = 0;
+    TEST_ASSERT_FALSE(ftp_parse_reply(nullptr, 4, &code, &used)); // null buffer
+    const char *unterm_first = "211-Supported";                   // first multiline line lacks its CRLF
+    TEST_ASSERT_FALSE(ftp_parse_reply(unterm_first, strlen(unterm_first), &code, &used));
+    const char *unterm_term = "211-a\r\n211 End"; // terminator line lacks its CRLF
+    TEST_ASSERT_FALSE(ftp_parse_reply(unterm_term, strlen(unterm_term), &code, &used));
+    const char *unterm_cont = "211-a\r\nbcd"; // continuation line lacks its CRLF
+    TEST_ASSERT_FALSE(ftp_parse_reply(unterm_cont, strlen(unterm_cont), &code, &used));
+}
+
+void test_build_overflow_and_null()
+{
+    char tiny[10];
+    const uint8_t ip[4] = {192, 168, 1, 50};
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(tiny, sizeof(tiny), ip, 4096));      // overflows mid-number
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(nullptr, 32, ip, 80));               // null buffer
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(tiny, 4, "1.2.3.4", false, 80));     // eprt overflow
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(tiny, sizeof(tiny), "", false, 80)); // empty ip
+}
+
+void test_pasv_epsv_null_and_edges()
+{
+    uint8_t ip[4];
+    uint16_t port;
+    TEST_ASSERT_FALSE(ftp_parse_pasv(nullptr, 10, ip, &port));             // null buffer
+    TEST_ASSERT_FALSE(ftp_parse_pasv("227 (x,1,2,3,4,5)", 17, ip, &port)); // leading non-digit
+    TEST_ASSERT_FALSE(ftp_parse_epsv(nullptr, 10, &port));                 // null buffer
+    TEST_ASSERT_FALSE(ftp_parse_epsv("229 (", 5, &port));                  // ends right at '('
+    TEST_ASSERT_FALSE(ftp_parse_epsv("229 (|5|)", 9, &port));              // fewer than 3 delimiters
+    TEST_ASSERT_FALSE(ftp_parse_epsv("229 (|||99999|)", 15, &port));       // port > 65535
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -224,5 +260,8 @@ int main()
     RUN_TEST(test_parse_pasv_malformed);
     RUN_TEST(test_parse_epsv);
     RUN_TEST(test_parse_epsv_malformed);
+    RUN_TEST(test_reply_null_and_partial_multiline);
+    RUN_TEST(test_build_overflow_and_null);
+    RUN_TEST(test_pasv_epsv_null_and_edges);
     return UNITY_END();
 }
