@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`91f8215`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91f82157e257a4e9b75d63e902b6cd1c3c539f13))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0d6dd68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d6dd6836f5e8cc4efe1c3b0a24ebae435ed472d))
+
+### Testing
+
+- cover the rewritten parser's error paths (92 -> 100% lines) ([`88e1b15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88e1b154e39cb8134f41050acc6799a39f4effd0))
+
 ## [5.81.3] - 2026-07-10
 
 <details>
