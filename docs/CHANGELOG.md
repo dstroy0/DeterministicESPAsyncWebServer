@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.90.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.90.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`fefa69a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fefa69ac92c25c6dfa935382d3b4f0a61ee8e0e0))
+
+### Changes
+
+- Bump version: 5.89.0 → 5.90.0 ([`8509aca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8509aca617f8d1fd4956b7409e272bceb53b1567))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`80f894e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80f894e087b39d4d1c536343dd9003a01b08b99b))
+- update ESP32 build footprints [skip ci] ([`8174b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8174b47204f6b238b5757802be0326aa0ae9aa91))
+
+### Features
+
+- smb_client dialogue engine (open/close over a real session) ([`f99fcc9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f99fcc9bb13846f3b932bf448e0e7c663ba23faa))
+
+</details>
+
 ## [5.89.0] - 2026-07-10
 
 <details>
