@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`400b38b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400b38b674427674065a58077122ed0579cf41e7))
 - update CHANGELOG.md [skip ci] ([`216ff40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216ff4062f9bd2e2cba0f5315db5ab218316e1aa))
 - update CHANGELOG.md [skip ci] ([`e860e23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e860e23931dac392550d7d8885bcaed65aab1dff))
 - update CHANGELOG.md [skip ci] ([`ceda34b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ceda34b1d9f0fb4262d5d3b73cc78d1086768825))
@@ -13,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eecc977`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eecc9776723c91320c059e7411a15b3cc49ab9e1))
 - update ESP32 build footprints [skip ci] ([`38f8589`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38f8589e48fc43960bedfa20f6e67c40ba450e71))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f8283eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8283eb09b902d9f003ac272e55b731d637c51ac))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`218f472`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/218f472d0124f388b7c2e6829d420afda2d16479))
@@ -22,6 +24,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- fuzz the DDS/RTPS message walker (completes the corpus) ([`8c6b573`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c6b57347875e9b0c67f12d4fb811c4dd0933cb3))
 - fuzz JWT + DirectNET / CC-Link / AMQP / MMS parsers ([`3c9b24e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c9b24e13496033bbf708eb736a74400ce544a32))
 - fuzz BACnet/IP, TPKT/COTP, C37.118 + FINS command parsers ([`96fdba2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96fdba232bc687158c00d641ae0cf3437ba64302))
 - fuzz the FTP + industrial client response parsers ([`0a3dce2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a3dce2b8d560ea3ea97ba7461e19648c2bfebc2))
