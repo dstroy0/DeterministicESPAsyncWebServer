@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6cea4b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cea4b201b66dbe284da6980852c9db42c89de31))
 - update test report + coverage [skip ci] ([`31a9bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31a9bd5720801f67f68a9bb4bc2fb626e6fc5ac2))
 - update CHANGELOG.md [skip ci] ([`11cbb68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11cbb687736fbd239817fdab72ea0838f243d9e7))
 - keep SECURITY.md supported-versions table current on bump ([`d069e65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d069e658106c2d13dbf3d385713e0216dceb45fd))
@@ -22,6 +23,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- measured SMB/DNC/port-forward + radio keep-awake, with practicality ([`c7c8beb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7c8bebe227ec7259fde285412f1b4cf1f141096))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f80e6e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f80e6e00ae39a1f553a708eb3dc3d665d497a88f))
 - update ESP32 build footprints [skip ci] ([`f3f7286`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3f728639a2bc6be8c60149d7671f01deb629c10))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a1acc69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1acc692c830bc69a16b9a45aa2174d157dbdc64))
 - update ESP32 build footprints [skip ci] ([`bc0c319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc0c3196855b9452d973bbc6657181ea625ec87c))
