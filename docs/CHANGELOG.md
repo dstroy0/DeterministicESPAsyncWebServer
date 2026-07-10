@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.85.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.85.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`7096073`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7096073ba5b99dbb8e76cccca8056b81b9ed429e))
+
+### Changes
+
+- Bump version: 5.84.0 → 5.85.0 ([`b912a58`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b912a58387902629cfa9050c5a41c21b2bec4a8b))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`930002d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/930002d9a2d18432d976a277c26d3363f458d658))
+
+### Features
+
+- NTLMSSP message codec - SMB2 increment 4 ([`4455648`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4455648b0731dd63b17f620735e4a7289c82fc81))
+
+</details>
+
 ## [5.84.0] - 2026-07-10
 
 <details>
