@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`a3366aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3366aaea64be2c86116b65bc16c6a6b80756e2c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`edc8804`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edc88044ea73ef84d6c94b90d165f5f7cd16591a))
+
+### Refactor
+
+- scoped enums (enum class migration 1/N) ([`ed44ead`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed44eadae714d3695864ac29cc890155f305445c))
+
 ## [5.95.0] - 2026-07-10
 
 <details>
