@@ -827,7 +827,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.restart());</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)9500));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());</code>
   </details>
@@ -1416,7 +1416,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: begin() before any listen() -> no-listeners error, no side effects.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.begin());</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.listen((uint16_t)(9100 + i)));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, srv.listen(9999));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());</code>
   </details>
