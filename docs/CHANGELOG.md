@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.89.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.89.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1527cab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1527cab2773e3decd005958427fff407d374303f))
+
+### Changes
+
+- Bump version: 5.88.0 → 5.89.0 ([`ab9c6f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab9c6f9785b37475128658e3a75e3b820fb2e7c9))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`abbcd1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abbcd1fb7267e94f0eee21201ce89ee8d80c07db))
+- update ESP32 build footprints [skip ci] ([`da681cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da681cc751a97b26417f247c64f80eceb839f464))
+
+### Features
+
+- SMB2 READ / WRITE file-data commands (increment 8) ([`05b0555`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05b055513ec436fa6dd489af6ebf6813989cb5a8))
+
+</details>
+
 ## [5.88.0] - 2026-07-10
 
 <details>
