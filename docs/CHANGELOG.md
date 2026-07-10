@@ -6,8 +6,29 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0433e4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0433e4e9081a2870a0ef80afa5aaa370e88172a9))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`979006a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/979006a5336e5df16ded6630a49a3d9a75700e96))
+
+### Features
+
+- extend RESP2 codec to full RESP3 (verified vs real redis-server) ([`8773954`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87739548329dd9db30e0247cf1822e7311eed25a))
+
+## [5.71.0] - 2026-07-09
+
+<details>
+<summary><b>Show Changelog for version 5.71.0 - 2026-07-09</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`19f7c21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19f7c217ab2d5309c16c0ff86fdabd6b639886d0))
 - update CHANGELOG.md [skip ci] ([`f64b78a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f64b78a17ae578c91cf62d2ebd50abd9504038b2))
+
+### Changes
+
+- Bump version: 5.70.0 → 5.71.0 ([`e01d20b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e01d20b79fe2d120b3411a1714cb87d9f0c15d56))
 
 ### Documentation
 
@@ -16,6 +37,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Features
 
 - multi-page table cursor (interior b-tree traversal) ([`4a4023f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a4023fd8076c0a24b7bef0f4d71b003997b6f81))
+
+</details>
 
 ## [5.70.0] - 2026-07-09
 
