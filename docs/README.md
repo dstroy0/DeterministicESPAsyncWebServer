@@ -723,6 +723,7 @@ src/
 │   ├── sht3x/  (sht3x.h, sht3x.cpp)
 │   ├── sigfox/  (sigfox.h, sigfox.cpp)
 │   ├── sleep_sched/  (sleep_sched.h, sleep_sched.cpp)
+│   ├── smb/  (smb2.h, smb2.cpp)
 │   ├── smtp/  (smtp.h, smtp.cpp)
 │   ├── snmp/
 │   │   ├── snmp_agent.cpp
@@ -1173,6 +1174,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_SHT3X` | `0` | Sensirion SHT3x temperature / humidity sensor (I2C). |
 | `DETWS_ENABLE_SIGFOX` | `0` | Enable the Sigfox AT-command codec (default off). |
 | `DETWS_ENABLE_SLEEP_SCHED` | `0` | Opt-in dynamic sleep-cycle scheduler. |
+| `DETWS_ENABLE_SMB` | `0` | Opt-in SMB2 client wire codec. |
 | `DETWS_ENABLE_SMTP` | `0` | Outbound SMTP client (RFC 5321) for device email alerts (services/smtp). |
 | `DETWS_ENABLE_SNMP` | `0` | SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP. |
 | `DETWS_ENABLE_SNMP_TRAP` | `0` | Outbound SNMP notifications - traps and informs (requires DETWS_ENABLE_SNMP). |
