@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2737 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2740 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24355,7 +24355,7 @@ A thorough directory of all **2737 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (11 tests)</b></summary>
+<summary><b>test_sqlite (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -24534,6 +24534,43 @@ A thorough directory of all **2737 test cases** across **233 suites**. Expand a 
       * <code>Assert equal memory (expect, v, vl)</code>
       * <code>Assert false (sqlite_record_next(&row, &st, &v, &vl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(DB_MP_ROWS, n); // every row visited exactly once</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_overflow_read_payload</b> &mdash; <i>The reassembled record decodes to (id INTEGER, data TEXT) where data is a run of one character.</i></summary>
+
+    * **Objective**: The reassembled record decodes to (id INTEGER, data TEXT) where data is a run of one character.
+    * **Assertions**:
+      * <code>Assert true (find_overflow_cell(leaf, &cell))</code>
+      * <code>Assert true (cell.has_overflow)</code>
+      * <code>Assert true (cell.local_len &lt; cell.payload_len)</code>
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert true (sqlite_record_begin(&row, payload, cell.payload_len))</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl))</code>
+      * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl)); // data (TEXT)</code>
+      * <code>Assert true (vl == OVF_ROW2_LEN || vl == OVF_ROW3_LEN)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(13u + 2u * vl, st);</code>
+      * <code>Assert true (ch == 'A' || ch == 'B')</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]); // every byte survived the chain intact</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_overflow_read_payload_bounds</b> &mdash; <i>Overflow read payload bounds</i></summary>
+
+    * **Objective**: Overflow read payload bounds
+    * **Assertions**:
+      * <code>Assert true (find_overflow_cell(leaf, &cell))</code>
+      * <code>Assert false (sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, tiny, sizeof(tiny), work))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_overflow_cursor</b> &mdash; <i>Overflow cursor</i></summary>
+
+    * **Objective**: Overflow cursor
+    * **Assertions**:
+      * <code>Assert true (sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(n, rowid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, n);</code>
   </details>
 
 </details>

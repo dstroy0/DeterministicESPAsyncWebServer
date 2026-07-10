@@ -486,48 +486,47 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature           | Flash (best-worst) | RAM (best-worst) |
 | ----- | ----------------- | -----------------: | ---------------: |
-| Core  | `ETHERNET`        |            36.0 KB |         < 0.5 KB |
+| Core  | `ETHERNET`        |            35.6 KB |         < 0.5 KB |
 | Core  | `BUS_CAPTURE`     |            17.5 KB |         < 0.5 KB |
 | Core  | `FORWARD`         |            17.5 KB |         < 0.5 KB |
 | Core  | `PROMISC`         |            11.2 KB |         < 0.5 KB |
-| Core  | `IPV6`            |             0.6 KB |         < 0.5 KB |
 | L4    | `PER_IP_THROTTLE` |           < 0.5 KB |           0.6 KB |
-| L5    | `SSH`             |       66.5-66.7 KB |     21.8-21.9 KB |
+| L5    | `SSH`             |       66.1-66.7 KB |     21.8-21.9 KB |
 | L5    | `TELNET`          |           < 0.5 KB |           0.7 KB |
-| L6    | `TLS`             |           100.0 KB |          49.9 KB |
-| L6    | `WS_DEFLATE`      |         2.8-7.9 KB |       8.0-9.5 KB |
+| L6    | `TLS`             |            99.6 KB |          49.9 KB |
+| L6    | `WS_DEFLATE`      |         2.4-7.9 KB |       8.0-9.5 KB |
 | L6    | `WEB_TERMINAL`    |         0.0-3.7 KB |       0.0-1.5 KB |
-| L6    | `MSGPACK`         |             1.7 KB |         < 0.5 KB |
+| L6    | `MSGPACK`         |             1.4 KB |         < 0.5 KB |
 | L6    | `JWT`             |           < 0.5 KB |           0.7 KB |
 | L6    | `AUTH_LOCKOUT`    |           < 0.5 KB |           0.7 KB |
-| L7    | `WS_CLIENT`       |            77.0 KB |          53.1 KB |
-| L7    | `ETAG`            |        0.0-72.6 KB |       0.0-1.4 KB |
-| L7    | `WEBDAV`          |       26.2-65.7 KB |     38.4-38.7 KB |
-| L7    | `VFS`             |            40.8 KB |           4.6 KB |
-| L7    | `RANGE`           |        0.6-39.9 KB |         < 0.5 KB |
-| L7    | `UPLOAD`          |            39.6 KB |           5.3 KB |
-| L7    | `OPCUA_CLIENT`    |        6.8-28.4 KB |     10.0-14.0 KB |
-| L7    | `NTP`             |            23.3 KB |           2.6 KB |
-| L7    | `MDNS`            |            23.1 KB |           2.0 KB |
-| L7    | `TIME_SOURCE`     |            18.9 KB |           1.7 KB |
-| L7    | `DASHBOARD`       |            18.5 KB |           0.5 KB |
+| L7    | `WS_CLIENT`       |            76.6 KB |          53.1 KB |
+| L7    | `ETAG`            |        0.0-72.3 KB |       0.0-1.4 KB |
+| L7    | `WEBDAV`          |       26.2-65.4 KB |     38.4-38.7 KB |
+| L7    | `VFS`             |            40.4 KB |           4.6 KB |
+| L7    | `RANGE`           |        0.6-39.5 KB |         < 0.5 KB |
+| L7    | `UPLOAD`          |            39.3 KB |           5.3 KB |
+| L7    | `OPCUA_CLIENT`    |        6.8-28.1 KB |     10.0-14.0 KB |
+| L7    | `NTP`             |            23.0 KB |           2.6 KB |
+| L7    | `MDNS`            |            22.8 KB |           2.0 KB |
+| L7    | `TIME_SOURCE`     |            18.6 KB |           1.7 KB |
+| L7    | `DASHBOARD`       |            18.2 KB |           0.5 KB |
 | L7    | `RTC`             |            13.5 KB |         < 0.5 KB |
-| L7    | `OIDC`            |            11.4 KB |          13.0 KB |
-| L7    | `OAUTH2`          |            10.8 KB |          22.4 KB |
-| L7    | `WEBHOOK`         |             8.5 KB |          19.4 KB |
-| L7    | `OPCUA`           |         6.0-6.9 KB |     10.0-10.2 KB |
-| L7    | `SNMP`            |             6.9 KB |          12.3 KB |
-| L7    | `TELEMETRY`       |             6.9 KB |         < 0.5 KB |
-| L7    | `PROVISIONING`    |             5.6 KB |           1.7 KB |
-| L7    | `DNS_RESOLVER`    |             4.1 KB |           1.4 KB |
-| L7    | `COAP`            |             3.7 KB |           2.6 KB |
-| L7    | `OTA`             |             3.3 KB |          35.4 KB |
-| L7    | `CONFIG_IO`       |             3.1 KB |         < 0.5 KB |
-| L7    | `CONFIG_STORE`    |             3.1 KB |         < 0.5 KB |
-| L7    | `GRAPHQL`         |             3.0 KB |           4.5 KB |
-| L7    | `GPIO_MAP`        |             2.4 KB |         < 0.5 KB |
-| L7    | `METRICS`         |             2.2 KB |         < 0.5 KB |
-| L7    | `SYSLOG`          |             1.5 KB |           2.0 KB |
+| L7    | `OIDC`            |            11.0 KB |          13.0 KB |
+| L7    | `OAUTH2`          |            10.4 KB |          22.4 KB |
+| L7    | `WEBHOOK`         |             8.1 KB |          19.4 KB |
+| L7    | `OPCUA`           |         5.7-6.9 KB |     10.0-10.2 KB |
+| L7    | `TELEMETRY`       |             6.5 KB |         < 0.5 KB |
+| L7    | `SNMP`            |             6.5 KB |          12.3 KB |
+| L7    | `PROVISIONING`    |             5.3 KB |           1.7 KB |
+| L7    | `DNS_RESOLVER`    |             3.7 KB |           1.4 KB |
+| L7    | `COAP`            |             3.4 KB |           2.6 KB |
+| L7    | `OTA`             |             3.0 KB |          35.4 KB |
+| L7    | `CONFIG_IO`       |             2.7 KB |         < 0.5 KB |
+| L7    | `CONFIG_STORE`    |             2.7 KB |         < 0.5 KB |
+| L7    | `GRAPHQL`         |             2.7 KB |           4.5 KB |
+| L7    | `GPIO_MAP`        |             2.1 KB |         < 0.5 KB |
+| L7    | `METRICS`         |             1.8 KB |         < 0.5 KB |
+| L7    | `SYSLOG`          |             1.2 KB |           2.0 KB |
 | L7    | `AUDIT_LOG`       |           < 0.5 KB |           3.1 KB |
 | L7    | `LOGBUF`          |           < 0.5 KB |           3.2 KB |
 | -     | `FILE_SERVING`    |         0.0-4.2 KB |         < 0.5 KB |
