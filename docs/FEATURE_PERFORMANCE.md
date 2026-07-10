@@ -129,11 +129,11 @@ enough to keep accepting work across a stalled flush.
 
 Host = Raspberry Pi 5 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real device at 240 MHz.
 
-| Feature   | Operation            | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
-| --------- | -------------------- | ---------: | --------: | -------------: | ------------: |
-| base64    | encode 1 KiB (sw)    |        944 |      1085 |          47.36 |          21.6 |
-| base64    | decode 1 KiB (mbedTLS)|      3274 |       313 |        1814.82 |          0.56 |
-| mtconnect | streams doc (20 obs) |       3291 |       749 |        278.279 |          8.86 |
+| Feature   | Operation              | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
+| --------- | ---------------------- | ---------: | --------: | -------------: | ------------: |
+| base64    | encode 1 KiB (sw)      |        944 |      1085 |          47.36 |          21.6 |
+| base64    | decode 1 KiB (mbedTLS) |       3274 |       313 |        1814.82 |          0.56 |
+| mtconnect | streams doc (20 obs)   |       3291 |       749 |        278.279 |          8.86 |
 
 Notes:
 
