@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **211 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **212 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -118,6 +118,7 @@ The native test matrix has **211 environments**, one per feature, generated from
 | `native_directnet` | `ETWS_ENABLE_DIRECTNET=1` | `test_directnet` | AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH + ASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse. |
 | `native_dma` | `ETWS_ENABLE_DMA=1`, `ETWS_DMA_BUF_SIZE=8`, `ETWS_DMA_CHANNELS=2` | `test_dma` | DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an ingress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms, egress DMA is captured, TX is one-i... |
 | `native_dmx` | `ETWS_ENABLE_DMX=1` | `test_dmx` | DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the RDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. |
+| `native_dnc` | `ETWS_ENABLE_DNC=1` | `test_dnc` | CNC RS-232 DNC drip-feed codec (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader runout, ... |
 | `native_dnp3` | `ETWS_ENABLE_DNP3=1` | `test_dnp3` | DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame builder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking parser. |
 | `native_dns_resolver` | `ETWS_ENABLE_DNS_RESOLVER=1` | `test_dns_resolver` | DNS resolver answer classifier/verifier (services/dns_resolver): host-tested; the lwIP resolve is ESP32-only. |
 | `native_dns_server` | `ETWS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
@@ -501,7 +502,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2759 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2772 test cases** across **234 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6300,6 +6301,167 @@ A thorough directory of all **2759 test cases** across **233 suites**. Expand a 
       * <code>Assert false (rdm_parse(bad_ml, n, &g, &c))</code>
       * <code>Assert false (rdm_parse(bad_pdl, n, &g, &c))</code>
       * <code>Assert false (rdm_parse(trunc, n, &g, &c))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dnc (13 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_eia_table_odd_parity_and_inverse</b> &mdash; <i>odd parity across all 8 tracks (EIA characteristic)</i></summary>
+
+    * **Objective**: odd parity across all 8 tracks (EIA characteristic)
+    * **Assertions**:
+      * <code>Assert true message ((popcount8(e) & 1) == 1, "EIA code must have odd parity")</code>
+      * <code>Assert equal int (c, (int)(unsigned char)dnc_eia_to_iso(e))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, seen[e], "two characters collide on one EIA byte");</code>
+      * <code>Assert equal int (43, representable)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_eia_known_vectors</b> &mdash; <i>no lowercase / no ':' '(' ')' in EIA -> fail closed</i></summary>
+
+    * **Objective**: no lowercase / no ':' '(' ')' in EIA -> fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, dnc_iso_to_eia('0'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, dnc_iso_to_eia('1'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, dnc_iso_to_eia('7'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, dnc_iso_to_eia('A'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x73, dnc_iso_to_eia('C')); // even hole count -&gt; parity added</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, dnc_iso_to_eia('W')); // numeral 6 + channel 6 (documented)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x29, dnc_iso_to_eia('Z'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, dnc_iso_to_eia(' '));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x6B, dnc_iso_to_eia('.'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, dnc_iso_to_eia('-'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x31, dnc_iso_to_eia('/'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, dnc_iso_to_eia('%')); // rewind stop = EIA End-of-Record</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia('a'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia('('));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia(':'));</code>
+      * <code>Assert equal int (0, (int)dnc_eia_to_iso(0x00))</code>
+      * <code>Assert equal int (0, (int)dnc_eia_to_iso(0x80))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_iso_even_parity</b> &mdash; <i>Iso even parity</i></summary>
+
+    * **Objective**: Iso even parity
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)c, (uint8_t)(p & 0x7F)); // low 7 bits unchanged</code>
+      * <code>Assert true message ((popcount8(p) & 1) == 0, "even parity total")</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x41, dnc_iso_add_parity('A')); // 0x41 has 2 bits -&gt; even -&gt; bit7 clear</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB1, dnc_iso_add_parity('1')); // 0x31 has 3 bits -&gt; odd -&gt; bit7 set</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_block_iso</b> &mdash; <i>Encode block iso</i></summary>
+
+    * **Objective**: Encode block iso
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
+      * <code>Assert equal memory ("G01X10\\n", out, 7)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
+      * <code>Assert equal memory ("G01X10\\r\\n", out, 8)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_block_eia</b> &mdash; <i>Encode block eia</i></summary>
+
+    * **Objective**: Encode block eia
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x67, out[0]); // G</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, out[1]); // 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]); // 1</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, out[3]); // EOB</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_block_fail_closed</b> &mdash; <i>Encode block fail closed</i></summary>
+
+    * **Objective**: Encode block fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "g01", 3, out, sizeof(out)));   // lowercase</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "(cmt)", 5, out, sizeof(out))); // '(' not in EIA</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "G01", 3, tiny, sizeof(tiny))); // overflow</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_marker</b> &mdash; <i>Encode marker</i></summary>
+
+    * **Objective**: Encode marker
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>Assert equal memory ("%\\n", out, 2)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, out[0]); // EOR</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x80, out[1]); // EOB</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_leader</b> &mdash; <i>Encode leader</i></summary>
+
+    * **Objective**: Encode leader
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[i]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_leader(&cfg, tiny, sizeof(tiny)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_flow_control</b> &mdash; <i>Flow control</i></summary>
+
+    * **Objective**: Flow control
+    * **Assertions**:
+      * <code>Assert true (dnc_flow_can_send(&f))</code>
+      * <code>Assert true (dnc_flow_feed(&f, DNC_XOFF))</code>
+      * <code>Assert false (dnc_flow_can_send(&f))</code>
+      * <code>Assert false (dnc_flow_feed(&f, 'G'))</code>
+      * <code>Assert false (dnc_flow_can_send(&f))</code>
+      * <code>Assert true (dnc_flow_feed(&f, DNC_XON))</code>
+      * <code>Assert true (dnc_flow_can_send(&f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_roundtrip_program</b> &mdash; <i>Roundtrip program</i></summary>
+
+    * **Objective**: Roundtrip program
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, w); // every block is EIA-representable</code>
+      * <code>Assert equal int (1, cap.starts)</code>
+      * <code>Assert equal int (1, cap.ends)</code>
+      * <code>Assert equal int (0, cap.overflows)</code>
+      * <code>Assert equal int (nlines, cap.nlines)</code>
+      * <code>Assert equal string (prog[i], cap.lines[i])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_overflow_and_recovery</b> &mdash; <i>next block decodes normally</i></summary>
+
+    * **Objective**: next block decodes normally
+    * **Assertions**:
+      * <code>Assert equal (DNC_EV_OVERFLOW, ev)</code>
+      * <code>Assert equal (DNC_EV_LINE, ev)</code>
+      * <code>Assert equal string ("G1", d.line)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_ignores_runout</b> &mdash; <i>Decode ignores runout</i></summary>
+
+    * **Objective**: Decode ignores runout
+    * **Assertions**:
+      * <code>Assert equal int (1, cap.nlines)</code>
+      * <code>Assert equal string ("G1", cap.lines[0])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode_eia_three_is_not_xoff</b> &mdash; <i>Decode eia three is not xoff</i></summary>
+
+    * **Objective**: Decode eia three is not xoff
+    * **Assertions**:
+      * <code>Assert equal (DNC_EV_LINE, ev)</code>
+      * <code>Assert equal string ("M30", d.line)</code>
   </details>
 
 </details>

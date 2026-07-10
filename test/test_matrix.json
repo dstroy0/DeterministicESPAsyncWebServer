@@ -33,6 +33,12 @@
       ],
       "tests": ["test_docstore"]
     },
+    "native_dnc": {
+      "desc": "CNC RS-232 DNC drip-feed codec (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code\ntranslation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop\nand leader runout, XON/XOFF flow-control state, and a streaming block reassembling decoder. Pure\nhost tests, incl. an odd-parity + exact-inverse table guardrail and full encode -> decode program\nround-trips for both tape codes.",
+      "flags": ["-DDETWS_ENABLE_DNC=1"],
+      "src": ["+<services/dnc/dnc.cpp>"],
+      "tests": ["test_dnc"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

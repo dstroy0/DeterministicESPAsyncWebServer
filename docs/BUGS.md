@@ -8,6 +8,31 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## DNC decoder ate the EIA digit `3` (0x13) as an XOFF flow-control byte
+
+- **Status:** FIXED (caught pre-ship by the codec's own encode -> decode round-trip test;
+  never released). `native_dnc` 13/13; the program "M30" now round-trips through the EIA
+  code intact.
+- **Found:** 2026-07-09, on the first run of `test_roundtrip_program` for the new CNC DNC
+  codec (services/dnc): the EIA round-trip of `M30` came back as `M0` - the `3` vanished.
+- **Symptom:** decoding an EIA-coded program silently dropped every digit `3`; any block
+  containing a `3` was corrupted.
+- **Root cause:** the block decoder (`dnc_decode_feed`) filtered XON/XOFF (DC1 0x11 / DC3
+  0x13) out of the byte stream as flow control - but in the EIA RS-244 tape code the data
+  character `3` **is** 0x13. Filtering it from the forward program stream deleted the digit.
+  The design conflated two different channels: the forward program data (sender -> controller,
+  what the decoder reassembles) and the reverse flow-control channel (controller -> sender,
+  XON/XOFF). They are opposite directions of a full-duplex link and must not share a filter.
+- **Fix:** removed the XON/XOFF filtering from `dnc_decode_feed` entirely; the decoder now
+  decodes the forward stream faithfully (0x13 = the data byte `3`). Flow control lives only in
+  `dnc_flow_feed`, which the caller drives from the **reverse** channel's bytes. Added
+  `test_decode_eia_three_is_not_xoff` as a regression guard.
+- **Lesson:** an in-band control code (ASCII DC3) can collide with a data code in a different
+  character set (EIA `3`); never filter control bytes out of a data stream that may legitimately
+  contain that byte value. Keep flow control on its own channel.
+
+---
+
 ## Owner-context grouping anchored the server TLS config + worker queue store (Arduino 3.x DRAM)
 
 - **Status:** FIXED (25.WebSocketClient builds on the arduino-esp32 3.x core - 37% DRAM, was 408 bytes

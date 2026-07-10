@@ -2892,6 +2892,41 @@
 #endif
 
 /**
+ * @brief Opt-in CNC RS-232 DNC drip-feed codec (DETWS_ENABLE_DNC).
+ *
+ * services/dnc is the transport-agnostic framing + tape-code layer that streams a G-code program
+ * (RS-274 / ISO 6983) to a machine-tool controller over RS-232 or a socket: block framing with a `%`
+ * rewind-stop, ISO 7-bit (ASCII, optional even parity) or EIA RS-244 (odd-parity punched-tape code)
+ * character translation, a streaming block encoder + reassembling decoder, and XON/XOFF software
+ * flow-control state. Pure codec (you own the UART / socket); host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_DNC
+#define DETWS_ENABLE_DNC 0
+#endif
+
+/**
+ * @brief Largest G-code block (one line) the DNC decoder reassembles (DETWS_ENABLE_DNC).
+ *
+ * A block longer than this overflows the decoder's fixed line buffer and is dropped whole
+ * (::DNC_EV_OVERFLOW) rather than truncated. Sized for a normal G-code line; raise it only for
+ * unusually long blocks (many parameters). Zero heap - this is the static per-decoder buffer.
+ */
+#ifndef DETWS_DNC_LINE_MAX
+#define DETWS_DNC_LINE_MAX 128
+#endif
+
+/**
+ * @brief Default leader/trailer runout length for the DNC encoder (DETWS_ENABLE_DNC).
+ *
+ * The number of NUL runout bytes ::dnc_encode_leader emits before the program (and can emit after
+ * it). The reader skips them until the first `%`. Traditional tape leaders were a few inches of
+ * blank feed; 32 bytes is a serial-link equivalent. Overridable per call via DncCfg::leader_len.
+ */
+#ifndef DETWS_DNC_LEADER_LEN
+#define DETWS_DNC_LEADER_LEN 32
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive
