@@ -614,6 +614,7 @@ src/
 │   ├── dnp3/  (dnp3.h, dnp3.cpp)
 │   ├── dns_resolver/  (dns_resolver.h, dns_resolver.cpp)
 │   ├── dns_server/  (dns_server.h, dns_server.cpp)
+│   ├── docstore/  (docstore.h, docstore.cpp)
 │   ├── dshot/  (dshot.h, dshot.cpp)
 │   ├── enip/  (enip.h, enip.cpp)
 │   ├── enocean/  (enocean.h, enocean.cpp)
@@ -869,6 +870,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 751,037 | 66,352 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 751,081 | 66,352 |
 | `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 751,205 | 66,352 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 751,241 | 66,352 |
 | `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 751,321 | 66,352 |
 | `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,385 | 66,800 |
 | `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,417 | 66,392 |
@@ -891,7 +893,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/33.Csrf` | 752,437 | 66,400 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 752,525 | 69,480 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,645 | 66,352 |
-| `DIAG` | `Foundation/05.Configuration` | 752,733 | 63,104 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 752,809 | 66,632 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 752,845 | 66,392 |
 | `STATS` | `L7-Application/22.Stats` | 752,897 | 66,448 |
@@ -1048,6 +1049,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_DNP3` | `0` | DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`). |
 | `DETWS_ENABLE_DNS_RESOLVER` | `0` | Opt-in DNS resolver with answer verification. |
 | `DETWS_ENABLE_DNS_SERVER` | `0` | Authoritative DNS server (services/dns_server) on UDP/53. |
+| `DETWS_ENABLE_DOCSTORE` | `0` | Opt-in local JSON document store on the WAL (DETWS_ENABLE_DOCSTORE, requires DBM + WAL). |
 | `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
 | `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
 | `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
