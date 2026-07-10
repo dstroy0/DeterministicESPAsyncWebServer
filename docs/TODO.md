@@ -110,11 +110,14 @@ layer built first, then the store codecs on top. Substrate before stores.
       stack** (section 4) - all with host + on-device ESP32-S3 numbers (`perf/bench_datastore.cpp` + an
       on-device firmware). _Remaining:_ whole request-paths (section 3: HTTP parse, TLS handshake, JSON
       render).
-- [ ] **base64 is slow on-device (mbedTLS): ~1.4 MB/s encode, ~0.56 MB/s decode** (731 / 1815 us per KiB;
-      section 2). The ESP32 path delegates to `mbedtls_base64_encode/decode`; the portable software codec
-      (the `#else` branch) is likely much faster on the device. Evaluate switching the ESP32 path to the
-      software impl - it touches JWT / OIDC / Basic-auth, so verify correctness **and** the speedup on
-      hardware before flipping.
+- [x] **base64 was slow on-device (mbedTLS).** _(done - hybrid)_ mbedTLS's base64 is slow because it is
+      constant-time (side-channel hardened). Rather than drop that globally, the path now splits by data
+      sensitivity: **encode** (only the public WebSocket-accept digest) uses the fast software codec on
+      every target (~731 -> ~47 us on the ESP32-S3, **~15x**); **decode** (the secret Basic-auth
+      credentials) keeps mbedTLS's constant-time decoder on the ESP32. JWT / OIDC already used the
+      software `base64url`. HW-verified on the ESP32-S3: RFC 4648 vectors both directions, a Basic-auth
+      round-trip, a 256-byte round-trip, and fail-closed on malformed input all pass; host tests
+      (test_websocket, test_auth) still pass.
 - [x] **WAL CRC-32 was CRC-bound on-device.** _(done)_ Replaced the table-less bit-by-bit CRC with a
       byte-table CRC-32 (1 KiB rodata). Measured **~3.6x faster** on the ESP32-S3 (231 -> 64 us/KiB,
       ~4.4 -> ~15.9 MB/s), roughly halving `record_encode` / `store_append` / dbm `put`; same 3.6x on the

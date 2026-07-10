@@ -5,14 +5,14 @@
  * @file base64.h
  * @brief Base64 encoder/decoder.
  *
- * On Arduino (ESP32) targets, delegates to mbedtls_base64_encode/decode()
- * from the ESP-IDF mbedTLS bundle - same SDK path as SHA-1.
- *
- * On native (x86) test targets, uses a portable software implementation so
- * unit tests run without mbedTLS installed.
- *
  * Used to encode the SHA-1 digest in the WebSocket handshake response
  * (RFC 6455 §4.2.2) and to decode Basic Auth credentials (RFC 7617).
+ *
+ * **Encode** is a portable software codec on every target (fast; it only handles
+ * the public WebSocket-accept digest). **Decode** touches the secret Basic-auth
+ * credentials, so on the ESP32 it uses mbedTLS's constant-time decoder (side-channel
+ * hardened) and on the native test target the portable software decoder. See
+ * base64.cpp and docs/FEATURE_PERFORMANCE.md section 2.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

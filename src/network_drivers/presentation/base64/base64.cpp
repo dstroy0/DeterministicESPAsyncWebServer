@@ -5,42 +5,20 @@
  * @file base64.cpp
  * @brief Base64 encoder/decoder implementation.
  *
- * On Arduino (ESP32) targets, delegates to mbedtls_base64_encode/decode()
- * which is part of the ESP-IDF mbedTLS bundle - same SDK path as SHA-1.
+ * **Encode** is a single portable software codec (RFC 4648) on every target: it is byte-identical to
+ * mbedTLS's but ~20x faster on the ESP32-S3 (docs/FEATURE_PERFORMANCE.md section 2), and it only ever
+ * encodes public data here (the SHA-1 in the WebSocket accept), so a data-dependent table lookup is fine.
  *
- * On native (x86) test targets, uses a portable software implementation so
- * unit tests run without mbedTLS installed.
+ * **Decode** is split by target. It is the only path that touches a secret (the Basic-auth credentials it
+ * decodes, RFC 7617), so on the ESP32 it delegates to mbedTLS's **constant-time** base64 decoder
+ * (`mbedtls_ct_base64_dec_value`, which evaluates every alphabet range with branchless masks so the timing
+ * / cache pattern does not leak the bytes). On the native test target it uses the portable software
+ * decoder. mbedTLS decode is ~8x slower but runs once per authenticated request, not in a byte loop.
+ * (JWT / OIDC use base64url below, which has always been the software codec.)
  */
 
 #include "base64.h"
 
-#ifdef ARDUINO
-
-// --- ESP32 / Arduino: use mbedTLS -------------------------------------------
-#include "mbedtls/base64.h"
-#include <string.h>
-
-void base64_encode(const uint8_t *src, size_t src_len, char *dst)
-{
-    size_t olen;
-    size_t dlen = ((src_len + 2) / 3) * 4 + 1;
-    mbedtls_base64_encode((unsigned char *)dst, dlen, &olen, src, src_len);
-    dst[olen] = '\0';
-}
-
-size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
-{
-    size_t src_len = strlen(src);
-    size_t olen;
-    // Pass the caller's true capacity; mbedtls returns BUFFER_TOO_SMALL (and we
-    // map it to 0) rather than overrunning dst.
-    int ret = mbedtls_base64_decode(dst, dst_cap, &olen, (const unsigned char *)src, src_len);
-    return (ret == 0) ? olen : 0;
-}
-
-#else
-
-// --- Native / test: software Base64, no external dependencies ---------------
 #include <stddef.h>
 
 static const char B64_TABLE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -77,6 +55,24 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst)
     dst[j] = '\0';
 }
 
+#ifdef ARDUINO
+
+// --- ESP32: mbedTLS's constant-time decode for the secret Basic-auth path -------------------------------
+#include "mbedtls/base64.h"
+#include <string.h>
+
+size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
+{
+    size_t src_len = strlen(src);
+    size_t olen;
+    // Pass the caller's true capacity; mbedtls returns BUFFER_TOO_SMALL (mapped to 0) rather than overrun.
+    int ret = mbedtls_base64_decode(dst, dst_cap, &olen, (const unsigned char *)src, src_len);
+    return (ret == 0) ? olen : 0;
+}
+
+#else
+
+// --- Native / test: portable software decode ------------------------------------------------------------
 static int b64_val(char c)
 {
     if (c >= 'A' && c <= 'Z')
