@@ -185,14 +185,14 @@
     "example": "L7-Application/23.HttpClient",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 734465,
+    "flash_bytes": 734473,
     "ram_bytes": 63160
   },
   "HTTP_CLIENT+WEBHOOK": {
     "example": "L7-Application/46.Webhook",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_WEBHOOK=1",
     "board": "esp32dev",
-    "flash_bytes": 761181,
+    "flash_bytes": 761193,
     "ram_bytes": 86112
   },
   "INA219": {
@@ -325,7 +325,7 @@
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 763529,
+    "flash_bytes": 763533,
     "ram_bytes": 89176
   },
   "OIDC": {
@@ -654,7 +654,7 @@
     "example": "L6-Presentation/02.Json",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754769,
+    "flash_bytes": 754765,
     "ram_bytes": 66352
   },
   "core/02.SSHCryptoSelfTest": {

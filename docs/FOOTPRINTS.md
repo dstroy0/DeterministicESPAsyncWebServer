@@ -35,7 +35,7 @@ from each example's `pio ci` size report and aggregated into
 | `GRAPHQL`                                | L7-Application/52.GraphQL               | 737.9 KB (57.6%) | 69.1 KB (21.6%)  |
 | `GUARDRAILS`                             | L7-Application/40.Guardrails            | 733.6 KB (57.3%) | 64.8 KB (20.3%)  |
 | `HTTP_CLIENT`                            | L7-Application/23.HttpClient            | 717.3 KB (56.0%) | 61.7 KB (19.3%)  |
-| `HTTP_CLIENT+WEBHOOK`                    | L7-Application/46.Webhook               | 743.3 KB (58.1%) | 84.1 KB (26.3%)  |
+| `HTTP_CLIENT+WEBHOOK`                    | L7-Application/46.Webhook               | 743.4 KB (58.1%) | 84.1 KB (26.3%)  |
 | `INA219`                                 | L7-Application/67.Ina219                | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                   | Foundation/20.IPv6                      | 735.5 KB (57.5%) | 64.8 KB (20.2%)  |
 | `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 734.4 KB (57.4%) | 64.8 KB (20.2%)  |
