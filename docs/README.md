@@ -337,7 +337,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#provisioning" title="First-boot WiFi provisioning: softAP + captive-portal credentials form.">Provisioning</a></td>
   <td align="center"><a href="FEATURES.md#range" title="HTTP Range requests / 206 Partial Content for served files. Default off. When set (requires FILE_SERVING), serve_file() / serve_static() honor a single-range `Range: bytes=...` request header: they answer `206 Partial Content` with a `Content-Range` header and stream only the requested bytes (seeking the file to the start offset), advertise `Accept-Ranges: bytes` on full responses, and answer an unsatisfiable range with `416 Range Not Satisfiable`. This enables resumable downloads and media seeking. Multi-range (multipart/byteranges) requests are not supported - the server falls back to a full 200 response, which is RFC 7233 §3.1 compliant.">Range</a></td>
   <td align="center"><a href="FEATURES.md#redis" title="Redis RESP2/RESP3 wire codec. Default off. services/redis_resp lets a device drive a Redis server over the shipped outbound client transport: `resp_encode_command` builds a command (an array of bulk strings, binary-safe via explicit arg lengths) and `resp_parse` is a streaming cursor reply decoder covering RESP2 (simple / error / integer / bulk / array / nil) plus the RESP3 additions (null / boolean / double / big number / bulk error / verbatim / map / set / push); aggregates report a child count and the caller walks each child, so nested replies decode with no heap. Pure and host-tested against Redis spec vectors and verified live against a real redis-server (SET/GET, arrays, and a RESP3 map from HELLO 3); the connection is the application's. See src/services/redis_resp.h.">Redis</a></td>
-  <td align="center"><a href="FEATURES.md#relay-tcp-forward--dnat" title="TCP relay / DNAT port forwarding. Default off. services/relay publishes an internal `host:port` through the server: an inbound (accepted) connection is relayed to an origin (an outbound `det_client` connection to the internal service), moving bytes in both directions so the device fronts a service that lives behind it. `det_relay_step` is a pure, non-blocking byte pump over two send/recv seams: the app calls it each poll tick until it returns `DET_RELAY_DONE`, then closes both sockets. It handles **backpressure** (a `send` seam that accepts a partial write carries the rest in a per-direction buffer and retries before reading more) and **independent half-close** (each direction finishes when its source hits EOF and drains; the opposite peer's optional `shutdown` seam is then called once to propagate the FIN, and the relay is done only when both directions have finished). Zero heap - each active relay owns two `DETWS_RELAY_BUF` buffers. Transports that report a close out of band (an `on_close` event rather than a short read - e.g. the server's `det_conn`) call `det_relay_note_eof` to finish a direction cleanly. Host-tested with two mock sockets covering a bidirectional transfer, the backpressure carry, half-close with shutdown propagation, a large multi-step byte-exact transfer, a seam error, and the out-of-band EOF path (`native_relay`, 6 cases); you own the two sockets. See src/services/relay/relay.h.">Relay (TCP forward / DNAT)</a></td>
+  <td align="center"><a href="FEATURES.md#relay-tcp-forward--dnat" title="TCP relay / DNAT port forwarding. Default off. services/relay publishes an internal `host:port` through the server: an inbound (accepted) connection is relayed to an origin (an outbound `det_client` connection to the internal service), moving bytes in both directions so the device fronts a service that lives behind it. `det_relay_step` is a pure, non-blocking byte pump over two send/recv seams: the app calls it each poll tick until it returns `DET_RELAY_DONE`, then closes both sockets. It handles **backpressure** (a `send` seam that accepts a partial write carries the rest in a per-direction buffer and retries before reading more) and **independent half-close** (each direction finishes when its source hits EOF and drains; the opposite peer's optional `shutdown` seam is then called once to propagate the FIN, and the relay is done only when both directions have finished). Zero heap - each active relay owns two `DETWS_RELAY_BUF` buffers. Transports that report a close out of band (an `on_close` event rather than a short read - e.g. the server's `det_conn`) call `det_relay_note_eof` to finish a direction cleanly. Host-tested with two mock sockets covering a bidirectional transfer, the backpressure carry, half-close with shutdown propagation, a large multi-step byte-exact transfer, a seam error, and the out-of-band EOF path (`native_relay`, 6 cases). The server-side listener (src/services/relay/relay_listener) wires it in: after `server.listen(port, PROTO_RELAY)` you call `det_relay_publish(listener_id, origin_host, origin_port)`, and a `PROTO_RELAY` connection handler dials the origin through `det_client` on each inbound accept, pumps `det_relay_step` from the server's poll loop, and tears both sockets down on close - so the app publishes an internal service in two calls (a fixed static bind/bridge table, zero heap; opt-in twice - compiled out by default and inert until you publish). Verified on ESP32 via the `70.PortForward` example build. See src/services/relay/relay.h and relay_listener.h.">Relay (TCP forward / DNAT)</a></td>
 </tr>
 <tr>
   <td align="center"><a href="FEATURES.md#routing" title="Exact, wildcard (/*), :param path parameters, bounded allocation-free regex routes, and per-interface STA/softAP route filters. Always on.">Routing</a></td>
@@ -719,7 +719,11 @@ src/
 │   ├── radio_power/  (radio_power.h, radio_power.cpp)
 │   ├── radio_sniff/  (radio_sniff.h, radio_sniff.cpp)
 │   ├── rawl2/  (rawl2.h, rawl2.cpp)
-│   ├── relay/  (relay.h, relay.cpp)
+│   ├── relay/
+│   │   ├── relay.cpp
+│   │   ├── relay.h
+│   │   ├── relay_listener.cpp
+│   │   └── relay_listener.h
 │   ├── rtc/  (rtc.h, rtc.cpp)
 │   ├── s7comm/  (s7comm.h, s7comm.cpp)
 │   ├── sdi12/  (sdi12.h, sdi12.cpp)
@@ -967,7 +971,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RANGE` | `L7-Application/12.Range` | 793,317 | 66,384 |
 | `VFS` | `L7-Application/51.Vfs` | 794,253 | 70,880 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 819,797 | 105,720 |
-| `SSH` | `L5-Session/01.SSH` | 821,265 | 88,676 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 820,577 | 88,676 |
 | `ETAG` | `L7-Application/09.ETag` | 826,853 | 67,656 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,580 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 854,865 | 117,276 |
@@ -1382,6 +1386,10 @@ guards at compile time.
 | `DETWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
 | `DETWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
 | `DETWS_RELAY_BUF` | `512` | Per-direction relay buffer size (bytes) for services/relay. |
+| `DETWS_RELAY_CONNECT_MS` | `5000` | Blocking connect timeout (ms) when the relay listener dials the origin on a new inbound. |
+| `DETWS_RELAY_HOST_MAX` | `64` | Max origin hostname length (bytes, incl. |
+| `DETWS_RELAY_MAX_CONNS` | `4` | Max concurrent relayed connections (bridge table size) for the relay listener. |
+| `DETWS_RELAY_MAX_PUBLISH` | `4` | Max published relay ports (bind table size) for the relay listener. |
 | `DETWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
 | `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
 | `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
