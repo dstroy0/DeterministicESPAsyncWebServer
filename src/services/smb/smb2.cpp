@@ -336,4 +336,94 @@ bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *ou
     return true;
 }
 
+size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                       const uint8_t file_id[16], uint32_t length, uint64_t offset)
+{
+    const size_t body = 48;                           // fixed READ request body (§2.2.19)
+    const size_t total = SMB2_HEADER_SIZE + body + 1; // + a 1-byte buffer (StructureSize 49 convention)
+    if (!buf || !file_id || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_READ, 1, message_id, tree_id, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body + 1);
+    wr16(b + 0, 49);                         // StructureSize
+    b[2] = (uint8_t)(SMB2_HEADER_SIZE + 16); // Padding: requested data offset in the response (header + 16-byte body)
+    // Flags (3) = 0
+    wr32(b + 4, length);         // Length
+    wr64(b + 8, offset);         // Offset
+    memcpy(b + 16, file_id, 16); // FileId
+    wr32(b + 32, 1);             // MinimumCount = 1 (fail if the server returns nothing)
+    // Channel (36) = 0, RemainingBytes (40) = 0, ReadChannelInfoOffset/Length (44/46) = 0
+    // Buffer (b+48) = one 0 byte (already zeroed)
+    return total;
+}
+
+bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_READ)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body (StructureSize .. Reserved2), Buffer follows
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 17) // StructureSize
+        return false;
+
+    uint8_t data_off = b[2];         // DataOffset - from the start of the SMB2 header (msg)
+    uint32_t data_len = rd32(b + 4); // DataLength
+    if (data_len == 0)
+    {
+        out->data = nullptr;
+        out->data_len = 0;
+        return true;
+    }
+    if (data_off < SMB2_HEADER_SIZE || (size_t)data_off + data_len > len)
+        return false; // data out of bounds - fail closed
+    out->data = msg + data_off;
+    out->data_len = data_len;
+    return true;
+}
+
+size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                        const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset)
+{
+    const size_t body = 48; // fixed WRITE request body (§2.2.21)
+    const size_t total = SMB2_HEADER_SIZE + body + data_len;
+    if (!buf || !file_id || !data || data_len == 0 || data_len > 0xFFFFFFFF || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_WRITE, 1, message_id, tree_id, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body);
+    wr16(b + 0, 49);                                  // StructureSize
+    wr16(b + 2, (uint16_t)(SMB2_HEADER_SIZE + body)); // DataOffset (from the header start) = 112
+    wr32(b + 4, (uint32_t)data_len);                  // Length
+    wr64(b + 8, offset);                              // Offset
+    memcpy(b + 16, file_id, 16);                      // FileId
+    // Channel (32) = 0, RemainingBytes (36) = 0, WriteChannelInfoOffset/Length (40/42) = 0, Flags (44) = 0
+    memcpy(b + body, data, data_len); // the data to write
+    return total;
+}
+
+bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_WRITE)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 17) // StructureSize
+        return false;
+    out->count = rd32(b + 4); // Count (bytes written)
+    return true;
+}
+
 #endif // DETWS_ENABLE_SMB

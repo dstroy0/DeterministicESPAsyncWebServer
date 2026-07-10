@@ -19,7 +19,8 @@
  *
  * Shipped: the NEGOTIATE exchange; the NTLM crypto (smb_md / ntlm / ntlmssp); the SPNEGO wrapping
  * (spnego); the SESSION_SETUP request/response framing that carries those tokens; and the
- * TREE_CONNECT / CREATE / CLOSE file commands. Roadmap (later increment): READ / WRITE.
+ * TREE_CONNECT / CREATE / CLOSE / READ / WRITE file commands - the full read/write-a-file-on-a-share
+ * client. Roadmap (later options): SMB 3.1.1 negotiate contexts + preauth integrity, SMB2 signing.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -307,6 +308,45 @@ struct Smb2CloseResp
  * @return true on a well-formed response.
  */
 bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out);
+
+/**
+ * @brief Build a READ request (header + §2.2.19 body) for @p length bytes at @p offset of an open file.
+ * @return total message bytes (no transport prefix), or 0 on overflow.
+ */
+size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                       const uint8_t file_id[16], uint32_t length, uint64_t offset);
+
+/** @brief Parsed READ response (MS-SMB2 §2.2.20). */
+struct Smb2ReadResp
+{
+    const uint8_t *data; ///< the file bytes read (points into @p msg), or nullptr when DataLength is 0
+    uint32_t data_len;
+};
+
+/**
+ * @brief Parse a READ response message (validates command + StructureSize 17, data within bounds).
+ * @return true on a well-formed response.
+ */
+bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out);
+
+/**
+ * @brief Build a WRITE request (header + §2.2.21 body) writing @p data at @p offset of an open file.
+ * @return total message bytes (no transport prefix), or 0 on overflow / empty data.
+ */
+size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                        const uint8_t file_id[16], const uint8_t *data, size_t data_len, uint64_t offset);
+
+/** @brief Parsed WRITE response (MS-SMB2 §2.2.22). */
+struct Smb2WriteResp
+{
+    uint32_t count; ///< bytes actually written
+};
+
+/**
+ * @brief Parse a WRITE response message (validates command + StructureSize 17).
+ * @return true on a well-formed response.
+ */
+bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
 
 #endif // DETWS_ENABLE_SMB
 

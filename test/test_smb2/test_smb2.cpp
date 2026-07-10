@@ -45,6 +45,10 @@ static uint32_t r32(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
+static uint64_t r64(const uint8_t *p)
+{
+    return (uint64_t)r32(p) | ((uint64_t)r32(p + 4) << 32);
+}
 
 void test_transport_frame()
 {
@@ -495,6 +499,123 @@ void test_close_roundtrip()
     TEST_ASSERT_FALSE(smb2_parse_close_response(bad, 64 + 60, &r));
 }
 
+void test_build_read()
+{
+    uint8_t fid[16];
+    for (int i = 0; i < 16; i++)
+        fid[i] = (uint8_t)(0xC0 + i);
+    uint8_t buf[128];
+    size_t n = smb2_build_read(buf, sizeof(buf), 5, 0xAAAA, 0x777, fid, 0x10000, 0x1000ULL);
+    TEST_ASSERT_EQUAL_size_t(64 + 48 + 1, n);
+
+    Smb2Header h;
+    TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT16(SMB2_READ, h.command);
+    TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);
+
+    const uint8_t *b = buf + 64;
+    TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));                                   // StructureSize
+    TEST_ASSERT_EQUAL_HEX8(80, b[2]);                                           // Padding = header + 16
+    TEST_ASSERT_EQUAL_UINT32(0x10000, r32(b + 4));                              // Length
+    TEST_ASSERT_EQUAL_HEX64(0x1000ULL, r64(b + 8));                             // Offset
+    TEST_ASSERT_EQUAL_MEMORY(fid, b + 16, 16);                                  // FileId
+    TEST_ASSERT_EQUAL_UINT32(1, r32(b + 32));                                   // MinimumCount
+    TEST_ASSERT_EQUAL_size_t(0, smb2_build_read(buf, 100, 5, 0, 0, fid, 1, 0)); // overflow
+}
+
+static size_t build_read_resp(uint8_t *m, const uint8_t *data, uint32_t data_len)
+{
+    smb2_build_header(m, 512, SMB2_READ, 1, 5, 0x777, 0xAAAA);
+    m[16] |= 0x01;
+    uint8_t *b = m + 64;
+    memset(b, 0, 16);
+    w16(b + 0, 17); // StructureSize
+    b[2] = 80;      // DataOffset = header + 16
+    w32(b + 4, data_len);
+    size_t total = 80;
+    if (data_len)
+    {
+        memcpy(m + 80, data, data_len);
+        total = 80 + data_len;
+    }
+    return total;
+}
+
+void test_parse_read_response()
+{
+    const uint8_t data[] = "N123 G01 X10 Y20\r\n";
+    uint8_t m[512];
+    size_t n = build_read_resp(m, data, sizeof(data));
+
+    Smb2ReadResp r;
+    TEST_ASSERT_TRUE(smb2_parse_read_response(m, n, &r));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(data), r.data_len);
+    TEST_ASSERT_EQUAL_MEMORY(data, r.data, sizeof(data));
+
+    // empty read (EOF) -> nullptr, still valid
+    n = build_read_resp(m, nullptr, 0);
+    TEST_ASSERT_TRUE(smb2_parse_read_response(m, n, &r));
+    TEST_ASSERT_NULL(r.data);
+    TEST_ASSERT_EQUAL_UINT32(0, r.data_len);
+
+    // rejects
+    n = build_read_resp(m, data, sizeof(data));
+    uint8_t bad[512];
+    memcpy(bad, m, n);
+    w16(bad + 64, 16); // wrong StructureSize (must be 17)
+    TEST_ASSERT_FALSE(smb2_parse_read_response(bad, n, &r));
+    memcpy(bad, m, n);
+    w32(bad + 64 + 4, 9000); // DataLength past the message
+    TEST_ASSERT_FALSE(smb2_parse_read_response(bad, n, &r));
+    TEST_ASSERT_FALSE(smb2_parse_read_response(m, 70, &r)); // truncated before the body
+}
+
+void test_build_write()
+{
+    uint8_t fid[16];
+    for (int i = 0; i < 16; i++)
+        fid[i] = (uint8_t)(i + 1);
+    const uint8_t data[] = "O0001 (PART)\r\n";
+    uint8_t buf[256];
+    size_t n = smb2_build_write(buf, sizeof(buf), 6, 0xAAAA, 0x777, fid, data, sizeof(data), 0x800ULL);
+    TEST_ASSERT_EQUAL_size_t(64 + 48 + sizeof(data), n);
+
+    Smb2Header h;
+    TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
+    TEST_ASSERT_EQUAL_UINT16(SMB2_WRITE, h.command);
+
+    const uint8_t *b = buf + 64;
+    TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));           // StructureSize
+    TEST_ASSERT_EQUAL_UINT16(112, r16(b + 2));          // DataOffset
+    TEST_ASSERT_EQUAL_UINT32(sizeof(data), r32(b + 4)); // Length
+    TEST_ASSERT_EQUAL_HEX64(0x800ULL, r64(b + 8));      // Offset
+    TEST_ASSERT_EQUAL_MEMORY(fid, b + 16, 16);          // FileId
+    TEST_ASSERT_EQUAL_MEMORY(data, buf + 112, sizeof(data));
+    TEST_ASSERT_EQUAL_size_t(0, smb2_build_write(buf, 100, 6, 0, 0, fid, data, sizeof(data), 0)); // overflow
+    TEST_ASSERT_EQUAL_size_t(0, smb2_build_write(buf, sizeof(buf), 6, 0, 0, fid, data, 0, 0));    // empty data
+}
+
+void test_parse_write_response()
+{
+    uint8_t m[128];
+    smb2_build_header(m, 128, SMB2_WRITE, 1, 6, 0x777, 0xAAAA);
+    m[16] |= 0x01;
+    uint8_t *b = m + 64;
+    memset(b, 0, 16);
+    w16(b + 0, 17);   // StructureSize
+    w32(b + 4, 4096); // Count
+
+    Smb2WriteResp r;
+    TEST_ASSERT_TRUE(smb2_parse_write_response(m, 64 + 16, &r));
+    TEST_ASSERT_EQUAL_UINT32(4096, r.count);
+
+    uint8_t bad[128];
+    memcpy(bad, m, 64 + 16);
+    w16(bad + 64, 16); // wrong StructureSize (must be 17)
+    TEST_ASSERT_FALSE(smb2_parse_write_response(bad, 64 + 16, &r));
+    TEST_ASSERT_FALSE(smb2_parse_write_response(m, 70, &r)); // truncated
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -513,5 +634,9 @@ int main()
     RUN_TEST(test_build_create);
     RUN_TEST(test_parse_create_response);
     RUN_TEST(test_close_roundtrip);
+    RUN_TEST(test_build_read);
+    RUN_TEST(test_parse_read_response);
+    RUN_TEST(test_build_write);
+    RUN_TEST(test_parse_write_response);
     return UNITY_END();
 }
