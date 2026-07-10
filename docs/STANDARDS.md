@@ -124,6 +124,7 @@ newer entry here.
 - [RFC 4918](https://www.rfc-editor.org/rfc/rfc4918) - WebDAV - **impl**.
 - [RFC 959](https://www.rfc-editor.org/rfc/rfc959) - File Transfer Protocol (FTP) - **impl** (client codec: command builders, single/multi-line reply parser, PASV address).
 - [RFC 2428](https://www.rfc-editor.org/rfc/rfc2428) - FTP Extensions for IPv6 and NATs (EPSV / EPRT) - **impl** (client codec: EPRT builder, EPSV port parser).
+- [MS-SMB2](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2) - SMB2 (Server Message Block 2) - **impl** (client wire codec, increment 1: the sync header + the NEGOTIATE exchange; SESSION_SETUP / file commands are staged).
 - [RFC 5424](https://www.rfc-editor.org/rfc/rfc5424) - Syslog Protocol - **impl**.
 - [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035) - Domain Names (DNS) - **impl** (resolver + captive-portal responder).
 - [IEEE 802.11](https://standards.ieee.org/ieee/802.11/7028/) - Wireless LAN MAC/PHY - **impl** (Wi-Fi link; raw-L2 frame TX path).

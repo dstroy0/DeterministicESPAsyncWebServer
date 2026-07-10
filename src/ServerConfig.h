@@ -2980,6 +2980,20 @@
 #endif
 
 /**
+ * @brief Opt-in SMB2 client wire codec (DETWS_ENABLE_SMB).
+ *
+ * services/smb is the pure wire layer of an SMB2 client (MS-SMB2) so a device can read/write files
+ * on a Windows share - e.g. a CNC controller's program store. Increment 1: the Direct-TCP transport
+ * frame, the 64-byte SMB2 sync header (build/parse), and the NEGOTIATE exchange (offer a dialect
+ * list, parse the chosen dialect + server GUID + max sizes + the SPNEGO/NTLM security token). All
+ * little-endian; you own the TCP socket. NTLM auth (SESSION_SETUP) + the file commands are later
+ * increments. Host-tested. Default off.
+ */
+#ifndef DETWS_ENABLE_SMB
+#define DETWS_ENABLE_SMB 0
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

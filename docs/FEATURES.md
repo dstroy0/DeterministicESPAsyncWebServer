@@ -926,6 +926,12 @@ Sigfox modem AT-command codec (v5 gateway plugin). Default off. services/sigfox 
 
 Opt-in dynamic sleep-cycle scheduler. When set, services/sleep_sched provides detws_sleep_next(): from the time since the last activity it returns how long a low-power device should sleep (0 = stay awake), ramping the window from a floor up to a ceiling the longer the idle streak runs. Pure decision core (the app applies the window via light / modem / deep sleep). Complements services/radio_power. Default off.
 
+## SMB
+
+`DETWS_ENABLE_SMB`
+
+SMB2 client wire codec (MS-SMB2). Default off. services/smb is the pure protocol layer of an SMB2 client so a device can read/write files on a Windows share - e.g. a CNC controller's `.nc` program store (Fanuc / Haas / Mazak / Heidenhain expose one). Increment 1 (no crypto): `smb2_transport_frame` / `smb2_transport_len` handle the Direct-TCP transport header (`0x00` + a 24-bit big-endian length on port 445); `smb2_build_header` / `smb2_parse_header` build and validate the 64-byte little-endian SMB2 sync header (ProtocolId `FE 53 4D 42` + StructureSize 64, exposing the command / status / MessageId / TreeId / SessionId); `smb2_build_negotiate` offers the dialect list (SMB 2.0.2 / 2.1 / 3.0 / 3.0.2) with the client GUID; and `smb2_parse_negotiate_response` extracts the chosen dialect, server GUID, max transact/read/write sizes, and the SPNEGO/NTLM security token (bounds-checked against the message). All fields little-endian; you own the TCP socket. Field layout verified against MS-SMB2 §2.2.1.2 / §2.2.3 / §2.2.4; pure and host-tested. NTLM auth (SESSION_SETUP, needs MD4/MD5/HMAC-MD5) and the file commands (TREE_CONNECT / CREATE / READ / WRITE / CLOSE) are later increments. See src/services/smb/smb2.h.
+
 ## SMTP
 
 `DETWS_ENABLE_SMTP`

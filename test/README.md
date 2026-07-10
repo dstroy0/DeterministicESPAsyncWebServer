@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **214 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **215 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -239,6 +239,7 @@ The native test matrix has **214 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2` | SMB2 client wire codec (services/smb, MS-SMB2 increment 1): the Direct-TCP transport frame, the 64-byte little-endian sync header (build/parse, ProtocolId + StructureSize validated), the NEGOTIATE req... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -504,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2824 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2830 test cases** across **237 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23809,6 +23810,101 @@ A thorough directory of all **2824 test cases** across **236 suites**. Expand a 
     * **Objective**: Null cfg
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(5000, 0, nullptr));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_smb2 (6 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
+
+    * **Objective**: fail closed: too small, and a non-zero leading byte
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(4 + 5, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[0]); // Direct-TCP: leading zero</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[1]); // 24-bit big-endian length = 5</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, out[3]);</code>
+      * <code>Assert equal memory (msg, out + 4, 5)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, smb2_transport_len(out, n));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_transport_frame(out, 3, msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, smb2_transport_len(bad, 4));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_and_parse_header</b> &mdash; <i>ProtocolId + StructureSize + Command at their offsets</i></summary>
+
+    * **Objective**: ProtocolId + StructureSize + Command at their offsets
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64, smb2_build_header(buf, sizeof(buf), SMB2_TREE_CONNECT, 8, 0x1122334455667788ULL,</code>
+      * <code>Assert equal memory (pid, buf, 4)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(64, r16(buf + 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, r16(buf + 12));</code>
+      * <code>Assert true (smb2_parse_header(buf, sizeof(buf), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x1122334455667788ULL, h.message_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xABCD, h.tree_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x99AABBCCDDEEFF00ULL, h.session_id);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_header_rejects</b> &mdash; <i>Parse header rejects</i></summary>
+
+    * **Objective**: Parse header rejects
+    * **Assertions**:
+      * <code>Assert false (smb2_parse_header(buf, 63, &h))</code>
+      * <code>Assert false (smb2_parse_header(b2, 64, &h))</code>
+      * <code>Assert false (smb2_parse_header(b2, 64, &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_negotiate</b> &mdash; <i>overflow fails closed</i></summary>
+
+    * **Objective**: overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 36 + 8, n); // header + fixed body + 4 dialects</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(b + 2));  // DialectCount</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_ENABLED, r16(b + 4));</code>
+      * <code>Assert equal memory (gid, b + 12, 16)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0202, r16(b + 36));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0210, r16(b + 38));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r16(b + 40));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0302, r16(b + 42));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_negotiate(buf, 100, gid, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_negotiate_response</b> &mdash; <i>an empty security buffer -> nullptr, still valid</i></summary>
+
+    * **Objective**: an empty security buffer -> nullptr, still valid
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_negotiate_response(m, n, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r.dialect);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_REQUIRED, r.security_mode);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x00080000, r.max_read);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x00040000, r.max_write);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xA0, r.server_guid[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(token), r.sec_buf_len);</code>
+      * <code>Assert equal memory (token, r.sec_buf, sizeof(token))</code>
+      * <code>Assert true (smb2_parse_negotiate_response(m, n, &r))</code>
+      * <code>Assert null (r.sec_buf)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r.sec_buf_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_negotiate_response_rejects</b> &mdash; <i>Parse negotiate response rejects</i></summary>
+
+    * **Objective**: Parse negotiate response rejects
+    * **Assertions**:
+      * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_negotiate_response(m, 100, &r))</code>
   </details>
 
 </details>
