@@ -21,10 +21,11 @@ from each example's `pio ci` size report and aggregated into
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.5 KB (57.4%) | 64.8 KB (20.3%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.4 KB (58.9%) | 65.2 KB (20.4%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.5 KB (57.3%) | 64.8 KB (20.3%)  |
-| `DIAG`                                   | Foundation/05.Configuration             | 734.7 KB (57.4%) | 61.6 KB (19.3%)  |
+| `DIAG`                                   | L7-Application/20.Diagnostics           | 733.3 KB (57.3%) | 64.8 KB (20.2%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | Foundation/09.InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
+| `DNC`                                    | L7-Application/69.EthernetDnc           | 708.7 KB (55.4%) | 42.4 KB (13.2%)  |
 | `DNS_RESOLVER`                           | L7-Application/48.DnsResolver           | 738.9 KB (57.7%) | 66.0 KB (20.6%)  |
 | `DNS_SERVER`                             | L7-Application/60.DnsServer             | 708.6 KB (55.4%) | 44.9 KB (14.0%)  |
 | `ENOCEAN+GATEWAY`                        | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
@@ -69,6 +70,7 @@ from each example's `pio ci` size report and aggregated into
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 740.5 KB (57.9%) | 66.3 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.1 KB (57.3%) | 64.8 KB (20.2%)  |
 | `RANGE`                                  | L7-Application/12.Range                 | 774.7 KB (60.5%) | 64.8 KB (20.3%)  |
+| `RELAY`                                  | L7-Application/70.PortForward           | 734.9 KB (57.4%) | 69.3 KB (21.7%)  |
 | `RTC+TIME_SOURCE+NTP`                    | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
 | `SHT3X`                                  | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                 | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
