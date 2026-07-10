@@ -191,6 +191,30 @@ void test_one_way_idle_then_close()
     TEST_ASSERT_EQUAL_size_t(0, a.out_len);
 }
 
+// A transport that signals close out of band (like det_conn's on_close) rather than via recv < 0:
+// the mocks never EOF through recv; det_relay_note_eof() drives the finish.
+void test_note_eof_out_of_band()
+{
+    MockSock a, b;
+    sock_init(&a, "hello", 5, false); // in_eof=false: recv returns 0 (not -1) when drained
+    sock_init(&b, "world", 5, false);
+    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DetRelay r;
+    det_relay_init(&r, &ea, &eb);
+
+    // one step moves the buffered data each way; without an EOF signal the relay keeps running
+    TEST_ASSERT_EQUAL_INT(DET_RELAY_RUNNING, det_relay_step(&r));
+    TEST_ASSERT_EQUAL_MEMORY("hello", b.out, 5);
+    TEST_ASSERT_EQUAL_MEMORY("world", a.out, 5);
+
+    // both peers close out of band -> the relay finishes and both shutdowns fire
+    det_relay_note_eof(&r, false); // inbound closed
+    det_relay_note_eof(&r, true);  // origin closed
+    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 8));
+    TEST_ASSERT_TRUE(a.shutdown_called);
+    TEST_ASSERT_TRUE(b.shutdown_called);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -199,5 +223,6 @@ int main()
     RUN_TEST(test_half_close_shutdown);
     RUN_TEST(test_send_error);
     RUN_TEST(test_one_way_idle_then_close);
+    RUN_TEST(test_note_eof_out_of_band);
     return UNITY_END();
 }

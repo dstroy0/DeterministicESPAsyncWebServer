@@ -94,6 +94,19 @@ void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *o
  */
 int det_relay_step(DetRelay *r);
 
+/**
+ * @brief Signal that a peer's send side has closed, when the transport reports EOF out of band (a
+ *        close callback) rather than through @c recv returning < 0.
+ *
+ * Some transports (e.g. the server's `det_conn`, which delivers a close as an `on_close` event, not
+ * as a short read) cannot report EOF via the recv seam. Call this from that event so the direction
+ * that peer sources finishes cleanly: the bytes already buffered are still flushed, then the opposite
+ * peer's `shutdown` fires and the relay reaches DONE once both directions have finished.
+ *
+ * @param origin false for the client (inbound) side, true for the origin (outbound) side.
+ */
+void det_relay_note_eof(DetRelay *r, bool origin);
+
 #endif // DETWS_ENABLE_RELAY
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_RELAY_H

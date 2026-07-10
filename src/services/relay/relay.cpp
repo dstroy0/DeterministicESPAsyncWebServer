@@ -94,4 +94,15 @@ int det_relay_step(DetRelay *r)
     return (r->a2b_done && r->b2a_done) ? DET_RELAY_DONE : DET_RELAY_RUNNING;
 }
 
+void det_relay_note_eof(DetRelay *r, bool origin)
+{
+    if (!r)
+        return;
+    // The next det_relay_step drains that source's buffered bytes, then finishes its direction.
+    if (origin)
+        r->b_eof = true;
+    else
+        r->a_eof = true;
+}
+
 #endif // DETWS_ENABLE_RELAY
