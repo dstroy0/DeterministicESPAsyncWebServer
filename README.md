@@ -467,7 +467,7 @@ cryptic linker error). Enable a child flag only together with its parent.
   <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">
 </picture>
 
-_22 hard dependencies, 3 PSRAM gates, 13 derived flags._
+_22 hard dependencies, 3 PSRAM gates, 14 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
