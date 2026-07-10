@@ -2,6 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.93.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.93.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`58c3be6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58c3be6ac526e8ca156debd39bd27785c04c8528))
+
+### Changes
+
+- Bump version: 5.92.1 → 5.93.0 ([`e00bd97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e00bd97f4926af2971c3343b59604b64e0012678))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7668e13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7668e1356eb52976c9888b5320290b394d6834ee))
+- Ethernet DNC example shipped - only HW-verify remains ([`fb0fc12`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb0fc12e20a68818b4512875b3d461109d6842b5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c5717f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5717f36beb5a8736251de3c0a0e43ebdca4ded3))
+- update ESP32 build footprints [skip ci] ([`2231c36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2231c36c2c0d2f05ab1aeea3e3d1d504dfd2e92d))
+
+### Features
+
+- TCP relay / DNAT byte pump (port forwarding core) ([`0f56ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f56ecee2f8e7bd8d301c130c7181c0d2a0c33f9))
+
+</details>
+
 ## [5.92.1] - 2026-07-10
 
 <details>
