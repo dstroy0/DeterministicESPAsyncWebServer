@@ -106,10 +106,15 @@ layer built first, then the store codecs on top. Substrate before stores.
       operation(s) to judge real-world viability: a host **ns/op** deterministic baseline plus the
       on-device **ESP32-S3 us/op @ 240 MHz** and throughput (the number that actually matters). Living
       table: feature, operation, host ns/op, ESP32 us/op, notes. **Done so far:** the storage
-      characterization (section 1) and the full **data-store stack** (section 4) - host + on-device
-      ESP32-S3 numbers for WAL / dbm / docstore / SQLite / RESP (`perf/bench_datastore.cpp`). _Remaining:_
-      the base64 / mtconnect on-device column (section 2), and whole request-paths (section 3: HTTP
-      parse, TLS handshake, JSON render).
+      characterization (section 1), the base64 / mtconnect codecs (section 2), and the full **data-store
+      stack** (section 4) - all with host + on-device ESP32-S3 numbers (`perf/bench_datastore.cpp` + an
+      on-device firmware). _Remaining:_ whole request-paths (section 3: HTTP parse, TLS handshake, JSON
+      render).
+- [ ] **base64 is slow on-device (mbedTLS): ~1.4 MB/s encode, ~0.56 MB/s decode** (731 / 1815 us per KiB;
+      section 2). The ESP32 path delegates to `mbedtls_base64_encode/decode`; the portable software codec
+      (the `#else` branch) is likely much faster on the device. Evaluate switching the ESP32 path to the
+      software impl - it touches JWT / OIDC / Basic-auth, so verify correctness **and** the speedup on
+      hardware before flipping.
 - [x] **WAL CRC-32 was CRC-bound on-device.** _(done)_ Replaced the table-less bit-by-bit CRC with a
       byte-table CRC-32 (1 KiB rodata). Measured **~3.6x faster** on the ESP32-S3 (231 -> 64 us/KiB,
       ~4.4 -> ~15.9 MB/s), roughly halving `record_encode` / `store_append` / dbm `put`; same 3.6x on the

@@ -127,22 +127,28 @@ enough to keep accepting work across a stalled flush.
 
 ## 2. Pure codec host baseline
 
-Measured on a Raspberry Pi 5 (Cortex-A76, `-O2`); a relative baseline only. The ESP32-S3 column is
-filled from the on-device harness (pending a board run).
+Host = Raspberry Pi 5 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real device at 240 MHz.
 
 | Feature   | Operation            | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | --------- | -------------------- | ---------: | --------: | -------------: | ------------: |
-| base64    | encode 1 KiB         |        944 |      1085 |        pending |       pending |
-| base64    | decode 1 KiB         |       3274 |       313 |        pending |       pending |
-| mtconnect | streams doc (20 obs) |       3291 |       749 |        pending |       pending |
+| base64    | encode 1 KiB         |        944 |      1085 |        731.399 |          1.40 |
+| base64    | decode 1 KiB         |       3274 |       313 |       1814.815 |          0.56 |
+| mtconnect | streams doc (20 obs) |       3291 |       749 |        278.279 |          8.86 |
 
 Notes:
 
-- base64 **decode is ~3.5x the cost of encode** (per-character alphabet lookup + validation vs a
-  straight 3-byte to 4-char map) - worth knowing where a hot path decodes large Basic-auth / payload
-  blobs.
-- The MTConnect row builds a ~2.5 KB XML document (header + 20 observations) end to end, so ~750 MB/s
-  of document assembly on the host baseline.
+- **The base64 rows are two different implementations, and the on-device numbers are a warning.** On the
+  host, base64 uses the portable software codec (the `#else` branch of `base64.cpp`); on the ESP32 it
+  delegates to **mbedTLS** (`mbedtls_base64_encode/decode`). mbedTLS's base64 is slow on the device -
+  ~1.4 MB/s encode, ~0.56 MB/s decode (731 / 1815 us per KiB) - so a hot path that base64s large blobs
+  (Basic-auth, JWT/OIDC tokens, payloads) pays real time. The host's fast software codec suggests the
+  device would be **much faster using the software impl than mbedTLS** here; see the follow-up in section 4
+  / TODO to evaluate switching the ESP32 path (it touches JWT / OIDC / Basic-auth, so it needs on-device
+  correctness + speed verification before flipping).
+- base64 **decode is ~2.5x the cost of encode on the device** (per-character alphabet validation vs a
+  straight map).
+- MTConnect builds a ~2.5 KB XML document (header + 20 observations) end to end in ~278 us on the device
+  (~8.9 MB/s of document assembly) - the zero-heap writer holds up well on hardware.
 
 ## 3. Request-path and protocol benchmarks
 
