@@ -1,0 +1,214 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file relay_listener.cpp
+ * @brief Server-side TCP relay / DNAT listener (see relay_listener.h). Bridges a PROTO_RELAY
+ *        connection to an origin det_client connection via the pure relay engine.
+ */
+
+#include "relay_listener.h"
+
+#if DETWS_ENABLE_RELAY
+
+#include "network_drivers/session/proto_handler.h"
+#include "network_drivers/transport/client.h"
+#include "network_drivers/transport/tcp.h"
+#include "relay.h"
+#include <string.h>
+
+namespace
+{
+
+// One published front port -> origin.
+struct RelayBind
+{
+    bool active;
+    uint8_t listener_id;
+    char host[DETWS_RELAY_HOST_MAX];
+    uint16_t port;
+};
+
+// One live relayed connection: an inbound conn slot bridged to an origin det_client.
+struct RelayBridge
+{
+    bool active;
+    uint8_t conn_slot;
+    int origin_cid;
+    DetRelay relay;
+};
+
+RelayBind s_binds[DETWS_RELAY_MAX_PUBLISH];
+RelayBridge s_bridges[DETWS_RELAY_MAX_CONNS];
+bool s_registered = false;
+
+RelayBind *bind_by_listener(uint8_t lid)
+{
+    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+        if (s_binds[i].active && s_binds[i].listener_id == lid)
+            return &s_binds[i];
+    return nullptr;
+}
+
+RelayBridge *bridge_by_conn(uint8_t slot)
+{
+    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+        if (s_bridges[i].active && s_bridges[i].conn_slot == slot)
+            return &s_bridges[i];
+    return nullptr;
+}
+
+int bridge_find_free()
+{
+    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+        if (!s_bridges[i].active)
+            return i;
+    return -1;
+}
+
+// --- Relay seams (ctx = the RelayBridge). ---
+// Inbound (a) = the accepted server connection; its EOF arrives out of band via relay_on_close.
+int a_recv(void *c, uint8_t *buf, size_t cap)
+{
+    RelayBridge *br = (RelayBridge *)c;
+    if (det_conn_available(br->conn_slot))
+        return (int)det_conn_read(br->conn_slot, buf, cap);
+    return 0;
+}
+int a_send(void *c, const uint8_t *buf, size_t len)
+{
+    RelayBridge *br = (RelayBridge *)c;
+    return det_conn_send(br->conn_slot, buf, (u16_t)len) ? (int)len : 0; // all-or-nothing = backpressure
+}
+// Origin (b) = the outbound det_client; it reports EOF through the recv seam.
+int b_recv(void *c, uint8_t *buf, size_t cap)
+{
+    RelayBridge *br = (RelayBridge *)c;
+    size_t n = det_client_read(br->origin_cid, buf, cap);
+    if (n)
+        return (int)n;
+    return det_client_is_closed(br->origin_cid) ? -1 : 0;
+}
+int b_send(void *c, const uint8_t *buf, size_t len)
+{
+    RelayBridge *br = (RelayBridge *)c;
+    return det_client_send(br->origin_cid, buf, len) ? (int)len : 0;
+}
+
+// Close the origin (and optionally the inbound) and free the bridge. active=false first so a
+// re-entrant close callback is a no-op.
+void teardown(RelayBridge *br, bool close_inbound)
+{
+    br->active = false;
+    det_client_close(br->origin_cid);
+    if (close_inbound)
+        det_conn_close(br->conn_slot);
+}
+
+// Pump the bridge one pass and tear it down if the origin ended or the pump errored.
+void service(uint8_t slot)
+{
+    RelayBridge *br = bridge_by_conn(slot);
+    if (!br)
+        return;
+    int st = det_relay_step(&br->relay);
+    if (st == DET_RELAY_ERROR || st == DET_RELAY_DONE)
+    {
+        teardown(br, true);
+        return;
+    }
+    // origin closed and everything it sent has been forwarded -> nothing more to do
+    if (det_client_is_closed(br->origin_cid) && det_client_available(br->origin_cid) == 0 &&
+        br->relay.b2a_off >= br->relay.b2a_len)
+        teardown(br, true);
+}
+
+void relay_on_accept(uint8_t slot)
+{
+    RelayBind *bd = bind_by_listener(conn_pool[slot].listener_id);
+    if (!bd)
+    {
+        det_conn_close(slot); // no origin published for this listener
+        return;
+    }
+    int idx = bridge_find_free();
+    if (idx < 0)
+    {
+        det_conn_close(slot); // bridge table full
+        return;
+    }
+    int cid = det_client_open(bd->host, bd->port, DETWS_RELAY_CONNECT_MS); // blocking connect (LAN origin)
+    if (cid < 0)
+    {
+        det_conn_close(slot); // origin unreachable
+        return;
+    }
+    RelayBridge *br = &s_bridges[idx];
+    br->active = true;
+    br->conn_slot = slot;
+    br->origin_cid = cid;
+    DetRelayEnd a = {a_recv, a_send, nullptr, br};
+    DetRelayEnd b = {b_recv, b_send, nullptr, br};
+    det_relay_init(&br->relay, &a, &b);
+}
+
+void relay_on_data(uint8_t slot)
+{
+    service(slot);
+}
+
+void relay_on_poll(uint8_t slot)
+{
+    if (conn_pool[slot].state != CONN_ACTIVE)
+        return;
+    service(slot);
+}
+
+void relay_on_close(uint8_t slot)
+{
+    RelayBridge *br = bridge_by_conn(slot);
+    if (br)
+        teardown(br, false); // the transport already owns the closing inbound slot
+}
+
+const ProtoHandler s_relay_handler = {relay_on_accept, relay_on_data, relay_on_close, relay_on_poll};
+
+} // namespace
+
+bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t origin_port)
+{
+    if (!origin_host)
+        return false;
+    size_t hl = strlen(origin_host);
+    if (hl == 0 || hl >= DETWS_RELAY_HOST_MAX)
+        return false;
+    int idx = -1;
+    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+        if (!s_binds[i].active)
+        {
+            idx = i;
+            break;
+        }
+    if (idx < 0)
+        return false;
+    s_binds[idx].active = true;
+    s_binds[idx].listener_id = listener_id;
+    memcpy(s_binds[idx].host, origin_host, hl + 1);
+    s_binds[idx].port = origin_port;
+    if (!s_registered)
+    {
+        proto_register(PROTO_RELAY, &s_relay_handler);
+        s_registered = true;
+    }
+    return true;
+}
+
+void det_relay_listener_reset(void)
+{
+    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+        s_binds[i].active = false;
+    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+        s_bridges[i].active = false;
+}
+
+#endif // DETWS_ENABLE_RELAY

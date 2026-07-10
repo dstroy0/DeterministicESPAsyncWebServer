@@ -2977,6 +2977,34 @@
 #endif
 
 /**
+ * @brief Max published relay ports (bind table size) for the relay listener (DETWS_ENABLE_RELAY).
+ *
+ * Each det_relay_publish() call binds one listener port to one origin `host:port`. This caps how
+ * many distinct ports the device can front at once.
+ */
+#ifndef DETWS_RELAY_MAX_PUBLISH
+#define DETWS_RELAY_MAX_PUBLISH 4
+#endif
+
+/**
+ * @brief Max concurrent relayed connections (bridge table size) for the relay listener
+ *        (DETWS_ENABLE_RELAY). Each holds a DetRelay (two DETWS_RELAY_BUF buffers) + an origin slot.
+ */
+#ifndef DETWS_RELAY_MAX_CONNS
+#define DETWS_RELAY_MAX_CONNS 4
+#endif
+
+/** @brief Max origin hostname length (bytes, incl. NUL) stored per published relay port. */
+#ifndef DETWS_RELAY_HOST_MAX
+#define DETWS_RELAY_HOST_MAX 64
+#endif
+
+/** @brief Blocking connect timeout (ms) when the relay listener dials the origin on a new inbound. */
+#ifndef DETWS_RELAY_CONNECT_MS
+#define DETWS_RELAY_CONNECT_MS 5000
+#endif
+
+/**
  * @brief Opt-in FTP client wire codec (DETWS_ENABLE_FTP).
  *
  * services/ftp is the pure protocol layer of an FTP client (RFC 959 + RFC 2428 EPSV/EPRT):
@@ -4928,6 +4956,7 @@ enum ConnProto
     PROTO_MODBUS = 4,   ///< Modbus TCP slave (Modbus Application Protocol).
     PROTO_OPCUA = 5,    ///< OPC UA Binary (UA-TCP) server.
     PROTO_SSH_RFWD = 6, ///< SSH remote-forward listener (ssh -R): accepts bridge to a forwarded-tcpip channel.
+    PROTO_RELAY = 7,    ///< TCP relay / DNAT (DETWS_ENABLE_RELAY): bridge to an origin det_client connection.
 };
 
 /**
