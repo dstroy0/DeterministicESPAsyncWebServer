@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.84.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.84.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`207aefe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/207aefe1e9913eae5c56143afd3fc8dfe70bcd78))
+
+### Changes
+
+- Bump version: 5.83.0 → 5.84.0 ([`95adc46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95adc468d0c87a8bcf3c1d9b8c202f17109f70a1))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c04cfd2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c04cfd275e74cd99459f3e9402d2fa875035c5f9))
+- update ESP32 build footprints [skip ci] ([`066566f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/066566fcac0aee389da8263d030f6c10fe0e14fc))
+
+### Features
+
+- NTLMv2 response computation - SMB2 increment 3 ([`12e3c16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12e3c16c8978716300480f9adb10f0795dbbb1a9))
+
+</details>
+
 ## [5.83.0] - 2026-07-10
 
 <details>
