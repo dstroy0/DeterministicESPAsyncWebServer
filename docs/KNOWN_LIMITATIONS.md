@@ -128,8 +128,11 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   and v3; the caller drives inform retransmission until the receiver's Response arrives.)
 - **Telnet** is plaintext - no auth or encryption; use it only on a trusted LAN
   (prefer SSH or the WebSocket terminal otherwise).
-- **Multipart:** at most `MAX_MULTIPART_PARTS` parts; a binary part containing the
-  boundary bytes is truncated; only `name` / `filename` are extracted.
+- **Multipart:** at most `MAX_MULTIPART_PARTS` parts; only `name` / `filename` are
+  extracted. Parsing is length-bounded over `body_len` and matches the full
+  `CRLF--boundary` delimiter, so a **binary** part (embedded NUL bytes, or the raw
+  boundary string inside the payload) is preserved intact - read it via
+  `part->data` + `part->data_len`.
 
 ## DMA ingest
 

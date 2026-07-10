@@ -9,12 +9,16 @@
 #include "multipart.h"
 #include <string.h>
 
-// Skip past a CRLF pair; returns p+2 if CRLF found, else p unchanged.
-static char *skip_crlf(char *p)
+// Length-bounded, binary-safe forward search for needle[0..nlen) within hay[0..hlen).
+// Unlike strstr, it does not stop at a NUL, so a body containing NUL bytes scans correctly.
+static char *mem_find(char *hay, size_t hlen, const char *needle, size_t nlen)
 {
-    if (p[0] == '\r' && p[1] == '\n')
-        return p + 2;
-    return p;
+    if (nlen == 0 || nlen > hlen)
+        return nullptr;
+    for (size_t i = 0; i + nlen <= hlen; i++)
+        if (memcmp(hay + i, needle, nlen) == 0)
+            return hay + i;
+    return nullptr;
 }
 
 // Extract parameter value: search for `key="<value>"` inside `src`.
@@ -69,19 +73,28 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
     size_t dlen = blen + 2;
 
     char *body = (char *)req->body;
+    char *end = body + req->body_len; // length-bounded scanning: NUL bytes in a binary part are fine
 
-    // Find the first delimiter
-    char *pos = strstr(body, delim);
+    // A part's data ends at the full "\r\n--boundary" delimiter (RFC 2046): matching only the
+    // "--boundary" bytes would false-truncate a binary part that happens to contain them.
+    char ddelim[MAX_BOUNDARY_LEN + 5];
+    ddelim[0] = '\r';
+    ddelim[1] = '\n';
+    memcpy(ddelim + 2, delim, dlen); // "--boundary" (dlen bytes, no NUL)
+    size_t ddlen = dlen + 2;
+
+    // Find the first delimiter ("--boundary"; a leading CRLF / preamble is optional here).
+    char *pos = mem_find(body, (size_t)(end - body), delim, dlen);
     if (!pos)
         return false;
-
-    pos += (int)dlen;
-    pos = skip_crlf(pos);
+    pos += dlen;
+    if (pos + 2 <= end && pos[0] == '\r' && pos[1] == '\n')
+        pos += 2;
 
     while (mp->part_count < MAX_MULTIPART_PARTS)
     {
-        // End boundary is "--" immediately after delimiter
-        if (pos[0] == '-' && pos[1] == '-')
+        // "--" immediately after the delimiter marks the terminating boundary.
+        if (pos + 2 <= end && pos[0] == '-' && pos[1] == '-')
             break;
 
         MultipartPart *part = &mp->parts[mp->part_count];
@@ -91,16 +104,16 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
         part->data = nullptr;
         part->data_len = 0;
 
-        // Parse per-part headers until the blank line
+        // Parse the per-part headers (text) until the blank line.
         for (;;)
         {
-            if (pos[0] == '\r' && pos[1] == '\n')
+            if (pos + 2 <= end && pos[0] == '\r' && pos[1] == '\n')
             {
                 pos += 2; // blank line → start of data
                 break;
             }
 
-            char *line_end = strstr(pos, "\r\n");
+            char *line_end = mem_find(pos, (size_t)(end - pos), "\r\n", 2);
             if (!line_end)
                 return false;
 
@@ -111,7 +124,6 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
                 char *v = pos + 20;
                 while (*v == ' ')
                     v++;
-                // Extract name and filename (in-place, with null termination)
                 // Extract filename before name: filename= appears after name= in the
                 // header, so extracting it first avoids corrupting name='s search
                 // when extract_quoted_param null-terminates the value in-place.
@@ -129,20 +141,20 @@ bool multipart_parse(HttpReq *req, Multipart *mp)
             pos = line_end + 2; // next line (skip '\0' + '\n')
         }
 
-        // Data runs from pos until the next delimiter (preceded by \r\n)
-        part->data = pos;
-        char *next = strstr(pos, delim);
+        // Data runs from pos until the next "\r\n--boundary" (binary-safe, length-bounded).
+        char *next = mem_find(pos, (size_t)(end - pos), ddelim, ddlen);
         if (!next)
             return false;
 
-        char *data_end = next - 2; // \r\n before the delimiter
-        part->data_len = (size_t)(data_end - pos);
-        *data_end = '\0'; // null-terminate data
+        part->data = pos;
+        part->data_len = (size_t)(next - pos);
+        *next = '\0'; // terminate at the CRLF so a text part is still usable as a C-string
 
         mp->part_count++;
 
-        pos = next + (int)dlen;
-        pos = skip_crlf(pos);
+        pos = next + ddlen; // past "\r\n--boundary"
+        if (pos + 2 <= end && pos[0] == '\r' && pos[1] == '\n')
+            pos += 2;
     }
 
     return mp->part_count > 0;

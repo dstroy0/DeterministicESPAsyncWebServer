@@ -9,10 +9,16 @@
  * the body buffer in-place by inserting null terminators, so `part->data`
  * pointers are valid only while the `HttpReq` lives (before `http_reset()`).
  *
+ * The scan is length-bounded over `HttpReq::body_len` and matches the full
+ * `\r\n--boundary` delimiter (RFC 2046), so a **binary** part is safe: embedded
+ * NUL bytes and even the raw boundary string inside the payload do not truncate it
+ * (only the true `CRLF--boundary` delimiter ends a part). Read a binary part via
+ * `part->data` + `part->data_len` (the in-place NUL terminator is a convenience for
+ * text parts, not a length).
+ *
  * **Limitations**
  * - Maximum parts: `MAX_MULTIPART_PARTS` (default 4).
  * - Maximum total body size: `BODY_BUF_SIZE` bytes.
- * - Binary payloads containing the boundary string will be truncated.
  * - Only `name` and `filename` are extracted from Content-Disposition;
  *   other parameters are ignored.
  * - Boundary value must be ≤ `MAX_BOUNDARY_LEN` bytes (RFC 2046 cap: 70).

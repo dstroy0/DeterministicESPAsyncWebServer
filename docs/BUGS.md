@@ -8,6 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Multipart parser truncated binary parts (strstr on a length-tracked binary body)
+
+- **Status:** FIXED (native_app `test_binary_part_not_truncated` + all multipart cases pass; native_pentest
+  38/38 clean under ASan + UBSan with the rewritten scan). Previously documented as a "known limitation";
+  it is really a data-integrity bug and is now fixed.
+- **Found:** 2026-07-10, reviewing the KNOWN_LIMITATIONS entry "a binary part containing the boundary bytes
+  is truncated".
+- **Symptom:** a multipart/form-data **file upload** whose body contains a NUL byte, or the raw boundary
+  token (e.g. `--BND`) inside the payload, was truncated - the part's `data_len` stopped at the first NUL
+  or the first boundary-looking bytes, corrupting binary uploads (images, firmware, ...).
+- **Root cause:** `multipart_parse` scanned the body with `strstr` (`strstr(body, delim)` /
+  `strstr(pos, "\r\n")`), which (1) stops at the first NUL even though `HttpReq::body` is a byte buffer with
+  an explicit `body_len`, and (2) matched the bare `--boundary` bytes anywhere, so a payload that merely
+  _contained_ those bytes (without the framing `CRLF`) was treated as a delimiter.
+- **Fix:** rewrote the scan to be length-bounded over `body_len` with a binary-safe `mem_find` (memcmp, no
+  NUL stop) and to match the full RFC 2046 `\r\n--boundary` delimiter for the data sections, so only a true
+  `CRLF--boundary` ends a part. The in-place NUL terminator is kept as a convenience for text parts; binary
+  parts are read via `part->data` + `part->data_len`.
+- **Lesson:** never `strstr`/`strlen`-scan a buffer that is length-tracked and may hold binary - use a
+  length-bounded `memcmp` search; and match the _full_ framed delimiter (`CRLF--boundary`), not the bare
+  token, so payload bytes can never masquerade as a boundary.
+
+---
+
 ## Signed-overflow UB + `10^exponent` DoS in the remaining hand-rolled number parsers
 
 - **Status:** FIXED (native_pentest 35/35 clean under ASan + UBSan `-fno-sanitize-recover=all`,

@@ -77,6 +77,31 @@ static HttpReq *build_multipart_req(uint8_t slot, const char *boundary, const ch
     return &http_pool[slot];
 }
 
+// Binary-safe variant: pushes @p blen raw bytes (which may contain NULs) rather than a C-string.
+static HttpReq *build_multipart_req_bin(uint8_t slot, const char *boundary, const char *body, size_t blen)
+{
+    reset_slot(slot);
+    char hdr[256];
+    snprintf(hdr, sizeof(hdr),
+             "POST /upload HTTP/1.1\r\n"
+             "Content-Type: multipart/form-data; boundary=%s\r\n"
+             "Content-Length: %u\r\n"
+             "\r\n",
+             boundary, (unsigned)blen);
+    TcpConn *c = &conn_pool[slot];
+    auto push = [&](const char *s, size_t n) {
+        for (size_t i = 0; i < n; i++)
+        {
+            c->rx_buffer[c->rx_head] = (uint8_t)s[i];
+            c->rx_head = (c->rx_head + 1) % RX_BUF_SIZE;
+        }
+    };
+    push(hdr, strlen(hdr));
+    push(body, blen);
+    http_parse(slot);
+    return &http_pool[slot];
+}
+
 void setUp()
 {
     for (int i = 0; i < MAX_CONNS; i++)
@@ -488,6 +513,36 @@ void stress_get_field_100_lookups()
     }
 }
 
+// A binary part whose data contains a NUL byte AND the raw boundary token "--BND"
+// (not framed by CRLF) must survive intact - the old strstr parser truncated it.
+void test_binary_part_not_truncated()
+{
+    const unsigned char payload[] = {0x89, 0x50, 0x4E, 0x47, 0x00, 0x1A, '-', '-', 'B', 'N', 'D', 0x00, 0xFF, 0x42};
+    const size_t plen = sizeof(payload);
+
+    char body[256];
+    size_t n = 0;
+    const char *pre = "--BND\r\n"
+                      "Content-Disposition: form-data; name=\"f\"; filename=\"a.png\"\r\n"
+                      "Content-Type: application/octet-stream\r\n\r\n";
+    memcpy(body + n, pre, strlen(pre));
+    n += strlen(pre);
+    memcpy(body + n, payload, plen);
+    n += plen;
+    const char *post = "\r\n--BND--\r\n";
+    memcpy(body + n, post, strlen(post));
+    n += strlen(post);
+
+    HttpReq *req = build_multipart_req_bin(0, "BND", body, n);
+    Multipart mp;
+    TEST_ASSERT_TRUE(multipart_parse(req, &mp));
+    TEST_ASSERT_EQUAL_INT(1, mp.part_count);                   // not split at the embedded token
+    TEST_ASSERT_EQUAL_size_t(plen, mp.parts[0].data_len);      // full length, not truncated at NUL / --BND
+    TEST_ASSERT_EQUAL_MEMORY(payload, mp.parts[0].data, plen); // bytes intact
+    TEST_ASSERT_NOT_NULL(mp.parts[0].filename);
+    TEST_ASSERT_EQUAL_STRING("a.png", mp.parts[0].filename);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -511,6 +566,7 @@ int main()
     RUN_TEST(test_long_boundary_string);
     RUN_TEST(stress_parse_100_requests);
     RUN_TEST(stress_get_field_100_lookups);
+    RUN_TEST(test_binary_part_not_truncated);
 
     return UNITY_END();
 }
