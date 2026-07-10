@@ -9,6 +9,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9dbb87a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dbb87a3205360349fcb9d42d85e9c478e92f4bb))
+
+### Documentation
+
+- prettier-align the section-2 perf table ([`fda56eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fda56ebb41a1b15365f0aed62dd1d8680d465974))
+
+## [5.73.3] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.73.3 - 2026-07-10</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`4cb62ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cb62ffd2b137ec0671d1406108f52249417c357))
 - update CHANGELOG.md [skip ci] ([`e462f36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e462f361cbf30b61320bc29078d825ecb3bd1e72))
 
