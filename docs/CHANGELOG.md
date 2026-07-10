@@ -2,6 +2,27 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- make the SMB client work on real hardware ([`3598650`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35986506411950ad27b53fef545021ee72a7528e))
+
+### CI / Build
+
+- bump prettier from 3.9.4 to 3.9.5 ([`1762c2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1762c2e58749168e1390cc4eaf466a07a780008a))
+- update test report + coverage [skip ci] ([`355b9ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/355b9ad0adeb61e99f3be51576321b62ffa40feb))
+- update CHANGELOG.md [skip ci] ([`25cb46c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25cb46c342a72baff040ae24ad952999091cb39c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`b284e29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b284e29ca0c95f8fcab3b61e61156b5a1be81667))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ee9125`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ee9125411e83452cb2b4fc6befe439b9c07e412))
+
+### Refactor
+
+- bound flagged strlen calls with strnlen (Sonar S5813) ([`d621111`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d621111014f4e98514a44c5e402f07e8d19cf955))
+
 ## [5.94.1] - 2026-07-10
 
 <details>
