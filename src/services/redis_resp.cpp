@@ -86,14 +86,14 @@ static bool parse_int(const uint8_t *buf, size_t from, size_t end, int64_t *out)
     }
     if (i >= end)
         return false;
-    int64_t v = 0;
+    uint64_t v = 0; // accumulate unsigned: signed overflow (a huge digit run) is UB
     for (; i < end; i++)
     {
         if (buf[i] < '0' || buf[i] > '9')
             return false;
-        v = v * 10 + (buf[i] - '0');
+        v = v * 10u + (uint64_t)(buf[i] - '0');
     }
-    *out = neg ? -v : v;
+    *out = neg ? (int64_t)(0ull - v) : (int64_t)v; // two's-complement reinterpret, no negation UB
     return true;
 }
 
@@ -176,7 +176,8 @@ static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *ou
         bool edig = false;
         for (; i < end && buf[i] >= '0' && buf[i] <= '9'; i++)
         {
-            exp = exp * 10 + (buf[i] - '0');
+            if (exp < 1000000) // clamp: a larger exponent saturates the double to inf/0 anyway
+                exp = exp * 10 + (buf[i] - '0');
             edig = true;
         }
         if (!edig)

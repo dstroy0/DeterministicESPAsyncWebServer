@@ -204,7 +204,7 @@ The native test matrix has **214 environments**, one per feature, generated from
 | `native_ota_rollback` | `ETWS_ENABLE_OTA_ROLLBACK=1` | `test_ota_rollback` | OTA rollback decision (services/ota_rollback): pure decision matrix host-tested; the esp_ota commit/rollback are ESP32-only. |
 | `native_partition` | `ETWS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
 | `native_pca9685` | `ETWS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
-| `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SQLITE=1`, `ETWS_ENABLE_REDIS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
+| `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SQLITE=1`, `ETWS_ENABLE_REDIS=1`, `ETWS_ENABLE_OPCUA=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
 | `native_pn532` | `ETWS_ENABLE_PN532=1`, `ETWS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
 | `native_powerlink` | `ETWS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
 | `native_preempt_queue` | `ETWS_ENABLE_PREEMPT_QUEUE=1`, `ETWS_PQ_DEPTH=4`, `ETWS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2810 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2813 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -18806,7 +18806,7 @@ A thorough directory of all **2810 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_pentest (30 tests)</b></summary>
+<summary><b>test_pentest (33 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_http_oversized_path</b> &mdash; <i>Http oversized path</i></summary>
@@ -18991,6 +18991,9 @@ A thorough directory of all **2810 test cases** across **236 suites**. Expand a 
       * <code>Assert true (consumed &lt;= len)</code>
       * <code>Assert true (consumed &lt;= len)</code>
       * <code>Assert true (c2 &lt;= cut)</code>
+      * <code>Assert true (rd.count &lt;= DETWS_OPCUA_READ_MAX)</code>
+      * <code>Assert true (wq.count &lt;= DETWS_OPCUA_WRITE_MAX)</code>
+      * <code>Assert true (br.count &lt;= DETWS_OPCUA_BROWSE_MAX)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19058,6 +19061,24 @@ A thorough directory of all **2810 test cases** across **236 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (consumed &lt;= len)</code>
       * <code>Assert true (c2 &lt;= cut)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_opcua_random</b> &mdash; <i>Half the time, stamp a well-formed UACP header (valid type + size == len) so the body</i></summary>
+
+    * **Objective**: Half the time, stamp a well-formed UACP header (valid type + size == len) so the body
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_opcua_hostile_open</b> &mdash; <i>An OPN whose SecurityPolicyUri length lies: the reader must fail-closed, never r_skip past</i></summary>
+
+    * **Objective**: An OPN whose SecurityPolicyUri length lies: the reader must fail-closed, never r_skip past
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_opcua_hostile_header</b> &mdash; <i>Opcua hostile header</i></summary>
+
+    * **Objective**: Opcua hostile header
   </details>
 
 </details>

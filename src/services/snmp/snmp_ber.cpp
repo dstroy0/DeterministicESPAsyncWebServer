@@ -260,12 +260,13 @@ bool ber_read_integer(BerDec *d, long *out)
         d->ok = false;
         return false;
     }
-    // Sign-extend from the first byte.
-    long v = (d->buf[d->pos] & 0x80) ? -1 : 0;
+    // Sign-extend from the first byte. Accumulate in unsigned: left-shifting a negative signed
+    // value is undefined behavior; the final reinterpret yields the two's-complement result.
+    uint64_t uv = (d->buf[d->pos] & 0x80) ? ~(uint64_t)0 : 0;
     for (size_t i = 0; i < len; i++)
-        v = (v << 8) | d->buf[d->pos + i];
+        uv = (uv << 8) | d->buf[d->pos + i];
     d->pos += len;
-    *out = v;
+    *out = (long)uv;
     return true;
 }
 

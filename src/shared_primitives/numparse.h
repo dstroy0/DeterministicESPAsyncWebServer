@@ -38,12 +38,12 @@ inline long det_strtol(const char *s, const char **end)
     if (*p == '+' || *p == '-')
         neg = (*p++ == '-');
     const char *ds = p;
-    long v = 0;
+    unsigned long v = 0; // accumulate unsigned: signed overflow (a huge digit run) is UB
     while (det_np_digit(*p))
-        v = v * 10 + (*p++ - '0');
+        v = v * 10UL + (unsigned long)(*p++ - '0');
     if (end)
         *end = (p == ds) ? s : p;
-    return neg ? -v : v;
+    return neg ? (long)(0UL - v) : (long)v; // two's-complement reinterpret, no negation UB
 }
 
 /** @brief Parse a base-10 unsigned long; sets @p end past the digits (or to @p s). */

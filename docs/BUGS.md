@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Signed-integer-overflow UB in three untrusted-input number parsers
+
+- **Status:** FIXED (native_pentest now passes clean under ASan + UBSan with
+  `-fno-sanitize-recover=all`: 33/33; the directly-affected suites - native_det_primitives,
+  native_redis, native_snmp, native_http_client - all still green).
+- **Found:** 2026-07-09, by the extended pentest fuzzer. Adding OPC UA Binary fuzz targets and
+  running the built binary directly under `-fno-sanitize-recover=all` (so UBSan aborts instead of
+  just printing) surfaced three latent undefined-behavior sites that earlier runs had been printing
+  and ignoring. All three are hit by feeding a parser a very long / hostile digit string.
+- **Sites + root cause:**
+    - `services/snmp/snmp_ber.cpp` `ber_read_integer`: sign-extended the BER INTEGER by seeding a
+      signed `long v = -1` and then `v = (v << 8) | byte` - **left-shifting a negative signed value
+      is UB** (C++ < 20).
+    - `shared_primitives/numparse.h` `det_strtol`: `v = v * 10 + digit` on a signed `long` - **signed
+      overflow is UB** once the digits exceed `LONG_MAX` (the unsigned `det_strtoul` was already safe).
+    - `services/redis_resp.cpp` RESP integer + double parsers: the same `v = v * 10 + digit` on a
+      signed `int64_t` (the integer) and an unbounded `int exp` accumulator (the exponent).
+- **Fix:** accumulate in unsigned and reinterpret with sign (BER integer, `det_strtol`, RESP
+  integer - `neg ? (T)(0 - uv) : (T)uv`, which also avoids the negate-`MIN` UB), and clamp the RESP
+  double exponent (`if (exp < 1000000)` - a larger exponent saturates the `double` to inf/0 anyway).
+  All fixes are value-identical for in-range inputs, so no test changed.
+- **Lesson:** a hand-rolled `v = v*10 + digit` (or a `neg_seed << 8`) on a **signed** accumulator is
+  UB the moment an attacker supplies enough digits; parse untrusted numbers into an unsigned type and
+  reinterpret, or clamp. The fuzzer only caught these once it ran the sanitized binary with
+  `-fno-sanitize-recover=all` - printing-but-not-failing UBSan output had hidden them.
+
+---
+
 ## DNC decoder ate the EIA digit `3` (0x13) as an XOFF flow-control byte
 
 - **Status:** FIXED (caught pre-ship by the codec's own encode -> decode round-trip test;

@@ -185,11 +185,15 @@ Let the device act as a caching edge / content-distribution node, not just an or
 - [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server. _Ongoing:_
       the fuzz harness (`native_pentest`) now also hammers the **SQLite on-disk reader** (random pages, a
       garbage b-tree the multi-page cursor must survive without hanging, a hostile overflow chain, and
-      structure-aware mutation of a valid image) and the **Redis RESP decoder** (random bytes + lying `$`/`*`
-      length prefixes that must not become an over-read) - 30/30 cases pass plain and clean under ASan+UBSan
-      (run the built `program` directly; the PIO runner mishandles the sanitizer binary's signals). _Next
-      candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the transport/session mocks wired
-      into the env since it dispatches on frame-ready), and the WebDAV / OPC UA binary decoders.
+      structure-aware mutation of a valid image), the **Redis RESP decoder** (random bytes + lying `$`/`*`
+      length prefixes that must not become an over-read), and the **OPC UA Binary parsers** (random bodies
+      behind a valid UACP header, an `OPN` with a lying `SecurityPolicyUri` length, per-type size mismatches;
+      the NodesToRead/Write/Browse counts stay clamped) - **33/33** cases pass plain and clean under ASan+UBSan
+      (run the built `program` directly; the PIO runner mishandles the sanitizer binary's signals). Adding the
+      OPC UA target + running the binary under `-fno-sanitize-recover=all` **found and fixed three latent
+      signed-overflow UBs** in the shared number parsers (SNMP BER, `det_strtol`, RESP - see docs/BUGS.md).
+      _Next candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the transport/session mocks
+      wired into the env since it dispatches on frame-ready), and the WebDAV binary decoder.
 
 ### Docs
 
