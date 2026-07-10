@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2883 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2884 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22811,7 +22811,7 @@ A thorough directory of all **2883 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_relay (5 tests)</b></summary>
+<summary><b>test_relay (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_bidirectional</b> &mdash; <i>Bidirectional</i></summary>
@@ -22869,6 +22869,19 @@ A thorough directory of all **2883 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 32))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(18, b.out_len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, a.out_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_note_eof_out_of_band</b> &mdash; <i>one step moves the buffered data each way; without an EOF signal the relay keeps running</i></summary>
+
+    * **Objective**: one step moves the buffered data each way; without an EOF signal the relay keeps running
+    * **Assertions**:
+      * <code>Assert equal int (DET_RELAY_RUNNING, det_relay_step(&r))</code>
+      * <code>Assert equal memory ("hello", b.out, 5)</code>
+      * <code>Assert equal memory ("world", a.out, 5)</code>
+      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 8))</code>
+      * <code>Assert true (a.shutdown_called)</code>
+      * <code>Assert true (b.shutdown_called)</code>
   </details>
 
 </details>
