@@ -898,7 +898,7 @@
       "tests": ["test_opcua_client"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, the IEEE C37.118\nsynchrophasor + FINS command parsers, the JWT HS256 token verifier, and the\nDirectNET / CC-Link / AMQP / MMS frame parsers) with malformed/oversized/partial/\nrandom/mutated input and asserts bounded buffers + fail-closed + termination (no\ncrash, no over-read, no hang). Pairs with the live driver pentesting/detws_pentest.py.\nSee docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, the IEEE C37.118\nsynchrophasor + FINS command parsers, the JWT HS256 token verifier, the\nDirectNET / CC-Link / AMQP / MMS frame parsers, and the DDS/RTPS UDP submessage\nwalker) with malformed/oversized/partial/random/mutated input and asserts bounded\nbuffers + fail-closed + termination (no crash, no over-read, no hang). Pairs with\nthe live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
       "flags": [
         "-DDETWS_ENABLE_MODBUS=1",
         "-DDETWS_ENABLE_MODBUS_MASTER=1",
@@ -933,7 +933,8 @@
         "-DDETWS_ENABLE_DIRECTNET=1",
         "-DDETWS_ENABLE_CCLINK=1",
         "-DDETWS_ENABLE_AMQP=1",
-        "-DDETWS_ENABLE_MMS=1"
+        "-DDETWS_ENABLE_MMS=1",
+        "-DDETWS_ENABLE_DDS=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -979,7 +980,8 @@
         "+<services/directnet/directnet.cpp>",
         "+<services/cclink/cclink.cpp>",
         "+<services/amqp/amqp.cpp>",
-        "+<services/mms/mms.cpp>"
+        "+<services/mms/mms.cpp>",
+        "+<services/dds/dds.cpp>"
       ],
       "tests": ["test_pentest"]
     },
