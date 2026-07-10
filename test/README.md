@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2746 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2751 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24389,7 +24389,7 @@ A thorough directory of all **2746 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sqlite (18 tests)</b></summary>
+<summary><b>test_sqlite (23 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_db_header_real_file</b> &mdash; <i>Db header real file</i></summary>
@@ -24589,6 +24589,23 @@ A thorough directory of all **2746 test cases** across **233 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_read_payload_nonoverflow</b> &mdash; <i>Read payload nonoverflow</i></summary>
+
+    * **Objective**: Read payload nonoverflow
+    * **Assertions**:
+      * <code>Assert true (sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work))</code>
+      * <code>Assert equal memory (leaf + 8, out, 50)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_payload_bad_overflow_pointer</b> &mdash; <i>The 4-byte first-overflow pointer sits right after the local prefix: point it at page 9999, which</i></summary>
+
+    * **Objective**: The 4-byte first-overflow pointer sits right after the local prefix: point it at page 9999, which
+    * **Assertions**:
+      * <code>Assert false (sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, out, sizeof(out), work))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_overflow_read_payload_bounds</b> &mdash; <i>Overflow read payload bounds</i></summary>
 
     * **Objective**: Overflow read payload bounds
@@ -24672,6 +24689,40 @@ A thorough directory of all **2746 test cases** across **233 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)strlen(spec[n].b), vl);</code>
       * <code>Assert equal memory (spec[n].b, v, vl)</code>
       * <code>Assert equal int (3, n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_record_int_widths</b> &mdash; <i>Every integer serial type: the value round-trips and the encoder picks the minimal type.</i></summary>
+
+    * **Objective**: Every integer serial type: the value round-trips and the encoder picks the minimal type.
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (sqlite_record_begin(&rc, rec, rl))</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(cases[k].st, st); // minimal serial type</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(cases[k].v, sqlite_column_int(st, v, vl));</code>
+      * <code>Assert false (sqlite_record_next(&rc, &st, &v, &vl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_record_blob</b> &mdash; <i>A BLOB column (serial type 12 + 2n) round-trips its raw bytes, including embedded NULs.</i></summary>
+
+    * **Objective**: A BLOB column (serial type 12 + 2n) round-trips its raw bytes, including embedded NULs.
+    * **Assertions**:
+      * <code>Assert true (rl &gt; 0)</code>
+      * <code>Assert true (sqlite_record_begin(&rc, rec, rl))</code>
+      * <code>Assert true (sqlite_record_next(&rc, &st, &v, &vl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(12u + 2u * sizeof(blob), st); // BLOB serial type</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(blob), vl);</code>
+      * <code>Assert equal memory (blob, v, sizeof(blob))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_table_db_page_overflow_fails_closed</b> &mdash; <i>Many rows that each fit but collectively exceed one leaf page must fail closed (distinct from the</i></summary>
+
+    * **Objective**: Many rows that each fit but collectively exceed one leaf page must fail closed (distinct from the
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", rows, 60, img, sizeof(img)));</code>
   </details>
 
   <details style="margin-left: 20px;">
