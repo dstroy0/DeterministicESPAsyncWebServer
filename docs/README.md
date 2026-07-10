@@ -630,6 +630,7 @@ src/
 │   ├── fins/  (fins.h, fins.cpp)
 │   ├── flow_export/  (flow_export.h, flow_export.cpp)
 │   ├── forward/  (forward.h, forward.cpp)
+│   ├── ftp/  (ftp.h, ftp.cpp)
 │   ├── gateway/  (gateway.h, gateway.cpp)
 │   ├── goose/  (goose.h, goose.cpp)
 │   ├── gpio_map/
@@ -1069,6 +1070,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_FINS` | `0` | Omron FINS frame codec (`services/fins`). |
 | `DETWS_ENABLE_FLOW_EXPORT` | `0` | Flow-record export codec (`services/flow_export`). |
 | `DETWS_ENABLE_FORWARD` | `0` | Enable the interface forwarding plane (default off). |
+| `DETWS_ENABLE_FTP` | `0` | Opt-in FTP client wire codec. |
 | `DETWS_ENABLE_GATEWAY` | `0` | Enable the radio / wireless gateway bridge (default off). |
 | `DETWS_ENABLE_GOOSE` | `0` | Opt-in IEC 61850 GOOSE publisher codec. |
 | `DETWS_ENABLE_GPIO_MAP` | `0` | Opt-in browser GPIO pin-mapper / diagnostics endpoint. |
@@ -1280,6 +1282,7 @@ guards at compile time.
 | `DETWS_ENFORCE_HOST_HEADER` | `1` | Enforce the RFC 7230 §5.4 Host-header requirement (default on). |
 | `DETWS_ENOCEAN_MAX_DATA` | `512` | Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). |
 | `DETWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
+| `DETWS_FTP_CMD_MAX` | `256` | Suggested FTP control-command buffer size. |
 | `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
 | `DETWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
 | `DETWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
