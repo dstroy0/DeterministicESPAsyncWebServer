@@ -2,17 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.92.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.92.0 - 2026-07-10</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`17de09a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17de09a33da0768a46430325b426a63d5c401cc8))
 - update CHANGELOG.md [skip ci] ([`adeba2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/adeba2f729e889c7a2729f13a225aa282bb7447c))
+
+### Changes
+
+- Bump version: 5.91.1 → 5.92.0 ([`a38ceb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a38ceb1d69a3fef9226a268ce487062ef4b1b928))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`32876f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32876f3f0a68bc595330f5ce8aa6a790e4234642))
 - SMB client complete - move to PARTIAL (only HW-verify remains) ([`fe6de9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe6de9f3e8e0914de812f4f60b09137cf61d6d98))
 - update ESP32 build footprints [skip ci] ([`52d3de0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52d3de0583f2f2c4d77149bdec112c6e7e2c9687))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f8e41e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8e41e43099209cf96a66ac7243069eb15616420))
+
+### Features
+
+- dnc_stream drip-feed engine (Ethernet DNC) ([`7aefa62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7aefa620c5ee6645d5532f25ad2bdffbf113e5e6))
+
+</details>
 
 ## [5.91.1] - 2026-07-10
 
