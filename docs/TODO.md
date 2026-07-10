@@ -33,6 +33,50 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 > WiFi-dependent services (mDNS resolve, NTP sync, OTA upload, portal join) needs
 > WiFi credentials / a phone.
 
+## Status at a glance
+
+A fast index by status so the next actionable item is obvious without scanning the whole file.
+Details for each live in the sections below (search the bolded name). Statuses: **OPEN** (actionable
+now) - **PARTIAL** (`[~]`, shipped in part, a remainder is noted) - **WON'T / BLOCKED** (deliberate
+non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped record below).
+
+### OPEN (actionable now)
+
+- **SMB/CIFS client** - _in progress_: the SMB2 wire codec + the NTLM crypto (MD4/MD5/HMAC-MD5) it needs.
+- **Ethernet DNC** - drip-feed the existing G-code framing over a plain TCP socket.
+- **Port forwarding / DNAT** - publish an internal `host:port` through the server.
+- **CDN caching tier** - edge cache + cache key/invalidation + range-aware delivery + mesh distribution
+  (origin-side `Cache-Control` helpers are **done**; the tier itself is a design/scope-with-user piece).
+- **Industrial_ESPIDF/** - create the directory + its CMake (use the library as an ESP-IDF component).
+- **More niche pure codecs** from old manuals (as they are named / requested - not invented).
+- **Docs** - chart the docs build + automation; full staleness audit; theming (palette/alignment);
+  a teacher switch to disable the sandbox; live theme preview.
+- **Ongoing quality** - extend the pentest fuzz corpus; extend test coverage; raise branch coverage
+  (ftp 87% / httpcache 90% branches noted); remediate any Sonar/CodeQL (currently 0 bugs / 0 vulns).
+
+### PARTIAL (`[~]` - shipped, remainder noted)
+
+- **Concurrent TLS** (`MAX_TLS_CONNS`>1) - library + PSRAM build done; only the live 2-client soak remains
+  (the reserved **two-rig HW test**, held per the user's "keep looping, hold the rigs").
+- **Ethernet PHY** - RMII bring-up shipped; needs a real PHY board to verify.
+- **IPv6 dual-stack** - phase 1 + 2 shipped; needs SLAAC verified on a real v6 network.
+- **CoAP scope** - `/.well-known/core` discovery shipped; separate/deferred responses + CON dedup are
+  deliberately out of scope.
+- **SSH channels** - `direct-tcpip` (`ssh -L`) shipped; `forwarded-tcpip` (`ssh -R`) + X11 pending.
+
+### WON'T / BLOCKED (needs hardware, proprietary docs, or a closed decision)
+
+- **Portability beyond ESP32** (ESP8266 / RP2040 / RP2350) - closed won't-do (per the user).
+- **W5500 SPI Ethernet driver** - needs the chip to verify.
+- **Radio-as-a-plugin** - needs bare-metal RF hardware.
+- **Fanuc FOCAS** - proprietary wire format; needs manuals + a real controller.
+
+### DONE (recent, this loop)
+
+DNC codec, FTP client, HTTP cache-control helpers, forwarding policy-routing + inspection hook,
+Ed25519-sign KAT (RFC 8032), a class of signed-overflow UB + `10^exp` DoS fixes in the number parsers,
+multipart binary-safety. Full shipped record: the `[x]` items and the collapsed sections below.
+
 ## From the working thread
 
 Ideas and intentions captured from the [Working Thread discussion](https://github.com/dstroy0/DeterministicESPAsyncWebServer/discussions/15) (the maintainer's thought-stream). Unpolished on purpose; refine as they are picked up.
