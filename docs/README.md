@@ -723,7 +723,11 @@ src/
 │   ├── sht3x/  (sht3x.h, sht3x.cpp)
 │   ├── sigfox/  (sigfox.h, sigfox.cpp)
 │   ├── sleep_sched/  (sleep_sched.h, sleep_sched.cpp)
-│   ├── smb/  (smb2.h, smb2.cpp)
+│   ├── smb/
+│   │   ├── smb2.cpp
+│   │   ├── smb2.h
+│   │   ├── smb_md.cpp
+│   │   └── smb_md.h
 │   ├── smtp/  (smtp.h, smtp.cpp)
 │   ├── snmp/
 │   │   ├── snmp_agent.cpp
