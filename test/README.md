@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **210 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **211 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -121,6 +121,7 @@ The native test matrix has **210 environments**, one per feature, generated from
 | `native_dnp3` | `ETWS_ENABLE_DNP3=1` | `test_dnp3` | DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame builder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking parser. |
 | `native_dns_resolver` | `ETWS_ENABLE_DNS_RESOLVER=1` | `test_dns_resolver` | DNS resolver answer classifier/verifier (services/dns_resolver): host-tested; the lwIP resolve is ESP32-only. |
 | `native_dns_server` | `ETWS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
+| `native_docstore` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1`, `ETWS_ENABLE_DOCSTORE=1` | `test_docstore` | Local JSON document store on the WAL (services/docstore): JSON documents addressed by id, stored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field equals a ... |
 | `native_dshot` | `ETWS_ENABLE_DSHOT=1` | `test_dshot` | DShot ESC throttle codec (services/dshot): the 16-bit frame (11-bit value + telemetry + 4-bit nibble-xor CRC), the bidirectional inverted-CRC variant, decode/validate, and per-rate bit timing. |
 | `native_enip` | `ETWS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `ETWS_ENABLE_ENOCEAN=1`, `ETWS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
@@ -500,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2732 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2737 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6561,6 +6562,77 @@ A thorough directory of all **2732 test cases** across **232 suites**. Expand a 
     * **Objective**: Dns begin host stub
     * **Assertions**:
       * <code>Assert false (dns_server_begin())</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_docstore (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_get_del</b> &mdash; <i>Replace u1's document.</i></summary>
+
+    * **Objective**: Replace u1's document.
+    * **Assertions**:
+      * <code>Assert true (put_doc("u1", "{\\"name\\":\\"alice\\",\\"age\\":30,\\"admin\\":true}"))</code>
+      * <code>Assert true (put_doc("u2", "{\\"name\\":\\"bob\\",\\"age\\":25,\\"admin\\":false}"))</code>
+      * <code>Assert true (get_eq("u1", "{\\"name\\":\\"alice\\",\\"age\\":30,\\"admin\\":true}"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_count(&g_ds));</code>
+      * <code>Assert true (detws_docstore_del(&g_ds, "u2", 2))</code>
+      * <code>Assert false (detws_docstore_contains(&g_ds, "u2", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_count(&g_ds));</code>
+      * <code>Assert true (put_doc("u1", "{\\"name\\":\\"alice2\\",\\"age\\":31}"))</code>
+      * <code>Assert true (get_eq("u1", "{\\"name\\":\\"alice2\\",\\"age\\":31}"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_by_field</b> &mdash; <i>String field.</i></summary>
+
+    * **Objective**: String field.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, m);</code>
+      * <code>Assert equal int (2, c.n)</code>
+      * <code>Assert true (has_id(&c, "u1"))</code>
+      * <code>Assert true (has_id(&c, "u2"))</code>
+      * <code>Assert false (has_id(&c, "u3"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, m);</code>
+      * <code>Assert true (has_id(&c2, "u1"))</code>
+      * <code>Assert true (has_id(&c2, "u2"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, m);</code>
+      * <code>Assert equal int (0, c3.n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_bool</b> &mdash; <i>Find bool</i></summary>
+
+    * **Objective**: Find bool
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, m);</code>
+      * <code>Assert true (has_id(&c, "a"))</code>
+      * <code>Assert true (has_id(&c, "c"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_persist_and_query_across_reboot</b> &mdash; <i>The field index (JSON scan) works after a remount too.</i></summary>
+
+    * **Objective**: The field index (JSON scan) works after a remount too.
+    * **Assertions**:
+      * <code>Assert true (detws_docstore_sync(&g_ds))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_docstore_count(&g_ds));</code>
+      * <code>Assert true (get_eq("u2", "{\\"name\\":\\"bob\\",\\"role\\":\\"user\\"}"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, m);</code>
+      * <code>Assert true (has_id(&c, "u1"))</code>
+      * <code>Assert true (has_id(&c, "u3"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_early_stop</b> &mdash; <i>A callback that stops after the first match sees exactly one.</i></summary>
+
+    * **Objective**: A callback that stops after the first match sees exactly one.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, m);</code>
+      * <code>Assert equal int (1, once.seen)</code>
   </details>
 
 </details>

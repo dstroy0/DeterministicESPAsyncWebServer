@@ -245,4 +245,19 @@ bool detws_dbm_sync(DetwsDbm *db)
     return wal_store_checkpoint(db->wal);
 }
 
+uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
+{
+    uint32_t visited = 0;
+    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    {
+        DetwsDbmSlot *s = &db->slots[i];
+        if (s->state != 1)
+            continue;
+        visited++;
+        if (cb && !cb(s->key, s->key_len, ctx))
+            break;
+    }
+    return visited;
+}
+
 #endif // DETWS_ENABLE_DBM

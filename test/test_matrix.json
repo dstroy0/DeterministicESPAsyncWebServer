@@ -13,6 +13,18 @@
       "src": ["+<services/wal/wal.cpp>", "+<services/wal/wal_store.cpp>", "+<services/dbm/dbm.cpp>"],
       "tests": ["test_dbm"]
     },
+    "native_docstore": {
+      "desc": "Local JSON document store on the WAL (services/docstore): JSON documents addressed by id,\nstored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field\nequals a value) via the zero-heap JSON reader. Pure host tests over a RAM-backed WalDev, incl.\nput/get/delete, string/int/bool field finds, persistence + query across a remount, and early stop.",
+      "flags": ["-DDETWS_ENABLE_WAL=1", "-DDETWS_ENABLE_DBM=1", "-DDETWS_ENABLE_DOCSTORE=1"],
+      "src": [
+        "+<services/wal/wal.cpp>",
+        "+<services/wal/wal_store.cpp>",
+        "+<services/dbm/dbm.cpp>",
+        "+<services/docstore/docstore.cpp>",
+        "+<network_drivers/presentation/json/json.cpp>"
+      ],
+      "tests": ["test_docstore"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

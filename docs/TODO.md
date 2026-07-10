@@ -87,15 +87,18 @@ layer built first, then the store codecs on top. Substrate before stores.
       any page source via a reader callback: RAM, wal_fs, fs::FS). Host-tested against real sqlite3-CLI
       files (11 cases): the `sqlite_schema` row column-by-column and a full scan of a 40-row, 2-level
       b-tree. **Remaining:** follow overflow-page chains for large payloads, then a bounded writer.
-- [~] **nosql (both)**: the user wants a NoSQL **wire client** and a **local on-flash store**.
+- [x] **nosql (both)**: _(done)_ a NoSQL **wire client** and a **local on-flash store**.
   - [x] **wire client**: a Redis **RESP** codec _(done)_ - `DETWS_ENABLE_REDIS` (services/redis_resp)
         extended from RESP2 to full RESP2/RESP3 (null / boolean / double / big number / bulk error /
         verbatim / map / set / push); streaming cursor decoder, no heap. Host-tested against Redis spec
         vectors (14 cases) and **verified live against a real redis-server 8.0.2** (SET/GET, nil, DEL,
         RPUSH/LRANGE array, HELLO 3 RESP3 map, INCRBYFLOAT - all pass). MongoDB OP_MSG/BSON is a
         possible later addition.
-  - [ ] **local store**: a JSON **document store on the WAL** - keyed documents (put/get/delete by id)
-        plus a simple field-equality scan, distinct from dbm's opaque-value KV. Zero-heap, bounded.
+  - [x] **local store**: a JSON **document store on the WAL** _(done)_ - `DETWS_ENABLE_DOCSTORE`
+        (services/docstore): JSON documents by id via dbm, plus top-level field queries
+        (`find_str`/`_int`/`_bool`) over the live docs using the zero-heap JSON reader; distinct from
+        dbm's opaque-value KV. Added `detws_dbm_iterate` to power the scan. Host-tested 5 cases (finds,
+        persistence + query across a remount, early stop). Zero-heap, bounded.
 
 ### Performance
 

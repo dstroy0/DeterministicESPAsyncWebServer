@@ -238,6 +238,12 @@ Opt-in DNS resolver with answer verification. Default off. services/dns_resolver
 
 Authoritative DNS server on UDP/53. Default off. services/dns_server answers A/IN queries from a small fixed table of `name -> IPv4` records you register with `dns_server_add()`, so devices on an offline / air-gapped LAN can use names (`printer.lan`) instead of raw IPs - a companion to the NTP server for self-hosted infrastructure. It parses the question, looks the name up case-insensitively, and on a hit appends one answer record using DNS name compression (a 2-byte pointer back to the question); an unknown name returns NXDOMAIN and non-A queries return no answer. The response builder (`dns_server_build_response`) is pure and host-tested against the wire format; the binding is the transport UDP service. Zero heap. This is a general resolver, distinct from the provisioning captive-portal DNS (which points every name at the softAP) - do not enable both. Example 60.DnsServer. See src/services/dns_server/dns_server.h.
 
+## Document Store
+
+`DETWS_ENABLE_DOCSTORE`
+
+Local JSON document store on the write-ahead log (services/docstore; requires DBM + WAL). Default off. A small NoSQL document store: JSON documents addressed by an id, kept durably on the WAL. It is a thin layer over dbm (the id is the key, the JSON body is the value), so it inherits dbm's zero-heap index, WAL persistence, and crash recovery; what it adds is the document capability - top-level field queries (`detws_docstore_find_str` / `_find_int` / `_find_bool` scan the live documents and match those whose JSON field equals a value, like a small `find({field: value})`) using the zero-heap JSON reader. put/get/delete forward to dbm; writes are batched and made durable by a checkpoint. Ids are bounded by DETWS_DBM_KEY_MAX, bodies by DETWS_DBM_VAL_MAX. Pure and host-tested over a RAM-backed device (put/get/delete, string/int/bool field finds, persistence and query across a remount, and early-stop). See src/services/docstore/docstore.h.
+
 ## DShot
 
 `DETWS_ENABLE_DSHOT`

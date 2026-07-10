@@ -2850,6 +2850,21 @@
 #endif
 
 /**
+ * @brief Opt-in local JSON document store on the WAL (DETWS_ENABLE_DOCSTORE, requires DBM + WAL).
+ *
+ * services/docstore is a small NoSQL document store: JSON documents addressed by an id, kept durably on
+ * the write-ahead log. It is a thin layer over dbm (id = key, JSON body = value) and adds the document
+ * capability - top-level field queries (find documents whose JSON field equals a value) via the zero-heap
+ * JSON reader. Ids are bounded by DETWS_DBM_KEY_MAX, bodies by DETWS_DBM_VAL_MAX. Default off.
+ */
+#ifndef DETWS_ENABLE_DOCSTORE
+#define DETWS_ENABLE_DOCSTORE 0
+#endif
+#ifndef DETWS_DOCSTORE_FIELD_MAX
+#define DETWS_DOCSTORE_FIELD_MAX 128 // largest string field value a find can compare
+#endif
+
+/**
  * @brief Opt-in SQLite3 on-disk file-format reader (DETWS_ENABLE_SQLITE).
  *
  * services/sqlite parses the documented SQLite database file structure by hand - the 100-byte database

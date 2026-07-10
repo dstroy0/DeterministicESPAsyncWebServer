@@ -206,6 +206,7 @@
     "DMAX",
     "DNAT",
     "DNET",
+    "DOCSTORE",
     "DogStatsD",
     "donna",
     "Dont",
