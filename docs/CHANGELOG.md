@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.80.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.80.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`84e7237`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84e72378e8f304fc9f82692ee882da42f68f18c4))
+
+### Changes
+
+- Bump version: 5.79.0 → 5.80.0 ([`09d72ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09d72ecce01f4de809607d38294d66ae5c4a6a57))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1d4c041`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d4c0419d1197c34da85214fa0839e0206c982a5))
+
+### Features
+
+- policy routing (route-by-tag to an egress interface) ([`607129e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/607129e6b14ca17ad3631208b8da8973c45fb99f))
+
+</details>
+
 ## [5.79.0] - 2026-07-10
 
 <details>
