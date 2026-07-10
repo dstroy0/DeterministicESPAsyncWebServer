@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2818 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2819 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -15843,7 +15843,7 @@ A thorough directory of all **2818 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_multipart (19 tests)</b></summary>
+<summary><b>test_multipart (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_no_content_type_returns_false</b> &mdash; <i>Craft a request with no Content-Type</i></summary>
@@ -16036,6 +16036,19 @@ A thorough directory of all **2818 test cases** across **236 suites**. Expand a 
       * <code>Assert not null message (v, "field not found")</code>
       * <code>Assert equal string message ("found_it", v, "wrong value")</code>
       * <code>Assert null message (multipart_get_field(&mp, "missing"), "expected null")</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_binary_part_not_truncated</b> &mdash; <i>Binary part not truncated</i></summary>
+
+    * **Objective**: Binary part not truncated
+    * **Assertions**:
+      * <code>Assert true (multipart_parse(req, &mp))</code>
+      * <code>Assert equal int (1, mp.part_count)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(plen, mp.parts[0].data_len);      // full length, not truncated at NUL / --BND</code>
+      * <code>Assert equal memory (payload, mp.parts[0].data, plen)</code>
+      * <code>Assert not null (mp.parts[0].filename)</code>
+      * <code>Assert equal string ("a.png", mp.parts[0].filename)</code>
   </details>
 
 </details>
