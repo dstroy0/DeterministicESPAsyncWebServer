@@ -646,6 +646,7 @@ src/
 │   ├── hostlink/  (hostlink.h, hostlink.cpp)
 │   ├── http_client/  (http_client.h, http_client.cpp)
 │   ├── http_delivery/  (http_delivery.h, http_delivery.cpp)
+│   ├── httpcache/  (httpcache.h, httpcache.cpp)
 │   ├── hw_health/  (hw_health.h, hw_health.cpp)
 │   ├── iccp/  (iccp.h, iccp.cpp)
 │   ├── iec60870/  (iec60870.h, iec60870.cpp)
@@ -877,7 +878,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 750,685 | 66,352 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 750,729 | 66,352 |
 | `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 750,849 | 66,352 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 750,893 | 66,352 |
 | `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 750,969 | 66,352 |
 | `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,025 | 66,800 |
 | `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,065 | 66,392 |
@@ -900,6 +900,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/33.Csrf` | 752,109 | 66,400 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 752,165 | 69,480 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,321 | 66,352 |
+| `DIAG` | `Foundation/05.Configuration` | 752,373 | 63,104 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 752,457 | 66,632 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 752,489 | 66,392 |
 | `STATS` | `L7-Application/22.Stats` | 752,541 | 66,448 |
@@ -1083,6 +1084,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
 | `DETWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
 | `DETWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first. |
+| `DETWS_ENABLE_HTTP_CACHE` | `0` | Opt-in HTTP Cache-Control directive helpers. |
 | `DETWS_ENABLE_HTTP_CLIENT` | `0` | Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). |
 | `DETWS_ENABLE_HTTP_CLIENT_TLS` | `0` | HTTPS client support inside the HTTP client (needs DETWS_ENABLE_TLS). |
 | `DETWS_ENABLE_HTTP_DELIVERY` | `0` | Opt-in HTTP delivery optimizations. |
