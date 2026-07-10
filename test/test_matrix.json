@@ -914,7 +914,10 @@
         "-DDETWS_ENABLE_SQLITE=1",
         "-DDETWS_ENABLE_REDIS=1",
         "-DDETWS_ENABLE_OPCUA=1",
-        "-DDETWS_ENABLE_GRAPHQL=1"
+        "-DDETWS_ENABLE_GRAPHQL=1",
+        "-DDETWS_ENABLE_DNS_SERVER=1",
+        "-DDETWS_ENABLE_DNP3=1",
+        "-DDETWS_ENABLE_STOMP=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -935,7 +938,10 @@
         "+<services/sqlite/sqlite_format.cpp>",
         "+<services/redis_resp.cpp>",
         "+<services/opcua/opcua.cpp>",
-        "+<services/graphql/graphql.cpp>"
+        "+<services/graphql/graphql.cpp>",
+        "+<services/dns_server/dns_server.cpp>",
+        "+<services/dnp3/dnp3.cpp>",
+        "+<services/stomp.cpp>"
       ],
       "tests": ["test_pentest"]
     },

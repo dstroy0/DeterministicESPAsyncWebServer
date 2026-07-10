@@ -189,8 +189,10 @@ Let the device act as a caching edge / content-distribution node, not just an or
       length prefixes that must not become an over-read), and the **OPC UA Binary parsers** (random bodies
       behind a valid UACP header, an `OPN` with a lying `SecurityPolicyUri` length, per-type size mismatches;
       the NodesToRead/Write/Browse counts stay clamped), the **number parsers** (`det_strtol`/`_strtoul`/
-      `_strtof` on huge integer + exponent strings), and the **GraphQL query parser** (huge int / exponent
-      literals) - **35/35** cases pass plain and clean under ASan+UBSan (run the built `program` directly; the
+      `_strtof` on huge integer + exponent strings), the **GraphQL query parser** (huge int / exponent
+      literals), the **DNS server** query parse (QNAME over-read + response-builder out_cap), the **DNP3**
+      data-link frame, and the **STOMP** frame parser (slice-bounds) - **38/38** cases pass plain and clean under
+      ASan+UBSan (run the built `program` directly; the
       PIO runner mishandles the sanitizer binary's signals). Running the binary under `-fno-sanitize-recover=all`
       **found and fixed a whole class of signed-overflow UB + `10^exponent` DoS** in the hand-rolled number
       parsers (SNMP BER, `det_strtol`, RESP, `det_strtof`, GraphQL, JWT, exc_decoder - see docs/BUGS.md; sweep
