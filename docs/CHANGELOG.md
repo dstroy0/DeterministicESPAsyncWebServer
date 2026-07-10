@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`05b945a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05b945a387e74b927f1f2b520268aa2ce915b6f7))
 - update CHANGELOG.md [skip ci] ([`400b38b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400b38b674427674065a58077122ed0579cf41e7))
 - update CHANGELOG.md [skip ci] ([`216ff40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/216ff4062f9bd2e2cba0f5315db5ab218316e1aa))
 - update CHANGELOG.md [skip ci] ([`e860e23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e860e23931dac392550d7d8885bcaed65aab1dff))
@@ -14,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- re-sort EXAMPLES.md L5 example order (generator drift) ([`fbc180b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbc180b89142dbb6f2f47b5be4f01d7fdb322495))
+- update ESP32 build footprints [skip ci] ([`b26a698`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b26a698b35398eff9474d4a4842801e221eb931b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eecc977`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eecc9776723c91320c059e7411a15b3cc49ab9e1))
 - update ESP32 build footprints [skip ci] ([`38f8589`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38f8589e48fc43960bedfa20f6e67c40ba450e71))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f8283eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8283eb09b902d9f003ac272e55b731d637c51ac))
