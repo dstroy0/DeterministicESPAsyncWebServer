@@ -6,12 +6,17 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`61ead80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61ead8041b4b4da2468a030857cbf8b52f7e36f7))
 - update CHANGELOG.md [skip ci] ([`42609a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42609a77c2e7372745527facc2a0fffa77868185))
 
 ### Documentation
 
 - add content delivery network (CDN) capability ([`70f25ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70f25efb045923a32155d89f9d3c5584931f1ad1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7613744`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76137445a8282294a9e6c5c3081896bf988945da))
+
+### Testing
+
+- cover writer serial-type widths + overflow robustness ([`7e58743`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e587432f4d7d45af136448ff4d420a42f280750))
 
 ## [5.76.0] - 2026-07-10
 
