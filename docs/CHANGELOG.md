@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`20d96e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20d96e06b69f6d11a8d87d25bccd37ff3d6e4f02))
+- update CHANGELOG.md [skip ci] ([`c6debcf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6debcfc26900746350874a94ebfa296d9cfad6e))
+
+### Performance
+
+- hand-rolled RESP length prefix (~6x faster encode on-device) ([`0665f32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0665f328d8f237ad2f65250530ac3cf88f6bd3cd))
+
 ## [5.73.1] - 2026-07-10
 
 <details>
