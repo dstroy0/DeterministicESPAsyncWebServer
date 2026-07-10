@@ -731,7 +731,9 @@ src/
 │   │   ├── smb2.cpp
 │   │   ├── smb2.h
 │   │   ├── smb_md.cpp
-│   │   └── smb_md.h
+│   │   ├── smb_md.h
+│   │   ├── spnego.cpp
+│   │   └── spnego.h
 │   ├── smtp/  (smtp.h, smtp.cpp)
 │   ├── snmp/
 │   │   ├── snmp_agent.cpp
