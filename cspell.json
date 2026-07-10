@@ -803,6 +803,7 @@
     "Renesas",
     "reparsed",
     "reqlen",
+    "reqpath",
     "resourcetype",
     "RESP_HDR_BUF_SIZE",
     "retransmittable",

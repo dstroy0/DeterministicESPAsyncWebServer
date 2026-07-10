@@ -153,11 +153,48 @@ Notes:
 - MTConnect builds a ~2.5 KB XML document (header + 20 observations) end to end in ~278 us on the device
   (~8.9 MB/s of document assembly) - the zero-heap writer holds up well on hardware.
 
-## 3. Request-path and protocol benchmarks
+## 3. Request-path benchmarks
 
-_To be added: HTTP request parse, JSON encode/decode throughput, a chunked/file send-pump pass, an SSH
-KEX, a TLS handshake time, and per-protocol codec encode/decode rates - each host-baselined here and
-then measured on the ESP32-S3._
+The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
+writer / reader (`perf/bench_reqpath.cpp` on the host, the same ops in an on-device firmware for the
+ESP32-S3 column). Host = Raspberry Pi 5 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real
+device at 240 MHz, timed over in-RAM buffers so this is pure compute, not socket I/O. Byte counts: the GET
+request is ~220 bytes over 6 headers, the POST is ~150 bytes with a 50-byte JSON body, the encoded doc is
+96 bytes, the decoded body is 50 bytes.
+
+| Feature    | Operation              | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
+| ---------- | ---------------------- | ---------: | --------: | -------------: | ------------: |
+| http_parse | GET (6 headers)        |     1819.6 |     122.6 |         84.969 |           2.6 |
+| http_parse | POST + JSON body       |     1110.1 |     138.7 |         56.076 |           2.7 |
+| json       | encode (8 fields, 96B) |      675.6 |     142.1 |         49.693 |           1.9 |
+| json       | decode (4 fields)      |      263.6 |     189.7 |         19.765 |           2.5 |
+
+Notes:
+
+- **The whole request path is cheap next to the network.** On the device a full browser GET parses in
+  ~85 us, a POST with a JSON body in ~56 us, and a typical telemetry response object encodes in ~50 us. So
+  a complete parse -> build-JSON round trip is on the order of **~135 us of CPU** - the device can turn over
+  ~7000 simple JSON request/responses per second of pure compute, far more than a 1-2-client embedded server
+  ever needs. Real request latency is dominated by the TCP round trip and (when enabled) the TLS handshake,
+  not by parsing or JSON. **No optimization was warranted here** (unlike the base64 and CRC findings in
+  sections 2 and 4), which is itself the useful result: the request path is not the bottleneck.
+- **The parser is byte-at-a-time by design.** `http_parser_feed()` is a pure per-byte state machine with no
+  look-ahead or buffering, so its cost scales with request length (~0.4 us/byte on the device) and it can
+  consume bytes exactly as they arrive off the socket - the parse overlaps the network read instead of
+  waiting for a whole request. That streaming design is why a ~220-byte GET costs more than a ~150-byte POST
+  here even though the POST carries a body.
+- **JSON throughput is ample.** The zero-heap writer emits a 96-byte object in ~50 us (~1.9 MB/s) and each
+  top-level field read re-scans the body (~5 us/field on the device); four reads over a 50-byte body is
+  ~20 us. Re-scanning per field is O(n) in the body, so for a large body with many reads a single parse pass
+  would win - but for the flat IoT shapes this reader targets (a handful of fields in a sub-1-KB body) it is
+  already well under any flash or network cost.
+- Host is ~35-45x faster than the device across the board, the expected ratio for a 2.4 GHz A76 vs a 240 MHz
+  Xtensa LX7, and the two tracked each other with no surprises - nothing on the request path behaved
+  differently on hardware than the host predicted.
+
+_Still to add:_ the TLS handshake and SSH KEX wall-clock (one-time per-connection costs, dominated by the
+mbedTLS RSA/ECDHE math - the ~7 KB modexp stack cost is already characterized in docs/TODO.md; a full
+end-to-end handshake bench needs the PSRAM TLS build) and a chunked / file send-pump pass.
 
 ## 4. Embedded data-store stack
 
