@@ -423,7 +423,7 @@
     "example": "L7-Application/47.RadioPower",
     "flags": "-DDETWS_ENABLE_RADIO_POWER=1 -DDETWS_RADIO_WIFI_PS=1",
     "board": "esp32dev",
-    "flash_bytes": 751161,
+    "flash_bytes": 751209,
     "ram_bytes": 66352
   },
   "RANGE": {
