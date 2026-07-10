@@ -220,11 +220,11 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
             L.p++;
         }
         bool any = false, is_float = false;
-        long long ipart = 0;
+        unsigned long long ipart = 0; // accumulate unsigned: signed overflow on a huge literal is UB
         double fval = 0.0;
         while (L.p < L.e && *L.p >= '0' && *L.p <= '9')
         {
-            ipart = ipart * 10 + (*L.p - '0');
+            ipart = ipart * 10ull + (unsigned)(*L.p - '0');
             L.p++;
             any = true;
         }
@@ -251,7 +251,11 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
                 eneg = (*L.p++ == '-');
             int ex = 0;
             while (L.p < L.e && *L.p >= '0' && *L.p <= '9')
-                ex = ex * 10 + (*L.p++ - '0');
+            {
+                if (ex < 400) // clamp: 10^400 overflows the double to inf, and bounds the loop below
+                    ex = ex * 10 + (*L.p - '0');
+                L.p++;
+            }
             double m = 1.0;
             for (int k = 0; k < ex; k++)
                 m *= 10.0;

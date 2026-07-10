@@ -181,10 +181,10 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     }
     if (*p < '0' || *p > '9')
         return false;
-    long v = 0;
+    unsigned long v = 0; // accumulate unsigned: signed overflow (a huge claim value) is UB
     while (*p >= '0' && *p <= '9')
-        v = v * 10 + (*p++ - '0');
-    *out = neg ? -v : v;
+        v = v * 10UL + (unsigned long)(*p++ - '0');
+    *out = neg ? (long)(0UL - v) : (long)v; // two's-complement reinterpret, no negation UB
     return true;
 }
 

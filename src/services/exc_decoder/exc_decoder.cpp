@@ -143,7 +143,8 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
             int n = 0;
             while (*p >= '0' && *p <= '9')
             {
-                n = n * 10 + (*p - '0');
+                if (n < 100000) // clamp: a core id is tiny; avoid signed-overflow UB on a huge number
+                    n = n * 10 + (*p - '0');
                 p++;
             }
             out->core = n;

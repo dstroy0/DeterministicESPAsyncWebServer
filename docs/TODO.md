@@ -188,12 +188,14 @@ Let the device act as a caching edge / content-distribution node, not just an or
       structure-aware mutation of a valid image), the **Redis RESP decoder** (random bytes + lying `$`/`*`
       length prefixes that must not become an over-read), and the **OPC UA Binary parsers** (random bodies
       behind a valid UACP header, an `OPN` with a lying `SecurityPolicyUri` length, per-type size mismatches;
-      the NodesToRead/Write/Browse counts stay clamped) - **33/33** cases pass plain and clean under ASan+UBSan
-      (run the built `program` directly; the PIO runner mishandles the sanitizer binary's signals). Adding the
-      OPC UA target + running the binary under `-fno-sanitize-recover=all` **found and fixed three latent
-      signed-overflow UBs** in the shared number parsers (SNMP BER, `det_strtol`, RESP - see docs/BUGS.md).
-      _Next candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the transport/session mocks
-      wired into the env since it dispatches on frame-ready), and the WebDAV binary decoder.
+      the NodesToRead/Write/Browse counts stay clamped), the **number parsers** (`det_strtol`/`_strtoul`/
+      `_strtof` on huge integer + exponent strings), and the **GraphQL query parser** (huge int / exponent
+      literals) - **35/35** cases pass plain and clean under ASan+UBSan (run the built `program` directly; the
+      PIO runner mishandles the sanitizer binary's signals). Running the binary under `-fno-sanitize-recover=all`
+      **found and fixed a whole class of signed-overflow UB + `10^exponent` DoS** in the hand-rolled number
+      parsers (SNMP BER, `det_strtol`, RESP, `det_strtof`, GraphQL, JWT, exc_decoder - see docs/BUGS.md; sweep
+      now complete). _Next candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the
+      transport/session mocks wired into the env since it dispatches on frame-ready), and the WebDAV binary decoder.
 
 ### Docs
 

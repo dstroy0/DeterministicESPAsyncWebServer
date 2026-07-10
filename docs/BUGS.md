@@ -8,6 +8,32 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Signed-overflow UB + `10^exponent` DoS in the remaining hand-rolled number parsers
+
+- **Status:** FIXED (native_pentest 35/35 clean under ASan + UBSan `-fno-sanitize-recover=all`,
+  including new `det_strtof` + GraphQL fuzz targets that feed huge exponents / integer literals;
+  native_jwt 22/22 and native_exc_decoder 7/7 clean under UBSan). Completes the sweep started by the
+  previous entry.
+- **Found:** 2026-07-10, continuing the signed-`v*10` audit. Five more sites; two carried a second,
+  worse bug: an exponent parsed into an `int` then applied as `for (k = 0; k < ex; k++) m *= 10.0` -
+  a huge exponent (e.g. GraphQL `1e999999999`) is both signed-overflow UB **and** a denial-of-service
+  (billions of iterations hang the device).
+- **Sites + fix:**
+    - `shared_primitives/numparse.h` `det_strtof` and `services/graphql/graphql.cpp` (query number
+      literal): the exponent overflowed and its `10^ex` loop was unbounded - **clamped** the exponent
+      (`if (ex < 400)` - 10^400 saturates the double to inf anyway), fixing UB + DoS. GraphQL's integer
+      literal (`long long ipart`) also overflowed - now unsigned-accumulate.
+    - `services/jwt/jwt.cpp` `jwt_claim_int` (untrusted numeric claim) and
+      `services/exc_decoder/exc_decoder.cpp` (crash-dump core id): the same signed `v*10` - fixed by
+      unsigned-accumulate + reinterpret (jwt) / clamp (exc_decoder).
+- **Not a bug:** `network_drivers/network/ip.cpp:54` matched the grep but is bounded - the
+  `if (digits >= 3) return false` guard caps the octet at 3 digits (<= 999), so `val*10` never
+  overflows. Left as-is.
+- **Lesson:** the same as the previous entry, plus: an exponent applied by a `10^ex` **loop** is a DoS
+  vector independent of the overflow - always clamp a parsed exponent to the type's real range.
+
+---
+
 ## Signed-integer-overflow UB in three untrusted-input number parsers
 
 - **Status:** FIXED (native_pentest now passes clean under ASan + UBSan with

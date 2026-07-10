@@ -98,7 +98,11 @@ inline float det_strtof(const char *s, const char **end)
             eneg = (*p++ == '-');
         int ex = 0;
         while (det_np_digit(*p))
-            ex = ex * 10 + (*p++ - '0');
+        {
+            if (ex < 400) // clamp: 10^400 overflows the double to inf, and bounds the loop below
+                ex = ex * 10 + (*p - '0');
+            p++;
+        }
         double m = 1.0;
         for (int k = 0; k < ex; k++)
             m *= 10.0;

@@ -913,7 +913,8 @@
         "-DDETWS_ENABLE_SNMP=1",
         "-DDETWS_ENABLE_SQLITE=1",
         "-DDETWS_ENABLE_REDIS=1",
-        "-DDETWS_ENABLE_OPCUA=1"
+        "-DDETWS_ENABLE_OPCUA=1",
+        "-DDETWS_ENABLE_GRAPHQL=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -933,7 +934,8 @@
         "+<network_drivers/presentation/sha1/sha1.cpp>",
         "+<services/sqlite/sqlite_format.cpp>",
         "+<services/redis_resp.cpp>",
-        "+<services/opcua/opcua.cpp>"
+        "+<services/opcua/opcua.cpp>",
+        "+<services/graphql/graphql.cpp>"
       ],
       "tests": ["test_pentest"]
     },
