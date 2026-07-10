@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9cbcf6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9cbcf6d4041b95b7824461ef4cf71629ce89041f))
 - update CHANGELOG.md [skip ci] ([`2c67db8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c67db83fca14da266e53a71816b3c48c4adac67))
 - update CHANGELOG.md [skip ci] ([`17d1062`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17d10621d5f24e5c32bce108ef22a186fc01d732))
 
@@ -15,6 +16,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- table-driven CRC-32 (~3.6x faster, the on-device write bottleneck) ([`d2b9ffe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2b9ffe9a9b477db6b5bec4c983e8c9c57c14818))
 - on-device ESP32-S3 us/op for the data-store stack ([`ef48953`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef48953f5a5da366589b2c9ecaba369e49ec72d1))
 - host CPU baseline for the WAL/dbm/docstore/sqlite/resp stack ([`eb33f37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb33f37bed1e96ded1afe5ef025d21d8070f8f1d))
 
