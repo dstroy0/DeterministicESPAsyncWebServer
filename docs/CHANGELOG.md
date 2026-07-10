@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.93.1] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.93.1 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`c3fb3aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3fb3aa6ec0183f7fa4e4a6bc09e3c4a51ac07db))
+
+### Changes
+
+- Bump version: 5.93.0 → 5.93.1 ([`d241d86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d241d867e5af312030e76f03be352710fd284e0a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2def3ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2def3add0dcb18bd1a0aaab04ae811e9be0e1c0c))
+- update ESP32 build footprints [skip ci] ([`b4ee6ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4ee6eca7f2a4d1329851aa6e05ec334cfbdbab4))
+
+### Features
+
+- det_relay_note_eof for out-of-band close signalling ([`cfc5b84`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cfc5b840847ece2df3ba0701b67f2dc189ef585f))
+
+</details>
+
 ## [5.93.0] - 2026-07-10
 
 <details>
