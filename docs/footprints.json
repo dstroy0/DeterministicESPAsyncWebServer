@@ -91,11 +91,11 @@
     "ram_bytes": 66392
   },
   "DIAG": {
-    "example": "Foundation/05.Configuration",
+    "example": "L7-Application/20.Diagnostics",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 752373,
-    "ram_bytes": 63104
+    "flash_bytes": 750893,
+    "ram_bytes": 66352
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
