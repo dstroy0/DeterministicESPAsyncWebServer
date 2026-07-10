@@ -898,7 +898,7 @@
       "tests": ["test_opcua_client"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, and the OPC UA Binary\nmessage parsers) with malformed/oversized/partial/random/mutated input and\nasserts bounded buffers + fail-closed + termination (no crash, no over-read, no\nhang). Pairs with the live driver pentesting/detws_pentest.py. See docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, and the DNC block decoder) with malformed/oversized/partial/\nrandom/mutated input and asserts bounded buffers + fail-closed + termination (no\ncrash, no over-read, no hang). Pairs with the live driver pentesting/detws_pentest.py.\nSee docs/PENTEST.md.",
       "flags": [
         "-DDETWS_ENABLE_MODBUS=1",
         "-DDETWS_ENABLE_MODBUS_MASTER=1",
@@ -917,7 +917,9 @@
         "-DDETWS_ENABLE_GRAPHQL=1",
         "-DDETWS_ENABLE_DNS_SERVER=1",
         "-DDETWS_ENABLE_DNP3=1",
-        "-DDETWS_ENABLE_STOMP=1"
+        "-DDETWS_ENABLE_STOMP=1",
+        "-DDETWS_ENABLE_SMB=1",
+        "-DDETWS_ENABLE_DNC=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -941,7 +943,13 @@
         "+<services/graphql/graphql.cpp>",
         "+<services/dns_server/dns_server.cpp>",
         "+<services/dnp3/dnp3.cpp>",
-        "+<services/stomp.cpp>"
+        "+<services/stomp.cpp>",
+        "+<services/smb/smb2.cpp>",
+        "+<services/smb/spnego.cpp>",
+        "+<services/smb/ntlmssp.cpp>",
+        "+<services/smb/ntlm.cpp>",
+        "+<services/smb/smb_md.cpp>",
+        "+<services/dnc/dnc.cpp>"
       ],
       "tests": ["test_pentest"]
     },
