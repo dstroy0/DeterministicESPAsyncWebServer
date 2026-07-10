@@ -80,8 +80,8 @@ Interactive consoles:
 
 [01.SSH](../examples/L5-Session/01.SSH) ·
 [02.SSHCryptoSelfTest](../examples/L5-Session/02.SSHCryptoSelfTest) ·
-[03.Telnet](../examples/L5-Session/03.Telnet) ·
-[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey)
+[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey) ·
+[03.Telnet](../examples/L5-Session/03.Telnet)
 
 ## L6 Presentation
 
