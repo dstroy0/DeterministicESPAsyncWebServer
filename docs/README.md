@@ -894,6 +894,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SNMP+SNMP_TRAP` | `L7-Application/26.SnmpTrap` | 728,405 | 44,928 |
 | `COAP+COAP_OBSERVE` | `L7-Application/27.CoapObserve` | 729,361 | 46,104 |
 | `ESPNOW` | `L7-Application/53.EspNow` | 731,293 | 43,576 |
+| `SMB` | `L7-Application/68.SmbFileClient` | 734,433 | 43,408 |
 | `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,473 | 63,160 |
 | `MQTT` | `L7-Application/24.MqttClient` | 736,117 | 65,320 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,065 | 46,668 |
