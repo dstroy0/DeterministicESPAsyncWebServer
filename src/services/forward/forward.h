@@ -25,6 +25,15 @@
  * drops the frame for that destination and is counted - it never blocks. Storage is
  * static (zero heap): DETWS_FWD_MAX_IFACES interfaces, DETWS_FWD_MAX_RULES rules.
  *
+ * **Policy routing** (route-by-tag): a policy route (det_forward_route_add) matches a frame by
+ * the same byte-pattern primitive as the ACL - so it keys on any field at a known offset
+ * (EtherType, IP protocol, a port, an address prefix) - and binds the match to a single
+ * **egress interface**. A matched frame is forwarded only to that interface, taking precedence
+ * over the src->dst fan-out (first matching route wins); if no policy route matches, the normal
+ * rules apply. This is policy-based routing layered on the plane: tagged traffic leaves a chosen
+ * NIC / radio. The ingress ACL still runs first, and the same rate-cap / never-reflect /
+ * fail-closed guarantees apply to the chosen egress.
+ *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
  */
@@ -69,12 +78,13 @@ typedef bool (*det_if_send_fn)(uint8_t if_id, const uint8_t *data, uint16_t len,
 /** @brief Forwarding counters (monotonic since the last det_forward_reset()). */
 struct det_forward_stats
 {
-    uint32_t frames_in;    ///< ingress calls
-    uint32_t forwarded;    ///< destination sends that succeeded
-    uint32_t blocked;      ///< destinations refused by a DENY / default-deny
-    uint32_t rate_dropped; ///< destinations dropped by a rate cap
-    uint32_t send_fail;    ///< destination send callbacks that returned false
-    uint32_t acl_denied;   ///< frames dropped at ingress by the access-control list
+    uint32_t frames_in;     ///< ingress calls
+    uint32_t forwarded;     ///< destination sends that succeeded
+    uint32_t blocked;       ///< destinations refused by a DENY / default-deny
+    uint32_t rate_dropped;  ///< destinations dropped by a rate cap
+    uint32_t send_fail;     ///< destination send callbacks that returned false
+    uint32_t acl_denied;    ///< frames dropped at ingress by the access-control list
+    uint32_t policy_routed; ///< frames that matched a policy route (routed to its chosen egress)
 };
 
 /** @brief Clear all interfaces, rules, and stats (start from empty). */
@@ -114,6 +124,23 @@ void det_forward_acl_set_default(uint8_t action);
  */
 bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
                          uint8_t action);
+
+/**
+ * @brief Add a policy route: a frame matching this byte pattern is forwarded only to
+ *        @p egress_if, taking precedence over the src->dst rules (first matching route wins).
+ *
+ * The match is the same offset/pattern/mask primitive as the ACL (each `byte & mask == pattern`
+ * at `[offset, offset + patlen)`), keyed on frames from @p src_if or DET_FWD_IF_ANY; @p patlen 0
+ * matches any content (a default route). On a match the frame goes only to @p egress_if -
+ * subject to the same guarantees as a rule: never reflected to the source, dropped (counted) if
+ * @p egress_if is not registered, if @p rate_cap_per_sec (0 = unlimited) is exceeded, or if the
+ * egress send fails. A matched route ends the decision (the normal fan-out is skipped).
+ *
+ * @return true; false if @p patlen exceeds DETWS_FWD_ACL_PATLEN, a non-zero @p patlen has a null
+ *         pattern/mask, or the table is full (DETWS_FWD_MAX_ROUTES).
+ */
+bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+                           uint8_t egress_if, uint16_t rate_cap_per_sec);
 
 /**
  * @brief Forward a frame that arrived on @p src_if to every allowed destination.

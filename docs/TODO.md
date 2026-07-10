@@ -166,7 +166,7 @@ Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and 
 
 Building on the existing forwarder (`native_forward` / `native_gateway` / `native_southbound`) toward the v5 "interface forwarding" milestone.
 
-- [ ] Route-by-tag to interface: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder.
+- [x] Route-by-tag to interface _(done)_: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder. `det_forward_route_add(src, offset, pattern, mask, patlen, egress_if, rate_cap)` (services/forward): a frame matching the byte pattern (the same offset/mask primitive as the ACL, so it keys on EtherType / IP-proto / port / address-prefix - any field at a known offset) is forwarded only to `egress_if`, taking precedence over the src->dst fan-out (first-match-wins), with the same never-reflect / rate-cap / fail-closed guarantees and a `policy_routed` stat. Static table `DETWS_FWD_MAX_ROUTES`; additive (empty by default = no behavior change). `native_forward` +7 cases (23 total).
 - [ ] Port forwarding: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it.
 - [ ] Optional packet inspection: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle.
 

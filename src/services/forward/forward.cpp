@@ -54,6 +54,21 @@ struct acl_entry
     bool used;
 };
 
+// A policy route: match a frame by byte pattern (as the ACL does) and bind it to one egress.
+struct route
+{
+    uint32_t window_start; // ms of the current rate window
+    uint8_t pattern[DETWS_FWD_ACL_PATLEN];
+    uint8_t mask[DETWS_FWD_ACL_PATLEN];
+    uint16_t offset;
+    uint16_t rate_cap; // frames per second to the egress (0 = unlimited)
+    uint16_t count;    // frames routed in the current window
+    uint8_t src;       // source interface, or DET_FWD_IF_ANY
+    uint8_t patlen;    // 0 = match any content
+    uint8_t egress;    // egress interface id
+    bool used;
+};
+
 // All forwarding-plane state, owned by one instance (internal linkage): interfaces,
 // rules, ACL, and stats grouped so it is one named owner, unreachable cross-TU.
 struct ForwardCtx
@@ -61,6 +76,7 @@ struct ForwardCtx
     iface if_[DETWS_FWD_MAX_IFACES];
     rule rules[DETWS_FWD_MAX_RULES];
     acl_entry acl[DETWS_FWD_MAX_ACL];
+    route routes[DETWS_FWD_MAX_ROUTES];
     uint8_t acl_default = DET_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
     det_forward_stats stats;
 #ifndef ARDUINO
@@ -121,36 +137,49 @@ resolve_result resolve(const ForwardCtx &f, uint8_t src, uint8_t dst, int *allow
 }
 
 // Fixed 1-second window rate cap; fail-closed (returns true = drop) once the cap is hit.
-bool rate_exceeded(rule *r)
+// Shared by the src->dst rules and the policy routes (same window bookkeeping fields).
+bool rate_gate(uint32_t &window_start, uint16_t &count, uint16_t rate_cap)
 {
-    if (r->rate_cap == 0)
+    if (rate_cap == 0)
         return false; // unlimited
     uint32_t now = fwd_now();
-    if ((uint32_t)(now - r->window_start) >= 1000)
+    if ((uint32_t)(now - window_start) >= 1000)
     {
-        r->window_start = now;
-        r->count = 0;
+        window_start = now;
+        count = 0;
     }
-    if (r->count >= r->rate_cap)
+    if (count >= rate_cap)
         return true;
-    r->count++;
+    count++;
     return false;
 }
 
-// Does an ACL entry match this frame? (interface + byte pattern under mask). A frame too
-// short for the pattern does not match, so evaluation falls through to the next entry.
+bool rate_exceeded(rule *r)
+{
+    return rate_gate(r->window_start, r->count, r->rate_cap);
+}
+
+// Does a stored byte pattern match this frame? (already-masked @p pattern under @p mask at
+// @p offset). @p patlen 0 matches any content; a frame too short for the pattern does not match.
+bool pat_match(uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen, const uint8_t *data,
+               uint16_t len)
+{
+    if (patlen == 0)
+        return true;
+    if ((uint32_t)offset + patlen > len)
+        return false;
+    for (uint8_t i = 0; i < patlen; i++)
+        if ((data[offset + i] & mask[i]) != pattern[i])
+            return false;
+    return true;
+}
+
+// Does an ACL entry match this frame? (interface + byte pattern under mask).
 bool acl_match(const acl_entry *a, uint8_t src, const uint8_t *data, uint16_t len)
 {
     if (a->src != DET_FWD_IF_ANY && a->src != src)
         return false;
-    if (a->patlen == 0)
-        return true; // interface-only entry, any content
-    if ((uint32_t)a->offset + a->patlen > len)
-        return false;
-    for (uint8_t i = 0; i < a->patlen; i++)
-        if ((data[a->offset + i] & a->mask[i]) != a->pattern[i])
-            return false;
-    return true;
+    return pat_match(a->offset, a->pattern, a->mask, a->patlen, data, len);
 }
 
 // Ingress ACL: the first matching entry's action decides; otherwise the default.
@@ -168,6 +197,7 @@ void det_forward_reset(void)
     memset(s_fwd.if_, 0, sizeof(s_fwd.if_));
     memset(s_fwd.rules, 0, sizeof(s_fwd.rules));
     memset(s_fwd.acl, 0, sizeof(s_fwd.acl));
+    memset(s_fwd.routes, 0, sizeof(s_fwd.routes));
     s_fwd.acl_default = DET_FWD_ALLOW;
     memset(&s_fwd.stats, 0, sizeof(s_fwd.stats));
 }
@@ -198,6 +228,35 @@ bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern
         s_fwd.acl[i].patlen = patlen;
         s_fwd.acl[i].action = action;
         s_fwd.acl[i].used = true;
+        return true;
+    }
+    return false; // table full
+}
+
+bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+                           uint8_t egress_if, uint16_t rate_cap_per_sec)
+{
+    if (patlen > DETWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
+        return false;
+    for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
+    {
+        if (s_fwd.routes[i].used)
+            continue;
+        memset(s_fwd.routes[i].pattern, 0, sizeof(s_fwd.routes[i].pattern));
+        memset(s_fwd.routes[i].mask, 0, sizeof(s_fwd.routes[i].mask));
+        for (uint8_t k = 0; k < patlen; k++)
+        {
+            s_fwd.routes[i].pattern[k] = (uint8_t)(pattern[k] & mask[k]); // store already masked
+            s_fwd.routes[i].mask[k] = mask[k];
+        }
+        s_fwd.routes[i].window_start = 0;
+        s_fwd.routes[i].offset = offset;
+        s_fwd.routes[i].rate_cap = rate_cap_per_sec;
+        s_fwd.routes[i].count = 0;
+        s_fwd.routes[i].src = src_if;
+        s_fwd.routes[i].patlen = patlen;
+        s_fwd.routes[i].egress = egress_if;
+        s_fwd.routes[i].used = true;
         return true;
     }
     return false; // table full
@@ -245,6 +304,37 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
     if (!acl_permits(s_fwd, src_if, data, len)) // ingress ACL runs before any forwarding rule
     {
         s_fwd.stats.acl_denied++;
+        return 0;
+    }
+    // Policy routes take precedence over the src->dst fan-out: the first matching route sends
+    // the frame only to its chosen egress and ends the decision (same guarantees as a rule).
+    for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
+    {
+        route &rt = s_fwd.routes[i];
+        if (!rt.used || (rt.src != DET_FWD_IF_ANY && rt.src != src_if))
+            continue;
+        if (!pat_match(rt.offset, rt.pattern, rt.mask, rt.patlen, data, len))
+            continue;
+        s_fwd.stats.policy_routed++;
+        if (rt.egress == src_if) // never reflect to the source interface
+            return 0;
+        const iface *out = find_if(s_fwd, rt.egress);
+        if (!out) // egress not registered -> drop, fail-closed
+        {
+            s_fwd.stats.send_fail++;
+            return 0;
+        }
+        if (rate_gate(rt.window_start, rt.count, rt.rate_cap))
+        {
+            s_fwd.stats.rate_dropped++;
+            return 0;
+        }
+        if (out->send(out->id, data, len, out->ctx))
+        {
+            s_fwd.stats.forwarded++;
+            return 1;
+        }
+        s_fwd.stats.send_fail++;
         return 0;
     }
     uint8_t n = 0;

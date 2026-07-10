@@ -250,6 +250,98 @@ void test_acl_add_validation_and_table_full()
     TEST_ASSERT_FALSE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW)); // full
 }
 
+// --- policy routes (route-by-tag to interface) ---
+
+// Add a policy route matching frames whose first byte is @p c, bound to @p egress.
+static bool route_firstbyte(uint8_t src, char c, uint8_t egress, uint16_t cap)
+{
+    uint8_t pat[1] = {(uint8_t)c};
+    uint8_t msk[1] = {0xFF};
+    return det_forward_route_add(src, 0, pat, msk, 1, egress, cap);
+}
+
+void test_route_selects_egress_and_falls_through()
+{
+    add_if(1);
+    add_if(2);
+    add_if(3);
+    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);                 // normal path 1 -> 2
+    TEST_ASSERT_TRUE(route_firstbyte(DET_FWD_IF_ANY, 'X', 3, 0)); // policy: 'X...' -> if 3 only
+
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xyz")); // matched -> routed only to if 3
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[3].frames.size());
+    TEST_ASSERT_EQUAL_size_t(0, g_cap[2].frames.size()); // the fan-out rule was skipped
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);
+
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "abc")); // no route -> normal rule -> if 2
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed); // unchanged
+}
+
+void test_route_never_reflects_to_source()
+{
+    add_if(1);
+    add_if(2);
+    route_firstbyte(DET_FWD_IF_ANY, 'X', 1, 0); // egress == source
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xyz"));
+    TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);
+}
+
+void test_route_unregistered_egress_fail_closed()
+{
+    add_if(1);
+    route_firstbyte(DET_FWD_IF_ANY, 'X', 9, 0); // if 9 is not registered
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xyz"));
+    TEST_ASSERT_EQUAL_UINT32(1, stats().policy_routed);
+    TEST_ASSERT_EQUAL_UINT32(1, stats().send_fail);
+}
+
+void test_route_rate_cap()
+{
+    add_if(1);
+    add_if(2);
+    route_firstbyte(DET_FWD_IF_ANY, 'X', 2, 1); // 1 frame/sec to the egress
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "X1"));
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "X2")); // over cap -> dropped
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_UINT32(1, stats().rate_dropped);
+    det_forward_test_set_now(1000); // next window
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "X3"));
+    TEST_ASSERT_EQUAL_size_t(2, g_cap[2].frames.size());
+}
+
+void test_route_default_any_content()
+{
+    add_if(1);
+    add_if(2);
+    TEST_ASSERT_TRUE(det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, 2, 0)); // patlen 0
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "anything"));
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+}
+
+void test_route_first_match_wins()
+{
+    add_if(1);
+    add_if(2);
+    add_if(3);
+    route_firstbyte(DET_FWD_IF_ANY, 'X', 2, 0); // added first -> if 2
+    route_firstbyte(DET_FWD_IF_ANY, 'X', 3, 0); // also matches -> if 3
+    TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xy"));
+    TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
+    TEST_ASSERT_EQUAL_size_t(0, g_cap[3].frames.size());
+}
+
+void test_route_add_validation_and_table_full()
+{
+    uint8_t pat[DETWS_FWD_ACL_PATLEN + 1] = {0}, msk[DETWS_FWD_ACL_PATLEN + 1] = {0};
+    TEST_ASSERT_FALSE(det_forward_route_add(DET_FWD_IF_ANY, 0, pat, msk, DETWS_FWD_ACL_PATLEN + 1, 2, 0)); // patlen big
+    TEST_ASSERT_FALSE(det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0)); // null pattern, patlen > 0
+    for (int i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
+        TEST_ASSERT_TRUE(route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0));
+    TEST_ASSERT_FALSE(route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0)); // table full
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -269,5 +361,12 @@ int main()
     RUN_TEST(test_acl_src_any_content_wildcard);
     RUN_TEST(test_acl_short_frame_skips_entry);
     RUN_TEST(test_acl_add_validation_and_table_full);
+    RUN_TEST(test_route_selects_egress_and_falls_through);
+    RUN_TEST(test_route_never_reflects_to_source);
+    RUN_TEST(test_route_unregistered_egress_fail_closed);
+    RUN_TEST(test_route_rate_cap);
+    RUN_TEST(test_route_default_any_content);
+    RUN_TEST(test_route_first_match_wins);
+    RUN_TEST(test_route_add_validation_and_table_full);
     return UNITY_END();
 }

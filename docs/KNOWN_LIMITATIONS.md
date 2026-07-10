@@ -156,12 +156,14 @@ overflowed by 34048 bytes`). A build guard now turns that cryptic linker error i
   **you** drive from each interface's RX. The library does not itself bind those to Wi-Fi /
   Ethernet / a bus / a radio - that wiring (and the "true zero-copy DMA descriptor reuse" the
   roadmap describes) is the integration's, and depends on the real silicon DMA backend
-  (above). It forwards whole frames handed to it; it does not parse or route by L2/L3 headers.
-- **The ingress ACL is a stateless byte-pattern pre-filter.** It matches raw bytes at a
-  fixed offset under a mask (up to `DETWS_FWD_ACL_PATLEN` bytes), first-match-wins - enough
-  to allow/deny by a protocol type, a flag, or an address prefix at a known offset. It does
-  not parse protocol fields, track flows, or do longest-prefix / CIDR matching; it is a fast
-  gate in front of the forwarding rules, not a stateful firewall.
+  (above). It forwards whole frames handed to it; it does not itself parse protocol headers.
+- **The ingress ACL and policy routes are stateless byte-pattern matchers.** Both match raw
+  bytes at a fixed offset under a mask (up to `DETWS_FWD_ACL_PATLEN` bytes), first-match-wins.
+  The ACL allows/denies at ingress; a **policy route** (`det_forward_route_add()`) binds a match
+  to a chosen egress interface (path selection by a header field at a known offset - EtherType,
+  IP protocol, a port, an address prefix), taking precedence over the src->dst rules. Neither
+  tracks flows or does longest-prefix / CIDR matching; they are fast fixed-offset gates, not a
+  stateful firewall or a full routing table.
 
 ## Radio gateway
 

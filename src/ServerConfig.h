@@ -331,6 +331,12 @@
 #define DETWS_FWD_ACL_PATLEN 4
 #endif
 
+/** @brief Max policy routes (byte-pattern -> egress interface; static). Policy routes take
+ *         precedence over the src->dst rules, so tagged traffic leaves a chosen interface. */
+#ifndef DETWS_FWD_MAX_ROUTES
+#define DETWS_FWD_MAX_ROUTES 8
+#endif
+
 #if DETWS_ENABLE_FORWARD && (DETWS_FWD_MAX_IFACES < 1 || DETWS_FWD_MAX_RULES < 1 || DETWS_FWD_ACL_PATLEN < 1)
 #error "DeterministicESPAsyncWebServer: DETWS_FWD_MAX_IFACES / DETWS_FWD_MAX_RULES / DETWS_FWD_ACL_PATLEN must be >= 1"
 #endif
