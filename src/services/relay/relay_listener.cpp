@@ -38,30 +38,36 @@ struct RelayBridge
     DetRelay relay;
 };
 
-RelayBind s_binds[DETWS_RELAY_MAX_PUBLISH];
-RelayBridge s_bridges[DETWS_RELAY_MAX_CONNS];
-bool s_registered = false;
+// All of the listener's mutable state in one owned, feature-gated context (least-privilege; the
+// owner-context guard requires the single file-scope mutable to be a `*Ctx` instance).
+struct RelayListenerCtx
+{
+    RelayBind binds[DETWS_RELAY_MAX_PUBLISH];
+    RelayBridge bridges[DETWS_RELAY_MAX_CONNS];
+    bool registered;
+};
+RelayListenerCtx s_ctx;
 
 RelayBind *bind_by_listener(uint8_t lid)
 {
     for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
-        if (s_binds[i].active && s_binds[i].listener_id == lid)
-            return &s_binds[i];
+        if (s_ctx.binds[i].active && s_ctx.binds[i].listener_id == lid)
+            return &s_ctx.binds[i];
     return nullptr;
 }
 
 RelayBridge *bridge_by_conn(uint8_t slot)
 {
     for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
-        if (s_bridges[i].active && s_bridges[i].conn_slot == slot)
-            return &s_bridges[i];
+        if (s_ctx.bridges[i].active && s_ctx.bridges[i].conn_slot == slot)
+            return &s_ctx.bridges[i];
     return nullptr;
 }
 
 int bridge_find_free()
 {
     for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
-        if (!s_bridges[i].active)
+        if (!s_ctx.bridges[i].active)
             return i;
     return -1;
 }
@@ -143,7 +149,7 @@ void relay_on_accept(uint8_t slot)
         det_conn_close(slot); // origin unreachable
         return;
     }
-    RelayBridge *br = &s_bridges[idx];
+    RelayBridge *br = &s_ctx.bridges[idx];
     br->active = true;
     br->conn_slot = slot;
     br->origin_cid = cid;
@@ -184,21 +190,21 @@ bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t or
         return false;
     int idx = -1;
     for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
-        if (!s_binds[i].active)
+        if (!s_ctx.binds[i].active)
         {
             idx = i;
             break;
         }
     if (idx < 0)
         return false;
-    s_binds[idx].active = true;
-    s_binds[idx].listener_id = listener_id;
-    memcpy(s_binds[idx].host, origin_host, hl + 1);
-    s_binds[idx].port = origin_port;
-    if (!s_registered)
+    s_ctx.binds[idx].active = true;
+    s_ctx.binds[idx].listener_id = listener_id;
+    memcpy(s_ctx.binds[idx].host, origin_host, hl + 1);
+    s_ctx.binds[idx].port = origin_port;
+    if (!s_ctx.registered)
     {
         proto_register(PROTO_RELAY, &s_relay_handler);
-        s_registered = true;
+        s_ctx.registered = true;
     }
     return true;
 }
@@ -206,9 +212,9 @@ bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t or
 void det_relay_listener_reset(void)
 {
     for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
-        s_binds[i].active = false;
+        s_ctx.binds[i].active = false;
     for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
-        s_bridges[i].active = false;
+        s_ctx.bridges[i].active = false;
 }
 
 #endif // DETWS_ENABLE_RELAY
