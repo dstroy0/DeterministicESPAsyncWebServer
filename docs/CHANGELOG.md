@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.79.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.79.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1cb5a32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cb5a32470d1d2c5ad9991af061d9c07908f91b1))
+
+### Changes
+
+- Bump version: 5.78.0 → 5.79.0 ([`bd47a9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd47a9e3fec383e0c8a4797639d68bea14a0e1e7))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2396234`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/239623401f7196dcabd342033f1d7d5b0b086719))
+- update ESP32 build footprints [skip ci] ([`d1f8dc6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1f8dc67bdc5f92c7da57524de4d30d574eb119f))
+
+### Features
+
+- Cache-Control directive builder/parser + freshness (RFC 9111) ([`0febe4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0febe4f6c820192ad3d3a6d6773c035f42fbc38e))
+
+</details>
+
 ## [5.78.0] - 2026-07-10
 
 <details>
