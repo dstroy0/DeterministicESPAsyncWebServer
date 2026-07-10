@@ -102,13 +102,20 @@ layer built first, then the store codecs on top. Substrate before stores.
 
 ### Performance
 
-- [ ] **Feature performance measurement -> `docs/FEATURE_PERFORMANCE.md`.** Benchmark each feature's hot
+- [~] **Feature performance measurement -> `docs/FEATURE_PERFORMANCE.md`.** Benchmark each feature's hot
       operation(s) to judge real-world viability: a host **ns/op** deterministic baseline plus the
-      on-device **ESP32-S3 us/op @ 240 MHz** and throughput (the number that actually matters). A
-      reusable bench harness (a shared timing header; a native runner on the RPi + an on-device example
-      that prints a table over serial). Living table: feature, operation, host ns/op, ESP32 us/op,
-      throughput, notes. Measure whole paths (HTTP parse, TLS handshake, JSON render), not just
-      micro-codecs.
+      on-device **ESP32-S3 us/op @ 240 MHz** and throughput (the number that actually matters). Living
+      table: feature, operation, host ns/op, ESP32 us/op, notes. **Done so far:** the storage
+      characterization (section 1) and the full **data-store stack** (section 4) - host + on-device
+      ESP32-S3 numbers for WAL / dbm / docstore / SQLite / RESP (`perf/bench_datastore.cpp`). _Remaining:_
+      the base64 / mtconnect on-device column (section 2), and whole request-paths (section 3: HTTP
+      parse, TLS handshake, JSON render).
+- [ ] **WAL CRC-32 is CRC-bound on-device (~4.4 MB/s), the WAL write bottleneck.** Replace the table-less
+      bit-by-bit CRC with a table-driven CRC-32 (or the ESP32 ROM `crc32_le`); measured to dominate
+      `record_encode` / `store_append` / dbm `put` (see FEATURE_PERFORMANCE section 4). Guarded by the
+      existing CRC-32 check-vector test.
+- [ ] **`resp_encode_command` is ~20 us on-device** because it formats length prefixes with `snprintf`;
+      replace with a hand-rolled integer format.
 
 ### CNC / machine-tool connectivity
 
