@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`31a9bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31a9bd5720801f67f68a9bb4bc2fb626e6fc5ac2))
+- update CHANGELOG.md [skip ci] ([`11cbb68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11cbb687736fbd239817fdab72ea0838f243d9e7))
 - keep SECURITY.md supported-versions table current on bump ([`d069e65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d069e658106c2d13dbf3d385713e0216dceb45fd))
 - update test report + coverage [skip ci] ([`ae8b154`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae8b1549f86b43d4a086ad7d3d255a9eea65d355))
 - update CHANGELOG.md [skip ci] ([`f81f789`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f81f7897130ba63ae7940ce9b5b44feac1dc3fba))
@@ -20,10 +22,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`f3f7286`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3f728639a2bc6be8c60149d7671f01deb629c10))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a1acc69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a1acc692c830bc69a16b9a45aa2174d157dbdc64))
 - update ESP32 build footprints [skip ci] ([`bc0c319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc0c3196855b9452d973bbc6657181ea625ec87c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3efffce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3efffced0aa06c2d5bec48a40d375f051df7bca8))
 - update ESP32 build footprints [skip ci] ([`b284e29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b284e29ca0c95f8fcab3b61e61156b5a1be81667))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ee9125`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ee9125411e83452cb2b4fc6befe439b9c07e412))
+
+### Features
+
+- hold modem sleep off during bulk transfers ([`4f4651a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4651add2d32ebbac2fad6f1cded7ae62a8908c))
 
 ### Performance
 
@@ -32,6 +40,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Refactor
 
 - bound flagged strlen calls with strnlen (Sonar S5813) ([`d621111`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d621111014f4e98514a44c5e402f07e8d19cf955))
+
+### Testing
+
+- decouple test_half_close_shutdown from DETWS_RELAY_BUF ([`cbb13fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbb13fe764d6b7f74893620e414e3522e5c0f80b))
 
 ## [5.94.1] - 2026-07-10
 
