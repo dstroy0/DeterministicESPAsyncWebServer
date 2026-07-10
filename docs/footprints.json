@@ -392,11 +392,11 @@
     "ram_bytes": 21920
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/08.PreemptLanes",
+    "example": "Foundation/06.PreemptQueue",
     "flags": "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 268393,
-    "ram_bytes": 23936
+    "flash_bytes": 274077,
+    "ram_bytes": 23968
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Foundation/21.WifiCapture",
@@ -532,11 +532,11 @@
     "ram_bytes": 22616
   },
   "TLS": {
-    "example": "L6-Presentation/07.SecureWebSocket",
+    "example": "L4-Transport/03.HTTPS",
     "flags": "-DDETWS_ENABLE_TLS=1",
     "board": "esp32dev",
-    "flash_bytes": 854865,
-    "ram_bytes": 117276
+    "flash_bytes": 854993,
+    "ram_bytes": 117268
   },
   "TLS+MTLS": {
     "example": "L4-Transport/04.mTLS",
