@@ -214,4 +214,126 @@ bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2Sessi
     return true;
 }
 
+size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                               const uint8_t *path_utf16, size_t path_len)
+{
+    const size_t body = 8; // fixed TREE_CONNECT request body (§2.2.9)
+    const size_t total = SMB2_HEADER_SIZE + body + path_len;
+    if (!buf || !path_utf16 || path_len == 0 || path_len > 0xFFFF || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_TREE_CONNECT, 1, message_id, 0, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body);
+    wr16(b + 0, 9); // StructureSize
+    // Flags/Reserved (2) = 0
+    wr16(b + 4, (uint16_t)(SMB2_HEADER_SIZE + body)); // PathOffset (from the header start) = 72
+    wr16(b + 6, (uint16_t)path_len);                  // PathLength
+    memcpy(b + body, path_utf16, path_len);           // the \\server\share path (UTF-16LE)
+    return total;
+}
+
+bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_TREE_CONNECT)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body, no variable buffer
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 16) // StructureSize
+        return false;
+    out->share_type = b[2];
+    out->share_flags = rd32(b + 4);
+    out->capabilities = rd32(b + 8);
+    out->maximal_access = rd32(b + 12);
+    return true;
+}
+
+size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                         uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
+                         uint32_t create_options, const uint8_t *name_utf16, size_t name_len)
+{
+    const size_t body = 56; // fixed CREATE request body (§2.2.13)
+    const size_t total = SMB2_HEADER_SIZE + body + name_len;
+    if (!buf || !name_utf16 || name_len == 0 || name_len > 0xFFFF || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_CREATE, 1, message_id, tree_id, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body);
+    wr16(b + 0, 57); // StructureSize (fixed 56 + 1 for the variable buffer)
+    // SecurityFlags (2) = 0, RequestedOplockLevel (3) = 0 (SMB2_OPLOCK_LEVEL_NONE)
+    wr32(b + 4, 2); // ImpersonationLevel = Impersonation
+    // SmbCreateFlags (8) = 0, Reserved (16) = 0
+    wr32(b + 24, desired_access);                      // DesiredAccess
+    wr32(b + 28, 0);                                   // FileAttributes = 0
+    wr32(b + 32, share_access);                        // ShareAccess
+    wr32(b + 36, create_disposition);                  // CreateDisposition
+    wr32(b + 40, create_options);                      // CreateOptions
+    wr16(b + 44, (uint16_t)(SMB2_HEADER_SIZE + body)); // NameOffset (from the header start) = 120
+    wr16(b + 46, (uint16_t)name_len);                  // NameLength
+    // CreateContextsOffset (48) = 0, CreateContextsLength (52) = 0
+    memcpy(b + body, name_utf16, name_len);
+    return total;
+}
+
+bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_CREATE)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 88) // fixed 88-byte body (StructureSize .. CreateContextsLength)
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 89) // StructureSize
+        return false;
+    out->create_action = rd32(b + 4);
+    out->end_of_file = rd64(b + 48);
+    out->file_attributes = rd32(b + 56);
+    memcpy(out->file_id, b + 64, 16); // FileId (persistent 8 + volatile 8)
+    return true;
+}
+
+size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                        const uint8_t file_id[16])
+{
+    const size_t body = 24; // fixed CLOSE request body (§2.2.15), no variable buffer
+    const size_t total = SMB2_HEADER_SIZE + body;
+    if (!buf || !file_id || cap < total)
+        return 0;
+    if (smb2_build_header(buf, cap, SMB2_CLOSE, 1, message_id, tree_id, session_id) == 0)
+        return 0;
+
+    uint8_t *b = buf + SMB2_HEADER_SIZE;
+    memset(b, 0, body);
+    wr16(b + 0, 24); // StructureSize
+    // Flags (2) = 0 (no POSTQUERY_ATTRIB), Reserved (4) = 0
+    memcpy(b + 8, file_id, 16); // FileId
+    return total;
+}
+
+bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out)
+{
+    if (!msg || !out)
+        return false;
+    Smb2Header h;
+    if (!smb2_parse_header(msg, len, &h) || h.command != SMB2_CLOSE)
+        return false;
+    if (len < SMB2_HEADER_SIZE + 60) // fixed 60-byte body
+        return false;
+    const uint8_t *b = msg + SMB2_HEADER_SIZE;
+    if (rd16(b + 0) != 60) // StructureSize
+        return false;
+    out->end_of_file = rd64(b + 48);
+    out->file_attributes = rd32(b + 56);
+    return true;
+}
+
 #endif // DETWS_ENABLE_SMB

@@ -18,8 +18,8 @@
  * security token that seeds authentication.
  *
  * Shipped: the NEGOTIATE exchange; the NTLM crypto (smb_md / ntlm / ntlmssp); the SPNEGO wrapping
- * (spnego); and (this file) the SESSION_SETUP request/response framing that carries those tokens.
- * Roadmap (later increments): TREE_CONNECT / CREATE / READ / WRITE / CLOSE.
+ * (spnego); the SESSION_SETUP request/response framing that carries those tokens; and the
+ * TREE_CONNECT / CREATE / CLOSE file commands. Roadmap (later increment): READ / WRITE.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -80,6 +80,51 @@ enum
 {
     SMB2_STATUS_SUCCESS = 0x00000000,
     SMB2_STATUS_MORE_PROCESSING_REQUIRED = 0xC0000016, ///< server wants the next SESSION_SETUP round
+};
+
+/** @brief TREE_CONNECT response ShareType (MS-SMB2 §2.2.10). */
+enum
+{
+    SMB2_SHARE_TYPE_DISK = 0x01,
+    SMB2_SHARE_TYPE_PIPE = 0x02,
+    SMB2_SHARE_TYPE_PRINT = 0x03,
+};
+
+/** @brief CREATE DesiredAccess masks (MS-DTYP ACCESS_MASK; the common file rights). */
+enum
+{
+    SMB2_FILE_READ_DATA = 0x00000001,
+    SMB2_FILE_WRITE_DATA = 0x00000002,
+    SMB2_FILE_APPEND_DATA = 0x00000004,
+    SMB2_FILE_READ_ATTRIBUTES = 0x00000080,
+    SMB2_FILE_GENERIC_READ = 0x00120089,  ///< READ_CONTROL|SYNCHRONIZE|READ_ATTRIBUTES|READ_EA|READ_DATA
+    SMB2_FILE_GENERIC_WRITE = 0x00120116, ///< READ_CONTROL|SYNCHRONIZE|WRITE_ATTRIBUTES|WRITE_EA|APPEND|WRITE_DATA
+};
+
+/** @brief CREATE ShareAccess (MS-SMB2 §2.2.13). */
+enum
+{
+    SMB2_FILE_SHARE_READ = 0x01,
+    SMB2_FILE_SHARE_WRITE = 0x02,
+    SMB2_FILE_SHARE_DELETE = 0x04,
+};
+
+/** @brief CREATE CreateDisposition (MS-SMB2 §2.2.13). */
+enum
+{
+    SMB2_FILE_SUPERSEDE = 0,
+    SMB2_FILE_OPEN = 1,      ///< open an existing file, fail if absent
+    SMB2_FILE_CREATE = 2,    ///< create, fail if it exists
+    SMB2_FILE_OPEN_IF = 3,   ///< open, create if absent
+    SMB2_FILE_OVERWRITE = 4, ///< open + truncate, fail if absent
+    SMB2_FILE_OVERWRITE_IF = 5,
+};
+
+/** @brief CREATE CreateOptions (MS-SMB2 §2.2.13; the two we set). */
+enum
+{
+    SMB2_FILE_DIRECTORY_FILE = 0x00000001,
+    SMB2_FILE_NON_DIRECTORY_FILE = 0x00000040,
 };
 
 /** @brief Parsed SMB2 sync header. */
@@ -190,6 +235,78 @@ size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, u
  *         @p msg (or is nullptr when SecurityBufferLength is 0).
  */
 bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2SessionSetupResp *out);
+
+/**
+ * @brief Build a TREE_CONNECT request (header + §2.2.9 body) for a share path.
+ * @param path_utf16 the UNC path `\\server\share` in UTF-16LE (no NUL); @p path_len its byte length.
+ * @return total message bytes (no transport prefix), or 0 on overflow / empty path.
+ */
+size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id,
+                               const uint8_t *path_utf16, size_t path_len);
+
+/** @brief Parsed TREE_CONNECT response (MS-SMB2 §2.2.10). The TreeId is in the response header. */
+struct Smb2TreeConnectResp
+{
+    uint8_t share_type;
+    uint32_t share_flags;
+    uint32_t capabilities;
+    uint32_t maximal_access;
+};
+
+/**
+ * @brief Parse a TREE_CONNECT response message (validates command + StructureSize 16).
+ * @return true on a well-formed response; the caller reads the TreeId from smb2_parse_header.
+ */
+bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeConnectResp *out);
+
+/**
+ * @brief Build a CREATE request (header + §2.2.13 body) to open/create a file on the tree.
+ * @param name_utf16 the file name relative to the share root in UTF-16LE (no leading backslash, no
+ *                   NUL); @p name_len its byte length (must be > 0).
+ * @param desired_access     e.g. SMB2_FILE_GENERIC_READ / _WRITE.
+ * @param share_access       SMB2_FILE_SHARE_* bitmask.
+ * @param create_disposition SMB2_FILE_OPEN / _CREATE / _OPEN_IF / ...
+ * @param create_options     SMB2_FILE_NON_DIRECTORY_FILE for a regular file.
+ * @return total message bytes (no transport prefix), or 0 on overflow.
+ */
+size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                         uint32_t desired_access, uint32_t share_access, uint32_t create_disposition,
+                         uint32_t create_options, const uint8_t *name_utf16, size_t name_len);
+
+/** @brief Parsed CREATE response (MS-SMB2 §2.2.14). */
+struct Smb2CreateResp
+{
+    uint8_t file_id[16]; ///< the open handle (persistent 8 + volatile 8), for READ/WRITE/CLOSE
+    uint64_t end_of_file;
+    uint32_t create_action;
+    uint32_t file_attributes;
+};
+
+/**
+ * @brief Parse a CREATE response message (validates command + StructureSize 89, FileId in bounds).
+ * @return true on a well-formed response.
+ */
+bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *out);
+
+/**
+ * @brief Build a CLOSE request (header + §2.2.15 body) for an open FileId.
+ * @return total message bytes (no transport prefix), or 0 on overflow.
+ */
+size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t session_id, uint32_t tree_id,
+                        const uint8_t file_id[16]);
+
+/** @brief Parsed CLOSE response (MS-SMB2 §2.2.16). */
+struct Smb2CloseResp
+{
+    uint64_t end_of_file;
+    uint32_t file_attributes;
+};
+
+/**
+ * @brief Parse a CLOSE response message (validates command + StructureSize 60).
+ * @return true on a well-formed response.
+ */
+bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *out);
 
 #endif // DETWS_ENABLE_SMB
 
