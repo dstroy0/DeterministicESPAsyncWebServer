@@ -238,3 +238,87 @@ The second finding was `resp_encode_command` at ~20 us on the device - it format
 prefixes with `snprintf`. Replacing that with a hand-rolled decimal writer **cut it ~6x to ~3.3 us**
 (and ~5x on the host, 329 -> 65 ns), with byte-identical output. Both fixes came straight out of this
 table; neither was visible from the host baseline alone.
+
+## 5. Network transport features (SMB client / Ethernet DNC / port-forward)
+
+Three transport-example features were taken end to end on hardware (ESP32-S3 over WiFi, `q_6`) against
+real peers on a Raspberry Pi: a **Samba 4.13** share, a raw-TCP sink, and a Python `http.server` origin.
+Each transfer is **byte-verified** (sha256 or FNV-1a compared to the source). HW testing found four real
+bugs the host mock-seam tests could not (a stubbed client transport, an `smb_open` stack overflow, a
+`listen()` that returned the wrong id, and the relay throughput issue below) - see docs/BUGS.md.
+
+### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
+
+The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
+`det_relay_publish()`). Measured by fetching a file **through** the ESP32 (RPi -> ESP32:8080 -> RPi:8000)
+and sha256-verifying it:
+
+| Transfer |  Time | Throughput | Byte-exact |
+| -------- | ----: | ---------: | ---------- |
+| 1 MB     |  4.3s |  1.87 Mbps | OK         |
+| 5 MB     | 24.3s |  1.65 Mbps | OK         |
+| 10 MB    | 44.3s |  1.81 Mbps | OK         |
+| 50 MB    |  209s |  1.91 Mbps | OK         |
+| 100 MB   |  449s |  1.78 Mbps | OK         |
+| 200 MB   | 1000s |  1.60 Mbps | OK         |
+
+Sustained **~1.6-1.9 Mbps**, flat across three orders of magnitude of transfer size, **byte-exact all the
+way to 200 MB** - the relay holds up for large transfers, not just a smoke test. (One first 200 MB attempt
+took a single WiFi recv-drop ~15 min in; the retry completed byte-exact. Over a link that flaky, keeping
+the radio awake matters - the relay now holds modem sleep off while a bridge is active, see the radio
+keep-awake note below.)
+
+**The first on-device run only managed ~0.4 Mbps**, and the fix came straight out of that number (the host
+mock never exercises the real send path). Two causes:
+
+- `a_send` forwarded to the inbound socket **all-or-nothing**: a whole `DETWS_RELAY_BUF` chunk rarely fits
+  `tcp_sndbuf` in one shot, so a "full or nothing" send forwarded **zero** bytes and stalled. Naively
+  raising the buffer to 2 KB made it _worse_ (~0.2 Mbps) for the same reason. The fix sends as much as the
+  send window currently allows (`det_conn_sndbuf`), partial.
+- `service()` pumped **one 512 B step per poll**. It now drains up to `DETWS_RELAY_DRAIN_MAX` passes, so one
+  poll forwards the whole buffered origin RX ring instead of a single chunk.
+
+Together: **~0.4 -> ~1.8 Mbps (~4.5x)**, byte-exact. The remaining ceiling is the classic
+bandwidth-delay-product limit - the inbound TCP send window over the double-hop WiFi relay - not the pump;
+raising `TCP_SND_BUF` / enabling window scaling in a custom lwIP would lift it further.
+
+**Practicality:** ~1.8 Mbps is the right tool for what a device-side port-forward is actually for -
+publishing a control-plane service through the board that bridges two segments: an SSH or HTTP admin
+console, a Modbus/OPC-UA endpoint, a config UI on a locked-down PLC network, and moderate file pulls. It
+is byte-exact and stable to hundreds of MB, so it will not corrupt a firmware image or a config archive. It
+is **not** a bulk media pipe - a 200 MB pull is minutes, and the WiFi double-hop halves the radio's usable
+rate. Keep the front port off untrusted networks (the relay authenticates nothing on the inbound side).
+
+### Radio keep-awake during transfers (DETWS_ENABLE_RADIO_POWER)
+
+Modem sleep (the default `WIFI_PS_MIN_MODEM`) parks the radio between DTIM beacons to save power, which is
+exactly what dropped a byte mid-transfer on the first 200 MB run. `detws_radio_busy_hold()` /
+`detws_radio_busy_release()` are reference-counted: the first hold forces `WIFI_PS_NONE`, the last release
+restores the configured `DETWS_RADIO_WIFI_PS`. The relay holds one while any bridge is active, so a
+port-forward keeps the radio awake for the whole transfer and lets power saving resume when idle - no
+per-app tuning. **Practicality:** on a battery device you still get modem-sleep power savings at rest; you
+only pay the awake current while actually moving bytes, which is the right trade for reliability.
+
+### SMB2 client (DETWS_ENABLE_SMB)
+
+Reads a file off a Windows / Samba share with real **NTLMv2** auth (NEGOTIATE -> two-round SESSION_SETUP
+-> TREE_CONNECT -> CREATE -> READ). On device it authenticated against Samba 4.13 and read the test file
+**byte-exact** (FNV-1a matched the server). The whole open+read+close completes in well under a second on
+the LAN. The working buffers (~4 KB) live in an owned static `SmbClientCtx`, not on the stack, because on
+the stack they overflow the 8 KB Arduino loopTask (the crash HW testing caught).
+
+**Practicality:** the use case is pulling a **small control file** - a CNC `.nc` program, a recipe, a
+config blob - off the shop file server, where correctness and NTLMv2 interop matter far more than MB/s.
+The client drives one sequential dialogue at a time (not reentrant across two concurrent SMB connections),
+which is exactly how a device fetches a program before a run.
+
+### Ethernet DNC (DETWS_ENABLE_DNC)
+
+Drip-feeds a G-code program to a controller's raw TCP program port with XON/XOFF pacing. On device it
+streamed a program to a capture sink and the received bytes were **byte-exact** (FNV-1a matched) with
+spec-correct framing: NUL leader, `%`+CRLF start, CR-before-LF end-of-block per line, `%`+CRLF end, NUL
+trailer.
+
+**Practicality:** DNC programs are small (KB) and the controller's input buffer is tiny, so the design
+point is **correct framing + flow control**, not throughput - a fast sender just overruns the machine. The
+XON/XOFF pause path is the feature; the byte-exact framing is what keeps the controller from faulting.
