@@ -2,28 +2,43 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.77.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.77.0 - 2026-07-10</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e379a92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e379a925ebc2aef30907e8e02c873d83b8c51be7))
 - update CHANGELOG.md [skip ci] ([`e8d7024`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8d7024da42e556628c14cb672b8dd19d40dfd68))
 - update CHANGELOG.md [skip ci] ([`f520bc1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f520bc147a1a9232d8a37a7e79bbf1fc81d44ea0))
 - update CHANGELOG.md [skip ci] ([`61ead80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61ead8041b4b4da2468a030857cbf8b52f7e36f7))
 - update CHANGELOG.md [skip ci] ([`42609a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42609a77c2e7372745527facc2a0fffa77868185))
 
+### Changes
+
+- Bump version: 5.76.0 → 5.77.0 ([`ee5a9b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee5a9b79b085123ac790be16ea7b574e4e538771))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`dfd8210`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dfd8210d0d4c3a21c59703af37a90bdd248eb719))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`41b268d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/41b268dc61e42e727c166e272717ba1b50180149))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`34466a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34466a9165c070f1dd7dab5cd344e6550eaf3aac))
 - update ESP32 build footprints [skip ci] ([`132d5ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/132d5ff24daf0f529011b781246e140dee3f0cc1))
 - add content delivery network (CDN) capability ([`70f25ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70f25efb045923a32155d89f9d3c5584931f1ad1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7613744`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76137445a8282294a9e6c5c3081896bf988945da))
 
+### Features
+
+- CNC RS-232 DNC drip-feed codec (EIA RS-244 + ISO tape codes) ([`26ba3ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26ba3edef6471e980eebbb668e7b822bf29457ff))
+
 ### Testing
 
 - prove compaction fails closed with no data loss on I/O error ([`0a71e5e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a71e5e1d221a8648ed280b47b39321531b575d7))
 - fuzz the SQLite on-disk reader + Redis RESP decoder ([`205c71d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/205c71d960f948f2d70ba9bda5ebca4bd52ba5e0))
 - cover writer serial-type widths + overflow robustness ([`7e58743`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e587432f4d7d45af136448ff4d420a42f280750))
+
+</details>
 
 ## [5.76.0] - 2026-07-10
 
