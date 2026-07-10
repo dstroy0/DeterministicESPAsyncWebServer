@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.78.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.78.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dd929b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd929b68fbfd4fe0698267fb59112b2f0741dfc8))
+
+### Changes
+
+- Bump version: 5.77.0 → 5.78.0 ([`8bbf8bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bbf8bc3d4b771aadc2ca2b280bdc32745e6e830))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9ed9158`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ed9158a87556733f4cf485ab2630371e87d71e1))
+
+### Features
+
+- FTP client wire codec (RFC 959 + RFC 2428) ([`b0e0d5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0e0d5a7dd9f309c7e5dae93e463db1d95b47087))
+
+</details>
+
 ## [5.77.0] - 2026-07-10
 
 <details>
