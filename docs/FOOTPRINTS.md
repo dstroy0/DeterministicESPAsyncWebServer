@@ -75,7 +75,7 @@ from each example's `pio ci` size report and aggregated into
 | `SMTP`                                   | L7-Application/57.SmtpAlert             | 709.5 KB (55.4%) | 42.4 KB (13.2%)  |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 741.7 KB (57.9%) | 76.9 KB (24.0%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
-| `SSH`                                    | L5-Session/01.SSH                       | 802.0 KB (62.7%) | 86.6 KB (27.1%)  |
+| `SSH`                                    | L5-Session/03.SSHHostKey                | 801.3 KB (62.6%) | 86.6 KB (27.1%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 734.9 KB (57.4%) | 64.9 KB (20.3%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.0 KB (57.6%) | 64.9 KB (20.3%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
