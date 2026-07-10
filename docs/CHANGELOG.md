@@ -2,17 +2,54 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.88.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.88.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f07a678`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f07a67816d993ea2fc82d17cab2f0ca0e49d80c0))
+
+### Changes
+
+- Bump version: 5.87.0 → 5.88.0 ([`d84628d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d84628d5a9864ca802a04c79660e27d19c8f13b0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7015ded`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7015ded80cb005bb71c567574d6ebcbe72f9fc7f))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`456534e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/456534e6d5a74bad3969fdaeeb6315d11a2d9624))
+
+### Features
+
+- SMB2 TREE_CONNECT / CREATE / CLOSE file commands (increment 7) ([`17c6643`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17c664357081b7ae8cd950e78610e122b7ce6821))
+
+</details>
+
+## [5.87.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.87.0 - 2026-07-10</b></summary>
 
 ### CI / Build
 
 - disable markdownlint (Prettier owns markdown formatting) ([`e7a5645`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7a564567d81cd42c61140b797a71e6d7d442e70))
 - update CHANGELOG.md [skip ci] ([`7b9ba64`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b9ba64e1a7c129ded33e51f8499fc06e11bc1cc))
 
+### Changes
+
+- Bump version: 5.86.0 → 5.87.0 ([`10e082f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10e082f0e876783386b132a8493cd7fb2947e406))
+
 ### Documentation
 
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1a0625a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1a0625aea8af1672fec92ea13eb4099e9414b62d))
 - update ESP32 build footprints [skip ci] ([`0ca2eed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ca2eed4fa00b67feeb31bfce67b763a341671b6))
+
+### Features
+
+- SMB2 SESSION_SETUP request/response framing (increment 6) ([`0d65556`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d655568848b79c53d48e3f05937041a4bd06f36))
+
+</details>
 
 ## [5.86.0] - 2026-07-10
 
