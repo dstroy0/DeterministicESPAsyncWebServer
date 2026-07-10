@@ -32144,7 +32144,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws alloc sets parse state header1
     * **Assertions**:
-      * <code>Assert equal (WS_HEADER1, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_HEADER1, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32239,7 +32239,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws parse text frame sets ready
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32247,7 +32247,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws parse payload stored correctly
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal (5, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal string ("Hello", (const char *)ws-&gt;buf)</code>
   </details>
@@ -32257,8 +32257,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws parse binary frame sets ready
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
-      * <code>Assert equal (WS_OP_BINARY, ws-&gt;opcode)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsOpcode::WS_OP_BINARY, ws-&gt;opcode)</code>
       * <code>Assert equal (3, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal (0x01, (int)ws-&gt;buf[0])</code>
       * <code>Assert equal (0x02, (int)ws-&gt;buf[1])</code>
@@ -32270,7 +32270,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unmasked zero-length frame: 0x81 0x00.
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32278,7 +32278,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Masked zero-length text frame: FIN\|TEXT, MASK\|0, 4-byte mask key.
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal (0, (int)ws-&gt;payload_len)</code>
   </details>
 
@@ -32287,7 +32287,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN\|TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking.
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32295,7 +32295,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection.
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32303,7 +32303,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5).
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32311,7 +32311,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: PING (masked) with payload length 126 - control frames MUST be <= 125
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32319,7 +32319,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build a 130-byte payload (> 125, requires 16-bit length field)
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal (130, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal (0, (int)ws-&gt;buf[0])</code>
       * <code>Assert equal (129 & 0xFF, (int)ws-&gt;buf[129])</code>
@@ -32330,7 +32330,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, RSV1=0x40, TEXT: byte0 = 0x80\|0x40\|0x01 = 0xC1
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32338,7 +32338,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, RSV2=0x20, TEXT: byte0 = 0x80\|0x20\|0x01 = 0xA1
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32346,7 +32346,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, RSV3=0x10, TEXT: byte0 = 0x80\|0x10\|0x01 = 0x91
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32354,7 +32354,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32362,7 +32362,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws parse oversized 16bit length closes too big
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32370,8 +32370,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet.
     * **Assertions**:
-      * <code>Assert not equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
-      * <code>Assert not equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert not equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert not equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
       * <code>Assert true (ws-&gt;fragmenting)</code>
   </details>
 
@@ -32381,8 +32381,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Ws fragmented message reassembled
     * **Assertions**:
       * <code>Assert true (ws-&gt;fragmenting)</code>
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
-      * <code>Assert equal (WS_OP_TEXT, ws-&gt;opcode)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsOpcode::WS_OP_TEXT, ws-&gt;opcode)</code>
       * <code>Assert equal (5, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal memory ("Hello", ws-&gt;buf, 5)</code>
   </details>
@@ -32392,8 +32392,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A PING arrives between the two data fragments; it must be handled without
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
-      * <code>Assert equal (WS_OP_TEXT, ws-&gt;opcode)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsOpcode::WS_OP_TEXT, ws-&gt;opcode)</code>
       * <code>Assert equal (5, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal memory ("Hello", ws-&gt;buf, 5)</code>
   </details>
@@ -32404,8 +32404,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Fragment 1 (FIN=0): exactly WS_FRAME_SIZE bytes - fits, starts reassembly.
     * **Assertions**:
       * <code>Assert true (ws-&gt;fragmenting)</code>
-      * <code>Assert not equal (WS_ERROR, ws-&gt;parse_state)</code>
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert not equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32413,7 +32413,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002.
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32421,7 +32421,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A second TEXT (new message) before finishing the first is illegal.
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32429,7 +32429,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, PING=0x09: byte0 = 0x89
     * **Assertions**:
-      * <code>Assert equal (WS_HEADER1, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_HEADER1, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32437,7 +32437,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, PONG=0x0A: byte0 = 0x8A
     * **Assertions**:
-      * <code>Assert equal (WS_HEADER1, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_HEADER1, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32445,7 +32445,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: FIN=1, CLOSE=0x08: byte0 = 0x88
     * **Assertions**:
-      * <code>Assert equal (WS_CLOSED, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_CLOSED, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32453,7 +32453,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Push two complete frames -- parser should stop after the first
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert not equal (conn_pool[0].rx_head, conn_pool[0].rx_tail)</code>
   </details>
 
@@ -32462,7 +32462,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws reset frame clears fields
     * **Assertions**:
-      * <code>Assert equal (WS_HEADER1, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_HEADER1, ws-&gt;parse_state)</code>
       * <code>Assert equal (0, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal (0, (int)ws-&gt;payload_idx)</code>
       * <code>Assert false (ws-&gt;fin)</code>
@@ -32476,7 +32476,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal ('H', (char)ws-&gt;buf[0])</code>
   </details>
 
@@ -32485,7 +32485,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws text invalid utf8 rejected
     * **Assertions**:
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32493,7 +32493,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws text valid utf8 accepted
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal ((int)sizeof(ok), (int)ws-&gt;payload_len)</code>
   </details>
 
@@ -32502,7 +32502,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ws binary arbitrary bytes accepted
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32511,7 +32511,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: "Hello, World!" as permessage-deflate (SYNC_FLUSH, marker stripped) - the
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(13, ws-&gt;msg_len);</code>
       * <code>Assert equal string ("Hello, World!", (const char *)ws-&gt;buf)</code>
   </details>
@@ -32522,7 +32522,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Ws rsv1 without negotiation closes
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32531,9 +32531,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: FIN + RSV1 + TEXT; compressed body is shorter than the original.
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)msg, mlen))</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)msg, mlen))</code>
       * <code>Assert true (sent_len &gt;= 2)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | 0x40 | WS_OP_TEXT, sent[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | 0x40 | (uint8_t)WsOpcode::WS_OP_TEXT, sent[0]);</code>
       * <code>Assert true (plen &lt; mlen)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(hdr + plen, sent_len);</code>
       * <code>Assert true (plen + 4 &lt;= sizeof(comp))</code>
@@ -32548,7 +32548,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Ws deflate inflate error closes
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert equal (WS_ERROR, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_ERROR, ws-&gt;parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32557,12 +32557,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: A PONG control frame is never compressed, even with data-like content.
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)"x", 1))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_TEXT, sent[0]); // no RSV1: not worth compressing</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)"x", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_TEXT, sent[0]); // no RSV1: not worth compressing</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, sent[1] & 0x7F);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8('x', sent[2]);</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_PONG, (const uint8_t *)"AAAAAAAAAAAAAAAA", 16))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_PONG, sent[0]); // RSV1 clear on control frames</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_PONG, (const uint8_t *)"AAAAAAAAAAAAAAAA", 16))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_PONG, sent[0]); // RSV1 clear on control frames</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32571,20 +32571,20 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: 3 frames, each a 2-byte header (len <= 125): [BINARY,FIN=0,4][CONT,FIN=0,4][CONT,FIN=1,2].
     * **Assertions**:
       * <code>Assert not null (ws)</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_BINARY, msg, sizeof(msg)))</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, msg, sizeof(msg)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3 * 2 + 10, tcp_captured_len());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WS_OP_BINARY, s[0]); // first: FIN clear, opcode</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WsOpcode::WS_OP_BINARY, s[0]); // first: FIN clear, opcode</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, s[1]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, s[2]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WS_OP_CONTINUATION, s[6]); // middle: FIN clear, CONTINUATION</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WsOpcode::WS_OP_CONTINUATION, s[6]); // middle: FIN clear, CONTINUATION</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, s[7]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(5, s[8]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_CONTINUATION, s[12]); // last: FIN set, CONTINUATION</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_CONTINUATION, s[12]); // last: FIN set, CONTINUATION</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, s[13]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(9, s[14]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, s[15]);</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_BINARY, msg, sizeof(msg)))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | WS_OP_BINARY, s[0]); // FIN set, one frame</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, msg, sizeof(msg)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x80 | (uint8_t)WsOpcode::WS_OP_BINARY, s[0]); // FIN set, one frame</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, s[1]);</code>
   </details>
 
@@ -32594,7 +32594,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Stress - Ws parse reset 100 cycles
     * **Assertions**:
       * <code>Assert not null message (ws, "alloc failed")</code>
-      * <code>Assert equal message (WS_FRAME_READY, ws-&gt;parse_state, "not FRAME_READY")</code>
+      * <code>Assert equal message (WsParseState::WS_FRAME_READY, ws-&gt;parse_state, "not FRAME_READY")</code>
       * <code>Assert equal string message (text, (const char *)ws-&gt;buf, "payload mismatch")</code>
   </details>
 
@@ -32617,8 +32617,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Ws parse incremental byte by byte
     * **Assertions**:
-      * <code>Assert not equal message (WS_ERROR, ws-&gt;parse_state, "WS_ERROR during valid incremental parse")</code>
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>TEST_ASSERT_NOT_EQUAL_MESSAGE(WsParseState::WS_ERROR, ws-&gt;parse_state,</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal string (text, (const char *)ws-&gt;buf)</code>
   </details>
 
@@ -32627,7 +32627,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Ws parse max payload
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal ((int)WS_FRAME_SIZE, (int)ws-&gt;payload_len)</code>
       * <code>Assert equal (0, (int)ws-&gt;buf[0])</code>
       * <code>Assert equal ((int)((WS_FRAME_SIZE - 1) & 0xFF), (int)ws-&gt;buf[WS_FRAME_SIZE - 1])</code>
@@ -32639,9 +32639,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: First frame
     * **Assertions**:
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal string (t1, (const char *)ws-&gt;buf)</code>
-      * <code>Assert equal (WS_FRAME_READY, ws-&gt;parse_state)</code>
+      * <code>Assert equal (WsParseState::WS_FRAME_READY, ws-&gt;parse_state)</code>
       * <code>Assert equal string (t2, (const char *)ws-&gt;buf)</code>
   </details>
 
@@ -32650,13 +32650,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Medium frame (len >= 126) uses the extended 16-bit length header.
     * **Assertions**:
-      * <code>Assert true (ws_send_frame(ws, WS_OP_BINARY, payload, 200))</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, payload, 200))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(126, sent[1]); // 16-bit extended-length marker (server-&gt;client unmasked)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, sent[2]);   // length high byte</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(200, sent[3]); // length low byte</code>
-      * <code>Assert true (ws_send_frame(ws, WS_OP_TEXT, payload, 200))</code>
+      * <code>Assert true (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, payload, 200))</code>
       * <code>Assert true (tcp_captured_len() &gt; 200)</code>
-      * <code>Assert false (ws_send_frame(ws, WS_OP_TEXT, payload, 10))</code>
+      * <code>Assert false (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, payload, 10))</code>
   </details>
 
 </details>
