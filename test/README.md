@@ -239,7 +239,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2` | SMB2 client wire codec (services/smb, MS-SMB2 increment 1): the Direct-TCP transport frame, the 64-byte little-endian sync header (build/parse, ProtocolId + StructureSize validated), the NEGOTIATE req... |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto` | SMB2 client wire codec (services/smb, MS-SMB2): increment 1 - the Direct-TCP transport frame, the 64-byte little-endian sync header (build/parse, ProtocolId + StructureSize validated), the NEGOTIATE r... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2830 test cases** across **237 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2835 test cases** across **238 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23905,6 +23905,50 @@ A thorough directory of all **2830 test cases** across **237 suites**. Expand a 
       * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (smb2_parse_negotiate_response(m, 100, &r))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_smb_crypto (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_md5_vectors</b> &mdash; <i>62 bytes -> spans two 64-byte blocks (RFC 1321 A.5)</i></summary>
+
+    * **Objective**: 62 bytes -> spans two 64-byte blocks (RFC 1321 A.5)
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_md4_vectors</b> &mdash; <i>Md4 vectors</i></summary>
+
+    * **Objective**: Md4 vectors
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hmac_md5_vectors</b> &mdash; <i>a key longer than the 64-byte block is hashed down first (RFC 2104)</i></summary>
+
+    * **Objective**: a key longer than the 64-byte block is hashed down first (RFC 2104)
+    * **Assertions**:
+      * <code>Assert equal string ("9294727a3638bb1c13f48ef8158bfc9d", hex)</code>
+      * <code>Assert equal string ("750c783e6ab0b503eaa86e310a5db738", hex)</code>
+      * <code>Assert equal string ("56be34521d144c88dbb8c733f0e8b3f6", hex)</code>
+      * <code>Assert equal string ("6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd", hex)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_streaming_equals_oneshot</b> &mdash; <i>Streaming equals oneshot</i></summary>
+
+    * **Objective**: Streaming equals oneshot
+    * **Assertions**:
+      * <code>Assert equal memory (one, strm, 16)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_nt_hash</b> &mdash; <i>Nt hash</i></summary>
+
+    * **Objective**: Nt hash
+    * **Assertions**:
+      * <code>Assert equal string ("8846f7eaee8fb117ad06bdd830b7586c", hex)</code>
   </details>
 
 </details>

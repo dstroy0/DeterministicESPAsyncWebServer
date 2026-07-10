@@ -107,6 +107,8 @@ newer entry here.
 
 - [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) - Secure Hash Standard (SHA-2) - **impl**.
 - [RFC 3174](https://www.rfc-editor.org/rfc/rfc3174) - SHA-1 - **impl** (WebSocket handshake only).
+- [RFC 1320](https://www.rfc-editor.org/rfc/rfc1320) - MD4 - **impl** (SMB/NTLM only: the NT hash; legacy, KAT-verified).
+- [RFC 1321](https://www.rfc-editor.org/rfc/rfc1321) - MD5 - **impl** (SMB/NTLM only: HMAC-MD5 base; legacy, KAT-verified).
 - [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) - AES - **impl** (SNMP priv; QUIC AES-128 block + header protection) / **via mbedTLS** (TLS; QUIC AES block on ESP32).
 - [NIST SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final) - GCM (Galois/Counter Mode) - **impl** (QUIC packet protection AEAD_AES_128_GCM; software GHASH).
 - [FIPS 198-1](https://csrc.nist.gov/pubs/fips/198-1/final) / [RFC 2104](https://www.rfc-editor.org/rfc/rfc2104) - HMAC - **impl**.
