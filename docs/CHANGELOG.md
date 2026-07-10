@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`49bd336`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49bd336a6ed4996548348123c868391789bd2dd8))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5e5f338`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e5f3385c8c5a6504399ff055e66c71b63714707))
+- update ESP32 build footprints [skip ci] ([`87163ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87163efcf3e27dbf9a318c57c55eb3098317733f))
+
+### Testing
+
+- fuzz the new SMB / SPNEGO / NTLMSSP / DNC parsers ([`eaa2897`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eaa2897589e7239da55c815cc426a989acd8066b))
+
 ## [5.94.0] - 2026-07-10
 
 <details>
