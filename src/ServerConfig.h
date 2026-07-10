@@ -2941,6 +2941,18 @@
 #endif
 
 /**
+ * @brief Safety cap on how many times the DNC stream engine polls the reverse channel while paused
+ *        by an XOFF, before giving up with an I/O error (DETWS_ENABLE_DNC).
+ *
+ * `dnc_stream` pauses on XOFF and polls `recv` for the XON that resumes it; a well-behaved transport
+ * paces `recv` (blocks briefly when idle) so this cap is only a backstop against a `recv` that spins
+ * returning no data forever. Raise it if a slow controller legitimately holds XOFF for a long time.
+ */
+#ifndef DETWS_DNC_XOFF_MAX_POLLS
+#define DETWS_DNC_XOFF_MAX_POLLS 200000
+#endif
+
+/**
  * @brief Opt-in FTP client wire codec (DETWS_ENABLE_FTP).
  *
  * services/ftp is the pure protocol layer of an FTP client (RFC 959 + RFC 2428 EPSV/EPRT):

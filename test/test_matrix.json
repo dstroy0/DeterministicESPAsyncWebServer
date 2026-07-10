@@ -34,10 +34,10 @@
       "tests": ["test_docstore"]
     },
     "native_dnc": {
-      "desc": "CNC RS-232 DNC drip-feed codec (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code\ntranslation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop\nand leader runout, XON/XOFF flow-control state, and a streaming block reassembling decoder. Pure\nhost tests, incl. an odd-parity + exact-inverse table guardrail and full encode -> decode program\nround-trips for both tape codes.",
+      "desc": "CNC DNC drip-feed (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation\n(odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader\nrunout, XON/XOFF flow-control state, a streaming block reassembling decoder, and the dnc_stream\ndrip-feed engine (leader / markers / blocks over a send/recv seam, paced on reverse-channel\nXON/XOFF). Pure host tests, incl. an odd-parity + exact-inverse table guardrail, full encode ->\ndecode program round-trips for both tape codes, and a scripted mock controller that decodes the\nstreamed program back and exercises the XOFF/XON pause-resume path.",
       "flags": ["-DDETWS_ENABLE_DNC=1"],
-      "src": ["+<services/dnc/dnc.cpp>"],
-      "tests": ["test_dnc"]
+      "src": ["+<services/dnc/dnc.cpp>", "+<services/dnc/dnc_stream.cpp>"],
+      "tests": ["test_dnc", "test_dnc_stream"]
     },
     "native_ftp": {
       "desc": "FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command\nbuilders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the\nPASV / EPSV data-address decoders. Pure host tests with authentic reply strings captured from a\nlive FTP server (multiline greeting + FEAT, PASV/EPSV tuples).",

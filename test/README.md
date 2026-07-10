@@ -118,7 +118,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_directnet` | `ETWS_ENABLE_DIRECTNET=1` | `test_directnet` | AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH + ASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse. |
 | `native_dma` | `ETWS_ENABLE_DMA=1`, `ETWS_DMA_BUF_SIZE=8`, `ETWS_DMA_CHANNELS=2` | `test_dma` | DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an ingress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms, egress DMA is captured, TX is one-i... |
 | `native_dmx` | `ETWS_ENABLE_DMX=1` | `test_dmx` | DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the RDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. |
-| `native_dnc` | `ETWS_ENABLE_DNC=1` | `test_dnc` | CNC RS-232 DNC drip-feed codec (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader runout, ... |
+| `native_dnc` | `ETWS_ENABLE_DNC=1` | `test_dnc`, `test_dnc_stream` | CNC DNC drip-feed (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader runout, XON/XOFF flow... |
 | `native_dnp3` | `ETWS_ENABLE_DNP3=1` | `test_dnp3` | DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame builder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking parser. |
 | `native_dns_resolver` | `ETWS_ENABLE_DNS_RESOLVER=1` | `test_dns_resolver` | DNS resolver answer classifier/verifier (services/dns_resolver): host-tested; the lwIP resolve is ESP32-only. |
 | `native_dns_server` | `ETWS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2870 test cases** across **242 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2878 test cases** across **243 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6477,6 +6477,100 @@ A thorough directory of all **2870 test cases** across **242 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_dnc_stream (8 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_iso_roundtrip</b> &mdash; <i>Iso roundtrip</i></summary>
+
+    * **Objective**: Iso roundtrip
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (1, m.prog_start)</code>
+      * <code>Assert equal int (1, m.prog_end)</code>
+      * <code>Assert equal int (3, m.nlines)</code>
+      * <code>Assert equal string ("N10 G0 X1 Y2", m.lines[0])</code>
+      * <code>Assert equal string ("N20 G1 X3 F100", m.lines[1])</code>
+      * <code>Assert equal string ("M30", m.lines[2])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_eia_roundtrip</b> &mdash; <i>Eia roundtrip</i></summary>
+
+    * **Objective**: Eia roundtrip
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (1, m.prog_start)</code>
+      * <code>Assert equal int (1, m.prog_end)</code>
+      * <code>Assert equal int (2, m.nlines)</code>
+      * <code>Assert equal string ("N10 G0 X1", m.lines[0])</code>
+      * <code>Assert equal string ("N20 M30", m.lines[1])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_crlf_and_parity</b> &mdash; <i>Crlf and parity</i></summary>
+
+    * **Objective**: Crlf and parity
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (2, m.nlines)</code>
+      * <code>Assert equal string ("G90", m.lines[0])</code>
+      * <code>Assert equal string ("G0 X0", m.lines[1])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_xoff_pacing</b> &mdash; <i>Xoff pacing</i></summary>
+
+    * **Objective**: Xoff pacing
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>Assert true (m.paused_seen)</code>
+      * <code>Assert equal int (3, m.nlines)</code>
+      * <code>Assert equal string ("N30 M30", m.lines[2])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_leader_trailer</b> &mdash; <i>8 leader + 8 trailer NUL runout bytes were emitted (skipped by the decoder)</i></summary>
+
+    * **Objective**: 8 leader + 8 trailer NUL runout bytes were emitted (skipped by the decoder)
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, plen, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (1, m.nlines)</code>
+      * <code>Assert equal string ("M30", m.lines[0])</code>
+      * <code>Assert greater or equal (16u, m.bytes_sent)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_program</b> &mdash; <i>Empty program</i></summary>
+
+    * **Objective**: Empty program
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, "", 0, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (1, m.prog_start)</code>
+      * <code>Assert equal int (1, m.prog_end)</code>
+      * <code>Assert equal int (0, m.nlines)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_error</b> &mdash; <i>Encode error</i></summary>
+
+    * **Objective**: Encode error
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_ERR_ENCODE, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_io_error_and_args</b> &mdash; <i>Io error and args</i></summary>
+
+    * **Objective**: Io error and args
+    * **Assertions**:
+      * <code>Assert equal int (DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DNC_STREAM_ERR_ARG, dnc_stream(nullptr, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DNC_STREAM_ERR_ARG, dnc_stream(&cfg, nullptr, 3, mock_send, mock_recv, &m))</code>
   </details>
 
 </details>
