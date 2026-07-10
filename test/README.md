@@ -501,7 +501,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2744 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2746 test cases** across **233 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4610,7 +4610,7 @@ A thorough directory of all **2744 test cases** across **233 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dbm (9 tests)</b></summary>
+<summary><b>test_dbm (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_put_get_overwrite</b> &mdash; <i>Put get overwrite</i></summary>
@@ -4728,6 +4728,40 @@ A thorough directory of all **2744 test cases** across **233 suites**. Expand a 
       * <code>Assert equal int (DETWS_DBM_VAL_MAX, detws_dbm_get(&g_db, "big", 3, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, DETWS_DBM_VAL_MAX);</code>
       * <code>Assert equal int (-1, detws_dbm_get(&g_db, "big", 3, small, sizeof(small)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compact_reclaims_space</b> &mdash; <i>Churn: overwrite k1 many times and delete k3 - all of that becomes dead space in the log.</i></summary>
+
+    * **Objective**: Churn: overwrite k1 many times and delete k3 - all of that becomes dead space in the log.
+    * **Assertions**:
+      * <code>Assert true (put_s("k1", v))</code>
+      * <code>Assert true (detws_dbm_del(&g_db, "k3", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db)); // k1,k2,k4 live</code>
+      * <code>Assert true (live &lt; used_before)</code>
+      * <code>Assert true (detws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (get_eq("k1", "k1-value-revision-29"))</code>
+      * <code>Assert true (get_eq("k2", "v2"))</code>
+      * <code>Assert true (get_eq("k4", "v4"))</code>
+      * <code>Assert false (detws_dbm_contains(&g_db, "k3", 2))</code>
+      * <code>Assert true (used_after &lt; used_before)</code>
+      * <code>Assert true (used_after &gt;= live)</code>
+      * <code>Assert true (put_s("k5", "v5"))</code>
+      * <code>Assert true (get_eq("k5", "v5"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_compact_dest_too_small_fails_closed</b> &mdash; <i>A 512-byte destination (384 B usable) cannot hold the live set: compact must fail closed.</i></summary>
+
+    * **Objective**: A 512-byte destination (384 B usable) cannot hold the live set: compact must fail closed.
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_put(&g_db, k, (uint16_t)strlen(k), (const uint8_t *)big, sizeof(big)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db)); // ~800+ B of live values, plus framing</code>
+      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db));</code>
+      * <code>Assert equal int (200, detws_dbm_get(&g_db, "key0", 4, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(big, out, 200);</code>
   </details>
 
 </details>
