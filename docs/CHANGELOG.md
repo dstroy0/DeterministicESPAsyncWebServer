@@ -6,14 +6,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a26ee7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a26ee7e6e8cab27222051ebb75f77d7633aa1f92))
 - update CHANGELOG.md [skip ci] ([`8d1b066`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d1b0662b5c44ad050d4dede990905a83b7b1d2f))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`379d092`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/379d092b8ce4242e26596c98ca35dd4bc8f7ba92))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d01fb90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d01fb90ba55edee779bdebb9e5cdb6f29e8c4d25))
 - update ESP32 build footprints [skip ci] ([`a20d0e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a20d0e45320c7dfc15fb0112dd1f386a6a949e69))
 
 ### Testing
 
+- fuzz the DNS / DNP3 / STOMP untrusted-input parsers ([`36c3274`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36c327494c863b51a1c2274142e605bb96242c21))
 - add RFC 8032 Ed25519 sign vectors (host-key signing path) ([`e29c2ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e29c2ac1f61f72b1791eb453db09a364b684a1a9))
 
 ## [5.81.2] - 2026-07-10
