@@ -651,6 +651,7 @@
     "nrefs",
     "NSCOUNT",
     "nslookup",
+    "ntauth",
     "NTCIP",
     "NTLM",
     "NTLMSSP",

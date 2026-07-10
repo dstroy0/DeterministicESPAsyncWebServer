@@ -4128,7 +4128,12 @@
 // DETWS_NEED_DET_CLIENT marks when the client transport is actually used; the
 // det_client translation unit compiles its body only then (a server-only Arduino
 // build that does not enable a client must not reference the resolver symbols).
-#if DETWS_ENABLE_HTTP_CLIENT || DETWS_ENABLE_MQTT || DETWS_ENABLE_WS_CLIENT
+// Every feature that drives the outbound client transport must pull it in: the direct callers
+// (http_client / mqtt / ws_client / relay / smtp / ssh port-forward) and the seam-based engines
+// whose shipped example binds the seam to det_client (smb / dnc). Miss one and its det_client_open
+// resolves to the !NEED stub that returns -1, so the feature silently never connects on device.
+#if DETWS_ENABLE_HTTP_CLIENT || DETWS_ENABLE_MQTT || DETWS_ENABLE_WS_CLIENT || DETWS_ENABLE_RELAY ||                   \
+    DETWS_ENABLE_SMTP || DETWS_SSH_PORT_FORWARD || DETWS_ENABLE_SMB || DETWS_ENABLE_DNC
 #undef DETWS_ENABLE_DNS_RESOLVER
 #define DETWS_ENABLE_DNS_RESOLVER 1
 #define DETWS_NEED_DET_CLIENT 1

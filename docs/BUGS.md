@@ -8,6 +8,47 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SMB / DNC / relay / SMTP / SSH-forward could never connect (client transport stubbed out)
+
+- **Status:** FIXED (HW: an ESP32-S3 SMB client now connects to a real Samba server - `det_client_open`
+  returns a valid slot instead of -1). Found by hardware testing; the host tests cannot catch it because
+  they drive the engines through a mock send/recv seam, not the real `det_client` transport.
+- **Found:** 2026-07-10, first on-hardware run of the 68.SmbFileClient example.
+- **Symptom:** every outbound connection from an SMB (also DNC, relay/DNAT, SMTP, or SSH port-forward)
+  build failed - `det_client_open()` returned -1 on the very first call, so the feature silently never
+  talked to its peer on device.
+- **Root cause:** `client.cpp` compiles the real transport only under `#if defined(ARDUINO) &&
+DETWS_NEED_DET_CLIENT`, else it falls through to a host stub whose `det_client_open` returns -1.
+  `DETWS_NEED_DET_CLIENT` was derived from only `HTTP_CLIENT || MQTT || WS_CLIENT`, omitting every newer
+  feature that drives det_client: the direct callers (relay, smtp, ssh port-forward) and the seam-based
+  engines whose shipped example binds the seam to det_client (smb, dnc). An SMB-only firmware got the stub.
+- **Fix:** added `DETWS_ENABLE_RELAY || DETWS_ENABLE_SMTP || DETWS_SSH_PORT_FORWARD || DETWS_ENABLE_SMB ||
+DETWS_ENABLE_DNC` to the `DETWS_NEED_DET_CLIENT` derivation (which also force-enables the shared DNS
+  resolver), so any feature that needs the outbound transport pulls it in.
+- **Lesson:** a "needs X" derived flag must list EVERY consumer, including features that reach the transport
+  only through an example's seam binding; and a stub that returns an error instead of failing to link hides
+  the omission until a board is on the bench.
+
+## SMB client crashed the ESP32 during NTLMv2 auth (smb_open stack overflow)
+
+- **Status:** FIXED (HW: the S3 read a file byte-exact - the fnv1a matched the server - after the buffers
+  moved off the stack; native_smb host tests still pass).
+- **Found:** 2026-07-10, on hardware, right after the det_client fix let `smb_open` reach the real Samba
+  NTLMv2 exchange.
+- **Symptom:** "Guru Meditation Error ... Stack canary watchpoint triggered (loopTask)" inside
+  `hmac_md5` <- `ntlm_ntowfv2` <- `smb_open`, in a boot loop. Host tests never saw it (the native stack is
+  large and unguarded).
+- **Root cause:** `smb_open` declared ~4 KB of working buffers on the stack (`tx` + `rx` = 2*DETWS_SMB_BUF,
+  plus `nt_resp` + `ntauth` + `sp2` + `utf16` = 4*(DETWS_SMB_BUF/2)); `smb_read`/`smb_write` each add
+  2*DETWS_SMB_BUF. With the caller's frame this overran the default 8 KB Arduino loopTask stack, tripping
+  the canary during the deep NTLMv2 call chain.
+- **Fix:** moved the large working buffers into one owned, feature-gated `SmbClientCtx` static (matching the
+  library's owner-context pattern), leaving only small locals on the stack. The SMB dialogue is sequential
+  (open -> read/write -> close) so a single shared working set is correct; documented as not reentrant
+  across two concurrent SMB connections.
+- **Lesson:** protocol clients with multi-KB working buffers must own them statically, not stack-allocate
+  them - default embedded task stacks are ~8 KB and host tests will not reveal the overflow.
+
 ## Multipart parser truncated binary parts (strstr on a length-tracked binary body)
 
 - **Status:** FIXED (native_app `test_binary_part_not_truncated` + all multipart cases pass; native_pentest
