@@ -15,6 +15,9 @@
 #include "network_drivers/transport/client.h"
 #include "network_drivers/transport/tcp.h"
 #include "relay.h"
+#if DETWS_ENABLE_RADIO_POWER
+#include "services/radio_power/radio_power.h" // keep the radio awake during a relayed transfer
+#endif
 #include <string.h>
 
 namespace
@@ -113,6 +116,9 @@ int b_send(void *c, const uint8_t *buf, size_t len)
 void teardown(RelayBridge *br, bool close_inbound)
 {
     br->active = false;
+#if DETWS_ENABLE_RADIO_POWER
+    detws_radio_busy_release(); // this bridge is done relaying
+#endif
     det_client_close(br->origin_cid);
     if (close_inbound)
         det_conn_close(br->conn_slot);
@@ -172,6 +178,9 @@ void relay_on_accept(uint8_t slot)
     DetRelayEnd a = {a_recv, a_send, nullptr, br};
     DetRelayEnd b = {b_recv, b_send, nullptr, br};
     det_relay_init(&br->relay, &a, &b);
+#if DETWS_ENABLE_RADIO_POWER
+    detws_radio_busy_hold(); // hold the radio awake for the life of this bridge
+#endif
 }
 
 void relay_on_data(uint8_t slot)
@@ -230,7 +239,13 @@ void det_relay_listener_reset(void)
     for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
         s_ctx.binds[i].active = false;
     for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
-        s_ctx.bridges[i].active = false;
+        if (s_ctx.bridges[i].active)
+        {
+            s_ctx.bridges[i].active = false;
+#if DETWS_ENABLE_RADIO_POWER
+            detws_radio_busy_release(); // balance the hold taken when the bridge was opened
+#endif
+        }
 }
 
 #endif // DETWS_ENABLE_RELAY

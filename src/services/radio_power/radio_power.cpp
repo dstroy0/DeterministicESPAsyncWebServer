@@ -39,6 +39,13 @@ wifi_ps_type_t to_esp_ps(uint8_t mode)
         return WIFI_PS_MAX_MODEM;
     return WIFI_PS_NONE;
 }
+
+// Bulk-transfer keep-awake refcount, owned in one context (owner-context guard).
+struct RadioBusyCtx
+{
+    int held;
+};
+RadioBusyCtx s_busy;
 } // namespace
 
 void detws_radio_power_apply(void)
@@ -61,6 +68,18 @@ uint8_t detws_radio_ps_get(void)
     return DETWS_PS_NONE;
 }
 
+void detws_radio_busy_hold(void)
+{
+    if (s_busy.held++ == 0)
+        esp_wifi_set_ps(WIFI_PS_NONE); // modem sleep off while a bulk transfer is in flight
+}
+
+void detws_radio_busy_release(void)
+{
+    if (s_busy.held > 0 && --s_busy.held == 0)
+        detws_radio_power_apply(); // last transfer done: restore the configured mode
+}
+
 #else // host build - no radio
 
 void detws_radio_power_apply(void)
@@ -69,6 +88,12 @@ void detws_radio_power_apply(void)
 uint8_t detws_radio_ps_get(void)
 {
     return DETWS_PS_NONE;
+}
+void detws_radio_busy_hold(void)
+{
+}
+void detws_radio_busy_release(void)
+{
 }
 
 #endif // ARDUINO
