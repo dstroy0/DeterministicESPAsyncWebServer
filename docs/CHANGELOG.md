@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.95.0 - 2026-07-10</b></summary>
 
 ### Bug Fixes
 
@@ -11,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`ba50c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba50c30574b11b3615870e6c946bcd2ea2e355d5))
+- update CHANGELOG.md [skip ci] ([`549b574`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/549b574c8d9ec5466cec25354f26fc84e74a02e5))
 - update CHANGELOG.md [skip ci] ([`6cea4b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cea4b201b66dbe284da6980852c9db42c89de31))
 - update test report + coverage [skip ci] ([`31a9bd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31a9bd5720801f67f68a9bb4bc2fb626e6fc5ac2))
 - update CHANGELOG.md [skip ci] ([`11cbb68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11cbb687736fbd239817fdab72ea0838f243d9e7))
@@ -21,8 +26,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report + coverage [skip ci] ([`355b9ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/355b9ad0adeb61e99f3be51576321b62ffa40feb))
 - update CHANGELOG.md [skip ci] ([`25cb46c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25cb46c342a72baff040ae24ad952999091cb39c))
 
+### Changes
+
+- Bump version: 5.94.1 → 5.95.0 ([`3313ad1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3313ad1eddb7e4496040924a4229cffd057ae6f8))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`0fa5ab5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0fa5ab58ec72d16bc5783b8cd4783856f926a722))
 - measured SMB/DNC/port-forward + radio keep-awake, with practicality ([`c7c8beb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7c8bebe227ec7259fde285412f1b4cf1f141096))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f80e6e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f80e6e00ae39a1f553a708eb3dc3d665d497a88f))
 - update ESP32 build footprints [skip ci] ([`f3f7286`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3f728639a2bc6be8c60149d7671f01deb629c10))
@@ -47,6 +57,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Testing
 
 - decouple test_half_close_shutdown from DETWS_RELAY_BUF ([`cbb13fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cbb13fe764d6b7f74893620e414e3522e5c0f80b))
+
+</details>
 
 ## [5.94.1] - 2026-07-10
 
