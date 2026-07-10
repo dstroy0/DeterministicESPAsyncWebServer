@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.94.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.94.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`5308f66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5308f6638f078698abe93267bbf0e3580321bbe6))
+
+### Changes
+
+- Bump version: 5.93.1 → 5.94.0 ([`651c8f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/651c8f99f1e5a496ff8eb1d197b33d357e8649e0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`56cae74`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56cae745c58694359e148112168dc057e9bb7bf0))
+- update ESP32 build footprints [skip ci] ([`1aa4c6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1aa4c6c34b550fdaf0c0d6531e139876d274187a))
+
+### Features
+
+- PROTO_RELAY server listener + 70.PortForward example ([`fa3ddef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa3ddeff8c88bc86393fa301b47bd52dddfb24b7))
+
+</details>
+
 ## [5.93.1] - 2026-07-10
 
 <details>
