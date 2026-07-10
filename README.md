@@ -535,6 +535,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `METRICS`         |             1.8 KB |         < 0.5 KB |
 | L7    | `SYSLOG`          |             1.2 KB |           2.0 KB |
 | L7    | `AUDIT_LOG`       |           < 0.5 KB |           3.1 KB |
+| L7    | `RELAY`           |           < 0.5 KB |           4.7 KB |
 | L7    | `LOGBUF`          |           < 0.5 KB |           3.2 KB |
 | -     | `FILE_SERVING`    |         0.0-4.2 KB |         < 0.5 KB |
 | -     | `WEBSOCKET`       |         0.0-3.7 KB |       0.0-1.5 KB |
