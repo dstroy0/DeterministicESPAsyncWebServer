@@ -3,19 +3,23 @@
 
 /**
  * @file redis_resp.h
- * @brief Redis RESP2 wire codec (DETWS_ENABLE_REDIS) - zero-heap command encoder
- *        + reply parser, so a device can talk to a Redis server with the shipped
- *        outbound client transport.
+ * @brief Redis RESP2/RESP3 wire codec (DETWS_ENABLE_REDIS) - zero-heap command
+ *        encoder + reply parser, so a device can talk to a Redis server with the
+ *        shipped outbound client transport.
  *
- * RESP2 (https://redis.io/docs/latest/develop/reference/protocol-spec):
+ * RESP (https://redis.io/docs/latest/develop/reference/protocol-spec):
  *  - A command is an array of bulk strings: `*<n>\r\n$<len>\r\n<arg>\r\n...`.
- *  - A reply is one of: simple string `+OK\r\n`, error `-ERR ...\r\n`, integer
- *    `:<n>\r\n`, bulk string `$<len>\r\n<bytes>\r\n` (`$-1\r\n` = nil), or array
- *    `*<n>\r\n<elements>` (`*-1\r\n` = nil).
+ *  - A RESP2 reply is one of: simple string `+OK\r\n`, error `-ERR ...\r\n`,
+ *    integer `:<n>\r\n`, bulk string `$<len>\r\n<bytes>\r\n` (`$-1\r\n` = nil), or
+ *    array `*<n>\r\n<elements>` (`*-1\r\n` = nil).
+ *  - RESP3 adds: null `_\r\n`, boolean `#t\r\n`/`#f\r\n`, double `,<x>\r\n`, big
+ *    number `(<digits>\r\n`, bulk error `!<len>\r\n...`, verbatim string
+ *    `=<len>\r\n<fmt>:<text>\r\n`, map `%<pairs>\r\n`, set `~<n>\r\n`, push `><n>\r\n`.
  *
  * The parser is a cursor: it decodes one value at the buffer head and reports how
- * many bytes it consumed; for an array it reports the element count and the caller
- * parses each element from the remaining bytes (no recursion state, no heap).
+ * many bytes it consumed; for an aggregate (array / set / push / map) it reports
+ * the following child count and the caller parses each child from the remaining
+ * bytes (no recursion state, no heap). A map of N pairs reports count 2*N.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -31,7 +35,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief RESP2 reply value types. */
+/** @brief RESP2/RESP3 reply value types. */
 enum RespType
 {
     RESP_SIMPLE,  ///< simple string (+); value in str/str_len
@@ -39,17 +43,27 @@ enum RespType
     RESP_INTEGER, ///< integer (:); value in ival
     RESP_BULK,    ///< bulk string ($); bytes in str/str_len
     RESP_ARRAY,   ///< array (*); element count in count (parse each from the remainder)
-    RESP_NIL,     ///< null bulk string ($-1) or null array (*-1)
+    RESP_NIL,     ///< null bulk string ($-1), null array (*-1), or RESP3 null (_)
+    // RESP3 additions:
+    RESP_BOOL,       ///< boolean (#); 0/1 in ival
+    RESP_DOUBLE,     ///< double (,); value in dval, text in str/str_len
+    RESP_BIG_NUMBER, ///< big number ((); digits in str/str_len
+    RESP_BULK_ERROR, ///< bulk error (!); message in str/str_len
+    RESP_VERBATIM,   ///< verbatim string (=); str includes the 3-char format + ':'
+    RESP_MAP,        ///< map (%); count = 2 * pairs = following child count
+    RESP_SET,        ///< set (~); element count in count
+    RESP_PUSH,       ///< push (>); element count in count
 };
 
 /** @brief One decoded RESP value. String fields point INTO the source buffer (not copied). */
 struct RespReply
 {
     RespType type;
-    int64_t ival;    ///< value for RESP_INTEGER; element count for RESP_ARRAY
-    const char *str; ///< bytes for RESP_SIMPLE / RESP_ERROR / RESP_BULK (not NUL-terminated)
+    int64_t ival;    ///< value for RESP_INTEGER; 0/1 for RESP_BOOL; child count for aggregates
+    double dval;     ///< value for RESP_DOUBLE (best-effort; str is authoritative)
+    const char *str; ///< bytes for simple/error/bulk/big-number/bulk-error/verbatim/double text
     size_t str_len;  ///< length of @ref str
-    int64_t count;   ///< element count for RESP_ARRAY (also mirrored in ival)
+    int64_t count;   ///< child count for RESP_ARRAY / RESP_SET / RESP_PUSH / RESP_MAP (map = 2*pairs)
 };
 
 /**

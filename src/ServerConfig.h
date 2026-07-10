@@ -2863,6 +2863,20 @@
 #endif
 
 /**
+ * @brief Opt-in Redis RESP wire codec (DETWS_ENABLE_REDIS).
+ *
+ * services/redis is the pure wire layer of a Redis client: a RESP command encoder (a command becomes a
+ * RESP array of bulk strings) and a streaming, zero-heap reply decoder that reads one value at a time, so
+ * arbitrarily nested replies are walked with only the caller's loop state (no tree allocation). Covers
+ * RESP2 and the RESP3 additions (null / boolean / double / big number / bulk error / verbatim / map / set
+ * / push). Pure (no I/O; you hand it byte buffers); host-tested against spec vectors and a real
+ * redis-server. Default off.
+ */
+#ifndef DETWS_ENABLE_REDIS
+#define DETWS_ENABLE_REDIS 0
+#endif
+
+/**
  * @brief Opt-in SAE J2735 V2X codec (DETWS_ENABLE_J2735).
  *
  * When set, services/j2735 provides the ASN.1 UPER (Unaligned Packed Encoding Rules) bit-level primitive

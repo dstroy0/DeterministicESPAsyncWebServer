@@ -842,7 +842,7 @@ Opt-in raw Layer-2 Ethernet frame codec. When set, services/rawl2 builds/parses 
 
 `DETWS_ENABLE_REDIS`
 
-Redis RESP2 wire codec. Default off. services/redis_resp lets a device drive a Redis server over the shipped outbound client transport: `resp_encode_command` builds a command (an array of bulk strings, binary-safe via explicit arg lengths) and `resp_parse` is a cursor reply decoder (simple / error / integer / bulk / array / nil). Pure and host-tested; the connection is the application's. See src/services/redis_resp.h.
+Redis RESP2/RESP3 wire codec. Default off. services/redis_resp lets a device drive a Redis server over the shipped outbound client transport: `resp_encode_command` builds a command (an array of bulk strings, binary-safe via explicit arg lengths) and `resp_parse` is a streaming cursor reply decoder covering RESP2 (simple / error / integer / bulk / array / nil) plus the RESP3 additions (null / boolean / double / big number / bulk error / verbatim / map / set / push); aggregates report a child count and the caller walks each child, so nested replies decode with no heap. Pure and host-tested against Redis spec vectors and verified live against a real redis-server (SET/GET, arrays, and a RESP3 map from HELLO 3); the connection is the application's. See src/services/redis_resp.h.
 
 ## Routing
 

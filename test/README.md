@@ -224,7 +224,7 @@ The native test matrix has **210 environments**, one per feature, generated from
 | `native_radio_sniff` | `ETWS_ENABLE_RADIO_SNIFF=1` | `test_radio_sniff` | Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI encode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs + MAC fram... |
 | `native_range` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
 | `native_rawl2` | `ETWS_ENABLE_RAWL2=1` | `test_rawl2` | Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the 802.3 FCS (CRC-32). |
-| `native_redis` | `ETWS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (simple/error/integer/bulk/array/nil). |
+| `native_redis` | `ETWS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
 | `native_rtc` | `ETWS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
 | `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
@@ -500,7 +500,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2728 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2732 test cases** across **232 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -21333,7 +21333,7 @@ A thorough directory of all **2728 test cases** across **232 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_redis_resp (10 tests)</b></summary>
+<summary><b>test_redis_resp (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_encode_command</b> &mdash; <i>Encode command</i></summary>
@@ -21458,6 +21458,78 @@ A thorough directory of all **2728 test cases** across **232 suites**. Expand a 
       * <code>Assert false (resp_parse((const uint8_t *)"$5\\r\\nhelloAB", 11, &r, &c))</code>
       * <code>Assert true (resp_parse((const uint8_t *)"*-1\\r\\n", 5, &r, &c))</code>
       * <code>Assert equal int (RESP_NIL, r.type)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resp3_null_bool</b> &mdash; <i>Parse resp3 null bool</i></summary>
+
+    * **Objective**: Parse resp3 null bool
+    * **Assertions**:
+      * <code>Assert true (resp_parse((const uint8_t *)"_\\r\\n", 3, &r, &c))</code>
+      * <code>Assert equal (RESP_NIL, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, c);</code>
+      * <code>Assert true (resp_parse((const uint8_t *)"#t\\r\\n", 4, &r, &c))</code>
+      * <code>Assert equal (RESP_BOOL, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1, r.ival);</code>
+      * <code>Assert true (resp_parse((const uint8_t *)"#f\\r\\n", 4, &r, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, r.ival);</code>
+      * <code>Assert false (resp_parse((const uint8_t *)"#x\\r\\n", 4, &r, &c))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resp3_double</b> &mdash; <i>Parse resp3 double</i></summary>
+
+    * **Objective**: Parse resp3 double
+    * **Assertions**:
+      * <code>Assert true (resp_parse((const uint8_t *)",3.14\\r\\n", 7, &r, &c))</code>
+      * <code>Assert equal (RESP_DOUBLE, r.type)</code>
+      * <code>Assert equal memory ("3.14", r.str, 4)</code>
+      * <code>Assert true (fabs(r.dval - 3.14) &lt; 1e-9)</code>
+      * <code>Assert true (resp_parse((const uint8_t *)",inf\\r\\n", 6, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &gt; 0)</code>
+      * <code>Assert true (resp_parse((const uint8_t *)",-inf\\r\\n", 7, &r, &c))</code>
+      * <code>Assert true (isinf(r.dval) && r.dval &lt; 0)</code>
+      * <code>Assert true (resp_parse((const uint8_t *)",nan\\r\\n", 6, &r, &c))</code>
+      * <code>Assert true (isnan(r.dval))</code>
+      * <code>Assert true (resp_parse((const uint8_t *)",1.5e3\\r\\n", 8, &r, &c))</code>
+      * <code>Assert true (fabs(r.dval - 1500.0) &lt; 1e-6)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resp3_bignum_bulkerr_verbatim</b> &mdash; <i>Parse resp3 bignum bulkerr verbatim</i></summary>
+
+    * **Objective**: Parse resp3 bignum bulkerr verbatim
+    * **Assertions**:
+      * <code>Assert true (resp_parse((const uint8_t *)big, strlen(big), &r, &c))</code>
+      * <code>Assert equal (RESP_BIG_NUMBER, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(digits), r.str_len);</code>
+      * <code>Assert equal memory (digits, r.str, r.str_len)</code>
+      * <code>Assert true (resp_parse((const uint8_t *)be, strlen(be), &r, &c))</code>
+      * <code>Assert equal (RESP_BULK_ERROR, r.type)</code>
+      * <code>Assert equal memory ("SYNTAX invalid syntax", r.str, 21)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(be), c);</code>
+      * <code>Assert true (resp_parse((const uint8_t *)vb, strlen(vb), &r, &c))</code>
+      * <code>Assert equal (RESP_VERBATIM, r.type)</code>
+      * <code>Assert equal memory ("txt:Some string", r.str, 15)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resp3_map_set_push</b> &mdash; <i>Parse resp3 map set push</i></summary>
+
+    * **Objective**: Parse resp3 map set push
+    * **Assertions**:
+      * <code>Assert true (resp_parse(m, len, &r, &c))</code>
+      * <code>Assert equal (RESP_MAP, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(4, r.count); // 2 pairs -&gt; 4 children</code>
+      * <code>Assert true (resp_parse(m + off, len - off, &r, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(len, off);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(3, seen_vals);</code>
+      * <code>Assert true (resp_parse((const uint8_t *)"~2\\r\\n", 4, &r, &c))</code>
+      * <code>Assert equal (RESP_SET, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(2, r.count);</code>
+      * <code>Assert true (resp_parse((const uint8_t *)"&gt;3\\r\\n", 4, &r, &c))</code>
+      * <code>Assert equal (RESP_PUSH, r.type)</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(3, r.count);</code>
   </details>
 
 </details>

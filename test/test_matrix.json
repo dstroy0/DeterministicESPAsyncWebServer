@@ -501,7 +501,7 @@
       "tests": ["test_cloudevents"]
     },
     "native_redis": {
-      "desc": "Redis RESP2 codec (services/redis_resp): the zero-heap command encoder + the\ncursor reply parser (simple/error/integer/bulk/array/nil). Pure host tests.",
+      "desc": "Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the\ncursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big\nnumber/bulk error/verbatim/map/set/push). Pure host tests against Redis spec vectors.",
       "flags": ["-DDETWS_ENABLE_REDIS=1"],
       "src": ["+<services/redis_resp.cpp>"],
       "tests": ["test_redis_resp"]

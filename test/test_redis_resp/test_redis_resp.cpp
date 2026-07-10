@@ -5,6 +5,7 @@
 // and the cursor reply parser. Pure host tests.
 
 #include "services/redis_resp.h"
+#include <math.h>
 #include <string.h>
 #include <unity.h>
 
@@ -152,6 +153,97 @@ void test_parse_guard_subconditions_and_edges()
     TEST_ASSERT_EQUAL_INT(RESP_NIL, r.type);
 }
 
+// RESP3: null (_), boolean (#t/#f).
+void test_parse_resp3_null_bool()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"_\r\n", 3, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_NIL, r.type);
+    TEST_ASSERT_EQUAL_size_t(3, c);
+
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"#t\r\n", 4, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_BOOL, r.type);
+    TEST_ASSERT_EQUAL_INT64(1, r.ival);
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"#f\r\n", 4, &r, &c));
+    TEST_ASSERT_EQUAL_INT64(0, r.ival);
+    TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"#x\r\n", 4, &r, &c)); // invalid boolean
+}
+
+// RESP3: double (,) including inf / -inf / nan and an exponent.
+void test_parse_resp3_double()
+{
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",3.14\r\n", 7, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_DOUBLE, r.type);
+    TEST_ASSERT_EQUAL_MEMORY("3.14", r.str, 4);
+    TEST_ASSERT_TRUE(fabs(r.dval - 3.14) < 1e-9);
+
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",inf\r\n", 6, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval > 0);
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",-inf\r\n", 7, &r, &c));
+    TEST_ASSERT_TRUE(isinf(r.dval) && r.dval < 0);
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",nan\r\n", 6, &r, &c));
+    TEST_ASSERT_TRUE(isnan(r.dval));
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",1.5e3\r\n", 8, &r, &c));
+    TEST_ASSERT_TRUE(fabs(r.dval - 1500.0) < 1e-6);
+}
+
+// RESP3: big number ((), bulk error (!), verbatim string (=).
+void test_parse_resp3_bignum_bulkerr_verbatim()
+{
+    RespReply r;
+    size_t c;
+    const char *big = "(3492890328409238509324850943850943825024385\r\n";
+    const char *digits = "3492890328409238509324850943850943825024385";
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)big, strlen(big), &r, &c));
+    TEST_ASSERT_EQUAL(RESP_BIG_NUMBER, r.type);
+    TEST_ASSERT_EQUAL_size_t(strlen(digits), r.str_len);
+    TEST_ASSERT_EQUAL_MEMORY(digits, r.str, r.str_len);
+
+    const char *be = "!21\r\nSYNTAX invalid syntax\r\n";
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)be, strlen(be), &r, &c));
+    TEST_ASSERT_EQUAL(RESP_BULK_ERROR, r.type);
+    TEST_ASSERT_EQUAL_MEMORY("SYNTAX invalid syntax", r.str, 21);
+    TEST_ASSERT_EQUAL_size_t(strlen(be), c);
+
+    const char *vb = "=15\r\ntxt:Some string\r\n";
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)vb, strlen(vb), &r, &c));
+    TEST_ASSERT_EQUAL(RESP_VERBATIM, r.type);
+    TEST_ASSERT_EQUAL_MEMORY("txt:Some string", r.str, 15); // format prefix kept
+}
+
+// RESP3 aggregates: map (%, reports 2*pairs), set (~), push (>).
+void test_parse_resp3_map_set_push()
+{
+    const uint8_t *m = (const uint8_t *)"%2\r\n$1\r\na\r\n:1\r\n$1\r\nb\r\n:2\r\n";
+    size_t len = strlen((const char *)m);
+    RespReply r;
+    size_t c;
+    TEST_ASSERT_TRUE(resp_parse(m, len, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_MAP, r.type);
+    TEST_ASSERT_EQUAL_INT64(4, r.count); // 2 pairs -> 4 children
+    size_t off = c;
+    int64_t seen_vals = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        TEST_ASSERT_TRUE(resp_parse(m + off, len - off, &r, &c));
+        if (i % 2 == 1)
+            seen_vals += r.ival; // the values are integers 1 and 2
+        off += c;
+    }
+    TEST_ASSERT_EQUAL_size_t(len, off);
+    TEST_ASSERT_EQUAL_INT64(3, seen_vals);
+
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"~2\r\n", 4, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_SET, r.type);
+    TEST_ASSERT_EQUAL_INT64(2, r.count);
+    TEST_ASSERT_TRUE(resp_parse((const uint8_t *)">3\r\n", 4, &r, &c));
+    TEST_ASSERT_EQUAL(RESP_PUSH, r.type);
+    TEST_ASSERT_EQUAL_INT64(3, r.count);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -165,5 +257,9 @@ int main()
     RUN_TEST(test_parse_incomplete_and_malformed);
     RUN_TEST(test_encode_guard_subconditions);
     RUN_TEST(test_parse_guard_subconditions_and_edges);
+    RUN_TEST(test_parse_resp3_null_bool);
+    RUN_TEST(test_parse_resp3_double);
+    RUN_TEST(test_parse_resp3_bignum_bulkerr_verbatim);
+    RUN_TEST(test_parse_resp3_map_set_push);
     return UNITY_END();
 }
