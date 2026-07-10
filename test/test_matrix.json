@@ -1010,9 +1010,10 @@
       "src": [
         "+<services/smb/smb2.cpp>",
         "+<services/smb/smb_md.cpp>",
-        "+<services/smb/ntlm.cpp>"
+        "+<services/smb/ntlm.cpp>",
+        "+<services/smb/ntlmssp.cpp>"
       ],
-      "tests": ["test_smb2", "test_smb_crypto", "test_ntlm"]
+      "tests": ["test_smb2", "test_smb_crypto", "test_ntlm", "test_ntlmssp"]
     },
     "native_smtp": {
       "desc": "SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH\nLOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply\nparsing. Driven by a scripted mock server on the host - no lwIP or TLS.",

@@ -1,0 +1,84 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file ntlmssp.h
+ * @brief NTLMSSP message codec (MS-NLMP §2.2.1) for the SMB2 client (DETWS_ENABLE_SMB).
+ *
+ * The three-message NTLM handshake tokens that carry the NTLMv2 response (ntlm.h) inside SMB2
+ * SESSION_SETUP: the client sends a NEGOTIATE (type 1), the server replies with a CHALLENGE
+ * (type 2) carrying the 8-byte server challenge + the target-info AV_PAIRs, and the client sends
+ * an AUTHENTICATE (type 3) carrying the NtChallengeResponse and the user/domain. All fields
+ * little-endian; text is UTF-16LE. Pure, zero heap. This builds the raw NTLMSSP tokens; the
+ * SPNEGO/GSS wrapping + the SESSION_SETUP framing are the next increment.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_NTLMSSP_H
+#define DETERMINISTICESPASYNCWEBSERVER_NTLMSSP_H
+
+#include "ServerConfig.h"
+
+#if DETWS_ENABLE_SMB
+
+#include <stddef.h>
+#include <stdint.h>
+
+/** @brief NTLMSSP NegotiateFlags (MS-NLMP §2.2.2.5), the subset a basic NTLMv2 client uses. */
+enum
+{
+    NTLMSSP_NEGOTIATE_UNICODE = 0x00000001,
+    NTLMSSP_REQUEST_TARGET = 0x00000004,
+    NTLMSSP_NEGOTIATE_NTLM = 0x00000200,
+    NTLMSSP_NEGOTIATE_ALWAYS_SIGN = 0x00008000,
+    NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000,
+    NTLMSSP_NEGOTIATE_TARGET_INFO = 0x00800000,
+    NTLMSSP_NEGOTIATE_128 = 0x20000000,
+    NTLMSSP_NEGOTIATE_56 = 0x80000000,
+    // the default NEGOTIATE flag set for an NTLMv2 client
+    NTLMSSP_CLIENT_DEFAULT_FLAGS = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_REQUEST_TARGET | NTLMSSP_NEGOTIATE_NTLM |
+                                   NTLMSSP_NEGOTIATE_ALWAYS_SIGN | NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY,
+};
+
+/** @brief Parsed CHALLENGE_MESSAGE (type 2). @ref target_info points INTO the source message. */
+struct NtlmChallenge
+{
+    uint32_t flags;
+    uint8_t server_challenge[8];
+    const uint8_t *target_info; ///< the AV_PAIR blob, or nullptr if absent
+    uint16_t target_info_len;
+};
+
+/**
+ * @brief Build a NEGOTIATE_MESSAGE (type 1) with @p flags and empty domain/workstation.
+ * @return message length (32), or 0 if @p cap < 32.
+ */
+size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags);
+
+/**
+ * @brief Parse a CHALLENGE_MESSAGE (type 2): extract the flags, the 8-byte server challenge, and
+ *        the target-info AV_PAIRs (bounds-checked into @p msg).
+ * @return true on a valid CHALLENGE; false on a bad signature / type / truncation / out-of-bounds
+ *         target info.
+ */
+bool ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out);
+
+/**
+ * @brief Build an AUTHENTICATE_MESSAGE (type 3) carrying the LM + NT responses and the identity.
+ *
+ * @param lm_resp / lm_len  the LM(v2) response (may be null/0).
+ * @param nt_resp / nt_len  the NtChallengeResponse from ntlm_v2_response.
+ * @param domain / user / workstation  ASCII/UTF-8 identity strings (encoded UTF-16LE); user
+ *        and domain are typically required, workstation is optional (may be null).
+ * @param flags  the NegotiateFlags to echo (usually the server's from the CHALLENGE).
+ * @return total message length, or 0 on overflow. No Version, no MIC, no session-key exchange.
+ */
+size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_resp, size_t lm_len,
+                                  const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
+                                  const char *workstation, uint32_t flags);
+
+#endif // DETWS_ENABLE_SMB
+
+#endif // DETERMINISTICESPASYNCWEBSERVER_NTLMSSP_H

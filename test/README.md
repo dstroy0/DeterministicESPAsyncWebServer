@@ -239,7 +239,7 @@ The native test matrix has **215 environments**, one per feature, generated from
 | `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
 | `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
 | `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
+| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE); the NTLM digests MD4 (RFC 1320) / MD5 (RFC 1321) / HMAC-MD5 (RFC 2104) KAT-verified vs the... |
 | `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
 | `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
 | `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2838 test cases** across **239 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2843 test cases** across **240 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -16812,6 +16812,74 @@ A thorough directory of all **2838 test cases** across **239 suites**. Expand a 
     * **Objective**: Fail closed
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), out, sizeof(out), skey));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ntlmssp (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_negotiate</b> &mdash; <i>Build negotiate</i></summary>
+
+    * **Objective**: Build negotiate
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(32, n);</code>
+      * <code>Assert equal memory (SIG, buf, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, r32(buf + 8)); // MessageType NEGOTIATE</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntlmssp_build_negotiate(buf, 16, 0)); // overflow</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_challenge</b> &mdash; <i>Parse challenge</i></summary>
+
+    * **Objective**: Parse challenge
+    * **Assertions**:
+      * <code>Assert true (ntlmssp_parse_challenge(m, n, &ch))</code>
+      * <code>Assert equal memory (sc, ch.server_challenge, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(ti_len, ch.target_info_len);</code>
+      * <code>Assert equal memory (ti, ch.target_info, ti_len)</code>
+      * <code>Assert true ((ch.flags & NTLMSSP_NEGOTIATE_TARGET_INFO) != 0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_challenge_rejects</b> &mdash; <i>Parse challenge rejects</i></summary>
+
+    * **Objective**: Parse challenge rejects
+    * **Assertions**:
+      * <code>Assert false (ntlmssp_parse_challenge(bad, n, &ch))</code>
+      * <code>Assert false (ntlmssp_parse_challenge(bad, n, &ch))</code>
+      * <code>Assert false (ntlmssp_parse_challenge(bad, n, &ch))</code>
+      * <code>Assert false (ntlmssp_parse_challenge(m, 40, &ch))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_authenticate</b> &mdash; <i>NtChallengeResponseFields (@20) must point at our nt response</i></summary>
+
+    * **Objective**: NtChallengeResponseFields (@20) must point at our nt response
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(64, n);</code>
+      * <code>Assert equal memory (SIG, buf, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, r32(buf + 8)); // AUTHENTICATE</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x12345678, r32(buf + 60));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(48, nt_field_len);</code>
+      * <code>Assert true (nt_field_off + nt_field_len &lt;= n)</code>
+      * <code>Assert equal memory (nt, buf + nt_field_off, 48)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(8, u_len);</code>
+      * <code>Assert equal memory (user16, buf + u_off, 8)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_end_to_end</b> &mdash; <i>the embedded NtChallengeResponse starts with the MS-NLMP 4.2 NTProofStr</i></summary>
+
+    * **Objective**: the embedded NtChallengeResponse starts with the MS-NLMP 4.2 NTProofStr
+    * **Assertions**:
+      * <code>Assert true (ntlmssp_parse_challenge(chal, cn, &ch))</code>
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, nt_len);</code>
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, an);</code>
+      * <code>Assert equal memory (ntproof, auth + nt_off, 16)</code>
   </details>
 
 </details>
