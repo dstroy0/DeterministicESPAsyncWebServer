@@ -84,9 +84,16 @@ layer built first, then the store codecs on top. Substrate before stores.
       leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
       column values), int/float decoders, and a **multi-page table cursor** that walks an interior
       b-tree over `rootpage` in rowid order with a bounded descent stack + two page buffers (works over
-      any page source via a reader callback: RAM, wal_fs, fs::FS). Host-tested against real sqlite3-CLI
-      files (11 cases): the `sqlite_schema` row column-by-column and a full scan of a 40-row, 2-level
-      b-tree. **Remaining:** follow overflow-page chains for large payloads, then a bounded writer.
+      any page source via a reader callback: RAM, wal_fs, fs::FS). **Overflow-page chains are now
+      followed** (`sqlite_read_payload` reassembles a record across its linked overflow pages - 4-byte
+      next-page pointer + content per page - into a caller buffer with a bounded page count and a
+      fail-closed capacity guard; the table cursor transparently reassembles an overflowing row when given
+      an overflow buffer via `sqlite_table_cursor_set_overflow_buf`, else it yields the in-page prefix as
+      before). Host-tested against real sqlite3-CLI files (14 cases): the `sqlite_schema` row
+      column-by-column, a full scan of a 40-row 2-level b-tree, and byte-exact reassembly of 1000- and
+      3000-byte TEXT columns spanning multi-page overflow chains (+ a short-buffer fail-closed case), and
+      **HW-verified on an ESP32-S3** (interior-root descent + multi-page reassembly + bounds, all byte-exact
+      on the Xtensa). **Remaining:** a bounded writer.
 - [x] **nosql (both)**: _(done)_ a NoSQL **wire client** and a **local on-flash store**.
   - [x] **wire client**: a Redis **RESP** codec _(done)_ - `DETWS_ENABLE_REDIS` (services/redis_resp)
         extended from RESP2 to full RESP2/RESP3 (null / boolean / double / big number / bulk error /

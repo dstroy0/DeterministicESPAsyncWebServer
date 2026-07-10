@@ -156,13 +156,37 @@ double sqlite_column_float(const uint8_t *val, uint32_t val_len);
 typedef bool (*SqlitePageReader)(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size);
 
 /**
+ * @brief Reassemble a row's full record payload, following the overflow-page chain (fileformat2.html 1.6).
+ *
+ * A row that does not fit its leaf page keeps its first @c local_len bytes in the leaf, followed by a 4-byte
+ * big-endian first-overflow-page number; each overflow page is a 4-byte next-page pointer (0 = last) plus up
+ * to `page_size - reserved - 4` content bytes. This copies the in-page prefix, then walks the chain until
+ * @c payload_len bytes are gathered.
+ *
+ * @param read/ctx    page source (the same reader the table cursor uses).
+ * @param page_size   page size in bytes; @p reserved the per-page reserved tail (usable = page_size - reserved).
+ * @param leaf_page   the leaf page the cell was parsed from (holds the local prefix + the overflow pointer).
+ * @param cell        the parsed leaf cell.
+ * @param out         destination for the full payload; must hold at least @c payload_len bytes.
+ * @param out_cap     capacity of @p out - a payload larger than this fails closed (no overrun).
+ * @param work_page   a @p page_size scratch buffer for reading overflow pages (must not alias @p leaf_page).
+ * @return true when @c payload_len bytes were reassembled into @p out; false on a short buffer, a read error,
+ * or a broken / looping chain (the page count is bounded, so a corrupt pointer cannot spin forever).
+ */
+bool sqlite_read_payload(SqlitePageReader read, void *ctx, uint32_t page_size, uint8_t reserved,
+                         const uint8_t *leaf_page, const SqliteTableLeafCell *cell, uint8_t *out, uint32_t out_cap,
+                         uint8_t *work_page);
+
+/**
  * @brief A forward cursor over the rows of a table b-tree, in rowid order, across pages.
  *
  * It walks the interior/leaf table b-tree rooted at a table's `rootpage`, descending leftmost and yielding
  * each leaf cell as a row. It keeps only a bounded descent stack of page numbers (re-reading an interior
  * page when it returns to it) plus two page buffers - the current leaf and a scratch - so memory is fixed
- * regardless of table size. Rows that overflow onto overflow pages yield only their in-page prefix for now
- * (full overflow-chain reassembly is a follow-up); @c has_overflow on the cell flags that.
+ * regardless of table size. A row that overflows onto overflow pages yields only its in-page prefix by
+ * default (and @c has_overflow flags it); provide an overflow buffer with
+ * ::sqlite_table_cursor_set_overflow_buf and the cursor transparently reassembles the full record for each
+ * overflowing row instead.
  */
 struct SqliteTableCursor
 {
@@ -170,8 +194,10 @@ struct SqliteTableCursor
     void *ctx;
     uint32_t page_size;
     uint8_t reserved;
-    uint8_t *leaf; ///< page_size buffer holding the current leaf page (values point into it)
-    uint8_t *work; ///< page_size scratch for interior-page reads during traversal
+    uint8_t *leaf;    ///< page_size buffer holding the current leaf page (values point into it)
+    uint8_t *work;    ///< page_size scratch for interior-page reads during traversal
+    uint8_t *ovf_buf; ///< optional buffer to reassemble overflowing rows into (null = prefix-only)
+    uint32_t ovf_cap; ///< capacity of ovf_buf in bytes
     uint32_t stack_pg[SQLITE_BTREE_MAX_DEPTH];
     uint16_t stack_idx[SQLITE_BTREE_MAX_DEPTH]; ///< next child index to descend at each interior frame
     int depth;
@@ -181,6 +207,14 @@ struct SqliteTableCursor
     uint16_t leaf_cell;  ///< next cell index within the current leaf
     uint16_t leaf_count; ///< cells in the current leaf
 };
+
+/**
+ * @brief Opt in to full overflow-chain reassembly. @p buf (@p cap bytes, must outlive the cursor and be at
+ * least as large as the biggest row) receives the reassembled record for each overflowing row; without it
+ * ::sqlite_table_cursor_next yields only the in-page prefix of an overflowing row. Reuses the cursor's work
+ * page as scratch, so it adds no other buffer. Call after ::sqlite_table_cursor_begin.
+ */
+void sqlite_table_cursor_set_overflow_buf(SqliteTableCursor *c, uint8_t *buf, uint32_t cap);
 
 /**
  * @brief Begin a table cursor at @p rootpage. @p leaf_buf and @p work_buf are each @p page_size bytes and

@@ -187,6 +187,53 @@ bool sqlite_parse_table_leaf_cell(const uint8_t *page, size_t page_len, uint32_t
     return true;
 }
 
+bool sqlite_read_payload(SqlitePageReader read, void *ctx, uint32_t page_size, uint8_t reserved,
+                         const uint8_t *leaf_page, const SqliteTableLeafCell *cell, uint8_t *out, uint32_t out_cap,
+                         uint8_t *work_page)
+{
+    if (cell->payload_len > out_cap)
+        return false; // fail closed rather than overrun the caller buffer
+    if ((size_t)cell->local_off + cell->local_len > page_size)
+        return false;
+
+    memcpy(out, leaf_page + cell->local_off, cell->local_len);
+    uint32_t got = cell->local_len;
+    if (!cell->has_overflow)
+        return got == cell->payload_len; // wholly in-page: nothing to follow
+
+    // The 4-byte first-overflow-page number sits immediately after the local prefix.
+    size_t ptr_off = (size_t)cell->local_off + cell->local_len;
+    if (ptr_off + 4 > page_size)
+        return false;
+    uint32_t next = be32(leaf_page + ptr_off);
+
+    uint32_t usable = page_size - reserved;
+    uint32_t content = usable - 4; // per overflow page: 4-byte next pointer + content
+    if (content == 0)
+        return false;
+    // A chain cannot legitimately be longer than this; the bound turns a corrupt/looping
+    // next-pointer into a clean failure instead of an unbounded read.
+    uint32_t max_pages = cell->payload_len / content + 2;
+
+    for (uint32_t pages = 0; next != 0 && got < cell->payload_len; pages++)
+    {
+        if (pages >= max_pages)
+            return false; // broken / looping chain
+        if (!read(ctx, next, work_page, page_size))
+            return false;
+        uint32_t nnext = be32(work_page);
+        uint32_t chunk = cell->payload_len - got;
+        if (chunk > content)
+            chunk = content;
+        if (got + chunk > out_cap)
+            return false;
+        memcpy(out + got, work_page + 4, chunk);
+        got += chunk;
+        next = nnext;
+    }
+    return got == cell->payload_len;
+}
+
 bool sqlite_record_begin(SqliteRecordCursor *c, const uint8_t *rec, uint32_t rec_len)
 {
     uint64_t hdr_len = 0;
@@ -317,10 +364,18 @@ bool sqlite_table_cursor_begin(SqliteTableCursor *c, SqlitePageReader read, void
     c->reserved = reserved;
     c->leaf = leaf_buf;
     c->work = work_buf;
+    c->ovf_buf = nullptr;
+    c->ovf_cap = 0;
     c->depth = 0;
     c->leaf_count = 0;
     c->leaf_cell = 0;
     return cursor_descend(c, rootpage);
+}
+
+void sqlite_table_cursor_set_overflow_buf(SqliteTableCursor *c, uint8_t *buf, uint32_t cap)
+{
+    c->ovf_buf = buf;
+    c->ovf_cap = cap;
 }
 
 bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecordCursor *row)
@@ -336,7 +391,17 @@ bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecor
             SqliteTableLeafCell cell;
             if (!sqlite_parse_table_leaf_cell(c->leaf, c->page_size, c->page_size, c->reserved, cp, &cell))
                 continue;
-            if (!sqlite_record_begin(row, c->leaf + cell.local_off, cell.local_len))
+            if (cell.has_overflow && c->ovf_buf)
+            {
+                // Reassemble the full record into the caller's overflow buffer, then read columns from it.
+                // c->work is free here (we are at a leaf, not descending), so it serves as the scratch page.
+                if (!sqlite_read_payload(c->read, c->ctx, c->page_size, c->reserved, c->leaf, &cell, c->ovf_buf,
+                                         c->ovf_cap, c->work))
+                    continue;
+                if (!sqlite_record_begin(row, c->ovf_buf, cell.payload_len))
+                    continue;
+            }
+            else if (!sqlite_record_begin(row, c->leaf + cell.local_off, cell.local_len))
                 continue;
             *rowid = cell.rowid;
             return true;

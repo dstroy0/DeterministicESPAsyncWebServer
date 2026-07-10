@@ -8,6 +8,7 @@
 // so the parsers are checked against bytes an authoritative implementation actually wrote.
 
 #include "db_multipage.h"
+#include "db_overflow.h"
 #include "services/sqlite/sqlite_format.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -311,6 +312,136 @@ void test_table_cursor_multipage(void)
     TEST_ASSERT_EQUAL_UINT32(DB_MP_ROWS, n); // every row visited exactly once
 }
 
+// Page reader over the overflow fixture, whose pages are separate 512-byte arrays (1-based).
+static bool ovf_read(void *ctx, uint32_t pgno, uint8_t *page, uint32_t page_size)
+{
+    (void)ctx;
+    if (pgno < 1 || pgno > OVF_PAGE_COUNT || page_size != OVF_PAGE_SIZE)
+        return false;
+    memcpy(page, OVF_PAGES[pgno - 1], OVF_PAGE_SIZE);
+    return true;
+}
+
+// Read the TEXT column b of a row record and assert it is `len` copies of `ch`.
+static void assert_text_run(SqliteRecordCursor *row, uint32_t len, char ch)
+{
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
+    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
+    TEST_ASSERT_EQUAL_UINT64(13u + 2u * len, st);            // TEXT serial type = 13 + 2*len
+    TEST_ASSERT_EQUAL_UINT32(len, vl);
+    for (uint32_t i = 0; i < vl; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]);
+}
+
+// Read the TEXT column b of a row record and assert it equals the exact string `s`.
+static void assert_text_eq(SqliteRecordCursor *row, const char *s)
+{
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    uint32_t len = (uint32_t)strlen(s);
+    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column a (INTEGER id)
+    TEST_ASSERT_TRUE(sqlite_record_next(row, &st, &v, &vl)); // column b (TEXT data)
+    TEST_ASSERT_EQUAL_UINT64(13u + 2u * len, st);
+    TEST_ASSERT_EQUAL_UINT32(len, vl);
+    TEST_ASSERT_EQUAL_MEMORY(s, v, vl);
+}
+
+// Scan the image for the first leaf-table page holding an overflowing cell; copy that leaf page into
+// @p leaf_out and return the parsed cell. (The table root here is an interior page whose leaves sit on
+// later pages, so we locate the leaf rather than assume the root is one.)
+static bool find_overflow_cell(uint8_t *leaf_out, SqliteTableLeafCell *cell_out)
+{
+    for (uint32_t pg = 1; pg <= OVF_PAGE_COUNT; pg++)
+    {
+        uint8_t page[OVF_PAGE_SIZE];
+        if (!ovf_read(nullptr, pg, page, OVF_PAGE_SIZE))
+            continue;
+        size_t off = (pg == 1) ? 100 : 0;
+        SqliteBtreeHeader bh;
+        if (!sqlite_parse_btree_header(page, OVF_PAGE_SIZE, off, &bh) || bh.type != SQLITE_BTREE_LEAF_TABLE)
+            continue;
+        for (uint16_t i = 0; i < bh.cell_count; i++)
+        {
+            uint32_t cp = sqlite_cell_pointer(page, OVF_PAGE_SIZE, &bh, off, i);
+            SqliteTableLeafCell cell;
+            if (cp && sqlite_parse_table_leaf_cell(page, OVF_PAGE_SIZE, OVF_PAGE_SIZE, 0, cp, &cell) &&
+                cell.has_overflow)
+            {
+                memcpy(leaf_out, page, OVF_PAGE_SIZE);
+                *cell_out = cell;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Reassemble an overflowing row's payload directly with sqlite_read_payload and verify the full TEXT.
+void test_overflow_read_payload(void)
+{
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], payload[4096];
+    SqliteTableLeafCell cell;
+    TEST_ASSERT_TRUE(find_overflow_cell(leaf, &cell));
+    TEST_ASSERT_TRUE(cell.has_overflow);
+    TEST_ASSERT_TRUE(cell.local_len < cell.payload_len); // the record really spills onto overflow pages
+    TEST_ASSERT_TRUE(
+        sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, payload, sizeof(payload), work));
+
+    // The reassembled record decodes to (id INTEGER, data TEXT) where data is a run of one character.
+    SqliteRecordCursor row;
+    TEST_ASSERT_TRUE(sqlite_record_begin(&row, payload, cell.payload_len));
+    uint64_t st = 0;
+    const uint8_t *v = nullptr;
+    uint32_t vl = 0;
+    TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // id
+    TEST_ASSERT_TRUE(sqlite_record_next(&row, &st, &v, &vl)); // data (TEXT)
+    TEST_ASSERT_TRUE(vl == OVF_ROW2_LEN || vl == OVF_ROW3_LEN);
+    TEST_ASSERT_EQUAL_UINT64(13u + 2u * vl, st);
+    char ch = (char)v[0];
+    TEST_ASSERT_TRUE(ch == 'A' || ch == 'B');
+    for (uint32_t i = 0; i < vl; i++)
+        TEST_ASSERT_EQUAL_UINT8((uint8_t)ch, v[i]); // every byte survived the chain intact
+}
+
+// A short output buffer must fail closed, not overrun.
+void test_overflow_read_payload_bounds(void)
+{
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE];
+    SqliteTableLeafCell cell;
+    TEST_ASSERT_TRUE(find_overflow_cell(leaf, &cell));
+    uint8_t tiny[16]; // far smaller than the >=1000-byte overflowing payload
+    TEST_ASSERT_FALSE(sqlite_read_payload(ovf_read, nullptr, OVF_PAGE_SIZE, 0, leaf, &cell, tiny, sizeof(tiny), work));
+}
+
+// Drive the table cursor with an overflow buffer: every row (incl. the overflowing ones) fully reassembled.
+void test_overflow_cursor(void)
+{
+    static uint8_t leaf[OVF_PAGE_SIZE], work[OVF_PAGE_SIZE], ovf[4096];
+    SqliteTableCursor c;
+    TEST_ASSERT_TRUE(sqlite_table_cursor_begin(&c, ovf_read, nullptr, OVF_PAGE_SIZE, 0, OVF_ROOTPAGE, leaf, work));
+    sqlite_table_cursor_set_overflow_buf(&c, ovf, sizeof(ovf));
+
+    uint64_t rowid = 0;
+    SqliteRecordCursor row;
+    uint32_t n = 0;
+    while (sqlite_table_cursor_next(&c, &rowid, &row))
+    {
+        n++;
+        TEST_ASSERT_EQUAL_UINT64(n, rowid);
+        if (n == 1)
+            assert_text_eq(&row, OVF_ROW1);
+        else if (n == 2)
+            assert_text_run(&row, OVF_ROW2_LEN, 'A');
+        else
+            assert_text_run(&row, OVF_ROW3_LEN, 'B');
+    }
+    TEST_ASSERT_EQUAL_UINT32(3, n);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -325,5 +456,8 @@ int main(void)
     RUN_TEST(test_column_int_signextend);
     RUN_TEST(test_leaf_cell_overflow_detection);
     RUN_TEST(test_table_cursor_multipage);
+    RUN_TEST(test_overflow_read_payload);
+    RUN_TEST(test_overflow_read_payload_bounds);
+    RUN_TEST(test_overflow_cursor);
     return UNITY_END();
 }
