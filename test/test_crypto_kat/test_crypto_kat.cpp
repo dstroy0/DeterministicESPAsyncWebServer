@@ -65,6 +65,14 @@ struct KatEd25519
     const char *sig;
     int valid;
 };
+struct KatEd25519Sign
+{
+    int tc;
+    const char *seed;
+    const char *pub;
+    const char *msg;
+    const char *sig;
+};
 struct KatHkdf
 {
     int tc;
@@ -238,6 +246,30 @@ static void test_ed25519_verify(void)
 }
 
 // ====================================================================
+// Ed25519 sign (RFC 8032 sec 7.1): signing is deterministic, so the derived
+// public key and the signature over the message must both match the vector -
+// this covers the SSH host-key signing path (verify above covers verification).
+// ====================================================================
+static void test_ed25519_sign(void)
+{
+    for (size_t i = 0; i < ARRAY_LEN(KAT_ED25519_SIGN); i++)
+    {
+        const KatEd25519Sign &v = KAT_ED25519_SIGN[i];
+        uint8_t seed[32], want_pub[32], msg[MAXB], want_sig[64], got_pub[32], got_sig[64];
+        hexdec(v.seed, seed);
+        hexdec(v.pub, want_pub);
+        hexdec(v.sig, want_sig);
+        size_t mlen = hexdec(v.msg, msg);
+        char m[48];
+        snprintf(m, sizeof(m), "Ed25519-sign tcId=%d", v.tc);
+        ssh_ed25519_pubkey(got_pub, seed);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want_pub, got_pub, 32, m);
+        ssh_ed25519_sign(got_sig, msg, mlen, seed);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE(want_sig, got_sig, 64, m);
+    }
+}
+
+// ====================================================================
 // HKDF-SHA256 Extract (RFC 5869 Appendix A): PRK = HMAC-SHA256(salt, IKM).
 // ====================================================================
 static void test_hkdf_extract(void)
@@ -297,6 +329,7 @@ int main(int, char **)
     RUN_TEST(test_aes128gcm);
     RUN_TEST(test_x25519);
     RUN_TEST(test_ed25519_verify);
+    RUN_TEST(test_ed25519_sign);
     RUN_TEST(test_hkdf_extract);
     RUN_TEST(test_chacha20_block);
     RUN_TEST(test_poly1305);
