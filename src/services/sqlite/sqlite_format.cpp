@@ -430,4 +430,331 @@ bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecor
     }
 }
 
+// ---------------------------------------------------------------------------
+// Writer (bounded): build a fresh single-table database image.
+// ---------------------------------------------------------------------------
+
+namespace
+{
+void wr_be16(uint8_t *p, uint16_t v)
+{
+    p[0] = (uint8_t)(v >> 8);
+    p[1] = (uint8_t)v;
+}
+void wr_be32(uint8_t *p, uint32_t v)
+{
+    p[0] = (uint8_t)(v >> 24);
+    p[1] = (uint8_t)(v >> 16);
+    p[2] = (uint8_t)(v >> 8);
+    p[3] = (uint8_t)v;
+}
+
+// Number of bytes a varint of value v occupies (mirror of sqlite_varint_encode's length).
+size_t varint_len(uint64_t v)
+{
+    if (v <= 0x7fULL)
+        return 1;
+    if (v <= 0x3fffULL)
+        return 2;
+    if (v <= 0x1fffffULL)
+        return 3;
+    if (v <= 0xfffffffULL)
+        return 4;
+    if (v <= 0x7ffffffffULL)
+        return 5;
+    if (v <= 0x3ffffffffffULL)
+        return 6;
+    if (v <= 0x1ffffffffffffULL)
+        return 7;
+    if (v <= 0xffffffffffffffULL)
+        return 8;
+    return 9;
+}
+
+// The serial type + value byte length for a column value. Integers get the minimal encoding.
+void value_serial(const SqliteValue *v, uint64_t *st, uint32_t *vlen)
+{
+    switch (v->type)
+    {
+    case SQLITE_COL_NULL:
+        *st = 0;
+        *vlen = 0;
+        return;
+    case SQLITE_COL_FLOAT:
+        *st = 7;
+        *vlen = 8;
+        return;
+    case SQLITE_COL_TEXT:
+        *st = 13 + (uint64_t)2 * v->len;
+        *vlen = v->len;
+        return;
+    case SQLITE_COL_BLOB:
+        *st = 12 + (uint64_t)2 * v->len;
+        *vlen = v->len;
+        return;
+    case SQLITE_COL_INT:
+    default:
+        break;
+    }
+    int64_t x = v->i;
+    if (x == 0)
+    {
+        *st = 8;
+        *vlen = 0;
+    }
+    else if (x == 1)
+    {
+        *st = 9;
+        *vlen = 0;
+    }
+    else if (x >= -128 && x <= 127)
+    {
+        *st = 1;
+        *vlen = 1;
+    }
+    else if (x >= -32768 && x <= 32767)
+    {
+        *st = 2;
+        *vlen = 2;
+    }
+    else if (x >= -8388608 && x <= 8388607)
+    {
+        *st = 3;
+        *vlen = 3;
+    }
+    else if (x >= -2147483648LL && x <= 2147483647LL)
+    {
+        *st = 4;
+        *vlen = 4;
+    }
+    else if (x >= -140737488355328LL && x <= 140737488355327LL)
+    {
+        *st = 5;
+        *vlen = 6;
+    }
+    else
+    {
+        *st = 6;
+        *vlen = 8;
+    }
+}
+
+// Write a column's value bytes (big-endian for ints/floats) into out; returns the count.
+uint32_t write_value(const SqliteValue *v, uint64_t st, uint32_t vlen, uint8_t *out)
+{
+    if (v->type == SQLITE_COL_TEXT || v->type == SQLITE_COL_BLOB)
+    {
+        if (vlen)
+            memcpy(out, v->data, vlen);
+        return vlen;
+    }
+    if (v->type == SQLITE_COL_FLOAT)
+    {
+        uint64_t u = 0;
+        memcpy(&u, &v->f, 8); // native bit pattern -> emit big-endian
+        for (int i = 7; i >= 0; i--)
+            *out++ = (uint8_t)(u >> (i * 8));
+        return 8;
+    }
+    if (st >= 1 && st <= 6) // signed big-endian integer of `vlen` bytes
+    {
+        uint64_t u = (uint64_t)v->i;
+        for (int i = (int)vlen - 1; i >= 0; i--)
+            out[(int)vlen - 1 - i] = (uint8_t)(u >> (i * 8));
+        return vlen;
+    }
+    return 0; // NULL / 0 / 1 constants carry no bytes
+}
+
+// Total encoded length of a record (header + values), or 0 on invalid input.
+uint32_t record_len(const SqliteValue *cols, uint32_t n)
+{
+    uint32_t st_len = 0, val_len = 0;
+    for (uint32_t c = 0; c < n; c++)
+    {
+        uint64_t st = 0;
+        uint32_t vl = 0;
+        value_serial(&cols[c], &st, &vl);
+        st_len += (uint32_t)varint_len(st);
+        val_len += vl;
+    }
+    // header_size counts its own length varint, which can grow the total - resolve the fixed point.
+    size_t hs_varlen = 1;
+    for (;;)
+    {
+        uint64_t hs = hs_varlen + st_len;
+        if (varint_len(hs) == hs_varlen)
+            break;
+        hs_varlen = varint_len(hs);
+    }
+    return (uint32_t)hs_varlen + st_len + val_len;
+}
+
+// Write a leaf-table page (b-tree header at hdr_off, then the rows as cells) into `page`. hdr_off is 100 for
+// page 1, else 0. Fails closed if a row would overflow the page or the cells + pointer array do not fit.
+bool write_leaf_page(uint8_t *page, uint32_t page_size, uint32_t hdr_off, const SqliteRow *rows, uint32_t nrows)
+{
+    const uint32_t usable = page_size; // reserved = 0 for images we build
+    const uint32_t max_local = usable - 35;
+
+    // Measure each cell up front so we can lay them out and fail closed before writing.
+    uint32_t total = 0;
+    for (uint32_t r = 0; r < nrows; r++)
+    {
+        uint32_t rl = record_len(rows[r].cols, rows[r].ncols);
+        if (rl == 0 && rows[r].ncols != 0)
+            return false;
+        if (rl > max_local)
+            return false; // would need an overflow page - out of scope for the bounded writer
+        total += (uint32_t)varint_len(rl) + (uint32_t)varint_len(rows[r].rowid) + rl;
+    }
+    uint32_t header_end = hdr_off + 8 + 2 * nrows; // 8-byte leaf header + 2-byte cell pointer each
+    if ((uint64_t)header_end + total > page_size)
+        return false; // does not fit one leaf page
+
+    uint32_t content_start = page_size - total;
+
+    // b-tree leaf-table header.
+    uint8_t *h = page + hdr_off;
+    h[0] = (uint8_t)SQLITE_BTREE_LEAF_TABLE;
+    wr_be16(h + 1, 0);               // first freeblock
+    wr_be16(h + 3, (uint16_t)nrows); // cell count
+    wr_be16(h + 5, (uint16_t)(content_start == 65536 ? 0 : content_start));
+    h[7] = 0; // fragmented free bytes
+
+    // Pack cells from the top of the content area downward; pointer array (rowid order) follows the header.
+    uint32_t off = page_size;
+    for (uint32_t r = 0; r < nrows; r++)
+    {
+        uint32_t rl = record_len(rows[r].cols, rows[r].ncols);
+        uint32_t cell_len = (uint32_t)varint_len(rl) + (uint32_t)varint_len(rows[r].rowid) + rl;
+        off -= cell_len;
+        uint8_t *cp = page + off;
+        size_t k = sqlite_varint_encode(rl, cp, cell_len);
+        k += sqlite_varint_encode(rows[r].rowid, cp + k, cell_len - k);
+        uint32_t w = sqlite_encode_record(rows[r].cols, rows[r].ncols, cp + k, cell_len - (uint32_t)k);
+        if (w != rl)
+            return false; // internal invariant: measured length must match written length
+        wr_be16(page + hdr_off + 8 + 2 * r, (uint16_t)off); // cell pointer for row r
+    }
+    return true;
+}
+} // namespace
+
+size_t sqlite_varint_encode(uint64_t v, uint8_t *out, size_t cap)
+{
+    size_t n = varint_len(v);
+    if (n > cap)
+        return 0;
+    if (n == 9)
+    {
+        // Bytes 0-7 carry bits 63..8 (7 bits each, high bit = continuation); byte 8 carries the low 8 bits.
+        for (int i = 0; i < 8; i++)
+            out[i] = (uint8_t)(0x80 | (uint8_t)((v >> (57 - 7 * i)) & 0x7f));
+        out[8] = (uint8_t)v;
+        return 9;
+    }
+    // The low 7 bits of each of the n bytes; high bit set on all but the last.
+    for (size_t i = 0; i < n; i++)
+    {
+        uint8_t bits = (uint8_t)((v >> (7 * (n - 1 - i))) & 0x7f);
+        out[i] = (i + 1 < n) ? (uint8_t)(bits | 0x80) : bits;
+    }
+    return n;
+}
+
+uint32_t sqlite_encode_record(const SqliteValue *cols, uint32_t n, uint8_t *out, uint32_t out_cap)
+{
+    uint32_t total = record_len(cols, n);
+    if (total == 0 && n != 0)
+        return 0;
+    if (total > out_cap)
+        return 0;
+
+    // Compute the header size (length varint + serial-type varints), same fixed point as record_len.
+    uint32_t st_len = 0;
+    for (uint32_t c = 0; c < n; c++)
+    {
+        uint64_t st = 0;
+        uint32_t vl = 0;
+        value_serial(&cols[c], &st, &vl);
+        st_len += (uint32_t)varint_len(st);
+    }
+    size_t hs_varlen = 1;
+    for (;;)
+    {
+        uint64_t hs = hs_varlen + st_len;
+        if (varint_len(hs) == hs_varlen)
+            break;
+        hs_varlen = varint_len(hs);
+    }
+    uint32_t header_size = (uint32_t)hs_varlen + st_len;
+
+    uint32_t pos = (uint32_t)sqlite_varint_encode(header_size, out, out_cap);
+    // Serial-type varints (the header body).
+    for (uint32_t c = 0; c < n; c++)
+    {
+        uint64_t st = 0;
+        uint32_t vl = 0;
+        value_serial(&cols[c], &st, &vl);
+        pos += (uint32_t)sqlite_varint_encode(st, out + pos, out_cap - pos);
+    }
+    // Value bytes, in column order.
+    for (uint32_t c = 0; c < n; c++)
+    {
+        uint64_t st = 0;
+        uint32_t vl = 0;
+        value_serial(&cols[c], &st, &vl);
+        pos += write_value(&cols[c], st, vl, out + pos);
+    }
+    return pos;
+}
+
+uint32_t sqlite_build_table_db(uint32_t page_size, const char *table_name, const char *create_sql,
+                               const SqliteRow *rows, uint32_t nrows, uint8_t *out, uint32_t out_cap)
+{
+    if (page_size < 512 || page_size > 65536 || !is_pow2(page_size))
+        return 0;
+    if ((uint64_t)page_size * 2 > out_cap || !table_name || !create_sql)
+        return 0;
+
+    memset(out, 0, (size_t)page_size * 2);
+
+    // --- Page 1: the 100-byte database header ---
+    memcpy(out, SQLITE_MAGIC, 16);
+    wr_be16(out + 16, (uint16_t)(page_size == 65536 ? 1 : page_size));
+    out[18] = 1;                // write version (legacy)
+    out[19] = 1;                // read version (legacy)
+    out[20] = 0;                // reserved bytes per page
+    out[21] = 64;               // max embedded payload fraction
+    out[22] = 32;               // min embedded payload fraction
+    out[23] = 32;               // leaf payload fraction
+    wr_be32(out + 24, 1);       // file change counter
+    wr_be32(out + 28, 2);       // page count
+    wr_be32(out + 40, 1);       // schema cookie
+    wr_be32(out + 44, 4);       // schema format number
+    wr_be32(out + 56, 1);       // text encoding = UTF-8
+    wr_be32(out + 92, 1);       // version-valid-for (== file change counter)
+    wr_be32(out + 96, 3046001); // SQLITE_VERSION_NUMBER that wrote the file
+
+    // --- Page 1: the sqlite_schema row for our table (type,name,tbl_name,rootpage,sql) ---
+    uint32_t name_len = (uint32_t)strlen(table_name);
+    uint32_t sql_len = (uint32_t)strlen(create_sql);
+    SqliteValue master[5];
+    master[0] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"table", 5};
+    master[1] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
+    master[2] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
+    master[3] = {SQLITE_COL_INT, 2, 0, nullptr, 0}; // rootpage = 2
+    master[4] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)create_sql, sql_len};
+    SqliteRow master_row = {1, master, 5};
+    if (!write_leaf_page(out, page_size, 100, &master_row, 1))
+        return 0;
+
+    // --- Page 2: the table's leaf b-tree with the caller's rows ---
+    if (!write_leaf_page(out + page_size, page_size, 0, rows, nrows))
+        return 0;
+
+    return page_size * 2;
+}
+
 #endif // DETWS_ENABLE_SQLITE

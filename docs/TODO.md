@@ -77,8 +77,8 @@ layer built first, then the store codecs on top. Substrate before stores.
       tombstone resurrection, persistence across remount with/without checkpoint, collisions, index-full
       fail-closed, bounds, max-value round-trip). _Follow-up:_ log compaction to reclaim space from
       overwritten/deleted keys (the log currently only grows).
-- [~] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
-      encoding) - read first, bounded writer later. Not the full SQLite amalgamation (heap + stdio,
+- [x] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
+      encoding) - reader + bounded writer, both done. Not the full SQLite amalgamation (heap + stdio,
       incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **reading is complete**
       (`services/sqlite/sqlite_format.h`): database header, b-tree page header, cell pointers, the
       leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
@@ -93,7 +93,16 @@ layer built first, then the store codecs on top. Substrate before stores.
       column-by-column, a full scan of a 40-row 2-level b-tree, and byte-exact reassembly of 1000- and
       3000-byte TEXT columns spanning multi-page overflow chains (+ a short-buffer fail-closed case), and
       **HW-verified on an ESP32-S3** (interior-root descent + multi-page reassembly + bounds, all byte-exact
-      on the Xtensa). **Remaining:** a bounded writer.
+      on the Xtensa). A **bounded writer** now completes the item: `sqlite_encode_record` (minimal integer
+      serial types, TEXT/BLOB/FLOAT/NULL) + `sqlite_varint_encode` + `sqlite_build_table_db`, which emits a
+      fresh two-page single-table database (page 1 = header + the `sqlite_schema` row, page 2 = the table's
+      leaf b-tree) straight into a caller buffer, zero-heap, failing closed if a row would overflow a page or
+      the rows do not fit one leaf (no page splitting / overflow pages / interior maintenance - a multi-page
+      writer is the follow-up). Host-tested (18 cases total: varint + record round-trips, a full build read
+      back through our own reader, fail-closed bounds) and **cross-checked against the real sqlite3 CLI**
+      (`PRAGMA integrity_check` returns `ok` and `SELECT` returns every row) plus **HW-verified byte-exact on
+      an ESP32-S3** (build in RAM + read back). **Remaining:** a multi-page writer (page splits) if larger
+      datasets are ever needed.
 - [x] **nosql (both)**: _(done)_ a NoSQL **wire client** and a **local on-flash store**.
   - [x] **wire client**: a Redis **RESP** codec _(done)_ - `DETWS_ENABLE_REDIS` (services/redis_resp)
         extended from RESP2 to full RESP2/RESP3 (null / boolean / double / big number / bulk error /

@@ -229,5 +229,69 @@ bool sqlite_table_cursor_begin(SqliteTableCursor *c, SqlitePageReader read, void
  */
 bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecordCursor *row);
 
+// ---------------------------------------------------------------------------
+// Writer (bounded): build a fresh single-table SQLite database image.
+//
+// The inverse of the reader: it emits a byte-valid SQLite3 file that the sqlite3 CLI (or any reader) can
+// open. It is deliberately BOUNDED - it lays the schema row on page 1 and the table's rows into one leaf
+// b-tree page on page 2, and fails closed if a row would overflow the page or the rows do not fit (no page
+// splitting, no overflow pages, no interior maintenance). That covers the on-device small config / dataset
+// export case; a multi-page writer is a follow-up. Zero-heap: it writes straight into the caller's buffer.
+// ---------------------------------------------------------------------------
+
+/** @brief Encode a SQLite varint for @p v into @p out. @return bytes written (1-9), or 0 if @p cap too small. */
+size_t sqlite_varint_encode(uint64_t v, uint8_t *out, size_t cap);
+
+/** @brief Column value kind for the record writer. */
+enum SqliteColType
+{
+    SQLITE_COL_NULL,
+    SQLITE_COL_INT,
+    SQLITE_COL_FLOAT,
+    SQLITE_COL_TEXT,
+    SQLITE_COL_BLOB
+};
+
+/** @brief A typed column value to write (TEXT/BLOB bytes are referenced, not copied, until encode time). */
+struct SqliteValue
+{
+    SqliteColType type;
+    int64_t i;           ///< INT value
+    double f;            ///< FLOAT value
+    const uint8_t *data; ///< TEXT / BLOB bytes
+    uint32_t len;        ///< TEXT / BLOB byte length
+};
+
+/**
+ * @brief Encode @p n columns as a record (row payload): the header (a length varint + one serial-type varint
+ * per column) followed by the value bytes. Integer columns use the minimal serial type (0/1 -> the 8/9
+ * constants, else a 1/2/3/4/6/8-byte big-endian int); TEXT/BLOB use 13+2n / 12+2n. @return bytes written, or
+ * 0 on overflow / bad input.
+ */
+uint32_t sqlite_encode_record(const SqliteValue *cols, uint32_t n, uint8_t *out, uint32_t out_cap);
+
+/** @brief A row for the table builder: its rowid and its column values (rowids must be ascending). */
+struct SqliteRow
+{
+    uint64_t rowid;
+    const SqliteValue *cols;
+    uint32_t ncols;
+};
+
+/**
+ * @brief Build a fresh two-page single-table database (page 1 = database header + the `sqlite_schema` row,
+ * page 2 = the table's leaf b-tree) into @p out.
+ *
+ * @param page_size   512..65536, a power of two.
+ * @param table_name  the table's name (stored as `sqlite_schema.name` and `.tbl_name`).
+ * @param create_sql  the exact `CREATE TABLE ...` text stored in `sqlite_schema.sql`.
+ * @param rows        the table rows, rowid-ascending; @p nrows may be 0 (empty table).
+ * @param out         destination image buffer; @p out_cap must be at least 2 * @p page_size bytes.
+ * @return the image length (2 * @p page_size), or 0 if a row would overflow a page, the rows do not fit one
+ * leaf page (the bounded writer fails closed), or on bad input.
+ */
+uint32_t sqlite_build_table_db(uint32_t page_size, const char *table_name, const char *create_sql,
+                               const SqliteRow *rows, uint32_t nrows, uint8_t *out, uint32_t out_cap);
+
 #endif // DETWS_ENABLE_SQLITE
 #endif // DETERMINISTICESPASYNCWEBSERVER_SQLITE_FORMAT_H
