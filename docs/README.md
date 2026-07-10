@@ -724,6 +724,8 @@ src/
 │   ├── sigfox/  (sigfox.h, sigfox.cpp)
 │   ├── sleep_sched/  (sleep_sched.h, sleep_sched.cpp)
 │   ├── smb/
+│   │   ├── ntlm.cpp
+│   │   ├── ntlm.h
 │   │   ├── smb2.cpp
 │   │   ├── smb2.h
 │   │   ├── smb_md.cpp
@@ -884,7 +886,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 750,685 | 66,352 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 750,729 | 66,352 |
 | `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 750,849 | 66,352 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 750,893 | 66,352 |
 | `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 750,969 | 66,352 |
 | `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 751,025 | 66,800 |
 | `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 751,065 | 66,392 |
@@ -907,6 +908,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CSRF` | `L7-Application/33.Csrf` | 752,109 | 66,400 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 752,165 | 69,480 |
 | `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 752,321 | 66,352 |
+| `DIAG` | `Foundation/05.Configuration` | 752,373 | 63,104 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 752,457 | 66,632 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 752,489 | 66,392 |
 | `STATS` | `L7-Application/22.Stats` | 752,541 | 66,448 |
