@@ -898,7 +898,7 @@
       "tests": ["test_opcua_client"]
     },
     "native_pentest": {
-      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, and the IEEE C37.118\nsynchrophasor + FINS command parsers) with malformed/oversized/partial/random/\nmutated input and asserts bounded buffers + fail-closed + termination (no crash,\nno over-read, no hang). Pairs with the live driver pentesting/detws_pentest.py.\nSee docs/PENTEST.md.",
+      "desc": "Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`),\nNOT part of run_tests.sh. Fuzzes the untrusted-input parsers (HTTP, multipart,\nCoAP, SNMP+BER, Modbus, CBOR, MessagePack, JSON, base64/base32, the SQLite\non-disk file-format reader, the Redis RESP reply decoder, the OPC UA Binary\nmessage parsers, the SMB2 client response parsers + the SPNEGO DER walker +\nNTLMSSP CHALLENGE, the DNC block decoder, the FTP client reply parsers, and the\nindustrial client response parsers FINS / MELSEC / CIP / EtherNet-IP / DF1, the\nBACnet/IP + ISO-transport TPKT/COTP frame parsers, the IEEE C37.118\nsynchrophasor + FINS command parsers, the JWT HS256 token verifier, and the\nDirectNET / CC-Link / AMQP / MMS frame parsers) with malformed/oversized/partial/\nrandom/mutated input and asserts bounded buffers + fail-closed + termination (no\ncrash, no over-read, no hang). Pairs with the live driver pentesting/detws_pentest.py.\nSee docs/PENTEST.md.",
       "flags": [
         "-DDETWS_ENABLE_MODBUS=1",
         "-DDETWS_ENABLE_MODBUS_MASTER=1",
@@ -928,7 +928,12 @@
         "-DDETWS_ENABLE_DF1=1",
         "-DDETWS_ENABLE_BACNET=1",
         "-DDETWS_ENABLE_COTP=1",
-        "-DDETWS_ENABLE_C37118=1"
+        "-DDETWS_ENABLE_C37118=1",
+        "-DDETWS_ENABLE_JWT=1",
+        "-DDETWS_ENABLE_DIRECTNET=1",
+        "-DDETWS_ENABLE_CCLINK=1",
+        "-DDETWS_ENABLE_AMQP=1",
+        "-DDETWS_ENABLE_MMS=1"
       ],
       "src": [
         "+<network_drivers/network/ip.cpp>",
@@ -967,7 +972,14 @@
         "+<services/df1/df1.cpp>",
         "+<services/bacnet/bacnet.cpp>",
         "+<services/cotp/cotp.cpp>",
-        "+<services/c37118/c37118.cpp>"
+        "+<services/c37118/c37118.cpp>",
+        "+<services/jwt/jwt.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<services/directnet/directnet.cpp>",
+        "+<services/cclink/cclink.cpp>",
+        "+<services/amqp/amqp.cpp>",
+        "+<services/mms/mms.cpp>"
       ],
       "tests": ["test_pentest"]
     },
