@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2819 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2824 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -15843,7 +15843,7 @@ A thorough directory of all **2819 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_multipart (20 tests)</b></summary>
+<summary><b>test_multipart (25 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_no_content_type_returns_false</b> &mdash; <i>Craft a request with no Content-Type</i></summary>
@@ -16049,6 +16049,53 @@ A thorough directory of all **2819 test cases** across **236 suites**. Expand a 
       * <code>Assert equal memory (payload, mp.parts[0].data, plen)</code>
       * <code>Assert not null (mp.parts[0].filename)</code>
       * <code>Assert equal string ("a.png", mp.parts[0].filename)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_quoted_boundary</b> &mdash; <i>Quoted boundary</i></summary>
+
+    * **Objective**: Quoted boundary
+    * **Assertions**:
+      * <code>Assert true (multipart_parse(req, &mp))</code>
+      * <code>Assert equal int (1, mp.part_count)</code>
+      * <code>Assert equal string ("val", mp.parts[0].data)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_empty_boundary_returns_false</b> &mdash; <i>Empty boundary returns false</i></summary>
+
+    * **Objective**: Empty boundary returns false
+    * **Assertions**:
+      * <code>Assert false (multipart_parse(req, &mp))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_malformed_disposition_values</b> &mdash; <i>unquoted name= value</i></summary>
+
+    * **Objective**: unquoted name= value
+    * **Assertions**:
+      * <code>Assert true (multipart_parse(r1, &mp))</code>
+      * <code>Assert equal int (1, mp.part_count)</code>
+      * <code>Assert null (mp.parts[0].name)</code>
+      * <code>Assert true (multipart_parse(r2, &mp))</code>
+      * <code>Assert null (mp.parts[0].name)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_body_shorter_than_delimiter</b> &mdash; <i>Body shorter than delimiter</i></summary>
+
+    * **Objective**: Body shorter than delimiter
+    * **Assertions**:
+      * <code>Assert false (multipart_parse(req, &mp))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_truncated_part_fails_closed</b> &mdash; <i>Truncated part fails closed</i></summary>
+
+    * **Objective**: Truncated part fails closed
+    * **Assertions**:
+      * <code>Assert false (multipart_parse(r1, &mp))</code>
+      * <code>Assert false (multipart_parse(r2, &mp))</code>
   </details>
 
 </details>
