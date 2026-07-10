@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2866 test cases** across **242 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2870 test cases** across **242 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24219,7 +24219,7 @@ A thorough directory of all **2866 test cases** across **242 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_client (6 tests)</b></summary>
+<summary><b>test_smb_client (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
@@ -24277,6 +24277,53 @@ A thorough directory of all **2866 test cases** across **242 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_file</b> &mdash; <i>Read file</i></summary>
+
+    * **Objective**: Read file
+    * **Assertions**:
+      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, got);</code>
+      * <code>Assert equal memory (m.file_data, buf, 2000)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_past_eof</b> &mdash; <i>Read past eof</i></summary>
+
+    * **Objective**: Read past eof
+    * **Assertions**:
+      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, got);</code>
+      * <code>Assert equal memory (m.file_data, buf, 100)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_file</b> &mdash; <i>Write file</i></summary>
+
+    * **Objective**: Write file
+    * **Assertions**:
+      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, wrote);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2000, m.file_data_len);</code>
+      * <code>Assert equal memory (data, m.file_data, 2000)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(2000, h.file_size);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_then_read_roundtrip</b> &mdash; <i>Write then read roundtrip</i></summary>
+
+    * **Objective**: Write then read roundtrip
+    * **Assertions**:
+      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1500, got);</code>
+      * <code>Assert equal memory (data, back, 1500)</code>
   </details>
 
 </details>
