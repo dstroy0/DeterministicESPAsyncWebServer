@@ -1287,6 +1287,7 @@ guards at compile time.
 | `DETWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
 | `DETWS_FTP_CMD_MAX` | `256` | Suggested FTP control-command buffer size. |
 | `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
+| `DETWS_FWD_INSPECT` | `0` | Build-time toggle for the forwarding-path inspection hook (default off, for cost + privacy). |
 | `DETWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
 | `DETWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
 | `DETWS_FWD_MAX_ROUTES` | `8` | Max policy routes (byte-pattern -> egress interface; static). |
