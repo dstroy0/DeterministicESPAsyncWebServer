@@ -2,18 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [5.73.3] - 2026-07-10
+## [5.73.4] - 2026-07-10
 
 <details>
-<summary><b>Show Changelog for version 5.73.3 - 2026-07-10</b></summary>
+<summary><b>Show Changelog for version 5.73.4 - 2026-07-10</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a0c1a7f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0c1a7fbceb8b0a217fbf4e4c74ae956174c81f4))
+- update CHANGELOG.md [skip ci] ([`6b113b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b113b51f019d96d23a66da1965b091f314e4de7))
 - update CHANGELOG.md [skip ci] ([`9dbb87a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dbb87a3205360349fcb9d42d85e9c478e92f4bb))
+
+### Changes
+
+- Bump version: 5.73.3 → 5.73.4 ([`34d9813`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34d9813064067d222129579009e359b6376e79e0))
 
 ### Documentation
 
 - prettier-align the section-2 perf table ([`fda56eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fda56ebb41a1b15365f0aed62dd1d8680d465974))
+
+### Performance
+
+- add HTTP-parse + JSON request-path benchmarks (section 3) ([`54847b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/54847b57dc973cc956ea1da3c4a412acdde05a07))
+
+</details>
 
 ## [5.73.3] - 2026-07-10
 
