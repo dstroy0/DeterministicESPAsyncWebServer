@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.74.0] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.74.0 - 2026-07-10</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`6ebecdf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ebecdf2ec3637175e592016acda2868fae0014b))
+
+### Changes
+
+- Bump version: 5.73.4 → 5.74.0 ([`4334b06`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4334b06f81135253355ed0a79d45b28edd0a33c0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`86bd2c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86bd2c914f329cb0ebb702fc98cdcf05ed0d7e58))
+
+### Features
+
+- follow overflow-page chains in the on-disk reader ([`0bcbae5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0bcbae5ac53bd79c4b5ae4dde64bc5c8ea4186f2))
+
+</details>
+
 ## [5.73.4] - 2026-07-10
 
 <details>
