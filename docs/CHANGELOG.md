@@ -6,12 +6,35 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e462f36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e462f361cbf30b61320bc29078d825ecb3bd1e72))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`65222eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65222ebc50e46464f04eb22d65bbb05b7b8c0a6a))
+
+### Performance
+
+- on-device base64/mtconnect numbers + a base64 finding (section 2) ([`17e6cd3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/17e6cd38ff3e9d5fdd17bf0ece43a1f9d4685a7b))
+
+## [5.73.2] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.73.2 - 2026-07-10</b></summary>
+
+### CI / Build
+
 - update CHANGELOG.md [skip ci] ([`20d96e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20d96e06b69f6d11a8d87d25bccd37ff3d6e4f02))
 - update CHANGELOG.md [skip ci] ([`c6debcf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6debcfc26900746350874a94ebfa296d9cfad6e))
+
+### Changes
+
+- Bump version: 5.73.1 → 5.73.2 ([`ca5e898`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca5e89832b41f8124c654ac756523351a5e11b12))
 
 ### Performance
 
 - hand-rolled RESP length prefix (~6x faster encode on-device) ([`0665f32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0665f328d8f237ad2f65250530ac3cf88f6bd3cd))
+
+</details>
 
 ## [5.73.1] - 2026-07-10
 
