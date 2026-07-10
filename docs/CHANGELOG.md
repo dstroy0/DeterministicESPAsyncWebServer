@@ -2,20 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.81.1] - 2026-07-10
+
+<details>
+<summary><b>Show Changelog for version 5.81.1 - 2026-07-10</b></summary>
+
+### Bug Fixes
+
+- patch 3 signed-overflow UBs found by new OPC UA pentest fuzzing ([`1216cb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1216cb9d5bbaef49b1d6f5d1b885303a648041ca))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`df71cb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df71cb376e4312711aeb029d571501b0f8d1d0fc))
 - update CHANGELOG.md [skip ci] ([`392b1fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/392b1fe056f14442663a7264a6e4251e1db1447f))
+
+### Changes
+
+- Bump version: 5.81.0 → 5.81.1 ([`14e8f86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14e8f863bdf69a327b8505ffcd25b567ad8b3995))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`1ec771f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ec771f4777ba3310ab15ede182349bafe89f096))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b94a395`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b94a395e0724dd2bd676adfbdd1428ea069df894))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3dbde5f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3dbde5f3c57db0dc888db8d2286f8a6994cd2ebb))
 - update ESP32 build footprints [skip ci] ([`4a7a538`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a7a53826008e27caa2d6b191addd8b77de1c245))
 
 ### Testing
 
 - 100% line coverage for the session's new codecs ([`ae19439`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae19439e34ee50af999d5581dc513a29b30d30d1))
+
+</details>
 
 ## [5.81.0] - 2026-07-10
 
