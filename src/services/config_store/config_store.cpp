@@ -170,7 +170,7 @@ bool detws_config_set_str(const char *key, const char *val)
 {
     if (!val)
         return false;
-    return store(s_cfg, key, val, strlen(val) + 1); // include the null terminator
+    return store(s_cfg, key, val, strnlen(val, DETWS_CONFIG_VAL_MAX) + 1); // include the null terminator
 }
 
 size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)

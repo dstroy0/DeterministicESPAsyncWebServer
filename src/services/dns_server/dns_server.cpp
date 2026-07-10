@@ -162,11 +162,14 @@ DnsSrvCtx s_dns;
 
 bool dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
-    if (!name || !name[0] || strlen(name) >= DETWS_DNS_NAME_MAX)
+    if (!name || !name[0])
+        return false;
+    size_t nlen = strnlen(name, DETWS_DNS_NAME_MAX);
+    if (nlen >= DETWS_DNS_NAME_MAX)
         return false;
     if (s_dns.count >= DETWS_DNS_SERVER_MAX_RECORDS)
         return false;
-    memcpy(s_dns.names[s_dns.count], name, strlen(name) + 1);
+    memcpy(s_dns.names[s_dns.count], name, nlen + 1);
     s_dns.ips[s_dns.count] = ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)c << 8) | (uint32_t)d;
     s_dns.count++;
     return true;

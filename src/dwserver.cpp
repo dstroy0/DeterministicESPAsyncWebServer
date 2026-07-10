@@ -333,7 +333,7 @@ static bool conn_has_token(const char *hdr, const char *token)
 {
     if (!hdr)
         return false;
-    size_t tlen = strlen(token);
+    size_t tlen = strnlen(token, 32);
     const char *p = hdr;
     while (*p)
     {
@@ -847,7 +847,7 @@ static void fill_route_base(Route *r, const char *path)
     strncpy(r->path, path, MAX_PATH_LEN - 1);
     r->path[MAX_PATH_LEN - 1] = '\0';
     r->is_active = true;
-    size_t len = strlen(r->path);
+    size_t len = strnlen(r->path, MAX_PATH_LEN);
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
     r->is_param = (strstr(r->path, "/:") != nullptr);
     r->is_regex = false;
@@ -1004,7 +1004,7 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
         return strcmp(route, req_path) == 0;
 
     // Prefix match: compare everything up to (but not including) the '*'
-    size_t prefix_len = strlen(route) - 1;
+    size_t prefix_len = strnlen(route, MAX_PATH_LEN) - 1;
     return strncmp(route, req_path, prefix_len) == 0;
 }
 
@@ -1672,7 +1672,7 @@ static void allow_append(char *buf, size_t cap, const char *m)
 {
     if (!m[0] || strstr(buf, m))
         return;
-    size_t len = strlen(buf);
+    size_t len = strnlen(buf, cap);
     if (len == 0)
         snprintf(buf, cap, "%s", m);
     else
@@ -1693,7 +1693,7 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
         return;
     }
 
-    int blen = (int)strlen(body);
+    int blen = (int)strnlen(body, 0xFFFF);
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header),
                         "HTTP/1.1 %s\r\n"
@@ -1997,7 +1997,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
         return;
     }
 
-    int payload_len = (int)strlen(payload);
+    int payload_len = (int)strnlen(payload, 0xFFFF);
 
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);
@@ -2146,7 +2146,7 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
                 const char *val = resolver ? resolver(name) : nullptr;
                 if (!val)
                     val = "";
-                size_t vlen = strlen(val);
+                size_t vlen = strnlen(val, 0xFFFF);
                 total += vlen;
                 if (emit && vlen)
                     det_conn_send(slot, val, (u16_t)vlen);
@@ -2356,7 +2356,7 @@ void DetWebServer::add_response_header(uint8_t slot_id, const char *name, const 
         return;
 
     char *buf = _extra_hdr[slot_id];
-    size_t used = strlen(buf);
+    size_t used = strnlen(buf, EXTRA_HDR_BUF_SIZE);
     size_t room = EXTRA_HDR_BUF_SIZE - used;
     int n = snprintf(buf + used, room, "%s: %s\r\n", name, value);
     if (n < 0 || (size_t)n >= room)
@@ -2369,7 +2369,7 @@ void DetWebServer::set_cookie(uint8_t slot_id, const char *name, const char *val
         return;
 
     char *buf = _extra_hdr[slot_id];
-    size_t used = strlen(buf);
+    size_t used = strnlen(buf, EXTRA_HDR_BUF_SIZE);
     size_t room = EXTRA_HDR_BUF_SIZE - used;
     int n;
     if (attrs != nullptr && attrs[0] != '\0')
@@ -2610,7 +2610,7 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     WsConn *ws = &ws_pool[ws_id];
     if (ws->parse_state == WS_CLOSED || ws->parse_state == WS_ERROR)
         return;
-    uint16_t len = (uint16_t)strlen(text);
+    uint16_t len = (uint16_t)strnlen(text, 0xFFFF);
     if (ws_send_frame(ws, WS_OP_TEXT, (const uint8_t *)text, len))
     {
         TcpConn *conn = &conn_pool[ws->slot_id];
@@ -2703,7 +2703,7 @@ static void sha256_hex(const uint8_t *data, size_t len, char out[65])
 // so "nc" does not match inside "cnonce", etc.
 static bool digest_field(const char *hdr, const char *key, char *out, size_t out_size)
 {
-    size_t klen = strlen(key);
+    size_t klen = strnlen(key, 32);
     const char *p = hdr;
     while ((p = strstr(p, key)) != nullptr)
     {
@@ -2794,7 +2794,7 @@ bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
 {
     *expired = false;
     // Expected shape: 8 hex (issue) + '.' + 32 hex (MAC).
-    if (strlen(nonce) != 8 + 1 + 32 || nonce[8] != '.')
+    if (strnlen(nonce, 42) != 8 + 1 + 32 || nonce[8] != '.')
         return false;
     uint32_t issue;
     if (det_hex_decode(nonce, 8, (uint8_t *)&issue, 4) != 4)
@@ -2877,7 +2877,7 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
     size_t ulen = (size_t)(colon - (const char *)decoded);
     const char *pass = colon + 1;
 
-    return (ulen == strlen(r->auth_user)) && (memcmp(decoded, r->auth_user, ulen) == 0) &&
+    return (ulen == strnlen(r->auth_user, MAX_AUTH_LEN)) && (memcmp(decoded, r->auth_user, ulen) == 0) &&
            (strcmp(pass, r->auth_pass) == 0);
 }
 
@@ -3110,7 +3110,7 @@ static bool inm_matches(const char *inm, const char *etag)
         inm++; // GCOVR_EXCL_LINE http_parser strips leading OWS from header values, so inm never starts with WS
     if (inm[0] == '*')
         return true; // "*" matches the existing representation
-    size_t etlen = strlen(etag);
+    size_t etlen = strnlen(etag, 40);
     const char *p = inm;
     while (*p)
     {
@@ -3345,7 +3345,7 @@ void DetWebServer::serve_static(const char *url_prefix, fs::FS &file_sys, const 
 
     // Store the pattern as a wildcard so path_matches() does a prefix match.
     char pat[MAX_PATH_LEN];
-    size_t n = strlen(url_prefix);
+    size_t n = strnlen(url_prefix, MAX_PATH_LEN);
     if (n > 0 && url_prefix[n - 1] == '*')
         snprintf(pat, sizeof(pat), "%s", url_prefix); // already a wildcard
     else
@@ -3366,10 +3366,10 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     }
 
     // Request path beyond the mount prefix (route path minus its trailing '*').
-    size_t plen = strlen(r->path);
+    size_t plen = strnlen(r->path, MAX_PATH_LEN);
     if (plen > 0 && r->path[plen - 1] == '*')
         plen--;
-    const char *sub = (strlen(req->path) >= plen) ? req->path + plen : "";
+    const char *sub = (strnlen(req->path, MAX_PATH_LEN) >= plen) ? req->path + plen : "";
 
     // Reject path traversal before touching the filesystem.
     if (strstr(sub, ".."))
@@ -3379,7 +3379,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     }
 
     const char *root = r->static_root ? r->static_root : "";
-    size_t rlen = strlen(root);
+    size_t rlen = strnlen(root, MAX_PATH_LEN);
     bool root_slash = (rlen > 0 && root[rlen - 1] == '/');
     if (root_slash && sub[0] == '/') // avoid a doubled separator
         sub++;
@@ -3387,7 +3387,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     const char *sep = (root_slash || sub_slash) ? "" : "/";
 
     // Directory or bare-prefix request → index.html.
-    size_t slen = strlen(sub);
+    size_t slen = strnlen(sub, MAX_PATH_LEN);
     bool dir = (slen == 0) || (sub[slen - 1] == '/');
 
     char fs_path[256];

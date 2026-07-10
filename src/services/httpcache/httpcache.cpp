@@ -60,7 +60,7 @@ static size_t cc_tok(char *buf, size_t cap, size_t n, bool *first, const char *t
 {
     if (n == CC_SENT)
         return CC_SENT;
-    size_t tlen = strlen(tok);
+    size_t tlen = strnlen(tok, cap);
     size_t need = (*first ? 0 : 2) + tlen;
     if (n + need > cap)
         return CC_SENT;

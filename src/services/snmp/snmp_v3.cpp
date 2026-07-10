@@ -209,7 +209,7 @@ static size_t build_message(long msg_id, bool auth, bool priv, const uint8_t *sc
     ber_put_octet_string(&se, BER_OCTET_STRING, s_v3.engine_id, s_v3.engine_id_len);
     ber_put_integer(&se, (long)s_v3.boots);
     ber_put_integer(&se, (long)now);
-    ber_put_octet_string(&se, BER_OCTET_STRING, (const uint8_t *)s_v3.user, strlen(s_v3.user));
+    ber_put_octet_string(&se, BER_OCTET_STRING, (const uint8_t *)s_v3.user, strnlen(s_v3.user, SNMP_V3_USER_MAX));
     size_t auth_off = 0;
     if (auth)
     {
@@ -393,7 +393,8 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
         return 0;
 
     // Known user?
-    if (!s_v3.auth_set || !(uname_len == strlen(s_v3.user) && s_v3.user[0] && memcmp(uname, s_v3.user, uname_len) == 0))
+    if (!s_v3.auth_set || !(uname_len == strnlen(s_v3.user, SNMP_V3_USER_MAX) && s_v3.user[0] &&
+                            memcmp(uname, s_v3.user, uname_len) == 0))
     {
         s_v3.stat_unknown_user++;
         return build_report(msg_id, false, USM_STAT_UNKNOWN_USER, s_v3.stat_unknown_user, 0, resp, resp_cap);

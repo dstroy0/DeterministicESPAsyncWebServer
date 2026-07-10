@@ -59,11 +59,11 @@ size_t ftp_build_command(char *buf, size_t cap, const char *verb, const char *ar
     if (!buf || !verb || !verb[0])
         return 0;
     size_t n = 0;
-    n = ftp_emit(buf, cap, n, verb, strlen(verb));
+    n = ftp_emit(buf, cap, n, verb, strnlen(verb, cap));
     if (arg && arg[0])
     {
         n = ftp_emit(buf, cap, n, " ", 1);
-        n = ftp_emit(buf, cap, n, arg, strlen(arg));
+        n = ftp_emit(buf, cap, n, arg, strnlen(arg, cap));
     }
     n = ftp_emit(buf, cap, n, "\r\n", 2);
     return ftp_finish(buf, cap, n);
@@ -95,7 +95,7 @@ size_t ftp_build_eprt(char *buf, size_t cap, const char *ip_str, bool ipv6, uint
     n = ftp_emit(buf, cap, n, "EPRT |", 6);
     n = ftp_emit(buf, cap, n, ipv6 ? "2" : "1", 1);
     n = ftp_emit(buf, cap, n, "|", 1);
-    n = ftp_emit(buf, cap, n, ip_str, strlen(ip_str));
+    n = ftp_emit(buf, cap, n, ip_str, strnlen(ip_str, cap));
     n = ftp_emit(buf, cap, n, "|", 1);
     n = ftp_emit_uint(buf, cap, n, port);
     n = ftp_emit(buf, cap, n, "|\r\n", 3);
