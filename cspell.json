@@ -501,6 +501,7 @@
     "MAX_SSE_CONNS",
     "MAX_VAL_LEN",
     "MAX_WS_CONNS",
+    "maxage",
     "Mazak",
     "MBAP",
     "mbed",

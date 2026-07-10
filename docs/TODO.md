@@ -170,6 +170,16 @@ Building on the existing forwarder (`native_forward` / `native_gateway` / `nativ
 - [ ] Port forwarding: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it.
 - [ ] Optional packet inspection: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle.
 
+### Content delivery network (CDN) capability
+
+Let the device act as a caching edge / content-distribution node, not just an origin. Builds on what already exists (file serving, ETag, Range/206, the reverse-proxy `Forwarded` recovery, the forwarder, and the new SD data-store stack) toward serving and replicating content near where it is consumed. Unpolished; **scope to refine with the user** (which role(s), how content is keyed/invalidated, single-device vs the two-rig / mesh case).
+
+- [ ] Edge cache for upstream content: an opt-in reverse-proxy cache that fetches an origin response once and serves subsequent hits from a local store (RAM tier + an SD tier via the WAL/dbm layer), honoring `Cache-Control` / `Expires` / `ETag` / `Last-Modified` and revalidating with conditional requests (`If-None-Match` / `If-Modified-Since` -> 304). Fixed-size, bounded, fail-open to origin on a miss or a full cache.
+- [ ] Cache key + invalidation: a deterministic cache key (method + host + path + selected `Vary` headers) and an explicit purge API (single key + prefix/wildcard), plus TTL expiry and LRU eviction within the bounded store.
+- [ ] Origin-side cache directives: first-class helpers to emit correct edge-cacheable responses from app routes (immutable static assets, `stale-while-revalidate`, `s-maxage`), so a device sitting _behind_ a real CDN is cached correctly.
+- [ ] Content distribution across devices (mesh/edge): replicate/serve cached objects between nodes over the device-to-device link (ties into the two-rig setup + the forwarder + interface-forwarding milestone) so a fleet shares a warm cache instead of each hitting the origin. Design pass needed (push vs pull, consistency, addressing).
+- [ ] Range-aware + chunked delivery from the cache: serve `206 Partial Content` and the chunked/file send-pump straight out of the cache tier so large cached objects stream in constant memory with the existing backpressure.
+
 ### Pentesting
 
 - [ ] Extend the pentesting suite to cover more cases. Get creative; try to break the server.
