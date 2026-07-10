@@ -505,7 +505,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2847 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2851 test cases** across **241 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -23917,7 +23917,7 @@ A thorough directory of all **2847 test cases** across **241 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb2 (6 tests)</b></summary>
+<summary><b>test_smb2 (10 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_frame</b> &mdash; <i>fail closed: too small, and a non-zero leading byte</i></summary>
@@ -24007,6 +24007,66 @@ A thorough directory of all **2847 test cases** across **241 suites**. Expand a 
       * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (smb2_parse_negotiate_response(bad, n, &r))</code>
       * <code>Assert false (smb2_parse_negotiate_response(m, 100, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_session_setup</b> &mdash; <i>overflow + empty token fail closed</i></summary>
+
+    * **Objective**: overflow + empty token fail closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(64 + 24 + 40, n);</code>
+      * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_SETUP, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0xDEADBEEFULL, h.session_id); // echoes the server SessionId</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(7, h.message_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(25, r16(b + 0)); // StructureSize</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(SMB2_NEGOTIATE_SIGNING_ENABLED, b[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(64 + 24, r16(b + 12)); // SecurityBufferOffset = 88</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(40, r16(b + 14));      // SecurityBufferLength</code>
+      * <code>Assert equal memory (tok, buf + 88, 40)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_session_setup(buf, 100, 7, 0, 0, tok, sizeof(tok)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_session_setup(buf, sizeof(buf), 7, 0, 0, tok, 0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_session_setup_response</b> &mdash; <i>the final SUCCESS round carries no security buffer -> nullptr, still valid</i></summary>
+
+    * **Objective**: the final SUCCESS round carries no security buffer -> nullptr, still valid
+    * **Assertions**:
+      * <code>Assert true (smb2_parse_header(m, n, &h))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(SMB2_STATUS_MORE_PROCESSING_REQUIRED, h.status);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX64(0x1234ULL, h.session_id);</code>
+      * <code>Assert true (smb2_parse_session_setup_response(m, n, &r))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_FLAG_IS_GUEST, r.session_flags);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(tok), r.sec_buf_len);</code>
+      * <code>Assert equal memory (tok, r.sec_buf, sizeof(tok))</code>
+      * <code>Assert true (smb2_parse_session_setup_response(m, n, &r))</code>
+      * <code>Assert null (r.sec_buf)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, r.sec_buf_len);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session_setup_rejects</b> &mdash; <i>Session setup rejects</i></summary>
+
+    * **Objective**: Session setup rejects
+    * **Assertions**:
+      * <code>Assert false (smb2_parse_session_setup_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_session_setup_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_session_setup_response(bad, n, &r))</code>
+      * <code>Assert false (smb2_parse_session_setup_response(m, 68, &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session_setup_spnego_flow</b> &mdash; <i>Session setup spnego flow</i></summary>
+
+    * **Objective**: Session setup spnego flow
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, req_n);</code>
+      * <code>Assert equal memory (spnego, req + 88, sp_n)</code>
+      * <code>Assert true (smb2_parse_session_setup_response(resp, resp_n, &r))</code>
+      * <code>Assert true (spnego_parse_response(r.sec_buf, r.sec_buf_len, &ct, &cl))</code>
+      * <code>Assert true (ntlmssp_parse_challenge(ct, cl, &nch))</code>
+      * <code>Assert equal memory (sc, nch.server_challenge, 8)</code>
   </details>
 
 </details>
