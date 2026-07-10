@@ -504,7 +504,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2803 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2810 test cases** across **236 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -6308,7 +6308,7 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_dnc (13 tests)</b></summary>
+<summary><b>test_dnc (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_eia_table_odd_parity_and_inverse</b> &mdash; <i>odd parity across all 8 tracks (EIA characteristic)</i></summary>
@@ -6464,6 +6464,18 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (DNC_EV_LINE, ev)</code>
       * <code>Assert equal string ("M30", d.line)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_encode_overflow_paths</b> &mdash; <i>Encode overflow paths</i></summary>
+
+    * **Objective**: Encode overflow paths
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
   </details>
 
 </details>
@@ -8146,7 +8158,7 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ftp (13 tests)</b></summary>
+<summary><b>test_ftp (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_command</b> &mdash; <i>bare verb (no arg) -> no trailing space</i></summary>
@@ -8292,6 +8304,41 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (ftp_parse_epsv("229 no parens\\r\\n", 15, &port))</code>
       * <code>Assert false (ftp_parse_epsv("229 (|||)\\r\\n", 11, &port))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_null_and_partial_multiline</b> &mdash; <i>Reply null and partial multiline</i></summary>
+
+    * **Objective**: Reply null and partial multiline
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_reply(nullptr, 4, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply(unterm_first, strlen(unterm_first), &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply(unterm_term, strlen(unterm_term), &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply(unterm_cont, strlen(unterm_cont), &code, &used))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow_and_null</b> &mdash; <i>Build overflow and null</i></summary>
+
+    * **Objective**: Build overflow and null
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(tiny, sizeof(tiny), ip, 4096));      // overflows mid-number</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(nullptr, 32, ip, 80));               // null buffer</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(tiny, 4, "1.2.3.4", false, 80));     // eprt overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(tiny, sizeof(tiny), "", false, 80)); // empty ip</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pasv_epsv_null_and_edges</b> &mdash; <i>Pasv epsv null and edges</i></summary>
+
+    * **Objective**: Pasv epsv null and edges
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_pasv(nullptr, 10, ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv("227 (x,1,2,3,4,5)", 17, ip, &port))</code>
+      * <code>Assert false (ftp_parse_epsv(nullptr, 10, &port))</code>
+      * <code>Assert false (ftp_parse_epsv("229 (", 5, &port))</code>
+      * <code>Assert false (ftp_parse_epsv("229 (|5|)", 9, &port))</code>
+      * <code>Assert false (ftp_parse_epsv("229 (|||99999|)", 15, &port))</code>
   </details>
 
 </details>
@@ -11328,7 +11375,7 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_httpcache (8 tests)</b></summary>
+<summary><b>test_httpcache (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_preset_immutable</b> &mdash; <i>Preset immutable</i></summary>
@@ -11422,6 +11469,54 @@ A thorough directory of all **2803 test cases** across **236 suites**. Expand a 
       * <code>Assert equal int (100, (int)cache_freshness_lifetime(&cc, false, 999))</code>
       * <code>Assert equal int (50, (int)cache_freshness_lifetime(&cc, true, 50))</code>
       * <code>Assert equal int (-1, (int)cache_freshness_lifetime(&cc, true, -1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_all_directives</b> &mdash; <i>Build all directives</i></summary>
+
+    * **Objective**: Build all directives
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(0, cache_control_build(b, sizeof(b), &cc));</code>
+      * <code>Assert not null (strstr(b, "proxy-revalidate"))</code>
+      * <code>Assert not null (strstr(b, "must-understand"))</code>
+      * <code>Assert not null (strstr(b, "only-if-cached"))</code>
+      * <code>Assert not null (strstr(b, "max-stale=8"))</code>
+      * <code>Assert not null (strstr(b, "min-fresh=7"))</code>
+      * <code>Assert not null (strstr(b, "max-stale"))</code>
+      * <code>Assert null (strstr(b, "max-stale="))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_all_directives</b> &mdash; <i>Parse all directives</i></summary>
+
+    * **Objective**: Parse all directives
+    * **Assertions**:
+      * <code>Assert true (cache_control_parse(s, strlen(s), &cc))</code>
+      * <code>Assert true (cc.cc_private)</code>
+      * <code>Assert true (cc.no_cache)</code>
+      * <code>Assert true (cc.no_transform)</code>
+      * <code>Assert true (cc.must_revalidate)</code>
+      * <code>Assert true (cc.proxy_revalidate)</code>
+      * <code>Assert true (cc.must_understand)</code>
+      * <code>Assert true (cc.cc_immutable)</code>
+      * <code>Assert true (cc.only_if_cached)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(30, cc.stale_while_revalidate);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_and_build_guards</b> &mdash; <i>a recognized numeric directive with no value stays absent (-1)</i></summary>
+
+    * **Objective**: a recognized numeric directive with no value stays absent (-1)
+    * **Assertions**:
+      * <code>Assert false (cache_control_parse(nullptr, 0, &cc))</code>
+      * <code>Assert true (cache_control_parse("max-age", 7, &cc))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);</code>
+      * <code>Assert true (cache_control_parse("public,,,", 9, &cc))</code>
+      * <code>Assert true (cc.cc_public)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(nullptr, 8, &cc));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, 0, &cc));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(snug, sizeof(snug), &cc));</code>
   </details>
 
 </details>
