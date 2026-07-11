@@ -3457,10 +3457,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Add resource limits
     * **Assertions**:
-      * <code>Assert false (coap_server_add_resource(nullptr, (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
-      * <code>Assert false (coap_server_add_resource("/x", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
+      * <code>Assert false (coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
       * <code>Assert less than (64, added)</code>
-      * <code>Assert false (coap_server_add_resource("/nope", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3538,7 +3538,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Response payload clamped
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource("/of", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
+      * <code>Assert true (coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
@@ -3556,7 +3556,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Well known core truncates
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource(g_longpaths[i], (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert true (coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
