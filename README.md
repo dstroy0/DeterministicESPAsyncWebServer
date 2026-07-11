@@ -523,7 +523,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `OIDC`            |            11.5 KB |          13.0 KB |
 | L7    | `OAUTH2`          |            10.9 KB |          22.4 KB |
 | L7    | `WEBHOOK`         |             8.6 KB |          19.4 KB |
-| L7    | `RELAY`           |             8.1 KB |          34.0 KB |
+| L7    | `RELAY`           |             8.1 KB |          33.9 KB |
 | L7    | `TELEMETRY`       |             7.0 KB |         < 0.5 KB |
 | L7    | `SNMP`            |             7.0 KB |          12.2 KB |
 | L7    | `OPCUA`           |         6.1-6.9 KB |     10.0-10.2 KB |
@@ -537,7 +537,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `GPIO_MAP`        |             2.5 KB |         < 0.5 KB |
 | L7    | `METRICS`         |             2.3 KB |         < 0.5 KB |
 | L7    | `SYSLOG`          |             1.7 KB |           2.0 KB |
-| L7    | `AUDIT_LOG`       |             0.6 KB |           3.1 KB |
+| L7    | `AUDIT_LOG`       |             0.6 KB |           3.0 KB |
 | L7    | `LOGBUF`          |           < 0.5 KB |           3.2 KB |
 | -     | `FILE_SERVING`    |         0.0-4.2 KB |         < 0.5 KB |
 | -     | `WEBSOCKET`       |         0.0-3.7 KB |       0.0-1.5 KB |

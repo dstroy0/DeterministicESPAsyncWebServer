@@ -10323,9 +10323,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Response edge rejections
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,</code>
       * <code>Assert equal int (200, http_client_parse_response((uint8_t *)r5, sizeof(r5) - 1, &boff, &blen))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(10, blen);</code>
       * <code>Assert equal memory ("0123456789", r5 + boff, 10)</code>
@@ -10340,8 +10340,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Host transport stubs
     * **Assertions**:
-      * <code>Assert equal int (HTTP_CLIENT_ERR_CONNECT, http_get("http://x/", &res))</code>
-      * <code>Assert equal int (HTTP_CLIENT_ERR_CONNECT, http_post("http://x/", "text/plain", b, 1, &res))</code>
+      * <code>Assert equal int (HttpClientError::HTTP_CLIENT_ERR_CONNECT, http_get("http://x/", &res))</code>
+      * <code>Assert equal int (HttpClientError::HTTP_CLIENT_ERR_CONNECT, http_post("http://x/", "text/plain", b, 1, &res))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22935,7 +22935,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Bidirectional
     * **Assertions**:
-      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(17, b.out_len);</code>
       * <code>Assert equal memory ("hello from client", b.out, 17)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(14, a.out_len);</code>
@@ -22949,7 +22949,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Backpressure
     * **Assertions**:
-      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 1000))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 1000))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1000, b.out_len);</code>
       * <code>Assert equal memory (data, b.out, 1000)</code>
   </details>
@@ -22962,8 +22962,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (r.b_shut_sent)</code>
       * <code>Assert true (b.shutdown_called)</code>
       * <code>Assert false (r.b2a_done)</code>
-      * <code>Assert equal int (DET_RELAY_RUNNING, st)</code>
-      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_RUNNING, st)</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64))</code>
       * <code>Assert equal memory ("req", b.out, 3)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(800, a.out_len);</code>
       * <code>Assert equal memory (resp, a.out, 800)</code>
@@ -22975,7 +22975,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Send error
     * **Assertions**:
-      * <code>Assert equal int (DET_RELAY_ERROR, st)</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_ERROR, st)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22983,7 +22983,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: origin never sends; client sends then closes -> relay completes cleanly
     * **Assertions**:
-      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 32))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 32))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(18, b.out_len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, a.out_len);</code>
   </details>
@@ -22993,10 +22993,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: one step moves the buffered data each way; without an EOF signal the relay keeps running
     * **Assertions**:
-      * <code>Assert equal int (DET_RELAY_RUNNING, det_relay_step(&r))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_RUNNING, det_relay_step(&r))</code>
       * <code>Assert equal memory ("hello", b.out, 5)</code>
       * <code>Assert equal memory ("world", a.out, 5)</code>
-      * <code>Assert equal int (DET_RELAY_DONE, run_relay(&r, 8))</code>
+      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 8))</code>
       * <code>Assert true (a.shutdown_called)</code>
       * <code>Assert true (b.shutdown_called)</code>
   </details>
@@ -24668,7 +24668,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Commands, in order.
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
       * <code>Assert true (m.sent.find("EHLO esp32\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("MAIL FROM:&lt;device@example.net&gt;\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("RCPT TO:&lt;ops@example.net&gt;\\r\\n") != std::string::npos)</code>
@@ -24686,7 +24686,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Auth login
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
       * <code>Assert true (m.sent.find("AUTH LOGIN\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("dXNlcg==\\r\\n") != std::string::npos); // base64("user")</code>
       * <code>Assert true (m.sent.find("cGFzcw==\\r\\n") != std::string::npos); // base64("pass")</code>
@@ -24697,7 +24697,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Auth rejected
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_AUTH, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24705,7 +24705,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Greeting not ready
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24713,7 +24713,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Rcpt rejected
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24721,7 +24721,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Data refused
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_PROTOCOL, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24729,7 +24729,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Dot stuffing
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
       * <code>Assert true (m.sent.find("..hidden\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("...two dots\\r\\n") != std::string::npos)</code>
       * <code>Assert true (m.sent.find("last\\r\\n.\\r\\n") != std::string::npos)</code>
@@ -24740,7 +24740,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Multiline reply and lf body
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
       * <code>Assert true (m.sent.find("a\\r\\nb\\r\\n") != std::string::npos)</code>
   </details>
 
@@ -24749,7 +24749,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Partial reads dribble
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24757,7 +24757,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Missing required arg
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_ARG, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24765,7 +24765,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Io error when server hangs
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24773,7 +24773,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reply buffer overflow
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_IO, dialogue({huge}, base_cfg(), base_msg()))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, dialogue({huge}, base_cfg(), base_msg()))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24781,7 +24781,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Command send fails
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24789,7 +24789,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Body send fails
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24797,7 +24797,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Auth secret too long
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_OVERFLOW, dialogue({"220 ESMTP\\r\\n", "250 OK\\r\\n", "334 x\\r\\n"}, c, base_msg()))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_OVERFLOW,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24805,12 +24805,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: greeting ok, then hang before: EHLO / MAIL(no auth) / AUTH(user) / pass-leg / RCPT / DATA / final.
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_IO, dialogue({"220 x\\r\\n"}, c, msg))</code>
-      * <code>Assert equal int (SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n"}, c, msg))</code>
-      * <code>Assert equal int (SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n"}, cu, msg))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO,</code>
-      * <code>Assert equal int (SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n", "250 Ok\\r\\n"}, c, msg))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(SMTP_ERR_IO,</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, dialogue({"220 x\\r\\n"}, c, msg))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n"}, c, msg))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n"}, cu, msg))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO,</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_IO, dialogue({"220 x\\r\\n", "250 OK\\r\\n", "250 Ok\\r\\n"}, c, msg))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO,</code>
       * <code>TEST_ASSERT_EQUAL_INT( // final acceptance read</code>
   </details>
 
@@ -24819,10 +24819,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Protocol error at each step
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_PROTOCOL, dialogue({"220 x\\r\\n", "500 no ehlo\\r\\n"}, c, msg))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(SMTP_ERR_AUTH,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_AUTH,</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>TEST_ASSERT_EQUAL_INT(SMTP_ERR_PROTOCOL,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_PROTOCOL,</code>
       * <code>TEST_ASSERT_EQUAL_INT(                                                                  // final acceptance != 250</code>
   </details>
 
@@ -24831,9 +24831,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Command line overflows
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_OVERFLOW, dialogue({"220 x\\r\\n"}, ch, base_msg()))</code>
-      * <code>Assert equal int (SMTP_ERR_OVERFLOW, dialogue({"220 x\\r\\n", "250 OK\\r\\n"}, cf, base_msg()))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(SMTP_ERR_OVERFLOW,</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_OVERFLOW, dialogue({"220 x\\r\\n"}, ch, base_msg()))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_OVERFLOW,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_OVERFLOW,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24849,7 +24849,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Cr in body dropped
     * **Assertions**:
-      * <code>Assert equal int (SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_OK, smtp_run(&c, &msg, mock_send, mock_recv, &m))</code>
       * <code>Assert true (m.sent.find("x\\r\\ny\\r\\n") != std::string::npos)</code>
   </details>
 
@@ -24858,7 +24858,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build message boundary overflows
     * **Assertions**:
-      * <code>Assert not equal (SMTP_OK, r)</code>
+      * <code>Assert not equal (SmtpResult::SMTP_OK, r)</code>
       * <code>Assert true (saw_overflow)</code>
   </details>
 
@@ -24867,7 +24867,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Host smtp send stub
     * **Assertions**:
-      * <code>Assert equal int (SMTP_ERR_CONNECT, smtp_send(&c, &msg))</code>
+      * <code>Assert equal int (SmtpResult::SMTP_ERR_CONNECT, smtp_send(&c, &msg))</code>
   </details>
 
 </details>
