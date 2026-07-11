@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6e24125`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e2412529affce46fafb76ae4d6676388b8f4d88))
+- update CHANGELOG.md [skip ci] ([`6340f21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6340f2177edf4086ffd02ea45da54155e00b592b))
 - update CHANGELOG.md [skip ci] ([`a78ad4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a78ad4acba7db5dffddc97dd7328862b0f4e58cf))
 - update CHANGELOG.md [skip ci] ([`e359c03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e359c03dd6f74388210ef6fa26559c55c692e7e7))
 - update CHANGELOG.md [skip ci] ([`2edeeb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2edeeb1cdcb59b83005ee534f3612c5462757fda))
@@ -19,8 +21,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report + coverage [skip ci] ([`199b9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199b9e843605c6dce7f9a7102c5200f20bd3e149))
 - update CHANGELOG.md [skip ci] ([`b1a5cde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a5cde4f69ec73d8f404fa64873cda3eadf99e7))
 
+### Changes
+
+- ftp_malicious_server - abuse the client's reply/PASV parsers ([`864dac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/864dac54663519442eff63ec1f47a0359b0f2f81))
+
 ### Documentation
 
+- FTP interop/bench/attack coverage + warmup non-bug note ([`8f73cf8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f73cf8083e479775dd5791985852eae719d4ff8))
 - Redis done all 3 dims (interop 11/~50); note TLS DRAM ceiling ([`a09277b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a09277b95220b1aec7e9eced6c67438e3e9e52ee))
 - Redis RESP bench+attack done (interop = device-as-client follow-up) ([`32b61a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32b61a025a42d9d8afc99c421fad1efeed4509fc))
 - MTConnect done on all three dimensions (interop 10/~50) ([`34c4546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34c4546a798fa4ebae9ee4016b05fe6e7ea27f2c))
@@ -37,6 +44,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host microbench for the FTP client wire codec ([`d7bddbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7bddbd93a5e4f2d3515bf79cd6a1837dcce9fa9))
 - RESP2/3 codec bench (host + device) ([`9914b6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9914b6f934c16526480cea5877e6e44956ecb2ed))
 - MQTT 3.1.1 client codec bench (host + device) ([`bd3f4b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd3f4b3047a487c6c7f5571169dd5947990c8b55))
 - permessage-deflate codec bench (host + device) ([`685d5e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/685d5e92346ef15c25dc59a720b4929cfe1ad7b8))
@@ -48,6 +56,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- FTP device-as-client peer vs a real pyftpdlib server ([`b3b8758`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3b8758a35231f184c7b2468b044c3065ff03c6e))
+- device-as-FTP-client /ftp/probe route + ftp_parse_reply /bench op ([`94eca4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94eca4d053d5d863fdcfb399d176d45ecdb708d8))
 - Redis peer (device-as-client vs a real redis-server) ([`33209dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33209dc13005cb2a3de07a9b2f9fcfe730d26717))
 - /redis/probe device-as-Redis-client (interop trigger) ([`01dca76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01dca76d85a5d35898c3a5caeff0a9d1289b1905))
 - Redis RESP reply-parser fuzz (redis_resp_fuzz) ([`793ef9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/793ef9df71e49a2494b4b7b73d483719ca4305d3))
