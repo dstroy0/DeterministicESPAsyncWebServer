@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6bdf13a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bdf13a708d9d38b46332fe2b79f7376f0d0d92f))
+- update CHANGELOG.md [skip ci] ([`7bf7467`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bf7467a13a51e6ad23868e3e92899b3e359d847))
 - update CHANGELOG.md [skip ci] ([`ed7bb49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed7bb49dac7610a409d72fecfccf9440c468db35))
 - update CHANGELOG.md [skip ci] ([`6f2e699`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f2e699e808554a9e88b68ccbf0481d111e6a927))
 - update CHANGELOG.md [skip ci] ([`647fe14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/647fe1482691e6e4a6ac2d76a7d5eab60ed6f07a))
@@ -14,11 +16,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ce47a01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce47a015e9e7e40a52a43916189053809f02ece9))
 - update ESP32 build footprints [skip ci] ([`b13092d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b13092da85c65877b4460c6434acf542db145c3c))
 - roadmap - expand the interop harness to the entire feature set ([`cda9f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cda9f0e9d3cfed455cc6d4ddef015e0f040b7c7d))
 
 ### Refactor
 
+- retro - type opcode/kind params, drop silencing casts ([`8a65e92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a65e927d727fd7dfe953291ec6f4bc01c90aafa))
 - scoped enums, type-safe negotiator (enum class 34/N) ([`b7bbd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bbd0133969c24a269d9df9db12d34c2e5f9785))
 
 ## [5.95.2] - 2026-07-11
