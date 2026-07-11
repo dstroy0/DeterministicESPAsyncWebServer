@@ -91,11 +91,11 @@
     "ram_bytes": 66368
   },
   "DIAG": {
-    "example": "Foundation/05.Configuration",
+    "example": "L7-Application/20.Diagnostics",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 752849,
-    "ram_bytes": 63080
+    "flash_bytes": 751361,
+    "ram_bytes": 66328
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -598,7 +598,7 @@
     "example": "L7-Application/29.WebDav",
     "flags": "-DDETWS_ENABLE_WEBDAV=1",
     "board": "esp32dev",
-    "flash_bytes": 820281,
+    "flash_bytes": 820285,
     "ram_bytes": 105696
   },
   "WEB_TERMINAL": {
