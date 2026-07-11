@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9842c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9842c30c29ddcae896d27d443f90bf8171d14ec0))
 - update CHANGELOG.md [skip ci] ([`53f5b69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f5b696eb468cb4b5f4c2742f4f1ce57e743d65))
 
 ### Testing
 
+- real HTTP/2 interop peer (httpx / h2 library) - device-as-server ALPN h2 ([`fb65608`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6560805239cbd7363ef993a0f7057b731592e8))
 - advanced HTTP/2 abuse attack (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood) ([`818d6b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/818d6b4e28ff4468a0d5b118cb2033f8605bc153))
 
 ## [5.95.10] - 2026-07-11
