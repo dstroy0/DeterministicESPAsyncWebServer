@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d0a6899`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0a6899cb8f4b30559e49786e0ac881c78806c42))
 - update test report + coverage [skip ci] ([`2692d3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2692d3abb622976143ad10e95b20f9c16379175e))
 - update CHANGELOG.md [skip ci] ([`af0d34c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af0d34c164232c54f8fe933e3e9718ab958fd112))
 - update test report + coverage [skip ci] ([`699b4c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/699b4c5d981cca553ed87cbcd48310e75270f73a))
@@ -48,6 +49,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`79a275e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79a275e167a3cc75205b26c11674ba4141effdd8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a7be938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7be93824f5343868d173fa1d8e57a89673dc7f2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6ce7909`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ce79098bf66cb4a187d97a15745ba0396ee5285))
 - update ESP32 build footprints [skip ci] ([`03aa086`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03aa086ff3ecc8b19469d2734db73ec9543628f0))
@@ -79,6 +81,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- hart anon wire-const enums -> namespacing structs ([`f655788`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f65578860369fb48c2f1adf5c92e9c2f2feeb69b))
 - guardrails breach-flags bitmask -> struct of static constexpr ([`5cde4b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5cde4b5efbeea5da48bcf8b36e6490ffdc694eec))
 - http2 anon enums -> structs; stream state -> enum class ([`614c396`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/614c3960376a6bfc5315fc1661f52881851a5bb8))
 - radio_power/ota_rollback/logbuf anon enums -> namespacing structs ([`236dd2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/236dd2b08b465776b59fb5a049f1157cb7bfc72e))
