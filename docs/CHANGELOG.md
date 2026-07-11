@@ -6,11 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- remediate SonarCloud BLOCKER + CodeQL high/warning findings ([`c9385a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9385a43daff059510139112792e33e6aa76309f))
 - enum_to_class handles feature-gated members + partial-write re-runs ([`d0cf390`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0cf390c8dafbad7e87285e7370954e2ef79688b))
 - enum_to_class preserves an existing underlying type ([`862fcab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/862fcaba6f3c4e0ebddb9743497b847b4a8d657d))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d3181a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3181a3a9d0ef28ba60adf118bc623464cce5941))
 - update CHANGELOG.md [skip ci] ([`5360666`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5360666b164bad7ae7a7bd447e56377414a4bb7b))
 - update CHANGELOG.md [skip ci] ([`14238d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14238d347449a5883bba5757e4339083d07972c3))
 - update CHANGELOG.md [skip ci] ([`3587571`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3587571abbe0a5ef8854e9f6c4ae9bb90b14b217))
@@ -55,6 +57,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`45ff05f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45ff05fcc1cb173bf4450c3999e395636b911ce9))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`470731a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/470731a9e39baaaa6aab9e573d426864a03f0805))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8bbf97d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bbf97d8e47c81d8566f647fadd0d6e4a4fec1dd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3193664`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/319366407349bf0aa38bc6488e6e6574c556305c))
