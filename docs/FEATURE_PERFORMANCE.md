@@ -220,6 +220,25 @@ device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 - The real device PROPFIND latency is dominated by LittleFS directory enumeration; the XML build is cheap
   by comparison. A directory-listing cache (invalidated on PUT/DELETE/MKCOL/MOVE) would help a hot share.
 
+### CoAP server codec (DETWS_ENABLE_COAP)
+
+`coap_server_process()` is the whole CoAP request→response path (RFC 7252): parse the 4-byte header +
+options, reconstruct the Uri-Path, dispatch against the resource table, and encode the piggybacked
+reply. Pure (no sockets, no heap). Host figures from [`perf/bench_coap.cpp`](../perf/bench_coap.cpp);
+the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the handler that renders the
+`/info` JSON.
+
+| Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| --------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `coap_server_process` GET /info         |       58.8 |     221.0 |            5331 |          22212 |
+| `coap_server_process` GET /a/b/c (3seg) |       29.6 |     338.3 |               - |              - |
+
+- A full CoAP GET round trip (parse + dispatch + encode, plus the handler's `snprintf` of the JSON body)
+  is ~22 us on the S3. That is a complete datagram exchange, not a micro-codec, so it is the honest
+  request-path number for CoAP - comparable to a small HTTP request but over a single UDP datagram with
+  no connection setup. UDP + the fixed resource table make CoAP the cheapest of the request paths per
+  transaction on this device.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
