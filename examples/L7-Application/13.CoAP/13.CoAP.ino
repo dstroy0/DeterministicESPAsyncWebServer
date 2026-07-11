@@ -56,26 +56,26 @@ static void coap_info(const CoapRequest *req, CoapResponse *resp)
     if (n < 0)
         n = 0;
     resp->payload_len = (size_t)n;
-    resp->content_format = COAP_CF_JSON;
-    resp->code = COAP_RSP_CONTENT;
+    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_JSON;
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 
 // GET/PUT /led -> read or drive the on-board LED.
 static void coap_led(const CoapRequest *req, CoapResponse *resp)
 {
-    if (req->method == COAP_PUT)
+    if (req->method == (uint8_t)CoapMethod::COAP_PUT)
     {
         // Treat any payload beginning with a non-'0' character as "on".
         g_led_state = (req->payload_len && req->payload[0] != '0') ? 1 : 0;
         digitalWrite(LED_BUILTIN, g_led_state ? HIGH : LOW);
-        resp->code = COAP_RSP_CHANGED;
+        resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CHANGED;
         resp->payload_len = 0;
         return;
     }
     resp->payload[0] = g_led_state ? '1' : '0';
     resp->payload_len = 1;
-    resp->content_format = COAP_CF_TEXT;
-    resp->code = COAP_RSP_CONTENT;
+    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 
 // GET /hello -> a constant greeting.
@@ -88,8 +88,8 @@ static void coap_hello(const CoapRequest *req, CoapResponse *resp)
         n = resp->payload_cap;
     memcpy(resp->payload, msg, n);
     resp->payload_len = n;
-    resp->content_format = COAP_CF_TEXT;
-    resp->code = COAP_RSP_CONTENT;
+    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 
 void setup()
@@ -110,9 +110,10 @@ void setup()
 
     // Build the resource table, then bind the server to UDP/5683.
     coap_server_init();
-    coap_server_add_resource("/info", COAP_ALLOW_GET, coap_info);
-    coap_server_add_resource("/led", COAP_ALLOW_GET | COAP_ALLOW_PUT, coap_led);
-    coap_server_add_resource("/hello", COAP_ALLOW_GET, coap_hello);
+    coap_server_add_resource("/info", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    coap_server_add_resource("/led", (uint8_t)CoapMethodMask::COAP_ALLOW_GET | (uint8_t)CoapMethodMask::COAP_ALLOW_PUT,
+                             coap_led);
+    coap_server_add_resource("/hello", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_hello);
     coap_server_begin_udp(5683);
     Serial.println("CoAP server listening on UDP/5683 (try: coap-client -m get coap://<ip>/info)");
 

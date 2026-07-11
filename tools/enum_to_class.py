@@ -37,6 +37,23 @@ def enum_body(text, name):
     return start, i - 1, text[start : i - 1]
 
 
+def split_top_commas(s):
+    """Split on commas at bracket-depth 0 only, so a macro value like COAP_CODE(2, 1) stays intact."""
+    out, cur, depth = [], "", 0
+    for ch in s:
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        if ch == "," and depth == 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    out.append(cur)
+    return out
+
+
 def parse_members(body):
     body = re.sub(r"//[^\n]*", "", body)
     body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
@@ -45,7 +62,7 @@ def parse_members(body):
     mn = 0
     mx = 0
     had_expr = False
-    for chunk in body.split(","):
+    for chunk in split_top_commas(body):
         c = chunk.strip()
         if not c:
             continue

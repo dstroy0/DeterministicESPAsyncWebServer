@@ -215,7 +215,7 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
         n = append_opt(resp, cap, n, &last_opt, COAP_OPT_OBSERVE, v,
                        enc_uint_minimal((uint32_t)observe_seq & 0xFFFFFF, v));
 
-    if (content_format != COAP_CF_NONE)
+    if (content_format != (uint16_t)CoapContentFormat::COAP_CF_NONE)
         n = append_opt(resp, cap, n, &last_opt, COAP_OPT_CONTENT_FORMAT, v, enc_uint_minimal(content_format, v));
 
 #if DETWS_ENABLE_COAP_BLOCK
@@ -256,25 +256,32 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
 
     // Reply type for a request: piggybacked ACK for CON, NON for NON. ACK/RST we
     // receive are not requests - ignore them.
-    if (type != COAP_TYPE_CON && type != COAP_TYPE_NON)
+    if (type != (uint8_t)CoapType::COAP_TYPE_CON && type != (uint8_t)CoapType::COAP_TYPE_NON)
         return 0;
-    uint8_t rsp_type = (type == COAP_TYPE_CON) ? COAP_TYPE_ACK : COAP_TYPE_NON;
+    uint8_t rsp_type = (type == (uint8_t)CoapType::COAP_TYPE_CON) ? (uint8_t)CoapType::COAP_TYPE_ACK
+                                                                  : (uint8_t)CoapType::COAP_TYPE_NON;
 
     // A malformed message: bad version or reserved TKL (9..15). RFC 7252 §4.2:
     // reject a CON with an RST; stay silent for a NON.
     if (ver != 1 || tkl > COAP_MAX_TOKEN)
-        return (type == COAP_TYPE_CON) ? emit_header(resp, resp_cap, COAP_TYPE_RST, 0, mid, nullptr, 0) : 0;
+        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   : 0;
 
     const uint8_t *p = req + 4;
     const uint8_t *end = req + req_len;
     if (p + tkl > end)
-        return (type == COAP_TYPE_CON) ? emit_header(resp, resp_cap, COAP_TYPE_RST, 0, mid, nullptr, 0) : 0;
+        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   : 0;
     const uint8_t *token = p;
     p += tkl;
 
     // An empty message (Code 0.00): CON is a ping -> RST; anything else -> ignore.
     if (code == 0)
-        return (type == COAP_TYPE_CON) ? emit_header(resp, resp_cap, COAP_TYPE_RST, 0, mid, nullptr, 0) : 0;
+        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+                   : 0;
 
 #if DETWS_ENABLE_COAP_OBSERVE
     s_coap.last_observe = -1;
@@ -288,7 +295,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     size_t path_len = 0, query_len = 0;
     s_coap.path[0] = '\0';
     s_coap.query[0] = '\0';
-    uint16_t req_cf = COAP_CF_NONE;
+    uint16_t req_cf = (uint16_t)CoapContentFormat::COAP_CF_NONE;
     const uint8_t *payload = nullptr;
     size_t payload_len = 0;
     uint32_t opt_num = 0;
@@ -409,9 +416,9 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     }
 
     if (bad)
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_REQUEST, mid, token, tkl);
+        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid, token, tkl);
     if (bad_option)
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
+        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token, tkl);
 
     if (path_len == 0)
     {
@@ -422,14 +429,15 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     // Only class-0 GET/POST/PUT/DELETE are supported request methods. RFC 7252 5.8:
     // "A request with an unrecognized or unsupported Method Code MUST generate a 4.05
     // (Method Not Allowed) piggybacked response."
-    if ((code >> 5) != 0 || code < COAP_GET || code > COAP_DELETE)
-        return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
+    if ((code >> 5) != 0 || code < (uint8_t)CoapMethod::COAP_GET || code > (uint8_t)CoapMethod::COAP_DELETE)
+        return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid, token,
+                           tkl);
 
     // The response the emit path below serializes (block-wise if large). Filled
     // either by the .well-known/core discovery listing or by a resource handler.
     CoapResponse cresp;
-    cresp.code = COAP_RSP_CONTENT;
-    cresp.content_format = COAP_CF_NONE;
+    cresp.code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
+    cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
     cresp.payload = s_coap.pl;
     cresp.payload_cap = sizeof(s_coap.pl);
     cresp.payload_len = 0;
@@ -439,8 +447,9 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     // registered resources, e.g. "</info>,</led>". Block2 (below) pages it if large.
     if (strcmp(s_coap.path, "/.well-known/core") == 0)
     {
-        if (code != COAP_GET)
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
+        if (code != (uint8_t)CoapMethod::COAP_GET)
+            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
+                               token, tkl);
         size_t pl = 0;
         for (size_t i = 0; i < s_coap.res_count; i++)
         {
@@ -456,30 +465,33 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             pl += plen;
             s_coap.pl[pl++] = '>';
         }
-        cresp.content_format = COAP_CF_LINK;
+        cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_LINK;
         cresp.payload_len = pl;
     }
     else
     {
         const CoapResource *r = find_resource(s_coap, s_coap.path);
         if (!r)
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_NOT_FOUND, mid, token, tkl);
+            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_NOT_FOUND, mid, token,
+                               tkl);
         if (!(r->methods & (1u << code)))
-            return emit_header(resp, resp_cap, rsp_type, COAP_RSP_METHOD_NOT_ALLOWED, mid, token, tkl);
+            return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, mid,
+                               token, tkl);
 
         const uint8_t *eff_payload = payload;
         size_t eff_payload_len = payload_len;
 
 #if DETWS_ENABLE_COAP_BLOCK
         // --- Block1: reassemble a chunked POST/PUT payload (RFC 7959 §2.5) ---
-        if (req_block1 >= 0 && (code == COAP_POST || code == COAP_PUT))
+        if (req_block1 >= 0 && (code == (uint8_t)CoapMethod::COAP_POST || code == (uint8_t)CoapMethod::COAP_PUT))
         {
             uint32_t b = (uint32_t)req_block1;
             uint32_t num = b >> 4;
             uint8_t more = (uint8_t)((b >> 3) & 1);
             uint8_t szx = (uint8_t)(b & 7);
             if (szx == 7) // reserved block size
-                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
+                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
+                                   tkl);
             uint32_t bsize = 1u << (szx + 4);
             if (num == 0) // first block starts a fresh transfer
             {
@@ -491,12 +503,14 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             if (szx != s_coap.b1_szx || (size_t)num * bsize != s_coap.b1_len)
             {
                 s_coap.b1_len = 0;
-                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_INCOMPLETE, mid, token, tkl);
+                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE,
+                                   mid, token, tkl);
             }
             if (s_coap.b1_len + payload_len > sizeof(s_coap.b1))
             {
                 s_coap.b1_len = 0;
-                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_REQUEST_TOO_LARGE, mid, token, tkl);
+                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_REQUEST_TOO_LARGE, mid,
+                                   token, tkl);
             }
             if (payload_len)
                 memcpy(s_coap.b1 + s_coap.b1_len, payload, payload_len);
@@ -506,10 +520,12 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             {
                 // More blocks coming: acknowledge with 2.31 Continue + Block1 echo
                 // (no representation yet; the handler runs only on the final block).
-                size_t cn = emit_header(resp, resp_cap, rsp_type, COAP_RSP_CONTINUE, mid, token, tkl);
+                size_t cn = emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, mid,
+                                        token, tkl);
                 if (cn == 0)
                     return 0;
-                return emit_options_payload(resp, resp_cap, cn, COAP_RSP_CONTINUE, -1, COAP_CF_NONE, -1,
+                return emit_options_payload(resp, resp_cap, cn, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, -1,
+                                            (uint16_t)CoapContentFormat::COAP_CF_NONE, -1,
                                             (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
             }
             // Final block: hand the whole reassembled payload to the handler.
@@ -551,7 +567,8 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             num = b >> 4;
             szx = (uint8_t)(b & 7);
             if (szx == 7)
-                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_OPTION, mid, token, tkl);
+                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
+                                   tkl);
             if (szx > DETWS_COAP_BLOCK_SZX_MAX)
                 szx = DETWS_COAP_BLOCK_SZX_MAX;
             block_wise = true; // the client asked for block-wise transfer
@@ -566,7 +583,8 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             size_t off = (size_t)num * bsize;
             // A block number past the end of the representation is a bad request.
             if (off > cresp.payload_len || (off == cresp.payload_len && num > 0))
-                return emit_header(resp, resp_cap, rsp_type, COAP_RSP_BAD_REQUEST, mid, token, tkl);
+                return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, mid,
+                                   token, tkl);
             size_t this_len = cresp.payload_len - off;
             uint8_t more = 0;
             if (this_len > bsize)
@@ -661,15 +679,15 @@ void coap_notify(const char *path)
             continue;
         // Re-render the resource via its GET handler.
         CoapRequest creq;
-        creq.method = COAP_GET;
+        creq.method = (uint8_t)CoapMethod::COAP_GET;
         creq.path = s_coap.res[ridx].path;
         creq.query = "";
         creq.payload = nullptr;
         creq.payload_len = 0;
-        creq.content_format = COAP_CF_NONE;
+        creq.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
         CoapResponse cresp;
-        cresp.code = COAP_RSP_CONTENT;
-        cresp.content_format = COAP_CF_NONE;
+        cresp.code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
+        cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
         cresp.payload = s_coap.pl;
         cresp.payload_cap = sizeof(s_coap.pl);
         cresp.payload_len = 0;
@@ -680,8 +698,8 @@ void coap_notify(const char *path)
         // Build a NON notification: header + token + Observe(seq) + body.
         uint16_t mid = (uint16_t)detws_millis();
         s_coap.obs[i].seq = (s_coap.obs[i].seq + 1) & 0xFFFFFF;
-        size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), COAP_TYPE_NON, cresp.code, mid, s_coap.obs[i].token,
-                               s_coap.obs[i].tkl);
+        size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), (uint8_t)CoapType::COAP_TYPE_NON, cresp.code, mid,
+                               s_coap.obs[i].token, s_coap.obs[i].tkl);
         if (n)
             n = emit_options_payload(s_coap.tx, sizeof(s_coap.tx), n, cresp.code, (int32_t)s_coap.obs[i].seq,
                                      cresp.content_format, -1, -1, cresp.payload, cresp.payload_len);
@@ -698,7 +716,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
     bool have_peer = det_udp_peer_addr(peer, ip, sizeof(ip), &pport);
 
     // A Reset from a client rejects our notification -> drop its observations.
-    if (len >= 1 && ((data[0] >> 4) & 0x03) == COAP_TYPE_RST)
+    if (len >= 1 && ((data[0] >> 4) & 0x03) == (uint8_t)CoapType::COAP_TYPE_RST)
     {
         if (have_peer)
             obs_remove(ip, pport, nullptr, 0);
@@ -709,7 +727,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
     if (!rn)
         return;
 
-    if (s_coap.last_method == COAP_GET && s_coap.last_observe == 0 && have_peer)
+    if (s_coap.last_method == (uint8_t)CoapMethod::COAP_GET && s_coap.last_observe == 0 && have_peer)
     {
         int ridx = find_resource_index(s_coap, s_coap.path);
         if (ridx >= 0)
