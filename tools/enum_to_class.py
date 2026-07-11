@@ -57,6 +57,7 @@ def split_top_commas(s):
 def parse_members(body):
     body = re.sub(r"//[^\n]*", "", body)
     body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+    body = re.sub(r"(?m)^[ \t]*#.*$", "", body)  # drop preprocessor lines (feature-gated members)
     members = []
     cur = -1
     mn = 0
@@ -64,9 +65,12 @@ def parse_members(body):
     had_expr = False
     for chunk in split_top_commas(body):
         c = chunk.strip()
-        if not c:
+        # Grab the final identifier, skipping any leading scope chain: re-running after a partial write
+        # (step 3 failed) leaves the body as `Name::MEMBER`, and a bare `\w+` match would parse `Name`.
+        m = re.match(r"(?:[A-Za-z_]\w*::)*([A-Za-z_]\w*)", c)
+        if not m:  # blank chunk or a stray non-identifier fragment
             continue
-        members.append(re.match(r"[A-Za-z_]\w*", c).group(0))
+        members.append(m.group(1))
         if "=" in c:
             v = c.split("=", 1)[1].strip()
             if re.fullmatch(r"0[xX][0-9a-fA-F]+", v):
