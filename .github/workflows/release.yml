@@ -3,7 +3,7 @@ name: Release Arduino Library
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
         with:
-          path: 'library-source'
+          path: "library-source"
           # Full history + tags so the release summary can diff against the previous tag.
           fetch-depth: 0
 
@@ -117,7 +117,7 @@ jobs:
         if: steps.token.outputs.present == 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install PlatformIO
         if: steps.token.outputs.present == 'true'
@@ -127,7 +127,19 @@ jobs:
         if: steps.token.outputs.present == 'true'
         env:
           PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
-        # library.json (version = the tag) drives the published package; --no-interactive
-        # skips the confirmation prompt, and the export filter in library.json controls
-        # what ships. A re-run of an already-published version fails loudly (by design).
-        run: pio pkg publish . --no-interactive --no-notify
+        # library.json (version = the tag) drives the published package; --no-interactive skips the
+        # confirmation prompt, and the export filter in library.json controls what ships. Re-running
+        # the release for an already-published version (a workflow re-run, or a moved tag) is a no-op,
+        # not a failure - only a genuine publish error fails the job.
+        run: |
+          set -o pipefail
+          if out="$(pio pkg publish . --no-interactive --no-notify 2>&1)"; then
+            printf '%s\n' "$out"
+          else
+            printf '%s\n' "$out"
+            if printf '%s' "$out" | grep -qi 'already published'; then
+              echo "This version is already in the registry - nothing to publish."
+              exit 0
+            fi
+            exit 1
+          fi
