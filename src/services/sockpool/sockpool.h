@@ -40,8 +40,8 @@ struct SockPool
     size_t n;
 };
 
-/** @brief Acquire outcome. */
-enum
+/** @brief Acquire outcome (the sole return of detws_sockpool_acquire). */
+enum class SockAcq : uint8_t
 {
     SOCK_ACQ_FREE = 0,     ///< a free slot was used.
     SOCK_ACQ_RECYCLED = 1, ///< the pool was full; the LRU slot was recycled (see evicted_id).
@@ -59,7 +59,7 @@ void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n);
  * @param idx  (may be null) receives the chosen slot index.
  * @return SOCK_ACQ_FREE / SOCK_ACQ_RECYCLED / SOCK_ACQ_FAIL.
  */
-int detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id);
+SockAcq detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id);
 
 /** @brief Mark slot @p idx active at tick @p now (refreshes its LRU position). */
 void detws_sockpool_touch(SockPool *p, size_t idx, uint32_t now);

@@ -24,10 +24,10 @@ void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n)
     }
 }
 
-int detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id)
+SockAcq detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id)
 {
     if (!p || !p->slots || p->n == 0)
-        return SOCK_ACQ_FAIL;
+        return SockAcq::SOCK_ACQ_FAIL;
 
     // Prefer a free slot.
     for (size_t i = 0; i < p->n; i++)
@@ -39,7 +39,7 @@ int detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, 
             p->slots[i].last_used = now;
             if (idx)
                 *idx = i;
-            return SOCK_ACQ_FREE;
+            return SockAcq::SOCK_ACQ_FREE;
         }
     }
 
@@ -54,7 +54,7 @@ int detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, 
     p->slots[lru].last_used = now;
     if (idx)
         *idx = lru;
-    return SOCK_ACQ_RECYCLED;
+    return SockAcq::SOCK_ACQ_RECYCLED;
 }
 
 void detws_sockpool_touch(SockPool *p, size_t idx, uint32_t now)

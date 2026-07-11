@@ -19,33 +19,33 @@ bool dram_fits(size_t size, size_t free_dram, size_t reserve)
 }
 } // namespace
 
-int detws_psram_place(size_t size, bool dma_required, size_t free_dram, size_t free_psram, size_t psram_threshold,
-                      size_t dram_reserve)
+DetwsPlace detws_psram_place(size_t size, bool dma_required, size_t free_dram, size_t free_psram,
+                             size_t psram_threshold, size_t dram_reserve)
 {
     if (size == 0)
-        return PLACE_FAIL;
+        return DetwsPlace::PLACE_FAIL;
 
     bool d_fits = dram_fits(size, free_dram, dram_reserve);
     bool p_fits = size <= free_psram;
 
     if (dma_required) // PSRAM is not DMA-capable: DRAM or bust.
-        return d_fits ? PLACE_DRAM : PLACE_FAIL;
+        return d_fits ? DetwsPlace::PLACE_DRAM : DetwsPlace::PLACE_FAIL;
 
     if (size >= psram_threshold) // large / cold: prefer PSRAM.
     {
         if (p_fits)
-            return PLACE_PSRAM;
+            return DetwsPlace::PLACE_PSRAM;
         if (d_fits)
-            return PLACE_DRAM;
-        return PLACE_FAIL;
+            return DetwsPlace::PLACE_DRAM;
+        return DetwsPlace::PLACE_FAIL;
     }
 
     // small / hot: prefer DRAM.
     if (d_fits)
-        return PLACE_DRAM;
+        return DetwsPlace::PLACE_DRAM;
     if (p_fits)
-        return PLACE_PSRAM;
-    return PLACE_FAIL;
+        return DetwsPlace::PLACE_PSRAM;
+    return DetwsPlace::PLACE_FAIL;
 }
 
 void detws_pingpong_init(PingPong *pp)
