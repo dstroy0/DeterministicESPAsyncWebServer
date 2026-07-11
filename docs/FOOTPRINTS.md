@@ -45,7 +45,7 @@ from each example's `pio ci` size report and aggregated into
 | `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
 | `LOGBUF`                                 | L7-Application/41.LogBuffer             | 734.7 KB (57.4%) | 67.5 KB (21.1%)  |
 | `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
-| `MDNS`                                   | L7-Application/15.mDNS                  | 758.2 KB (59.2%) | 66.3 KB (20.7%)  |
+| `MDNS`                                   | L7-Application/15.mDNS                  | 758.1 KB (59.2%) | 66.3 KB (20.7%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 735.0 KB (57.4%) | 64.7 KB (20.2%)  |
 | `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.3 KB (57.4%) | 64.7 KB (20.2%)  |
 | `MPR121`                                 | L7-Application/63.Mpr121                | 280.9 KB (21.9%) | 21.3 KB (6.7%)   |
@@ -78,7 +78,7 @@ from each example's `pio ci` size report and aggregated into
 | `SMTP`                                   | L7-Application/57.SmtpAlert             | 717.4 KB (56.0%) | 59.7 KB (18.6%)  |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 741.9 KB (58.0%) | 76.5 KB (23.9%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
-| `SSH`                                    | L5-Session/03.SSHHostKey                | 801.5 KB (62.6%) | 86.2 KB (26.9%)  |
+| `SSH`                                    | L5-Session/03.SSHHostKey                | 801.5 KB (62.6%) | 86.2 KB (27.0%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 735.1 KB (57.4%) | 64.5 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.2 KB (57.6%) | 64.6 KB (20.2%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
@@ -96,7 +96,7 @@ from each example's `pio ci` size report and aggregated into
 | `WEBDAV`                                 | L7-Application/29.WebDav                | 801.0 KB (62.6%) | 102.9 KB (32.2%) |
 | `WEB_TERMINAL`                           | L6-Presentation/10.WebTerminal          | 737.9 KB (57.7%) | 64.5 KB (20.2%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`            | L7-Application/25.WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
-| `WS_DEFLATE`                             | L6-Presentation/11.WebSocketCompression | 737.8 KB (57.6%) | 72.4 KB (22.6%)  |
+| `WS_DEFLATE`                             | L6-Presentation/11.WebSocketCompression | 737.8 KB (57.6%) | 72.5 KB (22.6%)  |
 | `ZIGBEE+GATEWAY`                         | Foundation/17.ZigbeeGateway             | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                          | Foundation/16.ZWaveGateway              | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |
 | `core/01.Basic`                          | Foundation/01.Basic                     | 735.3 KB (57.4%) | 64.4 KB (20.1%)  |
@@ -112,7 +112,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/04.BasicAuth`                      | L6-Presentation/04.BasicAuth            | 733.3 KB (57.3%) | 64.4 KB (20.1%)  |
 | `core/04.Middleware`                     | L7-Application/04.Middleware            | 733.9 KB (57.3%) | 64.4 KB (20.1%)  |
 | `core/04.Sysadmin`                       | Foundation/04.Sysadmin                  | 746.9 KB (58.4%) | 64.4 KB (20.1%)  |
-| `core/05.DigestAuth`                     | L6-Presentation/05.DigestAuth           | 733.5 KB (57.3%) | 64.4 KB (20.1%)  |
+| `core/05.DigestAuth`                     | L6-Presentation/05.DigestAuth           | 733.4 KB (57.3%) | 64.4 KB (20.1%)  |
 | `core/05.PathParams`                     | L7-Application/05.PathParams            | 733.7 KB (57.3%) | 64.4 KB (20.1%)  |
 | `core/06.RegexRoutes`                    | L7-Application/06.RegexRoutes           | 733.6 KB (57.3%) | 64.4 KB (20.1%)  |
 | `core/07.ResponseHeaders`                | L7-Application/07.ResponseHeaders       | 733.8 KB (57.3%) | 64.4 KB (20.1%)  |
